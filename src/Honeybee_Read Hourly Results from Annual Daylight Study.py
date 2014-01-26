@@ -141,8 +141,7 @@ def main(illFilesAddress, testPoints, HOY, annualProfiles):
     return msg, illuminanceValues, shadingProfiles
 
 
-
-if _HOY!=None and _illFilesAddress.DataCount!=0 and _illFilesAddress.Branch(0)!=None and _testPoints:
+if _HOY!=None and _illFilesAddress.DataCount!=0 and _illFilesAddress.Branch(0)[0]!=None and _testPoints:
     
     _testPoints.SimplifyPaths()
     _illFilesAddress.SimplifyPaths()
