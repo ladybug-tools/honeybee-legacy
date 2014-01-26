@@ -26,7 +26,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_createHBSrfs'
 ghenv.Component.NickName = 'createHBSrfs'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_24_2014'
+ghenv.Component.Message = 'VER 0.0.43\nJAN_26_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -103,11 +103,18 @@ def main(geometry, srfType, EPConstruction, RADMaterial):
         if EPConstruction:
             HBSurface.EPConstruction = EPConstruction
         if RADMaterial!=None:
-            addedToLib, HBSurface.RadMaterial = hb_RADMaterialAUX.analyseRadMaterials(RADMaterial, False)
             
             # if the material is not in the library add it to the library
             if HBSurface.RadMaterial not in sc.sticky ["honeybee_RADMaterialLib"].keys():
-                hb_RADMaterialAUX.analyseRadMaterials(RADMaterial, True)
+                # if it is just the name of the material give a warning
+                if len(RADMaterial.split(" ")) == 1 and len(HBSurface.RadMaterial.split("\n")) == 1:
+                    warningMsg = "Can't find " + HBSurface.RadMaterial + " in RAD Material Library.\n" + \
+                                "Add the material to the library and try again."
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
+                    return
+                else:
+                    # try to add the material to the library
+                    addedToLib, HBSurface.RadMaterial = hb_RADMaterialAUX.analyseRadMaterials(RADMaterial, False)
             
         HBSurfaces.append(HBSurface)
     

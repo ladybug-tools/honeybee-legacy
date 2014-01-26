@@ -14,7 +14,7 @@ Read Radaince Results
 """
 ghenv.Component.Name = "Honeybee_Read RAD Result"
 ghenv.Component.NickName = 'readRADResults'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_24_2014'
+ghenv.Component.Message = 'VER 0.0.42\nJAN_26_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -87,7 +87,7 @@ if _testPts and _resultFilesAddress and _analysisType and _resultFilesAddress[0]
         for ptCount in range(numOfPts[branchNum]):
             resValue = "%.2f"%resultValues[totalPtsCount]
             result.Add(resValue, p)
-            resFile.write(resValue + "\n")
+            if writeToFile_ == True: resFile.write(resValue + "\n")
             totalPtsCount += 1
     
     if writeToFile_ == True:
