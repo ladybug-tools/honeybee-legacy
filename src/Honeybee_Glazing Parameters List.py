@@ -31,7 +31,7 @@ Provided by Honeybee
         windowHeightList: A list of window heights for different cardinal directions to be plugged into the windowHeight input of the "Glazing based on ratio" component.
         sillHeightList: A list of window sill heights for different cardinal directions to be plugged into the sillHeight input of the "Glazing based on ratio" component.
 """
-ghenv.Component.Name = "Honeybee_Galzing Parameters List"
+ghenv.Component.Name = "Honeybee_Glazing Parameters List"
 ghenv.Component.NickName = 'glzParamList'
 ghenv.Component.Message = 'VER 0.0.42\nJAN_24_2014'
 ghenv.Component.Category = "Honeybee"

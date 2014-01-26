@@ -18,7 +18,7 @@ Provided by Honeybee 0.0.10
 
 ghenv.Component.Name = "Honeybee_Generate Cumulative Sky"
 ghenv.Component.NickName = 'genCumSky'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_24_2014'
+ghenv.Component.Message = 'VER 0.0.42\nJAN_26_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "2 | Daylight | Sky"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -120,4 +120,9 @@ def main(weatherFile, analysisPeriod):
     return outputFile
     
 if _generateSky and _weatherFile!=None:
-    skyFilePath = main(_weatherFile, _analysisPeriod_)
+    if not os.path.isfile(_weatherFile):
+        print "Can't find the weather file at: " + _weatherFile
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, "Can't find the weather file at: " + _weatherFile)
+    else:
+        skyFilePath = main(_weatherFile, _analysisPeriod_)  
