@@ -16,7 +16,7 @@ Provided by Honybee 0.0.10
 
 ghenv.Component.Name = "Honeybee_FalseColor"
 ghenv.Component.NickName = 'FalseColor'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_24_2014'
+ghenv.Component.Message = 'VER 0.0.42\nJAN_26_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -55,8 +55,8 @@ def main(legendUnit, legendMax, conversionF):
         inputFilePath = HDRFilePath.replace("\\" , "/")
         fileAddress = inputFilePath.replace(inputFilePath.split("/")[-1], "")
         fileName = "".join(inputFilePath.split("/")[-1].split('.')[:-1])
-        if not colorLines: outputFile = fileAddress + fileName + "@fc.HDR"
-        else: outputFile = fileAddress + fileName + "@fc_cl.HDR"
+        if colorLines: outputFile = fileAddress + fileName + "@fc_cl.HDR"
+        else: outputFile = fileAddress + fileName + "@fc.HDR"
         
     batchStr_head = "SET RAYPATH=.;" + hb_RADLibPath + "\n" + \
                     "PATH=" + hb_RADPath + ";$PATH\n\n"
@@ -66,7 +66,7 @@ def main(legendUnit, legendMax, conversionF):
                         " -z > " + outputFile + "\nexit"
     else:
         batchStr_body = "falsecolor2 -i " + inputFilePath + " -s " + str(legendMax) + \
-                        " -n 10 -mask 0.1 -cl -l " + legendUnit + " -m " + str(conversionF) + \
+                        " -p " +  inputFilePath + " -n 10 -cl -l " + legendUnit + " -m " + str(conversionF) + \
                         " -z > " + outputFile + "\nexit"
     
     batchStr = batchStr_head + batchStr_body
