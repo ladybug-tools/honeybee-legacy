@@ -24,9 +24,9 @@ export geometries to rad file, and run daylighting/energy simulation
         done: True if the study is over
 """
 
-ghenv.Component.Name = " Honeybee_Run Daylight Simulation"
+ghenv.Component.Name = "Honeybee_Run Daylight Simulation"
 ghenv.Component.NickName = 'runDaylightAnalysis'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_24_2014'
+ghenv.Component.Message = 'VER 0.0.42\nJAN_27_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -732,6 +732,7 @@ def main(north, HBObjects, analysisRecipe, runRad, numOfCPUs, workingDir, radFil
             analysisType = analysisRecipe.type
             radParameters = analysisRecipe.radParameters
             backupImages = False # will change to True in case the user set it to True for image-based analysis
+            numOfIllFiles = 1
             if radParameters==None:
                 quality = 0
                 radParameters = {}
