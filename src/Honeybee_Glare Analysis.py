@@ -22,7 +22,7 @@ Provided by Honybee 0.0.10
 
 ghenv.Component.Name = "Honeybee_Glare Analysis"
 ghenv.Component.NickName = 'glareAnalysis'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_24_2014'
+ghenv.Component.Message = 'VER 0.0.42\nJAN_26_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "5"
@@ -74,7 +74,29 @@ def main(HDRImagePath, taskPosition, taskPositionAngle):
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee to fly...")
         return -1
-        
+    
+    # make sure the image is the result of an luminance analysis and not illuminance
+    # I check for -i flag for rpict - This will work for all the Honeybee generatred renders
+    # may or may not work for other cases I may want to change this to be a popup window
+    # so the user can select between the options
+    
+    isLuminance = True
+    with open(HDRImagePath, "r") as hdrFile:
+        for lineCount, line in enumerate(hdrFile):
+            if lineCount<10:
+                if line.strip().lower().startswith("rpict"):
+                    if line.find("-i") > -1:
+                        isLuminance = False
+                        break
+            else:
+                break
+    
+    if not isLuminance:
+        warningMsg = "This image is the result of an illuminance analysis and not a luminance analysis which is needed for glare analysis!"
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warningMsg)
+        return -1
+    
     # http://www.ise.fraunhofer.de/en/downloads-englisch/software/evalglare_windows.zip/at_download/file
     notes = ""
     
