@@ -25,7 +25,7 @@ Provided by Honeybee 0.0.13
 
 ghenv.Component.Name = "Honeybee_Glazing based on ratio"
 ghenv.Component.NickName = 'glazingCreator'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_24_2014'
+ghenv.Component.Message = 'VER 0.0.43\nJAN_27_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -625,6 +625,14 @@ def findGlzBasedOnRatio(baseSrf, glzRatio, windowHeight, sillHeight, surfaceType
     else:
         glazing, lastSuccessfulRestOfSrf = createGlazingCurved(baseSrf, glzRatio)
     
+    
+    #Check to make sure that the window that has been generated is facing the right direction.  If not, flip it
+    for window in glazing:
+        windowDir = window.Faces[0].NormalAt(0,0)
+        if windowDir.X < originalSrfDir.X + tol and windowDir.X > originalSrfDir.X - tol and windowDir.Y < originalSrfDir.Y + tol and windowDir.Y > originalSrfDir.Y - tol and windowDir.Z < originalSrfDir.Z + tol and windowDir.Z > originalSrfDir.Z - tol:
+                pass
+        else:
+            window.Flip()
     
     def getRestOfSurfacePlanar(baseSrf, glazing):
         selfDir = baseSrf.Faces[0].NormalAt(0,0)
