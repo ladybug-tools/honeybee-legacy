@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.42
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_24_2014'
+ghenv.Component.Message = 'VER 0.0.42\nJAN_30_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1325,8 +1325,13 @@ class hb_EPSurface(object):
         
         # 4 represents an Air Wall
         self.srfType = {0:'WALL',
+           0.5: 'UndergroundWall',
            1:'ROOF',
+           1.5: 'UndergroundCeiling',
            2:'FLOOR',
+           2.25: 'UndergroundSlab',
+           2.5: 'SlabOnGrade',
+           2.75: 'ExposedFloor',
            3:'CEILING',
            4:'WALL',
            5:'WINDOW',
@@ -1627,6 +1632,65 @@ class hb_EPSurface(object):
         
         return centerPt, normalVector
     
+    def isUnderground(self, wall = False):
+        """
+        check if this surface is underground
+        """
+        # extract points
+        coordinatesList = self.extractPoints()
+        # create a list of list
+        if type(coordinatesList[0])is not list and type(coordinatesList[0]) is not tuple:
+            coordinatesList = [coordinatesList]
+        
+        for ptList in coordinatesList:
+            for pt in ptList:
+                if not wall and pt.Z - rc.Geometry.Point3d.Origin.Z >= sc.doc.ModelAbsoluteTolerance: return False
+                elif pt.Z >= sc.doc.ModelAbsoluteTolerance: return False
+        return True
+        
+    def isOnGrade(self):
+        """
+        check if this surface is underground
+        """
+        # extract points
+        coordinatesList = self.extractPoints()
+        # create a list of list
+        if type(coordinatesList[0])is not list and type(coordinatesList[0]) is not tuple:
+            coordinatesList = [coordinatesList]
+        
+        for ptList in coordinatesList:
+            for pt in ptList:
+                if abs(pt.Z - rc.Geometry.Point3d.Origin.Z) >= sc.doc.ModelAbsoluteTolerance: return False
+        return True
+        
+    def reEvaluateType(self, overwrite= True):
+        """
+        This method extract the type of the surface.
+        I'm adding this method for gbXML export for now, however this will be 
+        eventually what I will use for other components in HB
+        """
+        
+        if not overwrite and hasinstance(self, "type"): return self.type
+        
+        # get the surface type based on normal
+        #self.type = self.getTypeByNormalAngle()
+        
+        if self.type == 0:
+            if self.isUnderground(True): self.type += 0.5 #UndergroundWall
+        
+        elif self.type == 1:
+            # A roof underground will be assigned as UndergroundCeiling!
+            if self.isUnderground(): self.type += 0.5 #UndergroundCeiling
+            elif self.BC.upper() == "SURFACE": self.type == 3 # ceiling
+            
+        elif self.type == 2:
+            # floor
+            if self.isOnGrade(): self.type += 0.5 #SlabOnGrade
+            elif self.isUnderground(): self.type += 0.25 #UndergroundSlab
+            elif self.BC.upper() != "SURFACE":
+                self.type += 0.75 #UndergroundSlab
+        pass
+        
     
     def getTypeByNormalAngle(self, maximumRoofAngle = 30):
         # find the normal

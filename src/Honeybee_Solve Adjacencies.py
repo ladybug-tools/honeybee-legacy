@@ -13,7 +13,7 @@ Provided by Honeybee 0.0.42
 """
 ghenv.Component.Name = "Honeybee_Solve Adjacencies"
 ghenv.Component.NickName = 'solveAdjc'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_24_2014'
+ghenv.Component.Message = 'VER 0.0.42\nJAN_30_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -79,6 +79,8 @@ def main(HBZones, tol):
                                         print 'Surface ' + srf.name + ' is a ' + srf.srfType[srf.type] + \
                                               '->ADJACENT TO<-' + surface.name + ' which is a ' + \
                                               surface.srfType[surface.type] + '.'
+                                        if srf.type == 1: srf.type = 3 # roof + adjacent surface = ceiling
+                                        elif surface.type == 1: surface.type = 3
                                         # change bc
                                         srf.BC = 'SURFACE'
                                         surface.BC = 'SURFACE'
@@ -94,7 +96,7 @@ def main(HBZones, tol):
                                         break
                 
                 if srf.type == 3 and srf.BCObject.name == '':
-                        srf.type = 1
+                        srf.type = 1 # Roof
                         srf.BC = srf.srfBC[srf.type]
     
     # add zones to dictionary
