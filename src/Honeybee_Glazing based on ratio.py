@@ -25,7 +25,7 @@ Provided by Honeybee 0.0.13
 
 ghenv.Component.Name = "Honeybee_Glazing based on ratio"
 ghenv.Component.NickName = 'glazingCreator'
-ghenv.Component.Message = 'VER 0.0.43\nJAN_27_2014'
+ghenv.Component.Message = 'VER 0.0.44\nJAN_31_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -533,6 +533,7 @@ def createGlazingCurved(baseSrf, glzRatio):
     
     lastSuccessfulGlzSrf = None
     lastSuccessfulSrf = None
+    lastSuccessfulRestOfSrf = None
     lastSuccessfulArea = area
     srfs = []
     coordinatesList = baseSrf.Vertices
@@ -556,7 +557,7 @@ def createGlazingCurved(baseSrf, glzRatio):
                     print `e`
                     pass
     
-    return lastSuccessfulGlzSrf, lastSuccessfulRestOfSrf
+    return [lastSuccessfulGlzSrf], lastSuccessfulRestOfSrf
 
 
 def findGlzBasedOnRatio(baseSrf, glzRatio, windowHeight, sillHeight, surfaceType):

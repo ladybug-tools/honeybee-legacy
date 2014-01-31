@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.42
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_30_2014'
+ghenv.Component.Message = 'VER 0.0.42\nJAN_31_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1189,7 +1189,7 @@ class EPZone(object):
     def cleanMeshedFaces(self):
         for srf in self.surfaces: srf.disposeCurrentMeshes()
     
-    def prepareNonPlanarZone(self, meshingLevel = 0):
+    def prepareNonPlanarZone(self, meshingLevel = 0, isEnergyPlus = False):
         # clean current meshedFaces
         self.cleanMeshedFaces()
         # collect walls and windows, and roofs
@@ -1211,10 +1211,17 @@ class EPZone(object):
         # mesh the geometry
         if meshingLevel == 0: mp = rc.Geometry.MeshingParameters.Default; disFactor = 3
         if meshingLevel == 1: mp = rc.Geometry.MeshingParameters.Smooth; disFactor = 1
+        if isEnergyPlus:
+            mp.JaggedSeams = True
         
         meshedGeo = rc.Geometry.Mesh.CreateFromBrep(joinedBrep, mp)
         
         for mesh in meshedGeo:
+            if isEnergyPlus:
+                angleTol = sc.doc.ModelAngleToleranceRadians
+                minDiagonalRatio = .875
+                #print mesh.Faces.ConvertTrianglesToQuads(angleTol, minDiagonalRatio)
+                mesh.Faces.ConvertTrianglesToQuads(angleTol, minDiagonalRatio)
             mesh.FaceNormals.ComputeFaceNormals()
             #mesh.FaceNormals.UnitizeFaceNormals()
         
@@ -1433,15 +1440,18 @@ class hb_EPSurface(object):
                 t0 = t # Advance to the next parameter
         return points
     
-    def extractMeshPts(self, mesh):
+    def extractMeshPts(self, mesh, triangulate = False):
         coordinatesList = []
         for face in  range(mesh.Faces.Count):
             # get each mesh surface vertices
             if mesh.Faces.GetFaceVertices(face)[3] != mesh.Faces.GetFaceVertices(face)[4]:
                 meshVertices = mesh.Faces.GetFaceVertices(face)[1:5]
                 # triangulation
-                coordinatesList.append(meshVertices[:3])
-                coordinatesList.append([meshVertices[0], meshVertices[2], meshVertices[3]])
+                if triangulate:
+                    coordinatesList.append(meshVertices[:3])
+                    coordinatesList.append([meshVertices[0], meshVertices[2], meshVertices[3]])
+                else:
+                    coordinatesList.append(list(meshVertices))
             else:
                 meshVertices = mesh.Faces.GetFaceVertices(face)[1:4]
                 coordinatesList.append(list(meshVertices))
