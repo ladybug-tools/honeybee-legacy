@@ -1,7 +1,7 @@
 """
 Genrate Standard CIE Sky
 -
-Provided by Honybee 0.0.10
+Provided by Honybee 0.0.45
     
     Args:
         _weatherFile: epw file location on your system as a string
@@ -16,7 +16,7 @@ Provided by Honybee 0.0.10
 
 ghenv.Component.Name = "Honeybee_Generate Standard CIE Sky"
 ghenv.Component.NickName = 'genStandardCIESky'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_26_2014'
+ghenv.Component.Message = 'VER 0.0.42\nFEB_01_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "2 | Daylight | Sky"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -106,7 +106,7 @@ def main(weatherFile, month, day, hour, skyType):
         return -1
         
     # make new folder for each city
-    subWorkingDir = "c:/Ladybug/skylib/climateBasedSkies/" + newLocName
+    subWorkingDir = "c:/Ladybug/skylib/CIESkies/" + newLocName
     subWorkingDir = lb_preparation.makeWorkingDir(subWorkingDir)
     # print 'Current working directory is set to: ', subWorkingDir
     

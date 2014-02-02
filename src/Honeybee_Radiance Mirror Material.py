@@ -6,18 +6,17 @@ Provided by Honybee 0.0.10
     
     Args:
         materialName: Unique name for this material
-        RTransmittance: Transmittance for red. The value should be between 0 and 1
-        GTransmittance: Transmittance for green. The value should be between 0 and 1
-        BTransmittance: Transmittance for blue. The value should be between 0 and 1
+        RReflectance: Diffuse reflectance for red
+        GReflectance: Diffuse reflectance for green
+        BReflectance: Diffuse reflectance for blue
     Returns:
-        avrgTrans: Average transmittance of this glass
         RADMaterial: Radiance Material string
 
 """
 
 ghenv.Component.Name = "Honeybee_Radiance Mirror Material"
 ghenv.Component.NickName = 'radMirrorMaterial'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_24_2014'
+ghenv.Component.Message = 'VER 0.0.42\nFEB_02_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "1 | Daylight | Material"
 ghenv.Component.AdditionalHelpFromDocStrings = "0"
@@ -60,16 +59,16 @@ def createRadMaterial(modifier, name, *args):
 modifier = "mirror"
 
 if sc.sticky.has_key('honeybee_release'):
-    if RTransmittance!=None and GTransmittance!=None and BTransmittance!=None:
-        if 0 <= RTransmittance <= 1 and 0 <= GTransmittance <= 1 and 0 <= BTransmittance <= 1:
+    if RReflectance!=None and GReflectance!=None and BReflectance!=None:
+        if 0 <= RReflectance <= 1 and 0 <= GReflectance <= 1 and 0 <= BReflectance <= 1:
             
-            avrgTrans = (0.265 * RTransmittance + 0.670 * GTransmittance + 0.065 * BTransmittance)
+            avrgTrans = (0.265 * RReflectance + 0.670 * GReflectance + 0.065 * BReflectance)
             
             materialName = materialName.Replace(" ", "_")
             
-            RADMaterial = createRadMaterial(modifier, materialName, getTransmissivity(RTransmittance), getTransmissivity(GTransmittance), getTransmissivity(BTransmittance))
+            RADMaterial = createRadMaterial(modifier, materialName, getTransmissivity(RReflectance), getTransmissivity(GReflectance), getTransmissivity(BReflectance))
         else:
-            msg =  "Transmittance values should be between 0 and 1"
+            msg =  "Reflectance values should be between 0 and 1"
             e = gh.GH_RuntimeMessageLevel.Error
             ghenv.Component.AddRuntimeMessage(e, msg)
 else:
