@@ -11,7 +11,7 @@ Provided by Honybee 0.0.10
 
 ghenv.Component.Name = "Honeybee_Convert HDR to TIF"
 ghenv.Component.NickName = 'HDR > TIF'
-ghenv.Component.Message = 'VER 0.0.42\nFEb_02_2014'
+ghenv.Component.Message = 'VER 0.0.43\nFEb_02_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -62,7 +62,7 @@ def main():
     batchStr =  "SET RAYPATH=.;" + hb_RADLibPath + "n" + \
                 "PATH=" + hb_RADPath + ";$PATH\n\n" + \
                 "pcond -h+ " + inputFilePath + " > " + hInputFilePath + "\n" + \
-                "ra_tiff " + inputFilePath + " " + outputFile + \
+                "ra_tiff " + hInputFilePath + " " + outputFile + \
                 "\nexit\n"
     
     batchFileName = fileAddress + 'HDR2TIFF.BAT'
