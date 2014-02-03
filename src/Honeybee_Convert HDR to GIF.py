@@ -12,7 +12,7 @@ Provided by Honybee 0.0.10
 
 ghenv.Component.Name = "Honeybee_Convert HDR to GIF"
 ghenv.Component.NickName = 'HDR > GIF'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_24_2014'
+ghenv.Component.Message = 'VER 0.0.43\nFEB_02_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -51,16 +51,25 @@ def main():
         fileAddress = inputFilePath.replace(inputFilePath.split("/")[-1], "")
         fileName = "".join(inputFilePath.split("/")[-1].split('.')[:-1])
         outputFile = fileAddress + fileName + ".GIF"
-
+        hInputFilePath = fileAddress + fileName + "_h.GIF"
+        
+    if os.path.isfile(outputFile):
+        try: os.remove(outputFile)
+        except:
+            msg = "Can't remove the old GIF file..."
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+    
     batchStr =  "SET RAYPATH=.;" + hb_RADLibPath + "n" + \
                 "PATH=" + hb_RADPath + ";$PATH\n\n" + \
-                "ra_gif " + inputFilePath + " " + outputFile + \
+                "pcond -h+ " + inputFilePath + " > " + hInputFilePath + "\n" + \
+                "ra_gif " + hInputFilePath + " " + outputFile + \
                 "\nexit\n"
     
     batchFileName = fileAddress + 'HDR2GIF.BAT'
     batchFile = open(batchFileName, 'w')
     batchFile.write(batchStr)
     batchFile.close()
+    
     os.system("start /min /B /wait " + batchFileName)
     return outputFile
 

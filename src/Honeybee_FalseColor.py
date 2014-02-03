@@ -4,19 +4,19 @@ False Color
 Provided by Honybee 0.0.10
     
     Args:
-        HDRFilePath: Path to an HDR image file
-        legendUnit: Unit of the legend (e.g. lux, cd/m2,...)
-        conversionF: Conversion factor for the results. Default is 179.
-        legendMax: Maximum bound for the legend
-        colorLines: Set to True ro render the image with colored lines
-        render: Set to True to render the new image
+        _HDRFilePath: Path to an HDR image file
+        legendUnit_: Unit of the legend (e.g. lux, cd/m2,...)
+        conversionF_: Conversion factor for the results. Default is 179.
+        legendMax_: Maximum bound for the legend
+        colorLines_: Set to True ro render the image with colored lines
+        _render: Set to True to render the new image
     Returns:
         outputFilePath: Path to the result HDR file
 """
 
 ghenv.Component.Name = "Honeybee_FalseColor"
 ghenv.Component.NickName = 'FalseColor'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_26_2014'
+ghenv.Component.Message = 'VER 0.0.43\nFEB_02_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -25,7 +25,31 @@ import os
 import scriptcontext as sc
 import Grasshopper.Kernel as gh
 
-def main(legendUnit, legendMax, conversionF):
+def getHDRSimulationType(HDRImagePath):
+    #_simulationType_:
+    #    [0] illuminance(lux), [1] radiation (wh), [2] luminance (Candela)
+
+    with open(HDRImagePath, "r") as hdrFile:
+        for lineCount, line in enumerate(hdrFile):
+            if lineCount<10:
+                if line.strip().lower().startswith("oconv"):
+                    # check if the skytype could be radiation based on the sky type
+                    if line.strip().lower().find("cumulativesky")>-1:
+                        # annual radiation analysis
+                        return 1
+                    elif line.strip().lower().find("radanalysis")>-1:
+                        # hourly radiation analysis
+                        return 1.5
+                        
+                if line.strip().lower().startswith("rpict"):
+                    if line.find("-i") > -1:
+                        # is 0 or 1
+                        return 0
+            else:
+                return 2 #luminance
+
+
+def main(HDRFilePath, legendUnit, legendMax, conversionF, colorLines):
 
     # import the classes
     if sc.sticky.has_key('honeybee_release'):
@@ -57,7 +81,12 @@ def main(legendUnit, legendMax, conversionF):
         fileName = "".join(inputFilePath.split("/")[-1].split('.')[:-1])
         if colorLines: outputFile = fileAddress + fileName + "@fc_cl.HDR"
         else: outputFile = fileAddress + fileName + "@fc.HDR"
-        
+    
+    # check and remove the file if existed
+    if os.path.isfile(outputFile):
+        try: os.remove(outputFile)
+        except: print "---"
+    
     batchStr_head = "SET RAYPATH=.;" + hb_RADLibPath + "\n" + \
                     "PATH=" + hb_RADPath + ";$PATH\n\n"
     if not colorLines:
@@ -71,23 +100,45 @@ def main(legendUnit, legendMax, conversionF):
     
     batchStr = batchStr_head + batchStr_body
     batchFileName = fileAddress + 'FALSECLR.BAT'
+    
+        # check and remove the file if existed
+    if os.path.isfile(batchFileName):
+        try: os.remove(batchFileName)
+        except: print "---"
+        
     batchFile = open(batchFileName, 'w')
     batchFile.write(batchStr)
     batchFile.close()
     os.system(batchFileName)
+    
     return outputFile
 
 
-if HDRFilePath and render:
-    if legendUnit == None:
-        legendUnit = 'unknown'
-    if conversionF == None:
-        if legendUnit.upper().find('WH') > -1:
-            # Honeybee runs rpict with -i+ for radiation analysis so the factor has been already considered
-            # user can overwrite this in case the fcator should be considered
-            conversionF = 1
-        else:
-            # default
-            conversionF = 179
-    if legendMax == None: legendMax = 'auto '
-    outputFilePath = main(legendUnit, legendMax, conversionF)
+if _HDRFilePath and _render:
+    # check the simulation type
+    simulationType = getHDRSimulationType(_HDRFilePath)
+    
+    if simulationType == 0:
+        #[0] illuminance(lux)
+        legendUnit = "lux"
+        conversionF = 179
+    elif simulationType == 1:
+        #[1] annual radiation (kwh),
+        legendUnit = "kWh/m2"
+        conversionF = 1
+    elif simulationType == 1.5:
+        #[1] radiation (wh),
+        legendUnit = "Wh/m2"
+        conversionF = 1
+    else:
+        #[2] luminance (Candela)
+        legendUnit = "cd/m2"
+        conversionF = 179
+    
+    if legendUnit_!=None: legendUnit = legendUnit_
+    
+    if conversionF_!=None: conversionF = conversionF_
+    
+    if legendMax_ == None: legendMax_ = 'auto '
+    
+    outputFilePath = main(_HDRFilePath, legendUnit, legendMax_, conversionF, colorLines_)
