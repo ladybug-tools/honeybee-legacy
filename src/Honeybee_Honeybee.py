@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.42
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_31_2014'
+ghenv.Component.Message = 'VER 0.0.43\nFEB_03_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -391,7 +391,30 @@ class RADMaterialAux(object):
             matStr += str(len(properties)) + " " + " ".join(properties) + "\n"
         
         return matStr
+    
+    def getRADMaterialType(self, materialName):
+        materialType = sc.sticky ["honeybee_RADMaterialLib"][materialName].keys()[0]
+        return materialType
+    
+    def getRADMaterialParameters(self, materialName):
+        materialType = self.getRADMaterialType(materialName)
         
+        lastLine = len(sc.sticky ["honeybee_RADMaterialLib"][materialName][materialType].keys()) - 1
+        
+        properties = sc.sticky ["honeybee_RADMaterialLib"][materialName][materialType][lastLine]
+        
+        return properties
+    
+    def getSTForTransMaterials(self, materialName):
+        properties = self.getRADMaterialParameters(materialName)
+        
+        # check got translucant materials
+        PHAverage = 0.265 * properties[0] + 0.670 * properties[1] + 0.065 * properties[2]
+        
+        st = properties[5] * properties[6] * (1 - PHAverage * properties[3])
+        
+        return st
+    
     def importRadMatStr(self, firstline, inRadf):
         matStr = firstline
         for line in inRadf:
@@ -1739,10 +1762,13 @@ class hb_EPSurface(object):
         return self.geometry.GetArea()
     
     def __str__(self):
-        try: return 'Surface name: ' + self.name + '\nSurface number: ' + str(self.num)+ '\nThis surface is a ' + str(self.type)
-        except: return 'Surface name: ' + self.name + '\n' + 'Surface number: ' + str(self.num)
-        ##
-        
+        try:
+            return 'Surface name: ' + self.name + '\nSurface number: ' + str(self.num) + \
+                   '\nThis surface is a ' + str(self.srfType[self.type]) + "."
+        except:
+            return 'Surface name: ' + self.name + '\n' + 'Surface number: ' + str(self.num) + \
+                   '\nSurface type is not assigned. Honeybee thinks this is potentially a ' + str(self.srfType[self.getTypeByNormalAngle()]) + "."
+                   
 
 class hb_EPZoneSurface(hb_EPSurface):
     """..."""
