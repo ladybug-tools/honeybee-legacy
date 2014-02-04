@@ -6,13 +6,14 @@ Provided by Honybee 0.0.10
     
     Args:
         HDRFilePath: Path to an HDR image file
+        adjustExposure_: "Mimic human visual response in the output. The goal of this process is to produce output that correlates strongly with a persons subjective impression of a scene."
     Returns:
         GIFFilePath: Path to the result GIF file
 """
 
 ghenv.Component.Name = "Honeybee_Convert HDR to GIF"
 ghenv.Component.NickName = 'HDR > GIF'
-ghenv.Component.Message = 'VER 0.0.43\nFEB_02_2014'
+ghenv.Component.Message = 'VER 0.0.44\nFEB_04_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -60,11 +61,16 @@ def main():
             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
     
     batchStr =  "SET RAYPATH=.;" + hb_RADLibPath + "n" + \
-                "PATH=" + hb_RADPath + ";$PATH\n\n" + \
-                "pcond -h+ " + inputFilePath + " > " + hInputFilePath + "\n" + \
-                "ra_gif " + hInputFilePath + " " + outputFile + \
-                "\nexit\n"
+                "PATH=" + hb_RADPath + ";$PATH\n\n"
     
+    if adjustExposure_:
+        batchStr += "pcond -h+ " + inputFilePath + " > " + hInputFilePath + "\n" + \
+                    "ra_gif " + hInputFilePath + " " + outputFile + \
+                    "\nexit\n"
+    else:
+        batchStr += "ra_gif " + inputFilePath + " " + outputFile + \
+                    "\nexit\n"
+                    
     batchFileName = fileAddress + 'HDR2GIF.BAT'
     batchFile = open(batchFileName, 'w')
     batchFile.write(batchStr)
