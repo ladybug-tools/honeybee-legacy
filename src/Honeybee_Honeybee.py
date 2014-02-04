@@ -235,7 +235,6 @@ class RADMaterialAux(object):
         
         # initiate the library
         if not sc.sticky.has_key("honeybee_RADMaterialLib"): sc.sticky ["honeybee_RADMaterialLib"] = {}
-        sc.sticky ["honeybee_RADMaterialLib"] = {}
         
         # add default materials to the library
         self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', 'GenericFloorMaterial', .2, .2, .2, 0, 0.1), True, True)
@@ -254,7 +253,8 @@ class RADMaterialAux(object):
         # update the list of the materials in the call from library components
         for component in ghenv.Component.OnPingDocument().Objects:
             if  type(component)== type(ghenv.Component) and component.Name == "Honeybee_Call from Radiance Library":
-                component.ExpireSolution(True)
+                pass
+                #component.ExpireSolution(True)
         
         print "Loading RAD default materials..." + \
               `len(sc.sticky ["honeybee_RADMaterialLib"].keys())` + " RAD materials are loaded\n"
@@ -347,7 +347,6 @@ class RADMaterialAux(object):
                     upload = self.duplicateMaterialWarning(materialName, radMaterialString)
                     if not upload:
                         return 0, materialName
-            
                 sc.sticky ["honeybee_RADMaterialLib"][materialName] = {materialType: {}}
             
                 counters = []
@@ -420,7 +419,7 @@ class RADMaterialAux(object):
     
     def getSTForTransMaterials(self, materialName):
         properties = self.getRADMaterialParameters(materialName)
-        
+        properties = map(float, properties)
         # check got translucant materials
         PHAverage = 0.265 * properties[0] + 0.670 * properties[1] + 0.065 * properties[2]
         

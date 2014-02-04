@@ -26,7 +26,7 @@ export geometries to rad file, and run daylighting/energy simulation
 
 ghenv.Component.Name = "Honeybee_Run Daylight Simulation"
 ghenv.Component.NickName = 'runDaylightAnalysis'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_27_2014'
+ghenv.Component.Message = 'VER 0.0.44\nFEB_04_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -365,6 +365,10 @@ class WriteRADAUX(object):
         else:
             # radiation analysis
             line0 = "rpict -i "
+        
+        # check got translucant materials
+        # St = A6*A7*( 1  photopic average (A1,A2,A3) * A4 )
+        # radParameters["_st_"]
         
         line1 = "-t 10 "+ \
                 view + " -af " + ambFile +  " " + \
@@ -904,7 +908,7 @@ def main(north, HBObjects, analysisRecipe, runRad, numOfCPUs, workingDir, radFil
                         try:
                             customRADMat, customMixFunRadMat = hb_RADMaterialAUX.addRADMatToDocumentDict(HBObj, customRADMat, customMixFunRadMat)
                         except:
-                            msg = HBObj.RadMaterial + "is not defined in the material library! Add the material to library and try again."
+                            msg = HBObj.RadMaterial + " is not defined in the material library! Add the material to library and try again."
                             print msg
                             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
                             return -1
@@ -921,7 +925,7 @@ def main(north, HBObjects, analysisRecipe, runRad, numOfCPUs, workingDir, radFil
                                     try:
                                         customRADMat, customMixFunRadMat = hb_RADMaterialAUX.addRADMatToDocumentDict(childSrf, customRADMat, customMixFunRadMat)
                                     except:
-                                        msg = childSrf.RadMaterial + "is not defined in the material library! Add the material to library and try again."
+                                        msg = childSrf.RadMaterial + " is not defined in the material library! Add the material to library and try again."
                                         print msg
                                         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
                                         return -1
@@ -938,7 +942,7 @@ def main(north, HBObjects, analysisRecipe, runRad, numOfCPUs, workingDir, radFil
         matStr =  "# start of generic materials definition(s)\n" + \
             hb_RADMaterialAUX.getRADMaterialString('GenericFloorMaterial') + "\n" + \
             hb_RADMaterialAUX.getRADMaterialString('GenericOutdoorWallMaterial') + "\n" + \
-            hb_RADMaterialAUX.getRADMaterialString('ShadingMaterial') + "\n" + \
+            hb_RADMaterialAUX.getRADMaterialString('contextMaterial') + "\n" + \
             hb_RADMaterialAUX.getRADMaterialString('000_Interior_Ceiling') + "\n" + \
             hb_RADMaterialAUX.getRADMaterialString('000_Interior_Floor') + "\n" + \
             hb_RADMaterialAUX.getRADMaterialString('000_Exterior_Window') + "\n" + \
@@ -951,6 +955,17 @@ def main(north, HBObjects, analysisRecipe, runRad, numOfCPUs, workingDir, radFil
             matFile.write("\n# start of material(s) specific to this study (if any)\n")
             for radMatName in customRADMat.keys():
                 matFile.write(hb_RADMaterialAUX.getRADMaterialString(radMatName) + "\n")
+                
+                # check if the material is is trans
+                if hb_RADMaterialAUX.getRADMaterialType(radMatName) == "trans":
+                    
+                    # get the st value
+                    st = hb_RADMaterialAUX.getSTForTransMaterials(radMatName)
+                    if st < radParameters["_st_"]:
+                        print "Found a trans material... " + \
+                              "Resetting st parameter from " + str(radParameters["_st_"]) + " to " + str(st)
+                        radParameters["_st_"] = st
+                    
             # write mixedfun if any
             for radMatName in customMixFunRadMat.keys():
                 matFile.write(hb_RADMaterialAUX.getRADMaterialString(radMatName) + "\n")
