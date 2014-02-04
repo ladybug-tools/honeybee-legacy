@@ -14,7 +14,7 @@ Read Daysim result for a test point
 """
 ghenv.Component.Name = "Honeybee_Read DS Result for a point"
 ghenv.Component.NickName = 'readDSHourlyResults'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_24_2014'
+ghenv.Component.Message = 'VER 0.0.43\nFEB_03_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -27,6 +27,32 @@ import Grasshopper.Kernel as gh
 from Grasshopper import DataTree
 from Grasshopper.Kernel.Data import GH_Path
 
+def sortIllFiles(illFilesAddress):
+    sortedIllFiles = []
+    for shadingGroupCount in range(illFilesAddress.BranchCount):
+        fileNames = list(illFilesAddress.Branch(shadingGroupCount))
+        try:
+            fileNames = sorted(fileNames, key=lambda fileName: int(fileName.split(".")[-2].split("_")[-1]))
+            sortedIllFiles.append(fileNames)
+        except:
+            tmpmsg = "Can't sort the files based on the file names. Make sure the branches are sorted correctly."
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, tmpmsg)
+    
+    # sort shading states inside sortedIllFiles
+    illFileSets = {}
+    for listCount, fileNames in enumerate(sortedIllFiles):
+        try:
+            if len(fileNames[0].split("_state_"))==1:
+                illFileSets[0] = fileNames
+            else:
+                key = int(fileNames[0].split("_state_")[1].split("_")[0])-1
+                illFileSets[key] = fileNames
+        except Exception, e:
+            print "sortinng the branches failed!"
+            illFileSets[listCount] = fileNames
+    
+    return illFileSets
 
 def main(illFilesAddress, testPoints, targetPoint, annualProfiles):
     msg = str.Empty
@@ -113,7 +139,10 @@ def main(illFilesAddress, testPoints, targetPoint, annualProfiles):
         tempmsg = "Annual profile files are not provided.\nThe result will be only calculated for the original case with no blinds."
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, tempmsg)
-    
+        illFileSets = sortIllFiles(illFilesAddress)
+    else:
+        illFileSets = sortIllFiles(illFilesAddress)
+        
     # find the index of the point
     pointFound = False
     targetPtIndex = 0

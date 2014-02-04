@@ -8,7 +8,7 @@ Provided by Honybee 0.0.10
         _rhinoViewsName_: viewName to be rendered
         sectionPlane_: Optional view fore clipping plane. The Plane should be perpendicular to the view
         _cameraType_: [0] Perspective, [1] FishEye, [2] Parallel
-        _simulationType_: [0] illuminance(lux), [1] radiation (wh), [2] luminance (Candela)
+        _simulationType_: [0] illuminance(lux), [1] radiation (wh), [2] luminance (Candela). Default is 2 > luminance.
         _imageWidth_: Optional input for image width in pixels
         _imageHeight_: Optional input for image height in pixels
         _radParameters_: Radiance parameters
@@ -19,7 +19,7 @@ Provided by Honybee 0.0.10
 
 ghenv.Component.Name = "Honeybee_Image Based Simulation"
 ghenv.Component.NickName = 'imageBasedSimulation'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_24_2014'
+ghenv.Component.Message = 'VER 0.0.43\nFEB_03_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "3 | Daylight | Recipes"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"

@@ -15,7 +15,7 @@ Read the results of the annual study for a single hour of the year
 """
 ghenv.Component.Name = "Honeybee_Read Hourly Results from Annual Daylight Study"
 ghenv.Component.NickName = 'readDSHourlyResults'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_24_2014'
+ghenv.Component.Message = 'VER 0.0.43\nFEB_03_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -27,6 +27,33 @@ import Grasshopper.Kernel as gh
 from Grasshopper import DataTree
 from Grasshopper.Kernel.Data import GH_Path
 
+
+def sortIllFiles(illFilesAddress):
+    sortedIllFiles = []
+    for shadingGroupCount in range(illFilesAddress.BranchCount):
+        fileNames = list(illFilesAddress.Branch(shadingGroupCount))
+        try:
+            fileNames = sorted(fileNames, key=lambda fileName: int(fileName.split(".")[-2].split("_")[-1]))
+            sortedIllFiles.append(fileNames)
+        except:
+            tmpmsg = "Can't sort the files based on the file names. Make sure the branches are sorted correctly."
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, tmpmsg)
+    
+    # sort shading states inside sortedIllFiles
+    illFileSets = {}
+    for listCount, fileNames in enumerate(sortedIllFiles):
+        try:
+            if len(fileNames[0].split("_state_"))==1:
+                illFileSets[0] = fileNames
+            else:
+                key = int(fileNames[0].split("_state_")[1].split("_")[0])-1
+                illFileSets[key] = fileNames
+        except Exception, e:
+            print "sortinng the branches failed!"
+            illFileSets[listCount] = fileNames
+    
+    return illFileSets
 
 def main(illFilesAddress, testPoints, HOY, annualProfiles):
     msg = str.Empty
@@ -85,40 +112,23 @@ def main(illFilesAddress, testPoints, HOY, annualProfiles):
             else:
                 # looks right so let's sort them
                 # sort each list inside the branch and took the first one for sorting the branches!
-                sortedIllFiles = []
-                for shadingGroupCount in range(illFilesAddress.BranchCount):
-                    fileNames = list(illFilesAddress.Branch(shadingGroupCount))
-                    try:
-                        fileNames = sorted(fileNames, key=lambda fileName: int(fileName.split(".")[-2].split("_")[-1]))
-                        sortedIllFiles.append(fileNames)
-                    except:
-                        tmpmsg = "Can't sort the files based on the file names. Make sure the branches are sorted correctly."
-                        w = gh.GH_RuntimeMessageLevel.Warning
-                        ghenv.Component.AddRuntimeMessage(w, tmpmsg)
-                
-                # sort shading states inside sortedIllFiles
-                illFileSets = {}
-                for listCount, fileNames in enumerate(sortedIllFiles):
-                    try:
-                        if len(fileNames[0].split("_state_"))==1:
-                            illFileSets[0] = fileNames
-                        else:
-                            key = int(fileNames[0].split("_state_")[1].split("_")[0])-1
-                            illFileSets[key] = fileNames
-                    except Exception, e:
-                        print "sortinng the branches failed!"
-                        illFileSets[listCount] = fileNames
+                illFileSets = sortIllFiles(illFilesAddress)
+
                     
     elif illFilesAddress.BranchCount > 1 and illFilesAddress.BranchCount-1 != len(annualProfiles):
         tempmsg = "Annual profile files are not provided.\nThe result will be only calculated for the original case with no blinds."
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, tempmsg)
-    
-    
+        # copy the files into the 
+        illFileSets = sortIllFiles(illFilesAddress)
+    else:
+        # no profile
+        illFileSets = sortIllFiles(illFilesAddress)
+        
     # read the data for hour of the year and multiply it with the shading
     numOfPts = testPoints.DataCount
     
-    # 4 place holderd for the potential 3 outputs
+    # 3 place holderd for the potential 3 outputs
     # no blinds, shading group I and shading group II
     illuminanceValues = {0: [],
                          1: [],
