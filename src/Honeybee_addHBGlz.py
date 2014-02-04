@@ -25,21 +25,15 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_addHBGlz'
 ghenv.Component.NickName = 'addHBGlz'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_24_2014'
+ghenv.Component.Message = 'VER 0.0.43\nFEB_03_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
 
 
-def main(HBSurface, childSurfaces, EPConstruction, RADMaterial):
+def main(HBSurface, childSurfaces, EPConstruction, RADMaterial, tolerance):
     # import the classes
-    if sc.sticky.has_key('ladybug_release')and sc.sticky.has_key('honeybee_release'):
-        lb_preparation = sc.sticky["ladybug_Preparation"]()
-        lb_mesh = sc.sticky["ladybug_Mesh"]()
-        lb_runStudy_GH = sc.sticky["ladybug_RunAnalysis"]()
-        lb_runStudy_RAD = sc.sticky["ladybug_Export2Radiance"]()
-        lb_visualization = sc.sticky["ladybug_ResultVisualization"]()
-        
+    if sc.sticky.has_key('honeybee_release'):
         # don't customize this part
         hb_EPZone = sc.sticky["honeybee_EPZone"]
         hb_EPSrf = sc.sticky["honeybee_EPSurface"]
@@ -64,7 +58,7 @@ def main(HBSurface, childSurfaces, EPConstruction, RADMaterial):
                 pass
             
             # check if the surface is located on the base surface
-            if HBSurface.isPossibleChild(srf):
+            if HBSurface.isPossibleChild(srf, tolerance):
                 # if yes then create the child surface
                 guid = str(uuid.uuid4())
                 name = "".join(guid.split("-")[:-1])
@@ -90,13 +84,14 @@ def main(HBSurface, childSurfaces, EPConstruction, RADMaterial):
         return HBSurface
         
     else:
-        print "You should first let both Ladybug and Honeybee to fly..."
+        print "You should first let Honeybee fly..."
         w = gh.GH_RuntimeMessageLevel.Warning
-        ghenv.Component.AddRuntimeMessage(w, "You should first let both Ladybug and Honeybee to fly...")
+        ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee fly...")
         return -1
+
+if _HBSurface!=None and len(_childSurfaces)!=0:
     
-    conversionFac = lb_preparation.checkUnits()
-
-
-if _HBSurface!=None:
-    HBSrfWGLZ = main(_HBSurface, _childSurfaces, EPConstruction_, RADMaterial_)
+    # if tolerance_==None:
+    tolerance_ = sc.doc.ModelAbsoluteTolerance
+        
+    HBSrfWGLZ = main(_HBSurface, _childSurfaces, EPConstruction_, RADMaterial_, tolerance_)

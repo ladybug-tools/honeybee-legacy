@@ -1811,7 +1811,7 @@ class hb_EPZoneSurface(hb_EPSurface):
         self.isChild = False
         self.childSrfs = []
     
-    def isPossibleChild(self, chidSrfCandidate):
+    def isPossibleChild(self, chidSrfCandidate, tolerance = sc.doc.ModelAbsoluteTolerance):
         # check if all the vertices has 0 distance with the base surface
         segments = chidSrfCandidate.DuplicateEdgeCurves(True)
         pts = []
@@ -1819,7 +1819,7 @@ class hb_EPZoneSurface(hb_EPSurface):
         
         for pt in pts:
             ptOnSrf = self.geometry.ClosestPoint(pt)
-            if pt.DistanceTo(ptOnSrf) > sc.doc.ModelAbsoluteTolerance: return False
+            if pt.DistanceTo(ptOnSrf) > tolerance: return False
         
         # check the area of the child surface and make sure is smaller than base surface
         if self.geometry.GetArea() <= chidSrfCandidate.GetArea():
@@ -1853,8 +1853,17 @@ class hb_EPZoneSurface(hb_EPSurface):
         for crv in jBaseCrv: jBaseCrvList.append(crv)
 
         try:
-            punchedGeometries = rc.Geometry.Brep.CreatePlanarBreps(glzCrvs + jBaseCrvList)
-            
+            try:
+                punchedGeometries = rc.Geometry.Brep.CreatePlanarBreps(glzCrvs + jBaseCrvList)
+            except:
+                # project the curves on top of base surface
+                srfNormal = self.getSrfCenPtandNormalAlternate()[1]
+                glzCrvsArray = rc.Geometry.Curve.ProjectToBrep(glzCrvs, [self.geometry], srfNormal, sc.doc.ModelAbsoluteTolerance)
+                glzCrvs = []
+                for crv in glzCrvsArray: glzCrvs.append(crv)
+                
+                punchedGeometries = rc.Geometry.Brep.CreatePlanarBreps(glzCrvs + jBaseCrvList)
+                
             if len(punchedGeometries)>1:
                 crvDif = rc.Geometry.Curve.CreateBooleanDifference(jBaseCrvList[0], glzCrvs)
                 punchedGeometries = rc.Geometry.Brep.CreatePlanarBreps(crvDif)
