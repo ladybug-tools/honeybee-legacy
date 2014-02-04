@@ -73,6 +73,9 @@ class hb_findFolders():
             # structure which doesn't match the standard Daysim
             
             if fpath.find("DIVA")<0:
+                # if the user has DIVA installed the component may find DIVA version
+                # of RADIANCE and DAYISM which can cause issues because of the different
+                # structure of folders in DIVA
                 return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
             else:
                 return False
@@ -163,7 +166,7 @@ class hb_GetEPConstructions():
             return resultDict
         
         if not sc.sticky.has_key("honeybee_constructionLib")or True:
-            print "Loading construction library"
+            print "Loading EP construction library"
             resultDict = {}
             EPKeys = ["Material", "WindowMaterial", "Construction"]
             for libFilePath in libFilePaths:
@@ -196,7 +199,7 @@ class hb_GetEPConstructions():
                 sc.sticky ["honeybee_windowMaterialLib"]["List"] = outputs["WindowMaterial"]
                 
         if not sc.sticky.has_key("honeybee_ScheduleLib") or True:
-            print "loading schedules..."
+            print "\nLoading EP schedules..."
             EPKeys = ["ScheduleTypeLimits", "Schedule"]
             schedulesDict = {}
             for libFilePath in libFilePaths:
@@ -222,7 +225,7 @@ class hb_GetEPConstructions():
                 sc.sticky["honeybee_ScheduleTypeLimitsLib"] = schedulesDict["ScheduleTypeLimits"]
                 sc.sticky["honeybee_ScheduleLib"]["List"] = scheduleOutputs["Schedule"]
                 sc.sticky["honeybee_ScheduleTypeLimitsLib"]["List"] = scheduleOutputs["ScheduleTypeLimits"]
-                
+            print "\n"
 
 class RADMaterialAux(object):
     
@@ -232,11 +235,12 @@ class RADMaterialAux(object):
         
         # initiate the library
         if not sc.sticky.has_key("honeybee_RADMaterialLib"): sc.sticky ["honeybee_RADMaterialLib"] = {}
+        sc.sticky ["honeybee_RADMaterialLib"] = {}
         
         # add default materials to the library
         self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', 'GenericFloorMaterial', .2, .2, .2, 0, 0.1), True, True)
         self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', 'GenericOutdoorWallMaterial', .5, .5, .5, 0, 0.1), True, True)
-        self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', 'ShadingMaterial', .35, .35, .35, 0, 0.1), True, True)
+        self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', 'contextMaterial', .35, .35, .35, 0, 0.1), True, True)
         self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', '000_Interior_Ceiling', .80, .80, .80, 0, 0.1), True, True)
         self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', '000_Interior_Floor', .2, .2, .2, 0, 0.1), True, True)
         self.analyseRadMaterials(self.createRadMaterialFromParameters('glass', '000_Exterior_Window', .60, .60, .60), True, True)
@@ -246,6 +250,15 @@ class RADMaterialAux(object):
         # import user defined RAD library
         RADLibraryFile = r"c:\ladybug\HoneybeeRadMaterials.mat"
         if os.path.isfile(RADLibraryFile): self.importRADMaterialsFromFile(RADLibraryFile)
+        
+        # update the list of the materials in the call from library components
+        for component in ghenv.Component.OnPingDocument().Objects:
+            if  type(component)== type(ghenv.Component) and component.Name == "Honeybee_Call from Radiance Library":
+                component.ExpireSolution(True)
+        
+        print "Loading RAD default materials..." + \
+              `len(sc.sticky ["honeybee_RADMaterialLib"].keys())` + " RAD materials are loaded\n"
+        
         
     def duplicateMaterialWarning(self, materialName, newMaterialString):
         returnYN = {'YES': True, 'NO': False}
@@ -422,12 +435,14 @@ class RADMaterialAux(object):
                 if not line.strip().startswith("#") and line.strip()!= "":
                     matStr += line
             else:
-                
                 isAdded, materialName = self.analyseRadMaterials(matStr, True, True)
                 
                 # import the rest of the file to the honeybee library
                 self.importRadMatStr(line, inRadf)
-    
+        
+        # import the last file
+        isAdded, materialName = self.analyseRadMaterials(matStr, True, True)
+        
     def importRADMaterialsFromFile(self, radFilePath):
         with open(radFilePath, "r") as inRadf:
             for line in inRadf:

@@ -16,7 +16,7 @@ Provided by Honybee 0.0.36
 
 ghenv.Component.Name = "Honeybee_Add to Radiance Library"
 ghenv.Component.NickName = 'addToLibrary'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_24_2014'
+ghenv.Component.Message = 'VER 0.0.43\nFEB_03_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "1 | Daylight | Material"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -25,6 +25,12 @@ import scriptcontext as sc
 import Grasshopper.Kernel as gh
 
 
+def updateRADMaterialList():
+    # update the list of the materials in the call from library components
+    for component in ghenv.Component.OnPingDocument().Objects:
+        if  type(component)== type(ghenv.Component) and component.Name == "Honeybee_Call from Radiance Library":
+            component.ExpireSolution(True)
+
 if sc.sticky.has_key('honeybee_release'):
     hb_RADMaterialAUX = sc.sticky["honeybee_RADMaterialAUX"]()
     
@@ -32,15 +38,17 @@ if sc.sticky.has_key('honeybee_release'):
         
         if addToGlobalLib:
             hb_RADMaterialAUX.addToGlobalLibrary(RADMaterial)
-        
+            updateRADMaterialList()
+
         if addToProjectLib:
             added, name = hb_RADMaterialAUX.analyseRadMaterials(RADMaterial, True, overwrite)
             if not added:
-                msg = name + " is not added to the library!"
+                msg = name + " is not added to the project library!"
                 ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
                 print msg
             else:
                 print name + " is added to this project library!"
+                updateRADMaterialList()
         
 else:
     print "You should first let Honeybee to fly..."
