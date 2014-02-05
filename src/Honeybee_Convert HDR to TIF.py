@@ -13,7 +13,7 @@ Provided by Honybee 0.0.10
 
 ghenv.Component.Name = "Honeybee_Convert HDR to TIF"
 ghenv.Component.NickName = 'HDR > TIF'
-ghenv.Component.Message = 'VER 0.0.44\nFEb_04_2014'
+ghenv.Component.Message = 'VER 0.0.45\nFEb_04_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -53,13 +53,19 @@ def main():
         fileAddress = inputFilePath.replace(inputFilePath.split("/")[-1], "")
         fileName = "".join(inputFilePath.split("/")[-1].split('.')[:-1])
         outputFile = fileAddress + fileName + ".TIF"
-        hInputFilePath = fileAddress + fileName + "_h.TIF"
         
     if os.path.isfile(outputFile):
         try: os.remove(outputFile)
         except:
-            msg = "Can't remove the old TIF file..."
-            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+            # rename the file
+            count = 1
+            while os.path.isfile(outputFile):
+                outputFile = os.path.dirname(outputFile) + "\\" + \
+                             os.path.basename(outputFile) + "_" + str(count)  + ".TIF"
+            #msg = "Can't remove the old GIF file..."
+            #ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+    
+    hInputFilePath = outputFile.replace(".TIF", "_h.TIF")
     
     batchStr =  "SET RAYPATH=.;" + hb_RADLibPath + "n" + \
                 "PATH=" + hb_RADPath + ";$PATH\n\n"
