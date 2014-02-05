@@ -2,7 +2,7 @@
 Radiance Glass Material
 Read more here to understand Radiance materials: http://www.artifice.com/radiance/rad_materials.html
 -
-Provided by Honybee 0.0.10
+Provided by Honybee 0.0.35
     
     Args:
         materialName: Unique name for this material
@@ -18,7 +18,7 @@ Provided by Honybee 0.0.10
 
 ghenv.Component.Name = "Honeybee_Radiance Glass Material"
 ghenv.Component.NickName = 'radGlassMaterial'
-ghenv.Component.Message = 'VER 0.0.43\nFEB_02_2014'
+ghenv.Component.Message = 'VER 0.0.43\nFEB_04_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "1 | Daylight | Material"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
