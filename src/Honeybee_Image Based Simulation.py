@@ -12,6 +12,7 @@ Provided by Honybee 0.0.10
         _imageWidth_: Optional input for image width in pixels
         _imageHeight_: Optional input for image height in pixels
         _radParameters_: Radiance parameters
+        backupImages_: [0] No backup, [1] Backup in the same folder, [2] Backup in separate folders. Desfault is 0.
         
     Returns:
         analysisRecipe: Recipe for image-based simulation
@@ -19,7 +20,7 @@ Provided by Honybee 0.0.10
 
 ghenv.Component.Name = "Honeybee_Image Based Simulation"
 ghenv.Component.NickName = 'imageBasedSimulation'
-ghenv.Component.Message = 'VER 0.0.43\nFEB_03_2014'
+ghenv.Component.Message = 'VER 0.0.44\nFEB_06_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "3 | Daylight | Recipes"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"

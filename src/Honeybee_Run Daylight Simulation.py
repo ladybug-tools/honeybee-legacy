@@ -26,7 +26,7 @@ export geometries to rad file, and run daylighting/energy simulation
 
 ghenv.Component.Name = "Honeybee_Run Daylight Simulation"
 ghenv.Component.NickName = 'runDaylightAnalysis'
-ghenv.Component.Message = 'VER 0.0.44\nFEB_04_2014'
+ghenv.Component.Message = 'VER 0.0.45\nFEB_06_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -735,7 +735,7 @@ def main(north, HBObjects, analysisRecipe, runRad, numOfCPUs, workingDir, radFil
             # so it is going to be easier to read
             analysisType = analysisRecipe.type
             radParameters = analysisRecipe.radParameters
-            backupImages = False # will change to True in case the user set it to True for image-based analysis
+            backupImages = 0 # will change to 1 or 2 in case the user set it to another number for image-based analysis
             numOfIllFiles = 1
             if radParameters==None:
                 quality = 0
@@ -830,7 +830,7 @@ def main(north, HBObjects, analysisRecipe, runRad, numOfCPUs, workingDir, radFil
         
         try:
             if os.path.exists(subWorkingDir):
-                if backupImages == True:
+                if backupImages != 0:
                     # create the backup folder and copy the images to the folder
                     imageFolder = workingDir + "\\" + radFileName + "\\imagesBackup"
                     
@@ -840,6 +840,17 @@ def main(north, HBObjects, analysisRecipe, runRad, numOfCPUs, workingDir, radFil
                     imageExtensions = ["JPEG", "JPG", "GIF", "TIFF", "TIF", "HDR", "PIC"]
                     timeID = hb_writeRADAUX.getTime()
                     fileNames = os.listdir(subWorkingDir)
+                    
+                if backupImages == 1:
+                    # keep all the files in the same folder
+                    for fileName in fileNames:
+                        if fileName.split(".")[-1].upper() in imageExtensions:
+                            newFileName = (".").join(fileName.split(".")[:-1])
+                            extension = fileName.split(".")[-1]
+                            newFullName = newFileName + "_" + timeID + "." + extension
+                            hb_writeRADAUX.copyFile(os.path.join(subWorkingDir, fileName), os.path.join(imageFolder, newFullName) , True)
+                    
+                elif backupImages == 2:
                     for fileName in fileNames:
                         if fileName.split(".")[-1].upper() in imageExtensions:
                             if not os.path.exists(imageFolder + "\\" + timeID):
