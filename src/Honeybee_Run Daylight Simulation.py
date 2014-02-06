@@ -10,7 +10,7 @@ export geometries to rad file, and run daylighting/energy simulation
         _numOfCPUs_: Number of CPUs to be used for the studies. This option doesn't work for image-based analysis
         _workingDir_: Working directory on your system. Default is set to C:\Ladybug
         _radFileName_: Input the project name as a string
-        meshingLevel_: Level of meshing
+        meshingLevel_: Level of meshing [0] Coarse [1] Smooth
         
     Returns:
         readMe!: ...
@@ -26,7 +26,7 @@ export geometries to rad file, and run daylighting/energy simulation
 
 ghenv.Component.Name = "Honeybee_Run Daylight Simulation"
 ghenv.Component.NickName = 'runDaylightAnalysis'
-ghenv.Component.Message = 'VER 0.0.45\nFEB_06_2014'
+ghenv.Component.Message = 'VER 0.0.46\nFEB_06_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -99,7 +99,7 @@ class WriteRAD(object):
     def RADSurface(self, surface):
         fullStr = ''
         # base surface coordinates
-        coordinatesList = surface.extractPoints()
+        coordinatesList = surface.extractPoints(1, True)
         
         if coordinatesList:
             if type(coordinatesList[0])is not list and type(coordinatesList[0]) is not tuple:
@@ -127,7 +127,7 @@ class WriteRAD(object):
     def RADNonPlanarSurface(self, surface):
         fullStr = ''
         # base surface coordinates
-        coordinatesList = surface.extractPoints()
+        coordinatesList = surface.extractPoints(1, True)
         if type(coordinatesList[0])is not list and type(coordinatesList[0]) is not tuple:
             coordinatesList = [coordinatesList]
         for count, coordinates in enumerate(coordinatesList):
@@ -261,6 +261,10 @@ class WriteRADAUX(object):
             if sc.doc.Views.ActiveView.ActiveViewport.IsPerspectiveProjection: cameraType = 0
             elif sc.doc.Views.ActiveView.ActiveViewport.IsParallelProjection: cameraType = 2
         
+        # paralell view sizes
+        viewHSizeP = int(sc.doc.Views.ActiveView.ActiveViewport.Size.Width)
+        viewVSizeP = int(sc.doc.Views.ActiveView.ActiveViewport.Size.Height)
+        
         # read image size
         viewHSize = int(sc.doc.Views.ActiveView.ActiveViewport.Size.Width)
         viewVSize = int(sc.doc.Views.ActiveView.ActiveViewport.Size.Height)
@@ -306,6 +310,7 @@ class WriteRADAUX(object):
                `viewPoint[0]` + " " + `viewPoint[1]` + " " + `viewPoint[2]` + " " + \
                " -vd " + `viewDirection[0]` + " " + `viewDirection[1]` + " " + `viewDirection[2]` + " " + \
                " -vu " + `viewUp[0]` + " " +  `viewUp[1]` + " " + `viewUp[2]` + \
+               " -vh " + `int(viewHSizeP)` + " -vv " + `int(viewVSizeP)` + \
                " -x " + `int(viewHSize)` + " -y " + `int(viewVSize)`
                
         elif cameraType == 0:
