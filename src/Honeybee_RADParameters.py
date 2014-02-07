@@ -1,5 +1,6 @@
 """
 Radiance Parameters - Standard
+Check here for more details: http://radsite.lbl.gov/radiance/refer/Notes/rpict_options.html
 -
 Provided by Honybee 0.0.10
     
@@ -12,7 +13,7 @@ Provided by Honybee 0.0.10
 
 ghenv.Component.Name = "Honeybee_RADParameters"
 ghenv.Component.NickName = 'RADParameters'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_24_2014'
+ghenv.Component.Message = 'VER 0.0.43\nFEB_07_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "3 | Daylight | Recipes"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -21,9 +22,31 @@ from clr import AddReference
 AddReference('Grasshopper')
 import Grasshopper.Kernel as gh
 import scriptcontext as sc
-#low Quality =       -ps 8 -pt .15 -pj .6 -dj 0  -ds .5  -dt .5  -dc .25 -dr 0 -dp 64  -st .85 -ab 2 -aa .25 -ar 16  -ad 512  -as 128  -lr 4 -lw .05  -av 0 0 0
-#medium =     -ps 4 -pt .10 -pj .9 -dj .5 -ds .25 -dt .25 -dc .5  -dr 1 -dp 256 -st .5  -ab 3 -aa .2  -ar 64  -ad 2048 -as 1024 -lr 6 -lw .01  -av 0 0 0
-#high Quality = -ps 2 -pt .05 -pj .9 -dj .7 -ds .15 -dt .05 -dc .75 -dr 3 -dp 512 -st .15 -ab 4 -aa .1  -ar 128 -ad 4096 -as 1024 -lr 8 -lw .005 -av 0 0 0
+
+"""
+http://radsite.lbl.gov/radiance/refer/Notes/rpict_options.html
+
+Param   Description             Min     Fast    Accur   Max     Notes
+=====   ====================    =====   =====   =====   =====   =====
+-ps     pixel sampling rate     16      8       4       1
+-pt     sampling threshold      1       .15     .05     0
+-pj     anti-aliasing jitter    0       .6      .9      1       A
+-dj     source jitter           0       0       .7      1       B
+-ds     source substructuring   0       .5      .15     .02
+-dt     direct thresholding     1       .5      .05     0	    C
+-dc     direct certainty        0       .25     .5      1
+-dr	    direct relays		    0	    1	    3	    6
+-dp	    direct pretest density	32	    64	    512	    0	    C
+-sj	    specular jitter		    0	    .3	    .7	    1	    A
+-st	    specular threshold	    1	    .85	    .15	    0	    C
+-ab	    ambient bounces		    0	    0	    2	    8
+-aa	    ambient accuracy	    .5	    .2	    .15	    0	    C
+-ar	    ambient resolution	    8	    32	    128	    0	    C
+-ad	    ambient divisions	    0	    32	    512	    4096
+-as	    ambient super-samples	0	    32	    256	    1024
+-lr	    limit reflection	    0	    4	    8	    16
+-lw	    limit weight		    .05	    .01	    .002	0	    C
+"""
 
 class dictToClass(object):
     def __init__(self, pyDict):
