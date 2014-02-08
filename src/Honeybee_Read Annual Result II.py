@@ -17,7 +17,7 @@ Read Annual Daylight Results II [Daysim]
 """
 ghenv.Component.Name = "Honeybee_Read Annual Result II"
 ghenv.Component.NickName = 'readAnnualResultsII'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_24_2014'
+ghenv.Component.Message = 'VER 0.0.43\nFEB_08_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -30,16 +30,23 @@ import Grasshopper.Kernel as gh
 from Grasshopper import DataTree
 from Grasshopper.Kernel.Data import GH_Path
 
-numOfPts = 0
-if testPts:
+
+def isAllNone(dataList):
+    for item in dataList:
+        if item!=None: return False
+    return True
+
+if (testPts.DataCount!=0 or not isAllNone(testPts.AllData())) and resultFilesAddress and resultFilesAddress[0]!=None:
+    
+    numOfPts = 0
     testPts.SimplifyPaths()
     numOfBranches = testPts.BranchCount
     for branchNum in range(numOfBranches):
         numOfPts = numOfPts + len(testPts.Branch(branchNum))
     #print numOfPts
 # for path in range(len(testPts.Branch(branchNum))): print testPts.Branch(branchNum)[path]
-
-if resultFilesAddress and resultFilesAddress[0]!=None:
+    
+    
     # setting up work hours
     if workingHours == None:
         stHour = 8; endHour = 17

@@ -804,7 +804,8 @@ def main(north, HBObjects, analysisRecipe, runRad, numOfCPUs, workingDir, radFil
             # for grid based simulation
             if analysisType != 0:
                 print "The component is overwriting ad, as, ar and aa values.\n" + \
-                      "This is just to make sure that the results are accurate enough!"
+                      "This is just to make sure that the results are accurate enough!\n" + \
+                      "-ad is set to 1000. -as is set to 20.\n-ar is set to 300. -aa is set to 0.1.\n"
                 radParameters["_ad_"] = 1000
                 radParameters["_as_"] = 20
                 radParameters["_ar_"] = 300
@@ -865,9 +866,9 @@ def main(north, HBObjects, analysisRecipe, runRad, numOfCPUs, workingDir, radFil
                     
                 lb_preparation.nukedir(subWorkingDir, rmdir = False)
         except Exception, e:
+            print 'Failed to remove the old directory.'
             print `e`
-            print 'Failed to remove the old files directory'
-            pass
+            
         
         # sky and material file
         # copy the sky file to the local folder
@@ -1325,10 +1326,21 @@ def main(north, HBObjects, analysisRecipe, runRad, numOfCPUs, workingDir, radFil
         return -1
 
 if _writeRad == True and len(_HBObjects)!=0 and _HBObjects[0]!=None and _analysisRecipe!=None:
+    report = ""
     done = False
     waitingTime = 0.2 # waiting time between batch files in seconds
     try: numOfCPUs = int(_numOfCPUs_)
     except: numOfCPUs = 1
+    
+    # make sure it is not more than the number of available CPUs
+    ncpus = int(os.environ["NUMBER_OF_PROCESSORS"])
+    
+    if numOfCPUs > ncpus:
+        print "Sorry! But the number of available CPUs on your machine is " + str(ncpus) + "." + \
+              "\nHoneybee set the number of CPUs to " + str(ncpus) + ".\n"
+        numOfCPUs = ncpus
+        
+    
     
     result = main(north_, _HBObjects, _analysisRecipe, runRad_, numOfCPUs, _workingDir_, _radFileName_, meshingLevel_, waitingTime)
     

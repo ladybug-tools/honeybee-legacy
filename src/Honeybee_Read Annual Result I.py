@@ -6,7 +6,7 @@ Read Annual Daylight Results I [Standard Daysim Results]
         _testPoints: List of 3d Points
         occupancyFiles_: Address to a Daysim occupancy file. You can find some example in \Daysim\occ. Use Honeybee Occupancy Generator to generate a custom occupancy file.
         lightingControlGroups_: Daysim lighting control groups. Daysim can model up to 10 lighting control groups together.
-        _DLAIllumThresholds_: Illuminance threshold for Daylight Autonomy calculation in lux
+        _DLAIllumThresholds_: Illuminance threshold for Daylight Autonomy calculation in lux. Default is set to 300 lux.
         SHDGroupI_Sensors_: Senors for dhading group I. Use shadingGroupSensors component to prepare the inputs
         SHDGroupII_Sensors_: Senors for dhading group II. Use shadingGroupSensors component to prepare the inputs
         _runIt: set to True to run the analysis
@@ -21,7 +21,7 @@ Read Annual Daylight Results I [Standard Daysim Results]
 """
 ghenv.Component.Name = "Honeybee_Read Annual Result I"
 ghenv.Component.NickName = 'readAnnualResultsI'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_24_2014'
+ghenv.Component.Message = 'VER 0.0.43\nFEB_08_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -131,8 +131,8 @@ def main(illFilesAddress, testPts, testVecs, occFiles, lightingControlGroups, SH
         daysimOccFile = "C:\\DAYSIM\\occ\\weekdays9to5withDST.60min.occ.csv"
         occFiles = [daysimOccFile] * numOfSpaces
         if not os.path.isfile(daysimOccFile):
-            msg = "Can't find the default occupancy file at: " + occFiles + \
-                  "\nPlease generate an occupancy file and connect the file address to occupancyFiles_ input."
+            msg = "Can't find the default occupancy file at: " + daysimOccFile + \
+                  "\nYou can generate an occupancy file and connect the file address to occupancyFiles_ input."
             return msg, None
         
     # separate daylighting controls for each space
