@@ -26,7 +26,7 @@ export geometries to rad file, and run daylighting/energy simulation
 
 ghenv.Component.Name = "Honeybee_Run Daylight Simulation"
 ghenv.Component.NickName = 'runDaylightAnalysis'
-ghenv.Component.Message = 'VER 0.0.46\nFEB_06_2014'
+ghenv.Component.Message = 'VER 0.0.47\nFEB_08_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -126,17 +126,33 @@ class WriteRAD(object):
             
     def RADNonPlanarSurface(self, surface):
         fullStr = ''
+        
+        # replace the geometry with the punched geometry
+        # for planar surfaces with multiple openings
+        try:
+            if surface.punchedGeometry!=None:
+                surface.geometry = surface.punchedGeometry
+        except:
+            # nonplanar surfaces with no openings
+            pass
+            
         # base surface coordinates
         coordinatesList = surface.extractPoints(1, True)
         if type(coordinatesList[0])is not list and type(coordinatesList[0]) is not tuple:
             coordinatesList = [coordinatesList]
         for count, coordinates in enumerate(coordinatesList):
             fullStr = fullStr + self.getsurfaceStr(surface, count, coordinates)
-        return fullStr
         
+        return fullStr
     
     def RADNonPlanarChildSurface(self, surface):
         fullStr = ''
+        
+        # I should test this function before the first release!
+        # Not sure if it will work for cases generated only by surface
+        # should probably check for meshed surface and mesh the geometry
+        # in case it is not meshed
+        
         # base surface coordinates
         coordinatesList = surface.extractGlzPoints(True)
         if type(coordinatesList[0])is not list and type(coordinatesList[0]) is not tuple:
