@@ -1,5 +1,5 @@
 """
-Genrate Test Points
+Search Simulation Folder
 -
 Provided by Honybee 0.0.10
     
@@ -17,7 +17,7 @@ Provided by Honybee 0.0.10
 
 ghenv.Component.Name = "Honeybee_Search Annual Simulation Folder"
 ghenv.Component.NickName = 'searchAnnualSimulationFolder'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_24_2014'
+ghenv.Component.Message = 'VER 0.0.43\nFEB_08_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "4"

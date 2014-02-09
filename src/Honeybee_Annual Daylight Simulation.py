@@ -15,13 +15,14 @@ Provided by Honybee 0.0.10
 
 ghenv.Component.Name = "Honeybee_Annual Daylight Simulation"
 ghenv.Component.NickName = 'annualDaylightSimulation'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_24_2014'
+ghenv.Component.Message = 'VER 0.0.43\nFEB_08_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "3 | Daylight | Recipes"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
 import Rhino as rc
 import Grasshopper.Kernel as gh
+import os
 
 
 def isAllNone(dataList):
@@ -141,8 +142,15 @@ if _epwWeatherFile and _testPoints:
     _testPoints.SimplifyPaths()
     ptsVectors_.SimplifyPaths()
     recipe = DLAnalysisRecipe(2, _epwWeatherFile, _testPoints, ptsVectors_, _radParameters_, _DSParameters_)
-
+    
     analysisRecipe = recipe
+    
+    if not os.path.isfile(_epwWeatherFile):
+        analysisRecipe = None
+        print "Can't find the weather file at: " + _epwWeatherFile
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, "Can't find the weather file at: " + _epwWeatherFile)
+    
     if _testPoints.DataCount==0 or isAllNone(_testPoints.AllData()):
         analysisRecipe = None
         w = gh.GH_RuntimeMessageLevel.Warning
