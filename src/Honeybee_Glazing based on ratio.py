@@ -25,7 +25,7 @@ Provided by Honeybee 0.0.13
 
 ghenv.Component.Name = "Honeybee_Glazing based on ratio"
 ghenv.Component.NickName = 'glazingCreator'
-ghenv.Component.Message = 'VER 0.0.44\nJAN_31_2014'
+ghenv.Component.Message = 'VER 0.0.45\nFEB_08_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -330,7 +330,7 @@ def createGlazingForRect(rectBrep, glazingRatio, windowHeight, sillHeight):
             rc.Geometry.NurbsCurve.Transform(winStartLine, transformMatrix)
             
             #Scale the curve so that it is not touching the edges of the surface.
-            lineCentPt = rc.Geometry.Point3d(((winStartLine.PointAtStart.X + winStartLine.PointAtEnd.X)/2), ((winStartLine.PointAtStart.Y + winStartLine.PointAtEnd.Y)/2), ((winStartLine.PointAtStart.Z - winStartLine.PointAtEnd.Z)/2))
+            lineCentPt = rc.Geometry.Point3d(((winStartLine.PointAtStart.X + winStartLine.PointAtEnd.X)/2), ((winStartLine.PointAtStart.Y + winStartLine.PointAtEnd.Y)/2), ((winStartLine.PointAtStart.Z + winStartLine.PointAtEnd.Z)/2))
             transformMatrixScale = rc.Geometry.Transform.Scale(lineCentPt, 0.98)
             winStartLine.Transform(transformMatrixScale)
             
