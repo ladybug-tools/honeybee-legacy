@@ -11,6 +11,7 @@ export geometries to rad file, and run daylighting/energy simulation
         _workingDir_: Working directory on your system. Default is set to C:\Ladybug
         _radFileName_: Input the project name as a string
         meshingLevel_: Level of meshing [0] Coarse [1] Smooth
+        overwriteResults_: Set to False if you want the component create a copy of all the results. Default is True
         
     Returns:
         readMe!: ...
@@ -26,7 +27,7 @@ export geometries to rad file, and run daylighting/energy simulation
 
 ghenv.Component.Name = "Honeybee_Run Daylight Simulation"
 ghenv.Component.NickName = 'runDaylightAnalysis'
-ghenv.Component.Message = 'VER 0.0.47\nFEB_08_2014'
+ghenv.Component.Message = 'VER 0.0.48\nFEB_09_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -184,7 +185,7 @@ class WriteRADAUX(object):
     
         date = addZero(year) + "_" +  addZero(month)  + "_" + addZero(day)
     
-        return date + "@" + now
+        return date + "at" + now
     
     def copyFile(self, inputFile, destinationFullpath, overwrite = False):
         if overwrite: shutil.copyfile(inputFile, destinationFullpath)
@@ -724,7 +725,7 @@ sc.sticky["honeybee_WriteRAD"] = WriteRAD
 sc.sticky["honeybee_WriteRADAUX"] = WriteRADAUX
 sc.sticky["honeybee_WriteDS"] = WriteDS
 
-def main(north, HBObjects, analysisRecipe, runRad, numOfCPUs, workingDir, radFileName, meshingLevel, waitingTime):
+def main(north, HBObjects, analysisRecipe, runRad, numOfCPUs, workingDir, radFileName, meshingLevel, waitingTime, overwriteResults):
     # import the classes
     if sc.sticky.has_key('ladybug_release')and sc.sticky.has_key('honeybee_release'):
         lb_preparation = sc.sticky["ladybug_Preparation"]()
@@ -879,6 +880,29 @@ def main(north, HBObjects, analysisRecipe, runRad, numOfCPUs, workingDir, radFil
                                 os.mkdir(imageFolder + "\\" + timeID)
                             # copy the files to image backup folder with data and time added
                             hb_writeRADAUX.copyFile(os.path.join(subWorkingDir, fileName), os.path.join(imageFolder + "\\" + timeID, fileName) , True)
+                
+                if not overwriteResults:
+                    fileNames = os.listdir(subWorkingDir)
+                    
+                    mainBackupFolder = subWorkingDir[:-1] + "_backup"
+                    
+                    counter = 0
+                    backupFolder = os.path.join(mainBackupFolder, str(counter))
+                    
+                    while os.path.isdir(backupFolder):
+                        counter += 1
+                        backupFolder = os.path.join(mainBackupFolder, str(counter))
+                    
+                    os.mkdir(backupFolder)
+                    
+                    for fileName in fileNames:
+                        try:
+                            # copy the files to image backup folder with data and time added
+                            hb_writeRADAUX.copyFile(os.path.join(subWorkingDir, fileName), os.path.join(backupFolder, fileName) , True)                    
+                        except:
+                            pass
+                    
+                    print "Results of the previous study are copied to " + backupFolder
                     
                 lb_preparation.nukedir(subWorkingDir, rmdir = False)
         except Exception, e:
@@ -1358,7 +1382,7 @@ if _writeRad == True and len(_HBObjects)!=0 and _HBObjects[0]!=None and _analysi
         
     
     
-    result = main(north_, _HBObjects, _analysisRecipe, runRad_, numOfCPUs, _workingDir_, _radFileName_, meshingLevel_, waitingTime)
+    result = main(north_, _HBObjects, _analysisRecipe, runRad_, numOfCPUs, _workingDir_, _radFileName_, meshingLevel_, waitingTime, overwriteResults_)
     
     if result!= -1:
         # RADGeoFileAddress, radiationResult, RADResultFilesAddress, testPoints, DSResultFilesAddress, HDRFileAddress = result

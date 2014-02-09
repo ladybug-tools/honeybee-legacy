@@ -14,7 +14,7 @@ Read Daysim result for a test point
 """
 ghenv.Component.Name = "Honeybee_Read DS Result for a point"
 ghenv.Component.NickName = 'readDSHourlyResults'
-ghenv.Component.Message = 'VER 0.0.43\nFEB_03_2014'
+ghenv.Component.Message = 'VER 0.0.44\nFEB_08_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -236,7 +236,7 @@ if _targetPoint!=None and _illFilesAddress.DataCount!=0 and _illFilesAddress.Bra
         iIlluminanceBasedOnOccupancy = DataTree[Object]()
         
         heading = ["key:location/dataType/units/frequency/startsAt/endsAt",
-                    " ", "Annula illuminance values", "lux", "Hourly",
+                    " ", "Annual illuminance values", "lux", "Hourly",
                     (1, 1, 1), (12, 31, 24)]
         # now this is the time to create the mixed results
         # I think I confused blind groups and shading stats or maybe not!
