@@ -1,7 +1,7 @@
 """
 Genrate Test Points
 -
-Provided by Honybee 0.0.10
+Provided by Honybee 0.0.50
     
     Args:
         testSurface: Test surface as a Brep
@@ -17,12 +17,13 @@ Provided by Honybee 0.0.10
 
 ghenv.Component.Name = "Honeybee_Generate Test Points"
 ghenv.Component.NickName = 'genTestPts'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_24_2014'
+ghenv.Component.Message = 'VER 0.0.43\nFEB_09_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "3 | Daylight | Recipes"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
 import Rhino as rc
+import Grasshopper.Kernel as gh
 from itertools import chain
 import System.Threading.Tasks as tasks
 
@@ -108,10 +109,16 @@ def getTestPts(inputMesh, movingDis, parallel = True):
 
 
 if testSurface!=None and gridSize!=None and distBaseSrf!=None:
-    initMesh = createMesh([testSurface], gridSize)
-
-    inputMesh = []
-    for m in initMesh: inputMesh.append(m)
-
-    testPoints, ptsVectors, facesArea = getTestPts(inputMesh, distBaseSrf)
-    mesh = inputMesh
+    
+    if distBaseSrf<0:
+        msg = "Distance from base should be greater than 0. Flip the input surface instead of using a negative number."
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+        
+    else:
+        initMesh = createMesh([testSurface], gridSize)
+    
+        inputMesh = []
+        for m in initMesh: inputMesh.append(m)
+    
+        testPoints, ptsVectors, facesArea = getTestPts(inputMesh, distBaseSrf)
+        mesh = inputMesh

@@ -15,7 +15,7 @@ Provided by Honybee 0.0.10
 
 ghenv.Component.Name = "Honeybee_Annual Daylight Simulation"
 ghenv.Component.NickName = 'annualDaylightSimulation'
-ghenv.Component.Message = 'VER 0.0.43\nFEB_08_2014'
+ghenv.Component.Message = 'VER 0.0.44\nFEB_09_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "3 | Daylight | Recipes"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -145,12 +145,6 @@ if _epwWeatherFile and _testPoints:
     
     analysisRecipe = recipe
     
-    if not os.path.isfile(_epwWeatherFile):
-        analysisRecipe = None
-        print "Can't find the weather file at: " + _epwWeatherFile
-        w = gh.GH_RuntimeMessageLevel.Warning
-        ghenv.Component.AddRuntimeMessage(w, "Can't find the weather file at: " + _epwWeatherFile)
-    
     if _testPoints.DataCount==0 or isAllNone(_testPoints.AllData()):
         analysisRecipe = None
         w = gh.GH_RuntimeMessageLevel.Warning
@@ -162,4 +156,10 @@ if _epwWeatherFile and _testPoints:
             analysisRecipe.vectors.append([])
             for pt in ptList:
                 analysisRecipe.vectors[ptListCount].append(rc.Geometry.Vector3d.ZAxis)
-                
+    
+    if not os.path.isfile(_epwWeatherFile):
+        analysisRecipe = None
+        print "Can't find the weather file at: " + _epwWeatherFile
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, "Can't find the weather file at: " + _epwWeatherFile)
+    
