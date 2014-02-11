@@ -3,8 +3,12 @@ Glare Analysis
 
 This component is using evalglare for glare calculations. Evalgalare is developed by J. Wienold at Fraunhofer ISE.
 http://www.ise.fraunhofer.de/en/
+
+Check this link for more information about glare analysis. Thanks to Christoph Reinhart, Shelby Doyle, J Alstan Jakubiec and Rashida Mogri.
+http://web.mit.edu/tito_/www/Projects/Glare/GlareRecommendationsForPractice.html
+
 -
-Provided by Honybee 0.0.10
+Provided by Honybee 0.0.50
     
     Args:
         _HDRImagePath: Path to an HDR image file
@@ -14,7 +18,7 @@ Provided by Honybee 0.0.10
     Returns:
         readMe: ...
         glareCheckImage: Path to HDR image of the glare study
-        DGP: Daylight glare probability
+        DGP: Daylight glare probability. Imperceptible Glare [0.35 > DGP], Perceptible Glare [0.4 > DGP >= 0.35], Disturbing Glare [0.45 > DGP >= 0.4], Intolerable Glare [DGP >= 0.45]
         DGI: Daylight glare index
         imageWithTaskArea: Path to HDR image with task area marked with blue circle
 
@@ -22,7 +26,7 @@ Provided by Honybee 0.0.10
 
 ghenv.Component.Name = "Honeybee_Glare Analysis"
 ghenv.Component.NickName = 'glareAnalysis'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_26_2014'
+ghenv.Component.Message = 'VER 0.0.43\nFEB_10_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "5"

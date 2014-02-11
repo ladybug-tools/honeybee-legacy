@@ -21,7 +21,7 @@ Read Annual Daylight Results I [Standard Daysim Results]
 """
 ghenv.Component.Name = "Honeybee_Read Annual Result I"
 ghenv.Component.NickName = 'readAnnualResultsI'
-ghenv.Component.Message = 'VER 0.0.43\nFEB_08_2014'
+ghenv.Component.Message = 'VER 0.0.45\nFEB_10_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -124,8 +124,12 @@ def main(illFilesAddress, testPts, testVecs, occFiles, lightingControlGroups, SH
     # check for occupancy file
     if len(occFiles)!=0:
         for fileName in occFiles:
-            if not os.path.isfile(fileName):
-                msg = "Can't find the occupancy file: " + fileName
+            try:
+                if not os.path.isfile(fileName):
+                    msg = "Can't find the occupancy file: " + fileName
+                    return msg, None
+            except:
+                msg = "Occupancy file address is not valid."
                 return msg, None
     else:
         daysimOccFile = "C:\\DAYSIM\\occ\\weekdays9to5withDST.60min.occ.csv"
@@ -622,7 +626,13 @@ def main(illFilesAddress, testPts, testVecs, occFiles, lightingControlGroups, SH
     
     return None, [DLALists, underUDLILists, inRangeUDLILists, overUDLILists, CDALists, EPLSchLists, htmLists]
 
-if _runIt and _illFilesAddress.DataCount!=0 and _illFilesAddress.Branch(0)!=None and _testPoints:
+def isAllNone(dataList):
+    for item in dataList.AllData():
+        if item!=None: return False
+    return True
+
+
+if _runIt and not isAllNone(_illFilesAddress) and not isAllNone(_testPoints):
     
     _testPoints.SimplifyPaths()
     lightingControlGroups_.SimplifyPaths()

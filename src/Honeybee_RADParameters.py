@@ -1,19 +1,25 @@
 """
 Radiance Parameters - Standard
 Check here for more details: http://radsite.lbl.gov/radiance/refer/Notes/rpict_options.html
+Read more about the parameters at: http://daysim.ning.com/
+Here is my favorite presentation by John Mardaljevic: http://radiance-online.org/community/workshops/2011-berkeley-ca/presentations/day1/JM_AmbientCalculation.pdf
+
 -
-Provided by Honybee 0.0.10
+Provided by Honybee 0.0.50
     
     Args:
         _quality: 0 > low, 1 > Medium, 2 > High
-        _ab_: Number of ambient bounces. This is the maximum number of diffuse bounces computed by the indirect calculation. A value of zero implies no indirect calculation. 
-        _as_: Number of ambient super-samples. Super-samples are applied only to the ambient divisions which show a significant change.
+        _ab_: Number of ambient bounces. "This is the maximum number of diffuse bounces computed by the indirect calculation. A value of zero implies no indirect calculation. "
+        _ad_: Number of ambient divisions. "The error in the Monte Carlo calculation of indirect illuminance will be inversely proportional to the square root of this number. A value of zero implies no indirect calculation."
+        _as_: Number of ambient super-samples. "Super-samples are applied only to the ambient divisions which show a significant change."
+        _ar_: Ambient resolution. "This number will determine the maximum density of ambient values used in interpolation. Error will start to increase on surfaces spaced closer than the scene size divided by the ambient resolution. The maximum ambient value density is the scene size times the ambient accuracy."
+        _aa_: Ambient accuracy. "This value will approximately equal the error from indirect illuminance interpolation. A value of zero implies no interpolation"
 
 """
 
 ghenv.Component.Name = "Honeybee_RADParameters"
 ghenv.Component.NickName = 'RADParameters'
-ghenv.Component.Message = 'VER 0.0.43\nFEB_07_2014'
+ghenv.Component.Message = 'VER 0.0.45\nFEB_10_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "3 | Daylight | Recipes"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"

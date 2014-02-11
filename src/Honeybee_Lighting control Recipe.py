@@ -9,7 +9,7 @@ Provided by Honybee 0.0.35
 
 ghenv.Component.Name = "Honeybee_Lighting control Recipe"
 ghenv.Component.NickName = 'lightingControl'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_24_2014'
+ghenv.Component.Message = 'VER 0.0.43\nFEB_10_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "5"
@@ -80,5 +80,10 @@ class LightingControl(object):
         
         return lightingStr
 
-lightingControlGroup = LightingControl(sensorPoints, controlType, lightingPower, lightingSetpoint, ballastLossFactor, standbyPower, delayTime)
+try:
+    lightingControlGroup = LightingControl(sensorPoints, controlType, lightingPower, lightingSetpoint, ballastLossFactor, standbyPower, delayTime)
+except:
+    # controlType 0
+    lightingControlGroup = LightingControl(sensorPoints, controlType, lightingPower, 300, 20, 3, 5)
+    
 print lightingControlGroup.lightingControlStr

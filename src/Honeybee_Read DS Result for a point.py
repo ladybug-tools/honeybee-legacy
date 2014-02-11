@@ -14,7 +14,7 @@ Read Daysim result for a test point
 """
 ghenv.Component.Name = "Honeybee_Read DS Result for a point"
 ghenv.Component.NickName = 'readDSHourlyResults'
-ghenv.Component.Message = 'VER 0.0.44\nFEB_08_2014'
+ghenv.Component.Message = 'VER 0.0.45\nFEB_10_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -26,6 +26,12 @@ from System import Object
 import Grasshopper.Kernel as gh
 from Grasshopper import DataTree
 from Grasshopper.Kernel.Data import GH_Path
+
+def isAllNone(dataList):
+    for item in dataList.AllData():
+        if item!=None: return False
+    return True
+
 
 def sortIllFiles(illFilesAddress):
     sortedIllFiles = []
@@ -214,7 +220,7 @@ def main(illFilesAddress, testPoints, targetPoint, annualProfiles):
 
 
 
-if _targetPoint!=None and _illFilesAddress.DataCount!=0 and _illFilesAddress.Branch(0)!=None and _testPoints:
+if _targetPoint!=None and not isAllNone(_illFilesAddress) and not isAllNone(_testPoints):
     
     _testPoints.SimplifyPaths()
     _illFilesAddress.SimplifyPaths()

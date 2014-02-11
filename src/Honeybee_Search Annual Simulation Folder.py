@@ -4,20 +4,17 @@ Search Simulation Folder
 Provided by Honybee 0.0.10
     
     Args:
-        testSurface: Test surface as a Brep
-        gridSize: Size of the test grid
-        distBaseSrf: Distance from base surface
+        studyFolder: Path to study folder
+        refresh: Refresh the list
     Returns:
-        readMe!: ...
-        testPoints: Test points
-        ptsVectors: Vectors
-        faceArea: Area of each mesh face
-        mesh: Analysis mesh
+        resFiles: List of result files from grid based analysis
+        illFiles: List of ill files from annual analysis
+        ptsFiles: List of point files
 """
 
 ghenv.Component.Name = "Honeybee_Search Annual Simulation Folder"
 ghenv.Component.NickName = 'searchAnnualSimulationFolder'
-ghenv.Component.Message = 'VER 0.0.43\nFEB_08_2014'
+ghenv.Component.Message = 'VER 0.0.44\nFEB_10_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "4"

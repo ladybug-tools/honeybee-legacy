@@ -27,7 +27,7 @@ export geometries to rad file, and run daylighting/energy simulation
 
 ghenv.Component.Name = "Honeybee_Run Daylight Simulation"
 ghenv.Component.NickName = 'runDaylightAnalysis'
-ghenv.Component.Message = 'VER 0.0.48\nFEB_09_2014'
+ghenv.Component.Message = 'VER 0.0.49\nFEB_10_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -820,16 +820,35 @@ def main(north, HBObjects, analysisRecipe, runRad, numOfCPUs, workingDir, radFil
             # double check and make sure that the parameters are set good enough
             # for grid based simulation
             if analysisType != 0:
-                print "The component is overwriting ad, as, ar and aa values.\n" + \
-                      "This is just to make sure that the results are accurate enough!\n" + \
-                      "-ad is set to 1000. -as is set to 20.\n-ar is set to 300. -aa is set to 0.1.\n"
-                radParameters["_ad_"] = 1000
-                radParameters["_as_"] = 20
-                radParameters["_ar_"] = 300
-                radParameters["_aa_"] = 0.1
-            
+                print "The component is checking ad, as, ar and aa values. " + \
+                      "This is just to make sure that the results are accurate enough."
+                
+                if radParameters["_ad_"] < 1000:
+                    radParameters["_ad_"] = 1000
+                    print "-ad is set to 1000."
+                
+                if radParameters["_as_"] < 20:
+                    radParameters["_as_"] = 20
+                    print "-as is set to 20."
+                
+                if radParameters["_ar_"] < 300:
+                    # setting up the ar to 300 is tricky but I'm pretty sure in many
+                    # cases there will shadings involved.
+                    radParameters["_ar_"] = 300
+                    print "-ar is set to 300."
+                
+                if radParameters["_aa_"] > 0.1:
+                    # the same here. I think it is good to let the user wait a little bit more
+                    # but have a result that makes sense. If you are an exprienced user and don't
+                    # like this feel free to remove the if condition. Keep in mind that I only
+                    # apply this for grid based analysis, so the images can be rendered with any quality
+                    radParameters["_aa_"] = 0.1
+                    print "-aa is set to 0.1"
+                
+                print "Good to go!"
+        
         #stMonth, stDay, stHour, endMonth, endDay, endHour = lb_preparation.readRunPeriod(analysisPeriod, True)
-        conversionFac = lb_preparation.checkUnits()
+        #conversionFac = lb_preparation.checkUnits()
         
         # if radParameters: 
         
