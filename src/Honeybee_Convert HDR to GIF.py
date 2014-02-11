@@ -13,7 +13,7 @@ Provided by Honybee 0.0.10
 
 ghenv.Component.Name = "Honeybee_Convert HDR to GIF"
 ghenv.Component.NickName = 'HDR > GIF'
-ghenv.Component.Message = 'VER 0.0.46\nFEB_06_2014'
+ghenv.Component.Message = 'VER 0.0.47\nFEB_11_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -66,7 +66,7 @@ def main():
     
     hInputFilePath = outputFile.replace(".GIF", "_h.HDR")
     
-    batchStr =  "SET RAYPATH=.;" + hb_RADLibPath + "n" + \
+    batchStr =  "SET RAYPATH=.;" + hb_RADLibPath + "\n" + \
                 "PATH=" + hb_RADPath + ";$PATH\n\n"
     
     if adjustExposure_:
