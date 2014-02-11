@@ -15,7 +15,7 @@ Read the results of the annual study for a single hour of the year
 """
 ghenv.Component.Name = "Honeybee_Read Hourly Results from Annual Daylight Study"
 ghenv.Component.NickName = 'readDSHourlyResults'
-ghenv.Component.Message = 'VER 0.0.43\nFEB_03_2014'
+ghenv.Component.Message = 'VER 0.0.44\nFEB_11_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -173,7 +173,7 @@ if _HOY!=None and _illFilesAddress.DataCount!=0 and _illFilesAddress.Branch(0)[0
         iIlluminanceBasedOnOccupancy = DataTree[Object]()
         
         # now this is the time to create the mixed results
-        # I think I confused blind groups and shading stats or maybe not!
+        # I think I confused blind groups and shading states at some point or maybe I didn't!
         # Fore now it will work for one shading with one state. I'll check for more later.
         
         blindsGroupInEffect = 0
@@ -182,12 +182,12 @@ if _HOY!=None and _illFilesAddress.DataCount!=0 and _illFilesAddress.Branch(0)[0
             p = GH_Path(spaceCount)
             iIllumLevelsNoDynamicSHD.AddRange(illuminanceValues[0][sum(numOfPtsInEachSpace[:spaceCount]):sum(numOfPtsInEachSpace[:spaceCount+1])], p)
             
-            if len(illuminanceValues[1])!=0:
+            if len(illuminanceValues[1])!=0 and shadingProfiles[spaceCount]!=[]:
                 
                 if shadingProfiles[spaceCount][0][_HOY-1] == 1: blindsGroupInEffect = 1
                 iIllumLevelsDynamicSHDGroupI.AddRange(illuminanceValues[1][sum(numOfPtsInEachSpace[:spaceCount]):sum(numOfPtsInEachSpace[:spaceCount+1])], p)
                 
-            if len(illuminanceValues[2])!=0:
+            if len(illuminanceValues[2])!=0 and shadingProfiles[spaceCount]!=[]:
                 if shadingProfiles[spaceCount][1][_HOY-1] == 1: blindsGroupInEffect = 2
                 iIllumLevelsDynamicSHDGroupII.AddRange(illuminanceValues[2][sum(numOfPtsInEachSpace[:spaceCount]):sum(numOfPtsInEachSpace[:spaceCount+1])], p)
                 

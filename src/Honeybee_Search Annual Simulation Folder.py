@@ -14,7 +14,7 @@ Provided by Honybee 0.0.10
 
 ghenv.Component.Name = "Honeybee_Search Annual Simulation Folder"
 ghenv.Component.NickName = 'searchAnnualSimulationFolder'
-ghenv.Component.Message = 'VER 0.0.44\nFEB_10_2014'
+ghenv.Component.Message = 'VER 0.0.45\nFEB_11_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "4"
@@ -51,6 +51,8 @@ def main(studyFolder):
                 illFilesTemp.append(os.path.join(studyFolder, fileName))
             elif fileName.endswith(".pts") and fileName.split("_")[-2]!="space":
                 ptsFiles.append(os.path.join(studyFolder, fileName))
+            elif fileName.endswith(".epw"):
+                epwFile = os.path.join(studyFolder, fileName)
     
     # check if there are multiple ill files in the folder for different shading groups
     illFilesDict = {}
@@ -82,7 +84,7 @@ def main(studyFolder):
     try: ptsFiles = sorted(ptsFiles, key=lambda fileName: int(fileName.split(".")[-2].split("_")[-1]))
     except: pass
     
-    return msg, [illFiles, resFiles, ptsFiles]
+    return msg, [illFiles, resFiles, ptsFiles, epwFile]
     
 
 msg, results = main(studyFolder)
@@ -90,4 +92,4 @@ msg, results = main(studyFolder)
 if msg!=str.Empty:
     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
 else:
-    illFiles, resFiles, ptsFiles = results
+    illFiles, resFiles, ptsFiles, epwFile = results

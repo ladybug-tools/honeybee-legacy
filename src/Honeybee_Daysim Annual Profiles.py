@@ -11,7 +11,7 @@ Read Daysim Annual Profiles
 """
 ghenv.Component.Name = "Honeybee_Daysim Annual Profiles"
 ghenv.Component.NickName = 'DSAnnualProfiles'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_24_2014'
+ghenv.Component.Message = 'VER 0.0.43\nFEB_11_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "5"
