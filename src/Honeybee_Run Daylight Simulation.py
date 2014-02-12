@@ -27,7 +27,7 @@ export geometries to rad file, and run daylighting/energy simulation
 
 ghenv.Component.Name = "Honeybee_Run Daylight Simulation"
 ghenv.Component.NickName = 'runDaylightAnalysis'
-ghenv.Component.Message = 'VER 0.0.49\nFEB_10_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_12_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -133,7 +133,9 @@ class WriteRAD(object):
         try:
             if surface.punchedGeometry!=None:
                 surface.geometry = surface.punchedGeometry
-        except:
+                surface.hasInternalEdge = True
+        except exception, e:
+            #print e
             # nonplanar surfaces with no openings
             pass
             
@@ -142,6 +144,7 @@ class WriteRAD(object):
         if type(coordinatesList[0])is not list and type(coordinatesList[0]) is not tuple:
             coordinatesList = [coordinatesList]
         for count, coordinates in enumerate(coordinatesList):
+            #print count
             fullStr = fullStr + self.getsurfaceStr(surface, count, coordinates)
         
         return fullStr
