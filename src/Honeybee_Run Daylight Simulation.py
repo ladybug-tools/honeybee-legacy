@@ -134,7 +134,7 @@ class WriteRAD(object):
             if surface.punchedGeometry!=None:
                 surface.geometry = surface.punchedGeometry
                 surface.hasInternalEdge = True
-        except exception, e:
+        except:
             #print e
             # nonplanar surfaces with no openings
             pass
