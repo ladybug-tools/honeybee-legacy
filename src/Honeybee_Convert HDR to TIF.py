@@ -13,7 +13,7 @@ Provided by Honybee 0.0.10
 
 ghenv.Component.Name = "Honeybee_Convert HDR to TIF"
 ghenv.Component.NickName = 'HDR > TIF'
-ghenv.Component.Message = 'VER 0.0.47\nFEb_11_2014'
+ghenv.Component.Message = 'VER 0.0.48\nFEb_11_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -82,7 +82,14 @@ def main():
     batchFile.write(batchStr)
     batchFile.close()
     os.system("start /min /B /wait " + batchFileName)
-    return outputFile
-
+    
+    if os.path.isfile(outputFile):
+        return outputFile
+    else:
+        msg = "Failed to genearate the .gif file. Open the bat file with a text editor " + \
+              "and change the last line from exit to pause. Then run it again and see what is the error.\n" + \
+              "here is the file address: " + batchFileName
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+        return
 
 if HDRFilePath!=None: TIFFFilePath = main()
