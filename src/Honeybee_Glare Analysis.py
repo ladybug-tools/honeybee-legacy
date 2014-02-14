@@ -182,9 +182,9 @@ def main(HDRImagePath, taskPosition, taskPositionAngle):
         HDRImagePath = resizedImage
     
     glareCheckImage = ".".join(HDRImagePath.split(".")[:-1]) + "_chkFile." + HDRImagePath.split(".")[-1]
-    
+    glareNoTextImage = ".".join(HDRImagePath.split(".")[:-1]) + "_noText." + HDRImagePath.split(".")[-1]
     # run the analysis
-    evalGlareLine = "/c evalglare -c " +  glareCheckImage + " " + HDRImagePath
+    evalGlareLine = "/c evalglare -c " +  glareNoTextImage + " " + HDRImagePath
     glareRes, err = runCmdAndGetTheResults(evalGlareLine)
     
     notes += "Results for the image:\n" + glareRes + "\n"
@@ -192,12 +192,25 @@ def main(HDRImagePath, taskPosition, taskPositionAngle):
     # read the results
     totalGlareResultDict, possibleNotice = readGlareResults(glareRes)
     
+    # add the results to the picture
+    DGP = totalGlareResultDict['dgp']
+    DGI = totalGlareResultDict['dgi']
+    
+    textHeight = x / 25
+    if textHeight < 10: textHeight = 10
+    addNumbersLine = "/c " + hb_RADPath + r"\psign -h " + str(textHeight) + " -cb 0 0 0 -cf 1 1 1 DGP=" + str(DGP) + " | " + \
+                     hb_RADPath + r"\pcompos " + glareNoTextImage + " 0 0 - " + str(textHeight/2) + " " + str(y) + " > " + glareCheckImage
+    
+    runCmdAndGetTheResults(addNumbersLine)
+    
     if possibleNotice!=None: notes += "Notice: " + possibleNotice + "\n"
     
     # if task position run one image to
     if taskP:
         
         glareTaskPCheckImage = ".".join(HDRImagePath.split(".")[:-1]) + "_TPChkFile." + HDRImagePath.split(".")[-1]
+        glareTaskPNoText = ".".join(HDRImagePath.split(".")[:-1]) + "_TPnoText." + HDRImagePath.split(".")[-1]
+        
         
         xPixle = int(taskPX * x)
         yPixle = int(taskPY * y) # 0,0 coordinate for evalglare located at top left
@@ -205,13 +218,22 @@ def main(HDRImagePath, taskPosition, taskPositionAngle):
         
         TArguments = " ".join([str(xPixle), str(yPixle), "%.3f"%taskPA])
         
-        evalGlareTaskPLine = "/c evalglare -c " +  glareTaskPCheckImage + " -T " + \
+        evalGlareTaskPLine = "/c evalglare -c " +  glareTaskPNoText + " -T " + \
         TArguments + " " + HDRImagePath
         
         glareTaskRes, err = runCmdAndGetTheResults(evalGlareTaskPLine)
         notes += "Results for the task position:\n" + glareTaskRes + "\n"
         
         taskPGlareResultDict, possibleNotice = readGlareResults(glareTaskRes)
+        
+        # add the results to the picture
+        DGP = taskPGlareResultDict['dgp']
+        DGI = taskPGlareResultDict['dgi']
+        
+        addNumbersTLine = "/c " + hb_RADPath + r"\psign -h " + str(textHeight) + " -cb 0 0 0 -cf 1 1 1 DGP=" + str(DGP) + " | " + \
+                     hb_RADPath + r"\pcompos " + glareTaskPNoText + " 0 0 - " + str(textHeight/2) + " " + str(y) + " > " + glareTaskPCheckImage
+    
+        runCmdAndGetTheResults(addNumbersTLine)
         
         if possibleNotice!=None: notes += "Notice: " + possibleNotice + "\n"
         

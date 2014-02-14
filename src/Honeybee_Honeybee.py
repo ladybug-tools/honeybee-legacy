@@ -19,7 +19,7 @@ http://creativecommons.org/licenses/by-sa/3.0/deed.en_US
 Source code is available at:
 https://github.com/mostaphaRoudsari/ladybug
 -
-Provided by Honeybee 0.0.42
+Provided by Honeybee 0.0.46
     
     Args:
         letItFly: Set Boolean to True to let the Honeybee fly!
@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.42
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.45\nFEB_06_2014'
+ghenv.Component.Message = 'VER 0.0.46\nFEB_13_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -250,11 +250,12 @@ class RADMaterialAux(object):
         RADLibraryFile = r"c:\ladybug\HoneybeeRadMaterials.mat"
         if os.path.isfile(RADLibraryFile): self.importRADMaterialsFromFile(RADLibraryFile)
         
+        # let the user do it for now
         # update the list of the materials in the call from library components
-        for component in ghenv.Component.OnPingDocument().Objects:
-            if  type(component)== type(ghenv.Component) and component.Name == "Honeybee_Call from Radiance Library":
-                pass
-                #component.ExpireSolution(True)
+        #for component in ghenv.Component.OnPingDocument().Objects:
+        #    if  type(component)== type(ghenv.Component) and component.Name == "Honeybee_Call from Radiance Library":
+        #        pass
+        #        #component.ExpireSolution(True)
         
         print "Loading RAD default materials..." + \
               `len(sc.sticky ["honeybee_RADMaterialLib"].keys())` + " RAD materials are loaded\n"
