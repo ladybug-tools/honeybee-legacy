@@ -14,7 +14,7 @@ Provided by Honybee 0.0.10
 
 ghenv.Component.Name = "Honeybee_Set Exposure for HDR"
 ghenv.Component.NickName = 'setHDRExposure'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_24_2014'
+ghenv.Component.Message = 'VER 0.0.43\nFEB_14_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -22,6 +22,13 @@ ghenv.Component.AdditionalHelpFromDocStrings = "3"
 import os
 import scriptcontext as sc
 import Grasshopper.Kernel as gh
+import subprocess
+
+def runCmdAndGetTheResults(command, shellKey = True):
+    p = subprocess.Popen(["cmd", command], shell=shellKey, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, err = p.communicate()
+    # p.kill()
+    return out, err
 
 def main():
     
@@ -64,7 +71,10 @@ def main():
     batchFile = open(batchFileName, 'w')
     batchFile.write(batchStr)
     batchFile.close()
-    os.system("start /min /B /wait " + batchFileName)
+    #os.system("start /min /B /wait " + batchFileName)
+    
+    runCmdAndGetTheResults("/c " + batchFileName)
+    
     return outputFile
 
 

@@ -21,7 +21,14 @@ ghenv.Component.AdditionalHelpFromDocStrings = "3"
 import os
 import scriptcontext as sc
 import Grasshopper.Kernel as gh
+import subprocess
 
+def runCmdAndGetTheResults(command, shellKey = True):
+    p = subprocess.Popen(["cmd", command], shell=shellKey, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, err = p.communicate()
+    # p.kill()
+    return out, err
+    
 def main():
 
     # import the classes
@@ -81,7 +88,9 @@ def main():
     batchFile = open(batchFileName, 'w')
     batchFile.write(batchStr)
     batchFile.close()
-    os.system("start /min /B /wait " + batchFileName)
+
+    # os.system("start /min /B /wait " + batchFileName)
+    runCmdAndGetTheResults("/c " + batchFileName)
     
     if os.path.isfile(outputFile):
         return outputFile
