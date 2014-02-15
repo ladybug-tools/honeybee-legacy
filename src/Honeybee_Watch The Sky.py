@@ -9,12 +9,13 @@ Provided by Honybee 0.0.10
         _runIt: Set to true to run the analysis
     Returns:
         HDRImagePath: Path to the result HDR file
+        globalHorIrradiance: Global horizontal irradiance for an upstructed test point under this sky (wh/m2) - In case you're watching the cumulative sky the number is in (KWh/m2).
 
 """
 
 ghenv.Component.Name = "Honeybee_Watch The Sky"
 ghenv.Component.NickName = 'watchTheSky'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_24_2014'
+ghenv.Component.Message = 'VER 0.0.44\nFEB_14_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "2 | Daylight | Sky"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -23,6 +24,13 @@ import scriptcontext as sc
 import os
 import shutil
 import Grasshopper.Kernel as gh
+import subprocess
+
+def runCmdAndGetTheResults(command, shellKey = True):
+    p = subprocess.Popen(["cmd", command], shell=shellKey, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, err = p.communicate()
+    # p.kill()
+    return out, err
 
 def rpictRenderSkyLine(viewSize, projectName, viewName):
     octFile = projectName + "_" + viewName + ".oct"
@@ -45,6 +53,34 @@ def oconvLine(projectName, viewName, radFilesList):
     return line
 
 
+def rtraceLine(projectName, viewName):
+    
+    octFile = projectName + "_" + viewName + ".oct"
+    resultFile = projectName + "_" + viewName + ".irr"
+    
+    # Result will be in Wh/m^2
+    # EPiSODE have a really good post on this if you want to read more:
+    # http://episode-hopezh.blogspot.com/2012/05/viz-sky-generated-by-gendaylit.html?view=flipcard
+    line = "echo 0 0 0 0 0 1 | rtrace -w -h -I+ -ab 1 " + octFile + " | rcalc -e "'"$1 = $1 * 0.265 + $2 * 0.670 + $3*0.065"'" > " + resultFile + "\n"
+    
+    return line, resultFile
+    
+def checkSky(skyFile):
+    lines = []
+    with open(skyFile, "r") as skyIn:
+        for line in skyIn:
+            if line.strip().startswith("!gendaylit"):
+                line = line.replace("-O 0", "-O 1")
+            lines.append(line)
+            
+    skyFileOut = skyFile.split(".")[0] + "_radAnalysis.sky"
+    
+    with open(skyFileOut, "w") as skyOut:
+        for line in lines:
+            skyOut.write(line)
+    
+    return skyFileOut
+    
 def main(skyFilePath, imageSize):
     if sc.sticky.has_key('ladybug_release')and sc.sticky.has_key('honeybee_release'):
         hb_radParDict = sc.sticky["honeybee_RADParameters"]().radParDict
@@ -67,7 +103,11 @@ def main(skyFilePath, imageSize):
                   "Make sure that RADIANCE is installed on your system and try again."
             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
             return
-        
+    
+    
+    # change the sky in case it is for gendaylit
+    skyFilePath = checkSky(skyFilePath)
+    
     projectName = skyFilePath.split(".")[0]
     radFile = skyFilePath.split(".")[0] + "_geometry.RAD"
     viewName = "skyView"
@@ -87,25 +127,36 @@ def main(skyFilePath, imageSize):
     
     rpictL = rpictRenderSkyLine(imageSize, projectName, viewName)
     
+    rtraceL, resultFile = rtraceLine(projectName, viewName)
+    
     # run the study
     command = "@echo off\n" + \
               "echo Generating the sky view\n" + \
               oconvL + "\n" + \
               rpictL + "\n" + \
+              rtraceL + "\n" + \
               "pcond -h+ " + skyImageFile + " > " + hSkyImageFile + "\n" + \
               "pflip -h " + hSkyImageFile + " > " + flippedSkyImageFile + "\n" + \
               "exit"
 
-    with open(projectName + ".bat", "w") as inf:
-        inf.write(command)
+    with open(projectName + ".bat", "w") as outf:
+        outf.write(command)
         
-    os.system(projectName + ".bat")
+    #os.system(projectName + ".bat")
+    runCmdAndGetTheResults( "/c " + projectName + ".bat")
     
-    return flippedSkyImageFile
+    # read the result of the global horizontal irradiance
+    with open(resultFile, "r") as inf:
+        try:
+            gHorIrr = inf.readlines()[0].strip()
+        except:
+            gHorIrr = "Failed to calculate!"
+    
+    return flippedSkyImageFile, gHorIrr
     
     
 if _runIt and _skyFilePath:
     if _imageSize_ == None:
         _imageSize_ = 500 #pixles
     print "Image size:", _imageSize_
-    HDRImagePath = main(_skyFilePath, _imageSize_)
+    HDRImagePath, globalHorIrradiance = main(_skyFilePath, _imageSize_)
