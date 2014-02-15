@@ -19,7 +19,7 @@ http://creativecommons.org/licenses/by-sa/3.0/deed.en_US
 Source code is available at:
 https://github.com/mostaphaRoudsari/ladybug
 -
-Provided by Honeybee 0.0.47
+Provided by Honeybee 0.0.48
     
     Args:
         letItFly: Set Boolean to True to let the Honeybee fly!
@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.47
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.47\nFEB_15_2014'
+ghenv.Component.Message = 'VER 0.0.48\nFEB_15_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -72,7 +72,7 @@ class hb_findFolders():
             # Avoid Radiance and Daysim that comes with DIVA as it has a different
             # structure which doesn't match the standard Daysim
             
-            if fpath.find("DIVA")<0:
+            if fpath.upper().find("DIVA")<0:
                 # if the user has DIVA installed the component may find DIVA version
                 # of RADIANCE and DAYISM which can cause issues because of the different
                 # structure of folders in DIVA
@@ -106,7 +106,8 @@ class hb_GetEPConstructions():
         
         # create the folder if it is not there
         if not os.path.isdir(workingDir): os.mkdir(workingDir)
-        # download the Gencumulative Sky
+        
+        # download template file
         if not os.path.isfile(workingDir + '\OpenStudioMasterTemplate.idf'):
             try:
                 ## download File
@@ -1869,23 +1870,39 @@ class hb_EPZoneSurface(hb_EPSurface):
         for crv in jBaseCrv: jBaseCrvList.append(crv)
 
         try:
-            try:
-                punchedGeometries = rc.Geometry.Brep.CreatePlanarBreps(glzCrvs + jBaseCrvList)
-            except:
-                # project the curves on top of base surface
-                srfNormal = self.getSrfCenPtandNormalAlternate()[1]
-                glzCrvsArray = rc.Geometry.Curve.ProjectToBrep(glzCrvs, [self.geometry], srfNormal, sc.doc.ModelAbsoluteTolerance)
-                glzCrvs = []
-                for crv in glzCrvsArray: glzCrvs.append(crv)
+            if self.isPlanar:
+                try:
+                    # works for planar surfaces
+                    punchedGeometries = rc.Geometry.Brep.CreatePlanarBreps(glzCrvs + jBaseCrvList)
+                    self.punchedGeometry = punchedGeometries[0]
+                except:
+                    # project the curves on top of base surface
+                    srfNormal = self.getSrfCenPtandNormalAlternate()[1]
+                    glzCrvsArray = rc.Geometry.Curve.ProjectToBrep(glzCrvs, [self.geometry], srfNormal, sc.doc.ModelAbsoluteTolerance)
+                    glzCrvs = []
+                    for crv in glzCrvsArray: glzCrvs.append(crv)
+                    
+                    punchedGeometries = rc.Geometry.Brep.CreatePlanarBreps(glzCrvs + jBaseCrvList)
+                    
+                if len(punchedGeometries)>1:
+                    crvDif = rc.Geometry.Curve.CreateBooleanDifference(jBaseCrvList[0], glzCrvs)
+                    punchedGeometries = rc.Geometry.Brep.CreatePlanarBreps(crvDif)
                 
-                punchedGeometries = rc.Geometry.Brep.CreatePlanarBreps(glzCrvs + jBaseCrvList)
+                    self.punchedGeometry = punchedGeometries[0]
+            else:
+                # split the base geometry - Good luck!
+                splitBrep = self.geometry.Faces[0].Split(glzCrvs, sc.doc.ModelAbsoluteTolerance)
                 
-            if len(punchedGeometries)>1:
-                crvDif = rc.Geometry.Curve.CreateBooleanDifference(jBaseCrvList[0], glzCrvs)
-                punchedGeometries = rc.Geometry.Brep.CreatePlanarBreps(crvDif)
-            
-            self.punchedGeometry = punchedGeometries[0]
+                splitBrep.Faces.ShrinkFaces()
                 
+                for srfCount in range(splitBrep.Faces.Count):
+                    surface = splitBrep.Faces.ExtractFace(srfCount)
+                    edges = surface.DuplicateEdgeCurves(True)
+                    joinedEdges = rc.Geometry.Curve.JoinCurves(edges)
+                    
+                    if len(joinedEdges)>1:
+                        self.punchedGeometry = surface
+                                        
         except Exception, e:
             self.punchedGeometry = None
             print "failed to calculate opaque part of the surface:\n" + `e`
@@ -1951,7 +1968,12 @@ class hb_EPFenSurface(hb_EPSurface):
             parentZone: class of the zone that this surface belongs to"""
         hb_EPSurface.__init__(self, surface, srfNumber, srfName, parentSurface, surafceType)
         
-        if not self.isPlanar: self.parent.parent.hasNonplanarSrf = True
+        if not self.isPlanar:
+            try:
+                self.parent.parent.hasNonplanarSrf = True
+            except:
+                # surface is not part of a zone yet.
+                pass
         
         # this is a class that I only wrote to assign a fake object for surfaces
         # with outdoor boundaryCondition
