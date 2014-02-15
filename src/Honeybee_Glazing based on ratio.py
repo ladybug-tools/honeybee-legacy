@@ -9,7 +9,7 @@
 Generate window based on a desired percentage of glazing and possibly other inputs such as window height and sill height.
 
 -
-Provided by Honeybee 0.0.13
+Provided by Honeybee 0.0.50
     
     Args:
         HBObjects: Honeybee thermal zones or surfaces for which glazing should be generated.
@@ -25,7 +25,7 @@ Provided by Honeybee 0.0.13
 
 ghenv.Component.Name = "Honeybee_Glazing based on ratio"
 ghenv.Component.NickName = 'glazingCreator'
-ghenv.Component.Message = 'VER 0.0.45\nFEB_08_2014'
+ghenv.Component.Message = 'VER 0.0.44\nFEB_15_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -330,7 +330,7 @@ def createGlazingForRect(rectBrep, glazingRatio, windowHeight, sillHeight):
             rc.Geometry.NurbsCurve.Transform(winStartLine, transformMatrix)
             
             #Scale the curve so that it is not touching the edges of the surface.
-            lineCentPt = rc.Geometry.Point3d(((winStartLine.PointAtStart.X + winStartLine.PointAtEnd.X)/2), ((winStartLine.PointAtStart.Y + winStartLine.PointAtEnd.Y)/2), ((winStartLine.PointAtStart.Z + winStartLine.PointAtEnd.Z)/2))
+            lineCentPt = rc.Geometry.Point3d(((winStartLine.PointAtStart.X + winStartLine.PointAtEnd.X)/2), ((winStartLine.PointAtStart.Y + winStartLine.PointAtEnd.Y)/2), ((winStartLine.PointAtStart.Z - winStartLine.PointAtEnd.Z)/2))
             transformMatrixScale = rc.Geometry.Transform.Scale(lineCentPt, 0.98)
             winStartLine.Transform(transformMatrixScale)
             
@@ -479,44 +479,40 @@ def createGlazingCurved(baseSrf, glzRatio):
         else: return None, None, None
     
     
-    def OffsetCurveOnSurface(border, face, offsetDist, normalvector):
+    def OffsetCurveOnSurface(border, glazingBrep, offsetDist, normalvector):
         success = False
         glzArea = 0
         direction = 1
-        # Try RhinoCommon
-        #rc.Geometry.Curve.OffsetOnSurface(
-        glzCurve = border.OffsetOnSurface(face.Faces[0], offsetDist, sc.doc.ModelAbsoluteTolerance)
+        splittedSrfs = []
+        
+        # try RhinoCommon
+        surface = glazingBrep.Faces[0]
+        glzCurve = border.OffsetOnSurface(surface, offsetDist, sc.doc.ModelAbsoluteTolerance)
         if glzCurve==None:
-            glzCurve = border.OffsetOnSurface(face.Faces[0], -offsetDist, sc.doc.ModelAbsoluteTolerance)
+            glzCurve = border.OffsetOnSurface(surface, -offsetDist, sc.doc.ModelAbsoluteTolerance)
             direction = -1
             
         if glzCurve!=None:
-            try:
-                glzCurve = glzCurve[0]
-                splitter = rc.Geometry.Surface.CreateExtrusion(glzCurve, normalvector).ToBrep()
-                splittedSrfs = face.Split(splitter, sc.doc.ModelAbsoluteTolerance)
-                glzSrf = splittedSrfs[-1]
-                glzArea = glzSrf.GetArea()
-                success = True
-            except Exception, e:
-                print "Split surface failed in the first try!"
-                print `e`
-                try:
-                    splitter2 = rc.Geometry.Surface.CreateExtrusion(glzCurve, -normalvector).ToBrep()
-                    joinedSplitter = rc.Geometry.Brep.JoinBreps([splitter2, splitter], sc.doc.ModelAbsoluteTolerance)[0]
-                    splittedSrfs = face.Split(joinedSplitter, .5 * sc.doc.ModelAbsoluteTolerance)
-                    glzSrf = splittedSrfs[-1]
+            splitBrep = surface.Split(glzCurve, sc.doc.ModelAbsoluteTolerance)
+            splitBrep.Faces.ShrinkFaces()
+            #print splitBrep.Faces.Count
+            for srfCount in range(splitBrep.Faces.Count):
+                splSurface = splitBrep.Faces.ExtractFace(srfCount)
+                splittedSrfs.append(splSurface)
+                edges = splSurface.DuplicateEdgeCurves(True)
+                joinedEdges = rc.Geometry.Curve.JoinCurves(edges)
+                
+                if len(joinedEdges) == 1:
+                    glzSrf = splSurface
                     glzArea = glzSrf.GetArea()
                     success = True
-                except Exception, e:
-                    print "Split surface failed in the second try too!"
-                    print `e`
-                    return False, glzArea, glzCurve, None
         else:
             print "Split surface failed!"
-            splittedSrfs = face
+            splittedSrfs = None
+            success = False
+            
+        
         return success, glzArea, glzCurve, splittedSrfs
-    
     
     
     face = baseSrf
@@ -533,7 +529,6 @@ def createGlazingCurved(baseSrf, glzRatio):
     
     lastSuccessfulGlzSrf = None
     lastSuccessfulSrf = None
-    lastSuccessfulRestOfSrf = None
     lastSuccessfulArea = area
     srfs = []
     coordinatesList = baseSrf.Vertices
@@ -554,10 +549,12 @@ def createGlazingCurved(baseSrf, glzRatio):
                     lastSuccessfulRestOfSrf = splittedSrfs[0]
                     lastSuccessfulArea = glzArea
                 except Exception, e:
-                    print `e`
-                    pass
-    
-    return [lastSuccessfulGlzSrf], lastSuccessfulRestOfSrf
+                    print "Failed to calculate the glazing"
+                    lastSuccessfulGlzSrf = None
+                    lastSuccessfulRestOfSrf = None
+                    lastSuccessfulArea = 0
+                    
+    return lastSuccessfulGlzSrf, lastSuccessfulRestOfSrf
 
 
 def findGlzBasedOnRatio(baseSrf, glzRatio, windowHeight, sillHeight, surfaceType):
@@ -628,6 +625,11 @@ def findGlzBasedOnRatio(baseSrf, glzRatio, windowHeight, sillHeight, surfaceType
     
     
     #Check to make sure that the window that has been generated is facing the right direction.  If not, flip it
+    try:
+        len(glazing)
+    except:
+        glazing = [glazing]
+    
     for window in glazing:
         windowDir = window.Faces[0].NormalAt(0,0)
         if windowDir.X < originalSrfDir.X + tol and windowDir.X > originalSrfDir.X - tol and windowDir.Y < originalSrfDir.Y + tol and windowDir.Y > originalSrfDir.Y - tol and windowDir.Z < originalSrfDir.Z + tol and windowDir.Z > originalSrfDir.Z - tol:
