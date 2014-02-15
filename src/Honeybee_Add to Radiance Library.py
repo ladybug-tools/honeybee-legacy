@@ -8,7 +8,7 @@ Provided by Honybee 0.0.36
         RADMaterial: Radiance material definition
         addToProjectLib: Set to True to add the material to HB library for this project
         overwrite: Set to True if you want to overwrite the material with similar name
-        addToGlonalLib: Set to True to Honeybee material libaray. Materials in global library will be loaded anytime that you let the 'bee fly.
+        addToHoneybeeLib: Set to True to Honeybee material libaray. Materials in addToHoneybeeLib library will be loaded anytime that you let the 'bee fly. You can add the materials manually to C:\ladybug\HoneybeeRadMaterials.mat
     Returns:
         readMe!: ...
 
@@ -16,7 +16,7 @@ Provided by Honybee 0.0.36
 
 ghenv.Component.Name = "Honeybee_Add to Radiance Library"
 ghenv.Component.NickName = 'addToLibrary'
-ghenv.Component.Message = 'VER 0.0.43\nFEB_03_2014'
+ghenv.Component.Message = 'VER 0.0.44\nFEB_15_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "1 | Daylight | Material"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -36,7 +36,7 @@ if sc.sticky.has_key('honeybee_release'):
     
     if RADMaterial!=None:
         
-        if addToGlobalLib:
+        if addToHoneybeeLib:
             hb_RADMaterialAUX.addToGlobalLibrary(RADMaterial)
             updateRADMaterialList()
 

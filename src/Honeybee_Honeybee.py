@@ -19,7 +19,7 @@ http://creativecommons.org/licenses/by-sa/3.0/deed.en_US
 Source code is available at:
 https://github.com/mostaphaRoudsari/ladybug
 -
-Provided by Honeybee 0.0.46
+Provided by Honeybee 0.0.47
     
     Args:
         letItFly: Set Boolean to True to let the Honeybee fly!
@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.46
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.46\nFEB_13_2014'
+ghenv.Component.Message = 'VER 0.0.47\nFEB_15_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -237,9 +237,7 @@ class RADMaterialAux(object):
         if not sc.sticky.has_key("honeybee_RADMaterialLib"): sc.sticky ["honeybee_RADMaterialLib"] = {}
         
         # add default materials to the library
-        self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', 'GenericFloorMaterial', .2, .2, .2, 0, 0.1), True, True)
-        self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', 'GenericOutdoorWallMaterial', .5, .5, .5, 0, 0.1), True, True)
-        self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', 'contextMaterial', .35, .35, .35, 0, 0.1), True, True)
+        self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', '000_Context_Material', .35, .35, .35, 0, 0.1), True, True)
         self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', '000_Interior_Ceiling', .80, .80, .80, 0, 0.1), True, True)
         self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', '000_Interior_Floor', .2, .2, .2, 0, 0.1), True, True)
         self.analyseRadMaterials(self.createRadMaterialFromParameters('glass', '000_Exterior_Window', .60, .60, .60), True, True)
@@ -249,6 +247,9 @@ class RADMaterialAux(object):
         # import user defined RAD library
         RADLibraryFile = r"c:\ladybug\HoneybeeRadMaterials.mat"
         if os.path.isfile(RADLibraryFile): self.importRADMaterialsFromFile(RADLibraryFile)
+        else:
+            with open(RADLibraryFile, "w") as outf:
+                outf.write("#Honeybee Radiance Material Library\n")
         
         # let the user do it for now
         # update the list of the materials in the call from library components
