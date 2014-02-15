@@ -19,7 +19,7 @@ http://creativecommons.org/licenses/by-sa/3.0/deed.en_US
 Source code is available at:
 https://github.com/mostaphaRoudsari/ladybug
 -
-Provided by Honeybee 0.0.48
+Provided by Honeybee 0.0.49
     
     Args:
         letItFly: Set Boolean to True to let the Honeybee fly!
@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.48
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.48\nFEB_15_2014'
+ghenv.Component.Message = 'VER 0.0.49\nFEB_15_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1202,20 +1202,17 @@ class EPZone(object):
             print " Failed to create the geometry from the surface:\n" + `e`
         
     def getSrfCenPtandNormal(self, surface):
-        MP = rc.Geometry.AreaMassProperties.Compute(surface)
-        area = None
-        if MP:
-            centerPt = MP.Centroid
-            MP.Dispose()
-        else:
-            print 'MP Failed'
-            return
         
-        bool, centerPtU, centerPtV = surface.ClosestPoint(centerPt)
-        # normalVector = surface.Faces[0].NormalAt(centerPtU, centerPtV)
-        if bool: normalVector = surface.Faces[0].NormalAt(centerPtU, centerPtV)
-        else: normalVector = surface.Faces[0].NormalAt(0,0)
+        surface = surface.Faces[0]
+        u_domain = surface.Domain(0)
+        v_domain = surface.Domain(1)
+        centerU = (u_domain.Min + u_domain.Max)/2
+        centerV = (v_domain.Min + v_domain.Max)/2
         
+        centerPt = surface.PointAt(centerU, centerV)
+        normalVector = surface.NormalAt(centerU, centerV)
+        
+        normalVector.Unitize()
         return centerPt, normalVector
 
     def addSrf(self, srf):
@@ -1663,22 +1660,16 @@ class hb_EPSurface(object):
                     fenSrf.meshedFace = rc.Geometry.Mesh()
     
     def getSrfCenPtandNormalAlternate(self):
-        surface = self.geometry
-        MP = rc.Geometry.AreaMassProperties.Compute(surface)
-        area = None
-        if MP:
-            centerPt = MP.Centroid
-            MP.Dispose()
-        else:
-            print 'MP Failed'
-            return
+        surface = self.geometry.Faces[0]
+        u_domain = surface.Domain(0)
+        v_domain = surface.Domain(1)
+        centerU = (u_domain.Min + u_domain.Max)/2
+        centerV = (v_domain.Min + v_domain.Max)/2
         
-        bool, centerPtU, centerPtV = surface.ClosestPoint(centerPt)
-        # normalVector = surface.Faces[0].NormalAt(centerPtU, centerPtV)
-        if bool: normalVector = surface.Faces[0].NormalAt(centerPtU, centerPtV)
-        else:
-            normalVector = surface.Faces[0].NormalAt(0,0)
-            normalVector.Unitize()
+        centerPt = surface.PointAt(centerU, centerV)
+        normalVector = surface.NormalAt(centerU, centerV)
+        
+        normalVector.Unitize()
         
         return centerPt, normalVector
     
@@ -1784,7 +1775,7 @@ class hb_EPSurface(object):
                    '\nThis surface is a ' + str(self.srfType[self.type]) + "."
         except:
             return 'Surface name: ' + self.name + '\n' + 'Surface number: ' + str(self.num) + \
-                   '\nSurface type is not assigned. Honeybee thinks this is potentially a ' + str(self.srfType[self.getTypeByNormalAngle()]) + "."
+                   '\nSurface type is not assigned. Honeybee thinks this is a ' + str(self.srfType[self.getTypeByNormalAngle()]) + "."
                    
 
 class hb_EPZoneSurface(hb_EPSurface):
@@ -1945,16 +1936,18 @@ class hb_EPShdSurface(hb_EPSurface):
         pass
     
     def getSrfCenPtandNormal(self, surface):
-        MP = rc.Geometry.AreaMassProperties.Compute(surface)
-        area = None
-        if MP:
-            centerPt = MP.Centroid
-            MP.Dispose()
-        else: return
+        # I'm not sure if we need this method
+        # I will remove this later
+        surface = surface.Faces[0]
+        u_domain = surface.Domain(0)
+        v_domain = surface.Domain(1)
+        centerU = (u_domain.Min + u_domain.Max)/2
+        centerV = (v_domain.Min + v_domain.Max)/2
         
-        bool, centerPtU, centerPtV = surface.ClosestPoint(centerPt)
-        if bool: normalVector = surface.Faces[0].NormalAt(centerPtU, centerPtV)
-        else: normalVector = surface.Faces[0].NormalAt(0,0)
+        centerPt = surface.PointAt(centerU, centerV)
+        normalVector = surface.NormalAt(centerU, centerV)
+        
+        normalVector.Unitize()
         return centerPt, normalVector
 
 
