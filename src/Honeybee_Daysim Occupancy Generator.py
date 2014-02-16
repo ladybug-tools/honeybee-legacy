@@ -1,7 +1,8 @@
 """
 Daysim Occupancy Generator
+Daysim calculates the outputs for the hours that the space is occupied. This componet generates a csv file that will be used as the occupancy-file. Read more here: http://daysim.ning.com/page/keyword-occupancy-profile 
 -
-Provided by Honybee 0.0.35
+Provided by Honybee 0.0.50
     Args:
         _occupancyPeriod_: The period that the building is actively occupid. Use Ladybug Analysis Period component to generate the input. Default is all year between 9 to 5.
         dailyOffHours_: A list of hours that building is unoccupied during the occupancy period everyday (e.g. lunch break). Default is an hour lunch break at 12. 
@@ -15,7 +16,7 @@ Provided by Honybee 0.0.35
 
 ghenv.Component.Name = "Honeybee_Daysim Occupancy Generator"
 ghenv.Component.NickName = 'occupancyGenerator'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_24_2014'
+ghenv.Component.Message = 'VER 0.0.43\nJAN_24_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "5"
