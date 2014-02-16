@@ -27,7 +27,7 @@ export geometries to rad file, and run daylighting/energy simulation
 
 ghenv.Component.Name = "Honeybee_Run Daylight Simulation"
 ghenv.Component.NickName = 'runDaylightAnalysis'
-ghenv.Component.Message = 'VER 0.0.50\nFEB_12_2014'
+ghenv.Component.Message = 'VER 0.0.51\nFEB_15_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1019,9 +1019,7 @@ def main(north, HBObjects, analysisRecipe, runRad, numOfCPUs, workingDir, radFil
         
         # 0.1 material string
         matStr =  "# start of generic materials definition(s)\n" + \
-            hb_RADMaterialAUX.getRADMaterialString('GenericFloorMaterial') + "\n" + \
-            hb_RADMaterialAUX.getRADMaterialString('GenericOutdoorWallMaterial') + "\n" + \
-            hb_RADMaterialAUX.getRADMaterialString('contextMaterial') + "\n" + \
+            hb_RADMaterialAUX.getRADMaterialString('000_Context_Material') + "\n" + \
             hb_RADMaterialAUX.getRADMaterialString('000_Interior_Ceiling') + "\n" + \
             hb_RADMaterialAUX.getRADMaterialString('000_Interior_Floor') + "\n" + \
             hb_RADMaterialAUX.getRADMaterialString('000_Exterior_Window') + "\n" + \

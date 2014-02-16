@@ -19,7 +19,7 @@ http://creativecommons.org/licenses/by-sa/3.0/deed.en_US
 Source code is available at:
 https://github.com/mostaphaRoudsari/ladybug
 -
-Provided by Honeybee 0.0.49
+Provided by Honeybee 0.0.50
     
     Args:
         letItFly: Set Boolean to True to let the Honeybee fly!
@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.49
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.49\nFEB_15_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_15_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -230,38 +230,39 @@ class hb_GetEPConstructions():
 
 class RADMaterialAux(object):
     
-    def __init__(self):
+    def __init__(self, reloadRADMaterial = False):
         
-        self.radMatTypes = ["plastic", "glass", "trans", "metal", "mirror", "mixedfunc", "dielectric", "transdata", "light", "glow"]
-        
-        # initiate the library
-        if not sc.sticky.has_key("honeybee_RADMaterialLib"): sc.sticky ["honeybee_RADMaterialLib"] = {}
-        
-        # add default materials to the library
-        self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', '000_Context_Material', .35, .35, .35, 0, 0.1), True, True)
-        self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', '000_Interior_Ceiling', .80, .80, .80, 0, 0.1), True, True)
-        self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', '000_Interior_Floor', .2, .2, .2, 0, 0.1), True, True)
-        self.analyseRadMaterials(self.createRadMaterialFromParameters('glass', '000_Exterior_Window', .60, .60, .60), True, True)
-        self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', '000_Exterior_Roof', .35, .35, .35, 0, 0.1), True, True)
-        self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', '000_Exterior_Wall', .50, .50, .50, 0, 0.1), True, True)
-        
-        # import user defined RAD library
-        RADLibraryFile = r"c:\ladybug\HoneybeeRadMaterials.mat"
-        if os.path.isfile(RADLibraryFile): self.importRADMaterialsFromFile(RADLibraryFile)
-        else:
-            with open(RADLibraryFile, "w") as outf:
-                outf.write("#Honeybee Radiance Material Library\n")
-        
-        # let the user do it for now
-        # update the list of the materials in the call from library components
-        #for component in ghenv.Component.OnPingDocument().Objects:
-        #    if  type(component)== type(ghenv.Component) and component.Name == "Honeybee_Call from Radiance Library":
-        #        pass
-        #        #component.ExpireSolution(True)
-        
-        print "Loading RAD default materials..." + \
-              `len(sc.sticky ["honeybee_RADMaterialLib"].keys())` + " RAD materials are loaded\n"
-        
+        if reloadRADMaterial:
+            self.radMatTypes = ["plastic", "glass", "trans", "metal", "mirror", "mixedfunc", "dielectric", "transdata", "light", "glow"]
+            
+            # initiate the library
+            if not sc.sticky.has_key("honeybee_RADMaterialLib"): sc.sticky ["honeybee_RADMaterialLib"] = {}
+            
+            # add default materials to the library
+            self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', '000_Context_Material', .35, .35, .35, 0, 0.1), True, True)
+            self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', '000_Interior_Ceiling', .80, .80, .80, 0, 0.1), True, True)
+            self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', '000_Interior_Floor', .2, .2, .2, 0, 0.1), True, True)
+            self.analyseRadMaterials(self.createRadMaterialFromParameters('glass', '000_Exterior_Window', .60, .60, .60), True, True)
+            self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', '000_Exterior_Roof', .35, .35, .35, 0, 0.1), True, True)
+            self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', '000_Exterior_Wall', .50, .50, .50, 0, 0.1), True, True)
+            
+            # import user defined RAD library
+            RADLibraryFile = r"c:\ladybug\HoneybeeRadMaterials.mat"
+            if os.path.isfile(RADLibraryFile): self.importRADMaterialsFromFile(RADLibraryFile)
+            else:
+                with open(RADLibraryFile, "w") as outf:
+                    outf.write("#Honeybee Radiance Material Library\n")
+            
+            # let the user do it for now
+            # update the list of the materials in the call from library components
+            #for component in ghenv.Component.OnPingDocument().Objects:
+            #    if  type(component)== type(ghenv.Component) and component.Name == "Honeybee_Call from Radiance Library":
+            #        pass
+            #        #component.ExpireSolution(True)
+            
+            print "Loading RAD default materials..." + \
+                  `len(sc.sticky ["honeybee_RADMaterialLib"].keys())` + " RAD materials are loaded\n"
+            
         
     def duplicateMaterialWarning(self, materialName, newMaterialString):
         returnYN = {'YES': True, 'NO': False}
@@ -2196,7 +2197,7 @@ if now.day + now.month + now.year < 2055 + 365: # should work until the end of 2
             sc.sticky["honeybee_RADMaterialAUX"] = RADMaterialAux
 
             # set up radiance materials
-            sc.sticky["honeybee_RADMaterialAUX"]()
+            sc.sticky["honeybee_RADMaterialAUX"](True)
             
             hb_GetEPConstructions()
             
