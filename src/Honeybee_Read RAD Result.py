@@ -1,5 +1,5 @@
 """
-Read Radaince Results
+Read Radiance Results
 
     Args:
         _resultFilesAddress: A list of result files
@@ -14,7 +14,7 @@ Read Radaince Results
 """
 ghenv.Component.Name = "Honeybee_Read RAD Result"
 ghenv.Component.NickName = 'readRADResults'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_26_2014'
+ghenv.Component.Message = 'VER 0.0.43\nFEB_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"

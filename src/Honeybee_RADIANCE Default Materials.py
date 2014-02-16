@@ -23,7 +23,7 @@ Provided by Honybee 0.0.50
 
 ghenv.Component.Name = "Honeybee_RADIANCE Default Materials"
 ghenv.Component.NickName = 'RADDefaultMaterials'
-ghenv.Component.Message = 'VER 0.0.50\nFEB_15_2014'
+ghenv.Component.Message = 'VER 0.0.51\nFEB_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "1 | Daylight | Material"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -76,11 +76,14 @@ def main():
         print "You should first let Honeybee to fly..."
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee to fly...")
+        return -1
     
-main()
+success = main()
 
-currentWallMaterial = hb_RADMaterialAUX.getRADMaterialString('000_Exterior_Wall')
-currentGlassMaterial = hb_RADMaterialAUX.getRADMaterialString('000_Exterior_Window')
-currentCeilingMaterial = hb_RADMaterialAUX.getRADMaterialString('000_Interior_Ceiling')
-currentRoofMaterial = hb_RADMaterialAUX.getRADMaterialString('000_Exterior_Roof')
-currentFloorMaterial = hb_RADMaterialAUX.getRADMaterialString('000_Interior_Floor')
+if success!= -1:
+    hb_RADMaterialAUX = sc.sticky["honeybee_RADMaterialAUX"]()
+    currentWallMaterial = hb_RADMaterialAUX.getRADMaterialString('000_Exterior_Wall')
+    currentGlassMaterial = hb_RADMaterialAUX.getRADMaterialString('000_Exterior_Window')
+    currentCeilingMaterial = hb_RADMaterialAUX.getRADMaterialString('000_Interior_Ceiling')
+    currentRoofMaterial = hb_RADMaterialAUX.getRADMaterialString('000_Exterior_Roof')
+    currentFloorMaterial = hb_RADMaterialAUX.getRADMaterialString('000_Interior_Floor')
