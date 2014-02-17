@@ -4,33 +4,22 @@
 # under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
 
 """
-Split Mass to Zones
+Convert Mass to Honeybee Zones
 -
 Provided by Honeybee 0.0.50
 
     Args:
-        bldgMasses: List of closed Breps as thermal zones.
-        bldgsFlr2FlrHeights: List of buildings floor heights for the geometries
-        bldgsFloorProgram: List of building floor programs. A default schedule, construction,
-                           and HVAC system will be applied based on the program. In the coming versions
-                           users will be able to overwrite these inputs.
-        openingsPercentage: list of openings percentage based on orientation
-                            North, South, East, West, Roof
-        perimeterDepth: Number for parameter zones depth
-        shadingAndContext: Geometris as context and/or shading surfaces (Mesh or Brep)
-        createThermalZones: Boolean to generate the zones
-        ------------------------: separator
-        epwFileAddress: epw file address as a string
-        bldgsFloorProgram: sth.
-        customOutput: sth.
-        idfFileAddresss: The address to save the idf file
-        writeIdf: Boolean to write the idf file
-        runEnergyPlus: Run the simulation
+        _bldgMasses: List of closed Breps
+        bldgsFlr2FlrHeights_: List of buildings floor heights for the geometries
+        bldgsFloorProgram_: List of building floor programs. Default schedule, construction, and HVAC system will be applied based on the program
+                           In this version of Honeybee just leave it empty as it won't effect Daylighting simulation.
+        isConditioned_: List of Booleans to indicate if the space is conditioned
+        maximumRoofAngle_: Maximum angle from z vector that the surface will be assumed as a roof. Default is 30 degrees
+        projectName_: Name of the project
+        _createHoneybeeZones: Set Boolean to True to generate the zones
     Returns:
-        report: ...
-        thermalZones: Thermal zone's geometries for visualiza
-        resultFileAddress: Provide the address to the result file. Only available if runEnergyPlus
-                           is set to True
+        readMe!: ...
+        HBZones: Honeybee zones in case of success
 """
 
 import rhinoscriptsyntax as rs
@@ -326,7 +315,7 @@ class Building(object):
 
 ################################################################################
 
-def main(maximumRoofAngle):
+def main(maximumRoofAngle, bldgMasses, bldgsFlr2FlrHeights, isConditioned, projectName):
         # import the classes
         if sc.sticky.has_key('ladybug_release')and sc.sticky.has_key('honeybee_release'):
             lb_preparation = sc.sticky["ladybug_Preparation"]()
@@ -406,7 +395,7 @@ def main(maximumRoofAngle):
                         if srfCount == len(splitterSrfs) - 1:
                             pass
                         else:
-                            msg = 'This mass is problamatic...'
+                            msg = 'One of the masses is causing a problem. Check HBZones output for the mass that causes the problem.'
                             print msg
                             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
                             return [restOfmass, -1]
@@ -471,12 +460,12 @@ def main(maximumRoofAngle):
         ################################################################################################
 
 
-if createThermalZones == True:
+if _createHoneybeeZones == True:
     
-    try:  maximumRoofAngle = float(maximumRoofAngle)
+    try:  maximumRoofAngle = float(maximumRoofAngle_)
     except: maximumRoofAngle = 30
     
-    result= main(maximumRoofAngle)
+    result= main(maximumRoofAngle, _bldgMasses, bldgsFlr2FlrHeights_, isConditioned_, projectName_)
     
     if result!= []:
         if isinstance(result, list) and len(result)>1 and result[1]==-1:
