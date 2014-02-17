@@ -17,7 +17,7 @@ Read Annual Daylight Results II [Daysim]
 """
 ghenv.Component.Name = "Honeybee_Read Annual Result II"
 ghenv.Component.NickName = 'readAnnualResultsII'
-ghenv.Component.Message = 'VER 0.0.43\nFEB_08_2014'
+ghenv.Component.Message = 'VER 0.0.44\nFEB_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
