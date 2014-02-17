@@ -1,7 +1,12 @@
+# By Mostapha Sadeghipour Roudsari
+# Sadeghipour@gmail.com
+# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
+# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+
 """
 Daysim electrical lighting control. Check this link for more information about lighting control types. http://daysim.ning.com/page/keyword-lighting-control
 -
-Provided by Honybee 0.0.35
+Provided by Honeybee 0.0.50
     
     Returns:
         lightingControlGroup: Lighting control Recipe
@@ -9,7 +14,7 @@ Provided by Honybee 0.0.35
 
 ghenv.Component.Name = "Honeybee_Lighting control Recipe"
 ghenv.Component.NickName = 'lightingControl'
-ghenv.Component.Message = 'VER 0.0.43\nFEB_10_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "5"

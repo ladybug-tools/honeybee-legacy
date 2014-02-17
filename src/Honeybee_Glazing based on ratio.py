@@ -7,7 +7,6 @@
 
 """
 Generate window based on a desired percentage of glazing and possibly other inputs such as window height and sill height.
-
 -
 Provided by Honeybee 0.0.50
     
@@ -25,7 +24,7 @@ Provided by Honeybee 0.0.50
 
 ghenv.Component.Name = "Honeybee_Glazing based on ratio"
 ghenv.Component.NickName = 'glazingCreator'
-ghenv.Component.Message = 'VER 0.0.44\nFEB_15_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 ghenv.Component.AdditionalHelpFromDocStrings = "3"

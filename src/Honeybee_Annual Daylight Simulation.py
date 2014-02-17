@@ -1,7 +1,12 @@
+# By Mostapha Sadeghipour Roudsari
+# Sadeghipour@gmail.com
+# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
+# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+
 """
 Analysis Recipe for Annual Daylighting Simulation
 -
-Provided by Honybee 0.0.10
+Provided by Honeybee 0.0.50
     
     Args:
         _epwWeatherFile: epw weather file address on your system
@@ -15,7 +20,7 @@ Provided by Honybee 0.0.10
 
 ghenv.Component.Name = "Honeybee_Annual Daylight Simulation"
 ghenv.Component.NickName = 'annualDaylightSimulation'
-ghenv.Component.Message = 'VER 0.0.45\nFEB_10_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "3 | Daylight | Recipes"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"

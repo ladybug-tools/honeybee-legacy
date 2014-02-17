@@ -1,7 +1,12 @@
+# By Mostapha Sadeghipour Roudsari
+# Sadeghipour@gmail.com
+# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
+# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+
 """
 Set Exposure for HDR
 -
-Provided by Honybee 0.0.10
+Provided by Honeybee 0.0.50
     
     Args:
         HDRFilePath: Path to an HDR image file
@@ -14,7 +19,7 @@ Provided by Honybee 0.0.10
 
 ghenv.Component.Name = "Honeybee_Set Exposure for HDR"
 ghenv.Component.NickName = 'setHDRExposure'
-ghenv.Component.Message = 'VER 0.0.43\nFEB_14_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "3"

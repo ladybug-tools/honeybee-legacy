@@ -1,5 +1,13 @@
+# By Mostapha Sadeghipour Roudsari
+# Sadeghipour@gmail.com
+# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
+# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+
 """
 Read Daysim result for a test point
+
+-
+Provided by Honeybee 0.0.50
 
     Args:
         _illFilesAddress: List of .ill files
@@ -14,7 +22,7 @@ Read Daysim result for a test point
 """
 ghenv.Component.Name = "Honeybee_Read DS Result for a point"
 ghenv.Component.NickName = 'readDSHourlyResults'
-ghenv.Component.Message = 'VER 0.0.45\nFEB_10_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -273,3 +281,4 @@ if _targetPoint!=None and not isAllNone(_illFilesAddress) and not isAllNone(_tes
                 
 
         iIlluminanceBasedOnOccupancy.AddRange(mixResults)
+

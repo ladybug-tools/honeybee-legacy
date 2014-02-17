@@ -1,7 +1,12 @@
+# By Mostapha Sadeghipour Roudsari
+# Sadeghipour@gmail.com
+# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
+# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+
 """
 Genrate Test Points
 -
-Provided by Honybee 0.0.50
+Provided by Honeybee 0.0.50
     
     Args:
         testSurface: Test surface as a Brep
@@ -17,7 +22,7 @@ Provided by Honybee 0.0.50
 
 ghenv.Component.Name = "Honeybee_Generate Test Points"
 ghenv.Component.NickName = 'genTestPts'
-ghenv.Component.Message = 'VER 0.0.43\nFEB_09_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "3 | Daylight | Recipes"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -122,3 +127,4 @@ if testSurface!=None and gridSize!=None and distBaseSrf!=None:
     
         testPoints, ptsVectors, facesArea = getTestPts(inputMesh, distBaseSrf)
         mesh = inputMesh
+

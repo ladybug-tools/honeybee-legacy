@@ -1,3 +1,8 @@
+# By Mostapha Sadeghipour Roudsari
+# Sadeghipour@gmail.com
+# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
+# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+
 """
 Glare Analysis
 
@@ -8,7 +13,7 @@ Check this link for more information about glare analysis. Thanks to Christoph R
 http://web.mit.edu/tito_/www/Projects/Glare/GlareRecommendationsForPractice.html
 
 -
-Provided by Honybee 0.0.50
+Provided by Honeybee 0.0.50
     
     Args:
         _HDRImagePath: Path to an HDR image file
@@ -26,7 +31,7 @@ Provided by Honybee 0.0.50
 
 ghenv.Component.Name = "Honeybee_Glare Analysis"
 ghenv.Component.NickName = 'glareAnalysis'
-ghenv.Component.Message = 'VER 0.0.43\nFEB_10_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "5"

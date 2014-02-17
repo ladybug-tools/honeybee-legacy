@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.50
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.50\nFEB_15_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"

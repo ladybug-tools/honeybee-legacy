@@ -1,9 +1,14 @@
+# By Mostapha Sadeghipour Roudsari
+# Sadeghipour@gmail.com
+# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
+# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+
 """
 Analysis Recipie for Vertical Sky Component
 
 The idea Based on this discussion on RADIANCE: http://www.radiance-online.org/pipermail/radiance-general/2006-September/004017.html
 -
-Provided by Honybee 0.0.10
+Provided by Honeybee 0.0.50
     
     Args:
         _testPoints: Test points
@@ -15,7 +20,7 @@ Provided by Honybee 0.0.10
 
 ghenv.Component.Name = "Honeybee_Vertical Sky Component"
 ghenv.Component.NickName = 'verticalSkyComponent'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_24_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "3 | Daylight | Recipes"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -217,5 +222,6 @@ else:
     w = gh.GH_RuntimeMessageLevel.Warning
     ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee to fly...")
     radParameters = []
+
 
 

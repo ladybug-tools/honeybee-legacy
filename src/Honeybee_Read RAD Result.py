@@ -1,5 +1,13 @@
+# By Mostapha Sadeghipour Roudsari
+# Sadeghipour@gmail.com
+# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
+# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+
 """
 Read Radiance Results
+
+-
+Provided by Honeybee 0.0.50
 
     Args:
         _resultFilesAddress: A list of result files
@@ -14,7 +22,7 @@ Read Radiance Results
 """
 ghenv.Component.Name = "Honeybee_Read RAD Result"
 ghenv.Component.NickName = 'readRADResults'
-ghenv.Component.Message = 'VER 0.0.43\nFEB_16_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"

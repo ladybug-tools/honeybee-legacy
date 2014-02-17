@@ -1,9 +1,13 @@
+# By Mostapha Sadeghipour Roudsari
+# Sadeghipour@gmail.com
+# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
+# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+
 """
 Radiance Materials Info
-
 -
-Provided by Honybee 0.0.36
-    
+Provided by Honeybee 0.0.50
+
     Args:
         RADMaterial: Radiance material name
     Returns:
@@ -13,7 +17,7 @@ Provided by Honybee 0.0.36
 
 ghenv.Component.Name = "Honeybee_Radiance Materials Info"
 ghenv.Component.NickName = 'RADMaterialsInfo'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_24_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "1 | Daylight | Material"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -37,3 +41,4 @@ else:
     print "You should first let Honeybee to fly..."
     w = gh.GH_RuntimeMessageLevel.Warning
     ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee to fly...")
+

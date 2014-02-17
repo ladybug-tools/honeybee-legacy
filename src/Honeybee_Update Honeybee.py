@@ -1,16 +1,16 @@
 # By Mostapha Sadeghipour Roudsari
 # Sadeghipour@gmail.com
-# Ladybug started by Mostapha Sadeghipour Roudsari is licensed
+# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
 # under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
 
 """
-This component [removes | updates] Ladybug components from [grasshopper | a source folder]
+This component [removes | updates] Honeybee components from [grasshopper | a source folder]
 -
-Provided by Ladybug 0.0.53
-    
+Provided by Honeybee 0.0.50
+
     Args:
-        sourceDirectory_: Optional address to a folder that contains Ladybug updated userObjects. If None the component will download the latest version from GitHUB.
-        _updateThisFile: Set to True if you want the Ladybug components in this file be updated from the source directory
+        sourceDirectory_: Optional address to a folder that contains Honeybee updated userObjects. If None the component will download the latest version from GitHUB.
+        _updateThisFile: Set to True if you want the Honeybee components in this file be updated from the source directory
         _updateAllUObjects: Set to True to sync all the Ladybug and Honeybee userObjects
     Returns:
         readMe!: ...
@@ -18,7 +18,7 @@ Provided by Ladybug 0.0.53
 
 ghenv.Component.Name = "Honeybee_Update Honeybee"
 ghenv.Component.NickName = 'updateHoneybee'
-ghenv.Component.Message = 'VER 0.0.42\nJan_24_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "6 | Developers"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -38,16 +38,23 @@ def downloadSourceAndUnzip():
     url = "https://github.com/mostaphaRoudsari/honeybee/archive/master.zip"
     targetDirectory = "c:/ladybug/honeybeeSrc"
     
-    # create the target directory
-    if not os.path.isdir(targetDirectory): os.mkdir(targetDirectory)
     
     # download the zip file
     print "Downloading the source code..."
     zipFile = os.path.join(targetDirectory, os.path.basename(url))
     
     # if the source file is just downloded then just use the available file
-    if os.path.isfile(zipFile) and time.time() - os.stat(zipFile).st_mtime < 10000: download = False
-    else: download = True
+    if os.path.isfile(zipFile) and time.time() - os.stat(zipFile).st_mtime < 1000: download = False
+    else:
+        download = True
+        try:
+            os.rmdir(os.path.join(targetDirectory, r"honeybee-master\userObjects"))
+        except:
+            pass
+    
+    
+    # create the target directory
+    if not os.path.isdir(targetDirectory): os.mkdir(targetDirectory)
     
     if download:
         webFile = urllib.urlopen(url)
@@ -210,3 +217,4 @@ if _updateThisFile or _updateAllUObjects:
         print msg
 else:
     print " "
+

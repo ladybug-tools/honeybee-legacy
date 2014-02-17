@@ -1,12 +1,16 @@
+# By Mostapha Sadeghipour Roudsari
+# Sadeghipour@gmail.com
+# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
+# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+
 """
 This component generate a cumulative sky using GenCumulativeSky.exe. Only and only use it for radiation analysis (no daylighting!)
 GenCumulativeSky is developed by Darren Robinson and Andrew Stone, and modified by Christoph Reinhart.
 For more information, reference: "http://plea-arch.net/PLEA/ConferenceResources/PLEA2004/Proceedings/p1153final.pdf"
 
-The first time you use this component, you need to be connected to the internet so the component can download GenCumulativeSky.exe
-to the working directory.
+The first time you use this component, you need to be connected to the internet so the component can download GenCumulativeSky.exe to the working directory.
 -
-Provided by Honeybee 0.0.10
+Provided by Honeybee 0.0.50
     
     Args:
         _weatherFile: epw weather file address on your system
@@ -18,7 +22,7 @@ Provided by Honeybee 0.0.10
 
 ghenv.Component.Name = "Honeybee_Generate Cumulative Sky"
 ghenv.Component.NickName = 'genCumSky'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_26_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "2 | Daylight | Sky"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"

@@ -1,9 +1,14 @@
+# By Mostapha Sadeghipour Roudsari
+# Sadeghipour@gmail.com
+# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
+# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+
 """
 Genrate Climate Based Sky
 
 This component generate a climate based sky for any hour of the year
 -
-Provided by Honybee 0.0.10
+Provided by Honeybee 0.0.50
     
     Args:
         _weatherFile: epw weather file address on your system
@@ -17,7 +22,7 @@ Provided by Honybee 0.0.10
 
 ghenv.Component.Name = "Honeybee_Generate Climate Based Sky"
 ghenv.Component.NickName = 'genClimateBasedSky'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_26_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "2 | Daylight | Sky"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"

@@ -1,3 +1,8 @@
+# By Mostapha Sadeghipour Roudsari
+# Sadeghipour@gmail.com
+# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
+# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+
 # Glazing Parameters Component
 # By Chris Mackey
 # Chris@MackeyArchitecture.com
@@ -8,7 +13,7 @@
 Use this component to generate lists of glazing ratios, window heigths, and sill heights for different cardinal directions to be plugged into the glzRatio, windowHeight, and sillHeight inputs of the "Glazing based on ratio" component.
 
 -
-Provided by Honeybee
+Provided by Honeybee 0.0.50
 
     Args:
         northGlzRatio: Glazing ratio for the north side of a building.
@@ -33,7 +38,7 @@ Provided by Honeybee
 """
 ghenv.Component.Name = "Honeybee_Glazing Parameters List"
 ghenv.Component.NickName = 'glzParamList'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_24_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 ghenv.Component.AdditionalHelpFromDocStrings = "3"

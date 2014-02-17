@@ -1,9 +1,14 @@
+# By Mostapha Sadeghipour Roudsari
+# Sadeghipour@gmail.com
+# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
+# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+
 """
 Radiance Mirror Material
 Read more here to understand Radiance materials: http://www.artifice.com/radiance/rad_materials.html
 -
-Provided by Honybee 0.0.10
-    
+Provided by Honeybee 0.0.50
+
     Args:
         materialName: Unique name for this material
         RReflectance: Diffuse reflectance for red
@@ -16,7 +21,7 @@ Provided by Honybee 0.0.10
 
 ghenv.Component.Name = "Honeybee_Radiance Mirror Material"
 ghenv.Component.NickName = 'radMirrorMaterial'
-ghenv.Component.Message = 'VER 0.0.42\nFEB_04_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "1 | Daylight | Material"
 ghenv.Component.AdditionalHelpFromDocStrings = "0"
@@ -75,3 +80,4 @@ else:
     print "You should first let Honeybee to fly..."
     w = gh.GH_RuntimeMessageLevel.Warning
     ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee to fly...")
+

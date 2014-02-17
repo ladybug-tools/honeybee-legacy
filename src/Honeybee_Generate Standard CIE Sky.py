@@ -1,7 +1,12 @@
+# By Mostapha Sadeghipour Roudsari
+# Sadeghipour@gmail.com
+# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
+# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+
 """
 Genrate Standard CIE Sky
 -
-Provided by Honybee 0.0.45
+Provided by Honeybee 0.0.50
     
     Args:
         _weatherFile: epw file location on your system as a string
@@ -16,7 +21,7 @@ Provided by Honybee 0.0.45
 
 ghenv.Component.Name = "Honeybee_Generate Standard CIE Sky"
 ghenv.Component.NickName = 'genStandardCIESky'
-ghenv.Component.Message = 'VER 0.0.42\nFEB_01_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "2 | Daylight | Sky"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"

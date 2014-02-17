@@ -1,8 +1,13 @@
+# By Mostapha Sadeghipour Roudsari
+# Sadeghipour@gmail.com
+# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
+# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+
 """
-Create HBSurface
-    
-    Create a Honeybee surface
-    
+Create a Honeybee surface
+-
+Provided by Honeybee 0.0.50
+
     Args:
         _geometry: List of Breps
         srfType_: Optional input for surface type > 0:'WALL', 1:'ROOF', 2:'FLOOR', 3:'CEILING', 4:'WINDOW'
@@ -26,7 +31,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_createHBSrfs'
 ghenv.Component.NickName = 'createHBSrfs'
-ghenv.Component.Message = 'VER 0.0.45\nFEB_03_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"

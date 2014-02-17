@@ -1,7 +1,12 @@
+# By Mostapha Sadeghipour Roudsari
+# Sadeghipour@gmail.com
+# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
+# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+
 """
 Convert HDR to TIF
 -
-Provided by Honybee 0.0.10
+Provided by Honeybee 0.0.50
     
     Args:
         HDRFilePath: Path to an HDR image file
@@ -13,7 +18,7 @@ Provided by Honybee 0.0.10
 
 ghenv.Component.Name = "Honeybee_Convert HDR to TIF"
 ghenv.Component.NickName = 'HDR > TIF'
-ghenv.Component.Message = 'VER 0.0.48\nFEb_11_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -102,3 +107,4 @@ def main():
         return
 
 if HDRFilePath!=None: TIFFFilePath = main()
+

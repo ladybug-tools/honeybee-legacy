@@ -1,7 +1,12 @@
+# By Mostapha Sadeghipour Roudsari
+# Sadeghipour@gmail.com
+# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
+# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+
 """
 Analysis Recipie for Image-Based Analysis
 -
-Provided by Honybee 0.0.10
+Provided by Honeybee 0.0.50
     
     Args:
         _skyFile: Path to a radiance sky file
@@ -20,7 +25,7 @@ Provided by Honybee 0.0.10
 
 ghenv.Component.Name = "Honeybee_Image Based Simulation"
 ghenv.Component.NickName = 'imageBasedSimulation'
-ghenv.Component.Message = 'VER 0.0.44\nFEB_06_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "3 | Daylight | Recipes"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -143,5 +148,6 @@ if _skyFile:
     
     if recipe.skyFile != None:
         analysisRecipe = recipe
+
 
 

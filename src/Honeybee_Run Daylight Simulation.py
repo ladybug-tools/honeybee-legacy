@@ -1,5 +1,13 @@
+# By Mostapha Sadeghipour Roudsari
+# Sadeghipour@gmail.com
+# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
+# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+
 """
 export geometries to rad file, and run daylighting/energy simulation
+
+-
+Provided by Honeybee 0.0.50
 
     Args:
         north_: ...
@@ -27,7 +35,7 @@ export geometries to rad file, and run daylighting/energy simulation
 
 ghenv.Component.Name = "Honeybee_Run Daylight Simulation"
 ghenv.Component.NickName = 'runDaylightAnalysis'
-ghenv.Component.Message = 'VER 0.0.51\nFEB_15_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"

@@ -1,10 +1,15 @@
+# By Mostapha Sadeghipour Roudsari
+# Sadeghipour@gmail.com
+# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
+# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+
 """
 Radiance Trans Material
 
 This component is useful to create translucent materials. Many thanks to David Mead for his slides at:
 http://radiance-online.org/community/workshops/2010-freiburg/PDF/DavidMead.pdf
 -
-Provided by Honybee 0.0.10
+Provided by Honeybee 0.0.50
     
     Args:
         _materialName: Unique name for this material
@@ -21,7 +26,7 @@ Provided by Honybee 0.0.10
 
 ghenv.Component.Name = "Honeybee_Radiance Trans Material By Color"
 ghenv.Component.NickName = 'radTransMaterialByColor'
-ghenv.Component.Message = 'VER 0.0.42\nFEB_02_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "1 | Daylight | Material"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"

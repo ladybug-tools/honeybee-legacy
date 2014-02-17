@@ -1,8 +1,13 @@
+# By Mostapha Sadeghipour Roudsari
+# Sadeghipour@gmail.com
+# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
+# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+
 """
 Conceptual Shading Recipe for Annual Simulation with Daysim
 You need to add sensor points later in the Daysim result reader.
 -
-Provided by Honybee 0.0.35
+Provided by Honeybee 0.0.50
     
     Args:
         This sensors will be triggered by the 50 W/m2 threshold. "When lowered the blinds transmit 25% of diffuse daylight and block all direct solar radiation."
@@ -14,7 +19,7 @@ Provided by Honybee 0.0.35
 
 ghenv.Component.Name = "Honeybee_Conceptual Dynamic Shading Recipe"
 ghenv.Component.NickName = 'conceptualDynamicSHDRecipe'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_24_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "3 | Daylight | Recipes"
 ghenv.Component.AdditionalHelpFromDocStrings = "3"

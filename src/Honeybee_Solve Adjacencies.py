@@ -1,7 +1,12 @@
+# By Mostapha Sadeghipour Roudsari
+# Sadeghipour@gmail.com
+# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
+# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+
 """
 Solve adjacencies
 -
-Provided by Honeybee 0.0.42
+Provided by Honeybee 0.0.50
 
     Args:
         _HBZones: List of Honeybee zones
@@ -13,7 +18,7 @@ Provided by Honeybee 0.0.42
 """
 ghenv.Component.Name = "Honeybee_Solve Adjacencies"
 ghenv.Component.NickName = 'solveAdjc'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_30_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 ghenv.Component.AdditionalHelpFromDocStrings = "3"

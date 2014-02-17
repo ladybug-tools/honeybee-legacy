@@ -1,7 +1,12 @@
+# By Mostapha Sadeghipour Roudsari
+# Sadeghipour@gmail.com
+# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
+# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+
 """
 Analyses Recipe for Annual Daylight Simulation with Daysim
 -
-Provided by Honybee 0.0.35
+Provided by Honeybee 0.0.50
     
     Args:
         outputUnits: A list of numbers to indicate output units for test points. Defualt is 2. [0] visible irradiance(W/m2), [1] solar irradiance (W/m2), [2] illumiance (lux)
@@ -15,7 +20,7 @@ Provided by Honybee 0.0.35
 
 ghenv.Component.Name = "Honeybee_DSParameters"
 ghenv.Component.NickName = 'DSParameters'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_24_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "3 | Daylight | Recipes"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -107,3 +112,4 @@ if len(RhinoViewsName)!= 0:
     
 if msg != None:
     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Error, msg)                
+

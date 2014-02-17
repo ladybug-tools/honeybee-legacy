@@ -1,8 +1,13 @@
+# By Mostapha Sadeghipour Roudsari
+# Sadeghipour@gmail.com
+# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
+# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+
 """
 Add Radiance Materials to Library
 
 -
-Provided by Honybee 0.0.36
+Provided by Honeybee 0.0.50
     
     Args:
         RADMaterial: Radiance material definition
@@ -16,7 +21,7 @@ Provided by Honybee 0.0.36
 
 ghenv.Component.Name = "Honeybee_Add to Radiance Library"
 ghenv.Component.NickName = 'addToLibrary'
-ghenv.Component.Message = 'VER 0.0.44\nFEB_15_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "1 | Daylight | Material"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"

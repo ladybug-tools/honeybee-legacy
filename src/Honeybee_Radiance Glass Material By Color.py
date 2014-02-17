@@ -1,10 +1,14 @@
+# By Mostapha Sadeghipour Roudsari
+# Sadeghipour@gmail.com
+# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
+# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+
 """
 Radiance Glass Material By Color
 Read more here to understand Radiance materials: http://www.artifice.com/radiance/rad_materials.html
-
 -
-Provided by Honybee 0.0.10
-    
+Provided by Honeybee 0.0.50
+
     Args:
         materialName: Unique name for this material
         color: color of the glass
@@ -17,7 +21,7 @@ Provided by Honybee 0.0.10
 
 ghenv.Component.Name = "Honeybee_Radiance Glass Material By Color"
 ghenv.Component.NickName = 'radGlassMaterialByColor'
-ghenv.Component.Message = 'VER 0.0.42\nFEB_02_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "1 | Daylight | Material"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -68,3 +72,4 @@ else:
     print "You should first let both Ladybug and Honeybee to fly..."
     w = gh.GH_RuntimeMessageLevel.Warning
     ghenv.Component.AddRuntimeMessage(w, "You should first let both Ladybug and Honeybee to fly...")
+

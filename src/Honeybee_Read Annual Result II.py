@@ -1,5 +1,13 @@
+# By Mostapha Sadeghipour Roudsari
+# Sadeghipour@gmail.com
+# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
+# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+
 """
 Read Annual Daylight Results II [Daysim]
+
+-
+Provided by Honeybee 0.0.50
 
     Args:
         resultFilesAddress: List of .ill files
@@ -17,7 +25,7 @@ Read Annual Daylight Results II [Daysim]
 """
 ghenv.Component.Name = "Honeybee_Read Annual Result II"
 ghenv.Component.NickName = 'readAnnualResultsII'
-ghenv.Component.Message = 'VER 0.0.44\nFEB_16_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -114,3 +122,4 @@ if (testPts.DataCount!=0 or not isAllNone(testPts.AllData())) and resultFilesAdd
             inTheRange.Add(values[ptCount], p)
             moreThanRange.Add("%.2f"%overValues[ptCount], p)
             ptCount += 1
+

@@ -1,5 +1,13 @@
+# By Mostapha Sadeghipour Roudsari
+# Sadeghipour@gmail.com
+# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
+# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+
 """
 Read Annual Daylight Results I [Standard Daysim Results]
+
+-
+Provided by Honeybee 0.0.50
 
     Args:
         _illFilesAddress: List of .ill files
@@ -21,7 +29,7 @@ Read Annual Daylight Results I [Standard Daysim Results]
 """
 ghenv.Component.Name = "Honeybee_Read Annual Result I"
 ghenv.Component.NickName = 'readAnnualResultsI'
-ghenv.Component.Message = 'VER 0.0.46\nFEB_16_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -684,3 +692,4 @@ if _runIt and not isAllNone(_illFilesAddress) and not isAllNone(_testPoints):
             sDA.Add(getsDAResult(DLALists[branchNum]), p)
             htmReport.Add(htmLists[branchNum], p)
                 
+

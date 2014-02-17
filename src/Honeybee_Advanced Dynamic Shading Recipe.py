@@ -1,8 +1,13 @@
+# By Mostapha Sadeghipour Roudsari
+# Sadeghipour@gmail.com
+# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
+# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+
 """
 Advanced Shading Recipe for Annual Simulation with Daysim. This component prepares one shading group
 You need to add sensor points later in the Daysim result reader.
 -
-Provided by Honybee 0.0.35
+Provided by Honeybee 0.0.50
     
     Args:
         SHDGroupName: Unique name of this shading group
@@ -14,7 +19,7 @@ Provided by Honybee 0.0.35
 
 ghenv.Component.Name = "Honeybee_Advanced Dynamic Shading Recipe"
 ghenv.Component.NickName = 'advancedDynamicSHDRecipe'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_24_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "3 | Daylight | Recipes"
 ghenv.Component.AdditionalHelpFromDocStrings = "3"

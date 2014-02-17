@@ -1,3 +1,8 @@
+# By Mostapha Sadeghipour Roudsari
+# Sadeghipour@gmail.com
+# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
+# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+
 """
 Radiance Parameters - Standard
 Check here for more details: http://radsite.lbl.gov/radiance/refer/Notes/rpict_options.html
@@ -5,7 +10,7 @@ Read more about the parameters at: http://daysim.ning.com/
 Here is my favorite presentation by John Mardaljevic: http://radiance-online.org/community/workshops/2011-berkeley-ca/presentations/day1/JM_AmbientCalculation.pdf
 
 -
-Provided by Honybee 0.0.50
+Provided by Honeybee 0.0.50
     
     Args:
         _quality: 0 > low, 1 > Medium, 2 > High
@@ -19,7 +24,7 @@ Provided by Honybee 0.0.50
 
 ghenv.Component.Name = "Honeybee_RADParameters"
 ghenv.Component.NickName = 'RADParameters'
-ghenv.Component.Message = 'VER 0.0.45\nFEB_10_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "3 | Daylight | Recipes"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"

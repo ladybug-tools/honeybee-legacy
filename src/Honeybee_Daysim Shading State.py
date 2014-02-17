@@ -1,7 +1,12 @@
+# By Mostapha Sadeghipour Roudsari
+# Sadeghipour@gmail.com
+# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
+# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+
 """
 Daysim Shading State for Advanced Dynamic Shading
 -
-Provided by Honybee 0.0.35
+Provided by Honeybee 0.0.50
     
     Args:
         shdHBObjects: A list of HB Objects that define the shading geometry and materials
@@ -14,7 +19,7 @@ Provided by Honybee 0.0.35
 
 ghenv.Component.Name = "Honeybee_Daysim Shading State"
 ghenv.Component.NickName = 'DSShadingState'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_24_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "3 | Daylight | Recipes"
 ghenv.Component.AdditionalHelpFromDocStrings = "3"

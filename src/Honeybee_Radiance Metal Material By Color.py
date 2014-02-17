@@ -1,12 +1,16 @@
+# By Mostapha Sadeghipour Roudsari
+# Sadeghipour@gmail.com
+# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
+# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+
 """
 Radiance Metal Material By Color
 
 Create a Standard Radiance Metal Material. Many thanks to Axel Jacobs for his help and all the great resources he provided at jaloxa.eu
 Check out the color picker to see some great examples > http://www.jaloxa.eu/resources/radiance/colour_picker/index.shtml
-
 -
-Provided by Honybee 0.0.10
-    
+Provided by Honeybee 0.0.50
+
     Args:
         color: Material color
         roughness: Roughness values above 0.2 are uncommon
@@ -19,7 +23,7 @@ Provided by Honybee 0.0.10
 
 ghenv.Component.Name = "Honeybee_Radiance Metal Material By Color"
 ghenv.Component.NickName = 'radMetalMaterialByColor'
-ghenv.Component.Message = 'VER 0.0.42\nFEB_02_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "1 | Daylight | Material"
 ghenv.Component.AdditionalHelpFromDocStrings = "0"
@@ -70,3 +74,4 @@ else:
     w = gh.GH_RuntimeMessageLevel.Warning
     ghenv.Component.AddRuntimeMessage(w, "You should first let both Ladybug and Honeybee to fly...")
     
+

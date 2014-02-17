@@ -1,7 +1,12 @@
+# By Mostapha Sadeghipour Roudsari
+# Sadeghipour@gmail.com
+# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
+# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+
 """
 Genrate a Uniform CIE Sky Based on Illuminace Value
 -
-Provided by Honybee 0.0.10
+Provided by Honeybee 0.0.50
     
     Args:
         _illuminanceValue : Desired value for horizontal sky illuminance in Lux
@@ -12,7 +17,7 @@ Provided by Honybee 0.0.10
 
 ghenv.Component.Name = "Honeybee_Generate Sky With Certain Illuminance level"
 ghenv.Component.NickName = 'genSkyIlluminanceLevel'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_24_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "2 | Daylight | Sky"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"

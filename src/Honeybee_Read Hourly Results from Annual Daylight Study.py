@@ -1,5 +1,13 @@
+# By Mostapha Sadeghipour Roudsari
+# Sadeghipour@gmail.com
+# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
+# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+
 """
 Read the results of the annual study for a single hour of the year
+
+-
+Provided by Honeybee 0.0.50
 
     Args:
         _illFilesAddress: List of .ill files
@@ -15,7 +23,7 @@ Read the results of the annual study for a single hour of the year
 """
 ghenv.Component.Name = "Honeybee_Read Hourly Results from Annual Daylight Study"
 ghenv.Component.NickName = 'readDSHourlyResults'
-ghenv.Component.Message = 'VER 0.0.44\nFEB_11_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -195,3 +203,4 @@ if _HOY!=None and _illFilesAddress.DataCount!=0 and _illFilesAddress.Branch(0)[0
             iIlluminanceBasedOnOccupancy.AddRange(illuminanceValues[blindsGroupInEffect][sum(numOfPtsInEachSpace[:spaceCount]):sum(numOfPtsInEachSpace[:spaceCount+1])], p)
             
             shadingGroupInEffect =  blindsGroupInEffect
+

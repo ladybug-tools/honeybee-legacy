@@ -1,12 +1,16 @@
+# By Mostapha Sadeghipour Roudsari
+# Sadeghipour@gmail.com
+# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
+# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+
 """
 Radiance Opaque Material By Color
 
 Create a Standard Radiance Opaque Material. Many thanks to Axel Jacobs for his help and all the great resources he provided at jaloxa.eu
 Check out the color picker to see some great examples > http://www.jaloxa.eu/resources/radiance/colour_picker/index.shtml
-
 -
-Provided by Honybee 0.0.10
-    
+Provided by Honeybee 0.0.50
+
     Args:
         color: Material color
         roughness: Roughness values above 0.2 are uncommon
@@ -19,7 +23,7 @@ Provided by Honybee 0.0.10
 
 ghenv.Component.Name = "Honeybee_Radiance Opaque Material By Color"
 ghenv.Component.NickName = 'radOpaqueMaterialByColor'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_24_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "1 | Daylight | Material"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -72,3 +76,4 @@ else:
     w = gh.GH_RuntimeMessageLevel.Warning
     ghenv.Component.AddRuntimeMessage(w, "You should first Honeybee to fly...")
     
+

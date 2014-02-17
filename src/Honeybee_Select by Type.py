@@ -1,7 +1,12 @@
+# By Mostapha Sadeghipour Roudsari
+# Sadeghipour@gmail.com
+# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
+# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+
 """
 Select surfaces by type
 -
-Provided by Honeybee 0.0.42
+Provided by Honeybee 0.0.50
     Args:
         _HBZones: Honeybee Zones
         _showWalls_: Set to true to output the walls
@@ -15,7 +20,7 @@ Provided by Honeybee 0.0.42
 """
 ghenv.Component.Name = "Honeybee_Select by Type"
 ghenv.Component.NickName = 'selByType'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_24_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 ghenv.Component.AdditionalHelpFromDocStrings = "4"

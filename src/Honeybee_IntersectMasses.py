@@ -1,7 +1,12 @@
+# By Mostapha Sadeghipour Roudsari
+# Sadeghipour@gmail.com
+# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
+# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+
 """
 Intersect masses
 -
-Provided by Honeybee 0.0.42
+Provided by Honeybee 0.0.50
 
     Args:
         bldgMassesBefore: ...
@@ -10,7 +15,7 @@ Provided by Honeybee 0.0.42
 """
 ghenv.Component.Name = "Honeybee_IntersectMasses"
 ghenv.Component.NickName = 'IntersectMass'
-ghenv.Component.Message = 'VER 0.0.42\nJAN_24_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -50,3 +55,4 @@ def main(bldgMassesBefore):
             
 if _bldgMassesBefore and _bldgMassesBefore[0]!=None:
     bldgMassesAfter = main(_bldgMassesBefore)
+
