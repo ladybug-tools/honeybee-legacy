@@ -474,5 +474,5 @@ if _createHoneybeeZones == True:
         elif result!=-1:
             zoneClasses = result 
             hb_hive = sc.sticky["honeybee_Hive"]()
-            HBZones  = hb_hive.addToHoneybeeHive(zoneClasses, ghenv.Component.InstanceGuid.ToString() + + str(uuid.uuid4()))
+            HBZones  = hb_hive.addToHoneybeeHive(zoneClasses, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
         
