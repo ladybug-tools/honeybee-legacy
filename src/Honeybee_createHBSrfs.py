@@ -116,7 +116,7 @@ def main(geometry, srfType, EPConstruction, RADMaterial):
     
     # add to the hive
     hb_hive = sc.sticky["honeybee_Hive"]()
-    HBSurface  = hb_hive.addToHoneybeeHive(HBSurfaces, ghenv.Component.InstanceGuid.ToString())
+    HBSurface  = hb_hive.addToHoneybeeHive(HBSurfaces, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
     
     return HBSurface
     

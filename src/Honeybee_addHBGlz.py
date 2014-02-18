@@ -87,7 +87,7 @@ def main(HBSurface, childSurfaces, EPConstruction, RADMaterial, tolerance):
                 HBSurface.addChildSrf(HBFenSrf)
         # send the HB surface back to the hive
         # add to the hive
-        HBSurface  = hb_hive.addToHoneybeeHive([HBSurface], ghenv.Component.InstanceGuid.ToString())
+        HBSurface  = hb_hive.addToHoneybeeHive([HBSurface], ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
         
         return HBSurface
         

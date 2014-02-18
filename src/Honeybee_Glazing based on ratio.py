@@ -33,6 +33,7 @@ import Rhino as rc
 import scriptcontext as sc
 import rhinoscriptsyntax as rs
 import math
+import uuid
 
 # all this only to graft the data at the end! booooooo
 from clr import AddReference
@@ -801,7 +802,7 @@ def main(windowHeight, sillHeight):
                 surface.hasChild = False
         #print HBZoneObjects
         #add zones to dictionary
-        ModifiedHBZones  = hb_hive.addToHoneybeeHive(HBZoneObjects, ghenv.Component.InstanceGuid.ToString())
+        ModifiedHBZones  = hb_hive.addToHoneybeeHive(HBZoneObjects, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
         
     return zonesWithOpeningsGeometry, ModifiedHBZones
 

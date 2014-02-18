@@ -77,7 +77,7 @@ def main(zoneName, zoneProgram, HBSurfaces, isConditioned):
     # create the zone from the surfaces
     HBZone.createZoneFromSurfaces()
     
-    HBZone  = hb_hive.addToHoneybeeHive([HBZone], ghenv.Component.InstanceGuid.ToString())
+    HBZone  = hb_hive.addToHoneybeeHive([HBZone], ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
     
     return HBZone 
 

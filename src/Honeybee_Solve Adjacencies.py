@@ -25,6 +25,7 @@ ghenv.Component.AdditionalHelpFromDocStrings = "3"
 
 import Rhino as rc
 import scriptcontext as sc
+import uuid
 
 def shootIt(rayList, geometry, tol = 0.01, bounce =1):
    # yaha! not to crash if someone pass a geometry instead of a list
@@ -105,7 +106,7 @@ def main(HBZones, tol):
                         srf.BC = srf.srfBC[srf.type]
     
     # add zones to dictionary
-    ModifiedHBZones  = hb_hive.addToHoneybeeHive(HBZoneObjects, ghenv.Component.InstanceGuid.ToString())
+    ModifiedHBZones  = hb_hive.addToHoneybeeHive(HBZoneObjects, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
     
     return ModifiedHBZones
 

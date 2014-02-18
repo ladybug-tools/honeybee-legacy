@@ -31,6 +31,7 @@ import System
 from clr import AddReference
 AddReference('Grasshopper')
 import Grasshopper.Kernel as gh
+import uuid
 
 #HBLibrariesPath = r"C:\Users\MSadeghipourroudsari\Dropbox\ladybug\honeybee\src"
 #if HBLibrariesPath not in sys.path: sys.path.append(HBLibrariesPath)
@@ -473,5 +474,5 @@ if _createHoneybeeZones == True:
         elif result!=-1:
             zoneClasses = result 
             hb_hive = sc.sticky["honeybee_Hive"]()
-            HBZones  = hb_hive.addToHoneybeeHive(zoneClasses, ghenv.Component.InstanceGuid.ToString())
+            HBZones  = hb_hive.addToHoneybeeHive(zoneClasses, ghenv.Component.InstanceGuid.ToString() + + str(uuid.uuid4()))
         
