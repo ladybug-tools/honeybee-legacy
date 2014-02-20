@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.50
 """
 ghenv.Component.Name = "Honeybee_Read Annual Result I"
 ghenv.Component.NickName = 'readAnnualResultsI'
-ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_20_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -193,7 +193,7 @@ def main(illFilesAddress, testPts, testVecs, occFiles, lightingControlGroups, SH
             illFiles = sorted(illFiles, key=lambda fileName: int(fileName.split(".")[-2].split("_")[-1]))
             originalIllFilesSorted.append(illFiles)
         except:
-            pass
+            originalIllFilesSorted = originalIllFiles
     
     
     # number of points should be the same in all the illfile lists
@@ -383,7 +383,15 @@ def main(illFilesAddress, testPts, testVecs, occFiles, lightingControlGroups, SH
             #illFileDict[shaidngGroupCounter]
             lenOfDCFiles = []
             for counter, illFile in enumerate(illFileList):
-                dcFile = illFile.replace(".ill", ".dc")
+                if illFile.endswith("_up.ill"):
+                    dcFile = illFile.replace("_up.ill", ".dc")
+                    
+                elif illFile.endswith("_down.ill"):
+                    dcFile = illFile.replace("_down.ill", ".dc")
+                    
+                else:
+                    dcFile = illFile.replace(".ill", ".dc")
+                    
                 lenOfDCFile = getFilelength(dcFile) - 6 #Daysim files has 6 lines as header
                 lenOfDCFiles.append(lenOfDCFile)
                 dcfile = open(dcFile, "r")

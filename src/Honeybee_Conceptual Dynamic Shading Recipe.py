@@ -19,7 +19,7 @@ Provided by Honeybee 0.0.50
 
 ghenv.Component.Name = "Honeybee_Conceptual Dynamic Shading Recipe"
 ghenv.Component.NickName = 'conceptualDynamicSHDRecipe'
-ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_20_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "3 | Daylight | Recipes"
 ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -29,6 +29,7 @@ class dynamicSHDRecipe(object):
     def __init__(self, type = 0, name = "conceptual_dynamic_shading"):
         self.type = type
         self.name = name
+        self.sensorPts = None
 
 dynamicShadingGroup = dynamicSHDRecipe(type = 0, name = "conceptual_dynamic_shading")
 

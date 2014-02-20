@@ -31,7 +31,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_createHBSrfs'
 ghenv.Component.NickName = 'createHBSrfs'
-ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_20_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -111,6 +111,8 @@ def main(geometry, srfType, EPConstruction, RADMaterial):
                 else:
                     # try to add the material to the library
                     addedToLib, HBSurface.RadMaterial = hb_RADMaterialAUX.analyseRadMaterials(RADMaterial, True)
+            
+            HBSurface.RadMaterial = RADMaterial
             
         HBSurfaces.append(HBSurface)
     
