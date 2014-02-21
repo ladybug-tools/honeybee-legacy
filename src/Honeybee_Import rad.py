@@ -17,17 +17,18 @@ Provided by Honeybee 0.0.50
 """
 ghenv.Component.Name = "Honeybee_Import rad"
 ghenv.Component.NickName = 'importRad'
-ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_20_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
 import Rhino as rc
 import rhinoscriptsyntax as rs
-import clr
 import scriptcontext as sc
-clr.AddReference("Grasshopper")
-import Grasshopper as gh
+import System
+import Grasshopper.Kernel as gh
+from Grasshopper import DataTree
+from Grasshopper.Kernel.Data import GH_Path
 telorance = sc.doc.ModelAbsoluteTolerance
 
 
@@ -57,8 +58,16 @@ def radLine2Srf(ptCrd):
     # it might look stupid but rc.Geometry.Polyline(ptOnPlane) doesn't work for self intersecting polylines
     if ptOnPlane[0]!= ptOnPlane[-1]: ptOnPlane.append(ptOnPlane[0])
     pl = rc.Geometry.Polyline(ptOnPlane).ToNurbsCurve()
+    
     # print pl
     if showWireframe: return pl
+    if len(ptOnPlane) == 5:
+        srf = rc.Geometry.Brep.CreateFromCornerPoints(ptOnPlane[0], ptOnPlane[1], ptOnPlane[2],ptOnPlane[3], sc.doc.ModelAbsoluteTolerance)
+        return srf
+    elif len(ptOnPlane) == 4:
+        srf = rc.Geometry.Brep.CreateFromCornerPoints(ptOnPlane[0], ptOnPlane[1], ptOnPlane[2], sc.doc.ModelAbsoluteTolerance)
+        return srf
+    
     plSeg = pl.DuplicateSegments()
     
     borderLines = []
@@ -76,9 +85,8 @@ def removeOutputs():
         #ghenv.Component.OnSolutionExpire(True)
         ghenv.Component.Attributes.Owner.OnSolutionExpire(True)
         
-path = gh.Kernel.Data.GH_Path(0)
 if radFile:
-    file = open(radFile[0], 'r')
+    file = open(radFile, 'r')
     fileAllJoined = ""
     #clean the idf file
     for line in file:
@@ -97,6 +105,7 @@ if radFile:
     #print fileSeparated
     surfaces = {}
     for segCount, seg in enumerate(fileSeparated):
+        # I should fix this code later! This is really poor written.
         if seg.upper() == "polygon".upper():
             material = fileSeparated[segCount - 1]
             numPt = int(fileSeparated[segCount + 4])
@@ -105,22 +114,17 @@ if radFile:
             srf = radLine2Srf(ptCrd)
             if not surfaces.has_key(material): surfaces[material] = []
             surfaces[material].append(srf)
-            
+    
+    RADMaterialList = DataTree[System.Object]()
+    geometries = DataTree[System.Object]()
     if len(surfaces) > 0:
-        removeOutputs()
-        outputNum = 1
+        # removeOutputs()
+        outputNum = 0
         for mat, srfs in surfaces.items():
-            param = gh.Kernel.Parameters.Param_GenericObject()
-            param.Name = 'material name:' + mat
-            param.NickName = mat
-            param.Description = 'material:' + mat
-            ghenv.Component.Params.RegisterOutputParam(param)
-            for srfCount, srf in enumerate(srfs):
-                ghenv.Component.Params.Output[outputNum].AddVolatileData(path, srfCount, srf)
-            outputNum += 1
-        ghenv.Component.Params.OnParametersChanged()
-        
+            RADMaterialList.Add(mat, GH_Path(outputNum))
+            geometries.AddRange(srfs, GH_Path(outputNum))
+            outputNum+=1
 
-outputCount = ghenv.Component.Params.Output.Count
-if not radFile and  outputCount > 1:
-    removeOutputs()
+#outputCount = ghenv.Component.Params.Output.Count
+# if not radFile and  outputCount > 1:
+#    removeOutputs()
