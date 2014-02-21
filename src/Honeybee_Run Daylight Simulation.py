@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.50
 
 ghenv.Component.Name = "Honeybee_Run Daylight Simulation"
 ghenv.Component.NickName = 'runDaylightAnalysis'
-ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_20_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1274,12 +1274,24 @@ def main(north, HBObjects, analysisRecipe, runRad, numOfCPUs, workingDir, radFil
                 files = os.listdir(subWorkingDir)
                 numIll = 0
                 numDc = 0
-                for file in files:
-                    if file.EndsWith('ill'): numIll+=1
-                    elif file.EndsWith('dc'): numDc+=1
+                conceptualShade = False
+                conceptualShadingIllFiles = []
+                for fileName in files:
+                    if fileName.endswith('ill'):
+                        numIll+=1
+                        if fileName.endswith('_up.ill'):
+                            conceptualShade = True
+                            conceptualShadingIllFiles.append(os.path.join(subWorkingDir, fileName))
+                            
+                            
+                    elif fileName.endswith('dc'): numDc+=1
+                
+                if conceptualShade: numDc = 2 * numDc
                 if numIll!= numOfCPUs * numOfIllFiles or  numDc!= numOfCPUs * numOfIllFiles:
-                    print "Can't find the results for the study"
+                    print "Failed to load the results!"
                     DSResultFilesAddress = []
+                if len(conceptualShadingIllFiles) * len(DSResultFilesAddress)!=0:
+                     DSResultFilesAddress = conceptualShadingIllFiles
                 
                 return radFileFullName, [], [], testPoints, DSResultFilesAddress, []
             else:

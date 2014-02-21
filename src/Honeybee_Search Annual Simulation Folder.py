@@ -65,7 +65,12 @@ def main(studyFolder):
     for fullPath in illFilesTemp:
         fileName = os.path.basename(fullPath)
         if fileName.split("_")[:-1]!= []:
-            gist = "_".join(fileName.split("_")[:-1])
+            if fileName.endswith("_down.ill") or fileName.endswith("_up.ill"):
+                # conceptual blind
+                gist = "_".join(fileName.split("_")[:-2]) + "_" + fileName.split("_")[-1]
+            else:
+                gist = "_".join(fileName.split("_")[:-1])
+                
         else:
             gist = fileName
         if gist not in illFilesDict.keys():
@@ -79,7 +84,16 @@ def main(studyFolder):
         p = GH_Path(listCount)
         fileList = illFilesDict[fileListKey]
         try:
-            illFiles.AddRange(sorted(fileList, key=lambda fileName: int(fileName.split(".")[-2].split("_")[-1])), p)
+            if fileName.endswith("_down.ill") or fileName.endswith("_up.ill"):
+                # conceptual blind
+                if fileList[0].endswith("_down.ill"):
+                    p = GH_Path(1)
+                else:
+                    p = GH_Path(0)
+                
+                illFiles.AddRange(sorted(fileList, key=lambda fileName: int(fileName.split(".")[-2].split("_")[-2])), p)
+            else:
+                illFiles.AddRange(sorted(fileList, key=lambda fileName: int(fileName.split(".")[-2].split("_")[-1])), p)
         except:
             illFiles.AddRange(fileList, p)
             
