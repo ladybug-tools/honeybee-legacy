@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.50
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_22_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -248,8 +248,11 @@ class RADMaterialAux(object):
             
             # import user defined RAD library
             RADLibraryFile = r"c:\ladybug\HoneybeeRadMaterials.mat"
-            if os.path.isfile(RADLibraryFile): self.importRADMaterialsFromFile(RADLibraryFile)
+            if os.path.isfile(RADLibraryFile):
+                self.importRADMaterialsFromFile(RADLibraryFile)
             else:
+                if not os.path.isdir("c:\\ladybug"):
+                    os.mkdir("c:\\ladybug")
                 with open(RADLibraryFile, "w") as outf:
                     outf.write("#Honeybee Radiance Material Library\n")
             
@@ -1885,7 +1888,7 @@ class hb_EPZoneSurface(hb_EPSurface):
                 # split the base geometry - Good luck!
                 splitBrep = self.geometry.Faces[0].Split(glzCrvs, sc.doc.ModelAbsoluteTolerance)
                 
-                splitBrep.Faces.ShrinkFaces()
+                #splitBrep.Faces.ShrinkFaces()
                 
                 for srfCount in range(splitBrep.Faces.Count):
                     surface = splitBrep.Faces.ExtractFace(srfCount)
