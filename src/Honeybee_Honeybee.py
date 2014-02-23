@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.50
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.50\nFEB_22_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_23_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1866,11 +1866,10 @@ class hb_EPZoneSurface(hb_EPSurface):
 
         try:
             if self.isPlanar:
-                try:
-                    # works for planar surfaces
-                    punchedGeometries = rc.Geometry.Brep.CreatePlanarBreps(glzCrvs + jBaseCrvList)
-                    self.punchedGeometry = punchedGeometries[0]
-                except:
+                # works for planar surfaces
+                punchedGeometries = rc.Geometry.Brep.CreatePlanarBreps(glzCrvs + jBaseCrvList)
+                if len(punchedGeometries) == 1: self.punchedGeometry = punchedGeometries[0]
+                else:
                     # project the curves on top of base surface
                     srfNormal = self.getSrfCenPtandNormalAlternate()[1]
                     glzCrvsArray = rc.Geometry.Curve.ProjectToBrep(glzCrvs, [self.geometry], srfNormal, sc.doc.ModelAbsoluteTolerance)
@@ -1878,12 +1877,12 @@ class hb_EPZoneSurface(hb_EPSurface):
                     for crv in glzCrvsArray: glzCrvs.append(crv)
                     
                     punchedGeometries = rc.Geometry.Brep.CreatePlanarBreps(glzCrvs + jBaseCrvList)
-                    
+                
                 if len(punchedGeometries)>1:
                     crvDif = rc.Geometry.Curve.CreateBooleanDifference(jBaseCrvList[0], glzCrvs)
                     punchedGeometries = rc.Geometry.Brep.CreatePlanarBreps(crvDif)
                 
-                    self.punchedGeometry = punchedGeometries[0]
+                self.punchedGeometry = punchedGeometries[0]
             else:
                 # split the base geometry - Good luck!
                 splitBrep = self.geometry.Faces[0].Split(glzCrvs, sc.doc.ModelAbsoluteTolerance)
@@ -1900,7 +1899,7 @@ class hb_EPZoneSurface(hb_EPSurface):
                                         
         except Exception, e:
             self.punchedGeometry = None
-            print "failed to calculate opaque part of the surface:\n" + `e`
+            print "Failed to calculate opaque part of the surface:\n" + `e`
 
     def getOpaqueArea(self):
         if self.hasChild:
