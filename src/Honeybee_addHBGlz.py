@@ -33,7 +33,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_addHBGlz'
 ghenv.Component.NickName = 'addHBGlz'
-ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_23_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -55,7 +55,7 @@ def main(HBSurface, childSurfaces, EPConstruction, RADMaterial, tolerance):
         hb_hive = sc.sticky["honeybee_Hive"]()
         HBSurface = hb_hive.callFromHoneybeeHive([HBSurface])[0]
         
-        for srf in childSurfaces:
+        for srfCount, srf in enumerate(childSurfaces):
             # if the input is mesh, convert it to a surface
             try:
                 # check if this is a mesh
@@ -83,8 +83,14 @@ def main(HBSurface, childSurfaces, EPConstruction, RADMaterial, tolerance):
                         hb_RADMaterialAUX.analyseRadMaterials(RADMaterial, True)
                 
                 # add it to the base surface
-                
                 HBSurface.addChildSrf(HBFenSrf)
+                HBSurface.calculatePunchedSurface()
+            else:
+                warning = "Surface number " + str(srfCount) + " can't be a child surface for base surface.\n" + \
+                          "It can be because of document tolerance. Try to project the opening surfcae on base surface and try again."
+                w = gh.GH_RuntimeMessageLevel.Warning
+                ghenv.Component.AddRuntimeMessage(w, warning)
+                
         # send the HB surface back to the hive
         # add to the hive
         HBSurface  = hb_hive.addToHoneybeeHive([HBSurface], ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
