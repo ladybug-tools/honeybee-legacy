@@ -20,7 +20,7 @@ Provided by Honeybee 0.0.50
 
 ghenv.Component.Name = "Honeybee_Watch The Sky"
 ghenv.Component.NickName = 'watchTheSky'
-ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_23_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "2 | Daylight | Sky"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -97,7 +97,7 @@ def main(skyFilePath, imageSize):
         print "You should first let both Ladybug and Honeybee to fly..."
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, "You should first let both Ladybug and Honeybee to fly...")
-        return
+        return None, None
     
     
     fileNames = ["oconv.exe", "rpict.exe", "pcond.exe", "pflip.exe"]
@@ -107,7 +107,7 @@ def main(skyFilePath, imageSize):
             msg = "Cannot find " + fileName + " at " + hb_RADPath + \
                   "Make sure that RADIANCE is installed on your system and try again."
             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
-            return
+            return None, None
     
     
     # change the sky in case it is for gendaylit
