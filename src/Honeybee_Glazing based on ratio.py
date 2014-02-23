@@ -24,7 +24,7 @@ Provided by Honeybee 0.0.50
 
 ghenv.Component.Name = "Honeybee_Glazing based on ratio"
 ghenv.Component.NickName = 'glazingCreator'
-ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
+ghenv.Component.Message = 'VER 0.0.52\nFEB_23_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -420,7 +420,7 @@ def createGlazingThatContainsRectangle(topEdge, btmEdge, baseSrf, glazingRatio, 
     
     return glzSrf
 
-def createSkylightGlazing(baseSrf, glazingRatio):
+def createSkylightGlazing(baseSrf, glazingRatio, planarBool):
     #Define the meshing paramters to break down the surface in a manner that produces only trinagles and quads.
     meshPar = rc.Geometry.MeshingParameters.Default
     
@@ -446,21 +446,53 @@ def createSkylightGlazing(baseSrf, glazingRatio):
     #Create a mesh of the base surface.
     windowMesh = rc.Geometry.Mesh.CreateFromBrep(baseSrf, meshPar)[0]
     
-    #Create breps of all of the mesh faces and use them to make each window.
+    #Define all of the vairables that will be used in the following steps
     glzSrf = []
     srfFaceList = windowMesh.Faces
     srfVertList = windowMesh.Vertices
+    curvedOk = True
+    lastSuccessfulRestOfSrf = []
     
-    for faceNum, face in enumerate(srfFaceList):
-        if face.IsQuad == True:
-            glzSrf.append(createGlazingQuad(rc.Geometry.Brep.CreateFromCornerPoints(srfVertList[face[0]], srfVertList[face[1]], srfVertList[face[2]], srfVertList[face[3]], sc.doc.ModelAbsoluteTolerance), glazingRatio, windowMesh.Faces.GetFaceCenter(faceNum))[0])
-        else:
-            glzSrf.append(createGlazingTri(rc.Geometry.Brep.CreateFromCornerPoints(srfVertList[face[0]], srfVertList[face[1]], srfVertList[face[2]], sc.doc.ModelAbsoluteTolerance), glazingRatio, windowMesh.Faces.GetFaceCenter(faceNum))[0])
+    #If the surface is curved, check to see if all of the faces are quads, in which case, the generated glazing should look pretty nice.  Otherwise, abandon this method and use the offset algorithm.
+    if planarBool == False:
+        for face in srfFaceList:
+            if face.IsQuad == True: pass
+            else: curvedOk = False
+        if curvedOk == False:
+            glzSrf, lastSuccessfulRestOfSrf = createGlazingCurved(baseSrf, glazingRatio, planarBool)
+        else: pass
+    else:pass
     
-    return glzSrf
+    #Create breps of all of the mesh faces and use them to make each window.
+    if curvedOk == True:
+        for faceNum, face in enumerate(srfFaceList):
+            if face.IsQuad == True:
+                glzSrf.append(createGlazingQuad(rc.Geometry.Brep.CreateFromCornerPoints(srfVertList[face[0]], srfVertList[face[1]], srfVertList[face[2]], srfVertList[face[3]], sc.doc.ModelAbsoluteTolerance), glazingRatio, windowMesh.Faces.GetFaceCenter(faceNum))[0])
+            else:
+                glzSrf.append(createGlazingTri(rc.Geometry.Brep.CreateFromCornerPoints(srfVertList[face[0]], srfVertList[face[1]], srfVertList[face[2]], sc.doc.ModelAbsoluteTolerance), glazingRatio, windowMesh.Faces.GetFaceCenter(faceNum))[0])
+    
+    #If the surface is curved and has not been generated using the offset method, project the quad breps onto the curved surface and split it.
+    if planarBool == False and curvedOk == True:
+        faceNormals = []
+        curvedGlz = []
+        surface = baseSrf.Faces[0]
+        
+        for faceNum, face in enumerate(srfFaceList):
+            facePlane = rc.Geometry.Plane(srfVertList[face[0]], srfVertList[face[1]], srfVertList[face[2]])
+            faceNormals.append(facePlane.Normal)
+        for srfNum, srf in enumerate(glzSrf):
+            edges = srf.Edges
+            edge = rc.Geometry.Curve.JoinCurves(edges)
+            projectEdge = rc.Geometry.Curve.ProjectToBrep(edge, [baseSrf], faceNormals[srfNum], sc.doc.ModelAbsoluteTolerance)[0]
+            projectBrep = surface.Split([projectEdge], sc.doc.ModelAbsoluteTolerance)
+            splSurface = projectBrep.Faces.ExtractFace(1)
+            curvedGlz.append(splSurface)
+        glzSrf = curvedGlz
+    
+    return glzSrf, lastSuccessfulRestOfSrf
 
 
-def createGlazingCurved(baseSrf, glzRatio):
+def createGlazingCurved(baseSrf, glzRatio, planar):
     
     def getOffsetDist(cenPt, edges):
         distList = []
@@ -479,7 +511,7 @@ def createGlazingCurved(baseSrf, glzRatio):
         else: return None, None, None
     
     
-    def OffsetCurveOnSurface(border, glazingBrep, offsetDist, normalvector):
+    def OffsetCurveOnSurface(border, glazingBrep, offsetDist, normalvector, planar):
         success = False
         glzArea = 0
         direction = 1
@@ -487,15 +519,20 @@ def createGlazingCurved(baseSrf, glzRatio):
         
         # try RhinoCommon
         surface = glazingBrep.Faces[0]
-        glzCurve = border.OffsetOnSurface(surface, offsetDist, sc.doc.ModelAbsoluteTolerance)
-        if glzCurve==None:
+        if planar == True:
+            glzCurve = border.Offset(rc.Geometry.Plane.WorldXY, offsetDist, sc.doc.ModelAbsoluteTolerance, 0)
+        else:
+            glzCurve = border.OffsetOnSurface(surface, offsetDist, sc.doc.ModelAbsoluteTolerance)
+        
+        if planar == True and len(glzCurve) > 1:
+            glzCurve = border.Offset(rc.Geometry.Plane.WorldXY, -offsetDist, sc.doc.ModelAbsoluteTolerance, 0)
+        if planar==False and glzCurve==None:
             glzCurve = border.OffsetOnSurface(surface, -offsetDist, sc.doc.ModelAbsoluteTolerance)
             direction = -1
             
         if glzCurve!=None:
             splitBrep = surface.Split(glzCurve, sc.doc.ModelAbsoluteTolerance)
-            splitBrep.Faces.ShrinkFaces()
-            #print splitBrep.Faces.Count
+            
             for srfCount in range(splitBrep.Faces.Count):
                 splSurface = splitBrep.Faces.ExtractFace(srfCount)
                 splittedSrfs.append(splSurface)
@@ -528,15 +565,19 @@ def createGlazingCurved(baseSrf, glzRatio):
     success = False
     
     lastSuccessfulGlzSrf = None
+    lastSuccessfulRestOfSrf = None
     lastSuccessfulSrf = None
     lastSuccessfulArea = area
     srfs = []
     coordinatesList = baseSrf.Vertices
     
-    
-    while abs(targetArea-glzArea) > 0.01 * targetArea and i < 20:
+    succ, glzArea, glzCurve, splittedSrfs = OffsetCurveOnSurface(border, face, offsetDist, normalvector, planar)
+    if succ == False:
+        pass
+    else:
+        while abs(targetArea-glzArea) > 0.01 * targetArea and i < 20:
             i += 1
-            succ, glzArea, glzCurve, splittedSrfs = OffsetCurveOnSurface(border, face, offsetDist, normalvector)
+            succ, glzArea, glzCurve, splittedSrfs = OffsetCurveOnSurface(border, face, offsetDist, normalvector, planar)
             if targetArea < glzArea:
                 offsetDist = offsetDist + (offsetDist/(2*i))
             else:
@@ -549,11 +590,11 @@ def createGlazingCurved(baseSrf, glzRatio):
                     lastSuccessfulRestOfSrf = splittedSrfs[0]
                     lastSuccessfulArea = glzArea
                 except Exception, e:
-                    print "Failed to calculate the glazing"
                     lastSuccessfulGlzSrf = None
                     lastSuccessfulRestOfSrf = None
                     lastSuccessfulArea = 0
                     
+    
     return lastSuccessfulGlzSrf, lastSuccessfulRestOfSrf
 
 
@@ -565,7 +606,7 @@ def findGlzBasedOnRatio(baseSrf, glzRatio, windowHeight, sillHeight, surfaceType
     
     #Rebuild and simplify the surface to ensure best results when generating the glazing.
     edgeLinear = True
-    
+    createdNew = False
     edges = baseSrf.Edges
     joinedEdges = rc.Geometry.Curve.JoinCurves(edges)
     simplificationOpt = rc.Geometry.CurveSimplifyOptions.All
@@ -575,16 +616,21 @@ def findGlzBasedOnRatio(baseSrf, glzRatio, windowHeight, sillHeight, surfaceType
         joinedEdgesSimplified.append(crv.Simplify(simplificationOpt, sc.doc.ModelAbsoluteTolerance, sc.doc.ModelAngleToleranceRadians))
     
     originalSrfDir = baseSrf.Faces[0].NormalAt(0,0)
-    try:
-        baseSrf = rc.Geometry.Brep.CreatePlanarBreps(joinedEdgesSimplified)[0]
-    except:
-        pass
+    if planarBool == True:
+        try:
+            baseSrf = rc.Geometry.Brep.CreatePlanarBreps(joinedEdgesSimplified)[0]
+            createdNew = True
+        except:
+            createdNew = False
     newSrfDir = baseSrf.Faces[0].NormalAt(0,0)
     
     #If the direction of the rebuilt surface is not the same as that of the original surface, flip it around.
-    if newSrfDir.X < originalSrfDir.X + tol and newSrfDir.X > originalSrfDir.X - tol and newSrfDir.Y < originalSrfDir.Y + tol and newSrfDir.Y > originalSrfDir.Y - tol and newSrfDir.Z < originalSrfDir.Z + tol and newSrfDir.Z > originalSrfDir.Z - tol:
-        pass
-    else: baseSrf.Flip()
+    if createdNew == True:
+        if newSrfDir.X < originalSrfDir.X + tol and newSrfDir.X > originalSrfDir.X - tol and newSrfDir.Y < originalSrfDir.Y + tol and newSrfDir.Y > originalSrfDir.Y - tol and newSrfDir.Z < originalSrfDir.Z + tol and newSrfDir.Z > originalSrfDir.Z - tol:
+            pass
+        else:
+            baseSrf.Flip()
+    else: pass
     
     
     #Check if the surface has any curved edges to it
@@ -597,7 +643,7 @@ def findGlzBasedOnRatio(baseSrf, glzRatio, windowHeight, sillHeight, surfaceType
     
     #Check if the surface is a planar skylight that can be broken up into quads and, if so, send it through the skylight generator
     if surfaceType == 1:
-        glazing = createSkylightGlazing(baseSrf, glzRatio)
+        glazing, lastSuccessfulRestOfSrf = createSkylightGlazing(baseSrf, glzRatio, planarBool)
     
     #Check if the wall surface has horizontal top and bottom curves and contains a rectangle that can be extracted such that we can apply the windowHeight and sillHeight inputs to it.
     elif surfaceType == 0 and planarBool == True and edgeLinear == True and getTopBottomCurves(baseSrf)[1] == True and getTopBottomCurves(baseSrf)[3] == True:
@@ -621,21 +667,25 @@ def findGlzBasedOnRatio(baseSrf, glzRatio, windowHeight, sillHeight, surfaceType
     
     #If everything has failed up until this point, this means that the wall geometry is likely curved.  The best way forward is just to try to offset the curve on the surface to get the window.
     else:
-        glazing, lastSuccessfulRestOfSrf = createGlazingCurved(baseSrf, glzRatio)
+        glazing, lastSuccessfulRestOfSrf = createGlazingCurved(baseSrf, glzRatio, planarBool)
     
     
-    #Check to make sure that the window that has been generated is facing the right direction.  If not, flip it
-    try:
-        len(glazing)
-    except:
-        glazing = [glazing]
-    
-    for window in glazing:
-        windowDir = window.Faces[0].NormalAt(0,0)
-        if windowDir.X < originalSrfDir.X + tol and windowDir.X > originalSrfDir.X - tol and windowDir.Y < originalSrfDir.Y + tol and windowDir.Y > originalSrfDir.Y - tol and windowDir.Z < originalSrfDir.Z + tol and windowDir.Z > originalSrfDir.Z - tol:
+    #Check to make sure that a window has been generated and, if so, check to make sure that the window that has been generated is facing the right direction.  If not, flip it.
+    if glazing == None:
+        print "Failed to calculate the glazing"
+        pass
+    else:
+        try:
+            len(glazing)
+        except:
+            glazing = [glazing]
+        
+        for window in glazing:
+            windowDir = window.Faces[0].NormalAt(0,0)
+            if windowDir.X < originalSrfDir.X + tol and windowDir.X > originalSrfDir.X - tol and windowDir.Y < originalSrfDir.Y + tol and windowDir.Y > originalSrfDir.Y - tol and windowDir.Z < originalSrfDir.Z + tol and windowDir.Z > originalSrfDir.Z - tol:
                 pass
-        else:
-            window.Flip()
+            else:
+                window.Flip()
     
     def getRestOfSurfacePlanar(baseSrf, glazing):
         selfDir = baseSrf.Faces[0].NormalAt(0,0)
@@ -671,6 +721,7 @@ def findGlzBasedOnRatio(baseSrf, glzRatio, windowHeight, sillHeight, surfaceType
             return []
             print "failed to calculate opaque part of the surface:\n" + `e`
         
+    
     if lastSuccessfulRestOfSrf==[]:
         lastSuccessfulRestOfSrf = getRestOfSurfacePlanar(baseSrf, glazing)
     
@@ -794,10 +845,12 @@ def main(windowHeight, sillHeight):
                             fenSrf = hb_EPFenSurface(glzSrf, surface.num, surface.name + '_glz_' + `glzSrfCount`, surface, 5, lastSuccessfulRestOfSrf)
                             zonesWithOpeningsGeometry.append(glzSrf)
                             surface.addChildSrf(fenSrf)
+                        if lastSuccessfulRestOfSrf==[]: surface.calculatePunchedSurface()
                     else:
                         fenSrf = hb_EPFenSurface(lastSuccessfulGlzSrf, surface.num, surface.name + '_glz_0', surface, 5, lastSuccessfulRestOfSrf)
                         zonesWithOpeningsGeometry.append(lastSuccessfulGlzSrf)
                         surface.addChildSrf(fenSrf)
+                        if lastSuccessfulRestOfSrf==[]: surface.calculatePunchedSurface()
             else:
                 surface.hasChild = False
         #print HBZoneObjects
