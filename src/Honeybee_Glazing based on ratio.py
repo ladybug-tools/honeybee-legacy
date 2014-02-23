@@ -1,6 +1,6 @@
 # glazingCreator
-# By Mostapha Sadeghipour Roudsari and Chris Mackey
-# Sadeghipour@gmail.com - Chris@MackeyArchitecture.com
+# By Chris Mackey and Mostapha Sadeghipour Roudsari
+# Chris@MackeyArchitecture.com - Sadeghipour@gmail.com
 # The main geometry-generating parts of this component are developed by Chris Mackey
 # Honeybee started by Mostapha Sadeghipour Roudsari is licensed
 # under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
@@ -24,7 +24,7 @@ Provided by Honeybee 0.0.50
 
 ghenv.Component.Name = "Honeybee_Glazing based on ratio"
 ghenv.Component.NickName = 'glazingCreator'
-ghenv.Component.Message = 'VER 0.0.52\nFEB_23_2014'
+ghenv.Component.Message = 'VER 0.0.53\nFEB_23_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -544,7 +544,7 @@ def createGlazingCurved(baseSrf, glzRatio, planar):
                     glzArea = glzSrf.GetArea()
                     success = True
         else:
-            print "Split surface failed!"
+            print "Offseting boundary and spliting the surface failed!"
             splittedSrfs = None
             success = False
             
@@ -760,8 +760,8 @@ def main(windowHeight, sillHeight):
     
     if len(glzRatio)!=0:
         for ratio in glzRatio:
-            if ratio > 1:
-                giveWarning("Please ensure that your glazing ratio is between 0.0 and 0.95. glazing ratios outside of this are nota accepted.")
+            if ratio > 0.95:
+                giveWarning("Please ensure that your glazing ratio is between 0.0 and 0.95. glazing ratios outside of this are not accepted.")
                 return None, None
         initAngles = rs.frange(0, 360, 360/len(glzRatio))
     else: initAngles = []
@@ -814,7 +814,7 @@ def main(windowHeight, sillHeight):
             if surface.type == 0:
                 srfType = 0
                 for angleCount in range(len(angles)-1):
-                    if angles[angleCount] <= surface.angle2North%360 <= angles[angleCount +1]:
+                    if angles[angleCount]+(0.5*sc.doc.ModelAngleToleranceDegrees) <= surface.angle2North%360 <= angles[angleCount +1]+(0.5*sc.doc.ModelAngleToleranceDegrees):
                         #print surface.angle2North%360
                         targetPercentage = glzRatio[angleCount%len(glzRatio)]
                         if len(windowHeight) == 1:
