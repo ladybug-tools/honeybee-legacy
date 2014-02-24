@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.50
 
 ghenv.Component.Name = "Honeybee_Run Daylight Simulation"
 ghenv.Component.NickName = 'runDaylightAnalysis'
-ghenv.Component.Message = 'VER 0.0.50\nFEB_20_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_23_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -497,9 +497,10 @@ class WriteDS(object):
                  'Template_File      ' + hb_DSPath + '\\template\\DefaultTemplate.htm\n'
                  
     
-    def DSLocationStr(self, hb_writeRADAUX,  lb_preparation, epwFileAddress, outputUnits):
+    def DSLocationStr(self, hb_writeRADAUX,  lb_preparation, epwFileAddress):
         # location information
         locName, lat, long, timeZone, elev = hb_writeRADAUX.RADLocation(epwFileAddress)
+        
         
         return'\n\n#################################\n' + \
                   '#      LOCATION INFORMATION      \n' + \
@@ -513,9 +514,26 @@ class WriteDS(object):
                   'wea_data_short_file       ' + lb_preparation.removeBlankLight(locName) + '.wea\n' + \
                   'wea_data_short_file_units ' + '1\n' + \
                   'lower_direct_threshold    ' + '2\n' + \
-                  'lower_diffuse_threshold   ' + '2\n' + \
-                  'output_units              ' + `outputUnits[0]` + '\n', locName
-    
+                  'lower_diffuse_threshold   ' + '2\n', locName
+        
+    def DSAnalysisUnits(self, outputUnits, pointsCount):
+        # I notice that setting output_units to 1 return all 0 results and not the radiation values
+        # however assigning type 2 for each point using sensor_file_unit works! I think this is a bug
+        # in Daysim that I should report to the email list next week when I come back from Chicago.
+        
+        outputUnits = outputUnits[0]
+        
+        if outputUnits == 2:
+            return 'output_units              ' + `outputUnits` + '\n'
+        
+        elif outputUnits == 1:
+            
+            outputStr = "sensor_file_unit"
+            
+            for pt in range(pointsCount): outputStr += " 2"
+            
+            return outputStr +"\n"
+            
     # building information
     def DSBldgStr(self, projectName, materialFileName, radFileFullName, adaptiveZone, dgp_image_x = 500, dgp_image_y = 500, cpuCount = 0):
         return'\n\n#################################\n' + \
@@ -1168,7 +1186,7 @@ def main(north, HBObjects, analysisRecipe, runRad, numOfCPUs, workingDir, radFil
             # write the init batch files
             
             # location string
-            locationStr, locName = hb_writeDS.DSLocationStr(hb_writeRADAUX, lb_preparation, epwFileAddress, outputUnits)
+            locationStr, locName = hb_writeDS.DSLocationStr(hb_writeRADAUX, lb_preparation, epwFileAddress)
             newLocName = lb_preparation.removeBlankLight(locName)
             
             # copy .epw file to sub-directory
@@ -1202,7 +1220,10 @@ def main(north, HBObjects, analysisRecipe, runRad, numOfCPUs, workingDir, radFil
                 # if os.path.exists(tempDirName): lb_preparation.nukedir(tempDirName,rmdir = False)
                 tempWorkingDir = lb_preparation.makeWorkingDir(tempDirName)
                 
+                
                 heaFile.write(locationStr)
+                
+                heaFile.write(hb_writeDS.DSAnalysisUnits(outputUnits, lenOfPts[cpuCount]))
                 
                 # fake .vf file - it should be fixed later
                 fakeViewFileName = subWorkingDir + '\\' + projectName + '_' + 'fakeView.vf'
@@ -1274,24 +1295,12 @@ def main(north, HBObjects, analysisRecipe, runRad, numOfCPUs, workingDir, radFil
                 files = os.listdir(subWorkingDir)
                 numIll = 0
                 numDc = 0
-                conceptualShade = False
-                conceptualShadingIllFiles = []
-                for fileName in files:
-                    if fileName.endswith('ill'):
-                        numIll+=1
-                        if fileName.endswith('_up.ill'):
-                            conceptualShade = True
-                            conceptualShadingIllFiles.append(os.path.join(subWorkingDir, fileName))
-                            
-                            
-                    elif fileName.endswith('dc'): numDc+=1
-                
-                if conceptualShade: numDc = 2 * numDc
+                for file in files:
+                    if file.EndsWith('ill'): numIll+=1
+                    elif file.EndsWith('dc'): numDc+=1
                 if numIll!= numOfCPUs * numOfIllFiles or  numDc!= numOfCPUs * numOfIllFiles:
-                    print "Failed to load the results!"
+                    print "Can't find the results for the study"
                     DSResultFilesAddress = []
-                if len(conceptualShadingIllFiles) * len(DSResultFilesAddress)!=0:
-                     DSResultFilesAddress = conceptualShadingIllFiles
                 
                 return radFileFullName, [], [], testPoints, DSResultFilesAddress, []
             else:

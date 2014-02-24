@@ -9,7 +9,7 @@ Analyses Recipe for Annual Daylight Simulation with Daysim
 Provided by Honeybee 0.0.50
     
     Args:
-        outputUnits: A list of numbers to indicate output units for test points. Defualt is 2. [0] visible irradiance(W/m2), [1] solar irradiance (W/m2), [2] illumiance (lux)
+        outputUnits: A list of numbers to indicate output units for test points. Defualt is 2. [1] solar irradiance (W/m2), [2] illumiance (lux) - Default is 2
         dynamicShadingGroup_1: Use conceptual or advanced shading recipeis to define the dynamic shading. Leave it disconnected if you don't have any dynamic shading in the model
         dynamicShadingGroup_2: Use conceptual or advanced shading recipeis to define the dynamic shading. Leave it disconnected if you don't have any dynamic shading in the model
         ............................................: Graphical separator! Leave it empty. Thanks!
@@ -20,7 +20,7 @@ Provided by Honeybee 0.0.50
 
 ghenv.Component.Name = "Honeybee_DSParameters"
 ghenv.Component.NickName = 'DSParameters'
-ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_23_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "3 | Daylight | Recipes"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
