@@ -31,7 +31,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_createHBSrfs'
 ghenv.Component.NickName = 'createHBSrfs'
-ghenv.Component.Message = 'VER 0.0.50\nFEB_20_2014'
+ghenv.Component.Message = 'VER 0.0.50\nFEB_24_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -100,19 +100,26 @@ def main(geometry, srfType, EPConstruction, RADMaterial):
             HBSurface.EPConstruction = EPConstruction
             
         if RADMaterial!=None:
-            # if the material is not in the library add it to the library
-            if RADMaterial not in sc.sticky ["honeybee_RADMaterialLib"].keys():
-                # if it is just the name of the material give a warning
-                if len(RADMaterial.split(" ")) == 1:
+            # if it is just the name of the material give a warning
+            if len(RADMaterial.split(" ")) == 1:
+                # if the material is not in the library add it to the library
+                if RADMaterial not in sc.sticky ["honeybee_RADMaterialLib"].keys():
                     warningMsg = "Can't find " + RADMaterial + " in RAD Material Library.\n" + \
                                 "Add the material to the library and try again."
                     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
                     return
-                else:
-                    # try to add the material to the library
-                    addedToLib, HBSurface.RadMaterial = hb_RADMaterialAUX.analyseRadMaterials(RADMaterial, True)
-            
-            HBSurface.RadMaterial = RADMaterial
+                
+                # else assign the name of the material to the surface
+                HBSurface.RadMaterial = RADMaterial
+                
+        else:
+            # try to add the material to the library
+            addedToLib, HBSurface.RadMaterial = hb_RADMaterialAUX.analyseRadMaterials(RADMaterial, True)
+                    
+            if addedToLib==False:
+                warningMsg = "Failed to add " + RADMaterial + " to the Library."
+                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
+                return
             
         HBSurfaces.append(HBSurface)
     
