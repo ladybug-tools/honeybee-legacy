@@ -13,7 +13,7 @@ Check this link for more information about glare analysis. Thanks to Christoph R
 http://web.mit.edu/tito_/www/Projects/Glare/GlareRecommendationsForPractice.html
 
 -
-Provided by Honeybee 0.0.50
+Provided by Honeybee 0.0.51
     
     Args:
         _HDRImagePath: Path to an HDR image file
@@ -31,10 +31,12 @@ Provided by Honeybee 0.0.50
 
 ghenv.Component.Name = "Honeybee_Glare Analysis"
 ghenv.Component.NickName = 'glareAnalysis'
-ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
+ghenv.Component.Message = 'VER 0.0.51\nFEB_24_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
-ghenv.Component.AdditionalHelpFromDocStrings = "5"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
+except: pass
+
 
 import scriptcontext as sc
 import Grasshopper.Kernel as gh

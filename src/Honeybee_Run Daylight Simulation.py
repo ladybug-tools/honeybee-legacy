@@ -7,7 +7,7 @@
 export geometries to rad file, and run daylighting/energy simulation
 
 -
-Provided by Honeybee 0.0.50
+Provided by Honeybee 0.0.51
 
     Args:
         north_: ...
@@ -35,10 +35,12 @@ Provided by Honeybee 0.0.50
 
 ghenv.Component.Name = "Honeybee_Run Daylight Simulation"
 ghenv.Component.NickName = 'runDaylightAnalysis'
-ghenv.Component.Message = 'VER 0.0.50\nFEB_23_2014'
+ghenv.Component.Message = 'VER 0.0.51\nFEB_24_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
-ghenv.Component.AdditionalHelpFromDocStrings = "1"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
+except: pass
+
 
 import Rhino as rc
 import scriptcontext as sc

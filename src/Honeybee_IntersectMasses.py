@@ -6,7 +6,7 @@
 """
 Intersect masses
 -
-Provided by Honeybee 0.0.50
+Provided by Honeybee 0.0.51
 
     Args:
         bldgMassesBefore: ...
@@ -15,10 +15,12 @@ Provided by Honeybee 0.0.50
 """
 ghenv.Component.Name = "Honeybee_IntersectMasses"
 ghenv.Component.NickName = 'IntersectMass'
-ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
+ghenv.Component.Message = 'VER 0.0.51\nFEB_24_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
-ghenv.Component.AdditionalHelpFromDocStrings = "2"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
+except: pass
+
 
 import Rhino as rc
 import scriptcontext as sc

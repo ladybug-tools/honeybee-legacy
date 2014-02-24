@@ -7,7 +7,7 @@
 Add Radiance Materials to Library
 
 -
-Provided by Honeybee 0.0.50
+Provided by Honeybee 0.0.51
     
     Args:
         RADMaterial: Radiance material definition
@@ -21,10 +21,12 @@ Provided by Honeybee 0.0.50
 
 ghenv.Component.Name = "Honeybee_Add to Radiance Library"
 ghenv.Component.NickName = 'addToLibrary'
-ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
+ghenv.Component.Message = 'VER 0.0.51\nFEB_24_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "1 | Daylight | Material"
-ghenv.Component.AdditionalHelpFromDocStrings = "2"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
+except: pass
+
 
 import scriptcontext as sc
 import Grasshopper.Kernel as gh

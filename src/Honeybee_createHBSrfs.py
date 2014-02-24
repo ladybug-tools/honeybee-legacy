@@ -6,7 +6,7 @@
 """
 Create a Honeybee surface
 -
-Provided by Honeybee 0.0.50
+Provided by Honeybee 0.0.51
 
     Args:
         _geometry: List of Breps
@@ -31,10 +31,12 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_createHBSrfs'
 ghenv.Component.NickName = 'createHBSrfs'
-ghenv.Component.Message = 'VER 0.0.50\nFEB_24_2014'
+ghenv.Component.Message = 'VER 0.0.51\nFEB_24_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
-ghenv.Component.AdditionalHelpFromDocStrings = "2"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
+except: pass
+
 
 tolerance = sc.doc.ModelAbsoluteTolerance
 import math

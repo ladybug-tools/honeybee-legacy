@@ -7,7 +7,7 @@
 Call Radiance Materials from Library
 
 -
-Provided by Honeybee 0.0.50
+Provided by Honeybee 0.0.51
     
     Args:
         keywords: List of keywords to filter the list of materials
@@ -20,10 +20,12 @@ Provided by Honeybee 0.0.50
 
 ghenv.Component.Name = "Honeybee_Call from Radiance Library"
 ghenv.Component.NickName = 'callFromLibrary'
-ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
+ghenv.Component.Message = 'VER 0.0.51\nFEB_24_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "1 | Daylight | Material"
-ghenv.Component.AdditionalHelpFromDocStrings = "2"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
+except: pass
+
 
 import scriptcontext as sc
 import Grasshopper.Kernel as gh

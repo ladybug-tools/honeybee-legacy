@@ -8,7 +8,7 @@ Import a rad file to gh
 This component is just a proof of concept for now and needs major modifications
 
 -
-Provided by Honeybee 0.0.50
+Provided by Honeybee 0.0.51
 
     Args:
         input1: ...
@@ -17,10 +17,12 @@ Provided by Honeybee 0.0.50
 """
 ghenv.Component.Name = "Honeybee_Import rad"
 ghenv.Component.NickName = 'importRad'
-ghenv.Component.Message = 'VER 0.0.50\nFEB_20_2014'
+ghenv.Component.Message = 'VER 0.0.51\nFEB_24_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
-ghenv.Component.AdditionalHelpFromDocStrings = "1"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
+except: pass
+
 
 import Rhino as rc
 import rhinoscriptsyntax as rs

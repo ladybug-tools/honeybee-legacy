@@ -9,7 +9,7 @@ Radiance Metal Material By Color
 Create a Standard Radiance Metal Material. Many thanks to Axel Jacobs for his help and all the great resources he provided at jaloxa.eu
 Check out the color picker to see some great examples > http://www.jaloxa.eu/resources/radiance/colour_picker/index.shtml
 -
-Provided by Honeybee 0.0.50
+Provided by Honeybee 0.0.51
 
     Args:
         color: Material color
@@ -23,10 +23,12 @@ Provided by Honeybee 0.0.50
 
 ghenv.Component.Name = "Honeybee_Radiance Metal Material By Color"
 ghenv.Component.NickName = 'radMetalMaterialByColor'
-ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
+ghenv.Component.Message = 'VER 0.0.51\nFEB_24_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "1 | Daylight | Material"
-ghenv.Component.AdditionalHelpFromDocStrings = "0"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
+except: pass
+
 
 import math
 import scriptcontext as sc

@@ -8,7 +8,7 @@ Genrate Climate Based Sky
 
 This component generate a climate based sky for any hour of the year
 -
-Provided by Honeybee 0.0.50
+Provided by Honeybee 0.0.51
     
     Args:
         _weatherFile: epw weather file address on your system
@@ -22,10 +22,12 @@ Provided by Honeybee 0.0.50
 
 ghenv.Component.Name = "Honeybee_Generate Climate Based Sky"
 ghenv.Component.NickName = 'genClimateBasedSky'
-ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
+ghenv.Component.Message = 'VER 0.0.51\nFEB_24_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "2 | Daylight | Sky"
-ghenv.Component.AdditionalHelpFromDocStrings = "1"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
+except: pass
+
 
 import os
 import scriptcontext as sc

@@ -6,7 +6,7 @@
 """
 Search Simulation Folder
 -
-Provided by Honeybee 0.0.50
+Provided by Honeybee 0.0.51
     
     Args:
         studyFolder: Path to study folder
@@ -19,10 +19,12 @@ Provided by Honeybee 0.0.50
 
 ghenv.Component.Name = "Honeybee_Search Annual Simulation Folder"
 ghenv.Component.NickName = 'searchAnnualSimulationFolder'
-ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
+ghenv.Component.Message = 'VER 0.0.51\nFEB_24_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
-ghenv.Component.AdditionalHelpFromDocStrings = "4"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
+except: pass
+
 
 import os
 import System

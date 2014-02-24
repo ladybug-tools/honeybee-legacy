@@ -7,7 +7,7 @@
 """
 Convert HDR to GIF
 -
-Provided by Honeybee 0.0.50
+Provided by Honeybee 0.0.51
     
     Args:
         HDRFilePath: Path to an HDR image file
@@ -18,10 +18,12 @@ Provided by Honeybee 0.0.50
 
 ghenv.Component.Name = "Honeybee_Convert HDR to GIF"
 ghenv.Component.NickName = 'HDR > GIF'
-ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
+ghenv.Component.Message = 'VER 0.0.51\nFEB_24_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
-ghenv.Component.AdditionalHelpFromDocStrings = "3"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
+except: pass
+
 
 import os
 import scriptcontext as sc
