@@ -20,7 +20,7 @@ Provided by Honeybee 0.0.51
 
 ghenv.Component.Name = "Honeybee_Watch The Sky"
 ghenv.Component.NickName = 'watchTheSky'
-ghenv.Component.Message = 'VER 0.0.51\nFEB_24_2014'
+ghenv.Component.Message = 'VER 0.0.51\nFEB_25_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "2 | Daylight | Sky"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -128,7 +128,10 @@ def main(skyFilePath, imageSize):
     if os.path.isfile(skyImageFile):
         try: shutil.remove(skyImageFile)
         except: "Failed to remove the old sky image. The result might be wrong"
-        
+    
+    # write the path string (I should check radiance to be installed on the system
+    pathStr = "SET RAYPATH=.;" + hb_RADLibPath + "\nPATH=" + hb_RADPath + ";$PATH\n"
+    
     # generate the rad file
     oconvL = oconvLine(projectName, viewName, [skyFilePath])
     
@@ -139,6 +142,7 @@ def main(skyFilePath, imageSize):
     # run the study
     command = "@echo off\n" + \
               "echo Generating the sky view\n" + \
+              pathStr + "\n" + \
               oconvL + "\n" + \
               rpictL + "\n" + \
               rtraceL + "\n" + \
