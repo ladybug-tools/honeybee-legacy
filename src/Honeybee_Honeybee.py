@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.51
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.51\nFEB_24_2014'
+ghenv.Component.Message = 'VER 0.0.51\nFEB_25_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -233,9 +233,10 @@ class hb_GetEPConstructions():
 class RADMaterialAux(object):
     
     def __init__(self, reloadRADMaterial = False):
+            
+        self.radMatTypes = ["plastic", "glass", "trans", "metal", "mirror", "mixedfunc", "dielectric", "transdata", "light", "glow"]
         
         if reloadRADMaterial:
-            self.radMatTypes = ["plastic", "glass", "trans", "metal", "mirror", "mixedfunc", "dielectric", "transdata", "light", "glow"]
             
             # initiate the library
             if not sc.sticky.has_key("honeybee_RADMaterialLib"): sc.sticky ["honeybee_RADMaterialLib"] = {}
