@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.51
 """
 ghenv.Component.Name = "Honeybee_Read Annual Result I"
 ghenv.Component.NickName = 'readAnnualResultsI'
-ghenv.Component.Message = 'VER 0.0.51\nFEB_24_2014'
+ghenv.Component.Message = 'VER 0.0.51\nFEB_28_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -207,6 +207,9 @@ def main(illFilesAddress, testPts, testVecs, occFiles, lightingControlGroups, SH
                 if not line.startswith("#"):
                     numOfPtsInEachFile.append(len(line.strip().split(" ")) - 4)
                     break
+    
+    # find the current project directory that could be differnt from the old one
+    projectDirectory = os.path.dirname(originalIllFilesSorted[0][0]) + "\\"
     #print numOfPtsInEachFile
     #print numOfPtsInEachSpace
     
@@ -258,8 +261,8 @@ def main(illFilesAddress, testPts, testVecs, occFiles, lightingControlGroups, SH
                 projectName = line.split("project_name")[-1].strip()
                 modifiedHeaBase += "project_name       [project_name]\n"
             elif line.startswith("project_directory"):
-                projectDirectory = line.split("project_directory")[-1].strip()
-                modifiedHeaBase += line + "\n"
+                # projectDirectory = line.split("project_directory")[-1].strip()
+                modifiedHeaBase += "project_directory   " + projectDirectory + "\n"
             elif line.startswith("tmp_directory"):
                 # create a place holder for the new temp file
                 modifiedHeaBase += "tmp_directory      " + os.path.join(projectDirectory, "tmp[spaceCount]") + "\\\n"
