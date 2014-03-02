@@ -24,7 +24,7 @@ Provided by Honeybee 0.0.51
 
 ghenv.Component.Name = "Honeybee_Glazing based on ratio"
 ghenv.Component.NickName = 'glazingCreator'
-ghenv.Component.Message = 'VER 0.0.51\nMAR_01_2014'
+ghenv.Component.Message = 'VER 0.0.51\nMAR_02_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -823,6 +823,12 @@ def main(windowHeight, sillHeight):
             sill = None
             if surface.type == 0:
                 srfType = 0
+                if len(glzRatio) == 1:
+                    targetPercentage = glzRatio[0]
+                if len(windowHeight) == 1:
+                    winHeight = windowHeight[0]
+                if len(sillHeight) == 1:
+                    sill = sillHeight[0]
                 for angleCount in range(len(angles)-1):
                     if angles[angleCount]+(0.5*sc.doc.ModelAngleToleranceDegrees) <= surface.angle2North%360 <= angles[angleCount +1]+(0.5*sc.doc.ModelAngleToleranceDegrees):
                         #print surface.angle2North%360
