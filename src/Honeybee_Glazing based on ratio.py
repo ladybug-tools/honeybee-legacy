@@ -24,7 +24,7 @@ Provided by Honeybee 0.0.51
 
 ghenv.Component.Name = "Honeybee_Glazing based on ratio"
 ghenv.Component.NickName = 'glazingCreator'
-ghenv.Component.Message = 'VER 0.0.51\nFEB_24_2014'
+ghenv.Component.Message = 'VER 0.0.51\nMAR_01_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -387,8 +387,13 @@ def createGlazingThatContainsRectangle(topEdge, btmEdge, baseSrf, glazingRatio, 
             reconstructSrf = rc.Geometry.Brep.CreatePlanarBreps(joinedEdgesSimplified)[0]
         except:
             pass
-        angle1 = rc.Geometry.Vector3d.VectorAngle(rc.Geometry.Vector3d.Subtract(rc.Geometry.Vector3d(reconstructSrf.Vertices[0].Location), rc.Geometry.Vector3d(reconstructSrf.Vertices[1].Location)), rc.Geometry.Vector3d.Subtract(rc.Geometry.Vector3d(reconstructSrf.Vertices[0].Location), rc.Geometry.Vector3d(reconstructSrf.Vertices[reconstructSrf.Vertices.Count - 1].Location)))
-        angle2 = rc.Geometry.Vector3d.VectorAngle(rc.Geometry.Vector3d.Subtract(rc.Geometry.Vector3d(reconstructSrf.Vertices[1].Location), rc.Geometry.Vector3d(reconstructSrf.Vertices[2].Location)), rc.Geometry.Vector3d.Subtract(rc.Geometry.Vector3d(reconstructSrf.Vertices[1].Location), rc.Geometry.Vector3d(reconstructSrf.Vertices[0].Location)))
+        
+        # On some systems there was an error with using Brep.Vertices
+        # I assume this should be an issue with one of Rhinocommon versions
+        # Hopefully this will fix it - 
+        vertices = reconstructSrf.DuplicateVertices()
+        angle1 = rc.Geometry.Vector3d.VectorAngle(rc.Geometry.Vector3d.Subtract(rc.Geometry.Vector3d(vertices[0]), rc.Geometry.Vector3d(vertices[1])), rc.Geometry.Vector3d.Subtract(rc.Geometry.Vector3d(vertices[0]), rc.Geometry.Vector3d(vertices[len(vertices) - 1])))
+        angle2 = rc.Geometry.Vector3d.VectorAngle(rc.Geometry.Vector3d.Subtract(rc.Geometry.Vector3d(vertices[1]), rc.Geometry.Vector3d(vertices[2])), rc.Geometry.Vector3d.Subtract(rc.Geometry.Vector3d(vertices[1]), rc.Geometry.Vector3d(vertices[0])))
         numSides = reconstructSrf.Edges.Count
         rectBool = reconstructSrf.IsValid
         if rectBool and numSides == 4 and angle1 < 1.570796 + sc.doc.ModelAngleToleranceRadians and angle1 > 1.570796 - sc.doc.ModelAngleToleranceRadians and angle2 < 1.570796 + sc.doc.ModelAngleToleranceRadians and angle2 > 1.570796 - sc.doc.ModelAngleToleranceRadians:
@@ -571,7 +576,10 @@ def createGlazingCurved(baseSrf, glzRatio, planar):
     lastSuccessfulSrf = None
     lastSuccessfulArea = area
     srfs = []
-    coordinatesList = baseSrf.Vertices
+    
+    
+    try: coordinatesList = baseSrf.Vertices
+    except: coordinatesList = baseSrf.DuplicateVertices()
     
     succ, glzArea, glzCurve, splittedSrfs = OffsetCurveOnSurface(border, face, offsetDist, normalvector, planar)
     if succ == False:
