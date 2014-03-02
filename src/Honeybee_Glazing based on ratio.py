@@ -8,7 +8,7 @@
 """
 Generate window based on a desired percentage of glazing and possibly other inputs such as window height and sill height.
 -
-Provided by Honeybee 0.0.50
+Provided by Honeybee 0.0.51
     
     Args:
         HBObjects: Honeybee thermal zones or surfaces for which glazing should be generated.
@@ -24,10 +24,12 @@ Provided by Honeybee 0.0.50
 
 ghenv.Component.Name = "Honeybee_Glazing based on ratio"
 ghenv.Component.NickName = 'glazingCreator'
-ghenv.Component.Message = 'VER 0.0.54\nMAR_01_2014'
+ghenv.Component.Message = 'VER 0.0.51\nMAR_01_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
-ghenv.Component.AdditionalHelpFromDocStrings = "3"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
+except: pass
+
 
 import Rhino as rc
 import scriptcontext as sc
@@ -385,8 +387,13 @@ def createGlazingThatContainsRectangle(topEdge, btmEdge, baseSrf, glazingRatio, 
             reconstructSrf = rc.Geometry.Brep.CreatePlanarBreps(joinedEdgesSimplified)[0]
         except:
             pass
-        angle1 = rc.Geometry.Vector3d.VectorAngle(rc.Geometry.Vector3d.Subtract(rc.Geometry.Vector3d(reconstructSrf.Vertices[0].Location), rc.Geometry.Vector3d(reconstructSrf.Vertices[1].Location)), rc.Geometry.Vector3d.Subtract(rc.Geometry.Vector3d(reconstructSrf.Vertices[0].Location), rc.Geometry.Vector3d(reconstructSrf.Vertices[reconstructSrf.Vertices.Count - 1].Location)))
-        angle2 = rc.Geometry.Vector3d.VectorAngle(rc.Geometry.Vector3d.Subtract(rc.Geometry.Vector3d(reconstructSrf.Vertices[1].Location), rc.Geometry.Vector3d(reconstructSrf.Vertices[2].Location)), rc.Geometry.Vector3d.Subtract(rc.Geometry.Vector3d(reconstructSrf.Vertices[1].Location), rc.Geometry.Vector3d(reconstructSrf.Vertices[0].Location)))
+        
+        # On some systems there was an error with using Brep.Vertices
+        # I assume this should be an issue with one of Rhinocommon versions
+        # Hopefully this will fix it - 
+        vertices = reconstructSrf.DuplicateVertices()
+        angle1 = rc.Geometry.Vector3d.VectorAngle(rc.Geometry.Vector3d.Subtract(rc.Geometry.Vector3d(vertices[0]), rc.Geometry.Vector3d(vertices[1])), rc.Geometry.Vector3d.Subtract(rc.Geometry.Vector3d(vertices[0]), rc.Geometry.Vector3d(vertices[len(vertices) - 1])))
+        angle2 = rc.Geometry.Vector3d.VectorAngle(rc.Geometry.Vector3d.Subtract(rc.Geometry.Vector3d(vertices[1]), rc.Geometry.Vector3d(vertices[2])), rc.Geometry.Vector3d.Subtract(rc.Geometry.Vector3d(vertices[1]), rc.Geometry.Vector3d(vertices[0])))
         numSides = reconstructSrf.Edges.Count
         rectBool = reconstructSrf.IsValid
         if rectBool and numSides == 4 and angle1 < 1.570796 + sc.doc.ModelAngleToleranceRadians and angle1 > 1.570796 - sc.doc.ModelAngleToleranceRadians and angle2 < 1.570796 + sc.doc.ModelAngleToleranceRadians and angle2 > 1.570796 - sc.doc.ModelAngleToleranceRadians:
@@ -569,7 +576,10 @@ def createGlazingCurved(baseSrf, glzRatio, planar):
     lastSuccessfulSrf = None
     lastSuccessfulArea = area
     srfs = []
-    coordinatesList = baseSrf.Vertices
+    
+    
+    try: coordinatesList = baseSrf.Vertices
+    except: coordinatesList = baseSrf.DuplicateVertices()
     
     succ, glzArea, glzCurve, splittedSrfs = OffsetCurveOnSurface(border, face, offsetDist, normalvector, planar)
     if succ == False:
@@ -813,12 +823,6 @@ def main(windowHeight, sillHeight):
             sill = None
             if surface.type == 0:
                 srfType = 0
-                if len(glzRatio) == 1:
-                    targetPercentage = glzRatio[0]
-                if len(windowHeight) == 1:
-                    winHeight = windowHeight[0]
-                if len(sillHeight) == 1:
-                    sill = sillHeight[0]
                 for angleCount in range(len(angles)-1):
                     if angles[angleCount]+(0.5*sc.doc.ModelAngleToleranceDegrees) <= surface.angle2North%360 <= angles[angleCount +1]+(0.5*sc.doc.ModelAngleToleranceDegrees):
                         #print surface.angle2North%360
