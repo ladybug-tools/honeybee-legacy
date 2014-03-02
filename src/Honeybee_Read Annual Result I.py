@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.51
 """
 ghenv.Component.Name = "Honeybee_Read Annual Result I"
 ghenv.Component.NickName = 'readAnnualResultsI'
-ghenv.Component.Message = 'VER 0.0.51\nFEB_28_2014'
+ghenv.Component.Message = 'VER 0.0.51\nMAR_01_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -332,20 +332,23 @@ def main(illFilesAddress, testPts, testVecs, occFiles, lightingControlGroups, SH
     #
     # check if the files are already generated once
     firstRun = False
+    newIllFileNamesDict = {}
     for shdGroupCounter, illFileList in enumerate(originalIllFilesSorted):
+        newIllFileNamesDict[shdGroupCounter] = []
         for spaceCount in range(numOfSpaces):
             newIllFileName  = illFileList[0].split(".ill")[0] + "_space_" + str(spaceCount) + ".ill"
             newDcFileName  = illFileList[0].split(".ill")[0] + "_space_" + str(spaceCount) + ".dc"
+            newIllFileNamesDict[shdGroupCounter].append(newIllFileName) #collect ill files to calculate sDA
             if not (os.path.isfile(newIllFileName) and os.path.isfile(newDcFileName)):
                 firstRun = True
                 break
-        
+    
     # open all the available ill files and put them in the dictionary
     if firstRun:
         for shdGroupCounter, illFileList in enumerate(originalIllFilesSorted):
             illFilesDict = {}
             newIllFilesDict = {}
-            
+            newIllFileNamesDict[shdGroupCounter] = []
             #illFileDict[shaidngGroupCounter]
             for counter, illFile in enumerate(illFileList):
                 illfile = open(illFile, "r")
@@ -354,6 +357,7 @@ def main(illFilesAddress, testPts, testVecs, occFiles, lightingControlGroups, SH
             # open new ill files for each space and put them in the same directory
             for spaceCount in range(numOfSpaces):
                 newIllFileName  = illFileList[0].split(".ill")[0] + "_space_" + str(spaceCount) + ".ill"
+                newIllFileNamesDict[shdGroupCounter].append(newIllFileName) #collect ill files to calculate sDA
                 newIllFile = open(newIllFileName, "w")
                 newIllFilesDict[spaceCount] = newIllFile
             
@@ -610,7 +614,57 @@ def main(illFilesAddress, testPts, testVecs, occFiles, lightingControlGroups, SH
         for fileName in batchFileNames:
             batchFileName = os.path.join(filePath, fileName)
             os.system(batchFileName)
+    
+    # calculate sDA
+    # Daysim currently doesn't do it
+    # should be fixed to consider the shading profile right now I calculate the
+    # results only with the case with no shading
+    
+    
+    sDADict = {}
+    
+    
+    if len(newIllFileNamesDict.keys())!=1:
+        warning = "This version of Honeybee doesn't consider dynamic blinds in sDA calculation!\n"
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
         
+    for spaceCount, spaceIllFiles in enumerate(newIllFileNamesDict[0]):
+        totalOccupancyHours = 0
+        sDADict[spaceCount] = 0
+        
+        try: DLAIllumThreshold = DLAIllumThresholds[spaceCount]
+        except: DLAIllumThreshold = DLAIllumThresholds[0]
+        
+        
+        # open the file to read the values
+        with open(spaceIllFiles, "r") as illInf:
+            
+            # import occupancy profile
+            try: occFile = occFiles[spaceCount]
+            except: occFile = occFiles[0]
+            with open(occFile, "r") as occInFile:
+                occupancyLines = occInFile.readlines()
+                
+            # each line represnt an hour
+            for lineCount, line in enumerate(illInf):
+                higherThanThreshold = 0
+                # check the occupancy profile
+                if int(occupancyLines[lineCount + 3].split(",")[-1]) != 0:
+                    totalOccupancyHours += 1
+                    illValues = line.split("  ")[1].strip().split(" ")
+                    
+                    # check number of points that satisfy the minimum illuminance
+                    for sensorCount, illuminance in enumerate(illValues):
+                        if float(illuminance) >= DLAIllumThreshold:
+                            higherThanThreshold += 1
+                    
+                    if higherThanThreshold/len(illValues) > .5:
+                        sDADict[spaceCount] += 1
+            
+            sDADict[spaceCount] = "%.2f"%((sDADict[spaceCount]/totalOccupancyHours) * 100)
+          
+    
     # read all the results
     DLALists = []
     underUDLILists = []
@@ -646,7 +700,7 @@ def main(illFilesAddress, testPts, testVecs, occFiles, lightingControlGroups, SH
     try: overUDLILists = sorted(overUDLILists, key=lambda fileName: int(fileName.split(".")[-2].split("_")[-4]))
     except: pass
     
-    return None, [DLALists, underUDLILists, inRangeUDLILists, overUDLILists, CDALists, EPLSchLists, htmLists]
+    return None, [DLALists, underUDLILists, inRangeUDLILists, overUDLILists, CDALists, EPLSchLists, htmLists, sDADict]
 
 def isAllNone(dataList):
     for item in dataList.AllData():
@@ -667,7 +721,7 @@ if _runIt and not isAllNone(_illFilesAddress) and not isAllNone(_testPoints):
         ghenv.Component.AddRuntimeMessage(w, msg)
         
     else:
-        DLALists, underUDLILists, inRangeUDLILists, overUDLILists, CDALists, EPLSchLists, htmLists = results
+        DLALists, underUDLILists, inRangeUDLILists, overUDLILists, CDALists, EPLSchLists, htmLists, sDADict = results
         DLA = DataTree[Object]()
         UDLI_Less_100 = DataTree[Object]()    
         UDLI_100_2000 = DataTree[Object]()
@@ -685,24 +739,16 @@ if _runIt and not isAllNone(_illFilesAddress) and not isAllNone(_testPoints):
                         results.append(float(line.split("\t")[-1]))
             return results
         
-        def getsDAResult(DLAResult):
-            
-            moreThan50 = 0
-            for number in DLAResult:
-                if number >= 50: moreThan50+=1
-            
-            return (moreThan50/len(DLAResult)) *100
-        
         for branchNum in range(_testPoints.BranchCount):
             p = GH_Path(branchNum)
-            
-            DLA.AddRange(readDSStandardResults(DLALists[branchNum]), p)
+            DLARes = readDSStandardResults(DLALists[branchNum])
+            DLA.AddRange(DLARes, p)
             UDLI_Less_100.AddRange(readDSStandardResults(underUDLILists[branchNum]), p)
             UDLI_100_2000.AddRange(readDSStandardResults(inRangeUDLILists[branchNum]), p)
             UDLI_More_2000.AddRange(readDSStandardResults(overUDLILists[branchNum]), p)
             CDA.AddRange(readDSStandardResults(CDALists[branchNum]), p)
             annualProfiles.Add(EPLSchLists[branchNum], p)
-            sDA.Add(getsDAResult(DLALists[branchNum]), p)
+            sDA.Add(sDADict[branchNum], p)
             htmReport.Add(htmLists[branchNum], p)
                 
 
