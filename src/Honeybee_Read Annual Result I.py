@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.51
 """
 ghenv.Component.Name = "Honeybee_Read Annual Result I"
 ghenv.Component.NickName = 'readAnnualResultsI'
-ghenv.Component.Message = 'VER 0.0.51\nMAR_01_2014'
+ghenv.Component.Message = 'VER 0.0.51\nMAR_02_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -615,54 +615,50 @@ def main(illFilesAddress, testPts, testVecs, occFiles, lightingControlGroups, SH
             batchFileName = os.path.join(filePath, fileName)
             os.system(batchFileName)
     
-    # calculate sDA
-    # Daysim currently doesn't do it
-    # should be fixed to consider the shading profile right now I calculate the
-    # results only with the case with no shading
+    # calculate sDA    
     
+    #sDADict = {}
     
-    sDADict = {}
-    
-    
-    if len(newIllFileNamesDict.keys())!=1:
-        warning = "This version of Honeybee doesn't consider dynamic blinds in sDA calculation!\n"
-        w = gh.GH_RuntimeMessageLevel.Warning
-        ghenv.Component.AddRuntimeMessage(w, warning)
+    #if len(newIllFileNamesDict.keys())!=1:
+    #    warning = "This version of Honeybee doesn't consider dynamic blinds in sDA calculation!\n"
+    #    w = gh.GH_RuntimeMessageLevel.Warning
+    #    ghenv.Component.AddRuntimeMessage(w, warning)
+    #    
+    #for spaceCount, spaceIllFiles in enumerate(newIllFileNamesDict[0]):
+    #    totalOccupancyHours = 0
+    #    sDADict[spaceCount] = 0
         
-    for spaceCount, spaceIllFiles in enumerate(newIllFileNamesDict[0]):
-        totalOccupancyHours = 0
-        sDADict[spaceCount] = 0
-        
-        try: DLAIllumThreshold = DLAIllumThresholds[spaceCount]
-        except: DLAIllumThreshold = DLAIllumThresholds[0]
-        
-        
-        # open the file to read the values
-        with open(spaceIllFiles, "r") as illInf:
-            
-            # import occupancy profile
-            try: occFile = occFiles[spaceCount]
-            except: occFile = occFiles[0]
-            with open(occFile, "r") as occInFile:
-                occupancyLines = occInFile.readlines()
-                
-            # each line represnt an hour
-            for lineCount, line in enumerate(illInf):
-                higherThanThreshold = 0
-                # check the occupancy profile
-                if int(occupancyLines[lineCount + 3].split(",")[-1]) != 0:
-                    totalOccupancyHours += 1
-                    illValues = line.split("  ")[1].strip().split(" ")
-                    
-                    # check number of points that satisfy the minimum illuminance
-                    for sensorCount, illuminance in enumerate(illValues):
-                        if float(illuminance) >= DLAIllumThreshold:
-                            higherThanThreshold += 1
-                    
-                    if higherThanThreshold/len(illValues) > .5:
-                        sDADict[spaceCount] += 1
-            
-            sDADict[spaceCount] = "%.2f"%((sDADict[spaceCount]/totalOccupancyHours) * 100)
+    #    try: DLAIllumThreshold = DLAIllumThresholds[spaceCount]
+    #    except: DLAIllumThreshold = DLAIllumThresholds[0]
+    #    
+    #    
+    #    # open the file to read the values
+    #    with open(spaceIllFiles, "r") as illInf:
+    #        
+    #        # import occupancy profile
+    #        try: occFile = occFiles[spaceCount]
+    #        except: occFile = occFiles[0]
+    #        with open(occFile, "r") as occInFile:
+    #            occupancyLines = occInFile.readlines()
+    #            
+    #        # each line represnt an hour
+    #        for lineCount, line in enumerate(illInf):
+    #            higherThanThreshold = 0
+    #            # check the occupancy profile
+    #            if int(occupancyLines[lineCount + 3].split(",")[-1]) != 0:
+    #                totalOccupancyHours += 1
+    #                illValues = line.split("  ")[1].strip().split(" ")
+    #                
+    #                # check number of points that satisfy the minimum illuminance
+    #                for sensorCount, illuminance in enumerate(illValues):
+    #                    # print float(illuminance), DLAIllumThreshold, float(illuminance) >= DLAIllumThreshold
+    #                    if float(illuminance) >= DLAIllumThreshold:
+    #                        higherThanThreshold += 1
+    #                
+    #                if higherThanThreshold/len(illValues) > .5:
+    #                    sDADict[spaceCount] += 1
+    #        
+    #        sDADict[spaceCount] = "%.2f"%((sDADict[spaceCount]/totalOccupancyHours) * 100)
           
     
     # read all the results
@@ -700,7 +696,7 @@ def main(illFilesAddress, testPts, testVecs, occFiles, lightingControlGroups, SH
     try: overUDLILists = sorted(overUDLILists, key=lambda fileName: int(fileName.split(".")[-2].split("_")[-4]))
     except: pass
     
-    return None, [DLALists, underUDLILists, inRangeUDLILists, overUDLILists, CDALists, EPLSchLists, htmLists, sDADict]
+    return None, [DLALists, underUDLILists, inRangeUDLILists, overUDLILists, CDALists, EPLSchLists, htmLists]
 
 def isAllNone(dataList):
     for item in dataList.AllData():
@@ -721,7 +717,7 @@ if _runIt and not isAllNone(_illFilesAddress) and not isAllNone(_testPoints):
         ghenv.Component.AddRuntimeMessage(w, msg)
         
     else:
-        DLALists, underUDLILists, inRangeUDLILists, overUDLILists, CDALists, EPLSchLists, htmLists, sDADict = results
+        DLALists, underUDLILists, inRangeUDLILists, overUDLILists, CDALists, EPLSchLists, htmLists = results
         DLA = DataTree[Object]()
         UDLI_Less_100 = DataTree[Object]()    
         UDLI_100_2000 = DataTree[Object]()
@@ -739,6 +735,14 @@ if _runIt and not isAllNone(_illFilesAddress) and not isAllNone(_testPoints):
                         results.append(float(line.split("\t")[-1]))
             return results
         
+        def getsDA(DLARes, threshold = 50):
+            moreThan = 0
+            for res in DLARes:
+                if res >= threshold:
+                    moreThan += 1
+            return "%.2f"%((moreThan/len(DLARes)) * 100)
+        
+        
         for branchNum in range(_testPoints.BranchCount):
             p = GH_Path(branchNum)
             DLARes = readDSStandardResults(DLALists[branchNum])
@@ -748,7 +752,7 @@ if _runIt and not isAllNone(_illFilesAddress) and not isAllNone(_testPoints):
             UDLI_More_2000.AddRange(readDSStandardResults(overUDLILists[branchNum]), p)
             CDA.AddRange(readDSStandardResults(CDALists[branchNum]), p)
             annualProfiles.Add(EPLSchLists[branchNum], p)
-            sDA.Add(sDADict[branchNum], p)
+            sDA.Add(getsDA(DLARes), p)
             htmReport.Add(htmLists[branchNum], p)
                 
 
