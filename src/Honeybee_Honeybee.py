@@ -9,15 +9,15 @@ This component carries all of Honeybee's main classes. Other components refer to
 classes to run the studies. Therefore, you need to let her fly before running the studies so the
 classes will be copied to Rhinos shared space. So let her fly!
 -
-Ladybug started by Mostapha Sadeghipour Roudsari is licensed
+Honeybee started by Mostapha Sadeghipour Roudsari is licensed
 under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
-Based on a work at https://github.com/mostaphaRoudsari/ladybug.
+Based on a work at https://github.com/mostaphaRoudsari/Honeybee.
 -
 Check this link for more information about the license:
 http://creativecommons.org/licenses/by-sa/3.0/deed.en_US
 -
 Source code is available at:
-https://github.com/mostaphaRoudsari/ladybug
+https://github.com/mostaphaRoudsari/Honeybee
 -
 Provided by Honeybee 0.0.51
     
@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.51
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.51\nFEB_25_2014'
+ghenv.Component.Message = 'VER 0.0.51\nMAR_05_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -2133,107 +2133,117 @@ class hb_DSParameters(object):
         
         # print "number of ill files = " + str(self.numOfIll)
 
-now = datetime.datetime.now()
+
+def checkGHPythonVersion(target = "0.6.0.3"):
+    
+    currentVersion = int(ghenv.Version.ToString().replace(".", ""))
+    targetVersion = int(target.replace(".", ""))
+    
+    if targetVersion > currentVersion: return False
+    else: return True
+
 letItFly = True
-if now.day + now.month + now.year < 2055 + 365: # should work until the end of 2013
-    if letItFly:
-        if not sc.sticky.has_key("honeybee_release") or True:
-            w = gh.GH_RuntimeMessageLevel.Warning
-            sc.sticky["honeybee_release"] = True
-            folders = hb_findFolders()
-            
-            sc.sticky["honeybee_folders"] = {}
-            
-            if folders.RADPath == None:
-                if os.path.isdir("c:\\radiance\\bin\\"):
-                    folders.RADPath = "c:\\radiance\\bin\\"
-                else:
-                    msg= "Honeybee cannot find RADIANCE folder on your system.\n" + \
-                         "Make sure you have RADIANCE installed on your system.\n" + \
-                         "You won't be able to run daylighting studies without RADIANCE.\n" + \
-                         "A good place to install RADIANCE is c:\\radiance"
-                    ghenv.Component.AddRuntimeMessage(w, msg)
-                    folders.RADPath = ""
-            
-            # I should replace this with python methods in os library
-            # looks stupid!
-            if folders.RADPath.endswith("\\"): segmentNumber = -2
-            else: segmentNumber = -1
-            hb_RADLibPath = "\\".join(folders.RADPath.split("\\")[:segmentNumber]) + "\\lib"
-            
-            sc.sticky["honeybee_folders"]["RADPath"] = folders.RADPath
-            sc.sticky["honeybee_folders"]["RADLibPath"] = hb_RADLibPath
-                
-            if folders.DSPath == None:
-                if os.path.isdir("c:\\daysim\\bin\\"):
-                    folders.DSPath = "c:\\daysim\\bin\\"
-                else:
-                    msg= "Honeybee cannot find DAYSIM folder on your system.\n" + \
-                         "Make sure you have DAYISM installed on your system.\n" + \
-                         "You won't be able to run annual climate-based daylighting studies without DAYSIM.\n" + \
-                         "A good place to install DAYSIM is c:\\DAYSIM"
-                    ghenv.Component.AddRuntimeMessage(w, msg)
-                    folders.DSPath = ""
-                    
-            if folders.DSPath.endswith("\\"): segmentNumber = -2
-            else: segmentNumber = -1
-            hb_DSCore = "\\".join(folders.DSPath.split("\\")[:segmentNumber])
-            hb_DSLibPath = "\\".join(folders.DSPath.split("\\")[:segmentNumber]) + "\\lib"
-            
-            sc.sticky["honeybee_folders"]["DSPath"] = folders.DSPath
-            sc.sticky["honeybee_folders"]["DSCorePath"] = hb_DSCore
-            sc.sticky["honeybee_folders"]["DSLibPath"] = hb_DSLibPath
-        
-            
-            if folders.EPPath == None:
-                EPVersion = "V7-2-0"
-                if os.path.isdir("C:\EnergyPlus" + EPVersion + "\\"):
-                    folders.EPPath = "C:\EnergyPlus" + EPVersion + "\\"
-                else:
-                    msg= "Honeybee cannot find EnergyPlus" + EPVersion + " folder on your system.\n" + \
-                         "Make sure you have EnergyPlus" + EPVersion + " installed on your system.\n" + \
-                         "You won't be able to run energy simulations without EnergyPlus.\n" + \
-                         "A good place to install EnergyPlus is c:\\EnergyPlus" + EPVersion
-                    ghenv.Component.AddRuntimeMessage(w, msg)
-                    folders.EPPath = ""
-                    
-            sc.sticky["honeybee_folders"]["EPPath"] = folders.EPPath
-            
-            sc.sticky["honeybee_RADMaterialAUX"] = RADMaterialAux
 
-            # set up radiance materials
-            sc.sticky["honeybee_RADMaterialAUX"](True)
-            
-            hb_GetEPConstructions()
-            
-            sc.sticky["honeybee_Hive"] = hb_Hive
-            sc.sticky["honeybee_DefaultMaterialLib"] = materialLibrary
-            sc.sticky["honeybee_DefaultScheduleLib"] = scheduleLibrary
-            sc.sticky["honeybee_DefaultSurfaceLib"] = EPSurfaceLib
-            sc.sticky["honeybee_EPZone"] = EPZone
-            sc.sticky["honeybee_EPSurface"] = hb_EPSurface
-            sc.sticky["honeybee_EPShdSurface"] = hb_EPShdSurface
-            sc.sticky["honeybee_EPZoneSurface"] = hb_EPZoneSurface
-            sc.sticky["honeybee_EPFenSurface"] = hb_EPFenSurface
-            sc.sticky["honeybee_RADParameters"] = hb_RADParameters
-            sc.sticky["honeybee_DSParameters"] = hb_DSParameters
-            
-    # sc.sticky.clear()
+def checkGHPythonVersion(target = "0.6.0.3"):
+    currentVersion = int(ghenv.Version.ToString().replace(".", ""))
+    targetVersion = int(target.replace(".", ""))
+    
+    if targetVersion > currentVersion: return False
+    else: return True
 
-    if not sc.sticky.has_key("honeybee_release"):
+GHPythonTargetVersion = "0.6.0.3"
+
+if not checkGHPythonVersion(GHPythonTargetVersion):
+    msg =  "Honeybee failed to fly! :(\n" + \
+           "You are using an old version of GHPython. " +\
+           "Please update to version: " + GHPythonTargetVersion
+    print msg
+    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+    letItFly = False
+    sc.sticky["honeybee_release"] = False
+
+if letItFly:
+    if not sc.sticky.has_key("honeybee_release") or True:
         w = gh.GH_RuntimeMessageLevel.Warning
-        try:
-            print "Hi " + os.getenv("USERNAME")+ "! \nPlease let me fly!..."
-            ghenv.Component.AddRuntimeMessage(w, "Hi " + os.getenv("USERNAME")+ "! \nPlease let me fly!...")
-            if 0 <= datetime.datetime.timetuple(now)[3] <= 6: print "Wait! This is after midnight... Time to go to bed! ;)"
-        except:
-            print "Please let me fly!..."
-            ghenv.Component.AddRuntimeMessage(w, "Please let me fly!...")
-    elif sc.sticky.has_key("honeybee_release"):
+        sc.sticky["honeybee_release"] = True
+        folders = hb_findFolders()
+        
+        sc.sticky["honeybee_folders"] = {}
+        
+        if folders.RADPath == None:
+            if os.path.isdir("c:\\radiance\\bin\\"):
+                folders.RADPath = "c:\\radiance\\bin\\"
+            else:
+                msg= "Honeybee cannot find RADIANCE folder on your system.\n" + \
+                     "Make sure you have RADIANCE installed on your system.\n" + \
+                     "You won't be able to run daylighting studies without RADIANCE.\n" + \
+                     "A good place to install RADIANCE is c:\\radiance"
+                ghenv.Component.AddRuntimeMessage(w, msg)
+                folders.RADPath = ""
+        
+        # I should replace this with python methods in os library
+        # looks stupid!
+        if folders.RADPath.endswith("\\"): segmentNumber = -2
+        else: segmentNumber = -1
+        hb_RADLibPath = "\\".join(folders.RADPath.split("\\")[:segmentNumber]) + "\\lib"
+        
+        sc.sticky["honeybee_folders"]["RADPath"] = folders.RADPath
+        sc.sticky["honeybee_folders"]["RADLibPath"] = hb_RADLibPath
+            
+        if folders.DSPath == None:
+            if os.path.isdir("c:\\daysim\\bin\\"):
+                folders.DSPath = "c:\\daysim\\bin\\"
+            else:
+                msg= "Honeybee cannot find DAYSIM folder on your system.\n" + \
+                     "Make sure you have DAYISM installed on your system.\n" + \
+                     "You won't be able to run annual climate-based daylighting studies without DAYSIM.\n" + \
+                     "A good place to install DAYSIM is c:\\DAYSIM"
+                ghenv.Component.AddRuntimeMessage(w, msg)
+                folders.DSPath = ""
+                
+        if folders.DSPath.endswith("\\"): segmentNumber = -2
+        else: segmentNumber = -1
+        hb_DSCore = "\\".join(folders.DSPath.split("\\")[:segmentNumber])
+        hb_DSLibPath = "\\".join(folders.DSPath.split("\\")[:segmentNumber]) + "\\lib"
+        
+        sc.sticky["honeybee_folders"]["DSPath"] = folders.DSPath
+        sc.sticky["honeybee_folders"]["DSCorePath"] = hb_DSCore
+        sc.sticky["honeybee_folders"]["DSLibPath"] = hb_DSLibPath
+    
+        if folders.EPPath == None:
+            EPVersion = "V7-2-0"
+            if os.path.isdir("C:\EnergyPlus" + EPVersion + "\\"):
+                folders.EPPath = "C:\EnergyPlus" + EPVersion + "\\"
+            else:
+                msg= "Honeybee cannot find EnergyPlus" + EPVersion + " folder on your system.\n" + \
+                     "Make sure you have EnergyPlus" + EPVersion + " installed on your system.\n" + \
+                     "You won't be able to run energy simulations without EnergyPlus.\n" + \
+                     "A good place to install EnergyPlus is c:\\EnergyPlus" + EPVersion
+                # I remove the warning for now until EP plugins are available
+                # It confuses the users
+                #ghenv.Component.AddRuntimeMessage(w, msg)
+                folders.EPPath = ""
+                
+        sc.sticky["honeybee_folders"]["EPPath"] = folders.EPPath
+        
+        sc.sticky["honeybee_RADMaterialAUX"] = RADMaterialAux
+
+        # set up radiance materials
+        sc.sticky["honeybee_RADMaterialAUX"](True)
+        
+        hb_GetEPConstructions()
+        
+        sc.sticky["honeybee_Hive"] = hb_Hive
+        sc.sticky["honeybee_DefaultMaterialLib"] = materialLibrary
+        sc.sticky["honeybee_DefaultScheduleLib"] = scheduleLibrary
+        sc.sticky["honeybee_DefaultSurfaceLib"] = EPSurfaceLib
+        sc.sticky["honeybee_EPZone"] = EPZone
+        sc.sticky["honeybee_EPSurface"] = hb_EPSurface
+        sc.sticky["honeybee_EPShdSurface"] = hb_EPShdSurface
+        sc.sticky["honeybee_EPZoneSurface"] = hb_EPZoneSurface
+        sc.sticky["honeybee_EPFenSurface"] = hb_EPFenSurface
+        sc.sticky["honeybee_RADParameters"] = hb_RADParameters
+        sc.sticky["honeybee_DSParameters"] = hb_DSParameters
+        
+        # done! sharing the happiness.
         print "Hooohooho...Flying!!\nVviiiiiiizzz..."
-else:
-    sc.sticky.clear()
-    w = gh.GH_RuntimeMessageLevel.Warning
-    warning = "Hi! You were using a test version of honeybee which is expired now\nPlease check the Grasshopper group page for a newer version"
-    print warning
-    ghenv.Component.AddRuntimeMessage(w, warning)
