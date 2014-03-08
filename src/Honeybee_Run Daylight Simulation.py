@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.51
 
 ghenv.Component.Name = "Honeybee_Run Daylight Simulation"
 ghenv.Component.NickName = 'runDaylightAnalysis'
-ghenv.Component.Message = 'VER 0.0.51\nFEB_24_2014'
+ghenv.Component.Message = 'VER 0.0.51\nMAR_07_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -896,6 +896,10 @@ def main(north, HBObjects, analysisRecipe, runRad, numOfCPUs, workingDir, radFil
         
         ## check for the name of the file
         if radFileName == None: radFileName = 'unnamed'
+        
+        # make sure radfile name is a valid address
+        keepcharacters = ('.','_')
+        radFileName = "".join([c for c in radFileName if c.isalnum() or c in keepcharacters]).rstrip()
         
         # make new folder for each study
         subWorkingDir = lb_preparation.makeWorkingDir(workingDir + "\\" + radFileName + studyFolder)
