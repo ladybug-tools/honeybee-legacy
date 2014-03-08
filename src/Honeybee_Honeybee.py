@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.51
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.51\nMAR_05_2014'
+ghenv.Component.Message = 'VER 0.0.51\nMAR_07_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -2181,6 +2181,11 @@ if letItFly:
                 ghenv.Component.AddRuntimeMessage(w, msg)
                 folders.RADPath = ""
         
+        if  folders.RADPath.find(" ") > -1:
+            msg =  "There is a white space in RADIANCE filepath: " + folders.RADPath + "\n" + \
+                   "Please install RADIANCE in a valid address (e.g. c:\\radiance)"
+            ghenv.Component.AddRuntimeMessage(w, msg)
+            
         # I should replace this with python methods in os library
         # looks stupid!
         if folders.RADPath.endswith("\\"): segmentNumber = -2
@@ -2200,7 +2205,12 @@ if letItFly:
                      "A good place to install DAYSIM is c:\\DAYSIM"
                 ghenv.Component.AddRuntimeMessage(w, msg)
                 folders.DSPath = ""
-                
+        
+        if folders.DSPath.find(" ") > -1:
+            msg =  "There is a white space in DAYSIM filepath: " + folders.DSPath + "\n" + \
+                   "Please install Daysism in a valid address (e.g. c:\\daysim)"
+            ghenv.Component.AddRuntimeMessage(w, msg)
+        
         if folders.DSPath.endswith("\\"): segmentNumber = -2
         else: segmentNumber = -1
         hb_DSCore = "\\".join(folders.DSPath.split("\\")[:segmentNumber])
