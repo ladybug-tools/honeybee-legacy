@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.51
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.51\nMAR_07_2014'
+ghenv.Component.Message = 'VER 0.0.51\nMAR_08_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -2060,7 +2060,12 @@ class hb_Hive(object):
             try:
                 key = geometry.UserDictionary['HBID']
                 if sc.sticky['HBHive'].has_key(key):
-                    HBObjects.append(copy.deepcopy(sc.sticky['HBHive'][key]))
+                    try:
+                        HBObjects.append(copy.deepcopy(sc.sticky['HBHive'][key]))
+                    except:
+                        print "Failed to copy the object. Returning the original objects...\n" +\
+                              "This can cause strange behaviour!"
+                        HBObjects.append(sc.sticky['HBHive'][key])
             except:
                 pass
                 
