@@ -15,11 +15,14 @@ Provided by Honeybee 0.0.51
         resFiles: List of result files from grid based analysis
         illFiles: List of ill files from annual analysis
         ptsFiles: List of point files
+        hdrFiles: List of hdr files
+        gifFiles: List of gif files
+        
 """
 
-ghenv.Component.Name = "Honeybee_Search Annual Simulation Folder"
-ghenv.Component.NickName = 'searchAnnualSimulationFolder'
-ghenv.Component.Message = 'VER 0.0.51\nFEB_24_2014'
+ghenv.Component.Name = "Honeybee_Lookup Daylighting Folder"
+ghenv.Component.NickName = 'LookupFolder_Daylighting'
+ghenv.Component.Message = 'VER 0.0.51\nMAR_12_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
@@ -47,20 +50,26 @@ def main(studyFolder):
     resFiles = []
     illFilesTemp = []
     ptsFiles = []
+    hdrFiles = []
+    gifFiles = []
     epwFile = str.Empty
     
     if studyFolder!=None:
         fileNames = os.listdir(studyFolder)
         fileNames.sort()
         for fileName in fileNames:
-            if fileName.endswith(".res"):
+            if fileName.lower().endswith(".res"):
                 resFiles.append(os.path.join(studyFolder, fileName))
-            elif fileName.endswith(".ill") and fileName.split("_")[-2]!="space":
+            elif fileName.lower().endswith(".ill") and fileName.split("_")[-2]!="space":
                 illFilesTemp.append(os.path.join(studyFolder, fileName))
-            elif fileName.endswith(".pts") and fileName.split("_")[-2]!="space":
+            elif fileName.lower().endswith(".pts") and fileName.split("_")[-2]!="space":
                 ptsFiles.append(os.path.join(studyFolder, fileName))
-            elif fileName.endswith(".epw"):
+            elif fileName.lower().endswith(".epw"):
                 epwFile = os.path.join(studyFolder, fileName)
+            elif fileName.lower().endswith(".hdr"):
+                hdrFiles.append(os.path.join(studyFolder, fileName))
+            elif fileName.lower().endswith(".gif"):
+                gifFiles.append(os.path.join(studyFolder, fileName))
     
     # check if there are multiple ill files in the folder for different shading groups
     illFilesDict = {}
@@ -106,7 +115,7 @@ def main(studyFolder):
     try: ptsFiles = sorted(ptsFiles, key=lambda fileName: int(fileName.split(".")[-2].split("_")[-1]))
     except: pass
     
-    return msg, [illFiles, resFiles, ptsFiles, epwFile]
+    return msg, [illFiles, resFiles, ptsFiles, hdrFiles, gifFiles, epwFile]
     
 
 msg, results = main(studyFolder)
@@ -114,4 +123,4 @@ msg, results = main(studyFolder)
 if msg!=str.Empty:
     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
 else:
-    illFiles, resFiles, ptsFiles, epwFile = results
+    illFiles, resFiles, ptsFiles, hdrFiles, gifFiles, epwFile = results
