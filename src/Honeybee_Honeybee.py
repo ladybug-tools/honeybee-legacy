@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.51
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.51\nMAR_08_2014'
+ghenv.Component.Message = 'VER 0.0.52\nMAR_14_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -115,7 +115,6 @@ class hb_GetEPConstructions():
                 ## download File
                 print 'Downloading OpenStudioMasterTemplate.idf to ', workingDir
                 downloadFile(r'https://dl.dropboxusercontent.com/u/16228160/honeybee/OpenStudioMasterTemplate.idf', workingDir)
-                print 'Download complete!'
             except:
                 print 'Download failed!!! You need OpenStudioMasterTemplate.idf to use honeybee.' + \
                 '\nPlease check your internet connection, and try again!'
@@ -123,9 +122,12 @@ class hb_GetEPConstructions():
             pass
         
         if not os.path.isfile(workingDir + '\OpenStudioMasterTemplate.idf'):
-            return
+            print 'Download failed!!! You need OpenStudioMasterTemplate.idf to use honeybee.' + \
+                '\nPlease check your internet connection, and try again!'
+            return -1
         else:
             libFilePaths = [workingDir + '\OpenStudioMasterTemplate.idf']
+            # print 'Download complete!'
         
         if os.path.isfile("c:/ladybug/userCustomLibrary.idf"):
             libFilePaths.append("c:/ladybug/userCustomLibrary.idf")
@@ -168,7 +170,7 @@ class hb_GetEPConstructions():
                         break
             return resultDict
         
-        if not sc.sticky.has_key("honeybee_constructionLib")or True:
+        if not sc.sticky.has_key("honeybee_constructionLib"):
             print "Loading EP construction library"
             resultDict = {}
             EPKeys = ["Material", "WindowMaterial", "Construction"]
@@ -2246,7 +2248,8 @@ if letItFly:
         # set up radiance materials
         sc.sticky["honeybee_RADMaterialAUX"](True)
         
-        hb_GetEPConstructions()
+        try: hb_GetEPConstructions()
+        except: print "Failed to load EP constructions!"
         
         sc.sticky["honeybee_Hive"] = hb_Hive
         sc.sticky["honeybee_DefaultMaterialLib"] = materialLibrary
