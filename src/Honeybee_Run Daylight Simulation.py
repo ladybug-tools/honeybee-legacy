@@ -25,17 +25,17 @@ Provided by Honeybee 0.0.51
         readMe!: ...
         analysisType: Type of the analysis (e.g. illuminance, luminance,...)
         resultsUnit: Unit of the results (e.g. lux, candela, wh/m2)
-        radianceGeometryPath: Path to the Radiance geometry file
-        HDRImageOutputPath: Path to the HDR image file
-        gridBasedResultsPath: Path to the results of grid based analysis (includes all the recipes except image-based and annual)
-        annualAnalysisPath: Path to the result files of annual analysis
+        radianceFile: Path to the Radiance geometry file
+        HDRFiles: Path to the HDR image file
+        gridBasedResultsFiles: Path to the results of grid based analysis (includes all the recipes except image-based and annual)
+        annualResultFiles: Path to the result files of annual analysis
         testPts: Test points
         done: True if the study is over
 """
 
 ghenv.Component.Name = "Honeybee_Run Daylight Simulation"
 ghenv.Component.NickName = 'runDaylightAnalysis'
-ghenv.Component.Message = 'VER 0.0.51\nMAR_07_2014'
+ghenv.Component.Message = 'VER 0.0.51\nMAR_15_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1469,6 +1469,7 @@ if _writeRad == True and len(_HBObjects)!=0 and _HBObjects[0]!=None and _analysi
             
         try:
             analysisType, resultsUnit = analysisTypesDict[analysisTypeKey]
+            
         except:
             analysisType, resultsUnit = "annual analysis", "var"
             
