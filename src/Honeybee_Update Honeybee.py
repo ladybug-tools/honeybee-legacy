@@ -18,7 +18,7 @@ Provided by Honeybee 0.0.51
 
 ghenv.Component.Name = "Honeybee_Update Honeybee"
 ghenv.Component.NickName = 'updateHoneybee'
-ghenv.Component.Message = 'VER 0.0.51\nFEB_24_2014'
+ghenv.Component.Message = 'VER 0.0.51\nMAR_15_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "6 | Developers"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -32,8 +32,23 @@ import shutil
 import zipfile
 import time
 import urllib
+import Grasshopper.Folders as folders
 
-def downloadSourceAndUnzip():
+
+def removeCurrentHB():
+    UOFolders = folders.ClusterFolders
+    
+    for folder in UOFolders: 
+        fileNames = os.listdir(folder)
+        
+        print 'Removing Honeybee!'
+        for fileName in fileNames:
+            # check for ladybug userObjects and delete the files
+            if fileName.StartsWith('Honeybee'):
+                fullPath = os.path.join(folder, fileName)
+                os.remove(fullPath)
+
+def downloadSourceAndUnzip(lb_preparation):
     """
     Download the source code from github and unzip it in temp folder
     """
@@ -49,10 +64,10 @@ def downloadSourceAndUnzip():
     if os.path.isfile(zipFile) and time.time() - os.stat(zipFile).st_mtime < 1000: download = False
     else:
         download = True
-        try:
-            os.rmdir(os.path.join(targetDirectory, r"honeybee-master\userObjects"))
-        except:
-            pass
+        
+        # remove the old version
+        try: lb_preparation.nukedir(targetDirectory, True)
+        except: pass
     
     
     # create the target directory
@@ -171,7 +186,7 @@ def main(sourceDirectory, updateThisFile, updateAllUObjects):
     lb_preparation = sc.sticky["ladybug_Preparation"]()
     
     if sourceDirectory == None:
-        userObjectsFolder = downloadSourceAndUnzip()
+        userObjectsFolder = downloadSourceAndUnzip(lb_preparation)
         if userObjectsFolder==None: return "Download failed! Read component output for more information!", False
     else:
         userObjectsFolder = sourceDirectory
@@ -198,7 +213,7 @@ def main(sourceDirectory, updateThisFile, updateAllUObjects):
             ghenv.Component.AddRuntimeMessage(w, warning)
             return -1
         print 'Updating...'
-        srcFiles = os.listdir(userObjectsFolder )
+        srcFiles = os.listdir(userObjectsFolder)
         for srcFileName in srcFiles:
             # check for ladybug userObjects
             if srcFileName.StartsWith('Honeybee'):
