@@ -11,13 +11,14 @@ This component is just a proof of concept for now and needs major modifications
 Provided by Honeybee 0.0.51
 
     Args:
-        input1: ...
+        _radianceFile: File path to radiance file
     Returns:
-        readMe!: ...
+        RADMaterials: List of materials
+        RADSurfaces: List of surfaces
 """
 ghenv.Component.Name = "Honeybee_Import rad"
 ghenv.Component.NickName = 'importRad'
-ghenv.Component.Message = 'VER 0.0.51\nFEB_24_2014'
+ghenv.Component.Message = 'VER 0.0.51\nMAR_15_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -87,6 +88,10 @@ def removeOutputs():
         #ghenv.Component.OnSolutionExpire(True)
         ghenv.Component.Attributes.Owner.OnSolutionExpire(True)
         
+
+radFile = _radianceFile
+showWireframe = False
+
 if radFile:
     file = open(radFile, 'r')
     fileAllJoined = ""
@@ -117,14 +122,14 @@ if radFile:
             if not surfaces.has_key(material): surfaces[material] = []
             surfaces[material].append(srf)
     
-    RADMaterialList = DataTree[System.Object]()
-    geometries = DataTree[System.Object]()
+    RADMaterials = DataTree[System.Object]()
+    RADSurfaces = DataTree[System.Object]()
     if len(surfaces) > 0:
         # removeOutputs()
         outputNum = 0
         for mat, srfs in surfaces.items():
-            RADMaterialList.Add(mat, GH_Path(outputNum))
-            geometries.AddRange(srfs, GH_Path(outputNum))
+            RADMaterials.Add(mat, GH_Path(outputNum))
+            RADSurfaces.AddRange(srfs, GH_Path(outputNum))
             outputNum+=1
 
 #outputCount = ghenv.Component.Params.Output.Count

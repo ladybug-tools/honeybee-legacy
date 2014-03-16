@@ -1441,7 +1441,7 @@ if _writeRad == True and len(_HBObjects)!=0 and _HBObjects[0]!=None and _analysi
     
     if result!= -1:
         # RADGeoFileAddress, radiationResult, RADResultFilesAddress, testPoints, DSResultFilesAddress, HDRFileAddress = result
-        radianceGeometryPath, radiationResult, gridBasedResultsPath, testPoints, annualAnalysisPath, HDRImageOutputPath = result
+        radianceFile, radiationResult, gridBasedResultFiles, testPoints, annualResultFiles, HDRFiles = result
         
         testPts = DataTree[System.Object]()
         for i, ptList in enumerate(testPoints):
