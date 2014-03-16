@@ -24,7 +24,7 @@ Provided by Honeybee 0.0.51
 
 ghenv.Component.Name = "Honeybee_Radiance Metal Material"
 ghenv.Component.NickName = 'radMetalMaterial'
-ghenv.Component.Message = 'VER 0.0.51\nFEB_24_2014'
+ghenv.Component.Message = 'VER 0.0.51\nMAR_15_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "1 | Daylight | Material"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
@@ -58,7 +58,7 @@ if sc.sticky.has_key('ladybug_release')and sc.sticky.has_key('honeybee_release')
         
         materialName = materialName.Replace(" ", "_")
         
-        RADMaterial = createRadMaterial(modifier, materialName, RReflectance,  GReflectance,  BReflectance, roughness, specularity)
+        RADMaterial = createRadMaterial(modifier, materialName, RReflectance,  GReflectance,  BReflectance, specularity, roughness)
         
         if roughness > 0.2:
              msg = "Roughness values above 0.2 are uncommon"
