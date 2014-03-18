@@ -17,7 +17,7 @@ Provided by Honeybee 0.0.51
 
 ghenv.Component.Name = "Honeybee_Generate Sky With Certain Illuminance level"
 ghenv.Component.NickName = 'genSkyIlluminanceLevel'
-ghenv.Component.Message = 'VER 0.0.51\nFEB_24_2014'
+ghenv.Component.Message = 'VER 0.0.52\nMAR_17_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "2 | Daylight | Sky"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -25,6 +25,7 @@ except: pass
 
 
 import os
+import scriptcontext as sc
 
 def RADDaylightingSky(illuminanceValue):
     
@@ -58,7 +59,7 @@ def RADDaylightingSky(illuminanceValue):
 
 def main(illuminanceValue):
     
-    path  = "c:/Ladybug/skylib/basedOnIlluminanceLevel/"
+    path  = os.path.join(sc.sticky["Honeybee_DefaultFolder"], "skylib\\basedOnIlluminanceLevel\\")
     
     if not os.path.isdir(path): os.mkdir(path)
     

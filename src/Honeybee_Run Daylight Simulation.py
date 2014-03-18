@@ -7,7 +7,7 @@
 export geometries to rad file, and run daylighting/energy simulation
 
 -
-Provided by Honeybee 0.0.51
+Provided by Honeybee 0.0.52
 
     Args:
         north_: ...
@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.51
 
 ghenv.Component.Name = "Honeybee_Run Daylight Simulation"
 ghenv.Component.NickName = 'runDaylightAnalysis'
-ghenv.Component.Message = 'VER 0.0.51\nMAR_15_2014'
+ghenv.Component.Message = 'VER 0.0.52\nMAR_17_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -887,6 +887,8 @@ def main(north, HBObjects, analysisRecipe, runRad, numOfCPUs, workingDir, radFil
         # make working directory
         if workingDir:
             workingDir = lb_preparation.removeBlankLight(workingDir)
+        else:
+            workingDir = sc.sticky["Honeybee_DefaultFolder"]
         
         workingDir = lb_preparation.makeWorkingDir(workingDir)
         

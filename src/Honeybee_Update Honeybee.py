@@ -6,7 +6,7 @@
 """
 This component [removes | updates] Honeybee components from [grasshopper | a source folder]
 -
-Provided by Honeybee 0.0.51
+Provided by Honeybee 0.0.52
 
     Args:
         sourceDirectory_: Optional address to a folder that contains Honeybee updated userObjects. If None the component will download the latest version from GitHUB.
@@ -18,7 +18,7 @@ Provided by Honeybee 0.0.51
 
 ghenv.Component.Name = "Honeybee_Update Honeybee"
 ghenv.Component.NickName = 'updateHoneybee'
-ghenv.Component.Message = 'VER 0.0.51\nMAR_15_2014'
+ghenv.Component.Message = 'VER 0.0.52\nMAR_17_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "6 | Developers"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -53,7 +53,7 @@ def downloadSourceAndUnzip(lb_preparation):
     Download the source code from github and unzip it in temp folder
     """
     url = "https://github.com/mostaphaRoudsari/honeybee/archive/master.zip"
-    targetDirectory = "c:/ladybug/honeybeeSrc"
+    targetDirectory = os.path.join(sc.sticky["Honeybee_DefaultFolder"], "honeybeeSrc")
     
     
     # download the zip file

@@ -19,7 +19,7 @@ http://creativecommons.org/licenses/by-sa/3.0/deed.en_US
 Source code is available at:
 https://github.com/mostaphaRoudsari/Honeybee
 -
-Provided by Honeybee 0.0.51
+Provided by Honeybee 0.0.52
     
     Args:
         letItFly: Set Boolean to True to let the Honeybee fly!
@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.51
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.52\nMAR_14_2014'
+ghenv.Component.Message = 'VER 0.0.52\nMAR_17_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -96,7 +96,7 @@ class hb_findFolders():
 
 class hb_GetEPConstructions():
     
-    def __init__(self, workingDir = "c:\\ladybug"):
+    def __init__(self, workingDir = sc.sticky["Honeybee_DefaultFolder"]):
         
         def downloadFile(url, workingDir):
             import urllib
@@ -126,11 +126,11 @@ class hb_GetEPConstructions():
                 '\nPlease check your internet connection, and try again!'
             return -1
         else:
-            libFilePaths = [workingDir + '\OpenStudioMasterTemplate.idf']
+            libFilePaths = [os.path.join(workingDir, 'OpenStudioMasterTemplate.idf')]
             # print 'Download complete!'
         
-        if os.path.isfile("c:/ladybug/userCustomLibrary.idf"):
-            libFilePaths.append("c:/ladybug/userCustomLibrary.idf")
+        if os.path.isfile(os.path.join(workingDir,"userCustomLibrary.idf")):
+            libFilePaths.append(os.path.join(workingDir,"userCustomLibrary.idf"))
         
         
         
@@ -252,12 +252,12 @@ class RADMaterialAux(object):
             self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', '000_Exterior_Wall', .50, .50, .50, 0, 0.1), True, True)
             
             # import user defined RAD library
-            RADLibraryFile = r"c:\ladybug\HoneybeeRadMaterials.mat"
+            RADLibraryFile = os.path.join(sc.sticky["Honeybee_DefaultFolder"], "HoneybeeRadMaterials.mat")
             if os.path.isfile(RADLibraryFile):
                 self.importRADMaterialsFromFile(RADLibraryFile)
             else:
-                if not os.path.isdir("c:\\ladybug"):
-                    os.mkdir("c:\\ladybug")
+                if not os.path.isdir(sc.sticky["Honeybee_DefaultFolder"]):
+                    os.mkdir(sc.sticky["Honeybee_DefaultFolder"])
                 with open(RADLibraryFile, "w") as outf:
                     outf.write("#Honeybee Radiance Material Library\n")
             
@@ -483,7 +483,7 @@ class RADMaterialAux(object):
         
         return materials
     
-    def addToGlobalLibrary(self, RADMaterial, RADLibraryFile = r"c:\ladybug\HoneybeeRadMaterials.mat"):
+    def addToGlobalLibrary(self, RADMaterial, RADLibraryFile = os.path.join(sc.sticky["Honeybee_DefaultFolder"], "HoneybeeRadMaterials.mat")):
         
         added, materialName = self.analyseRadMaterials(RADMaterial, False)
         
@@ -2168,6 +2168,18 @@ if not checkGHPythonVersion(GHPythonTargetVersion):
     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
     letItFly = False
     sc.sticky["honeybee_release"] = False
+
+#set up default pass
+if os.path.exists("c:\\ladybug\\"):
+    # folder already exists so it is all fine
+    sc.sticky["Honeybee_DefaultFolder"] = "c:\\ladybug\\"
+elif os.access(os.path.dirname("c:\\"), os.W_OK):
+    #the folder does not exists but write privileges are given so it is fine
+    sc.sticky["Honeybee_DefaultFolder"] = "c:\\ladybug\\"
+else:
+    # let's use the user folder
+    sc.sticky["Honeybee_DefaultFolder"] = os.path.join("C:\\Users\\", os.getenv("USERNAME"), "AppData\\Roaming\\Ladybug\\")
+
 
 if letItFly:
     if not sc.sticky.has_key("honeybee_release") or True:

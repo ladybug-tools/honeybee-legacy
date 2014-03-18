@@ -8,7 +8,7 @@ Analysis Recipie for Vertical Sky Component
 
 The idea Based on this discussion on RADIANCE: http://www.radiance-online.org/pipermail/radiance-general/2006-September/004017.html
 -
-Provided by Honeybee 0.0.51
+Provided by Honeybee 0.0.52
     
     Args:
         _testPoints: Test points
@@ -20,7 +20,7 @@ Provided by Honeybee 0.0.51
 
 ghenv.Component.Name = "Honeybee_Vertical Sky Component"
 ghenv.Component.NickName = 'verticalSkyComponent'
-ghenv.Component.Message = 'VER 0.0.51\nFEB_24_2014'
+ghenv.Component.Message = 'VER 0.0.52\nMAR_17_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "3 | Daylight | Recipes"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -52,7 +52,7 @@ def genVSCSky(illuminanceValue = 1000, skyType = "-c"):
                 "0 0 1 180\n" + \
                 "# end of sky definition for daylighting studies\n\n"
     
-    path  = "c:/Ladybug/skylib/VSCSimulationSky/"
+    path  = os.path.join(sc.sticky["Honeybee_DefaultFolder"], "skylib\\VSCSimulationSky\\")
     if not os.path.isdir(path): os.mkdir(path)
     
     outputFile = path + `int(illuminanceValue)` + "_lux.sky"

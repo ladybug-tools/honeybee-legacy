@@ -19,7 +19,7 @@ Provided by Honeybee 0.0.51
 
 ghenv.Component.Name = "Honeybee_Daylight Factor Simulation"
 ghenv.Component.NickName = 'daylighFactorSimulation'
-ghenv.Component.Message = 'VER 0.0.51\nFEB_24_2014'
+ghenv.Component.Message = 'VER 0.0.52\nMAR_17_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "3 | Daylight | Recipes"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -28,7 +28,7 @@ except: pass
 
 import Rhino as rc
 import Grasshopper.Kernel as gh
-
+import scriptcontext as sc
 import os
 
 def genDFSky(illuminanceValue = 1000, skyType = "-c"):
@@ -62,7 +62,7 @@ def genDFSky(illuminanceValue = 1000, skyType = "-c"):
                 "0 0 -1 180\n" + \
                 "# end of sky definition for daylighting studies\n\n"
     
-    path  = "c:/Ladybug/skylib/DFSimulationSky/"
+    path  = os.path.join(sc.sticky["Honeybee_DefaultFolder"], "skylib\\DFSimulationSky\\")
     if not os.path.isdir(path): os.mkdir(path)
     
     outputFile = path + `int(illuminanceValue)` + "_lux.sky"

@@ -21,7 +21,7 @@ Provided by Honeybee 0.0.51
 
 ghenv.Component.Name = "Honeybee_Generate Standard CIE Sky"
 ghenv.Component.NickName = 'genStandardCIESky'
-ghenv.Component.Message = 'VER 0.0.51\nFEB_24_2014'
+ghenv.Component.Message = 'VER 0.0.52\nMAR_17_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "2 | Daylight | Sky"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -113,7 +113,7 @@ def main(weatherFile, month, day, hour, skyType):
         return -1
         
     # make new folder for each city
-    subWorkingDir = "c:/Ladybug/skylib/CIESkies/" + newLocName
+    subWorkingDir = os.path.join(sc.sticky["Honeybee_DefaultFolder"], "skylib\\CIESkies\\", newLocName)
     subWorkingDir = lb_preparation.makeWorkingDir(subWorkingDir)
     # print 'Current working directory is set to: ', subWorkingDir
     

@@ -21,7 +21,7 @@ Provided by Honeybee 0.0.51
 
 ghenv.Component.Name = "Honeybee_FalseColor"
 ghenv.Component.NickName = 'FalseColor'
-ghenv.Component.Message = 'VER 0.0.51\nFEB_24_2014'
+ghenv.Component.Message = 'VER 0.0.52\nMAR_17_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -47,7 +47,7 @@ def getHDRSimulationType(HDRImagePath):
         for lineCount, line in enumerate(hdrFile):
             if lineCount<10:
                 if line.strip().lower().startswith("oconv"):
-                    if line.strip().split(" ")[-1].lower().startswith("c:/ladybug/skylib") or line.strip().lower().endswith('.sky'):
+                    if line.strip().split(" ")[-1].lower().Replace("/", "").Replace("\\", "").startswith(sc.sticky["Honeybee_DefaultFolder"].Replace("\\", "").Replace("/", "")+ "skylib") or line.strip().lower().endswith('.sky'):
                         return 2.5 #this is a sky
                     # check if the skytype could be radiation based on the sky type
                     elif line.strip().lower().find("cumulativesky")>-1:
