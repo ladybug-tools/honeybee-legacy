@@ -57,6 +57,20 @@ PI = math.pi
 
 rc.Runtime.HostUtils.DisplayOleAlerts(False)
 
+#set up default pass
+if os.path.exists("c:\\ladybug\\"):
+    # folder already exists so it is all fine
+    sc.sticky["Honeybee_DefaultFolder"] = "c:\\ladybug\\"
+elif os.access(os.path.dirname("c:\\"), os.W_OK):
+    #the folder does not exists but write privileges are given so it is fine
+    sc.sticky["Honeybee_DefaultFolder"] = "c:\\ladybug\\"
+else:
+    # let's use the user folder
+    sc.sticky["Honeybee_DefaultFolder"] = os.path.join("C:\\Users\\", os.getenv("USERNAME"), "AppData\\Roaming\\Ladybug\\")
+
+
+
+
 class hb_findFolders():
     
     def __init__(self):
@@ -2168,18 +2182,6 @@ if not checkGHPythonVersion(GHPythonTargetVersion):
     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
     letItFly = False
     sc.sticky["honeybee_release"] = False
-
-#set up default pass
-if os.path.exists("c:\\ladybug\\"):
-    # folder already exists so it is all fine
-    sc.sticky["Honeybee_DefaultFolder"] = "c:\\ladybug\\"
-elif os.access(os.path.dirname("c:\\"), os.W_OK):
-    #the folder does not exists but write privileges are given so it is fine
-    sc.sticky["Honeybee_DefaultFolder"] = "c:\\ladybug\\"
-else:
-    # let's use the user folder
-    sc.sticky["Honeybee_DefaultFolder"] = os.path.join("C:\\Users\\", os.getenv("USERNAME"), "AppData\\Roaming\\Ladybug\\")
-
 
 if letItFly:
     if not sc.sticky.has_key("honeybee_release") or True:
