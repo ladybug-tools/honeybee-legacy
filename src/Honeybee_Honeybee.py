@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.52
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.52\nMAR_17_2014'
+ghenv.Component.Message = 'VER 0.0.52\nMAR_26_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -111,6 +111,10 @@ class hb_findFolders():
 class hb_GetEPConstructions():
     
     def __init__(self, workingDir = sc.sticky["Honeybee_DefaultFolder"]):
+        
+        
+        
+        
         
         def downloadFile(url, workingDir):
             import urllib
@@ -570,6 +574,174 @@ class RADMaterialAux(object):
         
 
 
+class EPMaterialAux(object):
+    
+    def __init__(self):
+        self.energyModelingStandards = {"0" : "ASHRAE 90.1",
+                                        "1" : "ASHRAE 189.1",
+                                        "2" : "CBECS 1980-2004",
+                                        "3" : "CBECS Before-1980",
+                                        "ASHRAE901" : "ASHRAE 90.1",
+                                        "ASHRAE1891" : "ASHRAE 189.1",
+                                        "CBECS19802004" : "CBECS 1980-2004",
+                                        "CBECSBEFORE1980" : "CBECS Before-1980"}
+    
+    
+    def searchListByKeyword(self, inputList, keywords):
+        """ search inside a list of strings for keywords """
+        
+        def checkMultipleKeywords(name, keywordlist):
+            for kw in keywordlist:
+                if item.find(kw)== -1:
+                    return False
+            return True
+            
+        kWords = []
+        for kw in keywords:
+            kWords.append(kw.strip().upper().split(" "))
+            
+        selectedItems = []
+        alternateOptions = []
+        
+        for item in inputList:
+            item = item.ToUpper()
+            if len(kWords)!= 0 and not "*" in keywords:
+                for keyword in kWords:
+                    if len(keyword) > 1 and checkMultipleKeywords(item, keyword):
+                        selectedItems.append(item)
+                    elif len(keyword) == 1 and item.find(keyword[0])!= -1:
+                        selectedItems.append(item)
+            else:
+                selectedItems.append(item)
+    
+        return selectedItems
+    
+    
+    def filterMaterials(self, constrList, standard, climateZone, surfaceType, bldgProgram, constructionType):
+        hb_EPTypes = EPTypes()
+        
+        w = gh.GH_RuntimeMessageLevel.Warning
+        
+        try:
+            standard = str(standard).upper().Replace(" ", "").Replace("_", "").Replace(".", "")
+            standard = self.energyModelingStandards[standard]
+            
+        except:
+            msg = "The input for standard is not valid. Standard is set to ASHRAE 90.1"
+            ghenv.Component.AddRuntimeMessage(w, msg)
+            standard = "ASHRAE 90.1"
+        
+        if surfaceType:
+            try: surfaceType = hb_EPTypes.srfType[surfaceType]
+            except: ghenv.Component.AddRuntimeMessage(w, str(surfaceType) + " is not a valid surface type.")
+                
+        
+        selConstr =[]
+        for cnstrName in constrList:
+           if cnstrName.upper().find(standard.upper())!=-1 and cnstrName.upper().find(surfaceType.upper())!=-1:
+                # check for climate zone
+                if climateZone!="":
+                    clmZones = []
+                    # split by space " "
+                    possibleAlt, zoneCode = cnstrName.split(" ")[-2:]
+                    clmZoneList = zoneCode.split("-")
+                    if len(clmZoneList) != 1:
+                        try:
+                            clmZoneRange = range(int(clmZoneList[0]), int(clmZoneList[1]) + 1)
+                            for clmZone in clmZoneRange: clmZones.append(str(clmZone))
+                        except:
+                            clmZones = [clmZoneList[0], clmZoneList[1]]
+                    else:
+                        clmZones = clmZoneList
+                        
+                    if climateZone in clmZones:
+                        selConstr.append(cnstrName)
+                    elif climateZone[0] in clmZones:
+                        # cases like 3a that is included in 3
+                        selConstr.append(cnstrName)
+                else:
+                    selConstr.append(cnstrName)
+                    
+        # check if any alternate 
+        alternateFit = []
+        if bldgProgram!="":
+            bldgProgram = hb_EPTypes.bldgTypes[bldgProgram]
+            # print bldgProgram
+            for cnstrName in selConstr:
+                possibleAlt = cnstrName.split(" ")[-2].split("-")
+                if possibleAlt[0].upper().find("ALT")!= -1:
+                    if bldgProgram.upper().find(possibleAlt[1].upper())!= -1:
+                        # if there is an alternate fit the rest should be removed
+                        gistName = " ".join(cnstrName.split(" ")[:-2])
+                        gistName.replace
+                        alternateFit.append(gistName)
+                    else:
+                        selConstr.remove(cnstrName)
+        
+        # check if there is a best fit and if not just return the list
+        if alternateFit!=[]:
+            for cnstrName in selConstr:
+                for gistName in alternateFit:
+                    if cnstrName.upper().find(gistName.upper())!= -1 and cnstrName.split(" ")[-2].split("-")[0].upper() != "ALT":
+                        try: selConstr.remove(cnstrName)
+                        except: pass
+        
+        # if there are multiple options they should be for different construction types
+        # so let check that
+        if len(selConstr) > 1 and constructionType != "":
+            tempSelConstr = []
+            for cnstrName in selConstr:
+                if cnstrName.upper().find(constructionType.upper())!= -1:
+                    tempSelConstr.append(cnstrName)
+            
+            if len(tempSelConstr)!=0:
+                selConstr = tempSelConstr
+        
+        return selConstr
+        
+class EPTypes(object):
+    def __init__(self):
+        self.srfType = {0:'WALL',
+                   0.5: 'UndergroundWall',
+                   1:'ROOF',
+                   1.5: 'UndergroundCeiling',
+                   2:'FLOOR',
+                   2.25: 'UndergroundSlab',
+                   2.5: 'SlabOnGrade',
+                   2.75: 'ExposedFloor',
+                   3:'CEILING',
+                   4:'WALL',
+                   5:'WINDOW',
+                   6:'SHADING',
+                   'WALL': 'WALL',
+                   'ROOF':'ROOF',
+                   'FLOOR': 'FLOOR',
+                   'CEILING': 'CEILING',
+                   'WINDOW':'WINDOW',
+                   'SHADING': 'SHADING'}
+            
+        self.bldgTypes = {0:'RES',
+                   'RESIDENTIAL':'RES',
+                   1:'OFFICE',
+                   'OFFICE':'OFFC',
+                   2:'HOSP',
+                   'HOSPITAL':'HOSP'
+                   }
+                #Restaurant(Full Service)  = "FullServiceRestaurant"
+                #Restaurant(Quick Service) = "QuickServiceRestaurant"
+                #Mid-rise Apartment        = "Mid-riseApartment"
+                #Hospital                  = "Hospital"
+                #Small Office              = "Small Office"
+                #Medium Office             = "Medium Office"
+                #Large Office              = "Large Office"
+                #Small Hotel               = "SmallHotel"
+                #Large Hotel               = "LargeHotel"
+                #Primary School            = "PrimarySchool"
+                #Secondary School          = "SecondarySchool"
+                #Strip Mall                = "StripMall"
+                #Retail                    = "Retail"
+                #Warehouse                 = "Warehouse"
+        
 class materialLibrary(object):
     
     def __init__(self):
@@ -1403,12 +1575,12 @@ class hb_EPSurface(object):
            4:'WALL',
            5:'WINDOW',
            6:'SHADING',
-           'WALL': 0,
-           'ROOF':1,
-           'FLOOR': 2,
-           'CEILING': 3,
-           'WINDOW':5,
-           'SHADING': 6}
+           'WALL': 'WALL',
+           'ROOF':'ROOF',
+           'FLOOR': 'FLOOR',
+           'CEILING': 'CEILING',
+           'WINDOW':'WINDOW',
+           'SHADING': 'SHADING'}
            
         self.cnstrSet = {0:'000 Exterior Wall',
                 1:'000 Exterior Roof',
@@ -2261,14 +2433,19 @@ if letItFly:
 
         # set up radiance materials
         sc.sticky["honeybee_RADMaterialAUX"](True)
-        
-        try: hb_GetEPConstructions()
-        except: print "Failed to load EP constructions!"
+        try:
+            hb_GetEPConstructions()
+            
+            sc.sticky["honeybee_EPMaterialAUX"] = EPMaterialAux
+            
+        except:
+            print "Failed to load EP constructions!"
         
         sc.sticky["honeybee_Hive"] = hb_Hive
         sc.sticky["honeybee_DefaultMaterialLib"] = materialLibrary
         sc.sticky["honeybee_DefaultScheduleLib"] = scheduleLibrary
         sc.sticky["honeybee_DefaultSurfaceLib"] = EPSurfaceLib
+        sc.sticky["honeybee_EPTypes"] = EPTypes()
         sc.sticky["honeybee_EPZone"] = EPZone
         sc.sticky["honeybee_EPSurface"] = hb_EPSurface
         sc.sticky["honeybee_EPShdSurface"] = hb_EPShdSurface
