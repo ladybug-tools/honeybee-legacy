@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.52
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.52\nMAR_26_2014'
+ghenv.Component.Message = 'VER 0.0.52\nMAR_27_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -67,8 +67,6 @@ elif os.access(os.path.dirname("c:\\"), os.W_OK):
 else:
     # let's use the user folder
     sc.sticky["Honeybee_DefaultFolder"] = os.path.join("C:\\Users\\", os.getenv("USERNAME"), "AppData\\Roaming\\Ladybug\\")
-
-
 
 
 class hb_findFolders():
@@ -604,12 +602,11 @@ class EPMaterialAux(object):
         alternateOptions = []
         
         for item in inputList:
-            item = item.ToUpper()
             if len(kWords)!= 0 and not "*" in keywords:
                 for keyword in kWords:
-                    if len(keyword) > 1 and checkMultipleKeywords(item, keyword):
+                    if len(keyword) > 1 and checkMultipleKeywords(itemitem.ToUpper(), keyword):
                         selectedItems.append(item)
-                    elif len(keyword) == 1 and item.find(keyword[0])!= -1:
+                    elif len(keyword) == 1 and item.ToUpper().find(keyword[0])!= -1:
                         selectedItems.append(item)
             else:
                 selectedItems.append(item)
@@ -617,23 +614,23 @@ class EPMaterialAux(object):
         return selectedItems
     
     
-    def filterMaterials(self, constrList, standard, climateZone, surfaceType, bldgProgram, constructionType):
+    def filterMaterials(self, constrList, standard, climateZone, surfaceType, bldgProgram, constructionType, sourceComponent):
         hb_EPTypes = EPTypes()
         
         w = gh.GH_RuntimeMessageLevel.Warning
         
         try:
-            standard = str(standard).upper().Replace(" ", "").Replace("_", "").Replace(".", "")
+            standard = str(standard).upper().Replace(" ", "").Replace("-", "").Replace(".", "")
             standard = self.energyModelingStandards[standard]
             
         except:
             msg = "The input for standard is not valid. Standard is set to ASHRAE 90.1"
-            ghenv.Component.AddRuntimeMessage(w, msg)
+            sourceComponent.AddRuntimeMessage(w, msg)
             standard = "ASHRAE 90.1"
         
         if surfaceType:
-            try: surfaceType = hb_EPTypes.srfType[surfaceType]
-            except: ghenv.Component.AddRuntimeMessage(w, str(surfaceType) + " is not a valid surface type.")
+            try: surfaceType = hb_EPTypes.srfType[surfaceType.upper()]
+            except: sourceComponent.AddRuntimeMessage(w, str(surfaceType) + " is not a valid surface type.")
                 
         
         selConstr =[]
