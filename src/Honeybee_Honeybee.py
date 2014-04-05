@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.52
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.52\nMAR_27_2014'
+ghenv.Component.Message = 'VER 0.0.52\nAPR_04_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -584,7 +584,144 @@ class EPMaterialAux(object):
                                         "CBECS19802004" : "CBECS 1980-2004",
                                         "CBECSBEFORE1980" : "CBECS Before-1980"}
     
+    def calcEPMaterialUValue(self, materialObj, GHComponent = None):
+        
+        materialType = materialObj[0]
+        
+        if materialType.lower() == "windowmaterial:simpleglazingsystem":
+            UValueSI = float(materialObj[1][0])
+            
+        elif materialType.lower() == "windowmaterial:glazing":
+            thickness = float(materialObj[3][0])
+            conductivity = float(materialObj[13][0])
+            UValueSI = conductivity/thickness
+            
+        elif materialType.lower() == "material:nomass":
+            # Material:NoMass is defined by R-Value and not U-Value
+            UValueSI = 1 / float(materialObj[2][0])
+            
+        elif materialType.lower() == "material":
+            thickness = float(materialObj[2][0])
+            conductivity = float(materialObj[3][0])
+            UValueSI = conductivity/thickness
+        
+        elif materialType.lower() == "material:airgap":
+            UValueSI = 1 / float(materialObj[1][0])
+            #print materialObj
+            #print UValueSI
+        
+        elif materialType.lower() == "material:airgap":
+            UValueSI = 1 / float(materialObj[1][0])
+        
+        elif materialType.lower() == "windowmaterial:gas":
+            thickness = float(materialObj[2][0])
+            if materialObj[1][0].lower() == "air":
+                # conductivity = 0.1603675
+                # considering ('0.18' for 'Thermal Resistance {m2-K/W}')
+                UValueSI = 5.55555555556
+            else:
+                warningMsg = "Honeybee can't calculate the UValue for " + materialObj[1][0] + ".\n" + \
+                    "Let us know if you think it is really neccesary and we will add it to the list. :)"
+                if GHComponent!=None:
+                    w = gh.GH_RuntimeMessageLevel.Warning
+                    GHComponent.AddRuntimeMessage(w, warningMsg)
+                    
+                    print materialObj
+        else:
+            warningMsg = "Honeybee currently doesn't support U-Value calculation for " + materialType + ".\n" +\
+                "Let us know if you think it is really neccesary and we will add it to the list. :)"
+            if GHComponent!=None:
+                w = gh.GH_RuntimeMessageLevel.Warning
+                GHComponent.AddRuntimeMessage(w, warningMsg)
+        
+            # http://bigladdersoftware.com/epx/docs/8-0/input-output-reference/page-010.html
+            UValueSI = -1
+        
+        return UValueSI
     
+    def calcEPConstructionUValue(self, constructionObj, GHComponent=None):
+        # find material layers
+        uValues = []
+        for layer in constructionObj.keys()[1:]:
+            materialName, comment = constructionObj[layer]
+            try: values, comments, UValueSI, UValueIP = self.decomposeMaterial(materialName, GHComponent)
+            except: UValueSI = -1
+            uValues.append(UValueSI)
+        
+        # calculate cumulative UValue
+        totalRValue = 0
+        for uValue in uValues:
+            totalRValue += 1/uValue
+        
+        return 1/totalRValue
+    
+    def convertUValueToIP(self, UValueSI):
+        return  0.176110 * UValueSI
+    
+    def convertUValueToSI(self, UValueIP):
+        return  5.678263 * UValueIP
+    
+    def decomposeMaterial(self, matName, GHComponent):
+        try:
+            try:
+                materialObj = sc.sticky["honeybee_materialLib"][matName]
+            except:
+                materialObj = sc.sticky["honeybee_windowMaterialLib"][matName]
+                
+            comments = []
+            values = []
+            
+            #print matName
+            for layer in materialObj.keys():
+                try:
+                    value, comment = materialObj[layer]
+                    # print value + ',\t!-' + comment + "\n"
+                    values.append(value)
+                    comments.append(comment)
+                except:
+                    value = materialObj[layer]
+                    values.append(value)
+                    comments.append('Material Type')
+            
+            UValueSI = self.calcEPMaterialUValue(materialObj, GHComponent)
+            UValueIP = self.convertUValueToIP(UValueSI)
+            
+            return values, comments, UValueSI, UValueIP
+            
+        except Exception, e:
+            print `e`
+            print "Failed to find " + matName + " in the Honeybee construction library."
+            return -1
+    
+    
+    def decomposeEPCnstr(self, cnstrName, GHComponent = None):
+        try:
+            constructionObj = sc.sticky ["honeybee_constructionLib"][cnstrName]
+            comments = []
+            materials = []
+            
+            # print cnstrName
+            for layer in constructionObj.keys():
+                try:
+                    material, comment = constructionObj[layer]
+                    materials.append(material)
+                    comments.append(comment)
+                except:
+                    material = constructionObj[layer]
+                    materials.append(material)
+                    comments.append("!- Material Type")
+            
+            # place holder
+            UValue_SI = self.calcEPConstructionUValue(constructionObj, GHComponent)
+            UValue_IP = self.convertUValueToIP(UValue_SI)
+            
+            return materials[1:], comments[1:], UValue_SI, UValue_IP
+    
+        except Exception, e:
+            print `e`
+            print "Failed to find " + cnstrName + " in the Honeybee construction library."
+            return -1
+       
     def searchListByKeyword(self, inputList, keywords):
         """ search inside a list of strings for keywords """
         
@@ -604,7 +741,7 @@ class EPMaterialAux(object):
         for item in inputList:
             if len(kWords)!= 0 and not "*" in keywords:
                 for keyword in kWords:
-                    if len(keyword) > 1 and checkMultipleKeywords(itemitem.ToUpper(), keyword):
+                    if len(keyword) > 1 and checkMultipleKeywords(item.ToUpper(), keyword):
                         selectedItems.append(item)
                     elif len(keyword) == 1 and item.ToUpper().find(keyword[0])!= -1:
                         selectedItems.append(item)
@@ -612,7 +749,6 @@ class EPMaterialAux(object):
                 selectedItems.append(item)
     
         return selectedItems
-    
     
     def filterMaterials(self, constrList, standard, climateZone, surfaceType, bldgProgram, constructionType, sourceComponent):
         hb_EPTypes = EPTypes()
@@ -661,7 +797,7 @@ class EPMaterialAux(object):
                     
         # check if any alternate 
         alternateFit = []
-        if bldgProgram!="":
+        if bldgProgram!=None and bldgProgram!="":
             bldgProgram = hb_EPTypes.bldgTypes[bldgProgram]
             # print bldgProgram
             for cnstrName in selConstr:
