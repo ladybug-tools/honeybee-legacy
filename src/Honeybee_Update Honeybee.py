@@ -18,7 +18,7 @@ Provided by Honeybee 0.0.52
 
 ghenv.Component.Name = "Honeybee_Update Honeybee"
 ghenv.Component.NickName = 'updateHoneybee'
-ghenv.Component.Message = 'VER 0.0.52\nMAR_17_2014'
+ghenv.Component.Message = 'VER 0.0.52\nAPR_07_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "6 | Developers"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -182,7 +182,8 @@ def updateTheComponent(component, newUOFolder, lb_preparation):
     
 
 def main(sourceDirectory, updateThisFile, updateAllUObjects):
-    if not sc.sticky.has_key('ladybug_release'): return "you need to let Ladybug fly first!", False
+    if not sc.sticky.has_key('ladybug_release') or not sc.sticky.has_key('honeybee_release'):
+        return "you need to let both Ladybug and Honeybee fly first!", False
     lb_preparation = sc.sticky["ladybug_Preparation"]()
     
     if sourceDirectory == None:
@@ -191,7 +192,7 @@ def main(sourceDirectory, updateThisFile, updateAllUObjects):
     else:
         userObjectsFolder = sourceDirectory
     
-    destinationDirectory = 'c:/Users/' + os.getenv("USERNAME") + '/AppData/Roaming/Grasshopper/UserObjects'
+    destinationDirectory = folders.ClusterFolders[0]
     
     if updateThisFile:
         # find all the userObjects
@@ -218,7 +219,7 @@ def main(sourceDirectory, updateThisFile, updateAllUObjects):
             # check for ladybug userObjects
             if srcFileName.StartsWith('Honeybee'):
                 srcFullPath = os.path.join(userObjectsFolder, srcFileName)
-                dstFullPath = os.path.join(destinationDirectory, srcFileName) 
+                dstFullPath = os.path.join(destinationDirectory, srcFileName)
                 
                 # check if a newer version is not aleady exist
                 if not os.path.isfile(dstFullPath): shutil.copy2(srcFullPath, dstFullPath)
