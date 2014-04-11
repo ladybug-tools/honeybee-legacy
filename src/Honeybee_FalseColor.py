@@ -14,6 +14,9 @@ Provided by Honeybee 0.0.51
         conversionF_: Conversion factor for the results. Default is 179.
         legendMax_: Maximum bound for the legend
         colorLines_: Set to True ro render the image with colored lines
+        legendPosition_: A number between 0 to 11 to set legend position to the given direction WS|W|WN|NW|N|NE|EN|E|ES|SE|S|SW
+        numOfSegments_: An interger representing the number of steps between the high and low boundary of the legend. Default value is set to 10.
+        useAlterColors_: Set to True to use the alternate colorset.
         _render: Set to True to render the new image
     Returns:
         outputFilePath: Path to the result HDR file
@@ -21,7 +24,7 @@ Provided by Honeybee 0.0.51
 
 ghenv.Component.Name = "Honeybee_FalseColor"
 ghenv.Component.NickName = 'FalseColor'
-ghenv.Component.Message = 'VER 0.0.52\nMAR_17_2014'
+ghenv.Component.Message = 'VER 0.0.52\nAPR_11_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -64,7 +67,21 @@ def getHDRSimulationType(HDRImagePath):
                 return 2 #luminance
 
 
-def main(HDRFilePath, legendUnit, legendMax, conversionF, colorLines):
+legendPos = { 0 : "WS",
+              1 : "W",
+              2 : "WN",
+              3 : "NW",
+              4 : "N",
+              5 : "NE",
+              6 : "EN",
+              7 : "E",
+              8 : "ES",
+              9 : "SE",
+              10 : "S",
+              11 : "SW"
+              }
+
+def main(HDRFilePath, legendUnit, legendMax, conversionF, contourLines, contourBands, legendPosition, numOfSegments, useAlterColors):
 
     # import the classes
     if sc.sticky.has_key('honeybee_release'):
@@ -94,7 +111,7 @@ def main(HDRFilePath, legendUnit, legendMax, conversionF, colorLines):
         inputFilePath = HDRFilePath.replace("\\" , "/")
         fileAddress = inputFilePath.replace(inputFilePath.split("/")[-1], "")
         fileName = "".join(inputFilePath.split("/")[-1].split('.')[:-1])
-        if colorLines: outputFile = fileAddress + fileName + "@fc_cl.HDR"
+        if contourLines: outputFile = fileAddress + fileName + "@fc_cl.HDR"
         else: outputFile = fileAddress + fileName + "@fc.HDR"
     
     # check and remove the file if existed
@@ -104,16 +121,23 @@ def main(HDRFilePath, legendUnit, legendMax, conversionF, colorLines):
     
     batchStr_head = "SET RAYPATH=.;" + hb_RADLibPath + "\n" + \
                     "PATH=" + hb_RADPath + ";$PATH\n\n"
-    if not colorLines:
+    if not contourLines and not contourBands:
         batchStr_body = "falsecolor2 -i " + inputFilePath + " -s " + str(legendMax) + \
-                        " -n 10 -mask 0.1 -l " + legendUnit + " -m " + str(conversionF) + \
-                        " -z > " + outputFile + "\nexit"
-    else:
+                        " -n " + str(numOfSegments) + " -mask 0.1 -l " + legendUnit + " -m " + str(conversionF) + " "
+    elif contourBands:
         batchStr_body = "falsecolor2 -i " + inputFilePath + " -s " + str(legendMax) + \
-                        " -p " +  inputFilePath + " -n 10 -cl -l " + legendUnit + " -m " + str(conversionF) + \
-                        " -z > " + outputFile + "\nexit"
+                        " -p " +  inputFilePath + " -n " + str(numOfSegments) + " -cb -l " + legendUnit + " -m " + str(conversionF) + " "
+    elif contourLines:
+        batchStr_body = "falsecolor2 -i " + inputFilePath + " -s " + str(legendMax) + \
+                        " -p " +  inputFilePath + " -n " + str(numOfSegments) + " -cl -l " + legendUnit + " -m " + str(conversionF) + " "
+    if legendPosition != None:
+        try: batchStr_body += "-lp " + legendPos[legendPosition%12] + " "
+        except: pass
     
-    batchStr = batchStr_head + batchStr_body
+    if useAlterColors:
+        batchStr_body += "-spec "
+    
+    batchStr = batchStr_head + batchStr_body + "-z > " + outputFile + "\nexit"
     batchFileName = fileAddress + 'FALSECLR.BAT'
     
         # check and remove the file if existed
@@ -161,4 +185,6 @@ if _HDRFilePath and _render:
     
     if legendMax_ == None: legendMax_ = 'auto '
     
-    outputFilePath = main(_HDRFilePath, legendUnit, legendMax_, conversionF, colorLines_)
+    if numOfSegments_ == None: numOfSegments_ = 10
+    
+    outputFilePath = main(_HDRFilePath, legendUnit, legendMax_, conversionF, contourLines_, contourBands_, legendPosition_, numOfSegments_, useAlterColors_)
