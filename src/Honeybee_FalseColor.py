@@ -16,6 +16,7 @@ Provided by Honeybee 0.0.51
         colorLines_: Set to True ro render the image with colored lines
         legendPosition_: A number between 0 to 11 to set legend position to the given direction WS|W|WN|NW|N|NE|EN|E|ES|SE|S|SW
         numOfSegments_: An interger representing the number of steps between the high and low boundary of the legend. Default value is set to 10.
+        maskThreshold_: Optional number for masking threshold. Pixels with values less than this number will be rendered in black.
         useAlterColors_: Set to True to use the alternate colorset.
         _render: Set to True to render the new image
     Returns:
@@ -81,7 +82,7 @@ legendPos = { 0 : "WS",
               11 : "SW"
               }
 
-def main(HDRFilePath, legendUnit, legendMax, conversionF, contourLines, contourBands, legendPosition, numOfSegments, useAlterColors):
+def main(HDRFilePath, legendUnit, legendMax, conversionF, contourLines, contourBands, legendPosition, numOfSegments, useAlterColors, maskThreshold):
 
     # import the classes
     if sc.sticky.has_key('honeybee_release'):
@@ -123,13 +124,13 @@ def main(HDRFilePath, legendUnit, legendMax, conversionF, contourLines, contourB
                     "PATH=" + hb_RADPath + ";$PATH\n\n"
     if not contourLines and not contourBands:
         batchStr_body = "falsecolor2 -i " + inputFilePath + " -s " + str(legendMax) + \
-                        " -n " + str(numOfSegments) + " -mask 0.1 -l " + legendUnit + " -m " + str(conversionF) + " "
+                        " -n " + str(numOfSegments) + " -mask " + str(maskThreshold) + " -l " + legendUnit + " -m " + str(conversionF) + " "
     elif contourBands:
         batchStr_body = "falsecolor2 -i " + inputFilePath + " -s " + str(legendMax) + \
-                        " -p " +  inputFilePath + " -n " + str(numOfSegments) + " -cb -l " + legendUnit + " -m " + str(conversionF) + " "
+                        " -p " +  inputFilePath + " -n " + str(numOfSegments) + " -cb -mask " + str(maskThreshold) + " -l " + legendUnit + " -m " + str(conversionF) + " "
     elif contourLines:
         batchStr_body = "falsecolor2 -i " + inputFilePath + " -s " + str(legendMax) + \
-                        " -p " +  inputFilePath + " -n " + str(numOfSegments) + " -cl -l " + legendUnit + " -m " + str(conversionF) + " "
+                        " -p " +  inputFilePath + " -n " + str(numOfSegments) + " -cl -mask " + str(maskThreshold) + " -l " + legendUnit + " -m " + str(conversionF) + " "
     if legendPosition != None:
         try: batchStr_body += "-lp " + legendPos[legendPosition%12] + " "
         except: pass
@@ -187,4 +188,6 @@ if _HDRFilePath and _render:
     
     if numOfSegments_ == None: numOfSegments_ = 10
     
-    outputFilePath = main(_HDRFilePath, legendUnit, legendMax_, conversionF, contourLines_, contourBands_, legendPosition_, numOfSegments_, useAlterColors_)
+    if maskThreshold_ == None: maskThreshold_ = 0.1
+    
+    outputFilePath = main(_HDRFilePath, legendUnit, legendMax_, conversionF, contourLines_, contourBands_, legendPosition_, numOfSegments_, useAlterColors_, maskThreshold_)
