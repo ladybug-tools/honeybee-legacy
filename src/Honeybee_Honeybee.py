@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.52
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.52\nAPR_04_2014'
+ghenv.Component.Message = 'VER 0.0.52\nAPR_17_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -2130,6 +2130,14 @@ class hb_EPZoneSurface(hb_EPSurface):
         else:
             hb_EPSurface.__init__(self, surface, srfNumber, srfName)
             
+            # Check for possible surface type and assign the BC based on that
+            # This will be re-evaluated in write idf file
+            srfType = self.getTypeByNormalAngle()
+            self.BC = self.srfBC[srfType]
+            self.BCObject = ''
+            self.sunExposure = self.srfSunExposure[srfType]
+            self.windExposure = self.srfWindExposure[srfType]
+
         
         if hasattr(self, 'parent') and self.parent!=None:
             # in both of this cases the zone should be meshed
@@ -2158,9 +2166,9 @@ class hb_EPZoneSurface(hb_EPSurface):
             if pt.DistanceTo(ptOnSrf) > tolerance: return False
         
         # check the area of the child surface and make sure is smaller than base surface
-        if self.geometry.GetArea() <= chidSrfCandidate.GetArea():
-            print "The area of the child surface cannot be larger than the area of the parent surface!"
-            return False
+        #if self.geometry.GetArea() <= chidSrfCandidate.GetArea():
+        #    print "The area of the child surface cannot be larger than the area of the parent surface!"
+        #    return False
         
         # all points are located on the surface and the area is less so it is all good!
         return True
