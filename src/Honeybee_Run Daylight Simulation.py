@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.52
 
 ghenv.Component.Name = "Honeybee_Run Daylight Simulation"
 ghenv.Component.NickName = 'runDaylightAnalysis'
-ghenv.Component.Message = 'VER 0.0.52\nMAR_18_2014'
+ghenv.Component.Message = 'VER 0.0.52\nAPR_21_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -104,6 +104,13 @@ class WriteRAD(object):
         for  pt in coordinates:
             ptStr = ptStr + '%.4f'%pt.X + '  ' + '%.4f'%pt.Y + '  ' + '%.4f'%pt.Z + '\n'
         ptStr = ptStr + '\n'
+        
+        # check for polygons with only two points.
+        # Yes! it is possible. Import a model from REVIT/SketchUp and create some breps out of it
+        # and you will get some!
+        if len(coordinates) < 3:
+            comment = " Polygon " + surface.name + " has less than 3 vertices and is removed by Honeybee.\n"
+            return "#" + comment
         
         return srfStr + ptStr
 
