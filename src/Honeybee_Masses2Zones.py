@@ -41,7 +41,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_Masses2Zones'
 ghenv.Component.NickName = 'Mass2Zone'
-ghenv.Component.Message = 'VER 0.0.51\nFEB_24_2014'
+ghenv.Component.Message = 'VER 0.0.51\nAPR_23_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -445,7 +445,7 @@ def main(maximumRoofAngle, bldgMasses, bldgsFlr2FlrHeights, isConditioned, proje
                 
                 # zone programs should be generated using the bldgsFloorProgram
                 try: thisZoneProgram = zonePrograms[zoneKey]
-                except: thisZoneProgram = 'Medium Office'
+                except: thisZoneProgram = 'Office', 'OpenOffice'
                 
                 thisZone = hb_EPZone(zone, zoneKey, `bldgKey` + '_' + `zoneKey`, thisZoneProgram, isZoneConditioned)
                 if zoneKey == 0: thisZone.isThisTheFirstZone = True

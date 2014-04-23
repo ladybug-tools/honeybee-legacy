@@ -52,6 +52,7 @@ import System
 import time
 from itertools import chain
 import datetime
+import json
 import copy
 PI = math.pi
 
@@ -158,8 +159,12 @@ class hb_GetEPConstructions():
                 '\nPlease check your internet connection, and try again!'
             return -1
         else:
-            sc.sticky ["honeybee_OpenStudioStandards"] = [os.path.join(workingDir, 'OpenStudio_Standards.json')]
-        
+            # load the json file
+            filepath = os.path.join(workingDir, 'OpenStudio_Standards.json')
+            with open(filepath) as jsondata:
+                openStudioStandardLib = json.load(jsondata)
+            sc.sticky ["honeybee_OpenStudioStandardsFile"] = openStudioStandardLib
+            print "OpenStudio Standard file is loaded!"
         if os.path.isfile(os.path.join(workingDir,"userCustomLibrary.idf")):
             libFilePaths.append(os.path.join(workingDir,"userCustomLibrary.idf"))
         
@@ -1391,6 +1396,187 @@ class scheduleLibrary(object):
             '\t0.05;                    !- Field 40\n'
     
 
+class BuildingProgramsLib(object):
+    def __init__(self):
+        
+        self.bldgPrograms = {
+                0 : 'Office',
+                1 : 'Retail',
+                2 : 'MidriseApartment',
+                3 : 'PrimarySchool',
+                4 : 'SecondarySchool',
+                5 : 'SmallHotel',
+                6 : 'LargeHotel',
+                7 : 'Hospital',
+                8 : 'Outpatient',
+                9 : 'Warehouse',
+                10 : 'SuperMarket',
+                11 : 'FullServiceRestaurant',
+                12 : 'QuickServiceRestaurant',
+                'Office' : 'Office',
+                'Retail' : 'Retail',
+                'MidriseApartment' : 'MidriseApartment',
+                'PrimarySchool' : 'PrimarySchool',
+                'SecondarySchool' : 'SecondarySchool',
+                'SmallHotel' : 'SmallHotel',
+                'LargeHotel' : 'LargeHotel',
+                'Hospital' : 'Hospital',
+                'Outpatient' : 'Outpatient',
+                'Warehouse' : 'Warehouse',
+                'SuperMarket' : 'SuperMarket',
+                'FullServiceRestaurant' : 'FullServiceRestaurant',
+                'QuickServiceRestaurant' : 'QuickServiceRestaurant'}
+        
+        self.zonePrograms = { "MidriseApartment" : {
+                                            0: "Apartment",
+                                            1: "Office",
+                                            2: "Corridor",
+                                            },
+                    'Outpatient' : {
+                                    0: "IT_Room",
+                                    1: "ProcedureRoom",
+                                    2: "Conference",
+                                    3: "MedGas",
+                                    4: "Janitor",
+                                    5: "Cafe",
+                                    6: "OR",
+                                    7: "PhysicalTherapy",
+                                    8: "Lobby",
+                                    9: "Xray",
+                                    10: "MRI_Control",
+                                    11: "Toilet",
+                                    12: "Elec/MechRoom",
+                                    13: "Stair",
+                                    14: "PACU",
+                                    15: "Anesthesia",
+                                    16: "MRI",
+                                    17: "CleanWork",
+                                    18: "NurseStation",
+                                    19: "PreOp",
+                                    20: "Lounge",
+                                    21: "BioHazard",
+                                    22: "Office",
+                                    23: "Hall",
+                                    24: "Soil Work",
+                                    25: "DressingRoom",
+                                    26: "Exam",
+                                    27: "LockerRoom",
+                                    },
+                    'LargeHotel'  : {
+                                    0: "Storage",
+                                    1: "Mechanical",
+                                    2: "Banquet",
+                                    3: "GuestRoom",
+                                    4: "Laundry",
+                                    5: "Retail",
+                                    6: "Kitchen",
+                                    7: "Cafe",
+                                    8: "Corridor",
+                                    9: "Lobby"
+                                    },
+                    'FullServiceRestaurant' : {
+                                    0: "Kitchen",
+                                    1: "Dining"
+                                    },
+                    'PrimarySchool' : {
+                                    0: "Mechanical",
+                                    1: "Library",
+                                    2: "Cafeteria",
+                                    3: "Gym",
+                                    4: "Restroom",
+                                    5: "Office",
+                                    6: "Classroom",
+                                    7: "Kitchen",
+                                    8: "Corridor",
+                                    9: "Lobby"
+                                    },
+                    'SmallHotel' : {
+                                    0: "Storage",
+                                    1: "GuestLounge",
+                                    2: "Mechanical",
+                                    3: "StaffLounge",
+                                    4: "PublicRestroom",
+                                    5: "GuestRoom",
+                                    6: "Exercise",
+                                    7: "Laundry",
+                                    8: "Meeting",
+                                    9: "Office",
+                                    10: "Stair",
+                                    11: "Corridor"
+                                    },
+                    'SuperMarket' : {
+                                    0: "Sales/Produce",
+                                    1: "DryStorage",
+                                    2: "Office",
+                                    3: "Deli/Bakery"
+                                    },
+                    'SecondarySchool' : {
+                                    0: "Mechanical",
+                                    1: "Library",
+                                    2: "Auditorium",
+                                    3: "Cafeteria",
+                                    4: "Gym",
+                                    5: "Restroom",
+                                    6: "Office",
+                                    7: "Classroom",
+                                    8: "Kitchen",
+                                    9: "Corridor",
+                                    10: "Lobby"
+                                    },
+                    'Retail' : {
+                                    0: "Back_Space",
+                                    1: "Point_of_Sale",
+                                    2: "Entry",
+                                    3: "Retail"
+                                    },
+                    'Hospital' : {
+                                    0: "ER_Trauma",
+                                    1: "PatCorridor",
+                                    2: "ICU_PatRm",
+                                    3: "ER_NurseStn",
+                                    4: "ICU_Open",
+                                    5: "NurseStn",
+                                    6: "PhysTherapy",
+                                    7: "ICU_NurseStn",
+                                    8: "Radiology",
+                                    9: "Dining",
+                                    10: "PatRoom",
+                                    11: "OR",
+                                    12: "Office",
+                                    13: "Kitchen",
+                                    14: "Lab",
+                                    15: "ER_Exam",
+                                    16: "ER_Triage",
+                                    17: "Corridor",
+                                    18: "Lobby"
+                                    },
+                    'Office' : {
+                                    0: "BreakRoom",
+                                    1: "Storage",
+                                    2: "Vending",
+                                    3: "OpenOffice",
+                                    4: "ClosedOffice",
+                                    5: "Conference",
+                                    6: "PrintRoom",
+                                    7: "Restroom",
+                                    8: "Elec/MechRoom",
+                                    9: "IT_Room",
+                                    10: "Stair",
+                                    11: "Corridor",
+                                    12: "Lobby"
+                                    },
+                    'Warehouse' : {
+                                    0: "Office",
+                                    1: "Fine",
+                                    2: "Bulk"
+                                    },
+                    'QuickServiceRestaurant' : {
+                                    0: "Kitchen",
+                                    1: "Dining"
+                                    }
+                    }
+
+
 class EPSurfaceLib(object):
     
     def __init__(self):
@@ -1437,7 +1623,7 @@ class EPZone(object):
     """This calss represents a honeybee zone that will be used for energy and daylighting
     simulatios"""
     
-    def __init__(self, zoneBrep, zoneID, zoneName, zoneProgram, isConditioned = True):
+    def __init__(self, zoneBrep, zoneID, zoneName, program = [None, None], isConditioned = True):
         self.north = 0
         self.objectType = "HBZone"
         self.origin = rc.Geometry.Point3d.Origin
@@ -1456,11 +1642,83 @@ class EPZone(object):
         self.name = zoneName
         self.hasNonPlanarSrf = False
         self.hasInternalEdge = False
-        self.program = zoneProgram
-
+        self.bldgProgram = program[0]
+        self.zoneProgram = program[1]
         self.isConditioned = isConditioned
         self.isThisTheTopZone = False
         self.isThisTheFirstZone = False
+        
+        self.isSchedulesAssigned = False
+        self.isLoadsAssigned = False
+        
+    
+    def assignScheduleBasedOnProgram(self):
+        # create an open office is the program is not assigned
+        if self.bldgProgram == None: self.bldgProgram = "Office"
+        if self.zoneProgram == None: self.zoneProgram = "OpenOffice"
+        
+        openStudioStandardLib = sc.sticky ["honeybee_OpenStudioStandardsFile"]
+        
+        schedulesAndLoads = openStudioStandardLib['space_types']['90.1-2007']['ClimateZone 1-8'][self.bldgProgram][self.zoneProgram]
+        
+        self.occupancySchedule = schedulesAndLoads['occupancy_sch']
+        self.heatingSetPtSchedule = schedulesAndLoads['heating_setpoint_sch']
+        self.coolingSetPtSchedule = schedulesAndLoads['cooling_setpoint_sch']
+        self.lightingSchedule = schedulesAndLoads['lighting_sch']
+        self.equipmentSchedule = schedulesAndLoads['elec_equip_sch']
+        self.infiltrationSchedule = schedulesAndLoads['infiltration_sch']
+        
+        # find all the patameters and assign them to 
+        self.isSchedulesAssigned = True
+        
+    
+    def assignLoadsBasedOnProgram(self):
+        # create an open office is the program is not assigned
+        if self.bldgProgram == None: self.bldgProgram = "Office"
+        if self.zoneProgram == None: self.zoneProgram = "OpenOffice"
+        
+        openStudioStandardLib = sc.sticky ["honeybee_OpenStudioStandardsFile"]
+        
+        schedulesAndLoads = openStudioStandardLib['space_types']['90.1-2007']['ClimateZone 1-8'][self.bldgProgram][self.zoneProgram]
+        
+        self.equipmentLoadPerArea = schedulesAndLoads['elec_equip_per_area']
+        self.infiltrationRatePerArea = schedulesAndLoads['infiltration_per_area_ext']
+        self.lightingDensityPerArea = schedulesAndLoads['lighting_w_per_area']
+        self.numOfPeoplePerArea = schedulesAndLoads[ 'occupancy_per_area']
+        self.ventilationPerArea = schedulesAndLoads['ventilation_per_area']
+        self.ventilationPerPerson = schedulesAndLoads['ventilation_per_person']
+        
+        self.isLoadsAssigned = True
+    
+    
+    def getCurrentSchedules(self):
+        # assign the default is there is no schedule assigned 
+        if not self.isSchedulesAssigned:
+            self.assignScheduleBasedOnProgram()
+        
+        report = " Schedule list:\n" + \
+        "Occupancy Schedule: " + `self.occupancySchedule` + "\n" + \
+        "heatingSetPtSchedule: " + `self.heatingSetPtSchedule` + "\n" + \
+        "coolingSetPtSchedule: " + `self.coolingSetPtSchedule` + "\n" + \
+        "lightingSchedule: " + `self.lightingSchedule` + "\n" + \
+        "equipmentSchedule: " + `self.equipmentSchedule` + "\n" + \
+        "infiltrationSchedule: " + `self.infiltrationSchedule` + "."
+        
+        return report
+
+    def  getCurrentLoads(self):
+        # assign the default is there is no schedule assigned 
+        if not self.isLoadsAssigned:
+            self.assignLoadsBasedOnProgram()
+        
+        report = " Internal Loads:\n" + \
+        "Equipments Load Per Area: " + "%.4f"%self.equipmentLoadPerArea + "\n" + \
+        "infiltrationRatePerArea: " + "%.4f"%self.infiltrationRatePerArea + "\n" + \
+        "lightingDensityPerArea: " + "%.4f"%self.lightingDensityPerArea + "\n" + \
+        "numOfPeoplePerArea: " + "%.4f"%self.numOfPeoplePerArea + "\n" + \
+        "ventilationPerArea: " + "%.4f"%self.ventilationPerArea + "."
+        
+        return report        
         
     def checkZoneNormalsDir(self):
         """check normal direction of the surfaces"""
@@ -2594,13 +2852,15 @@ if letItFly:
             
             sc.sticky["honeybee_EPMaterialAUX"] = EPMaterialAux
             
-        except:
+        except Exception, e:
+            print e
             print "Failed to load EP constructions!"
         
         sc.sticky["honeybee_Hive"] = hb_Hive
         sc.sticky["honeybee_DefaultMaterialLib"] = materialLibrary
         sc.sticky["honeybee_DefaultScheduleLib"] = scheduleLibrary
         sc.sticky["honeybee_DefaultSurfaceLib"] = EPSurfaceLib
+        sc.sticky["honeybee_BuildingProgramsLib"] = BuildingProgramsLib
         sc.sticky["honeybee_EPTypes"] = EPTypes()
         sc.sticky["honeybee_EPZone"] = EPZone
         sc.sticky["honeybee_EPSurface"] = hb_EPSurface
