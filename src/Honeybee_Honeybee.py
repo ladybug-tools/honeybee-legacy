@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.52
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.52\nAPR_17_2014'
+ghenv.Component.Message = 'VER 0.0.52\nAPR_22_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -110,10 +110,6 @@ class hb_GetEPConstructions():
     
     def __init__(self, workingDir = sc.sticky["Honeybee_DefaultFolder"]):
         
-        
-        
-        
-        
         def downloadFile(url, workingDir):
             import urllib
             webFile = urllib.urlopen(url)
@@ -143,7 +139,26 @@ class hb_GetEPConstructions():
             return -1
         else:
             libFilePaths = [os.path.join(workingDir, 'OpenStudioMasterTemplate.idf')]
-            # print 'Download complete!'
+            
+        # download openstudio standards
+        if not os.path.isfile(workingDir + '\OpenStudio_Standards.json'):
+            try:
+                ## download File
+                print 'Downloading OpenStudio_Standards.json to ', workingDir
+                downloadFile(r'https://dl.dropboxusercontent.com/u/16228160/honeybee/OpenStudio_Standards.json', workingDir)
+            except:
+                print 'Download failed!!! You need OpenStudio_Standards.json to use honeybee.' + \
+                '\nPlease check your internet connection, and try again!'
+        else:
+            pass
+        
+        
+        if not os.path.isfile(workingDir + '\OpenStudio_Standards.json'):
+            print 'Download failed!!! You need OpenStudio_Standards.json to use honeybee.' + \
+                '\nPlease check your internet connection, and try again!'
+            return -1
+        else:
+            sc.sticky ["honeybee_OpenStudioStandards"] = [os.path.join(workingDir, 'OpenStudio_Standards.json')]
         
         if os.path.isfile(os.path.join(workingDir,"userCustomLibrary.idf")):
             libFilePaths.append(os.path.join(workingDir,"userCustomLibrary.idf"))
