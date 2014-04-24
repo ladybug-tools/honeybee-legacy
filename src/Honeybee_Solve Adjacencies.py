@@ -10,15 +10,15 @@ Provided by Honeybee 0.0.51
 
     Args:
         _HBZones: List of Honeybee zones
-        _tolerance_: Tolerance value
-        _findAdjc: Set to True to find the adjacencies
+        altConstruction_: Optional alternate EP construction
+        altBC_: Optional alternate boundary condition
     Returns:
         readMe!: Report of the adjacencies
         HBZonesWADJ: List of Honeybee zones with adjacencies
 """
 ghenv.Component.Name = "Honeybee_Solve Adjacencies"
 ghenv.Component.NickName = 'solveAdjc'
-ghenv.Component.Message = 'VER 0.0.51\nFEB_24_2014'
+ghenv.Component.Message = 'VER 0.0.51\nAPR_24_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -27,6 +27,7 @@ except: pass
 
 import Rhino as rc
 import scriptcontext as sc
+import Grasshopper.Kernel as gh
 import uuid
 
 def shootIt(rayList, geometry, tol = 0.01, bounce =1):
@@ -42,7 +43,19 @@ class OutdoorBC(object):
     def __init__(self):
         self.name = ""
 
-def main(HBZones, tol):
+def main(HBZones, altConstruction, altBC, tol):
+    
+    # import the classes
+    if not sc.sticky.has_key('honeybee_release'):
+        print "You should first let Honeybee to fly..."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee to fly...")
+        return
+    
+    # extra check to be added later.
+    # check altBC and altConstruction to be valid inputs
+    
+    
     # call the objects from the lib
     hb_hive = sc.sticky["honeybee_Hive"]()
     HBZoneObjects = hb_hive.callFromHoneybeeHive(HBZones)
@@ -89,13 +102,23 @@ def main(HBZones, tol):
                                               surface.srfType[surface.type] + '.'
                                         if srf.type == 1: srf.type = 3 # roof + adjacent surface = ceiling
                                         elif surface.type == 1: surface.type = 3
+                                        
+                                        # change construction
+                                        if altConstruction != None:
+                                            srf.EPConstruction = altConstruction
+                                            Surface.EPConstruction = altConstruction
+                                        
                                         # change bc
-                                        srf.BC = 'SURFACE'
-                                        surface.BC = 'SURFACE'
-                                        # change bc.Obj
-                                        # used to be only a name but I changed it to an object so you can find the parent, etc.
-                                        srf.BCObject = surface
-                                        surface.BCObject = srf
+                                        if altBC != None:
+                                            surface.BC = altBC
+                                            srf.BC = altBC
+                                        else:
+                                            srf.BC = 'SURFACE'
+                                            surface.BC = 'SURFACE'
+                                            # change bc.Obj
+                                            # used to be only a name but I changed it to an object so you can find the parent, etc.
+                                            srf.BCObject = surface
+                                            surface.BCObject = srf
                                         # sun and wind exposure
                                         surface.sunExposure = srf.srfSunExposure[2]
                                         srf.sunExposure = srf.srfSunExposure[2]
@@ -117,4 +140,4 @@ def main(HBZones, tol):
 if _findAdjc and _HBZones and _HBZones[0]!=None:
     try: tol = float(_tolerance_)
     except: tol = sc.doc.ModelAbsoluteTolerance
-    HBZonesWADJ = main(_HBZones, tol)
+    HBZonesWADJ = main(_HBZones, altConstruction_, altBC_, tol)
