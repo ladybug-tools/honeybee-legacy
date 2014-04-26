@@ -18,7 +18,7 @@ Provided by Honeybee 0.0.51
 """
 ghenv.Component.Name = "Honeybee_Solve Adjacencies"
 ghenv.Component.NickName = 'solveAdjc'
-ghenv.Component.Message = 'VER 0.0.51\nAPR_24_2014'
+ghenv.Component.Message = 'VER 0.0.51\nAPR_25_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -38,10 +38,6 @@ def shootIt(rayList, geometry, tol = 0.01, bounce =1):
         if intPt:
             if ray.Position.DistanceTo(intPt[0]) <= tol:
                 return 'Bang!'
-
-class OutdoorBC(object):
-    def __init__(self):
-        self.name = ""
 
 def main(HBZones, altConstruction, altBC, tol):
     
@@ -63,7 +59,8 @@ def main(HBZones, altConstruction, altBC, tol):
     
     # clean bcObjects
     for testZone in HBZoneObjects:
-        for srf in testZone.surfaces: srf.BCObject = OutdoorBC()  
+        for srf in testZone.surfaces:
+            srf.BCObject = srf.outdoorBCObject()
     
     for testZone in HBZoneObjects:
         for srf in testZone.surfaces:

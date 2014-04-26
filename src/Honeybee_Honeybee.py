@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.52
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.52\nAPR_22_2014'
+ghenv.Component.Message = 'VER 0.0.52\nAPR_25_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -851,7 +851,37 @@ class EPMaterialAux(object):
                 selConstr = tempSelConstr
         
         return selConstr
+
+
+class EPScheduleAux(object):
+    
+    def getScheduleDataByName(self, schName, component = None):
+        try:
+            scheduleObj = sc.sticky["honeybee_ScheduleLib"][schName]
+        except:
+            msg = "Failed to find " + schName + " in the Honeybee schedule library."
+            print msg
+            if component is not None:
+                component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+            
+            return None, None
+            
+        comments = []
+        values = []
         
+        for layer in scheduleObj.keys():
+            try:
+                material, comment = scheduleObj[layer]
+                values.append(material)
+                comments.append(comment)
+            except:
+                scheduleType = scheduleObj[layer]
+                values.append(scheduleType)
+                comments.append("Schedule Type")
+        
+        return values, comments
+
+
 class EPTypes(object):
     def __init__(self):
         self.srfType = {0:'WALL',
@@ -1652,14 +1682,23 @@ class EPZone(object):
         self.isLoadsAssigned = False
         
     
-    def assignScheduleBasedOnProgram(self):
+    def assignScheduleBasedOnProgram(self, component = None):
         # create an open office is the program is not assigned
         if self.bldgProgram == None: self.bldgProgram = "Office"
         if self.zoneProgram == None: self.zoneProgram = "OpenOffice"
         
         openStudioStandardLib = sc.sticky ["honeybee_OpenStudioStandardsFile"]
         
-        schedulesAndLoads = openStudioStandardLib['space_types']['90.1-2007']['ClimateZone 1-8'][self.bldgProgram][self.zoneProgram]
+        try:
+            schedulesAndLoads = openStudioStandardLib['space_types']['90.1-2007']['ClimateZone 1-8'][self.bldgProgram][self.zoneProgram]
+        except:
+            msg = "Either your input for bldgProgram > [" + self.bldgProgram + "] or " + \
+                  "the input for zoneProgram > [" + self.zoneProgram + "] is not valid.\n" + \
+                  "Use ListSpacePrograms component to find the available programs."
+            print msg
+            if component != None:
+                component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+            return
         
         self.occupancySchedule = schedulesAndLoads['occupancy_sch']
         self.heatingSetPtSchedule = schedulesAndLoads['heating_setpoint_sch']
@@ -1672,14 +1711,23 @@ class EPZone(object):
         self.isSchedulesAssigned = True
         
     
-    def assignLoadsBasedOnProgram(self):
+    def assignLoadsBasedOnProgram(self, component=None):
         # create an open office is the program is not assigned
         if self.bldgProgram == None: self.bldgProgram = "Office"
         if self.zoneProgram == None: self.zoneProgram = "OpenOffice"
         
         openStudioStandardLib = sc.sticky ["honeybee_OpenStudioStandardsFile"]
         
-        schedulesAndLoads = openStudioStandardLib['space_types']['90.1-2007']['ClimateZone 1-8'][self.bldgProgram][self.zoneProgram]
+        try:
+            schedulesAndLoads = openStudioStandardLib['space_types']['90.1-2007']['ClimateZone 1-8'][self.bldgProgram][self.zoneProgram]
+        except:
+            msg = "Either your input for bldgProgram > [" + self.bldgProgram + "] or " + \
+                  "the input for zoneProgram > [" + self.zoneProgram + "] is not valid.\n" + \
+                  "Use ListSpacePrograms component to find the available programs."
+            print msg
+            if component != None:
+                component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+            return
         
         self.equipmentLoadPerArea = schedulesAndLoads['elec_equip_per_area']
         self.infiltrationRatePerArea = schedulesAndLoads['infiltration_per_area_ext']
@@ -1691,35 +1739,59 @@ class EPZone(object):
         self.isLoadsAssigned = True
     
     
-    def getCurrentSchedules(self):
+    def getCurrentSchedules(self, returnDictionary = False, component = None):
         # assign the default is there is no schedule assigned 
         if not self.isSchedulesAssigned:
-            self.assignScheduleBasedOnProgram()
+            self.assignScheduleBasedOnProgram(component)
         
-        report = " Schedule list:\n" + \
-        "Occupancy Schedule: " + `self.occupancySchedule` + "\n" + \
-        "heatingSetPtSchedule: " + `self.heatingSetPtSchedule` + "\n" + \
-        "coolingSetPtSchedule: " + `self.coolingSetPtSchedule` + "\n" + \
-        "lightingSchedule: " + `self.lightingSchedule` + "\n" + \
-        "equipmentSchedule: " + `self.equipmentSchedule` + "\n" + \
-        "infiltrationSchedule: " + `self.infiltrationSchedule` + "."
+        if not returnDictionary:
+            report = " Schedule list:\n" + \
+            "OccupancySchedule: " + `self.occupancySchedule` + "\n" + \
+            "heatingSetPtSchedule: " + `self.heatingSetPtSchedule` + "\n" + \
+            "coolingSetPtSchedule: " + `self.coolingSetPtSchedule` + "\n" + \
+            "lightingSchedule: " + `self.lightingSchedule` + "\n" + \
+            "equipmentSchedule: " + `self.equipmentSchedule` + "\n" + \
+            "infiltrationSchedule: " + `self.infiltrationSchedule` + "."
+            
+            return report
         
-        return report
+        else:
+            scheduleDict = {"OccupancySchedule" : `self.occupancySchedule`,
+                            "heatingSetPtSchedule" :`self.heatingSetPtSchedule`,
+                            "coolingSetPtSchedule" : `self.coolingSetPtSchedule`,
+                            "lightingSchedule" : `self.lightingSchedule`,
+                            "equipmentSchedule" : `self.equipmentSchedule`,
+                            "infiltrationSchedule" : `self.infiltrationSchedule`}
+            
+            return scheduleDict
 
-    def  getCurrentLoads(self):
-        # assign the default is there is no schedule assigned 
+    def  getCurrentLoads(self,  returnDictionary = False, component = None):
+        
+        # assign the default is there is no schedule assigned
         if not self.isLoadsAssigned:
-            self.assignLoadsBasedOnProgram()
+            self.assignLoadsBasedOnProgram(component)
         
-        report = " Internal Loads:\n" + \
-        "Equipments Load Per Area: " + "%.4f"%self.equipmentLoadPerArea + "\n" + \
-        "infiltrationRatePerArea: " + "%.4f"%self.infiltrationRatePerArea + "\n" + \
-        "lightingDensityPerArea: " + "%.4f"%self.lightingDensityPerArea + "\n" + \
-        "numOfPeoplePerArea: " + "%.4f"%self.numOfPeoplePerArea + "\n" + \
-        "ventilationPerArea: " + "%.4f"%self.ventilationPerArea + "."
-        
-        return report        
-        
+        if not returnDictionary:
+            report = " Internal Loads:\n" + \
+            "EquipmentsLoadPerArea: " + "%.4f"%self.equipmentLoadPerArea + "\n" + \
+            "infiltrationRatePerArea: " + "%.4f"%self.infiltrationRatePerArea + "\n" + \
+            "lightingDensityPerArea: " + "%.4f"%self.lightingDensityPerArea + "\n" + \
+            "numOfPeoplePerArea: " + "%.4f"%self.numOfPeoplePerArea + "\n" + \
+            "ventilationPerArea: " + "%.4f"%self.ventilationPerArea + "."
+            
+            return report        
+            
+        else:
+            
+            loadsDict = {"EquipmentsLoadPerArea" : self.equipmentLoadPerArea,
+                         "infiltrationRatePerArea" : self.infiltrationRatePerArea,
+                         "lightingDensityPerArea" : self.lightingDensityPerArea,
+                         "numOfPeoplePerArea" : self.numOfPeoplePerArea,
+                         "ventilationPerArea" : self.ventilationPerArea}
+            
+            return loadsDict
+            
+            
     def checkZoneNormalsDir(self):
         """check normal direction of the surfaces"""
         MP3D = rc.Geometry.AreaMassProperties.Compute(self.geometry)
@@ -2033,6 +2105,13 @@ class hb_EPSurface(object):
             return True
         else:
             return False
+    
+    class outdoorBCObject(object):
+        """
+        BCObject for surfaces with outdoor BC
+        """
+        def __init__(self, name = ""):
+            self.name = name
     
     def getAngle2North(self):
         types = [0, 4, 5] # vertical surfaces
@@ -2396,10 +2475,10 @@ class hb_EPZoneSurface(hb_EPSurface):
             # by a smarter intersection process. I tried multiple ways and none of
             # them were promising...
             self.BC = self.srfBC[self.type]
-            self.BCObject = ''
+            self.BCObject = self.outdoorBCObject()
             if self.type ==2 and parentZone.isThisTheFirstZone:
                 self.BC = 'GROUND'
-                self.BCObject = ''
+                self.BCObject = self.outdoorBCObject()
         else:
             hb_EPSurface.__init__(self, surface, srfNumber, srfName)
             
@@ -2407,7 +2486,7 @@ class hb_EPZoneSurface(hb_EPSurface):
             # This will be re-evaluated in write idf file
             srfType = self.getTypeByNormalAngle()
             self.BC = self.srfBC[srfType]
-            self.BCObject = ''
+            self.BCObject = self.outdoorBCObject()
             self.sunExposure = self.srfSunExposure[srfType]
             self.windExposure = self.srfWindExposure[srfType]
 
@@ -2578,16 +2657,16 @@ class hb_EPFenSurface(hb_EPSurface):
         
         # this is a class that I only wrote to assign a fake object for surfaces
         # with outdoor boundaryCondition
-        class OutdoorBC(object):
-            def __init__(self):
-                self.name = ""
+        #class OutdoorBC(object):
+        #    def __init__(self):
+        #        self.name = ""
         
         # calculate punchedWall
         self.parent.punchedGeometry = punchedWall
         self.shadingControlName = ''
         self.frameName = ''
         self.Multiplier = 1
-        self.BCObject = OutdoorBC()
+        self.BCObject = self.outdoorBCObject()
         self.groundViewFactor = 'autocalculate'
         self.isChild = True # is it really useful?
         
@@ -2851,6 +2930,7 @@ if letItFly:
             hb_GetEPConstructions()
             
             sc.sticky["honeybee_EPMaterialAUX"] = EPMaterialAux
+            sc.sticky["honeybee_EPScheduleAUX"] = EPScheduleAux
             
         except Exception, e:
             print e
