@@ -13,6 +13,7 @@ Provided by Honeybee 0.0.51
     Args:
         _iesFilePath: Filepath to a valid IES file
         newName_: Optional new name for the ies file
+        modifier_: Optional number between 0 and 1 which will be "multiplied by "all output quantities. This is the best way to scale fixture brightness for different lamps, but care should be taken when this option is applied to multiple files."
         _runIt: Set to True to import the IES file
     Returns:
         HB_IES: HB IES object. Do not scale or rotate this object. Just locate it in the right place
@@ -20,7 +21,7 @@ Provided by Honeybee 0.0.51
 
 ghenv.Component.Name = "Honeybee_Import IES"
 ghenv.Component.NickName = 'importIES'
-ghenv.Component.Message = 'VER 0.0.51\nAPR_18_2014'
+ghenv.Component.Message = 'VER 0.0.51\nAPR_26_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "7 | WIP"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -128,12 +129,17 @@ def runCmdAndGetTheResults(command, shellKey = True):
     # p.kill()
     return out, err
 
-def main(iesFilePath, newName):
+def main(iesFilePath, newName, modifier):
     
     w = gh.GH_RuntimeMessageLevel.Warning
     
     if not sc.sticky.has_key('honeybee_release'):
         msg = "You should first let Honeybee to fly..."
+        ghenv.Component.AddRuntimeMessage(w, msg)
+        return -1
+    
+    if modifier!=None and not 0 < modifier < 1:
+        msg = "Modifier should be a number between 0 and 1"
         ghenv.Component.AddRuntimeMessage(w, msg)
         return -1
     
@@ -162,6 +168,9 @@ def main(iesFilePath, newName):
     
     # add input file
     ies2radLine += newName + " " + iesName
+    
+    if modifier!=None:
+        ies2radLine += " -m " + str(modifier)
     
     # write a batch file
     batchFilePath = os.path.join(dirName, newName + "_ies2rad.bat")
@@ -200,5 +209,5 @@ def main(iesFilePath, newName):
     return HBIESSrf
 
 if _runIt:
-    result = main(_iesFilePath, newName_)
+    result = main(_iesFilePath, newName_, modifier_)
     if result!=-1: HB_IES = result
