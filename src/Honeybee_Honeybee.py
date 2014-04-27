@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.52
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.52\nAPR_25_2014'
+ghenv.Component.Message = 'VER 0.0.52\nAPR_27_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -163,6 +163,13 @@ class hb_GetEPConstructions():
             filepath = os.path.join(workingDir, 'OpenStudio_Standards.json')
             with open(filepath) as jsondata:
                 openStudioStandardLib = json.load(jsondata)
+            
+            # fix schedule for office lighting in dictionary
+            
+            zonePrograms = openStudioStandardLib['space_types']['90.1-2007']['ClimateZone 1-8']['Office']
+            for zoneProgram in zonePrograms.keys():
+                zonePrograms[zoneProgram]['lighting_sch'] = "Medium Office Bldg Light"
+            
             sc.sticky ["honeybee_OpenStudioStandardsFile"] = openStudioStandardLib
             print "OpenStudio Standard file is loaded!"
         if os.path.isfile(os.path.join(workingDir,"userCustomLibrary.idf")):
@@ -858,7 +865,8 @@ class EPScheduleAux(object):
     def getScheduleDataByName(self, schName, component = None):
         try:
             scheduleObj = sc.sticky["honeybee_ScheduleLib"][schName]
-        except:
+        except Exception, e:
+            #print e
             msg = "Failed to find " + schName + " in the Honeybee schedule library."
             print msg
             if component is not None:
@@ -953,142 +961,6 @@ class materialLibrary(object):
                    2: 'RESIDENTIAL_SCH',
                    3: 'HOTEL_SCH'}
                    
-        # construction str
-        self.cnstrStr ='\n' +\
-            'Construction,\n' +\
-            '\t000_Exterior_Wall,        !- Name\n' +\
-            '\t000_M01 100mm brick,      !- Outside Layer\n' +\
-            '\t000_M15 200mm heavyweight concrete,  !- Layer 2\n' +\
-            '\t000_I02 50mm insulation board,  !- Layer 3\n' +\
-            '\t000_F04 Wall air space resistance,  !- Layer 4\n' +\
-            '\t000_G01a 19mm gypsum board;  !- Layer 5\n\n' +\
-            '\n' +\
-            'Construction,\n' +\
-            '\t000_Exterior_Floor,       !- Name\n' +\
-            '\t000_I02 50mm insulation board,  !- Outside Layer\n' +\
-            '\t000_M15 200mm heavyweight concrete;  !- Layer 2\n\n' +\
-            '\n' +\
-            'Construction,\n' +\
-            '\t000_Exterior_Roof,        !- Name\n' +\
-            '\t000_M11 100mm lightweight concrete,  !- Outside Layer\n' +\
-            '\t000_F05 Ceiling air space resistance,  !- Layer 2\n' +\
-            '\t000_F16 Acoustic tile;    !- Layer 3\n\n' + \
-            '\n' +\
-            'Construction,\n' +\
-            '\t000_Exterior_Window,      !- Name\n' +\
-            '\t000_Clear 3mm,            !- Outside Layer\n' +\
-            '\t000_Air 13mm,             !- Layer 2\n' +\
-            '\t000_Clear 3mm;            !- Layer 3\n' +\
-            '\n' +\
-            'Construction,\n' + \
-            '\t000_Interior_Floor,      !- Name\n' + \
-            '\t000_F16 Acoustic tile,   !- Outside Layer\n' + \
-            '\t000_F05 Ceiling air space resistance,  !- Layer 2\n' + \
-            '\t000_M11 100mm lightweight concrete;  !- Layer 3\n' + \
-            '\n' + \
-            'Construction,\n' + \
-            '\t000_Interior_Ceiling,      !- Name\n' + \
-            '\t000_M11 100mm lightweight concrete,   !- Outside Layer\n' + \
-            '\t000_F05 Ceiling air space resistance,  !- Layer 2\n' + \
-            '\t000_F16 Acoustic tile;  !- Layer 3\n' + \
-            '\n' + \
-            'Construction,\n' + \
-            '\tAir Wall,                !- Name\n' + \
-            '\tAir Wall_Material;       !- Outside Layer\n'
-            
-            #idfFile.write(cnstrStr)
-            #print cnstrStr
-            
-        self.materialStr = '\n' + \
-            'Material,\n' +\
-            '\t000_M01 100mm brick,      !- Name\n' +\
-            '\tMediumRough,              !- Roughness\n' +\
-            '\t0.1016,                   !- Thickness {m}\n' +\
-            '\t0.89,                     !- Conductivity {W/m-K}\n' +\
-            '\t1920,                     !- Density {kg/m3}\n' +\
-            '\t790;                      !- Specific Heat {J/kg-K}\n' +\
-            '\n' +\
-            'Material:AirGap,\n' +\
-            '\t000_F04 Wall air space resistance,  !- Name\n' +\
-            '\t0.15;                     !- Thermal Resistance {m2-K/W}\n' +\
-            '\n' +\
-            'Material,\n' +\
-            '\t000_G01a 19mm gypsum board,  !- Name\n' +\
-            '\tMediumSmooth,             !- Roughness\n' +\
-            '\t0.019,                    !- Thickness {m}\n' +\
-            '\t0.16,                     !- Conductivity {W/m-K}\n' +\
-            '\t800,                      !- Density {kg/m3}\n' +\
-            '\t1090;                     !- Specific Heat {J/kg-K}\n' +\
-            '\n' +\
-            'Material,\n' +\
-            '\t000_I02 50mm insulation board,  !- Name\n' +\
-            '\tMediumRough,              !- Roughness\n' +\
-            '\t0.0508,                   !- Thickness {m}\n' +\
-            '\t0.03,                     !- Conductivity {W/m-K}\n' +\
-            '\t43,                       !- Density {kg/m3}\n' +\
-            '\t1210;                     !- Specific Heat {J/kg-K}\n' +\
-            '\n' +\
-            'Material,\n' +\
-            '\t000_M15 200mm heavyweight concrete,  !- Name\n' +\
-            '\tMediumRough,              !- Roughness\n' +\
-            '\t0.2032,                   !- Thickness {m}\n' +\
-            '\t1.95,                     !- Conductivity {W/m-K}\n' +\
-            '\t2240,                     !- Density {kg/m3}\n' +\
-            '\t900;                      !- Specific Heat {J/kg-K}\n' +\
-            '\n' +\
-            'Material,\n' +\
-            '\t000_M11 100mm lightweight concrete,  !- Name\n' +\
-            '\tMediumRough,              !- Roughness\n' +\
-            '\t0.1016,                   !- Thickness {m}\n' +\
-            '\t0.53,                     !- Conductivity {W/m-K}\n' +\
-            '\t1280,                     !- Density {kg/m3}\n' +\
-            '\t840;                      !- Specific Heat {J/kg-K}\n' +\
-            '\n' +\
-            'Material:AirGap,\n' +\
-            '\t000_F05 Ceiling air space resistance,  !- Name\n' +\
-            '\t0.18;                     !- Thermal Resistance {m2-K/W}\n' +\
-            '\n' +\
-            'Material,\n' +\
-            '\t000_F16 Acoustic tile,    !- Name\n' +\
-            '\tMediumSmooth,             !- Roughness\n' +\
-            '\t0.0191,                   !- Thickness {m}\n' +\
-            '\t0.06,                     !- Conductivity {W/m-K}\n' +\
-            '\t368,                      !- Density {kg/m3}\n' +\
-            '\t590;                      !- Specific Heat {J/kg-K}\n' +\
-            '\n' +\
-            'WindowMaterial:Glazing,\n' +\
-            '\t000_Clear 3mm,            !- Name\n' +\
-            '\tSpectralAverage,          !- Optical Data Type\n' +\
-            '\t,                         !- Window Glass Spectral Data Set Name\n' +\
-            '\t0.003,                    !- Thickness {m}\n' +\
-            '\t0.837,                    !- Solar Transmittance at Normal Incidence\n' +\
-            '\t0.075,                    !- Front Side Solar Reflectance at Normal Incidence\n' +\
-            '\t0.075,                    !- Back Side Solar Reflectance at Normal Incidence\n' +\
-            '\t0.898,                    !- Visible Transmittance at Normal Incidence\n' +\
-            '\t0.081,                    !- Front Side Visible Reflectance at Normal Incidence\n' +\
-            '\t0.081,                    !- Back Side Visible Reflectance at Normal Incidence\n' +\
-            '\t0,                        !- Infrared Transmittance at Normal Incidence\n' +\
-            '\t0.84,                     !- Front Side Infrared Hemispherical Emissivity\n' +\
-            '\t0.84,                     !- Back Side Infrared Hemispherical Emissivity\n' +\
-            '\t0.9;                      !- Conductivity {W/m-K}\n' +\
-            '\n' +\
-            'WindowMaterial:Gas,\n' +\
-            '\t000_Air 13mm,             !- Name\n' +\
-            '\tAir,                      !- Gas Type\n' +\
-            '\t0.0127;                   !- Thickness {m}\n' +\
-            '\n' + \
-            'Material,\n' +\
-            '\tAir Wall_Material,       !- Name\n' +\
-            '\tMediumSmooth,            !- Roughness\n' +\
-            '\t0.01,                    !- Thickness {m}\n' +\
-            '\t0.59999999999999998,     !- Conductivity {W/m-K}\n' +\
-            '\t800,                     !- Density {kg/m3}\n' +\
-            '\t1000,                    !- Specific Heat {J/kg-K}\n' +\
-            '\t0.94999999999999996,     !- Thermal Absorptance\n' +\
-            '\t0.69999999999999996,     !- Solar Absorptance\n' +\
-            '\t0.69999999999999996;     !- Visible Absorptance\n' +\
-            '\n'
-            ###
             
 
 class scheduleLibrary(object):
@@ -1701,6 +1573,7 @@ class EPZone(object):
             return
         
         self.occupancySchedule = schedulesAndLoads['occupancy_sch']
+        self.occupancyActivitySch = schedulesAndLoads['occupancy_activity_sch']
         self.heatingSetPtSchedule = schedulesAndLoads['heating_setpoint_sch']
         self.coolingSetPtSchedule = schedulesAndLoads['cooling_setpoint_sch']
         self.lightingSchedule = schedulesAndLoads['lighting_sch']
@@ -1746,22 +1619,24 @@ class EPZone(object):
         
         if not returnDictionary:
             report = " Schedule list:\n" + \
-            "OccupancySchedule: " + `self.occupancySchedule` + "\n" + \
-            "heatingSetPtSchedule: " + `self.heatingSetPtSchedule` + "\n" + \
-            "coolingSetPtSchedule: " + `self.coolingSetPtSchedule` + "\n" + \
-            "lightingSchedule: " + `self.lightingSchedule` + "\n" + \
-            "equipmentSchedule: " + `self.equipmentSchedule` + "\n" + \
-            "infiltrationSchedule: " + `self.infiltrationSchedule` + "."
+            "occupancySchedule: " + str(self.occupancySchedule) + "\n" + \
+            "occupancyActivitySch: " + str(self.occupancyActivitySch) + "\n" + \
+            "heatingSetPtSchedule: " + str(self.heatingSetPtSchedule) + "\n" + \
+            "coolingSetPtSchedule: " + str(self.coolingSetPtSchedule) + "\n" + \
+            "lightingSchedule: " + str(self.lightingSchedule) + "\n" + \
+            "equipmentSchedule: " + str(self.equipmentSchedule) + "\n" + \
+            "infiltrationSchedule: " + str(self.infiltrationSchedule) + "."
             
             return report
         
         else:
-            scheduleDict = {"OccupancySchedule" : `self.occupancySchedule`,
-                            "heatingSetPtSchedule" :`self.heatingSetPtSchedule`,
-                            "coolingSetPtSchedule" : `self.coolingSetPtSchedule`,
-                            "lightingSchedule" : `self.lightingSchedule`,
-                            "equipmentSchedule" : `self.equipmentSchedule`,
-                            "infiltrationSchedule" : `self.infiltrationSchedule`}
+            scheduleDict = {"occupancySchedule" : str(self.occupancySchedule),
+                            "occupancyActivitySch" : str(self.occupancyActivitySch),
+                            "heatingSetPtSchedule" :str(self.heatingSetPtSchedule),
+                            "coolingSetPtSchedule" : str(self.coolingSetPtSchedule),
+                            "lightingSchedule" : str(self.lightingSchedule),
+                            "equipmentSchedule" : str(self.equipmentSchedule),
+                            "infiltrationSchedule" : str(self.infiltrationSchedule)}
             
             return scheduleDict
 
@@ -1783,11 +1658,11 @@ class EPZone(object):
             
         else:
             
-            loadsDict = {"EquipmentsLoadPerArea" : self.equipmentLoadPerArea,
-                         "infiltrationRatePerArea" : self.infiltrationRatePerArea,
-                         "lightingDensityPerArea" : self.lightingDensityPerArea,
-                         "numOfPeoplePerArea" : self.numOfPeoplePerArea,
-                         "ventilationPerArea" : self.ventilationPerArea}
+            loadsDict = {"EquipmentsLoadPerArea" : "%.4f"%self.equipmentLoadPerArea,
+                         "infiltrationRatePerArea" : "%.4f"%self.infiltrationRatePerArea,
+                         "lightingDensityPerArea" : "%.4f"%self.lightingDensityPerArea,
+                         "numOfPeoplePerArea" : "%.4f"%self.numOfPeoplePerArea,
+                         "ventilationPerArea" : "%.4f"%self.ventilationPerArea}
             
             return loadsDict
             
@@ -2067,6 +1942,16 @@ class hb_EPSurface(object):
                 4:'Air Wall',
                 5:'000 Exterior Window',
                 6:'000 Interior Wall'}
+        
+        self.intCnstrSet = {
+                0:'000 Interior Wall',
+                1:'000 Exterior Roof',
+                2:'000 Interior Floor',
+                3:'000 Interior Ceiling',
+                4:'Air Wall',
+                5:'000 Interior Window',
+                6:'000 Interior Wall'}
+        
         
         # Floor and ceiling are set to Adiabatic for now
         self.srfBC = {0:'Outdoors',

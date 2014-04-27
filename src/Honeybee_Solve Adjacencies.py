@@ -18,7 +18,7 @@ Provided by Honeybee 0.0.51
 """
 ghenv.Component.Name = "Honeybee_Solve Adjacencies"
 ghenv.Component.NickName = 'solveAdjc'
-ghenv.Component.Message = 'VER 0.0.51\nAPR_25_2014'
+ghenv.Component.Message = 'VER 0.0.51\nAPR_27_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -101,10 +101,13 @@ def main(HBZones, altConstruction, altBC, tol):
                                         elif surface.type == 1: surface.type = 3
                                         
                                         # change construction
-                                        if altConstruction != None:
+                                        if altConstruction == None:
+                                            srf.EPConstruction = srf.intCnstrSet[srf.type]
+                                            surface.EPConstruction = surface.intCnstrSet[surface.type]
+                                        else:
                                             srf.EPConstruction = altConstruction
-                                            Surface.EPConstruction = altConstruction
-                                        
+                                            surface.EPConstruction = altConstruction
+                                            
                                         # change bc
                                         if altBC != None:
                                             surface.BC = altBC
