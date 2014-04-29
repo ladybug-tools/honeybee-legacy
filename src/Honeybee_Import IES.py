@@ -21,7 +21,7 @@ Provided by Honeybee 0.0.51
 
 ghenv.Component.Name = "Honeybee_Import IES"
 ghenv.Component.NickName = 'importIES'
-ghenv.Component.Message = 'VER 0.0.51\nAPR_26_2014'
+ghenv.Component.Message = 'VER 0.0.51\nAPR_28_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "7 | WIP"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -138,7 +138,7 @@ def main(iesFilePath, newName, modifier):
         ghenv.Component.AddRuntimeMessage(w, msg)
         return -1
     
-    if modifier!=None and not 0 < modifier < 1:
+    if modifier!=None and not 0 <= modifier <= 1:
         msg = "Modifier should be a number between 0 and 1"
         ghenv.Component.AddRuntimeMessage(w, msg)
         return -1
@@ -162,15 +162,18 @@ def main(iesFilePath, newName, modifier):
     # check if user provided a new name
     if newName == None: newName = iesName.split(".")[0]
 
+    # check if user provided a new name
+    if modifier == None: modifier = 1.0
+
     # conversion line
     pathStr = "SET RAYPATH=.;" + hb_RADLibPath + "\nPATH=" + hb_RADPath + ";$PATH\n"
     ies2radLine = "ies2rad -o "
     
     # add input file
-    ies2radLine += newName + " " + iesName
+    ies2radLine += newName
     
-    if modifier!=None:
-        ies2radLine += " -m " + str(modifier)
+    # add a multiplier factor
+    ies2radLine += " -m " + str(modifier) + " " + iesName
     
     # write a batch file
     batchFilePath = os.path.join(dirName, newName + "_ies2rad.bat")
