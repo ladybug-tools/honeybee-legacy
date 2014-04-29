@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.52
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.52\nAPR_27_2014'
+ghenv.Component.Message = 'VER 0.0.52\nAPR_28_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -84,14 +84,17 @@ class hb_findFolders():
         http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
         """
         def is_exe(fpath):
+            #print fpath
+            #if fpath.upper().find("EnergyPlus") > 0:
+            #    print fpath
             # Avoid Radiance and Daysim that comes with DIVA as it has a different
             # structure which doesn't match the standard Daysim
-            
             if fpath.upper().find("DIVA")<0:
                 # if the user has DIVA installed the component may find DIVA version
                 # of RADIANCE and DAYISM which can cause issues because of the different
                 # structure of folders in DIVA
                 return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+            
             else:
                 return False
                 
@@ -2792,7 +2795,7 @@ if letItFly:
         sc.sticky["honeybee_folders"]["DSLibPath"] = hb_DSLibPath
     
         if folders.EPPath == None:
-            EPVersion = "V7-2-0"
+            EPVersion = "V8-0-0"
             if os.path.isdir("C:\EnergyPlus" + EPVersion + "\\"):
                 folders.EPPath = "C:\EnergyPlus" + EPVersion + "\\"
             else:
@@ -2802,8 +2805,8 @@ if letItFly:
                      "A good place to install EnergyPlus is c:\\EnergyPlus" + EPVersion
                 # I remove the warning for now until EP plugins are available
                 # It confuses the users
-                #ghenv.Component.AddRuntimeMessage(w, msg)
-                folders.EPPath = ""
+                ghenv.Component.AddRuntimeMessage(w, msg)
+                folders.EPPath = "C:\EnergyPlus" + EPVersion + "\\"
                 
         sc.sticky["honeybee_folders"]["EPPath"] = folders.EPPath
         
