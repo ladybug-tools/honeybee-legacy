@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.52
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.52\nAPR_29_2014'
+ghenv.Component.Message = 'VER 0.0.52\nAPR_30_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1678,6 +1678,11 @@ class EPZone(object):
         MP3D = rc.Geometry.AreaMassProperties.Compute(self.geometry)
         self.cenPt = MP3D.Centroid
         MP3D.Dispose()
+        #Check if the centroid is inside the volume.
+        if self.geometry.IsPointInside(self.cenPt, sc.doc.ModelAbsoluteTolerance, True) == True:
+            doNotFlip = False
+        else: doNotFlip = True
+        
         # first surface of the geometry
         testSurface = self.geometry.Faces[0].DuplicateFace(False)
         srfCenPt, normal = self.getSrfCenPtandNormal(testSurface)
@@ -1686,7 +1691,8 @@ class EPZone(object):
             # make a vector from the center point of the zone to center point of the surface
             testVector = rc.Geometry.Vector3d(srfCenPt - self.cenPt)
             # check the direction of the vectors and flip zone surfaces if needed
-            if rc.Geometry.Vector3d.VectorAngle(testVector, normal)> 1: self.geometry.Flip()
+            if vecDir > 1 and doNotFlip == True: self.geometry.Flip()
+            elif vecDir < 1 and doNotFlip == True: self.geometry.Flip()
         except Exception, e:
             print 'Zone normal check failed!\n' + `e`
             return 
