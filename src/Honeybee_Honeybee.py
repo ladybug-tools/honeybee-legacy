@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.52
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.52\nAPR_28_2014'
+ghenv.Component.Message = 'VER 0.0.52\nAPR_29_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1605,12 +1605,13 @@ class EPZone(object):
                 component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
             return
         
-        self.equipmentLoadPerArea = schedulesAndLoads['elec_equip_per_area']
-        self.infiltrationRatePerArea = schedulesAndLoads['infiltration_per_area_ext']
-        self.lightingDensityPerArea = schedulesAndLoads['lighting_w_per_area']
-        self.numOfPeoplePerArea = schedulesAndLoads[ 'occupancy_per_area']
-        self.ventilationPerArea = schedulesAndLoads['ventilation_per_area']
-        self.ventilationPerPerson = schedulesAndLoads['ventilation_per_person']
+        # numbers in OpenStudio standard library are in IP and I have to convert them to SI!
+        self.equipmentLoadPerArea = schedulesAndLoads['elec_equip_per_area'] / 10.764961
+        self.infiltrationRatePerArea = schedulesAndLoads['infiltration_per_area_ext'] / 0.005080
+        self.lightingDensityPerArea = schedulesAndLoads['lighting_w_per_area'] / 10.764961
+        self.numOfPeoplePerArea = schedulesAndLoads[ 'occupancy_per_area'] / 10.764961
+        self.ventilationPerArea = schedulesAndLoads['ventilation_per_area'] / 0.005080
+        self.ventilationPerPerson = schedulesAndLoads['ventilation_per_person'] / 0.000472
         
         self.isLoadsAssigned = True
     
@@ -1655,6 +1656,7 @@ class EPZone(object):
             "infiltrationRatePerArea: " + "%.4f"%self.infiltrationRatePerArea + "\n" + \
             "lightingDensityPerArea: " + "%.4f"%self.lightingDensityPerArea + "\n" + \
             "numOfPeoplePerArea: " + "%.4f"%self.numOfPeoplePerArea + "\n" + \
+            "ventilationPerPerson: " + "%.4f"%self.ventilationPerPerson + "\n" + \
             "ventilationPerArea: " + "%.4f"%self.ventilationPerArea + "."
             
             return report        
@@ -1665,7 +1667,8 @@ class EPZone(object):
                          "infiltrationRatePerArea" : "%.4f"%self.infiltrationRatePerArea,
                          "lightingDensityPerArea" : "%.4f"%self.lightingDensityPerArea,
                          "numOfPeoplePerArea" : "%.4f"%self.numOfPeoplePerArea,
-                         "ventilationPerArea" : "%.4f"%self.ventilationPerArea}
+                         "ventilationPerArea" : "%.4f"%self.ventilationPerArea,
+                         "ventilationPerPerson" : "%.4f"%self.ventilationPerPerson}
             
             return loadsDict
             
@@ -2795,7 +2798,7 @@ if letItFly:
         sc.sticky["honeybee_folders"]["DSLibPath"] = hb_DSLibPath
     
         if folders.EPPath == None:
-            EPVersion = "V8-0-0"
+            EPVersion = "V8-1-0"
             if os.path.isdir("C:\EnergyPlus" + EPVersion + "\\"):
                 folders.EPPath = "C:\EnergyPlus" + EPVersion + "\\"
             else:
