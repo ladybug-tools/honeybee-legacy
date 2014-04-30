@@ -1691,6 +1691,7 @@ class EPZone(object):
             # make a vector from the center point of the zone to center point of the surface
             testVector = rc.Geometry.Vector3d(srfCenPt - self.cenPt)
             # check the direction of the vectors and flip zone surfaces if needed
+            vecDir = rc.Geometry.Vector3d.VectorAngle(testVector, normal)
             if vecDir > 1 and doNotFlip == True: self.geometry.Flip()
             elif vecDir < 1 and doNotFlip == True: self.geometry.Flip()
         except Exception, e:
