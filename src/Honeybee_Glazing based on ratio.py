@@ -24,7 +24,7 @@ Provided by Honeybee 0.0.51
 
 ghenv.Component.Name = "Honeybee_Glazing based on ratio"
 ghenv.Component.NickName = 'glazingCreator'
-ghenv.Component.Message = 'VER 0.0.51\nMAR_02_2014'
+ghenv.Component.Message = 'VER 0.0.51\nAPR_30_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -386,7 +386,7 @@ def createGlazingThatContainsRectangle(topEdge, btmEdge, baseSrf, glazingRatio, 
         try:
             reconstructSrf = rc.Geometry.Brep.CreatePlanarBreps(joinedEdgesSimplified)[0]
         except:
-            pass
+            reconstructSrf = srf
         
         # On some systems there was an error with using Brep.Vertices
         # I assume this should be an issue with one of Rhinocommon versions
@@ -536,7 +536,7 @@ def createGlazingCurved(baseSrf, glzRatio, planar):
         if planar==False and glzCurve==None:
             glzCurve = border.OffsetOnSurface(surface, -offsetDist, sc.doc.ModelAbsoluteTolerance)
             direction = -1
-            
+        
         if glzCurve!=None:
             splitBrep = surface.Split(glzCurve, sc.doc.ModelAbsoluteTolerance)
             
@@ -645,11 +645,13 @@ def findGlzBasedOnRatio(baseSrf, glzRatio, windowHeight, sillHeight, surfaceType
     
     #Check if the surface has any curved edges to it
     for crv in joinedEdgesSimplified:
-        for edge in crv.DuplicateSegments():
-            if rc.Geometry.BrepEdge.IsLinear(edge, sc.doc.ModelAbsoluteTolerance):
-                pass
-            else:
-                edgeLinear = False
+        if crv != None:
+            for edge in crv.DuplicateSegments():
+                if rc.Geometry.BrepEdge.IsLinear(edge, sc.doc.ModelAbsoluteTolerance):
+                    pass
+                else:
+                    edgeLinear = False
+        else: pass
     
     #Check if the surface is a planar skylight that can be broken up into quads and, if so, send it through the skylight generator
     if surfaceType == 1:
@@ -664,7 +666,7 @@ def findGlzBasedOnRatio(baseSrf, glzRatio, windowHeight, sillHeight, surfaceType
         glazing = createGlazingThatContainsRectangle(getTopBottomCurves(baseSrf)[4][0], getTopBottomCurves(baseSrf)[4][1], baseSrf, glzRatio, windowHeight, sillHeight)
     
     #Since the surface does not seem to have a rectangle that can be extracted, check to see if it is a triangle for which we can use a simple mathematical relation.
-    elif surfaceType == 0 and baseSrf.Edges.Count == 3:
+    elif surfaceType == 0 and planarBool == True and baseSrf.Edges.Count == 3:
         glazing = createGlazingTri(baseSrf, glzRatio, None)
     
     #Since the surface does not seem to have a rectangle and is not a triangle, check to see if it is a just an odd-shaped quarilateral for which we can use a mathematical relation.
