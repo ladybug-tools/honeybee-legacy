@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.52
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.52\nAPR_30_2014'
+ghenv.Component.Message = 'VER 0.0.52\nMAY_03_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -871,6 +871,33 @@ class EPScheduleAux(object):
         except Exception, e:
             #print e
             msg = "Failed to find " + schName + " in the Honeybee schedule library."
+            print msg
+            if component is not None:
+                component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+            
+            return None, None
+            
+        comments = []
+        values = []
+        
+        for layer in scheduleObj.keys():
+            try:
+                material, comment = scheduleObj[layer]
+                values.append(material)
+                comments.append(comment)
+            except:
+                scheduleType = scheduleObj[layer]
+                values.append(scheduleType)
+                comments.append("Schedule Type")
+        
+        return values, comments
+    
+    def getScheduleTypeLimitsDataByName(self, schName, component = None):
+        try:
+            scheduleObj = sc.sticky["honeybee_ScheduleTypeLimitsLib"][schName]
+        except Exception, e:
+            #print e
+            msg = "Failed to find " + schName + " in the Honeybee schedule type limits library."
             print msg
             if component is not None:
                 component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
