@@ -1623,6 +1623,7 @@ class EPZone(object):
         
         try:
             schedulesAndLoads = openStudioStandardLib['space_types']['90.1-2007']['ClimateZone 1-8'][self.bldgProgram][self.zoneProgram]
+            
         except:
             msg = "Either your input for bldgProgram > [" + self.bldgProgram + "] or " + \
                   "the input for zoneProgram > [" + self.zoneProgram + "] is not valid.\n" + \
@@ -1633,12 +1634,12 @@ class EPZone(object):
             return
         
         # numbers in OpenStudio standard library are in IP and I have to convert them to SI!
-        self.equipmentLoadPerArea = schedulesAndLoads['elec_equip_per_area'] / 10.764961
-        self.infiltrationRatePerArea = schedulesAndLoads['infiltration_per_area_ext'] / 0.005080
-        self.lightingDensityPerArea = schedulesAndLoads['lighting_w_per_area'] / 10.764961
-        self.numOfPeoplePerArea = schedulesAndLoads[ 'occupancy_per_area'] / 10.764961
-        self.ventilationPerArea = schedulesAndLoads['ventilation_per_area'] / 0.005080
-        self.ventilationPerPerson = schedulesAndLoads['ventilation_per_person'] / 0.000472
+        self.equipmentLoadPerArea = schedulesAndLoads['elec_equip_per_area'] * 10.763961 #Per ft^2 to Per m^2
+        self.infiltrationRatePerArea = schedulesAndLoads['infiltration_per_area_ext'] * 0.00508001 #1 ft3/min.m2 = 5.08001016E-03 m3/s.m2
+        self.lightingDensityPerArea = schedulesAndLoads['lighting_w_per_area'] * 10.763961 #Per ft^2 to Per m^2
+        self.numOfPeoplePerArea = schedulesAndLoads[ 'occupancy_per_area'] * 10.763961 /1000 #Per 1000 ft^2 to Per m^2
+        self.ventilationPerArea = schedulesAndLoads['ventilation_per_area'] * 0.00508001 #1 ft3/min.m2 = 5.08001016E-03 m3/s.m2
+        self.ventilationPerPerson = schedulesAndLoads['ventilation_per_person'] * 0.0004719  #1 ft3/min.perosn = 4.71944743E-04 m3/s.person
         
         self.isLoadsAssigned = True
     
@@ -1678,7 +1679,7 @@ class EPZone(object):
             self.assignLoadsBasedOnProgram(component)
         
         if not returnDictionary:
-            report = " Internal Loads:\n" + \
+            report = " Internal Loads [SI]:\n" + \
             "EquipmentsLoadPerArea: " + "%.4f"%self.equipmentLoadPerArea + "\n" + \
             "infiltrationRatePerArea: " + "%.4f"%self.infiltrationRatePerArea + "\n" + \
             "lightingDensityPerArea: " + "%.4f"%self.lightingDensityPerArea + "\n" + \
