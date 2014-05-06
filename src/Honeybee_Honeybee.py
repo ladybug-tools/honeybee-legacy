@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.52
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.52\nMAY_05_2014'
+ghenv.Component.Message = 'VER 0.0.52\nMAY_06_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -2156,6 +2156,15 @@ class hb_EPSurface(object):
             except:  centPt, normalVector = self.parent.getSrfCenPtandNormal(self.geometry)
         
         basePlane = rc.Geometry.Plane(centPt, normalVector)
+        
+        # inclusion test
+        if str(joinedBorder[0].Contains(centPt, basePlane)).lower() != "inside":
+            # average points
+            cumPt = rc.Geometry.Point3d(0,0,0)
+            for pt in pts: cumPt += pt
+            centPt = cumPt/len(pts)
+            # move basePlane to the new place
+            basePlane = rc.Geometry.Plane(centPt, normalVector)
         
         # sort based on parameter on curve
         pointsSorted = sorted(pts, key =lambda pt: joinedBorder[0].ClosestPoint(pt)[1])
