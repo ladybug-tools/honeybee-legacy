@@ -41,7 +41,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_Masses2Zones'
 ghenv.Component.NickName = 'Mass2Zone'
-ghenv.Component.Message = 'VER 0.0.51\nAPR_23_2014'
+ghenv.Component.Message = 'VER 0.0.52\nMAY_05_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -105,194 +105,6 @@ class Export2EP(object):
                 crvDir.append(rc.Geometry.Curve.DoDirectionsMatch(refCrv, crv))
             
         return contourCrvs , splitters #, crvDir
-        
-    def getCrvArea(self, crv, p= False):
-        try:
-            massP = crv.AreaMassProperties.Compute()
-            area = massP.Area
-            massP.Dispose()
-        except:
-            try:
-                ghCrv = ghdoc.Objects.AddCurve(crv)
-                if not rs.IsCurveClosed(ghCrv) and rs.IsCurveClosable(ghCrv):
-                    ghCrv = rs.CloseCurve(ghCrv, -1)
-                    print 'one open curve found and closed for area calculation...'
-                elif not rs.IsCurveClosed(ghCrv):
-                    endPt = rs.CurveEndPoint(ghCrv)
-                    startPt = rs.CurveStartPoint(ghCrv)
-                    newLine = rs.AddLine(startPt, endPt)
-                    ghCrv = rs.JoinCurves([ghCrv, newLine], True)
-                    print 'one open curve found and closed for area calculation...'
-                area = rs.Area(ghCrv)
-            
-                try: rs.DeleteObject(ghCrv)
-                except: pass
-            except: print "can't calculate the area!"; area = 0
-        if p: print area
-        return area
-    
-    def getSrfAreaAndCenPt(self, surface, calArea = True):
-        MP = rc.Geometry.AreaMassProperties.Compute(surface)
-        area = None
-        if MP:
-            if calArea: area = MP.Area
-            centerPt = MP.Centroid
-            MP.Dispose()
-            # cenPtU, cenPtV = rc.Geometry.Brep.
-            
-            try:
-                bool, centerPtU, centerPtV = surface.ClosestPoint(centerPt)
-                normalVector = surface.NormalAt(centerPtU, centerPtV)
-            except:
-                bool, centerPtU, centerPtV = surface.Faces[0].ClosestPoint(centerPt)
-                normalVector = surface.Faces[0].NormalAt(centerPtU, centerPtV)
-            return area, centerPt, normalVector
-        return None, None, None
-
-    def getCrvAreaAndCenPt(self, curve, calArea = True):
-        MP = rc.Geometry.AreaMassProperties.Compute(curve)
-        
-        area = -1
-        centerPt = rc.Geometry.Point3d.Origin
-        if MP:
-            if calArea: area = MP.Area
-            centerPt = MP.Centroid
-            MP.Dispose()
-        
-        return area, centerPt
-
-
-    def checkZoneNormalsDir(self, zone):
-        """check normal direction of the surfaces"""
-        MP3D = rc.Geometry.AreaMassProperties.Compute(zone)
-        volumeCenPt = MP3D.Centroid
-        MP3D.Dispose()
-        # first surface of the geometry
-        testSurface = zone.Faces[0].DuplicateFace(False)
-        area, srfCentPt, normal = self.getSrfAreaAndCenPt(testSurface, calArea = False)
-        try:
-            # make a vector from the center point of the zone to center point of the surface
-            testVector = rc.Geometry.Vector3d(srfCenPt - volumeCenPt)
-            # check the direction of the vectors and flip zone surfaces if needed
-            if rc.Geometry.Vector3d.VectorAngle(testVector, normal)> 1: zone.Flip()
-        except:
-            print 'Zone normal check failed!'
-            return  
-
-    def getOffsetDist(self, cenPt, edges):
-        distList = []
-        [distList.append(cenPt.DistanceTo(edge.PointAtNormalizedLength(0.5))) for edge in edges]
-        return min(distList)/2
-    
-    def OffsetCurveOnSurface(self, border, face, offsetDist):
-        success = False
-        glzArea = 0
-        direction = 1
-        # Try RhinoCommon
-        glzCurve = border.OffsetOnSurface(face.Faces[0], offsetDist, tolerance)
-        if glzCurve==None:
-            glzCurve = border.OffsetOnSurface(face.Faces[0], -offsetDist, tolerance)
-            direction = -1
-        
-        if glzCurve == None:
-            # Magically Steve Baer's script works in many cases that RhinoCommon Fails
-            # I checked the source code in gitHub and it looks exactly the same as the lines above!
-            # I have no idea what am I doing wrong! [Jan 19 2013]
-            print "RhinoCommon failed to offsetCurveOnSurface... Testing Steve Baer's magic!"
-            rsborder = sc.doc.Objects.AddCurve(border)
-            rsface = sc.doc.Objects.AddSurface(face.Faces[0])
-            glzCurve = rs.OffsetCurveOnSurface(rsborder, rsface, offsetDist)
-            if glzCurve==None:
-                glzCurve = rs.OffsetCurveOnSurface(rsborder, rsface, -offsetDist)
-                direction = -1
-            rs.DeleteObjects([rsface, rsborder])
-            if glzCurve!=None:
-                try:
-                    glzCurve =  [rs.coercecurve(glzCurve)]
-                except:
-                    glzCurve = [rs.coercecurve(glzCurve[0])]
-                print "Magic worked!"
-        
-        if glzCurve!=None:
-            glzCurve = glzCurve[0]
-            splitter = rc.Geometry.Surface.CreateExtrusion(glzCurve, self.getSrfAreaAndCenPt(face, calArea = False)[2]).ToBrep()
-            splittedSrfs = face.Split(splitter, sc.doc.ModelAbsoluteTolerance)
-            try:
-                glzSrf = splittedSrfs[-1]
-                glzArea = glzSrf.GetArea()
-                success = True
-                joinedSrf = rc.Geometry.Brep.JoinBreps(splittedSrfs, tolerance)[0]
-            except Exception, e:
-                print "Split surface failed!\n" + `e`
-                return True, glzArea, glzCurve, None
-                #joinedSrf = face
-        else:
-            print "Magic failed! I'm not surprised! " + \
-                  "I'm thinking to apply a work around for this later!"
-            # bake the surface
-            # dupBorder and offsetCurveOnSurface in Rhino
-            # bring the result
-            joinedSrf = face
-        
-        return success, glzArea, glzCurve, joinedSrf
-
-    def simplifyCrv(self, crv, tol=sc.doc.ModelAbsoluteTolerance , ang_tol = sc.doc.ModelAngleToleranceRadians):
-        simplifyOption = rc.Geometry.CurveSimplifyOptions.All
-        simplifiedCrv = crv.Simplify(simplifyOption, tol, ang_tol)
-        if simplifiedCrv == None:
-            return crv; print 'Curve simplification failed!'
-        return simplifiedCrv
-
-    # copied and modified from rhinoScript (@Steve Baer @GitHub)
-    def CurveDiscontinuity(self, curve, style):
-        """Search for a derivatitive, tangent, or curvature discontinuity in
-        a curve object.
-        Parameters:
-          curve_id = identifier of curve object
-          style = The type of continuity to test for. The types of
-              continuity are as follows:
-              Value    Description
-              1        C0 - Continuous function
-              2        C1 - Continuous first derivative
-              3        C2 - Continuous first and second derivative
-              4        G1 - Continuous unit tangent
-              5        G2 - Continuous unit tangent and curvature
-        Returns:
-          List 3D points where the curve is discontinuous
-        """
-        dom = curve.Domain
-        t0 = dom.Min
-        t1 = dom.Max
-        points = []
-        get_next = True
-        while get_next:
-            get_next, t = curve.GetNextDiscontinuity(System.Enum.ToObject(rc.Geometry.Continuity, style), t0, t1)
-            if get_next:
-                points.append(curve.PointAt(t))
-                t0 = t # Advance to the next parameter
-        return points
-
-    def findNearestPt(self, pt, ptList):
-        def distance(point):
-            return pt.DistanceTo(point)
-        return sorted(ptList, key = distance)[0]
-
-    def getCurvePoints(self, curve):
-        nc = curve.ToNurbsCurve()
-        if nc is None: return sc.errorhandler()  
-        points = [nc.Points[i].Location for i in xrange(nc.Points.Count)]
-        return points
-        
-    def checkCurveInList(self, crv, crvList):
-        """This definition checks if a curve with the same start and end point
-        is in the list """
-        ptList = [crv.PointAtStart, crv.PointAtEnd]
-        #crvLength = crv.Domain[1] - crv.Domain[0]
-        for c in crvList:
-            #if not c.Domain[1] - c.Domain[0] == crvLength: return False
-            if (c.PointAtStart in ptList) and (c.PointAtEnd in ptList):
-                return True
-        return False
 
 
 class Building(object):
@@ -364,74 +176,79 @@ def main(maximumRoofAngle, bldgMasses, bldgsFlr2FlrHeights, isConditioned, proje
                 maxHeights = lb_visualization.BoundingBoxPar[-1].Z
                 bldgHeights = lb_visualization.BoundingBoxPar[-1].Z - lb_visualization.BoundingBoxPar[0].Z
                 floorHeights = hb_export2EP.getFloorHeights(bldgsFlr2FlrHeights, bldgHeights, maxHeights, conversionFac)
-                floorCrvs, splitterSrfs = hb_export2EP.getFloorCrvs(mass, floorHeights)
                 
-                # well, I'm pretty sure that something like this is smarter to be written
-                # as a recursive fuction but I'm not comfortable enough to write it that way
-                # right now. Should be fixed later!
-                restOfmass = mass
-                
-                for srfCount, srf in enumerate(splitterSrfs):
-                    lastPiece = []
-                    lastPiece.append(restOfmass)
-                    pieces = restOfmass.Split(srf.ToBrep(), tolerance)
-                    if len(pieces)== 2 and lb_visualization.calculateBB([pieces[0]], True)[-1].Z < lb_visualization.calculateBB([pieces[1]], True)[-1].Z:
-                        try: 
-                            zone = pieces[0].CapPlanarHoles(tolerance);
-                            if zone!=None:
-                                thisBuilding.addZone(zone)
-                            restOfmass = pieces[1].CapPlanarHoles(tolerance)
-                        except Exception, e:
-                            print 'error 1: ' + `e`
-
-                    elif len(pieces)== 2:
-                        thisBuilding.addZone(pieces[1].CapPlanarHoles(tolerance))
-                        restOfmass = pieces[0].CapPlanarHoles(tolerance)
-                        try:
-                            zone = pieces[1].CapPlanarHoles(tolerance)
-                            if zone!=None:
-                                thisBuilding.addZone(zone)
+                if floorHeights!=[0]:
+                    floorCrvs, splitterSrfs = hb_export2EP.getFloorCrvs(mass, floorHeights)
+                    
+                    # well, I'm pretty sure that something like this is smarter to be written
+                    # as a recursive fuction but I'm not comfortable enough to write it that way
+                    # right now. Should be fixed later!
+                    restOfmass = mass
+                    
+                    for srfCount, srf in enumerate(splitterSrfs):
+                        lastPiece = []
+                        lastPiece.append(restOfmass)
+                        pieces = restOfmass.Split(srf.ToBrep(), tolerance)
+                        if len(pieces)== 2 and lb_visualization.calculateBB([pieces[0]], True)[-1].Z < lb_visualization.calculateBB([pieces[1]], True)[-1].Z:
+                            try: 
+                                zone = pieces[0].CapPlanarHoles(tolerance);
+                                if zone!=None:
+                                    thisBuilding.addZone(zone)
+                                restOfmass = pieces[1].CapPlanarHoles(tolerance)
+                            except Exception, e:
+                                print 'error 1: ' + `e`
+    
+                        elif len(pieces)== 2:
+                            thisBuilding.addZone(pieces[1].CapPlanarHoles(tolerance))
                             restOfmass = pieces[0].CapPlanarHoles(tolerance)
-                        except Exception, e:
-                            print 'error 2: ' + `e`
-                    else:
-                        if srfCount == len(splitterSrfs) - 1:
-                            pass
+                            try:
+                                zone = pieces[1].CapPlanarHoles(tolerance)
+                                if zone!=None:
+                                    thisBuilding.addZone(zone)
+                                restOfmass = pieces[0].CapPlanarHoles(tolerance)
+                            except Exception, e:
+                                print 'error 2: ' + `e`
                         else:
-                            msg = 'One of the masses is causing a problem. Check HBZones output for the mass that causes the problem.'
-                            print msg
-                            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
-                            return [restOfmass, -1]
-                    
-                    # remove the last 
+                            if srfCount == len(splitterSrfs) - 1:
+                                pass
+                            else:
+                                msg = 'One of the masses is causing a problem. Check HBZones output for the mass that causes the problem.'
+                                print msg
+                                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                                return [restOfmass, -1]
+                        
+                        # remove the last 
+                        try:
+                            if lb_visualization.calculateBB([pieces[0]], True)[-1].Z == lb_visualization.calculateBB([pieces[1]], True)[-1].Z:
+                                thisBuilding.removeLastZone()
+                        except:
+                            pass
                     try:
-                        if lb_visualization.calculateBB([pieces[0]], True)[-1].Z == lb_visualization.calculateBB([pieces[1]], True)[-1].Z:
+                        # check if the last part heights is less than minimum acceptable height
+                        minZPt, cetPt, maxZPt = lb_visualization.calculateBB([restOfmass], True)
+                        minHeights = 0.1
+                        
+                        if  maxZPt.Z - minZPt.Z < minHeights:
+                            # remove the last zone
                             thisBuilding.removeLastZone()
-                    except:
-                        pass
-                try:
-                    # check if the last part heights is less than minimum acceptable height
-                    minZPt, cetPt, maxZPt = lb_visualization.calculateBB([restOfmass], True)
-                    minHeights = 0.1
+                            thisBuilding.addZone(lastPiece[0])
+                        else:
+                            # if acceptable then add it to the geometry
+                            if not restOfmass.IsSolid:
+                                restOfmass = restOfmass.CapPlanarHoles(tolerance)
+                            if restOfmass!=None:
+                                thisBuilding.addZone(restOfmass)
+                                
+                    except Exception, e:
+                        print 'mass to zone partially failed!\n' + \
+                              `e`
+                    #    pass
                     
-                    if  maxZPt.Z - minZPt.Z < minHeights:
-                        # remove the last zone
-                        thisBuilding.removeLastZone()
-                        thisBuilding.addZone(lastPiece[0])
-                    else:
-                        # if acceptable then add it to the geometry
-                        if not restOfmass.IsSolid:
-                            restOfmass = restOfmass.CapPlanarHoles(tolerance)
-                        if restOfmass!=None:
-                            thisBuilding.addZone(restOfmass)
-                            
-                except Exception, e:
-                    print 'mass to zone partially failed!\n' + \
-                          `e`
-                #    pass
-                
-                # add this building to buildings collection
-                buildingsDic[bldgCount] = thisBuilding
+                    # add this building to buildings collection
+                    buildingsDic[bldgCount] = thisBuilding
+                else:
+                    thisBuilding.addZone(mass)
+                    buildingsDic[bldgCount] = thisBuilding
         
         zoneClasses = []
         # iterate through building dictionary
@@ -448,8 +265,10 @@ def main(maximumRoofAngle, bldgMasses, bldgsFlr2FlrHeights, isConditioned, proje
                 except: thisZoneProgram = 'Office', 'OpenOffice'
                 
                 thisZone = hb_EPZone(zone, zoneKey, `bldgKey` + '_' + `zoneKey`, thisZoneProgram, isZoneConditioned)
+                
                 if zoneKey == 0: thisZone.isThisTheFirstZone = True
-                if zoneKey == numOfZones - 1: thisZone.isThisTheTopZone = True
+                elif zoneKey == numOfZones - 1: thisZone.isThisTheTopZone = True
+                
                 
                 # since this zone will be build based on a closed brep I use decompseZone
                 # to find walls, surfaces, blah blah
@@ -467,6 +286,9 @@ if _createHoneybeeZones == True:
     
     try:  maximumRoofAngle = float(maximumRoofAngle_)
     except: maximumRoofAngle = 30
+    
+    bldgsFloorProgram_ = []
+    isConditioned_ = [True]
     
     result= main(maximumRoofAngle, _bldgMasses, bldgsFlr2FlrHeights_, isConditioned_, projectName_)
     

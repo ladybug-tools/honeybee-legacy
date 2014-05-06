@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.52
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.52\nMAY_03_2014'
+ghenv.Component.Message = 'VER 0.0.52\nMAY_05_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1700,28 +1700,45 @@ class EPZone(object):
             
             return loadsDict
             
-            
+    def joinMesh(self, meshList):
+        joinedMesh = rc.Geometry.Mesh()
+        for m in meshList: joinedMesh.Append(m)
+        return joinedMesh
+    
     def checkZoneNormalsDir(self):
+        # isPointInside for Breps is buggy, that's why I mesh the geometry here
+        mesh = rc.Geometry.Mesh.CreateFromBrep(self.geometry)
+        joinedMesh = self.joinMesh(mesh)
+        
         """check normal direction of the surfaces"""
         MP3D = rc.Geometry.AreaMassProperties.Compute(self.geometry)
         self.cenPt = MP3D.Centroid
         MP3D.Dispose()
+        
         #Check if the centroid is inside the volume.
-        if self.geometry.IsPointInside(self.cenPt, sc.doc.ModelAbsoluteTolerance, True) == True:
-            doNotFlip = False
-        else: doNotFlip = True
+        if joinedMesh.IsPointInside(self.cenPt, sc.doc.ModelAbsoluteTolerance, True) != True:
+            # point is not inside so this method can't be used
+            return
         
         # first surface of the geometry
         testSurface = self.geometry.Faces[0].DuplicateFace(False)
         srfCenPt, normal = self.getSrfCenPtandNormal(testSurface)
         
+        #create a plane from the surface
+        srfPlane = rc.Geometry.Plane(srfCenPt, normal)
+        
+        # project center point of the geometry to surface plane
+        projectedPt = srfPlane.ClosestPoint(self.cenPt)
+        
         try:
             # make a vector from the center point of the zone to center point of the surface
-            testVector = rc.Geometry.Vector3d(srfCenPt - self.cenPt)
+            testVector = rc.Geometry.Vector3d(projectedPt - self.cenPt)
             # check the direction of the vectors and flip zone surfaces if needed
-            vecDir = rc.Geometry.Vector3d.VectorAngle(testVector, normal)
-            if vecDir > 1 and doNotFlip == True: self.geometry.Flip()
-            elif vecDir < 1 and doNotFlip == True: self.geometry.Flip()
+            vecAngleDiff = math.degrees(rc.Geometry.Vector3d.VectorAngle(testVector, normal))
+            
+            # vecAngleDiff should be 0 otherwise the normal is reversed
+            if vecAngleDiff > 10:
+                self.geometry.Flip()
         except Exception, e:
             print 'Zone normal check failed!\n' + `e`
             return 
@@ -1887,7 +1904,7 @@ class EPZone(object):
     def getFloorArea(self):
         totalFloorArea = 0
         for HBSrf in self.surfaces:
-            if HBSrf.type == 2:
+            if int(HBSrf.type) == 2:
                 totalFloorArea += HBSrf.getTotalArea()
         return totalFloorArea
     
