@@ -601,6 +601,32 @@ class RADMaterialAux(object):
             inRadf.write(self.outFileStr)
         
 
+class hb_EnergySimulatioParameters(object):
+    
+    def readEPParams(self, EPParameters):
+        if EPParameters == [] or len(EPParameters)!=10:
+            timestep = 6
+            
+            shadowPar = ["AverageOverDaysInFrequency", 30, 3000]
+            
+            solarDistribution = "FullExterior"
+            
+            simulationControl = [True, True, True, False, True]
+            
+            ddyFile = None
+        
+        else:
+            timestep = int(EPParameters[0])
+            
+            shadowPar = EPParameters[1:4]
+            
+            solarDistribution = EPParameters[4]
+            
+            simulationControl = EPParameters[5:10]
+            
+            ddyFile = EPParameters[10]
+        
+        return timestep, shadowPar, solarDistribution, simulationControl, ddyFile
 
 class EPMaterialAux(object):
     
@@ -1561,8 +1587,8 @@ class EPZone(object):
         self.origin = rc.Geometry.Point3d.Origin
         self.geometry = zoneBrep
         self.surfaces = []
-        if isConditioned: self.HVACSystem = { 0 : 0} # assign ideal loads as default
-        else: self.HVACSystem = { 0 : -1} # assign ideal loads as default
+        if isConditioned: self.HVACSystem = ["GroupI", 0] # assign ideal loads as default
+        else: self.HVACSystem = ["NoHVAC", -1] # assign ideal loads as default
         
         if zoneBrep != None:
             self.isClosed = self.geometry.IsSolid
@@ -2874,7 +2900,7 @@ if letItFly:
                 # It confuses the users
                 ghenv.Component.AddRuntimeMessage(w, msg)
                 folders.EPPath = "C:\EnergyPlus" + EPVersion + "\\"
-                
+        
         sc.sticky["honeybee_folders"]["EPPath"] = folders.EPPath
         
         sc.sticky["honeybee_RADMaterialAUX"] = RADMaterialAux
@@ -2904,6 +2930,7 @@ if letItFly:
         sc.sticky["honeybee_EPFenSurface"] = hb_EPFenSurface
         sc.sticky["honeybee_RADParameters"] = hb_RADParameters
         sc.sticky["honeybee_DSParameters"] = hb_DSParameters
+        sc.sticky["honeybee_EPParameters"] = hb_EnergySimulatioParameters
         
         # done! sharing the happiness.
         print "Hooohooho...Flying!!\nVviiiiiiizzz..."
