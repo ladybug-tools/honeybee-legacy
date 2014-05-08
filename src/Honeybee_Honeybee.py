@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.52
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.52\nMAY_06_2014'
+ghenv.Component.Message = 'VER 0.0.52\nMAY_07_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1561,6 +1561,9 @@ class EPZone(object):
         self.origin = rc.Geometry.Point3d.Origin
         self.geometry = zoneBrep
         self.surfaces = []
+        if isConditioned: self.HVACSystem = { 0 : 0} # assign ideal loads as default
+        else: self.HVACSystem = { 0 : -1} # assign ideal loads as default
+        
         if zoneBrep != None:
             self.isClosed = self.geometry.IsSolid
         else:
