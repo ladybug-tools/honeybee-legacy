@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.52
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.52\nMAY_07_2014'
+ghenv.Component.Message = 'VER 0.0.52\nMAY_08_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1589,6 +1589,9 @@ class EPZone(object):
         self.surfaces = []
         if isConditioned: self.HVACSystem = ["GroupI", 0] # assign ideal loads as default
         else: self.HVACSystem = ["NoHVAC", -1] # assign ideal loads as default
+        self.daylightThreshold = ""
+        self.coolingSetPt= ""
+        self.heatingSetPt= ""
         
         if zoneBrep != None:
             self.isClosed = self.geometry.IsSolid
@@ -1605,6 +1608,11 @@ class EPZone(object):
         self.hasInternalEdge = False
         self.bldgProgram = program[0]
         self.zoneProgram = program[1]
+        # assign schedules
+        self.assignScheduleBasedOnProgram()
+        # assign loads
+        self.assignLoadsBasedOnProgram()
+        
         self.isConditioned = isConditioned
         self.isThisTheTopZone = False
         self.isThisTheFirstZone = False
@@ -1999,8 +2007,8 @@ class hb_EPSurface(object):
             self.type = arg[1] # surface type (e.g. wall, roof,...)
             
         self.meshedFace = rc.Geometry.Mesh()
-        self.EPConstruction = None
         self.RadMaterial = None
+        self.EPConstruction = None # this gets overwritten below
         
         # 4 represents an Air Wall
         self.srfType = {0:'WALL',
@@ -2063,9 +2071,13 @@ class hb_EPSurface(object):
         
         # should be fixed later
         #self.construction = setSrfCnstr(self.type, parentZone.constructionSet)
-        if len(arg) == 2: self.construction = self.cnstrSet[self.type]
+        if len(arg) == 2:
+            self.construction = self.cnstrSet[self.type]
+            self.EPConstruction = self.construction
+            
         self.numOfVertices = 'autocalculate'
-    
+        
+        
     def checkPlanarity(self):
         # planarity tolerance should change for different 
         return self.geometry.Faces[0].IsPlanar(1e-3)
