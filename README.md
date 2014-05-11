@@ -1,4 +1,4 @@
-![Screenshot](http://api.ning.com/files/aq07GQXjwH2k7HkAx7K7a1BGAue2TB8k2AUbTA3QqG8evpY*5VRaCTcbhF4*QGUVshrRDVEN0W1QTldeW7c7LDsDqlmYfOzV/Merged_Icons.jpg?crop=1%3A1&width=171)
+![Screenshot](http://api.ning.com/files/OsG-NixX39fgvBguMkfqhfQB8A6qoIOoishY-IJX5jjM5aTt7vHdO05*4SLN3rLPUVIksyARyzUIMt3w1gJPlWA3aO-DlMvQ/Merged_Icons_2.png?width=200)
 
 
 Honeybee
