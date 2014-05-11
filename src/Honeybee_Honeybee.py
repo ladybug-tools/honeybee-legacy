@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.52
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.52\nMAY_10_2014'
+ghenv.Component.Message = 'VER 0.0.52\nMAY_11_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -907,7 +907,7 @@ class EPMaterialAux(object):
             objectData = sc.sticky ["honeybee_windowMaterialLib"][objectName]
         elif objectName in sc.sticky ["honeybee_materialLib"].keys():
             objectData = sc.sticky ["honeybee_materialLib"][objectName]
-        elif name in sc.sticky ["honeybee_constructionLib"].keys():
+        elif objectName in sc.sticky ["honeybee_constructionLib"].keys():
             objectData = sc.sticky ["honeybee_constructionLib"][objectName]
         
         if objectData!=None:
@@ -935,6 +935,9 @@ class EPMaterialAux(object):
     def addEPConstructionToLib(self, EPMaterial, overwrite = False):
         
         key = self.getObjectKey(EPMaterial)
+        
+        if key == None:
+            return None, None
         
         HBLibrarieNames = {
                        "Construction" : "honeybee_constructionLib",
