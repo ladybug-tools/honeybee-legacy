@@ -24,7 +24,7 @@ ghenv.Component.NickName = 'DSGlareControl'
 ghenv.Component.Message = 'VER 0.0.51\nFEB_24_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "3 | Daylight | Recipes"
-try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
 
 

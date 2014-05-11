@@ -20,7 +20,7 @@ ghenv.Component.NickName = 'genSkyIlluminanceLevel'
 ghenv.Component.Message = 'VER 0.0.52\nMAR_17_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "2 | Daylight | Sky"
-try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
 
 

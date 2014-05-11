@@ -22,7 +22,7 @@ ghenv.Component.NickName = 'setHDRExposure'
 ghenv.Component.Message = 'VER 0.0.51\nFEB_24_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "4 | Daylight | Daylight"
-try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
 
 
