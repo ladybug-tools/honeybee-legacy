@@ -888,6 +888,108 @@ class EPMaterialAux(object):
         
         return selConstr
 
+    def isEPMaterialObjectAlreadyExists(self, name):
+        """
+        Check if material or construction exist
+        """
+        if name in sc.sticky ["honeybee_constructionLib"].keys(): return True
+        if name in sc.sticky ["honeybee_materialLib"].keys(): return True
+        if name in sc.sticky ["honeybee_windowMaterialLib"].keys(): return True
+        
+        return False
+    
+    def getEPObjectsStr(self, objectName):
+        """
+        This function should work for materials, and counstructions
+        """
+        objectData = None
+        if objectName in sc.sticky ["honeybee_windowMaterialLib"].keys():
+            objectData = sc.sticky ["honeybee_windowMaterialLib"][objectName]
+        elif objectName in sc.sticky ["honeybee_materialLib"].keys():
+            objectData = sc.sticky ["honeybee_materialLib"][objectName]
+        elif name in sc.sticky ["honeybee_constructionLib"].keys():
+            objectData = sc.sticky ["honeybee_constructionLib"][objectName]
+        
+        if objectData!=None:
+            numberOfLayers = len(objectData.keys())
+            # add material/construction type
+            objectStr = objectData[0] + ",\n"
+            
+            for layer in range(1, numberOfLayers):
+                if layer < numberOfLayers-1:
+                    objectStr =  objectStr + "  " + str(objectData[layer][0]) + ",   !- " +  objectData[layer][1] + "\n"
+                else:
+                    objectStr =  objectStr + "  " + str(objectData[layer][0]) + ";   !- " +  objectData[layer][1] + "\n\n"
+            return objectStr
+            
+    
+    def getObjectKey(self, EPObject):
+        
+        EPKeys = ["Material", "WindowMaterial", "Construction"]
+    
+        # check if it is a full string
+        for key in EPKeys:
+            if EPObject.strip().startswith(key):
+                return key
+    
+    def addEPConstructionToLib(self, EPMaterial, overwrite = False):
+        
+        key = self.getObjectKey(EPMaterial)
+        
+        HBLibrarieNames = {
+                       "Construction" : "honeybee_constructionLib",
+                       "Material" : "honeybee_materialLib",
+                       "WindowMaterial" : "honeybee_windowMaterialLib"
+                       }
+        
+        # find construction/material name
+        name = EPMaterial.split("\n")[1].split("!")[0].strip()[:-1]
+        
+        if name in sc.sticky[HBLibrarieNames[key]].keys():
+            #overwrite = True
+            if not overwrite:
+                # ask user if they want to overwrite it
+                add = self.duplicateEPMaterialWarning(name, EPMaterial)
+                if not add: return False, name
+        
+        # add material/construction to the lib
+        # create an empty dictoinary for the material
+        sc.sticky[HBLibrarieNames[key]][name] = {}
+        
+        lines = EPMaterial.split("\n")
+
+        # store the data into the dictionary
+        for lineCount, line in enumerate(lines):
+            
+            objValue = line.split("!")[0].strip()
+            try: objDescription = line.split("!")[1].strip()
+            except:  objDescription = ""
+            if lineCount == 0:
+                sc.sticky[HBLibrarieNames[key]][name][lineCount] = objValue[:-1]
+            elif objValue.endswith(","):
+                sc.sticky[HBLibrarieNames[key]][name][lineCount] = objValue[:-1], objDescription
+            elif objValue.endswith(";"):
+                sc.sticky[HBLibrarieNames[key]][name][lineCount] = objValue[:-1], objDescription
+                break
+        
+        return True, name
+    
+    def duplicateEPMaterialWarning(self, objectName, newMaterialString):
+        returnYN = {'YES': True, 'NO': False}
+        buttons = System.Windows.Forms.MessageBoxButtons.YesNo
+        icon = System.Windows.Forms.MessageBoxIcon.Warning
+        
+        currentMaterialString = self.getEPObjectsStr(objectName)
+            
+        msg = objectName + " already exists in the library:\n\n" + \
+            currentMaterialString + "\n" + \
+            "Do you want to overwrite the current with this new definition?\n\n" + \
+            newMaterialString + "\n\n" + \
+            "Tip: If you are not sure what to do select No and change the name."
+        
+        up = rc.UI.Dialogs.ShowMessageBox(msg, "Duplicate Material Name", buttons, icon)
+        return returnYN[up.ToString().ToUpper()]
+
 
 class EPScheduleAux(object):
     
