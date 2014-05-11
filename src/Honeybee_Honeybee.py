@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.52
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.52\nMAY_08_2014'
+ghenv.Component.Message = 'VER 0.0.52\nMAY_10_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "0 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -188,7 +188,7 @@ class hb_GetEPConstructions():
             # store the data into the dictionary
             for lineCount, line in enumerate(inf):
                 if lineCount == 0:
-                    nameKey = line.split("!-")[0].strip()[:-1]
+                    nameKey = line.split("!")[0].strip()[:-1]
                     
                     if nameKey in resultDict[key].keys():
                         # this means the material is already in the lib
@@ -204,8 +204,8 @@ class hb_GetEPConstructions():
                         if scheduleType!=None: resultDict[key][nameKey][0] = scheduleType
                         
                 else:
-                    objValue = line.split("!-")[0].strip()
-                    try: objDescription = line.split("!-")[1].strip()
+                    objValue = line.split("!")[0].strip()
+                    try: objDescription = line.split("!")[1].strip()
                     except:  objDescription = ""
                     objKey = lineCount #+ '_' + line.split("!-")[1].strip()
         
