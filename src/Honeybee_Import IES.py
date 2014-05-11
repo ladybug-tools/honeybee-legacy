@@ -21,7 +21,7 @@ Provided by Honeybee 0.0.51
 
 ghenv.Component.Name = "Honeybee_Import IES"
 ghenv.Component.NickName = 'importIES'
-ghenv.Component.Message = 'VER 0.0.51\nAPR_28_2014'
+ghenv.Component.Message = 'VER 0.0.51\nMAY_05_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "7 | WIP"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -33,6 +33,7 @@ import scriptcontext as sc
 import Grasshopper.Kernel as gh
 import subprocess
 import uuid
+import time
 
 
 class HBIESSrf(object):
@@ -161,22 +162,24 @@ def main(iesFilePath, newName, modifier):
     
     # check if user provided a new name
     if newName == None: newName = iesName.split(".")[0]
-
+    
     # check if user provided a new name
     if modifier == None: modifier = 1.0
-
+    
+    fileName = newName + "_" + str(modifier)
+    
     # conversion line
     pathStr = "SET RAYPATH=.;" + hb_RADLibPath + "\nPATH=" + hb_RADPath + ";$PATH\n"
     ies2radLine = "ies2rad -o "
     
     # add input file
-    ies2radLine += newName
+    ies2radLine += fileName
     
     # add a multiplier factor
     ies2radLine += " -m " + str(modifier) + " " + iesName
     
     # write a batch file
-    batchFilePath = os.path.join(dirName, newName + "_ies2rad.bat")
+    batchFilePath = os.path.join(dirName, fileName + "_ies2rad.bat")
     with open(batchFilePath, "w") as ies2radOut:
         ies2radOut.write(pathStr)
         ies2radOut.write("cd " + dirName + "\n")
@@ -187,9 +190,14 @@ def main(iesFilePath, newName, modifier):
     runCmdAndGetTheResults( "/c " + batchFilePath)
     
     # result files
-    radFile = os.path.join(dirName, newName + ".rad")
-    datFile = os.path.join(dirName, newName + ".dat")
+    radFile = os.path.join(dirName, fileName + ".rad")
+    datFile = os.path.join(dirName, fileName + ".dat")
     
+    #try one more time
+    if not os.path.isfile(radFile) or not os.path.isfile(datFile):
+        time.sleep(.5)
+        os.system(batchFilePath)
+        
     if not os.path.isfile(radFile) or not os.path.isfile(datFile):
         msg = "Can't find the results at: " + radFile + ".\n" + \
               "You can run " + batchFilePath + " manually to check the error."
@@ -197,7 +205,7 @@ def main(iesFilePath, newName, modifier):
         ghenv.Component.AddRuntimeMessage(w, msg)
         return -1
         
-    HB_IES = HBIESBase(newName, radFile, datFile).IESObjects
+    HB_IES = HBIESBase(fileName, radFile, datFile).IESObjects
     
     # add to HB Hive
     hb_hive = sc.sticky["honeybee_Hive"]()
