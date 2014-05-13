@@ -9,7 +9,7 @@ Constructions, schedules and systems will be neglected
 """
 ghenv.Component.Name = "Honeybee_Import idf"
 ghenv.Component.NickName = 'importIdf'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nMAY_13_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "4"
@@ -135,7 +135,7 @@ def main(idfFile):
     for EPZoneName in idfFileDict["EPZONES"]:
         # initiate the zone
         zoneID = str(uuid.uuid4())
-        thisZone = hb_EPZone(None, zoneID, EPZoneName, zoneProgram = None, isConditioned = True)
+        thisZone = hb_EPZone(None, zoneID, EPZoneName, program = [None, None], isConditioned = True)
         # I can also set the zone origin here
         HBZones[EPZoneName] = thisZone
         pass
