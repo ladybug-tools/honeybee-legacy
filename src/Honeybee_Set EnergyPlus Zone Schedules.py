@@ -28,13 +28,13 @@ ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
+
 import scriptcontext as sc
 import uuid
 import Grasshopper.Kernel as gh
 
 
-
-def main(HBZones, occupancySchedule, heatingSetPtSchedule, coolingSetPtSchedule, lightingSchedule, equipmentSchedule, infiltrationSchedule):
+def main(HBZones, occupancySchedule, occupancyActivitySch, heatingSetPtSchedule, coolingSetPtSchedule, lightingSchedule, equipmentSchedule, infiltrationSchedule):
     # check for Honeybee
     if not sc.sticky.has_key('honeybee_release'):
         print "You should first let Honeybee to fly..."
@@ -60,6 +60,7 @@ def main(HBZones, occupancySchedule, heatingSetPtSchedule, coolingSetPtSchedule,
     schedules = []
     for HBZone in HBObjectsFromHive:
         if occupancySchedule != None: HBZone.occupancySchedule = occupancySchedule
+        if occupancyActivitySch != None:  HBZone.occupancyActivitySch = occupancyActivitySch
         if heatingSetPtSchedule != None: HBZone.heatingSetPtSchedule = heatingSetPtSchedule
         if coolingSetPtSchedule != None: HBZone.coolingSetPtSchedule = coolingSetPtSchedule
         if lightingSchedule != None: HBZone.lightingSchedule = lightingSchedule
@@ -73,6 +74,6 @@ def main(HBZones, occupancySchedule, heatingSetPtSchedule, coolingSetPtSchedule,
     
 
 if _HBZones and _HBZones[0]!=None:
-    results = main(_HBZones, occupancySchedule_, heatingSetPtSchedule_, coolingSetPtSchedule_, lightingSchedule_, equipmentSchedule_, infiltrationSchedule_)
+    results = main(_HBZones, occupancySchedule_, occupancyActivitySch_, heatingSetPtSchedule_, coolingSetPtSchedule_, lightingSchedule_, equipmentSchedule_, infiltrationSchedule_)
     
     if results != -1: HBZones, schedules = results
