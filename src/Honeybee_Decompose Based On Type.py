@@ -6,7 +6,7 @@
 """
 Decompose zone by type
 -
-Provided by Honeybee 0.0.51
+Provided by Honeybee 0.0.53
 
     Args:
         _HBZone: Honeybee Zone
@@ -22,9 +22,9 @@ Provided by Honeybee 0.0.51
 """
 ghenv.Component.Name = "Honeybee_Decompose Based On Type"
 ghenv.Component.NickName = 'decomposeByType'
-ghenv.Component.Message = 'VER 0.0.51\nFEB_24_2014'
+ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "0 | Honeybee"
+ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
 except: pass
 

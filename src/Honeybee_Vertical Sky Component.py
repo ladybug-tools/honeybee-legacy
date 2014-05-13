@@ -8,7 +8,7 @@ Analysis Recipie for Vertical Sky Component
 
 The idea Based on this discussion on RADIANCE: http://www.radiance-online.org/pipermail/radiance-general/2006-September/004017.html
 -
-Provided by Honeybee 0.0.52
+Provided by Honeybee 0.0.53
     
     Args:
         _testPoints: Test points
@@ -20,9 +20,9 @@ Provided by Honeybee 0.0.52
 
 ghenv.Component.Name = "Honeybee_Vertical Sky Component"
 ghenv.Component.NickName = 'verticalSkyComponent'
-ghenv.Component.Message = 'VER 0.0.52\nMAR_17_2014'
+ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "3 | Daylight | Recipes"
+ghenv.Component.SubCategory = "03 | Daylight | Recipes"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
 

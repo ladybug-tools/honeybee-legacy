@@ -7,10 +7,7 @@
 This component exports Ladybug/Honeybee components source code and create/update the userObjects
 Thanks to Giulio Piacentino for a really helpful example
 -
-Provided by Ladybug 0.0.54
-    
--
-Provided by Honeybee 0.0.50
+Provided by Ladybug 0.0.55
 
     Args:
         _components: Output of a series of Ladybug component or * to search all the components on canvas
@@ -22,10 +19,11 @@ Provided by Honeybee 0.0.50
 
 ghenv.Component.Name = "Ladybug_Export Ladybug"
 ghenv.Component.NickName = 'exportLadybug'
-ghenv.Component.Message = 'VER 0.0.50\nFEB_16_2014'
+ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
 ghenv.Component.Category = "Ladybug"
-ghenv.Component.SubCategory = "6 | Developers"
-ghenv.Component.AdditionalHelpFromDocStrings = "1"
+ghenv.Component.SubCategory = "06 | Developers"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
+except: pass
 
 import Grasshopper.Kernel as gh
 import scriptcontext as sc
@@ -136,7 +134,15 @@ def exportToUserObject(component, targetFolder, lb_preparation):
     uo.Icon = component.Icon_24x24
     
     try: uo.Exposure = exposureDict[int(component.AdditionalHelpFromDocStrings)]
-    except: uo.Exposure = exposureDict[int(1)]
+    except:
+        try:
+            compCode = component.Code
+            # this is so dirty
+            exposureNumber = compCode.split("ghenv.Component.AdditionalHelpFromDocStrings")[1].split("\n")[0].replace("=", "").replace('"', "").strip()
+            uo.Exposure = exposureDict[int(exposureNumber)]
+            
+        except:
+            uo.Exposure = exposureDict[int(1)]
     
     uo.BaseGuid = component.ComponentGuid
     uo.Description.Name = component.Name
@@ -305,6 +311,7 @@ if _export and len(_components)!=0 and _targetFolder!=None:
     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
 else:
     print "At the minimum one of the components are missing!"
+
 
 
 

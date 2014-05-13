@@ -6,7 +6,7 @@
 """
 False Color
 -
-Provided by Honeybee 0.0.51
+Provided by Honeybee 0.0.53
     
     Args:
         _HDRFilePath: Path to an HDR image file
@@ -25,9 +25,9 @@ Provided by Honeybee 0.0.51
 
 ghenv.Component.Name = "Honeybee_FalseColor"
 ghenv.Component.NickName = 'FalseColor'
-ghenv.Component.Message = 'VER 0.0.52\nAPR_11_2014'
+ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "4 | Daylight | Daylight"
+ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
 except: pass
 

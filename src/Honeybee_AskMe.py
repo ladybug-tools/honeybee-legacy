@@ -7,7 +7,7 @@
 Ask Me!
 
 -
-Provided by Honeybee 0.0.51
+Provided by Honeybee 0.0.53
 
     Args:
         HBObjects: Any valid Honeybee object
@@ -16,9 +16,9 @@ Provided by Honeybee 0.0.51
 """
 ghenv.Component.Name = "Honeybee_AskMe"
 ghenv.Component.NickName = 'askMe'
-ghenv.Component.Message = 'VER 0.0.51\nFEB_24_2014'
+ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "0 | Honeybee"
+ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
 

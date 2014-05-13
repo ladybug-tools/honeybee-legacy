@@ -6,7 +6,7 @@
 """
 Solve adjacencies
 -
-Provided by Honeybee 0.0.51
+Provided by Honeybee 0.0.53
 
     Args:
         _HBZones: List of Honeybee zones
@@ -18,9 +18,9 @@ Provided by Honeybee 0.0.51
 """
 ghenv.Component.Name = "Honeybee_Solve Adjacencies"
 ghenv.Component.NickName = 'solveAdjc'
-ghenv.Component.Message = 'VER 0.0.51\nAPR_27_2014'
+ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "0 | Honeybee"
+ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
 except: pass
 

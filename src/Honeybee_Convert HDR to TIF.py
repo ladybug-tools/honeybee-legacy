@@ -6,7 +6,7 @@
 """
 Convert HDR to TIF
 -
-Provided by Honeybee 0.0.51
+Provided by Honeybee 0.0.53
     
     Args:
         HDRFilePath: Path to an HDR image file
@@ -18,9 +18,9 @@ Provided by Honeybee 0.0.51
 
 ghenv.Component.Name = "Honeybee_Convert HDR to TIF"
 ghenv.Component.NickName = 'HDR > TIF'
-ghenv.Component.Message = 'VER 0.0.51\nFEB_24_2014'
+ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "4 | Daylight | Daylight"
+ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
 

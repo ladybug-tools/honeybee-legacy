@@ -6,7 +6,7 @@
 """
 Analysis Recipie for Grid-Based Analysis
 -
-Provided by Honeybee 0.0.51
+Provided by Honeybee 0.0.53
     
     Args:
         _skyFile: Path to a radiance sky file
@@ -21,9 +21,9 @@ Provided by Honeybee 0.0.51
 
 ghenv.Component.Name = "Honeybee_Grid Based Simulation"
 ghenv.Component.NickName = 'gridBasedSimulation'
-ghenv.Component.Message = 'VER 0.0.51\nFEB_24_2014'
+ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "3 | Daylight | Recipes"
+ghenv.Component.SubCategory = "03 | Daylight | Recipes"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
 

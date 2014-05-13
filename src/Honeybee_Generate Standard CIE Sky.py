@@ -6,7 +6,7 @@
 """
 Genrate Standard CIE Sky
 -
-Provided by Honeybee 0.0.51
+Provided by Honeybee 0.0.53
     
     Args:
         _weatherFile: epw file location on your system as a string
@@ -21,9 +21,9 @@ Provided by Honeybee 0.0.51
 
 ghenv.Component.Name = "Honeybee_Generate Standard CIE Sky"
 ghenv.Component.NickName = 'genStandardCIESky'
-ghenv.Component.Message = 'VER 0.0.52\nMAR_17_2014'
+ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "2 | Daylight | Sky"
+ghenv.Component.SubCategory = "02 | Daylight | Sky"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
 

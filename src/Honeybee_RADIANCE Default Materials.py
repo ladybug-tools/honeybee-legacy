@@ -7,7 +7,7 @@
 """
 Radiance Default Materials
 -
-Provided by Honeybee 0.0.51
+Provided by Honeybee 0.0.53
 
     Args:
         _newWallMaterial_: Optional wall material to overwrite the default wall material
@@ -27,9 +27,9 @@ Provided by Honeybee 0.0.51
 
 ghenv.Component.Name = "Honeybee_RADIANCE Default Materials"
 ghenv.Component.NickName = 'RADDefaultMaterials'
-ghenv.Component.Message = 'VER 0.0.51\nFEB_24_2014'
+ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "1 | Daylight | Material"
+ghenv.Component.SubCategory = "01 | Daylight | Material"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
 except: pass
 

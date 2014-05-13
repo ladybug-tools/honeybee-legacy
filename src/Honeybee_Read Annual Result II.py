@@ -7,7 +7,7 @@
 Read Annual Daylight Results II [Daysim]
 
 -
-Provided by Honeybee 0.0.51
+Provided by Honeybee 0.0.53
 
     Args:
         resultFilesAddress: List of .ill files
@@ -25,9 +25,9 @@ Provided by Honeybee 0.0.51
 """
 ghenv.Component.Name = "Honeybee_Read Annual Result II"
 ghenv.Component.NickName = 'readAnnualResultsII'
-ghenv.Component.Message = 'VER 0.0.51\nFEB_24_2014'
+ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "4 | Daylight | Daylight"
+ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
 except: pass
 

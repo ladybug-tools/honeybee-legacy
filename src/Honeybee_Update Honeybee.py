@@ -6,7 +6,7 @@
 """
 This component [removes | updates] Honeybee components from [grasshopper | a source folder]
 -
-Provided by Honeybee 0.0.52
+Provided by Honeybee 0.0.53
 
     Args:
         sourceDirectory_: Optional address to a folder that contains Honeybee updated userObjects. If None the component will download the latest version from GitHUB.
@@ -18,9 +18,9 @@ Provided by Honeybee 0.0.52
 
 ghenv.Component.Name = "Honeybee_Update Honeybee"
 ghenv.Component.NickName = 'updateHoneybee'
-ghenv.Component.Message = 'VER 0.0.52\nAPR_07_2014'
+ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "6 | Developers"
+ghenv.Component.SubCategory = "10 | Developers"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
 
