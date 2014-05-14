@@ -16,13 +16,13 @@ Provided by Honeybee 0.0.53
     Returns:
         materials: List of materials (from outside to inside)
         comments: Comments for each layer of materials if any
-        UValue_SI: U value of the construction in W/K.m2
+        UValue_SI: U value of the construction in W/m2.K
         UValue_IP: U value of the construction in Btu/hft2F
 """
 
 ghenv.Component.Name = "Honeybee_Decompose EP Construction"
 ghenv.Component.NickName = 'DecomposeEPConstruction'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nMAY_13_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
