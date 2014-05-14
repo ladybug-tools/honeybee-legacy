@@ -10,17 +10,17 @@ Call from EP Schedule Library
 Provided by Honeybee 0.0.53
     
     Args:
-        keywords_: List of keywords to filter the list of materials
+        keywords_: List of keywords to filter the list of schedules
             
     Returns:
-        scheduleTypeLimits: List of EP materials in Honeybee library
-        scheduleList: List of EP window materials in Honeybee library
+        scheduleTypeLimits: List of EP schedules in Honeybee library
+        scheduleList: List of EP window schedules in Honeybee library
 
 """
 
 ghenv.Component.Name = "Honeybee_Call from EP Schedule Library"
 ghenv.Component.NickName = 'callFromEPSCHLibrary'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nMAY_13_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "07 | Energy | Schedule"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"

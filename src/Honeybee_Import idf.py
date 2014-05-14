@@ -137,7 +137,7 @@ def main(idfFile):
         zoneID = str(uuid.uuid4())
         thisZone = hb_EPZone(None, zoneID, EPZoneName, program = [None, None], isConditioned = True)
         # I can also set the zone origin here
-        HBZones[EPZoneName] = thisZone
+        HBZones[EPZoneName.lower()] = thisZone
         pass
     
     HBSurfaces = {}
@@ -167,8 +167,10 @@ def main(idfFile):
             thisEPSrf = hb_EPZoneSurface(geometry, 1, surfaceName)
             #, parentZone, srfTypeDict[srfType.ToUpper()])
             
+            #print parentZone
+            
             #assign properties
-            thisEPSrf.parent = HBZones[parentZone]
+            thisEPSrf.parent = HBZones[parentZone.lower()]
             thisEPSrf.type = srfTypeDict[srfType.ToUpper()]
             thisEPSrf.construction = thisEPSrf.cnstrSet[thisEPSrf.type]
             thisEPSrf.EPConstruction = EPConstruction
@@ -180,7 +182,7 @@ def main(idfFile):
             thisEPSrf.numOfVertices = numOfVertices
             
             # add surface to the zone
-            HBZones[parentZone].addSrf(thisEPSrf)
+            HBZones[parentZone.lower()].addSrf(thisEPSrf)
             # add to surfaces dictionary
             HBSurfaces[surfaceName] = thisEPSrf
         
@@ -228,7 +230,7 @@ def main(idfFile):
     # recalculate the zone
     zonesList = []
     for zoneName in HBZones.keys():
-        HBZone = HBZones[zoneName]
+        HBZone = HBZones[zoneName.lower()]
         HBZone.createZoneFromSurfaces()
         zonesList.append(HBZone)
     
