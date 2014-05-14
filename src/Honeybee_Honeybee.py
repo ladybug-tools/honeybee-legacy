@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nMAY_13_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -657,8 +657,8 @@ class EPMaterialAux(object):
             UValueSI = 1 / float(materialObj[2][0])
             
         elif materialType.lower() == "material":
-            thickness = float(materialObj[2][0])
-            conductivity = float(materialObj[3][0])
+            thickness = float(materialObj[3][0])
+            conductivity = float(materialObj[4][0])
             UValueSI = conductivity/thickness
         
         elif materialType.lower() == "material:airgap":
@@ -746,7 +746,7 @@ class EPMaterialAux(object):
             
         except Exception, e:
             print `e`
-            print "Failed to find " + matName + " in the Honeybee construction library."
+            print "Failed to find " + matName + " in the Honeybee material library."
             return -1
     
     

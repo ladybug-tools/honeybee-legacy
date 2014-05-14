@@ -21,7 +21,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Add to EnergyPlus Construction Library"
 ghenv.Component.NickName = 'addToEPConstrLibrary'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nMAY_13_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -44,7 +44,7 @@ def main(EPMatOrConstr, addToProjectLib, overwrite):
     
     hb_EPMaterialAUX = sc.sticky["honeybee_EPMaterialAUX"]()
     
-    added, name = hb_EPMaterialAUX.addEPConstructionToLib(EPMaterial, overwrite)
+    added, name = hb_EPMaterialAUX.addEPConstructionToLib(EPMatOrConstr, overwrite)
     
     if not added:
         msg = name + " is not added to the project library!"
