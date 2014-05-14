@@ -58,7 +58,7 @@ else:
     
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_13_2014'
+ghenv.Component.Message = 'VER 0.0.53\nMAY_14_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -379,15 +379,15 @@ class WriteOPS(object):
         coolingSetPtSchedule = self.getOSSchedule(HBZone.coolingSetPtSchedule, model)
         
         if HBZone.heatingSetPt != "":
-            msg = "Currently you need to change the HeatingSetPt inside the shcedule: " + HBZone.heatingSetPtSchedule
-            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+            #msg = "Currently you need to change the HeatingSetPt inside the shcedule: " + HBZone.heatingSetPtSchedule
+            #ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
             #heatingSetPtSchedule.addValue(time24hrs, HBZone.heatingSetPt)
             # overwrite the existing schedule
             heatingSch = ops.ScheduleRuleset(model)
             heatingSch.setName("Heating Sch")
             defaultDaySchedule = heatingSch.defaultDaySchedule()
             defaultDaySchedule.setName("Heating Sch Default")
-            defaultDaySchedule.addValue(time24hrs, float(HBZone.HeatingSetPt))
+            defaultDaySchedule.addValue(time24hrs, float(HBZone.heatingSetPt))
             thermostat.setHeatingSchedule(heatingSch)
             
         thermostat.setHeatingSetpointTemperatureSchedule(heatingSetPtSchedule)
