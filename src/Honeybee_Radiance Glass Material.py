@@ -10,11 +10,11 @@ Read more here to understand Radiance materials: http://www.artifice.com/radianc
 Provided by Honeybee 0.0.53
 
     Args:
-        materialName: Unique name for this material
-        RTransmittance: Transmittance for red. The value should be between 0 and 1
-        GTransmittance: Transmittance for green. The value should be between 0 and 1
-        BTransmittance: Transmittance for blue. The value should be between 0 and 1
-        refractiveIndex: RefractiveIndex is 1.52 for glass and 1.4 for ETFE
+        _materialName: Unique name for this material
+        _RTransmittance: Transmittance for red. The value should be between 0 and 1
+        _GTransmittance: Transmittance for green. The value should be between 0 and 1
+        _BTransmittance: Transmittance for blue. The value should be between 0 and 1
+        refractiveIndex_: RefractiveIndex is 1.52 for glass and 1.4 for ETFE
     Returns:
         avrgTrans: Average transmittance of this glass
         RADMaterial: Radiance Material string
@@ -23,7 +23,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Radiance Glass Material"
 ghenv.Component.NickName = 'radGlassMaterial'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nMAY_14_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "01 | Daylight | Material"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -67,20 +67,20 @@ def createRadMaterial(modifier, name, *args):
 
 modifier = "glass"
 
-if sc.sticky.has_key('ladybug_release')and sc.sticky.has_key('honeybee_release'):
-    if RTransmittance!=None and GTransmittance!=None and BTransmittance!=None:
-        if 0 <= RTransmittance <= 1 and 0 <= GTransmittance <= 1 and 0 <= BTransmittance <= 1:
+if sc.sticky.has_key('honeybee_release'):
+    if _materialName!=None and _RTransmittance!=None and _GTransmittance!=None and _BTransmittance!=None:
+        if 0 <= _RTransmittance <= 1 and 0 <= _GTransmittance <= 1 and 0 <= _BTransmittance <= 1:
             
-            avrgTrans = (0.265 * RTransmittance + 0.670 * GTransmittance + 0.065 * BTransmittance)
+            avrgTrans = (0.265 * _RTransmittance + 0.670 * _GTransmittance + 0.065 * _BTransmittance)
             
-            materialName = materialName.Replace(" ", "_")
-            RADMaterial = createRadMaterial(modifier, materialName, getTransmissivity(RTransmittance), getTransmissivity(GTransmittance), getTransmissivity(BTransmittance), refractiveIndex)
+            materialName = _materialName.Replace(" ", "_")
+            RADMaterial = createRadMaterial(modifier, materialName, getTransmissivity(_RTransmittance), getTransmissivity(_GTransmittance), getTransmissivity(_BTransmittance), refractiveIndex_)
         else:
             msg =  "Transmittance values should be between 0 and 1"
-            e = gh.GH_RuntimeMessageLevel.Error
+            e = gh.GH_RuntimeMessageLevel.Warning
             ghenv.Component.AddRuntimeMessage(e, msg)
 else:
-    print "You should first let both Ladybug and Honeybee to fly..."
+    print "You should first let Honeybee to fly..."
     w = gh.GH_RuntimeMessageLevel.Warning
-    ghenv.Component.AddRuntimeMessage(w, "You should first let both Ladybug and Honeybee to fly...")
+    ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee to fly...")
 
