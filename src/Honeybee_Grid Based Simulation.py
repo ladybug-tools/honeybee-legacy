@@ -21,7 +21,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Grid Based Simulation"
 ghenv.Component.NickName = 'gridBasedSimulation'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nMAY_14_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -147,6 +147,10 @@ if _skyFile and _testPoints:
     
     _testPoints.SimplifyPaths()
     ptsVectors_.SimplifyPaths()
+    
+    try: int(_simulationType_)
+    except: _simulationType_ = 0
+    
     recipe = DLAnalysisRecipe(1, _skyFile, _testPoints, ptsVectors_, _radParameters_, _simulationType_)
     
     if recipe.skyFile != None:

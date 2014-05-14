@@ -25,7 +25,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Image Based Simulation"
 ghenv.Component.NickName = 'imageBasedSimulation'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nMAY_14_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -146,6 +146,10 @@ class DLAnalysisRecipe(object):
 
 
 if _skyFile:
+    
+    try: int(_simulationType_)
+    except: _simulationType_ = 2 #luminance
+    
     recipe = DLAnalysisRecipe(0, _skyFile, _rhinoViewsName_, _radParameters_, _cameraType_, _simulationType_, _imageWidth_, _imageHeight_, sectionPlane_, backupImages_)
     
     if recipe.skyFile != None:
