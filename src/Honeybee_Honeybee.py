@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_13_2014'
+ghenv.Component.Message = 'VER 0.0.53\nMAY_14_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -59,10 +59,10 @@ PI = math.pi
 rc.Runtime.HostUtils.DisplayOleAlerts(False)
 
 #set up default pass
-if os.path.exists("c:\\ladybug\\"):
+if os.path.exists("c:\\ladybug\\") and os.access(os.path.dirname("c:\\ladybug\\"), os.F_OK):
     # folder already exists so it is all fine
     sc.sticky["Honeybee_DefaultFolder"] = "c:\\ladybug\\"
-elif os.access(os.path.dirname("c:\\"), os.W_OK):
+elif os.access(os.path.dirname("c:\\"), os.F_OK):
     #the folder does not exists but write privileges are given so it is fine
     sc.sticky["Honeybee_DefaultFolder"] = "c:\\ladybug\\"
 else:
