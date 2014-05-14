@@ -58,7 +58,7 @@ else:
     
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nMAY_13_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -849,17 +849,14 @@ class WriteOPS(object):
                     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
                 
 
-        
-
-
-
 class RunOPS(object):
-    def __init__(self, weatherFilePath = r"C:\EnergyPlusV8-1-0\WeatherData\USA_CA_San.Francisco.Intl.AP.724940_TMY3.epw"):
+    def __init__(self, model, weatherFilePath = r"C:\EnergyPlusV8-1-0\WeatherData\USA_CA_San.Francisco.Intl.AP.724940_TMY3.epw"):
         self.weatherFile = weatherFilePath # just for batch file as an alternate solution
         self.EPPath = ops.Path(r"C:\EnergyPlusV8-1-0\EnergyPlus.exe")
         self.epwFile = ops.Path(weatherFilePath)
         self.iddFile = ops.Path(r"C:\EnergyPlusV8-1-0\Energy+.idd")
-    
+        self.model = model
+        
     def osmToidf(self, workingDir, projectName, osmPath):
         # create a new folder to run the analysis
         projectFolder =os.path.join(workingDir, projectName)
@@ -867,28 +864,39 @@ class RunOPS(object):
         try: os.mkdir(projectFolder)
         except: pass
         
-        DBPath = ops.Path(os.path.join(projectFolder, projectName + "_osmToidf.db"))
-        # start run manager
-        rm = ops.RunManager(DBPath, True, True)
-        # create workflow
-        wf = ops.Workflow("ModelToIdf->EnergyPlus")
-        
-        # tableStyle = ops.IdfObject(ops.IddObjectType("OutputControl_Table_Style"))
-        # styleFields = ops.OutputControl_Table_StyleFields()
-        # tableStyle.setString(styleFields.getValues(), "Comma")
-        
-        # put in queue and let it go
-        rm.enqueue(wf.create(ops.Path(projectFolder), osmPath, self.epwFile), True)
-        rm.setPaused(False)
-        
-        while rm.workPending():
-            time.sleep(.5)
-            print "Converting osm to idf ..."
-        
-        rm.Dispose() # don't remove this as Rhino will crash if you don't dispose run manager
-        
         idfFolder = os.path.join(projectFolder)
         idfFilePath = ops.Path(os.path.join(projectFolder, "ModelToIdf", "in.idf"))
+        
+        forwardTranslator = ops.EnergyPlusForwardTranslator()
+        workspace = forwardTranslator.translateModel(self.model)
+        
+        # remove the current object
+        tableStyleObjects = workspace.getObjectsByType(ops.IddObjectType("OutputControl_Table_Style"))
+        for obj in tableStyleObjects: obj.remove()
+
+        tableStyle = ops.IdfObject(ops.IddObjectType("OutputControl_Table_Style"))
+        tableStyle.setString(0, "CommaAndHTML")
+        workspace.addObject(tableStyle)
+        
+        workspace.save(idfFilePath, overwrite = True)
+        
+        #DBPath = ops.Path(os.path.join(projectFolder, projectName + "_osmToidf.db"))
+        
+        # start run manager
+        #rm = ops.RunManager(DBPath, True, True)        
+        
+        # create workflow
+        #wf = ops.Workflow("EnergyPlus")
+        
+        # put in queue and let it go
+        #rm.enqueue(wf.create(ops.Path(projectFolder), osmPath, self.epwFile), True)
+        #rm.setPaused(False)
+        
+        #while rm.workPending():
+        #    time.sleep(.5)
+        #    print "Converting osm to idf ..."
+        
+        #rm.Dispose() # don't remove this as Rhino will crash if you don't dispose run manager
         
         return idfFolder, idfFilePath
         
@@ -1117,15 +1125,16 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     print "Model saved to: " + fname
 
     if runIt:
-        hb_runOPS = RunOPS(epwWeatherFile)
+        hb_runOPS = RunOPS(model, epwWeatherFile)
         idfFile, resultFile = hb_runOPS.runAnalysis(fname, useRunManager = True)
         return fname, idfFile, resultFile
         
     return fname, None, None
 
 if _epwWeatherFile and _writeOSM and openStudioIsReady:
-    osmFileAddress, idfFileAddress, resultsFileAddress = main(_HBZones, HBContext_,
-                                                               north_, _epwWeatherFile,
-                                                              _analysisPeriod_, _energySimPar_,
-                                                              simulationOutputs_,
-                                                              runSimulation_, workingDir_, fileName_)
+    results = main(_HBZones, HBContext_, north_, _epwWeatherFile,
+                  _analysisPeriod_, _energySimPar_, simulationOutputs_,
+                  runSimulation_, workingDir_, fileName_)
+    
+    if results!=-1:
+        osmFileAddress, idfFileAddress, resultsFileAddress = results
