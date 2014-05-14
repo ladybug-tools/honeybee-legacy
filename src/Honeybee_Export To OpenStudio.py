@@ -326,7 +326,10 @@ class WriteOPS(object):
     def assignThermalZone(self, zone, space, model):
         thermalZone = ops.ThermalZone(model)
         ops.OpenStudioModelHVAC.setThermalZone(space, thermalZone)
-        thermalZone.setName("thermalZone_" + zone.name)
+        #thermalZone.setName("thermalZone_" + zone.name)
+        # This is a temporary change to make the component work with the current result reader
+        # Will change it to what it used to be later
+        thermalZone.setName(zone.name)
         return space, thermalZone
     
     def addSystemsToZones(self, model):
@@ -824,6 +827,7 @@ class WriteOPS(object):
         """
         var, name, freq = fields
         outputMeter = ops.Meter(model)
+        outputMeter.setMeterFileOnly(False)
         outputMeter.setName(name.strip())
         outputMeter.setReportingFrequency(freq.strip())
         
@@ -988,7 +992,7 @@ class RunOPS(object):
         #execute the batch file
         os.system(batchFileAddress)
         
-        return fullPath
+        return fullPath + ".csv"
 
 
 def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameters, simulationOutputs, runIt, workingDir = "C:\ladybug", fileName = "openStudioModel.osm"):
@@ -1126,7 +1130,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
 
     if runIt:
         hb_runOPS = RunOPS(model, epwWeatherFile)
-        idfFile, resultFile = hb_runOPS.runAnalysis(fname, useRunManager = True)
+        idfFile, resultFile = hb_runOPS.runAnalysis(fname, useRunManager = False)
         return fname, idfFile, resultFile
         
     return fname, None, None
