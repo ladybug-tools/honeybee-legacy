@@ -335,37 +335,96 @@ class WriteOPS(object):
     def addSystemsToZones(self, model):
         
         for HAVCGroupID in self.HVACSystemDict.keys():
-            
+            print self.HVACSystemDict.keys()
             # HAVC system index for this group and thermal zones
             systemIndex, thermalZones = self.HVACSystemDict[HAVCGroupID]
-            
+            print len(thermalZones)
             # put thermal zones into a vector
             thermalZoneVector = ops.ThermalZoneVector(thermalZones)
-            
+            print thermalZoneVector
             # add systems. There are 10 standard ASHRAE systems + Ideal Air Loads
             if systemIndex == 0:
                 for zone in thermalZoneVector: zone.setUseIdealAirLoads(True)
             
             elif systemIndex == 1:
-                # 1: PTAC, Residential
+                # 1: PTAC, Residential - thermalZoneVector because ZoneHVAC
                 ops.OpenStudioModelHVAC.addSystemType1(model, thermalZoneVector)
                 #hvac.setName = "PTAC_i"
             
             elif systemIndex == 2:
-                # 2: PTHP, Residential
+                # 2: PTHP, Residential - thermalZoneVector because ZoneHVAC
                 ops.OpenStudioModelHVAC.addSystemType2(model, thermalZoneVector)
                 
             elif systemIndex == 5:
                 hvacHandle = ops.OpenStudioModelHVAC.addSystemType5(model).handle()
-                
-                
                 # get the airloop
                 airloop = model.getAirLoopHVAC(hvacHandle).get()
-                
                 # add branches
                 for zone in thermalZoneVector:
                     airloop.addBranchForZone(zone)
                 
+                oasys = airloop.airLoopHVACOutdoorAirSystem() 
+                
+                if oasys.is_initialized():
+                    oactrl = oasys.get().getControllerOutdoorAir()
+                    oactrl.autosizeMinimumOutdoorAirFlowRate()
+                    oactrl.setEconomizerControlType("FixedDryBulb")
+                    oactrl.setEconomizerMinimumLimitDryBulbTemperature(12)
+                    oactrl.setEconomizerMaximumLimitDryBulbTemperature(21)
+                    oactrl.setLockoutType("LockoutWithCompressor")
+                    print "success for economizer!"
+                    x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:VariableVolume"))
+                    fan = model.getFanVariableVolume(x[0].handle()).get()
+                    
+                    fan.setFanEfficiency(0.79)
+                    fan.setMotorEfficiency(0.92)
+                    fan.setPressureRise(1000)
+                    fan.setFanPowerMinimumFlowFraction(0.2)
+                    print "success for fan setup"
+                    
+                    x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:DX:TwoSpeed"))
+                    coolcoil = model.getCoilCoolingDXTwoSpeed(x[0].handle()).get()
+                    coolcoil.setRatedHighSpeedCOP(4.5)
+                    coolcoil.setRatedLowSpeedCOP(3.7)
+                    coolcoil.setCondenserType("EvaporativelyCooled")
+                    coolcoil.setHighSpeedEvaporativeCondenserEffectiveness(0.9)
+                    coolcoil.setHighSpeedEvaporativeCondenserAirFlowRate(ops.OptionalDouble(3.5))
+                    coolcoil.setLowSpeedEvaporativeCondenserEffectiveness(0.85)
+                    coolcoil.setLowSpeedEvaporativeCondenserAirFlowRate(ops.OptionalDouble(2.0))
+                    
+                    print "success for cooling coil"
+                    #x = airloop.supplyComponents(ops.IddObjectType("")
+                else:
+                    print "failed to init oasys"
+                
+            elif systemIndex == 7:
+                hvacHandle = ops.OpenStudioModelHVAC.addSystemType7(model).handle()
+                # get the airloop
+                airloop = model.getAirLoopHVAC(hvacHandle).get()
+                # add branches
+                for zone in thermalZoneVector:
+                    airloop.addBranchForZone(zone)
+                
+                oasys = airloop.airLoopHVACOutdoorAirSystem() 
+                if oasys.is_initialized():
+                    oactrl = oasys.get().getControllerOutdoorAir()
+                    oactrl.autosizeMinimumOutdoorAirFlowRate()
+                    oactrl.setEconomizerControlType("FixedDryBulb")
+                    oactrl.setEconomizerMinimumLimitDryBulbTemperature(12)
+                    oactrl.setEconomizerMaximumLimitDryBulbTemperature(21)
+                    oactrl.setLockoutType("LockoutWithCompressor")
+                    print "Sys 7: success for economizer!"
+                    
+                    x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:VariableVolume"))
+                    fan = model.getFanVariableVolume(x[0].handle()).get()
+                    
+                    fan.setFanEfficiency(0.79)
+                    fan.setMotorEfficiency(0.92)
+                    fan.setPressureRise(1000)
+                    fan.setFanPowerMinimumFlowFraction(0.2)
+                    print "Sys 7:  success for fan setup"
+                
+
             else:
                 msg = "HVAC system index " + str(systemIndex) +  " is not implemented yet!"
                 ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
@@ -826,6 +885,7 @@ class WriteOPS(object):
         Output:Meter
         """
         var, name, freq = fields
+        print name
         outputMeter = ops.Meter(model)
         outputMeter.setMeterFileOnly(False)
         outputMeter.setName(name.strip())
@@ -837,20 +897,28 @@ class WriteOPS(object):
         else:
             
             for output in simulationOutputs:
-                # remove ; from the end
-                output = output.replace(";", "", 1)
-                # split into fields
-                fields = output.split(",")
-                if fields[0].lower() == "output:variable":
-                    self.setOutputVariable(fields, model)
-                elif fields[0].lower() == "output:meter":
-                    self.setOutputMeter(fields, model)
-                elif fields[0].lower() == "outputcontrol:table:style":
+                try:
+                    # remove comment
+                    outstr = output.split("!")[0].strip()
+                    # remove ; from the end
+                    finalout = outstr.replace(";", "", 1)
+                    # split into fields
+                    fields = finalout.split(",")
+                    print fields
+                    if fields[0].strip().lower() == "output:variable":
+                        self.setOutputVariable(fields, model)
+                    elif fields[0].strip().lower() == "output:meter":
+                        self.setOutputMeter(fields, model)
+                    elif fields[0].strip().lower() == "outputcontrol:table:style":
+                        pass
+                        #self.setOutputControl(fields, model)
+                    else:
+                        msg = fields[0] + " is missing from the outputs!"
+                        #ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                except Exception, e:
+                    print  e
                     pass
-                    #self.setOutputControl(fields, model)
-                else:
-                    msg = fields[0] + " is missing from the outputs!"
-                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                
                 
 
 class RunOPS(object):
@@ -994,6 +1062,168 @@ class RunOPS(object):
         
         return fullPath + ".csv"
 
+class RunOPSRManage(object):
+    def __init__(self, model, measuredict, weatherFilePath = r"C:\EnergyPlusV8-1-0\WeatherData\USA_CA_San.Francisco.Intl.AP.724940_TMY3.epw"):
+        self.weatherFile = weatherFilePath # just for batch file as an alternate solution
+        self.EPPath = ops.Path(r"C:\EnergyPlusV8-1-0\EnergyPlus.exe")
+        self.epwFile = ops.Path(weatherFilePath)
+        self.iddFile = ops.Path(r"C:\EnergyPlusV8-1-0\Energy+.idd")
+        self.model = model
+        self.measuredict = measuredict
+        
+    def osmToidf(self, workingDir, projectName, osmPath):
+        # create a new folder to run the analysis
+        projectFolder =os.path.join(workingDir, projectName)
+        
+        try: os.mkdir(projectFolder)
+        except: pass
+        
+        idfFolder = os.path.join(projectFolder)
+        idfFilePath = ops.Path(os.path.join(projectFolder, "ModelToIdf", "in.idf"))
+        
+        forwardTranslator = ops.EnergyPlusForwardTranslator()
+        workspace = forwardTranslator.translateModel(self.model)
+        
+        # remove the current object
+        tableStyleObjects = workspace.getObjectsByType(ops.IddObjectType("OutputControl_Table_Style"))
+        for obj in tableStyleObjects: obj.remove()
+
+        tableStyle = ops.IdfObject(ops.IddObjectType("OutputControl_Table_Style"))
+        tableStyle.setString(0, "CommaAndHTML")
+        workspace.addObject(tableStyle)
+        
+        workspace.save(idfFilePath, overwrite = True)
+        
+        #DBPath = ops.Path(os.path.join(projectFolder, projectName + "_osmToidf.db"))
+        
+        # start run manager
+        #rm = ops.RunManager(DBPath, True, True)        
+        
+        # create workflow
+        #wf = ops.Workflow("EnergyPlus")
+        
+        # put in queue and let it go
+        #rm.enqueue(wf.create(ops.Path(projectFolder), osmPath, self.epwFile), True)
+        #rm.setPaused(False)
+        
+        #while rm.workPending():
+        #    time.sleep(.5)
+        #    print "Converting osm to idf ..."
+        
+        #rm.Dispose() # don't remove this as Rhino will crash if you don't dispose run manager
+        
+        return idfFolder, idfFilePath
+        
+    def runAnalysis(self, osmFile, RunSimulation = False):
+        
+
+        # Preparation
+        workingDir, fileName = os.path.split(osmFile)
+        projectName = (".").join(fileName.split(".")[:-1])
+        osmPath = ops.Path(osmFile)
+        
+        
+        projectFolder =os.path.join(workingDir, projectName)
+        
+        try: os.mkdir(projectFolder)
+        except: pass
+        
+        try:
+            # create idf - I separated this job as putting them together
+            # was making EnergyPlus to crash
+            #idfFolder, idfPath = self.osmToidf(workingDir, projectName, osmPath)
+            zone_handles = " "
+            #remote = ops.RemoteBCL()
+            #remote.downloadComponent("5f126600-ca2f-4611-9121-6dfea2de49d6")
+            bclfile = 'C:\\Users\\Chiensi\\BCL\\5f126600-ca2f-4611-9121-6dfea2de49d6\\e83a66c9-c8d6-4896-a979-ba75f3dacb02'
+            #local = ops.LocalBCL()
+            #print dir(local)
+            #measure = local.getMeasure("5f126600-ca2f-4611-9121-6dfea2de49d6")
+            
+            #measure = component.files("rb")
+            #if measure.empty == True:
+            #  print 'No .rb file found'
+            #  assert False
+            #  return
+            
+            #measure_path = component.files("rb")[0]
+            bclpath = ops.Path(bclfile)
+            #measure_root_path = os.path.dirname(bclpath)
+            #print measure_root_path
+            
+            bcl_measure = ops.BCLMeasure(bclpath)
+            
+            DBPath = ops.Path(os.path.join(projectFolder, projectName + "_osmToidf.db"))
+            run_manager = ops.RunManager(DBPath,True)
+            #run_manager.setPaused(true)
+            
+            values = []
+            ruleset = ops.OpenStudioRuleset()
+            print dir(ruleset)
+            
+            # arguments = ruleset.getArguments(bcl_measure,model)
+            arguments = ""
+            zone_arg = arguments[0]
+            zone_arg.setValue(zone_handles)
+            values.append(zone_arg)
+            
+            rjb = ops.Runmanager.RubyJobBuilder(bcl_measure,values)
+            #rjb.setIncludeDir(OpenStudiio::Path.new("$OpenStudio_Dir")
+    
+            workflow = ops.Runmanager.Workflow()
+            workflow.addJob(rjb.toWorkItem())
+    
+            if RunSimulation:
+                workflow.addJob(ops.Runmanager.JobType("ModelToIdf"))
+                workflow.addJob(ops.Runmanager.JobType("EnergyPlusPreProcess"))
+                workflow.addJob(ops.Runmanager.JobType("EnergyPlus"))
+            
+            co = ops.RunManager.ConfigOptions()
+            co.fastFindEnergyPlus()
+            co.findTools(False)
+           
+            tools = co.getTools()
+            workflow.add(tools)
+    
+            
+            job = workflow.create(projectFolder, osmPath, self.epwFile)
+            run_manager.enqueue(job, false)
+            run_manager.waitForFinished()
+        
+
+                
+        except Exception, e:
+             try: 
+                run_manager.Dispose() # in case anything goes wrong it closes the rm
+             except: 
+                pass
+             print `e`
+    
+    def writeBatchFile(self, workingDir, idfFileName, epwFileAddress, EPDirectory = 'C:\\EnergyPlusV8-1-0'):
+        """
+        This is here as an alternate until I can get RunManager to work
+        """
+        workingDrive = workingDir[:2]
+        if idfFileName.EndsWith('.idf'):  shIdfFileName = idfFileName.replace('.idf', '')
+        else: shIdfFileName = idfFileName
+        
+        if not workingDir.EndsWith('\\'): workingDir = workingDir + '\\'
+        
+        fullPath = workingDir + shIdfFileName
+        
+        folderName = workingDir.replace( (workingDrive + '\\'), '')
+        batchStr = workingDrive + '\ncd\\' +  folderName + '\n' + EPDirectory + \
+                '\\Epl-run ' + fullPath + ' ' + fullPath + ' idf ' + epwFileAddress + ' EP N nolimit N N 0 Y'
+    
+        batchFileAddress = fullPath +'.bat'
+        batchfile = open(batchFileAddress, 'w')
+        batchfile.write(batchStr)
+        batchfile.close()
+        
+        #execute the batch file
+        os.system(batchFileAddress)
+        
+        return fullPath + ".csv"
 
 def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameters, simulationOutputs, runIt, workingDir = "C:\ladybug", fileName = "openStudioModel.osm"):
     
@@ -1089,11 +1319,12 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
             
             if HAVCGroupID not in hb_writeOPS.HVACSystemDict.keys():
                 # add place holder for lists 
+                
                 hb_writeOPS.HVACSystemDict[HAVCGroupID] = [HVACIndex,[]]
         
         # collect informations for systems here
         hb_writeOPS.HVACSystemDict[HAVCGroupID][1].append(thermalZone)
-        
+        print zone.HVACSystem
         # add thermostat
         thermalZone = hb_writeOPS.addThermostat(zone, thermalZone, space, model)
         
@@ -1130,8 +1361,14 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
 
     if runIt:
         hb_runOPS = RunOPS(model, epwWeatherFile)
+        #hb_runOPSRm = RunOPSRManage(model, hb_writeOPS.HVACSystemDict, epwWeatherFile)
+        #hb_runOPSRm.runAnalysis(fname, False)
         idfFile, resultFile = hb_runOPS.runAnalysis(fname, useRunManager = False)
-        return fname, idfFile, resultFile
+        #this is the zone group id
+                # add HVAC system
+
+            
+        return fname, resultFile, idfFile
         
     return fname, None, None
 
