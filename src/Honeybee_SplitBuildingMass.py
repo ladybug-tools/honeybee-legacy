@@ -21,7 +21,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = 'Honeybee_SplitBuildingMass'
 ghenv.Component.NickName = 'SplitMass'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nMAY_18_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -189,7 +189,13 @@ def getFloorCrvs(buildingMass, floorHeights, maxHeights):
     if len(contourCrvs)!= 0:
         crvCentPt = rc.Geometry.AreaMassProperties.Compute(contourCrvs[0]).Centroid
         # get a point from the center of the contour curve to a seam in order to adjust the seam of all other curves.
-        seamVectorPt = rc.Geometry.Vector3d((contourCrvs[0].PointAtStart.X - crvCentPt.X)*2, (contourCrvs[0].PointAtStart.Y - crvCentPt.Y)*2, 0)
+        curveLengths = []
+        for curve in contourCrvs:
+            curveLengths.append(curve.GetLength())
+        curveLengths.sort()
+        longestCurveLength = curveLengths[-1]
+        factor = ((longestCurveLength)/(contourCrvs[0].PointAtStart.X - crvCentPt.X))*2
+        seamVectorPt = rc.Geometry.Vector3d((contourCrvs[0].PointAtStart.X - crvCentPt.X)*factor, (contourCrvs[0].PointAtStart.Y - crvCentPt.Y)*factor, 0)
         # adjust the seam of the curves.
         crvAdjust = []
         for curve in contourCrvs:
@@ -331,13 +337,13 @@ def splitPerimZones(mass, zoneDepth, floorCrvs, topInc):
         try:
             offsetFloorCrv = curve.Offset(rc.Geometry.Plane.WorldXY, -flrDepths[curveCount], tolerance, rc.Geometry.CurveOffsetCornerStyle.Chamfer)[0]
             if str(offsetFloorCrv.Contains(floorPts[curveCount][0], rc.Geometry.Plane.WorldXY, tolerance)) == "Inside":
-                offsetFloorCrv = crv.Offset(rc.Geometry.Plane.WorldXY, flrDepths[curveCount], tolerance, rc.Geometry.CurveOffsetCornerStyle.Chamfer)[0]
+                offsetFloorCrv = curve.Offset(rc.Geometry.Plane.WorldXY, flrDepths[curveCount], tolerance, rc.Geometry.CurveOffsetCornerStyle.Chamfer)[0]
             else: pass
             offsetFloorPts = getCurvePoints(offsetFloorCrv)
             
             offsetCeilingCrv = ceilingCrv[curveCount].Offset(rc.Geometry.Plane.WorldXY, -flrDepths[curveCount], tolerance, rc.Geometry.CurveOffsetCornerStyle.Chamfer)[0]
             if str(offsetCeilingCrv.Contains(ceilingPts[curveCount][0], rc.Geometry.Plane.WorldXY, tolerance)) == "Inside":
-                offsetCeilingCrv = crv.Offset(rc.Geometry.Plane.WorldXY, flrDepths[curveCount], tolerance, rc.Geometry.CurveOffsetCornerStyle.Chamfer)[0]
+                offsetCeilingCrv = ceilingCrv[curveCount].Offset(rc.Geometry.Plane.WorldXY, flrDepths[curveCount], tolerance, rc.Geometry.CurveOffsetCornerStyle.Chamfer)[0]
             else: pass
             offsetCeilingPts = getCurvePoints(offsetCeilingCrv)
             
