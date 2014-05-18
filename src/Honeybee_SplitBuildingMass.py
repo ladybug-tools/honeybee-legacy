@@ -4,7 +4,7 @@
 # under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
 
 """
-Divide up a building mass into smaller zones.
+Divide up a building mass into smaller smaller geometries that correspond to recommended zones.
 -
 Provided by Honeybee 0.0.53
 
@@ -15,7 +15,7 @@ Provided by Honeybee 0.0.53
         _createHoneybeeZones: Set Boolean to True to split up the building mass into zones.
     Returns:
         readMe!: ...
-        _splitBldgMasses: The building mass split up into zone geometries.
+        _splitBldgMasses: A lot of breps that correspond to the recommended means of breaking up geometry into zones for energy simulations.
 """
 
 
