@@ -8,7 +8,7 @@ export geometries to idf file, and run the energy simulation
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nMAY_22_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -638,19 +638,24 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     conversionFac = lb_preparation.checkUnits()
     
     # check for folder and idf file address
+    
+    # if workingDir\
+    ## check for idf file to be connected
+    if idfFileName == None: idfFileName = 'unnamed.idf'
+    elif idfFileName[-3:] != 'idf': idfFileName = idfFileName + '.idf'
+    
     # make working directory
     if workingDir: workingDir = lb_preparation.removeBlankLight(workingDir)
+    else: workingDir = "c:\\ladybug"
+    
+    workingDir = os.path.join(workingDir, idfFileName.split(".idf")[0], "EnergyPlus")
+    
     workingDir = lb_preparation.makeWorkingDir(workingDir)
     
     # make sure the directory has been created
     if workingDir == -1: return -1
     workingDrive = workingDir[0:1]
     
-    
-    # if workingDir\
-    ## check for idf file to be connected
-    if idfFileName == None: idfFileName = 'unnamed.idf'
-    elif idfFileName[-3:] != 'idf': idfFileName = idfFileName + '.idf'
     
     idfFileFullName = workingDir + "\\" + idfFileName
     idfFile = open(idfFileFullName, "w")
