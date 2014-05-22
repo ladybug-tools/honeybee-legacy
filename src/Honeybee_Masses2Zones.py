@@ -10,10 +10,6 @@ Provided by Honeybee 0.0.53
 
     Args:
         _bldgMasses: List of closed Breps
-        bldgsFlr2FlrHeights_: List of buildings floor heights for the geometries
-        bldgsFloorProgram_: List of building floor programs. Default schedule, construction, and HVAC system will be applied based on the program
-                           In this version of Honeybee just leave it empty as it won't effect Daylighting simulation.
-        isConditioned_: List of Booleans to indicate if the space is conditioned
         maximumRoofAngle_: Maximum angle from z vector that the surface will be assumed as a roof. Default is 30 degrees
         projectName_: Name of the project
         _createHoneybeeZones: Set Boolean to True to generate the zones
@@ -41,7 +37,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_Masses2Zones'
 ghenv.Component.NickName = 'Mass2Zone'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_18_2014'
+ghenv.Component.Message = 'VER 0.0.53\nMAY_22_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
