@@ -37,7 +37,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_Masses2Zones'
 ghenv.Component.NickName = 'Mass2Zone'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_22_2014'
+ghenv.Component.Message = 'VER 0.0.53\nMAY_24_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -126,7 +126,7 @@ class Building(object):
 
 ################################################################################
 
-def main(maximumRoofAngle, bldgMasses, bldgsFlr2FlrHeights, isConditioned, projectName):
+def main(maximumRoofAngle, bldgMasses, isConditioned, projectName):
         # import the classes
         if sc.sticky.has_key('ladybug_release')and sc.sticky.has_key('honeybee_release'):
             lb_preparation = sc.sticky["ladybug_Preparation"]()
@@ -150,6 +150,8 @@ def main(maximumRoofAngle, bldgMasses, bldgsFlr2FlrHeights, isConditioned, proje
         
         conversionFac = lb_preparation.checkUnits()
         
+        # floor heights is now moved to a different component
+        bldgsFlr2FlrHeights = []
         ########################################################################
         #----------------------------------------------------------------------#
         buildingsDic = {}
@@ -286,7 +288,7 @@ if _createHoneybeeZones == True:
     bldgsFloorProgram_ = []
     isConditioned_ = [True]
     
-    result= main(maximumRoofAngle, _bldgMasses, bldgsFlr2FlrHeights_, isConditioned_, projectName_)
+    result= main(maximumRoofAngle, _bldgMasses, isConditioned_, projectName_)
     
     if result!= []:
         if isinstance(result, list) and len(result)>1 and result[1]==-1:
