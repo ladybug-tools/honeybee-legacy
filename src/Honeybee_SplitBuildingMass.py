@@ -21,7 +21,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = 'Honeybee_SplitBuildingMass'
 ghenv.Component.NickName = 'SplitMass'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_18_2014'
+ghenv.Component.Message = 'VER 0.0.53\nMAY_28_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -50,7 +50,7 @@ def checkTheInputs():
                 w = gh.GH_RuntimeMessageLevel.Warning
                 ghenv.Component.AddRuntimeMessage(w, warning)
         if sum(brepSolid) == len(_bldgMasses):
-            checkData = True
+            checkData1 = True
     else: print "Connect closed solid building masses to split them up into zones."
     
     if bldgsFlr2FloorHeights_ == []:
@@ -59,9 +59,19 @@ def checkTheInputs():
     
     if perimeterZoneDepth_ == []:
         print "No value is connected for zone depth and so the model will not be divided up into perimeter and core zones."
+    else: pass
+    
+    if bldgsFlr2FloorHeights_ != [] or perimeterZoneDepth_ != []:
+        checkData2 = True
+    else:
+        checkData2 = False
+        print "A value must be conneted for either Flr2FloorHeights_ or perimeterZoneDepth_ in order to run."
+    
+    if checkData1 == True and checkData2 == True:
+        checkData = True
+    else: checkData = False
     
     return checkData
-
 
 
 def getFloorHeights(flr2flrHeights, totalHeights, maxHeights, conversionFac = 1, firstFloorHeight = 0, rep = False):
@@ -81,23 +91,27 @@ def getFloorHeights(flr2flrHeights, totalHeights, maxHeights, conversionFac = 1,
                 print 'There is a floor with height of ' + `floorH` + ' m.'
             
             for floors in range(numOfFlr): flrHeights.append(flrHeights[-1] + floorH)
-    #print flrHeights[-1] - maxHeights
+    
     #if maxHeights - flrHeights[-1] < (0.5/conversionFac): flrHeights.pop()
     return flrHeights # list of floor heights
 
 def getFloorCrvs(buildingMass, floorHeights, maxHeights):
+    #Draw a bounding box around the mass and use the lowest Z point to set the base point.
+    massBB = buildingMass.GetBoundingBox(rc.Geometry.Plane.WorldXY)
+    minZ = massBB.Min.Z
+    
     basePoint = rc.Geometry.Point3d.Origin
     contourCrvs = []; splitters = []
     bbox = buildingMass.GetBoundingBox(True)
     for h in floorHeights:
-        floorBasePt = rc.Geometry.Point3d.Add(basePoint, rc.Geometry.Vector3d(0,0,h))
+        floorBasePt = rc.Geometry.Point3d.Add(basePoint, rc.Geometry.Vector3d(0,0,h + minZ))
         sectionPlane = rc.Geometry.Plane(floorBasePt, rc.Geometry.Vector3d.ZAxis)
         crvList = rc.Geometry.Brep.CreateContourCurves(buildingMass, sectionPlane)
+        
         if crvList:
-            #print len(crvList)
             [contourCrvs.append(crv) for crv in crvList]
             
-            # This part is based on one of David Rutten's scritp
+            # This part is based on one of David Rutten's script
             bool, extU, extV = sectionPlane.ExtendThroughBox(bbox)
             # extend the plane for good measure
             extU.T0 -= 1.0
@@ -105,9 +119,19 @@ def getFloorCrvs(buildingMass, floorHeights, maxHeights):
             extV.T0 -= 1.0
             extV.T1 += 1.0
             splitters.append(rc.Geometry.PlaneSurface(sectionPlane, extU, extV))
-            #print contourCrvs
     
-    #Chedk to see if the top floor is shorter than 2 meters and, if so, discount it.
+    #Check if any of the generated curves have no area and, fi so, discount them from the list.
+    newContourCrvs = []
+    for crv in contourCrvs:
+        if crv.SegmentCount == 2:
+            segments = crv.DuplicateSegments()
+            if segments[0].IsLinear and segments[0].IsLinear:
+                pass
+            else: newContourCrvs.append(crv)
+        else: newContourCrvs.append(crv)
+    contourCrvs = newContourCrvs
+    
+    #Check to see if the top floor is shorter than 2 meters and, if so, discount it.
     units = sc.doc.ModelUnitSystem
     
     #Define a default max height for a floor based on the model units and typical building dimensions.
@@ -127,7 +151,7 @@ def getFloorCrvs(buildingMass, floorHeights, maxHeights):
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, warning)
     
-    lastFloorHeight = maxHeights - floorHeights[-1]
+    lastFloorHeight = (maxHeights - minZ)  - floorHeights[-1]
     if lastFloorHeight < maxHeight:
         lastFloorInc = False
     else: lastFloorInc = True
@@ -165,11 +189,15 @@ def getFloorCrvs(buildingMass, floorHeights, maxHeights):
         if tophoriz == True and topPlanar == True:
             topInc = True
             edgeCurves = rc.Geometry.Curve.JoinCurves(topSurface.DuplicateEdgeCurves())
-        edgeLen = len(edgeCurves)
-        for curve in edgeCurves:
-            contourCrvs.append(curve)
+            edgeLen = len(edgeCurves)
+            for curve in edgeCurves:
+                contourCrvs.append(curve)
+        else:
+            topInc = False
     else:
-        topInc = True
+        if lastFloorHeight < maxHeight:
+            topInc = True
+        else: topInc = False
     
     #Simplify the contour curves to ensure that they do not mess up the next few steps.
     for curve in contourCrvs:
@@ -240,13 +268,15 @@ def splitFloorHeights(bldgMasses, bldgsFlr2FlrHeights, lb_preparation, lb_visual
         conversionFac = lb_preparation.checkUnits()
         
         splitZones = []
+        floorCurves = []
+        topIncluded = []
         for bldgCount, mass in enumerate(initialMasses):
             
             # 0- split the mass vertically [well, it is actually horizontally! so confusing...]
             # 0-1 find the boundingBox
             lb_visualization.calculateBB([mass])
             
-            # SPLIT MASS TO ZONES
+            # SPLIT MASS TO FLOORS
             # 0-2 get floor curves and split surfaces based on floor heights
             # I don't use floor curves here. It is originally developed for upload Rhino2Web
             maxHeights = lb_visualization.BoundingBoxPar[-1].Z
@@ -256,34 +286,38 @@ def splitFloorHeights(bldgMasses, bldgsFlr2FlrHeights, lb_preparation, lb_visual
             if floorHeights!=[0]:
                 floorCrvs, splitterSrfs, crvAdjust, topInc = getFloorCrvs(mass, floorHeights, maxHeights)
                 
+                floorCurves.append(crvAdjust)
+                topIncluded.append(topInc)
+                
                 # well, I'm pretty sure that something like this is smarter to be written
                 # as a recursive fuction but I'm not comfortable enough to write it that way
                 # right now. Should be fixed later!
                 restOfmass = mass
-                
+                massZones = []
                 for srfCount, srf in enumerate(splitterSrfs):
                     lastPiece = []
                     lastPiece.append(restOfmass)
                     pieces = restOfmass.Split(srf.ToBrep(), tolerance)
+                    
                     if len(pieces)== 2 and lb_visualization.calculateBB([pieces[0]], True)[-1].Z < lb_visualization.calculateBB([pieces[1]], True)[-1].Z:
                         try: 
                             zone = pieces[0].CapPlanarHoles(tolerance);
                             if zone!=None:
-                                splitZones.append(zone)
+                                massZones.append(zone)
                             restOfmass = pieces[1].CapPlanarHoles(tolerance)
                         except Exception, e:
                             print 'error 1: ' + `e`
 
-                    elif len(pieces)== 2:
-                        splitZones.append(pieces[1].CapPlanarHoles(tolerance))
-                        restOfmass = pieces[0].CapPlanarHoles(tolerance)
-                        try:
-                            zone = pieces[1].CapPlanarHoles(tolerance)
-                            if zone!=None:
-                                splitZones.append(zone)
-                            restOfmass = pieces[0].CapPlanarHoles(tolerance)
-                        except Exception, e:
-                            print 'error 2: ' + `e`
+                    #elif len(pieces)== 2:
+                    #    massZones.append(pieces[1].CapPlanarHoles(tolerance))
+                    #    restOfmass = pieces[0].CapPlanarHoles(tolerance)
+                    #    try:
+                    #        zone = pieces[1].CapPlanarHoles(tolerance)
+                    #        if zone!=None:
+                    #            massZones.append(zone)
+                    #        restOfmass = pieces[0].CapPlanarHoles(tolerance)
+                    #    except Exception, e:
+                    #        print 'error 2: ' + `e`
                     else:
                         if srfCount == len(splitterSrfs) - 1:
                             pass
@@ -292,9 +326,13 @@ def splitFloorHeights(bldgMasses, bldgsFlr2FlrHeights, lb_preparation, lb_visual
                             print msg
                             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
                             return [restOfmass, -1]
-                splitZones.append(restOfmass)
+                if restOfmass != None:
+                    massZones.append(restOfmass)
+                else: pass
+                
+                splitZones.append(massZones)
         
-        return splitZones, crvAdjust, topInc
+        return splitZones, floorCurves, topIncluded
 
 
 def splitPerimZones(mass, zoneDepth, floorCrvs, topInc):
@@ -306,17 +344,79 @@ def splitPerimZones(mass, zoneDepth, floorCrvs, topInc):
             individPts.append(line.PointAtStart)
         return individPts
     
-    #Get a list of cuves that represent the ceiling (without the top floor). And a list of points for each.
+    #Define a function that cleans up curves by deleting out points that lie in a line and leaves the curved segments intact.
+    def cleanCurve(curve, curvePts):
+        #First check if there are any curved segements and make a list to keep track of this
+        curveBool = []
+        exploCurve = rc.Geometry.PolyCurve.DuplicateSegments(curve)
+        for segment in exploCurve:
+            if segment.IsLinear == False: curveBool.append(True)
+            else: curveBool.append(False)
+        
+        #Test if any of the points lie in a line and use this to generate a new list of curve segments and points.
+        newPts = []
+        newSegments = []
+        for pointCount, point in enumerate(curvePts):
+            testLine = rc.Geometry.Line(point, curvePts[pointCount-2])
+            if testLine.DistanceTo(curvePts[pointCount-1], True) > tolerance and curveBool[pointCount-1] == False and len(newPts) == 0:
+                newPts.append(curvePts[pointCount-1])
+            elif testLine.DistanceTo(curvePts[pointCount-1], True) > tolerance and curveBool[pointCount-1] == False and len(newPts) != 0:
+                newSegments.append(rc.Geometry.LineCurve(newPts[-1], curvePts[pointCount-1]))
+                newPts.append(curvePts[pointCount-1])
+            elif curveBool[pointCount-1] == True:
+                newPts.append(curvePts[pointCount-1])
+                newSegments.append(exploCurve[pointCount-1])
+            else: pass
+        
+        #Add a segment to close the curves and join them together into one polycurve.
+        if curveBool[-1] == True:
+            newSegments.append(exploCurve[-1])
+        else:
+            newSegments.append(rc.Geometry.LineCurve(newPts[-1], newPts[0]))
+        
+        #Shift the lists over by 1 to ensure that the order of the points and curves match the input
+        newCurvePts = newPts[1:]
+        newCurvePts.append(newPts[0])
+        newCurveSegments = newSegments[1:]
+        newCurveSegments.append(newSegments[0])
+        
+        
+        #Join the segments together into one curve.
+        newCrv = rc.Geometry.PolyCurve.JoinCurves(newCurveSegments, tolerance, True)[0]
+        
+        #return the new curve and the list of points associated with it.
+        return newCrv, newCurvePts, newCurveSegments
+    
+    #Get a list of cuves that represent the ceiling (without the top floor). Generate a list of points for each and a brep for the ceiling surface.
     ceilingCrv = floorCrvs[1:]
     ceilingPts = []
     for curveCount, curve in enumerate(ceilingCrv):
         ceilingPts.append(getCurvePoints(curve))
     
-    #Get a list of curves that represent the floors (without the top floor).
+    #Get a list of curves that represent the floors (without the top floor). Generate a list of points for each and a brep for the ceiling surface.
     floorCrv = floorCrvs[:-1]
     floorPts = []
     for curveCount, curve in enumerate(floorCrv):
         floorPts.append(getCurvePoints(curve))
+    
+    #Clean up the input curves, This involves testing to see if any 3 points on the floor or ceiling curves lie in a line and, if so, deleting out the redundant mid point.
+    newFloorCrv = []
+    newFloorPts = []
+    for count, curve in enumerate(floorCrv):
+        newFCrv, newFCrvPts, newFCrvSeg = cleanCurve(curve, floorPts[count])
+        newFloorCrv.append(newFCrv)
+        newFloorPts.append(newFCrvPts)
+    floorCrv = newFloorCrv
+    floorPts = newFloorPts
+    
+    newCeilingCrv = []
+    newCeilingPts = []
+    for count, curve in enumerate(ceilingCrv):
+        newCCrv, newCCrvPts, newCCrvSeg  = cleanCurve(curve, ceilingPts[count])
+        newCeilingCrv.append(newCCrv)
+        newCeilingPts.append(newCCrvPts)
+    ceilingCrv = newCeilingCrv
+    ceilingPts = newCeilingPts
     
     #Find the offset depth for each of the floors.
     numOfFlr = len(floorCrv)
@@ -324,7 +424,7 @@ def splitPerimZones(mass, zoneDepth, floorCrvs, topInc):
     for depth in zoneDepth:
         if '@' in depth:
             zoneD = float(depth.split('@')[1])
-            try: numFlr = float(depth.split('@')[0])
+            try: numFlr = int(depth.split('@')[0])
             except: numFlr = numOfFlr
             for floors in range(numFlr): flrDepths.append(zoneD)
         else:
@@ -335,27 +435,50 @@ def splitPerimZones(mass, zoneDepth, floorCrvs, topInc):
     finalZones = []
     for curveCount, curve in enumerate(floorCrv):
         try:
-            offsetFloorCrv = curve.Offset(rc.Geometry.Plane.WorldXY, -flrDepths[curveCount], tolerance, rc.Geometry.CurveOffsetCornerStyle.Chamfer)[0]
+            offsetFloorCrv = curve.Offset(rc.Geometry.Plane.WorldXY, -flrDepths[curveCount], tolerance, rc.Geometry.CurveOffsetCornerStyle.Sharp)[0]
             if str(offsetFloorCrv.Contains(floorPts[curveCount][0], rc.Geometry.Plane.WorldXY, tolerance)) == "Inside":
-                offsetFloorCrv = curve.Offset(rc.Geometry.Plane.WorldXY, flrDepths[curveCount], tolerance, rc.Geometry.CurveOffsetCornerStyle.Chamfer)[0]
+                offsetFloorCrv = curve.Offset(rc.Geometry.Plane.WorldXY, flrDepths[curveCount], tolerance, rc.Geometry.CurveOffsetCornerStyle.Sharp)[0]
             else: pass
             offsetFloorPts = getCurvePoints(offsetFloorCrv)
             
-            offsetCeilingCrv = ceilingCrv[curveCount].Offset(rc.Geometry.Plane.WorldXY, -flrDepths[curveCount], tolerance, rc.Geometry.CurveOffsetCornerStyle.Chamfer)[0]
+            offsetCeilingCrv = ceilingCrv[curveCount].Offset(rc.Geometry.Plane.WorldXY, -flrDepths[curveCount], tolerance, rc.Geometry.CurveOffsetCornerStyle.Sharp)[0]
             if str(offsetCeilingCrv.Contains(ceilingPts[curveCount][0], rc.Geometry.Plane.WorldXY, tolerance)) == "Inside":
-                offsetCeilingCrv = ceilingCrv[curveCount].Offset(rc.Geometry.Plane.WorldXY, flrDepths[curveCount], tolerance, rc.Geometry.CurveOffsetCornerStyle.Chamfer)[0]
+                offsetCeilingCrv = ceilingCrv[curveCount].Offset(rc.Geometry.Plane.WorldXY, flrDepths[curveCount], tolerance, rc.Geometry.CurveOffsetCornerStyle.Sharp)[0]
             else: pass
             offsetCeilingPts = getCurvePoints(offsetCeilingCrv)
             
+            #Clean up the offset curves, This involves testing to see if any 3 points on the floor or ceiling curves lie in a line and, if so, deleting out the redundant mid point.
+            offsetFloorCrv, offsetFloorPts, offsetFloorCrvSegments = cleanCurve(offsetFloorCrv, offsetFloorPts)
+            offsetCeilingCrv, offsetCeilingPts, offsetCeilingCrvSegments = cleanCurve(offsetCeilingCrv, offsetCeilingPts)
+            
+            #Test to see which points on the inside are closest to those on the outside.
+            floorConnectionPts = []
+            for point in offsetFloorPts:
+                pointDist = []
+                floorEdgePts = floorPts[curveCount][:]
+                for perimPoint in floorEdgePts:
+                    pointDist.append(rc.Geometry.Point3d.DistanceTo(point, perimPoint))
+                sortDist = [x for (y,x) in sorted(zip(pointDist, floorEdgePts))]
+                floorConnectionPts.append(sortDist[0])
+            
+            ceilingConnectionPts = []
+            for point in offsetCeilingPts:
+                pointDist = []
+                ceilingEdgePts = ceilingPts[curveCount][:]
+                for perimPoint in ceilingEdgePts:
+                    pointDist.append(rc.Geometry.Point3d.DistanceTo(point, perimPoint))
+                sortDist = [x for (y,x) in sorted(zip(pointDist, ceilingEdgePts))]
+                ceilingConnectionPts.append(sortDist[0])
+            
             #Create lines from the collected points of the offset curves in order to split up the different perimeter zones.
             zoneFloorCurves = []
-            for pointCount, point in enumerate(floorPts[curveCount]):
-                floorZoneCurve = rc.Geometry.LineCurve(point, offsetFloorPts[pointCount])
+            for pointCount, point in enumerate(offsetFloorPts):
+                floorZoneCurve = rc.Geometry.LineCurve(point, floorConnectionPts[pointCount])
                 zoneFloorCurves.append(floorZoneCurve)
             
             zoneCeilingCurves = []
-            for pointCount, point in enumerate(ceilingPts[curveCount]):
-                ceilingCurves = rc.Geometry.LineCurve(point, offsetCeilingPts[pointCount])
+            for pointCount, point in enumerate(offsetCeilingPts):
+                ceilingCurves = rc.Geometry.LineCurve(point, ceilingConnectionPts[pointCount])
                 zoneCeilingCurves.append(ceilingCurves)
             
             #Loft the floor and ceiling curves together in order to get walls
@@ -382,7 +505,6 @@ def splitPerimZones(mass, zoneDepth, floorCrvs, topInc):
             #Join the walls together to make zones.
             joinedWalls = rc.Geometry.Brep.JoinBreps(coreZoneWalls, tolerance)[0]
             coreZone = joinedWalls.CapPlanarHoles(tolerance)
-            
             perimZones = []
             for wallCount, wall in enumerate(perimZoneWalls):
                 brepList = [wall, perimZoneWalls[wallCount-1], exteriorWalls[wallCount-1], coreZoneWalls[wallCount-1]]
@@ -395,8 +517,20 @@ def splitPerimZones(mass, zoneDepth, floorCrvs, topInc):
             floorZones.append(coreZone)
             floorZones.extend(perimZones)
             
+            #Test to see if all of the generated zones are null and, if so, return the full floor mass.
+            noneTest = []
+            for zone in floorZones:
+                if zone == None:
+                    noneTest.append(1)
+                else: pass
+            
+            
             #Append the group to the full zone list.
-            finalZones.append(floorZones)
+            if sum(noneTest) == len(floorZones):
+                finalZones.append(mass[curveCount])
+                print "Failed to generate the perimieter zones for one floor.  The problematic floor will be returned as a single zone.  If perimeter zones are desired, try decreasing the perimeter depth."
+            else:
+                finalZones.append(floorZones)
         except:
             finalZones.append(mass[curveCount])
             print "Failed to generate the perimieter zones for one floor.  The problematic floor will be returned as a single zone.  If perimeter zones are desired, try decreasing the perimeter depth."
@@ -421,15 +555,22 @@ def main(mass, floorHeights, perimDepth):
             splitFloors, floorCrvs, topInc = splitFloorHeights(mass, floorHeights, lb_preparation, lb_visualization)
         else:
             splitFloors = mass
-            lb_visualization.calculateBB([mass])
-            maxHeights = lb_visualization.BoundingBoxPar[-1].Z
-            contourCrvs, splitters, floorCrvs, topInc = getFloorCrvs(mass, maxHeights)
+            floorCrvs = []
+            topInc = []
+            for item in mass:
+                bbBox = item.GetBoundingBox(rc.Geometry.Plane.WorldXY)
+                maxHeights = bbBox.Max.Z
+                minHeights = bbBox.Min.Z
+                contCrvs, splitters, flrCrvs, topIncl = getFloorCrvs(item, [0, maxHeights-minHeights], maxHeights)
+                floorCrvs.append(flrCrvs)
+                topInc.append(True)
         
         #If the user had specified a perimeter zone depth, offset the floor curves to get perimeter and core.
-        splitZones = []
         if perimeterZoneDepth_ != []:
-            splitZones = splitPerimZones(splitFloors, perimDepth, floorCrvs, topInc)
-        
+            splitZones = []
+            for count, mass in enumerate(splitFloors):
+                splitZones.append(splitPerimZones(mass, perimDepth, floorCrvs[count], topInc[count]))
+        else: splitZones = splitFloors
         
         return splitZones
         
@@ -449,6 +590,7 @@ if checkData == True:
     
     splitBldgMasses = DataTree[Object]()
     for i, buildingMasses in enumerate(splitBldgMassesLists):
-        p = GH_Path(i)
-        try: splitBldgMasses.AddRange(buildingMasses, p)
-        except: splitBldgMasses.Add(buildingMasses, p)
+        for j, mass in enumerate(buildingMasses):
+            p = GH_Path(i,j)
+            try: splitBldgMasses.AddRange(mass, p)
+            except: splitBldgMasses.Add(mass, p)
