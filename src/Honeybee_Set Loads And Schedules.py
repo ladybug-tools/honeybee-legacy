@@ -20,7 +20,7 @@ Provided by Honeybee 0.0.51
 
 ghenv.Component.Name = "Honeybee_Set Loads And Schedules"
 ghenv.Component.NickName = 'SetLoadsAndSchedules'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUN_08_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -30,7 +30,7 @@ import scriptcontext as sc
 import uuid
 import Grasshopper.Kernel as gh
 
-def main(HBZones, bldgProgram, zoneProgram):
+def main(HBZones, bldgProgram, zonePrograms):
     # check for Honeybee
     if not sc.sticky.has_key('honeybee_release'):
         print "You should first let Honeybee to fly..."
@@ -48,7 +48,10 @@ def main(HBZones, bldgProgram, zoneProgram):
     
     currentSchedules = []
     currentLoads = []
-    for HBZone in HBObjectsFromHive:
+    for zoneCount, HBZone in enumerate(HBObjectsFromHive):
+        try: zoneProgram = zonePrograms[zoneCount]
+        except: zoneProgram = zonePrograms[0]
+        
         # make sure the combination is valid before changing it for the zone
         if bldgProgram!=None and bldgProgram not in bldgProgramDict.values():
             msg = "bldgProgram > [" + bldgProgram + "] is not a valid input.\n" + \
@@ -88,7 +91,7 @@ def main(HBZones, bldgProgram, zoneProgram):
 
 
 if _HBZones:
-    results = main(_HBZones, bldgProgram_, zoneProgram_)
+    results = main(_HBZones, bldgProgram_, zonePrograms_)
     
     if results != -1:
         currentSchedules, currentLoads, HBZones = results
