@@ -11,12 +11,13 @@ Generate window based on a desired percentage of glazing and possibly other inpu
 Provided by Honeybee 0.0.53
     
     Args:
-        HBObjects: Honeybee thermal zones or surfaces for which glazing should be generated.
-        glzRatio: The fraction of the wall surface that should be glazed.  This input only accepts values between 0 and 0.95.  This input can also accept lists of values in this range and will assign different glazing ratios based on cardinal direction, starting with north and moving counter-clockwise.  Note that glazing ratio always takes priority over the windowHeight and sillHeight inputs below.
-        windowHeight: This input it optional and will only have relevance to HBObjects that contain a rectangle, which can be used to generate orthagonal windows.  Use this input to set the height of your windows in model units.  This input can also accept lists of values and will assign different window heights based on cardinal direction, starting with north and moving counter-clockwise.  Note that this input will be over-ridden at high glazing ratios.
-        sillHeight: This input it optional and will only have relevance to HBObjects that contain a rectangle, which can be used to generate orthagonal windows.  Use this input to set the distance from the floor to the bottom of your windows in model units.  This input can also accept lists of values and will assign different sill heights based on cardinal direction, starting with north and moving counter-clockwise.  Note that this input will be over-ridden at high glazing ratios or window heights.
-        skyLightRatio: If you have input a full zone or list of zones as your HBObjects, use this input to generate skylights on the roof surfaces.
-        runIt: set runIt to True to generate the glazing
+        _HBObjects: Honeybee thermal zones or surfaces for which glazing should be generated.
+        _glzRatio: The fraction of the wall surface that should be glazed.  This input only accepts values between 0 and 0.95.  This input can also accept lists of values in this range and will assign different glazing ratios based on cardinal direction, starting with north and moving counter-clockwise.  Note that glazing ratio always takes priority over the windowHeight and sillHeight inputs below.
+        breakUpWindow_: Set to "True" to break up windows on walls that contain rectangles.  Set to "False" to generate one window per quadrilateral wall.  The default is set to "True."
+        windowHeight_: This input it optional and will only have relevance to HBObjects that contain a rectangle, which can be used to generate orthagonal windows.  Use this input to set the height of your windows in model units.  This input can also accept lists of values and will assign different window heights based on cardinal direction, starting with north and moving counter-clockwise.  Note that this input will be over-ridden at high glazing ratios.
+        sillHeight_: This input it optional and will only have relevance to HBObjects that contain a rectangle, which can be used to generate orthagonal windows.  Use this input to set the distance from the floor to the bottom of your windows in model units.  This input can also accept lists of values and will assign different sill heights based on cardinal direction, starting with north and moving counter-clockwise.  Note that this input will be over-ridden at high glazing ratios or window heights.
+        skyLightRatio_: If you have input a full zone or list of zones as your HBObjects, use this input to generate skylights on the roof surfaces.
+        _runIt: set runIt to True to generate the glazing
     Returns:
         readMe!: ...
         HBObjWGLZ: Newhoneybee zones that contain glazing surfaces based on the parameters above. 
@@ -24,7 +25,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Glazing based on ratio"
 ghenv.Component.NickName = 'glazingCreator'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nMAY_18_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -609,7 +610,7 @@ def createGlazingCurved(baseSrf, glzRatio, planar):
     return lastSuccessfulGlzSrf, lastSuccessfulRestOfSrf
 
 
-def findGlzBasedOnRatio(baseSrf, glzRatio, windowHeight, sillHeight, surfaceType):
+def findGlzBasedOnRatio(baseSrf, glzRatio, windowHeight, sillHeight, surfaceType, breakUpWindow):
     lastSuccessfulRestOfSrf = []
     
     #Check if the surface is a planar surface
@@ -654,16 +655,22 @@ def findGlzBasedOnRatio(baseSrf, glzRatio, windowHeight, sillHeight, surfaceType
                     edgeLinear = False
         else: pass
     
+    #If the breakupWindow is not set, automatically break up the windows.
+    if breakUpWindow == None:
+        breakUpWindow = True
+    else: pass
+    
+    
     #Check if the surface is a planar skylight that can be broken up into quads and, if so, send it through the skylight generator
     if surfaceType == 1:
         glazing, lastSuccessfulRestOfSrf = createSkylightGlazing(baseSrf, glzRatio, planarBool)
     
     #Check if the wall surface has horizontal top and bottom curves and contains a rectangle that can be extracted such that we can apply the windowHeight and sillHeight inputs to it.
-    elif surfaceType == 0 and planarBool == True and edgeLinear == True and getTopBottomCurves(baseSrf)[1] == True and getTopBottomCurves(baseSrf)[3] == True:
+    elif surfaceType == 0 and planarBool == True and edgeLinear == True and getTopBottomCurves(baseSrf)[1] == True and getTopBottomCurves(baseSrf)[3] == True and breakUpWindow == True:
         glazing = createGlazingThatContainsRectangle(getTopBottomCurves(baseSrf)[2], getTopBottomCurves(baseSrf)[0], baseSrf, glzRatio, windowHeight, sillHeight)
         
     #Check if the wall surface has vertical sides and contains a rectangle that can be extracted such that we can apply the windowheight and sill height inputs to it.
-    elif surfaceType == 0 and planarBool == True and edgeLinear == True and getTopBottomCurves(baseSrf)[5] == True:
+    elif surfaceType == 0 and planarBool == True and edgeLinear == True and getTopBottomCurves(baseSrf)[5] == True and breakUpWindow == True:
         glazing = createGlazingThatContainsRectangle(getTopBottomCurves(baseSrf)[4][0], getTopBottomCurves(baseSrf)[4][1], baseSrf, glzRatio, windowHeight, sillHeight)
     
     #Since the surface does not seem to have a rectangle that can be extracted, check to see if it is a triangle for which we can use a simple mathematical relation.
@@ -745,7 +752,7 @@ def giveWarning(message):
     w = gh.GH_RuntimeMessageLevel.Warning
     ghenv.Component.AddRuntimeMessage(w, message)
 
-def main(windowHeight, sillHeight):
+def main(windowHeight, sillHeight, glzRatio, skyLightRatio, breakUpWindow):
     # check if honeybee is flying
     # import the classes
     if sc.sticky.has_key('ladybug_release')and sc.sticky.has_key('honeybee_release'):
@@ -762,7 +769,7 @@ def main(windowHeight, sillHeight):
     
     # call the objects from the lib
     hb_hive = sc.sticky["honeybee_Hive"]()
-    HBZoneObjects = hb_hive.callFromHoneybeeHive(HBObjects)
+    HBZoneObjects = hb_hive.callFromHoneybeeHive(_HBObjects)
     
     joinedSrf = []
     zonesWithOpeningsGeometry =[]
@@ -855,7 +862,7 @@ def main(windowHeight, sillHeight):
                 face = surface.geometry # call surface geometry
                 
                 # This part of the code sends the parameters and surfaces to their respective methods of of galzing generation.  It is developed by Chris Mackey.
-                lastSuccessfulGlzSrf, lastSuccessfulRestOfSrf = findGlzBasedOnRatio(face, targetPercentage, winHeight, sill, srfType)
+                lastSuccessfulGlzSrf, lastSuccessfulRestOfSrf = findGlzBasedOnRatio(face, targetPercentage, winHeight, sill, srfType, breakUpWindow)
                 # print lastSuccessfulGlzSrf
                 
                 if lastSuccessfulGlzSrf!= None:
@@ -878,8 +885,8 @@ def main(windowHeight, sillHeight):
         
     return zonesWithOpeningsGeometry, ModifiedHBZones
 
-if runIt:
-    glazingSrf, ModifiedHBZones = main(windowHeight, sillHeight)
+if _runIt:
+    glazingSrf, ModifiedHBZones = main(windowHeight_, sillHeight_, _glzRatio, skyLightRatio_, breakUpWindow_)
     
     HBObjWGLZ = ModifiedHBZones
     #HBZonesWGLZ = DataTree[System.Object]()
