@@ -25,7 +25,7 @@ import math
 
 ghenv.Component.Name = "Honeybee_Separate By Normal"
 ghenv.Component.NickName = 'separateByNormal'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUN_15_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
@@ -35,20 +35,16 @@ except: pass
 def separateByNormal(geometry, maximumRoofAngle = 30, maximumFloorAngle = 30):
     
     def getSrfCenPtandNormal(surface):
-        MP = rc.Geometry.AreaMassProperties.Compute(surface)
-        area = None
-        if MP:
-            centerPt = MP.Centroid
-            MP.Dispose()
-        else:
-            print 'MP Failed'
-            return
+        surface = surface.Faces[0]
+        u_domain = surface.Domain(0)
+        v_domain = surface.Domain(1)
+        centerU = (u_domain.Min + u_domain.Max)/2
+        centerV = (v_domain.Min + v_domain.Max)/2
         
-        bool, centerPtU, centerPtV = surface.ClosestPoint(centerPt)
-
-        if bool: normalVector = surface.Faces[0].NormalAt(centerPtU, centerPtV)
-        else: normalVector = surface.Faces[0].NormalAt(0,0)
+        centerPt = surface.PointAt(centerU, centerV)
+        normalVector = surface.NormalAt(centerU, centerV)
         
+        normalVector.Unitize()
         return centerPt, normalVector
     
     up = []
@@ -59,9 +55,10 @@ def separateByNormal(geometry, maximumRoofAngle = 30, maximumFloorAngle = 30):
     for i in range(geometry.Faces.Count):
         
         surface = geometry.Faces[i].DuplicateFace(False)
+        
         # find the normal
         findNormal = getSrfCenPtandNormal(surface)
-        
+
         if findNormal:
             normal = findNormal[1]
             angle2Z = math.degrees(rc.Geometry.Vector3d.VectorAngle(normal, rc.Geometry.Vector3d.ZAxis))
