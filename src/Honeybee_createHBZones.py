@@ -33,7 +33,7 @@ import math
 
 ghenv.Component.Name = 'Honeybee_createHBZones'
 ghenv.Component.NickName = 'createHBZones'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUN_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
@@ -42,7 +42,7 @@ except: pass
 
 tolerance = sc.doc.ModelAbsoluteTolerance
 
-def main(zoneName, zoneProgram, HBSurfaces, isConditioned):
+def main(zoneName,  bldgProgram, zoneProgram, HBSurfaces, isConditioned):
     # import the classes
     if sc.sticky.has_key('ladybug_release')and sc.sticky.has_key('honeybee_release'):
         lb_preparation = sc.sticky["ladybug_Preparation"]()
@@ -71,7 +71,7 @@ def main(zoneName, zoneProgram, HBSurfaces, isConditioned):
     
     # initiate the zone
     zoneID = str(uuid.uuid4())
-    HBZone = hb_EPZone(None, zoneID, zoneName, zoneProgram, isConditioned)
+    HBZone = hb_EPZone(None, zoneID, zoneName, (bldgProgram, zoneProgram), isConditioned)
     
     for hbSrf in HBSurfaces:
         HBZone.addSrf(hbSrf)
@@ -83,8 +83,8 @@ def main(zoneName, zoneProgram, HBSurfaces, isConditioned):
     
     return HBZone 
 
-if _name_ != None and _HBSurfaces and _HBSurfaces[0]!=None:
+if _name != None and _HBSurfaces and _HBSurfaces[0]!=None:
     
-    result= main(_name_, _zoneType_, _HBSurfaces, isConditioned_)
+    result= main(_name, bldgProgram_, zoneProgram_, _HBSurfaces, isConditioned_)
     
     HBZone = result

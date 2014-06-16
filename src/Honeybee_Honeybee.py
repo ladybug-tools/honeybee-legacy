@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_14_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUN_15_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1938,6 +1938,11 @@ class EPZone(object):
             
             # check for child surfaces
             if srf.hasChild: srf.calculatePunchedSurface()
+            
+            # assign construction
+            srf.construction = srf.cnstrSet[srf.type]
+            srf.EPConstruction = srf.construction
+            
         try:
             self.geometry = rc.Geometry.Brep.JoinBreps(srfs, sc.doc.ModelAbsoluteTolerance)[0]
             self.isClosed = self.geometry.IsSolid
@@ -1946,6 +1951,10 @@ class EPZone(object):
                     self.checkZoneNormalsDir()
                 except Exception, e:
                     print '0_Check Zone Normals Direction Failed:\n' + `e`
+            else:
+                MP3D = rc.Geometry.AreaMassProperties.Compute(self.geometry)
+                self.cenPt = MP3D.Centroid
+                MP3D.Dispose()
         except Exception, e:
             print " Failed to create the geometry from the surface:\n" + `e`
         
