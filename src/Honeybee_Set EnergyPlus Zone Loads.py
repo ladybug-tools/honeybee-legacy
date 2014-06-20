@@ -23,7 +23,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Set EnergyPlus Zone Loads"
 ghenv.Component.NickName = 'setEPZoneLoads'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUN_20_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -46,13 +46,55 @@ def main(HBZones, equipmentLoadPerArea, infiltrationRatePerArea, lightingDensity
     HBObjectsFromHive = hb_hive.callFromHoneybeeHive(HBZones)
     
     loads = []
-    for HBZone in HBObjectsFromHive:
-        if equipmentLoadPerArea != None: HBZone.equipmentLoadPerArea = equipmentLoadPerArea
-        if infiltrationRatePerArea != None: HBZone.infiltrationRatePerArea = infiltrationRatePerArea
-        if lightingDensityPerArea != None: HBZone.lightingDensityPerArea = lightingDensityPerArea
-        if numOfPeoplePerArea != None: HBZone.numOfPeoplePerArea = numOfPeoplePerArea
-        if ventilationPerArea != None: HBZone.ventilationPerArea = ventilationPerArea
-        if ventilationPerPerson != None: HBZone.ventilationPerPerson = ventilationPerPerson
+    for zoneCount, HBZone in enumerate(HBObjectsFromHive):
+        
+        # assign the default is there is no load assigned yet
+        if not HBZone.isLoadsAssigned:
+            HBZone.assignLoadsBasedOnProgram(ghenv.Component)
+            
+        if equipmentLoadPerArea!=[]:
+            try:
+                if equipmentLoadPerArea[zoneCount]!= None:
+                    HBZone.equipmentLoadPerArea = equipmentLoadPerArea[zoneCount]
+            except:
+                if equipmentLoadPerArea[0]!= None:
+                    HBZone.equipmentLoadPerArea = equipmentLoadPerArea[0]
+        if infiltrationRatePerArea != []:
+            try:
+                if infiltrationRatePerArea[zoneCount]!= None:
+                    HBZone.infiltrationRatePerArea = infiltrationRatePerArea[zoneCount]
+            except:
+                if infiltrationRatePerArea[0]!= None:
+                    HBZone.infiltrationRatePerArea = infiltrationRatePerArea[0]
+        if lightingDensityPerArea != []:
+            try:
+                if lightingDensityPerArea[zoneCount]!=None:
+                    HBZone.lightingDensityPerArea = lightingDensityPerArea[zoneCount]
+            except:
+                if lightingDensityPerArea[0]!=None:
+                    HBZone.lightingDensityPerArea = lightingDensityPerArea[0]
+        if numOfPeoplePerArea != []:
+            try:
+                if numOfPeoplePerArea[zoneCount]!=None:
+                    HBZone.numOfPeoplePerArea = numOfPeoplePerArea[zoneCount]
+            except:
+                if numOfPeoplePerArea[0]!=None:
+                    HBZone.numOfPeoplePerArea = numOfPeoplePerArea[0]
+        if ventilationPerArea != []:
+            try:
+                if ventilationPerArea[zoneCount] != None:
+                    HBZone.ventilationPerArea = ventilationPerArea[zoneCount]
+            except:
+                if ventilationPerArea[0] != None:
+                    HBZone.ventilationPerArea = ventilationPerArea[0]        
+        if ventilationPerPerson != []:
+            try:
+                if ventilationPerPerson[zoneCount] != None:
+                    HBZone.ventilationPerPerson = ventilationPerPerson[zoneCount]
+            except:
+                if ventilationPerPerson[0] != None:
+                    HBZone.ventilationPerPerson = ventilationPerPerson[0]
+
         loads.append(HBZone.getCurrentLoads())
     
     HBZones  = hb_hive.addToHoneybeeHive(HBObjectsFromHive, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
