@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.53\nJUN_15_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUN_20_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -2275,7 +2275,6 @@ class hb_EPSurface(object):
         return coordinatesList
     
     def extractPoints(self, method = 1, triangulate = False):
-        
         if not self.meshedFace.IsValid:
             if self.isPlanar:
                 meshPar = rc.Geometry.MeshingParameters.Coarse
@@ -2413,7 +2412,11 @@ class hb_EPSurface(object):
                     mp = rc.Geometry.MeshingParameters.Smooth
                     mesh = rc.Geometry.Mesh.CreateFromBrep(glzSrf.geometry, mp)[0]
                 if mesh:
-                    glzCoordinatesList = self.extractMeshPts(mesh)
+                    # Make sure non-rectangular shapes with 4 edges will be triangulated
+                    if len(sortedPoints) == 4 and self.isPlanar: triangulate= True
+                    else: triangulate= False
+                    
+                    glzCoordinatesList = self.extractMeshPts(mesh, triangulate)
                     
         return glzCoordinatesList
         

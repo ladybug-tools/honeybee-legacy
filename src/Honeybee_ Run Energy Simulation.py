@@ -8,7 +8,7 @@ export geometries to idf file, and run the energy simulation
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_22_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUN_20_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -40,7 +40,6 @@ class WriteIDF(object):
     
     def EPZoneSurface (self, surface, namingMethod = 0, coordinatesList = False):
         if not coordinatesList: coordinatesList = surface.extractPoints()
-        # print surface
         if namingMethod == 1:
             # these walls are only there as parent surfaces for nonplanar glazing surfaces
             srfNaming = 'count_for_glazing'
@@ -115,7 +114,9 @@ class WriteIDF(object):
         fullString = ''
         # print len(glzCoordinatesList)
         for count, coordinates in enumerate(glzCoordinatesList):
-            if parentNamingMethod == 0: parentSurfaceName = surface.childSrfs[count].parent.name
+            if parentNamingMethod == 0:
+                try: parentSurfaceName = surface.childSrfs[count].parent.name
+                except: parentSurfaceName = surface.childSrfs[0].parent.name
             elif parentNamingMethod == 1:
                 # print surface.childSrfs
                 try:
