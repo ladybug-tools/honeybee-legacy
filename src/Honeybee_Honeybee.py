@@ -604,7 +604,8 @@ class RADMaterialAux(object):
 class hb_EnergySimulatioParameters(object):
     
     def readEPParams(self, EPParameters):
-        if EPParameters == [] or len(EPParameters)!=10:
+        
+        if EPParameters == [] or len(EPParameters)!=11:
             timestep = 6
             
             shadowPar = ["AverageOverDaysInFrequency", 30, 3000]
