@@ -2738,6 +2738,8 @@ class hb_EPZoneSurface(hb_EPSurface):
         
     def removeAllChildSrfs(self):
         self.childSrfs = []
+        self.hasChild = False
+        self.calculatePunchedSurface()
 
 class hb_EPShdSurface(hb_EPSurface):
     def __init__(self, surface, srfNumber, srfName):
