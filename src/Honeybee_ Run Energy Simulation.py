@@ -8,7 +8,7 @@ export geometries to idf file, and run the energy simulation
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.53\nJUN_20_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUN_21_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -57,7 +57,7 @@ class WriteIDF(object):
             
             str_1 = '\nBuildingSurface:Detailed,\n' + \
                 '\t' + surfaceName + ',\t!- Name\n' + \
-                '\t' + surface.srfType[surface.type] + ',\t!- Surface Type\n' + \
+                '\t' + surface.srfType[int(surface.type)] + ',\t!- Surface Type\n' + \
                 '\t' + surface.construction + ',\t!- Construction Name\n' + \
                 '\t' + surface.parent.name + ',\t!- Zone Name\n' + \
                 '\t' + surface.BC + ',\t!- Outside Boundary Condition\n' + \

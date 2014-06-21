@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.53\nJUN_20_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUN_21_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1692,9 +1692,14 @@ class EPZone(object):
         self.objectType = "HBZone"
         self.origin = rc.Geometry.Point3d.Origin
         self.geometry = zoneBrep
+        
+        self.num = zoneID
+        self.name = zoneName
+        self.hasNonPlanarSrf = False
+        self.hasInternalEdge = False
+        
         self.surfaces = []
-        if isConditioned: self.HVACSystem = ["GroupI", 0] # assign ideal loads as default
-        else: self.HVACSystem = ["NoHVAC", -1] # assign ideal loads as default
+        
         self.daylightThreshold = ""
         self.coolingSetPt= ""
         self.heatingSetPt= ""
@@ -1707,25 +1712,22 @@ class EPZone(object):
             try:
                 self.checkZoneNormalsDir()
             except Exception, e:
-                print '0_Check Zone Normals Direction Failed:\n' + `e`
-        self.num = zoneID
-        self.name = zoneName
-        self.hasNonPlanarSrf = False
-        self.hasInternalEdge = False
+                print 'Checking normal directions failed:\n' + `e`
+        
         self.bldgProgram = program[0]
         self.zoneProgram = program[1]
+        
         # assign schedules
         self.assignScheduleBasedOnProgram()
         # assign loads
         self.assignLoadsBasedOnProgram()
         
+        if isConditioned: self.HVACSystem = ["GroupI", 0] # assign ideal loads as default
+        else: self.HVACSystem = ["NoHVAC", -1] # no system        
+        
         self.isConditioned = isConditioned
         self.isThisTheTopZone = False
         self.isThisTheFirstZone = False
-        
-        self.isSchedulesAssigned = False
-        self.isLoadsAssigned = False
-        
     
     def assignScheduleBasedOnProgram(self, component = None):
         # create an open office is the program is not assigned
@@ -1755,7 +1757,6 @@ class EPZone(object):
         
         # find all the patameters and assign them to 
         self.isSchedulesAssigned = True
-        
     
     def assignLoadsBasedOnProgram(self, component=None):
         # create an open office is the program is not assigned
@@ -1786,7 +1787,6 @@ class EPZone(object):
         
         self.isLoadsAssigned = True
     
-    
     def getCurrentSchedules(self, returnDictionary = False, component = None):
         # assign the default is there is no schedule assigned 
         if not self.isSchedulesAssigned:
@@ -1815,7 +1815,7 @@ class EPZone(object):
             
             return scheduleDict
 
-    def  getCurrentLoads(self,  returnDictionary = False, component = None):
+    def getCurrentLoads(self,  returnDictionary = False, component = None):
         
         # assign the default is there is no schedule assigned
         if not self.isLoadsAssigned:
@@ -1905,14 +1905,21 @@ class EPZone(object):
                 angle2Z = 0
             
             if  angle2Z < maximumRoofAngle or angle2Z > 360- maximumRoofAngle:
-                if self.isThisTheTopZone: surafceType = 1 #roof
-                else:  surafceType = 3 # ceiling
+                # roof is the right assumption
+                # it will change to ceiling after solveAdj if it is a ceiling
+                surafceType = 1 #roof
+                #if self.isThisTheTopZone: surafceType = 1 #roof
+                #else:  surafceType = 3 # ceiling
             
             elif  160 < angle2Z <200:
                 surafceType = 2 # floor
             
             else: surafceType = 0 #wall
-            self.addSrf(hb_EPZoneSurface(surface, i, self.name + '_' + `i`, self, surafceType))
+            
+            
+            HBSurface = hb_EPZoneSurface(surface, i, self.name + '_Srf_' + `i`, self, surafceType)
+
+            self.addSrf(HBSurface)
     
     def createZoneFromSurfaces(self, maximumRoofAngle = 30):
         # this method recreate the geometry from the surfaces
@@ -1936,6 +1943,8 @@ class EPZone(object):
                 surfaceType = srf.type
             except:
                 srf.type = srf.getTypeByNormalAngle()
+            
+            srf.reEvaluateType(True)
             
             # check for child surfaces
             if srf.hasChild: srf.calculatePunchedSurface()
@@ -2051,7 +2060,6 @@ class EPZone(object):
                             #if intPt:
                             if cenPt.DistanceTo(fenSrf.parent.punchedGeometry.ClosestPoint(cenPt))<0.05 * disFactor:
                                 srf.collectMeshFaces(mesh.Faces.GetFaceVertices(faceIndex), reverseList); break
-                            
     
     def getFloorArea(self):
         totalFloorArea = 0
@@ -2074,11 +2082,10 @@ class EPZone(object):
                 if centerPt.Z < minZ: minZ = centerPt.Z
         return minZ
     
-    
     def __str__(self):
         try:
             return 'Zone name: ' + self.name + \
-               '\nZone program: ' + self.program + \
+               '\nZone program: ' + self.bldgProgram + "::" + self.zoneProgram + \
                '\n# of surfaces: ' + `len(self.surfaces)` + \
                '\n-------------------------------------'
         except:
@@ -2086,7 +2093,6 @@ class EPZone(object):
                '\nZone program: Unknown' + \
                '\n# of surfaces: ' + `len(self.surfaces)` + \
                '\n-------------------------------------'
-            
 
 class hb_EPSurface(object):
     def __init__(self, surface, srfNumber, srfID, *arg):
@@ -2100,32 +2106,16 @@ class hb_EPSurface(object):
         self.objectType = "HBSurface"
         self.geometry = surface
         self.num = srfNumber
+        
         self.name = srfID
+        
         self.isPlanar = self.checkPlanarity()
         self.hasInternalEdge = self.checkForInternalEdge()
-        
-        if len(arg) == 0:
-            # minimum surface
-            # A minimum surface is a surface that will be added to a zone later
-            # or is a surface that will only be used for daylighting simulation
-            # so the concept of parent zone/surface is irrelevant
-            self.parent = None
-        elif len(arg) == 1:
-            # represents an opening. The parent is the parent surafce
-            # honeybee only supports windows (and not doors) at this point so
-            # the type is always the same (window)
-            self.parent = arg[0]
-        elif len(arg) == 2:
-            # represents a normal EP surface
-            # parent is a parent zone and the type differs case by case
-            self.parent = arg[0] # parent zone
-            self.type = arg[1] # surface type (e.g. wall, roof,...)
-            
         self.meshedFace = rc.Geometry.Mesh()
         self.RadMaterial = None
         self.EPConstruction = None # this gets overwritten below
         
-        # 4 represents an Air Wall
+                # 4 represents an Air Wall
         self.srfType = {0:'WALL',
            0.5: 'UndergroundWall',
            1:'ROOF',
@@ -2146,8 +2136,13 @@ class hb_EPSurface(object):
            'SHADING': 'SHADING'}
            
         self.cnstrSet = {0:'000 Exterior Wall',
-                1:'000 Exterior Roof',
+                0.5: '000 Exterior Wall',
+                1: '000 Exterior Roof',
+                1.5: '000 Exterior Roof',
                 2:'000 Interior Floor',
+                2.25: '000 Exterior Floor',
+                2.5: '000 Exterior Floor',
+                2.75: '000 Exterior Floor',
                 3:'000 Interior Ceiling',
                 4:'Air Wall',
                 5:'000 Exterior Window',
@@ -2156,42 +2151,75 @@ class hb_EPSurface(object):
         self.intCnstrSet = {
                 0:'000 Interior Wall',
                 1:'000 Exterior Roof',
+                1.5:'000 Exterior Roof',
                 2:'000 Interior Floor',
+                2.25: '000 Exterior Floor',
+                2.5: '000 Exterior Floor',
+                2.75: '000 Exterior Floor',
                 3:'000 Interior Ceiling',
                 4:'Air Wall',
                 5:'000 Interior Window',
                 6:'000 Interior Wall'}
         
-        
-        # Floor and ceiling are set to Adiabatic for now
         self.srfBC = {0:'Outdoors',
-         1:'Outdoors',
-         2: 'surface',
-         3: 'surface',
-         4: 'surface',
-         5: 'Outdoors',
-         6: 'surface'}
+                     1:'Outdoors',
+                     1.5: 'ground',
+                     2: 'surface',
+                     2.25: 'ground',
+                     2.5: 'ground',
+                     2.75: 'outdoors',
+                     3: 'outdoors', # this will be changed to surface once solveAdjacency is used 
+                     4: 'surface',
+                     5: 'Outdoors',
+                     6: 'surface'}
          
         self.srfSunExposure = {0:'SunExposed',
-             1:'SunExposed',
-             2:'NoSun',
-             3:'NoSun',
-             4:'NoSun'}
+                     1:'SunExposed',
+                     1.5:'NoSun', 
+                     2:'NoSun',
+                     2.25: 'NoSun',
+                     2.5: 'NoSun',
+                     2.75: 'SunExposed',
+                     3:'NoSun',
+                     4:'NoSun',
+                     6: 'NoSun'}
              
         self.srfWindExposure = {0:'WindExposed',
-              1:'WindExposed',
-              2:'NoWind',
-              3:'NoWind',
-              4:'NoWind'}
+                     1:'WindExposed',
+                     1.5:'NoWind',
+                     2:'NoWind',
+                     2.25:'NoWind',
+                     2.5:'NoWind',
+                     2.75:'WindExposed',
+                     3:'NoWind',
+                     4:'NoWind',
+                     6:'NoWind'}
         
-        # should be fixed later
-        #self.construction = setSrfCnstr(self.type, parentZone.constructionSet)
-        if len(arg) == 2:
-            self.construction = self.cnstrSet[self.type]
-            self.EPConstruction = self.construction
-            
         self.numOfVertices = 'autocalculate'
         
+        if len(arg) == 0:
+            # minimum surface
+            # A minimum surface is a surface that will be added to a zone later
+            # or is a surface that will only be used for daylighting simulation
+            # so the concept of parent zone/surface is irrelevant
+            self.parent = None
+        elif len(arg) == 1:
+            # represents an opening. The parent is the parent surafce
+            # honeybee only supports windows (and not doors) at this point so
+            # the type is always the same (window)
+            self.parent = arg[0]
+        elif len(arg) == 2:
+            # represents a normal EP surface
+            # parent is a parent zone and the type differs case by case
+            self.parent = arg[0] # parent zone
+            self.type = arg[1] # surface type (e.g. wall, roof,...)
+            self.BC = self.srfBC[self.type]
+            # check for special conditions(eg. slab underground, slab on ground
+            self.reEvaluateType(True)
+            # this should be fixed to be based on zone type
+            # I can remove default constructions at some point
+            self.construction = self.cnstrSet[int(self.type)]
+            self.EPConstruction = self.construction
         
     def checkPlanarity(self):
         # planarity tolerance should change for different 
@@ -2394,7 +2422,6 @@ class hb_EPSurface(object):
         
         return list(pointsSorted)
 
-
     def extractGlzPoints(self, RAD = False, method = 2):
         glzCoordinatesList = []
         for glzSrf in self.childSrfs:
@@ -2420,7 +2447,7 @@ class hb_EPSurface(object):
                     glzCoordinatesList = self.extractMeshPts(mesh, triangulate)
                     
         return glzCoordinatesList
-        
+    
     def collectMeshFaces(self, meshVertices, reverseList = False):
         mesh = rc.Geometry.Mesh()
         if meshVertices[3]!= meshVertices[4:]:
@@ -2497,15 +2524,9 @@ class hb_EPSurface(object):
         
     def reEvaluateType(self, overwrite= True):
         """
-        This method extract the type of the surface.
-        I'm adding this method for gbXML export for now, however this will be 
-        eventually what I will use for other components in HB
+        Find special surface types
         """
-        
         if not overwrite and hasinstance(self, "type"): return self.type
-        
-        # get the surface type based on normal
-        #self.type = self.getTypeByNormalAngle()
         
         if self.type == 0:
             if self.isUnderground(True): self.type += 0.5 #UndergroundWall
@@ -2521,8 +2542,6 @@ class hb_EPSurface(object):
             elif self.isUnderground(): self.type += 0.25 #UndergroundSlab
             elif self.BC.upper() != "SURFACE":
                 self.type += 0.75 #UndergroundSlab
-        pass
-        
     
     def getTypeByNormalAngle(self, maximumRoofAngle = 30):
         # find the normal
@@ -2555,7 +2574,6 @@ class hb_EPSurface(object):
         
         else:
             return 0 #wall
-    
     
     def getTotalArea(self):
         return self.geometry.GetArea()
@@ -2854,7 +2872,8 @@ class hb_Hive(object):
                 if sc.sticky['HBHive'].has_key(key):
                     try:
                         HBObjects.append(copy.deepcopy(sc.sticky['HBHive'][key]))
-                    except:
+                    except Exception, e:
+                        # print `e`
                         print "Failed to copy the object. Returning the original objects...\n" +\
                               "This can cause strange behaviour!"
                         HBObjects.append(sc.sticky['HBHive'][key])

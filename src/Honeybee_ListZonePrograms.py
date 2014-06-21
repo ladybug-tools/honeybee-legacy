@@ -17,7 +17,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_ListZonePrograms"
 ghenv.Component.NickName = 'ListZonePrograms'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUN_21_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "05 | Energy | Building Program"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -29,8 +29,8 @@ import Grasshopper.Kernel as gh
 
 path = gh.Data.GH_Path(0)
 
-ghenv.Component.Params.Output[1].Name = "zonePrograms"
-ghenv.Component.Params.Output[1].NickName = "zonePrograms"
+ghenv.Component.Params.Output[0].Name = "zonePrograms"
+ghenv.Component.Params.Output[0].NickName = "zonePrograms"
 
 def main(bldgProgram):
     # check for Honeybee
@@ -56,12 +56,16 @@ if _bldgProgram!=None:
     if results!=-1:
         bldgProgram, zonePrograms = results
         
-        ghenv.Component.Params.Output[1].Name = bldgProgram + "SubPrograms"
-        ghenv.Component.Params.Output[1].NickName = bldgProgram + "SubPrograms"
+        bldgAndZonP = range(len(zonePrograms))
+        for pCount, zoneProgram in enumerate(zonePrograms):
+            bldgAndZonP[pCount] = "::".join([bldgProgram , zoneProgram])
+            
+        ghenv.Component.Params.Output[0].Name = bldgProgram + "ZonePrograms"
+        ghenv.Component.Params.Output[0].NickName = bldgProgram + "ZonePrograms"
         
         #for programCount, program in enumerate(zonePrograms):
         #    ghenv.Component.Params.Output[0].AddVolatileData(path, programCount + 1, program)
         
         # not the best solution but the normal solution was missing the first item for some reason
-        line  = bldgProgram + "SubPrograms = zonePrograms"
+        line  = bldgProgram + "ZonePrograms = bldgAndZonP"
         exec(line)
