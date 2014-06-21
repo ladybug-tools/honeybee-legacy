@@ -26,7 +26,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_GrizzlyBear"
 ghenv.Component.NickName = 'grizzlyBear'
-ghenv.Component.Message = 'VER 0.0.53\nJUN_20_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUN_21_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | WIP"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -108,6 +108,25 @@ if gbXMLIsReady:
 
 
 class WritegbXML(object):
+    
+    def __init__(self, location, zipCode):
+        
+        # import location
+        locationStr = _location.split('\n')
+        newLocStr = ""
+        
+        #clean the coments
+        for line in locationStr:
+            if '!' in line: newLocStr += line.split('!')[0].strip()
+            else: newLocStr += line
+        
+        newLocStr = newLocStr.replace(';', "")
+        
+        site, self.locationName, self.latitude, self.longitude, timeZone, elevation = newLocStr.split(',')
+        
+        # zipCode
+        if zipCode!=None: self.zipCode = zipCode
+        else: self.zipCode = "00000"
     
     def point3DtoMemorySafeCoord(pt3d):
         
@@ -670,12 +689,12 @@ class WritegbXML(object):
     def writelocNode(self):
         logging.debug('Writing gb location node.')
         loc = gbx.Location()
-        locname = rhinolocation.Split()[0] + rhinolocation.Split()[1]
         
-        loc.Name= locname
-        loc.Latitude=rhinolocation.Split()[2]
-        loc.Longitude=rhinolocation.Split()[3]
-        loc.ZipcodeOrPostalCode = rhinolocation.Split()[4]
+        loc.Name= self.locationName
+        loc.Latitude= self.latitude
+        loc.Longitude= self.longitude
+        
+        loc.ZipcodeOrPostalCode = self.zipCode
         logging.info('location node written successfully')
         return loc
         
@@ -1527,18 +1546,17 @@ class WritegbXML(object):
         gb.WindowTypes = gbWindowType
 
 
-if gbXMLIsReady and _writegbXML:
+if gbXMLIsReady and _location and _writegbXML:
     try:
-        
         #instantiate gbXML object
-        wgb = WritegbXML()
+        wgb = WritegbXML(_location, zipCode_)
         logging.debug('calling the honeybee hive.')
         if (sc.sticky["honeybee_release"] and sc.sticky.has_key("honeybee_materialLib")):
             hb_hive = sc.sticky["honeybee_Hive"]()
             HBZones = hb_hive.callFromHoneybeeHive(_HBZones)
-            if HBContext and HBContext[0]!=None:
+            if HBContext_ and HBContext_[0]!=None:
                 # call the objects from the lib
-                HBContext = hb_hive.callFromHoneybeeHive(HBContext)
+                HBContext = hb_hive.callFromHoneybeeHive(HBContext_)
             else:
                 HBContext = []
                 
