@@ -27,7 +27,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = 'Honeybee_SplitBuildingMass'
 ghenv.Component.NickName = 'SplitMass'
-ghenv.Component.Message = 'VER 0.0.53\nJUN_04_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_22_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -45,7 +45,7 @@ from Grasshopper.Kernel.Data import GH_Path
 tolerance = sc.doc.ModelAbsoluteTolerance
 
 def checkTheInputs():
-    if len(_bldgMasses) != 0:
+    if len(_bldgMasses) != 0 and _bldgMasses[0]!=None :
         brepSolid = []
         for brep in _bldgMasses:
             if brep.IsSolid == True:
@@ -57,7 +57,9 @@ def checkTheInputs():
                 ghenv.Component.AddRuntimeMessage(w, warning)
         if sum(brepSolid) == len(_bldgMasses):
             checkData1 = True
-    else: print "Connect closed solid building masses to split them up into zones."
+    else:
+        checkData1 = False
+        print "Connect closed solid building masses to split them up into zones."
     
     if bldgsFlr2FloorHeights_ == []:
         print "No value is connected for floor heights and so the model will not be divided up into floors"
@@ -1015,8 +1017,14 @@ if checkData == True:
     splitBldgMassesLists = main(_bldgMasses, bldgsFlr2FloorHeights_, perimeterZoneDepth_)
     
     splitBldgMasses = DataTree[Object]()
+    names = DataTree[Object]()
     for i, buildingMasses in enumerate(splitBldgMassesLists):
         for j, mass in enumerate(buildingMasses):
             p = GH_Path(i,j)
-            try: splitBldgMasses.AddRange(mass, p)
-            except: splitBldgMasses.Add(mass, p)
+            try:
+                splitBldgMasses.AddRange(mass, p)
+                #zoneNames = [str(i) + "_" + str(m) for m in range(len(mass))]
+                #names.AddRange(zoneNames, p)
+            except:
+                splitBldgMasses.Add(mass, p)
+                #names.Add(str(i) + "_" + str(j), p)

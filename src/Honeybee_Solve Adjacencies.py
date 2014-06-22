@@ -18,7 +18,7 @@ Provided by Honeybee 0.0.53
 """
 ghenv.Component.Name = "Honeybee_Solve Adjacencies"
 ghenv.Component.NickName = 'solveAdjc'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUN_22_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -37,9 +37,64 @@ def shootIt(rayList, geometry, tol = 0.01, bounce =1):
         intPt = rc.Geometry.Intersect.Intersection.RayShoot(ray, geometry, bounce)
         if intPt:
             if ray.Position.DistanceTo(intPt[0]) <= tol:
-                return 'Bang!'
+                return True #'Bang!'
 
-def main(HBZones, altConstruction, altBC, tol):
+def updateAdj(surface1, surface2, altConstruction, altBC, tol):
+    # change roof to ceiling
+    if surface1.type == 1: surface1.type = 3 # roof + adjacent surface = ceiling
+    elif surface2.type == 1: surface2.type = 3
+    
+    # change construction
+    if altConstruction == None:
+        surface1.EPConstruction = surface1.intCnstrSet[surface1.type]
+        surface2.EPConstruction = surface2.intCnstrSet[surface2.type]
+    else:
+        surface1.EPConstruction = altConstruction
+        surface2.EPConstruction = altConstruction
+        
+    # change bc
+    if altBC != None:
+        surface2.BC = altBC
+        surface1.BC = altBC
+    else:
+        surface1.BC = 'SURFACE'
+        surface2.BC = 'SURFACE'
+        
+        # change bc.Obj
+        # used to be only a name but I changed it to an object so you can find the parent, etc.
+        surface1.BCObject = surface2
+        surface2.BCObject = surface1
+    
+    # set sun and wind exposure to no exposure
+    surface2.sunExposure = 'NoSun'
+    surface1.sunExposure = 'NoSun'
+    surface2.windExposure = 'NoWind'
+    surface1.windExposure = 'NoWind'
+    
+    # check for child objects
+    if (surface1.hasChild or surface2.hasChild) and (len(surface2.childSrfs)!= len(surface1.childSrfs)):
+        # give warning
+        warnMsg= "Number of windows doesn't match between " + surface1.name + " and " + surface2.name + "." + \
+                 " Make sure adjacent surfaces are divided correctly and have similar windows."
+        print warnMsg
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warnMsg)
+        return
+        
+    if surface1.hasChild and surface2.hasChild:
+        # find child surfaces that match the other one
+        for childSurface1 in surface1.childSrfs:
+            for childSurface2 in surface2.childSrfs:
+                if childSurface2.BCObject.name == "":
+                    if childSurface1.cenPt.DistanceTo(childSurface2.cenPt) <= tol:
+                        childSurface1.BCObject.name = childSurface2.name
+                        childSurface2.BCObject.name = childSurface1.name
+                        print 'Interior window ' + childSurface1.BCObject.name + \
+                              '\t-> is adjacent to <-\t' + childSurface2.BCObject.name + '.'
+        
+
+
+def main(HBZones, altConstruction, altBC, tol, remCurrent):
     
     # import the classes
     if not sc.sticky.has_key('honeybee_release'):
@@ -51,79 +106,53 @@ def main(HBZones, altConstruction, altBC, tol):
     # extra check to be added later.
     # check altBC and altConstruction to be valid inputs
     
-    
     # call the objects from the lib
     hb_hive = sc.sticky["honeybee_Hive"]()
     HBZoneObjects = hb_hive.callFromHoneybeeHive(HBZones)
     
+    # clean current boundary condition
+    if remCurrent:
+        for testZone in HBZoneObjects:
+            for srf in testZone.surfaces:
+                srf.BC = 'OUTDOORS'
+                srf.BCObject = srf.outdoorBCObject()
     
-    # clean bcObjects
+    # solve it zone by zone
     for testZone in HBZoneObjects:
+        # mesh each surface and test if it will be adjacent to any surface
+        # from other zones
         for srf in testZone.surfaces:
-            srf.BCObject = srf.outdoorBCObject()
-    
-    for testZone in HBZoneObjects:
-        for srf in testZone.surfaces:
-            BCToBeChecked = ['SURFACE', 'OUTDOORS']
-            if (srf.BC.upper() in  BCToBeChecked) and srf.BCObject.name == "" and not srf.hasChild:
-                
-                #Create a mesh of the zone geometry.
+            if srf.BC.upper() == 'OUTDOORS':
+                #Create a mesh of surface to use center points as test points
                 meshPar = rc.Geometry.MeshingParameters.Default
                 BrepMesh = rc.Geometry.Mesh.CreateFromBrep(srf.geometry, meshPar)[0]
-                
-                #Create breps of all of the mesh faces to be used as the base for ray generation.
-                rayPtBases = []
-                rays = []
-                srfFaceList = BrepMesh.Faces
                 
                 # calculate face normals
                 BrepMesh.FaceNormals.ComputeFaceNormals()
                 BrepMesh.FaceNormals.UnitizeFaceNormals()
                 
-                for face in range(BrepMesh.Faces.Count):
-                    srfNormal = (BrepMesh.FaceNormals)[face] # store face normals
-                    meshSrfCen = BrepMesh.Faces.GetFaceCenter(face) # store face centers
-                    rayPtBases.append(meshSrfCen)
-                    rays.append(rc.Geometry.Ray3d(meshSrfCen, srfNormal))
+                # dictionary to collect center points and rays
+                raysDict = {}
+                for faceIndex in range(BrepMesh.Faces.Count):
+                    srfNormal = (BrepMesh.FaceNormals)[faceIndex]
+                    meshSrfCen = BrepMesh.Faces.GetFaceCenter(faceIndex)
+                    
+                    raysDict[meshSrfCen] = rc.Geometry.Ray3d(meshSrfCen, srfNormal)
                 
                 for targetZone in HBZoneObjects:
                     if targetZone.name != testZone.name:
-                       # check ray intersection
-                       if shootIt(rays, [targetZone.geometry], 100):
+                       # check ray intersection to see if this zone is next to the surface
+                       if shootIt(raysDict.values(), [targetZone.geometry], tol):
                             for surface in targetZone.surfaces:
                                 # check distance with the nearest point on each surface
-                                for pt in rayPtBases:
+                                for pt in raysDict.keys():
                                     if surface.geometry.ClosestPoint(pt).DistanceTo(pt) <= tol:
-                                        print 'Surface ' + srf.name + ' is a ' + srf.srfType[srf.type] + \
-                                              '->ADJACENT TO<-' + surface.name + ' which is a ' + \
+                                        print 'Surface ' + srf.name + ' which is a ' + srf.srfType[srf.type] + \
+                                              '\t-> is adjacent to <-\t' + surface.name + ' which is a ' + \
                                               surface.srfType[surface.type] + '.'
-                                        if srf.type == 1: srf.type = 3 # roof + adjacent surface = ceiling
-                                        elif surface.type == 1: surface.type = 3
                                         
-                                        # change construction
-                                        if altConstruction == None:
-                                            srf.EPConstruction = srf.intCnstrSet[srf.type]
-                                            surface.EPConstruction = surface.intCnstrSet[surface.type]
-                                        else:
-                                            srf.EPConstruction = altConstruction
-                                            surface.EPConstruction = altConstruction
-                                            
-                                        # change bc
-                                        if altBC != None:
-                                            surface.BC = altBC
-                                            srf.BC = altBC
-                                        else:
-                                            srf.BC = 'SURFACE'
-                                            surface.BC = 'SURFACE'
-                                            # change bc.Obj
-                                            # used to be only a name but I changed it to an object so you can find the parent, etc.
-                                            srf.BCObject = surface
-                                            surface.BCObject = srf
-                                        # sun and wind exposure
-                                        surface.sunExposure = srf.srfSunExposure[2]
-                                        srf.sunExposure = srf.srfSunExposure[2]
-                                        surface.windExposure = surface.srfWindExposure[2]
-                                        srf.windExposure = surface.srfWindExposure[2]
+                                        updateAdj(srf, surface, altConstruction, altBC, tol)                                        
+
                                         break
                 
                 if srf.type == 3 and srf.BCObject.name == '':
@@ -138,6 +167,7 @@ def main(HBZones, altConstruction, altBC, tol):
 
 
 if _findAdjc and _HBZones and _HBZones[0]!=None:
-    try: tol = float(_tolerance_)
+    try: tol = float(tolerance_)
     except: tol = sc.doc.ModelAbsoluteTolerance
-    HBZonesWADJ = main(_HBZones, altConstruction_, altBC_, tol)
+    
+    HBZonesWADJ = main(_HBZones, altConstruction_, altBC_, tol, remCurrentAdjc_)
