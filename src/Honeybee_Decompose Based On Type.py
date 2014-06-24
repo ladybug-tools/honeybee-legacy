@@ -11,18 +11,19 @@ Provided by Honeybee 0.0.53
     Args:
         _HBZone: Honeybee Zone
     Returns:
-        walls: List of walls as breps
-        windows: List of windows as breps
-        skylights: List of skylights as breps
-        roofs: List of roofs as breps
-        floors: List of floors as breps
-        ceilings: List of ceilings as breps
-        airWalls: List of airWalls as breps
-        shadings: List of shadings as breps
+        walls: A list of walls as breps.
+        windows: A list of windows as breps.
+        skylights: A list of skylights as breps.
+        roofs: A list of roofs as breps.
+        floors: A list of floors as breps.
+        groundFloors: A list of ground floors as breps.
+        ceilings: A list of ceilings as breps.
+        airWalls: A list of airWalls as breps.
+        shadings: A list of shadings as breps.
 """
 ghenv.Component.Name = "Honeybee_Decompose Based On Type"
 ghenv.Component.NickName = 'decomposeByType'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUN_24_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
@@ -36,6 +37,7 @@ windows = []
 skylights =[]
 roofs = []
 floors = []
+groundFloors = []
 ceilings = []
 shadings = []
 
@@ -55,6 +57,7 @@ if _HBZone!= None:
                 if srf.hasChild: roofs.append(srf.punchedGeometry)
                 else: roofs.append(srf.geometry)
             elif srf.type == 2: floors.append(srf.geometry)
+            elif str(srf.type) == "2.5": groundFloors.append(srf.geometry)
             elif srf.type == 3: ceilings.append(srf.geometry)
             elif srf.type == 4: airWalls.append(srf.geometry)
             elif srf.type == 6: shadings.append(srf.geometry)
