@@ -9,16 +9,12 @@ Grizzlybear exports Honeybee zones to gbXML file
 Provided by Honeybee 0.0.53
 
     Args:
-        EquipRange:
-        LPDRange:
-        bldgType:
-        epwFileAddress:
-        rhinolocation:
-        _HBZones:
-        HBContext:
-        _writegbXML:
-        workingDir:
-        fileName:
+        rhinolocation: will be replaced with LadyBug location
+        _HBZones: Input your honeybee zones
+        HBContext: Input your honeybee context
+        _writegbXML: Set to true to create gbxml
+        workingDir: C:\gbXML by default
+        fileName: choose a filename, no need to add the xml extension.  
     Returns:
         readMe!: ...
         resultFileAddress: ...
@@ -26,7 +22,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_GrizzlyBear"
 ghenv.Component.NickName = 'grizzlyBear'
-ghenv.Component.Message = 'VER 0.0.53\nJUN_21_2014'
+ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | WIP"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -37,6 +33,7 @@ import traceback
 import re
 import logging
 import Grasshopper.Kernel as gh
+import datetime
 
 gbXMLLibFolder = "C:\\gbXML"
 
@@ -88,11 +85,19 @@ if gbXMLIsReady:
     clr.AddReferenceToFileAndPath(os.path.join(gbXMLLibFolder, "VectorMath.dll"))
     clr.AddReference("System.Xml")
     clr.AddReference("System.Core")
+    clr.AddReference("System.Runtime.Remoting")
     
     import System
-    clr.ImportExtensions(System.Linq)
-    from System.Collections.Generic import List
+    import System.Xml
     import System.Xml.Serialization
+    clr.ImportExtensions(System.Linq)
+    clr.ImportExtensions(System.Globalization)
+    from System.Collections.Generic import List
+    from System import DateTime
+    from System.Xml import XmlConvert
+    
+    from System.Globalization import CultureInfo
+    
     
     import sys
     import uuid
@@ -108,25 +113,6 @@ if gbXMLIsReady:
 
 
 class WritegbXML(object):
-    
-    def __init__(self, location, zipCode):
-        
-        # import location
-        locationStr = _location.split('\n')
-        newLocStr = ""
-        
-        #clean the coments
-        for line in locationStr:
-            if '!' in line: newLocStr += line.split('!')[0].strip()
-            else: newLocStr += line
-        
-        newLocStr = newLocStr.replace(';', "")
-        
-        site, self.locationName, self.latitude, self.longitude, timeZone, elevation = newLocStr.split(',')
-        
-        # zipCode
-        if zipCode!=None: self.zipCode = zipCode
-        else: self.zipCode = "00000"
     
     def point3DtoMemorySafeCoord(pt3d):
         
@@ -161,18 +147,42 @@ class WritegbXML(object):
             logging.info('point3d List successfully converted to MemSafe Coord List.')
         return memsafelist
     
+    #required to count up the shades in case they are meshed
+    def getShadeCount(self,shades):
+        shdct = 0
+        for surfnum,shade in enumerate(shades):
+                
+                #coordinateList contains all the shade points for all shades
+                coordinatesList = shade.extractPoints()
+                #print coordinatesList
+                try:
+                    len(coordinatesList[0][0])
+                    print 'meshed surface'
+                    for subcount,ss in enumerate(coordinatesList):
+                        shdct+=1
+                except:
+                    shdct+=1
+        return shdct
+    
     #takes a Honeybee space, finds the floor, then finds its area
     def findZoneFloorArea(self,surfaces):
         logging.debug('Finding floor area of all surfaces.')
-        for surface in surfaces:
+        for ct,surface in enumerate(surfaces):
+            print ct, surface
             coordlist = surface.extractPoints()
-           
-            memsafelist = wgb.point3DListtoMemorySafeCoordList([coordlist])
+            
+            try:
+                memsafelist = wgb.point3DListtoMemorySafeCoordList([coordlist])
+            except:
+                memsafelist = wgb.point3DListtoMemorySafeCoordList(coordlist)
             
             normal = v.Vector.GetMemRHR(memsafelist[0])
+            print normal.X,normal.Y,normal.Z
             #get tilt
             tilt=gbx.prod.FindTilt(normal)
+            print "tilt: ",tilt
             if(tilt == 180):
+                print 'slab on grade'
                 #then we have found the floor
                 area = v.Vector.GetAreaofMemSafeCoords(memsafelist[0])
                 logging.info('Successfully found floor and calculated area.')
@@ -195,8 +205,8 @@ class WritegbXML(object):
         perps = []
         ht = 0
         wid = 0
-        print 'here'
-        print len(memsafelist)
+        
+        
         if len(memsafelist) != 4:
             return sqrnt,ht,wid
         else:
@@ -268,7 +278,7 @@ class WritegbXML(object):
                 scheduleData = sc.sticky ["honeybee_ScheduleLib"][scheduleName]
             elif scheduleName in sc.sticky ["honeybee_ScheduleTypeLimitsLib"].keys():
                 scheduleData = sc.sticky["honeybee_ScheduleTypeLimitsLib"][scheduleName]
-            print scheduleData
+            
             if scheduleData!=None:
                 numberOfLayers = len(scheduleData.keys())
                 scheduleStr = scheduleData[0] + ",\n"
@@ -332,16 +342,57 @@ class WritegbXML(object):
                         
                         yearsched = gbx.BasicSerialization.setYearScheduleArray(len(yrarr))
                         yrs.YearSchedule = yearsched
+                        yrschnames = []
+                        uniqueint=0
                         for i,y in enumerate(yrarr):
+                            #these had to be removed because dates cannot be strings
+                            #bd.val = y[1]
+                            #ed.val = y[2]
                             yrsch = gbx.YearSchedule()
                             yrs.YearSchedule[i] = yrsch
-                            yrsch.id = scheduleName.replace(" ","_")+'-2'
+                            schednm = scheduleName.replace(" ","_")+str(uniqueint)
+                            if schednm in yrschnames:
+                                uniqueint=uniqueint+1
+                                schednm = scheduleName.replace(" ","_")+str(uniqueint)
+                            yrsch.id = schednm
+                            yrschnames.append(schednm)
                             bd = gbx.BeginDate()
                             ed = gbx.EndDate()
-                            bd.val = y[1]
-                            ed.val = y[2]
-                            yrsch.BeginDate = bd
-                            yrsch.EndDate = ed
+                            begmatch = re.match(r'(\d+)(-)(\d+)',y[1])
+                            if begmatch:
+                                provider = CultureInfo.InvariantCulture
+                                
+                                month = begmatch.group(1)
+                                day = begmatch.group(3)
+                                yr = "2014"
+                                datestring = yr+"-"+month+"-"+day
+                                
+                                yrsch.BeginDate = DateTime.Parse(datestring)
+                                
+                            else:
+                                month = "12"
+                                day = "12"
+                                yr = "1900"
+                                datestring = yr+"-"+month+"-"+day
+                                
+                                yrsch.BeginDate = DateTime.Parse(datestring)
+                            endmatch = re.match(r'(\d+)(-)(\d+)',y[2])
+                            if endmatch:
+                               
+                                month = endmatch.group(1)
+                                day = endmatch.group(3)
+                                yr = "2014"
+                                datestring = yr+"-"+month+"-"+day
+                                
+                                yrsch.EndDate = DateTime.Parse(datestring)
+                            else:
+                                month = "12"
+                                day = "12"
+                                yr = "1900"
+                                datestring = yr+"-"+month+"-"+day
+                                
+                                yrsch.EndDate = DateTime.Parse(datestring)
+
                             yrsch.WeekScheduleId = y[0]
                     #this is the only type of schedule I know
                     elif (m.group(3) == "Daily"):
@@ -550,19 +601,18 @@ class WritegbXML(object):
         return gb
     
     def makeSpace(self,zone,totalarea, uniqueSched):
+        
         logging.debug('Making gb spaces from hb zones.')
         space = gbx.Space()
         space.id = "Space_"+zone.name
         space.Name = "Space_"+zone.name
         area = gbx.Area()
-        area.val = str(wgb.findZoneFloorArea(zone.surfaces))
+        floorarea = wgb.findZoneFloorArea(zone.surfaces)
+        totalarea+=floorarea
+        area.val = str(floorarea)
+        print area.val
         space.spacearea = area
         logging.info("space area = " + str(space.Area))
-        try:
-            totalarea = totalarea + wgb.findZoneFloorArea(zone.surfaces)
-        except:
-            logging.error(sys.exc_info()[0])
-            totalarea = totalarea + zone.getFloorArea()
         vol = gbx.Volume()
         vol.val = str(zone.getZoneVolume())
         space.spacevol = vol
@@ -689,12 +739,12 @@ class WritegbXML(object):
     def writelocNode(self):
         logging.debug('Writing gb location node.')
         loc = gbx.Location()
+        locname = rhinolocation.Split()[0] + rhinolocation.Split()[1]
         
-        loc.Name= self.locationName
-        loc.Latitude= self.latitude
-        loc.Longitude= self.longitude
-        
-        loc.ZipcodeOrPostalCode = self.zipCode
+        loc.Name= locname
+        loc.Latitude=rhinolocation.Split()[2]
+        loc.Longitude=rhinolocation.Split()[3]
+        loc.ZipcodeOrPostalCode = rhinolocation.Split()[4]
         logging.info('location node written successfully')
         return loc
         
@@ -795,9 +845,9 @@ class WritegbXML(object):
         logging.debug('Writing gb surfaces.')
         cmp.Surface = gbx.BasicSerialization.defSurfaceArray(tsc)
         print  'writing surfaces'
-        print str(tsc)
+      
         gbxmlSpaces = cmp.Buildings[0].Spaces
-        print len(gbxmlSpaces)
+        
         surfnum = 0
         for space in gbxmlSpaces:
             sbcount = 0
@@ -814,7 +864,7 @@ class WritegbXML(object):
                     #unwrap the meshed surfaces to get a list of each on
                     len(coordinatesList[0][0])
                     logging.info("this honeybee surface is a meshed surface.")
-                    subsurfaces = []
+
                     for subcount,ss in enumerate(coordinatesList):
                         surface = gbx.Surface()
                         surface.id = space.spbound[sbcount].surfaceIdRef
@@ -963,9 +1013,7 @@ class WritegbXML(object):
                     
                     #get the azimuth and tilt and assign the construction yourself
                     #this is a hack to get around honeybee's nested surface
-                    print hbsurface.type
                     surface.surfaceType = wgb.mapSurfaceTypes(hbsurface.type)
-
                     surface.constructionIdRef = "OpenStudio_"+hbsurface.construction.replace(" ","_")
                     usedconstructions.append(hbsurface.construction)
                     surface.Name = hbsurface.name
@@ -974,6 +1022,7 @@ class WritegbXML(object):
                     parentname = hbsurface.parent.name
                     try: 
                         neighborparentname = hbsurface.BCObject.parent.name
+                        print neighborparentname
                         adjSpaces = gbx.BasicSerialization.defAdjSpID(2)
                         adjSp1 = gbx.AdjacentSpaceId()
                         adjSp1.spaceIdRef = "Space_"+parentname
@@ -982,6 +1031,8 @@ class WritegbXML(object):
                         adjSp2.spaceIdRef = "Space_"+neighborparentname
                         adjSpaces[1] = adjSp2
                         surface.AdjacentSpaceId = adjSpaces
+                        if hbsurface.type == 0:
+                            surface.surfaceType = gbx.surfaceTypeEnum.InteriorWall
                     except:
                         neighborparentname = str.Empty
                         adjSpaces = gbx.BasicSerialization.defAdjSpID(1)
@@ -1028,74 +1079,134 @@ class WritegbXML(object):
                     #this should only occur if the surface is totaly new (bad idea)
                     CAD.id = str(uuid.uuid4())
                     surface.CADObjectId = CAD
-                    print 'making surface:'
-                    print str(surfnum)
+
                     cmp.Surface[surfnum] = surface
                     sbcount += 1
                     surfnum += 1
         #write shading devices
-        
+        print 'transition to shades', len(cmp.Surface), surfnum
         cmp.Surface = wgb.makeShdSurface(HBContext,cmp.Surface, surfnum)
         logging.info('Making surfaces completed.')
         return cmp,usedconstructions,usedopening
         
     def makeShdSurface(self, shades, surfaceList,index):
+        print 'making shades', shades
         logging.debug('Making shading surfaces.')
+        #this has to be here because I may have to make both meshed and unmeshed shadings
+        totalcount = 0+index
         for surfnum,shade in enumerate(shades):
             surfnum = surfnum+index
-            #assume unmeshed
-            surface = gbx.Surface()
+            #coordinateList contains all the shade points for all shades
             coordinatesList = shade.extractPoints()
-            surface.id = "su-"+str(surfnum)
-            #by convention, added by MR Jan 20 2014
-            LLeft = coordinatesList[0]
-            
-            memsafelist = wgb.point3DListtoMemorySafeCoordList([coordinatesList])
-            normal = v.Vector.GetMemRHR(memsafelist[0])
-            #get tilt
-            tilt=gbx.prod.FindTilt(normal)
-            #assign lower left, no special intelligence
-            cp = gbx.CartesianPoint()
-            cp = wgb.makegbCartesianPt(LLeft)
-            normarr = []
-            normarr.append(normal.X)
-            normarr.append(normal.Y)
-            normarr.append(normal.Z)
-            #get the azimuth and tilt and assign the construction yourself
-            #this is a hack to get around honeybee's nested surface
-            surface.surfaceType = wgb.mapSurfaceTypes(shade.type)
-            surface.Name = shade.name
-            rg = gbx.RectangularGeometry()
-            #get azimuth
-            #need to add something for CADModel Azimuth eventually
-            az = gbx.prod.FindAzimuth(normal)
-            rg.Azimuth = '%.6f' % az
-            #set the rg to the found cp
-            rg.CartesianPoint = cp
-            rg.Tilt = '%.6f' % tilt
-            #add code to check for normal quads before making this simplification
-            #get width
-            area = v.Vector.GetAreaofMemSafeCoords(memsafelist[0])
-            sqrnt,height,wid = wgb.isItSquare(memsafelist[0])
-            if (sqrnt):
-                ht = min(height,wid)
-                width= max(height,wid)
-            else:
-                ht = 10
-                width = area/ht
-            rg.Width = '%.6f' % width
-            #get height
-            rg.Height = '%.6f' % ht
-            surface.RectangularGeometry = rg
-            pg = gbx.BasicSerialization.makegbPlanarGeom(memsafelist)
-            surface.PlanarGeometry = pg
-            CAD = gbx.CADObjectId()
-            #this should only occur if the surface is totaly new (bad idea)
-            CAD.id = str(uuid.uuid4())
-            surface.CADObjectId = CAD
-            surfaceList[surfnum] = surface
-            surfnum += 1
-            #meshed surface?
+            #print coordinatesList
+            try:
+                len(coordinatesList[0][0])
+                print 'meshed surface'
+                for subcount,ss in enumerate(coordinatesList):
+                    surface = gbx.Surface()
+                    shadeid = "su-"+str(surfnum)+"-"+str(subcount)
+                    print subcount, shadeid
+                    surface.id = shadeid
+                    memsafelist = wgb.point3DListtoMemorySafeCoordList([coordinatesList[subcount]])
+                    print memsafelist
+                    normal = v.Vector.GetMemRHR(memsafelist[0])
+                    print shadeid, normal
+                    LLeft = memsafelist[0][0]
+                    print LLeft
+                    cp = gbx.CartesianPoint()
+                    cp = wgb.makegbCartesianPt(LLeft)
+                    normarr = []
+                    normarr.append(normal.X)
+                    normarr.append(normal.Y)
+                    normarr.append(normal.Z)
+                    #get the azimuth and tilt and assign the construction yourself
+                    #this is a hack to get around honeybee's nested surface
+                    surface.surfaceType = wgb.mapSurfaceTypes(shade.type)
+                    surface.Name = shade.name
+                    rg = gbx.RectangularGeometry()
+                    #get azimuth
+                    #need to add something for CADModel Azimuth eventually
+                    az = gbx.prod.FindAzimuth(normal)
+                    rg.Azimuth = '%.6f' % az
+                    #get tilt
+                    tilt=gbx.prod.FindTilt(normal)
+                    #set the rg to the found cp
+                    rg.CartesianPoint = cp
+                    rg.Tilt = '%.6f' % tilt
+                    #add code to check for normal quads before making this simplification
+                    #get width
+                    area = v.Vector.GetAreaofMemSafeCoords(memsafelist[0])
+                    sqrnt,height,wid = wgb.isItSquare(memsafelist[0])
+                    if (sqrnt):
+                        ht = min(height,wid)
+                        width= max(height,wid)
+                    else:
+                        ht = 10
+                        width = area/ht
+                    rg.Width = '%.6f' % width
+                    #get height
+                    rg.Height = '%.6f' % ht
+                    surface.RectangularGeometry = rg
+                    pg = gbx.BasicSerialization.makegbPlanarGeom(memsafelist)
+                    surface.PlanarGeometry = pg
+                    CAD = gbx.CADObjectId()
+                    #this should only occur if the surface is totaly new (bad idea)
+                    CAD.id = str(uuid.uuid4())
+                    surface.CADObjectId = CAD
+                    surfaceList[totalcount] = surface
+                    totalcount+=1
+                    
+            except:
+                surface = gbx.Surface()
+                surface.id = "su-"+str(surfnum)
+                #by convention, added by MR Jan 20 2014
+                LLeft = coordinatesList[0]
+                
+                memsafelist = wgb.point3DListtoMemorySafeCoordList([coordinatesList])
+                normal = v.Vector.GetMemRHR(memsafelist[0])
+                #get tilt
+                tilt=gbx.prod.FindTilt(normal)
+                #assign lower left, no special intelligence
+                cp = gbx.CartesianPoint()
+                cp = wgb.makegbCartesianPt(LLeft)
+                normarr = []
+                normarr.append(normal.X)
+                normarr.append(normal.Y)
+                normarr.append(normal.Z)
+                #get the azimuth and tilt and assign the construction yourself
+                #this is a hack to get around honeybee's nested surface
+                surface.surfaceType = wgb.mapSurfaceTypes(shade.type)
+                surface.Name = shade.name
+                rg = gbx.RectangularGeometry()
+                #get azimuth
+                #need to add something for CADModel Azimuth eventually
+                az = gbx.prod.FindAzimuth(normal)
+                rg.Azimuth = '%.6f' % az
+                #set the rg to the found cp
+                rg.CartesianPoint = cp
+                rg.Tilt = '%.6f' % tilt
+                #get width
+                area = v.Vector.GetAreaofMemSafeCoords(memsafelist[0])
+                sqrnt,height,wid = wgb.isItSquare(memsafelist[0])
+                if (sqrnt):
+                    ht = min(height,wid)
+                    width= max(height,wid)
+                else:
+                    ht = 10
+                    width = area/ht
+                rg.Width = '%.6f' % width
+                #get height
+                rg.Height = '%.6f' % ht
+                surface.RectangularGeometry = rg
+                pg = gbx.BasicSerialization.makegbPlanarGeom(memsafelist)
+                surface.PlanarGeometry = pg
+                CAD = gbx.CADObjectId()
+                #this should only occur if the surface is totaly new (bad idea)
+                CAD.id = str(uuid.uuid4())
+                surface.CADObjectId = CAD
+                surfaceList[totalcount] = surface
+                totalcount+=1
+                
         return surfaceList
 
 
@@ -1143,8 +1254,7 @@ class WritegbXML(object):
             wrg.Tilt = '%.6f' % deftilt
             warea = window.getTotalArea()
             logging.info("Window area is: " + str(warea))
-            print 'wind'
-            print wmemsafelist[0]
+
             sqrnt,height,wid = wgb.isItSquare(wmemsafelist[0])
             if (sqrnt):
                 ht = min(height,wid)
@@ -1260,12 +1370,15 @@ class WritegbXML(object):
             #this can be updated
             while(layercount< len(HBConstructions[const])):
                 #don't add layers if there the construction is a window
-                layerid = 'layer_'+str(constcount)+'_'+(HBConstructions[const][layercount][1]).replace(' ','_')
-                HBLayer = HBConstructions[const][layercount][0]
+                #don't change name if the layer already has "HBlayer in it)
+                matchObj = re.match( r'(HBlayer_)(.*)', HBConstructions[const][layercount][1])
+                if not matchObj:
+                    layerid = 'HBlayer_'+str(constcount)+'_'+(HBConstructions[const][layercount][1]).replace(' ','_')
+                    HBLayer = HBConstructions[const][layercount][0]
                 
                 if(uniquelayers.has_key(HBLayer)):
                     layer = gbx.LayerId();
-                    layer.layerIdRef = 'layer_'+uniquelayers[HBLayer].replace(' ','_')
+                    layer.layerIdRef = uniquelayers[HBLayer].replace(' ','_')
                     gblayerids[layercount-1] = layer
                     layercount+=1
                 else:
@@ -1530,7 +1643,7 @@ class WritegbXML(object):
                         #go ahead and define the gap for this windowtype
                         gbgap = gbx.Gap()
                         gbgap.id = "honeybeegap_"+str(len(uniquegaps))
-                        gbgap.Gas = gbx.gasTypeEnum.Air
+                        gbgap.gas = gbx.gasTypeEnum.Air
                         tk = gbx.Thickness()
                         gbgap.Thickness = tk
                         #this call is based on Honeybee's inherent structure
@@ -1544,19 +1657,21 @@ class WritegbXML(object):
                             gaplayerct+=1
                             
         gb.WindowTypes = gbWindowType
+    
 
 
-if gbXMLIsReady and _location and _writegbXML:
+if gbXMLIsReady and _writegbXML:
     try:
+        
         #instantiate gbXML object
-        wgb = WritegbXML(_location, zipCode_)
+        wgb = WritegbXML()
         logging.debug('calling the honeybee hive.')
         if (sc.sticky["honeybee_release"] and sc.sticky.has_key("honeybee_materialLib")):
             hb_hive = sc.sticky["honeybee_Hive"]()
             HBZones = hb_hive.callFromHoneybeeHive(_HBZones)
-            if HBContext_ and HBContext_[0]!=None:
+            if HBContext and HBContext[0]!=None:
                 # call the objects from the lib
-                HBContext = hb_hive.callFromHoneybeeHive(HBContext_)
+                HBContext = hb_hive.callFromHoneybeeHive(HBContext)
             else:
                 HBContext = []
                 
@@ -1594,7 +1709,7 @@ if gbXMLIsReady and _location and _writegbXML:
             cmp.Buildings[bcount] = gbx.BasicSerialization.MakeBuilding(building,bldname,t)
             #make the levels (optional - we skip it)
             cmp.Buildings[bcount].Spaces = gbx.prod.makeSpaceArray(len(HBZones))
-            #this is the total area of all spaces
+            #this is the total area of all spaces, to be applied elsewhere
             totalarea = 0
             uniqueSched = []
             for zonecounter, zone in enumerate(HBZones):
@@ -1604,6 +1719,7 @@ if gbXMLIsReady and _location and _writegbXML:
                 
                 # create a space, calculate total area, find all unique schedules
                 space,totalarea,uniqueSched = wgb.makeSpace(zone,totalarea, uniqueSched)
+                
                 space = wgb.writeShellGeo(zone.surfaces, space)
                 cid = gbx.CADObjectId()
                 cid.id = str(uuid.uuid4())
@@ -1616,8 +1732,11 @@ if gbXMLIsReady and _location and _writegbXML:
         #createsurface elements, keep track of all constructions and openings
         usedconstructions = []
         usedopening = {}
-        #surfaces include shading surfaces
-        totsurfct = len(HBsurfaces) + len(HBContext)
+        #whether surfaces are meshed or not has already been determined
+        print HBContext
+        shadecount = wgb.getShadeCount(HBContext)
+        print "number of shades", shadecount
+        totsurfct = len(HBsurfaces) + shadecount
         cmp,usedconstructions,usedopening = wgb.writeSurfaces(cmp,HBsurfaces,uniquesurfcount,usedconstructions,usedopening, totsurfct)
 
         #write only unique constructions and openings
@@ -1685,7 +1804,6 @@ if gbXMLIsReady and _location and _writegbXML:
                         wct += 1
                         print wct, schedule
                     elif m.group(3) == "Interval":
-                        
                         gb = wgb.EPSCHStr(gb, schedule, dct,wknms)
                         dct += 1
 
