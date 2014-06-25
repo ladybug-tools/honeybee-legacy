@@ -9,6 +9,10 @@ Grizzlybear exports Honeybee zones to gbXML file
 Provided by Honeybee 0.0.53
 
     Args:
+        EquipRange: reserved for future use
+        LPDRange: reserved for future use
+        bldgType: reserved for future use
+        epwFileAddress: location of the EnergyPlus weather file
         rhinolocation: will be replaced with LadyBug location
         _HBZones: Input your honeybee zones
         HBContext: Input your honeybee context
@@ -249,22 +253,48 @@ class WritegbXML(object):
         sg = gbx.ShellGeometry()
         sg.unit = gbx.lengthUnitEnum.Meters
         sg.id = "sg"+space.Name
+        print sg.id
         #make closed shell
         cs = gbx.ClosedShell()
-        cs.PolyLoops = gbx.prod.makePolyLoopArray(len(surfaces))
         #put polyloops in closed shell
+        totsurfcount = 0
+        totsurfaces=[]
         for surfcount, surface in enumerate(surfaces):
             #get list of point for the surface from the HoneyBee Surface
             coordinatesList = surface.extractPoints()
+            
             if not isinstance(coordinatesList[0], list) and not isinstance(coordinatesList[0], tuple):
-                    coordinatesList = [coordinatesList]
+                #not meshed
+                coordinatesList = [coordinatesList]
+                totsurfcount+=1
+                totsurfaces.append(coordinatesList)
+                #print "notmeshed"
+                #print coordinatesList
+            else:
+                #meshed
+                #print 'meshed'
+                totsurfcount+=len(coordinatesList)
+                for c in coordinatesList:
+                    totsurfaces.append(c)
+                #print len(coordinatesList)
+        #print totsurfcount
+        #print len(totsurfaces)
+        cs.PolyLoops = gbx.prod.makePolyLoopArray(totsurfcount)
+        for plcount, allsurf in enumerate(totsurfaces):
+            #get list of point for the surface from the HoneyBee Surface
+            coordinatesList = allsurf
+            print coordinatesList
+            if not isinstance(coordinatesList[0], list) and not isinstance(coordinatesList[0], tuple):
+                coordinatesList = [coordinatesList]
             for count, coordinates in enumerate(coordinatesList):
-
-                cs.PolyLoops[surfcount].Points = gbx.BasicSerialization.makeCartesianPtArray(len(coordinates));
+                #print "coords",coordinates
+                cs.PolyLoops[plcount].Points = gbx.BasicSerialization.makeCartesianPtArray(len(coordinates));
                 for ptcount,pt in enumerate(coordinates):
+                    #print pt
                     cp = wgb.makegbCartesianPt(pt)
                     #for the list holding all surface polyloops, 1 point = cp
-                    cs.PolyLoops[surfcount].Points[ptcount] = cp
+                    cs.PolyLoops[plcount].Points[ptcount] = cp
+            
         sg.ClosedShell = cs
         space.ShellGeo = sg
         logging.debug('Successfully created shell geometry for space.'+sg.id)
@@ -847,7 +877,7 @@ class WritegbXML(object):
         print  'writing surfaces'
       
         gbxmlSpaces = cmp.Buildings[0].Spaces
-        
+        openingct = 0
         surfnum = 0
         for space in gbxmlSpaces:
             sbcount = 0
@@ -962,7 +992,8 @@ class WritegbXML(object):
                         #this will need a new special treatment when I figure it out
                         if hbsurface.hasChild:
                             hbwindows = hbsurface.childSrfs                            
-                            gbopenings,usedopening = wgb.makegbOpening(hbwindows,hbsurface.name, usedopening)
+                            gbopenings,usedopening = wgb.makegbOpening(hbwindows,hbsurface.name, usedopening,openingct)
+                            openingct+=1
                             surface.Opening = gbopenings
                             
                         CAD = gbx.CADObjectId()
@@ -1072,7 +1103,8 @@ class WritegbXML(object):
                         logging.debug("Making glazing surfaces.")
                         hbwindows = hbsurface.childSrfs    
                         
-                        gbopenings,usedopening = wgb.makegbOpening(hbwindows,hbsurface.name, usedopening)
+                        gbopenings,usedopening = wgb.makegbOpening(hbwindows,hbsurface.name, usedopening,openingct)
+                        openingct+1
                         surface.Opening = gbopenings
                         
                     CAD = gbx.CADObjectId()
@@ -1210,7 +1242,7 @@ class WritegbXML(object):
         return surfaceList
 
 
-    def makegbOpening(self,hbwindows,parentsurfacename,usedopening):
+    def makegbOpening(self,hbwindows,parentsurfacename,usedopening,openingct):
         logging.debug('Making gb openings from hb openings.')
         gbopenings = gbx.BasicSerialization.defOpeningsArr(len(hbwindows))
         defaz = 0
@@ -1222,7 +1254,7 @@ class WritegbXML(object):
         for count,window in enumerate(hbwindows):
             gbopen = gbx.Opening() 
             #do all naming 
-            gbopen.id = "OpenStudio_"+window.name.replace(' ','_')
+            gbopen.id = "OpenStudio_"+window.name.replace(' ','_')+str(openingct)
             usedopening[window.name] = window.construction
           
             opCoordsList = window.extractPoints()
