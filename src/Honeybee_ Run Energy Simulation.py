@@ -8,7 +8,7 @@ export geometries to idf file, and run the energy simulation
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.53\nJUN_21_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUN_25_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -38,121 +38,62 @@ class WriteIDF(object):
         '\t' + `zone.origin.Z` + ',\t!- Z Origin {m}\n' + \
         '\t1;\t!- Type\n'
     
-    def EPZoneSurface (self, surface, namingMethod = 0, coordinatesList = False):
-        if not coordinatesList: coordinatesList = surface.extractPoints()
-        if namingMethod == 1:
-            # these walls are only there as parent surfaces for nonplanar glazing surfaces
-            srfNaming = 'count_for_glazing'
-        elif type(coordinatesList[0])is not list and type(coordinatesList[0]) is not tuple:
-            coordinatesList = [coordinatesList]
-            srfNaming = 'no_counting'
-        else:
-            srfNaming = 'counting'
+    def EPZoneSurface (self, surface):
         
-        fullString = ''
-        for count, coordinates in enumerate(coordinatesList):
-            if srfNaming == 'count_for_glazing': surfaceName = surface.name + '_glzP_' + `count`
-            elif srfNaming == 'counting': surfaceName = surface.name + '_' + `count`
-            elif srfNaming == 'no_counting': surfaceName = surface.name
-            
-            str_1 = '\nBuildingSurface:Detailed,\n' + \
-                '\t' + surfaceName + ',\t!- Name\n' + \
-                '\t' + surface.srfType[int(surface.type)] + ',\t!- Surface Type\n' + \
-                '\t' + surface.construction + ',\t!- Construction Name\n' + \
-                '\t' + surface.parent.name + ',\t!- Zone Name\n' + \
-                '\t' + surface.BC + ',\t!- Outside Boundary Condition\n' + \
-                '\t' + surface.BCObject.name + ',\t!- Outside Boundary Condition Object\n' + \
-                '\t' + surface.sunExposure + ',\t!- Sun Exposure\n' + \
-                '\t' + surface.windExposure + ',\t!- Wind Exposure\n' + \
-                '\t' + surface.groundViewFactor + ',\t!- View Factor to Ground\n' + \
-                '\t' + `len(coordinates)` + ',\t!- Number of Vertices\n'
+        coordinates = surface.coordinates
+        str_1 = '\nBuildingSurface:Detailed,\n' + \
+            '\t' + surface.name + ',\t!- Name\n' + \
+            '\t' + surface.srfType[int(surface.type)] + ',\t!- Surface Type\n' + \
+            '\t' + surface.construction + ',\t!- Construction Name\n' + \
+            '\t' + surface.parent.name + ',\t!- Zone Name\n' + \
+            '\t' + surface.BC + ',\t!- Outside Boundary Condition\n' + \
+            '\t' + surface.BCObject.name + ',\t!- Outside Boundary Condition Object\n' + \
+            '\t' + surface.sunExposure + ',\t!- Sun Exposure\n' + \
+            '\t' + surface.windExposure + ',\t!- Wind Exposure\n' + \
+            '\t' + surface.groundViewFactor + ',\t!- View Factor to Ground\n' + \
+            '\t' + `len(coordinates)` + ',\t!- Number of Vertices\n'
+    
+        str_2 = '\t';
         
-            str_2 = '\t';
-            
-            for ptCount, pt in enumerate(coordinates):
-                if ptCount < len (coordinates) - 1:
-                    str_2 = str_2 + `pt.X` + ',\n\t' + `pt.Y` + ',\n\t' + `pt.Z` + ',\n\t'
-                else:
-                    str_2 = str_2 + `pt.X` + ',\n\t' + `pt.Y` + ',\n\t' + `pt.Z` + ';\n\n'
-            fullString = fullString + str_1 + str_2
+        for ptCount, pt in enumerate(coordinates):
+            if ptCount < len (coordinates) - 1:
+                str_2 = str_2 + `pt.X` + ',\n\t' + `pt.Y` + ',\n\t' + `pt.Z` + ',\n\t'
+            else:
+                str_2 = str_2 + `pt.X` + ',\n\t' + `pt.Y` + ',\n\t' + `pt.Z` + ';\n\n'
+        
+        fullString = str_1 + str_2
+        
         return fullString
     
-    def EPNonPlanarFenSurface(self, surface):
-        glzCoordinateLists = surface.extractGlzPoints()
+    def EPFenSurface (self, surface):
         
-        # generate walls string
-        parentSrfStr = self.EPZoneSurface (surface, namingMethod = 1, coordinatesList = glzCoordinateLists)
+        glzStr = ""
         
-        def averagePts(ptList):
-            pt = rc.Geometry.Point3d(0,0,0)
-            for p in ptList: pt = pt + p
-            return rc.Geometry.Point3d(pt.X/len(ptList), pt.Y/len(ptList), pt.Z/len(ptList))
-            
-        distance = 2 * sc.doc.ModelAbsoluteTolerance
-        cornerStyle = rc.Geometry.CurveOffsetCornerStyle.None
-        # offset was so slow so I changed the method to this
-        insetCoordinates = []
-        for coordinates in glzCoordinateLists:
-            pts = []
-            for pt in coordinates: pts.append(rc.Geometry.Point3d(pt.X, pt.Y, pt.Z))
-            cenPt = averagePts(pts)
-            insetPts = []
-            for pt in pts:
-                movingVector = rc.Geometry.Vector3d(cenPt-pt)
-                movingVector.Unitize()
-                newPt = rc.Geometry.Point3d.Add(pt, movingVector * 2 * sc.doc.ModelAbsoluteTolerance)
-                insetPts.append(newPt)
-            insetCoordinates.append(insetPts)
-            
-            glzStr = self.EPFenSurface (surface, parentNamingMethod = 1, glzCoordinatesList = insetCoordinates)
-        
-        return parentSrfStr + glzStr
-            
-    def EPFenSurface (self, surface, parentNamingMethod = 0, glzCoordinatesList = False):
-        if not glzCoordinatesList: glzCoordinatesList = surface.extractGlzPoints()
-        
-        fullString = ''
-        # print len(glzCoordinatesList)
-        for count, coordinates in enumerate(glzCoordinatesList):
-            if parentNamingMethod == 0:
-                try: parentSurfaceName = surface.childSrfs[count].parent.name
-                except: parentSurfaceName = surface.childSrfs[0].parent.name
-            elif parentNamingMethod == 1:
-                # print surface.childSrfs
-                try:
-                    parentSurfaceName = surface.childSrfs[count].parent.name + '_glzP_' + `count`
-                except:
-                    # this is just a fix for now! There is a problem here that the number of
-                    # surfaces doesn't match the number of coordinates!
-                    #print "fix line 126!"
-                    parentSurfaceName = surface.childSrfs[0].parent.name + '_glzP_' + `count`
-                    
-            
-            try: childSrf = surface.childSrfs[count]
-            except: childSrf = surface.childSrfs[0]
-            
+        for childSrf in surface.childSrfs:
+            glzCoordinates = childSrf.coordinates
             str_1 = '\nFenestrationSurface:Detailed,\n' + \
-                '\t' + childSrf.name + '_' + `count` + ',\t!- Name\n' + \
+                '\t' + childSrf.name + ',\t!- Name\n' + \
                 '\t' + childSrf.srfType[childSrf.type] + ',\t!- Surface Type\n' + \
                 '\t' + childSrf.construction + ',\t!- Construction Name\n' + \
-                '\t' + parentSurfaceName + ',\t!- Surface Name\n' + \
+                '\t' + childSrf.parent.name + ',\t!- Surface Name\n' + \
                 '\t' + childSrf.BCObject.name + ',\t!- Outside Boundary Condition Object\n' + \
                 '\t' + childSrf.groundViewFactor + ',\t!- View Factor to Ground\n' + \
                 '\t' + childSrf.shadingControlName + ',\t!- Shading Control Name\n' + \
                 '\t' + childSrf.frameName + ',\t!- Frame and Divider Name\n' + \
                 '\t' + `childSrf.Multiplier`+ ',\t!- Multiplier\n' + \
-                '\t' + `len(coordinates)` + ',\t!- Number of Vertices\n'
+                '\t' + `len(glzCoordinates)` + ',\t!- Number of Vertices\n'
         
             str_2 = '\t';
-            for ptCount, pt in enumerate(coordinates):
-                if ptCount < len (coordinates) - 1:
+            for ptCount, pt in enumerate(glzCoordinates):
+                if ptCount < len (glzCoordinates) - 1:
                     str_2 = str_2 + `pt.X` + ',\n\t' + `pt.Y` + ',\n\t' + `pt.Z` + ',\n\t'
                 else:
                     str_2 = str_2 + `pt.X` + ',\n\t' + `pt.Y` + ',\n\t' + `pt.Z` + ';\n\n'
             
-            fullString = fullString + str_1 + str_2
+            glzStr += str_1 + str_2
             
-        return fullString
+        return glzStr
+        
 
     def EPShdSurface (self, surface):
         coordinatesList = surface.extractPoints()
@@ -610,7 +551,9 @@ sc.sticky["honeybee_WriteIDF"] = WriteIDF
 sc.sticky["honeybee_RunIDF"] = RunIDF
 
 
-def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext, simulationOutputs, writeIdf, runEnergyPlus, workingDir, idfFileName, meshingLevel):
+def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext,
+         simulationOutputs, writeIdf, runEnergyPlus, workingDir, idfFileName,
+         meshingLevel, triangulate):
     # import the classes
     w = gh.GH_RuntimeMessageLevel.Warning
     
@@ -630,6 +573,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     hb_scheduleLib = sc.sticky["honeybee_DefaultScheduleLib"]()
     hb_writeIDF = sc.sticky["honeybee_WriteIDF"]()
     hb_runIDF = sc.sticky["honeybee_RunIDF"]()
+    hb_reEvaluateHBZones= sc.sticky["honeybee_reEvaluateHBZones"]
     hb_hive = sc.sticky["honeybee_Hive"]()
     hb_EPScheduleAUX = sc.sticky["honeybee_EPScheduleAUX"]()
     hb_EPPar = sc.sticky["honeybee_EPParameters"]()
@@ -656,7 +600,13 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     # make sure the directory has been created
     if workingDir == -1: return -1
     workingDrive = workingDir[0:1]
+        
     
+    # call the objects from the lib
+    thermalZonesPyClasses = hb_hive.callFromHoneybeeHive(HBZones)
+    
+    reEvaluate = hb_reEvaluateHBZones(thermalZonesPyClasses, meshingLevel, triangulate)
+    reEvaluate.evaluateZones()
     
     idfFileFullName = workingDir + "\\" + idfFileName
     idfFile = open(idfFileFullName, "w")
@@ -725,19 +675,15 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         
     #################  BODY #####################
     print "[3 of 6] Writing geometry..."
-    # call the objects from the lib
-    thermalZonesPyClasses = hb_hive.callFromHoneybeeHive(HBZones)
     EPConstructionsCollection = []
     EPMaterialCollection = []
     EPScheduleCollection = []
     ZoneCollectionBasedOnSchAndLoads = {} # This will be used to create zoneLists
     
+    # write idf file
     for zone in thermalZonesPyClasses:
         # Zone
         idfFile.write(hb_writeIDF.EPZone(zone))
-        
-        if zone.hasNonPlanarSrf or zone.hasInternalEdge:
-            zone.prepareNonPlanarZone(meshingLevel, isEnergyPlus= True)
         
         # get the schedule and loads for the zone
         schedules = zone.getCurrentSchedules(True)
@@ -768,6 +714,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
             
             # Surfaces
             idfFile.write(hb_writeIDF.EPZoneSurface(srf))
+            
             if srf.hasChild:
                 # check the construction
                 # this should be moved inside the function later
@@ -782,8 +729,8 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                             EPConstructionsCollection.append(childSrf.construction)
                     
                 # write the glazing strings
-                if srf.isPlanar: idfFile.write(hb_writeIDF.EPFenSurface(srf))
-                else: idfFile.write(hb_writeIDF.EPNonPlanarFenSurface(srf))
+                idfFile.write(hb_writeIDF.EPFenSurface(srf))
+                # else: idfFile.write(hb_writeIDF.EPNonPlanarFenSurface(srf))
         
     ################ Construction #####################
     print "[4 of 6] Writing materials and constructions..."
@@ -896,7 +843,7 @@ if _writeIdf == True and _epwFile and _HBZones and _HBZones[0]!=None:
     
     result = main(north_, _epwFile, _energySimPar_, _analysisPeriod_, _HBZones,
                   HBContext_, simulationOutputs_, _writeIdf, runEnergyPlus_,
-                  _workingDir_, _idfFileName_, meshingLevel_)
+                  _workingDir_, _idfFileName_, meshingLevel_, triangulate_)
     if result!= -1:
         idfFileAddress, resultFileAddress = result
         if runEnergyPlus_:

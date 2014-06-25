@@ -18,7 +18,7 @@ Provided by Honeybee 0.0.53
 """
 ghenv.Component.Name = "Honeybee_Solve Adjacencies"
 ghenv.Component.NickName = 'solveAdjc'
-ghenv.Component.Message = 'VER 0.0.53\nJUN_22_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUN_24_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -36,6 +36,7 @@ def shootIt(rayList, geometry, tol = 0.01, bounce =1):
    for ray in rayList:
         intPt = rc.Geometry.Intersect.Intersection.RayShoot(ray, geometry, bounce)
         if intPt:
+            # print ray.Position.DistanceTo(intPt[0])
             if ray.Position.DistanceTo(intPt[0]) <= tol:
                 return True #'Bang!'
 
@@ -43,6 +44,10 @@ def updateAdj(surface1, surface2, altConstruction, altBC, tol):
     # change roof to ceiling
     if surface1.type == 1: surface1.type = 3 # roof + adjacent surface = ceiling
     elif surface2.type == 1: surface2.type = 3
+    
+    
+    if surface1.type == 2.75: surface1.type = 2
+    if surface2.type == 2.75:  surface2.type = 2 
     
     # change construction
     if altConstruction == None:
@@ -122,6 +127,7 @@ def main(HBZones, altConstruction, altBC, tol, remCurrent):
         # mesh each surface and test if it will be adjacent to any surface
         # from other zones
         for srf in testZone.surfaces:
+            #print srf.type, srf.BC 
             if srf.BC.upper() == 'OUTDOORS':
                 #Create a mesh of surface to use center points as test points
                 meshPar = rc.Geometry.MeshingParameters.Default
@@ -136,6 +142,8 @@ def main(HBZones, altConstruction, altBC, tol, remCurrent):
                 for faceIndex in range(BrepMesh.Faces.Count):
                     srfNormal = (BrepMesh.FaceNormals)[faceIndex]
                     meshSrfCen = BrepMesh.Faces.GetFaceCenter(faceIndex)
+                    # move testPt backward for half of tolerance
+                    meshSrfCen = rc.Geometry.Point3d.Add(meshSrfCen, -rc.Geometry.Vector3d(srfNormal)*tol/2)
                     
                     raysDict[meshSrfCen] = rc.Geometry.Ray3d(meshSrfCen, srfNormal)
                 

@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.53\nJUN_21_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUN_23_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1123,7 +1123,6 @@ class materialLibrary(object):
                    2: 'RESIDENTIAL_SCH',
                    3: 'HOTEL_SCH'}
                    
-            
 
 class scheduleLibrary(object):
     
@@ -2015,17 +2014,20 @@ class EPZone(object):
         # mesh the geometry
         if meshingLevel == 0: mp = rc.Geometry.MeshingParameters.Default; disFactor = 3
         if meshingLevel == 1: mp = rc.Geometry.MeshingParameters.Smooth; disFactor = 1
-        if isEnergyPlus:
-            mp.JaggedSeams = True
+        #if isEnergyPlus:
+        #    mp.JaggedSeams = True
         
         meshedGeo = rc.Geometry.Mesh.CreateFromBrep(joinedBrep, mp)
         
         for mesh in meshedGeo:
-            if isEnergyPlus:
-                angleTol = sc.doc.ModelAngleToleranceRadians
-                minDiagonalRatio = .875
-                #print mesh.Faces.ConvertTrianglesToQuads(angleTol, minDiagonalRatio)
-                mesh.Faces.ConvertTrianglesToQuads(angleTol, minDiagonalRatio)
+            # if isEnergyPlus:
+            #     angleTol = sc.doc.ModelAngleToleranceRadians
+            #     minDiagonalRatio = .875
+            #     #print mesh.Faces.ConvertTrianglesToQuads(angleTol, minDiagonalRatio)
+            #     mesh.Faces.ConvertTrianglesToQuads(angleTol, minDiagonalRatio)
+            # else:
+            #     mesh.Faces.ConvertQuadsToTriangles()
+            
             mesh.FaceNormals.ComputeFaceNormals()
             #mesh.FaceNormals.UnitizeFaceNormals()
         
@@ -2094,6 +2096,364 @@ class EPZone(object):
                '\n# of surfaces: ' + `len(self.surfaces)` + \
                '\n-------------------------------------'
 
+class hb_reEvaluateHBZones(object):
+    """
+    This class check Honeybee zones once more and zones with nonplanar surfaces
+    or non-rectangualr glazings recreates the surfaces so the output zones will
+    be all zones with planar surfaces, and they can be exported with two functions
+    for planar EPSurfaces and planar fenestration.
+    
+    It also assigns the right boundary condition object to each sub surface
+    and checks duplicate names for zones and surfaces and give a warning
+    to user to get them fixed.
+    """
+    
+    def __init__(self, inHBZones, meshingLevel, triangulate):
+        # import the classes
+        self.hb_EPZone = sc.sticky["honeybee_EPZone"]
+        self.hb_EPSrf = sc.sticky["honeybee_EPSurface"]
+        self.hb_EPZoneSurface = sc.sticky["honeybee_EPZoneSurface"]
+        self.hb_EPFenSurface = sc.sticky["honeybee_EPFenSurface"]
+        
+        self.fakeSurface = rc.Geometry.Brep.CreateFromCornerPoints(
+                                            rc.Geometry.Point3d(0,0.5,0),
+                                            rc.Geometry.Point3d(-0.5,-0.5,0),
+                                            rc.Geometry.Point3d(0.5,-0.5,0),
+                                            sc.doc.ModelAbsoluteTolerance)
+        self.originalHBZones = inHBZones
+        self.meshingLevel = meshingLevel
+        self.triangulate = triangulate
+        self.zoneNames = []
+        self.srfNames = []
+        self.modifiedSrfsNames= []
+        self.modifiedGlzSrfsNames = []
+        self.adjcGlzSrfCollection = []
+        self.adjcSrfCollection = {} #collect adjacent surfaces for nonplanar surfaces
+    
+    def checkSrfNameDuplication(self, surface):
+        if surface.name in self.srfNames:
+                warning = "Duplicate surface name!"
+                print warning
+                # return -1
+        else:
+            self.srfNames.append(surface.name)            
+        
+        if not surface.isChild and surface.hasChild:
+            for child in surface.childSrfs:
+                self.checkSrfNameDuplication(child)
+                    
+    def checkNameDuplication(self, HBZone):
+        
+        if HBZone.name in self.zoneNames:
+            warning = "Duplicate zone name!"
+            print warning
+            # return -1
+        else:
+            self.zoneNames.append(HBZone.name)            
+        
+        for surface in HBZone.surfaces:
+            self.checkSrfNameDuplication(surface)
+    
+    def prepareNonPlanarZones(self, HBZone):
+        # prepare nonplanar zones
+        if  HBZone.hasNonPlanarSrf or  HBZone.hasInternalEdge:
+             HBZone.prepareNonPlanarZone(self.meshingLevel, isEnergyPlus= not self.triangulate)
+    
+    
+    def createSurface(self, pts):
+        """
+        # it takes so long if I generate the geometry
+        
+        if len(pts) == 3:
+            return rc.Geometry.Brep.CreateFromCornerPoints(pts[0], pts[1], pts[2], sc.doc.ModelAbsoluteTolerance)
+        elif len(pts) == 4:
+            return rc.Geometry.Brep.CreateFromCornerPoints(pts[0], pts[1], pts[2], pts[3], sc.doc.ModelAbsoluteTolerance)
+        else:
+            # create a planar surface
+            pts.append(pts[0])
+            pl = rc.Geometry.Polyline(pts).ToNurbsCurve()
+            return rc.Geometry.Brep.CreatePlanarBreps([pl])[0]
+        """
+        return self.fakeSurface
+        
+    def evaluateZones(self):
+        for HBZone in self.originalHBZones:
+            self.checkNameDuplication(HBZone)
+            self.prepareNonPlanarZones(HBZone)
+            
+            modifiedSurfaces = []
+            for surface in HBZone.surfaces:
+                try: modifiedSurfaces.extend(self.checkZoneSurface(surface))
+                except: modifiedSurfaces.append(self.checkZoneSurface(surface))
+            
+            # replace surfaces with new ones
+            HBZone.surfaces = []
+            for HBSrf in modifiedSurfaces:
+                HBZone.surfaces.append(HBSrf)
+    
+    def createSubSurfaceFromBaseSrf(self, surface, newSurfaceName, count, coordinates, glazingBase = False, nameAddition = None):
+        
+        # pass the wrong geometry for now. I assume creating planar surface from
+        # coordinates will be computationally heavy and at this point geometry doesn't
+        # matter, since I have the coordinates.
+        newSurface = self.hb_EPZoneSurface(self.createSurface(coordinates),
+                                           count, newSurfaceName, surface.parent, surface.type)
+        newSurface.coordinates = coordinates
+        newSurface.type = surface.type # protect the surface from reEvaluate
+        newSurface.construction = surface.construction
+        newSurface.BC = surface.BC
+        newSurface.sunExposure = surface.sunExposure
+        newSurface.windExposure = surface.windExposure
+        newSurface.groundViewFactor = surface.groundViewFactor
+        
+        if surface.BC.upper() == 'SURFACE':
+            adjcSurface = surface.BCObject
+            
+            if not glazingBase:
+                newAdjcSurfaceName = adjcSurface.name + "_" + `count`
+            else:
+                newAdjcSurfaceName = adjcSurface.name + nameAddition
+            
+            newAdjcSurface = self.hb_EPZoneSurface(self.createSurface(coordinates),
+                                           count, newAdjcSurfaceName, adjcSurface.parent, adjcSurface.type)
+            # reverse the order of points
+            restOfcoordinates = coordinates[1:]
+            restOfcoordinates.reverse()
+            newAdjcSurface.coordinates = [coordinates[0]] + restOfcoordinates
+            newAdjcSurface.type = adjcSurface.type
+            newAdjcSurface.construction = adjcSurface.construction
+            newAdjcSurface.BC = adjcSurface.BC
+            newAdjcSurface.sunExposure = adjcSurface.sunExposure
+            newAdjcSurface.windExposure = adjcSurface.windExposure
+            newAdjcSurface.groundViewFactor = adjcSurface.groundViewFactor
+        
+            # assign boundary objects
+            newSurface.BCObject = newAdjcSurface
+            newAdjcSurface.BCObject = newSurface
+            
+            self.adjcSrfCollection[adjcSurface.name].append(newAdjcSurface)
+            
+        return newSurface
+    
+    def createSubGlzSurfaceFromBaseSrf(self, baseChildSurface, parentSurface, glzSurfaceName, count, coordinates):
+        
+        newFenSrf = self.hb_EPFenSurface(self.createSurface(coordinates),
+                                    count, glzSurfaceName, parentSurface, 5, punchedWall = None)
+        
+        newFenSrf.coordinates = coordinates
+        newFenSrf.type = baseChildSurface.type
+        newFenSrf.construction = baseChildSurface.construction
+        newFenSrf.parent = parentSurface
+        newFenSrf.groundViewFactor = baseChildSurface.groundViewFactor
+        newFenSrf.shadingControlName = baseChildSurface.shadingControlName
+        newFenSrf.frameName = baseChildSurface.frameName
+        newFenSrf.Multiplier = baseChildSurface.Multiplier
+        
+        # Will be overwritten later if needed
+        newFenSrf.BCObject = baseChildSurface.BCObject
+        newFenSrf.BCObject = baseChildSurface.BCObject
+        
+        return newFenSrf
+        
+    def getInsetGlazingCoordinates(self, glzCoordinates):
+        # find the coordinates
+        def averagePts(ptList):
+            pt = rc.Geometry.Point3d(0,0,0)
+            for p in ptList: pt = pt + p
+            return rc.Geometry.Point3d(pt.X/len(ptList), pt.Y/len(ptList), pt.Z/len(ptList))
+            
+        distance = 2 * sc.doc.ModelAbsoluteTolerance
+        # offset was so slow so I changed the method to this
+        pts = []
+        for pt in glzCoordinates:
+            pts.append(rc.Geometry.Point3d(pt.X, pt.Y, pt.Z))
+        cenPt = averagePts(pts)
+        insetPts = []
+        for pt in pts:
+            movingVector = rc.Geometry.Vector3d(cenPt-pt)
+            movingVector.Unitize()
+            newPt = rc.Geometry.Point3d.Add(pt, movingVector * 2 * sc.doc.ModelAbsoluteTolerance)
+            insetPts.append(newPt)
+        
+        return insetPts
+            
+    def checkChildSurfaces(self, surface):
+        
+        def isRectangle(ptList):
+            if ptList[0].DistanceTo(ptList[2]) == ptList[1].DistanceTo(ptList[3]):
+                return True
+            else:
+                return False
+        
+        # print "checking child surfaces for " + surface.name
+        glzCoordinates = surface.extractGlzPoints()
+        if surface.isPlanar:
+            for child, coordinates in zip(surface.childSrfs, glzCoordinates):
+                if not hasattr(coordinates[0], '__iter__'):
+                    # single geometry - All should be fine
+                    # also the adjacent surface will be fine by itself
+                    child.coordinates = coordinates
+                    self.modifiedGlzSrfsNames.append(child.name)                        
+                else:
+                    # planar but multiple
+                    for count, glzCoordinates in enumerate(coordinates):
+                        
+                        glzSurfaceName = "glzSrf_" + `count` + "_" + surface.name
+                        
+                        HBGlzSrf = self.createSubGlzSurfaceFromBaseSrf(surface.childSrfs[0], surface, glzSurfaceName, count, glzCoordinates)
+                        
+                        if surface.BC.upper() == 'SURFACE':
+                            # add glazing to adjacent surface
+                            if count == 0:
+                                adjcSrf = surface.BCObject
+                                adjcSrf.childSrfs = []
+                            
+                            # add glazing to adjacent surface
+                            adjcSrf = surface.BCObject
+                            glzAdjcSrfName = "glzSrf_" + `count` + "_" + adjcSrf.name
+                                
+                            adjcGlzPt = glzCoordinates[1:]
+                            adjcGlzPt.reverse()
+                            adjcGlzPt = [glzCoordinates[0]] + adjcGlzPt
+
+                            adjHBGlzSrf = self.createSubGlzSurfaceFromBaseSrf(surface.childSrfs[0], adjcSrf, glzAdjcSrfName, count, adjcGlzPt)
+                            
+                            # overwrite BC Object
+                            adjHBGlzSrf.BCObject = HBGlzSrf
+                            HBGlzSrf.BCObject = adjHBGlzSrf
+                            
+                            adjcSrf.addChildSrf(adjHBGlzSrf)
+                            
+                        # add to parent surface
+                        surface.addChildSrf(HBGlzSrf)
+        else:
+            
+            # convert nonplanar surface to planar wall surfaces with offset glazing
+            # and treat them similar to other surfaces except the fact that if it has
+            # another surface next to it the surface should be generated regardless of
+            # being single geometry or not
+            newSurfaces =[]
+            count = 0
+            baseChildSrf = surface.childSrfs[0]
+            
+                
+            for count, glzCoordinate in enumerate(glzCoordinates):
+                # check if the points are recetangle
+                if len(glzCoordinate) == 3 or isRectangle(glzCoordinate):
+                    insetGlzCoordinates = [glzCoordinate]
+                else:
+                    # triangulate
+                    insetGlzCoordinates = [glzCoordinate[:3], [glzCoordinate[0],glzCoordinate[2],glzCoordinate[3]]]
+                
+                for glzCount, insetGlzCoordinate in enumerate(insetGlzCoordinates):
+                    
+                    # self.modifiedGlzSrfsNames.append(child.name)
+                    # create new Honeybee surfaces as parent surface for glass face
+                    if len(insetGlzCoordinates) == 1:
+                        newSurfaceName = surface.name + '_glzP_' + `count`
+                    else:
+                        newSurfaceName = surface.name + '_glzP_' + `count` + '_' + `glzCount`
+                        
+                    newSurface = self.createSubSurfaceFromBaseSrf(surface, newSurfaceName, count, insetGlzCoordinate, glazingBase = True, nameAddition = '_glzP_' + `count` + '_' + `glzCount`)
+                    
+                    # collect them here so it will have potential new BC
+                    newSurfaces.append(newSurface)
+                    
+                    # create glazing coordinate and add it to the parent surface
+                    insetPts = self.getInsetGlazingCoordinates(insetGlzCoordinate)
+
+                    # create new window and go for it
+                    glzSurfaceName = "glzSrf_" + `count` + "_" + newSurface.name
+                    
+                    HBGlzSrf = self.createSubGlzSurfaceFromBaseSrf(baseChildSrf, newSurface, glzSurfaceName, count, insetPts)
+                    
+                    if surface.BC.upper() == 'SURFACE':
+                        # add glazing to adjacent surface
+                        if count == 0:
+                            adjcSrf = newSurface.BCObject
+                            adjcSrf.childSrfs = []
+                        
+                        # add glazing to adjacent surface
+                        adjcSrf = newSurface.BCObject
+                        glzAdjcSrfName = "glzSrf_" + `count` + "_" + adjcSrf.name
+                            
+                        adjcGlzPt = insetPts[1:]
+                        adjcGlzPt.reverse()
+                        adjcGlzPt = [insetPts[0]] + adjcGlzPt
+
+                        adjHBGlzSrf = self.createSubGlzSurfaceFromBaseSrf(baseChildSrf, adjcSrf, glzAdjcSrfName, count, adjcGlzPt)
+                        
+                        # overwrite BC Object
+                        adjHBGlzSrf.BCObject = HBGlzSrf
+                        HBGlzSrf.BCObject = adjHBGlzSrf
+                        
+                        adjcSrf.addChildSrf(adjHBGlzSrf)
+                        
+                    # add to parent surface
+                    newSurface.addChildSrf(HBGlzSrf)                        
+            
+            return newSurfaces
+        
+    def checkZoneSurface(self, surface):
+        if not hasattr(surface, 'coordinates'):
+            coordinatesL = surface.extractPoints()
+        else:
+            coordinatesL = surface.coordinates
+        
+        # case 0 : it is a planar surface so it is all fine
+        if not hasattr(coordinatesL[0], '__iter__'):
+            # it is a single surface so just let it go to the modified list
+            surface.coordinates = coordinatesL
+            self.modifiedSrfsNames.append(surface.name)
+            if  not surface.isChild and surface.hasChild:
+                self.checkChildSurfaces(surface)
+            return surface
+            
+        # case 1 : it is not planar
+        else:
+            
+            # case 1-1 : surface is a nonplanar surface and adjacent to another surface
+            # sub surfaces has been already generated based on the adjacent surface
+            if surface.BC.upper() == 'SURFACE' and surface.name in self.adjcSrfCollection.keys():
+                    # print "collecting sub surfaces for surface " + surface.name
+                    # surface has been already generated by the other adjacent surface
+                    self.modifiedSrfsNames.append(surface.name)
+                    return self.adjcSrfCollection[surface.name]
+                    
+            # case 1-2 : surface is a nonplanar surface and adjacent to another surface
+            # and hasn't been generated so let's generate this surface and the adjacent one
+            elif surface.BC.upper() == 'SURFACE':
+                adjcSurface= surface.BCObject
+                # find adjacent zone and create the surfaces
+                # create a place holder for the surface
+                # the surfaces will be collected inside the function
+                self.adjcSrfCollection[adjcSurface.name] = []
+                
+            self.modifiedSrfsNames.append(surface.name)
+            newSurfaces = []
+            for count, coordinates in enumerate(coordinatesL):
+                # create new Honeybee surfaces
+                # makes sense to copy the original surface here but since
+                # copy.deepcopy fails on a number of systems I just create
+                # a new surface and assign necessary data to write the surface
+                
+                newSurfaceName = surface.name + "_" + `count`
+                
+                newSurface = self.createSubSurfaceFromBaseSrf(surface, newSurfaceName, count, coordinates)
+                
+                newSurfaces.append(newSurface)
+                
+            # nonplanar surface
+            if  not surface.isChild and surface.hasChild:
+                
+                glzPSurfaces = self.checkChildSurfaces(surface)
+                
+                if glzPSurfaces != None:
+                    newSurfaces += glzPSurfaces
+                
+            return newSurfaces
+
+
 class hb_EPSurface(object):
     def __init__(self, surface, srfNumber, srfID, *arg):
         """EP surface Class
@@ -2114,6 +2474,8 @@ class hb_EPSurface(object):
         self.meshedFace = rc.Geometry.Mesh()
         self.RadMaterial = None
         self.EPConstruction = None # this gets overwritten below
+        
+        self.cenPt, self.normalVector = self.getSrfCenPtandNormalAlternate()
         
                 # 4 represents an Air Wall
         self.srfType = {0:'WALL',
@@ -2150,6 +2512,7 @@ class hb_EPSurface(object):
         
         self.intCnstrSet = {
                 0:'000 Interior Wall',
+                0.5: '000 Exterior Wall',
                 1:'000 Exterior Roof',
                 1.5:'000 Exterior Roof',
                 2:'000 Interior Floor',
@@ -2162,9 +2525,10 @@ class hb_EPSurface(object):
                 6:'000 Interior Wall'}
         
         self.srfBC = {0:'Outdoors',
+                     0.5: 'ground',
                      1:'Outdoors',
                      1.5: 'ground',
-                     2: 'surface',
+                     2: 'outdoors', # this will be changed to surface once solveAdjacency is used 
                      2.25: 'ground',
                      2.5: 'ground',
                      2.75: 'outdoors',
@@ -2174,6 +2538,7 @@ class hb_EPSurface(object):
                      6: 'surface'}
          
         self.srfSunExposure = {0:'SunExposed',
+                     0.5:'NoSun',
                      1:'SunExposed',
                      1.5:'NoSun', 
                      2:'NoSun',
@@ -2185,6 +2550,7 @@ class hb_EPSurface(object):
                      6: 'NoSun'}
              
         self.srfWindExposure = {0:'WindExposed',
+                     0.5:'NoWind',
                      1:'WindExposed',
                      1.5:'NoWind',
                      2:'NoWind',
@@ -2213,9 +2579,11 @@ class hb_EPSurface(object):
             # parent is a parent zone and the type differs case by case
             self.parent = arg[0] # parent zone
             self.type = arg[1] # surface type (e.g. wall, roof,...)
-            self.BC = self.srfBC[self.type]
+            self.BC = self.srfBC[self.type] # initial BC based on type
             # check for special conditions(eg. slab underground, slab on ground
-            self.reEvaluateType(True)
+            
+            self.reEvaluateType(True) # I should give this another thought
+            
             # this should be fixed to be based on zone type
             # I can remove default constructions at some point
             self.construction = self.cnstrSet[int(self.type)]
@@ -2541,8 +2909,11 @@ class hb_EPSurface(object):
             if self.isOnGrade(): self.type += 0.5 #SlabOnGrade
             elif self.isUnderground(): self.type += 0.25 #UndergroundSlab
             elif self.BC.upper() != "SURFACE":
-                self.type += 0.75 #UndergroundSlab
-    
+                self.type += 0.75 #Exposed floor
+        
+        # update boundary condition based on new type
+        self.BC = self.srfBC[self.type]
+        
     def getTypeByNormalAngle(self, maximumRoofAngle = 30):
         # find the normal
         try: findNormal = self.getSrfCenPtandNormalAlternate()
@@ -2599,15 +2970,9 @@ class hb_EPZoneSurface(hb_EPSurface):
             parentZone, surafceType = args
             hb_EPSurface.__init__(self, surface, srfNumber, srfName, parentZone, surafceType)
             self.getAngle2North()
-            # set the boundary condition
-            # it only works for simple geometries for now and should be replaced
-            # by a smarter intersection process. I tried multiple ways and none of
-            # them were promising...
-            self.BC = self.srfBC[self.type]
+            
             self.BCObject = self.outdoorBCObject()
-            if self.type ==2 and parentZone.isThisTheFirstZone:
-                self.BC = 'GROUND'
-                self.BCObject = self.outdoorBCObject()
+
         else:
             hb_EPSurface.__init__(self, surface, srfNumber, srfName)
             
@@ -2618,7 +2983,6 @@ class hb_EPZoneSurface(hb_EPSurface):
             self.BCObject = self.outdoorBCObject()
             self.sunExposure = self.srfSunExposure[srfType]
             self.windExposure = self.srfWindExposure[srfType]
-
         
         if hasattr(self, 'parent') and self.parent!=None:
             # in both of this cases the zone should be meshed
@@ -2785,13 +3149,7 @@ class hb_EPFenSurface(hb_EPSurface):
             except:
                 # surface is not part of a zone yet.
                 pass
-        
-        # this is a class that I only wrote to assign a fake object for surfaces
-        # with outdoor boundaryCondition
-        #class OutdoorBC(object):
-        #    def __init__(self):
-        #        self.name = ""
-        
+
         # calculate punchedWall
         self.parent.punchedGeometry = punchedWall
         self.shadingControlName = ''
@@ -3075,6 +3433,7 @@ if letItFly:
         sc.sticky["honeybee_BuildingProgramsLib"] = BuildingProgramsLib
         sc.sticky["honeybee_EPTypes"] = EPTypes()
         sc.sticky["honeybee_EPZone"] = EPZone
+        sc.sticky["honeybee_reEvaluateHBZones"] = hb_reEvaluateHBZones
         sc.sticky["honeybee_EPSurface"] = hb_EPSurface
         sc.sticky["honeybee_EPShdSurface"] = hb_EPShdSurface
         sc.sticky["honeybee_EPZoneSurface"] = hb_EPZoneSurface
