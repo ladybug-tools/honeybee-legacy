@@ -23,7 +23,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Write EP Result Parameters"
 ghenv.Component.NickName = 'writeResultParameters'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUN_25_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -38,34 +38,35 @@ def main(zoneEnergyUse, zoneGainsAndLosses, zoneTemperatures, surfaceAnalysis, t
     simulationOutputs.append("OutputControl:Table:Style,Comma;")
     
     if zoneEnergyUse == True:
-        simulationOutputs.append("Output:Meter,Heating:*, " + timePeriod)
-        simulationOutputs.append("Output:Meter,Cooling:*, " + timePeriod)
-        simulationOutputs.append("Output:Variable,*,Zone Lights Total Heat Gain, " + timePeriod)
-        simulationOutputs.append("Output:Variable,*,Zone Electric Equipment Total Heat Gain, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Zone Air System Sensible Heating Energy, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Zone Air System Sensible Cooling Energy, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Zone Lights Electric Energy, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Zone Electric Equipment Electric Energy, " + timePeriod)
     else:
         pass
     
     if zoneGainsAndLosses == True:
-        simulationOutputs.append("Output:Variable,*,Zone Beam Solar from Exterior Windows Energy, " + timePeriod)
-        simulationOutputs.append("Output:Variable,*,Zone Diff Solar from Exterior Windows Energy, " + timePeriod)
-        simulationOutputs.append("Output:Variable,*,Zone People Total Heat Gain, " + timePeriod)
-        simulationOutputs.append("Output:Variable,*,Zone Infiltration Total Heat Loss, " + timePeriod)
-        simulationOutputs.append("Output:Variable,*,Zone Window Heat Loss Energy, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Zone Exterior Windows Total Transmitted Beam Solar Radiation Energy, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Zone Exterior Windows Total Transmitted Diffuse Solar Radiation Energy, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Zone People Total Heating Energy, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Zone Infiltration Total Heat Loss Energy, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Zone Infiltration Total Heat Gain Energy, " + timePeriod)
     else:
         pass
     
-    if zoneTemperatures == True:
+    if zoneComfortMetrics == True:
         simulationOutputs.append("Output:Variable,*,Zone Mean Air Temperature, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Mean Radiant Temperature, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Zone Air Relative Humidity, " + timePeriod)
     else:
         pass
     
     if surfaceAnalysis == True:
-        simulationOutputs.append("Output:Variable,*,Surface Outside Face Solar Radiation Heat Gain Energy, " + timePeriod)
-        simulationOutputs.append("Output:Variable,*,Surface Outside Face Net Thermal Radiation Heat Gain Energy, " + timePeriod)
-        simulationOutputs.append("Output:Variable,*,Surface Outside Face Convection Heat Gain Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Surface Outside Face Temperature, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Surface Inside Face Temperature, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Surface Average Face Conduction Heat Transfer Energy, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Surface Window Heat Loss Energy, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Surface Window Heat Gain Energy, " + timePeriod)
     else:
         pass
     
@@ -74,39 +75,15 @@ def main(zoneEnergyUse, zoneGainsAndLosses, zoneTemperatures, surfaceAnalysis, t
 
 
 #Check the inputs to be sure that the right data types are selected.
-if zoneEnergyUse == True or zoneEnergyUse == False:
-    checkdata1 = True
-else:
-    checkdata1 = False
-    print "Please connect a valid boolean value for zoneEnergyUse"
-
-if zoneGainsAndLosses == True or zoneGainsAndLosses == False:
-    checkdata2 = True
-else:
-    checkdata2 = False
-    print "Please connect a valid boolean value for zoneGainsAndLosses"
-
-if zoneTemperatures == True or zoneTemperatures == False:
-    checkdata3 = True
-else:
-    checkdata3 = False
-    print "Please connect a valid boolean value for zoneTemperatures"
-
-if surfaceAnalysis == True or surfaceAnalysis == False:
-    checkdata4 = True
-else:
-    checkdata4 = False
-    print "Please connect a valid boolean value for surfaceAnalysis"
-
 if timestep == "monthly" or timestep == "hourly" or timestep == "daily" or timestep == "annually":
-    checkdata5 = True
+    checkdata = True
 else:
-    checkdata5 = False
+    checkdata = False
     print "Please specify a timestep by inputing the words 'hourly', 'daily', 'monthly' or 'annually'"
 
 
 #Generate the simulation outputs if the above checks are sucessful.
-if checkdata1 == True and checkdata2 == True and checkdata3 == True and checkdata4 == True and checkdata5 == True:
+if checkdata == True:
     simulationOutputs = main(zoneEnergyUse, zoneGainsAndLosses, zoneTemperatures, surfaceAnalysis, timestep)
     print "Simulation outputs generated successfully!"
 else:
