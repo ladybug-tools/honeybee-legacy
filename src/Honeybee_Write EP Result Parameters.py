@@ -23,7 +23,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Write EP Result Parameters"
 ghenv.Component.NickName = 'writeResultParameters'
-ghenv.Component.Message = 'VER 0.0.53\nJUN_25_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUN_29_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -84,7 +84,7 @@ else:
 
 #Generate the simulation outputs if the above checks are sucessful.
 if checkdata == True:
-    simulationOutputs = main(zoneEnergyUse, zoneGainsAndLosses, zoneTemperatures, surfaceAnalysis, timestep)
+    simulationOutputs = main(zoneEnergyUse_, zoneGainsAndLosses_, zoneComfortMetrics_, surfaceAnalysis_, timestep_)
     print "Simulation outputs generated successfully!"
 else:
     simulationOutputs = []

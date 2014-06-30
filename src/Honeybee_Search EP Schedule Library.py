@@ -21,14 +21,18 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Search EP Schedule Library"
 ghenv.Component.NickName = 'SearchEPSCHLibrary'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUN_29_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "07 | Energy | Schedule"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
 
-def main(scheduleList, bldgProgram, zoneProgram, scheduleType):
+def main(scheduleList, HBZoneProgram, scheduleType):
     selSch =[]
+    
+    try: bldgProgram, zoneProgram = HBZoneProgram.split("::")
+    except: bldgProgram, zoneProgram = None, None
+        
     for schName in scheduleList:
        if schName.upper().find(bldgProgram.upper())!=-1 and schName.upper().find(scheduleType.upper())!=-1:
             selSch.append(schName)
@@ -44,6 +48,6 @@ def main(scheduleList, bldgProgram, zoneProgram, scheduleType):
     return exactFit, selSch
 
 if _scheduleList:
-    selSchedule, possibleAlt = main(_scheduleList, bldgProgram_, zoneProgram_, scheduleType_)
+    selSchedule, possibleAlt = main(_scheduleList, zoneProgram_, scheduleType_)
     
     selSchedules = [selSchedule] + possibleAlt

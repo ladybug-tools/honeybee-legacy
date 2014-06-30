@@ -22,7 +22,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Get EnergyPlus Schedules"
 ghenv.Component.NickName = 'getEPSchedules'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_13_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUN_29_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "07 | Energy | Schedule"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -30,13 +30,15 @@ except: pass
 import scriptcontext as sc
 import Grasshopper.Kernel as gh
 
-def main(bldgProgram, zoneProgram):
+def main(HBZoneProgram):
     # check for Honeybee
     if not sc.sticky.has_key('honeybee_release'):
         print "You should first let Honeybee to fly..."
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee to fly...")
         return -1
+    
+    bldgProgram, zoneProgram = HBZoneProgram.split("::")
     
     openStudioStandardLib = sc.sticky ["honeybee_OpenStudioStandardsFile"]
     
@@ -66,8 +68,8 @@ def main(bldgProgram, zoneProgram):
     return occupancySchedule, occupancyActivitySch, heatingSetPtSchedule, coolingSetPtSchedule, lightingSchedule, equipmentSchedule, infiltrationSchedule
     
     
-if _bldgProgram and _zoneProgram:
-    results = main(_bldgProgram, _zoneProgram)
+if _zoneProgram:
+    results = main(_zoneProgram)
     
     if results != -1:
         occupancySchedule, occupancyActivitySch, heatingSetPtSchedule, coolingSetPtSchedule, lightingSchedule, equipmentSchedule, infiltrationSchedule = results

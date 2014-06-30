@@ -22,7 +22,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Get EnergyPlus Loads"
 ghenv.Component.NickName = 'getEPLoads'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_13_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUN_29_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "07 | Energy | Schedule"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
@@ -32,7 +32,7 @@ import scriptcontext as sc
 import Grasshopper.Kernel as gh
 from pprint import pprint
 
-def main(bldgProgram, zoneProgram):
+def main(HBZoneProgram):
     # check for Honeybee
     if not sc.sticky.has_key('honeybee_release'):
         print "You should first let Honeybee to fly..."
@@ -45,6 +45,8 @@ def main(bldgProgram, zoneProgram):
     BuildingPrograms = sc.sticky["honeybee_BuildingProgramsLib"]()
     bldgProgramDict = BuildingPrograms.bldgPrograms
     zonesProgramDict = BuildingPrograms.zonePrograms
+    
+    bldgProgram, zoneProgram = HBZoneProgram.split("::")
     
     try:
         schedulesAndLoads = openStudioStandardLib['space_types']['90.1-2007']['ClimateZone 1-8'][bldgProgram][zoneProgram]
@@ -69,8 +71,8 @@ def main(bldgProgram, zoneProgram):
 
 
 
-if _bldgProgram and _zoneProgram:
-    results = main(_bldgProgram, _zoneProgram)
+if _zoneProgram:
+    results = main(_zoneProgram)
     
     if results != -1:
         equipmentLoadPerArea, infiltrationRatePerArea, lightingDensityPerArea, numOfPeoplePerArea, ventilationPerArea, ventilationPerPerson = results
