@@ -11,7 +11,7 @@ Provided by Honeybee 0.0.53
 
     Args:
         _name_: The name of the zone as a string
-        _zoneType_: Optional input for the program of this zone
+        zoneProgram_: Optional input for the program of this zone
         isConditioned_: Set to true if the zone is conditioned
         _HBSurfaces: A list of Honeybee Surfaces
     Returns:
@@ -33,7 +33,7 @@ import math
 
 ghenv.Component.Name = 'Honeybee_createHBZones'
 ghenv.Component.NickName = 'createHBZones'
-ghenv.Component.Message = 'VER 0.0.53\nJUN_16_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUN_30_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
@@ -42,7 +42,7 @@ except: pass
 
 tolerance = sc.doc.ModelAbsoluteTolerance
 
-def main(zoneName,  bldgProgram, zoneProgram, HBSurfaces, isConditioned):
+def main(zoneName,  HBZoneProgram, HBSurfaces, isConditioned):
     # import the classes
     if sc.sticky.has_key('ladybug_release')and sc.sticky.has_key('honeybee_release'):
         lb_preparation = sc.sticky["ladybug_Preparation"]()
@@ -69,8 +69,13 @@ def main(zoneName,  bldgProgram, zoneProgram, HBSurfaces, isConditioned):
     
     HBSurfaces = hb_hive.callFromHoneybeeHive(HBSurfaces)
     
+    # bldg program
+    try: bldgProgram, zoneProgram = HBZoneProgram.split("::")
+    except: bldgProgram, zoneProgram = 'Office', 'OpenOffice'
+    
     # initiate the zone
     zoneID = str(uuid.uuid4())
+    
     HBZone = hb_EPZone(None, zoneID, zoneName, (bldgProgram, zoneProgram), isConditioned)
     
     for hbSrf in HBSurfaces:
@@ -85,6 +90,6 @@ def main(zoneName,  bldgProgram, zoneProgram, HBSurfaces, isConditioned):
 
 if _name != None and _HBSurfaces and _HBSurfaces[0]!=None:
     
-    result= main(_name, bldgProgram_, zoneProgram_, _HBSurfaces, isConditioned_)
+    result= main(_name, zoneProgram_, _HBSurfaces, isConditioned_)
     
     HBZone = result
