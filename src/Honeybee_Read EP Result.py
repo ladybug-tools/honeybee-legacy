@@ -36,7 +36,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readIdf'
-ghenv.Component.Message = 'VER 0.0.53\nJUN_25_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUN_30_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "4"
@@ -52,7 +52,6 @@ from Grasshopper.Kernel.Data import GH_Path
 
 #Read the location and the analysis period info from the eio file, if there is one.
 location = "NoLocation"
-timeStep = "Unknown Timestep"
 start = "NoDate"
 end = "NoDate"
 
@@ -130,7 +129,7 @@ if resultFileAddress:
                     zoneCooling.Add(location, GH_Path(int(path[columnCount][0])))
                     zoneCooling.Add("Cooling Energy for Zone " + str(path[columnCount][0]), GH_Path(int(path[columnCount][0])))
                     zoneCooling.Add("kWh", GH_Path(int(path[columnCount][0])))
-                    zoneCooling.Add(timeStep, GH_Path(int(path[columnCount][0])))
+                    zoneCooling.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0])))
                     zoneCooling.Add(start, GH_Path(int(path[columnCount][0])))
                     zoneCooling.Add(end, GH_Path(int(path[columnCount][0])))
                     dataTypeList[0] = True
@@ -142,7 +141,7 @@ if resultFileAddress:
                     zoneHeating.Add(location, GH_Path(int(path[columnCount][0])))
                     zoneHeating.Add("Heating Energy for Zone " + str(path[columnCount][0]), GH_Path(int(path[columnCount][0])))
                     zoneHeating.Add("kWh", GH_Path(int(path[columnCount][0])))
-                    zoneHeating.Add(timeStep, GH_Path(int(path[columnCount][0])))
+                    zoneHeating.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0])))
                     zoneHeating.Add(start, GH_Path(int(path[columnCount][0])))
                     zoneHeating.Add(end, GH_Path(int(path[columnCount][0])))
                     dataTypeList[1] = True
@@ -154,7 +153,7 @@ if resultFileAddress:
                     zoneElectricLight.Add(location, GH_Path(int(path[columnCount][0])))
                     zoneElectricLight.Add("Electric Lighting Energy for Zone " + str(path[columnCount][0]), GH_Path(int(path[columnCount][0])))
                     zoneElectricLight.Add("kWh", GH_Path(int(path[columnCount][0])))
-                    zoneElectricLight.Add(timeStep, GH_Path(int(path[columnCount][0])))
+                    zoneElectricLight.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0])))
                     zoneElectricLight.Add(start, GH_Path(int(path[columnCount][0])))
                     zoneElectricLight.Add(end, GH_Path(int(path[columnCount][0])))
                     dataTypeList[2] = True
@@ -166,7 +165,7 @@ if resultFileAddress:
                     zoneElectricEquip.Add(location, GH_Path(int(path[columnCount][0])))
                     zoneElectricEquip.Add("Electric Equipment Energy for Zone " + str(path[columnCount][0]), GH_Path(int(path[columnCount][0])))
                     zoneElectricEquip.Add("kWh", GH_Path(int(path[columnCount][0])))
-                    zoneElectricEquip.Add(timeStep, GH_Path(int(path[columnCount][0])))
+                    zoneElectricEquip.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0])))
                     zoneElectricEquip.Add(start, GH_Path(int(path[columnCount][0])))
                     zoneElectricEquip.Add(end, GH_Path(int(path[columnCount][0])))
                     dataTypeList[3] = True
@@ -178,7 +177,7 @@ if resultFileAddress:
                     zonePeopleGains.Add(location, GH_Path(int(path[columnCount][0])))
                     zonePeopleGains.Add("People Energy for Zone " + str(path[columnCount][0]), GH_Path(int(path[columnCount][0])))
                     zonePeopleGains.Add("kWh", GH_Path(int(path[columnCount][0])))
-                    zonePeopleGains.Add(timeStep, GH_Path(int(path[columnCount][0])))
+                    zonePeopleGains.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0])))
                     zonePeopleGains.Add(start, GH_Path(int(path[columnCount][0])))
                     zonePeopleGains.Add(end, GH_Path(int(path[columnCount][0])))
                     dataTypeList[5] = True
@@ -190,7 +189,7 @@ if resultFileAddress:
                     zoneBeamGains.Add(location, GH_Path(int(path[columnCount][0])))
                     zoneBeamGains.Add("Solar Beam Energy for Zone " + str(path[columnCount][0]), GH_Path(int(path[columnCount][0])))
                     zoneBeamGains.Add("kWh", GH_Path(int(path[columnCount][0])))
-                    zoneBeamGains.Add(timeStep, GH_Path(int(path[columnCount][0])))
+                    zoneBeamGains.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0])))
                     zoneBeamGains.Add(start, GH_Path(int(path[columnCount][0])))
                     zoneBeamGains.Add(end, GH_Path(int(path[columnCount][0])))
                     dataTypeList[6] = True
@@ -202,7 +201,7 @@ if resultFileAddress:
                     zoneDiffGains.Add(location, GH_Path(int(path[columnCount][0])))
                     zoneDiffGains.Add("Solar Diffuse Energy for Zone" + " " + str(path[columnCount][0]), GH_Path(int(path[columnCount][0])))
                     zoneDiffGains.Add("kWh", GH_Path(int(path[columnCount][0])))
-                    zoneDiffGains.Add(timeStep, GH_Path(int(path[columnCount][0])))
+                    zoneDiffGains.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0])))
                     zoneDiffGains.Add(start, GH_Path(int(path[columnCount][0])))
                     zoneDiffGains.Add(end, GH_Path(int(path[columnCount][0])))
                     dataTypeList[7] = True
@@ -214,7 +213,7 @@ if resultFileAddress:
                     zoneInfiltrationEnergyFlow.Add(location, GH_Path(int(path[columnCount][0])))
                     zoneInfiltrationEnergyFlow.Add("Infiltration Energy Loss/Gain for Zone " + str(path[columnCount][0]), GH_Path(int(path[columnCount][0])))
                     zoneInfiltrationEnergyFlow.Add("kWh", GH_Path(int(path[columnCount][0])))
-                    zoneInfiltrationEnergyFlow.Add(timeStep, GH_Path(int(path[columnCount][0])))
+                    zoneInfiltrationEnergyFlow.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0])))
                     zoneInfiltrationEnergyFlow.Add(start, GH_Path(int(path[columnCount][0])))
                     zoneInfiltrationEnergyFlow.Add(end, GH_Path(int(path[columnCount][0])))
                     dataTypeList[8] = True
@@ -230,7 +229,7 @@ if resultFileAddress:
                     zoneAirTemperature.Add(location, GH_Path(int(path[columnCount][0])))
                     zoneAirTemperature.Add("Air Temperature for Zone " + str(path[columnCount][0]), GH_Path(int(path[columnCount][0])))
                     zoneAirTemperature.Add("C", GH_Path(int(path[columnCount][0])))
-                    zoneAirTemperature.Add(timeStep, GH_Path(int(path[columnCount][0])))
+                    zoneAirTemperature.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0])))
                     zoneAirTemperature.Add(start, GH_Path(int(path[columnCount][0])))
                     zoneAirTemperature.Add(end, GH_Path(int(path[columnCount][0])))
                     dataTypeList[10] = True
@@ -242,7 +241,7 @@ if resultFileAddress:
                     zoneMeanRadiantTemperature.Add(location, GH_Path(int(path[columnCount][0])))
                     zoneMeanRadiantTemperature.Add("Radiant Temperature for Zone " + str(path[columnCount][0]), GH_Path(int(path[columnCount][0])))
                     zoneMeanRadiantTemperature.Add("C", GH_Path(int(path[columnCount][0])))
-                    zoneMeanRadiantTemperature.Add(timeStep, GH_Path(int(path[columnCount][0])))
+                    zoneMeanRadiantTemperature.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0])))
                     zoneMeanRadiantTemperature.Add(start, GH_Path(int(path[columnCount][0])))
                     zoneMeanRadiantTemperature.Add(end, GH_Path(int(path[columnCount][0])))
                     dataTypeList[11] = True
@@ -254,7 +253,7 @@ if resultFileAddress:
                     zoneRelativeHumidity.Add(location, GH_Path(int(path[columnCount][0])))
                     zoneRelativeHumidity.Add("Relative Humidity for Zone " + str(path[columnCount][0]), GH_Path(int(path[columnCount][0])))
                     zoneRelativeHumidity.Add("%", GH_Path(int(path[columnCount][0])))
-                    zoneRelativeHumidity.Add(timeStep, GH_Path(int(path[columnCount][0])))
+                    zoneRelativeHumidity.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0])))
                     zoneRelativeHumidity.Add(start, GH_Path(int(path[columnCount][0])))
                     zoneRelativeHumidity.Add(end, GH_Path(int(path[columnCount][0])))
                     dataTypeList[12] = True
@@ -266,7 +265,7 @@ if resultFileAddress:
                     surfaceOpaqueIndoorTemp.Add(location, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
                     surfaceOpaqueIndoorTemp.Add("Indoor Surface Temperature for Zone " + str(path[columnCount][0]) + " Surface " + str(path[columnCount][1]), GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
                     surfaceOpaqueIndoorTemp.Add("C", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                    surfaceOpaqueIndoorTemp.Add(timeStep, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                    surfaceOpaqueIndoorTemp.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
                     surfaceOpaqueIndoorTemp.Add(start, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
                     surfaceOpaqueIndoorTemp.Add(end, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
                     dataTypeList[14] = True
@@ -278,7 +277,7 @@ if resultFileAddress:
                     surfaceGlazIndoorTemp.Add(location, GH_Path(int(path[columnCount][0]), int(path[columnCount][1]), int(path[columnCount][2])))
                     surfaceGlazIndoorTemp.Add("Indoor Surface Temperature for Zone " + str(path[columnCount][0]) + " Surface " + str(path[columnCount][1]) + " Window " + str(path[columnCount][2]), GH_Path(int(path[columnCount][0]), int(path[columnCount][1]), int(path[columnCount][2])))
                     surfaceGlazIndoorTemp.Add("C", GH_Path(int(path[columnCount][0]), int(path[columnCount][1]), int(path[columnCount][2])))
-                    surfaceGlazIndoorTemp.Add(timeStep, GH_Path(int(path[columnCount][0]), int(path[columnCount][1]), int(path[columnCount][2])))
+                    surfaceGlazIndoorTemp.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0]), int(path[columnCount][1]), int(path[columnCount][2])))
                     surfaceGlazIndoorTemp.Add(start, GH_Path(int(path[columnCount][0]), int(path[columnCount][1]), int(path[columnCount][2])))
                     surfaceGlazIndoorTemp.Add(end, GH_Path(int(path[columnCount][0]), int(path[columnCount][1]), int(path[columnCount][2])))
                     dataTypeList[15] = True
@@ -290,7 +289,7 @@ if resultFileAddress:
                     surfaceOpaqueOutdoorTemp.Add(location, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
                     surfaceOpaqueOutdoorTemp.Add("Outdoor Surface Temperature for Zone " + str(path[columnCount][0]) + " Surface " + str(path[columnCount][1]), GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
                     surfaceOpaqueOutdoorTemp.Add("C", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                    surfaceOpaqueOutdoorTemp.Add(timeStep, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                    surfaceOpaqueOutdoorTemp.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
                     surfaceOpaqueOutdoorTemp.Add(start, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
                     surfaceOpaqueOutdoorTemp.Add(end, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
                     dataTypeList[16] = True
@@ -302,7 +301,7 @@ if resultFileAddress:
                     surfaceGlazOutdoorTemp.Add(location, GH_Path(int(path[columnCount][0]), int(path[columnCount][1]), int(path[columnCount][2])))
                     surfaceGlazOutdoorTemp.Add("Outdoor Surface Temperature for Zone " + str(path[columnCount][0]) + " Surface " + str(path[columnCount][1]) + " Window " + str(path[columnCount][2]), GH_Path(int(path[columnCount][0]), int(path[columnCount][1]), int(path[columnCount][2])))
                     surfaceGlazOutdoorTemp.Add("C", GH_Path(int(path[columnCount][0]), int(path[columnCount][1]), int(path[columnCount][2])))
-                    surfaceGlazOutdoorTemp.Add(timeStep, GH_Path(int(path[columnCount][0]), int(path[columnCount][1]), int(path[columnCount][2])))
+                    surfaceGlazOutdoorTemp.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0]), int(path[columnCount][1]), int(path[columnCount][2])))
                     surfaceGlazOutdoorTemp.Add(start, GH_Path(int(path[columnCount][0]), int(path[columnCount][1]), int(path[columnCount][2])))
                     surfaceGlazOutdoorTemp.Add(end, GH_Path(int(path[columnCount][0]), int(path[columnCount][1]), int(path[columnCount][2])))
                     dataTypeList[17] = True
@@ -314,7 +313,7 @@ if resultFileAddress:
                     surfaceOpaqueEnergyFlow.Add(location, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
                     surfaceOpaqueEnergyFlow.Add("Opaque Conductive Energy Loss/Gain for Zone " + str(path[columnCount][0]) + " Surface " + str(path[columnCount][1]), GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
                     surfaceOpaqueEnergyFlow.Add("kWh", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                    surfaceOpaqueEnergyFlow.Add(timeStep, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                    surfaceOpaqueEnergyFlow.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
                     surfaceOpaqueEnergyFlow.Add(start, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
                     surfaceOpaqueEnergyFlow.Add(end, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
                     dataTypeList[18] = True
@@ -326,7 +325,7 @@ if resultFileAddress:
                     surfaceGlazEnergyFlow.Add(location, GH_Path(int(path[columnCount][0]), int(path[columnCount][1]), int(path[columnCount][2])))
                     surfaceGlazEnergyFlow.Add("Glazing Energy Loss/Gain for Zone " + str(path[columnCount][0]) + " Surface " + str(path[columnCount][1]) + " Window " + str(path[columnCount][2]), GH_Path(int(path[columnCount][0]), int(path[columnCount][1]), int(path[columnCount][2])))
                     surfaceGlazEnergyFlow.Add("kWh", GH_Path(int(path[columnCount][0]), int(path[columnCount][1]), int(path[columnCount][2])))
-                    surfaceGlazEnergyFlow.Add(timeStep, GH_Path(int(path[columnCount][0]), int(path[columnCount][1]), int(path[columnCount][2])))
+                    surfaceGlazEnergyFlow.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0]), int(path[columnCount][1]), int(path[columnCount][2])))
                     surfaceGlazEnergyFlow.Add(start, GH_Path(int(path[columnCount][0]), int(path[columnCount][1]), int(path[columnCount][2])))
                     surfaceGlazEnergyFlow.Add(end, GH_Path(int(path[columnCount][0]), int(path[columnCount][1]), int(path[columnCount][2])))
                     dataTypeList[19] = True
