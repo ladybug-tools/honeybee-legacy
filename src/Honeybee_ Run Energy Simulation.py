@@ -8,7 +8,7 @@ export geometries to idf file, and run the energy simulation
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.53\nJUN_25_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUN_29_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -41,6 +41,7 @@ class WriteIDF(object):
     def EPZoneSurface (self, surface):
         
         coordinates = surface.coordinates
+        
         str_1 = '\nBuildingSurface:Detailed,\n' + \
             '\t' + surface.name + ',\t!- Name\n' + \
             '\t' + surface.srfType[int(surface.type)] + ',\t!- Surface Type\n' + \
@@ -68,29 +69,32 @@ class WriteIDF(object):
     def EPFenSurface (self, surface):
         
         glzStr = ""
-        
-        for childSrf in surface.childSrfs:
-            glzCoordinates = childSrf.coordinates
-            str_1 = '\nFenestrationSurface:Detailed,\n' + \
-                '\t' + childSrf.name + ',\t!- Name\n' + \
-                '\t' + childSrf.srfType[childSrf.type] + ',\t!- Surface Type\n' + \
-                '\t' + childSrf.construction + ',\t!- Construction Name\n' + \
-                '\t' + childSrf.parent.name + ',\t!- Surface Name\n' + \
-                '\t' + childSrf.BCObject.name + ',\t!- Outside Boundary Condition Object\n' + \
-                '\t' + childSrf.groundViewFactor + ',\t!- View Factor to Ground\n' + \
-                '\t' + childSrf.shadingControlName + ',\t!- Shading Control Name\n' + \
-                '\t' + childSrf.frameName + ',\t!- Frame and Divider Name\n' + \
-                '\t' + `childSrf.Multiplier`+ ',\t!- Multiplier\n' + \
-                '\t' + `len(glzCoordinates)` + ',\t!- Number of Vertices\n'
-        
-            str_2 = '\t';
-            for ptCount, pt in enumerate(glzCoordinates):
-                if ptCount < len (glzCoordinates) - 1:
-                    str_2 = str_2 + `pt.X` + ',\n\t' + `pt.Y` + ',\n\t' + `pt.Z` + ',\n\t'
-                else:
-                    str_2 = str_2 + `pt.X` + ',\n\t' + `pt.Y` + ',\n\t' + `pt.Z` + ';\n\n'
+        try:
+            for childSrf in surface.childSrfs:
+                glzCoordinates = childSrf.coordinates
+                str_1 = '\nFenestrationSurface:Detailed,\n' + \
+                    '\t' + childSrf.name + ',\t!- Name\n' + \
+                    '\t' + childSrf.srfType[childSrf.type] + ',\t!- Surface Type\n' + \
+                    '\t' + childSrf.construction + ',\t!- Construction Name\n' + \
+                    '\t' + childSrf.parent.name + ',\t!- Surface Name\n' + \
+                    '\t' + childSrf.BCObject.name + ',\t!- Outside Boundary Condition Object\n' + \
+                    '\t' + childSrf.groundViewFactor + ',\t!- View Factor to Ground\n' + \
+                    '\t' + childSrf.shadingControlName + ',\t!- Shading Control Name\n' + \
+                    '\t' + childSrf.frameName + ',\t!- Frame and Divider Name\n' + \
+                    '\t' + `childSrf.Multiplier`+ ',\t!- Multiplier\n' + \
+                    '\t' + `len(glzCoordinates)` + ',\t!- Number of Vertices\n'
             
-            glzStr += str_1 + str_2
+                str_2 = '\t';
+                for ptCount, pt in enumerate(glzCoordinates):
+                    if ptCount < len (glzCoordinates) - 1:
+                        str_2 = str_2 + `pt.X` + ',\n\t' + `pt.Y` + ',\n\t' + `pt.Z` + ',\n\t'
+                    else:
+                        str_2 = str_2 + `pt.X` + ',\n\t' + `pt.Y` + ',\n\t' + `pt.Z` + ';\n\n'
+                
+                glzStr += str_1 + str_2
+        except:
+            print "Failed to write " + childSrf.name + " to idf file"
+            pass
             
         return glzStr
         
