@@ -31,7 +31,7 @@ ghenv.Component.AdditionalHelpFromDocStrings = "3"
 
 
 
-def main(zoneEnergyUse, zoneGainsAndLosses, zoneTemperatures, surfaceAnalysis, timestep):
+def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, surfaceAnalysis, timestep):
     simulationOutputs = []
     timePeriod = timestep + ";"
     
@@ -75,7 +75,7 @@ def main(zoneEnergyUse, zoneGainsAndLosses, zoneTemperatures, surfaceAnalysis, t
 
 
 #Check the inputs to be sure that the right data types are selected.
-if timestep == "monthly" or timestep == "hourly" or timestep == "daily" or timestep == "annually":
+if timestep_ == "monthly" or timestep_ == "hourly" or timestep_ == "daily" or timestep_ == "annually":
     checkdata = True
 else:
     checkdata = False
