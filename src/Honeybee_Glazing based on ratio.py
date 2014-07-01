@@ -25,7 +25,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Glazing based on ratio"
 ghenv.Component.NickName = 'glazingCreator'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_18_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_01_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -88,7 +88,57 @@ def getTopBottomCurves(brep):
     
     return btmEdge, isBtmHorizontal, topEdge, isTopHorizontal, vertEdges, are2LinesVert
 
+def getCurvePoints(curve):
+    exploCurve = rc.Geometry.PolyCurve.DuplicateSegments(curve)
+    individPts = []
+    for line in exploCurve:
+        individPts.append(line.PointAtStart)
+    return individPts
 
+#Define a function that cleans up curves by deleting out points that lie in a line and leaves the curved segments intact.  Also, have it delete out any segments that are shorter than the tolerance.
+def cleanCurve(curve):
+    #First check if there are any curved segements and make a list to keep track of this
+    curveBool = False
+    exploCurve = rc.Geometry.PolyCurve.DuplicateSegments(curve)
+    for segment in exploCurve:
+        if segment.IsLinear() == False: curveBool = True
+        else: pass
+    
+    # Get the curve points.
+    curvePts = getCurvePoints(curve)
+    
+    if curveBool == False:
+        #Test if any of the points lie in a line and use this to generate a new list of curve segments and points.
+        newPts = []
+        newSegments = []
+        for pointCount, point in enumerate(curvePts):
+            testLine = rc.Geometry.Line(point, curvePts[pointCount-2])
+            if testLine.DistanceTo(curvePts[pointCount-1], True) > tol and len(newPts) == 0:
+                newPts.append(curvePts[pointCount-1])
+            elif testLine.DistanceTo(curvePts[pointCount-1], True) > tol and len(newPts) != 0:
+                newSegments.append(rc.Geometry.LineCurve(newPts[-1], curvePts[pointCount-1]))
+                newPts.append(curvePts[pointCount-1])
+            else: pass
+        
+        #Add a segment to close the curves and join them together into one polycurve.
+        newSegments.append(rc.Geometry.LineCurve(newPts[-1], newPts[0]))
+        
+        #Shift the lists over by 1 to ensure that the order of the points and curves match the input
+        newCurvePts = newPts[1:]
+        newCurvePts.append(newPts[0])
+        newCurveSegments = newSegments[1:]
+        newCurveSegments.append(newSegments[0])
+        
+        #Join the segments together into one curve.
+        newCrv = rc.Geometry.PolyCurve()
+        for seg in newCurveSegments:
+            newCrv.Append(seg)
+        newCrv.MakeClosed(tol)
+    else:
+        newCrv = curve
+    
+    #return the new curve and the list of points associated with it.
+    return newCrv
 
 def createGlazingTri(triSrf, glazingRatio, scalePt):
     #Calculate the center point if one is not provided.
@@ -143,7 +193,6 @@ def createGlazingQuad(quadSrf, glazingRatio, scalePt):
             glzSrf.append(createGlazingTri(brep, glazingRatio, None)[0])
     
     return glzSrf
-
 
 
 def createGlazingOddPlanarGeo(baseSrf, glazingRatio):
@@ -351,7 +400,7 @@ def createGlazingForRect(rectBrep, glazingRatio, windowHeight, sillHeight):
     return rectWinBreps
 
 
-def createGlazingThatContainsRectangle(topEdge, btmEdge, baseSrf, glazingRatio, windowHeight, sillHeight):
+def createGlazingThatContainsRectangle(topEdge, btmEdge, baseSrf, glazingRatio, windowHeight, sillHeight, breakUpWindow):
     #Get the rectangle vertices points from the arrangement of closest points of the top and bottom curves.
     rectPt1 = rc.Geometry.Curve.PointAt(topEdge, rc.Geometry.LineCurve.ClosestPoint(topEdge, btmEdge.PointAtEnd)[1])
     rectPt2 = rc.Geometry.Curve.PointAt(btmEdge, rc.Geometry.LineCurve.ClosestPoint(btmEdge, topEdge.PointAtEnd)[1])
@@ -383,6 +432,7 @@ def createGlazingThatContainsRectangle(topEdge, btmEdge, baseSrf, glazingRatio, 
     for srf in srfSplit:
         edges = srf.Edges
         joinedEdges = rc.Geometry.Curve.JoinCurves(edges)[0]
+        joinedEdges = cleanCurve(joinedEdges)
         simplificationOpt = rc.Geometry.CurveSimplifyOptions.All
         joinedEdgesSimplified = joinedEdges.Simplify(simplificationOpt, sc.doc.ModelAbsoluteTolerance, sc.doc.ModelAngleToleranceRadians)
         try:
@@ -398,10 +448,11 @@ def createGlazingThatContainsRectangle(topEdge, btmEdge, baseSrf, glazingRatio, 
         angle2 = rc.Geometry.Vector3d.VectorAngle(rc.Geometry.Vector3d.Subtract(rc.Geometry.Vector3d(vertices[1]), rc.Geometry.Vector3d(vertices[2])), rc.Geometry.Vector3d.Subtract(rc.Geometry.Vector3d(vertices[1]), rc.Geometry.Vector3d(vertices[0])))
         numSides = reconstructSrf.Edges.Count
         rectBool = reconstructSrf.IsValid
+        
         if rectBool and numSides == 4 and angle1 < 1.570796 + sc.doc.ModelAngleToleranceRadians and angle1 > 1.570796 - sc.doc.ModelAngleToleranceRadians and angle2 < 1.570796 + sc.doc.ModelAngleToleranceRadians and angle2 > 1.570796 - sc.doc.ModelAngleToleranceRadians:
-            middle.append(srf)
+            middle.append(reconstructSrf)
         else:
-            sides.append(srf)
+            sides.append(reconstructSrf)
     
     #Generate glazing for the non-rectangular surfaces.
     sideGlaz = []
@@ -415,8 +466,12 @@ def createGlazingThatContainsRectangle(topEdge, btmEdge, baseSrf, glazingRatio, 
     
     #Find the glazing for the rectangle part of the wall
     rectWinBreps = []
-    for rect in middle:
-        rectWinBreps.append(createGlazingForRect(rect, glazingRatio, windowHeight, sillHeight))
+    if breakUpWindow == True:
+        for rect in middle:
+            rectWinBreps.append(createGlazingForRect(rect, glazingRatio, windowHeight, sillHeight))
+    else:
+        for rect in middle:
+            rectWinBreps.append(createGlazingQuad(rect, glazingRatio, None))
     
     #Add all of the glazings together into one list.
     glzSrf = []
@@ -666,12 +721,12 @@ def findGlzBasedOnRatio(baseSrf, glzRatio, windowHeight, sillHeight, surfaceType
         glazing, lastSuccessfulRestOfSrf = createSkylightGlazing(baseSrf, glzRatio, planarBool)
     
     #Check if the wall surface has horizontal top and bottom curves and contains a rectangle that can be extracted such that we can apply the windowHeight and sillHeight inputs to it.
-    elif surfaceType == 0 and planarBool == True and edgeLinear == True and getTopBottomCurves(baseSrf)[1] == True and getTopBottomCurves(baseSrf)[3] == True and breakUpWindow == True:
-        glazing = createGlazingThatContainsRectangle(getTopBottomCurves(baseSrf)[2], getTopBottomCurves(baseSrf)[0], baseSrf, glzRatio, windowHeight, sillHeight)
+    elif surfaceType == 0 and planarBool == True and edgeLinear == True and getTopBottomCurves(baseSrf)[1] == True and getTopBottomCurves(baseSrf)[3] == True:
+        glazing = createGlazingThatContainsRectangle(getTopBottomCurves(baseSrf)[2], getTopBottomCurves(baseSrf)[0], baseSrf, glzRatio, windowHeight, sillHeight, breakUpWindow)
         
     #Check if the wall surface has vertical sides and contains a rectangle that can be extracted such that we can apply the windowheight and sill height inputs to it.
-    elif surfaceType == 0 and planarBool == True and edgeLinear == True and getTopBottomCurves(baseSrf)[5] == True and breakUpWindow == True:
-        glazing = createGlazingThatContainsRectangle(getTopBottomCurves(baseSrf)[4][0], getTopBottomCurves(baseSrf)[4][1], baseSrf, glzRatio, windowHeight, sillHeight)
+    elif surfaceType == 0 and planarBool == True and edgeLinear == True and getTopBottomCurves(baseSrf)[5] == True:
+        glazing = createGlazingThatContainsRectangle(getTopBottomCurves(baseSrf)[4][0], getTopBottomCurves(baseSrf)[4][1], baseSrf, glzRatio, windowHeight, sillHeight, breakUpWindow)
     
     #Since the surface does not seem to have a rectangle that can be extracted, check to see if it is a triangle for which we can use a simple mathematical relation.
     elif surfaceType == 0 and planarBool == True and baseSrf.Edges.Count == 3:
