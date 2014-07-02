@@ -12,7 +12,7 @@ Provided by Honeybee 0.0.53
     Args:
         _resultFileAddress: The result file address that comes out of the WriteIDF component.
     Returns:
-        zoneEndUseIntensity: The total energy per unit floor area used by each zone in kWh/m2.
+        zoneEndUseIntensity: The total energy per unit floor area used by each zone in Wh/m2.
         zoneTotalEnergy: The total energy used by each zone in kWh.
         zoneCooling: The ideal air load cooling energy needed for each zone in kWh.
         zoneHeating: The ideal air load heating energy needed for each zone in kWh.
@@ -479,19 +479,19 @@ if len(coolingPyList) > 0 and len(heatingPyList) > 0 and len(lightingPyList) > 0
         zoneEndUseIntensity.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(listCount))
         zoneEndUseIntensity.Add(location, GH_Path(listCount))
         zoneEndUseIntensity.Add("Total Energy per Floor Area for Zone " + str(listCount), GH_Path(listCount))
-        zoneEndUseIntensity.Add("kWh/m2", GH_Path(listCount))
+        zoneEndUseIntensity.Add("Wh/m2", GH_Path(listCount))
         zoneEndUseIntensity.Add(list[4].split('(')[-1].split(')')[0], GH_Path(listCount))
         zoneEndUseIntensity.Add(start, GH_Path(listCount))
         zoneEndUseIntensity.Add(end, GH_Path(listCount))
         for numCount, num in enumerate(list[7:]):
-            zoneEndUseIntensity.Add(((num + heatingPyList[listCount][7:][numCount] + lightingPyList[listCount][7:][numCount] + equipmentPyList[listCount][7:][numCount])/floorAreaList[listCount]), GH_Path(listCount))
+            zoneEndUseIntensity.Add(((num + heatingPyList[listCount][7:][numCount] + lightingPyList[listCount][7:][numCount] + equipmentPyList[listCount][7:][numCount])/floorAreaList[listCount])*1000, GH_Path(listCount))
         dataTypeList[0] = True
 
 
 #If some of the component outputs are not in the result csv file, blot the variable out of the component.
 outputsDict = {
      
-0: ["zoneEndUseIntensity", "The total energy per unit floor area used by each zone in kWh per square Rhino model units."],
+0: ["zoneEndUseIntensity", "The total energy per unit floor area used by each zone in Wh/m2"],
 1: ["zoneTotalEnergy", "The total energy used by each zone in kWh."],
 2: ["zoneCooling", "The ideal air load cooling energy needed for each zone in kWh."],
 3: ["zoneHeating", "The ideal air load heating energy needed for each zone in kWh."],
