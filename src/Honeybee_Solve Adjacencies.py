@@ -18,7 +18,7 @@ Provided by Honeybee 0.0.53
 """
 ghenv.Component.Name = "Honeybee_Solve Adjacencies"
 ghenv.Component.NickName = 'solveAdjc'
-ghenv.Component.Message = 'VER 0.0.53\nJUN_24_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_03_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -155,14 +155,16 @@ def main(HBZones, altConstruction, altBC, tol, remCurrent):
                                 # check distance with the nearest point on each surface
                                 for pt in raysDict.keys():
                                     if surface.geometry.ClosestPoint(pt).DistanceTo(pt) <= tol:
-                                        print 'Surface ' + srf.name + ' which is a ' + srf.srfType[srf.type] + \
-                                              '\t-> is adjacent to <-\t' + surface.name + ' which is a ' + \
-                                              surface.srfType[surface.type] + '.'
-                                        
-                                        updateAdj(srf, surface, altConstruction, altBC, tol)                                        
-
-                                        break
-                
+                                        # extra check for normal direction
+                                        if abs(rc.Geometry.Vector3d.VectorAngle(surface.normalVector, -srf.normalVector)) <= sc.doc.ModelAngleToleranceRadians:
+                                            print 'Surface ' + srf.name + ' which is a ' + srf.srfType[srf.type] + \
+                                                  '\t-> is adjacent to <-\t' + surface.name + ' which is a ' + \
+                                                  surface.srfType[surface.type] + '.'
+                                            
+                                            updateAdj(srf, surface, altConstruction, altBC, tol)                                        
+    
+                                            break
+                    
                 if srf.type == 3 and srf.BCObject.name == '':
                         srf.type = 1 # Roof
                         srf.BC = srf.srfBC[srf.type]
