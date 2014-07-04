@@ -23,7 +23,7 @@ Provided by Honeybee 0.0.53
 """
 ghenv.Component.Name = "Honeybee_Decompose Based On Type"
 ghenv.Component.NickName = 'decomposeByType'
-ghenv.Component.Message = 'VER 0.0.53\nJUN_24_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_04_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
@@ -32,48 +32,100 @@ except: pass
 
 import scriptcontext as sc
 
-walls = []
-windows = []
-skylights =[]
-roofs = []
-floors = []
-groundFloors = []
-ceilings = []
-shadings = []
 
 
-if _HBZone!= None:
-    
+def main(HBZone):
+    # import the classes
+    if not sc.sticky.has_key('honeybee_release'):
+        print "You should first let Honeybee to fly..."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee to fly...")
+        return
+        
+    walls = []
+    interiorWalls = []
+    windows = []
+    interiorWindows = []
+    skylights =[]
+    roofs = []
+    ceilings = []
+    floors = []
+    exposedFloors = []
+    groundFloors = []
+    undergroundWalls = []
+    undergroundCeilings = []
+    shadings = []
+
     # call the objects from the lib
     hb_hive = sc.sticky["honeybee_Hive"]()
-    try:
-        zone = hb_hive.callFromHoneybeeHive([_HBZone])[0]
-    
-        for srf in zone.surfaces:
-            if srf.type == 0:
-                if srf.hasChild: walls.append(srf.punchedGeometry)
-                else: walls.append(srf.geometry)
-            elif srf.type == 1:
-                if srf.hasChild: roofs.append(srf.punchedGeometry)
-                else: roofs.append(srf.geometry)
-            elif srf.type == 2: floors.append(srf.geometry)
-            elif str(srf.type) == "2.5": groundFloors.append(srf.geometry)
-            elif srf.type == 3: ceilings.append(srf.geometry)
-            elif srf.type == 4: airWalls.append(srf.geometry)
-            elif srf.type == 6: shadings.append(srf.geometry)
-            if srf.hasChild and srf.type == 0:
-                try:
+
+    zone = hb_hive.callFromHoneybeeHive([HBZone])[0]
+
+    for srf in zone.surfaces:
+        # WALL
+        if srf.type == 0:
+            if srf.hasChild:
+                if srf.BC.upper() == "SURFACE":
+                    interiorWalls.append(srf.punchedGeometry)
+                    for childSrf in srf.childSrfs:
+                        interiorWindows.append(childSrf.geometry)
+                else:
+                    walls.append(srf.punchedGeometry)
                     for childSrf in srf.childSrfs:
                         windows.append(childSrf.geometry)
-                except Exception, e:
-                    print `e`
-                    pass
-            if srf.hasChild and srf.type == 1:
-                try:
-                    for childSrf in srf.childSrfs:
-                        skylights.append(childSrf.geometry)
-                except Exception, e:
-                    print `e`
-                    pass
-    except:
-        pass
+                        
+            else:
+                walls.append(srf.geometry)
+        
+        # underground wall
+        elif srf.type == 0.5:
+            undergroundWalls.append(srf.geometry)
+        
+        # Roof
+        elif srf.type == 1:
+            if srf.hasChild:
+                roofs.append(srf.punchedGeometry)
+                for childSrf in srf.childSrfs:
+                    skylights.append(childSrf.geometry)
+            else:
+                roofs.append(srf.geometry)
+        
+        # underground ceiling
+        elif srf.type == 1.5:
+            undergroundCeilings.append(srf.geometry)
+            
+        elif srf.type == 2: floors.append(srf.geometry)
+        elif srf.type == 2.5: groundFloors.append(srf.geometry)
+        elif srf.type == 2.75: exposedFloors.append(srf.geometry)
+        elif srf.type == 3: ceilings.append(srf.geometry)
+        elif srf.type == 4: airWalls.append(srf.geometry)
+        elif srf.type == 6: shadings.append(srf.geometry)
+        
+        
+    return walls, interiorWalls, windows, interiorWindows, skylights, roofs, \
+           ceilings, floors, exposedFloors, groundFloors, groundFloors, \
+           undergroundWalls, undergroundSlabs, undergroundCeilings, shadings
+
+
+#    # add to the hive
+#    hb_hive = sc.sticky["honeybee_Hive"]()
+#    HBSurface  = hb_hive.addToHoneybeeHive(HBSurfaces, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+
+if _HBZone!= None:
+    HBSurfaces = main(_HBZone)
+    
+    if HBSurfaces:
+        walls = HBSurfaces[0]
+        interiorWalls = HBSurfaces[1]
+        windows = HBSurfaces[2]
+        interiorWindows = HBSurfaces[3]
+        skylights = HBSurfaces[4]
+        roofs = HBSurfaces[5]
+        ceilings = HBSurfaces[6]
+        floors = HBSurfaces[7]
+        exposedFloors = HBSurfaces[8]
+        groundFloors = HBSurfaces[9]
+        undergroundWalls = HBSurfaces[10]
+        undergroundSlabs = HBSurfaces[11]
+        undergroundCeilings = HBSurfaces[12]
+        shadings = HBSurfaces[13]

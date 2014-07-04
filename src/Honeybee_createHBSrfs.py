@@ -10,7 +10,9 @@ Provided by Honeybee 0.0.53
 
     Args:
         _geometry: List of Breps
+        srfName_: Optional name for surface
         srfType_: Optional input for surface type > 0:'WALL', 1:'ROOF', 2:'FLOOR', 3:'CEILING', 4:'WINDOW'
+        EPBC_: 'Ground', 'Adiabatic'
         _EPConstruction_: Optional EnergyPlus construction
         _RadMaterial_: Optional Radiance Material
     Returns:
@@ -31,7 +33,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_createHBSrfs'
 ghenv.Component.NickName = 'createHBSrfs'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_04_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -42,7 +44,7 @@ tolerance = sc.doc.ModelAbsoluteTolerance
 import math
 
 
-def main(geometry, srfType, EPConstruction, RADMaterial):
+def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
     # import the classes
     if sc.sticky.has_key('honeybee_release'):
         # don't customize this part
@@ -67,42 +69,83 @@ def main(geometry, srfType, EPConstruction, RADMaterial):
     except:
         pass
     
-    # generate a random name
-    # the name will be overwritten for energy simulation
     HBSurfaces = []
     
     for faceCount in range(geometry.Faces.Count):
-        guid = str(uuid.uuid4())
-        name = "".join(guid.split("-")[:-1])
-        number = guid.split("-")[-1]
         
-        HBSurface = hb_EPZoneSurface(geometry.Faces[faceCount].DuplicateFace(False), number, name)
+        # 0. check if user input a name for this surface
+        if srfName != None:
+            if geometry.Faces.Count != 1:
+                srfName = srfName + "_" + `faceCount`
+        else:
+            # generate a random name
+            # the name will be overwritten for energy simulation
+            guid = str(uuid.uuid4())
+            srfName = "".join(guid.split("-")[:-1])
+            number = guid.split("-")[-1]
+            
+        # 1. create initial surface
+        HBSurface = hb_EPZoneSurface(geometry.Faces[faceCount].DuplicateFace(False), number, srfName)
         
-        if srfType:
+        # 1.1 check for surface type
+        if srfType!=None:
             try:
+                # if user uses a number to input type
                 surfaceType = int(srfType)
                 if surfaceType == 4:
                     surfaceType = 5
                     warningMsg = "If you want to use this model for energy simulation, use addGlazing to add window to surfaces.\n" + \
                                  "It will be fine for Daylighting simulation though."
+                    print warningMsg
                     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
-                
-                if surfaceType in HBSurface.srfType.keys():
-                    HBSurface.type = surfaceType
             except:
-                surfaceType = srfType
-                if surfaceType.ToUpper() in HBSurface.srfType.keys():
-                    HBSurface.type = HBSurface.srfType[HBSurface.srfType[surfaceType.ToUpper()]]
+                # user uses text as an input (e.g.: wall)
+                # convert it to a number if a valid input
+                surfaceType = surfaceType.ToUpper()
+                if surfaceType in HBSurface.srfType.keys():
+                   surfaceType = HBSurface.srfType[surfaceType.ToUpper()]
+            
+            if surfaceType in HBSurface.srfType.keys():
+                try:
+                    HBSurface.setType(surfaceType, isUserInput= True)
+                except:
+                    warningMsg = "You are using an old version of Honeybee_Honeybee! Update your files and try again."
+                    print warningMsg
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
+                    return
         
-        if srfType == None:
-            # This will be recalculated 
-            pass
-            
+        # 1.2 assign boundary condition
+        if EPBC!= None:
+            # only ground, adiabatic and outdoors is valid
+            validBC = ['ground', 'adiabatic', 'outdoors']
+            if EPBC.lower() in validBC:
+                try:
+                    HBSurface.setBC(EPBC, isUserInput= True)
+                    
+                    # change type of surface if BC is set to ground
+                    if EPBC.lower()== "ground":
+                        HBSurface.setType(int(HBSurface.type) + 0.5, isUserInput= True)
+                        
+                except:
+                    warningMsg = "You are using an old version of Honeybee_Honeybee! Update your files and try again."
+                    print warningMsg
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
+                    return                
+        
+        # 1.3 assign construction for EnergyPlus
         if EPConstruction!=None:
-            HBSurface.EPConstruction = EPConstruction
+            # I need to add extra check here and make sure EPConstruction is valid
+            try:
+                HBSurface.setEPConstruction(EPConstruction)
+            except:
+                warningMsg = "You are using an old version of Honeybee_Honeybee! Update your files and try again."
+                print warningMsg
+                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
+                return                 
             
+        # 1.4 assign RAD Material
         if RADMaterial!=None:
-            # if it is just the name of the material give a warning
+            # if it is just the name of the material make sure it is already defined
             if len(RADMaterial.split(" ")) == 1:
                 # if the material is not in the library add it to the library
                 if RADMaterial not in sc.sticky ["honeybee_RADMaterialLib"].keys():
@@ -110,9 +153,14 @@ def main(geometry, srfType, EPConstruction, RADMaterial):
                                 "Add the material to the library and try again."
                     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
                     return
-                
-                # else assign the name of the material to the surface
-                HBSurface.RadMaterial = RADMaterial
+            try:
+                HBSurface.setRADMaterial(RADMaterial)
+            
+            except:
+                warningMsg = "You are using an old version of Honeybee_Honeybee! Update your files and try again."
+                print warningMsg
+                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
+                return
                 
             else:
                 # try to add the material to the library
@@ -124,6 +172,8 @@ def main(geometry, srfType, EPConstruction, RADMaterial):
                 return
             
         HBSurfaces.append(HBSurface)
+        print HBSurface.type
+        #print surfaceType
     
     # add to the hive
     hb_hive = sc.sticky["honeybee_Hive"]()
@@ -136,6 +186,6 @@ def main(geometry, srfType, EPConstruction, RADMaterial):
 
 if _geometry != None:
     
-    result= main(_geometry, srfType_, _EPConstruction_, _RADMaterial_)
+    result= main(_geometry, srfName_, srfType_, EPBC_, _EPConstruction_, _RADMaterial_)
     
     HBSurface = result

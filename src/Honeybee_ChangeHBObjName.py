@@ -17,7 +17,7 @@ Provided by Honeybee 0.0.53
 """
 ghenv.Component.Name = "Honeybee_ChangeHBObjName"
 ghenv.Component.NickName = 'changeHBObjName'
-ghenv.Component.Message = 'VER 0.0.53\nJUN_21_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_04_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
@@ -42,8 +42,11 @@ def main(HBObjects, names):
     HBObjs = range(len(HBObjectsFromHive))
     
     for count, HBO in enumerate(HBObjectsFromHive):
-        try: HBO.name = names[count]
-        except: pass
+        try:
+            HBO.setName(names[count])
+        except:
+            pass
+        
         HBObjs[count] = HBO
     
     return hb_hive.addToHoneybeeHive(HBObjs, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))

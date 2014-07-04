@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.53\nJUN_23_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_04_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1641,7 +1641,7 @@ class BuildingProgramsLib(object):
 
 
 class EPSurfaceLib(object):
-    
+    # I think I can remove this now
     def __init__(self):
         # 4 represents an Air Wall
         self.srfType = {0:'WALL',
@@ -1949,6 +1949,7 @@ class EPZone(object):
             if srf.hasChild: srf.calculatePunchedSurface()
             
             # assign construction
+            print srf.type
             srf.construction = srf.cnstrSet[srf.type]
             srf.EPConstruction = srf.construction
             
@@ -2083,6 +2084,9 @@ class EPZone(object):
                 
                 if centerPt.Z < minZ: minZ = centerPt.Z
         return minZ
+    
+    def setName(self, newName):
+        self.name = newName
     
     def __str__(self):
         try:
@@ -2477,6 +2481,10 @@ class hb_EPSurface(object):
         
         self.cenPt, self.normalVector = self.getSrfCenPtandNormalAlternate()
         
+        # define if type and BC is defined by user and should be kept
+        self.srfTypeByUser = False
+        self.srfBCByUser = False
+        
                 # 4 represents an Air Wall
         self.srfType = {0:'WALL',
            0.5: 'UndergroundWall',
@@ -2569,6 +2577,7 @@ class hb_EPSurface(object):
             # or is a surface that will only be used for daylighting simulation
             # so the concept of parent zone/surface is irrelevant
             self.parent = None
+            self.reEvaluateType(True)
         elif len(arg) == 1:
             # represents an opening. The parent is the parent surafce
             # honeybee only supports windows (and not doors) at this point so
@@ -2894,20 +2903,38 @@ class hb_EPSurface(object):
         """
         Find special surface types
         """
-        if not overwrite and hasinstance(self, "type"): return self.type
+        if not overwrite and hasattr(self, "type"): return self.type
         
+        if self.srfTypeByUser: return self.type
+        
+        if self.srfBCByUser: return self.type
+        
+        # find initial type it has no type yet
+        if not hasattr(self, "type"):
+            self.type = self.getTypeByNormalAngle()
+            self.BC = "OUTDOORS"
+            
         if self.type == 0:
-            if self.isUnderground(True): self.type += 0.5 #UndergroundWall
-        
+            if self.isUnderground(True):
+                self.type += 0.5 #UndergroundWall
+                self.BC = "GROUND"
+                
         elif self.type == 1:
             # A roof underground will be assigned as UndergroundCeiling!
-            if self.isUnderground(): self.type += 0.5 #UndergroundCeiling
-            elif self.BC.upper() == "SURFACE": self.type == 3 # ceiling
+            if self.isUnderground():
+                self.type += 0.5 #UndergroundCeiling
+                self.BC = "GROUND"
+            elif self.BC.upper() == "SURFACE":
+                self.type == 3 # ceiling
             
         elif self.type == 2:
             # floor
-            if self.isOnGrade(): self.type += 0.5 #SlabOnGrade
-            elif self.isUnderground(): self.type += 0.25 #UndergroundSlab
+            if self.isOnGrade():
+                self.type += 0.5 #SlabOnGrade
+                self.BC = "GROUND"
+            elif self.isUnderground():
+                self.type += 0.25 #UndergroundSlab
+                self.BC = "GROUND"
             elif self.BC.upper() != "SURFACE":
                 self.type += 0.75 #Exposed floor
         
@@ -2949,6 +2976,23 @@ class hb_EPSurface(object):
     def getTotalArea(self):
         return self.geometry.GetArea()
     
+    def setType(self, type, isUserInput = False):
+        self.type = type
+        self.srfTypeByUser = isUserInput
+    
+    def setBC(self, BC, isUserInput = False):
+        self.BC = BC
+        self.srfBCByUser = isUserInput
+    
+    def setEPConstruction(Self, EPConstruction):
+        self.EPConstruction = EPConstruction
+    
+    def setRadMaterial(self, RADMaterial):
+        self.RadMaterial = RADMaterial
+    
+    def setName(self, newName):
+        self.name = newName
+        
     def __str__(self):
         try:
             return 'Surface name: ' + self.name + '\nSurface number: ' + str(self.num) + \

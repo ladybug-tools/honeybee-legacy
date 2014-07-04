@@ -44,25 +44,18 @@ tolerance = sc.doc.ModelAbsoluteTolerance
 
 def main(zoneName,  HBZoneProgram, HBSurfaces, isConditioned):
     # import the classes
-    if sc.sticky.has_key('ladybug_release')and sc.sticky.has_key('honeybee_release'):
-        lb_preparation = sc.sticky["ladybug_Preparation"]()
-        lb_mesh = sc.sticky["ladybug_Mesh"]()
-        lb_runStudy_GH = sc.sticky["ladybug_RunAnalysis"]()
-        lb_runStudy_RAD = sc.sticky["ladybug_Export2Radiance"]()
-        lb_visualization = sc.sticky["ladybug_ResultVisualization"]()
-        
+    if sc.sticky.has_key('honeybee_release'):
         # don't customize this part
         hb_EPZone = sc.sticky["honeybee_EPZone"]
         hb_EPSrf = sc.sticky["honeybee_EPSurface"]
         hb_EPZoneSurface = sc.sticky["honeybee_EPSurface"]
         
     else:
-        print "You should first let both Ladybug and Honeybee to fly..."
+        print "You should first let Honeybee to fly..."
         w = gh.GH_RuntimeMessageLevel.Warning
-        ghenv.Component.AddRuntimeMessage(w, "You should first let both Ladybug and Honeybee to fly...")
-        return -1
+        ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee to fly...")
+        return
     
-    conversionFac = lb_preparation.checkUnits()
     
     # call the surface from the hive
     hb_hive = sc.sticky["honeybee_Hive"]()
