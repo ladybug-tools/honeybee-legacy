@@ -1,4 +1,4 @@
-﻿# By Chris Mackey
+# By Chris Mackey
 # Chris@MackeyArchitecture.com
 # Honeybee started by Mostapha Sadeghipour Roudsari is licensed
 # under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
@@ -27,7 +27,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = 'Honeybee_SplitBuildingMass'
 ghenv.Component.NickName = 'SplitMass'
-ghenv.Component.Message = 'VER 0.0.53\nJUN_22_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_03_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -1016,15 +1016,16 @@ if _runIt == True:
 if checkData == True:
     splitBldgMassesLists = main(_bldgMasses, bldgsFlr2FloorHeights_, perimeterZoneDepth_)
     
-    splitBldgMasses = DataTree[Object]()
-    names = DataTree[Object]()
-    for i, buildingMasses in enumerate(splitBldgMassesLists):
-        for j, mass in enumerate(buildingMasses):
-            p = GH_Path(i,j)
-            try:
-                splitBldgMasses.AddRange(mass, p)
-                #zoneNames = [str(i) + "_" + str(m) for m in range(len(mass))]
-                #names.AddRange(zoneNames, p)
-            except:
-                splitBldgMasses.Add(mass, p)
-                #names.Add(str(i) + "_" + str(j), p)
+    if splitBldgMassesLists!= -1:
+        splitBldgMasses = DataTree[Object]()
+        names = DataTree[Object]()
+        for i, buildingMasses in enumerate(splitBldgMassesLists):
+            for j, mass in enumerate(buildingMasses):
+                p = GH_Path(i,j)
+                try:
+                    splitBldgMasses.AddRange(mass, p)
+                    #zoneNames = [str(i) + "_" + str(m) for m in range(len(mass))]
+                    #names.AddRange(zoneNames, p)
+                except:
+                    splitBldgMasses.Add(mass, p)
+                    #names.Add(str(i) + "_" + str(j), p)
