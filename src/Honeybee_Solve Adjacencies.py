@@ -143,14 +143,14 @@ def main(HBZones, altConstruction, altBC, tol, remCurrent):
                     srfNormal = (BrepMesh.FaceNormals)[faceIndex]
                     meshSrfCen = BrepMesh.Faces.GetFaceCenter(faceIndex)
                     # move testPt backward for half of tolerance
-                    meshSrfCen = rc.Geometry.Point3d.Add(meshSrfCen, -rc.Geometry.Vector3d(srfNormal)*tol/2)
+                    meshSrfCen = rc.Geometry.Point3d.Add(meshSrfCen, -rc.Geometry.Vector3d(srfNormal)* tol /2)
                     
                     raysDict[meshSrfCen] = rc.Geometry.Ray3d(meshSrfCen, srfNormal)
                 
                 for targetZone in HBZoneObjects:
                     if targetZone.name != testZone.name:
                        # check ray intersection to see if this zone is next to the surface
-                       if shootIt(raysDict.values(), [targetZone.geometry], tol):
+                       if shootIt(raysDict.values(), [targetZone.geometry], tol + sc.doc.ModelAbsoluteTolerance):
                             for surface in targetZone.surfaces:
                                 # check distance with the nearest point on each surface
                                 for pt in raysDict.keys():
@@ -180,4 +180,8 @@ if _findAdjc and _HBZones and _HBZones[0]!=None:
     try: tol = float(tolerance_)
     except: tol = sc.doc.ModelAbsoluteTolerance
     
+    # tolrance can't be less than document tolerance
+    if tol < sc.doc.ModelAbsoluteTolerance:
+        tol = sc.doc.ModelAbsoluteTolerance
+        
     HBZonesWADJ = main(_HBZones, altConstruction_, altBC_, tol, remCurrentAdjc_)
