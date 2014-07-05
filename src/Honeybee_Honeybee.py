@@ -914,7 +914,11 @@ class EPMaterialAux(object):
         if objectData!=None:
             numberOfLayers = len(objectData.keys())
             # add material/construction type
+            # print objectData
             objectStr = objectData[0] + ",\n"
+            
+            # add the name
+            objectStr =  objectStr + "  " + objectName + ",   !- name\n"
             
             for layer in range(1, numberOfLayers):
                 if layer < numberOfLayers-1:
@@ -970,10 +974,12 @@ class EPMaterialAux(object):
             except:  objDescription = ""
             if lineCount == 0:
                 sc.sticky[HBLibrarieNames[key]][name][lineCount] = objValue[:-1]
+            elif lineCount == 1:
+                pass # name is already there as the key
             elif objValue.endswith(","):
-                sc.sticky[HBLibrarieNames[key]][name][lineCount] = objValue[:-1], objDescription
+                sc.sticky[HBLibrarieNames[key]][name][lineCount-1] = objValue[:-1], objDescription
             elif objValue.endswith(";"):
-                sc.sticky[HBLibrarieNames[key]][name][lineCount] = objValue[:-1], objDescription
+                sc.sticky[HBLibrarieNames[key]][name][lineCount-1] = objValue[:-1], objDescription
                 break
         
         return True, name
