@@ -74,15 +74,16 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
     for faceCount in range(geometry.Faces.Count):
         
         # 0. check if user input a name for this surface
+        guid = str(uuid.uuid4())
+        number = guid.split("-")[-1]
+
         if srfName != None:
             if geometry.Faces.Count != 1:
                 srfName = srfName + "_" + `faceCount`
         else:
             # generate a random name
             # the name will be overwritten for energy simulation
-            guid = str(uuid.uuid4())
             srfName = "".join(guid.split("-")[:-1])
-            number = guid.split("-")[-1]
             
         # 1. create initial surface
         HBSurface = hb_EPZoneSurface(geometry.Faces[faceCount].DuplicateFace(False), number, srfName)
@@ -172,8 +173,6 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
                 return
             
         HBSurfaces.append(HBSurface)
-        print HBSurface.type
-        #print surfaceType
     
     # add to the hive
     hb_hive = sc.sticky["honeybee_Hive"]()
