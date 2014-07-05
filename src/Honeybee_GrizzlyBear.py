@@ -26,7 +26,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_GrizzlyBear"
 ghenv.Component.NickName = 'grizzlyBear'
-ghenv.Component.Message = 'VER 0.0.53\nJUN_25_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_04_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | WIP"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -650,10 +650,14 @@ class WritegbXML(object):
         space.id = "Space_"+zone.name
         space.Name = "Space_"+zone.name
         area = gbx.Area()
-        floorarea = wgb.findZoneFloorArea(zone.surfaces)
+        
+        floorarea = zone.getFloorArea()
+        if floorarea == 0 :
+            floorarea = wgb.findZoneFloorArea(zone.surfaces)
+        
         totalarea+=floorarea
         area.val = str(floorarea)
-        print area.val
+        # print area.val
         space.spacearea = area
         logging.info("space area = " + str(space.Area))
         vol = gbx.Volume()
@@ -1728,7 +1732,11 @@ if gbXMLIsReady and _location and _writegbXML:
         wct = 0
         dct = 0
         wknms = []
+        
         for schedule in uniqueSched:
+            # print schedule
+            schedule = schedule.strip('.')
+            
             scheduleValues, comments = hb_EPScheduleAUX.getScheduleDataByName(schedule, ghenv.Component)
             if scheduleValues!=None:
                 m = re.match('(.*)(:)(.*)', scheduleValues[0])
