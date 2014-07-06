@@ -4,24 +4,22 @@
 # under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
 
 """
-OpenStudio Systems
+Set Zone Thresholds
 -
 Provided by Honeybee 0.0.53
 
     Args:
-        timestep_:...
-        shadowCalcPar_: ...
-        doPlantSizingCalculation_: ...
-        solarDistribution_: ...
-        simulationControls_: ...
-        ddyFile_: ...
+        _HBZones:...
+        daylightThreshold_: ...
+        coolingSetPt_: ...
+        heatingSetPt_: ...
     Returns:
-        energySimPar:...
+        HBZones:...
 """
 
 ghenv.Component.Name = "Honeybee_Set EnergyPlus Zone Thresholds"
 ghenv.Component.NickName = 'setEPZoneThresholds'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_06_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
@@ -45,9 +43,21 @@ def main(HBZones, daylightThreshold, coolingSetPt, heatingSetPt):
     
     # assign the values
     for zoneCount, zone in enumerate(HBZonesFromHive):
-        if daylightThreshold != None: zone.daylightThreshold = daylightThreshold
-        if coolingSetPt != None: zone.coolingSetPt = coolingSetPt
-        if heatingSetPt != None:  zone.heatingSetPt = heatingSetPt
+        try:
+            zone.daylightThreshold = str(daylightThreshold[zoneCount])
+            print "Daylight threshold for " + zone.name + " is set to: " + zone.daylightThreshold
+            
+        except: pass
+        
+        try:
+            zone.coolingSetPt = str(coolingSetPt[zoneCount])
+            print "Cooling setpoint for " + zone.name + " is set to: " + zone.coolingSetPt
+        except: pass
+        
+        try:
+            zone.heatingSetPt = str(heatingSetPt[zoneCount])
+            print "Heating setpoint for " + zone.name + " is set to: " + zone.heatingSetPt
+        except: pass
     
     # send the zones back to the hive
     HBZones  = hb_hive.addToHoneybeeHive(HBZonesFromHive, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
