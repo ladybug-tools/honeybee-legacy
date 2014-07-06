@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_04_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_06_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -2990,7 +2990,13 @@ class hb_EPSurface(object):
         self.BC = BC
         self.srfBCByUser = isUserInput
     
-    def setEPConstruction(Self, EPConstruction):
+    def setBCObject(self, BCObject):
+        self.BCObject = BCObject
+    
+    def setBCObjectToOutdoors(self):
+        self.BCObject = self.outdoorBCObject()
+    
+    def setEPConstruction(self, EPConstruction):
         self.EPConstruction = EPConstruction
     
     def setRadMaterial(self, RADMaterial):
@@ -2999,6 +3005,12 @@ class hb_EPSurface(object):
     def setName(self, newName):
         self.name = newName
         
+    def setSunExposure(self, exposure = 'NoSun'):
+        self.sunExposure = exposure
+    
+    def setWindExposure(self, exposure = 'NoWind'):
+        self.windExposure = exposure
+    
     def __str__(self):
         try:
             return 'Surface name: ' + self.name + '\nSurface number: ' + str(self.num) + \
@@ -3281,9 +3293,23 @@ class hb_Hive(object):
                 key = geometry.UserDictionary['HBID']
                 if sc.sticky['HBHive'].has_key(key):
                     try:
-                        HBObjects.append(copy.deepcopy(sc.sticky['HBHive'][key]))
+                        HBObject = sc.sticky['HBHive'][key]
+                        # after the first round meshedFace makes copy.deepcopy crash
+                        # so I need to regenerate meshFaces
+                        if HBObject.objectType == "HBZone":
+                            for surface in HBObject.surfaces:
+                                newMesh = rc.Geometry.Mesh()
+                                newMesh.Append(surface.meshedFace)
+                                surface.meshedFace = newMesh
+                        elif HBObject.objectType == "HBSurface": 
+                            newMesh = rc.Geometry.Mesh()
+                            newMesh.Append(HBObject.meshedFace)
+                            HBObject.meshedFace = newMesh
+                        
+                        HBObjects.append(copy.deepcopy(HBObject))
+                        
                     except Exception, e:
-                        # print `e`
+                        print `e`
                         print "Failed to copy the object. Returning the original objects...\n" +\
                               "This can cause strange behaviour!"
                         HBObjects.append(sc.sticky['HBHive'][key])
