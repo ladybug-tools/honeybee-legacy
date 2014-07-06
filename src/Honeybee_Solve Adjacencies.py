@@ -18,7 +18,7 @@ Provided by Honeybee 0.0.53
 """
 ghenv.Component.Name = "Honeybee_Solve Adjacencies"
 ghenv.Component.NickName = 'solveAdjc'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_03_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_06_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -42,39 +42,39 @@ def shootIt(rayList, geometry, tol = 0.01, bounce =1):
 
 def updateAdj(surface1, surface2, altConstruction, altBC, tol):
     # change roof to ceiling
-    if surface1.type == 1: surface1.type = 3 # roof + adjacent surface = ceiling
-    elif surface2.type == 1: surface2.type = 3
+    if surface1.type == 1: surface1.setType(3) # roof + adjacent surface = ceiling
+    elif surface2.type == 1: surface2.setType(3)
     
     
-    if surface1.type == 2.75: surface1.type = 2
-    if surface2.type == 2.75:  surface2.type = 2 
+    if surface1.type == 2.75: surface1.setType(2)
+    if surface2.type == 2.75:  surface2.setType(2) 
     
     # change construction
     if altConstruction == None:
-        surface1.EPConstruction = surface1.intCnstrSet[surface1.type]
-        surface2.EPConstruction = surface2.intCnstrSet[surface2.type]
+        surface1.setEPConstruction(surface1.intCnstrSet[surface1.type])
+        surface2.setEPConstruction(surface1.intCnstrSet[surface2.type])
     else:
-        surface1.EPConstruction = altConstruction
-        surface2.EPConstruction = altConstruction
+        surface1.setEPConstruction(altConstruction, True)
+        surface2.setEPConstruction(altConstruction, True)
         
     # change bc
     if altBC != None:
-        surface2.BC = altBC
-        surface1.BC = altBC
+        surface2.setBC(altBC)
+        surface1.setBC(altBC)
     else:
-        surface1.BC = 'SURFACE'
-        surface2.BC = 'SURFACE'
+        surface1.setBC('SURFACE', True)
+        surface2.setBC('SURFACE', True)
         
         # change bc.Obj
         # used to be only a name but I changed it to an object so you can find the parent, etc.
-        surface1.BCObject = surface2
-        surface2.BCObject = surface1
+        surface1.setBCObject(surface2)
+        surface2.setBCObject(surface1)
     
     # set sun and wind exposure to no exposure
-    surface2.sunExposure = 'NoSun'
-    surface1.sunExposure = 'NoSun'
-    surface2.windExposure = 'NoWind'
-    surface1.windExposure = 'NoWind'
+    surface2.setSunExposure('NoSun')
+    surface1.setSunExposure('NoSun')
+    surface2.setWindExposure('NoWind')
+    surface1.setWindExposure('NoWind')
     
     # check for child objects
     if (surface1.hasChild or surface2.hasChild) and (len(surface2.childSrfs)!= len(surface1.childSrfs)):
@@ -119,8 +119,8 @@ def main(HBZones, altConstruction, altBC, tol, remCurrent):
     if remCurrent:
         for testZone in HBZoneObjects:
             for srf in testZone.surfaces:
-                srf.BC = 'OUTDOORS'
-                srf.BCObject = srf.outdoorBCObject()
+                srf.setBC('OUTDOORS')
+                srf.setBCObjectToOutdoors()
     
     # solve it zone by zone
     for testZone in HBZoneObjects:
@@ -165,9 +165,9 @@ def main(HBZones, altConstruction, altBC, tol, remCurrent):
     
                                             break
                     
-                if srf.type == 3 and srf.BCObject.name == '':
-                        srf.type = 1 # Roof
-                        srf.BC = srf.srfBC[srf.type]
+                #if srf.type == 3 and srf.BCObject.name == '':
+                #        srf.setType(1) # Roof
+                #        srf.setBC(srf.srfBC[srf.type])
     
     # add zones to dictionary
     ModifiedHBZones  = hb_hive.addToHoneybeeHive(HBZoneObjects, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
