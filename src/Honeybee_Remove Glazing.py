@@ -18,7 +18,7 @@ Provided by Honeybee 0.0.53
 """
 ghenv.Component.Name = "Honeybee_Remove Glazing"
 ghenv.Component.NickName = 'remGlz'
-ghenv.Component.Message = 'VER 0.0.53\nJUN_21_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_06_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
@@ -48,7 +48,8 @@ def main(HBObjects, srfIndex, pattern):
                 if srfCount in srfIndex and surface.hasChild:
                     #remove the glzing
                     surface.removeAllChildSrfs()
-                elif srfCount in srfIndex and surface.hasChild:
+                elif pattern[srfCount] == True and surface.hasChild:
+                    print srfCount
                     #remove the glzing
                     surface.removeAllChildSrfs()
                     
@@ -56,5 +57,5 @@ def main(HBObjects, srfIndex, pattern):
     
     return hb_hive.addToHoneybeeHive(HBObjs, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
 
-if (_HBZones and srfIndex_) or (_HBZones and pattern_):
+if (_HBZones and srfIndex_!=[]) or (_HBZones and pattern_!=[]):
     HBZones = main(_HBZones, srfIndex_, pattern_)
