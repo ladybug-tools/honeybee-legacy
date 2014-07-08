@@ -32,7 +32,7 @@ Provided by Ladybug 0.0.45
 
 ghenv.Component.Name = "Honeybee_Re-run IDF"
 ghenv.Component.NickName = 'Re-Run IDF'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_08_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "5"
@@ -41,7 +41,7 @@ ghenv.Component.AdditionalHelpFromDocStrings = "5"
 import os
 
 
-def writeBatchFile(workingDir, idfFileName, epwFileAddress, EPDirectory = 'C:\\EnergyPlusV7-2-0'):
+def writeBatchFile(workingDir, idfFileName, epwFileAddress, EPDirectory = 'C:\\EnergyPlusV8-1-0'):
     workingDrive = workingDir[:2]
     
     if idfFileName.endswith('.idf'):  shIdfFileName = idfFileName.replace('.idf', '')
@@ -112,7 +112,7 @@ else:
 
 
 if checkdata:
-    batchFileAddress = writeBatchFile(workingDir, idfFileName, epwFileAddress, EPDirectory = 'C:\\EnergyPlusV7-2-0')
+    batchFileAddress = writeBatchFile(workingDir, idfFileName, epwFileAddress, EPDirectory = 'C:\\EnergyPlusV8-1-0')
     
     runBatchFile(batchFileAddress)
     if idfFileName.endswith('.idf'):  shIdfFileName = idfFileName.replace('.idf', '')
