@@ -75,6 +75,8 @@ def runBatchFile(batchFileAddress):
 
 #Check to make sure that a working directory has been connected.
 if str(workingDir) != 'None' and len(list(str(workingDir))) > 3:
+    if str(workingDir).endswith("/") or str(workingDir).endswith('\\'): pass
+    else: workingDir = workingDir + "\\"
     checkdata1 = True
 else:
     checkdata1 = False
