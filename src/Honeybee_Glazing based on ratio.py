@@ -25,7 +25,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Glazing based on ratio"
 ghenv.Component.NickName = 'glazingCreator'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_01_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_08_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -383,7 +383,7 @@ def createGlazingForRect(rectBrep, glazingRatio, windowHeight, sillHeight):
             
             #Scale the curve so that it is not touching the edges of the surface.
             lineCentPt = rc.Geometry.Point3d(((winStartLine.PointAtStart.X + winStartLine.PointAtEnd.X)/2), ((winStartLine.PointAtStart.Y + winStartLine.PointAtEnd.Y)/2), ((winStartLine.PointAtStart.Z + winStartLine.PointAtEnd.Z)/2))
-            print lineCentPt
+            
             transformMatrixScale = rc.Geometry.Transform.Scale(lineCentPt, 0.98)
             winStartLine.Transform(transformMatrixScale)
             
@@ -481,6 +481,13 @@ def createGlazingThatContainsRectangle(topEdge, btmEdge, baseSrf, glazingRatio, 
     for item in sideGlaz:
         for window in item:
             glzSrf.append(window)
+    
+    #If the surface failed to split and there was no rectangle, chances are that the surface is really oblique so I should get the glazing using the quad function or odd geo function. 
+    if len(srfSplit) == 0 and rectBrep == None:
+        try:
+            glzSrf = createGlazingQuad(baseSrf, glazingRatio, None)
+        except:
+            glzSrf = createGlazingOddPlanarGeo(baseSrf, glazingRatio)
     
     return glzSrf
 
