@@ -8,7 +8,7 @@ export geometries to idf file, and run the energy simulation
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.53\nJUN_29_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_07_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -66,33 +66,66 @@ class WriteIDF(object):
         
         return fullString
     
-    def EPFenSurface (self, surface):
+    def checkCoordinates(self, glzCoordinates):
+        # check if coordinates are so close or duplicated
+        # this is a place holder for now I just return true
+        return True, glzCoordinates
         
+        try:
+            pl = rc.Geometry.Polyline(glzCoordinates).ToNurbsCurve()
+            segments = pl.DuplicateSegments()
+            edgeCount = 0
+            for seg in segments:
+                if seg.GetLength() > sc.doc.ModelAbsoluteTolerance:
+                    edgeCount += 1
+                if edgeCount > 2:
+                    newCoordinates = []
+                    for pt in glzCoordinates:
+                        if pt not in newCoordinates:
+                            newCoordinates.append(pt)
+                            
+                    return True, newCoordinates
+            
+            return False,[]
+        except:
+            return False,[]
+                            
+    def EPFenSurface (self, surface):
         glzStr = ""
         try:
             for childSrf in surface.childSrfs:
-                glzCoordinates = childSrf.coordinates
-                str_1 = '\nFenestrationSurface:Detailed,\n' + \
-                    '\t' + childSrf.name + ',\t!- Name\n' + \
-                    '\t' + childSrf.srfType[childSrf.type] + ',\t!- Surface Type\n' + \
-                    '\t' + childSrf.construction + ',\t!- Construction Name\n' + \
-                    '\t' + childSrf.parent.name + ',\t!- Surface Name\n' + \
-                    '\t' + childSrf.BCObject.name + ',\t!- Outside Boundary Condition Object\n' + \
-                    '\t' + childSrf.groundViewFactor + ',\t!- View Factor to Ground\n' + \
-                    '\t' + childSrf.shadingControlName + ',\t!- Shading Control Name\n' + \
-                    '\t' + childSrf.frameName + ',\t!- Frame and Divider Name\n' + \
-                    '\t' + `childSrf.Multiplier`+ ',\t!- Multiplier\n' + \
-                    '\t' + `len(glzCoordinates)` + ',\t!- Number of Vertices\n'
-            
-                str_2 = '\t';
-                for ptCount, pt in enumerate(glzCoordinates):
-                    if ptCount < len (glzCoordinates) - 1:
-                        str_2 = str_2 + `pt.X` + ',\n\t' + `pt.Y` + ',\n\t' + `pt.Z` + ',\n\t'
-                    else:
-                        str_2 = str_2 + `pt.X` + ',\n\t' + `pt.Y` + ',\n\t' + `pt.Z` + ';\n\n'
+                # check surface area
                 
-                glzStr += str_1 + str_2
-        except:
+                glzCoordinates = childSrf.coordinates
+                
+                checked, glzCoordinates= self.checkCoordinates(glzCoordinates)
+                
+                if checked:
+                    str_1 = '\nFenestrationSurface:Detailed,\n' + \
+                        '\t' + childSrf.name + ',\t!- Name\n' + \
+                        '\t' + childSrf.srfType[childSrf.type] + ',\t!- Surface Type\n' + \
+                        '\t' + childSrf.construction + ',\t!- Construction Name\n' + \
+                        '\t' + childSrf.parent.name + ',\t!- Surface Name\n' + \
+                        '\t' + childSrf.BCObject.name + ',\t!- Outside Boundary Condition Object\n' + \
+                        '\t' + childSrf.groundViewFactor + ',\t!- View Factor to Ground\n' + \
+                        '\t' + childSrf.shadingControlName + ',\t!- Shading Control Name\n' + \
+                        '\t' + childSrf.frameName + ',\t!- Frame and Divider Name\n' + \
+                        '\t' + `childSrf.Multiplier`+ ',\t!- Multiplier\n' + \
+                        '\t' + `len(glzCoordinates)` + ',\t!- Number of Vertices\n'
+                
+                    str_2 = '\t';
+                    for ptCount, pt in enumerate(glzCoordinates):
+                        if ptCount < len (glzCoordinates) - 1:
+                            str_2 = str_2 + `pt.X` + ',\n\t' + `pt.Y` + ',\n\t' + `pt.Z` + ',\n\t'
+                        else:
+                            str_2 = str_2 + `pt.X` + ',\n\t' + `pt.Y` + ',\n\t' + `pt.Z` + ';\n\n'
+                    
+                    glzStr += str_1 + str_2
+                
+                else:
+                    glzStr += "\n"
+        except Exception, e:
+            print e
             print "Failed to write " + childSrf.name + " to idf file"
             pass
             
@@ -134,30 +167,35 @@ class WriteIDF(object):
         return str_1 + str_2
 
     def EPHVACTemplate( self, name, zone):
-        
-        heatingSCHName = zone.heatingSetPtSchedule
-        if zone.heatingSetPtSchedule != "":
-            constantHeatingSetPoint = zone.heatingSetPtSchedule
+        if zone.isConditioned:
+            heatingSCHName = zone.heatingSetPtSchedule
+            if zone.heatingSetPtSchedule != "":
+                constantHeatingSetPoint = zone.heatingSetPtSchedule
+            else:
+                constantHeatingSetPoint = '' # I should add this to zones later
+            
+            coolingSCHName = zone.coolingSetPtSchedule
+            if zone.heatingSetPtSchedule != "":
+                constantCoolingSetPoint = zone.coolingSetPtSchedule
+            else:
+                constantCoolingSetPoint = ''
+            
+            return '\nHVACTemplate:Thermostat,\n' + \
+                    '\t' + name + ',                    !- Name\n' + \
+                    '\t' + heatingSCHName + ',          !- Heating Setpoint Schedule Name\n' + \
+                    '\t' + constantHeatingSetPoint + ', !- Constant Heating Setpoint {C}\n' + \
+                    '\t' + coolingSCHName + ',          !- Cooling Setpoint Schedule Name\n' + \
+                    '\t' + constantCoolingSetPoint + '; !- Constant Cooling Setpoint {C}\n'
         else:
-            constantHeatingSetPoint = '' # I should add this to zones later
-        
-        coolingSCHName = zone.coolingSetPtSchedule
-        if zone.heatingSetPtSchedule != "":
-            constantCoolingSetPoint = zone.coolingSetPtSchedule
-        else:
-            constantCoolingSetPoint = ''
-        
-        return '\nHVACTemplate:Thermostat,\n' + \
-                '\t' + name + ',                    !- Name\n' + \
-                '\t' + heatingSCHName + ',          !- Heating Setpoint Schedule Name\n' + \
-                '\t' + constantHeatingSetPoint + ', !- Constant Heating Setpoint {C}\n' + \
-                '\t' + coolingSCHName + ',          !- Cooling Setpoint Schedule Name\n' + \
-                '\t' + constantCoolingSetPoint + '; !- Constant Cooling Setpoint {C}\n'
-
+            return "\n"
+            
     def EPIdealAirSystem(self, zone, thermostatName):
-        return '\nHVACTemplate:Zone:IdealLoadsAirSystem,\n' + \
-            '\t' + zone.name + ',\t!- Zone Name\n' + \
-            '\t' + thermostatName + ';\t!- Template Thermostat Name\n\n'
+        if zone.isConditioned:
+            return '\nHVACTemplate:Zone:IdealLoadsAirSystem,\n' + \
+                '\t' + zone.name + ',\t!- Zone Name\n' + \
+                '\t' + thermostatName + ';\t!- Template Thermostat Name\n\n'
+        else:
+            return "\n"
 
     def EPSiteLocation(self, epw_file):
         epwfile = open(epw_file,"r")
@@ -257,13 +295,15 @@ class WriteIDF(object):
         """
         Returns design specification for outdoor air
         """
-        return "\nDesignSpecification:OutdoorAir,\n" + \
-               "\tDSOA" + zone.name + ", !- Name\n" + \
-               "\tsum, !- Outdoor Air Method\n" + \
-               "\t" + str(zone.ventilationPerPerson) + ", !- Outdoor Air Flow per Person {m3/s-person}\n" + \
-               "\t" + str(zone.ventilationPerArea) + ", !- Outdoor Air Flow per Zone Floor Area {m3/s-m2}\n" + \
-               "\t0.0; !- Outdoor Air Flow per Zone {m3/s}"
-
+        if zone.isConditioned:
+            return "\nDesignSpecification:OutdoorAir,\n" + \
+                   "\tDSOA" + zone.name + ", !- Name\n" + \
+                   "\tsum, !- Outdoor Air Method\n" + \
+                   "\t" + str(zone.ventilationPerPerson) + ", !- Outdoor Air Flow per Person {m3/s-person}\n" + \
+                   "\t" + str(zone.ventilationPerArea) + ", !- Outdoor Air Flow per Zone Floor Area {m3/s-m2}\n" + \
+                   "\t0.0; !- Outdoor Air Flow per Zone {m3/s}"
+        else:
+            return "\n"
 
     def EPZoneInfiltration(self, zone, zoneListName = None):
         """ Methods: 
