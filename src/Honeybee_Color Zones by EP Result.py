@@ -37,7 +37,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Color Zones by EP Result"
 ghenv.Component.NickName = 'ColorZones'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2014'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_08_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
@@ -423,7 +423,7 @@ def getData(pyZoneData, zoneFlrAreas, annualData, simStep, zoneNormalizable, zon
             else:
                 for list in pyZoneData:
                     dataForColoring.append(round(sum(list), 4)/len(list))
-        if analysisPeriod == [] and stepOfSimulation == None:
+        if analysisPeriod == [0, 0] and stepOfSimulation == None:
             getColorData1()
             if zoneHeaders != []:
                 coloredTitle.append(str(monthNames[zoneHeaders[0][5][0]-1]) + " " + str(zoneHeaders[0][5][1]) + " " + str(timeNames[zoneHeaders[0][5][2]-1]) + " - " + str(monthNames[zoneHeaders[0][6][0]-1]) + " " + str(zoneHeaders[0][6][1]) + " " + str(timeNames[zoneHeaders[0][6][2]-1]))
@@ -461,7 +461,7 @@ def getData(pyZoneData, zoneFlrAreas, annualData, simStep, zoneNormalizable, zon
                 ghenv.Component.AddRuntimeMessage(w, warning)
         
         # If the user has connected annual data, has not hooked up a step of simulation, and has hooked up an analysis period, take data from just the analysis period.
-        if annualData == True and analysisPeriod != [] and stepOfSimulation == None and simStep != "Annually" and simStep != "unknown timestep":
+        if annualData == True and analysisPeriod != [0,0] and stepOfSimulation == None and simStep != "Annually" and simStep != "unknown timestep":
             #If the data is monthly, just take the months from the analysis period.
             if simStep == "Monthly":
                 startMonth = analysisPeriod[0][0]
