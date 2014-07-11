@@ -428,6 +428,11 @@ def getData(pyZoneData, zoneFlrAreas, annualData, simStep, zoneNormalizable, zon
             if zoneHeaders != []:
                 coloredTitle.append(str(monthNames[zoneHeaders[0][5][0]-1]) + " " + str(zoneHeaders[0][5][1]) + " " + str(timeNames[zoneHeaders[0][5][2]-1]) + " - " + str(monthNames[zoneHeaders[0][6][0]-1]) + " " + str(zoneHeaders[0][6][1]) + " " + str(timeNames[zoneHeaders[0][6][2]-1]))
             else: coloredTitle.append("Complete Time Period That Is Connected")
+        if analysisPeriod == [] and stepOfSimulation == None:
+            getColorData1()
+            if zoneHeaders != []:
+                coloredTitle.append(str(monthNames[zoneHeaders[0][5][0]-1]) + " " + str(zoneHeaders[0][5][1]) + " " + str(timeNames[zoneHeaders[0][5][2]-1]) + " - " + str(monthNames[zoneHeaders[0][6][0]-1]) + " " + str(zoneHeaders[0][6][1]) + " " + str(timeNames[zoneHeaders[0][6][2]-1]))
+            else: coloredTitle.append("Complete Time Period That Is Connected")
         elif simStep == "Annually" or simStep == "unknown timestep":
             getColorData1()
             if zoneHeaders != []:
@@ -461,7 +466,7 @@ def getData(pyZoneData, zoneFlrAreas, annualData, simStep, zoneNormalizable, zon
                 ghenv.Component.AddRuntimeMessage(w, warning)
         
         # If the user has connected annual data, has not hooked up a step of simulation, and has hooked up an analysis period, take data from just the analysis period.
-        if annualData == True and analysisPeriod != [0,0] and stepOfSimulation == None and simStep != "Annually" and simStep != "unknown timestep":
+        if annualData == True and analysisPeriod != [0,0] and analysisPeriod != [] and stepOfSimulation == None and simStep != "Annually" and simStep != "unknown timestep":
             #If the data is monthly, just take the months from the analysis period.
             if simStep == "Monthly":
                 startMonth = analysisPeriod[0][0]
