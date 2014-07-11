@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_06_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_11_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1004,6 +1004,18 @@ class EPMaterialAux(object):
 class EPScheduleAux(object):
     
     def getScheduleDataByName(self, schName, component = None):
+
+        if schName.endswith(".csv"):
+            # Check for the file
+            if not os.path.isfile(schName):
+                msg = "Failed to find the schedule file: " + schName
+                print msg
+                if component is not None:
+                    component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                return None, None
+                
+            return schName, "csv"
+            
         try:
             scheduleObj = sc.sticky["honeybee_ScheduleLib"][schName]
         except Exception, e:

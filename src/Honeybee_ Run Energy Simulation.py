@@ -8,7 +8,7 @@ export geometries to idf file, and run the energy simulation
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_07_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_11_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -23,12 +23,17 @@ from clr import AddReference
 AddReference('Grasshopper')
 import Grasshopper.Kernel as gh
 import math
+import shutil
 
 rc.Runtime.HostUtils.DisplayOleAlerts(False)
 
 
 class WriteIDF(object):
-
+    
+    def __init__(self, workingDir):
+        self.fileBasedSchedules = {}
+        self.workingDir = workingDir
+        
     def EPZone(self, zone):
         return '\nZone,\n' + \
         '\t' + zone.name + ',\n' + \
@@ -412,6 +417,10 @@ class WriteIDF(object):
         value = zone.lightingDensityPerArea
         scheduleName = zone.lightingSchedule
         
+        if scheduleName.endswith(".csv"):
+            # find filebased schedule name
+            scheduleName = self.fileBasedSchedules[scheduleName]
+        
         if zone.daylightThreshold != "":
             method = 2
             lightingLevel = str(zone.daylightThreshold)
@@ -517,8 +526,6 @@ class WriteIDF(object):
                     materialStr =  materialStr + "  " + str(materialData[layer][0]) + ";   !- " +  materialData[layer][1] + "\n\n"
             return materialStr
        
-       
-    
     def EPConstructionStr(self, constructionName):
         constructionData = None
         if constructionName in sc.sticky ["honeybee_constructionLib"].keys():
@@ -542,6 +549,33 @@ class WriteIDF(object):
             
     def EPSCHStr(self, scheduleName):
         scheduleData = None
+        if scheduleName.endswith(".csv"):
+            # check if the schedule is already created
+            if scheduleName in self.fileBasedSchedules.keys(): return "\n"
+            
+            # create schedule object based on file
+            # find file name and use it as schedule name
+            scheduleFileName = os.path.basename(scheduleName)
+            scheduleObjectName = "_".join(scheduleFileName.split(".")[:-1])
+            
+            # copy schedule file into working dir
+            scheduleNewAddress = os.path.join(self.workingDir, scheduleFileName)
+            shutil.copyfile(scheduleName, scheduleNewAddress)
+            
+            # put them as key, value so I can find the new name when write schedule
+            self.fileBasedSchedules[scheduleName] = scheduleObjectName
+            
+            scheduleStr = "Schedule:File,\n" + \
+                          scheduleObjectName + ",\t!- Name\n" + \
+                          "Fraction,\t!- Schedule Type Limits Name\n" + \
+                          scheduleNewAddress + ",\t!- File Name\n" + \
+                          "5,\t!- Column Number\n" + \
+                          "3,\t!- Rows To Skip\n" + \
+                          "8760,\t!- Hours of Data\n" + \
+                          "Comma;\t!- Column Separator\n"
+            
+            return scheduleStr
+            
         if scheduleName in sc.sticky ["honeybee_ScheduleLib"].keys():
             scheduleData = sc.sticky ["honeybee_ScheduleLib"][scheduleName]
         elif scheduleName in sc.sticky ["honeybee_ScheduleTypeLimitsLib"].keys():
@@ -613,10 +647,9 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         ghenv.Component.AddRuntimeMessage(w, msg)
         return -1
     
+    
     lb_preparation = sc.sticky["ladybug_Preparation"]()
     hb_scheduleLib = sc.sticky["honeybee_DefaultScheduleLib"]()
-    hb_writeIDF = sc.sticky["honeybee_WriteIDF"]()
-    hb_runIDF = sc.sticky["honeybee_RunIDF"]()
     hb_reEvaluateHBZones= sc.sticky["honeybee_reEvaluateHBZones"]
     hb_hive = sc.sticky["honeybee_Hive"]()
     hb_EPScheduleAUX = sc.sticky["honeybee_EPScheduleAUX"]()
@@ -645,6 +678,8 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     if workingDir == -1: return -1
     workingDrive = workingDir[0:1]
         
+    hb_writeIDF = sc.sticky["honeybee_WriteIDF"](workingDir)
+    hb_runIDF = sc.sticky["honeybee_RunIDF"]()
     
     # call the objects from the lib
     thermalZonesPyClasses = hb_hive.callFromHoneybeeHive(HBZones)
@@ -796,7 +831,16 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     # Write Schedules
     for schedule in EPScheduleCollection:
         scheduleValues, comments = hb_EPScheduleAUX.getScheduleDataByName(schedule, ghenv.Component)
-        if scheduleValues!=None:
+        if comments == "csv":
+            # create a new schedule object based on file
+            idfFile.write(hb_writeIDF.EPSCHStr(schedule))
+            
+            # I need to also change the name of the schedule
+            # when I write the objects! Maybe I should have added them
+            # when I check for the zones so I can name them based on zone names
+            pass
+            
+        elif scheduleValues!=None:
             idfFile.write(hb_writeIDF.EPSCHStr(schedule))
             
             # collect all the schedule items inside the schedule
