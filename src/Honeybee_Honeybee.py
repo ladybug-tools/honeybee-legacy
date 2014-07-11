@@ -658,14 +658,9 @@ class EPMaterialAux(object):
             UValueSI = 1 / float(materialObj[2][0])
             
         elif materialType.lower() == "material":
-            thickness = float(materialObj[3][0])
-            conductivity = float(materialObj[4][0])
+            thickness = float(materialObj[2][0])
+            conductivity = float(materialObj[3][0])
             UValueSI = conductivity/thickness
-        
-        elif materialType.lower() == "material:airgap":
-            UValueSI = 1 / float(materialObj[1][0])
-            #print materialObj
-            #print UValueSI
         
         elif materialType.lower() == "material:airgap":
             UValueSI = 1 / float(materialObj[1][0])
