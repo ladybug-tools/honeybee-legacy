@@ -784,7 +784,7 @@ class EPMaterialAux(object):
         
         def checkMultipleKeywords(name, keywordlist):
             for kw in keywordlist:
-                if item.find(kw)== -1:
+                if name.find(kw)== -1:
                     return False
             return True
             
