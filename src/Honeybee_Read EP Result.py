@@ -4,7 +4,9 @@
 # under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
 
 """
-This component reads the results of an EnergyPlus simulation from the WriteIDF Component
+This component reads the results of an EnergyPlus simulation from the WriteIDF Component or any EnergyPlus result .csv file address.  Note that, if you use this component without the WriteIDF component, you should make sure that a corresponding .eio file is next to your .csv file at the input address that you specify.
+_
+This component reads only the results related to zones.  For results related to surfaces, you should use the "Honeybee_Read EP Surface Result" component.
 
 -
 Provided by Honeybee 0.0.53
@@ -13,33 +15,27 @@ Provided by Honeybee 0.0.53
         _resultFileAddress: The result file address that comes out of the WriteIDF component.
         normByFloorArea_: Set to 'True' to normalize all zone energy data by floor area (note that the resulting units will be kWh/m2 as EnergyPlus runs in the metric system).
     Returns:
-        zoneTotalEnergy: The total energy used by each zone in kWh.  This includes cooling, heating, lighting, and equipment.
-        zoneTotalThermalEnergy: The total thermal energy used by each zone in kWh.  This includes cooling and heating.
-        zoneEnergyBalance: The thermal energy used by each zone in kWh.  Heating values are positive while cooling values are negative.
-        zoneCooling: The ideal air load cooling energy needed for each zone in kWh.
-        zoneHeating: The ideal air load heating energy needed for each zone in kWh.
-        zoneElectricLight: The electric lighting energy needed for each zone in kWh.
-        zoneElectricEquip: The electric equipment energy needed for each zone in kWh.
-        zonePeopleGains: The internal heat gains in each zone resulting from people (kWh).
-        zoneTotalSolarGain: The total solar gain in each zone(kWh).
-        zoneBeamGains: The direct solar beam gain in each zone(kWh).
-        zoneDiffGains: The diffuse solar gain in each zone(kWh).
-        zoneInfiltrationEnergyFlow: The heat loss (negative) or heat gain (positive) in each zone resulting from infiltration (kWh).
-        zoneOperativeTemperature: The mean operative temperature of each zone (degrees Celcius).
-        zoneAirTemperature: The mean air temperature of each zone (degrees Celcius).
-        zoneMeanRadiantTemperature: The mean radiant temperature of each zone (degrees Celcius).
-        zoneRelativeHumidity: The relative humidity of each zone (%).
-        surfaceOpaqueIndoorTemp: The indoor surface temperature of each opaque surface (degrees Celcius).
-        surfaceGlazIndoorTemp: The indoor surface temperature of each glazed surface (degrees Celcius).
-        surfaceOpaqueOutdoorTemp: The outdoor surface temperature of each opaque surface (degrees Celcius).
-        surfaceGlazOutdoorTemp: The outdoor surface temperature of each glazed surface (degrees Celcius).
-        surfaceOpaqueEnergyFlow: The heat loss (negative) or heat gain (positive) through each building opaque surface (kWh).
-        surfaceGlazEnergyFlow: The heat loss (negative) or heat gain (positive) through each building glazing surface (kWh).  Note that the value here includes both solar gains and conduction losses/gains.
+        totalEnergy: The total energy used by each zone in kWh.  This includes cooling, heating, lighting, and equipment.
+        totalThermalEnergy: The total thermal energy used by each zone in kWh.  This includes cooling and heating.
+        thermalEnergyBalance: The thermal energy used by each zone in kWh.  Heating values are positive while cooling values are negative.
+        cooling: The ideal air load cooling energy needed for each zone in kWh.
+        heating: The ideal air load heating energy needed for each zone in kWh.
+        electricLight: The electric lighting energy needed for each zone in kWh.
+        electricEquip: The electric equipment energy needed for each zone in kWh.
+        peopleGains: The internal heat gains in each zone resulting from people (kWh).
+        totalSolarGain: The total solar gain in each zone(kWh).
+        solarBeamGains: The direct solar beam gain in each zone(kWh).
+        solarDiffuseGains: The diffuse solar gain in each zone(kWh).
+        infiltrationEnergy: The heat loss (negative) or heat gain (positive) in each zone resulting from infiltration (kWh).
+        operativeTemperature: The mean operative temperature of each zone (degrees Celcius).
+        airTemperature: The mean air temperature of each zone (degrees Celcius).
+        meanRadTemperature: The mean radiant temperature of each zone (degrees Celcius).
+        relativeHumidity: The relative humidity of each zone (%).
 """
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
-ghenv.Component.NickName = 'readIdf'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_08_2014'
+ghenv.Component.NickName = 'readEPResult'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_11_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "4"
@@ -118,31 +114,25 @@ elif normByFlr == True:
 else: pass
 
 # Make data tree objects for all of the outputs.
-zoneTotalEnergy = DataTree[Object]()
-zoneTotalThermalEnergy = DataTree[Object]()
-zoneEnergyBalance = DataTree[Object]()
-zoneCooling = DataTree[Object]()
-zoneHeating = DataTree[Object]()
-zoneElectricLight = DataTree[Object]()
-zoneElectricEquip = DataTree[Object]()
-zonePeopleGains = DataTree[Object]()
-zoneTotalSolarGain = DataTree[Object]()
-zoneBeamGains = DataTree[Object]()
-zoneDiffGains = DataTree[Object]()
-zoneInfiltrationEnergyFlow = DataTree[Object]()
-zoneOperativeTemperature = DataTree[Object]()
-zoneAirTemperature = DataTree[Object]()
-zoneMeanRadiantTemperature = DataTree[Object]()
-zoneRelativeHumidity = DataTree[Object]()
-surfaceOpaqueIndoorTemp = DataTree[Object]()
-surfaceGlazIndoorTemp = DataTree[Object]()
-surfaceOpaqueOutdoorTemp = DataTree[Object]()
-surfaceGlazOutdoorTemp = DataTree[Object]()
-surfaceOpaqueEnergyFlow = DataTree[Object]()
-surfaceGlazEnergyFlow = DataTree[Object]()
+totalEnergy = DataTree[Object]()
+totalThermalEnergy = DataTree[Object]()
+thermalEnergyBalance = DataTree[Object]()
+cooling = DataTree[Object]()
+heating = DataTree[Object]()
+electricLight = DataTree[Object]()
+electricEquip = DataTree[Object]()
+peopleGains = DataTree[Object]()
+totalSolarGain = DataTree[Object]()
+solarBeamGains = DataTree[Object]()
+solarDiffuseGains = DataTree[Object]()
+infiltrationEnergy = DataTree[Object]()
+operativeTemperature = DataTree[Object]()
+airTemperature = DataTree[Object]()
+meanRadTemperature = DataTree[Object]()
+relativeHumidity = DataTree[Object]()
 
 #Make a list to keep track of what outputs are in the result file.
-dataTypeList = [False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False]
+dataTypeList = [False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False]
 parseSuccess = False
 
 #Make a list to keep track of the number of surfaces in each zone.
@@ -172,13 +162,6 @@ if _resultFileAddress and gotData == True:
                 #air temperature = 9
                 #radiant temperature = 10
                 #relative humidity = 11
-                #inside opaque temperature = 12
-                #inside glazing temperature = 13
-                #outside opaque temperature = 14
-                #outside glazing temperature = 15
-                #opaque surface energy transfer = 16
-                #glazing surface energy gain = 17
-                #glazing surface energy loss = 18
                 key = []; path = []
                 for columnCount, column in enumerate(line.split(',')):
                     if 'Zone Air System Sensible Cooling Energy' in column:
@@ -187,15 +170,15 @@ if _resultFileAddress and gotData == True:
                             if name == " " + column.split(':')[0]:
                                 zoneName = name
                                 path.append(count)
-                        zoneCooling.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount])))
-                        zoneCooling.Add(location, GH_Path(int(path[columnCount])))
-                        if normByFlr == False: zoneCooling.Add("Cooling Energy for" + zoneName, GH_Path(int(path[columnCount])))
-                        else: zoneCooling.Add("Floor Normalized Cooling Energy for" + zoneName, GH_Path(int(path[columnCount])))
-                        if normByFlr == False: zoneCooling.Add("kWh", GH_Path(int(path[columnCount])))
-                        else: zoneCooling.Add("kWh/m2", GH_Path(int(path[columnCount])))
-                        zoneCooling.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount])))
-                        zoneCooling.Add(start, GH_Path(int(path[columnCount])))
-                        zoneCooling.Add(end, GH_Path(int(path[columnCount])))
+                        cooling.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount])))
+                        cooling.Add(location, GH_Path(int(path[columnCount])))
+                        if normByFlr == False: cooling.Add("Cooling Energy for" + zoneName, GH_Path(int(path[columnCount])))
+                        else: cooling.Add("Floor Normalized Cooling Energy for" + zoneName, GH_Path(int(path[columnCount])))
+                        if normByFlr == False: cooling.Add("kWh", GH_Path(int(path[columnCount])))
+                        else: cooling.Add("kWh/m2", GH_Path(int(path[columnCount])))
+                        cooling.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount])))
+                        cooling.Add(start, GH_Path(int(path[columnCount])))
+                        cooling.Add(end, GH_Path(int(path[columnCount])))
                         dataTypeList[3] = True
                     
                     elif 'Zone Air System Sensible Heating Energy' in column:
@@ -204,15 +187,15 @@ if _resultFileAddress and gotData == True:
                             if name == " " + column.split(':')[0]:
                                 zoneName = name
                                 path.append(count)
-                        zoneHeating.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount])))
-                        zoneHeating.Add(location, GH_Path(int(path[columnCount])))
-                        if normByFlr == False: zoneHeating.Add("Heating Energy for" + zoneName, GH_Path(int(path[columnCount])))
-                        else:zoneHeating.Add("Floor Normalized Heating Energy for" + zoneName, GH_Path(int(path[columnCount])))
-                        if normByFlr == False: zoneHeating.Add("kWh", GH_Path(int(path[columnCount])))
-                        else: zoneHeating.Add("kWh/m2", GH_Path(int(path[columnCount])))
-                        zoneHeating.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount])))
-                        zoneHeating.Add(start, GH_Path(int(path[columnCount])))
-                        zoneHeating.Add(end, GH_Path(int(path[columnCount])))
+                        heating.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount])))
+                        heating.Add(location, GH_Path(int(path[columnCount])))
+                        if normByFlr == False: heating.Add("Heating Energy for" + zoneName, GH_Path(int(path[columnCount])))
+                        else:heating.Add("Floor Normalized Heating Energy for" + zoneName, GH_Path(int(path[columnCount])))
+                        if normByFlr == False: heating.Add("kWh", GH_Path(int(path[columnCount])))
+                        else: heating.Add("kWh/m2", GH_Path(int(path[columnCount])))
+                        heating.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount])))
+                        heating.Add(start, GH_Path(int(path[columnCount])))
+                        heating.Add(end, GH_Path(int(path[columnCount])))
                         dataTypeList[4] = True
                     
                     elif 'Zone Lights Electric Energy' in column:
@@ -221,15 +204,15 @@ if _resultFileAddress and gotData == True:
                             if name == " " + column.split(':')[0]:
                                 zoneName = name
                                 path.append(count)
-                        zoneElectricLight.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount])))
-                        zoneElectricLight.Add(location, GH_Path(int(path[columnCount])))
-                        if normByFlr == False: zoneElectricLight.Add("Electric Lighting Energy for" + zoneName, GH_Path(int(path[columnCount])))
-                        else: zoneElectricLight.Add("Floor Normalized Electric Lighting Energy for" + zoneName, GH_Path(int(path[columnCount])))
-                        if normByFlr == False: zoneElectricLight.Add("kWh", GH_Path(int(path[columnCount])))
-                        else: zoneElectricLight.Add("kWh/m2", GH_Path(int(path[columnCount])))
-                        zoneElectricLight.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount])))
-                        zoneElectricLight.Add(start, GH_Path(int(path[columnCount])))
-                        zoneElectricLight.Add(end, GH_Path(int(path[columnCount])))
+                        electricLight.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount])))
+                        electricLight.Add(location, GH_Path(int(path[columnCount])))
+                        if normByFlr == False: electricLight.Add("Electric Lighting Energy for" + zoneName, GH_Path(int(path[columnCount])))
+                        else: electricLight.Add("Floor Normalized Electric Lighting Energy for" + zoneName, GH_Path(int(path[columnCount])))
+                        if normByFlr == False: electricLight.Add("kWh", GH_Path(int(path[columnCount])))
+                        else: electricLight.Add("kWh/m2", GH_Path(int(path[columnCount])))
+                        electricLight.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount])))
+                        electricLight.Add(start, GH_Path(int(path[columnCount])))
+                        electricLight.Add(end, GH_Path(int(path[columnCount])))
                         dataTypeList[5] = True
                     
                     elif 'Zone Electric Equipment Electric Energy' in column:
@@ -238,15 +221,15 @@ if _resultFileAddress and gotData == True:
                             if name == " " + column.split(':')[0]:
                                 zoneName = name
                                 path.append(count)
-                        zoneElectricEquip.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount])))
-                        zoneElectricEquip.Add(location, GH_Path(int(path[columnCount])))
-                        if normByFlr == False: zoneElectricEquip.Add("Electric Equipment Energy for" + zoneName, GH_Path(int(path[columnCount])))
-                        else: zoneElectricEquip.Add("Floor Normalized Electric Equipment Energy for" + zoneName, GH_Path(int(path[columnCount])))
-                        if normByFlr == False:zoneElectricEquip.Add("kWh", GH_Path(int(path[columnCount])))
-                        else: zoneElectricEquip.Add("kWh/m2", GH_Path(int(path[columnCount])))
-                        zoneElectricEquip.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount])))
-                        zoneElectricEquip.Add(start, GH_Path(int(path[columnCount])))
-                        zoneElectricEquip.Add(end, GH_Path(int(path[columnCount])))
+                        electricEquip.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount])))
+                        electricEquip.Add(location, GH_Path(int(path[columnCount])))
+                        if normByFlr == False: electricEquip.Add("Electric Equipment Energy for" + zoneName, GH_Path(int(path[columnCount])))
+                        else: electricEquip.Add("Floor Normalized Electric Equipment Energy for" + zoneName, GH_Path(int(path[columnCount])))
+                        if normByFlr == False:electricEquip.Add("kWh", GH_Path(int(path[columnCount])))
+                        else: electricEquip.Add("kWh/m2", GH_Path(int(path[columnCount])))
+                        electricEquip.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount])))
+                        electricEquip.Add(start, GH_Path(int(path[columnCount])))
+                        electricEquip.Add(end, GH_Path(int(path[columnCount])))
                         dataTypeList[6] = True
                     
                     elif 'Zone People Total Heating Energy' in column:
@@ -255,15 +238,15 @@ if _resultFileAddress and gotData == True:
                             if name == " " + column.split(':')[0]:
                                 zoneName = name
                                 path.append(count)
-                        zonePeopleGains.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount])))
-                        zonePeopleGains.Add(location, GH_Path(int(path[columnCount])))
-                        if normByFlr == False: zonePeopleGains.Add("People Energy for" + zoneName, GH_Path(int(path[columnCount])))
-                        else: zonePeopleGains.Add("Floor Normalized People Energy for" + zoneName, GH_Path(int(path[columnCount])))
-                        if normByFlr == False: zonePeopleGains.Add("kWh", GH_Path(int(path[columnCount])))
-                        else: zonePeopleGains.Add("kWh/m2", GH_Path(int(path[columnCount])))
-                        zonePeopleGains.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount])))
-                        zonePeopleGains.Add(start, GH_Path(int(path[columnCount])))
-                        zonePeopleGains.Add(end, GH_Path(int(path[columnCount])))
+                        peopleGains.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount])))
+                        peopleGains.Add(location, GH_Path(int(path[columnCount])))
+                        if normByFlr == False: peopleGains.Add("People Energy for" + zoneName, GH_Path(int(path[columnCount])))
+                        else: peopleGains.Add("Floor Normalized People Energy for" + zoneName, GH_Path(int(path[columnCount])))
+                        if normByFlr == False: peopleGains.Add("kWh", GH_Path(int(path[columnCount])))
+                        else: peopleGains.Add("kWh/m2", GH_Path(int(path[columnCount])))
+                        peopleGains.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount])))
+                        peopleGains.Add(start, GH_Path(int(path[columnCount])))
+                        peopleGains.Add(end, GH_Path(int(path[columnCount])))
                         dataTypeList[7] = True
                     
                     elif 'Zone Exterior Windows Total Transmitted Beam Solar Radiation Energy' in column:
@@ -272,15 +255,15 @@ if _resultFileAddress and gotData == True:
                             if name == " " + column.split(':')[0]:
                                 zoneName = name
                                 path.append(count)
-                        zoneBeamGains.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount])))
-                        zoneBeamGains.Add(location, GH_Path(int(path[columnCount])))
-                        if normByFlr == False:zoneBeamGains.Add("Solar Beam Energy for" + zoneName, GH_Path(int(path[columnCount])))
-                        else: zoneBeamGains.Add("Floor Normalized Solar Beam Energy for" + zoneName, GH_Path(int(path[columnCount])))
-                        if normByFlr == False:zoneBeamGains.Add("kWh", GH_Path(int(path[columnCount])))
-                        else: zoneBeamGains.Add("kWh/m2", GH_Path(int(path[columnCount])))
-                        zoneBeamGains.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount])))
-                        zoneBeamGains.Add(start, GH_Path(int(path[columnCount])))
-                        zoneBeamGains.Add(end, GH_Path(int(path[columnCount])))
+                        solarBeamGains.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount])))
+                        solarBeamGains.Add(location, GH_Path(int(path[columnCount])))
+                        if normByFlr == False:solarBeamGains.Add("Solar Beam Energy for" + zoneName, GH_Path(int(path[columnCount])))
+                        else: solarBeamGains.Add("Floor Normalized Solar Beam Energy for" + zoneName, GH_Path(int(path[columnCount])))
+                        if normByFlr == False:solarBeamGains.Add("kWh", GH_Path(int(path[columnCount])))
+                        else: solarBeamGains.Add("kWh/m2", GH_Path(int(path[columnCount])))
+                        solarBeamGains.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount])))
+                        solarBeamGains.Add(start, GH_Path(int(path[columnCount])))
+                        solarBeamGains.Add(end, GH_Path(int(path[columnCount])))
                         dataTypeList[9] = True
                     
                     elif 'Zone Exterior Windows Total Transmitted Diffuse Solar Radiation Energy' in column:
@@ -289,15 +272,15 @@ if _resultFileAddress and gotData == True:
                             if name == " " + column.split(':')[0]:
                                 zoneName = name
                                 path.append(count)
-                        zoneDiffGains.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount])))
-                        zoneDiffGains.Add(location, GH_Path(int(path[columnCount])))
-                        if normByFlr == False:zoneDiffGains.Add("Solar Diffuse Energy for" + zoneName, GH_Path(int(path[columnCount])))
-                        else: zoneDiffGains.Add("Floor Normalized Solar Diffuse Energy for" + zoneName, GH_Path(int(path[columnCount])))
-                        if normByFlr == False:zoneDiffGains.Add("kWh", GH_Path(int(path[columnCount])))
-                        else: zoneDiffGains.Add("kWh/m2", GH_Path(int(path[columnCount])))
-                        zoneDiffGains.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount])))
-                        zoneDiffGains.Add(start, GH_Path(int(path[columnCount])))
-                        zoneDiffGains.Add(end, GH_Path(int(path[columnCount])))
+                        solarDiffuseGains.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount])))
+                        solarDiffuseGains.Add(location, GH_Path(int(path[columnCount])))
+                        if normByFlr == False:solarDiffuseGains.Add("Solar Diffuse Energy for" + zoneName, GH_Path(int(path[columnCount])))
+                        else: solarDiffuseGains.Add("Floor Normalized Solar Diffuse Energy for" + zoneName, GH_Path(int(path[columnCount])))
+                        if normByFlr == False:solarDiffuseGains.Add("kWh", GH_Path(int(path[columnCount])))
+                        else: solarDiffuseGains.Add("kWh/m2", GH_Path(int(path[columnCount])))
+                        solarDiffuseGains.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount])))
+                        solarDiffuseGains.Add(start, GH_Path(int(path[columnCount])))
+                        solarDiffuseGains.Add(end, GH_Path(int(path[columnCount])))
                         dataTypeList[10] = True
                     
                     elif 'Zone Infiltration Total Heat Loss Energy ' in column:
@@ -306,15 +289,15 @@ if _resultFileAddress and gotData == True:
                             if name == " " + column.split(':')[0]:
                                 zoneName = name
                                 path.append(count)
-                        zoneInfiltrationEnergyFlow.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount])))
-                        zoneInfiltrationEnergyFlow.Add(location, GH_Path(int(path[columnCount])))
-                        if normByFlr == False: zoneInfiltrationEnergyFlow.Add("Infiltration Energy Loss/Gain for" + zoneName, GH_Path(int(path[columnCount])))
-                        else:zoneInfiltrationEnergyFlow.Add("Floor Normalized Infiltration Energy Loss/Gain for" + zoneName, GH_Path(int(path[columnCount])))
-                        if normByFlr == False: zoneInfiltrationEnergyFlow.Add("kWh", GH_Path(int(path[columnCount])))
-                        else:zoneInfiltrationEnergyFlow.Add("kWh/m2", GH_Path(int(path[columnCount])))
-                        zoneInfiltrationEnergyFlow.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount])))
-                        zoneInfiltrationEnergyFlow.Add(start, GH_Path(int(path[columnCount])))
-                        zoneInfiltrationEnergyFlow.Add(end, GH_Path(int(path[columnCount])))
+                        infiltrationEnergy.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount])))
+                        infiltrationEnergy.Add(location, GH_Path(int(path[columnCount])))
+                        if normByFlr == False: infiltrationEnergy.Add("Infiltration Energy Loss/Gain for" + zoneName, GH_Path(int(path[columnCount])))
+                        else:infiltrationEnergy.Add("Floor Normalized Infiltration Energy Loss/Gain for" + zoneName, GH_Path(int(path[columnCount])))
+                        if normByFlr == False: infiltrationEnergy.Add("kWh", GH_Path(int(path[columnCount])))
+                        else:infiltrationEnergy.Add("kWh/m2", GH_Path(int(path[columnCount])))
+                        infiltrationEnergy.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount])))
+                        infiltrationEnergy.Add(start, GH_Path(int(path[columnCount])))
+                        infiltrationEnergy.Add(end, GH_Path(int(path[columnCount])))
                         dataTypeList[11] = True
                     
                     elif 'Zone Infiltration Total Heat Gain Energy' in column:
@@ -329,13 +312,13 @@ if _resultFileAddress and gotData == True:
                             if name == " " + column.split(':')[0]:
                                 zoneName = name
                                 path.append(count)
-                        zoneAirTemperature.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount])))
-                        zoneAirTemperature.Add(location, GH_Path(int(path[columnCount])))
-                        zoneAirTemperature.Add("Air Temperature for" + zoneName, GH_Path(int(path[columnCount])))
-                        zoneAirTemperature.Add("C", GH_Path(int(path[columnCount])))
-                        zoneAirTemperature.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount])))
-                        zoneAirTemperature.Add(start, GH_Path(int(path[columnCount])))
-                        zoneAirTemperature.Add(end, GH_Path(int(path[columnCount])))
+                        airTemperature.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount])))
+                        airTemperature.Add(location, GH_Path(int(path[columnCount])))
+                        airTemperature.Add("Air Temperature for" + zoneName, GH_Path(int(path[columnCount])))
+                        airTemperature.Add("C", GH_Path(int(path[columnCount])))
+                        airTemperature.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount])))
+                        airTemperature.Add(start, GH_Path(int(path[columnCount])))
+                        airTemperature.Add(end, GH_Path(int(path[columnCount])))
                         dataTypeList[13] = True
                     
                     elif 'Zone Mean Radiant Temperature' in column:
@@ -344,13 +327,13 @@ if _resultFileAddress and gotData == True:
                             if name == " " + column.split(':')[0]:
                                 zoneName = name
                                 path.append(count)
-                        zoneMeanRadiantTemperature.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount])))
-                        zoneMeanRadiantTemperature.Add(location, GH_Path(int(path[columnCount])))
-                        zoneMeanRadiantTemperature.Add("Radiant Temperature for" + zoneName, GH_Path(int(path[columnCount])))
-                        zoneMeanRadiantTemperature.Add("C", GH_Path(int(path[columnCount])))
-                        zoneMeanRadiantTemperature.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount])))
-                        zoneMeanRadiantTemperature.Add(start, GH_Path(int(path[columnCount])))
-                        zoneMeanRadiantTemperature.Add(end, GH_Path(int(path[columnCount])))
+                        meanRadTemperature.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount])))
+                        meanRadTemperature.Add(location, GH_Path(int(path[columnCount])))
+                        meanRadTemperature.Add("Radiant Temperature for" + zoneName, GH_Path(int(path[columnCount])))
+                        meanRadTemperature.Add("C", GH_Path(int(path[columnCount])))
+                        meanRadTemperature.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount])))
+                        meanRadTemperature.Add(start, GH_Path(int(path[columnCount])))
+                        meanRadTemperature.Add(end, GH_Path(int(path[columnCount])))
                         dataTypeList[14] = True
                     
                     elif 'Zone Air Relative Humidity' in column:
@@ -359,167 +342,14 @@ if _resultFileAddress and gotData == True:
                             if name == " " + column.split(':')[0]:
                                 zoneName = name
                                 path.append(count)
-                        zoneRelativeHumidity.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount])))
-                        zoneRelativeHumidity.Add(location, GH_Path(int(path[columnCount])))
-                        zoneRelativeHumidity.Add("Relative Humidity for" + zoneName, GH_Path(int(path[columnCount])))
-                        zoneRelativeHumidity.Add("%", GH_Path(int(path[columnCount])))
-                        zoneRelativeHumidity.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount])))
-                        zoneRelativeHumidity.Add(start, GH_Path(int(path[columnCount])))
-                        zoneRelativeHumidity.Add(end, GH_Path(int(path[columnCount])))
+                        relativeHumidity.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount])))
+                        relativeHumidity.Add(location, GH_Path(int(path[columnCount])))
+                        relativeHumidity.Add("Relative Humidity for" + zoneName, GH_Path(int(path[columnCount])))
+                        relativeHumidity.Add("%", GH_Path(int(path[columnCount])))
+                        relativeHumidity.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount])))
+                        relativeHumidity.Add(start, GH_Path(int(path[columnCount])))
+                        relativeHumidity.Add(end, GH_Path(int(path[columnCount])))
                         dataTypeList[15] = True
-                    
-                    elif 'Surface Inside Face Temperature' in column and "GLZ" not in column:
-                        try:
-                            for count, name in enumerate(zoneNameList):
-                                if name in " " + column.split(':')[0]:
-                                    zoneName = name
-                                    srfName = column.split(':')[0].split(name.split(" ")[-1])[-1]
-                                    srfIndex = len(zoneSrfs[count][0])
-                                    zoneSrfs[count][0].append(1)
-                                    path.append([count, srfIndex])
-                            surfaceOpaqueIndoorTemp.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceOpaqueIndoorTemp.Add(location, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceOpaqueIndoorTemp.Add("Indoor Surface Temperature for" + zoneName + srfName, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceOpaqueIndoorTemp.Add("C", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceOpaqueIndoorTemp.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceOpaqueIndoorTemp.Add(start, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceOpaqueIndoorTemp.Add(end, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            key.append(12)
-                            dataTypeList[16] = True
-                        except:
-                            key.append(-1)
-                            path.append(-1)
-                    
-                    elif 'Surface Inside Face Temperature' in column and "GLZ" in column:
-                        try:
-                            for count, name in enumerate(zoneNameList):
-                                if name in " " + column.split(':')[0]:
-                                    zoneName = name
-                                    srfName = column.split(':')[0].split(name.split(" ")[-1])[-1]
-                                    srfIndex = len(zoneSrfs[count][1])
-                                    zoneSrfs[count][1].append(1)
-                                    path.append([count, srfIndex])
-                            
-                            surfaceGlazIndoorTemp.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceGlazIndoorTemp.Add(location, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceGlazIndoorTemp.Add("Indoor Surface Temperature for" + zoneName + srfName, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceGlazIndoorTemp.Add("C", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceGlazIndoorTemp.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceGlazIndoorTemp.Add(start, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceGlazIndoorTemp.Add(end, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            key.append(13)
-                            dataTypeList[17] = True
-                        except:
-                            key.append(-1)
-                            path.append(-1)
-                    
-                    elif 'Surface Outside Face Temperature' in column and "GLZ" not in column:
-                        try:
-                            for count, name in enumerate(zoneNameList):
-                                if name in " " + column.split(':')[0]:
-                                    zoneName = name
-                                    srfName = column.split(':')[0].split(name.split(" ")[-1])[-1]
-                                    srfIndex = len(zoneSrfs[count][2])
-                                    zoneSrfs[count][2].append(1)
-                                    path.append([count, srfIndex])
-                            surfaceOpaqueOutdoorTemp.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceOpaqueOutdoorTemp.Add(location, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceOpaqueOutdoorTemp.Add("Outdoor Surface Temperature for" + zoneName + srfName, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceOpaqueOutdoorTemp.Add("C", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceOpaqueOutdoorTemp.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceOpaqueOutdoorTemp.Add(start, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceOpaqueOutdoorTemp.Add(end, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            key.append(14)
-                            dataTypeList[18] = True
-                        except:
-                            key.append(-1)
-                            path.append(-1)
-                    
-                    elif 'Surface Outside Face Temperature' in column and "GLZ" in column:
-                        try:
-                            for count, name in enumerate(zoneNameList):
-                                if name in " " + column.split(':')[0]:
-                                    zoneName = name
-                                    srfName = column.split(':')[0].split(name.split(" ")[-1])[-1]
-                                    srfIndex = len(zoneSrfs[count][3])
-                                    zoneSrfs[count][3].append(1)
-                                    path.append([count, srfIndex])
-                            surfaceGlazOutdoorTemp.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceGlazOutdoorTemp.Add(location, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceGlazOutdoorTemp.Add("Outdoor Surface Temperature for" + zoneName + srfName, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceGlazOutdoorTemp.Add("C", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceGlazOutdoorTemp.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceGlazOutdoorTemp.Add(start, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceGlazOutdoorTemp.Add(end, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            key.append(15)
-                            dataTypeList[19] = True
-                        except:
-                            key.append(-1)
-                            path.append(-1)
-                    
-                    elif 'Surface Average Face Conduction Heat Transfer Energy' in column and "GLZ" not in column:
-                        try:
-                            for count, name in enumerate(zoneNameList):
-                                if name in " " + column.split(':')[0]:
-                                    zoneName = name
-                                    srfName = column.split(':')[0].split(name.split(" ")[-1])[-1]
-                                    srfIndex = len(zoneSrfs[count][4])
-                                    zoneSrfs[count][4].append(1)
-                                    path.append([count, srfIndex])
-                            surfaceOpaqueEnergyFlow.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceOpaqueEnergyFlow.Add(location, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceOpaqueEnergyFlow.Add("Opaque Conductive Energy Loss/Gain for" + zoneName + srfName, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceOpaqueEnergyFlow.Add("kWh", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceOpaqueEnergyFlow.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceOpaqueEnergyFlow.Add(start, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceOpaqueEnergyFlow.Add(end, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            key.append(16)
-                            dataTypeList[20] = True
-                        except:
-                            key.append(-1)
-                            path.append(-1)
-                    
-                    elif 'Surface Window Heat Gain Energy' in column and "GLZ" in column:
-                        try:
-                            for count, name in enumerate(zoneNameList):
-                                if name in " " + column.split(':')[0]:
-                                    zoneName = name
-                                    srfName = column.split(':')[0].split(name.split(" ")[-1])[-1]
-                                    srfIndex = len(zoneSrfs[count][5])
-                                    zoneSrfs[count][5].append(1)
-                                    path.append([count, srfIndex])
-                            surfaceGlazEnergyFlow.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceGlazEnergyFlow.Add(location, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceGlazEnergyFlow.Add("Glazing Energy Loss/Gain for" + zoneName + srfName, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceGlazEnergyFlow.Add("kWh", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceGlazEnergyFlow.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceGlazEnergyFlow.Add(start, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceGlazEnergyFlow.Add(end, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            key.append(17)
-                            dataTypeList[21] = True
-                        except:
-                            key.append(-1)
-                            path.append(-1)
-                    
-                    elif 'Surface Window Heat Loss Energy' in column and "GLZ" in column:
-                        try:
-                            gotData = False
-                            for count, name in enumerate(zoneNameList):
-                                if name in " " + column.split(':')[0]:
-                                    zoneName = name
-                                    srfName = column.split(':')[0].split(name.split(" ")[-1])[-1]
-                                    srfIndex = len(zoneSrfs[count][6])
-                                    zoneSrfs[count][6].append(1)
-                                    path.append([count, srfIndex])
-                                    gotData = True
-                                    key.append(18)
-                            if gotData == False:
-                                key.append(-1)
-                                path.append(-1)
-                            else: pass
-                        except:
-                            key.append(-1)
-                            path.append(-1)
                     
                     else:
                         key.append(-1)
@@ -533,73 +363,53 @@ if _resultFileAddress and gotData == True:
                         if normByFlr == True: flrArea = floorAreaList[int(path[columnCount])]
                         else: flrArea = 1
                         p = GH_Path(int(path[columnCount]))
-                        zoneCooling.Add((float(column)/3600000)/flrArea, p)
+                        cooling.Add((float(column)/3600000)/flrArea, p)
                     elif key[columnCount] == 1:
                         if normByFlr == True: flrArea = floorAreaList[int(path[columnCount])]
                         else: flrArea = 1
                         p = GH_Path(int(path[columnCount]))
-                        zoneHeating.Add((float(column)/3600000)/flrArea, p)
+                        heating.Add((float(column)/3600000)/flrArea, p)
                     elif key[columnCount] == 2:
                         if normByFlr == True: flrArea = floorAreaList[int(path[columnCount])]
                         else: flrArea = 1
                         p = GH_Path(int(path[columnCount]))
-                        zoneElectricLight.Add((float(column)/3600000)/flrArea, p)
+                        electricLight.Add((float(column)/3600000)/flrArea, p)
                     elif key[columnCount] == 3:
                         if normByFlr == True: flrArea = floorAreaList[int(path[columnCount])]
                         else: flrArea = 1
                         p = GH_Path(int(path[columnCount]))
-                        zoneElectricEquip.Add((float(column)/3600000)/flrArea, p)
+                        electricEquip.Add((float(column)/3600000)/flrArea, p)
                     elif key[columnCount] == 4:
                         if normByFlr == True: flrArea = floorAreaList[int(path[columnCount])]
                         else: flrArea = 1
                         p = GH_Path(int(path[columnCount]))
-                        zonePeopleGains.Add((float(column)/3600000)/flrArea, p)
+                        peopleGains.Add((float(column)/3600000)/flrArea, p)
                     elif key[columnCount] == 5:
                         if normByFlr == True: flrArea = floorAreaList[int(path[columnCount])]
                         else: flrArea = 1
                         p = GH_Path(int(path[columnCount]))
-                        zoneBeamGains.Add((float(column)/3600000)/flrArea, p)
+                        solarBeamGains.Add((float(column)/3600000)/flrArea, p)
                     elif key[columnCount] == 6:
                         if normByFlr == True: flrArea = floorAreaList[int(path[columnCount])]
                         else: flrArea = 1
                         p = GH_Path(int(path[columnCount]))
-                        zoneDiffGains.Add((float(column)/3600000)/flrArea, p)
+                        solarDiffuseGains.Add((float(column)/3600000)/flrArea, p)
                     elif key[columnCount] == 7:
                         if normByFlr == True: flrArea = floorAreaList[int(path[columnCount])]
                         else: flrArea = 1
                         p = GH_Path(int(path[columnCount]))
-                        zoneInfiltrationEnergyFlow.Add((((float(column))*(-1)/3600000) + ((float( line.split(',')[columnCount+1] ))/3600000))/flrArea, p)
+                        infiltrationEnergy.Add((((float(column))*(-1)/3600000) + ((float( line.split(',')[columnCount+1] ))/3600000))/flrArea, p)
                     elif key[columnCount] == 8:
                         pass
                     elif key[columnCount] == 9:
                         p = GH_Path(int(path[columnCount]))
-                        zoneAirTemperature.Add(float(column), p)
+                        airTemperature.Add(float(column), p)
                     elif key[columnCount] == 10:
                         p = GH_Path(int(path[columnCount]))
-                        zoneMeanRadiantTemperature.Add(float(column), p)
+                        meanRadTemperature.Add(float(column), p)
                     elif key[columnCount] == 11:
                         p = GH_Path(int(path[columnCount]))
-                        zoneRelativeHumidity.Add(float(column), p)
-                    elif key[columnCount] == 12:
-                        p = GH_Path(int(path[columnCount][0]), int(path[columnCount][1]))
-                        surfaceOpaqueIndoorTemp.Add(float(column), p)
-                    elif key[columnCount] == 13:
-                        p = GH_Path(int(path[columnCount][0]), int(path[columnCount][1]))
-                        surfaceGlazIndoorTemp.Add(float(column), p)
-                    elif key[columnCount] == 14:
-                        p = GH_Path(int(path[columnCount][0]), int(path[columnCount][1]))
-                        surfaceOpaqueOutdoorTemp.Add(float(column), p)
-                    elif key[columnCount] == 15:
-                        p = GH_Path(int(path[columnCount][0]), int(path[columnCount][1]))
-                        surfaceGlazOutdoorTemp.Add(float(column), p)
-                    elif key[columnCount] == 16:
-                        p = GH_Path(int(path[columnCount][0]), int(path[columnCount][1]))
-                        surfaceOpaqueEnergyFlow.Add((float(column)/3600000), p)
-                    elif key[columnCount] == 17:
-                        p = GH_Path(int(path[columnCount][0]), int(path[columnCount][1]))
-                        surfaceGlazEnergyFlow.Add((((float(column))/3600000) + ((float( line.split(',')[columnCount+1] ))*(-1)/3600000)), p)
-                    elif key[columnCount] == 18:
-                        pass
+                        relativeHumidity.Add(float(column), p)
                     
         result.close()
         parseSuccess = True
@@ -619,50 +429,50 @@ beamGainPyList = []
 diffGainPyList = []
 airTempPyList = []
 mrtPyList = []
-for i in range(zoneCooling.BranchCount):
-    branchList = zoneCooling.Branch(i)
+for i in range(cooling.BranchCount):
+    branchList = cooling.Branch(i)
     coolingval = []
     for item in branchList:
         coolingval.append(item)
     coolingPyList.append(coolingval)
-for i in range(zoneHeating.BranchCount):
-    branchList = zoneHeating.Branch(i)
+for i in range(heating.BranchCount):
+    branchList = heating.Branch(i)
     heatingval = []
     for item in branchList:
         heatingval.append(item)
     heatingPyList.append(heatingval)
-for i in range(zoneElectricLight.BranchCount):
-    branchList = zoneElectricLight.Branch(i)
+for i in range(electricLight.BranchCount):
+    branchList = electricLight.Branch(i)
     lightingval = []
     for item in branchList:
         lightingval.append(item)
     lightingPyList.append(lightingval)
-for i in range(zoneElectricEquip.BranchCount):
-    branchList = zoneElectricEquip.Branch(i)
+for i in range(electricEquip.BranchCount):
+    branchList = electricEquip.Branch(i)
     equipval = []
     for item in branchList:
         equipval.append(item)
     equipmentPyList.append(equipval)
-for i in range(zoneBeamGains.BranchCount):
-    branchList = zoneBeamGains.Branch(i)
+for i in range(solarBeamGains.BranchCount):
+    branchList = solarBeamGains.Branch(i)
     beamval = []
     for item in branchList:
         beamval.append(item)
     beamGainPyList.append(beamval)
-for i in range(zoneDiffGains.BranchCount):
-    branchList = zoneDiffGains.Branch(i)
+for i in range(solarDiffuseGains.BranchCount):
+    branchList = solarDiffuseGains.Branch(i)
     diffval = []
     for item in branchList:
         diffval.append(item)
     diffGainPyList.append(diffval)
-for i in range(zoneAirTemperature.BranchCount):
-    branchList = zoneAirTemperature.Branch(i)
+for i in range(airTemperature.BranchCount):
+    branchList = airTemperature.Branch(i)
     airval = []
     for item in branchList:
         airval.append(item)
     airTempPyList.append(airval)
-for i in range(zoneMeanRadiantTemperature.BranchCount):
-    branchList = zoneMeanRadiantTemperature.Branch(i)
+for i in range(meanRadTemperature.BranchCount):
+    branchList = meanRadTemperature.Branch(i)
     mrtval = []
     for item in branchList:
         mrtval.append(item)
@@ -671,105 +481,99 @@ for i in range(zoneMeanRadiantTemperature.BranchCount):
 
 if len(coolingPyList) > 0 and len(heatingPyList) > 0 and len(lightingPyList) > 0 and len(equipmentPyList) > 0:
     for listCount, list in enumerate(coolingPyList):
-        zoneTotalEnergy.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(listCount))
-        zoneTotalEnergy.Add(location, GH_Path(listCount))
-        if normByFlr == False: zoneTotalEnergy.Add("Total Energy for" + zoneNameList[listCount], GH_Path(listCount))
-        else: zoneTotalEnergy.Add("Floor Normalized Total Energy for" + zoneNameList[listCount], GH_Path(listCount))
-        if normByFlr == False: zoneTotalEnergy.Add("kWh", GH_Path(listCount))
-        else: zoneTotalEnergy.Add("kWh/m2", GH_Path(listCount))
-        zoneTotalEnergy.Add(list[4].split('(')[-1].split(')')[0], GH_Path(listCount))
-        zoneTotalEnergy.Add(start, GH_Path(listCount))
-        zoneTotalEnergy.Add(end, GH_Path(listCount))
+        totalEnergy.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(listCount))
+        totalEnergy.Add(location, GH_Path(listCount))
+        if normByFlr == False: totalEnergy.Add("Total Energy for" + zoneNameList[listCount], GH_Path(listCount))
+        else: totalEnergy.Add("Floor Normalized Total Energy for" + zoneNameList[listCount], GH_Path(listCount))
+        if normByFlr == False: totalEnergy.Add("kWh", GH_Path(listCount))
+        else: totalEnergy.Add("kWh/m2", GH_Path(listCount))
+        totalEnergy.Add(list[4].split('(')[-1].split(')')[0], GH_Path(listCount))
+        totalEnergy.Add(start, GH_Path(listCount))
+        totalEnergy.Add(end, GH_Path(listCount))
         for numCount, num in enumerate(list[7:]):
-            zoneTotalEnergy.Add((num + heatingPyList[listCount][7:][numCount] + lightingPyList[listCount][7:][numCount] + equipmentPyList[listCount][7:][numCount]), GH_Path(listCount))
+            totalEnergy.Add((num + heatingPyList[listCount][7:][numCount] + lightingPyList[listCount][7:][numCount] + equipmentPyList[listCount][7:][numCount]), GH_Path(listCount))
         dataTypeList[0] = True
 
 if len(coolingPyList) > 0 and len(heatingPyList) > 0:
     for listCount, list in enumerate(coolingPyList):
-        zoneTotalThermalEnergy.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(listCount))
-        zoneTotalThermalEnergy.Add(location, GH_Path(listCount))
-        if normByFlr == False:zoneTotalThermalEnergy.Add("Total Thermal Energy for" + zoneNameList[listCount], GH_Path(listCount))
-        else: zoneTotalThermalEnergy.Add("Floor Normalized Total Thermal Energy for" + zoneNameList[listCount], GH_Path(listCount))
-        if normByFlr == False:zoneTotalThermalEnergy.Add("kWh", GH_Path(listCount))
-        else: zoneTotalThermalEnergy.Add("kWh/m2", GH_Path(listCount))
-        zoneTotalThermalEnergy.Add(list[4].split('(')[-1].split(')')[0], GH_Path(listCount))
-        zoneTotalThermalEnergy.Add(start, GH_Path(listCount))
-        zoneTotalThermalEnergy.Add(end, GH_Path(listCount))
+        totalThermalEnergy.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(listCount))
+        totalThermalEnergy.Add(location, GH_Path(listCount))
+        if normByFlr == False:totalThermalEnergy.Add("Total Thermal Energy for" + zoneNameList[listCount], GH_Path(listCount))
+        else: totalThermalEnergy.Add("Floor Normalized Total Thermal Energy for" + zoneNameList[listCount], GH_Path(listCount))
+        if normByFlr == False:totalThermalEnergy.Add("kWh", GH_Path(listCount))
+        else: totalThermalEnergy.Add("kWh/m2", GH_Path(listCount))
+        totalThermalEnergy.Add(list[4].split('(')[-1].split(')')[0], GH_Path(listCount))
+        totalThermalEnergy.Add(start, GH_Path(listCount))
+        totalThermalEnergy.Add(end, GH_Path(listCount))
         for numCount, num in enumerate(list[7:]):
-            zoneTotalThermalEnergy.Add((num + heatingPyList[listCount][7:][numCount]), GH_Path(listCount))
+            totalThermalEnergy.Add((num + heatingPyList[listCount][7:][numCount]), GH_Path(listCount))
         dataTypeList[1] = True
         
-        zoneEnergyBalance.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(listCount))
-        zoneEnergyBalance.Add(location, GH_Path(listCount))
-        if normByFlr == False:zoneEnergyBalance.Add("Heating - Cooling Energy for" + zoneNameList[listCount], GH_Path(listCount))
-        else: zoneEnergyBalance.Add("Floor Normalized Heating - Cooling Energy for" + zoneNameList[listCount], GH_Path(listCount))
-        if normByFlr == False:zoneEnergyBalance.Add("kWh", GH_Path(listCount))
-        else: zoneEnergyBalance.Add("kWh/m2", GH_Path(listCount))
-        zoneEnergyBalance.Add(list[4].split('(')[-1].split(')')[0], GH_Path(listCount))
-        zoneEnergyBalance.Add(start, GH_Path(listCount))
-        zoneEnergyBalance.Add(end, GH_Path(listCount))
+        thermalEnergyBalance.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(listCount))
+        thermalEnergyBalance.Add(location, GH_Path(listCount))
+        if normByFlr == False:thermalEnergyBalance.Add("Heating - Cooling Energy for" + zoneNameList[listCount], GH_Path(listCount))
+        else: thermalEnergyBalance.Add("Floor Normalized Heating - Cooling Energy for" + zoneNameList[listCount], GH_Path(listCount))
+        if normByFlr == False:thermalEnergyBalance.Add("kWh", GH_Path(listCount))
+        else: thermalEnergyBalance.Add("kWh/m2", GH_Path(listCount))
+        thermalEnergyBalance.Add(list[4].split('(')[-1].split(')')[0], GH_Path(listCount))
+        thermalEnergyBalance.Add(start, GH_Path(listCount))
+        thermalEnergyBalance.Add(end, GH_Path(listCount))
         for numCount, num in enumerate(list[7:]):
-            zoneEnergyBalance.Add((heatingPyList[listCount][7:][numCount] - num), GH_Path(listCount))
+            thermalEnergyBalance.Add((heatingPyList[listCount][7:][numCount] - num), GH_Path(listCount))
         dataTypeList[2] = True
 
 if len(beamGainPyList) > 0 and len(diffGainPyList) > 0:
     for listCount, list in enumerate(beamGainPyList):
-        zoneTotalSolarGain.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(listCount))
-        zoneTotalSolarGain.Add(location, GH_Path(listCount))
-        if normByFlr == False: zoneTotalSolarGain.Add("Total Solar Gain for" + zoneNameList[listCount], GH_Path(listCount))
-        else: zoneTotalSolarGain.Add("Floor Normalized Total Solar Gain for" + zoneNameList[listCount], GH_Path(listCount))
-        if normByFlr == False: zoneTotalSolarGain.Add("kWh", GH_Path(listCount))
-        else: zoneTotalSolarGain.Add("kWh/m2", GH_Path(listCount))
-        zoneTotalSolarGain.Add(list[4].split('(')[-1].split(')')[0], GH_Path(listCount))
-        zoneTotalSolarGain.Add(start, GH_Path(listCount))
-        zoneTotalSolarGain.Add(end, GH_Path(listCount))
+        totalSolarGain.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(listCount))
+        totalSolarGain.Add(location, GH_Path(listCount))
+        if normByFlr == False: totalSolarGain.Add("Total Solar Gain for" + zoneNameList[listCount], GH_Path(listCount))
+        else: totalSolarGain.Add("Floor Normalized Total Solar Gain for" + zoneNameList[listCount], GH_Path(listCount))
+        if normByFlr == False: totalSolarGain.Add("kWh", GH_Path(listCount))
+        else: totalSolarGain.Add("kWh/m2", GH_Path(listCount))
+        totalSolarGain.Add(list[4].split('(')[-1].split(')')[0], GH_Path(listCount))
+        totalSolarGain.Add(start, GH_Path(listCount))
+        totalSolarGain.Add(end, GH_Path(listCount))
         for numCount, num in enumerate(list[7:]):
-            zoneTotalSolarGain.Add((num + diffGainPyList[listCount][7:][numCount]), GH_Path(listCount))
+            totalSolarGain.Add((num + diffGainPyList[listCount][7:][numCount]), GH_Path(listCount))
         dataTypeList[8] = True
 
 if len(airTempPyList) > 0 and len(mrtPyList) > 0:
     for listCount, list in enumerate(airTempPyList):
-        zoneOperativeTemperature.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(listCount))
-        zoneOperativeTemperature.Add(location, GH_Path(listCount))
-        zoneOperativeTemperature.Add("Operative Temperature for" + zoneNameList[listCount], GH_Path(listCount))
-        zoneOperativeTemperature.Add("C", GH_Path(listCount))
-        zoneOperativeTemperature.Add(list[4].split('(')[-1].split(')')[0], GH_Path(listCount))
-        zoneOperativeTemperature.Add(start, GH_Path(listCount))
-        zoneOperativeTemperature.Add(end, GH_Path(listCount))
+        operativeTemperature.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(listCount))
+        operativeTemperature.Add(location, GH_Path(listCount))
+        operativeTemperature.Add("Operative Temperature for" + zoneNameList[listCount], GH_Path(listCount))
+        operativeTemperature.Add("C", GH_Path(listCount))
+        operativeTemperature.Add(list[4].split('(')[-1].split(')')[0], GH_Path(listCount))
+        operativeTemperature.Add(start, GH_Path(listCount))
+        operativeTemperature.Add(end, GH_Path(listCount))
         for numCount, num in enumerate(list[7:]):
-            zoneOperativeTemperature.Add((num + mrtPyList[listCount][7:][numCount])/2, GH_Path(listCount))
+            operativeTemperature.Add((num + mrtPyList[listCount][7:][numCount])/2, GH_Path(listCount))
         dataTypeList[12] = True
 
 #If some of the component outputs are not in the result csv file, blot the variable out of the component.
 
 outputsDict = {
      
-0: ["zoneTotalEnergy", "The total energy used by each zone in kWh.  This includes cooling, heating, lighting, and equipment."],
-1: ["zoneTotalThermalEnergy", "The total thermal energy used by each zone in kWh.  This includes cooling and heating."],
-2: ["zoneEnergyBalance", "The thermal energy used by each zone in kWh.  Heating values are positive while cooling values are negative."],
-3: ["zoneCooling", "The ideal air load cooling energy needed for each zone in kWh."],
-4: ["zoneHeating", "The ideal air load heating energy needed for each zone in kWh."],
-5: ["zoneElectricLight", "The electric lighting energy needed for each zone in kWh."],
-6: ["zoneElectricEquip", "The electric equipment energy needed for each zone in kWh."],
-7: ["zonePeopleGains", "The internal heat gains in each zone resulting from people (kWh)."],
-8: ["zoneTotalSolarGain", "The total solar gain in each zone(kWh)."],
-9: ["zoneBeamGains", "The direct solar beam gain in each zone(kWh)."],
-10: ["zoneDiffGains", "The diffuse solar gain in each zone(kWh)."],
-11: ["zoneInfiltrationEnergyFlow", "The heat loss (negative) or heat gain (positive) in each zone resulting from infiltration (kWh)."],
-12: ["zoneOperativeTemperature", "The mean operative temperature of each zone (degrees Celcius)."],
-13: ["zoneAirTemperature", "The mean air temperature of each zone (degrees Celcius)."],
-14: ["zoneMeanRadiantTemperature", "The mean radiant temperature of each zone (degrees Celcius)."],
-15: ["zoneRelativeHumidity", "The relative humidity of each zone (%)."],
-16: ["surfaceOpaqueIndoorTemp", "The indoor surface temperature of each opaque surface (degrees Celcius)."],
-17: ["surfaceGlazIndoorTemp", "The indoor surface temperature of each glazed surface (degrees Celcius)."],
-18: ["surfaceOpaqueOutdoorTemp", "The outdoor surface temperature of each opaque surface (degrees Celcius)."],
-19: ["surfaceGlazOutdoorTemp", "The outdoor surface temperature of each glazed surface (degrees Celcius)."],
-20: ["surfaceOpaqueEnergyFlow", "The heat loss (negative) or heat gain (positive) through each building opaque surface (kWh)."],
-21: ["surfaceGlazEnergyFlow", "The heat loss (negative) or heat gain (positive) through each building glazing surface (kWh).  Note that the value here includes both solar gains and conduction losses/gains."]
+0: ["totalEnergy", "The total energy used by each zone in kWh.  This includes cooling, heating, lighting, and equipment."],
+1: ["totalThermalEnergy", "The total thermal energy used by each zone in kWh.  This includes cooling and heating."],
+2: ["thermalEnergyBalance", "The thermal energy used by each zone in kWh.  Heating values are positive while cooling values are negative."],
+3: ["cooling", "The ideal air load cooling energy needed for each zone in kWh."],
+4: ["heating", "The ideal air load heating energy needed for each zone in kWh."],
+5: ["electricLight", "The electric lighting energy needed for each zone in kWh."],
+6: ["electricEquip", "The electric equipment energy needed for each zone in kWh."],
+7: ["peopleGains", "The internal heat gains in each zone resulting from people (kWh)."],
+8: ["totalSolarGain", "The total solar gain in each zone(kWh)."],
+9: ["solarBeamGains", "The direct solar beam gain in each zone(kWh)."],
+10: ["solarDiffuseGains", "The diffuse solar gain in each zone(kWh)."],
+11: ["infiltrationEnergy", "The heat loss (negative) or heat gain (positive) in each zone resulting from infiltration (kWh)."],
+12: ["operativeTemperature", "The mean operative temperature of each zone (degrees Celcius)."],
+13: ["airTemperature", "The mean air temperature of each zone (degrees Celcius)."],
+14: ["meanRadTemperature", "The mean radiant temperature of each zone (degrees Celcius)."],
+15: ["relativeHumidity", "The relative humidity of each zone (%)."]
 }
 
 if _resultFileAddress and parseSuccess == True:
-    for output in range(22):
+    for output in range(16):
         if dataTypeList[output] == False:
             ghenv.Component.Params.Output[output].NickName = "............................"
             ghenv.Component.Params.Output[output].Name = "............................"
@@ -779,7 +583,7 @@ if _resultFileAddress and parseSuccess == True:
             ghenv.Component.Params.Output[output].Name = outputsDict[output][0]
             ghenv.Component.Params.Output[output].Description = outputsDict[output][1]
 else:
-    for output in range(22):
+    for output in range(16):
         ghenv.Component.Params.Output[output].NickName = outputsDict[output][0]
         ghenv.Component.Params.Output[output].Name = outputsDict[output][0]
         ghenv.Component.Params.Output[output].Description = outputsDict[output][1]
