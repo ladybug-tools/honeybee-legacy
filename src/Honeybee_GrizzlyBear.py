@@ -16,6 +16,7 @@ Provided by Honeybee 0.0.53
         rhinolocation: will be replaced with LadyBug location
         _HBZones: Input your honeybee zones
         HBContext: Input your honeybee context
+        meshSettings_: Custom mesh setting. Use Grasshopper mesh setting components
         _writegbXML: Set to true to create gbxml
         workingDir: C:\gbXML by default
         fileName: choose a filename, no need to add the xml extension.  
@@ -26,7 +27,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_GrizzlyBear"
 ghenv.Component.NickName = 'grizzlyBear'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_04_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_12_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | WIP"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1612,7 +1613,7 @@ if gbXMLIsReady and _location and _writegbXML:
             
             HBZones = hb_hive.callFromHoneybeeHive(_HBZones)
             # reEvaluate zones
-            reEvaluate = hb_reEvaluateHBZones(HBZones, meshingLevel = 1, triangulate = True)
+            reEvaluate = hb_reEvaluateHBZones(HBZones, meshSettings_)
             reEvaluate.evaluateZones()
             if HBContext_ and HBContext_[0]!=None:
                 # call the objects from the lib
