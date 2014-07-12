@@ -19,6 +19,7 @@ Provided by Honeybee 0.0.53
         _workingDir_: Working directory on your system. Default is set to C:\Ladybug
         _radFileName_: Input the project name as a string
         meshingLevel_: Level of meshing [0] Coarse [1] Smooth
+        additionalRadFiles_: A list of fullpath to valid radiance files which will be added to the scene
         overwriteResults_: Set to False if you want the component create a copy of all the results. Default is True
         
     Returns:
@@ -35,7 +36,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Run Daylight Simulation"
 ghenv.Component.NickName = 'runDaylightAnalysis'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_11_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -780,7 +781,8 @@ sc.sticky["honeybee_WriteRAD"] = WriteRAD
 sc.sticky["honeybee_WriteRADAUX"] = WriteRADAUX
 sc.sticky["honeybee_WriteDS"] = WriteDS
 
-def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir, radFileName, meshingLevel, waitingTime, overwriteResults):
+def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir,
+         radFileName, meshingLevel, waitingTime, additionalRadFiles, overwriteResults):
     # import the classes
     if sc.sticky.has_key('ladybug_release')and sc.sticky.has_key('honeybee_release'):
         lb_preparation = sc.sticky["ladybug_Preparation"]()
@@ -1408,7 +1410,12 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
             # write OCT file
             # 3.2. oconv line
             OCTFileName = radFileName + '_RAD'
-            OCTLine = hb_writeRADAUX.oconvLine(OCTFileName, [materialFileName, radSkyFileName, radFileFullName])
+            
+            sceneRadFiles = [materialFileName, radSkyFileName, radFileFullName]
+            if additionalRadFiles:
+                sceneRadFiles += additionalRadFiles
+                
+            OCTLine = hb_writeRADAUX.oconvLine(OCTFileName, sceneRadFiles)
             batchFile.write(OCTLine)
             
             if analysisRecipe.type == 0:
@@ -1489,7 +1496,7 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
         ghenv.Component.AddRuntimeMessage(w, "You should first let both Ladybug and Honeybee to fly...")
         return -1
 
-if _writeRad == True and len(_HBObjects)!=0 and _HBObjects[0]!=None and _analysisRecipe!=None:
+if _writeRad == True and _analysisRecipe!=None and ((len(_HBObjects)!=0 and _HBObjects[0]!=None) or  additionalRadFiles_!=[]):
     report = ""
     done = False
     waitingTime = 0.2 # waiting time between batch files in seconds
@@ -1506,7 +1513,9 @@ if _writeRad == True and len(_HBObjects)!=0 and _HBObjects[0]!=None and _analysi
         
     
     
-    result = main(north_, _HBObjects, _analysisRecipe, runRad_, numOfCPUs, _workingDir_, _radFileName_, meshingLevel_, waitingTime, overwriteResults_)
+    result = main(north_, _HBObjects, _analysisRecipe, runRad_, numOfCPUs, \
+                  _workingDir_, _radFileName_, meshingLevel_, waitingTime, \
+                  additionalRadFiles_, overwriteResults_)
     
     if result!= -1:
         # RADGeoFileAddress, radiationResult, RADResultFilesAddress, testPoints, DSResultFilesAddress, HDRFileAddress = result
