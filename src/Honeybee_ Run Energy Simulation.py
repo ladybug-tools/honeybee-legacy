@@ -3,12 +3,14 @@ export geometries to idf file, and run the energy simulation
 
     Args:
         input1: ...
+        meshSettings_: Custom mesh setting. Use Grasshopper mesh setting components
+        
     Returns:
         readMe!: ...
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_11_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_12_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -631,7 +633,7 @@ sc.sticky["honeybee_RunIDF"] = RunIDF
 
 def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext,
          simulationOutputs, writeIdf, runEnergyPlus, workingDir, idfFileName,
-         meshingLevel, triangulate):
+         meshSettings):
     # import the classes
     w = gh.GH_RuntimeMessageLevel.Warning
     
@@ -684,7 +686,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     # call the objects from the lib
     thermalZonesPyClasses = hb_hive.callFromHoneybeeHive(HBZones)
     
-    reEvaluate = hb_reEvaluateHBZones(thermalZonesPyClasses, meshingLevel, triangulate)
+    reEvaluate = hb_reEvaluateHBZones(thermalZonesPyClasses, meshSettings)
     reEvaluate.evaluateZones()
     
     idfFileFullName = workingDir + "\\" + idfFileName
@@ -931,7 +933,7 @@ if _writeIdf == True and _epwFile and _HBZones and _HBZones[0]!=None:
     
     result = main(north_, _epwFile, _energySimPar_, _analysisPeriod_, _HBZones,
                   HBContext_, simulationOutputs_, _writeIdf, runEnergyPlus_,
-                  _workingDir_, _idfFileName_, meshingLevel_, triangulate_)
+                  _workingDir_, _idfFileName_, meshSettings_)
     if result!= -1:
         idfFileAddress, resultFileAddress = result
         if runEnergyPlus_:
