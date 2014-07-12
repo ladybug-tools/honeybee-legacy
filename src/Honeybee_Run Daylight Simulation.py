@@ -18,7 +18,7 @@ Provided by Honeybee 0.0.53
         _numOfCPUs_: Number of CPUs to be used for the studies. This option doesn't work for image-based analysis
         _workingDir_: Working directory on your system. Default is set to C:\Ladybug
         _radFileName_: Input the project name as a string
-        meshingLevel_: Level of meshing [0] Coarse [1] Smooth
+        meshSettings_: Custom mesh setting. Use Grasshopper mesh setting components
         additionalRadFiles_: A list of fullpath to valid radiance files which will be added to the scene
         overwriteResults_: Set to False if you want the component create a copy of all the results. Default is True
         
@@ -36,7 +36,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Run Daylight Simulation"
 ghenv.Component.NickName = 'runDaylightAnalysis'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_11_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_12_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -782,7 +782,7 @@ sc.sticky["honeybee_WriteRADAUX"] = WriteRADAUX
 sc.sticky["honeybee_WriteDS"] = WriteDS
 
 def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir,
-         radFileName, meshingLevel, waitingTime, additionalRadFiles, overwriteResults):
+         radFileName, meshParameters, waitingTime, additionalRadFiles, overwriteResults):
     # import the classes
     if sc.sticky.has_key('ladybug_release')and sc.sticky.has_key('honeybee_release'):
         lb_preparation = sc.sticky["ladybug_Preparation"]()
@@ -1023,7 +1023,7 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
                 # check if the object is zone or a surface (?)
                 if HBObj.objectType == "HBZone":
                     if HBObj.hasNonPlanarSrf or HBObj.hasInternalEdge:
-                        HBObj.prepareNonPlanarZone(meshingLevel)
+                        HBObj.prepareNonPlanarZone(meshParameters)
                     
                     for srf in HBObj.surfaces:
                         # collect the custom material informations
@@ -1112,9 +1112,12 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
             hb_RADMaterialAUX.getRADMaterialString('000_Context_Material') + "\n" + \
             hb_RADMaterialAUX.getRADMaterialString('000_Interior_Ceiling') + "\n" + \
             hb_RADMaterialAUX.getRADMaterialString('000_Interior_Floor') + "\n" + \
+            hb_RADMaterialAUX.getRADMaterialString('000_Exterior_Floor') + "\n" + \
             hb_RADMaterialAUX.getRADMaterialString('000_Exterior_Window') + "\n" + \
+            hb_RADMaterialAUX.getRADMaterialString('000_Interior_Window') + "\n" + \
             hb_RADMaterialAUX.getRADMaterialString('000_Exterior_Roof') + "\n" + \
             hb_RADMaterialAUX.getRADMaterialString('000_Exterior_Wall') + "\n" + \
+            hb_RADMaterialAUX.getRADMaterialString('000_Interior_Wall') + "\n" + \
             "# end of generic materials definition(s)\n"
     
         with open(materialFileName, 'w') as matFile:
@@ -1514,7 +1517,7 @@ if _writeRad == True and _analysisRecipe!=None and ((len(_HBObjects)!=0 and _HBO
     
     
     result = main(north_, _HBObjects, _analysisRecipe, runRad_, numOfCPUs, \
-                  _workingDir_, _radFileName_, meshingLevel_, waitingTime, \
+                  _workingDir_, _radFileName_, meshSettings_, waitingTime, \
                   additionalRadFiles_, overwriteResults_)
     
     if result!= -1:

@@ -293,9 +293,12 @@ class RADMaterialAux(object):
             self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', '000_Context_Material', .35, .35, .35, 0, 0.1), True, True)
             self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', '000_Interior_Ceiling', .80, .80, .80, 0, 0.1), True, True)
             self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', '000_Interior_Floor', .2, .2, .2, 0, 0.1), True, True)
+            self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', '000_Exterior_Floor', .2, .2, .2, 0, 0.1), True, True)
             self.analyseRadMaterials(self.createRadMaterialFromParameters('glass', '000_Exterior_Window', .60, .60, .60), True, True)
+            self.analyseRadMaterials(self.createRadMaterialFromParameters('glass', '000_Interior_Window', .60, .60, .60), True, True)
             self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', '000_Exterior_Roof', .35, .35, .35, 0, 0.1), True, True)
             self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', '000_Exterior_Wall', .50, .50, .50, 0, 0.1), True, True)
+            self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', '000_Interior_Wall', .50, .50, .50, 0, 0.1), True, True)
             
             # import user defined RAD library
             RADLibraryFile = os.path.join(sc.sticky["Honeybee_DefaultFolder"], "HoneybeeRadMaterials.mat")
@@ -658,9 +661,14 @@ class EPMaterialAux(object):
             UValueSI = 1 / float(materialObj[2][0])
             
         elif materialType.lower() == "material":
-            thickness = float(materialObj[2][0])
-            conductivity = float(materialObj[3][0])
+            thickness = float(materialObj[3][0])
+            conductivity = float(materialObj[4][0])
             UValueSI = conductivity/thickness
+        
+        elif materialType.lower() == "material:airgap":
+            UValueSI = 1 / float(materialObj[1][0])
+            #print materialObj
+            #print UValueSI
         
         elif materialType.lower() == "material:airgap":
             UValueSI = 1 / float(materialObj[1][0])
@@ -2006,7 +2014,7 @@ class EPZone(object):
     def cleanMeshedFaces(self):
         for srf in self.surfaces: srf.disposeCurrentMeshes()
     
-    def prepareNonPlanarZone(self, meshingLevel = 0, isEnergyPlus = False):
+    def prepareNonPlanarZone(self, meshingParameters = None, isEnergyPlus = False):
         # clean current meshedFaces
         self.cleanMeshedFaces()
         # collect walls and windows, and roofs
@@ -2026,21 +2034,20 @@ class EPZone(object):
         joinedBrep = rc.Geometry.Brep.JoinBreps(srfsToBeMeshed, sc.doc.ModelAbsoluteTolerance)[0]
         
         # mesh the geometry
-        if meshingLevel == 0: mp = rc.Geometry.MeshingParameters.Default; disFactor = 3
-        if meshingLevel == 1: mp = rc.Geometry.MeshingParameters.Smooth; disFactor = 1
-        #if isEnergyPlus:
-        #    mp.JaggedSeams = True
-        
+        if meshingParameters == None:
+            mp = rc.Geometry.MeshingParameters.Default; disFactor = 3
+        else:
+            disFactor = 1
+            
         meshedGeo = rc.Geometry.Mesh.CreateFromBrep(joinedBrep, mp)
         
         for mesh in meshedGeo:
+            # generate quad surfaces for EnergyPlus model
             # if isEnergyPlus:
             #     angleTol = sc.doc.ModelAngleToleranceRadians
             #     minDiagonalRatio = .875
             #     #print mesh.Faces.ConvertTrianglesToQuads(angleTol, minDiagonalRatio)
             #     mesh.Faces.ConvertTrianglesToQuads(angleTol, minDiagonalRatio)
-            # else:
-            #     mesh.Faces.ConvertQuadsToTriangles()
             
             mesh.FaceNormals.ComputeFaceNormals()
             #mesh.FaceNormals.UnitizeFaceNormals()
@@ -2125,7 +2132,7 @@ class hb_reEvaluateHBZones(object):
     to user to get them fixed.
     """
     
-    def __init__(self, inHBZones, meshingLevel, triangulate):
+    def __init__(self, inHBZones, meshingParameters):
         # import the classes
         self.hb_EPZone = sc.sticky["honeybee_EPZone"]
         self.hb_EPSrf = sc.sticky["honeybee_EPSurface"]
@@ -2138,8 +2145,8 @@ class hb_reEvaluateHBZones(object):
                                             rc.Geometry.Point3d(0.5,-0.5,0),
                                             sc.doc.ModelAbsoluteTolerance)
         self.originalHBZones = inHBZones
-        self.meshingLevel = meshingLevel
-        self.triangulate = triangulate
+        self.meshingParameters = meshingParameters
+        #self.triangulate = triangulate
         self.zoneNames = []
         self.srfNames = []
         self.modifiedSrfsNames= []
@@ -2174,7 +2181,7 @@ class hb_reEvaluateHBZones(object):
     def prepareNonPlanarZones(self, HBZone):
         # prepare nonplanar zones
         if  HBZone.hasNonPlanarSrf or  HBZone.hasInternalEdge:
-             HBZone.prepareNonPlanarZone(self.meshingLevel, isEnergyPlus= not self.triangulate)
+             HBZone.prepareNonPlanarZone(self.meshingParameters)
     
     
     def createSurface(self, pts):
