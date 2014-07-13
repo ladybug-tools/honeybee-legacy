@@ -20,6 +20,7 @@ Provided by Honeybee 0.0.53
         _radFileName_: Input the project name as a string
         meshSettings_: Custom mesh setting. Use Grasshopper mesh setting components
         additionalRadFiles_: A list of fullpath to valid radiance files which will be added to the scene
+        exportInteriorWalls_: Set to False if you don't want interior walls be exported
         overwriteResults_: Set to False if you want the component create a copy of all the results. Default is True
         
     Returns:
@@ -503,6 +504,13 @@ class WriteRADAUX(object):
             result.append( 179 * (.265 * float(R) + .67 * float(G) + .065 * float(B)))
         return result
 
+    def isSrfInterior(self, HBSrf):
+        # This can be tricky since some of interior walls may or may not be air walls
+        if HBSrf.type == 0 and HBSrf.BC.lower() == "surface":
+            return True
+        else:
+            return False
+        
 class WriteDS(object):
     
     def isSensor(self, testPt, sensors):
@@ -782,7 +790,8 @@ sc.sticky["honeybee_WriteRADAUX"] = WriteRADAUX
 sc.sticky["honeybee_WriteDS"] = WriteDS
 
 def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir,
-         radFileName, meshParameters, waitingTime, additionalRadFiles, overwriteResults):
+         radFileName, meshParameters, waitingTime, additionalRadFiles, overwriteResults,
+         exportInteriorWalls):
     # import the classes
     if sc.sticky.has_key('ladybug_release')and sc.sticky.has_key('honeybee_release'):
         lb_preparation = sc.sticky["ladybug_Preparation"]()
@@ -1026,6 +1035,10 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
                         HBObj.prepareNonPlanarZone(meshParameters)
                     
                     for srf in HBObj.surfaces:
+                        # check if an interior wall
+                        if not exportInteriorWalls and hb_writeRADAUX.isSrfInterior(srf):
+                            continue
+                            
                         # collect the custom material informations
                         if srf.RadMaterial!=None:
                             customRADMat, customMixFunRadMat = hb_RADMaterialAUX.addRADMatToDocumentDict(srf, customRADMat, customMixFunRadMat)
@@ -1518,7 +1531,7 @@ if _writeRad == True and _analysisRecipe!=None and ((len(_HBObjects)!=0 and _HBO
     
     result = main(north_, _HBObjects, _analysisRecipe, runRad_, numOfCPUs, \
                   _workingDir_, _radFileName_, meshSettings_, waitingTime, \
-                  additionalRadFiles_, overwriteResults_)
+                  additionalRadFiles_, overwriteResults_, exportInteriorWalls_)
     
     if result!= -1:
         # RADGeoFileAddress, radiationResult, RADResultFilesAddress, testPoints, DSResultFilesAddress, HDRFileAddress = result
