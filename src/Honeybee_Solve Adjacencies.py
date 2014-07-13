@@ -18,7 +18,7 @@ Provided by Honeybee 0.0.53
 """
 ghenv.Component.Name = "Honeybee_Solve Adjacencies"
 ghenv.Component.NickName = 'solveAdjc'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_09_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_12_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -31,12 +31,9 @@ import Grasshopper.Kernel as gh
 import uuid
 
 def shootIt(rayList, geometry, tol = 0.01, bounce =1):
-   # yaha! not to crash if someone pass a geometry instead of a list
-   #if type(geometryList)!= list or type(geometryList)!= tuple: geometryList = [geometryList]
    for ray in rayList:
         intPt = rc.Geometry.Intersect.Intersection.RayShoot(ray, geometry, bounce)
         if intPt:
-            # print ray.Position.DistanceTo(intPt[0])
             if ray.Position.DistanceTo(intPt[0]) <= tol:
                 return True #'Bang!'
 
@@ -64,7 +61,6 @@ def updateAdj(surface1, surface2, altConstruction, altBC, tol):
     else:
         surface1.setBC('SURFACE', True)
         surface2.setBC('SURFACE', True)
-        
         # change bc.Obj
         # used to be only a name but I changed it to an object so you can find the parent, etc.
         surface1.setBCObject(surface2)
@@ -156,11 +152,18 @@ def main(HBZones, altConstruction, altBC, tol, remCurrent):
                                 for pt in raysDict.keys():
                                     if surface.geometry.ClosestPoint(pt).DistanceTo(pt) <= tol:
                                         # extra check for normal direction
-                                        if abs(rc.Geometry.Vector3d.VectorAngle(surface.normalVector, -srf.normalVector)) <= sc.doc.ModelAngleToleranceRadians:
+                                        normalAngle = abs(rc.Geometry.Vector3d.VectorAngle(surface.normalVector, srf.normalVector))
+                                        revNormalAngle = abs(rc.Geometry.Vector3d.VectorAngle(surface.normalVector, srf.normalVector))
+                                        if normalAngle==0  or revNormalAngle <= sc.doc.ModelAngleToleranceRadians:
                                             print 'Surface ' + srf.name + ' which is a ' + srf.srfType[srf.type] + \
                                                   '\t-> is adjacent to <-\t' + surface.name + ' which is a ' + \
                                                   surface.srfType[surface.type] + '.'
-                                            
+                                            if normalAngle == 0:
+                                                msg = "Warning: Normal direction of one of the surfaces " + srf.name + ", " + surface.name + " should be reversed!"
+                                                print msg
+                                                w = gh.GH_RuntimeMessageLevel.Warning
+                                                ghenv.Component.AddRuntimeMessage(w, msg)
+                                                
                                             updateAdj(srf, surface, altConstruction, altBC, tol)                                        
     
                                             break
