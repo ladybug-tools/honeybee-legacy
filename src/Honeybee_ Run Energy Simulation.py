@@ -10,7 +10,7 @@ export geometries to idf file, and run the energy simulation
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_14_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -532,7 +532,7 @@ class WriteIDF(object):
         constructionData = None
         if constructionName in sc.sticky ["honeybee_constructionLib"].keys():
             constructionData = sc.sticky ["honeybee_constructionLib"][constructionName]
-    
+        
         if constructionData!=None:
             materials = []
             numberOfLayers = len(constructionData.keys())
@@ -548,6 +548,9 @@ class WriteIDF(object):
                 materials.append(constructionData[layer][0])
                 
             return constructionStr, materials
+        else:
+            print "Failed to find " + constructionName + " in library."
+            return None, None
             
     def EPSCHStr(self, scheduleName):
         scheduleData = None
@@ -819,13 +822,14 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     # Write constructions
     for cnstr in EPConstructionsCollection:
         constructionStr, materials = hb_writeIDF.EPConstructionStr(cnstr)
-        idfFile.write(constructionStr)
+        if constructionStr:
+            idfFile.write(constructionStr)
         
-        for mat in materials:
-            if not mat in EPMaterialCollection:
-                idfFile.write(hb_writeIDF.EPMaterialStr(mat))
-                EPMaterialCollection.append(mat)
-    
+            for mat in materials:
+                if not mat in EPMaterialCollection:
+                    idfFile.write(hb_writeIDF.EPMaterialStr(mat))
+                    EPMaterialCollection.append(mat)
+        
     
     ################ BODYII #####################
     print "[5 of 7] Writing schedules..."
