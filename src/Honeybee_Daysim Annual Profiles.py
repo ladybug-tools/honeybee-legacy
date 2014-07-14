@@ -19,7 +19,7 @@ Provided by Honeybee 0.0.53
 """
 ghenv.Component.Name = "Honeybee_Daysim Annual Profiles"
 ghenv.Component.NickName = 'DSAnnualProfiles'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_14_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
@@ -51,8 +51,10 @@ if _annualProfiles.DataCount!=0 and _annualProfiles.Branch(0)[0]!=None:
                 elif lineCount> 3:
                     results = line.strip().split(",")[3:]
                     for resCount, result in enumerate(results):
-                        resultDict[resCount].append(float(result))
-            
+                        try:
+                            resultDict[resCount].append(float(result))
+                        except:
+                            pass
             occupancyHeading = ["key:location/dataType/units/frequency/startsAt/endsAt",
                                 " ", "Occupancy Profile", "0 = Absent, 1 = Present", "Hourly",
                                 (1, 1, 1), (12, 31, 24)]
