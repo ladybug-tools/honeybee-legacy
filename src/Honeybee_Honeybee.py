@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_11_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_14_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1970,9 +1970,9 @@ class EPZone(object):
             if srf.hasChild: srf.calculatePunchedSurface()
             
             # assign construction
-            print srf.type
             srf.construction = srf.cnstrSet[srf.type]
-            srf.EPConstruction = srf.construction
+            if srf.EPConstruction == "":
+                srf.EPConstruction = srf.construction
             
         try:
             self.geometry = rc.Geometry.Brep.JoinBreps(srfs, sc.doc.ModelAbsoluteTolerance)[0]
