@@ -10,7 +10,7 @@ export geometries to idf file, and run the energy simulation
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_14_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_15_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -554,6 +554,7 @@ class WriteIDF(object):
             
     def EPSCHStr(self, scheduleName):
         scheduleData = None
+        scheduleName= scheduleName.upper()
         if scheduleName.endswith(".csv"):
             # check if the schedule is already created
             if scheduleName in self.fileBasedSchedules.keys(): return "\n"
@@ -783,9 +784,8 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         
         # collect unique schedules
         for schedule in schedules.values():
-            if schedule not in EPScheduleCollection:
-                EPScheduleCollection.append(schedule)
-                
+            if schedule.upper() not in EPScheduleCollection:
+                EPScheduleCollection.append(schedule.upper())
                 
         for srf in zone.surfaces:
             # check if there is an energyPlus material
@@ -793,8 +793,8 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                 srf.construction = srf.EPConstruction
             # else try to find the material based on bldg type and climate zone
             # the surface will use the default construction
-            if not srf.construction in EPConstructionsCollection:
-                EPConstructionsCollection.append(srf.construction)
+            if not srf.construction.upper() in EPConstructionsCollection:
+                EPConstructionsCollection.append(srf.construction.upper())
             
             # Surfaces
             idfFile.write(hb_writeIDF.EPZoneSurface(srf))
@@ -809,8 +809,8 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                     # else try to find the material based on bldg type and climate zone
                     # I will apply this later
                     # the surface will use the default construction
-                    if not childSrf.construction in EPConstructionsCollection:
-                            EPConstructionsCollection.append(childSrf.construction)
+                    if not childSrf.construction.upper() in EPConstructionsCollection:
+                            EPConstructionsCollection.append(childSrf.construction.upper())
                     
                 # write the glazing strings
                 idfFile.write(hb_writeIDF.EPFenSurface(srf))
@@ -826,9 +826,11 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
             idfFile.write(constructionStr)
         
             for mat in materials:
-                if not mat in EPMaterialCollection:
-                    idfFile.write(hb_writeIDF.EPMaterialStr(mat))
-                    EPMaterialCollection.append(mat)
+                if not mat.upper() in EPMaterialCollection:
+                    materialStr = hb_writeIDF.EPMaterialStr(mat.upper())
+                    if materialStr:
+                        idfFile.write(materialStr)
+                        EPMaterialCollection.append(mat.upper())
         
     
     ################ BODYII #####################
