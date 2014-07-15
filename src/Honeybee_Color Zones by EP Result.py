@@ -37,7 +37,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Color Zones by EP Result"
 ghenv.Component.NickName = 'ColorZones'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_11_2014'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_15_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
@@ -307,68 +307,6 @@ def restoreInputOutput():
         ghenv.Component.Params.Output[output].Description = outputsDict[output][1]
 
 
-def getHOYs(hours, days, months, timeStep, lb_preparation, method = 0):
-    
-    if method == 1: stDay, endDay = days
-        
-    numberOfDaysEachMonth = lb_preparation.numOfDaysEachMonth
-    
-    if timeStep != 1: hours = rs.frange(hours[0], hours[-1] + 1 - 1/timeStep, 1/timeStep)
-    
-    HOYS = []
-    
-    for monthCount, m in enumerate(months):
-        # just a single day
-        if method == 1 and len(months) == 1 and stDay - endDay == 0:
-            days = [stDay]
-        # few days in a single month
-        
-        elif method == 1 and len(months) == 1:
-            days = range(stDay, endDay + 1)
-        
-        elif method == 1:
-            #based on analysis period
-            if monthCount == 0:
-                # first month
-                days = range(stDay, numberOfDaysEachMonth[monthCount] + 1)
-            elif monthCount == len(months) - 1:
-                # last month
-                days = range(1, lb_preparation.checkDay(endDay, m) + 1)
-            else:
-                #rest of the months
-                days = range(1, numberOfDaysEachMonth[monthCount] + 1)
-        
-        for d in days:
-            for h in hours:
-                h = lb_preparation.checkHour(float(h))
-                m  = lb_preparation.checkMonth(int(m))
-                d = lb_preparation.checkDay(int(d), m)
-                HOY = lb_preparation.date2Hour(m, d, h)
-                if HOY not in HOYS: HOYS.append(int(HOY))
-    
-    return HOYS
-
-
-def getHOYsBasedOnPeriod(analysisPeriod, timeStep, lb_preparation):
-    
-    stMonth, stDay, stHour, endMonth, endDay, endHour = lb_preparation.readRunPeriod(analysisPeriod, True, False)
-    
-    if stMonth > endMonth:
-        months = range(stMonth, 13) + range(1, endMonth + 1)
-    else:
-        months = range(stMonth, endMonth + 1)
-    
-    # end hour shouldn't be included
-    hours  = range(stHour, endHour+1)
-    
-    days = stDay, endDay
-    
-    HOYS = getHOYs(hours, days, months, timeStep, lb_preparation, method = 1)
-    
-    return HOYS, months, days
-
-
-
 def getData(pyZoneData, zoneFlrAreas, annualData, simStep, zoneNormalizable, zoneHeaders, headerUnits, normByFlr, analysisPeriod, stepOfSimulation, total):
     # import the classes
     if sc.sticky.has_key('ladybug_release'):
@@ -544,7 +482,7 @@ def getData(pyZoneData, zoneFlrAreas, annualData, simStep, zoneNormalizable, zon
                 endDay = analysisPeriod[1][1]
                 startHour = analysisPeriod[0][2]
                 endHour = analysisPeriod[1][2]
-                HOYS, months, days = getHOYsBasedOnPeriod(analysisPeriod, 1, lb_preparation)
+                HOYS, months, days = lb_preparation.getHOYsBasedOnPeriod(analysisPeriod, 1)
                 startIndex = HOYS[0]
                 endIndex = HOYS[-1]
                 #Get the data from the lists.
@@ -586,46 +524,6 @@ def getData(pyZoneData, zoneFlrAreas, annualData, simStep, zoneNormalizable, zon
         ghenv.Component.AddRuntimeMessage(w, "You should first let the Ladybug fly...")
         return [], [], [], None, None, None
 
-
-def text2srf(text, textPt, font, textHeight):
-    # Thanks to Giulio Piacentino for his version of text to curve
-    textSrfs = []
-    for n in range(len(text)):
-        plane = rc.Geometry.Plane(textPt[n], rc.Geometry.Vector3d(0,0,1))
-        if type(text[n]) is not str:
-            preText = rc.RhinoDoc.ActiveDoc.Objects.AddText(`text[n]`, plane, textHeight, font, True, False)
-        else:
-            preText = rc.RhinoDoc.ActiveDoc.Objects.AddText( text[n], plane, textHeight, font, True, False)
-            
-        postText = rc.RhinoDoc.ActiveDoc.Objects.Find(preText)
-        TG = postText.Geometry
-        crvs = TG.Explode()
-        
-        # join the curves
-        joindCrvs = rc.Geometry.Curve.JoinCurves(crvs)
-        
-        # create the surface
-        srfs = rc.Geometry.Brep.CreatePlanarBreps(joindCrvs)
-        
-        
-        extraSrfCount = 0
-        # = generate 2 surfaces
-        if "=" in text[n]: extraSrfCount += -1
-        if ":" in text[n]: extraSrfCount += -1
-        
-        if len(text[n].strip()) != len(srfs) + extraSrfCount:
-            # project the curves to the place in case number of surfaces
-            # doesn't match the text
-            projectedCrvs = []
-            for crv in joindCrvs:
-                projectedCrvs.append(rc.Geometry.Curve.ProjectToPlane(crv, plane))
-            srfs = rc.Geometry.Brep.CreatePlanarBreps(projectedCrvs)
-        
-        textSrfs.append(srfs)
-        
-        rc.RhinoDoc.ActiveDoc.Objects.Delete(postText, True) # find and delete the text
-        
-    return textSrfs
 
 def main(zoneValues, zones, zoneFloors, zoneHeaders, title, legendTitle, lb_preparation, lb_visualization, legendPar):
     #Read the legend parameters.
@@ -671,7 +569,7 @@ def main(zoneValues, zones, zoneFloors, zoneHeaders, title, legendTitle, lb_prep
     zoneNames = []
     for list in zoneHeaders:
         zoneNames.append(list[2].split(' for ')[-1])
-    zoneNum = text2srf(zoneNames, newTxtPts, legendFont, textSize/3)
+    zoneNum = lb_visualization.text2srf(zoneNames, newTxtPts, legendFont, textSize/3)
     zoneNumFinal = []
     for list in zoneNum:
         for brep in list:
@@ -680,7 +578,7 @@ def main(zoneValues, zones, zoneFloors, zoneHeaders, title, legendTitle, lb_prep
     #Create the Title.
     titleTxt = '\n' + title[0] + '\n' + title[1]
     titleBasePt = lb_visualization.BoundingBoxPar[5]
-    titleTextCurve = text2srf([titleTxt], [titleBasePt], legendFont, textSize)
+    titleTextCurve = lb_visualization.text2srf([titleTxt], [titleBasePt], legendFont, textSize)
     
     #Bring the legend and the title together.
     fullLegTxt = lb_preparation.flattenList(legendTextCrv + titleTextCurve)
