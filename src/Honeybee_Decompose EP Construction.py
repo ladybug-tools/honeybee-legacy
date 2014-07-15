@@ -22,7 +22,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Decompose EP Construction"
 ghenv.Component.NickName = 'DecomposeEPConstruction'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_13_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_15_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
@@ -52,4 +52,7 @@ def main(cnstrName):
 if _cnstrName != None:
     data = main(_cnstrName)
     
-    if data!=-1: materials, comments, UValue_SI, UValue_IP = data
+    if data!=-1:
+        materials, comments, UValue_SI, UValue_IP = data
+        RValue_SI = 1/UValue_SI
+        RValue_IP = 1/UValue_IP
