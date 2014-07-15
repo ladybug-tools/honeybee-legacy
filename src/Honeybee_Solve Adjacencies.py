@@ -117,8 +117,9 @@ def main(HBZones, altConstruction, altBC, tol, remCurrent):
     if remCurrent:
         for testZone in HBZoneObjects:
             for srf in testZone.surfaces:
-                srf.setBC('OUTDOORS')
-                srf.setBCObjectToOutdoors()
+                if srf.BC.upper() != "GROUND":
+                    srf.setBC('OUTDOORS')
+                    srf.setBCObjectToOutdoors()
     
     # solve it zone by zone
     for testZone in HBZoneObjects:
@@ -126,7 +127,7 @@ def main(HBZones, altConstruction, altBC, tol, remCurrent):
         # from other zones
         for srf in testZone.surfaces:
             #print srf.type, srf.BC 
-            if srf.BC.upper() == 'OUTDOORS':
+            if srf.BC.upper() == 'OUTDOORS' or srf.BC.upper() == 'GROUND':
                 #Create a mesh of surface to use center points as test points
                 meshPar = rc.Geometry.MeshingParameters.Default
                 BrepMesh = rc.Geometry.Mesh.CreateFromBrep(srf.geometry, meshPar)[0]
