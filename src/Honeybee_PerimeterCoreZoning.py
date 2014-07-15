@@ -1,4 +1,4 @@
-# By Chien Si Harriman
+# By Chien Si Harriman - Modified by Mostapha Sadeghipour Roudsari
 # Chien.Harriman@gmail.com
 # Honeybee started by Mostapha Sadeghipour Roudsari is licensed
 # under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
@@ -21,7 +21,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = 'Honeybee_PerimeterCoreZoning'
 ghenv.Component.NickName = 'PerimeterCore'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_18_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_15_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
@@ -41,33 +41,20 @@ def main(HBZones):
     interiorzones = []
     perimeterzones = []
     for zone in HBZonesFromHive:
+        
         for surface in zone.surfaces:
-            
-            coordinatesList = surface.extractPoints()
-            if not isinstance(coordinatesList[0], list) and not isinstance(coordinatesList[0], tuple):
-                coordinatesList = [coordinatesList]
-            
-            #do the work to map the coordinatesList appropriately, 
-            #this will change as the honeybee object changes
-            #for now, here is the test for an unmeshed surface
-            try:
-                #meshed surface
-                #unwrap the meshed surfaces to get a list of each on
-                print surface.type, surface.BC
-                if surface.type == 0 and surface.BC == "Outdoors":
-                    #this is a perimeter wall
-                    perimeterzones.append(zone)
-            except:
-                print "not meshed"
-        if zone in perimeterzones:
-            pass
-        else:
+            if surface.type == 0 and surface.BC.upper() == "OUTDOORS":
+                #this is a perimeter wall
+                perimeterzones.append(zone)
+                break
+                
+        if zone not in perimeterzones:
             interiorzones.append(zone)
+    
     perims  = hb_hive.addToHoneybeeHive(perimeterzones, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
     ints = hb_hive.addToHoneybeeHive(interiorzones, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+    
     return perims,ints
 
 
 perimeters,interiors = main(_HBZones)
-
-print len(perimeters)
