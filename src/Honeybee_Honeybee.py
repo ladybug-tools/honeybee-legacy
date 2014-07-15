@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_14_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_15_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -185,17 +185,18 @@ class hb_GetEPConstructions():
             if key not in resultDict.keys():
                 # create an empty dictionary for the key
                 resultDict[key] = {}
+                
             # store the data into the dictionary
             for lineCount, line in enumerate(inf):
                 if lineCount == 0:
-                    nameKey = line.split("!")[0].strip()[:-1]
+                    nameKey = line.split("!")[0].strip()[:-1].upper()
                     
                     if nameKey in resultDict[key].keys():
                         # this means the material is already in the lib
                         # I can rename it but for now I rather to give a warning
                         # and break the loop
-                        warning = "The " + key + ": " + nameKey + " is already existed in the libaray.\n" + \
-                                  "You need to rename this " + key + "."
+                        warning = key + ": " + nameKey + " is already existed in the libaray. " + \
+                                  "Rename one of the " + nameKey + " and try again."
                         print warning
                         break
                     else:
@@ -1020,7 +1021,7 @@ class EPScheduleAux(object):
             return schName, "csv"
             
         try:
-            scheduleObj = sc.sticky["honeybee_ScheduleLib"][schName]
+            scheduleObj = sc.sticky["honeybee_ScheduleLib"][schName.upper()]
         except Exception, e:
             #print e
             msg = "Failed to find " + schName + " in the Honeybee schedule library."
@@ -1047,7 +1048,7 @@ class EPScheduleAux(object):
     
     def getScheduleTypeLimitsDataByName(self, schName, component = None):
         try:
-            scheduleObj = sc.sticky["honeybee_ScheduleTypeLimitsLib"][schName]
+            scheduleObj = sc.sticky["honeybee_ScheduleTypeLimitsLib"][schName.upper()]
         except Exception, e:
             #print e
             msg = "Failed to find " + schName + " in the Honeybee schedule type limits library."
@@ -2098,7 +2099,7 @@ class EPZone(object):
         # useful for gbXML export
         minZ = float("inf")
         for HBSrf in self.surfaces:
-            if HBSrf.type == 2:
+            if int(HBSrf.type) == 2:
                 #get the center point
                 centerPt, normalVector = HBSrf.getSrfCenPtandNormalAlternate()
                 
