@@ -23,7 +23,7 @@ Provided by Honeybee 0.0.53
 """
 ghenv.Component.Name = "Honeybee_Decompose Based On Type"
 ghenv.Component.NickName = 'decomposeByType'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_11_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_15_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
@@ -103,8 +103,8 @@ def main(HBZone):
         
         
     return walls, interiorWalls, windows, interiorWindows, skylights, roofs, \
-           ceilings, floors, exposedFloors, groundFloors, groundFloors, \
-           undergroundWalls, undergroundSlabs, undergroundCeilings, shadings
+           ceilings, floors, exposedFloors, groundFloors, undergroundWalls, \
+           undergroundSlabs, undergroundCeilings, shadings
 
 
 #    # add to the hive
