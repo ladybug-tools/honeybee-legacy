@@ -15,7 +15,7 @@ Provided by Honeybee 0.0.53
 """
 ghenv.Component.Name = "Honeybee_IntersectMasses"
 ghenv.Component.NickName = 'IntersectMass'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_15_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -33,20 +33,29 @@ def main(bldgMassesBefore):
         buildingDict[bldgCount] = bldg
     
     for bldgNum, building in buildingDict.items():
-        for otherBldg in  bldgMassesBefore[:bldgNum]:
-            intersectedBuilding = rc.Geometry.Brep.CreateBooleanDifference(building, otherBldg, sc.doc.ModelAbsoluteTolerance)
-            if intersectedBuilding:
-                building = intersectedBuilding[0]
-                buildingDict[bldgNum] = building
-                bldgMassesBefore[bldgNum] = building
-                
-        for otherBldg in  bldgMassesBefore[bldgNum+1:]:
-            intersectedBuilding = rc.Geometry.Brep.CreateBooleanDifference(building, otherBldg, sc.doc.ModelAbsoluteTolerance)
-            if intersectedBuilding:
-                building = intersectedBuilding[0]
-                buildingDict[bldgNum] = building
-                bldgMassesBefore[bldgNum] = building
-    
+        try:
+            for otherBldg in  bldgMassesBefore[:bldgNum]:
+                intersectedBuilding = rc.Geometry.Brep.CreateBooleanDifference(building, otherBldg, sc.doc.ModelAbsoluteTolerance)
+                if intersectedBuilding:
+                    building = intersectedBuilding[0]
+                    if building.IsValid:
+                        buildingDict[bldgNum] = building
+                        bldgMassesBefore[bldgNum] = building
+                    else:
+                        pass
+            for otherBldg in  bldgMassesBefore[bldgNum+1:]:
+                intersectedBuilding = rc.Geometry.Brep.CreateBooleanDifference(building, otherBldg, sc.doc.ModelAbsoluteTolerance)
+                if intersectedBuilding:
+                    building = intersectedBuilding[0]
+                    if building.IsValid:
+                        buildingDict[bldgNum] = building
+                        bldgMassesBefore[bldgNum] = building
+                    else:
+                        pass
+        except:
+            buildingDict[bldgNum] = building
+            bldgMassesBefore[bldgNum] = building
+            
     for bldgNum, building in buildingDict.items():
         intersectedBldgs.append(building)
     
