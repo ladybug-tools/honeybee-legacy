@@ -3113,7 +3113,16 @@ class hb_EPZoneSurface(hb_EPSurface):
             # here I check and remove them
             
             # check area of curve
-            if rc.Geometry.AreaMassProperties.Compute(jGlzCrv).Area > sc.doc.ModelAbsoluteTolerance:
+            try:
+                if self.isPlanar:
+                    area = rc.Geometry.AreaMassProperties.Compute(jGlzCrv).Area
+                else:
+                    area = rc.Geometry.AreaMassProperties.Compute(glzSrf).Area
+            except:
+                #in case area calulation fails 
+                area = 0.0
+            
+            if  area > sc.doc.ModelAbsoluteTolerance:
                 childSrfs.append(glzSrf)
                 glzCrvs.append(jGlzCrv)
             else:
