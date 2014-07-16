@@ -955,7 +955,7 @@ class EPMaterialAux(object):
                        }
         
         # find construction/material name
-        name = EPMaterial.split("\n")[1].split("!")[0].strip()[:-1]
+        name = EPMaterial.split("\n")[1].split("!")[0].strip()[:-1].upper()
         
         if name in sc.sticky[HBLibrarieNames[key]].keys():
             #overwrite = True
