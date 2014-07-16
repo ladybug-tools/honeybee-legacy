@@ -25,7 +25,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Glazing based on ratio"
 ghenv.Component.NickName = 'glazingCreator'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_08_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -65,6 +65,11 @@ def getTopBottomCurves(brep):
     
     # duplicate the edges of the wall
     edges = brep.DuplicateEdgeCurves(True)
+    
+    #joinedEdges = rc.Geometry.Curve.JoinCurves(edges)[0]
+    #simplificationOpt = rc.Geometry.CurveSimplifyOptions.All
+    #joinedEdgesSimplified = joinedEdges.Simplify(simplificationOpt, sc.doc.ModelAbsoluteTolerance, sc.doc.ModelAngleToleranceRadians)
+    #edges = joinedEdgesSimplified.DuplicateSegments()
     
     # sort the edges based on the z of mid point of the edge and get the top and bottom edges.
     sortedEdges = sorted(edges, key=lambda edge: edge.PointAtNormalizedLength(0.5).Z)
@@ -412,9 +417,22 @@ def createGlazingThatContainsRectangle(topEdge, btmEdge, baseSrf, glazingRatio, 
     rect = rc.Geometry.Rectangle3d(rectPlane, rectPt2, rectPt1)
     rectBrep = rc.Geometry.Brep.CreateFromCornerPoints(rectPt1, rectPt3, rectPt2, rectPt4, sc.doc.ModelAbsoluteTolerance)
     
+    
+    def areEdgesLinear(brepList):
+        for srf in brepList:
+            for edge in srf.Edges:
+                if not edge.IsLinear():
+                    return False       
+        return True
+        
     #Split the base surface with the rectangle
     if rectBrep:
         srfSplit = rc.Geometry.Brep.Split(baseSrf, rectBrep, sc.doc.ModelAbsoluteTolerance)
+        # make sure split doesn't generate curves shapes!
+        # happens for some strange surfaces:
+        # https://github.com/mostaphaRoudsari/Honeybee/issues/115
+        if srfSplit!=[] and not areEdgesLinear(srfSplit): srfSplit =[]
+    
     else:
         srfSplit = []
     
@@ -718,10 +736,7 @@ def findGlzBasedOnRatio(baseSrf, glzRatio, windowHeight, sillHeight, surfaceType
         else: pass
     
     #If the breakupWindow is not set, automatically break up the windows.
-    if breakUpWindow == None:
-        breakUpWindow = True
-    else: pass
-    
+    if breakUpWindow == None: breakUpWindow = True
     
     #Check if the surface is a planar skylight that can be broken up into quads and, if so, send it through the skylight generator
     if surfaceType == 1:
@@ -730,7 +745,7 @@ def findGlzBasedOnRatio(baseSrf, glzRatio, windowHeight, sillHeight, surfaceType
     #Check if the wall surface has horizontal top and bottom curves and contains a rectangle that can be extracted such that we can apply the windowHeight and sillHeight inputs to it.
     elif surfaceType == 0 and planarBool == True and edgeLinear == True and getTopBottomCurves(baseSrf)[1] == True and getTopBottomCurves(baseSrf)[3] == True:
         glazing = createGlazingThatContainsRectangle(getTopBottomCurves(baseSrf)[2], getTopBottomCurves(baseSrf)[0], baseSrf, glzRatio, windowHeight, sillHeight, breakUpWindow)
-        
+
     #Check if the wall surface has vertical sides and contains a rectangle that can be extracted such that we can apply the windowheight and sill height inputs to it.
     elif surfaceType == 0 and planarBool == True and edgeLinear == True and getTopBottomCurves(baseSrf)[5] == True:
         glazing = createGlazingThatContainsRectangle(getTopBottomCurves(baseSrf)[4][0], getTopBottomCurves(baseSrf)[4][1], baseSrf, glzRatio, windowHeight, sillHeight, breakUpWindow)
@@ -818,8 +833,8 @@ def main(windowHeight, sillHeight, glzRatio, skyLightRatio, breakUpWindow):
     # check if honeybee is flying
     # import the classes
     if sc.sticky.has_key('ladybug_release')and sc.sticky.has_key('honeybee_release'):
-        # don't customize this part
         
+        # don't customize this part
         hb_EPZone = sc.sticky["honeybee_EPZone"]
         hb_EPSrf = sc.sticky["honeybee_EPSurface"]
         hb_EPFenSurface = sc.sticky["honeybee_EPFenSurface"]
@@ -925,7 +940,6 @@ def main(windowHeight, sillHeight, glzRatio, skyLightRatio, breakUpWindow):
                 
                 # This part of the code sends the parameters and surfaces to their respective methods of of galzing generation.  It is developed by Chris Mackey.
                 lastSuccessfulGlzSrf, lastSuccessfulRestOfSrf = findGlzBasedOnRatio(face, targetPercentage, winHeight, sill, srfType, breakUpWindow)
-                # print lastSuccessfulGlzSrf
                 
                 if lastSuccessfulGlzSrf!= None:
                     if isinstance(lastSuccessfulGlzSrf, list):
@@ -933,7 +947,8 @@ def main(windowHeight, sillHeight, glzRatio, skyLightRatio, breakUpWindow):
                             fenSrf = hb_EPFenSurface(glzSrf, surface.num, surface.name + '_glz_' + `glzSrfCount`, surface, 5, lastSuccessfulRestOfSrf)
                             zonesWithOpeningsGeometry.append(glzSrf)
                             surface.addChildSrf(fenSrf)
-                        if lastSuccessfulRestOfSrf==[]: surface.calculatePunchedSurface()
+                        if lastSuccessfulRestOfSrf==[]:
+                            surface.calculatePunchedSurface()
                     else:
                         fenSrf = hb_EPFenSurface(lastSuccessfulGlzSrf, surface.num, surface.name + '_glz_0', surface, 5, lastSuccessfulRestOfSrf)
                         zonesWithOpeningsGeometry.append(lastSuccessfulGlzSrf)

@@ -3104,6 +3104,39 @@ class hb_EPZoneSurface(hb_EPSurface):
         pass
     
     def calculatePunchedSurface(self):
+        
+        def checkCrvArea(crv):
+            try:
+                area = rc.Geometry.AreaMassProperties.Compute(crv).Area
+            except:
+                area = 0
+            
+            return area > sc.doc.ModelAbsoluteTolerance
+        
+        def checkCrvsPts(crv):
+            # in some cases crv generates a line with similar points
+            pts = []
+            pts.append(crv.PointAtStart)
+            restOfpts = self.findDiscontinuity(crv, style = 4)
+            # for some reason restOfPts returns no pt!
+            try: pts.extend(restOfpts)
+            except: pass
+            
+            def isDuplicate(pt, newPts):
+                for p in newPts:
+                    # print pt.DistanceTo(p)
+                    if pt.DistanceTo(p) < 2 * sc.doc.ModelAbsoluteTolerance:
+                        return True
+                return False
+                
+            newPts = [pts[0]]
+            for pt in pts[1:]:
+                if not isDuplicate(pt, newPts):
+                    newPts.append(pt)
+                    if len(newPts) > 2:
+                        return True
+            return False
+            
         glzCrvs = []
         childSrfs = []
         for glzSrf in self.childSrfs:
@@ -3122,7 +3155,11 @@ class hb_EPZoneSurface(hb_EPSurface):
                 #in case area calulation fails 
                 area = 0.0
             
-            if  area > sc.doc.ModelAbsoluteTolerance:
+            if  area > sc.doc.ModelAbsoluteTolerance and checkCrvsPts(jGlzCrv):
+                
+                # check normal direction of child surface and base surface
+                # print math.degrees(rc.Geometry.Vector3d.VectorAngle(glzSrf.normalVector, self.normalVector))
+                
                 childSrfs.append(glzSrf)
                 glzCrvs.append(jGlzCrv)
             else:
@@ -3150,17 +3187,14 @@ class hb_EPZoneSurface(hb_EPSurface):
                     srfPlane = rc.Geometry.Plane(self.cenPt, self.normalVector)
                     PGlzCrvs = []
                     for curve in glzCrvs + jBaseCrvList:
-                        pCrvs = rc.Geometry.Curve.ProjectToPlane(curve, srfPlane)
-                        PGlzCrvs.append(pCrvs)
+                        pCrv = rc.Geometry.Curve.ProjectToPlane(curve, srfPlane)
+                        if checkCrvArea:
+                            PGlzCrvs.append(pCrv)
                     
                     punchedGeometries = rc.Geometry.Brep.CreatePlanarBreps(PGlzCrvs)
-                    #if len(punchedGeometries)>1:
-                    #    # this shouldn't happen
-                    #    crvDif = rc.Geometry.Curve.CreateBooleanDifference(jBaseCrvList[0], glzCrvs)
-                    #    punchedGeometries = rc.Geometry.Brep.CreatePlanarBreps(crvDif)
-                
-                    print PGlzCrvs
-                    self.punchedGeometry = PGlzCrvs
+                    # in some cases glazing with very minor areas are generated
+                    # which causes multiple surfaces
+                    self.punchedGeometry = punchedGeometries[-1]
             else:
                 # split the base geometry - Good luck!
                 splitBrep = self.geometry.Faces[0].Split(glzCrvs, sc.doc.ModelAbsoluteTolerance)
