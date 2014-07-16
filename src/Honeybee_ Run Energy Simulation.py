@@ -10,7 +10,7 @@ export geometries to idf file, and run the energy simulation
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_15_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -419,9 +419,9 @@ class WriteIDF(object):
         value = zone.lightingDensityPerArea
         scheduleName = zone.lightingSchedule
         
-        if scheduleName.endswith(".csv"):
+        if scheduleName.lower().endswith(".csv"):
             # find filebased schedule name
-            scheduleName = self.fileBasedSchedules[scheduleName]
+            scheduleName = self.fileBasedSchedules[scheduleName.upper()]
         
         if zone.daylightThreshold != "":
             method = 2
@@ -555,9 +555,9 @@ class WriteIDF(object):
     def EPSCHStr(self, scheduleName):
         scheduleData = None
         scheduleName= scheduleName.upper()
-        if scheduleName.endswith(".csv"):
+        if scheduleName.lower().endswith(".csv"):
             # check if the schedule is already created
-            if scheduleName in self.fileBasedSchedules.keys(): return "\n"
+            if scheduleName.upper() in self.fileBasedSchedules.keys(): return "\n"
             
             # create schedule object based on file
             # find file name and use it as schedule name
@@ -569,7 +569,7 @@ class WriteIDF(object):
             shutil.copyfile(scheduleName, scheduleNewAddress)
             
             # put them as key, value so I can find the new name when write schedule
-            self.fileBasedSchedules[scheduleName] = scheduleObjectName
+            self.fileBasedSchedules[scheduleName.upper()] = scheduleObjectName
             
             scheduleStr = "Schedule:File,\n" + \
                           scheduleObjectName + ",\t!- Name\n" + \

@@ -23,7 +23,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Set EnergyPlus Zone Schedules"
 ghenv.Component.NickName = 'setEPZoneSchedules'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_15_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -52,12 +52,12 @@ def main(HBZones, occupancySchedule, occupancyActivitySch, heatingSetPtSchedule,
             
             schedule= schedule.upper()
             
-            if schedule!=None and not schedule.endswith(".csv") and schedule not in HBScheduleList:
+            if schedule!=None and not schedule.lower().endswith(".csv") and schedule not in HBScheduleList:
                 msg = "Cannot find " + schedule + " in Honeybee schedule library."
                 print msg
                 ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
                 return -1
-            elif schedule!=None and schedule.endswith(".csv"):
+            elif schedule!=None and schedule.lower().endswith(".csv"):
                 # check if csv file is existed
                 if not os.path.isfile(schedule):
                     msg = "Cannot find the shchedule file: " + schedule
