@@ -49,54 +49,58 @@ class WriteIDF(object):
         
         coordinates = surface.coordinates
         
-        str_1 = '\nBuildingSurface:Detailed,\n' + \
-            '\t' + surface.name + ',\t!- Name\n' + \
-            '\t' + surface.srfType[int(surface.type)] + ',\t!- Surface Type\n' + \
-            '\t' + surface.construction + ',\t!- Construction Name\n' + \
-            '\t' + surface.parent.name + ',\t!- Zone Name\n' + \
-            '\t' + surface.BC + ',\t!- Outside Boundary Condition\n' + \
-            '\t' + surface.BCObject.name + ',\t!- Outside Boundary Condition Object\n' + \
-            '\t' + surface.sunExposure + ',\t!- Sun Exposure\n' + \
-            '\t' + surface.windExposure + ',\t!- Wind Exposure\n' + \
-            '\t' + surface.groundViewFactor + ',\t!- View Factor to Ground\n' + \
-            '\t' + `len(coordinates)` + ',\t!- Number of Vertices\n'
-    
-        str_2 = '\t';
+        checked, coordinates= self.checkCoordinates(coordinates)
         
-        for ptCount, pt in enumerate(coordinates):
-            if ptCount < len (coordinates) - 1:
-                str_2 = str_2 + `pt.X` + ',\n\t' + `pt.Y` + ',\n\t' + `pt.Z` + ',\n\t'
-            else:
-                str_2 = str_2 + `pt.X` + ',\n\t' + `pt.Y` + ',\n\t' + `pt.Z` + ';\n\n'
+        if checked:
+            str_1 = '\nBuildingSurface:Detailed,\n' + \
+                '\t' + surface.name + ',\t!- Name\n' + \
+                '\t' + surface.srfType[int(surface.type)] + ',\t!- Surface Type\n' + \
+                '\t' + surface.construction + ',\t!- Construction Name\n' + \
+                '\t' + surface.parent.name + ',\t!- Zone Name\n' + \
+                '\t' + surface.BC + ',\t!- Outside Boundary Condition\n' + \
+                '\t' + surface.BCObject.name + ',\t!- Outside Boundary Condition Object\n' + \
+                '\t' + surface.sunExposure + ',\t!- Sun Exposure\n' + \
+                '\t' + surface.windExposure + ',\t!- Wind Exposure\n' + \
+                '\t' + surface.groundViewFactor + ',\t!- View Factor to Ground\n' + \
+                '\t' + `len(coordinates)` + ',\t!- Number of Vertices\n'
         
-        fullString = str_1 + str_2
+            str_2 = '\t';
+            
+            for ptCount, pt in enumerate(coordinates):
+                if ptCount < len (coordinates) - 1:
+                    str_2 = str_2 + `pt.X` + ',\n\t' + `pt.Y` + ',\n\t' + `pt.Z` + ',\n\t'
+                else:
+                    str_2 = str_2 + `pt.X` + ',\n\t' + `pt.Y` + ',\n\t' + `pt.Z` + ';\n\n'
+            
+            fullString = str_1 + str_2
+            
+            return fullString
         
-        return fullString
-    
-    def checkCoordinates(self, glzCoordinates):
+        else:
+            return "\n"
+            
+    def checkCoordinates(self, coordinates):
         # check if coordinates are so close or duplicated
         # this is a place holder for now I just return true
-        return True, glzCoordinates
-        
-        try:
-            pl = rc.Geometry.Polyline(glzCoordinates).ToNurbsCurve()
-            segments = pl.DuplicateSegments()
-            edgeCount = 0
-            for seg in segments:
-                if seg.GetLength() > sc.doc.ModelAbsoluteTolerance:
-                    edgeCount += 1
-                if edgeCount > 2:
-                    newCoordinates = []
-                    for pt in glzCoordinates:
-                        if pt not in newCoordinates:
-                            newCoordinates.append(pt)
-                            
-                    return True, newCoordinates
+        #return True, glzCoordinates
+    
+        def isDuplicate(pt, newPts):
+            for p in newPts:
+                if pt.DistanceTo(p) < 2 * sc.doc.ModelAbsoluteTolerance:
+                    return True
+            return False
             
+        newCoordinates = [coordinates[0]]
+        for pt in coordinates[1:]:
+            if not isDuplicate(pt, newCoordinates):
+                newCoordinates.append(pt)
+            
+        if len(newCoordinates) > 2:
+            return True, newCoordinates
+        else:
+            print "One of the surfaces has less than 3 identical coordinates and is removed."
             return False,[]
-        except:
-            return False,[]
-                            
+                        
     def EPFenSurface (self, surface):
         glzStr = ""
         try:
