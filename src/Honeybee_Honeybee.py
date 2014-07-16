@@ -1009,7 +1009,7 @@ class EPScheduleAux(object):
     
     def getScheduleDataByName(self, schName, component = None):
 
-        if schName.endswith(".csv"):
+        if schName.lower().endswith(".csv"):
             # Check for the file
             if not os.path.isfile(schName):
                 msg = "Failed to find the schedule file: " + schName
@@ -3105,38 +3105,53 @@ class hb_EPZoneSurface(hb_EPSurface):
     
     def calculatePunchedSurface(self):
         glzCrvs = []
+        childSrfs = []
         for glzSrf in self.childSrfs:
             glzEdges = glzSrf.geometry.DuplicateEdgeCurves(True)
             jGlzCrv = rc.Geometry.Curve.JoinCurves(glzEdges)[0]
-            glzCrvs.append(jGlzCrv)
+            # in some cases glazing based on percentage generates very small glazings
+            # here I check and remove them
+            
+            # check area of curve
+            if rc.Geometry.AreaMassProperties.Compute(jGlzCrv).Area > sc.doc.ModelAbsoluteTolerance:
+                childSrfs.append(glzSrf)
+                glzCrvs.append(jGlzCrv)
+            else:
+                print "A very tiny glazing is removed from " + self.name+ "."
+                
+        self.childSrfs = childSrfs
         
         baseEdges = self.geometry.DuplicateEdgeCurves(True)
         
         jBaseCrv = rc.Geometry.Curve.JoinCurves(baseEdges)
         
         # convert array to list
-        jBaseCrvList = []
-        for crv in jBaseCrv: jBaseCrvList.append(crv)
-
+        jBaseCrvList = list(jBaseCrv)
+        
         try:
             if self.isPlanar:
                 # works for planar surfaces
                 punchedGeometries = rc.Geometry.Brep.CreatePlanarBreps(glzCrvs + jBaseCrvList)
-                if len(punchedGeometries) == 1: self.punchedGeometry = punchedGeometries[0]
+                
+                if len(punchedGeometries) == 1:
+                    self.punchedGeometry = punchedGeometries[0]
                 else:
-                    # project the curves on top of base surface
-                    srfNormal = self.getSrfCenPtandNormalAlternate()[1]
-                    glzCrvsArray = rc.Geometry.Curve.ProjectToBrep(glzCrvs, [self.geometry], srfNormal, sc.doc.ModelAbsoluteTolerance)
-                    glzCrvs = []
-                    for crv in glzCrvsArray: glzCrvs.append(crv)
+                    # curves are not in the same plane so let's
+                    # project the curves on surface plane
+                    srfPlane = rc.Geometry.Plane(self.cenPt, self.normalVector)
+                    PGlzCrvs = []
+                    for curve in glzCrvs + jBaseCrvList:
+                        pCrvs = rc.Geometry.Curve.ProjectToPlane(curve, srfPlane)
+                        PGlzCrvs.append(pCrvs)
                     
-                    punchedGeometries = rc.Geometry.Brep.CreatePlanarBreps(glzCrvs + jBaseCrvList)
+                    punchedGeometries = rc.Geometry.Brep.CreatePlanarBreps(PGlzCrvs)
+                    #if len(punchedGeometries)>1:
+                    #    # this shouldn't happen
+                    #    crvDif = rc.Geometry.Curve.CreateBooleanDifference(jBaseCrvList[0], glzCrvs)
+                    #    punchedGeometries = rc.Geometry.Brep.CreatePlanarBreps(crvDif)
                 
-                if len(punchedGeometries)>1:
-                    crvDif = rc.Geometry.Curve.CreateBooleanDifference(jBaseCrvList[0], glzCrvs)
-                    punchedGeometries = rc.Geometry.Brep.CreatePlanarBreps(crvDif)
-                
-                self.punchedGeometry = punchedGeometries[0]
+                    print PGlzCrvs
+                    self.punchedGeometry = PGlzCrvs
             else:
                 # split the base geometry - Good luck!
                 splitBrep = self.geometry.Faces[0].Split(glzCrvs, sc.doc.ModelAbsoluteTolerance)
