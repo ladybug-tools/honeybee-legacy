@@ -40,7 +40,7 @@ def main(schName):
     
     hb_EPScheduleAUX = sc.sticky["honeybee_EPScheduleAUX"]()
     
-    schedule, comments = hb_EPScheduleAUX.getScheduleDataByName(schName, ghenv.Component)
+    schedule, comments = hb_EPScheduleAUX.getScheduleDataByName(schName.upper(), ghenv.Component)
     
     return schName, schedule, comments
 

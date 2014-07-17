@@ -986,6 +986,9 @@ class EPMaterialAux(object):
                 sc.sticky[HBLibrarieNames[key]][name][lineCount-1] = objValue[:-1], objDescription
                 break
         
+        # add name to list
+        sc.sticky [HBLibrarieNames[key]]["List"].append(name)
+        
         return True, name
     
     def duplicateEPMaterialWarning(self, objectName, newMaterialString):

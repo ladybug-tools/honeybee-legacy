@@ -24,7 +24,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Set EP Zone Construction"
 ghenv.Component.NickName = 'setEPZoneCnstr'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -50,26 +50,21 @@ def main(HBZone, wallEPCnst, windowEPCnst, roofEPCnst, flrEPCnst, ceilEPCnst):
     # here I should check for each construction to be in the library
     EPConstructios = sc.sticky ["honeybee_constructionLib"]["List"]
     warning = ""
-    if wallEPCnst not in EPConstructios:
-        if wallEPCnst != None:
-            warning += "Can't find wall construction in Honeybee library.\n"
-            wallEPCnst = None
-    if windowEPCnst not in EPConstructios:
-        if windowEPCnst != None:
-            warning += "Can't find window construction in Honeybee library.\n"
-            windowEPCnst = None
-    if roofEPCnst not in EPConstructios:
-        if roofEPCnst != None:
-            warning += "Can't find roof construction in Honeybee library.\n"
-            roofEPCnst = None
-    if flrEPCnst not in EPConstructios:
-        if flrEPCnst != None:
-            warning += "Can't find floor construction in Honeybee library.\n"
-            flrEPCnst = None
-    if ceilEPCnst not in EPConstructios:
-        if ceilEPCnst != None:
-            warning += "Can't find ceiling construction in Honeybee library.\n"
-            ceilEPCnst = None
+    if wallEPCnst != None and wallEPCnst.upper() not in EPConstructios:
+        warning += "Can't find wall construction in Honeybee library.\n"
+        wallEPCnst = None
+    if windowEPCnst != None and windowEPCnst.upper() not in EPConstructios:
+        warning += "Can't find window construction in Honeybee library.\n"
+        windowEPCnst = None
+    if roofEPCnst != None and roofEPCnst.upper() not in EPConstructios:
+        warning += "Can't find roof construction in Honeybee library.\n"
+        roofEPCnst = None
+    if flrEPCnst != None and flrEPCnst.upper() not in EPConstructios:
+        warning += "Can't find floor construction in Honeybee library.\n"
+        flrEPCnst = None
+    if ceilEPCnst != None and ceilEPCnst.upper() not in EPConstructios:
+        warning += "Can't find ceiling construction in Honeybee library.\n"
+        ceilEPCnst = None
     
     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
     
