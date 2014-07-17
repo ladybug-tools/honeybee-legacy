@@ -19,7 +19,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Construction"
 ghenv.Component.NickName = 'EPConstruction'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_16_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_17_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -68,7 +68,7 @@ def main():
             if materialName != None:
                  # double check and make sure material already exists
                 if materialName not in sc.sticky ["honeybee_materialLib"].keys() and materialName not in sc.sticky ["honeybee_windowMaterialLib"].keys():
-                    added, materialName = hb_EPMaterialAUX.addEPConstructionToLib(materialName.upper(), overwrite = True)
+                    added, materialName = hb_EPMaterialAUX.addEPConstructionToLib(materialName, overwrite = True)
                     # double check and make sure material already exists
                     if materialName in sc.sticky ["honeybee_materialLib"].keys():
                         pass
