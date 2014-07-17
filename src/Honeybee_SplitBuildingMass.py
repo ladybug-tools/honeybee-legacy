@@ -27,7 +27,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = 'Honeybee_SplitBuildingMass'
 ghenv.Component.NickName = 'SplitMass'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_15_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -156,7 +156,8 @@ def getFloorCrvs(buildingMass, floorHeights, maxHeights):
     finaltopIncList = []
     finalNurbsList = []
     
-    for contourCrvs in cntrCrvs:
+    for courtyrdCount, contourCrvs in enumerate(cntrCrvs):
+        
         #Check if the operation has generated a single nurbs curve for a floor (like a circle) and, if so, segment it.
         goodContourCrvs = []
         nurbsList = []
@@ -264,7 +265,16 @@ def getFloorCrvs(buildingMass, floorHeights, maxHeights):
             if tophoriz == True and topPlanar == True:
                 topInc = True
                 edgeCurves = rc.Geometry.Curve.JoinCurves(topSurface.DuplicateEdgeCurves())
-                edgeLen = len(edgeCurves)
+                #If the building is a courtyard one, select out the curve with the same area order.
+                if len(edgeCurves) > 1:
+                    areaList = []
+                    for curve in edgeCurves:
+                        try: areaList.append(rc.Geometry.AreaMassProperties.Compute(curve).Area)
+                        except: areaList.append(0.0)
+                    edgeCurvesSorted = [x for (y,x) in sorted(zip(areaList, edgeCurves))]
+                    edgeCurves = [edgeCurvesSorted[courtyrdCount]]
+                else: pass
+                
                 isNurbCurve = []
                 for count, curve in enumerate(edgeCurves):
                     try:
@@ -317,6 +327,7 @@ def getFloorCrvs(buildingMass, floorHeights, maxHeights):
             seamVectorPt = rc.Geometry.Vector3d((contourCrvs[0].PointAtStart.X - crvCentPt.X)*factor, (contourCrvs[0].PointAtStart.Y - crvCentPt.Y)*factor, 0)
             # adjust the seam of the curves.
             crvAdjust = []
+            
             for nurbCount, curve in enumerate(contourCrvs):
                 if nurbsList[nurbCount] == False and curveSegmentList[nurbCount] == False:
                     curveParameter = curve.ClosestPoint(rc.Geometry.Intersect.Intersection.CurveCurve(curve, rc.Geometry.Line(rc.Geometry.AreaMassProperties.Compute(curve).Centroid, seamVectorPt).ToNurbsCurve(), sc.doc.ModelAbsoluteTolerance, sc.doc.ModelAbsoluteTolerance)[0].PointA)[1]
@@ -353,7 +364,7 @@ def getFloorCrvs(buildingMass, floorHeights, maxHeights):
         finaltopIncList.append(topInc)
         finalNurbsList.append(nurbsList)
     
-    return splitters, finalCrvsList, finaltopIncList, finalNurbsList
+    return splitters, finalCrvsList, finaltopIncList, finalNurbsList, lastFloorInc
 
 
 
@@ -366,6 +377,7 @@ def splitFloorHeights(bldgMasses, bldgsFlr2FlrHeights, lb_preparation, lb_visual
         floorCurves = []
         topIncluded = []
         nurbsCurveList = []
+        lastFloorInclud = []
         for bldgCount, mass in enumerate(initialMasses):
             
             # 0- split the mass vertically [well, it is actually horizontally! so confusing...]
@@ -378,11 +390,12 @@ def splitFloorHeights(bldgMasses, bldgsFlr2FlrHeights, lb_preparation, lb_visual
             floorHeights = getFloorHeights(bldgsFlr2FlrHeights, maxHeights)
             
             if floorHeights!=[0]:
-                splitterSrfs, crvAdjust, topInc, nurbsList = getFloorCrvs(mass, floorHeights, maxHeights)
+                splitterSrfs, crvAdjust, topInc, nurbsList, lastFloorInc = getFloorCrvs(mass, floorHeights, maxHeights)
                 
                 floorCurves.append(crvAdjust)
                 topIncluded.append(topInc)
                 nurbsCurveList.append(nurbsList)
+                lastFloorInclud.append(lastFloorInc)
                 
                 # well, I'm pretty sure that something like this is smarter to be written
                 # as a recursive fuction but I'm not comfortable enough to write it that way
@@ -416,7 +429,7 @@ def splitFloorHeights(bldgMasses, bldgsFlr2FlrHeights, lb_preparation, lb_visual
                 
                 splitZones.append(massZones)
         
-        return splitZones, floorCurves, topIncluded, nurbsCurveList
+        return splitZones, floorCurves, topIncluded, nurbsCurveList, lastFloorInclud
 
 #Define a function that will extract the points from a polycurve line
 def getCurvePoints(curve):
@@ -754,8 +767,8 @@ def splitPerimZones(mass, zoneDepth, floorCrvList, topInc, totalNurbsList):
                         if height > zMin + tolerance and height < zMax - tolerance:
                             testEdgeCurves.append(edgeCurves[heightCount])
                         else: pass
-                    
-                    
+                    #for wall in floorWalls:
+                    #    print rc.Geometry.AreaMassProperties.Compute(wall).Area
                     #Make the list of perimeter zone walls.
                     perimZoneWalls = []
                     
@@ -941,8 +954,10 @@ def splitPerimZones(mass, zoneDepth, floorCrvList, topInc, totalNurbsList):
                     finalZones.append(mass[curveCount])
                     print "One floor did not generate perimeter and core zones because the offsetting of the boundary causes part of the core to dissappear.  The floor will be returned as a single zone.  If perimeter zones are desired, try decreasing the perimeter depth."
             except:
-                finalZones.append(mass[curveCount])
-                print "Failed to generate the perimieter zones for one floor as the floor's geometry is not accomodated by the script.  The floor will be returned as a single zone."
+                if len(floorCrvList) > 1 and listCount > 0: pass
+                else:
+                    finalZones.append(mass[curveCount])
+                    print "Failed to generate the perimieter zones for one floor as the floor's geometry is not accomodated by the script.  The floor will be returned as a single zone."
     
     # If the building is a courtyard building, generate the core zones and append them to the final zones.
     if len(coreZoneWallList) != 0 and genFailure == False:
@@ -978,7 +993,7 @@ def main(mass, floorHeights, perimDepth):
         
         #If the user has specified a floor height, split the mass up by floor.
         if floorHeights != []:
-            splitFloors, floorCrvs, topInc, nurbsList = splitFloorHeights(mass, floorHeights, lb_preparation, lb_visualization)
+            splitFloors, floorCrvs, topInc, nurbsList, lastFloorInclud = splitFloorHeights(mass, floorHeights, lb_preparation, lb_visualization)
         else:
             splitFloors = mass
             floorCrvs = []
@@ -988,18 +1003,27 @@ def main(mass, floorHeights, perimDepth):
                 bbBox = item.GetBoundingBox(rc.Geometry.Plane.WorldXY)
                 maxHeights = bbBox.Max.Z
                 minHeights = bbBox.Min.Z
-                splitters, flrCrvs, topIncl, nurbL = getFloorCrvs(item, [0, maxHeights-minHeights], maxHeights)
+                splitters, flrCrvs, topIncl, nurbL, lastInclu = getFloorCrvs(item, [0, maxHeights-minHeights], maxHeights)
+                
                 floorCrvs.append(flrCrvs)
-                topInc.append(True)
+                topInc.append(topIncl)
                 nurbsList.append(nurbL)
         
         #If the user had specified a perimeter zone depth, offset the floor curves to get perimeter and core.
+        splitZones = []
         if perimeterZoneDepth_ != []:
-            splitZones = []
             for count, mass in enumerate(splitFloors):
                 splitZones.append(splitPerimZones(mass, perimDepth, floorCrvs[count], topInc[count], nurbsList[count]))
-        else: splitZones = splitFloors
-        
+        else:
+            for count, mass in enumerate(splitFloors):
+                print topInc[count][0]
+                print lastFloorInclud[count]
+                if topInc[count][0] == True and lastFloorInclud[count] == True:
+                    splitZones.append(mass)
+                elif topInc[count][0] == False and lastFloorInclud[count] == False:
+                    splitZones.append(mass)
+                else:
+                    splitZones.append(mass[:-1])
         
         return splitZones
     else:
