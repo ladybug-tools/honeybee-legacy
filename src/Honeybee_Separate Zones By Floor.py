@@ -19,7 +19,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = 'Honeybee_Separate Zones By Floor'
 ghenv.Component.NickName = 'separateZonesByFloor'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_15_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_17_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
@@ -44,7 +44,7 @@ def main(HBZones):
     HBZones = {}
     
     for zone in HBZonesFromHive:
-        floorH = zone.getFloorZLevel()
+        floorH = "%.3f"%zone.getFloorZLevel()
         # print floorH
         if floorH not in HBZones.keys():
             HBZones[floorH] = []
