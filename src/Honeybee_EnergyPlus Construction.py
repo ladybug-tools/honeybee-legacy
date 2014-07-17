@@ -19,7 +19,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Construction"
 ghenv.Component.NickName = 'EPConstruction'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_13_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -58,7 +58,7 @@ def main():
     # if not then stop the process
     materialNames = []
     
-    constructionStr = "Construction,\n" + _name + ",    !- Name\n"
+    constructionStr = "Construction,\n" + _name.upper() + ",    !- Name\n"
     
     for inputCount in range(ghenv.Component.Params.Input.Count):
         if inputCount!=0 and inputCount < ghenv.Component.Params.Input.Count:
@@ -66,18 +66,19 @@ def main():
             exec('materialName = ' + layerName) #that's why I love Python. Yo!
             # check if it is a full string definition
             if materialName != None:
-                added, materialName = hb_EPMaterialAUX.addEPConstructionToLib(materialName, overwrite = True)
-            
-                # double check and make sure material already exists
-                if materialName in sc.sticky ["honeybee_materialLib"].keys():
-                    pass
-                elif materialName in sc.sticky ["honeybee_windowMaterialLib"].keys():
-                    pass
-                else:
-                    msg = "layer_" + str(inputCount) + " is not a valid material name/definition.\n" + \
-                        "Create the material first and try again."
-                    ghenv.Component.AddRuntimeMessage(w, msg)
-                    return
+                 # double check and make sure material already exists
+                if materialName not in sc.sticky ["honeybee_materialLib"].keys() and materialName not in sc.sticky ["honeybee_windowMaterialLib"].keys():
+                    added, materialName = hb_EPMaterialAUX.addEPConstructionToLib(materialName.upper(), overwrite = True)
+                    # double check and make sure material already exists
+                    if materialName in sc.sticky ["honeybee_materialLib"].keys():
+                        pass
+                    elif materialName in sc.sticky ["honeybee_windowMaterialLib"].keys():
+                        pass
+                    else:
+                        msg = "layer_" + str(inputCount) + " is not a valid material name/definition.\n" + \
+                            "Create the material first and try again."
+                        ghenv.Component.AddRuntimeMessage(w, msg)
+                        return
                 
                 if inputCount!= ghenv.Component.Params.Input.Count - 1:
                     constructionStr += materialName + ",    !- Layer " + str(inputCount) + "\n"

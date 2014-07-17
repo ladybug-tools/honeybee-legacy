@@ -22,7 +22,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Decompose EP Material"
 ghenv.Component.NickName = 'DecomposeEPMaterial'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_15_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
@@ -45,7 +45,7 @@ def main(matName):
         return -1
     
     if sc.sticky.has_key("honeybee_materialLib"):
-        return hb_EPMaterialAUX.decomposeMaterial(matName, ghenv.Component)
+        return hb_EPMaterialAUX.decomposeMaterial(matName.upper(), ghenv.Component)
         
 
 if _materialName!=None:
@@ -54,6 +54,4 @@ if _materialName!=None:
     if results!=-1:
         values, comments, UValue_SI, UValue_IP = results
         names = _materialName
-        RValue_SI = 1/UValue_SI
-        RValue_IP = 1/UValue_IP
     

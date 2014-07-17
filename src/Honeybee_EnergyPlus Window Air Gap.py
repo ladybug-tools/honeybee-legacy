@@ -21,7 +21,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Window Air Gap"
 ghenv.Component.NickName = 'EPWindowAirGap'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
@@ -33,7 +33,7 @@ def main(name, gasType, thickness):
     if gasType == None: gasType = "AIR"
     if thickness == None: thickness = .0125
     
-    values = [name, gasType, thickness]
+    values = [name.upper(), gasType, thickness]
     comments = ["Name", "Gas type", "Thickness {m}"]
     
     materialStr = "WindowMaterial:Gas,\n"

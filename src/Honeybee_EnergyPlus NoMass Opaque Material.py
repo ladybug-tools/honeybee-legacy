@@ -21,7 +21,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_EnergyPlus NoMass Opaque Material"
 ghenv.Component.NickName = 'EPNoMassMat'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -34,7 +34,7 @@ def main(name, roughness, R_Value, thermAbsp, solAbsp, visAbsp):
     if solAbsp == None: solAbsp = 0.7
     if visAbsp == None: visAbsp = 0.7
     
-    values = [name, roughness, R_Value, thermAbsp, solAbsp, visAbsp]
+    values = [name.upper(), roughness, R_Value, thermAbsp, solAbsp, visAbsp]
     comments = ["Name", "Roughness", "Thermal Resistance {m2-K/W}", "Thermal Absorptance", "Solar Absorptance", "Visible Absorptance"]
     
     materialStr = "Material:NoMass,\n"

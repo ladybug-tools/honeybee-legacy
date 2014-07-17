@@ -21,7 +21,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Window Material"
 ghenv.Component.NickName = 'EPWindowMat'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -29,7 +29,7 @@ except: pass
 
 def main(name, U_Value, SHGC, VT):
     
-    values = [name, U_Value, SHGC, VT]
+    values = [name.upper(), U_Value, SHGC, VT]
     comments = ["Name", "U Value", "Solar Heat Gain Coeff", "Visible Transmittance"]
     
     materialStr = "WindowMaterial:SimpleGlazingSystem,\n"

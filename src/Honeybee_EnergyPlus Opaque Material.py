@@ -21,7 +21,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Opaque Material"
 ghenv.Component.NickName = 'EPOpaqueMat'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
@@ -34,7 +34,7 @@ def main(name, roughness, thickness, conductivity, density, specificHeat, thermA
     if solAbsp == None: solAbsp = 0.7
     if visAbsp == None: visAbsp = 0.7
     
-    values = [name, roughness, thickness, conductivity, density, specificHeat, thermAbsp, solAbsp, visAbsp]
+    values = [name.upper(), roughness, thickness, conductivity, density, specificHeat, thermAbsp, solAbsp, visAbsp]
     comments = ["Name", "Roughness", "Thickness {m}", "Conductivity {W/m-K}", "Density {kg/m3}", "Specific Heat {J/kg-K}", "Thermal Absorptance", "Solar Absorptance", "Visible Absorptance"]
     
     materialStr = "Material,\n"
