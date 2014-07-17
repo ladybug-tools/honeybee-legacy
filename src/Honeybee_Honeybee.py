@@ -725,9 +725,9 @@ class EPMaterialAux(object):
     def decomposeMaterial(self, matName, GHComponent):
         try:
             try:
-                materialObj = sc.sticky["honeybee_materialLib"][matName]
+                materialObj = sc.sticky["honeybee_materialLib"][matName.upper()]
             except:
-                materialObj = sc.sticky["honeybee_windowMaterialLib"][matName]
+                materialObj = sc.sticky["honeybee_windowMaterialLib"][matName.upper()]
                 
             comments = []
             values = []
@@ -757,7 +757,7 @@ class EPMaterialAux(object):
     
     def decomposeEPCnstr(self, cnstrName, GHComponent = None):
         try:
-            constructionObj = sc.sticky ["honeybee_constructionLib"][cnstrName]
+            constructionObj = sc.sticky ["honeybee_constructionLib"][cnstrName.upper()]
             comments = []
             materials = []
             
