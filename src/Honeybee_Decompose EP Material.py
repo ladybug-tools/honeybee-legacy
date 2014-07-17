@@ -54,4 +54,7 @@ if _materialName!=None:
     if results!=-1:
         values, comments, UValue_SI, UValue_IP = results
         names = _materialName
+        if UValue_SI and UValue_IP:
+            RValue_SI = 1/UValue_SI
+            RValue_IP = 1/UValue_IP
     
