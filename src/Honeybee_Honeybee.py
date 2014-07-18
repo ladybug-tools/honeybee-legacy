@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_15_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_18_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -54,21 +54,106 @@ from itertools import chain
 import datetime
 import json
 import copy
+import urllib
 PI = math.pi
 
 rc.Runtime.HostUtils.DisplayOleAlerts(False)
 
-#set up default pass
-if os.path.exists("c:\\ladybug\\") and os.access(os.path.dirname("c:\\ladybug\\"), os.F_OK):
-    # folder already exists so it is all fine
-    sc.sticky["Honeybee_DefaultFolder"] = "c:\\ladybug\\"
-elif os.access(os.path.dirname("c:\\"), os.F_OK):
-    #the folder does not exists but write privileges are given so it is fine
-    sc.sticky["Honeybee_DefaultFolder"] = "c:\\ladybug\\"
-else:
-    # let's use the user folder
-    sc.sticky["Honeybee_DefaultFolder"] = os.path.join("C:\\Users\\", os.getenv("USERNAME"), "AppData\\Roaming\\Ladybug\\")
-
+class CheckIn():
+    
+    def __init__(self):
+        #set up default pass
+        if os.path.exists("c:\\ladybug\\") and os.access(os.path.dirname("c:\\ladybug\\"), os.F_OK):
+            # folder already exists so it is all fine
+            sc.sticky["Honeybee_DefaultFolder"] = "c:\\ladybug\\"
+        elif os.access(os.path.dirname("c:\\"), os.F_OK):
+            #the folder does not exists but write privileges are given so it is fine
+            sc.sticky["Honeybee_DefaultFolder"] = "c:\\ladybug\\"
+        else:
+            # let's use the user folder
+            sc.sticky["Honeybee_DefaultFolder"] = os.path.join("C:\\Users\\", os.getenv("USERNAME"), "AppData\\Roaming\\Ladybug\\")
+    
+    def getComponentVersion(self):
+        monthDict = {'JAN':'01', 'FEB':'02', 'MAR':'03', 'APR':'04', 'MAY':'05', 'JUN':'06',
+                     'JUL':'07', 'AUG':'08', 'SEP':'09', 'OCT':'10', 'NOV':'11', 'DEC':'12'}        
+        # convert component version to standard versioning
+        ver, verDate = ghenv.Component.Message.split("\n")
+        ver = ver.split(" ")[1].strip()
+        month, day, year = verDate.split("_")
+        month = monthDict[month.upper()]
+        version = ".".join([year, month, day, ver])
+        return version
+        
+    def isNewerVersionAvailable(self, currentVersion, availableVersion):
+        # print int(availableVersion.replace(".", "")), int(currentVersion.replace(".", ""))
+        return int(availableVersion.replace(".", "")) > int(currentVersion.replace(".", ""))
+    
+    def checkForUpdates(self, LB= True, HB= True, OpenStudio = True, template = True):
+        
+        url = "https://dl.dropboxusercontent.com/u/16228160/honeybee/versions.txt"
+        webFile = urllib.urlopen(url)
+        versions= eval(webFile.read())
+        webFile.close()
+        
+        if LB:
+            ladybugVersion = versions['Ladybug']
+            currentLadybugVersion = self.getComponentVersion() # I assume that this function will be called inside Ladybug_ladybug Component
+            if self.isNewerVersionAvailable(currentLadybugVersion, ladybugVersion):
+                msg = "There is a newer version of Ladybug available to download! " + \
+                      "We strongly recommend you to download the newer version from Food4Rhino: " + \
+                      "http://www.food4rhino.com/project/ladybug-honeybee"
+                print msg
+                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+        if HB:
+            honeybeeVersion = versions['Honeybee']
+            currentHoneybeeVersion = self.getComponentVersion() # I assume that this function will be called inside Honeybee_Honeybee Component
+            if self.isNewerVersionAvailable(currentHoneybeeVersion, honeybeeVersion):
+                msg = "There is a newer version of Honeybee available to download! " + \
+                      "We strongly recommend you to download the newer version from Food4Rhino: " + \
+                      "http://www.food4rhino.com/project/ladybug-honeybee"
+                print msg
+                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+            
+        if OpenStudio:
+            # This should be called inside OpenStudio component which means Honeybee is already flying
+            # check if the version file exist
+            openStudioLibFolder = os.path.join(sc.sticky["Honeybee_DefaultFolder"], "OpenStudio")
+            versionFile = os.path.join(openStudioLibFolder, "osversion.txt")
+            isNewerOSAvailable= False
+            if not os.path.isfile(versionFile):
+                isNewerOSAvailable= True
+            else:
+                # read the file
+                with open(versionFile) as verFile:
+                    currentOSVersion= eval(verFile.read())['version']
+            
+            OSVersion = versions['OpenStudio']
+            
+            if isNewerOSAvailable or self.isNewerVersionAvailable(currentOSVersion, OSVersion):
+                sc.sticky["isNewerOSAvailable"] = True
+            else:
+                sc.sticky["isNewerOSAvailable"] = False
+                
+        if template:
+            honeybeeDefaultFolder = sc.sticky["Honeybee_DefaultFolder"]
+            templateFile = os.path.join(honeybeeDefaultFolder, 'OpenStudioMasterTemplate.idf')
+            
+            # check file doesn't exist then it should be downloaded
+            if not os.path.isfile(templateFile):
+                return True
+            
+            # find the version
+            try:
+                with open(templateFile) as tempFile:
+                    templateVersion = eval(tempFile.readline().split("!")[-1].strip())["version"]
+            except Exception, e:
+                return True
+            
+            # finally if the file exist and already has a version, compare the versions
+            currentTemplateVersion = versions['Template']
+            
+            return self.isNewerVersionAvailable(currentTemplateVersion, templateVersion)
+        
 
 class hb_findFolders():
     
@@ -112,7 +197,8 @@ class hb_findFolders():
 
 class hb_GetEPConstructions():
     
-    def __init__(self, workingDir = sc.sticky["Honeybee_DefaultFolder"]):
+    def __init__(self, downloadTemplate = False, workingDir = sc.sticky["Honeybee_DefaultFolder"]):
+        
         
         def downloadFile(url, workingDir):
             import urllib
@@ -126,11 +212,14 @@ class hb_GetEPConstructions():
         if not os.path.isdir(workingDir): os.mkdir(workingDir)
         
         # download template file
-        if not os.path.isfile(workingDir + '\OpenStudioMasterTemplate.idf'):
+        if downloadTemplate or not os.path.isfile(workingDir + '\OpenStudioMasterTemplate.idf'):
             try:
                 ## download File
                 print 'Downloading OpenStudioMasterTemplate.idf to ', workingDir
-                downloadFile(r'https://dl.dropboxusercontent.com/u/16228160/honeybee/OpenStudioMasterTemplate.idf', workingDir)
+                updatedLink = "https://dl.dropboxusercontent.com/u/16228160/honeybee/template/OpenStudioMasterTemplate.idf"
+                # This is the current link for current available version of Honeybee. Once we release the new version it can be removed.
+                #downloadFile(r'https://dl.dropboxusercontent.com/u/16228160/honeybee/OpenStudioMasterTemplate.idf', workingDir)
+                downloadFile(updatedLink, workingDir)
             except:
                 print 'Download failed!!! You need OpenStudioMasterTemplate.idf to use honeybee.' + \
                 '\nPlease check your internet connection, and try again!'
@@ -169,9 +258,9 @@ class hb_GetEPConstructions():
             
             # fix schedule for office lighting in dictionary
             
-            zonePrograms = openStudioStandardLib['space_types']['90.1-2007']['ClimateZone 1-8']['Office']
-            for zoneProgram in zonePrograms.keys():
-                zonePrograms[zoneProgram]['lighting_sch'] = "Medium Office Bldg Light"
+            #zonePrograms = openStudioStandardLib['space_types']['90.1-2007']['ClimateZone 1-8']['Office']
+            #for zoneProgram in zonePrograms.keys():
+            #    zonePrograms[zoneProgram]['lighting_sch'] = "Medium Office Bldg Light"
             
             sc.sticky ["honeybee_OpenStudioStandardsFile"] = openStudioStandardLib
             print "OpenStudio Standard file is loaded!"
@@ -291,15 +380,15 @@ class RADMaterialAux(object):
             if not sc.sticky.has_key("honeybee_RADMaterialLib"): sc.sticky ["honeybee_RADMaterialLib"] = {}
             
             # add default materials to the library
-            self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', '000_Context_Material', .35, .35, .35, 0, 0.1), True, True)
-            self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', '000_Interior_Ceiling', .80, .80, .80, 0, 0.1), True, True)
-            self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', '000_Interior_Floor', .2, .2, .2, 0, 0.1), True, True)
-            self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', '000_Exterior_Floor', .2, .2, .2, 0, 0.1), True, True)
-            self.analyseRadMaterials(self.createRadMaterialFromParameters('glass', '000_Exterior_Window', .60, .60, .60), True, True)
-            self.analyseRadMaterials(self.createRadMaterialFromParameters('glass', '000_Interior_Window', .60, .60, .60), True, True)
-            self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', '000_Exterior_Roof', .35, .35, .35, 0, 0.1), True, True)
-            self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', '000_Exterior_Wall', .50, .50, .50, 0, 0.1), True, True)
-            self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', '000_Interior_Wall', .50, .50, .50, 0, 0.1), True, True)
+            self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', 'Context_Material', .35, .35, .35, 0, 0.1), True, True)
+            self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', 'Interior_Ceiling', .80, .80, .80, 0, 0.1), True, True)
+            self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', 'Interior_Floor', .2, .2, .2, 0, 0.1), True, True)
+            self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', 'Exterior_Floor', .2, .2, .2, 0, 0.1), True, True)
+            self.analyseRadMaterials(self.createRadMaterialFromParameters('glass', 'Exterior_Window', .60, .60, .60), True, True)
+            self.analyseRadMaterials(self.createRadMaterialFromParameters('glass', 'Interior_Window', .60, .60, .60), True, True)
+            self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', 'Exterior_Roof', .35, .35, .35, 0, 0.1), True, True)
+            self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', 'Exterior_Wall', .50, .50, .50, 0, 0.1), True, True)
+            self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', 'Interior_Wall', .50, .50, .50, 0, 0.1), True, True)
             
             # import user defined RAD library
             RADLibraryFile = os.path.join(sc.sticky["Honeybee_DefaultFolder"], "HoneybeeRadMaterials.mat")
@@ -1678,12 +1767,12 @@ class EPSurfaceLib(object):
         
         # surface construction should change later
         # to be based on the zone program
-        self.srfCnstr = {0:'000_Exterior_Wall',
-                1:'000_Exterior_Roof',
-                2:'000_Exterior_Floor',
-                3:'000_Interior_Floor',
+        self.srfCnstr = {0:'Exterior_Wall',
+                1:'Exterior_Roof',
+                2:'Exterior_Floor',
+                3:'Interior_Floor',
                 4:'Air_Wall',
-                5:'000_Exterior_Window'}
+                5:'Exterior_Window'}
          
         self.srfBC = {0:'Outdoors',
                  1:'Outdoors',
@@ -2529,32 +2618,32 @@ class hb_EPSurface(object):
            'WINDOW':'WINDOW',
            'SHADING': 'SHADING'}
            
-        self.cnstrSet = {0:'000 Exterior Wall',
-                0.5: '000 Exterior Wall',
-                1: '000 Exterior Roof',
-                1.5: '000 Exterior Roof',
-                2:'000 Interior Floor',
-                2.25: '000 Exterior Floor',
-                2.5: '000 Exterior Floor',
-                2.75: '000 Exterior Floor',
-                3:'000 Interior Ceiling',
+        self.cnstrSet = {0:'Exterior Wall',
+                0.5: 'Exterior Wall',
+                1: 'Exterior Roof',
+                1.5: 'Exterior Roof',
+                2:'Interior Floor',
+                2.25: 'Exterior Floor',
+                2.5: 'Exterior Floor',
+                2.75: 'Exterior Floor',
+                3:'Interior Ceiling',
                 4:'Air Wall',
-                5:'000 Exterior Window',
-                6:'000 Interior Wall'}
+                5:'Exterior Window',
+                6:'Interior Wall'}
         
         self.intCnstrSet = {
-                0:'000 Interior Wall',
-                0.5: '000 Exterior Wall',
-                1:'000 Exterior Roof',
-                1.5:'000 Exterior Roof',
-                2:'000 Interior Floor',
-                2.25: '000 Exterior Floor',
-                2.5: '000 Exterior Floor',
-                2.75: '000 Exterior Floor',
-                3:'000 Interior Ceiling',
+                0:'Interior Wall',
+                0.5: 'Exterior Wall',
+                1:'Exterior Roof',
+                1.5:'Exterior Roof',
+                2:'Interior Floor',
+                2.25: 'Exterior Floor',
+                2.5: 'Exterior Floor',
+                2.75: 'Exterior Floor',
+                3:'Interior Ceiling',
                 4:'Air Wall',
-                5:'000 Interior Window',
-                6:'000 Interior Wall'}
+                5:'Interior Window',
+                6:'Interior Wall'}
         
         self.srfBC = {0:'Outdoors',
                      0.5: 'ground',
@@ -3214,7 +3303,10 @@ class hb_EPZoneSurface(hb_EPSurface):
                                         
         except Exception, e:
             self.punchedGeometry = None
-            print "Failed to calculate opaque part of the surface:\n" + `e`
+            self.hasChild = False
+            self.childSrfs = []
+            print "Failed to calculate opaque part of the surface. " + \
+                  "Glazing is removed from " + self.name
 
     def getOpaqueArea(self):
         if self.hasChild:
@@ -3249,8 +3341,8 @@ class hb_EPShdSurface(hb_EPSurface):
         self.TransmittanceSCH = ''
         self.isChild = False
         self.hasChild = False
-        self.construction = '000 Exterior Wall' # just added here to get the minimum surface to work
-        self.EPConstruction = '000 Exterior Wall' # just added here to get the minimum surface to work
+        self.construction = 'Exterior Wall' # just added here to get the minimum surface to work
+        self.EPConstruction = 'Exterior Wall' # just added here to get the minimum surface to work
         self.childSrfs = [self] # so I can use the same function as glazing to extract the points
         self.type = 6
         pass
@@ -3479,6 +3571,16 @@ def checkGHPythonVersion(target = "0.6.0.3"):
     if targetVersion > currentVersion: return False
     else: return True
 
+
+
+checkIn = CheckIn()
+
+try:
+    downloadTemplate = checkIn.checkForUpdates(LB= False, HB= True, OpenStudio = True, template = True)
+except:
+    # no internet connection
+    downloadTemplate = False
+
 GHPythonTargetVersion = "0.6.0.3"
 
 if not checkGHPythonVersion(GHPythonTargetVersion):
@@ -3568,8 +3670,9 @@ if letItFly:
 
         # set up radiance materials
         sc.sticky["honeybee_RADMaterialAUX"](True)
+        
         try:
-            hb_GetEPConstructions()
+            hb_GetEPConstructions(downloadTemplate)
             
             sc.sticky["honeybee_EPMaterialAUX"] = EPMaterialAux
             sc.sticky["honeybee_EPScheduleAUX"] = EPScheduleAux

@@ -55,10 +55,20 @@ else:
     #icon = System.Windows.Forms.MessageBoxIcon.Warning
     #up = rc.UI.Dialogs.ShowMessageBox(msg + "\n" + link, "Duplicate Material Name", buttons, icon)
     
-    
+
+if openStudioIsReady and sc.sticky.has_key('honeybee_release') and sc.sticky["isNewerOSAvailable"]:
+    # check if there is an update available
+    msg = "There is a newer version of OpenStudio libraries available to download! " + \
+                  "We strongly recommend you to download the newer version from this link and replace it with current files at " + \
+                  openStudioLibFolder +".\n" + \
+                  "https://app.box.com/s/y2sx16k98g1lfd3r47zi"
+    print msg
+    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+
+
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_14_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_18_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -1235,6 +1245,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         ghenv.Component.AddRuntimeMessage(w, "You should first let both Ladybug and Honeybee to fly...")
         return -1
     
+        
     # make sure epw file address is correct
     if not epwWeatherFile.endswith(epwWeatherFile) or not os.path.isfile(epwWeatherFile):
         msg = "Wrong weather file!"
