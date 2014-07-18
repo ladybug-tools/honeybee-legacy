@@ -4,8 +4,11 @@
 # under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
 
 """
-EnergyPlus Construction
-
+Use this component to make your own EnergyPlus construction.  Inputs can be either the name of a matterial form the Openstudio construction library or a custom material made with any of the EnergyPlus Material components.  Only all custom materials or all existing Openstudio materials can be used in a given construction.
+_
+Note that the last layer in the component is always the innermost layer and _layer_1 is always the outermost layer.
+_
+To add more layers in the construction, simply zoom into the component and hit the lowest "+" sign that shows up on the input side.  To remove layers from the construction, zoom into the component and hit the lowest "-" sign that shows up on the input side.
 -
 Provided by Honeybee 0.0.53
     
