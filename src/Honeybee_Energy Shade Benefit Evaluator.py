@@ -51,7 +51,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Energy Shade Benefit Evaluator"
 ghenv.Component.NickName = 'EnergyShadeBenefit'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
@@ -374,8 +374,9 @@ def main(gridSize, coolingLoad, heatingLoad, beamGain, analysisMesh, analysisAre
         else: legendVal = abs(mostHarm)
         
         #Get the colors for the analysis mesh based on the calculated benefit values unless a user has connected specific legendPar.
+        legendFont = 'Verdana'
         if legendPar:
-            lowB, highB, numSeg, customColors, legendBasePoint, legendScale = lb_preparation.readLegendParameters(legendPar, False)
+            lowB, highB, numSeg, customColors, legendBasePoint, legendScale, legendFont, legendFontSize = lb_preparation.readLegendParameters(legendPar, False)
         else:
             lowB = -1 * legendVal
             highB = legendVal
@@ -422,7 +423,7 @@ def main(gridSize, coolingLoad, heatingLoad, beamGain, analysisMesh, analysisAre
         legendSrfs = lb_visualization.colorMesh(legendColors, legendSrfs)
         
         titlebasePt = lb_visualization.BoundingBoxPar[-2]
-        titleTextCurve = lb_visualization.text2crv([analysisTitle], [titlebasePt], 'Verdana', legendScale * (lb_visualization.BoundingBoxPar[2]/20))
+        titleTextCurve = lb_visualization.text2srf([analysisTitle], [titlebasePt], legendFont, legendScale * (lb_visualization.BoundingBoxPar[2]/20))
         
         #Package the final legend together.
         legend = [legendSrfs, [lb_preparation.flattenList(legendTextCrv + titleTextCurve)]]
@@ -478,3 +479,9 @@ if checkData == True:
         legendBasePoint = result[5]
         legend = []
         [legend.append(item) for item in openLegend(result[4])]
+    
+    ghenv.Component.Params.Output[2].Hidden = True
+    ghenv.Component.Params.Output[5].Hidden = True
+else:
+    ghenv.Component.Params.Output[2].Hidden = False
+    ghenv.Component.Params.Output[5].Hidden = False
