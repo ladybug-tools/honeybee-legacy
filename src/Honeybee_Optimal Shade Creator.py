@@ -14,6 +14,7 @@ Provided by Honeybee 0.0.53
         _shadeMesh: The shade mesh out of either of the shade benefit evaluators.
         _shadeNetEffect: The shade net effect out of either of the shade benefit evaluators.
         percentToKeep_: A number between 0 and 100 that represents the percentage of the beneficial shade cells that you would like to keep.  By default, this is set to 25% but you may want to move it down if the area of your resulting shade is very large or move it up if you want to save more energy and do not care about the area of your shade.
+        levelOfPerform_: An optional number that represents the maximum acceptable energy savings per square area unit to be included in the created shade.  An input here will ocerride the percent input above.
     Returns:
         readMe!: ...
         energySavedByShade: The anticipated energy savings (or degree-days helped) for the shade output below.
@@ -86,11 +87,16 @@ def main(percent):
         else: faceNumbersHarm.append(faceNumbersSort[count])
     
     # Take the specified percent of the helpful cells.
-    numToTake  = percent*(len(shadeNetEffectHelp))
     shadeNetFinal = []
-    for count, num in enumerate(shadeNetEffectHelp):
-        if count < numToTake: shadeNetFinal.append(num)
-        else: faceNumbersHarm.append(faceNumbersSort[count])
+    if levelOfPerform_ == None:
+        numToTake  = percent*(len(shadeNetEffectHelp))
+        for count, num in enumerate(shadeNetEffectHelp):
+            if count < numToTake: shadeNetFinal.append(num)
+            else: faceNumbersHarm.append(faceNumbersSort[count])
+    else:
+        for count, num in enumerate(shadeNetEffectHelp):
+            if num > levelOfPerform_: shadeNetFinal.append(num)
+            else: faceNumbersHarm.append(faceNumbersSort[count])
     
     #Remove the unnecessary cells from the shade mesh.
     newMesh = _shadeMesh
