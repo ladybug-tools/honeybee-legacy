@@ -104,26 +104,29 @@ def main(percent):
     
     #Turn the new mesh into a brep snd get the area of each face.
     meshBrep = rc.Geometry.Brep.CreateFromMesh(newMesh, True)
-    areaList = []
-    for surface in meshBrep.Faces:
-        areaList.append(rc.Geometry.AreaMassProperties.Compute(surface).Area)
-    
-    #Try to simplify the brep.
-    try:
-        edgeCrv = meshBrep.DuplicateEdgeCurves(True)
-        joinedCrv = rc.Geometry.Curve.JoinCurves(edgeCrv, sc.doc.ModelAbsoluteTolerance)
-        meshBrepFinal = rc.Geometry.Brep.CreatePlanarBreps(joinedCrv)
-    except:
-        meshBrepFinal = meshBrep
-    
-    #Calculate the total area and the energy saved by the new mesh.
-    totalArea = sum(areaList)
-    totalEnergyList = []
-    for count, area in enumerate(areaList):
-        totalEnergyList.append(shadeNetFinal[count]*area)
-    totalEnergy = sum(totalEnergyList)
-    
-    return totalEnergy, totalArea, newMesh, meshBrepFinal
+    if meshBrep != None:
+        areaList = []
+        for surface in meshBrep.Faces:
+            areaList.append(rc.Geometry.AreaMassProperties.Compute(surface).Area)
+        
+        #Try to simplify the brep.
+        try:
+            edgeCrv = meshBrep.DuplicateEdgeCurves(True)
+            joinedCrv = rc.Geometry.Curve.JoinCurves(edgeCrv, sc.doc.ModelAbsoluteTolerance)
+            meshBrepFinal = rc.Geometry.Brep.CreatePlanarBreps(joinedCrv)
+        except:
+            meshBrepFinal = meshBrep
+        
+        #Calculate the total area and the energy saved by the new mesh.
+        totalArea = sum(areaList)
+        totalEnergyList = []
+        for count, area in enumerate(areaList):
+            totalEnergyList.append(shadeNetFinal[count]*area)
+        totalEnergy = sum(totalEnergyList)
+        
+        return totalEnergy, totalArea, newMesh, meshBrepFinal
+    else:
+        return 0, 0, None, None
 
 
 checkData = False
