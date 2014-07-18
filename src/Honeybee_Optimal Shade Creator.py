@@ -25,7 +25,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Optimal Shade Creator"
 ghenv.Component.NickName = 'ShadeCreator'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_16_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_17_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
@@ -127,7 +127,7 @@ def main(percent):
 
 
 checkData = False
-if _shadeMesh and _shadeNetEffect != []:
+if _shadeMesh != None and _shadeNetEffect != [] and _shadeNetEffect != [None]:
     checkData, percent = checkTheInputs()
 
 if checkData == True and _shadeMesh and _shadeNetEffect != []:

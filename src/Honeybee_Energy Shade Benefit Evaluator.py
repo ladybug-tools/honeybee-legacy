@@ -51,7 +51,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Energy Shade Benefit Evaluator"
 ghenv.Component.NickName = 'EnergyShadeBenefit'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_16_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_17_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
