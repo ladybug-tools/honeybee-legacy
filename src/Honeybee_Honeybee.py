@@ -155,6 +155,9 @@ class CheckIn():
             return self.isNewerVersionAvailable(currentTemplateVersion, templateVersion)
         
 
+checkIn = CheckIn()
+
+
 class hb_findFolders():
     
     def __init__(self):
@@ -3570,10 +3573,6 @@ def checkGHPythonVersion(target = "0.6.0.3"):
     
     if targetVersion > currentVersion: return False
     else: return True
-
-
-
-checkIn = CheckIn()
 
 try:
     downloadTemplate = checkIn.checkForUpdates(LB= False, HB= True, OpenStudio = True, template = True)
