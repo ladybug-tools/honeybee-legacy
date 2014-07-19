@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_18_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_19_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -145,13 +145,12 @@ class CheckIn():
             # find the version
             try:
                 with open(templateFile) as tempFile:
-                    templateVersion = eval(tempFile.readline().split("!")[-1].strip())["version"]
+                    currentTemplateVersion = eval(tempFile.readline().split("!")[-1].strip())["version"]
             except Exception, e:
                 return True
             
             # finally if the file exist and already has a version, compare the versions
-            currentTemplateVersion = versions['Template']
-            
+            templateVersion = versions['Template']
             return self.isNewerVersionAvailable(currentTemplateVersion, templateVersion)
         
 
@@ -211,11 +210,26 @@ class hb_GetEPConstructions():
             webFile.close()
             localFile.close()
         
+        def cleanHBLib():
+            sc.sticky ["honeybee_constructionLib"] = {}
+            sc.sticky ["honeybee_materialLib"] = {}
+            sc.sticky ["honeybee_windowMaterialLib"] = {}
+            sc.sticky["honeybee_ScheduleLib"] = {}
+            sc.sticky["honeybee_ScheduleTypeLimitsLib"] = {}
+        
         # create the folder if it is not there
         if not os.path.isdir(workingDir): os.mkdir(workingDir)
         
+        # create a backup from users library
+        templateFile = os.path.join(workingDir, 'OpenStudioMasterTemplate.idf')
+        bckupfile = os.path.join(workingDir, 'OpenStudioMasterTemplate_' + str(int(time.time())) +'.idf')
+        
         # download template file
-        if downloadTemplate or not os.path.isfile(workingDir + '\OpenStudioMasterTemplate.idf'):
+        if downloadTemplate or not os.path.isfile(templateFile):
+            # create a backup from users library
+            try: shutil.copyfile(templateFile, bckupfile)
+            except: pass
+            
             try:
                 ## download File
                 print 'Downloading OpenStudioMasterTemplate.idf to ', workingDir
@@ -223,6 +237,8 @@ class hb_GetEPConstructions():
                 # This is the current link for current available version of Honeybee. Once we release the new version it can be removed.
                 #downloadFile(r'https://dl.dropboxusercontent.com/u/16228160/honeybee/OpenStudioMasterTemplate.idf', workingDir)
                 downloadFile(updatedLink, workingDir)
+                # clean current library
+                cleanHBLib()
             except:
                 print 'Download failed!!! You need OpenStudioMasterTemplate.idf to use honeybee.' + \
                 '\nPlease check your internet connection, and try again!'
@@ -259,14 +275,9 @@ class hb_GetEPConstructions():
             with open(filepath) as jsondata:
                 openStudioStandardLib = json.load(jsondata)
             
-            # fix schedule for office lighting in dictionary
-            
-            #zonePrograms = openStudioStandardLib['space_types']['90.1-2007']['ClimateZone 1-8']['Office']
-            #for zoneProgram in zonePrograms.keys():
-            #    zonePrograms[zoneProgram]['lighting_sch'] = "Medium Office Bldg Light"
             
             sc.sticky ["honeybee_OpenStudioStandardsFile"] = openStudioStandardLib
-            print "OpenStudio Standard file is loaded!"
+            print "Standard template file is loaded!\n"
         if os.path.isfile(os.path.join(workingDir,"userCustomLibrary.idf")):
             libFilePaths.append(os.path.join(workingDir,"userCustomLibrary.idf"))
         
@@ -309,8 +320,9 @@ class hb_GetEPConstructions():
                         break
             return resultDict
         
-        if not sc.sticky.has_key("honeybee_constructionLib"):
-            print "Loading EP construction library"
+        
+        if True: #not sc.sticky.has_key("honeybee_constructionLib") or sc.sticky["honeybee_constructionLib"] == {}:
+            print "Loading EP construction library..."
             resultDict = {}
             EPKeys = ["Material", "WindowMaterial", "Construction"]
             for libFilePath in libFilePaths:
@@ -341,8 +353,9 @@ class hb_GetEPConstructions():
                 sc.sticky ["honeybee_constructionLib"]["List"] = outputs["Construction"]
                 sc.sticky ["honeybee_materialLib"]["List"] = outputs["Material"]
                 sc.sticky ["honeybee_windowMaterialLib"]["List"] = outputs["WindowMaterial"]
-                
-        if not sc.sticky.has_key("honeybee_ScheduleLib") or True:
+        
+        
+        if True: #not sc.sticky.has_key("honeybee_ScheduleLib") or sc.sticky["honeybee_ScheduleLib"] == {}:
             print "\nLoading EP schedules..."
             EPKeys = ["ScheduleTypeLimits", "Schedule"]
             schedulesDict = {}
@@ -725,6 +738,7 @@ class hb_EnergySimulatioParameters(object):
         
         return timestep, shadowPar, solarDistribution, simulationControl, ddyFile
 
+
 class EPMaterialAux(object):
     
     def __init__(self):
@@ -814,7 +828,7 @@ class EPMaterialAux(object):
     def convertUValueToSI(self, UValueIP):
         return  5.678263 * UValueIP
     
-    def decomposeMaterial(self, matName, GHComponent):
+    def decomposeMaterial(self, matName, GHComponent = None):
         try:
             try:
                 materialObj = sc.sticky["honeybee_materialLib"][matName.upper()]
@@ -1099,7 +1113,6 @@ class EPMaterialAux(object):
         up = rc.UI.Dialogs.ShowMessageBox(msg, "Duplicate Material Name", buttons, icon)
         return returnYN[up.ToString().ToUpper()]
 
-
 class EPScheduleAux(object):
     
     def getScheduleDataByName(self, schName, component = None):
@@ -1168,6 +1181,73 @@ class EPScheduleAux(object):
         
         return values, comments
 
+
+class EPObjectsAux(object):
+    
+    def isEPMaterial(self, matName):
+        return matName.upper() in sc.sticky["honeybee_materialLib"].keys() or \
+               matName.upper() in sc.sticky["honeybee_windowMaterialLib"].keys()
+    
+    def isEPConstruction(self, matName):
+        return matName.upper() in sc.sticky["honeybee_constructionLib"].keys()
+    
+    def isSchedule(self, scheduleName):
+        return scheduleName.upper() in sc.sticky["honeybee_ScheduleLib"].keys()
+    
+    def isScheduleTypeLimits(self, scheduleName):
+        return scheduleName.upper() in sc.sticky["honeybee_ScheduleTypeLimitsLib"].keys()
+    
+    def customizeEPObject(self, EPObjectName, indexes, inValues, overwriteOriginal = False):
+        hb_EPScheduleAUX = EPScheduleAux()
+        hb_EPMaterialAUX = EPMaterialAux()
+        
+        if self.isSchedule(EPObjectName):
+            values, comments = hb_EPScheduleAUX.getScheduleDataByName(EPObjectName.upper())
+        
+        elif self.isScheduleTypeLimits(EPObjectName):
+            values, comments = hb_EPScheduleAUX.getScheduleTypeLimitsDataByName(EPObjectName.upper())
+        
+        elif self.isEPConstruction(EPObjectName):
+            values, comments, uSI, uIP = hb_EPMaterialAUX.decomposeEPCnstr(EPObjectName.upper())
+        
+        elif self.isEPMaterial(EPObjectName):
+            values, comments, uSI, uIP = hb_EPMaterialAUX.decomposeMaterial(EPObjectName.upper())
+        else:
+            return
+        
+        # create a dictionary of index and values
+        if len(indexes)==0 or (len(indexes) != len(inValues)):
+            return
+        
+        valuesDict = {}
+        
+        for i, v in zip(indexes, inValues):
+            valuesDict[i] = v
+        
+        count = 0
+        originalObj = ""
+        modifiedObj = ""
+        
+        for value, comment in zip(values, comments):
+            if count == 1:
+                # add name
+                originalObj += "[" + `count` + "]\t" + EPObjectName.upper() + " ! Name\n" 
+                
+                if count in valuesDict.keys():
+                    modifiedObj += "[" + `count` + "]\t " + valuesDict[count].upper() + "   ! Name\n"
+                else:
+                    modifiedObj += "[" + `count` + "]\t " + EPObjectName.upper() + "    ! Name\n"
+            else:
+                originalObj += "[" + `count` + "]\t " + value + "   !" + comment + "\n" 
+                
+                if count in valuesDict.keys():
+                    modifiedObj += "[" + `count` + "]\t " + valuesDict[count] + "   !" + comment + "\n"
+                else:
+                    modifiedObj += "[" + `count` + "]\t " + value + "   !" + comment + "\n" 
+            
+            count += 1
+        
+        return originalObj, modifiedObj
 
 class EPTypes(object):
     def __init__(self):
@@ -3556,15 +3636,6 @@ class hb_DSParameters(object):
         
         # print "number of ill files = " + str(self.numOfIll)
 
-
-def checkGHPythonVersion(target = "0.6.0.3"):
-    
-    currentVersion = int(ghenv.Version.ToString().replace(".", ""))
-    targetVersion = int(target.replace(".", ""))
-    
-    if targetVersion > currentVersion: return False
-    else: return True
-
 letItFly = True
 
 def checkGHPythonVersion(target = "0.6.0.3"):
@@ -3666,7 +3737,7 @@ if letItFly:
         sc.sticky["honeybee_folders"]["EPPath"] = folders.EPPath
         
         sc.sticky["honeybee_RADMaterialAUX"] = RADMaterialAux
-
+        
         # set up radiance materials
         sc.sticky["honeybee_RADMaterialAUX"](True)
         
@@ -3675,6 +3746,7 @@ if letItFly:
             
             sc.sticky["honeybee_EPMaterialAUX"] = EPMaterialAux
             sc.sticky["honeybee_EPScheduleAUX"] = EPScheduleAux
+            sc.sticky["honeybee_EPObjectsAux"] = EPObjectsAux
             
         except Exception, e:
             print e
