@@ -20,7 +20,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Decompose EnergyPlus Schedule"
 ghenv.Component.NickName = 'decomposeEPSCH'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_19_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "07 | Energy | Schedule"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -39,9 +39,17 @@ def main(schName):
         return -1
     
     hb_EPScheduleAUX = sc.sticky["honeybee_EPScheduleAUX"]()
+    hb_EPObjectsAUX = sc.sticky["honeybee_EPObjectsAUX"]()
     
-    schedule, comments = hb_EPScheduleAUX.getScheduleDataByName(schName.upper(), ghenv.Component)
+    if hb_EPObjectsAUX.isScheduleTypeLimits(schName):
+        schedule, comments = hb_EPScheduleAUX.getScheduleTypeLimitsDataByName(schName.upper(), ghenv.Component)
     
+    elif hb_EPObjectsAUX.isSchedule(schName):
+        schedule, comments = hb_EPScheduleAUX.getScheduleDataByName(schName.upper(), ghenv.Component)
+    
+    else:
+        return schName, None, None
+        
     return schName, schedule, comments
 
 if schName_!= None:
