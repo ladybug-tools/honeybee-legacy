@@ -4,13 +4,13 @@
 # under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
 
 """
-Add EnergyPlus Material and construction to Library
+Add EnergyPlus Material, Construction or Schedule to Library
 
 -
 Provided by Honeybee 0.0.53
     
     Args:
-        _EPMatOrConstr: EnergyPlus material or construction definition
+        _EPObject: EnergyPlus material, construction or schedule definition
         _addToProjectLib: Set to True to add the material to HB library for this project
         overwrite_: Set to True if you want to overwrite the material with similar name
         addToHoneybeeLib: Set to True to Honeybee material libaray. Materials in addToHoneybeeLib library will be loaded anytime that you let the 'bee fly. You can add the materials manually to C:\ladybug\HoneybeeRadMaterials.mat
@@ -19,9 +19,9 @@ Provided by Honeybee 0.0.53
 
 """
 
-ghenv.Component.Name = "Honeybee_Add to EnergyPlus Construction Library"
-ghenv.Component.NickName = 'addToEPConstrLibrary'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_13_2014'
+ghenv.Component.Name = "Honeybee_Add to EnergyPlus Library"
+ghenv.Component.NickName = 'addToEPLibrary'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_19_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -32,7 +32,7 @@ import scriptcontext as sc
 import Grasshopper.Kernel as gh
 
 
-def main(EPMatOrConstr, addToProjectLib, overwrite):
+def main(EPObject, addToProjectLib, overwrite):
     
     # import the classes
     w = gh.GH_RuntimeMessageLevel.Warning
@@ -42,9 +42,8 @@ def main(EPMatOrConstr, addToProjectLib, overwrite):
         ghenv.Component.AddRuntimeMessage(w, "You should first let both Ladybug and Honeybee to fly...")
         return -1
     
-    hb_EPMaterialAUX = sc.sticky["honeybee_EPMaterialAUX"]()
-    
-    added, name = hb_EPMaterialAUX.addEPConstructionToLib(EPMatOrConstr, overwrite)
+    hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
+    added, name = hb_EPObjectsAux.addEPObjectToLib(EPObject, overwrite)
     
     if not added:
         msg = name + " is not added to the project library!"
@@ -53,5 +52,5 @@ def main(EPMatOrConstr, addToProjectLib, overwrite):
     else:
         print name + " is added to this project library!"
         
-if _EPMatOrConstr and _addToProjectLib:
-    main(_EPMatOrConstr, _addToProjectLib, overwrite_)
+if _EPObject and _addToProjectLib:
+    main(_EPObject, _addToProjectLib, overwrite_)
