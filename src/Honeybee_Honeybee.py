@@ -275,13 +275,19 @@ class hb_GetEPConstructions():
             with open(filepath) as jsondata:
                 openStudioStandardLib = json.load(jsondata)
             
-            
             sc.sticky ["honeybee_OpenStudioStandardsFile"] = openStudioStandardLib
             print "Standard template file is loaded!\n"
-        if os.path.isfile(os.path.join(workingDir,"userCustomLibrary.idf")):
-            libFilePaths.append(os.path.join(workingDir,"userCustomLibrary.idf"))
         
+        # add cutom library
+        customEPLib = os.path.join(workingDir,"userCustomEPLibrary.idf")
         
+        if not os.path.isfile(customEPLib):
+            # create an empty file
+            with open(customEPLib, "w") as outf:
+                outf.write("!Honeybee custom EnergyPlus library\n")
+        
+        if os.path.isfile(customEPLib):
+            libFilePaths.append(customEPLib)
         
         def createObject(openFile, resultDict, key, scheduleType = None):
             # This function creates a dictionary from EPObjects
