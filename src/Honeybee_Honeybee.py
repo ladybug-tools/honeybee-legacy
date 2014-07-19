@@ -337,17 +337,10 @@ class hb_GetEPConstructions():
                         for key in EPKeys:
                             if line.strip().startswith(key):
                                 resultDict = createObject(inf, resultDict, key, line.strip()[:-1])
+                
                 outputs = { "Material" : [],
                             "WindowMaterial" : [],
                             "Construction" : []}
-                
-                for EPKey in EPKeys:
-                    if EPKey in resultDict.keys():
-                        try:
-                            for key in resultDict[EPKey].keys(): outputs[EPKey].append(key)
-                            print  `len(resultDict[EPKey].keys())` + " " + EPKey.lower() + " found in " + libFilePath
-                        except:
-                            outputs[key] = " 0 " + EPKey.lower() + " found in " + libFilePath
                 
                 materialList = outputs["Material"]
                 windowMat =  outputs["WindowMaterial"]
@@ -360,7 +353,15 @@ class hb_GetEPConstructions():
                 sc.sticky ["honeybee_materialLib"]["List"] = outputs["Material"]
                 sc.sticky ["honeybee_windowMaterialLib"]["List"] = outputs["WindowMaterial"]
         
-        
+            for EPKey in EPKeys:
+                if EPKey in resultDict.keys():
+                    try:
+                        for key in resultDict[EPKey].keys(): outputs[EPKey].append(key)
+                        # List shouldn't be counted
+                        print  `len(resultDict[EPKey].keys())-1` + " " + EPKey.lower() + " found in " + " & ".join(libFilePaths)
+                    except:
+                        outputs[key] = " 0 " + EPKey.lower() + " found in " + " & ".join(libFilePaths)
+                
         if True: #not sc.sticky.has_key("honeybee_ScheduleLib") or sc.sticky["honeybee_ScheduleLib"] == {}:
             print "\nLoading EP schedules..."
             EPKeys = ["ScheduleTypeLimits", "Schedule"]
@@ -374,20 +375,22 @@ class hb_GetEPConstructions():
                                 break
                 
                 scheduleOutputs = { "Schedule" : [],
-                            "ScheduleTypeLimits" : []}
+                                    "ScheduleTypeLimits" : []}
                             
-                for EPKey in EPKeys:
-                    if EPKey in schedulesDict.keys():
-                        try:
-                            for key in schedulesDict[EPKey].keys(): scheduleOutputs[EPKey].append(key)
-                            print  `len(schedulesDict[EPKey].keys())` + " " + EPKey.lower() + " found in " + libFilePath
-                        except:
-                            scheduleOutputs[key] = " 0 " + EPKey.lower() + " found in " + libFilePath
-                
                 sc.sticky["honeybee_ScheduleLib"] = schedulesDict["Schedule"]
                 sc.sticky["honeybee_ScheduleTypeLimitsLib"] = schedulesDict["ScheduleTypeLimits"]
                 sc.sticky["honeybee_ScheduleLib"]["List"] = scheduleOutputs["Schedule"]
                 sc.sticky["honeybee_ScheduleTypeLimitsLib"]["List"] = scheduleOutputs["ScheduleTypeLimits"]
+            
+            for EPKey in EPKeys:
+                if EPKey in schedulesDict.keys():
+                    try:
+                        for key in schedulesDict[EPKey].keys():
+                            scheduleOutputs[EPKey].append(key)
+                        
+                        print  `len(schedulesDict[EPKey].keys())-1` + " " + EPKey.lower() + " found in " + " & ".join(libFilePaths)
+                    except:
+                        scheduleOutputs[key] = " 0 " + EPKey.lower() + " found in "  + " & ".join(libFilePaths)
             print "\n"
 
 class RADMaterialAux(object):
@@ -1104,6 +1107,7 @@ class EPMaterialAux(object):
         return True, name
     
     def duplicateEPMaterialWarning(self, objectName, newMaterialString):
+        # this function is duplicate with duplicateEPObject warning and should be removed at some point
         returnYN = {'YES': True, 'NO': False}
         buttons = System.Windows.Forms.MessageBoxButtons.YesNo
         icon = System.Windows.Forms.MessageBoxIcon.Warning
@@ -1203,7 +1207,7 @@ class EPObjectsAux(object):
     def isScheduleTypeLimits(self, scheduleName):
         return scheduleName.upper() in sc.sticky["honeybee_ScheduleTypeLimitsLib"].keys()
     
-    def customizeEPObject(self, EPObjectName, indexes, inValues, overwriteOriginal = False):
+    def customizeEPObject(self, EPObjectName, indexes, inValues):
         hb_EPScheduleAUX = EPScheduleAux()
         hb_EPMaterialAUX = EPMaterialAux()
         
@@ -1212,7 +1216,6 @@ class EPObjectsAux(object):
         
         elif self.isScheduleTypeLimits(EPObjectName):
             values, comments = hb_EPScheduleAUX.getScheduleTypeLimitsDataByName(EPObjectName.upper())
-        
         elif self.isEPConstruction(EPObjectName):
             values, comments, uSI, uIP = hb_EPMaterialAUX.decomposeEPCnstr(EPObjectName.upper())
         
@@ -1235,25 +1238,156 @@ class EPObjectsAux(object):
         modifiedObj = ""
         
         for value, comment in zip(values, comments):
+            if count == len(values) -1:
+                separator = ";"
+            else:
+                separator = ","
+                
             if count == 1:
                 # add name
                 originalObj += "[" + `count` + "]\t" + EPObjectName.upper() + " ! Name\n" 
                 
                 if count in valuesDict.keys():
-                    modifiedObj += "[" + `count` + "]\t " + valuesDict[count].upper() + "   ! Name\n"
-                else:
-                    modifiedObj += "[" + `count` + "]\t " + EPObjectName.upper() + "    ! Name\n"
-            else:
-                originalObj += "[" + `count` + "]\t " + value + "   !" + comment + "\n" 
+                    # update the value
+                    modifiedObj += valuesDict[count].upper() + separator + "   ! Name\n"
                 
-                if count in valuesDict.keys():
-                    modifiedObj += "[" + `count` + "]\t " + valuesDict[count] + "   !" + comment + "\n"
                 else:
-                    modifiedObj += "[" + `count` + "]\t " + value + "   !" + comment + "\n" 
+                    # keep original
+                    modifiedObj += EPObjectName.upper() + separator + "    ! Name\n"
+                
+                count = 2
+                
+            originalObj += "[" + `count` + "]\t " + value + "   !" + comment + "\n" 
             
+            if count in valuesDict.keys():
+                modifiedObj += valuesDict[count] + separator + "   !" + comment + "\n"
+            else:
+                modifiedObj += value + separator + "   !" + comment + "\n" 
+                
             count += 1
         
         return originalObj, modifiedObj
+    
+    def getObjectKey(self, EPObject):
+        
+        EPKeys = ["Material", "WindowMaterial", "Construction", "ScheduleTypeLimits", "Schedule"]
+        
+        # check if it is a full string
+        for key in EPKeys:
+            if EPObject.strip().startswith(key):
+                return key
+    
+    def addEPObjectToLib(self, EPObject, overwrite = False):
+        
+        key = self.getObjectKey(EPObject)
+        
+        if key == None:
+            return None, None
+        
+        HBLibrarieNames = {
+                       "Construction" : "honeybee_constructionLib",
+                       "Material" : "honeybee_materialLib",
+                       "WindowMaterial" : "honeybee_windowMaterialLib",
+                       "Schedule": "honeybee_ScheduleLib",
+                       "ScheduleTypeLimits" : "honeybee_ScheduleTypeLimitsLib"
+                       }
+        
+        # find construction/material name
+        name = EPObject.split("\n")[1].split("!")[0].strip()[:-1].upper()
+        
+        if name in sc.sticky[HBLibrarieNames[key]].keys():
+            #overwrite = True
+            if not overwrite:
+                # ask user if they want to overwrite it
+                add = self.duplicateEPObjectWarning(name, EPObject)
+                if not add: return False, name
+        
+        # add material/construction to the lib
+        # create an empty dictoinary for the material
+        sc.sticky[HBLibrarieNames[key]][name] = {}
+        
+        lines = EPObject.split("\n")
+
+        # store the data into the dictionary
+        for lineCount, line in enumerate(lines):
+            
+            objValue = line.split("!")[0].strip()
+            try: objDescription = line.split("!")[1].strip()
+            except:  objDescription = ""
+            if lineCount == 0:
+                sc.sticky[HBLibrarieNames[key]][name][lineCount] = objValue[:-1]
+            elif lineCount == 1:
+                pass # name is already there as the key
+            elif objValue.endswith(","):
+                sc.sticky[HBLibrarieNames[key]][name][lineCount-1] = objValue[:-1], objDescription
+            elif objValue.endswith(";"):
+                sc.sticky[HBLibrarieNames[key]][name][lineCount-1] = objValue[:-1], objDescription
+                break
+        
+        # add name to list
+        sc.sticky [HBLibrarieNames[key]]["List"].append(name)
+        
+        return True, name
+    
+    def getEPObjectDataByName(self, objectName):
+        objectData = None
+        
+        objectName = objectName.upper()
+        
+        if objectName in sc.sticky ["honeybee_windowMaterialLib"].keys():
+            objectData = sc.sticky ["honeybee_windowMaterialLib"][objectName]
+        elif objectName in sc.sticky ["honeybee_materialLib"].keys():
+            objectData = sc.sticky ["honeybee_materialLib"][objectName]
+        elif objectName in sc.sticky ["honeybee_constructionLib"].keys():
+            objectData = sc.sticky ["honeybee_constructionLib"][objectName]
+        elif objectName in sc.sticky["honeybee_ScheduleLib"].keys():
+            objectData = sc.sticky ["honeybee_ScheduleLib"][objectName]
+        elif objectName in sc.sticky["honeybee_ScheduleTypeLimitsLib"].keys():
+            objectData = sc.sticky ["honeybee_ScheduleTypeLimitsLib"][objectName]
+
+        return objectData
+    
+    def getEPObjectsStr(self, objectName):
+        """
+        This function should work for materials, and counstructions
+        """
+        
+        objectData = self.getEPObjectDataByName(objectName)
+        
+        if objectData!=None:
+            numberOfLayers = len(objectData.keys())
+            # add material/construction type
+            # print objectData
+            objectStr = objectData[0] + ",\n"
+            
+            # add the name
+            objectStr =  objectStr + "  " + objectName + ",   !- name\n"
+            
+            for layer in range(1, numberOfLayers):
+                if layer < numberOfLayers-1:
+                    objectStr =  objectStr + "  " + str(objectData[layer][0]) + ",   !- " +  objectData[layer][1] + "\n"
+                else:
+                    objectStr =  objectStr + "  " + str(objectData[layer][0]) + ";   !- " +  objectData[layer][1] + "\n\n"
+            return objectStr
+            
+    def duplicateEPObjectWarning(self, objectName, newMaterialString):
+        returnYN = {'YES': True, 'NO': False}
+        buttons = System.Windows.Forms.MessageBoxButtons.YesNo
+        icon = System.Windows.Forms.MessageBoxIcon.Warning
+        
+        currentMaterialString = self.getEPObjectsStr(objectName)
+            
+        msg = objectName + " already exists in the library:\n\n" + \
+            currentMaterialString + "\n" + \
+            "Do you want to overwrite the current with this new definition?\n\n" + \
+            newMaterialString + "\n\n" + \
+            "Tip: If you are not sure what to do select No and change the name."
+        
+        up = rc.UI.Dialogs.ShowMessageBox(msg, "Duplicate Material Name", buttons, icon)
+        
+        return returnYN[up.ToString().ToUpper()]
+        
+        
 
 class EPTypes(object):
     def __init__(self):
@@ -3752,7 +3886,7 @@ if letItFly:
             
             sc.sticky["honeybee_EPMaterialAUX"] = EPMaterialAux
             sc.sticky["honeybee_EPScheduleAUX"] = EPScheduleAux
-            sc.sticky["honeybee_EPObjectsAux"] = EPObjectsAux
+            sc.sticky["honeybee_EPObjectsAUX"] = EPObjectsAux
             
         except Exception, e:
             print e
