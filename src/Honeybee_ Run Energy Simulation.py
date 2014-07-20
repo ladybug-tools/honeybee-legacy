@@ -10,7 +10,7 @@ export geometries to idf file, and run the energy simulation
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_16_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_20_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -176,7 +176,105 @@ class WriteIDF(object):
             else:
                 str_2 = str_2 + '\t' + zone.name + ';\n\n'
         return str_1 + str_2
-
+    
+    def writeHVACSched1(self):
+        return '\nSchedule:Year, HVAC Operation Schedule, Control Type,\n' + \
+        '\t' + 'Winter Control Type Week Sch, 1, 1, 3, 31' + ',  !- End winter\n' + \
+        '\t' + 'Summer Control Type Week Sch, 4, 1, 9, 30' + ',  !- Summer\n' + \
+        '\t' + 'Winter Control Type Week Sch, 10, 1, 12, 31' + ';  !- Start winter\n'
+    
+    def writeHVACSched2(self):
+        return '\nSchedule:Day:Hourly, Summer Control Type Day Sch, Control Type,\n' + \
+        '\t' + '4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4' + ';\n'
+    
+    def writeHVACSched3(self):
+        return '\nSchedule:Day:Hourly, Winter Control Type Day Sch, Control Type,\n' + \
+        '\t' + '4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4' + ';\n'
+    
+    def writeHVACSched4(self):
+        return '\nSchedule:Week:Daily, Summer Control Type Week Sch,\n' + \
+        '\t' + 'Summer Control Type Day Sch,Summer Control Type Day Sch,Summer Control Type Day Sch,' + '\n' + \
+        '\t' + 'Summer Control Type Day Sch,Summer Control Type Day Sch,Summer Control Type Day Sch,' + '\n' + \
+        '\t' + 'Summer Control Type Day Sch,Summer Control Type Day Sch,Summer Control Type Day Sch,' + '\n' + \
+        '\t' + 'Summer Control Type Day Sch,Summer Control Type Day Sch,Summer Control Type Day Sch;'+ '\n'
+    
+    def writeHVACSched5(self):
+        return '\nSchedule:Week:Daily, Winter Control Type Week Sch,\n' + \
+        '\t' + 'Winter Control Type Day Sch,Winter Control Type Day Sch,Winter Control Type Day Sch,' + '\n' + \
+        '\t' + 'Winter Control Type Day Sch,Winter Control Type Day Sch,Winter Control Type Day Sch,' + '\n' + \
+        '\t' + 'Winter Control Type Day Sch,Winter Control Type Day Sch,Winter Control Type Day Sch,' + '\n' + \
+        '\t' + 'Winter Control Type Day Sch,Winter Control Type Day Sch,Winter Control Type Day Sch;'+ '\n'
+    
+    def writeThemostat(self, name):
+        return '\nZoneControl:Thermostat,\n' + \
+        '\t' + name + ' Thermostat' + ',  !- Thermostat Name\n' + \
+        '\t' + name + ',  !- Zone Name\n' + \
+        '\t' + 'HVAC Operation Schedule' + ',  !- Control Type Schedule Name\n' + \
+        '\t' + 'ThermostatSetpoint:DualSetpoint' + ',  !- Control Type\n' + \
+        '\t' + name + ' Thermostat Dual SP Control' + ';  !- Control Type Name\n'
+    
+    def writeSetpoint(self, zone, name):
+        return '\nThermostatSetpoint:DualSetpoint,\n' + \
+        '\t' + name + ' Thermostat Dual SP Control' + ',  !- Name\n' + \
+        '\t' + zone.heatingSetPtSchedule + ',  !- Heating Setpoint Temperature Schedule Name\n' + \
+        '\t' + zone.coolingSetPtSchedule + ';  !- Cooling Setpoint Temperature Schedule Name\n'
+    
+    def writeEquipConnect(self, name):
+        return '\nZoneHVAC:EquipmentConnections,\n' + \
+        '\t' + name + ',  !- Zone Name\n' + \
+        '\t' + name + " Equipment" + ',  !- Zone Conditioning Equipment List Name\n' + \
+        '\t' + name + " Inlets" + ',  !- List Name: Zone Air Inlet Nodes\n' + \
+        '\t' + ',  !- List Name: Zone Air Exhaust Nodes\n' + \
+        '\t' + name + " Zone Air Node" + ',  !- Zone Air Node Name\n' + \
+        '\t' + name + " Return Outlet" + ';  !- Zone Return Air Node Name\n'
+    
+    def writeEquipList(self, name):
+        return '\nZoneHVAC:EquipmentList,\n' + \
+        '\t' + name + ' Equipment' + ',  !- Name\n' + \
+        '\t' + "ZoneHVAC:IdealLoadsAirSystem" + ',  !- Zone Equipment 1 Object Type\n' + \
+        '\t' + name + "ZoneHVAC:IdealLoadsAirSystem" + ',  !- Zone Equipment 1 Name\n' + \
+        '\t' + '1' + ',  !- Zone Equipment 1 Cooling Sequence\n' + \
+        '\t' + "1" + ';  !- Zone Equipment 1 Heating or No-Load Sequence\n'
+    
+    def writeNodeList(self, name):
+        return '\nNodeList,\n' + \
+        '\t' + name + ' Inlets' + ',  !- List Name\n' + \
+        '\t' + "Node " + name + " In" + ';  !- Node Name\n'
+    
+    def writeIdealAirSys(self, name, zone):
+        if zone.coolSupplyAirTemp == "": coolSupply = "11"
+        else: coolSupply = zone.coolSupplyAirTemp
+        if zone.heatSupplyAirTemp == "": heatSupply = "40"
+        else: heatSupply = zone.heatSupplyAirTemp
+        print coolSupply 
+        return '\nZoneHVAC:IdealLoadsAirSystem,\n' + \
+        '\t' + name + "ZoneHVAC:IdealLoadsAirSystem" + ',  !- Ideal Loads Air Name\n' + \
+        '\t' + ',  !- Availability Schedule Name\n' + \
+        '\t' + "Node " + name + " In" + ',  !- Zone Supply Air Node Name\n' + \
+        '\t' + ',  !- Zone Exhaust Air Node Name\n' + \
+        '\t' + heatSupply + ',  !- Heating Supply Air Temp {C}\n' + \
+        '\t' + coolSupply + ',  !- Cooling Supply Air Temp {C}\n' + \
+        '\t' + ',  !- Max Heating Supply Air Humidity Ratio {kg-H2O/kg-air}\n' + \
+        '\t' + ',  !- Min Cooling Supply Air Humidity Ratio {kg-H2O/kg-air}\n' + \
+        '\t' + "NoLimit" + ',  !- Heating Limit\n' + \
+        '\t' + ',  !- Maximum Heating Air Flow Rate {m3/s}\n' + \
+        '\t' + ',  !- Maximum Sensible Heat Capacity\n' + \
+        '\t' + "NoLimit" + ',  !- Cooling Limit\n' + \
+        '\t' + ',  !- Maximum Cooling Air Flow Rate {m3/s}\n' + \
+        '\t' + ',  !- Maximum Total Cooling Capacity\n' + \
+        '\t' + ',  !- Heating Availability Schedule\n' + \
+        '\t' + ',  !- Cooling Availability Schedule\n' + \
+        '\t' + 'None' + ',  !- Dehumidification Control Type\n' + \
+        '\t' + ',  !- Cooling Sensible Heat Ratio\n' + \
+        '\t' + 'None' + ',  !- Humidification Control Type\n' + \
+        '\t' + ',  !- Outside Air Object Name\n' + \
+        '\t' + ',  !- Outside Air Inlet Name\n' + \
+        '\t' + ',  !- Demand Controlled Ventilation Type\n' + \
+        '\t' + ',  !- Outdoor Air Economizer Type\n' + \
+        '\t' + ',  !- Heat Recovery Type\n' + \
+        '\t' + ',  !- Seneible HEat Recovery Effectiveness\n' + \
+        '\t' + ';  !- Latent HEat Recovery Effectiveness\n'
+    
     def EPHVACTemplate( self, name, zone):
         if zone.isConditioned:
             heatingSCHName = zone.heatingSetPtSchedule
@@ -869,6 +967,14 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     print "[6 of 7] Writing loads and ideal air system..."
     listCount = 0
     listName = None
+    
+    idfFile.write(hb_writeIDF.writeHVACSched1())
+    idfFile.write(hb_writeIDF.writeHVACSched2())
+    idfFile.write(hb_writeIDF.writeHVACSched3())
+    idfFile.write(hb_writeIDF.writeHVACSched4())
+    idfFile.write(hb_writeIDF.writeHVACSched5())
+    
+    
     for key, zones in ZoneCollectionBasedOnSchAndLoads.items():
         
         # removed for now as apparently openstudio import idf does not like lists!
@@ -879,22 +985,43 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         #    
         #    idfFile.write(hb_writeIDF.EPZoneListStr(listName, zones))
         
+        
         for zone in zones:
             #zone = zones[0]
             
-            #   HAVC System
             if listName!=None:
-                HAVCTemplateName = listName + "_HVAC"
                 for zone in zones:
-                    idfFile.write(hb_writeIDF.EPIdealAirSystem(zone, HAVCTemplateName))
-                
+                    idfFile.write(hb_writeIDF.writeThemostat(zone.name))
+                    idfFile.write(hb_writeIDF.writeSetpoint(zone, zone.name))
+                    idfFile.write(hb_writeIDF.writeEquipConnect(zone.name))
+                    idfFile.write(hb_writeIDF.writeEquipList(zone.name))
+                    idfFile.write(hb_writeIDF.writeNodeList(zone.name))
+                    idfFile.write(hb_writeIDF.writeIdealAirSys(zone.name, zone))
             else:
-                HAVCTemplateName = zone.name + "_HVAC"
-                idfFile.write(hb_writeIDF.EPIdealAirSystem(zone, HAVCTemplateName))
-        
+                idfFile.write(hb_writeIDF.writeThemostat(zone.name))
+                idfFile.write(hb_writeIDF.writeSetpoint(zone, zone.name))
+                idfFile.write(hb_writeIDF.writeEquipConnect(zone.name))
+                idfFile.write(hb_writeIDF.writeEquipList(zone.name))
+                idfFile.write(hb_writeIDF.writeNodeList(zone.name))
+                idfFile.write(hb_writeIDF.writeIdealAirSys(zone.name, zone))
+            
+            
+            #This is the old HVAC Template.  It has been replaced with one that allows humidity control.
+            #   HAVC System
+            #if listName!=None:
+            #    HAVCTemplateName = listName + "_HVAC"
+            #    for zone in zones:
+            #        idfFile.write(hb_writeIDF.EPIdealAirSystem(zone, HAVCTemplateName))
+            #    
+            #else:
+            #    HAVCTemplateName = zone.name + "_HVAC"
+            #    idfFile.write(hb_writeIDF.EPIdealAirSystem(zone, HAVCTemplateName))
+            
             #   Thermostat
-            idfFile.write(hb_writeIDF.EPHVACTemplate(HAVCTemplateName, zone))
-                        
+            #idfFile.write(hb_writeIDF.EPHVACTemplate(HAVCTemplateName, zone))
+            #            
+            
+            
             #   LOADS - INTERNAL LOADS + PLUG LOADS
             idfFile.write(hb_writeIDF.EPZoneElectricEquipment(zone, listName))
         

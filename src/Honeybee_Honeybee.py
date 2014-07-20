@@ -2039,6 +2039,8 @@ class EPZone(object):
         self.daylightThreshold = ""
         self.coolingSetPt= ""
         self.heatingSetPt= ""
+        self.coolSupplyAirTemp= ""
+        self.heatSupplyAirTemp= ""
         
         if zoneBrep != None:
             self.isClosed = self.geometry.IsSolid

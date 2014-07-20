@@ -4,7 +4,8 @@
 # under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
 
 """
-This component helps select simulation outputs that can be hooked into the WriteIDF component
+This component helps select simulation outputs that can be hooked into the WriteIDF component.  Outputs are taken from here:
+http://apps1.eere.energy.gov/buildings/energyplus/pdfs/inputoutputreference.pdf
 
 -
 Provided by Honeybee 0.0.53
@@ -23,7 +24,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Write EP Result Parameters"
 ghenv.Component.NickName = 'writeResultParameters'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_01_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_20_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -40,6 +41,9 @@ def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, surfaceAnalysis,
     if zoneEnergyUse == True:
         simulationOutputs.append("Output:Variable,*,Zone Air System Sensible Heating Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Air System Sensible Cooling Energy, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,System Node Mass Flow Rate, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,System Node Enthalpy, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Site Outdoor Air Enthalpy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Lights Electric Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Electric Equipment Electric Energy, " + timePeriod)
     else:
