@@ -10,8 +10,8 @@ Call Radiance Materials from Library
 Provided by Honeybee 0.0.53
     
     Args:
-        keywords: List of keywords to filter the list of materials
-        materialTypes: Material types to be shown (e.g. plastic, glass, trans, metal, mirror)
+        keywords_: List of keywords to filter the list of materials
+        materialTypes_: Material types to be shown (e.g. plastic, glass, trans, metal, mirror)
             
     Returns:
         material: List of materials
@@ -20,7 +20,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Call from Radiance Library"
 ghenv.Component.NickName = 'callFromLibrary'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_20_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "01 | Daylight | Material"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -35,8 +35,8 @@ if sc.sticky.has_key('honeybee_release'):
     
     hb_RADMaterialAUX = sc.sticky["honeybee_RADMaterialAUX"]()
     
-    if len(keywords)!=0 and keywords[0]!=None or materialTypes!=None:
-        materials = hb_RADMaterialAUX.searchRadMaterials(keywords, materialTypes)
+    if len(keywords_)!=0 and keywords_[0]!=None or materialTypes_!=None:
+        materials = hb_RADMaterialAUX.searchRadMaterials(keywords_, materialTypes_)
         materials.sort()
 else:
     print "You should first let Honeybee to fly..."

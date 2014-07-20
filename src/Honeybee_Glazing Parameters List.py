@@ -16,20 +16,20 @@ Use this component to generate lists of glazing ratios, window heigths, and sill
 Provided by Honeybee 0.0.53
 
     Args:
-        northGlzRatio: Glazing ratio for the north side of a building.
-        westGlzRatio: Glazing ratio for the west side of a building.
-        southGlzRatio: Glazing ratio for the south side of a building.
-        eastGlzRatio: Glazing ratio for the east side of a building.
+        _northGlzRatio_: Glazing ratio for the north side of a building.
+        _westGlzRatio_: Glazing ratio for the west side of a building.
+        _southGlzRatio_: Glazing ratio for the south side of a building.
+        _eastGlzRatio_: Glazing ratio for the east side of a building.
         --------------------: ...
-        northWindowHeight: Height of the window on the north side of a building in model units (only applicable to bldg surfaces that contain rectangular geometry; this input will be over-ridden at high glazing ratios).
-        westWindowHeight: Height of the window on the west side of a building in model units (only applicable to bldg surfaces that contain rectangular geometry; this input will be over-ridden at high glazing ratios).
-        southWindowHeight: Height of the window on the south side of a building in model units (only applicable to bldg surfaces that contain rectangular geometry; this input will be over-ridden at high glazing ratios).
-        eastWindowHeight: Height of the window on the east side of a building in model units (only applicable to bldg surfaces that contain rectangular geometry; this input will be over-ridden at high glazing ratios).
+        _northWindowHeight_: Height of the window on the north side of a building in model units (only applicable to bldg surfaces that contain rectangular geometry; this input will be over-ridden at high glazing ratios).
+        _westWindowHeight_: Height of the window on the west side of a building in model units (only applicable to bldg surfaces that contain rectangular geometry; this input will be over-ridden at high glazing ratios).
+        _southWindowHeight_: Height of the window on the south side of a building in model units (only applicable to bldg surfaces that contain rectangular geometry; this input will be over-ridden at high glazing ratios).
+        _eastWindowHeight_: Height of the window on the east side of a building in model units (only applicable to bldg surfaces that contain rectangular geometry; this input will be over-ridden at high glazing ratios).
         --------------------: ...
-        northSillHeight: Distance from the floor to the bottom of the window for the north side of a building (only applicable to bldg surfaces that contain rectangular geometry; this input will be over-ridden at high glazing ratios or window heights).
-        westSillHeight: Distance from the floor to the bottom of the window for the west side of a building (only applicable to bldg surfaces that contain rectangular geometry; this input will be over-ridden at high glazing ratios or window heights).
-        southSillHeight: Distance from the floor to the bottom of the window for the south side of a building (only applicable to bldg surfaces that contain rectangular geometry; this input will be over-ridden at high glazing ratios or window heights).
-        eastSillHeight: Distance from the floor to the bottom of the window for the eastside of a building (only applicable to bldg surfaces that contain rectangular geometry; this input will be over-ridden at high glazing ratios or window heights).
+        _northSillHeight_: Distance from the floor to the bottom of the window for the north side of a building (only applicable to bldg surfaces that contain rectangular geometry; this input will be over-ridden at high glazing ratios or window heights).
+        _westSillHeight_: Distance from the floor to the bottom of the window for the west side of a building (only applicable to bldg surfaces that contain rectangular geometry; this input will be over-ridden at high glazing ratios or window heights).
+        _southSillHeight_: Distance from the floor to the bottom of the window for the south side of a building (only applicable to bldg surfaces that contain rectangular geometry; this input will be over-ridden at high glazing ratios or window heights).
+        _eastSillHeight_: Distance from the floor to the bottom of the window for the eastside of a building (only applicable to bldg surfaces that contain rectangular geometry; this input will be over-ridden at high glazing ratios or window heights).
     Returns:
         readMe!: ...
         glzRatioList: A list of glazing ratios for different cardinal directions to be plugged into the glzRatio input of the "Glazing based on ratio" component.
@@ -38,7 +38,7 @@ Provided by Honeybee 0.0.53
 """
 ghenv.Component.Name = "Honeybee_Glazing Parameters List"
 ghenv.Component.NickName = 'glzParamList'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_20_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -65,10 +65,10 @@ def checkRatio(ratio):
         return 0
     else: return ratio
     
-northRatio = checkRatio(northGlzRatio)
-westRatio = checkRatio(westGlzRatio)
-southRatio = checkRatio(southGlzRatio)
-eastRatio = checkRatio(eastGlzRatio)
+northRatio = checkRatio(_northGlzRatio_)
+westRatio = checkRatio(_westGlzRatio_)
+southRatio = checkRatio(_southGlzRatio_)
+eastRatio = checkRatio(_eastGlzRatio_)
 
 def checkWinHeight(height):
     if height == None: return 0
@@ -77,10 +77,10 @@ def checkWinHeight(height):
         return 0
     else: return height
 
-northHeight = checkWinHeight(northWindowHeight)
-westHeight = checkWinHeight(westWindowHeight)
-southHeight = checkWinHeight(southWindowHeight)
-eastHeight = checkWinHeight(eastWindowHeight)
+northHeight = checkWinHeight(_northWindowHeight_)
+westHeight = checkWinHeight(_westWindowHeight_)
+southHeight = checkWinHeight(_southWindowHeight_)
+eastHeight = checkWinHeight(_eastWindowHeight_)
 
 def checkSillHeight(height):
     if height == None: return 0
@@ -89,10 +89,10 @@ def checkSillHeight(height):
         return 0
     else: return height
 
-northSill = checkSillHeight(northSillHeight)
-westSill = checkSillHeight(westSillHeight)
-southSill = checkSillHeight(southSillHeight)
-eastSill = checkSillHeight(eastSillHeight)
+northSill = checkSillHeight(_northSillHeight_)
+westSill = checkSillHeight(_westSillHeight_)
+southSill = checkSillHeight(_southSillHeight_)
+eastSill = checkSillHeight(_eastSillHeight_)
 
 
 

@@ -10,9 +10,9 @@ Read more here to understand Radiance materials: http://www.artifice.com/radianc
 Provided by Honeybee 0.0.53
 
     Args:
-        materialName: Unique name for this material
-        color: color of the glass
-        refractiveIndex: RefractiveIndex is 1.52 for glass and 1.4 for ETFE
+        _materialName: Unique name for this material
+        _color: color of the glass
+        refractiveIndex_: RefractiveIndex is 1.52 for glass and 1.4 for ETFE
     Returns:
         avrgTrans: Average transmittance of this glass
         RADMaterial: Radiance Material string
@@ -21,7 +21,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Radiance Glass Material By Color"
 ghenv.Component.NickName = 'radGlassMaterialByColor'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_20_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "01 | Daylight | Material"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
@@ -56,15 +56,15 @@ def createRadMaterial(modifier, name, *args):
 modifier = "glass"
 
 if sc.sticky.has_key('ladybug_release')and sc.sticky.has_key('honeybee_release'):
-    if color != None:
-        RTransmittance = color.R/255
-        GTransmittance = color.G/255
-        BTransmittance = color.B/255
+    if _materialName!=None and _color != None:
+        RTransmittance = _color.R/255
+        GTransmittance = _color.G/255
+        BTransmittance = _color.B/255
         
         if 0 <= RTransmittance <= 1 and 0 <= GTransmittance <= 1 and 0 <= BTransmittance <= 1:
             avrgTrans = (0.265 * RTransmittance + 0.670 * GTransmittance + 0.065 * BTransmittance)
             
-            materialName = materialName.Replace(" ", "_")
+            materialName = _materialName.Replace(" ", "_")
             RADMaterial = createRadMaterial(modifier, materialName, RTransmittance, GTransmittance, BTransmittance, refractiveIndex)
         else:
             msg =  "Transmittance values should be between 0 and 1"

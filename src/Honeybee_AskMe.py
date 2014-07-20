@@ -10,13 +10,13 @@ Ask Me!
 Provided by Honeybee 0.0.53
 
     Args:
-        HBObjects: Any valid Honeybee object
+        _HBObjects: Any valid Honeybee object
     Returns:
         readMe!: Information about the Honeybee object
 """
 ghenv.Component.Name = "Honeybee_AskMe"
 ghenv.Component.NickName = 'askMe'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_20_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -27,7 +27,7 @@ import scriptcontext as sc
 try:
     # call the objects from the lib
     hb_hive = sc.sticky["honeybee_Hive"]()
-    HBObjectsFromHive = hb_hive.callFromHoneybeeHive(HBObjects)
+    HBObjectsFromHive = hb_hive.callFromHoneybeeHive(_HBObjects)
     for HBO in HBObjectsFromHive:
         print HBO
         #print HBO.getFloorArea()

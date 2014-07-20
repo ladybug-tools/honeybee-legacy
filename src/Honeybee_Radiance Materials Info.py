@@ -9,7 +9,7 @@ Radiance Materials Info
 Provided by Honeybee 0.0.53
 
     Args:
-        RADMaterial: Radiance material name
+        _RADMaterial: Radiance material name
     Returns:
         RADMaterialStr: Radiance material definition
 
@@ -17,7 +17,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Radiance Materials Info"
 ghenv.Component.NickName = 'RADMaterialsInfo'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_20_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "01 | Daylight | Material"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -32,9 +32,9 @@ if sc.sticky.has_key('honeybee_release'):
     
     hb_RADMaterialAUX = sc.sticky["honeybee_RADMaterialAUX"]()
     
-    if RADMaterial!= None:
+    if _RADMaterial!= None:
         # check if the name is in the library
-        addedToLib, materialName = hb_RADMaterialAUX.analyseRadMaterials(RADMaterial, False)
+        addedToLib, materialName = hb_RADMaterialAUX.analyseRadMaterials(_RADMaterial, False)
         
         if materialName in sc.sticky["honeybee_RADMaterialLib"].keys():
             RADMaterialStr = hb_RADMaterialAUX.getRADMaterialString(materialName)

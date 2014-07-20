@@ -12,9 +12,10 @@ Check out the color picker to see some great examples > http://www.jaloxa.eu/res
 Provided by Honeybee 0.0.53
 
     Args:
-        color: Material color
-        roughness: Roughness values above 0.2 are uncommon
-        specularity: Specularity values above 0.1 are uncommon
+        _materialName: Material name
+        _color: Material color
+        _roughness_: Roughness values above 0.2 are uncommon
+        _specularity_: Specularity values above 0.1 are uncommon
     Returns:
         avrgRef: Average diffuse reflectance of the material
         RADMaterial: Radiance Material string
@@ -23,7 +24,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Radiance Opaque Material By Color"
 ghenv.Component.NickName = 'radOpaqueMaterialByColor'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_20_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "01 | Daylight | Material"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
@@ -52,14 +53,14 @@ def createRadMaterial(modifier, name, *args):
 modifier = "plastic"
 
 if sc.sticky.has_key('honeybee_release'):
-    if color!=None:
-        R = color.R/255
-        G = color.G/255
-        B = color.B/255
+    if _materialName!=None and _color!=None:
+        R = _color.R/255
+        G = _color.G/255
+        B = _color.B/255
         if 0 <= R <= 1 and 0 <= G <= 1 and 0 <= B <= 1:
             avrgRef = (0.265 * R + 0.670 * G + 0.065 * B)  * (1 - specularity) + specularity
             
-            materialName = materialName.Replace(" ", "_")
+            materialName = _materialName.Replace(" ", "_")
             
             RADMaterial = createRadMaterial(modifier, materialName, R,  G,  B, specularity, roughness)
             

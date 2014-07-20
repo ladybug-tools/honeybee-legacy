@@ -27,7 +27,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_RADIANCE Default Materials"
 ghenv.Component.NickName = 'RADDefaultMaterials'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_20_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "01 | Daylight | Material"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -39,12 +39,12 @@ import Grasshopper.Kernel as gh
 
 
 def setToDefault(hb_RADMaterialAUX):
-    hb_RADMaterialAUX.analyseRadMaterials(hb_RADMaterialAUX.createRadMaterialFromParameters('plastic', '000_Context_Material', .35, .35, .35, 0, 0.1), True, True)
-    hb_RADMaterialAUX.analyseRadMaterials(hb_RADMaterialAUX.createRadMaterialFromParameters('plastic', '000_Interior_Ceiling', .80, .80, .80, 0, 0.1), True, True)
-    hb_RADMaterialAUX.analyseRadMaterials(hb_RADMaterialAUX.createRadMaterialFromParameters('plastic', '000_Interior_Floor', .2, .2, .2, 0, 0.1), True, True)
-    hb_RADMaterialAUX.analyseRadMaterials(hb_RADMaterialAUX.createRadMaterialFromParameters('glass', '000_Exterior_Window', .60, .60, .60), True, True)
-    hb_RADMaterialAUX.analyseRadMaterials(hb_RADMaterialAUX.createRadMaterialFromParameters('plastic', '000_Exterior_Roof', .35, .35, .35, 0, 0.1), True, True)
-    hb_RADMaterialAUX.analyseRadMaterials(hb_RADMaterialAUX.createRadMaterialFromParameters('plastic', '000_Exterior_Wall', .50, .50, .50, 0, 0.1), True, True)
+    hb_RADMaterialAUX.analyseRadMaterials(hb_RADMaterialAUX.createRadMaterialFromParameters('plastic', 'Context_Material', .35, .35, .35, 0, 0.1), True, True)
+    hb_RADMaterialAUX.analyseRadMaterials(hb_RADMaterialAUX.createRadMaterialFromParameters('plastic', 'Interior_Ceiling', .80, .80, .80, 0, 0.1), True, True)
+    hb_RADMaterialAUX.analyseRadMaterials(hb_RADMaterialAUX.createRadMaterialFromParameters('plastic', 'Interior_Floor', .2, .2, .2, 0, 0.1), True, True)
+    hb_RADMaterialAUX.analyseRadMaterials(hb_RADMaterialAUX.createRadMaterialFromParameters('glass', 'Exterior_Window', .60, .60, .60), True, True)
+    hb_RADMaterialAUX.analyseRadMaterials(hb_RADMaterialAUX.createRadMaterialFromParameters('plastic', 'Exterior_Roof', .35, .35, .35, 0, 0.1), True, True)
+    hb_RADMaterialAUX.analyseRadMaterials(hb_RADMaterialAUX.createRadMaterialFromParameters('plastic', 'Exterior_Wall', .50, .50, .50, 0, 0.1), True, True)
     
 
 def main():
@@ -59,7 +59,7 @@ def main():
             return
         
         RADMaterials = [_newWallMaterial_, _newGlassMaterial_, _newCeilingMaterial_, _newRoofMaterial_, _newFloorMaterial_]
-        defaultMaterial = ['000_Exterior_Wall', '000_Exterior_Window', '000_Interior_Ceiling', '000_Exterior_Roof', '000_Interior_Floor']
+        defaultMaterial = ['Exterior_Wall', 'Exterior_Window', 'Interior_Ceiling', 'Exterior_Roof', 'Interior_Floor']
         
         for materialCount, RADMaterial in enumerate(RADMaterials):
             if RADMaterial!=None:
@@ -88,9 +88,9 @@ success = main()
 
 if success!= -1:
     hb_RADMaterialAUX = sc.sticky["honeybee_RADMaterialAUX"]()
-    currentWallMaterial = hb_RADMaterialAUX.getRADMaterialString('000_Exterior_Wall')
-    currentGlassMaterial = hb_RADMaterialAUX.getRADMaterialString('000_Exterior_Window')
-    currentCeilingMaterial = hb_RADMaterialAUX.getRADMaterialString('000_Interior_Ceiling')
-    currentRoofMaterial = hb_RADMaterialAUX.getRADMaterialString('000_Exterior_Roof')
-    currentFloorMaterial = hb_RADMaterialAUX.getRADMaterialString('000_Interior_Floor')
+    currentWallMaterial = hb_RADMaterialAUX.getRADMaterialString('Exterior_Wall')
+    currentGlassMaterial = hb_RADMaterialAUX.getRADMaterialString('Exterior_Window')
+    currentCeilingMaterial = hb_RADMaterialAUX.getRADMaterialString('Interior_Ceiling')
+    currentRoofMaterial = hb_RADMaterialAUX.getRADMaterialString('Exterior_Roof')
+    currentFloorMaterial = hb_RADMaterialAUX.getRADMaterialString('Interior_Floor')
 

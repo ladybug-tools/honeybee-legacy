@@ -10,10 +10,10 @@ Add Radiance Materials to Library
 Provided by Honeybee 0.0.53
     
     Args:
-        RADMaterial: Radiance material definition
-        addToProjectLib: Set to True to add the material to HB library for this project
-        overwrite: Set to True if you want to overwrite the material with similar name
-        addToHoneybeeLib: Set to True to Honeybee material libaray. Materials in addToHoneybeeLib library will be loaded anytime that you let the 'bee fly. You can add the materials manually to C:\ladybug\HoneybeeRadMaterials.mat
+        _RADMaterial: Radiance material definition
+        _addToProjectLib: Set to True to add the material to HB library for this project
+        overwrite_: Set to True if you want to overwrite the material with similar name
+        addToHoneybeeLib_: Set to True to Honeybee material libaray. Materials in addToHoneybeeLib library will be loaded anytime that you let the 'bee fly. You can add the materials manually to C:\ladybug\HoneybeeRadMaterials.mat
     Returns:
         readMe!: ...
 
@@ -21,7 +21,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Add to Radiance Library"
 ghenv.Component.NickName = 'addToLibrary'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_20_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "01 | Daylight | Material"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -41,14 +41,14 @@ def updateRADMaterialList():
 if sc.sticky.has_key('honeybee_release'):
     hb_RADMaterialAUX = sc.sticky["honeybee_RADMaterialAUX"]()
     
-    if RADMaterial!=None:
+    if _RADMaterial!=None:
         
-        if addToHoneybeeLib:
-            hb_RADMaterialAUX.addToGlobalLibrary(RADMaterial)
+        if addToHoneybeeLib_:
+            hb_RADMaterialAUX.addToGlobalLibrary(_RADMaterial)
             updateRADMaterialList()
 
-        if addToProjectLib:
-            added, name = hb_RADMaterialAUX.analyseRadMaterials(RADMaterial, True, overwrite)
+        if _addToProjectLib:
+            added, name = hb_RADMaterialAUX.analyseRadMaterials(_RADMaterial, True, overwrite_)
             if not added:
                 msg = name + " is not added to the project library!"
                 ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
