@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_19_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_20_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -3329,7 +3329,7 @@ class hb_EPSurface(object):
     def setEPConstruction(self, EPConstruction):
         self.EPConstruction = EPConstruction
     
-    def setRadMaterial(self, RADMaterial):
+    def setRADMaterial(self, RADMaterial):
         self.RadMaterial = RADMaterial
     
     def setName(self, newName):

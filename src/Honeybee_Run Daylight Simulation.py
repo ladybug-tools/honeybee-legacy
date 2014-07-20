@@ -37,7 +37,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Run Daylight Simulation"
 ghenv.Component.NickName = 'runDaylightAnalysis'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_20_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1122,15 +1122,15 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
         
         # 0.1 material string
         matStr =  "# start of generic materials definition(s)\n" + \
-            hb_RADMaterialAUX.getRADMaterialString('000_Context_Material') + "\n" + \
-            hb_RADMaterialAUX.getRADMaterialString('000_Interior_Ceiling') + "\n" + \
-            hb_RADMaterialAUX.getRADMaterialString('000_Interior_Floor') + "\n" + \
-            hb_RADMaterialAUX.getRADMaterialString('000_Exterior_Floor') + "\n" + \
-            hb_RADMaterialAUX.getRADMaterialString('000_Exterior_Window') + "\n" + \
-            hb_RADMaterialAUX.getRADMaterialString('000_Interior_Window') + "\n" + \
-            hb_RADMaterialAUX.getRADMaterialString('000_Exterior_Roof') + "\n" + \
-            hb_RADMaterialAUX.getRADMaterialString('000_Exterior_Wall') + "\n" + \
-            hb_RADMaterialAUX.getRADMaterialString('000_Interior_Wall') + "\n" + \
+            hb_RADMaterialAUX.getRADMaterialString('Context_Material') + "\n" + \
+            hb_RADMaterialAUX.getRADMaterialString('Interior_Ceiling') + "\n" + \
+            hb_RADMaterialAUX.getRADMaterialString('Interior_Floor') + "\n" + \
+            hb_RADMaterialAUX.getRADMaterialString('Exterior_Floor') + "\n" + \
+            hb_RADMaterialAUX.getRADMaterialString('Exterior_Window') + "\n" + \
+            hb_RADMaterialAUX.getRADMaterialString('Interior_Window') + "\n" + \
+            hb_RADMaterialAUX.getRADMaterialString('Exterior_Roof') + "\n" + \
+            hb_RADMaterialAUX.getRADMaterialString('Exterior_Wall') + "\n" + \
+            hb_RADMaterialAUX.getRADMaterialString('Interior_Wall') + "\n" + \
             "# end of generic materials definition(s)\n"
     
         with open(materialFileName, 'w') as matFile:
