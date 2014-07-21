@@ -27,7 +27,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_GrizzlyBear"
 ghenv.Component.NickName = 'grizzlyBear'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_21_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | WIP"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -314,6 +314,7 @@ class WritegbXML(object):
 
     def EPSCHStr(self, gb, scheduleName,ct,wknmdict):
             logging.debug('Making schedules for gb node')
+            scheduleName = scheduleName.upper()
             #try:
             scheduleData = None
             if scheduleName in sc.sticky ["honeybee_ScheduleLib"].keys():
@@ -1288,6 +1289,7 @@ class WritegbXML(object):
         uniquelayercount = 0
         uniquelayers = {}
         for constcount,const in enumerate(uniqueconst):
+            const = const.upper()
             #write the construction
             construction = gbx.Construction()
             construction.id = 'OpenStudio_'+const.replace(' ','_')
@@ -1351,9 +1353,11 @@ class WritegbXML(object):
         #make gbmaterials
         gbmaterialsarray = gbx.BasicSerialization.defMaterialsArray(len(uniquematerials))
         for matcount,materialid in enumerate(uniquematerials.keys()):
+            materialid = materialid
             thisisglazing = False
             materialData = None
             materialName = uniquematerials[materialid]
+            materialName= materialName.upper()
             if materialName in sc.sticky ["honeybee_windowMaterialLib"].keys():
                 logging.info("Found some glass!!")
                 thisisglazing = True
@@ -1362,9 +1366,9 @@ class WritegbXML(object):
             elif materialName in sc.sticky ["honeybee_materialLib"].keys():
                 materialData = sc.sticky ["honeybee_materialLib"]
             try:
-                materialData[uniquematerials[materialid]]
+                materialData[uniquematerials[materialid].upper()]
                 if(uniquematerials.has_key(materialid)):
-                    material = uniquematerials[materialid]
+                    material = uniquematerials[materialid].upper()
                 else:
                     logging.error('Could not find the material:'+str(material))
                 gbmater = gbx.Material()
@@ -1420,6 +1424,7 @@ class WritegbXML(object):
         uniquegaps = []
         gbWindowType = gbx.BasicSerialization.defWindowTypeArray(len(uniqueopens))
         for opencount, opening in enumerate(uniqueopens):
+            opening = opening.upper()
             gbopening = gbx.WindowType()
             gbWindowType[opencount] = gbopening
             gbopening.id = "OpenStudio_"+opening.replace(' ','_')
@@ -1468,7 +1473,7 @@ class WritegbXML(object):
                 #glazing or air material?
                 #review a very simple property, the length of dictionary
                 #air gap dictionaries are only of length three
-                HBGlazeLayerName = HBConstructions[opening][totlayercount][0]
+                HBGlazeLayerName = HBConstructions[opening][totlayercount][0].upper()
                 
                 matprops = HBGlazeMat[HBGlazeLayerName].values()
                 
