@@ -10,7 +10,7 @@ export geometries to idf file, and run the energy simulation
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_20_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_24_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -246,7 +246,7 @@ class WriteIDF(object):
         else: coolSupply = zone.coolSupplyAirTemp
         if zone.heatSupplyAirTemp == "": heatSupply = "40"
         else: heatSupply = zone.heatSupplyAirTemp
-        print coolSupply 
+        # print coolSupply 
         return '\nZoneHVAC:IdealLoadsAirSystem,\n' + \
         '\t' + name + "ZoneHVAC:IdealLoadsAirSystem" + ',  !- Ideal Loads Air Name\n' + \
         '\t' + ',  !- Availability Schedule Name\n' + \
