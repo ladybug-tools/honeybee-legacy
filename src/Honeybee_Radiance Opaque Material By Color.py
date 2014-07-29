@@ -24,7 +24,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Radiance Opaque Material By Color"
 ghenv.Component.NickName = 'radOpaqueMaterialByColor'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_20_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_29_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "01 | Daylight | Material"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
@@ -58,16 +58,16 @@ if sc.sticky.has_key('honeybee_release'):
         G = _color.G/255
         B = _color.B/255
         if 0 <= R <= 1 and 0 <= G <= 1 and 0 <= B <= 1:
-            avrgRef = (0.265 * R + 0.670 * G + 0.065 * B)  * (1 - specularity) + specularity
+            avrgRef = (0.265 * R + 0.670 * G + 0.065 * B)  * (1 - _specularity_) + _specularity_
             
             materialName = _materialName.Replace(" ", "_")
             
-            RADMaterial = createRadMaterial(modifier, materialName, R,  G,  B, specularity, roughness)
+            RADMaterial = createRadMaterial(modifier, materialName, R,  G,  B, _specularity_, _roughness_)
             
-            if roughness > 0.2:
+            if _roughness_ > 0.2:
                  msg = "Roughness values above 0.2 are uncommon"
                  ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
-            if specularity > 0.1:
+            if _specularity_ > 0.1:
                 msg = "Specularity values above 0.1 are uncommon"
                 ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
         else:
