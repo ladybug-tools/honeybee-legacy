@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_24_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_29_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -974,7 +974,7 @@ class EPMaterialAux(object):
         # check if any alternate 
         alternateFit = []
         if bldgProgram!=None and bldgProgram!="":
-            bldgProgram = hb_EPTypes.bldgTypes[bldgProgram]
+            bldgProgram = hb_EPTypes.bldgTypes[int(bldgProgram)]
             # print bldgProgram
             for cnstrName in selConstr:
                 possibleAlt = cnstrName.split(" ")[-2].split("-")
@@ -2356,7 +2356,6 @@ class EPZone(object):
             mp = rc.Geometry.MeshingParameters.Default; disFactor = 3
         else:
             disFactor = 1
-            mp = meshingParameters
             
         meshedGeo = rc.Geometry.Mesh.CreateFromBrep(joinedBrep, mp)
         
@@ -2526,9 +2525,8 @@ class hb_reEvaluateHBZones(object):
             
             modifiedSurfaces = []
             for surface in HBZone.surfaces:
-                srfs = self.checkZoneSurface(surface)
-                try: modifiedSurfaces.extend(srfs)
-                except: modifiedSurfaces.append(srfs)
+                try: modifiedSurfaces.extend(self.checkZoneSurface(surface))
+                except: modifiedSurfaces.append(self.checkZoneSurface(surface))
             
             # replace surfaces with new ones
             HBZone.surfaces = []
@@ -2629,59 +2627,47 @@ class hb_reEvaluateHBZones(object):
             else:
                 return False
         
-        # get glaing coordinates- coordinates will be returned as lists of lists
+        # print "checking child surfaces for " + surface.name
         glzCoordinates = surface.extractGlzPoints()
-        glzSrfs = []
         if surface.isPlanar:
-            
-            for count, coordinates in enumerate(glzCoordinates):
-                try: child = surface.childSrfs[count]
-                except: child = surface.childSrfs[0]
-                
-                if len(glzCoordinates) == 1: #not hasattr(glzCoordinates, '__iter__'):
-                    # single rectangular glazing - All should be fine
+            for child, coordinates in zip(surface.childSrfs, glzCoordinates):
+                if not hasattr(coordinates[0], '__iter__'):
+                    # single geometry - All should be fine
                     # also the adjacent surface will be fine by itself
                     child.coordinates = coordinates
                     self.modifiedGlzSrfsNames.append(child.name)                        
                 else:
-                    # surface is planar but glazing is not rectangular
-                    # and so it is meshed now and is multiple glazing
-                    glzSurfaceName = "glzSrf_" + `count` + "_" + surface.name
-                    
-                    # create glazing surface
-                    HBGlzSrf = self.createSubGlzSurfaceFromBaseSrf(child, surface, glzSurfaceName, count, coordinates)
-                    
-                    # create adjacent glazingin case needed
-                    if surface.BC.upper() == 'SURFACE':
-                        # add glazing to adjacent surface
-                        if count == 0:
-                            adjcSrf = surface.BCObject
-                            adjcSrf.childSrfs = []
+                    # planar but multiple
+                    for count, glzCoordinates in enumerate(coordinates):
                         
-                        # add glazing to adjacent surface
-                        adjcSrf = surface.BCObject
-                        glzAdjcSrfName = "glzSrf_" + `count` + "_" + adjcSrf.name
+                        glzSurfaceName = "glzSrf_" + `count` + "_" + surface.name
+                        
+                        HBGlzSrf = self.createSubGlzSurfaceFromBaseSrf(surface.childSrfs[0], surface, glzSurfaceName, count, glzCoordinates)
+                        
+                        if surface.BC.upper() == 'SURFACE':
+                            # add glazing to adjacent surface
+                            if count == 0:
+                                adjcSrf = surface.BCObject
+                                adjcSrf.childSrfs = []
                             
-                        adjcGlzPt = glzCoordinates[1:]
-                        adjcGlzPt.reverse()
-                        adjcGlzPt = [glzCoordinates[0]] + adjcGlzPt
+                            # add glazing to adjacent surface
+                            adjcSrf = surface.BCObject
+                            glzAdjcSrfName = "glzSrf_" + `count` + "_" + adjcSrf.name
+                                
+                            adjcGlzPt = glzCoordinates[1:]
+                            adjcGlzPt.reverse()
+                            adjcGlzPt = [glzCoordinates[0]] + adjcGlzPt
 
-                        adjHBGlzSrf = self.createSubGlzSurfaceFromBaseSrf(child, adjcSrf, glzAdjcSrfName, count, adjcGlzPt)
-                        
-                        # overwrite BC Object
-                        adjHBGlzSrf.BCObject = HBGlzSrf
-                        HBGlzSrf.BCObject = adjHBGlzSrf
-                        
-                        adjcSrf.addChildSrf(adjHBGlzSrf)
-                    
-                    # collect surfaces
-                    glzSrfs.append(HBGlzSrf)
-            
-            # add to parent surface
-            if len(glzCoordinates) != 1:
-                surface.removeAllChildSrfs()
-                surface.addChildSrf(glzSrfs)
-          
+                            adjHBGlzSrf = self.createSubGlzSurfaceFromBaseSrf(surface.childSrfs[0], adjcSrf, glzAdjcSrfName, count, adjcGlzPt)
+                            
+                            # overwrite BC Object
+                            adjHBGlzSrf.BCObject = HBGlzSrf
+                            HBGlzSrf.BCObject = adjHBGlzSrf
+                            
+                            adjcSrf.addChildSrf(adjHBGlzSrf)
+                            
+                        # add to parent surface
+                        surface.addChildSrf(HBGlzSrf)
         else:
             
             # convert nonplanar surface to planar wall surfaces with offset glazing
@@ -3430,8 +3416,7 @@ class hb_EPZoneSurface(hb_EPSurface):
         # I should copy/paste the function here so I can run it as
         # a method! For now I just collect them here together....
         # use the window function
-        try: self.childSrfs.extend(childSurface)
-        except: self.childSrfs.append(childSurface)
+        self.childSrfs.append(childSurface)
         self.hasChild = True
         pass
     
