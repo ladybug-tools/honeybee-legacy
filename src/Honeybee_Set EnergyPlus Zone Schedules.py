@@ -23,7 +23,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Set EnergyPlus Zone Schedules"
 ghenv.Component.NickName = 'setEPZoneSchedules'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_16_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_29_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -50,7 +50,8 @@ def main(HBZones, occupancySchedule, occupancyActivitySch, heatingSetPtSchedule,
     for scheduleList in schedules:
         for schedule in scheduleList: 
             
-            schedule= schedule.upper()
+            if schedule!=None:
+                schedule= schedule.upper()
             
             if schedule!=None and not schedule.lower().endswith(".csv") and schedule not in HBScheduleList:
                 msg = "Cannot find " + schedule + " in Honeybee schedule library."
