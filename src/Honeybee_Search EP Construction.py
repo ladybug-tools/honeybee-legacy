@@ -15,7 +15,7 @@ Provided by Honeybee 0.0.53
         _standard: Energy modeling standard [0:"ASHRAE 90.1", 1:"ASHRAE 189.1", 2:"CBECS 1980-2004", 3:"CBECS Before-1980"]
         climateZone_: Optional input for climate zone
         surfaceType_: Optional input for surface type > 0:'WALL', 1:'ROOF', 2:'FLOOR', 3:'CEILING', 4:'WINDOW'
-        altBldgProgram_: Optional input for building type > 0:'RETAIL', 1:'OFFICE', 2:'RESIDENTIAL', 3:'HOTEL'
+        altBldgProgram_: Optional input for building type > 0:'RESIDENTIAL', 1:'OFFICE', 2:'HOSPITAL'
         constructionType_:
     Returns:
         EPSelectedConstr:  List of selected EP constructions that matches the the inputs
@@ -24,7 +24,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Search EP Construction"
 ghenv.Component.NickName = 'searchEPConstruction'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_29_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
