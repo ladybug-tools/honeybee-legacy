@@ -27,7 +27,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = 'Honeybee_SplitBuildingMass'
 ghenv.Component.NickName = 'SplitMass'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_16_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_29_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -995,7 +995,7 @@ def main(mass, floorHeights, perimDepth):
         if floorHeights != []:
             splitFloors, floorCrvs, topInc, nurbsList, lastFloorInclud = splitFloorHeights(mass, floorHeights, lb_preparation, lb_visualization)
         else:
-            splitFloors = mass
+            splitFloors = [mass]
             floorCrvs = []
             topInc = []
             nurbsList = []
