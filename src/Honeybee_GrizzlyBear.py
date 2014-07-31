@@ -27,7 +27,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_GrizzlyBear"
 ghenv.Component.NickName = 'grizzlyBear'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_21_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_31_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | WIP"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -114,7 +114,6 @@ if gbXMLIsReady:
     import Rhino as rc
     import VectorMath as v
     #import OpenStudio as os
-
 
 
 class WritegbXML(object):
@@ -1269,6 +1268,7 @@ class WritegbXML(object):
                             2:gbx.surfaceTypeEnum.InteriorFloor,
                             2.25: gbx.surfaceTypeEnum.UndergroundSlab,
                             2.5: gbx.surfaceTypeEnum.SlabOnGrade,
+                            2.57: gbx.surfaceTypeEnum.RaisedFloor,
                             3:gbx.surfaceTypeEnum.Ceiling,
                             4:gbx.surfaceTypeEnum.Air,
                             #5 is reserved for openings
