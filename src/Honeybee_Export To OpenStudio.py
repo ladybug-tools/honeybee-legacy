@@ -68,7 +68,7 @@ if openStudioIsReady and sc.sticky.has_key('honeybee_release') and sc.sticky["is
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_18_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_03_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -541,6 +541,8 @@ class WriteOPS(object):
             lightsDefinition.setLightingLevel(int(zone.daylightThreshold))
         else:
             lightsDefinition.setDesignLevelCalculationMethod("Watts/Area", zone.getFloorArea(), space.numberOfPeople())
+            lightsDefinition.setWattsperSpaceFloorArea(int(zone.lightingDensityPerArea))
+
         lights = ops.Lights(lightsDefinition)
         lights.setName(zone.name + "_LightsObject")
         lights.setSchedule(self.getOSSchedule(zone.lightingSchedule, model))
