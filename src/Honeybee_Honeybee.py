@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_29_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_03_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -717,7 +717,118 @@ class RADMaterialAux(object):
         # print self.outFileStr
         with open(RADLibraryFile, "w") as inRadf:
             inRadf.write(self.outFileStr)
+
+class DLAnalysisRecipe(object):
+    
+    def __init__(self, type, *arg):
+        """
+        types:
+            0: image based analysis > Illuminance(lux) = 0, Radiation(kwh)   = 1,  Luminance (cd)   = 2
+            1: node based analysis
+            2: annual simulation (Daysim for now)
+            3: daylight factor
+            4: vertical sky component
+        """
+        self.type = type
         
+        # based on the type it should return different outputs
+        if type == 0:
+            self.skyFile = arg[0]
+            self.viewNames = arg[1]
+            try: self.radParameters = arg[2].d
+            except: self.radParameters = arg[2]
+            self.cameraType = arg[3]
+            self.simulationType = arg[4]
+            self.imageSize = arg[5], arg[6]
+            self.sectionPlane = arg[7]
+            self.backupImages =  arg[8]
+            self.studyFolder = "\\imageBasedSimulation\\"
+            
+        elif type == 1:
+            self.skyFile = arg[0]
+            self.testPts = self.convertTreeToLists(arg[1])
+            self.vectors = self.convertTreeToLists(arg[2])
+            try: self.radParameters = arg[3].d
+            except: self.radParameters = arg[3]
+            self.simulationType = arg[4]
+            self.testMesh = self.convertTreeToLists(arg[5])
+            self.studyFolder = "\\gridBasedSimulation\\"
+            
+        elif type == 2:
+            self.weatherFile = arg[0]
+            self.testPts = self.convertTreeToLists(arg[1])
+            self.vectors = self.convertTreeToLists(arg[2])
+            try: self.radParameters = arg[3].d
+            except: self.radParameters = arg[3]
+            self.DSParameters = arg[4]
+            self.testMesh = self.convertTreeToLists(arg[5])
+            self.studyFolder = "\\annualSimulation\\"
+        
+        elif type == 3:
+            self.skyFile = arg[0]
+            self.testPts = self.convertTreeToLists(arg[1])
+            self.vectors = self.convertTreeToLists(arg[2])
+            try: self.radParameters = arg[3].d
+            except: self.radParameters = arg[3]
+            self.simulationType = 0 #illuminance
+            self.testMesh = self.convertTreeToLists(arg[4])
+            self.studyFolder = "\\DF\\"
+        
+        elif type == 4:
+            self.skyFile = arg[0]
+            self.testPts = self.convertTreeToLists(arg[1])
+            self.vectors = self.convertTreeToLists(arg[2])
+            try: self.radParameters = arg[3].d
+            except: self.radParameters = arg[3]
+            self.testMesh = self.convertTreeToLists(arg[4])
+            self.simulationType = 0 #illuminance
+            self.studyFolder = "\\VSC\\"
+        
+        # double check the sky in case of grid based and image based simulations
+        if type ==0 or type == 1:
+            self.checkSky()
+                    
+    def convertTreeToLists(self, l):
+        listOfLists = []
+        for path in l.Paths:
+            listOfLists.append(l.Branch(path))
+        return listOfLists
+    
+    def checkSky(self):
+        if self.simulationType == 1:
+            # make sure the sky is either gencum or gendaylit
+            # edit in case of gendaylit
+            self.radSkyFile = self.skyFile.split(".")[0] + "_radAnalysis.sky"
+            skyOut = open(self.radSkyFile, "w")
+            genDaylit = False
+            with open(self.skyFile, "r") as skyIn:
+                for line in skyIn:
+                    if line.startswith("!gensky"):
+                        self.skyFile = None
+                        msg = "You need to use one of the climate-based skies for radiation analysis.\n" + \
+                              "Change the skyFile and try again"
+                        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                        return
+                    elif line.startswith("!gendaylit"):
+                        line = line.replace("-O 0", "-O 1")
+                        genDaylit = True
+                    # write a new file
+                    skyOut.write(line)
+            skyOut.close()
+            self.skyFile = self.radSkyFile
+            if not genDaylit:
+                self.simulationType = 1.1 # annual radiation analysis
+        
+        else:
+            # make sure the sky is not from gencum
+            with open(self.skyFile, "r") as skyIn:
+                for line in skyIn:
+                    if line.strip().startswith("2 skybright") and line.strip().endswith(".cal"):
+                        self.skyFile = None
+                        msg = "Cumulative sky can only be used for radiation analysis.\n" + \
+                              "Change the skyFile and try again"
+                        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                        return
 
 class hb_EnergySimulatioParameters(object):
     
@@ -1386,8 +1497,7 @@ class EPObjectsAux(object):
         up = rc.UI.Dialogs.ShowMessageBox(msg, "Duplicate Material Name", buttons, icon)
         
         return returnYN[up.ToString().ToUpper()]
-        
-        
+
 
 class EPTypes(object):
     def __init__(self):
@@ -1432,6 +1542,7 @@ class EPTypes(object):
                 #Retail                    = "Retail"
                 #Warehouse                 = "Warehouse"
         
+
 class materialLibrary(object):
     
     def __init__(self):
@@ -3921,6 +4032,7 @@ if letItFly:
         sc.sticky["honeybee_EPShdSurface"] = hb_EPShdSurface
         sc.sticky["honeybee_EPZoneSurface"] = hb_EPZoneSurface
         sc.sticky["honeybee_EPFenSurface"] = hb_EPFenSurface
+        sc.sticky["honeybee_DLAnalysisRecipe"] = DLAnalysisRecipe
         sc.sticky["honeybee_RADParameters"] = hb_RADParameters
         sc.sticky["honeybee_DSParameters"] = hb_DSParameters
         sc.sticky["honeybee_EPParameters"] = hb_EnergySimulatioParameters

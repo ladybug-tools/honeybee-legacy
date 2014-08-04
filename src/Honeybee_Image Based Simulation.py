@@ -25,134 +25,42 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Image Based Simulation"
 ghenv.Component.NickName = 'imageBasedSimulation'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_14_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_03_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
 
 
+import scriptcontext as sc
 import Rhino as rc
 import Grasshopper.Kernel as gh
 
-class DLAnalysisRecipe(object):
+def main():
+    # check for Honeybee
+    if not sc.sticky.has_key('honeybee_release'):
+        msg = "You should first let Honeybee to fly..."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, msg)
+        return
+        
+    DLAnalysisRecipe = sc.sticky["honeybee_DLAnalysisRecipe"]
     
-    def __init__(self, type, *arg):
-        """
-        types:
-            0: image based analysis > Illuminance(lux) = 0, Radiation(kwh)   = 1,  Luminance (cd)   = 2
-            1: node based analysis
-            2: annual simulation (Daysim for now)
-            3: daylight factor
-            4: vertical sky component
-        """
-        self.type = type
-        
-        # based on the type it should return different outputs
-        if type == 0:
-            self.skyFile = arg[0]
-            self.viewNames = arg[1]
-            try: self.radParameters = arg[2].d
-            except: self.radParameters = arg[2]
-            self.cameraType = arg[3]
-            self.simulationType = arg[4]
-            self.imageSize = arg[5], arg[6]
-            self.sectionPlane = arg[7]
-            self.backupImages =  arg[8]
-            self.studyFolder = "\\imageBasedSimulation\\"
-            
-        elif type == 1:
-            self.skyFile = arg[0]
-            self.testPts = self.convertTreeToLists(arg[1])
-            self.vectors = self.convertTreeToLists(arg[2])
-            try: self.radParameters = arg[3].d
-            except: self.radParameters = arg[3]
-            self.simulationType = arg[4]
-            self.studyFolder = "\\gridBasedSimulation\\"
-            
-        elif type == 2:
-            self.weatherFile = arg[0]
-            self.testPts = self.convertTreeToLists(arg[1])
-            self.vectors = self.convertTreeToLists(arg[2])
-            try: self.radParameters = arg[3].d
-            except: self.radParameters = arg[3]
-            self.DSParameters = arg[4]
-            self.studyFolder = "\\annualSimulation\\"
-        
-        elif type == 3:
-            self.skyFile = arg[0]
-            self.testPts = self.convertTreeToLists(arg[1])
-            self.vectors = self.convertTreeToLists(arg[2])
-            try: self.radParameters = arg[3].d
-            except: self.radParameters = arg[3]
-            self.simulationType = 0 #illuminance
-            self.studyFolder = "\\DF\\"
-        
-        elif type == 4:
-            self.skyFile = arg[0]
-            self.testPts = self.convertTreeToLists(arg[1])
-            self.vectors = self.convertTreeToLists(arg[2])
-            try: self.radParameters = arg[3].d
-            except: self.radParameters = arg[3]
-            self.simulationType = 0 #illuminance
-            self.studyFolder = "\\VSC\\"
-        
-        # double check the sky in case of grid based and image based simulations
-        if type ==0 or type == 1:
-            self.checkSky()
-                    
-    def convertTreeToLists(self, l):
-        listOfLists = []
-        for path in l.Paths:
-            listOfLists.append(l.Branch(path))
-        return listOfLists
+    # As much as I dislike using global variables I feel lazy to change this now
+    recipe = DLAnalysisRecipe(0, _skyFile, _rhinoViewsName_, _radParameters_,
+                              _cameraType_, _simulationType_, _imageWidth_,
+                              _imageHeight_, sectionPlane_, backupImages_)
     
-    def checkSky(self):
-        if self.simulationType == 1:
-            # make sure the sky is either gencum or gendaylit
-            # edit in case of gendaylit
-            self.radSkyFile = self.skyFile.split(".")[0] + "_radAnalysis.sky"
-            skyOut = open(self.radSkyFile, "w")
-            genDaylit = False
-            with open(self.skyFile, "r") as skyIn:
-                for line in skyIn:
-                    if line.startswith("!gensky"):
-                        self.skyFile = None
-                        msg = "You need to use one of the climate-based skies for radiation analysis.\n" + \
-                              "Change the skyFile and try again"
-                        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
-                        return
-                    elif line.startswith("!gendaylit"):
-                        line = line.replace("-O 0", "-O 1")
-                        genDaylit = True
-                    # write a new file
-                    skyOut.write(line)
-            skyOut.close()
-            self.skyFile = self.radSkyFile
-            if not genDaylit:
-                self.simulationType = 1.1 # annual radiation analysis
-        
-        else:
-            # make sure the sky is not from gencum
-            with open(self.skyFile, "r") as skyIn:
-                for line in skyIn:
-                    if line.strip().startswith("2 skybright") and line.strip().endswith(".cal"):
-                        self.skyFile = None
-                        msg = "Cumulative sky can only be used for radiation analysis.\n" + \
-                              "Change the skyFile and try again"
-                        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
-                        return
-            
-
+    return recipe
 
 if _skyFile:
     
     try: int(_simulationType_)
     except: _simulationType_ = 2 #luminance
     
-    recipe = DLAnalysisRecipe(0, _skyFile, _rhinoViewsName_, _radParameters_, _cameraType_, _simulationType_, _imageWidth_, _imageHeight_, sectionPlane_, backupImages_)
+    recipe = main()
     
-    if recipe.skyFile != None:
+    if recipe!=None and recipe.skyFile != None:
         analysisRecipe = recipe
 
 
