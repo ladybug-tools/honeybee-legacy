@@ -22,13 +22,13 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Lookup Daylighting Folder"
 ghenv.Component.NickName = 'LookupFolder_Daylighting'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_04_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
 except: pass
 
-
+import scriptcontext as sc
 import os
 import System
 import Grasshopper.Kernel as gh
@@ -38,7 +38,14 @@ from Grasshopper.Kernel.Data import GH_Path
 
 def main(studyFolder):
     msg = str.Empty
-
+    
+    if not (sc.sticky.has_key('ladybug_release')and sc.sticky.has_key('honeybee_release')):
+        msg = "You should first let Ladybug and Honeybee fly..."
+        return msg, None
+    
+    lb_preparation = sc.sticky["ladybug_Preparation"]()
+    hb_serializeObjects = sc.sticky["honeybee_SerializeObjects"]
+    
     if studyFolder==None:
         msg = " "
         return msg, None
@@ -52,7 +59,16 @@ def main(studyFolder):
     ptsFiles = []
     hdrFiles = []
     gifFiles = []
+    tifFiles = []
+    bmpFiles = []
+    jpgFiles = []
     epwFile = str.Empty
+    analysisType = str.Empty
+    analysisMesh = []
+    
+    radianceFiles = []
+    materialFiles = []
+    skyFiles = []
     
     if studyFolder!=None:
         fileNames = os.listdir(studyFolder)
@@ -70,7 +86,28 @@ def main(studyFolder):
                 hdrFiles.append(os.path.join(studyFolder, fileName))
             elif fileName.lower().endswith(".gif"):
                 gifFiles.append(os.path.join(studyFolder, fileName))
-    
+            elif fileName.lower().endswith(".tif") or fileName.lower().endswith(".tiff"):
+                tifFiles.append(os.path.join(studyFolder, fileName))
+            elif fileName.lower().endswith(".bmp"):
+                bmpFiles.append(os.path.join(studyFolder, fileName))
+            elif fileName.lower().endswith(".jpg") or fileName.lower().endswith(".jpeg"):
+                jpgFiles.append(os.path.join(studyFolder, fileName))
+            elif fileName.lower().endswith(".rad") and not fileName.lower().startswith("daysim_"):
+                if fileName.lower().startswith("material_"):
+                    materialFiles.append(os.path.join(studyFolder, fileName))
+                else:
+                    radianceFiles.append(os.path.join(studyFolder, fileName))
+            elif fileName.lower().endswith(".sky"):
+                skyFiles.append(os.path.join(studyFolder, fileName))
+            elif fileName.lower().endswith(".typ"):
+                with open(os.path.join(studyFolder, fileName), "r") as typf:
+                    analysisType = typf.readline().strip()
+            elif fileName.lower().endswith(".msh"):
+                meshFilePath = os.path.join(studyFolder, fileName)
+                serializer = hb_serializeObjects(meshFilePath)
+                serializer.readFromFile()
+                analysisMesh = lb_preparation.flattenList(serializer.data)
+                
     # check if there are multiple ill files in the folder for different shading groups
     illFilesDict = {}
     for fullPath in illFilesTemp:
@@ -115,12 +152,28 @@ def main(studyFolder):
     try: ptsFiles = sorted(ptsFiles, key=lambda fileName: int(fileName.split(".")[-2].split("_")[-1]))
     except: pass
     
-    return msg, [illFiles, resFiles, ptsFiles, hdrFiles, gifFiles, epwFile]
+    imgFiles = gifFiles + tifFiles + bmpFiles + jpgFiles
     
+    return msg, [illFiles, resFiles, ptsFiles, hdrFiles, imgFiles, epwFile, analysisType, analysisMesh, radianceFiles, materialFiles, skyFiles]
+    
+
+ghenv.Component.Params.Output[1].NickName = "resultFiles"
+ghenv.Component.Params.Output[1].Name = "resultFiles"
+resultFiles = []
 
 msg, results = main(studyFolder)
 
 if msg!=str.Empty:
     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
 else:
-    illFiles, resFiles, ptsFiles, hdrFiles, gifFiles, epwFile = results
+    illFiles, resFiles, ptsFiles, hdrFiles, imageFiles, epwFile, analysisType, \
+    analysisMesh, radianceFiles, materialFiles, skyFiles = results
+
+    if resFiles != []:
+        resultFiles = resFiles
+    else:
+        resultFiles = illFiles
+        filesOutputName = "illFiles"
+        ghenv.Component.Params.Output[1].NickName = filesOutputName
+        ghenv.Component.Params.Output[1].Name = filesOutputName
+        exec(filesOutputName + "= resultFiles")

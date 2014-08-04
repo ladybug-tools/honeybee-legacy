@@ -37,7 +37,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Run Daylight Simulation"
 ghenv.Component.NickName = 'runDaylightAnalysis'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_20_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_04_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -789,6 +789,14 @@ sc.sticky["honeybee_WriteRAD"] = WriteRAD
 sc.sticky["honeybee_WriteRADAUX"] = WriteRADAUX
 sc.sticky["honeybee_WriteDS"] = WriteDS
 
+ghenv.Component.Params.Output[5].NickName = "resultFiles"
+ghenv.Component.Params.Output[5].Name = "resultFiles"
+resultFiles = []
+
+ghenv.Component.Params.Output[3].NickName = "results"
+ghenv.Component.Params.Output[3].Name = "results"
+results = []
+
 def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir,
          radFileName, meshParameters, waitingTime, additionalRadFiles, overwriteResults,
          exportInteriorWalls):
@@ -805,6 +813,7 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
         hb_writeDS = sc.sticky["honeybee_WriteDS"]()
         hb_radParDict = sc.sticky["honeybee_RADParameters"]().radParDict
         hb_dsParameters = sc.sticky["honeybee_DSParameters"]()
+        hb_serializeObjects = sc.sticky["honeybee_SerializeObjects"]
         
         hb_folders = sc.sticky["honeybee_folders"]
         hb_RADPath = hb_folders["RADPath"]
@@ -815,6 +824,7 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
         hb_EPPath = hb_folders["EPPath"]
         
         northAngle, northVector = lb_preparation.angle2north(north)
+        
         
         if analysisRecipe:
             #epwFileAddress, runRadiationAnalysis_GridPts, analysisPeriod, runRadiationAnalysis_Image, rhinoViewNames, runDaylightingSimulation, skyCondition, hour, day, month, runClimateBasedSimulation, dasysimParameters = analysesRecipe
@@ -910,15 +920,12 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
                     # apply this for grid based analysis, so the images can be rendered with any quality
                     radParameters["_aa_"] = 0.1
                     print "-aa is set to 0.1"
-                
+                    
                 print "Good to go!"
-        
-        #stMonth, stDay, stHour, endMonth, endDay, endHour = lb_preparation.readRunPeriod(analysisPeriod, True)
+
         #conversionFac = lb_preparation.checkUnits()
-        
-        # if radParameters: 
-        
-        # check for folder and idf file address
+
+        # check for folder
         # make working directory
         if workingDir:
             workingDir = lb_preparation.removeBlankLight(workingDir)
@@ -939,7 +946,7 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
         radFileName = "".join([c for c in radFileName if c.isalnum() or c in keepcharacters]).rstrip()
         
         # make new folder for each study
-        subWorkingDir = lb_preparation.makeWorkingDir(workingDir + "\\" + radFileName + studyFolder)
+        subWorkingDir = lb_preparation.makeWorkingDir(workingDir + "\\" + radFileName + studyFolder).replace("\\\\", "\\")
         print 'Current working directory is set to: ', subWorkingDir
         
         try:
@@ -996,10 +1003,21 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
                     print "Results of the previous study are copied to " + backupFolder
                     
                 lb_preparation.nukedir(subWorkingDir, rmdir = False)
+                
         except Exception, e:
             print 'Failed to remove the old directory.'
             print `e`
-            
+        
+        # try to write mesh file if any
+        if analysisType != 0 and analysisRecipe.testMesh !=[]:
+            meshFilePath = os.path.join(subWorkingDir, radFileName + ".msh")
+            serializer = hb_serializeObjects(meshFilePath, analysisRecipe.testMesh)
+            serializer.saveToFile()
+        
+        # write analysis type to folder
+        typeFile = os.path.join(subWorkingDir, radFileName + ".typ")
+        with open(typeFile, "w") as typf:
+            typf.write(str(analysisRecipe.type))
         
         # sky and material file
         # copy the sky file to the local folder
@@ -1395,9 +1413,9 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
                     print "Can't find the results for the study"
                     DSResultFilesAddress = []
                 
-                return radFileFullName, [], [], testPoints, DSResultFilesAddress, []
+                return radFileFullName, [], [], testPoints, DSResultFilesAddress, [], subWorkingDir
             else:
-                return radFileFullName, [], [], testPoints, [], []
+                return radFileFullName, [], [], testPoints, [], [], subWorkingDir
                 
         ######################## NOT ANNUAL SIMULATION #######################
         
@@ -1470,7 +1488,7 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
                 # run batch file and return address  and the result
                 if  analysisRecipe.type == 0:
                     os.system(initBatchFileName)
-                    return radFileFullName, [], [], [], [], HDRFileAddress
+                    return radFileFullName, [], [], [], [], HDRFileAddress, subWorkingDir
                 
                 else:
                     RADResultFilesAddress = []
@@ -1499,18 +1517,19 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
                     time.sleep(1)
                     # run all the batch files
                     
-                    return radFileFullName, [], RADResultFilesAddress, testPoints, [], []
+                    return radFileFullName, [], RADResultFilesAddress, testPoints, [], [], subWorkingDir
                 
             else:
                 # return name of the file
-                if  analysisRecipe.type == 0: return radFileFullName, [], [], [], [], []
-                else: return radFileFullName, [], [], testPoints, [], []
+                if  analysisRecipe.type == 0: return radFileFullName, [], [], [], [], [], subWorkingDir
+                else: return radFileFullName, [], [], testPoints, [], [], subWorkingDir
                 
     else:
         print "You should first let both Ladybug and Honeybee to fly..."
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, "You should first let both Ladybug and Honeybee to fly...")
         return -1
+
 
 if _writeRad == True and _analysisRecipe!=None and ((len(_HBObjects)!=0 and _HBObjects[0]!=None) or  additionalRadFiles_!=[]):
     report = ""
@@ -1534,22 +1553,17 @@ if _writeRad == True and _analysisRecipe!=None and ((len(_HBObjects)!=0 and _HBO
                   additionalRadFiles_, overwriteResults_, exportInteriorWalls_)
     
     if result!= -1:
+        
+        analysisTypesDict = sc.sticky["honeybee_DLAnalaysisTypes"]
+        
         # RADGeoFileAddress, radiationResult, RADResultFilesAddress, testPoints, DSResultFilesAddress, HDRFileAddress = result
-        radianceFile, radiationResult, gridBasedResultFiles, testPoints, annualResultFiles, HDRFiles = result
+        radGeoFile, radiationResult, gridBasedResultFiles, testPoints, annualResultFiles, HDRFiles, studyFolder = result
         
         testPts = DataTree[System.Object]()
         for i, ptList in enumerate(testPoints):
             p = GH_Path(i)
             testPts.AddRange(ptList, p)
-        
-        # add analysis type
-        analysisTypesDict = {0: ["0: illuminance" , "lux"],
-                             1: ["1: radiation" , "wh/m2"],
-                             1.1: ["1.1: cumulative radiation" , "kWh/m2"],
-                             2: ["2: luminance" , "cd/m2"],
-                             3: ["3: daylight factor", "%"],
-                             4: ["4: vertical sky component", "%"]}
-        
+
         analysisType = _analysisRecipe.type
         
         if analysisType == 3 or analysisType == 4:
@@ -1566,5 +1580,28 @@ if _writeRad == True and _analysisRecipe!=None and ((len(_HBObjects)!=0 and _HBO
             
         except:
             analysisType, resultsUnit = "annual analysis", "var"
+        
+        resultsOutputName = analysisType.split(":")[-1].strip().replace(" ", "_") + "_values"
+        filesOutputName = analysisType.split(":")[-1].strip().replace(" ", "_") + "_files"
+        
+        # check and rename result files based on analysis type
+        if gridBasedResultFiles != []:
+            resultFiles = gridBasedResultFiles
+            #get the values for the results
+            CalculateGridBasedDLAnalysisResults = sc.sticky["honeybee_GridBasedDLResults"]
+            calculateResults = CalculateGridBasedDLAnalysisResults(resultFiles, int(analysisType.split(":")[0].strip()[0]))
+            values = calculateResults.getResults()
+            ghenv.Component.Params.Output[3].NickName = resultsOutputName
+            ghenv.Component.Params.Output[3].Name = resultsOutputName
+            exec(resultsOutputName + "= values")
+            
+        elif annualResultFiles != []:
+            resultFiles = annualResultFiles
+        elif HDRFiles != []:
+            resultFiles = HDRFiles
             
         done = True
+
+        ghenv.Component.Params.Output[5].NickName = filesOutputName
+        ghenv.Component.Params.Output[5].Name = filesOutputName
+        exec(filesOutputName + "= resultFiles")

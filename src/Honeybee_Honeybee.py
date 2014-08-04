@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_03_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_04_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -55,6 +55,8 @@ import datetime
 import json
 import copy
 import urllib
+import cPickle as pickle
+
 PI = math.pi
 
 rc.Runtime.HostUtils.DisplayOleAlerts(False)
@@ -3904,6 +3906,73 @@ class hb_DSParameters(object):
         
         # print "number of ill files = " + str(self.numOfIll)
 
+
+class CalculateGridBasedDLAnalysisResults(object):
+    """
+    calculate results of any grid based analysis
+    analysisType: [0] illuminance, [1] radiation, [2] luminance, [3] daylight factor, [4] vertical sky component
+    """
+    def __init__(self, resultFiles, analysisType):
+        self.analysisType = analysisType
+        self.resultFiles = resultFiles
+        
+    def getResults(self):
+        resultValues = []
+        studyType= self.analysisType
+        for fileCount, resultFile in enumerate(self.resultFiles):
+            if studyType == 0 or studyType == 2:
+                #illuminance / luminance
+                resultValues.extend(self.readDLResult(resultFile))
+            elif studyType == 1:
+                # radiation
+                resultValues.extend(self.readRadiationResult(resultFile))
+            elif studyType == 3 or studyType == 4:
+                resultValues.extend(self.readDFResult(resultFile))
+        
+        return resultValues
+    
+    def readRadiationResult(self, resultFile):
+        result = []
+        resultFile = open(resultFile,"r")
+        for line in resultFile:
+            result.append(float(line.split('	')[0]))
+        return result
+    
+    def readDLResult(self, resultFile):
+        result = []
+        resultFile = open(resultFile,"r")
+        for line in resultFile:
+            R, G, B = line.split('	')[0:3]
+            result.append(179*(.265 * float(R) + .67 * float(G) + .065 * float(B)))
+        return result
+    
+    def readDFResult(self, resultFile):
+        result = []
+        resultFile = open(resultFile,"r")
+        for line in resultFile:
+            R, G, B = line.split('	')[0:3]
+            # divide by the sky horizontal illuminance = 1000
+            res = 17900*(.265 * float(R) + .67 * float(G) + .065 * float(B))/1000
+            if res > 100: res = 100
+            result.append(res)
+        return result
+
+class SerializeObjects(object):
+    
+    def __init__(self, filePath, data = None):
+        self.filePath = filePath
+        self.data = data
+    
+    def saveToFile(self):
+        with open(self.filePath, 'wb') as outf:
+            pickle.dump(self.data, outf)
+    
+    def readFromFile(self):
+        with open(self.filePath, 'rb') as inf:
+            self.data = pickle.load(inf)
+
+
+
 letItFly = True
 
 def checkGHPythonVersion(target = "0.6.0.3"):
@@ -4036,6 +4105,15 @@ if letItFly:
         sc.sticky["honeybee_RADParameters"] = hb_RADParameters
         sc.sticky["honeybee_DSParameters"] = hb_DSParameters
         sc.sticky["honeybee_EPParameters"] = hb_EnergySimulatioParameters
-        
+        sc.sticky["honeybee_SerializeObjects"] = SerializeObjects
+        sc.sticky["honeybee_GridBasedDLResults"] = CalculateGridBasedDLAnalysisResults
+        sc.sticky["honeybee_DLAnalaysisTypes"] = {0: ["0: illuminance" , "lux"],
+                                                  1: ["1: radiation" , "wh/m2"],
+                                                  1.1: ["1.1: cumulative radiation" , "kWh/m2"],
+                                                  2: ["2: luminance" , "cd/m2"],
+                                                  3: ["3: DF", "%"],
+                                                  4: ["4: VSC", "%"],
+                                                  5: ["5: annual analysis", "var"]}
+                                                 
         # done! sharing the happiness.
         print "Hooohooho...Flying!!\nVviiiiiiizzz..."
