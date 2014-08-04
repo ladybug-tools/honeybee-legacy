@@ -20,7 +20,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Vertical Sky Component"
 ghenv.Component.NickName = 'verticalSkyComponent'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_03_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_04_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -71,14 +71,20 @@ def isAllNone(dataList):
     return True
 
 
-def main(skyFilePath):
+def main():
     # check for Honeybee
     if not sc.sticky.has_key('honeybee_release'):
         msg = "You should first let Honeybee to fly..."
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, msg)
         return
-        
+    
+    # generate the sky
+    if uniformSky_==True:
+        skyFilePath = genVSCSky(1000, "-u")
+    else:
+        skyFilePath = genVSCSky(1000, "-c")
+    
     DLAnalysisRecipe = sc.sticky["honeybee_DLAnalysisRecipe"]
     
     # set radiance parameters
@@ -117,14 +123,7 @@ def main(skyFilePath):
     
     return analysisRecipe
 
-
-# generate the sky
-if uniformSky_==True:
-    skyFilePath = genVSCSky(1000, "-u")
-else:
-    skyFilePath = genVSCSky(1000, "-c")
-
-analysisRecipe = main(skyFilePath)
+analysisRecipe = main()
 
 
 
