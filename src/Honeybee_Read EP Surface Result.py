@@ -16,8 +16,11 @@ Provided by Honeybee 0.0.53
     Returns:
         surfaceIndoorTemp: The indoor surface temperature of each surface (degrees Celcius).
         surfaceOutdoorTemp: The outdoor surface temperature of each surface (degrees Celcius).
-        surfaceOpaqueEnergyFlow: The heat loss (negative) or heat gain (positive) through each building opaque surface (kWh).
-        surfaceGlazEnergyFlow: The heat loss (negative) or heat gain (positive) through each building glazing surface (kWh).  Note that the value here includes both solar gains and conduction losses/gains.
+        opaqueEnergyFlow: The heat loss (negative) or heat gain (positive) through each building opaque surface (kWh).
+        glazEnergyFlow: The heat loss (negative) or heat gain (positive) through each building glazing surface (kWh).  Note that the value here includes both solar gains and conduction losses/gains.
+        windowTotalSolarEnergy: The total solar energy transmitted through each of the glazing surfaces to the zone (kWh).
+        windowBeamEnergy: The total direct solar beam energy transmitted through each of the glazing surfaces to the zone (kWh).
+        windowDiffEnergy: The total diffuse solar energy transmitted through each of the glazing surfaces to the zone (kWh).
 """
 
 ghenv.Component.Name = "Honeybee_Read EP Surface Result"
@@ -90,14 +93,15 @@ else: pass
 
 # Make data tree objects for all of the outputs.
 surfaceIndoorTemp = DataTree[Object]()
-surfaceGlazIndoorTemp = DataTree[Object]()
 surfaceOutdoorTemp = DataTree[Object]()
-surfaceGlazOutdoorTemp = DataTree[Object]()
-surfaceOpaqueEnergyFlow = DataTree[Object]()
-surfaceGlazEnergyFlow = DataTree[Object]()
+opaqueEnergyFlow = DataTree[Object]()
+glazEnergyFlow = DataTree[Object]()
+windowBeamEnergy = DataTree[Object]()
+windowDiffEnergy = DataTree[Object]()
+windowTotalSolarEnergy = DataTree[Object]()
 
 #Make a list to keep track of what outputs are in the result file.
-dataTypeList = [False, False, False, False, False, False]
+dataTypeList = [False, False, False, False, False, False, False]
 parseSuccess = False
 
 #Make a list to keep track of the number of surfaces in each zone.
@@ -115,6 +119,9 @@ glzOutTemp = 0
 opaConduct = 0
 glzGain = 0
 glzLoss = 0
+glzBeamGain = 0
+glzDiffGain = 0
+glzTotalGain = 0
 
 # PARSE THE RESULT FILE.
 if _resultFileAddress and gotData == True:
@@ -147,7 +154,7 @@ if _resultFileAddress and gotData == True:
                             path.append([opaInTemp])
                             surfaceIndoorTemp.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount][0])))
                             surfaceIndoorTemp.Add(location, GH_Path(int(path[columnCount][0])))
-                            surfaceIndoorTemp.Add("Indoor Surface Temperature for" + column.split(':')[0], GH_Path(int(path[columnCount][0])))
+                            surfaceIndoorTemp.Add("Indoor Surface Temperature for " + column.split(':')[0], GH_Path(int(path[columnCount][0])))
                             surfaceIndoorTemp.Add("C", GH_Path(int(path[columnCount][0])))
                             surfaceIndoorTemp.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0])))
                             surfaceIndoorTemp.Add(start, GH_Path(int(path[columnCount][0])))
@@ -156,7 +163,7 @@ if _resultFileAddress and gotData == True:
                         else:
                             surfaceIndoorTemp.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
                             surfaceIndoorTemp.Add(location, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceIndoorTemp.Add("Indoor Surface Temperature for" + zoneName + srfName, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            surfaceIndoorTemp.Add("Indoor Surface Temperature for " + zoneName + srfName, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
                             surfaceIndoorTemp.Add("C", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
                             surfaceIndoorTemp.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
                             surfaceIndoorTemp.Add(start, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
@@ -178,7 +185,7 @@ if _resultFileAddress and gotData == True:
                             path.append([opaOutTemp])
                             surfaceOutdoorTemp.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount][0])))
                             surfaceOutdoorTemp.Add(location, GH_Path(int(path[columnCount][0])))
-                            surfaceOutdoorTemp.Add("Outdoor Surface Temperature for" + column.split(':')[0], GH_Path(int(path[columnCount][0])))
+                            surfaceOutdoorTemp.Add("Outdoor Surface Temperature for " + column.split(':')[0], GH_Path(int(path[columnCount][0])))
                             surfaceOutdoorTemp.Add("C", GH_Path(int(path[columnCount][0])))
                             surfaceOutdoorTemp.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0])))
                             surfaceOutdoorTemp.Add(start, GH_Path(int(path[columnCount][0])))
@@ -187,7 +194,7 @@ if _resultFileAddress and gotData == True:
                         else:
                             surfaceOutdoorTemp.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
                             surfaceOutdoorTemp.Add(location, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceOutdoorTemp.Add("Outdoor Surface Temperature for" + zoneName + srfName, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            surfaceOutdoorTemp.Add("Outdoor Surface Temperature for " + zoneName + srfName, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
                             surfaceOutdoorTemp.Add("C", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
                             surfaceOutdoorTemp.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
                             surfaceOutdoorTemp.Add(start, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
@@ -207,22 +214,22 @@ if _resultFileAddress and gotData == True:
                                 foundNameOpaConduct = True
                         if foundNameOpaConduct == False:
                             path.append([opaConduct])
-                            surfaceOpaqueEnergyFlow.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount][0])))
-                            surfaceOpaqueEnergyFlow.Add(location, GH_Path(int(path[columnCount][0])))
-                            surfaceOpaqueEnergyFlow.Add("Opaque Conductive Energy Loss/Gain for" + column.split(':')[0], GH_Path(int(path[columnCount][0])))
-                            surfaceOpaqueEnergyFlow.Add("kWh", GH_Path(int(path[columnCount][0])))
-                            surfaceOpaqueEnergyFlow.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0])))
-                            surfaceOpaqueEnergyFlow.Add(start, GH_Path(int(path[columnCount][0])))
-                            surfaceOpaqueEnergyFlow.Add(end, GH_Path(int(path[columnCount][0])))
+                            opaqueEnergyFlow.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount][0])))
+                            opaqueEnergyFlow.Add(location, GH_Path(int(path[columnCount][0])))
+                            opaqueEnergyFlow.Add("Opaque Conductive Energy Loss/Gain for " + column.split(':')[0], GH_Path(int(path[columnCount][0])))
+                            opaqueEnergyFlow.Add("kWh", GH_Path(int(path[columnCount][0])))
+                            opaqueEnergyFlow.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0])))
+                            opaqueEnergyFlow.Add(start, GH_Path(int(path[columnCount][0])))
+                            opaqueEnergyFlow.Add(end, GH_Path(int(path[columnCount][0])))
                             opaConduct += 1
                         else:
-                            surfaceOpaqueEnergyFlow.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceOpaqueEnergyFlow.Add(location, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceOpaqueEnergyFlow.Add("Opaque Conductive Energy Loss/Gain for" + zoneName + srfName, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceOpaqueEnergyFlow.Add("kWh", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceOpaqueEnergyFlow.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceOpaqueEnergyFlow.Add(start, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceOpaqueEnergyFlow.Add(end, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            opaqueEnergyFlow.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            opaqueEnergyFlow.Add(location, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            opaqueEnergyFlow.Add("Opaque Conductive Energy Loss/Gain for " + zoneName + srfName, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            opaqueEnergyFlow.Add("kWh", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            opaqueEnergyFlow.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            opaqueEnergyFlow.Add(start, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            opaqueEnergyFlow.Add(end, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
                         key.append(16)
                         dataTypeList[2] = True
                     
@@ -238,22 +245,22 @@ if _resultFileAddress and gotData == True:
                                 foundNameGlzGain = True
                         if foundNameGlzGain == False:
                             path.append([glzGain])
-                            surfaceGlazEnergyFlow.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount][0])))
-                            surfaceGlazEnergyFlow.Add(location, GH_Path(int(path[columnCount][0])))
-                            surfaceGlazEnergyFlow.Add("Glazing Energy Loss/Gain for" + column.split(':')[0], GH_Path(int(path[columnCount][0])))
-                            surfaceGlazEnergyFlow.Add("kWh", GH_Path(int(path[columnCount][0])))
-                            surfaceGlazEnergyFlow.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0])))
-                            surfaceGlazEnergyFlow.Add(start, GH_Path(int(path[columnCount][0])))
-                            surfaceGlazEnergyFlow.Add(end, GH_Path(int(path[columnCount][0])))
+                            glazEnergyFlow.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount][0])))
+                            glazEnergyFlow.Add(location, GH_Path(int(path[columnCount][0])))
+                            glazEnergyFlow.Add("Glazing Energy Loss/Gain for " + column.split(':')[0], GH_Path(int(path[columnCount][0])))
+                            glazEnergyFlow.Add("kWh", GH_Path(int(path[columnCount][0])))
+                            glazEnergyFlow.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0])))
+                            glazEnergyFlow.Add(start, GH_Path(int(path[columnCount][0])))
+                            glazEnergyFlow.Add(end, GH_Path(int(path[columnCount][0])))
                             glzGain += 1
                         else:
-                            surfaceGlazEnergyFlow.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceGlazEnergyFlow.Add(location, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceGlazEnergyFlow.Add("Glazing Energy Loss/Gain for" + zoneName + srfName, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceGlazEnergyFlow.Add("kWh", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceGlazEnergyFlow.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceGlazEnergyFlow.Add(start, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceGlazEnergyFlow.Add(end, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            glazEnergyFlow.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            glazEnergyFlow.Add(location, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            glazEnergyFlow.Add("Glazing Energy Loss/Gain for " + zoneName + srfName, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            glazEnergyFlow.Add("kWh", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            glazEnergyFlow.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            glazEnergyFlow.Add(start, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            glazEnergyFlow.Add(end, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
                         key.append(17)
                         dataTypeList[3] = True
                     
@@ -272,6 +279,99 @@ if _resultFileAddress and gotData == True:
                             key.append(18)
                             path.append([glzLoss])
                             glzLoss += 1
+                    
+                    elif 'Surface Window Transmitted Beam Solar Radiation Energy' in column:
+                        foundNameGlzBeamGain = False
+                        for count, name in enumerate(zoneNameList):
+                            if name in " " + column.split(':')[0]:
+                                zoneName = name
+                                srfName = column.split(':')[0].split(name.split(" ")[-1])[-1]
+                                srfIndex = len(zoneSrfs[count][5])
+                                zoneSrfs[count][5].append(1)
+                                path.append([count, srfIndex])
+                                foundNameGlzBeamGain = True
+                        if foundNameGlzBeamGain == False:
+                            path.append([glzBeamGain])
+                            windowBeamEnergy.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount][0])))
+                            windowBeamEnergy.Add(location, GH_Path(int(path[columnCount][0])))
+                            windowBeamEnergy.Add("Window Transmitted Beam Energy for " + column.split(':')[0], GH_Path(int(path[columnCount][0])))
+                            windowBeamEnergy.Add("kWh", GH_Path(int(path[columnCount][0])))
+                            windowBeamEnergy.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0])))
+                            windowBeamEnergy.Add(start, GH_Path(int(path[columnCount][0])))
+                            windowBeamEnergy.Add(end, GH_Path(int(path[columnCount][0])))
+                            glzBeamGain += 1
+                        else:
+                            windowBeamEnergy.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            windowBeamEnergy.Add(location, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            windowBeamEnergy.Add("Window Transmitted Beam Energy for " + zoneName + srfName, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            windowBeamEnergy.Add("kWh", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            windowBeamEnergy.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            windowBeamEnergy.Add(start, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            windowBeamEnergy.Add(end, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                        key.append(1)
+                        dataTypeList[4] = True
+                    
+                    elif 'Surface Window Transmitted Diffuse Solar Radiation Energy' in column:
+                        foundNameGlzDiffGain = False
+                        for count, name in enumerate(zoneNameList):
+                            if name in " " + column.split(':')[0]:
+                                zoneName = name
+                                srfName = column.split(':')[0].split(name.split(" ")[-1])[-1]
+                                srfIndex = len(zoneSrfs[count][5])
+                                zoneSrfs[count][5].append(1)
+                                path.append([count, srfIndex])
+                                foundNameGlzDiffGain = True
+                        if foundNameGlzDiffGain == False:
+                            path.append([glzDiffGain])
+                            windowDiffEnergy.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount][0])))
+                            windowDiffEnergy.Add(location, GH_Path(int(path[columnCount][0])))
+                            windowDiffEnergy.Add("Window Transmitted Diffuse Energy for " + column.split(':')[0], GH_Path(int(path[columnCount][0])))
+                            windowDiffEnergy.Add("kWh", GH_Path(int(path[columnCount][0])))
+                            windowDiffEnergy.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0])))
+                            windowDiffEnergy.Add(start, GH_Path(int(path[columnCount][0])))
+                            windowDiffEnergy.Add(end, GH_Path(int(path[columnCount][0])))
+                            glzDiffGain += 1
+                        else:
+                            windowDiffEnergy.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            windowDiffEnergy.Add(location, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            windowDiffEnergy.Add("Window Transmitted Diffuse Energy for " + zoneName + srfName, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            windowDiffEnergy.Add("kWh", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            windowDiffEnergy.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            windowDiffEnergy.Add(start, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            windowDiffEnergy.Add(end, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                        key.append(2)
+                        dataTypeList[5] = True
+                    
+                    elif 'Surface Window Transmitted Solar Radiation Energy' in column:
+                        foundNameGlzTotalGain = False
+                        for count, name in enumerate(zoneNameList):
+                            if name in " " + column.split(':')[0]:
+                                zoneName = name
+                                srfName = column.split(':')[0].split(name.split(" ")[-1])[-1]
+                                srfIndex = len(zoneSrfs[count][5])
+                                zoneSrfs[count][5].append(1)
+                                path.append([count, srfIndex])
+                                foundNameGlzTotalGain = True
+                        if foundNameGlzTotalGain == False:
+                            path.append([glzTotalGain])
+                            windowTotalSolarEnergy.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount][0])))
+                            windowTotalSolarEnergy.Add(location, GH_Path(int(path[columnCount][0])))
+                            windowTotalSolarEnergy.Add("Window Total Transmitted Solar Energy for " + column.split(':')[0], GH_Path(int(path[columnCount][0])))
+                            windowTotalSolarEnergy.Add("kWh", GH_Path(int(path[columnCount][0])))
+                            windowTotalSolarEnergy.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0])))
+                            windowTotalSolarEnergy.Add(start, GH_Path(int(path[columnCount][0])))
+                            windowTotalSolarEnergy.Add(end, GH_Path(int(path[columnCount][0])))
+                            glzTotalGain += 1
+                        else:
+                            windowTotalSolarEnergy.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            windowTotalSolarEnergy.Add(location, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            windowTotalSolarEnergy.Add("Window Total Transmitted Solar Energy for " + zoneName + srfName, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            windowTotalSolarEnergy.Add("kWh", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            windowTotalSolarEnergy.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            windowTotalSolarEnergy.Add(start, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            windowTotalSolarEnergy.Add(end, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                        key.append(3)
+                        dataTypeList[6] = True
                     
                     else:
                         key.append(-1)
@@ -295,14 +395,29 @@ if _resultFileAddress and gotData == True:
                         if foundNameOpaConduct == True:
                             p = GH_Path(int(path[columnCount][0]), int(path[columnCount][1]))
                         else: p = GH_Path(int(path[columnCount][0]))
-                        surfaceOpaqueEnergyFlow.Add((float(column)/3600000), p)
+                        opaqueEnergyFlow.Add((float(column)/3600000), p)
                     elif key[columnCount] == 17:
                         if foundNameGlzGain == True:
                             p = GH_Path(int(path[columnCount][0]), int(path[columnCount][1]))
                         else: p = GH_Path(int(path[columnCount][0]))
-                        surfaceGlazEnergyFlow.Add((((float(column))/3600000) + ((float( line.split(',')[columnCount+1] ))*(-1)/3600000)), p)
+                        glazEnergyFlow.Add((((float(column))/3600000) + ((float( line.split(',')[columnCount+1] ))*(-1)/3600000)), p)
                     elif key[columnCount] == 18:
                         pass
+                    elif key[columnCount] == 1:
+                        if foundNameGlzBeamGain == True:
+                            p = GH_Path(int(path[columnCount][0]), int(path[columnCount][1]))
+                        else: p = GH_Path(int(path[columnCount][0]))
+                        windowBeamEnergy.Add((((float(column))/3600000) + ((float( line.split(',')[columnCount+1] ))*(-1)/3600000)), p)
+                    elif key[columnCount] == 2:
+                        if foundNameGlzDiffGain == True:
+                            p = GH_Path(int(path[columnCount][0]), int(path[columnCount][1]))
+                        else: p = GH_Path(int(path[columnCount][0]))
+                        windowDiffEnergy.Add((((float(column))/3600000) + ((float( line.split(',')[columnCount+1] ))*(-1)/3600000)), p)
+                    elif key[columnCount] == 3:
+                        if foundNameGlzTotalGain == True:
+                            p = GH_Path(int(path[columnCount][0]), int(path[columnCount][1]))
+                        else: p = GH_Path(int(path[columnCount][0]))
+                        windowTotalSolarEnergy.Add((((float(column))/3600000) + ((float( line.split(',')[columnCount+1] ))*(-1)/3600000)), p)
                     
         result.close()
         parseSuccess = True
@@ -320,12 +435,15 @@ outputsDict = {
      
 0: ["surfaceIndoorTemp", "The indoor surface temperature of each surface (degrees Celcius)."],
 1: ["surfaceOutdoorTemp", "The outdoor surface temperature of each surface (degrees Celcius)."],
-2: ["surfaceOpaqueEnergyFlow", "The heat loss (negative) or heat gain (positive) through each building opaque surface (kWh)."],
-3: ["surfaceGlazEnergyFlow", "The heat loss (negative) or heat gain (positive) through each building glazing surface (kWh).  Note that the value here includes both solar gains and conduction losses/gains."]
+2: ["opaqueEnergyFlow", "The heat loss (negative) or heat gain (positive) through each building opaque surface (kWh)."],
+3: ["glazEnergyFlow", "The heat loss (negative) or heat gain (positive) through each building glazing surface (kWh).  Note that the value here includes both solar gains and conduction losses/gains."],
+4: ["windowTotalSolarEnergy", "The total solar energy transmitted through each of the glazing surfaces to the zone (kWh)."],
+5: ["windowBeamEnergy", "The total direct solar beam energy transmitted through each of the glazing surfaces to the zone (kWh)."],
+6: ["windowDiffEnergy", "The total diffuse solar energy transmitted through each of the glazing surfaces to the zone (kWh)."]
 }
 
 if _resultFileAddress and parseSuccess == True:
-    for output in range(4):
+    for output in range(7):
         if dataTypeList[output] == False:
             ghenv.Component.Params.Output[output].NickName = "............................"
             ghenv.Component.Params.Output[output].Name = "............................"
@@ -335,7 +453,7 @@ if _resultFileAddress and parseSuccess == True:
             ghenv.Component.Params.Output[output].Name = outputsDict[output][0]
             ghenv.Component.Params.Output[output].Description = outputsDict[output][1]
 else:
-    for output in range(4):
+    for output in range(7):
         ghenv.Component.Params.Output[output].NickName = outputsDict[output][0]
         ghenv.Component.Params.Output[output].Name = outputsDict[output][0]
         ghenv.Component.Params.Output[output].Description = outputsDict[output][1]
