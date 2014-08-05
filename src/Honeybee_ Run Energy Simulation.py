@@ -212,75 +212,93 @@ class WriteIDF(object):
         '\t' + 'Winter Control Type Day Sch,Winter Control Type Day Sch,Winter Control Type Day Sch,' + '\n' + \
         '\t' + 'Winter Control Type Day Sch,Winter Control Type Day Sch,Winter Control Type Day Sch;'+ '\n'
     
-    def writeThemostat(self, name):
-        return '\nZoneControl:Thermostat,\n' + \
-        '\t' + name + ' Thermostat' + ',  !- Thermostat Name\n' + \
-        '\t' + name + ',  !- Zone Name\n' + \
-        '\t' + 'HVAC Operation Schedule' + ',  !- Control Type Schedule Name\n' + \
-        '\t' + 'ThermostatSetpoint:DualSetpoint' + ',  !- Control Type\n' + \
-        '\t' + name + ' Thermostat Dual SP Control' + ';  !- Control Type Name\n'
+    def writeThemostat(self, name, zone):
+        if zone.isConditioned:
+            return '\nZoneControl:Thermostat,\n' + \
+            '\t' + name + ' Thermostat' + ',  !- Thermostat Name\n' + \
+            '\t' + name + ',  !- Zone Name\n' + \
+            '\t' + 'HVAC Operation Schedule' + ',  !- Control Type Schedule Name\n' + \
+            '\t' + 'ThermostatSetpoint:DualSetpoint' + ',  !- Control Type\n' + \
+            '\t' + name + ' Thermostat Dual SP Control' + ';  !- Control Type Name\n'
+        else:
+            return "\n"
     
     def writeSetpoint(self, zone, name):
-        return '\nThermostatSetpoint:DualSetpoint,\n' + \
-        '\t' + name + ' Thermostat Dual SP Control' + ',  !- Name\n' + \
-        '\t' + zone.heatingSetPtSchedule + ',  !- Heating Setpoint Temperature Schedule Name\n' + \
-        '\t' + zone.coolingSetPtSchedule + ';  !- Cooling Setpoint Temperature Schedule Name\n'
+        if zone.isConditioned:
+            return '\nThermostatSetpoint:DualSetpoint,\n' + \
+            '\t' + name + ' Thermostat Dual SP Control' + ',  !- Name\n' + \
+            '\t' + zone.heatingSetPtSchedule + ',  !- Heating Setpoint Temperature Schedule Name\n' + \
+            '\t' + zone.coolingSetPtSchedule + ';  !- Cooling Setpoint Temperature Schedule Name\n'
+        else:
+            return "\n"
     
-    def writeEquipConnect(self, name):
-        return '\nZoneHVAC:EquipmentConnections,\n' + \
-        '\t' + name + ',  !- Zone Name\n' + \
-        '\t' + name + " Equipment" + ',  !- Zone Conditioning Equipment List Name\n' + \
-        '\t' + name + " Inlets" + ',  !- List Name: Zone Air Inlet Nodes\n' + \
-        '\t' + ',  !- List Name: Zone Air Exhaust Nodes\n' + \
-        '\t' + name + " Zone Air Node" + ',  !- Zone Air Node Name\n' + \
-        '\t' + name + " Return Outlet" + ';  !- Zone Return Air Node Name\n'
+    def writeEquipConnect(self, name, zone):
+        if zone.isConditioned:
+            return '\nZoneHVAC:EquipmentConnections,\n' + \
+            '\t' + name + ',  !- Zone Name\n' + \
+            '\t' + name + " Equipment" + ',  !- Zone Conditioning Equipment List Name\n' + \
+            '\t' + name + " Inlets" + ',  !- List Name: Zone Air Inlet Nodes\n' + \
+            '\t' + ',  !- List Name: Zone Air Exhaust Nodes\n' + \
+            '\t' + name + " Zone Air Node" + ',  !- Zone Air Node Name\n' + \
+            '\t' + name + " Return Outlet" + ';  !- Zone Return Air Node Name\n'
+        else:
+            return "\n"
     
-    def writeEquipList(self, name):
-        return '\nZoneHVAC:EquipmentList,\n' + \
-        '\t' + name + ' Equipment' + ',  !- Name\n' + \
-        '\t' + "ZoneHVAC:IdealLoadsAirSystem" + ',  !- Zone Equipment 1 Object Type\n' + \
-        '\t' + name + "ZoneHVAC:IdealLoadsAirSystem" + ',  !- Zone Equipment 1 Name\n' + \
-        '\t' + '1' + ',  !- Zone Equipment 1 Cooling Sequence\n' + \
-        '\t' + "1" + ';  !- Zone Equipment 1 Heating or No-Load Sequence\n'
+    def writeEquipList(self, name, zone):
+        if zone.isConditioned:
+            return '\nZoneHVAC:EquipmentList,\n' + \
+            '\t' + name + ' Equipment' + ',  !- Name\n' + \
+            '\t' + "ZoneHVAC:IdealLoadsAirSystem" + ',  !- Zone Equipment 1 Object Type\n' + \
+            '\t' + name + "ZoneHVAC:IdealLoadsAirSystem" + ',  !- Zone Equipment 1 Name\n' + \
+            '\t' + '1' + ',  !- Zone Equipment 1 Cooling Sequence\n' + \
+            '\t' + "1" + ';  !- Zone Equipment 1 Heating or No-Load Sequence\n'
+        else:
+            return "\n"
     
-    def writeNodeList(self, name):
-        return '\nNodeList,\n' + \
-        '\t' + name + ' Inlets' + ',  !- List Name\n' + \
-        '\t' + "Node " + name + " In" + ';  !- Node Name\n'
+    def writeNodeList(self, name, zone):
+        if zone.isConditioned:
+            return '\nNodeList,\n' + \
+            '\t' + name + ' Inlets' + ',  !- List Name\n' + \
+            '\t' + "Node " + name + " In" + ';  !- Node Name\n'
+        else:
+            return "\n"
     
     def writeIdealAirSys(self, name, zone):
-        if zone.coolSupplyAirTemp == "": coolSupply = "11"
-        else: coolSupply = zone.coolSupplyAirTemp
-        if zone.heatSupplyAirTemp == "": heatSupply = "40"
-        else: heatSupply = zone.heatSupplyAirTemp
-        # print coolSupply 
-        return '\nZoneHVAC:IdealLoadsAirSystem,\n' + \
-        '\t' + name + "ZoneHVAC:IdealLoadsAirSystem" + ',  !- Ideal Loads Air Name\n' + \
-        '\t' + ',  !- Availability Schedule Name\n' + \
-        '\t' + "Node " + name + " In" + ',  !- Zone Supply Air Node Name\n' + \
-        '\t' + ',  !- Zone Exhaust Air Node Name\n' + \
-        '\t' + heatSupply + ',  !- Heating Supply Air Temp {C}\n' + \
-        '\t' + coolSupply + ',  !- Cooling Supply Air Temp {C}\n' + \
-        '\t' + ',  !- Max Heating Supply Air Humidity Ratio {kg-H2O/kg-air}\n' + \
-        '\t' + ',  !- Min Cooling Supply Air Humidity Ratio {kg-H2O/kg-air}\n' + \
-        '\t' + "NoLimit" + ',  !- Heating Limit\n' + \
-        '\t' + ',  !- Maximum Heating Air Flow Rate {m3/s}\n' + \
-        '\t' + ',  !- Maximum Sensible Heat Capacity\n' + \
-        '\t' + "NoLimit" + ',  !- Cooling Limit\n' + \
-        '\t' + ',  !- Maximum Cooling Air Flow Rate {m3/s}\n' + \
-        '\t' + ',  !- Maximum Total Cooling Capacity\n' + \
-        '\t' + ',  !- Heating Availability Schedule\n' + \
-        '\t' + ',  !- Cooling Availability Schedule\n' + \
-        '\t' + 'None' + ',  !- Dehumidification Control Type\n' + \
-        '\t' + ',  !- Cooling Sensible Heat Ratio\n' + \
-        '\t' + 'None' + ',  !- Humidification Control Type\n' + \
-        '\t' + ',  !- Outside Air Object Name\n' + \
-        '\t' + ',  !- Outside Air Inlet Name\n' + \
-        '\t' + ',  !- Demand Controlled Ventilation Type\n' + \
-        '\t' + ',  !- Outdoor Air Economizer Type\n' + \
-        '\t' + ',  !- Heat Recovery Type\n' + \
-        '\t' + ',  !- Seneible HEat Recovery Effectiveness\n' + \
-        '\t' + ';  !- Latent HEat Recovery Effectiveness\n'
+        if zone.isConditioned:
+            if zone.coolSupplyAirTemp == "": coolSupply = "11"
+            else: coolSupply = zone.coolSupplyAirTemp
+            if zone.heatSupplyAirTemp == "": heatSupply = "40"
+            else: heatSupply = zone.heatSupplyAirTemp
+            # print coolSupply 
+            return '\nZoneHVAC:IdealLoadsAirSystem,\n' + \
+            '\t' + name + "ZoneHVAC:IdealLoadsAirSystem" + ',  !- Ideal Loads Air Name\n' + \
+            '\t' + ',  !- Availability Schedule Name\n' + \
+            '\t' + "Node " + name + " In" + ',  !- Zone Supply Air Node Name\n' + \
+            '\t' + ',  !- Zone Exhaust Air Node Name\n' + \
+            '\t' + heatSupply + ',  !- Heating Supply Air Temp {C}\n' + \
+            '\t' + coolSupply + ',  !- Cooling Supply Air Temp {C}\n' + \
+            '\t' + ',  !- Max Heating Supply Air Humidity Ratio {kg-H2O/kg-air}\n' + \
+            '\t' + ',  !- Min Cooling Supply Air Humidity Ratio {kg-H2O/kg-air}\n' + \
+            '\t' + "NoLimit" + ',  !- Heating Limit\n' + \
+            '\t' + ',  !- Maximum Heating Air Flow Rate {m3/s}\n' + \
+            '\t' + ',  !- Maximum Sensible Heat Capacity\n' + \
+            '\t' + "NoLimit" + ',  !- Cooling Limit\n' + \
+            '\t' + ',  !- Maximum Cooling Air Flow Rate {m3/s}\n' + \
+            '\t' + ',  !- Maximum Total Cooling Capacity\n' + \
+            '\t' + ',  !- Heating Availability Schedule\n' + \
+            '\t' + ',  !- Cooling Availability Schedule\n' + \
+            '\t' + 'None' + ',  !- Dehumidification Control Type\n' + \
+            '\t' + ',  !- Cooling Sensible Heat Ratio\n' + \
+            '\t' + 'None' + ',  !- Humidification Control Type\n' + \
+            '\t' + ',  !- Outside Air Object Name\n' + \
+            '\t' + ',  !- Outside Air Inlet Name\n' + \
+            '\t' + ',  !- Demand Controlled Ventilation Type\n' + \
+            '\t' + ',  !- Outdoor Air Economizer Type\n' + \
+            '\t' + ',  !- Heat Recovery Type\n' + \
+            '\t' + ',  !- Seneible HEat Recovery Effectiveness\n' + \
+            '\t' + ';  !- Latent HEat Recovery Effectiveness\n'
+        else:
+            return "\n"
     
     def EPHVACTemplate( self, name, zone):
         if zone.isConditioned:
@@ -999,18 +1017,18 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
             
             if listName!=None:
                 for zone in zones:
-                    idfFile.write(hb_writeIDF.writeThemostat(zone.name))
+                    idfFile.write(hb_writeIDF.writeThemostat(zone.name, zone))
                     idfFile.write(hb_writeIDF.writeSetpoint(zone, zone.name))
-                    idfFile.write(hb_writeIDF.writeEquipConnect(zone.name))
-                    idfFile.write(hb_writeIDF.writeEquipList(zone.name))
-                    idfFile.write(hb_writeIDF.writeNodeList(zone.name))
+                    idfFile.write(hb_writeIDF.writeEquipConnect(zone.name, zone))
+                    idfFile.write(hb_writeIDF.writeEquipList(zone.name, zone))
+                    idfFile.write(hb_writeIDF.writeNodeList(zone.name, zone))
                     idfFile.write(hb_writeIDF.writeIdealAirSys(zone.name, zone))
             else:
-                idfFile.write(hb_writeIDF.writeThemostat(zone.name))
+                idfFile.write(hb_writeIDF.writeThemostat(zone.name, zone))
                 idfFile.write(hb_writeIDF.writeSetpoint(zone, zone.name))
-                idfFile.write(hb_writeIDF.writeEquipConnect(zone.name))
-                idfFile.write(hb_writeIDF.writeEquipList(zone.name))
-                idfFile.write(hb_writeIDF.writeNodeList(zone.name))
+                idfFile.write(hb_writeIDF.writeEquipConnect(zone.name, zone))
+                idfFile.write(hb_writeIDF.writeEquipList(zone.name, zone))
+                idfFile.write(hb_writeIDF.writeNodeList(zone.name, zone))
                 idfFile.write(hb_writeIDF.writeIdealAirSys(zone.name, zone))
             
             
