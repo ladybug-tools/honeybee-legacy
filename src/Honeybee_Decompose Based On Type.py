@@ -73,10 +73,14 @@ def main(HBZone):
                     interiorWalls.append(srf.geometry)
                     
             else:
-                walls.append(srf.geometry)
                 if srf.hasChild:
+                    walls.append(srf.punchedGeometry)
+                    
                     for childSrf in srf.childSrfs:
                         windows.append(childSrf.geometry)
+                else:
+                    walls.append(srf.geometry)
+                        
         # underground wall
         elif srf.type == 0.5:
             undergroundWalls.append(srf.geometry)
