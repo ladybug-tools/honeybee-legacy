@@ -22,7 +22,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Lookup Daylighting Folder"
 ghenv.Component.NickName = 'LookupFolder_Daylighting'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_04_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_05_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
@@ -103,11 +103,13 @@ def main(studyFolder):
                 with open(os.path.join(studyFolder, fileName), "r") as typf:
                     analysisType = typf.readline().strip()
             elif fileName.lower().endswith(".msh"):
-                meshFilePath = os.path.join(studyFolder, fileName)
-                serializer = hb_serializeObjects(meshFilePath)
-                serializer.readFromFile()
-                analysisMesh = lb_preparation.flattenList(serializer.data)
-                
+                try:
+                    meshFilePath = os.path.join(studyFolder, fileName)
+                    serializer = hb_serializeObjects(meshFilePath)
+                    serializer.readFromFile()
+                    analysisMesh = lb_preparation.flattenList(serializer.data)
+                except:
+                    pass
     # check if there are multiple ill files in the folder for different shading groups
     illFilesDict = {}
     for fullPath in illFilesTemp:
