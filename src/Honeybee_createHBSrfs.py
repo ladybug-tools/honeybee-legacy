@@ -33,7 +33,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_createHBSrfs'
 ghenv.Component.NickName = 'createHBSrfs'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_20_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_05_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -125,7 +125,11 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
                     # change type of surface if BC is set to ground
                     if EPBC.lower()== "ground":
                         HBSurface.setType(int(HBSurface.type) + 0.5, isUserInput= True)
-                        
+                    
+                    
+                    if EPBC.lower()== "ground" or EPBC.lower()== "adiabatic":
+                        HBSurface.setSunExposure('NoSun')
+                        HBSurface.setWindExposure('NoWind')
                 except:
                     warningMsg = "You are using an old version of Honeybee_Honeybee! Update your files and try again."
                     print warningMsg

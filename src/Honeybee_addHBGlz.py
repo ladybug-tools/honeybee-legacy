@@ -33,7 +33,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_addHBGlz'
 ghenv.Component.NickName = 'addHBGlz'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_05_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
@@ -73,8 +73,14 @@ def main(HBSurface, childSurfaces, EPConstruction, RADMaterial, tolerance):
                 guid = str(uuid.uuid4())
                 name = "".join(guid.split("-")[:-1])
                 number = guid.split("-")[-1]
+                
                 HBFenSrf = hb_EPFenSurface(srf, number, name, HBSurface, 5)
-            
+                
+                # check normal direction
+                if not rc.Geometry.Vector3d.VectorAngle(HBFenSrf.normalVector, HBFenSrf.parent.normalVector)<sc.doc.ModelAngleToleranceRadians:
+                    HBFenSrf.geometry.Flip()
+                    HBFenSrf.normalVector.Reverse()
+                
                 if EPConstruction:
                     HBFenSrf.EPConstruction = EPConstruction
                 if RADMaterial!=None:

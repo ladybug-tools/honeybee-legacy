@@ -10,7 +10,7 @@ export geometries to idf file, and run the energy simulation
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_24_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_05_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -176,6 +176,13 @@ class WriteIDF(object):
             else:
                 str_2 = str_2 + '\t' + zone.name + ';\n\n'
         return str_1 + str_2
+    
+    def writeHVACSched0(self):
+        return '\nScheduleTypeLimits, \n' + \
+        '\t' + 'Control Type, !- Name\n' + \
+        '\t0,                       !- Lower Limit Value\n' + \
+        '\t4,                       !- Upper Limit Value\n' + \
+        '\t' + 'DISCRETE;                !- Numeric Type\n'
     
     def writeHVACSched1(self):
         return '\nSchedule:Year, HVAC Operation Schedule, Control Type,\n' + \
@@ -968,6 +975,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     listCount = 0
     listName = None
     
+    idfFile.write(hb_writeIDF.writeHVACSched0())
     idfFile.write(hb_writeIDF.writeHVACSched1())
     idfFile.write(hb_writeIDF.writeHVACSched2())
     idfFile.write(hb_writeIDF.writeHVACSched3())

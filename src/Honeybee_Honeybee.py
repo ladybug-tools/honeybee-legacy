@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_04_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_05_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -2300,6 +2300,30 @@ class EPZone(object):
         return joinedMesh
     
     def checkZoneNormalsDir(self):
+        
+        def checkSrfNormal(HBSrf, printAngle = False):
+            #create a plane from the surface
+            srfPlane = rc.Geometry.Plane(HBSrf.cenPt, HBSrf.normalVector)
+            
+            # project center point of the geometry to surface plane
+            projectedPt = srfPlane.ClosestPoint(self.cenPt)
+        
+            # make a vector from the center point of the zone to center point of the surface
+            testVector = rc.Geometry.Vector3d(projectedPt - self.cenPt)
+            # check the direction of the vectors and flip zone surfaces if needed
+            vecAngleDiff = math.degrees(rc.Geometry.Vector3d.VectorAngle(testVector, HBSrf.normalVector))
+            
+            # vecAngleDiff should be 0 otherwise the normal is reversed
+            if printAngle:
+                print vecAngleDiff
+            if vecAngleDiff > 10:
+                HBSrf.geometry.Flip()
+                HBSrf.normalVector.Reverse()
+                
+            if not HBSrf.isChild and HBSrf.hasChild:
+                    for childSrf in HBSrf.childSrfs:
+                        checkSrfNormal(childSrf)
+        
         # isPointInside for Breps is buggy, that's why I mesh the geometry here
         mesh = rc.Geometry.Mesh.CreateFromBrep(self.geometry)
         joinedMesh = self.joinMesh(mesh)
@@ -2314,29 +2338,10 @@ class EPZone(object):
             # point is not inside so this method can't be used
             return
         
-        # first surface of the geometry
-        testSurface = self.geometry.Faces[0].DuplicateFace(False)
-        srfCenPt, normal = self.getSrfCenPtandNormal(testSurface)
-        
-        #create a plane from the surface
-        srfPlane = rc.Geometry.Plane(srfCenPt, normal)
-        
-        # project center point of the geometry to surface plane
-        projectedPt = srfPlane.ClosestPoint(self.cenPt)
-        
-        try:
-            # make a vector from the center point of the zone to center point of the surface
-            testVector = rc.Geometry.Vector3d(projectedPt - self.cenPt)
-            # check the direction of the vectors and flip zone surfaces if needed
-            vecAngleDiff = math.degrees(rc.Geometry.Vector3d.VectorAngle(testVector, normal))
+        for HBSrf in self.surfaces:
+            checkSrfNormal(HBSrf)
+                
             
-            # vecAngleDiff should be 0 otherwise the normal is reversed
-            if vecAngleDiff > 10:
-                self.geometry.Flip()
-        except Exception, e:
-            print 'Zone normal check failed!\n' + `e`
-            return 
-        
     def decomposeZone(self, maximumRoofAngle = 30):
         # this method is useufl when the zone is going to be constructed from a closed brep
         # materials will be applied based on the zones construction set
