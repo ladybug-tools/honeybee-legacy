@@ -1351,7 +1351,7 @@ class EPObjectsAux(object):
         modifiedObj = ""
         
         for value, comment in zip(values, comments):
-            if count == len(values) -1:
+            if count == len(values):
                 separator = ";"
             else:
                 separator = ","
