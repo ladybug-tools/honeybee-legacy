@@ -18,7 +18,7 @@ Provided by Honeybee 0.0.53
 """
 ghenv.Component.Name = "Honeybee_Solve Adjacencies"
 ghenv.Component.NickName = 'solveAdjc'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_15_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_05_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"

@@ -23,7 +23,7 @@ Provided by Honeybee 0.0.53
 """
 ghenv.Component.Name = "Honeybee_Decompose Based On Type"
 ghenv.Component.NickName = 'decomposeByType'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_30_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_05_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
@@ -74,7 +74,9 @@ def main(HBZone):
                     
             else:
                 walls.append(srf.geometry)
-        
+                if srf.hasChild:
+                    for childSrf in srf.childSrfs:
+                        windows.append(childSrf.geometry)
         # underground wall
         elif srf.type == 0.5:
             undergroundWalls.append(srf.geometry)
