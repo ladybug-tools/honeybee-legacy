@@ -14,10 +14,8 @@ Provided by Honeybee 0.0.53
     Args:
         _resultFileAddress: The result file address that comes out of the WriteIDF component.
     Returns:
-        surfaceOpaqueIndoorTemp: The indoor surface temperature of each opaque surface (degrees Celcius).
-        surfaceGlazIndoorTemp: The indoor surface temperature of each glazed surface (degrees Celcius).
-        surfaceOpaqueOutdoorTemp: The outdoor surface temperature of each opaque surface (degrees Celcius).
-        surfaceGlazOutdoorTemp: The outdoor surface temperature of each glazed surface (degrees Celcius).
+        surfaceIndoorTemp: The indoor surface temperature of each surface (degrees Celcius).
+        surfaceOutdoorTemp: The outdoor surface temperature of each surface (degrees Celcius).
         surfaceOpaqueEnergyFlow: The heat loss (negative) or heat gain (positive) through each building opaque surface (kWh).
         surfaceGlazEnergyFlow: The heat loss (negative) or heat gain (positive) through each building glazing surface (kWh).  Note that the value here includes both solar gains and conduction losses/gains.
 """
@@ -91,9 +89,9 @@ else: pass
 
 
 # Make data tree objects for all of the outputs.
-surfaceOpaqueIndoorTemp = DataTree[Object]()
+surfaceIndoorTemp = DataTree[Object]()
 surfaceGlazIndoorTemp = DataTree[Object]()
-surfaceOpaqueOutdoorTemp = DataTree[Object]()
+surfaceOutdoorTemp = DataTree[Object]()
 surfaceGlazOutdoorTemp = DataTree[Object]()
 surfaceOpaqueEnergyFlow = DataTree[Object]()
 surfaceGlazEnergyFlow = DataTree[Object]()
@@ -135,7 +133,7 @@ if _resultFileAddress and gotData == True:
                 #glazing surface energy loss = 18
                 key = []; path = []
                 for columnCount, column in enumerate(line.split(',')):
-                    if 'Surface Inside Face Temperature' in column and "GLZ" not in column:
+                    if 'Surface Inside Face Temperature' in column:
                         foundNameOpaTemp = False
                         for count, name in enumerate(zoneNameList):
                             if name in " " + column.split(':')[0]:
@@ -147,57 +145,26 @@ if _resultFileAddress and gotData == True:
                                 foundNameOpaTemp = True
                         if foundNameOpaTemp == False:
                             path.append([opaInTemp])
-                            surfaceOpaqueIndoorTemp.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount][0])))
-                            surfaceOpaqueIndoorTemp.Add(location, GH_Path(int(path[columnCount][0])))
-                            surfaceOpaqueIndoorTemp.Add("Indoor Surface Temperature for" + column.split(':')[0], GH_Path(int(path[columnCount][0])))
-                            surfaceOpaqueIndoorTemp.Add("C", GH_Path(int(path[columnCount][0])))
-                            surfaceOpaqueIndoorTemp.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0])))
-                            surfaceOpaqueIndoorTemp.Add(start, GH_Path(int(path[columnCount][0])))
-                            surfaceOpaqueIndoorTemp.Add(end, GH_Path(int(path[columnCount][0])))
+                            surfaceIndoorTemp.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount][0])))
+                            surfaceIndoorTemp.Add(location, GH_Path(int(path[columnCount][0])))
+                            surfaceIndoorTemp.Add("Indoor Surface Temperature for" + column.split(':')[0], GH_Path(int(path[columnCount][0])))
+                            surfaceIndoorTemp.Add("C", GH_Path(int(path[columnCount][0])))
+                            surfaceIndoorTemp.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0])))
+                            surfaceIndoorTemp.Add(start, GH_Path(int(path[columnCount][0])))
+                            surfaceIndoorTemp.Add(end, GH_Path(int(path[columnCount][0])))
                             opaInTemp += 1
                         else:
-                            surfaceOpaqueIndoorTemp.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceOpaqueIndoorTemp.Add(location, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceOpaqueIndoorTemp.Add("Indoor Surface Temperature for" + zoneName + srfName, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceOpaqueIndoorTemp.Add("C", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceOpaqueIndoorTemp.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceOpaqueIndoorTemp.Add(start, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceOpaqueIndoorTemp.Add(end, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            surfaceIndoorTemp.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            surfaceIndoorTemp.Add(location, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            surfaceIndoorTemp.Add("Indoor Surface Temperature for" + zoneName + srfName, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            surfaceIndoorTemp.Add("C", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            surfaceIndoorTemp.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            surfaceIndoorTemp.Add(start, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            surfaceIndoorTemp.Add(end, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
                         key.append(12)
                         dataTypeList[0] = True
                     
-                    elif 'Surface Inside Face Temperature' in column and "GLZ" in column:
-                        foundNameGlzTemp = False
-                        for count, name in enumerate(zoneNameList):
-                            if name in " " + column.split(':')[0]:
-                                zoneName = name
-                                srfName = column.split(':')[0].split(name.split(" ")[-1])[-1]
-                                srfIndex = len(zoneSrfs[count][1])
-                                zoneSrfs[count][1].append(1)
-                                path.append([count, srfIndex])
-                                foundNameGlzTemp = True
-                        if foundNameGlzTemp == False:
-                            path.append([glzInTemp])
-                            surfaceGlazIndoorTemp.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount][0])))
-                            surfaceGlazIndoorTemp.Add(location, GH_Path(int(path[columnCount][0])))
-                            surfaceGlazIndoorTemp.Add("Indoor Surface Temperature for" + column.split(':')[0], GH_Path(int(path[columnCount][0])))
-                            surfaceGlazIndoorTemp.Add("C", GH_Path(int(path[columnCount][0])))
-                            surfaceGlazIndoorTemp.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0])))
-                            surfaceGlazIndoorTemp.Add(start, GH_Path(int(path[columnCount][0])))
-                            surfaceGlazIndoorTemp.Add(end, GH_Path(int(path[columnCount][0])))
-                            glzInTemp += 1
-                        else:
-                            surfaceGlazIndoorTemp.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceGlazIndoorTemp.Add(location, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceGlazIndoorTemp.Add("Indoor Surface Temperature for" + zoneName + srfName, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceGlazIndoorTemp.Add("C", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceGlazIndoorTemp.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceGlazIndoorTemp.Add(start, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceGlazIndoorTemp.Add(end, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                        key.append(13)
-                        dataTypeList[1] = True
-                    
-                    elif 'Surface Outside Face Temperature' in column and "GLZ" not in column:
+                    elif 'Surface Outside Face Temperature' in column:
                         foundNameOutOpaTemp = False
                         for count, name in enumerate(zoneNameList):
                             if name in " " + column.split(':')[0]:
@@ -209,57 +176,26 @@ if _resultFileAddress and gotData == True:
                                 foundNameOutOpaTemp = True
                         if foundNameOutOpaTemp == False:
                             path.append([opaOutTemp])
-                            surfaceOpaqueOutdoorTemp.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount][0])))
-                            surfaceOpaqueOutdoorTemp.Add(location, GH_Path(int(path[columnCount][0])))
-                            surfaceOpaqueOutdoorTemp.Add("Outdoor Surface Temperature for" + column.split(':')[0], GH_Path(int(path[columnCount][0])))
-                            surfaceOpaqueOutdoorTemp.Add("C", GH_Path(int(path[columnCount][0])))
-                            surfaceOpaqueOutdoorTemp.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0])))
-                            surfaceOpaqueOutdoorTemp.Add(start, GH_Path(int(path[columnCount][0])))
-                            surfaceOpaqueOutdoorTemp.Add(end, GH_Path(int(path[columnCount][0])))
+                            surfaceOutdoorTemp.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount][0])))
+                            surfaceOutdoorTemp.Add(location, GH_Path(int(path[columnCount][0])))
+                            surfaceOutdoorTemp.Add("Outdoor Surface Temperature for" + column.split(':')[0], GH_Path(int(path[columnCount][0])))
+                            surfaceOutdoorTemp.Add("C", GH_Path(int(path[columnCount][0])))
+                            surfaceOutdoorTemp.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0])))
+                            surfaceOutdoorTemp.Add(start, GH_Path(int(path[columnCount][0])))
+                            surfaceOutdoorTemp.Add(end, GH_Path(int(path[columnCount][0])))
                             opaOutTemp += 1
                         else:
-                            surfaceOpaqueOutdoorTemp.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceOpaqueOutdoorTemp.Add(location, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceOpaqueOutdoorTemp.Add("Outdoor Surface Temperature for" + zoneName + srfName, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceOpaqueOutdoorTemp.Add("C", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceOpaqueOutdoorTemp.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceOpaqueOutdoorTemp.Add(start, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceOpaqueOutdoorTemp.Add(end, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            surfaceOutdoorTemp.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            surfaceOutdoorTemp.Add(location, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            surfaceOutdoorTemp.Add("Outdoor Surface Temperature for" + zoneName + srfName, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            surfaceOutdoorTemp.Add("C", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            surfaceOutdoorTemp.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            surfaceOutdoorTemp.Add(start, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
+                            surfaceOutdoorTemp.Add(end, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
                         key.append(14)
-                        dataTypeList[2] = True
+                        dataTypeList[1] = True
                     
-                    elif 'Surface Outside Face Temperature' in column and "GLZ" in column:
-                        foundNameOutGlzTemp = False
-                        for count, name in enumerate(zoneNameList):
-                            if name in " " + column.split(':')[0]:
-                                zoneName = name
-                                srfName = column.split(':')[0].split(name.split(" ")[-1])[-1]
-                                srfIndex = len(zoneSrfs[count][3])
-                                zoneSrfs[count][3].append(1)
-                                path.append([count, srfIndex])
-                                foundNameOutGlzTemp = True
-                        if foundNameOutGlzTemp == False:
-                            path.append([glzOutTemp])
-                            surfaceGlazOutdoorTemp.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount][0])))
-                            surfaceGlazOutdoorTemp.Add(location, GH_Path(int(path[columnCount][0])))
-                            surfaceGlazOutdoorTemp.Add("Outdoor Surface Temperature for" + column.split(':')[0], GH_Path(int(path[columnCount][0])))
-                            surfaceGlazOutdoorTemp.Add("C", GH_Path(int(path[columnCount][0])))
-                            surfaceGlazOutdoorTemp.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0])))
-                            surfaceGlazOutdoorTemp.Add(start, GH_Path(int(path[columnCount][0])))
-                            surfaceGlazOutdoorTemp.Add(end, GH_Path(int(path[columnCount][0])))
-                            glzOutTemp += 1
-                        else:
-                            surfaceGlazOutdoorTemp.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceGlazOutdoorTemp.Add(location, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceGlazOutdoorTemp.Add("Outdoor Surface Temperature for" + zoneName + srfName, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceGlazOutdoorTemp.Add("C", GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceGlazOutdoorTemp.Add(column.split('(')[-1].split(')')[0], GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceGlazOutdoorTemp.Add(start, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                            surfaceGlazOutdoorTemp.Add(end, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
-                        key.append(15)
-                        dataTypeList[3] = True
-                    
-                    elif 'Surface Average Face Conduction Heat Transfer Energy' in column and "GLZ" not in column:
+                    elif 'Surface Average Face Conduction Heat Transfer Energy' in column:
                         foundNameOpaConduct = False
                         for count, name in enumerate(zoneNameList):
                             if name in " " + column.split(':')[0]:
@@ -288,9 +224,9 @@ if _resultFileAddress and gotData == True:
                             surfaceOpaqueEnergyFlow.Add(start, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
                             surfaceOpaqueEnergyFlow.Add(end, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
                         key.append(16)
-                        dataTypeList[4] = True
+                        dataTypeList[2] = True
                     
-                    elif 'Surface Window Heat Gain Energy' in column and "GLZ" in column:
+                    elif 'Surface Window Heat Gain Energy' in column:
                         foundNameGlzGain = False
                         for count, name in enumerate(zoneNameList):
                             if name in " " + column.split(':')[0]:
@@ -319,9 +255,9 @@ if _resultFileAddress and gotData == True:
                             surfaceGlazEnergyFlow.Add(start, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
                             surfaceGlazEnergyFlow.Add(end, GH_Path(int(path[columnCount][0]), int(path[columnCount][1])))
                         key.append(17)
-                        dataTypeList[5] = True
+                        dataTypeList[3] = True
                     
-                    elif 'Surface Window Heat Loss Energy' in column and "GLZ" in column:
+                    elif 'Surface Window Heat Loss Energy' in column:
                         foundNameGlzLoss = False
                         for count, name in enumerate(zoneNameList):
                             if name in " " + column.split(':')[0]:
@@ -349,22 +285,12 @@ if _resultFileAddress and gotData == True:
                         if foundNameOpaTemp == True:
                             p = GH_Path(int(path[columnCount][0]), int(path[columnCount][1]))
                         else: p = GH_Path(int(path[columnCount][0]))
-                        surfaceOpaqueIndoorTemp.Add(float(column), p)
-                    elif key[columnCount] == 13:
-                        if foundNameGlzTemp == True:
-                            p = GH_Path(int(path[columnCount][0]), int(path[columnCount][1]))
-                        else: p = GH_Path(int(path[columnCount][0]))
-                        surfaceGlazIndoorTemp.Add(float(column), p)
+                        surfaceIndoorTemp.Add(float(column), p)
                     elif key[columnCount] == 14:
                         if foundNameOutOpaTemp == True:
                             p = GH_Path(int(path[columnCount][0]), int(path[columnCount][1]))
                         else: p = GH_Path(int(path[columnCount][0]))
-                        surfaceOpaqueOutdoorTemp.Add(float(column), p)
-                    elif key[columnCount] == 15:
-                        if foundNameOutGlzTemp == True:
-                            p = GH_Path(int(path[columnCount][0]), int(path[columnCount][1]))
-                        else: p = GH_Path(int(path[columnCount][0]))
-                        surfaceGlazOutdoorTemp.Add(float(column), p)
+                        surfaceOutdoorTemp.Add(float(column), p)
                     elif key[columnCount] == 16:
                         if foundNameOpaConduct == True:
                             p = GH_Path(int(path[columnCount][0]), int(path[columnCount][1]))
@@ -392,16 +318,14 @@ if _resultFileAddress and gotData == True:
 
 outputsDict = {
      
-0: ["surfaceOpaqueIndoorTemp", "The indoor surface temperature of each opaque surface (degrees Celcius)."],
-1: ["surfaceGlazIndoorTemp", "The indoor surface temperature of each glazed surface (degrees Celcius)."],
-2: ["surfaceOpaqueOutdoorTemp", "The outdoor surface temperature of each opaque surface (degrees Celcius)."],
-3: ["surfaceGlazOutdoorTemp", "The outdoor surface temperature of each glazed surface (degrees Celcius)."],
-4: ["surfaceOpaqueEnergyFlow", "The heat loss (negative) or heat gain (positive) through each building opaque surface (kWh)."],
-5: ["surfaceGlazEnergyFlow", "The heat loss (negative) or heat gain (positive) through each building glazing surface (kWh).  Note that the value here includes both solar gains and conduction losses/gains."]
+0: ["surfaceIndoorTemp", "The indoor surface temperature of each surface (degrees Celcius)."],
+1: ["surfaceOutdoorTemp", "The outdoor surface temperature of each surface (degrees Celcius)."],
+2: ["surfaceOpaqueEnergyFlow", "The heat loss (negative) or heat gain (positive) through each building opaque surface (kWh)."],
+3: ["surfaceGlazEnergyFlow", "The heat loss (negative) or heat gain (positive) through each building glazing surface (kWh).  Note that the value here includes both solar gains and conduction losses/gains."]
 }
 
 if _resultFileAddress and parseSuccess == True:
-    for output in range(6):
+    for output in range(4):
         if dataTypeList[output] == False:
             ghenv.Component.Params.Output[output].NickName = "............................"
             ghenv.Component.Params.Output[output].Name = "............................"
@@ -411,7 +335,7 @@ if _resultFileAddress and parseSuccess == True:
             ghenv.Component.Params.Output[output].Name = outputsDict[output][0]
             ghenv.Component.Params.Output[output].Description = outputsDict[output][1]
 else:
-    for output in range(6):
+    for output in range(4):
         ghenv.Component.Params.Output[output].NickName = outputsDict[output][0]
         ghenv.Component.Params.Output[output].Name = outputsDict[output][0]
         ghenv.Component.Params.Output[output].Description = outputsDict[output][1]

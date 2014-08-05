@@ -15,6 +15,7 @@ Provided by Honeybee 0.0.53
         zoneGainsAndLosses: Set to "True" to have EnergyPlus solve for building gains and losses such as people gains, solar gains, infiltration losses, and conduction losses through windows.
         zoneTemperatures: Set to "True" to have EnergyPlus solve for the mean air temperatures and mean radiante temperatures of the zones.
         surfaceAnalysis: Set to "True" to have EnergyPlus solve for an number of factors that relate to the individual surfaces bodering each zone, such as gains and losses through the opaque exterior envelope as well as surface temperatures for interior and exterior surfaces.
+        zoneHVACMetrics: Set to "True" to have EnergyPlus solve for the flow rate of air into the zone and the nethalpy of this air.
         ____________________: ...
         timestep: Specify a timestep by inputing the words 'hourly', 'daily', 'monthly' or 'annually'.
     Returns:
@@ -24,7 +25,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Write EP Result Parameters"
 ghenv.Component.NickName = 'writeResultParameters'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_20_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_05_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -32,7 +33,7 @@ ghenv.Component.AdditionalHelpFromDocStrings = "3"
 
 
 
-def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, surfaceAnalysis, timestep):
+def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, surfaceAnalysis, zoneHVACMetrics, timestep):
     simulationOutputs = []
     timePeriod = timestep + ";"
     
@@ -41,9 +42,6 @@ def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, surfaceAnalysis,
     if zoneEnergyUse == True:
         simulationOutputs.append("Output:Variable,*,Zone Air System Sensible Heating Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Air System Sensible Cooling Energy, " + timePeriod)
-        simulationOutputs.append("Output:Variable,*,System Node Mass Flow Rate, " + timePeriod)
-        simulationOutputs.append("Output:Variable,*,System Node Enthalpy, " + timePeriod)
-        simulationOutputs.append("Output:Variable,*,Site Outdoor Air Enthalpy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Lights Electric Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Electric Equipment Electric Energy, " + timePeriod)
     else:
@@ -62,6 +60,12 @@ def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, surfaceAnalysis,
         simulationOutputs.append("Output:Variable,*,Zone Mean Air Temperature, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Mean Radiant Temperature, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Air Relative Humidity, " + timePeriod)
+    else:
+        pass
+    
+    if zoneHVACMetrics == True:
+        simulationOutputs.append("Output:Variable,*,System Node Mass Flow Rate, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,System Node Enthalpy, " + timePeriod)
     else:
         pass
     
@@ -88,7 +92,7 @@ else:
 
 #Generate the simulation outputs if the above checks are sucessful.
 if checkdata == True:
-    simulationOutputs = main(zoneEnergyUse_, zoneGainsAndLosses_, zoneComfortMetrics_, surfaceAnalysis_, timestep_)
+    simulationOutputs = main(zoneEnergyUse_, zoneGainsAndLosses_, zoneComfortMetrics_, surfaceAnalysis_, zoneHVACMetrics_, timestep_)
     print "Simulation outputs generated successfully!"
 else:
     simulationOutputs = []
