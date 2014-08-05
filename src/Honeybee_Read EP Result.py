@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_11_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_04_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "4"
@@ -49,7 +49,7 @@ from Grasshopper import DataTree
 from Grasshopper.Kernel.Data import GH_Path
 import scriptcontext as sc
 import copy
-
+import os
 
 #Read the location and the analysis period info from the eio file, if there is one.
 #Also try to read the floor areas from this file to be used in EUI calculations.
@@ -68,6 +68,15 @@ if _resultFileAddress:
         areaIndex = 0
         
         eioFileAddress = _resultFileAddress[0:-3] + "eio"
+        if not os.path.isfile(eioFileAddress):
+            # try to find the file from the list
+            studyFolder = os.path.dirname(_resultFileAddress)
+            fileNames = os.listdir(studyFolder)
+            for fileName in fileNames:
+                if fileName.lower().endswith("eio"):
+                    eioFileAddress = os.path.join(studyFolder, fileName)
+                    break
+                    
         eioResult = open(eioFileAddress, 'r')
         for lineCount, line in enumerate(eioResult):
             if "Site:Location," in line:

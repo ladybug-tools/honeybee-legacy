@@ -26,49 +26,52 @@ import time
 from pprint import pprint
 
 #openStudioLibFolder = "C:\\Users\\" + os.getenv("USERNAME") + "\\Dropbox\\ladybug\\honeybee\\openStudio\\CSharp64bits"
-openStudioLibFolder = "C:\\Ladybug\\OpenStudio"
-
-if os.path.isdir(openStudioLibFolder) and os.path.isfile(os.path.join(openStudioLibFolder, "openStudio.dll")):
-    # openstudio is there
-    # I need to add a function to check the version and compare with available version
-    openStudioIsReady = True
-    import clr
-    clr.AddReferenceToFileAndPath(openStudioLibFolder+"\\openStudio.dll")
-
-    import sys
-    if openStudioLibFolder not in sys.path:
-        sys.path.append(openStudioLibFolder)
-
-    import OpenStudio as ops
+if sc.sticky.has_key('honeybee_release'):
+    
+    openStudioLibFolder = os.path.join(sc.sticky["Honeybee_DefaultFolder"], "OpenStudio")
+    
+    if os.path.isdir(openStudioLibFolder) and os.path.isfile(os.path.join(openStudioLibFolder, "openStudio.dll")):
+        # openstudio is there
+        # I need to add a function to check the version and compare with available version
+        openStudioIsReady = True
+        import clr
+        clr.AddReferenceToFileAndPath(openStudioLibFolder+"\\openStudio.dll")
+    
+        import sys
+        if openStudioLibFolder not in sys.path:
+            sys.path.append(openStudioLibFolder)
+    
+        import OpenStudio as ops
+    else:
+        openStudioIsReady = False
+        # let the user know that they need to download OpenStudio libraries
+        msg = "Cannot find OpenStudio libraries. You can download the libraries from the link below. " + \
+              "Unzip the file and copy it to " + openStudioLibFolder + " and try again. Click on the link to copy the address."
+              
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+        
+        link = "https://app.box.com/s/y2sx16k98g1lfd3r47zi"
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, link)
+        
+        #buttons = System.Windows.Forms.MessageBoxButtons.OK
+        #icon = System.Windows.Forms.MessageBoxIcon.Warning
+        #up = rc.UI.Dialogs.ShowMessageBox(msg + "\n" + link, "Duplicate Material Name", buttons, icon)
+        
+    
+    if openStudioIsReady and sc.sticky.has_key('honeybee_release') and sc.sticky["isNewerOSAvailable"]:
+        # check if there is an update available
+        msg = "There is a newer version of OpenStudio libraries available to download! " + \
+                      "We strongly recommend you to download the newer version from this link and replace it with current files at " + \
+                      openStudioLibFolder +".\n" + \
+                      "https://app.box.com/s/y2sx16k98g1lfd3r47zi"
+        print msg
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
 else:
     openStudioIsReady = False
-    # let the user know that they need to download OpenStudio libraries
-    msg = "Cannot find OpenStudio libraries. You can download the libraries from the link below. " + \
-          "Unzip the file and copy it to c:\Ladybug\OpenStudio and try again. Click on the link to copy the address."
-          
-    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
-    
-    link = "https://app.box.com/s/y2sx16k98g1lfd3r47zi"
-    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, link)
-    
-    #buttons = System.Windows.Forms.MessageBoxButtons.OK
-    #icon = System.Windows.Forms.MessageBoxIcon.Warning
-    #up = rc.UI.Dialogs.ShowMessageBox(msg + "\n" + link, "Duplicate Material Name", buttons, icon)
-    
-
-if openStudioIsReady and sc.sticky.has_key('honeybee_release') and sc.sticky["isNewerOSAvailable"]:
-    # check if there is an update available
-    msg = "There is a newer version of OpenStudio libraries available to download! " + \
-                  "We strongly recommend you to download the newer version from this link and replace it with current files at " + \
-                  openStudioLibFolder +".\n" + \
-                  "https://app.box.com/s/y2sx16k98g1lfd3r47zi"
-    print msg
-    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
-
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_03_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_04_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -345,13 +348,13 @@ class WriteOPS(object):
     def addSystemsToZones(self, model):
         
         for HAVCGroupID in self.HVACSystemDict.keys():
-            print self.HVACSystemDict.keys()
+            #print self.HVACSystemDict.keys()
             # HAVC system index for this group and thermal zones
             systemIndex, thermalZones = self.HVACSystemDict[HAVCGroupID]
-            print len(thermalZones)
+            #print len(thermalZones)
             # put thermal zones into a vector
             thermalZoneVector = ops.ThermalZoneVector(thermalZones)
-            print thermalZoneVector
+            #print thermalZoneVector
             # add systems. There are 10 standard ASHRAE systems + Ideal Air Loads
             if systemIndex == 0:
                 for zone in thermalZoneVector: zone.setUseIdealAirLoads(True)
@@ -634,8 +637,13 @@ class WriteOPS(object):
         standardGlazing.setConductivity(float(values[12]))
         try: standardGlazing.setDirtCorrectionFactorforSolarandVisibleTransmittance(float(values[13]))
         except: pass
-        try: standardGlazing.setSolarDiffusing(values[14])
-        except: pass
+        try:
+            if values[14].lower() == "no":
+                standardGlazing.setSolarDiffusing(False)
+            else:
+                standardGlazing.setSolarDiffusing(True)
+        except:
+            pass
         return standardGlazing
     
     def createOSNoMassMaterial(self, HBMaterialName, values, model):
@@ -775,7 +783,7 @@ class WriteOPS(object):
                 self.addConstructionToLib(surface.EPConstruction, construction)
             else:
                 construction = self.getConstructionFromLib(surface.EPConstruction)
-            
+
             thisSurface.setConstruction(construction)
             thisSurface.setOutsideBoundaryCondition(surface.BC)
             thisSurface.setSunExposure(surface.sunExposure)
@@ -1072,7 +1080,7 @@ class RunOPS(object):
         #execute the batch file
         os.system(batchFileAddress)
         
-        return fullPath + ".csv"
+        return fullPath + "Zsz.csv"
 
 class RunOPSRManage(object):
     def __init__(self, model, measuredict, weatherFilePath = r"C:\EnergyPlusV8-1-0\WeatherData\USA_CA_San.Francisco.Intl.AP.724940_TMY3.epw"):
@@ -1171,7 +1179,7 @@ class RunOPSRManage(object):
             
             values = []
             ruleset = ops.OpenStudioRuleset()
-            print dir(ruleset)
+            #print dir(ruleset)
             
             # arguments = ruleset.getArguments(bcl_measure,model)
             arguments = ""
@@ -1234,7 +1242,6 @@ class RunOPSRManage(object):
         
         #execute the batch file
         os.system(batchFileAddress)
-        
         return fullPath + ".csv"
 
 def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameters, simulationOutputs, runIt, workingDir = "C:\ladybug", fileName = "openStudioModel.osm"):
@@ -1259,11 +1266,15 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     hb_hive = sc.sticky["honeybee_Hive"]()
     
     
-    if workingDir == None: workingDir = "C:\ladybug"
-    if fileName == None: fileName = "openStudioModel.osm"
-    if not fileName.lower().endswith(".osm"): fileName += ".osm"
+    if workingDir == None: workingDir = sc.sticky["Honeybee_DefaultFolder"] 
     
-    fname = os.path.join(workingDir, fileName)
+    if fileName == None: fileName = "unnamed"
+    
+    subWorkingDir = lb_preparation.makeWorkingDir(os.path.join(workingDir, fileName, "OpenStudio")).replace("\\\\", "\\")
+    
+    print 'Current working directory is set to: ', subWorkingDir
+    
+    fname = os.path.join(subWorkingDir, fileName + ".osm")
     
     # initiate OpenStudio model
     model = ops.Model()
@@ -1329,7 +1340,6 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         HAVCGroupID, HVACIndex = zone.HVACSystem
         
         if HAVCGroupID!= -1:
-            
             if HAVCGroupID not in hb_writeOPS.HVACSystemDict.keys():
                 # add place holder for lists 
                 
@@ -1381,7 +1391,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
                 # add HVAC system
 
             
-        return fname, resultFile, idfFile
+        return fname, idfFile, resultFile
         
     return fname, None, None
 
