@@ -364,14 +364,19 @@ class WriteRADAUX(object):
         if cameraType == 2:
             # Thank you to Brent Watanabe for the great discussion, and his help in figuring this out
             # I should find the bounding box of the geometry and set X and Y based of that!
-            if nXDiv != 1 or nYDiv != 1:
-                print "top view only works with a single cpu!"
+            if nXDiv != 1:
+                viewHSizeP = viewHSizeP/nXDiv
+                viewHSize = viewHSize/nXDiv
+            if nYDiv != 1:
+                viewVSizeP = viewVSizeP/nYDiv
+                viewVSize = viewVSize/nYDiv
                 
             view = "-vtl -vp " + \
                `viewPoint[0]` + " " + `viewPoint[1]` + " " + `viewPoint[2]` + " " + \
                " -vd " + `viewDirection[0]` + " " + `viewDirection[1]` + " " + `viewDirection[2]` + " " + \
                " -vu " + `viewUp[0]` + " " +  `viewUp[1]` + " " + `viewUp[2]` + \
                " -vh " + `int(viewHSizeP)` + " -vv " + `int(viewVSizeP)` + \
+               " -vs " + "%.3f"%vs + " -vl " + "%.3f"%vl + \
                " -x " + `int(viewHSize)` + " -y " + `int(viewVSize)`
                
         elif cameraType == 0:
