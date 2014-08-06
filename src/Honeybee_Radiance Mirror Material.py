@@ -21,7 +21,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Radiance Mirror Material"
 ghenv.Component.NickName = 'radMirrorMaterial'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_20_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_06_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "01 | Daylight | Material"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
@@ -88,4 +88,4 @@ def main(materialName, RReflectance, GReflectance, BReflectance):
 
 
 if _materialName and _RReflectance and _GReflectance and _BReflectance:
-    RADMaterial = main(materialName, RReflectance, GReflectance, BReflectance)
+    RADMaterial = main(_materialName, _RReflectance, _GReflectance, _BReflectance)
