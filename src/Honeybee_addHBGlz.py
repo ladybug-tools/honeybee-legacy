@@ -56,7 +56,7 @@ def main(HBSurface, childSurfaces, EPConstruction, RADMaterial, tolerance):
         # call the surface from the hive
         hb_hive = sc.sticky["honeybee_Hive"]()
         HBSurface = hb_hive.callFromHoneybeeHive([HBSurface])[0]
-        
+        glzCount = 0
         for srfCount, srf in enumerate(childSurfaces):
             # if the input is mesh, convert it to a surface
             try:
@@ -71,9 +71,9 @@ def main(HBSurface, childSurfaces, EPConstruction, RADMaterial, tolerance):
             if HBSurface.isPossibleChild(srf, tolerance):
                 # if yes then create the child surface
                 guid = str(uuid.uuid4())
-                name = "".join(guid.split("-")[:-1])
+                name = "glz_" + str(glzCount) + "_" + HBSurface.name + "_" + "".join(guid.split("-")[:-1])
                 number = guid.split("-")[-1]
-                
+                glzCount += 1
                 HBFenSrf = hb_EPFenSurface(srf, number, name, HBSurface, 5)
                 
                 # check normal direction
