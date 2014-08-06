@@ -37,7 +37,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Color Zones by EP Result"
 ghenv.Component.NickName = 'ColorZones'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_15_2014'
+ghenv.Component.Message = 'VER 0.0.57\nAUG_06_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
@@ -593,7 +593,7 @@ def main(zoneValues, zones, zoneFloors, zoneHeaders, title, legendTitle, lb_prep
 
 #Check the inputs.
 checkData = False
-if _zoneData.BranchCount > 0:
+if _zoneData.BranchCount > 0 and str(_zoneData) != "tree {0}":
     checkData, annualData, simStep, zoneNormalizable, pyZoneData, zoneHeaders, headerUnits, total = checkTheInputs()
 
 #Manage the inputs and outputs of the component based on the data that is hooked up.
