@@ -37,7 +37,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Run Daylight Simulation"
 ghenv.Component.NickName = 'runDaylightAnalysis'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_04_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_06_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -291,7 +291,7 @@ class WriteRADAUX(object):
                 "# end of sky definition for daylighting studies\n\n"
                     
                     
-    def exportView(self, viewName, radParameters, cameraType, imageSize, sectionPlane):
+    def exportView(self, viewName, radParameters, cameraType, imageSize, sectionPlane, nXDiv = 1, nYDiv = 1, vs = 0, vl = 0):
         
         if viewName in rs.ViewNames():
             viewName = rs.CurrentView(viewName, True)
@@ -359,9 +359,14 @@ class WriteRADAUX(object):
         viewVA = 180 - rs.VectorAngle(sc.doc.Views.ActiveView.ActiveViewport.GetFrustumBottomPlane()[1][1], sc.doc.Views.ActiveView.ActiveViewport.GetFrustumTopPlane()[1][1])
         if viewVA == 0: viewVA = 180
         
+        PI = math.pi
+        
         if cameraType == 2:
             # Thank you to Brent Watanabe for the great discussion, and his help in figuring this out
             # I should find the bounding box of the geometry and set X and Y based of that!
+            if nXDiv != 1 or nYDiv != 1:
+                print "top view only works with a single cpu!"
+                
             view = "-vtl -vp " + \
                `viewPoint[0]` + " " + `viewPoint[1]` + " " + `viewPoint[2]` + " " + \
                " -vd " + `viewDirection[0]` + " " + `viewDirection[1]` + " " + `viewDirection[2]` + " " + \
@@ -371,20 +376,40 @@ class WriteRADAUX(object):
                
         elif cameraType == 0:
             # perspective
+            
+            # recalculate vh and vv
+            if nXDiv != 1:
+                viewHA = (2.*180./PI)*math.atan(((PI/180./2.) * viewHA)/nXDiv)
+                viewHSize = viewHSize/nXDiv
+            if nYDiv != 1:
+                viewVA = (2.*180./PI)*math.atan(math.tan((PI/180./2.)*viewVA)/nYDiv)
+                viewVSize = viewVSize/nYDiv
+            
             view = "-vtv -vp " + \
                "%.3f"%viewPoint[0] + " " + "%.3f"%viewPoint[1] + " " + "%.3f"%viewPoint[2] + " " + \
                " -vd " + "%.3f"%viewDirection[0] + " " + "%.3f"%viewDirection[1] + " " + "%.3f"%viewDirection[2] + " " + \
                " -vu " + "%.3f"%viewUp[0] + " " +  "%.3f"%viewUp[1] + " " + "%.3f"%viewUp[2] + " " + \
                " -vh " + "%.3f"%viewHA + " -vv " + "%.3f"%viewVA + \
-               " -vl 0 -vs 0 -vl 0 -x " + `int(viewHSize)` + " -y " + `int(viewVSize)`
+               " -vs " + "%.3f"%vs + " -vl " + "%.3f"%vl + " -x " + `int(viewHSize)` + " -y " + `int(viewVSize)`
         
         elif cameraType == 1:
             # fish eye
+            # recalculate vh and vv
+            viewHA = 180
+            viewVA = 180
+            if nXDiv != 1:
+                viewHA = (2.*180./PI)*math.asin(math.sin((PI/180./2.)*viewHA)/nXDiv)
+                viewHSize = viewHSize/nXDiv
+            if nYDiv != 1:
+                viewVA = (2.*180./PI)*math.asin(math.sin((PI/180./2.)*viewVA)/nYDiv)
+                viewVSize = viewVSize/nYDiv
+            
             view = "-vth -vp " + \
                `viewPoint[0]` + " " + `viewPoint[1]` + " " + `viewPoint[2]` + " " + \
                " -vd " + `viewDirection[0]` + " " + `viewDirection[1]` + " " + `viewDirection[2]` + " " + \
                " -vu " + `viewUp[0]` + " " +  `viewUp[1]` + " " + `viewUp[2]` + " " + \
-               " -vh 180 -vv 180 -vl 0 -vs 0 -vl 0  -x " + `int(viewHSize)` + " -y " + `int(viewVSize)`
+               " -vh " + "%.3f"%viewHA + " -vv " + "%.3f"%viewVA + \
+               " -vs " + "%.3f"%vs + " -vl " + "%.3f"%vl + " -x " + `int(viewHSize)` + " -y " + `int(viewVSize)`
         
         if sectionPlane!=None:
             # map the point on the plane
@@ -411,11 +436,11 @@ class WriteRADAUX(object):
            projectName + "_" + viewName + "_RadStudy.pic\n"
         return line
     
-    def rpictLineAlternate(self, view, projectName, viewName, radParameters, analysisType = 0):
+    def rpictLineAlternate(self, view, projectName, viewName, radParameters, analysisType = 0, cpuCount = 0):
         octFile = projectName + ".oct"
-        ambFile = projectName + "_" + viewName + ".amb"
-        unfFile = projectName + "_" + viewName + ".unf" 
-        outputFile = projectName + "_" + viewName + ".HDR"
+        ambFile = projectName + "_" + viewName + "_" + `cpuCount` + ".amb"
+        unfFile = projectName + "_" + viewName + "_" + `cpuCount` + ".unf" 
+        outputFile = projectName + "_" + viewName + "_" + `cpuCount` + ".HDR"
         
         if analysisType==0:
             # illuminance (lux)
@@ -1432,41 +1457,82 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
                 # not annual and not image based
                 initBatchFileName = radFileFullName.replace('.rad', '_RADInit.bat')
             
-            batchFile = open(initBatchFileName, "w")
+            with open(initBatchFileName, "w") as batchFile:
             
-            # write the path string (I should check radiance to be installed on the system
-            pathStr = "SET RAYPATH=.;" + hb_RADLibPath + "\nPATH=" + hb_RADPath + ";$PATH\n"
-            batchFile.write(pathStr)
-            
-            batchFile.write("c:\n")
-            batchFile.write("cd " + subWorkingDir + "\n")
-            
-            # write OCT file
-            # 3.2. oconv line
-            OCTFileName = radFileName + '_RAD'
-            
-            sceneRadFiles = [materialFileName, radSkyFileName, radFileFullName]
-            if additionalRadFiles:
-                sceneRadFiles += additionalRadFiles
+                # write the path string (I should check radiance to be installed on the system
+                pathStr = "SET RAYPATH=.;" + hb_RADLibPath + "\nPATH=" + hb_RADPath + ";$PATH\n"
+                batchFile.write(pathStr)
                 
-            OCTLine = hb_writeRADAUX.oconvLine(OCTFileName, sceneRadFiles)
-            batchFile.write(OCTLine)
-            
+                batchFile.write("c:\n")
+                batchFile.write("cd " + subWorkingDir + "\n")
+                
+                # write OCT file
+                # 3.2. oconv line
+                OCTFileName = radFileName + '_RAD'
+                
+                sceneRadFiles = [materialFileName, radSkyFileName, radFileFullName]
+                if additionalRadFiles:
+                    sceneRadFiles += additionalRadFiles
+                    
+                OCTLine = hb_writeRADAUX.oconvLine(OCTFileName, sceneRadFiles)
+                batchFile.write(OCTLine)
+                
             if analysisRecipe.type == 0:
                 # write view files
-                if len(rhinoViewNames)==0: rhinoViewNames = [sc.doc.Views.ActiveView.ActiveViewport.Name]
+                if len(rhinoViewNames)==0:
+                    rhinoViewNames = [sc.doc.Views.ActiveView.ActiveViewport.Name]
                 # print rhinoViewNames
+                
+                #recalculate vh and vv
+                nXDiv = int(math.sqrt(numOfCPUs))
+
+                while numOfCPUs%nXDiv !=0 and nXDiv < numOfCPUs:
+                    nXDiv += 1
+                
+                nYDiv = numOfCPUs/nXDiv
+
+                fileNames = []
+                HDRPieces = {}
                 HDRFileAddress = []
-                for view in rhinoViewNames:
-                    view = lb_preparation.removeBlank(view)
-                    HDRFileAddress.append(subWorkingDir + "\\" + OCTFileName + "_" + view + ".HDR")
-                    viewLine = hb_writeRADAUX.exportView(view, radParameters, cameraType, imageSize, sectionPlane)
-                    # write rpict lines
-                    RPICTLines = hb_writeRADAUX.rpictLineAlternate(viewLine, OCTFileName, view, radParameters, int(simulationType))
-                    batchFile.write(RPICTLines)
-                batchFile.close()
+                for cpuCount in range(numOfCPUs):
+                    # create a batch file
+                    batchFileName = radFileFullName.replace('.rad', '_' + `cpuCount` + '_IMG.bat')
+                    fileNames.append(batchFileName.split("\\")[-1])
+                    batchFile = open(batchFileName, "w")
+                    # write path files
+                    batchFile.write(pathStr)
+                    batchFile.write("c:\n")
+                    batchFile.write("cd " + subWorkingDir + "\n")
+                    
+                    # calculate vs and vl for thi cpu
+                    try: vs = (((cpuCount%nXDiv)/(nXDiv-1)) - 0.5) * (nXDiv - 1)
+                    except: vs = 0
+                        
+                    try: vl = ((int(cpuCount/nXDiv)/(nYDiv-1)) - 0.5) * (nYDiv - 1)
+                    except: vl = 0
+                    
+                    # print vs, vl
+                    for view in rhinoViewNames:
+                        
+                        view = lb_preparation.removeBlank(view)
+                        
+                        if cpuCount == 0:
+                            HDRFileAddress.append(subWorkingDir + "\\" + OCTFileName + "_" + view + ".HDR")
+                            HDRPieces[OCTFileName + "_" + view + ".HDR"] = []
+                        
+                        # collect name of the pieces of the picture
+                        HDRPieces[OCTFileName + "_" + view + ".HDR"].append(OCTFileName + "_" + view + "_" + `cpuCount` + ".HDR")
+                        
+                        viewLine = hb_writeRADAUX.exportView(view, radParameters, cameraType, imageSize, sectionPlane, nXDiv, nYDiv, vs, vl)
+                        
+                        # write rpict lines
+                        RPICTLines = hb_writeRADAUX.rpictLineAlternate(viewLine, OCTFileName, view, radParameters, int(simulationType), cpuCount)
+                        batchFile.write(RPICTLines)                    
+                        
+                    # close the file
+                    batchFile.close()
+                
             else:
-                batchFile.close() # close the init file
                 fileNames = []
                 for cpuCount in range(numOfCPUs):
                     # create a batch file
@@ -1488,6 +1554,40 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
                 # run batch file and return address  and the result
                 if  analysisRecipe.type == 0:
                     os.system(initBatchFileName)
+                    
+                    for cpuCount in range(numOfCPUs):
+                        # running batch file in background
+                        IMGBatchFileName = radFileFullName.replace('.rad', '_' + `cpuCount` + '_IMG.bat')
+                        # print DSBatchFileName
+                        p = subprocess.Popen(r'start cmd /c ' + IMGBatchFileName , shell=True)
+                        time.sleep(waitingTime)
+                        
+                    if subWorkingDir[-1] == os.sep: subWorkingDir = subWorkingDir[:-1]
+                    
+                    startTime = time.time()
+                    isTheStudyOver(fileNames)
+                    
+                    # merge images into a single HDR
+                    pcompFileName = radFileFullName.replace('.rad', '_PCOMP.bat')
+                    
+                    with open(pcompFileName, "w") as pcompFile:
+                        # write path files
+                        pcompFile.write(pathStr)
+                        pcompFile.write("c:\n")
+                        pcompFile.write("cd " + subWorkingDir + "\n")
+                        
+                        for mergedName, pieces in HDRPieces.items():
+                            
+                            pcomposLine = "pcompos -a " + `nXDiv` + " "
+                            # pieces.reverse()
+                            for piece in pieces:
+                                pcomposLine += piece + " "
+                            pcomposLine += " > " + mergedName + "\n"
+                            
+                            pcompFile.write(pcomposLine)
+                    
+                    subprocess.Popen(r'start cmd /c ' + pcompFileName , shell=True)
+                    
                     return radFileFullName, [], [], [], [], HDRFileAddress, subWorkingDir
                 
                 else:
@@ -1605,3 +1705,4 @@ if _writeRad == True and _analysisRecipe!=None and ((len(_HBObjects)!=0 and _HBO
         ghenv.Component.Params.Output[5].NickName = filesOutputName
         ghenv.Component.Params.Output[5].Name = filesOutputName
         exec(filesOutputName + "= resultFiles")
+        time.sleep(.2)
