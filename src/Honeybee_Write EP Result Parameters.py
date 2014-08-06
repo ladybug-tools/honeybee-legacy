@@ -11,13 +11,13 @@ http://apps1.eere.energy.gov/buildings/energyplus/pdfs/inputoutputreference.pdf
 Provided by Honeybee 0.0.53
     
     Args:
-        facilityProperties_: Set to "True" to have EnergyPlus solve for the total electricity consumed by the building, total CO2 impact, and number of occupants present.
-        zoneEnergyUse_: Set to "True" to have EnergyPlus solve for basic building energy use such as heating, cooling, electricity for lights and electricity for plug loads.
-        zoneGainsAndLosses_: Set to "True" to have EnergyPlus solve for building gains and losses such as people gains, solar gains, infiltration losses, and conduction losses through windows.
-        zoneTemperatures_: Set to "True" to have EnergyPlus solve for the mean air temperatures and mean radiante temperatures of the zones.
-        zoneHVACParams_: Set to "True" to have EnergyPlus solve for the flow rate of air into the zone and the nethalpy of this air.
-        surfaceAnalysis_: Set to "True" to have EnergyPlus solve for an number of factors that relate to the individual surfaces bodering each zone, such as gains and losses through the opaque exterior envelope as well as surface temperatures for interior and exterior surfaces.
-         ____________________: ...
+        zoneEnergyUse_: Set to "True" to have EnergyPlus solve for basic building energy use such as heating, cooling, electricity for lights and electricity for plug loads for each zone.
+        zoneGainsAndLosses_: Set to "True" to have EnergyPlus solve for building gains and losses such as people gains, solar gains and infiltration losses/gains.
+        zoneComfortMetrics_: Set to "True" to have EnergyPlus solve for the mean air temperature, mean radiant temperature, operative temperature, and relative humidity of each zone.
+        zoneHVACParams_: Set to "True" to have EnergyPlus solve for the fractions of heating/cooling loads that are latent vs. sensible as well as the the flow rate and temperature of supply air into each zone.
+        surfaceAnalysis_: Set to "True" to have EnergyPlus solve for an number of factors that relate to the individual surfaces bodering each zone, such as gains and losses through the surfaces as well as interior/exterior surface temperatures.
+        facilityProperties_: Set to "True" to have EnergyPlus output the total electricity consumed by the building, the total CO2 impact, and number of occupants present.
+        ____________________: ...
         timestep_: Specify a timestep by inputing the words 'hourly', 'daily', 'monthly' or 'annually'.  The default is set to hourly.
     Returns:
         report: Report!
@@ -26,7 +26,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Write EP Result Parameters"
 ghenv.Component.NickName = 'writeResultParameters'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_05_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_06_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -49,16 +49,15 @@ def main(facilityProperties, zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetri
         pass
     
     if zoneEnergyUse == True:
-        simulationOutputs.append("Output:Variable,*,Zone Air System Sensible Heating Energy, " + timePeriod)
-        simulationOutputs.append("Output:Variable,*,Zone Air System Sensible Cooling Energy, " + timePeriod)
-        simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Outdoor Air Total Cooling Energy, " + timePeriod)
-        simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Outdoor Air Total Heating Energy, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Zone Total Cooling Energy, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Zone Total Heating Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Lights Electric Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Electric Equipment Electric Energy, " + timePeriod)
     else:
         pass
     
     if zoneGainsAndLosses == True:
+        simulationOutputs.append("Output:Variable,*,Zone Windows Total Transmitted Solar Radiation Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Exterior Windows Total Transmitted Beam Solar Radiation Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Exterior Windows Total Transmitted Diffuse Solar Radiation Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone People Total Heating Energy, " + timePeriod)
@@ -68,6 +67,7 @@ def main(facilityProperties, zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetri
         pass
     
     if zoneComfortMetrics == True:
+        simulationOutputs.append("Output:Variable,*,Zone Operative Temperature, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Mean Air Temperature, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Mean Radiant Temperature, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Air Relative Humidity, " + timePeriod)
@@ -75,11 +75,13 @@ def main(facilityProperties, zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetri
         pass
     
     if zoneHVACMetrics == True:
+        simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Zone Latent Heating Energy, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Zone Latent Cooling Energy, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Zone Sensible Heating Energy, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Zone Sensible Cooling Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,System Node Mass Flow Rate, " + timePeriod)
-        simulationOutputs.append("Output:Variable,*,System Node Current Density Volume Flow Rate, " + timePeriod)
-        simulationOutputs.append("Output:Variable,*,System Node Relative Humidity, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,System Node Temperature, " + timePeriod)
-        simulationOutputs.append("Output:Variable,*,System Node Enthalpy, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,System Node Relative Humidity, " + timePeriod)
     else:
         pass
     
