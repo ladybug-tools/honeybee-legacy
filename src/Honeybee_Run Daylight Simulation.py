@@ -1637,6 +1637,8 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
 
 
 if _writeRad == True and _analysisRecipe!=None and ((len(_HBObjects)!=0 and _HBObjects[0]!=None) or  additionalRadFiles_!=[]):
+    north_ = 0 # place holder for now until I implement it to the code.
+    
     report = ""
     done = False
     waitingTime = 0.2 # waiting time between batch files in seconds
