@@ -156,238 +156,159 @@ def makeHeader(list, path, zoneName, timestep, name, units, normable):
     list.Add(start, GH_Path(path))
     list.Add(end, GH_Path(path))
 
+#Make a function to check the zone name.
+def checkZone(csvName):
+    zoneName = None
+    for count, name in enumerate(zoneNameList):
+        if name == csvName:
+            zoneName = name
+            path.append(count)
+    return zoneName
+
 
 # PARSE THE RESULT FILE.
 if _resultFileAddress and gotData == True:
-    #try:
-    result = open(_resultFileAddress, 'r')
-    
-    for lineCount, line in enumerate(result):
-        if lineCount == 0:
-            #ANALYZE THE FILE HEADING
-            #cooling = 0
-            #heating = 1
-            #lights = 2
-            #equipment = 3
-            #people = 4
-            #solar beam = 5
-            #solar diffuse = 6
-            #infiltration loss = 7
-            #infiltration gain = 8
-            #air temperature = 9
-            #radiant temperature = 10
-            #relative humidity = 11
-            key = []; path = []
-            for columnCount, column in enumerate(line.split(',')):
-                if 'Zone Air System Sensible Cooling Energy' in column or 'Zone Ideal Loads Zone Total Cooling Energy' in column:
-                    key.append(0)
-                    for count, name in enumerate(zoneNameList):
-                        if 'Zone Ideal Loads Zone Total Cooling Energy' in column:
-                            if name == " " + column.split(':')[0].split('ZONEHVAC')[0]:
-                                zoneName = name
-                                path.append(count)
-                        else:
-                            if name in " " + column.split(':')[0]:
-                                zoneName = name
-                                path.append(count)
-                    makeHeader(cooling, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Cooling Energy", "kWh", True)
-                    dataTypeList[3] = True
-                
-                elif 'Zone Air System Sensible Heating Energy' in column or 'Zone Ideal Loads Zone Total Heating Energy' in column:
-                    key.append(1)
-                    for count, name in enumerate(zoneNameList):
-                        if 'Zone Ideal Loads Zone Total Heating Energy' in column:
-                            if name == " " + column.split(':')[0].split('ZONEHVAC')[0]:
-                                zoneName = name
-                                path.append(count)
-                        else:
-                            if name in " " + column.split(':')[0]:
-                                zoneName = name
-                                path.append(count)
-                    makeHeader(heating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Heating Energy", "kWh", True)
-                    dataTypeList[4] = True
-                
-                elif 'Zone Lights Electric Energy' in column:
-                    key.append(2)
-                    for count, name in enumerate(zoneNameList):
-                        if name == " " + column.split(':')[0]:
-                            zoneName = name
-                            path.append(count)
-                    makeHeader(electricLight, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Electric Lighting Energy", "kWh", True)
-                    dataTypeList[5] = True
-                
-                elif 'Zone Electric Equipment Electric Energy' in column:
-                    key.append(3)
-                    for count, name in enumerate(zoneNameList):
-                        if name == " " + column.split(':')[0]:
-                            zoneName = name
-                            path.append(count)
-                    makeHeader(electricEquip, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Electric Equipment Energy", "kWh", True)
-                    dataTypeList[6] = True
-                
-                elif 'Zone People Total Heating Energy' in column:
-                    key.append(4)
-                    for count, name in enumerate(zoneNameList):
-                        if name == " " + column.split(':')[0]:
-                            zoneName = name
-                            path.append(count)
-                    makeHeader(peopleGains, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "People Energy", "kWh", True)
-                    dataTypeList[7] = True
-                
-                elif 'Zone Windows Total Transmitted Solar Radiation Energy' in column:
-                    key.append(5)
-                    for count, name in enumerate(zoneNameList):
-                        if name == " " + column.split(':')[0]:
-                            zoneName = name
-                            path.append(count)
-                    makeHeader(totalSolarGain, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Total Solar Gain", "kWh", True)
-                    dataTypeList[8] = True
-                
-                elif 'Zone Exterior Windows Total Transmitted Beam Solar Radiation Energy' in column:
-                    key.append(6)
-                    for count, name in enumerate(zoneNameList):
-                        if name == " " + column.split(':')[0]:
-                            zoneName = name
-                            path.append(count)
-                    makeHeader(exterSolarBeamGains, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Solar Beam Energy", "kWh", True)
-                    dataTypeList[9] = True
-                
-                elif 'Zone Exterior Windows Total Transmitted Diffuse Solar Radiation Energy' in column:
-                    key.append(7)
-                    for count, name in enumerate(zoneNameList):
-                        if name == " " + column.split(':')[0]:
-                            zoneName = name
-                            path.append(count)
-                    makeHeader(exterSolarDiffuseGains, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Solar Diffuse Energy", "kWh", True)
-                    dataTypeList[10] = True
-                
-                elif 'Zone Infiltration Total Heat Loss Energy ' in column:
-                    key.append(8)
-                    for count, name in enumerate(zoneNameList):
-                        if name == " " + column.split(':')[0]:
-                            zoneName = name
-                            path.append(count)
-                    makeHeader(infiltrationEnergy, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Infiltration Energy", "kWh", True)
-                    dataTypeList[11] = True
-                
-                elif 'Zone Infiltration Total Heat Gain Energy' in column:
-                    key.append(9)
-                    for count, name in enumerate(zoneNameList):
-                        if name == " " + column.split(':')[0]:
-                            path.append(count)
-                
-                elif 'Zone Operative Temperature' in column:
-                    key.append(10)
-                    for count, name in enumerate(zoneNameList):
-                        if name == " " + column.split(':')[0]:
-                            zoneName = name
-                            path.append(count)
-                    makeHeader(operativeTemperature, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Operative Temperature", "C", False)
-                    dataTypeList[12] = True
-                
-                elif 'Zone Mean Air Temperature' in column:
-                    key.append(11)
-                    for count, name in enumerate(zoneNameList):
-                        if name == " " + column.split(':')[0]:
-                            zoneName = name
-                            path.append(count)
-                    makeHeader(airTemperature, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Air Temperature", "C", False)
-                    dataTypeList[13] = True
-                
-                elif 'Zone Mean Radiant Temperature' in column:
-                    key.append(12)
-                    for count, name in enumerate(zoneNameList):
-                        if name == " " + column.split(':')[0]:
-                            zoneName = name
-                            path.append(count)
-                    makeHeader(meanRadTemperature, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Radiant Temperature", "C", False)
-                    dataTypeList[14] = True
-                
-                elif 'Zone Air Relative Humidity' in column:
-                    key.append(13)
-                    for count, name in enumerate(zoneNameList):
-                        if name == " " + column.split(':')[0]:
-                            zoneName = name
-                            path.append(count)
-                    makeHeader(relativeHumidity, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Relative Humidity", "%", False)
-                    dataTypeList[15] = True
-                
-                else:
-                    key.append(-1)
-                    path.append(-1)
-                
-            #print key
-            #print path
-        else:
-            for columnCount, column in enumerate(line.split(',')):
-                if key[columnCount] == 0:
+    try:
+        result = open(_resultFileAddress, 'r')
+        
+        for lineCount, line in enumerate(result):
+            if lineCount == 0:
+                #ANALYZE THE FILE HEADING
+                key = []; path = []
+                for columnCount, column in enumerate(line.split(',')):
+                    if 'Zone Air System Sensible Cooling Energy' in column or 'Zone Ideal Loads Zone Total Cooling Energy' in column:
+                        key.append(0)
+                        if 'Zone Ideal Loads Zone Total Cooling Energy' in column: zoneName = checkZone(" " + column.split(':')[0].split('ZONEHVAC')[0])
+                        else: zoneName = checkZone(" " + column.split(':')[0])
+                        makeHeader(cooling, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Cooling Energy", "kWh", True)
+                        dataTypeList[3] = True
+                    
+                    elif 'Zone Air System Sensible Heating Energy' in column or 'Zone Ideal Loads Zone Total Heating Energy' in column:
+                        key.append(1)
+                        if 'Zone Ideal Loads Zone Total Heating Energy' in column: zoneName = checkZone(" " + column.split(':')[0].split('ZONEHVAC')[0])
+                        else: zoneName = checkZone(" " + column.split(':')[0])
+                        makeHeader(heating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Heating Energy", "kWh", True)
+                        dataTypeList[4] = True
+                    
+                    elif 'Zone Lights Electric Energy' in column:
+                        key.append(2)
+                        zoneName = checkZone(" " + column.split(':')[0])
+                        makeHeader(electricLight, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Electric Lighting Energy", "kWh", True)
+                        dataTypeList[5] = True
+                    
+                    elif 'Zone Electric Equipment Electric Energy' in column:
+                        key.append(3)
+                        zoneName = checkZone(" " + column.split(':')[0])
+                        makeHeader(electricEquip, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Electric Equipment Energy", "kWh", True)
+                        dataTypeList[6] = True
+                    
+                    elif 'Zone People Total Heating Energy' in column:
+                        key.append(4)
+                        zoneName = checkZone(" " + column.split(':')[0])
+                        makeHeader(peopleGains, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "People Energy", "kWh", True)
+                        dataTypeList[7] = True
+                    
+                    elif 'Zone Windows Total Transmitted Solar Radiation Energy' in column:
+                        key.append(5)
+                        zoneName = checkZone(" " + column.split(':')[0])
+                        makeHeader(totalSolarGain, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Total Solar Gain", "kWh", True)
+                        dataTypeList[8] = True
+                    
+                    elif 'Zone Exterior Windows Total Transmitted Beam Solar Radiation Energy' in column:
+                        key.append(6)
+                        zoneName = checkZone(" " + column.split(':')[0])
+                        makeHeader(exterSolarBeamGains, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Solar Beam Energy", "kWh", True)
+                        dataTypeList[9] = True
+                    
+                    elif 'Zone Exterior Windows Total Transmitted Diffuse Solar Radiation Energy' in column:
+                        key.append(7)
+                        zoneName = checkZone(" " + column.split(':')[0])
+                        makeHeader(exterSolarDiffuseGains, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Solar Diffuse Energy", "kWh", True)
+                        dataTypeList[10] = True
+                    
+                    elif 'Zone Infiltration Total Heat Loss Energy ' in column:
+                        key.append(8)
+                        zoneName = checkZone(" " + column.split(':')[0])
+                        makeHeader(infiltrationEnergy, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Infiltration Energy", "kWh", True)
+                        dataTypeList[11] = True
+                    
+                    elif 'Zone Infiltration Total Heat Gain Energy' in column:
+                        key.append(9)
+                        zoneName = checkZone(" " + column.split(':')[0])
+                    
+                    elif 'Zone Operative Temperature' in column:
+                        key.append(10)
+                        zoneName = checkZone(" " + column.split(':')[0])
+                        makeHeader(operativeTemperature, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Operative Temperature", "C", False)
+                        dataTypeList[12] = True
+                    
+                    elif 'Zone Mean Air Temperature' in column:
+                        key.append(11)
+                        zoneName = checkZone(" " + column.split(':')[0])
+                        makeHeader(airTemperature, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Air Temperature", "C", False)
+                        dataTypeList[13] = True
+                    
+                    elif 'Zone Mean Radiant Temperature' in column:
+                        key.append(12)
+                        zoneName = checkZone(" " + column.split(':')[0])
+                        makeHeader(meanRadTemperature, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Radiant Temperature", "C", False)
+                        dataTypeList[14] = True
+                    
+                    elif 'Zone Air Relative Humidity' in column:
+                        key.append(13)
+                        zoneName = checkZone(" " + column.split(':')[0])
+                        makeHeader(relativeHumidity, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Relative Humidity", "%", False)
+                        dataTypeList[15] = True
+                    
+                    else:
+                        key.append(-1)
+                        path.append(-1)
+                    
+                #print key
+                #print path
+            else:
+                for columnCount, column in enumerate(line.split(',')):
+                    p = GH_Path(int(path[columnCount]))
                     if normByFlr == True: flrArea = floorAreaList[int(path[columnCount])]
                     else: flrArea = 1
-                    p = GH_Path(int(path[columnCount]))
-                    cooling.Add((float(column)/3600000)/flrArea, p)
-                elif key[columnCount] == 1:
-                    if normByFlr == True: flrArea = floorAreaList[int(path[columnCount])]
-                    else: flrArea = 1
-                    p = GH_Path(int(path[columnCount]))
-                    heating.Add((float(column)/3600000)/flrArea, p)
-                elif key[columnCount] == 2:
-                    if normByFlr == True: flrArea = floorAreaList[int(path[columnCount])]
-                    else: flrArea = 1
-                    p = GH_Path(int(path[columnCount]))
-                    electricLight.Add((float(column)/3600000)/flrArea, p)
-                elif key[columnCount] == 3:
-                    if normByFlr == True: flrArea = floorAreaList[int(path[columnCount])]
-                    else: flrArea = 1
-                    p = GH_Path(int(path[columnCount]))
-                    electricEquip.Add((float(column)/3600000)/flrArea, p)
-                elif key[columnCount] == 4:
-                    if normByFlr == True: flrArea = floorAreaList[int(path[columnCount])]
-                    else: flrArea = 1
-                    p = GH_Path(int(path[columnCount]))
-                    peopleGains.Add((float(column)/3600000)/flrArea, p)
-                elif key[columnCount] == 5:
-                    if normByFlr == True: flrArea = floorAreaList[int(path[columnCount])]
-                    else: flrArea = 1
-                    p = GH_Path(int(path[columnCount]))
-                    totalSolarGain.Add((float(column)/3600000)/flrArea, p)
-                elif key[columnCount] == 6:
-                    if normByFlr == True: flrArea = floorAreaList[int(path[columnCount])]
-                    else: flrArea = 1
-                    p = GH_Path(int(path[columnCount]))
-                    exterSolarBeamGains.Add((float(column)/3600000)/flrArea, p)
-                elif key[columnCount] == 7:
-                    if normByFlr == True: flrArea = floorAreaList[int(path[columnCount])]
-                    else: flrArea = 1
-                    p = GH_Path(int(path[columnCount]))
-                    exterSolarDiffuseGains.Add((float(column)/3600000)/flrArea, p)
-                elif key[columnCount] == 8:
-                    if normByFlr == True: flrArea = floorAreaList[int(path[columnCount])]
-                    else: flrArea = 1
-                    p = GH_Path(int(path[columnCount]))
-                    infiltrationEnergy.Add((((float(column))*(-1)/3600000) + ((float( line.split(',')[columnCount+1] ))/3600000))/flrArea, p)
-                elif key[columnCount] == 9:
-                    pass
-                elif key[columnCount] == 10:
-                    p = GH_Path(int(path[columnCount]))
-                    operativeTemperature.Add(float(column), p)
-                elif key[columnCount] == 11:
-                    p = GH_Path(int(path[columnCount]))
-                    airTemperature.Add(float(column), p)
-                elif key[columnCount] == 12:
-                    p = GH_Path(int(path[columnCount]))
-                    meanRadTemperature.Add(float(column), p)
-                elif key[columnCount] == 13:
-                    p = GH_Path(int(path[columnCount]))
-                    relativeHumidity.Add(float(column), p)
-                
-    result.close()
-    parseSuccess = True
-    #except:
-    #    parseSuccess = False
-    #    warn = 'Failed to parse the result file.  The csv file might not have existed when connected or the simulation did not run correctly.'+ \
-    #              'Try reconnecting the _resultfileAddress to this component or re-running your simulation.'
-    #    print warn
-    #    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warn)
+                    
+                    if key[columnCount] == 0:
+                        cooling.Add((float(column)/3600000)/flrArea, p)
+                    elif key[columnCount] == 1:
+                        heating.Add((float(column)/3600000)/flrArea, p)
+                    elif key[columnCount] == 2:
+                        electricLight.Add((float(column)/3600000)/flrArea, p)
+                    elif key[columnCount] == 3:
+                        electricEquip.Add((float(column)/3600000)/flrArea, p)
+                    elif key[columnCount] == 4:
+                        peopleGains.Add((float(column)/3600000)/flrArea, p)
+                    elif key[columnCount] == 5:
+                        totalSolarGain.Add((float(column)/3600000)/flrArea, p)
+                    elif key[columnCount] == 6:
+                        exterSolarBeamGains.Add((float(column)/3600000)/flrArea, p)
+                    elif key[columnCount] == 7:
+                        exterSolarDiffuseGains.Add((float(column)/3600000)/flrArea, p)
+                    elif key[columnCount] == 8:
+                        infiltrationEnergy.Add((((float(column))*(-1)/3600000) + ((float( line.split(',')[columnCount+1] ))/3600000))/flrArea, p)
+                    elif key[columnCount] == 9:
+                        pass
+                    elif key[columnCount] == 10:
+                        operativeTemperature.Add(float(column), p)
+                    elif key[columnCount] == 11:
+                        airTemperature.Add(float(column), p)
+                    elif key[columnCount] == 12:
+                        meanRadTemperature.Add(float(column), p)
+                    elif key[columnCount] == 13:
+                        relativeHumidity.Add(float(column), p)
+                    
+        result.close()
+        parseSuccess = True
+    except:
+        parseSuccess = False
+        warn = 'Failed to parse the result file.  The csv file might not have existed when connected or the simulation did not run correctly.'+ \
+                  'Try reconnecting the _resultfileAddress to this component or re-running your simulation.'
+        print warn
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warn)
 
 #Construct the total energy and energy balance outputs.  Also, construct the total solar and operative temperature outputs
 coolingPyList = []
