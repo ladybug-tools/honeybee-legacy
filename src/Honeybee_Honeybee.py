@@ -2566,29 +2566,50 @@ class EPZone(object):
         #Check if the centroid is inside the volume.
         if joinedMesh.IsPointInside(self.cenPt, sc.doc.ModelAbsoluteTolerance, True) != True:
             # point is not inside so this method can't be used
+            print "Honeybee cannot check normal directions for " + self.name
             return
         
         for HBSrf in self.surfaces:
             checkSrfNormal(HBSrf)
                 
-            
+
     def decomposeZone(self, maximumRoofAngle = 30):
         # this method is useufl when the zone is going to be constructed from a closed brep
         # materials will be applied based on the zones construction set
-
+        
+        def checkGHSrfNormal(GHSrf, printAngle = False):
+            
+            cenPt, normalVector = self.getSrfCenPtandNormal(surface)
+            
+            #create a plane from the surface
+            srfPlane = rc.Geometry.Plane(cenPt, normalVector)
+            
+            # project center point of the geometry to surface plane
+            projectedPt = srfPlane.ClosestPoint(self.cenPt)
+        
+            # make a vector from the center point of the zone to center point of the surface
+            testVector = rc.Geometry.Vector3d(projectedPt - self.cenPt)
+            # check the direction of the vectors and flip zone surfaces if needed
+            vecAngleDiff = math.degrees(rc.Geometry.Vector3d.VectorAngle(testVector, normalVector))
+            
+            # vecAngleDiff should be 0 otherwise the normal is reversed
+            if printAngle:
+                print vecAngleDiff
+            if vecAngleDiff > 10:
+                GHSrf.Flip()
+                normalVector.Reverse()
+        
+            return normalVector, GHSrf
+            
         # explode zone
         for i in range(self.geometry.Faces.Count):
             
             surface = self.geometry.Faces[i].DuplicateFace(False)
-            # find the normal
-            findNormal = self.getSrfCenPtandNormal(surface)
-            if findNormal:
-                normal = findNormal[1]
-                angle2Z = math.degrees(rc.Geometry.Vector3d.VectorAngle(normal, rc.Geometry.Vector3d.ZAxis))
-            else:
-                #print findNormal
-                #print self.geometry
-                angle2Z = 0
+            
+            # check surface Normal
+            normal, surface = checkGHSrfNormal(surface)
+            
+            angle2Z = math.degrees(rc.Geometry.Vector3d.VectorAngle(normal, rc.Geometry.Vector3d.ZAxis))
             
             if  angle2Z < maximumRoofAngle or angle2Z > 360- maximumRoofAngle:
                 # roof is the right assumption
@@ -2606,7 +2627,8 @@ class EPZone(object):
             HBSurface = hb_EPZoneSurface(surface, i, self.name + '_Srf_' + `i`, self, surafceType)
 
             self.addSrf(HBSurface)
-    
+            
+            
     def createZoneFromSurfaces(self, maximumRoofAngle = 30):
         # this method recreate the geometry from the surfaces
         srfs = []
