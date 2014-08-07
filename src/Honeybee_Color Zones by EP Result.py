@@ -37,7 +37,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Color Zones by EP Result"
 ghenv.Component.NickName = 'ColorZones'
-ghenv.Component.Message = 'VER 0.0.57\nAUG_06_2014'
+ghenv.Component.Message = 'VER 0.0.57\nAUG_07_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
@@ -164,7 +164,7 @@ def checkTheInputs():
             total = True
         elif "Total Thermal Energy for" in dataType: normable = True
         elif "Total Energy for" in dataType: normable = True
-        elif "Heating - Cooling Energy for" in dataType: normable = True
+        elif "Thermal Energy Balance for" in dataType: normable = True
         elif "Cooling Energy for" in dataType: normable = True
         elif "Heating Energy for" in dataType: normable = True
         elif "Electric Lighting Energy for" in dataType: normable = True
@@ -185,6 +185,13 @@ def checkTheInputs():
         elif "Adaptive Comfort" in dataType: normable = False
         elif "Universal Thermal Climate Index" in dataType: normable = False
         elif "Outdoor Comfort" in dataType: normable = False
+        elif "Sensible Cooling Energy" in dataType: normable = True
+        elif "Latent Cooling Energy" in dataType: normable = True
+        elif "Sensible Heating Energy" in dataType: normable = True
+        elif "Latent Heating Energy" in dataType: normable = True
+        elif "Supply Air Mass Flow Rate" in dataType: normable = True
+        elif "Supply Air Temperature" in dataType: normable = False
+        elif "Supply Air Relative Humidity" in dataType: normable = False
         else:
             normable = False
             warning = "Component cannot tell what data type is being connected.  Data will be averaged for each zone by default."
@@ -218,6 +225,7 @@ def checkZones(pyZoneData):
             for srf in zone.surfaces:
                 if srf.type == 2: floorGeo.append(srf.geometry)
                 elif str(srf.type) == "2.5": floorGeo.append(srf.geometry)
+                elif str(srf.type) == "2.75": floorGeo.append(srf.geometry)
                 else: pass
             zoneFloors.append(floorGeo)
         
@@ -261,15 +269,15 @@ def manageInputOutput(annualData, simStep, zoneNormalizable):
     for input in range(8):
         if input == 3 and zoneNormalizable == False:
             ghenv.Component.Params.Input[input].NickName = "__________"
-            ghenv.Component.Params.Input[input].Name = "................."
+            ghenv.Component.Params.Input[input].Name = "."
             ghenv.Component.Params.Input[input].Description = " "
         elif input == 4 and annualData == False:
             ghenv.Component.Params.Input[input].NickName = "___________"
-            ghenv.Component.Params.Input[input].Name = "................"
+            ghenv.Component.Params.Input[input].Name = "."
             ghenv.Component.Params.Input[input].Description = " "
         elif input == 5 and (simStep == "Annually" or simStep == "unknown timestep"):
             ghenv.Component.Params.Input[input].NickName = "____________"
-            ghenv.Component.Params.Input[input].Name = "..............."
+            ghenv.Component.Params.Input[input].Name = "."
             ghenv.Component.Params.Input[input].Description = " "
         else:
             ghenv.Component.Params.Input[input].NickName = inputsDict[input][0]
@@ -278,8 +286,8 @@ def manageInputOutput(annualData, simStep, zoneNormalizable):
     
     for output in range(10):
         if output == 10 and zoneNormalizable == False:
-            ghenv.Component.Params.Output[output].NickName = ".................."
-            ghenv.Component.Params.Output[output].Name = ".................."
+            ghenv.Component.Params.Output[output].NickName = "."
+            ghenv.Component.Params.Output[output].Name = "."
             ghenv.Component.Params.Output[output].Description = " "
         else:
             ghenv.Component.Params.Output[output].NickName = outputsDict[output][0]

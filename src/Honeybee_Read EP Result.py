@@ -311,79 +311,36 @@ if _resultFileAddress and gotData == True:
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warn)
 
 #Construct the total energy and energy balance outputs.  Also, construct the total solar and operative temperature outputs
-coolingPyList = []
-heatingPyList = []
-lightingPyList = []
-equipmentPyList = []
-beamGainPyList = []
-diffGainPyList = []
-airTempPyList = []
-mrtPyList = []
-for i in range(cooling.BranchCount):
-    branchList = cooling.Branch(i)
-    coolingval = []
-    for item in branchList:
-        coolingval.append(item)
-    coolingPyList.append(coolingval)
-for i in range(heating.BranchCount):
-    branchList = heating.Branch(i)
-    heatingval = []
-    for item in branchList:
-        heatingval.append(item)
-    heatingPyList.append(heatingval)
-for i in range(electricLight.BranchCount):
-    branchList = electricLight.Branch(i)
-    lightingval = []
-    for item in branchList:
-        lightingval.append(item)
-    lightingPyList.append(lightingval)
-for i in range(electricEquip.BranchCount):
-    branchList = electricEquip.Branch(i)
-    equipval = []
-    for item in branchList:
-        equipval.append(item)
-    equipmentPyList.append(equipval)
+def createPyList(ghTree):
+    pyList = []
+    for i in range(ghTree.BranchCount):
+        branchList = ghTree.Branch(i)
+        branchval = []
+        for item in branchList:
+            branchval.append(item)
+        pyList.append(branchval)
+    return pyList
 
+coolingPyList = createPyList(cooling)
+heatingPyList = createPyList(heating)
+lightingPyList = createPyList(electricLight)
+equipmentPyList = createPyList(electricEquip)
 
 if len(coolingPyList) > 0 and len(heatingPyList) > 0 and len(lightingPyList) > 0 and len(equipmentPyList) > 0:
     for listCount, list in enumerate(coolingPyList):
-        totalEnergy.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(listCount))
-        totalEnergy.Add(location, GH_Path(listCount))
-        if normByFlr == False: totalEnergy.Add("Total Energy for" + zoneNameList[listCount], GH_Path(listCount))
-        else: totalEnergy.Add("Floor Normalized Total Energy for" + zoneNameList[listCount], GH_Path(listCount))
-        if normByFlr == False: totalEnergy.Add("kWh", GH_Path(listCount))
-        else: totalEnergy.Add("kWh/m2", GH_Path(listCount))
-        totalEnergy.Add(list[4].split('(')[-1].split(')')[0], GH_Path(listCount))
-        totalEnergy.Add(start, GH_Path(listCount))
-        totalEnergy.Add(end, GH_Path(listCount))
+        makeHeader(totalEnergy, listCount, zoneNameList[listCount], list[4].split('(')[-1].split(')')[0], "Total Energy", "kWh", True)
         for numCount, num in enumerate(list[7:]):
             totalEnergy.Add((num + heatingPyList[listCount][7:][numCount] + lightingPyList[listCount][7:][numCount] + equipmentPyList[listCount][7:][numCount]), GH_Path(listCount))
         dataTypeList[0] = True
 
 if len(coolingPyList) > 0 and len(heatingPyList) > 0:
     for listCount, list in enumerate(coolingPyList):
-        totalThermalEnergy.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(listCount))
-        totalThermalEnergy.Add(location, GH_Path(listCount))
-        if normByFlr == False:totalThermalEnergy.Add("Total Thermal Energy for" + zoneNameList[listCount], GH_Path(listCount))
-        else: totalThermalEnergy.Add("Floor Normalized Total Thermal Energy for" + zoneNameList[listCount], GH_Path(listCount))
-        if normByFlr == False:totalThermalEnergy.Add("kWh", GH_Path(listCount))
-        else: totalThermalEnergy.Add("kWh/m2", GH_Path(listCount))
-        totalThermalEnergy.Add(list[4].split('(')[-1].split(')')[0], GH_Path(listCount))
-        totalThermalEnergy.Add(start, GH_Path(listCount))
-        totalThermalEnergy.Add(end, GH_Path(listCount))
+        makeHeader(totalThermalEnergy, listCount, zoneNameList[listCount], list[4].split('(')[-1].split(')')[0], "Total Thermal Energy", "kWh", True)
         for numCount, num in enumerate(list[7:]):
             totalThermalEnergy.Add((num + heatingPyList[listCount][7:][numCount]), GH_Path(listCount))
         dataTypeList[1] = True
         
-        thermalEnergyBalance.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(listCount))
-        thermalEnergyBalance.Add(location, GH_Path(listCount))
-        if normByFlr == False:thermalEnergyBalance.Add("Heating - Cooling Energy for" + zoneNameList[listCount], GH_Path(listCount))
-        else: thermalEnergyBalance.Add("Floor Normalized Heating - Cooling Energy for" + zoneNameList[listCount], GH_Path(listCount))
-        if normByFlr == False:thermalEnergyBalance.Add("kWh", GH_Path(listCount))
-        else: thermalEnergyBalance.Add("kWh/m2", GH_Path(listCount))
-        thermalEnergyBalance.Add(list[4].split('(')[-1].split(')')[0], GH_Path(listCount))
-        thermalEnergyBalance.Add(start, GH_Path(listCount))
-        thermalEnergyBalance.Add(end, GH_Path(listCount))
+        makeHeader(thermalEnergyBalance, listCount, zoneNameList[listCount], list[4].split('(')[-1].split(')')[0], "Thermal Energy Balance", "kWh", True)
         for numCount, num in enumerate(list[7:]):
             thermalEnergyBalance.Add((heatingPyList[listCount][7:][numCount] - num), GH_Path(listCount))
         dataTypeList[2] = True
