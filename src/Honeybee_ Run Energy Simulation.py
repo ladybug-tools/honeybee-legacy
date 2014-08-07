@@ -10,7 +10,7 @@ export geometries to idf file, and run the energy simulation
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_05_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_07_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -727,6 +727,10 @@ class WriteIDF(object):
                 else:
                     scheduleStr =  scheduleStr + "  " + str(scheduleData[layer][0]) + ";   !- " +  scheduleData[layer][1] + "\n\n"
             return scheduleStr
+    
+    def requestSrfeio(self):
+        return '\nOutput:Surfaces:List,\n' + \
+        '\t' + 'Details;                 !- Report Type' + '\n'
 
 class RunIDF(object):
     
@@ -1032,7 +1036,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                 idfFile.write(hb_writeIDF.writeIdealAirSys(zone.name, zone))
             
             
-            #This is the old HVAC Template.  It has been replaced with one that allows humidity control.
+            #This is the old HVAC Template.  It has been replaced with one that allows humidity control and adjusting of supply temperature.
             #   HAVC System
             #if listName!=None:
             #    HAVCTemplateName = listName + "_HVAC"
@@ -1065,7 +1069,9 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         
     ################## FOOTER ###################
     # write output lines
-    # could be as a set of inputs
+    # request surface information in the eio file.
+    idfFile.write(hb_writeIDF.requestSrfeio())
+    # write the outputs requested by the user.
     if simulationOutputs:
         print "[7 of 7] Writing outputs..."
         idfFile.write('\n')

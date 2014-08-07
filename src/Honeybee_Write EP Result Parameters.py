@@ -16,7 +16,6 @@ Provided by Honeybee 0.0.53
         zoneComfortMetrics_: Set to "True" to have EnergyPlus solve for the mean air temperature, mean radiant temperature, operative temperature, and relative humidity of each zone.
         zoneHVACParams_: Set to "True" to have EnergyPlus solve for the fractions of heating/cooling loads that are latent vs. sensible as well as the the flow rate and temperature of supply air into each zone.
         surfaceAnalysis_: Set to "True" to have EnergyPlus solve for an number of factors that relate to the individual surfaces bodering each zone, such as gains and losses through the surfaces as well as interior/exterior surface temperatures.
-        facilityProperties_: Set to "True" to have EnergyPlus output the total electricity consumed by the building, the total CO2 impact, and number of occupants present.
         ____________________: ...
         timestep_: Specify a timestep by inputing the words 'hourly', 'daily', 'monthly' or 'annually'.  The default is set to hourly.
     Returns:
@@ -26,7 +25,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Write EP Result Parameters"
 ghenv.Component.NickName = 'writeResultParameters'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_06_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_07_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -34,19 +33,11 @@ ghenv.Component.AdditionalHelpFromDocStrings = "3"
 
 
 
-def main(facilityProperties, zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, surfaceAnalysis, zoneHVACMetrics, timestep):
+def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, surfaceAnalysis, zoneHVACMetrics, timestep):
     simulationOutputs = []
     timePeriod = timestep + ";"
     
     simulationOutputs.append("OutputControl:Table:Style,Comma;")
-    
-    
-    if facilityProperties == True:
-        simulationOutputs.append("Output:Variable,*,Environmental Impact Total CO2 Emissions Carbon Equivalent Mass, " + timePeriod)
-        simulationOutputs.append("Output:Variable,*,Facility Total Purchased Electric Energy, " + timePeriod)
-        simulationOutputs.append("Output:Variable,*,People Occupant Count, " + timePeriod)
-    else:
-        pass
     
     if zoneEnergyUse == True:
         simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Zone Total Cooling Energy, " + timePeriod)
@@ -107,5 +98,5 @@ else:timestep_ = "hourly"
 
 
 #Generate the simulation outputs if the above checks are sucessful.
-simulationOutputs = main(facilityProperties_, zoneEnergyUse_, zoneGainsAndLosses_, zoneComfortMetrics_, surfaceAnalysis_, zoneHVACParams_, timestep_)
+simulationOutputs = main(zoneEnergyUse_, zoneGainsAndLosses_, zoneComfortMetrics_, surfaceAnalysis_, zoneHVACParams_, timestep_)
 print "Simulation outputs generated successfully!"

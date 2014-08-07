@@ -14,7 +14,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Lighting control Recipe"
 ghenv.Component.NickName = 'lightingControl'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_07_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
@@ -40,8 +40,8 @@ numInputs = ghenv.Component.Params.Input.Count
 if controlType == 0:
     for input in range(numInputs):
         if input > 2:
-            ghenv.Component.Params.Input[input].NickName = "............................"
-            ghenv.Component.Params.Input[input].Name = "............................"
+            ghenv.Component.Params.Input[input].NickName = "."
+            ghenv.Component.Params.Input[input].Name = "."
             ghenv.Component.Params.Input[input].Description = " "
 else:
     for input in range(numInputs):

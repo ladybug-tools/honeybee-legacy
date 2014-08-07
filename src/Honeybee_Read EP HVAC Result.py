@@ -13,7 +13,7 @@ Provided by Honeybee 0.0.53
     
     Args:
         _resultFileAddress: The result file address that comes out of the WriteIDF component.
-        normByFloorArea_: Set to 'True' to normalize all zone energy data by floor area (note that the resulting units will be kWh/m2 as EnergyPlus runs in the metric system).
+        normByFloorArea_: Set to 'True' to normalize all zone energy data by floor area (note that the resulting units will be kWh/m2 as EnergyPlus runs in the metric system). The default is set to "False."
     Returns:
         sensibleCooling: The sensible energy removed by the ideal air cooling load for each zone in kWh.
         latentCooling: The latent energy removed by the ideal air cooling load for each zone in kWh.
@@ -26,7 +26,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Read EP HVAC Result"
 ghenv.Component.NickName = 'readEP_HVAC_Result'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_06_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_07_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "4"
@@ -269,8 +269,8 @@ outputsDict = {
 if _resultFileAddress and parseSuccess == True:
     for output in range(7):
         if dataTypeList[output] == False:
-            ghenv.Component.Params.Output[output].NickName = "............................"
-            ghenv.Component.Params.Output[output].Name = "............................"
+            ghenv.Component.Params.Output[output].NickName = "."
+            ghenv.Component.Params.Output[output].Name = "."
             ghenv.Component.Params.Output[output].Description = " "
         else:
             ghenv.Component.Params.Output[output].NickName = outputsDict[output][0]
