@@ -33,7 +33,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_addHBGlz'
 ghenv.Component.NickName = 'addHBGlz'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_05_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_07_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
@@ -49,7 +49,7 @@ def main(HBSurface, childSurfaces, EPConstruction, RADMaterial, tolerance):
         hb_EPSrf = sc.sticky["honeybee_EPSurface"]
         hb_EPZoneSurface = sc.sticky["honeybee_EPZoneSurface"]
         hb_EPFenSurface = sc.sticky["honeybee_EPFenSurface"]
-        
+        hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
         hb_RADMaterialAUX = sc.sticky["honeybee_RADMaterialAUX"]()
         
         
@@ -82,7 +82,33 @@ def main(HBSurface, childSurfaces, EPConstruction, RADMaterial, tolerance):
                     HBFenSrf.normalVector.Reverse()
                 
                 if EPConstruction:
-                    HBFenSrf.EPConstruction = EPConstruction
+                    # if it is just the name of the material make sure it is already defined
+                    if len(EPConstruction.split("\n")) == 1:
+                        # if the material is not in the library add it to the library
+                        if not hb_EPObjectsAux.isEPConstruction(EPConstruction):
+                            warningMsg = "Can't find " + EPConstruction + " in EP Construction Library.\n" + \
+                                        "Add the construction to the library and try again."
+                            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
+                            return
+                    else:
+                        # it is a full string
+                        added, EPConstruction = hb_EPObjectsAux.addEPObjectToLib(EPConstruction, overwrite = True)
+        
+                        if not added:
+                            msg = name + " is not added to the project library!"
+                            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                            print msg
+                            return
+                    
+                    try:
+                        HBFenSrf.setEPConstruction(EPConstruction)
+                    except:
+                        warningMsg = "You are using an old version of Honeybee_Honeybee! Update your files and try again."
+                        print warningMsg
+                        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
+                        return  
+                    
+                    
                 if RADMaterial!=None:
                     addedToLib, HBSurface.RadMaterial = hb_RADMaterialAUX.analyseRadMaterials(RADMaterial, False)
                 

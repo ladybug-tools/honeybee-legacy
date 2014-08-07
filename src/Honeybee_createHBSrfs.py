@@ -33,7 +33,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_createHBSrfs'
 ghenv.Component.NickName = 'createHBSrfs'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_05_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_07_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -53,6 +53,7 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
         hb_EPZoneSurface = sc.sticky["honeybee_EPZoneSurface"]
         hb_EPFenSurface = sc.sticky["honeybee_EPFenSurface"]
         hb_RADMaterialAUX = sc.sticky["honeybee_RADMaterialAUX"]()
+        hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
         
     else:
         print "You should first let Honeybee to fly..."
@@ -87,9 +88,10 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
             
         # 1. create initial surface
         HBSurface = hb_EPZoneSurface(geometry.Faces[faceCount].DuplicateFace(False), number, srfName)
-        
+
         # 1.1 check for surface type
         if srfType!=None:
+            
             try:
                 # if user uses a number to input type
                 surfaceType = int(srfType)
@@ -105,8 +107,16 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
                 surfaceType = surfaceType.ToUpper()
                 if surfaceType in HBSurface.srfType.keys():
                    surfaceType = HBSurface.srfType[surfaceType.ToUpper()]
+            
             if surfaceType in HBSurface.srfType.keys():
                 try:
+                    if int(HBSurface.type) != surfaceType:
+                        warningMsg = "Normal direction of the surface is not expected for a " + HBSurface.srfType[surfaceType] + ". " + \
+                                     "The surface is more likely a " + HBSurface.srfType[int(HBSurface.type)] + ".\n" + \
+                                     "Honeybee won't overwrite the type so you may need to manually flip the surface."
+                        print warningMsg
+                        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
+                        
                     HBSurface.setType(surfaceType, isUserInput= True)
                 except:
                     warningMsg = "You are using an old version of Honeybee_Honeybee! Update your files and try again."
@@ -138,7 +148,24 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
         
         # 1.3 assign construction for EnergyPlus
         if EPConstruction!=None:
-            # I need to add extra check here and make sure EPConstruction is valid
+            # if it is just the name of the material make sure it is already defined
+            if len(EPConstruction.split("\n")) == 1:
+                # if the material is not in the library add it to the library
+                if not hb_EPObjectsAux.isEPConstruction(EPConstruction):
+                    warningMsg = "Can't find " + EPConstruction + " in EP Construction Library.\n" + \
+                                "Add the construction to the library and try again."
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
+                    return
+            else:
+                # it is a full string
+                added, EPConstruction = hb_EPObjectsAux.addEPObjectToLib(EPConstruction, overwrite = True)
+
+                if not added:
+                    msg = name + " is not added to the project library!"
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                    print msg
+                    return
+            
             try:
                 HBSurface.setEPConstruction(EPConstruction)
             except:
