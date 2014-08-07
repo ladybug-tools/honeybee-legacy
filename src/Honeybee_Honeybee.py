@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_05_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_07_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1054,7 +1054,10 @@ class EPMaterialAux(object):
             standard = "ASHRAE 90.1"
         
         if surfaceType:
-            try: surfaceType = hb_EPTypes.srfType[surfaceType.upper()]
+            
+            try:
+                try: surfaceType = hb_EPTypes.srfType[surfaceType]
+                except: surfaceType = hb_EPTypes.srfType[surfaceType.upper()]
             except: sourceComponent.AddRuntimeMessage(w, str(surfaceType) + " is not a valid surface type.")
                 
         
