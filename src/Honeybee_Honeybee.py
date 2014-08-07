@@ -857,10 +857,19 @@ class hb_MSHToRAD(object):
             bitmapFileName = os.path.basename(self.pattern)
             self.matName = ".".join(bitmapFileName.split(".")[:-1])
             #copy the image into same folder
-            shutil.copyfile(self.pattern, os.path.join(self.workingDir, bitmapFileName))
-        
+            try:
+                shutil.copyfile(self.pattern, os.path.join(self.workingDir, bitmapFileName))
+            except:
+                pass
         else:
             self.matName = "radMaterial"
+            
+            if userRADMateialName and radMaterial != None:
+                try:
+                    self.matName = self.RADMaterial.split("\n")[0].split(" ")[2]
+                except:
+                    # not a standard radiance material
+                    pass
             
         self.RADMaterial = radMaterial
         
