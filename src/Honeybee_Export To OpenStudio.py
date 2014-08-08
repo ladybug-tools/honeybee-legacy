@@ -71,7 +71,7 @@ else:
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_04_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_08_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -94,6 +94,7 @@ class WriteOPS(object):
         self.materialList = {}
         self.scheduleList = {}
         self.bldgTypes = {}
+        self.levels = {}
         self.HVACSystemDict = {}
         self.adjacentSurfacesDict = {}
     
@@ -140,7 +141,25 @@ class WriteOPS(object):
         northAngle, northVector = self.lb_preparation.angle2north(north)
         building = ops.Model.getBuilding(model)
         building.setNorthAxis(northAngle)
+    
+    def generateStories(self, HBZones, model):
+        levels = []
+        for HBZone in HBZones:
+            floorH = "%.3f"%HBZone.getFloorZLevel()
+            if floorH not in self.levels.keys():
+                levels.append(float(floorH))
         
+        levels.sort()
+        for floorH in levels:
+            story = ops.BuildingStory(model)
+            story.setNominalZCoordinate(float(floorH))
+            self.levels["%.3f"%floorH] = story
+        
+    def setupLevels(self, zone, space):
+        floorH = "%.3f"%zone.getFloorZLevel()
+        space.setBuildingStory(self.levels[floorH])
+        return space
+    
     def addDesignDays(self, model):
         ddyFile = self.ddyFile
         ddyPath = ops.Path(ddyFile)
@@ -777,7 +796,7 @@ class WriteOPS(object):
             
             # create construction
             if not self.isConstructionInLib(surface.EPConstruction):
-                construction = self.getOSConstruction(surface.EPConstruction, model)
+                construction = self.getOSConstruction(surface.construction, model)
                 
                 # keep track of constructions
                 self.addConstructionToLib(surface.EPConstruction, construction)
@@ -1302,6 +1321,9 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     # call Honeybee objects from the hive
     HBZones = hb_hive.callFromHoneybeeHive(HBZones)
     
+    # generate stories
+    hb_writeOPS.generateStories(HBZones, model)
+    
     for zoneCount, zone in enumerate(HBZones):
         
         # prepare non-planar zones
@@ -1314,6 +1336,9 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         
         # assign name and type
         space = hb_writeOPS.setupNameAndType(zone, space, model)
+        
+        # assign level/building story to zone
+        space = hb_writeOPS.setupLevels(zone, space)
         
         # schedules
         space = hb_writeOPS.setDefaultSchedule(zone, space, model)
