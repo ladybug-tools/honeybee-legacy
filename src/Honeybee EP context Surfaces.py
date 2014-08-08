@@ -12,7 +12,7 @@ prepare shading/context geometries
 
 ghenv.Component.Name = 'Honeybee EP context Surfaces'
 ghenv.Component.NickName = 'HB_EPContextSrf'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_07_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -22,9 +22,8 @@ import Rhino as rc
 import scriptcontext as sc
 import os
 import System
-from clr import AddReference
-AddReference('Grasshopper')
 import Grasshopper.Kernel as gh
+import uuid
 
 tolerance = sc.doc.ModelAbsoluteTolerance
 import math
@@ -70,7 +69,7 @@ def main():
                 for brepFaceIndex in range(brep.Faces.Count):
                     mesh = meshedGeo[brepFaceIndex]
                     #for meshCount, mesh in enumerate(meshedGeo):
-                    thisShading = hb_EPSHDSurface(brep.Faces[brepFaceIndex].ToBrep(), 1000*brepCount + brepFaceIndex, 'shdSrf_' + `brepCount` + '_' + `brepFaceIndex`)
+                    thisShading = hb_EPSHDSurface(brep.Faces[brepFaceIndex].ToBrep(), 1000*brepCount + brepFaceIndex, 'shdSrf_' + `brepCount` + '_' + `brepFaceIndex` + "_" + str(uuid.uuid4()))
                     for faceIndex in  range(mesh.Faces.Count):
                         thisShading.collectMeshFaces(mesh.Faces.GetFaceVertices(faceIndex))
                     if EPConstruction!=None: thisShading.EPConstruction = EPConstruction
