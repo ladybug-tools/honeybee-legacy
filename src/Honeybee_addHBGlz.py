@@ -110,12 +110,12 @@ def main(HBSurface, childSurfaces, EPConstruction, RADMaterial, tolerance):
                     
                     
                 if RADMaterial!=None:
-                    addedToLib, HBSurface.RadMaterial = hb_RADMaterialAUX.analyseRadMaterials(RADMaterial, False)
+                    addedToLib, HBFenSrf.RadMaterial = hb_RADMaterialAUX.analyseRadMaterials(RADMaterial, True)
                 
                     # if the material is not in the library add it to the library
-                    if HBSurface.RadMaterial not in sc.sticky ["honeybee_RADMaterialLib"].keys():
+                    if HBFenSrf.RadMaterial not in sc.sticky ["honeybee_RADMaterialLib"].keys():
                         hb_RADMaterialAUX.analyseRadMaterials(RADMaterial, True)
-                
+                        
                 # add it to the base surface
                 HBSurface.addChildSrf(HBFenSrf)
                 HBSurface.calculatePunchedSurface()
