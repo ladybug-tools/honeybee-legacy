@@ -18,7 +18,6 @@ Provided by Honeybee 0.0.53
         surfaceIndoorTemp: The indoor surface temperature of each surface (degrees Celcius).
         surfaceOutdoorTemp: The outdoor surface temperature of each surface (degrees Celcius).
         surfaceEnergyFlow: The heat loss (negative) or heat gain (positive) through each building surfaces (kWh).
-        ---------------: ...
         opaqueEnergyFlow: The heat loss (negative) or heat gain (positive) through each building opaque surface (kWh).
         glazEnergyFlow: The heat loss (negative) or heat gain (positive) through each building glazing surface (kWh).  Note that the value here includes both solar gains and conduction losses/gains.
         windowTotalSolarEnergy: The total solar energy transmitted through each of the glazing surfaces to the zone (kWh).
@@ -143,7 +142,7 @@ windowDiffEnergy = DataTree[Object]()
 windowTotalSolarEnergy = DataTree[Object]()
 
 #Make a list to keep track of what outputs are in the result file.
-dataTypeList = [False, False, False, True, False, False, False, False, False]
+dataTypeList = [False, False, False, False, False, False, False, False]
 parseSuccess = False
 
 # If zone names are not included, make lists to keep track of the number of surfaces that have been imported so far.
@@ -210,7 +209,7 @@ if _resultFileAddress and gotZoneData == True:
                             path.append([InTemp])
                             makeHeader(surfaceIndoorTemp, int(path[columnCount]), srfName, column.split('(')[-1].split(')')[0], "Inner Surface Temperature", "C")
                             InTemp += 1
-                        key.append(12)
+                        key.append(1)
                         dataTypeList[0] = True
                     
                     elif 'Surface Outside Face Temperature' in column:
@@ -221,7 +220,7 @@ if _resultFileAddress and gotZoneData == True:
                             path.append([OutTemp])
                             makeHeader(surfaceOutdoorTemp, int(path[columnCount]), srfName, column.split('(')[-1].split(')')[0], "Outer Surface Temperature", "C")
                             OutTemp += 1
-                        key.append(14)
+                        key.append(2)
                         dataTypeList[1] = True
                     
                     elif 'Surface Average Face Conduction Heat Transfer Energy' in column:
@@ -232,8 +231,8 @@ if _resultFileAddress and gotZoneData == True:
                             path.append([opaConduct])
                             makeHeader(opaqueEnergyFlow, int(path[columnCount]), srfName, column.split('(')[-1].split(')')[0], "Opaque Conductive Energy Loss/Gain", "kWh")
                             opaConduct += 1
-                        key.append(16)
-                        dataTypeList[4] = True
+                        key.append(3)
+                        dataTypeList[3] = True
                     
                     elif 'Surface Window Heat Gain Energy' in column:
                         if gotSrfData == True:
@@ -243,8 +242,8 @@ if _resultFileAddress and gotZoneData == True:
                             path.append([glzGain])
                             makeHeader(glazEnergyFlow, int(path[columnCount]), srfName, column.split('(')[-1].split(')')[0], "Glazing Energy Loss/Gain", "kWh")
                             glzGain += 1
-                        key.append(17)
-                        dataTypeList[5] = True
+                        key.append(4)
+                        dataTypeList[4] = True
                     
                     elif 'Surface Window Heat Loss Energy' in column:
                         if gotSrfData == True:
@@ -252,7 +251,7 @@ if _resultFileAddress and gotZoneData == True:
                         else:
                             path.append([glzLoss])
                             glzLoss += 1
-                        key.append(18)
+                        key.append(5)
                     
                     elif 'Surface Window Transmitted Beam Solar Radiation Energy' in column:
                         if gotSrfData == True:
@@ -262,8 +261,8 @@ if _resultFileAddress and gotZoneData == True:
                             path.append([glzBeamGain])
                             makeHeader(windowBeamEnergy, int(path[columnCount]), srfName, column.split('(')[-1].split(')')[0], "Window Transmitted Beam Energy", "kWh")
                             glzBeamGain += 1
-                        key.append(1)
-                        dataTypeList[7] = True
+                        key.append(6)
+                        dataTypeList[6] = True
                     
                     elif 'Surface Window Transmitted Diffuse Solar Radiation Energy' in column:
                         if gotSrfData == True:
@@ -273,8 +272,8 @@ if _resultFileAddress and gotZoneData == True:
                             path.append([glzDiffGain])
                             makeHeader(windowDiffEnergy, int(path[columnCount]), srfName, column.split('(')[-1].split(')')[0], "Window Transmitted Diffuse Energy", "kWh")
                             glzDiffGain += 1
-                        key.append(2)
-                        dataTypeList[8] = True
+                        key.append(7)
+                        dataTypeList[7] = True
                     
                     elif 'Surface Window Transmitted Solar Radiation Energy' in column:
                         if gotSrfData == True:
@@ -284,8 +283,8 @@ if _resultFileAddress and gotZoneData == True:
                             path.append([glzTotalGain])
                             makeHeader(windowTotalSolarEnergy, int(path[columnCount]), srfName, column.split('(')[-1].split(')')[0], "Window Total Transmitted Solar Energy", "kWh")
                             glzTotalGain += 1
-                        key.append(3)
-                        dataTypeList[6] = True
+                        key.append(8)
+                        dataTypeList[5] = True
                     
                     else:
                         key.append(-1)
@@ -304,21 +303,21 @@ if _resultFileAddress and gotZoneData == True:
                             p = GH_Path(int(path[columnCount][0]))
                             srfArea = 1
                         
-                        if key[columnCount] == 12:
+                        if key[columnCount] == 1:
                             surfaceIndoorTemp.Add(float(column), p)
-                        elif key[columnCount] == 14:
-                            surfaceOutdoorTemp.Add(float(column), p)
-                        elif key[columnCount] == 16:
-                            opaqueEnergyFlow.Add((float(column)/3600000)/srfArea, p)
-                        elif key[columnCount] == 17:
-                            glazEnergyFlow.Add((((float(column))/3600000) + ((float( line.split(',')[columnCount+1] ))*(-1)/3600000))/srfArea, p)
-                        elif key[columnCount] == 18:
-                            pass
-                        elif key[columnCount] == 1:
-                            windowBeamEnergy.Add(((float(column))/3600000)/srfArea, p)
                         elif key[columnCount] == 2:
-                            windowDiffEnergy.Add(((float(column))/3600000)/srfArea, p)
+                            surfaceOutdoorTemp.Add(float(column), p)
                         elif key[columnCount] == 3:
+                            opaqueEnergyFlow.Add((float(column)/3600000)/srfArea, p)
+                        elif key[columnCount] == 4:
+                            glazEnergyFlow.Add((((float(column))/3600000) + ((float( line.split(',')[columnCount+1] ))*(-1)/3600000))/srfArea, p)
+                        elif key[columnCount] == 5:
+                            pass
+                        elif key[columnCount] == 6:
+                            windowBeamEnergy.Add(((float(column))/3600000)/srfArea, p)
+                        elif key[columnCount] == 7:
+                            windowDiffEnergy.Add(((float(column))/3600000)/srfArea, p)
+                        elif key[columnCount] == 8:
                             windowTotalSolarEnergy.Add(((float(column))/3600000)/srfArea, p)
                     
         result.close()
@@ -331,17 +330,18 @@ if _resultFileAddress and gotZoneData == True:
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warn)
 
 # Create a list with the energy flow of all surfaces.
-for i in range(opaqueEnergyFlow.BranchCount):
-    path = opaqueEnergyFlow.Path(i)
-    branchList = opaqueEnergyFlow.Branch(i)
-    for item in branchList:
-        surfaceEnergyFlow.Add(item, path)
-for i in range(glazEnergyFlow.BranchCount):
-    path = glazEnergyFlow.Path(i)
-    branchList = glazEnergyFlow.Branch(i)
-    for item in branchList:
-        surfaceEnergyFlow.Add(item, path)
-dataTypeList[2] = True
+if opaqueEnergyFlow.BranchCount > 0 and str(opaqueEnergyFlow) != "tree {0}" and glazEnergyFlow.BranchCount > 0 and str(glazEnergyFlow) != "tree {0}":
+    for i in range(opaqueEnergyFlow.BranchCount):
+        path = opaqueEnergyFlow.Path(i)
+        branchList = opaqueEnergyFlow.Branch(i)
+        for item in branchList:
+            surfaceEnergyFlow.Add(item, path)
+    for i in range(glazEnergyFlow.BranchCount):
+        path = glazEnergyFlow.Path(i)
+        branchList = glazEnergyFlow.Branch(i)
+        for item in branchList:
+            surfaceEnergyFlow.Add(item, path)
+    dataTypeList[2] = True
 
 
 #If some of the component outputs are not in the result csv file, blot the variable out of the component.
@@ -351,17 +351,16 @@ outputsDict = {
 0: ["surfaceIndoorTemp", "The indoor surface temperature of each surface (degrees Celcius)."],
 1: ["surfaceOutdoorTemp", "The outdoor surface temperature of each surface (degrees Celcius)."],
 2: ["surfaceEnergyFlow", "The heat loss (negative) or heat gain (positive) through each building surfaces (kWh)."],
-3: ["--------------------", "..."],
-4: ["opaqueEnergyFlow", "The heat loss (negative) or heat gain (positive) through each building opaque surface (kWh)."],
-5: ["glazEnergyFlow", "The heat loss (negative) or heat gain (positive) through each building glazing surface (kWh).  Note that the value here includes both solar gains and conduction losses/gains."],
-6: ["windowTotalSolarEnergy", "The total solar energy transmitted through each of the glazing surfaces to the zone (kWh)."],
-7: ["windowBeamEnergy", "The total direct solar beam energy transmitted through each of the glazing surfaces to the zone (kWh)."],
-8: ["windowDiffEnergy", "The total diffuse solar energy transmitted through each of the glazing surfaces to the zone (kWh)."]
+3: ["opaqueEnergyFlow", "The heat loss (negative) or heat gain (positive) through each building opaque surface (kWh)."],
+4: ["glazEnergyFlow", "The heat loss (negative) or heat gain (positive) through each building glazing surface (kWh).  Note that the value here includes both solar gains and conduction losses/gains."],
+5: ["windowTotalSolarEnergy", "The total solar energy transmitted through each of the glazing surfaces to the zone (kWh)."],
+6: ["windowBeamEnergy", "The total direct solar beam energy transmitted through each of the glazing surfaces to the zone (kWh)."],
+7: ["windowDiffEnergy", "The total diffuse solar energy transmitted through each of the glazing surfaces to the zone (kWh)."]
 }
 
 
 if _resultFileAddress and parseSuccess == True:
-    for output in range(9):
+    for output in range(8):
         if dataTypeList[output] == False:
             ghenv.Component.Params.Output[output].NickName = "."
             ghenv.Component.Params.Output[output].Name = "."
@@ -371,7 +370,7 @@ if _resultFileAddress and parseSuccess == True:
             ghenv.Component.Params.Output[output].Name = outputsDict[output][0]
             ghenv.Component.Params.Output[output].Description = outputsDict[output][1]
 else:
-    for output in range(9):
+    for output in range(8):
         ghenv.Component.Params.Output[output].NickName = outputsDict[output][0]
         ghenv.Component.Params.Output[output].Name = outputsDict[output][0]
         ghenv.Component.Params.Output[output].Description = outputsDict[output][1]
