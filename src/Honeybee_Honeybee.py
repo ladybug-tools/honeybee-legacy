@@ -3878,6 +3878,7 @@ class hb_reEvaluateHBZones(object):
             self.modifiedSrfsNames.append(surface.name)
             if  not surface.isChild and surface.hasChild:
                 self.checkChildSurfaces(surface)
+                
             return surface
             
         # case 1 : it is not planar
@@ -4304,7 +4305,8 @@ class hb_EPSurface(object):
                     if len(sortedPoints) == 4 and self.isPlanar: triangulate= True
                     else: triangulate= False
                     
-                    glzCoordinatesList = self.extractMeshPts(mesh, triangulate)
+                    try: glzCoordinatesList.extend(self.extractMeshPts(mesh, triangulate))
+                    except: glzCoordinatesList.append(self.extractMeshPts(mesh, triangulate))
                     
         return glzCoordinatesList
     
