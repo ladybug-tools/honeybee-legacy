@@ -51,6 +51,7 @@ start = "NoDate"
 end = "NoDate"
 zoneNameList = []
 zoneSrfNameList = []
+zoneSrfTypeList = []
 zoneSrfAreaList = []
 gotZoneData = False
 gotSrfData = False
@@ -84,6 +85,7 @@ if _resultFileAddress:
                 numSrfs = line.split(",")[numSrfsIndex]
                 for num in range(int(numZones)):
                     zoneSrfNameList.append([])
+                    zoneSrfTypeList.append([])
                     zoneSrfAreaList.append([])
             elif "Zone Information" in line and "Floor Area {m2}" in line:
                 zoneAreaLines = range(lineCount+1, lineCount+1+int(numZones))
@@ -97,6 +99,7 @@ if _resultFileAddress:
                     zoneCounter += 1
                 else:
                     zoneSrfNameList[zoneCounter].append(line.split(",")[1])
+                    zoneSrfTypeList[zoneCounter].append(line.split(",")[5])
                     zoneSrfAreaList[zoneCounter].append(float(line.split(",")[9]))
                 gotSrfData = True
             else: pass
@@ -163,18 +166,18 @@ def makeHeader(list, path, srfName, timestep, name, units):
     list.Add(start, GH_Path(path))
     list.Add(end, GH_Path(path))
 
-def makeHeaderGrafted(list, path1, path2, srfName, timestep, name, units, normable):
+def makeHeaderGrafted(list, path1, path2, srfName, timestep, name, units, normable, typeName):
     list.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(path1, path2))
     list.Add(location, GH_Path(path1, path2))
-    if normBySrf == False or normable == False: list.Add(name + " for " + srfName, GH_Path(path1, path2))
-    else: list.Add("Area Normalized " + name + " for " + srfName, GH_Path(path1, path2))
+    if normBySrf == False or normable == False: list.Add(name + " for " + srfName + ": " + typeName, GH_Path(path1, path2))
+    else: list.Add("Area Normalized " + name + " for " + srfName + ": " + typeName, GH_Path(path1, path2))
     if normBySrf == False or normable == False: list.Add(units, GH_Path(path1, path2))
     else: list.Add(units+"/m2", GH_Path(path1, path2))
     list.Add(timestep, GH_Path(path1, path2))
     list.Add(start, GH_Path(path1, path2))
     list.Add(end, GH_Path(path1, path2))
 
-#Make a function to check the srf name.
+#Make a function to check the srf name and type Name.
 def checkSrfName(csvName):
     srfName = None
     for branch, list in enumerate(zoneSrfNameList):
@@ -182,7 +185,9 @@ def checkSrfName(csvName):
             if name == csvName:
                 srfName = name
                 path.append([branch, count])
-    return srfName
+                typeName = zoneSrfTypeList[branch][count]
+    
+    return srfName, typeName
 
 
 # PARSE THE RESULT FILE.
@@ -199,8 +204,8 @@ if _resultFileAddress and gotZoneData == True:
                     
                     if 'Surface Inside Face Temperature' in column:
                         if gotSrfData == True:
-                            srfName = checkSrfName(srfName)
-                            makeHeaderGrafted(surfaceIndoorTemp, int(path[columnCount][0]), int(path[columnCount][1]), srfName, column.split('(')[-1].split(')')[0], "Inner Surface Temperature", "C", False)
+                            srfName, typeName = checkSrfName(srfName)
+                            makeHeaderGrafted(surfaceIndoorTemp, int(path[columnCount][0]), int(path[columnCount][1]), srfName, column.split('(')[-1].split(')')[0], "Inner Surface Temperature", "C", False, typeName)
                         else:
                             path.append([InTemp])
                             makeHeader(surfaceIndoorTemp, int(path[columnCount]), srfName, column.split('(')[-1].split(')')[0], "Inner Surface Temperature", "C")
@@ -210,8 +215,8 @@ if _resultFileAddress and gotZoneData == True:
                     
                     elif 'Surface Outside Face Temperature' in column:
                         if gotSrfData == True:
-                            srfName = checkSrfName(srfName)
-                            makeHeaderGrafted(surfaceOutdoorTemp, int(path[columnCount][0]), int(path[columnCount][1]), srfName, column.split('(')[-1].split(')')[0], "Outer Surface Temperature", "C", False)
+                            srfName, typeName = checkSrfName(srfName)
+                            makeHeaderGrafted(surfaceOutdoorTemp, int(path[columnCount][0]), int(path[columnCount][1]), srfName, column.split('(')[-1].split(')')[0], "Outer Surface Temperature", "C", False, typeName)
                         else:
                             path.append([OutTemp])
                             makeHeader(surfaceOutdoorTemp, int(path[columnCount]), srfName, column.split('(')[-1].split(')')[0], "Outer Surface Temperature", "C")
@@ -221,8 +226,8 @@ if _resultFileAddress and gotZoneData == True:
                     
                     elif 'Surface Average Face Conduction Heat Transfer Energy' in column:
                         if gotSrfData == True:
-                            srfName = checkSrfName(srfName)
-                            makeHeaderGrafted(opaqueEnergyFlow, int(path[columnCount][0]), int(path[columnCount][1]), srfName, column.split('(')[-1].split(')')[0], "Opaque Conductive Energy Loss/Gain", "kWh", True)
+                            srfName, typeName = checkSrfName(srfName)
+                            makeHeaderGrafted(opaqueEnergyFlow, int(path[columnCount][0]), int(path[columnCount][1]), srfName, column.split('(')[-1].split(')')[0], "Opaque Conductive Energy Loss/Gain", "kWh", True, typeName)
                         else:
                             path.append([opaConduct])
                             makeHeader(opaqueEnergyFlow, int(path[columnCount]), srfName, column.split('(')[-1].split(')')[0], "Opaque Conductive Energy Loss/Gain", "kWh")
@@ -232,8 +237,8 @@ if _resultFileAddress and gotZoneData == True:
                     
                     elif 'Surface Window Heat Gain Energy' in column:
                         if gotSrfData == True:
-                            srfName = checkSrfName(srfName)
-                            makeHeaderGrafted(glazEnergyFlow, int(path[columnCount][0]), int(path[columnCount][1]), srfName, column.split('(')[-1].split(')')[0], "Glazing Energy Loss/Gain", "kWh", True)
+                            srfName, typeName = checkSrfName(srfName)
+                            makeHeaderGrafted(glazEnergyFlow, int(path[columnCount][0]), int(path[columnCount][1]), srfName, column.split('(')[-1].split(')')[0], "Glazing Energy Loss/Gain", "kWh", True, typeName)
                         else:
                             path.append([glzGain])
                             makeHeader(glazEnergyFlow, int(path[columnCount]), srfName, column.split('(')[-1].split(')')[0], "Glazing Energy Loss/Gain", "kWh")
@@ -243,7 +248,7 @@ if _resultFileAddress and gotZoneData == True:
                     
                     elif 'Surface Window Heat Loss Energy' in column:
                         if gotSrfData == True:
-                            srfName = checkSrfName(srfName)
+                            srfName, typeName = checkSrfName(srfName)
                         else:
                             path.append([glzLoss])
                             glzLoss += 1
@@ -251,8 +256,8 @@ if _resultFileAddress and gotZoneData == True:
                     
                     elif 'Surface Window Transmitted Beam Solar Radiation Energy' in column:
                         if gotSrfData == True:
-                            srfName = checkSrfName(srfName)
-                            makeHeaderGrafted(windowBeamEnergy, int(path[columnCount][0]), int(path[columnCount][1]), srfName, column.split('(')[-1].split(')')[0], "Window Transmitted Beam Energy", "kWh", True)
+                            srfName, typeName = checkSrfName(srfName)
+                            makeHeaderGrafted(windowBeamEnergy, int(path[columnCount][0]), int(path[columnCount][1]), srfName, column.split('(')[-1].split(')')[0], "Window Transmitted Beam Energy", "kWh", True, typeName)
                         else:
                             path.append([glzBeamGain])
                             makeHeader(windowBeamEnergy, int(path[columnCount]), srfName, column.split('(')[-1].split(')')[0], "Window Transmitted Beam Energy", "kWh")
@@ -262,8 +267,8 @@ if _resultFileAddress and gotZoneData == True:
                     
                     elif 'Surface Window Transmitted Diffuse Solar Radiation Energy' in column:
                         if gotSrfData == True:
-                            srfName = checkSrfName(srfName)
-                            makeHeaderGrafted(windowDiffEnergy, int(path[columnCount][0]), int(path[columnCount][1]), srfName, column.split('(')[-1].split(')')[0], "Window Transmitted Diffuse Energy", "kWh", True)
+                            srfName, typeName = checkSrfName(srfName)
+                            makeHeaderGrafted(windowDiffEnergy, int(path[columnCount][0]), int(path[columnCount][1]), srfName, column.split('(')[-1].split(')')[0], "Window Transmitted Diffuse Energy", "kWh", True, typeName)
                         else:
                             path.append([glzDiffGain])
                             makeHeader(windowDiffEnergy, int(path[columnCount]), srfName, column.split('(')[-1].split(')')[0], "Window Transmitted Diffuse Energy", "kWh")
@@ -273,8 +278,8 @@ if _resultFileAddress and gotZoneData == True:
                     
                     elif 'Surface Window Transmitted Solar Radiation Energy' in column:
                         if gotSrfData == True:
-                            srfName = checkSrfName(srfName)
-                            makeHeaderGrafted(windowTotalSolarEnergy, int(path[columnCount][0]), int(path[columnCount][1]), srfName, column.split('(')[-1].split(')')[0], "Window Total Transmitted Solar Energy", "kWh", True)
+                            srfName, typeName = checkSrfName(srfName)
+                            makeHeaderGrafted(windowTotalSolarEnergy, int(path[columnCount][0]), int(path[columnCount][1]), srfName, column.split('(')[-1].split(')')[0], "Window Total Transmitted Solar Energy", "kWh", True, typeName)
                         else:
                             path.append([glzTotalGain])
                             makeHeader(windowTotalSolarEnergy, int(path[columnCount]), srfName, column.split('(')[-1].split(')')[0], "Window Total Transmitted Solar Energy", "kWh")
@@ -326,7 +331,11 @@ if _resultFileAddress and gotZoneData == True:
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warn)
 
 # Create a list with the energy flow of all surfaces.
-surfaceEnergyFlow = opaqueEnergyFlow
+for i in range(opaqueEnergyFlow.BranchCount):
+    path = opaqueEnergyFlow.Path(i)
+    branchList = opaqueEnergyFlow.Branch(i)
+    for item in branchList:
+        surfaceEnergyFlow.Add(item, path)
 for i in range(glazEnergyFlow.BranchCount):
     path = glazEnergyFlow.Path(i)
     branchList = glazEnergyFlow.Branch(i)
