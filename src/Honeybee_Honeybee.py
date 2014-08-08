@@ -2994,10 +2994,17 @@ class hb_reEvaluateHBZones(object):
     def checkChildSurfaces(self, surface):
         
         def isRectangle(ptList):
-            if ptList[0].DistanceTo(ptList[2]) == ptList[1].DistanceTo(ptList[3]):
-                return True
-            else:
+            vector1 = rc.Geometry.Vector3d(ptList[0] - ptList[1])
+            vector2 = rc.Geometry.Vector3d(ptList[1] - ptList[2])
+            vector3 = rc.Geometry.Vector3d(ptList[2] - ptList[3])
+            vector4 = rc.Geometry.Vector3d(ptList[3] - ptList[0])
+            
+            if ptList[0].DistanceTo(ptList[2]) != ptList[1].DistanceTo(ptList[3]) or \
+               math.degrees(rc.Geometry.Vector3d.VectorAngle(vector1, vector2))!= 90 or \
+               math.degrees(rc.Geometry.Vector3d.VectorAngle(vector3, vector4))!= 90:
                 return False
+            else:
+                return True
         
         # get glaing coordinates- coordinates will be returned as lists of lists
         glzCoordinates = surface.extractGlzPoints()
@@ -3390,7 +3397,7 @@ class hb_EPSurface(object):
             if mesh.Faces.GetFaceVertices(face)[3] != mesh.Faces.GetFaceVertices(face)[4]:
                 meshVertices = mesh.Faces.GetFaceVertices(face)[1:5]
                 # triangulation
-                if triangulate:
+                if triangulate or not self.isRectangle(meshVertices):
                     coordinatesList.append(meshVertices[:3])
                     coordinatesList.append([meshVertices[0], meshVertices[2], meshVertices[3]])
                 else:
@@ -3520,7 +3527,21 @@ class hb_EPSurface(object):
             pointsSorted = pointsSorted[firstPtIndex:] + pointsSorted[:firstPtIndex]
         
         return list(pointsSorted)
-
+    
+    def isRectangle(self, ptList):
+        vector1 = rc.Geometry.Vector3d(ptList[0] - ptList[1])
+        vector2 = rc.Geometry.Vector3d(ptList[1] - ptList[2])
+        vector3 = rc.Geometry.Vector3d(ptList[2] - ptList[3])
+        vector4 = rc.Geometry.Vector3d(ptList[3] - ptList[0])
+        
+        if ptList[0].DistanceTo(ptList[2]) != ptList[1].DistanceTo(ptList[3]) or \
+           math.degrees(rc.Geometry.Vector3d.VectorAngle(vector1, vector2))!= 90 or \
+           math.degrees(rc.Geometry.Vector3d.VectorAngle(vector3, vector4))!= 90:
+            return False
+        else:
+            return True
+        
+        
     def extractGlzPoints(self, RAD = False, method = 2):
         glzCoordinatesList = []
         for glzSrf in self.childSrfs:
@@ -3528,7 +3549,7 @@ class hb_EPSurface(object):
             # check numOfPoints
             if len(sortedPoints) < 4 or (self.isPlanar and RAD==True):
                 glzCoordinatesList.append(sortedPoints) #triangle
-            elif len(sortedPoints) == 4 and self.isPlanar and abs(sortedPoints[0].DistanceTo(sortedPoints[2]) - sortedPoints[1].DistanceTo(sortedPoints[3]))< sc.doc.ModelAbsoluteTolerance:
+            elif len(sortedPoints) == 4 and self.isPlanar and self.isRectangle(sortedPoints):
                 glzCoordinatesList.append(sortedPoints) #rectangle
             else:
                 if method == 1:
