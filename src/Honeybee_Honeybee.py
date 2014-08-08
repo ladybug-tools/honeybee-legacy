@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_07_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_07_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1057,6 +1057,744 @@ class hb_MSHToRAD(object):
         time.sleep(.2)
     
         return matFile, radFile
+
+class WriteRAD(object):
+    
+    def shiftList(self, list, number = 1):
+        newList = []
+        newList.extend(list[-number:])
+        newList.extend(list[:-number])
+        return newList
+    
+    def getsurfaceStr(self, surface, count, coordinates):
+        if surface.RadMaterial != None:
+            surface.construction = surface.RadMaterial
+        elif not hasattr(surface, 'construction'):
+            
+            if not hasattr(surface, 'type'):
+                # find the type based on 
+                surface.type = surface.getTypeByNormalAngle()
+                
+            #assign the construction based on type
+            surface.construction = surface.cnstrSet[surface.type]
+            
+        srfStr =  surface.construction.replace(" ", "_") + " polygon " + surface.name + '_' + `count` + "\n" + \
+            "0\n" + \
+            "0\n" + \
+            `(len(coordinates)*3)` + "\n"
+            
+        ptStr = ''
+        for  pt in coordinates:
+            ptStr = ptStr + '%.4f'%pt.X + '  ' + '%.4f'%pt.Y + '  ' + '%.4f'%pt.Z + '\n'
+        ptStr = ptStr + '\n'
+        
+        # check for polygons with only two points.
+        # Yes! it is possible. Import a model from REVIT/SketchUp and create some breps out of it
+        # and you will get some!
+        if len(coordinates) < 3:
+            comment = " Polygon " + surface.name + " has less than 3 vertices and is removed by Honeybee.\n"
+            return "#" + comment
+        
+        return srfStr + ptStr
+
+    def RADSurface(self, surface):
+        fullStr = ''
+        # base surface coordinates
+        coordinatesList = surface.extractPoints(1, True)
+        
+        if coordinatesList:
+            if type(coordinatesList[0])is not list and type(coordinatesList[0]) is not tuple:
+                coordinatesList = [coordinatesList]
+                
+            for count, coordinates in enumerate(coordinatesList):
+                endCoordinate = rc.Geometry.Point3d.Add(coordinates[-1], rc.Geometry.Vector3d(0,0,0))
+                if surface.hasChild:
+                    glzCoordinateLists = surface.extractGlzPoints(True)
+                    for glzCount, glzCoorList in enumerate(glzCoordinateLists):
+                        # glazingStr
+                        fullStr = fullStr + self.getsurfaceStr(surface.childSrfs[0], glzCount, glzCoorList)
+                        
+                        # shift glazing list
+                        glzCoorList = self.shiftList(glzCoorList)
+                        coordinates.extend(glzCoorList)
+                        coordinates.append(glzCoorList[0])
+                    coordinates.extend([endCoordinate, coordinates[0]])
+                fullStr = fullStr + self.getsurfaceStr(surface, count, coordinates)
+            return fullStr
+        else:
+            print "one of the surfaces is not exported correctly"
+            return ""
+            
+    def RADNonPlanarSurface(self, surface):
+        fullStr = ''
+        
+        # replace the geometry with the punched geometry
+        # for planar surfaces with multiple openings
+        try:
+            if surface.punchedGeometry!=None:
+                surface.geometry = surface.punchedGeometry
+                surface.hasInternalEdge = True
+        except:
+            #print e
+            # nonplanar surfaces with no openings
+            pass
+            
+        # base surface coordinates
+        coordinatesList = surface.extractPoints(1, True)
+
+        if type(coordinatesList[0])is not list and type(coordinatesList[0]) is not tuple:
+            coordinatesList = [coordinatesList]
+        for count, coordinates in enumerate(coordinatesList):
+            #print count
+            fullStr = fullStr + self.getsurfaceStr(surface, count, coordinates)
+        
+        return fullStr
+    
+    def RADNonPlanarChildSurface(self, surface):
+        fullStr = ''
+        
+        # I should test this function before the first release!
+        # Not sure if it will work for cases generated only by surface
+        # should probably check for meshed surface and mesh the geometry
+        # in case it is not meshed
+        
+        # base surface coordinates
+        coordinatesList = surface.extractGlzPoints(True)
+        if type(coordinatesList[0])is not list and type(coordinatesList[0]) is not tuple:
+            coordinatesList = [coordinatesList]
+        for glzCount, glzCoorList in enumerate(coordinatesList):
+            # glazingStr
+            fullStr = fullStr + self.getsurfaceStr(surface.childSrfs[0], glzCount, glzCoorList)
+        return fullStr
+    
+    def getIESSurfaceStr(self, surface, constructionName, count):
+        
+        coordinates = surface.DuplicateVertices()
+        construction = constructionName
+            
+        srfStr =  constructionName + "_light polygon " + constructionName + '_' + `count` + ".d\n" + \
+            "0\n" + \
+            "0\n" + \
+            `(len(coordinates)*3)` + "\n"
+            
+        ptStr = ''
+        for  pt in coordinates:
+            ptStr = ptStr + '%.4f'%pt.X + '  ' + '%.4f'%pt.Y + '  ' + '%.4f'%pt.Z + '\n'
+        ptStr = ptStr + '\n'
+        
+        return srfStr + ptStr
+
+class WriteRADAUX(object):
+    radSkyCondition = {0: '-u',
+                       1: '-c',
+                       2: '-i',
+                       3: '+i',
+                       4: '-s',
+                       5: '+s'}
+                       
+    def getTime(self):
+        
+        def addZero(number):
+            if len(str(number)) == 1:
+                return "0" + str(number)
+            else:
+                return str(number)
+        
+        year, month, day, hour, minute, second = time.localtime()[0:6]
+        
+        now = addZero(hour) + "_" + addZero(minute) + "_" + addZero(second)
+    
+        date = addZero(year) + "_" +  addZero(month)  + "_" + addZero(day)
+    
+        return date + "at" + now
+    
+    def copyFile(self, inputFile, destinationFullpath, overwrite = False):
+        if overwrite: shutil.copyfile(inputFile, destinationFullpath)
+        elif not os.path.isfile(destinationFullpath): shutil.copyfile(inputFile, destinationFullpath)
+    
+    def RADLocation(self, epw_file):
+        epwfile = open(epw_file,"r")
+        headline = epwfile.readline()
+        csheadline = headline.split(',')
+        while 1>0: #remove empty cells from the end of the list if any
+            try: float(csheadline[-1]); break
+            except: csheadline.pop()
+        locName = ''
+        for hLine in range(1,4):
+            if csheadline[hLine] != '-':
+                locName = locName + csheadline[hLine].strip() + '_'
+        locName = locName[:-1].strip()
+        lat = csheadline[-4]
+        lngt = csheadline[-3]
+        timeZone = csheadline[-2]
+        elev = csheadline[-1].strip()
+        epwfile.close()
+        
+        return locName, lat, lngt, timeZone, elev
+    
+    def RADRadiationSky(self, projectName):
+        return  "# start of sky definition for radiation studies\n" + \
+                "void brightfunc skyfunc\n" + \
+                "2 skybright " + projectName + ".cal\n" + \
+                "0\n" + \
+                "0\n" + \
+                "skyfunc glow sky_glow\n" + \
+                "0\n" + \
+                "0\n" + \
+                "4 1 1 1 0\n" + \
+                "sky_glow source sky\n" + \
+                "0\n" + \
+                "0\n" + \
+                "4 0 0 1 180\n" + \
+                "# end of sky definition for radiation studies\n\n"
+    
+    def RADDaylightingSky(self, epwFileAddress, skyCondition, time, month, day):
+        locName, lat, long, timeZone, elev = self.RADLocation(epwFileAddress)
+        return  "# start of sky definition for daylighting studies\n" + \
+                "# location name: " + locName + " LAT: " + lat + "\n" + \
+                "!gensky " + `month` + ' ' + `day` + ' ' + `time` + ' ' + self.radSkyCondition[skyCondition] + \
+                " -a " + lat + " -o " + `-float(long)` + " -m " + `-float(timeZone) * 15` + "\n" + \
+                "skyfunc glow sky_mat\n" + \
+                "0\n" + \
+                "0\n" + \
+                "4 1 1 1 0\n" + \
+                "sky_mat source sky\n" + \
+                "0\n" + \
+                "0\n" + \
+                "4 0 0 1 180\n" + \
+                "skyfunc glow ground_glow\n" + \
+                "0\n" + \
+                "0\n" + \
+                "4 1 .8 .5 0\n" + \
+                "ground_glow source ground\n" + \
+                "0\n" + \
+                "0\n" + \
+                "4 0 0 -1 180\n" + \
+                "# end of sky definition for daylighting studies\n\n"
+                    
+                    
+    def exportView(self, viewName, radParameters, cameraType, imageSize, sectionPlane, nXDiv = 1, nYDiv = 1, vs = 0, vl = 0):
+        
+        if viewName in rs.ViewNames():
+            viewName = rs.CurrentView(viewName, True)
+        else:
+            # change to RhinoDoc to get access to NamedViews
+            sc.doc = rc.RhinoDoc.ActiveDoc
+            namedViews = rs.NamedViews()
+            if viewName in namedViews:
+                viewName = rs.RestoreNamedView(viewName)
+            else:
+                viewName = None
+            # change back to Grasshopper
+            sc.doc = ghdoc
+            viewName = rs.CurrentView(viewName, True)
+        
+        if viewName == None:
+            print "Illegal view name!"
+            viewName = "Perspective"
+            
+        # Read camera type 0: Perspective, 1: fisheye, 2: parallel
+        try: cameraType = int(cameraType)
+        except:
+            if sc.doc.Views.ActiveView.ActiveViewport.IsPerspectiveProjection: cameraType = 0
+            elif sc.doc.Views.ActiveView.ActiveViewport.IsParallelProjection: cameraType = 2
+        
+        # paralell view sizes
+        viewHSizeP = int(sc.doc.Views.ActiveView.ActiveViewport.Size.Width)
+        viewVSizeP = int(sc.doc.Views.ActiveView.ActiveViewport.Size.Height)
+        
+        # read image size
+        viewHSize = int(sc.doc.Views.ActiveView.ActiveViewport.Size.Width)
+        viewVSize = int(sc.doc.Views.ActiveView.ActiveViewport.Size.Height)
+        # print viewHSize, viewVSize
+        userInputH = imageSize[0]
+        userInputV = imageSize[1]
+        if userInputH != None and userInputV != None:
+            try:
+                viewHSize = float(userInputH)
+                viewVSize = float(userInputV)
+            except:
+                print "Illegal input for view size."
+                pass
+        elif userInputH == None and userInputV != None:
+            try:
+                viewHSize = viewHSize * (userInputV/viewVSize)
+                viewVSize = float(userInputV)
+            except:
+                print "Illegal input for view size."
+                pass
+        elif userInputH != None and userInputV == None:
+            try:
+                viewVSize = viewVSize * (userInputH/viewHSize)
+                viewHSize = float(userInputH)
+            except:
+                print "Illegal input for view size."
+                pass
+        
+        # print viewHSize, viewVSize
+        viewPoint = sc.doc.Views.ActiveView.ActiveViewport.CameraLocation
+        viewDirection = sc.doc.Views.ActiveView.ActiveViewport.CameraDirection
+        viewDirection.Unitize()
+        viewUp = sc.doc.Views.ActiveView.ActiveViewport.CameraUp
+        viewHA = 180 - rs.VectorAngle(sc.doc.Views.ActiveView.ActiveViewport.GetFrustumRightPlane()[1][1], sc.doc.Views.ActiveView.ActiveViewport.GetFrustumLeftPlane()[1][1])
+        if viewHA == 0: viewHA = 180
+        viewVA = 180 - rs.VectorAngle(sc.doc.Views.ActiveView.ActiveViewport.GetFrustumBottomPlane()[1][1], sc.doc.Views.ActiveView.ActiveViewport.GetFrustumTopPlane()[1][1])
+        if viewVA == 0: viewVA = 180
+        
+        PI = math.pi
+        
+        if cameraType == 2:
+            # Thank you to Brent Watanabe for the great discussion, and his help in figuring this out
+            # I should find the bounding box of the geometry and set X and Y based of that!
+            if nXDiv != 1:
+                viewHSizeP = viewHSizeP/nXDiv
+                viewHSize = viewHSize/nXDiv
+            if nYDiv != 1:
+                viewVSizeP = viewVSizeP/nYDiv
+                viewVSize = viewVSize/nYDiv
+                
+            view = "-vtl -vp " + \
+               `viewPoint[0]` + " " + `viewPoint[1]` + " " + `viewPoint[2]` + " " + \
+               " -vd " + `viewDirection[0]` + " " + `viewDirection[1]` + " " + `viewDirection[2]` + " " + \
+               " -vu " + `viewUp[0]` + " " +  `viewUp[1]` + " " + `viewUp[2]` + \
+               " -vh " + `int(viewHSizeP)` + " -vv " + `int(viewVSizeP)` + \
+               " -vs " + "%.3f"%vs + " -vl " + "%.3f"%vl + \
+               " -x " + `int(viewHSize)` + " -y " + `int(viewVSize)`
+               
+        elif cameraType == 0:
+            # perspective
+            
+            # recalculate vh and vv
+            if nXDiv != 1:
+                viewHA = (2.*180./PI)*math.atan(((PI/180./2.) * viewHA)/nXDiv)
+                viewHSize = viewHSize/nXDiv
+            if nYDiv != 1:
+                viewVA = (2.*180./PI)*math.atan(math.tan((PI/180./2.)*viewVA)/nYDiv)
+                viewVSize = viewVSize/nYDiv
+            
+            view = "-vtv -vp " + \
+               "%.3f"%viewPoint[0] + " " + "%.3f"%viewPoint[1] + " " + "%.3f"%viewPoint[2] + " " + \
+               " -vd " + "%.3f"%viewDirection[0] + " " + "%.3f"%viewDirection[1] + " " + "%.3f"%viewDirection[2] + " " + \
+               " -vu " + "%.3f"%viewUp[0] + " " +  "%.3f"%viewUp[1] + " " + "%.3f"%viewUp[2] + " " + \
+               " -vh " + "%.3f"%viewHA + " -vv " + "%.3f"%viewVA + \
+               " -vs " + "%.3f"%vs + " -vl " + "%.3f"%vl + " -x " + `int(viewHSize)` + " -y " + `int(viewVSize)`
+        
+        elif cameraType == 1:
+            # fish eye
+            # recalculate vh and vv
+            viewHA = 180
+            viewVA = 180
+            if nXDiv != 1:
+                viewHA = (2.*180./PI)*math.asin(math.sin((PI/180./2.)*viewHA)/nXDiv)
+                viewHSize = viewHSize/nXDiv
+            if nYDiv != 1:
+                viewVA = (2.*180./PI)*math.asin(math.sin((PI/180./2.)*viewVA)/nYDiv)
+                viewVSize = viewVSize/nYDiv
+            
+            view = "-vth -vp " + \
+               `viewPoint[0]` + " " + `viewPoint[1]` + " " + `viewPoint[2]` + " " + \
+               " -vd " + `viewDirection[0]` + " " + `viewDirection[1]` + " " + `viewDirection[2]` + " " + \
+               " -vu " + `viewUp[0]` + " " +  `viewUp[1]` + " " + `viewUp[2]` + " " + \
+               " -vh " + "%.3f"%viewHA + " -vv " + "%.3f"%viewVA + \
+               " -vs " + "%.3f"%vs + " -vl " + "%.3f"%vl + " -x " + `int(viewHSize)` + " -y " + `int(viewVSize)`
+        
+        if sectionPlane!=None:
+            # map the point on the plane
+            pointOnPlane = sectionPlane.ClosestPoint(viewPoint)
+            distance = pointOnPlane.DistanceTo(viewPoint)
+            view += " -vo " + str(distance)
+            
+        return view + " "
+    
+    def oconvLine(self, octFileName, radFilesList):
+        # sence files
+        senceFiles = ""
+        for address in radFilesList: senceFiles = senceFiles + address.replace("\\" , "/") + " "
+        
+        line = "oconv -f " +  senceFiles + " > " + octFileName + ".oct\n"
+        
+        return line
+
+    def rpictLine(self, viewFileName, projectName, viewName, radParameters):
+        line = "rpict -t 10 -i -ab " + `radParameters["_ab_"]` + \
+           " -ad " + `radParameters["_ad_"]` + " -as " +  `radParameters["_as_"]` + \
+           " -ar " + `radParameters["_ar_"]` + " -aa " +  `radParameters["_aa_"]` + \
+           " -vf " + viewFileName + " " + projectName + ".oct > " + \
+           projectName + "_" + viewName + "_RadStudy.pic\n"
+        return line
+    
+    def rpictLineAlternate(self, view, projectName, viewName, radParameters, analysisType = 0, cpuCount = 0):
+        octFile = projectName + ".oct"
+        ambFile = projectName + "_" + viewName + "_" + `cpuCount` + ".amb"
+        unfFile = projectName + "_" + viewName + "_" + `cpuCount` + ".unf" 
+        outputFile = projectName + "_" + viewName + "_" + `cpuCount` + ".HDR"
+        
+        if analysisType==0:
+            # illuminance (lux)
+            line0 = "rpict -i "
+        elif analysisType==2:
+            # luminance (cd)
+            line0 = "rpict "
+        else:
+            # radiation analysis
+            line0 = "rpict -i "
+        
+        # check got translucant materials
+        # St = A6*A7*( 1  photopic average (A1,A2,A3) * A4 )
+        # radParameters["_st_"]
+        
+        line1 = "-t 10 "+ \
+                view + " -af " + ambFile +  " " + \
+                " -ps " + str(radParameters["_ps_"]) + " -pt " + str(radParameters["_pt_"]) + \
+                " -pj " + str(radParameters["_pj_"]) + " -dj " + str(radParameters["_dj_"]) + \
+                " -ds " + str(radParameters["_ds_"]) + " -dt " + str(radParameters["_dt_"]) + \
+                " -dc " + str(radParameters["_dc_"]) + " -dr " + str(radParameters["_dr_"]) + \
+                " -dp " + str(radParameters["_dp_"]) + " -st " + str(radParameters["_st_"])  + \
+                " -ab " + `radParameters["_ab_"]` + \
+                " -ad " + `radParameters["_ad_"]` + " -as " +  `radParameters["_as_"]` + \
+                " -ar " + `radParameters["_ar_"]` + " -aa " +  '%.3f'%radParameters["_aa_"] + \
+                " -lr " + `radParameters["_lr_"]`  + " -lw " + '%.3f'%radParameters["_lw_"] + " -av 0 0 0 " + \
+                " " + octFile + " > " + unfFile + "\n"
+    
+        line2 = "del " + ambFile + "\n"
+        
+        line3 = "pfilt -1 -r .6 -x/2 -y/2 " + unfFile + " > " + outputFile + \
+                    "\nexit\n"
+        
+        return line0 + line1 + line2 + line0 + line1 + line3
+        
+        
+    def falsecolorLine(self, projectName, viewName):
+        line = "c:\python27\python c:\honeybee\\falsecolor2.py -i " + projectName + "_RAD_" + viewName + "_RadStudy.pic -s auto -n 10 -mask 0.1 -l kWhm-2 -z > " + projectName + "_" + viewName + "_FalseColored.pic\n" + \
+           "ra_tiff " + projectName + "_" + viewName + "_FalseColored.pic " + projectName + "_" + viewName + "_FalseColored.tif\n" + \
+           "ra_gif " + projectName + "_" + viewName + "_FalseColored.pic " + projectName + "_" + viewName + "_FalseColored.gif\n"
+        return line
+
+    def rtraceLine(self, projectName, octFileName, radParameters, simulationType = 0, cpuCount = 0):
+        ptsFile = projectName + "_" + str(cpuCount) + ".pts"
+        outputFile = projectName + "_" + str(cpuCount) + ".res"
+        if simulationType == 0:
+            line0 = "rtrace -I "
+        elif simulationType == 2:
+            line0 = "rtrace "
+        else:
+            print "Fix this for radiation analysis"
+            line0 = "rtrace -I "
+            
+        line1 = " -h -ms 0.063 -dp " + str(radParameters["_dp_"]) + \
+                " -ds " + str(radParameters["_ds_"]) + " -dt " + str(radParameters["_dt_"]) + \
+                " -dc " + str(radParameters["_dc_"]) + " -dr " + str(radParameters["_dr_"]) + \
+                " -st " + str(radParameters["_st_"]) + " -lr " + str(radParameters["_lr_"]) + \
+                " -lw " + str(radParameters["_lw_"]) + " -ab " + str(radParameters["_ab_"]) + \
+                " -ad " + str(radParameters["_ad_"]) + " -as " + str(radParameters["_as_"]) + \
+                " -ar " + str(radParameters["_ar_"]) + " -aa " + str(radParameters["_aa_"]) + \
+                " " + octFileName + ".oct < " + ptsFile + \
+                " > " + outputFile + "\n"
+        
+        return line0 + line1
+        
+    def testPtsStr(self, testPoint, ptsNormal):
+        return  '%.4f'%testPoint.X + '\t' + \
+                '%.4f'%testPoint.Y + '\t' + \
+                '%.4f'%testPoint.Z + '\t' + \
+                '%.4f'%ptsNormal.X + '\t' + \
+                '%.4f'%ptsNormal.Y + '\t' + \
+                '%.4f'%ptsNormal.Z + '\n'
+        
+
+    def readRadiationResult(self, resultFile):
+        result = []
+        resultFile = open(resultFile,"r")
+        for line in resultFile: result.append(float(line.split('	')[0])*179)
+        return result
+    
+    def readDLResult(self, resultFile):
+        result = []
+        resultFile = open(resultFile,"r")
+        for line in resultFile:
+            R, G, B = line.split('	')[0:3]
+            result.append( 179 * (.265 * float(R) + .67 * float(G) + .065 * float(B)))
+        return result
+
+    def isSrfInterior(self, HBSrf):
+        # This can be tricky since some of interior walls may or may not be air walls
+        if HBSrf.type == 0 and HBSrf.BC.lower() == "surface":
+            return True
+        else:
+            return False
+        
+class WriteDS(object):
+    
+    def isSensor(self, testPt, sensors):
+        for pt in sensors:
+            if pt.DistanceTo(testPt) < sc.doc.ModelAbsoluteTolerance:
+                # this is a senor point
+                return True
+        # not a sensor
+        return False
+    
+    def DSHeadingStr(self, projectName, subWorkingDir, tempFolder, hb_DSPath, cpuCount = 0):
+        return   '#######################################\n' + \
+                 '#DAYSIM HEADING - GENERATED BY HONEYBEE\n' + \
+                 '#######################################\n' + \
+                 'project_name       ' + projectName + '_' + `cpuCount` + '\n' + \
+                 'project_directory  ' + subWorkingDir + '\\\n' + \
+                 'bin_directory      ' + hb_DSPath + '\\bin\\\n' + \
+                 'tmp_directory      ' + tempFolder + '\\\n' + \
+                 'Template_File      ' + hb_DSPath + '\\template\\DefaultTemplate.htm\n'
+                 
+    
+    def DSLocationStr(self, hb_writeRADAUX,  lb_preparation, epwFileAddress):
+        # location information
+        locName, lat, long, timeZone, elev = hb_writeRADAUX.RADLocation(epwFileAddress)
+        
+        
+        return'\n\n#################################\n' + \
+                  '#      LOCATION INFORMATION      \n' + \
+                  '#################################\n' + \
+                  'place                     ' + lb_preparation.removeBlankLight(locName) + '\n' + \
+                  'latitude                  ' + lat + '\n' + \
+                  'longitude                 ' + `-float(long)` + '\n' + \
+                  'time_zone                 ' + `-15 * float(timeZone)` + '\n' + \
+                  'site_elevation            ' + elev + '\n' + \
+                  'time_step                 ' + '60\n' + \
+                  'wea_data_short_file       ' + lb_preparation.removeBlankLight(locName) + '.wea\n' + \
+                  'wea_data_short_file_units ' + '1\n' + \
+                  'lower_direct_threshold    ' + '2\n' + \
+                  'lower_diffuse_threshold   ' + '2\n', locName
+        
+    def DSAnalysisUnits(self, outputUnits, pointsCount):
+        # I notice that setting output_units to 1 return all 0 results and not the radiation values
+        # however assigning type 2 for each point using sensor_file_unit works! I think this is a bug
+        # in Daysim that I should report to the email list next week when I come back from Chicago.
+        
+        outputUnits = outputUnits[0]
+        
+        if outputUnits == 2:
+            return 'output_units              ' + `outputUnits` + '\n'
+        
+        elif outputUnits == 1:
+            
+            outputStr = "sensor_file_unit"
+            
+            for pt in range(pointsCount): outputStr += " 2"
+            
+            return outputStr +"\n"
+            
+    # building information
+    def DSBldgStr(self, projectName, materialFileName, radFileFullName, adaptiveZone, dgp_image_x = 500, dgp_image_y = 500, cpuCount = 0):
+        return'\n\n#################################\n' + \
+                  '#      BUILDING INFORMATION      \n' + \
+                  '#################################\n' + \
+                  'material_file          Daysim_material_' + projectName + '.rad\n' + \
+                  'geometry_file          Daysim_'+ projectName + '.rad\n' + \
+                  'radiance_source_files  2, ' + materialFileName + ', ' + radFileFullName + '\n' + \
+                  'sensor_file            ' + projectName + '_' + `cpuCount` + '.pts\n' + \
+                  'viewpoint_file         ' + projectName + '_' + 'fakeView.vf\n' + \
+                  'AdaptiveZoneApplies    ' + `adaptiveZone` + '\n' + \
+                  'dgp_image_x_size       ' + `dgp_image_x` + '\n' + \
+                  'dgp_image_y_size       ' + `dgp_image_y` + '\n'
+    
+    # radiance parameters
+    def DSRADStr(self, radParameters):
+        return '\n\n#################################\n' + \
+                  '#       RADIANCE PARAMETERS      \n' + \
+                  '#################################\n' + \
+                  'ab ' + `radParameters["_ab_"]` + '\n' + \
+                  'ad ' + `radParameters["_ad_"]` + '\n' + \
+                  'as ' + `radParameters["_as_"]` + '\n' + \
+                  'ar ' + `radParameters["_ar_"]` + '\n' + \
+                  'aa ' + `radParameters["_aa_"]` + '\n' + \
+                  'lr 6\n' + \
+                  'st 0.1500\n' + \
+                  'sj 1.0000\n' + \
+                  'lw 0.0040000\n' + \
+                  'dj 0.0000\n' + \
+                  'ds 0.200\n' + \
+                  'dr 2\n' + \
+                  'dp 512\n'
+                          
+    def DSDynamicSimStr(self, shadingRecipes, projectName, subWorkingDir, testPts, cpuCount = 0):
+        
+        dynOptStr = '\n==========================\n' + \
+                    '= shading control system\n' + \
+                    '==========================\n'
+        
+        numOfDynamicShadings = 0
+        # find number of dynamic shadings
+        for shadingRecipe in shadingRecipes:
+            if shadingRecipe.type == 2:
+                numOfDynamicShadings += 1
+
+        dynamicShdHeading ='shading -' + str(numOfDynamicShadings) + '\n' + \
+                    projectName + '_' + `cpuCount` + '.dc ' + projectName + '_' + `cpuCount` + '.ill\n'
+        
+        dynamicCounter = 0
+        for recipeCount, shadingRecipe in enumerate(shadingRecipes):
+            name = shadingRecipe.name
+            type = shadingRecipe.type
+            if type == 1:
+                # no dynamic blind
+                sensorPts = []
+                dynamicShd ='shading ' + str(type) + ' ' + name + ' ' + projectName + '_' + `cpuCount` + '.dc ' + projectName + '_' + `cpuCount` + '.ill\n' + \
+                            '\n'
+            elif type == 0:
+                # conceptual dynamic shading
+                sensors = shadingRecipe.sensorPts
+                dynamicShd ='shading ' + str(type) + '\n' + \
+                            name + '_' + str(recipeCount+1) + ' ' + projectName + '_' + `cpuCount` + '.dc ' + projectName + '_' + `cpuCount` + '_up.ill\n' + \
+                            projectName + '_' + `cpuCount` + '_down.ill\n\n'
+                            
+            elif type == 2:
+                dynamicCounter += 1
+                dynamicShd = ""
+                
+                # advanced dynamic shading
+                glareControlRecipe = shadingRecipe.glareControlR
+                shadingStates = shadingRecipe.shadingStates
+                controlSystem = shadingRecipe.controlSystem
+                # sensors = shadingRecipe.sensorPts #sensors are removed from this part and will be added later for the analysis
+                coolingPeriod = shadingRecipe.coolingPeriod
+                
+                # add the heading for the first dynamic shading group
+                if dynamicCounter == 1: dynamicShd = dynamicShdHeading
+                groupName = name
+                
+                if controlSystem == "ManualControl":
+                    dynamicShd += groupName + '\n' + \
+                                  str(len(shadingStates)-1) + '\n' + \
+                                  "ManualControl " + subWorkingDir + "\\" + groupName + "_state_1.rad\n"
+                    
+                    for stateCount in range(1, len(shadingStates)):
+                        dynamicShd += subWorkingDir + "\\" + groupName + "_state_" + str(stateCount + 1) + ".rad " + \
+                                      groupName + "_state_" + str(stateCount + 1) + '_' + `cpuCount` + ".dc " + \
+                                      groupName + "_state_" + str(stateCount + 1) + '_' + `cpuCount` + ".ill\n"
+                
+                elif controlSystem == "AutomatedThermalControl":
+                    if glareControlRecipe!=None:
+                        controlSystem = "AutomatedGlareControl"
+                        exteriorSensor = glareControlRecipe.exteriorSensor
+                        threshold = glareControlRecipe.threshold
+                        minAz = glareControlRecipe.minAz
+                        maxAz = glareControlRecipe.maxAz
+                        minAlt = glareControlRecipe.minAltitude
+                        maxAlt = glareControlRecipe.maxAltitude
+                        
+                    if len(coolingPeriod)!=0:
+                        stMonth, stDay, hour = coolingPeriod[0]
+                        endMonth, endDay, hour = coolingPeriod[1]
+                        
+                        controlSystem += "WithOccupancy"
+                    
+                    if controlSystem == "AutomatedThermalControl":
+                        dynamicShd += groupName + '\n' + \
+                                  str(len(shadingStates)-1) + '\n' + \
+                                  "AutomatedThermalControl " + subWorkingDir + "\\" + groupName + "_state_1.rad\n"
+                        
+                        for stateCount, shadingState in enumerate(shadingStates):
+                            try:
+                                dynamicShd += `int(shadingState.minIlluminance)` + " " + `int(shadingState.maxIlluminance)` + " " + \
+                                          subWorkingDir + "\\" + groupName + "_state_" + str(stateCount + 1) + ".rad " + \
+                                          groupName + "_state_" + str(stateCount + 1) + '_' + `cpuCount` + ".dc " + \
+                                          groupName + "_state_" + str(stateCount + 1) + '_' + `cpuCount` + ".ill\n"
+                            except:
+                                # empty shading states
+                                pass
+                    
+                    elif controlSystem == "AutomatedThermalControlWithOccupancy":
+                        dynamicShd += groupName + '\n' + \
+                                  str(len(shadingStates)-1) + '\n' + \
+                                  "AutomatedThermalControlWithOccupancy " + \
+                                  `stMonth` + " " + `stDay` + " " + `endMonth` + " " + `endDay` + " " + \
+                                  subWorkingDir + "\\" + groupName + "_state_1.rad\n"
+                        
+                        for stateCount, shadingState in enumerate(shadingStates):
+                            try:
+                                dynamicShd += `int(shadingState.minIlluminance)` + " " + `int(shadingState.maxIlluminance)` + " " + \
+                                          subWorkingDir + "\\" + groupName + "_state_" + str(stateCount + 1) + ".rad " + \
+                                          groupName + "_state_" + str(stateCount + 1) + '_' + `cpuCount` + ".dc " + \
+                                          groupName + "_state_" + str(stateCount + 1) + '_' + `cpuCount` + ".ill\n"
+                            except:
+                                pass
+                                
+                    elif controlSystem == "AutomatedGlareControl":
+                        dynamicShd += groupName + '\n' + \
+                                  str(len(shadingStates)-1) + '\n' + \
+                                  "AutomatedGlareControl \n" + \
+                                  `int(threshold)` + " " + `int(minAz)` + " " + `int(maxAz)` + " " + \
+                                  `int(minAlt)` + " " + `int(maxAlt)` + " " + subWorkingDir + "\\" + groupName + "_state_1.rad\n"
+                        
+                        for stateCount, shadingState in enumerate(shadingStates):
+                            try:
+                                dynamicShd += `int(shadingState.minIlluminance)` + " " + `int(shadingState.maxIlluminance)` + " " + \
+                                          subWorkingDir + "\\" + groupName + "_state_" + str(stateCount + 1) + ".rad " + \
+                                          groupName + "_state_" + str(stateCount + 1) + '_' + `cpuCount` + ".dc " + \
+                                          groupName + "_state_" + str(stateCount + 1) + '_' + `cpuCount` + ".ill\n"
+                            except:
+                                pass
+                    
+                    elif controlSystem == "AutomatedGlareControlWithOccupancy":
+                        dynamicShd += groupName + '\n' + \
+                                  str(len(shadingStates)-1) + '\n' + \
+                                  "AutomatedGlareControlWithOccupancy \n" + \
+                                  `int(threshold)` + " " + `int(minAz)` + " " + `int(maxAz)` + " " + \
+                                  `int(minAlt)` + " " + `int(maxAlt)` + "\n" + \
+                                  `stMonth` + " " + `stDay` + " " + `endMonth` + " " + `endDay` + " " + \
+                                  subWorkingDir + "\\" + groupName + "_state_1.rad\n"
+                        
+                        for stateCount, shadingState in enumerate(shadingStates):
+                            try:
+                                dynamicShd += `int(shadingState.minIlluminance)` + " " + `int(shadingState.maxIlluminance)` + " " + \
+                                          subWorkingDir + "\\" + groupName + "_state_" + str(stateCount + 1) + ".rad " + \
+                                          groupName + "_state_" + str(stateCount + 1) + '_' + `cpuCount` + ".dc " + \
+                                          groupName + "_state_" + str(stateCount + 1) + '_' + `cpuCount` + ".ill\n"
+                            except:
+                                pass
+                    
+                    
+            dynOptStr += dynamicShd
+        
+        
+        # I removed the sensor point from here as it wasn't really nessecay to 
+        # apply it here and it was also 
+        
+        #sensorInfoStr = 'sensor_file_info'
+        #if type == 0 or type == 2:
+        #    for pt in testPts:
+        #        if self.isSensor(pt, sensors):
+        #            sensorInfoStr += ' BG' + str(recipeCount+1)
+        #        # if BG1_Ext
+        #        # add external sensor_ This should happen inside the loop for each group
+        #        # as the point maybe part of multiple shading groups
+        #        else:
+        #            sensorInfoStr += ' 0'
+        #        
+        #else:
+        #    for pt in testPts: sensorInfoStr += ' 0'
+        #
+        #dynOptStr += sensorInfoStr
+        
+        #'==========================\n' + \
+        #'= electric lighting system\n' + \
+        #'==========================\n' + \
+        #'electric_lighting_system 2\n' + \
+        #'   4 manual_dimming    100 1 0.0 20 300\n' + \
+        #'   1 manual_control    200 1\n' + \
+        #'\n' + \
+        #'sensor_file_info '
+        #for pt in range(lenOfPts[cpuCount]): dynOptStr = dynOptStr + '0 '
+        
+        return dynOptStr + '\n'
+    
+    
+    def resultStr(self, projectName, cpuCount):
+        return  '\n\n######################\n' + \
+                '# daylighting results \n' + \
+                '######################\n' + \
+                'daylight_autonomy_active_RGB ' + projectName + '_' + `cpuCount` + '_autonomy.DA\n' + \
+                'electric_lighting ' + projectName + '_' + `cpuCount` + '_electriclighting.htm\n' + \
+                'direct_sunlight_file ' + projectName  + '_' + `cpuCount` + '.dir\n' + \
+                'thermal_simulation ' + projectName  + '_' + `cpuCount` + '_intgain.csv\n'
 
 
 class hb_EnergySimulatioParameters(object):
@@ -3410,14 +4148,16 @@ class hb_EPSurface(object):
         return coordinatesList
     
     def extractPoints(self, method = 1, triangulate = False):
-        if not self.meshedFace.IsValid:
-            if self.isPlanar:
-                meshPar = rc.Geometry.MeshingParameters.Coarse
-                meshPar.SimplePlanes = True
-            else:
-                meshPar = rc.Geometry.MeshingParameters.Smooth
-            
-            self.meshedFace = rc.Geometry.Mesh.CreateFromBrep(self.geometry, meshPar)[0]
+        # if not self.meshedFace.IsValid:
+        # meshed surface will be generated regardless
+        # to make sure it won't fail for surfaces with multiple openings
+        if self.isPlanar:
+            meshPar = rc.Geometry.MeshingParameters.Coarse
+            meshPar.SimplePlanes = True
+        else:
+            meshPar = rc.Geometry.MeshingParameters.Smooth
+        
+        self.meshedFace = rc.Geometry.Mesh.CreateFromBrep(self.geometry, meshPar)[0]
             
         if self.meshedFace.IsValid or self.hasInternalEdge:
             if self.isPlanar and not self.hasInternalEdge:
@@ -4381,6 +5121,9 @@ if letItFly:
         sc.sticky["honeybee_EPFenSurface"] = hb_EPFenSurface
         sc.sticky["honeybee_DLAnalysisRecipe"] = DLAnalysisRecipe
         sc.sticky["honeybee_MeshToRAD"] = hb_MSHToRAD
+        sc.sticky["honeybee_WriteRAD"] = WriteRAD
+        sc.sticky["honeybee_WriteRADAUX"] = WriteRADAUX
+        sc.sticky["honeybee_WriteDS"] = WriteDS
         sc.sticky["honeybee_RADParameters"] = hb_RADParameters
         sc.sticky["honeybee_DSParameters"] = hb_DSParameters
         sc.sticky["honeybee_EPParameters"] = hb_EnergySimulatioParameters
