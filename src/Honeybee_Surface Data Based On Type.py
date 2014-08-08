@@ -22,10 +22,10 @@ Provided by Honeybee 0.0.53
 """
 ghenv.Component.Name = "Honeybee_Surface Data Based On Type"
 ghenv.Component.NickName = 'srfDataByType'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_07_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_09_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
-try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
 
 
