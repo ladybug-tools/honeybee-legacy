@@ -9,7 +9,7 @@ Use this component to color zones based on EnergyPlus data out of the "Honeybee_
 _
 By default, zones will be colored based on total energy per unit floor area of the zone in the case of energy input data or colored based on total average value of each zone in the case of temperature, humidity or comfort input data.
 If total annual simulation data has been connected, the analysisPeriod_ input can be used to select out a specific period fo the year for coloration.
-In order to color zones by individual hours/months, connecting interger values to the "stepOfSimulation_" (or "dayOfSimulation_" or "monthOfSimulation_") will allow you to scroll though each step of the input data.
+In order to color zones by individual hours/months, connecting interger values to the "stepOfSimulation_" will allow you to scroll though each step of the input data.
 -
 Provided by Honeybee 0.0.53
     
@@ -17,7 +17,7 @@ Provided by Honeybee 0.0.53
         _zoneData: A list zone data out of the Read EP Result component or the comfort calculator components that have zone data hooked up to them.
         _HBZones: The HBZones out of any of the HB components that generate or alter zones.  Note that these should ideally be the zones that are fed into the Run Energy Simulation component.  Zones read back into Grasshopper from the Import idf component will not align correctly with the EP Result data.
         ===============: ...
-        normalizeByFloorArea_: Set boolean to "True" in order to normalize results by the floor area of the zone and set to "False" to color zones based on total zone values.  The default is set to "True" such that colored zones communicate energy intensity rather than total energy.  Note that this input will be ignored if connected data is Temperature, Humidity, a Comfort Metric, or EUI (which is already normalized by floor area).
+        normalizeByFloorArea_: Set boolean to "True" in order to normalize results by the floor area of the zone and set to "False" to color zones based on total zone values.  The default is set to "True" such that colored zones communicate energy intensity rather than total energy.  Note that this input will be ignored if connected data is Temperature, Humidity, a Comfort Metric, or already normalized data.
         analysisPeriod_: Optional analysisPeriod_ to take a slice out of an annual data stream.  Note that this will only work if the connected data is for a full year and the data is hourly.  Otherwise, this input will be ignored. Also note that connecting a value to "stepOfSimulation_" will override this input.
         stepOfSimulation_: Optional interger for the hour of simulation to color the zones with.  Connecting a value here will override the analysisPeriod_ input.
         legendPar_: Optional legend parameters from the Ladybug Legend Parameters component.
@@ -25,10 +25,10 @@ Provided by Honeybee 0.0.53
     Returns:
         readMe!: ...
         zoneColoredMesh: A list of meshes for each zone, each of which is colored based on the input _zoneData.
-        zoneWireFrame: A list of curves representing the outlines of the zones.  This is particularly helpful if one wants to scroll through indicidual zone meshes but still see with outline of the building.
-        zoneNames: A set of surfaces indicating the names of each zone as they correspond to the branches in the result file and the title of the zone in the header.
+        zoneWireFrame: A list of curves representing the outlines of the zones.  This is particularly helpful if one wants to scroll through individual zone meshes but still see the outline of the building.
+        zoneNames: A set of surfaces indicating the names of each zone as they correspond to the branches in the EP results and the name of the zone in the headers of data.
         legend: A legend of the zone colors. Connect this output to a grasshopper "Geo" component in order to preview the legend spearately in the Rhino scene.
-        legendBasePt: The legend base point, which can be used to move the legend in relation to the chart with the grasshopper "move" component.
+        legendBasePt: The legend base point, which can be used to move the legend in relation to the building with the grasshopper "move" component.
         zoneBreps: A list of breps for each zone. This is essentially the same as the _HBZones input. Connecting this output and the following zoneColors to a Grasshopper 'Preview' component will thus allow you to see the zones colored transparently.
         zoneColors: A list of colors that correspond to the colors of each zone.  These colors include alpha values to make them slightly transparent.  Connecting the previous output and this output to a Grasshopper 'Preview' component will thus allow you to see the zones colored transparently.
         zoneValues: The values of the input data that are being used to color the zones.
@@ -37,7 +37,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Color Zones by EP Result"
 ghenv.Component.NickName = 'ColorZones'
-ghenv.Component.Message = 'VER 0.0.57\nAUG_07_2014'
+ghenv.Component.Message = 'VER 0.0.57\nAUG_09_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
@@ -72,17 +72,39 @@ outputsDict = {
     
 0: ["readMe!", "..."],
 1: ["zoneColoredMesh", "A list of meshes for each zone, each of which is colored based on the input _zoneData."],
-2: ["zoneWireFrame", "A list of curves representing the outlines of the zones.  This is particularly helpful if one wants to scroll through indicidual zone meshes but still see with outline of the building."],
-3: ["zoneNames", "A set of surfaces indicating the names of each zone as they correspond to the branches in the result file and the title of the zone in the header."],
+2: ["zoneWireFrame", "A list of curves representing the outlines of the zones.  This is particularly helpful if one wants to scroll through individual zone meshes but still see the outline of the building."],
+3: ["zoneNames", "A set of surfaces indicating the names of each zone as they correspond to the branches in the EP results and the name of the zone in the headers of data."],
 4: ["legend", "A legend of the zone colors. Connect this output to a grasshopper 'Geo' component in order to preview the legend spearately in the Rhino scene."],
-5: ["legendBasePt", "The legend base point, which can be used to move the legend in relation to the chart with the grasshopper 'move' component."],
+5: ["legendBasePt", "The legend base point, which can be used to move the legend in relation to the building with the grasshopper 'move' component."],
 6: ["zoneBreps", "A list of breps for each zone. This is essentially the same as the _HBZones input. Connecting this output and the following zoneColors to a Grasshopper 'Preview' component will thus allow you to see the zones colored transparently."],
 7: ["zoneColors", "A list of colors that correspond to the colors of each zone.  These colors include alpha values to make them slightly transparent.  Connecting the previous output and this output to a Grasshopper 'Preview' component will thus allow you to see the zones colored transparently."],
 8: ["zoneValues", "The values of the input data that are being used to color the zones."],
 9: ["floorNormZoneData", "The input data normalized by the floor area of it corresponding zone."]
 }
 
+
 w = gh.GH_RuntimeMessageLevel.Warning
+
+
+def copyHBZoneData():
+    hb_hive = sc.sticky["honeybee_Hive"]()
+    zoneNames = []
+    zoneFloors = []
+    zoneBreps = []
+    
+    for HZone in _HBZones:
+        zoneBreps.append(HZone)
+        zone = hb_hive.callFromHoneybeeHive([HZone])[0]
+        zoneNames.append(zone.name)
+        floorGeo = []
+        for srf in zone.surfaces:
+            if srf.type == 2: floorGeo.append(srf.geometry)
+            elif str(srf.type) == "2.5": floorGeo.append(srf.geometry)
+            elif str(srf.type) == "2.75": floorGeo.append(srf.geometry)
+            else: pass
+        zoneFloors.append(floorGeo)
+    
+    sc.sticky["Honeybee_ZoneData"] = [zoneBreps, zoneNames, zoneFloors]
 
 def checkTheInputs():
     #Create a Python list from the _zoneData
@@ -112,6 +134,7 @@ def checkTheInputs():
         checkData2 = False
         warning = "Not all of the connected _zoneData has a Ladybug/Honeybee header on it.  This header is necessary to color zones with this component."
         print warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
     
     #Check to be sure that the lengths of data in in the _zoneData branches are all the same.
     dataLength = len(dataNumbers[0])
@@ -213,56 +236,31 @@ def checkTheInputs():
     
     return checkData, annualData, simStep, normable, dataNumbers, dataHeaders, headerUnits, total
 
-def checkZones(pyZoneData):
-    if sc.sticky.has_key('honeybee_release'):
-        #Bring in the HB data on the connected zones and put the floors on their own list
-        hb_hive = sc.sticky["honeybee_Hive"]()
-        zoneFloors = []
-        
-        for HZone in _HBZones:
-            zone = hb_hive.callFromHoneybeeHive([HZone])[0]
-            floorGeo = []
-            for srf in zone.surfaces:
-                if srf.type == 2: floorGeo.append(srf.geometry)
-                elif str(srf.type) == "2.5": floorGeo.append(srf.geometry)
-                elif str(srf.type) == "2.75": floorGeo.append(srf.geometry)
-                else: pass
-            zoneFloors.append(floorGeo)
-        
-        #Get the areas of each floor.
-        zoneFlrAreas = []
-        if len(zoneFloors) == len(_HBZones):
-            for floor in zoneFloors:
-                flrA = []
-                for srf in floor:
-                    flrA.append(rc.Geometry.AreaMassProperties.Compute(srf).Area)
-                zoneFlrAreas.append(sum(flrA))
-            checkData1 = True
-        else:
-            checkData1 = False
-            warning = "The number of floors does not match the number of zones.  Something is wrong."
-            print warning
-            ghenv.Component.AddRuntimeMessage(w, warning)
-        
-        #Test to see if the lenth of the _zoneData list aligns with the length of the floor areas.
-        if len(pyZoneData) == len(zoneFlrAreas):
-            checkData3 = True
-        else:
-            checkData3 = False
-            warning = "The number of connected _zoneData branches does not match the number of connected _HBZones.  Each zone must have its own data branch."
-            print warning
-            ghenv.Component.AddRuntimeMessage(w, warning)
-        
-        # Bring the Cehcks together.
-        finalCheck = False
-        if checkData1 == True and checkData3 == True:
-            finalCheck = True
-        
-        return finalCheck, zoneFlrAreas, zoneFloors
-    else:
-        print "You should first let Honeybee  fly..."
-        ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee fly...")
-        return False, [], []
+def checkZones(zoneHeaders, pyZoneData, hb_zoneData):
+    #Bring in the HB data on the connected zones and put the floors on their own list
+    zoneFloors = hb_zoneData[2]
+    zoneBreps = hb_zoneData[0]
+    zoneNames = hb_zoneData[1]
+    
+    #Figure out which surfaces in the full list for the zones correspond to the connected srfHeaders.
+    zoneFlrAreas = []
+    newZoneFloors = []
+    newPyZoneData = []
+    newZoneHeaders = []
+    finalZoneNames = []
+    
+    for list in zoneHeaders:
+        zoneName = list[2].split(" for ")[-1]
+        finalZoneNames.append(zoneName)
+        for count, name in enumerate(zoneNames):
+            if zoneName == name.upper():
+                newZoneFloors.append(zoneFloors[count])
+                zoneFlrAreas.append(rc.Geometry.AreaMassProperties.Compute(zoneFloors[count]).Area)
+                newPyZoneData.append(pyZoneData[count])
+                newZoneHeaders.append(zoneHeaders[count])
+    
+    
+    return finalZoneNames, zoneFlrAreas, newZoneFloors, newPyZoneData, newZoneHeaders
 
 def manageInputOutput(annualData, simStep, zoneNormalizable):
     #If some of the component inputs and outputs are not right, blot them out or change them.
@@ -550,7 +548,12 @@ def main(zoneValues, zones, zoneFloors, zoneHeaders, title, legendTitle, lb_prep
     zoneWires = []
     zoneCentPts = []
     
-    for count, brep in enumerate(zones):
+    joinedFloors = []
+    for list in zoneFloors:
+        joinedFloor = rc.Geometry.Brep.JoinBreps(list, sc.doc.ModelAbsoluteTolerance)[0]
+        joinedFloors.append(joinedFloor)
+    
+    for count, brep in enumerate(joinedFloors):
         zoneMeshSrfs = rc.Geometry.Mesh.CreateFromBrep(brep, rc.Geometry.MeshingParameters.Default)
         for mesh in zoneMeshSrfs:
             mesh.VertexColors.CreateMonotoneMesh(colors[count])
@@ -597,11 +600,30 @@ def main(zoneValues, zones, zoneFloors, zoneHeaders, title, legendTitle, lb_prep
 
 
 
+#If the HBzone data has not been copied to memory or if the data is old, get it.
+initCheck = False
+if _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('Honeybee_ZoneData') == False:
+    copyHBZoneData()
+    hb_zoneData = sc.sticky["Honeybee_ZoneData"]
+    initCheck = True
+elif _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('Honeybee_ZoneData') == True:
+    hb_zoneData = sc.sticky["Honeybee_ZoneData"]
+    if len(hb_zoneData[0]) == len(_HBZones): pass
+    else:
+        copyHBZoneData()
+        hb_zoneData = sc.sticky["Honeybee_ZoneData"]
+    initCheck = True
+elif _HBZones != [] and sc.sticky.has_key('honeybee_release') == False:
+    print "You should first let Honeybee  fly..."
+    ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee fly...")
+else:
+    pass
 
 
-#Check the inputs.
+
+#Check the data input.
 checkData = False
-if _zoneData.BranchCount > 0 and str(_zoneData) != "tree {0}":
+if _zoneData.BranchCount > 0 and str(_zoneData) != "tree {0}" and initCheck == True:
     checkData, annualData, simStep, zoneNormalizable, pyZoneData, zoneHeaders, headerUnits, total = checkTheInputs()
 
 #Manage the inputs and outputs of the component based on the data that is hooked up.
@@ -610,21 +632,13 @@ if checkData == True:
 else: restoreInputOutput()
 
 #If the data is meant to be normalized by floor area, check the zones.
-if checkData == True and normByFlr == None:
-    normByFlr = True
-if _runIt == True and checkData == True and _HBZones != [] and zoneNormalizable == True and normByFlr == True:
-    finalCheck, zoneFlrAreas, zoneFloors = checkZones(pyZoneData)
-else:
-    zoneFloors = []
-    zoneFlrAreas = []
-    finalCheck = True
-
-#If everything so far has been good, get the values with which to color the zones.
-if _runIt == True and checkData == True and _HBZones != [] and finalCheck == True:
+if checkData == True and normByFlr == None: normByFlr = True
+if _runIt == True and checkData == True and _HBZones != []:
+    zoneNames, zoneFlrAreas, zoneFloors, pyZoneData, zoneHeaders = checkZones(zoneHeaders, pyZoneData, hb_zoneData)
     zoneValues, floorNormZoneData, title, legendTitle, lb_preparation, lb_visualization = getData(pyZoneData, zoneFlrAreas, annualData, simStep, zoneNormalizable, zoneHeaders, headerUnits, normByFlr, analysisPeriod, stepOfSimulation, total)
 
 #Color the zones with the data and get all of the other cool stuff that this component does.
-if _runIt == True and checkData == True and _HBZones != [] and finalCheck == True and zoneValues != []:
+if _runIt == True and checkData == True and _HBZones != [] and zoneValues != []:
     zoneColors, zoneBreps, zoneColoredMesh, zoneWireFrame, legendInit, legendBasePt, zoneNames = main(zoneValues, _HBZones, zoneFloors, zoneHeaders, title, legendTitle, lb_preparation, lb_visualization, legendPar_)
     #Unpack the legend.
     legend = []
