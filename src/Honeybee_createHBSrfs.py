@@ -33,7 +33,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_createHBSrfs'
 ghenv.Component.NickName = 'createHBSrfs'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_07_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_08_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -109,8 +109,9 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
                    surfaceType = HBSurface.srfType[surfaceType.ToUpper()]
             
             if surfaceType in HBSurface.srfType.keys():
+                acceptableCombination = [[1,3], [3,1], [0,5], [5,0], [1,5], [5,1]]
                 try:
-                    if int(HBSurface.type) != surfaceType:
+                    if int(HBSurface.type) != surfaceType and [int(HBSurface.type), surfaceType] not in acceptableCombination:
                         warningMsg = "Normal direction of the surface is not expected for a " + HBSurface.srfType[surfaceType] + ". " + \
                                      "The surface is more likely a " + HBSurface.srfType[int(HBSurface.type)] + ".\n" + \
                                      "Honeybee won't overwrite the type so you may need to manually flip the surface."
