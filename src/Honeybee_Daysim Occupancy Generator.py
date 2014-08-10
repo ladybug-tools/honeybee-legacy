@@ -10,7 +10,7 @@ Daysim calculates the outputs for the hours that the space is occupied. This com
 Provided by Honeybee 0.0.53
     Args:
         _occupancyPeriod_: The period that the building is actively occupid. Use Ladybug Analysis Period component to generate the input. Default is all year between 9 to 5.
-        dailyOffHours_: A list of hours that building is unoccupied during the occupancy period everyday (e.g. lunch break). Default is an hour lunch break at 12. 
+        dailyOffHours_: A list of hours that building is unoccupied during the occupancy period everyday (e.g. lunch break). Default is an hour lunch break at 12. If you don't want any off hours input -1.
         weekendDays_: A list of numbers to indicate the weekend days. [0] None, [1-7] SAT to FRI. Default is 1,2 (SAT, SUN)
         _fileName_: Optional fileName for this schedule. Files will be saved to C:\Honeybee\DaysimOcc
         _writeTheOcc: Set to True to write the file
@@ -21,7 +21,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Daysim Occupancy Generator"
 ghenv.Component.NickName = 'occupancyGenerator'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_10_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
@@ -40,6 +40,9 @@ def main(analysisPeriod, dailyOffHours, weekendDays, fileName):
     
     if len(dailyOffHours)==0:
         dailyOffHours = [12]
+    elif dailyOffHours== [-1]:
+        dailyOffHours = []
+    
     
     if len(weekendDays)==0:
         weekendDays = [1, 2]
@@ -47,9 +50,6 @@ def main(analysisPeriod, dailyOffHours, weekendDays, fileName):
         weekendDays = []
     
     # create the folder if not exist
-    folder = "c:/honeybee/DysimOcc/"
-    if not os.path.isdir(folder):
-        os.mkdir(folder)
         
     # import the classes
     if not sc.sticky.has_key('ladybug_release'):
@@ -58,11 +58,15 @@ def main(analysisPeriod, dailyOffHours, weekendDays, fileName):
     
     lb_preparation = sc.sticky["ladybug_Preparation"]()
     
+    # create the folder if not exist
+    folder = os.path.join(sc.sticky["Honeybee_DefaultFolder"], "DaysimCSVOCC\\")
+    if not os.path.isdir(folder):
+        os.mkdir(folder)
+    
     stMonth, stDay, stHour, endMonth, endDay, endHour = lb_preparation.readRunPeriod(analysisPeriod, False)
     # selected hourly data includes the last hour that daysim doesnt
-    analysisPeriod = [(stMonth, stDay, stHour), (endMonth, endDay, endHour -1)]
+    analysisPeriod = [(stMonth, stDay, stHour), (endMonth, endDay, endHour)]
     occHours = lb_preparation.selectHourlyData(range(1,8761), analysisPeriod)
-    
     stOfDLSHour = lb_preparation.date2Hour(3, 12, 1)
     endOfDLSHour = lb_preparation.date2Hour(11, 5, 1)
     
@@ -80,11 +84,11 @@ def main(analysisPeriod, dailyOffHours, weekendDays, fileName):
     with open(fullPath, "w") as occFile:
         occFile.write(heading)
         for HOY in range(1,8761):
+            
             d, m, t = lb_preparation.hour2Date(HOY, True)
             m += 1 #month starts from 0 in Ladybug hour2Date. I should fix this at some point
             
             DOY = int(lb_preparation.getJD(m, d))
-            HOY -= 1
             
             # time correction for daylight saving
             if stOfDLSHour <= HOY <= endOfDLSHour: HOY += 1
@@ -97,8 +101,11 @@ def main(analysisPeriod, dailyOffHours, weekendDays, fileName):
                     # check if the hour is the hour off
                     if not HOY%24 in dailyOffHours:
                         occ = 1
-            
+                else:
+                    print HOY
             t -= .5 # add half and hour to be similar to daysim
+            if t == -.5: t = 23.5
+            
             occLine = str(m) + "," + str(d) + "," + str(t) + "," + str(occ) + "\n"
             occFile.write(occLine)
         

@@ -21,7 +21,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Daysim Occupancy Generator Based On List"
 ghenv.Component.NickName = 'occupancyGenerator'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_08_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_10_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
@@ -38,22 +38,21 @@ def main(hourlyValues, fileName):
     if len(hourlyValues)!=8760:
         msg = "Length of occValues should be 8760 values for every hour of the year."
         return msg, None
-    
-    # create the folder if not exist
-    folder = "c:/honeybee/DysimOcc/"
-    if not os.path.isdir(folder):
-        os.mkdir(folder)
         
     # import the classes
-    if not sc.sticky.has_key('ladybug_release'):
-        msg = " You need to let Ladybug fly first!\nI know this is a Honeybee component but it actually uses Ladybug's functions."
+    if not sc.sticky.has_key('ladybug_release') or not sc.sticky.has_key('honeybee_release'):
+        msg = " You need to let Ladybug and honeybee to fly first!"
         return msg, None
     
     lb_preparation = sc.sticky["ladybug_Preparation"]()
     
+    # create the folder if not exist
+    folder = os.path.join(sc.sticky["Honeybee_DefaultFolder"], "DaysimCSVOCC\\")
+    if not os.path.isdir(folder):
+        os.mkdir(folder)
     
     heading = "# Daysim occupancy file,,,\n" + \
-          "# time_step 60, commnet: weekdays are based on user list inputs." + \
+          "# time_step 60, comment: weekdays are based on user list inputs." + \
           "daylight savings time is based on user input),,\n" + \
           "# month,day,time,occupancy (1=present/0=absent)\n"
     
@@ -65,13 +64,14 @@ def main(hourlyValues, fileName):
     with open(fullPath, "w") as occFile:
         occFile.write(heading)
         for HOY, occ in enumerate(hourlyValues):
-            
+            HOY += 1
             d, m, t = lb_preparation.hour2Date(HOY, True)
             
             m += 1 #month starts from 0 in Ladybug hour2Date. I should fix this at some point
-            HOY -= 1
             
-            t += .5 # add half an hour to the time to be similar to daysim
+            t -= .5 # add half an hour to the time to be similar to daysim
+            
+            if t == -.5: t = 23.5
             
             if occ > 0: occ = 1
             else: occ = 0
