@@ -10,7 +10,7 @@ export geometries to idf file, and run the energy simulation
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_07_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_09_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -982,16 +982,19 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         elif scheduleValues!=None:
             idfFile.write(hb_writeIDF.EPSCHStr(schedule))
             
+            if scheduleValues[0].lower() == "schedule:year":
+                numOfWeeklySchedules = int((len(scheduleValues)-2)/5)
+                
+                for i in range(numOfWeeklySchedules):
+                    weekDayScheduleName = scheduleValues[5 * i + 2]
+                    if weekDayScheduleName not in EPScheduleCollection:
+                            EPScheduleCollection.append(weekDayScheduleName)
+                    
             # collect all the schedule items inside the schedule
-            if scheduleValues[0] == "Schedule:Week:Daily":
+            elif scheduleValues[0].lower() == "schedule:week:daily":
                 for value in scheduleValues[1:]:
                     if value not in EPScheduleCollection:
                         EPScheduleCollection.append(value)
-                
-            # add schedules which are referenced inside other schedules to the list
-            for value in scheduleValues[1:]:
-                if value.startswith("Schedule:") and value not in EPScheduleCollection:
-                    EPScheduleCollection.append(value)
     
     print "[6 of 7] Writing loads and ideal air system..."
     listCount = 0

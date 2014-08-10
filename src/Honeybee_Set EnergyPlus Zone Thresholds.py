@@ -12,7 +12,9 @@ Provided by Honeybee 0.0.53
         _HBZones:...
         daylightThreshold_: ...
         coolingSetPt_: ...
+        coolingSetback_: ...
         heatingSetPt_: ...
+        heatingSetback_: ...
         coolSuplyAirTemp_: ...
         heatSupplyAirTemp_: ...
     Returns:
@@ -21,13 +23,14 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Set EnergyPlus Zone Thresholds"
 ghenv.Component.NickName = 'setEPZoneThresholds'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_20_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_09_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
 
 import scriptcontext as sc
+import Grasshopper.Kernel as gh
 import uuid
 
 
@@ -42,11 +45,17 @@ def checkTheInputs():
     if len(daylightThreshold_) == 1: daylightThreshold = duplicateData(daylightThreshold_, len(_HBZones))
     else: daylightThreshold = daylightThreshold_
     
+    if len(coolingSetback_) == 1: coolingSetback = duplicateData(coolingSetback_, len(_HBZones))
+    else: coolingSetback = coolingSetback_
+
     if len(coolingSetPt_) == 1: coolingSetPt = duplicateData(coolingSetPt_, len(_HBZones))
     else: coolingSetPt = coolingSetPt_
     
     if len(heatingSetPt_) == 1: heatingSetPt = duplicateData(heatingSetPt_, len(_HBZones))
     else: heatingSetPt = heatingSetPt_
+    
+    if len(heatingSetback_) == 1: heatingSetback = duplicateData(heatingSetback_, len(_HBZones))
+    else: heatingSetback = heatingSetback_
     
     if len(coolSupplyAirTemp_) == 1: coolSupplyAirTemp = duplicateData(coolSupplyAirTemp_, len(_HBZones))
     else: coolSupplyAirTemp = coolSupplyAirTemp_
@@ -55,10 +64,127 @@ def checkTheInputs():
     else: heatSupplyAirTemp = heatSupplyAirTemp_
     
     
-    return daylightThreshold, coolingSetPt, heatingSetPt, coolSupplyAirTemp, heatSupplyAirTemp
+    return daylightThreshold, coolingSetPt, coolingSetback, heatingSetPt, heatingSetback, coolSupplyAirTemp, heatSupplyAirTemp
 
+def updateSetPoints(schName, setPt, setBk):
+    """
+    This function takes a setpoint schedule and change setPts and setbacks
+    and return the new yearly schedule.
+    
+    The function is written for OpenStudioTemplate schedule and only works
+    for schedules which are structured similat to the template
+    """
+    
+    hb_EPScheduleAUX = sc.sticky["honeybee_EPScheduleAUX"]()
+    hb_EPObjectsAUX = sc.sticky["honeybee_EPObjectsAUX"]()
+    lb_preparation = sc.sticky["ladybug_Preparation"]()
+    
+    setPt = str(setPt)
+    setBk = str(setBk)
+    
+    if setPt=="" and setBk=="":
+        return schName
+    
+    if hb_EPObjectsAUX.isSchedule(schName):
+        values, comments = hb_EPScheduleAUX.getScheduleDataByName(schName.upper(), ghenv.Component)
+    else:
+        return schName
+    
+    scheduleType = values[0].lower()
+    if scheduleType != "schedule:year": return schName
+    
+    # find all weekly schedules
+    numOfWeeklySchedules = int((len(values)-2)/5)
 
-def main(HBZones, daylightThreshold, coolingSetPt, heatingSetPt, coolSupplyAirTemp, heatSupplyAirTemp):
+    yearlyIndexes = []
+    yearlyValues = []
+        
+    for i in range(numOfWeeklySchedules):
+        yearlyIndexCount = 5 * i + 2
+        
+        weekDayScheduleName = values[yearlyIndexCount]
+        # find name of schedules for every day of the week
+        dailyScheduleNames, comments = hb_EPScheduleAUX.getScheduleDataByName(weekDayScheduleName.upper(), ghenv.Component)
+        weeklyIndexes = []
+        weeklyValues = []
+        
+        for itemCount, dailySchedule in enumerate(dailyScheduleNames[1:]):
+            newName = ""
+            indexes = []
+            inValues = []
+            
+            hourlyValues, comments = hb_EPScheduleAUX.getScheduleDataByName(dailySchedule.upper(), ghenv.Component)
+            numberOfSetPts = int((len(hourlyValues) - 3) /2)
+            
+            # check if schedule has setback and give a warning if it doesn't
+            if numberOfSetPts == 1 and setBk!="":
+                warning = dailySchedule + " has no setback. Only setPt will be changed."
+                w = gh.GH_RuntimeMessageLevel.Warning
+                ghenv.Component.AddRuntimeMessage(w, warning)
+                print warning
+                
+            # change the values in the list
+            if setBk!="" and numberOfSetPts == 3:
+                indexes.extend([5, 9])
+                inValues.extend([setBk, setBk])
+                newName += "setBk " + str(setBk) + " "
+                
+            if setPt!="" and numberOfSetPts == 3:
+                indexes.append(7)
+                inValues.append(setPt)
+                newName += "setPt " + str(setPt) + " "
+                
+            elif setPt!="" and numberOfSetPts == 1:
+                indexes.append(5)
+                inValues.append(setPt)
+                newName += "setPt " + str(setPt) + " "
+            
+            # assign new name to be changed
+            indexes.append(1)
+            inValues.append(dailySchedule + newName)
+            
+            # create a new object
+            original, updated = hb_EPObjectsAUX.customizeEPObject(dailySchedule.upper(), indexes, inValues)
+            
+            # add to library
+            added, name = hb_EPObjectsAUX.addEPObjectToLib(updated, overwrite = True)
+            
+            # collect indexes and names to update the weekly schedule
+            if added:
+                weeklyIndexes.append(itemCount + 2)
+                weeklyValues.append(name)
+        
+        # modify the name of schedule
+        weeklyIndexes.append(1)
+        weeklyValues.append(newName + " {" + str(uuid.uuid4())+ "}")
+        
+        # update weekly schedule based on new names
+        # create a new object
+        originalWeekly, updatedWeekly = hb_EPObjectsAUX.customizeEPObject(weekDayScheduleName.upper(), weeklyIndexes, weeklyValues)
+        
+        # add to library
+        added, name = hb_EPObjectsAUX.addEPObjectToLib(updatedWeekly, overwrite = True)
+        
+        if added:
+            # collect the changes for yearly schedule
+            yearlyIndexes.append(yearlyIndexCount + 1)
+            yearlyValues.append(name)
+    
+    # update name
+    yearlyIndexes.append(1)
+    yearlyValues.append(schName + " " + newName)
+    
+    # update yearly schedule
+    originalYear, updatedYear = hb_EPObjectsAUX.customizeEPObject(schName.upper(), yearlyIndexes, yearlyValues)
+    
+    # add to library
+    added, name = hb_EPObjectsAUX.addEPObjectToLib(updatedYear, overwrite = True)
+    
+    return name
+
+def main(HBZones, daylightThreshold, coolingSetPt, heatingSetPt, coolingSetback, \
+         heatingSetback, coolSupplyAirTemp, heatSupplyAirTemp):
+    
     # check for Honeybee
     if not sc.sticky.has_key('honeybee_release'):
         print "You should first let Honeybee to fly..."
@@ -80,32 +206,56 @@ def main(HBZones, daylightThreshold, coolingSetPt, heatingSetPt, coolSupplyAirTe
         
         try:
             zone.coolingSetPt = str(coolingSetPt[zoneCount])
-            print "Cooling setpoint for " + zone.name + " is set to: " + zone.coolingSetPt
+            # print "Cooling setpoint for " + zone.name + " is set to: " + zone.coolingSetPt
         except: pass
+
+        try:
+            zone.coolingSetback = str(coolingSetback[zoneCount])
+            # print "Cooling setback for " + zone.name + " is set to: " + zone.coolingSetback
+        except: pass
+        
+        # update zone schedule based on new values
+        zone.coolingSetPtSchedule = updateSetPoints(zone.coolingSetPtSchedule, \
+                                                    zone.coolingSetPt, zone.coolingSetback)
         
         try:
             zone.heatingSetPt = str(heatingSetPt[zoneCount])
-            print "Heating setpoint for " + zone.name + " is set to: " + zone.heatingSetPt
+            # print "Heating setpoint for " + zone.name + " is set to: " + zone.heatingSetPt
         except: pass
+        
+        try:
+            zone.heatingSetback = str(heatingSetback[zoneCount])
+            # print "Heating setback for " + zone.name + " is set to: " + zone.heatingSetback
+        except: pass
+        
+        # update zone schedule based on new values
+        zone.heatingSetPtSchedule = updateSetPoints(zone.heatingSetPtSchedule, \
+                                                    zone.heatingSetPt, zone.heatingSetback)
         
         try:
             zone.coolSupplyAirTemp = str(coolSupplyAirTemp[zoneCount])
             print "Cooling supply air temperture for " + zone.name + " is set to: " + zone.coolSupplyAirTemp
         except: pass
         
+        
         try:
             zone.heatSupplyAirTemp = str(heatSupplyAirTemp[zoneCount])
             print "Heating supply air temperture for " + zone.name + " is set to: " + zone.heatSupplyAirTemp
         except: pass
-    
+        
+        
+        
     # send the zones back to the hive
     HBZones  = hb_hive.addToHoneybeeHive(HBZonesFromHive, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
         
     return HBZones
 
 if _HBZones:
-    daylightThreshold, coolingSetPt, heatingSetPt, coolSupplyAirTemp, heatSupplyAirTemp = checkTheInputs()
-    HBZones = main(_HBZones, daylightThreshold, coolingSetPt, heatingSetPt, coolSupplyAirTemp, heatSupplyAirTemp)
+    daylightThreshold, coolingSetPt, coolingSetback, heatingSetPt, \
+    heatingSetback, coolSupplyAirTemp, heatSupplyAirTemp = checkTheInputs()
+    
+    HBZones = main(_HBZones, daylightThreshold, coolingSetPt, heatingSetPt, \
+                   coolingSetback, heatingSetback, coolSupplyAirTemp, heatSupplyAirTemp)
 
 
 
