@@ -13,7 +13,7 @@ Provided by Honeybee 0.0.53
         _illFilesAddress: List of .ill files
         _testPoints: List of 3d Points
         occupancyFiles_: Address to a Daysim occupancy file. You can find some example in \Daysim\occ. Use Honeybee Occupancy Generator to generate a custom occupancy file.
-        lightingControlGroups_: Daysim lighting control groups. Daysim can model up to 10 lighting control groups together.
+        lightingControlGroups_: Daysim lighting control groups. Daysim can model up to 10 lighting control groups together. Default is > cntrlType = 3, lightingPower = 250, lightingSetpoint = 300, ballastLossFactor = 20, standbyPower = 3, delayTime = 5
         _DLAIllumThresholds_: Illuminance threshold for Daylight Autonomy calculation in lux. Default is set to 300 lux.
         SHDGroupI_Sensors_: Senors for dhading group I. Use shadingGroupSensors component to prepare the inputs
         SHDGroupII_Sensors_: Senors for dhading group II. Use shadingGroupSensors component to prepare the inputs
@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.53
 """
 ghenv.Component.Name = "Honeybee_Read Annual Result I"
 ghenv.Component.NickName = 'readAnnualResultsI'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_10_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -106,6 +106,45 @@ def main(illFilesAddress, testPts, testVecs, occFiles, lightingControlGroups, SH
         "user_profile", "PNGScheduleExists" ]
     
     # I will remove this function later and just use WriteDS class
+    
+    
+    class genDefaultLightingControl(object):
+        
+        def __init__(self, sensorPts = [], cntrlType = 3, lightingPower = 250, lightingSetpoint = 300, ballastLossFactor = 20, standbyPower = 3, delayTime = 5):
+            
+            self.sensorPts = sensorPts
+            self.lightingControlStr = self.getLightingControlStr(cntrlType, lightingPower, lightingSetpoint, ballastLossFactor, standbyPower, delayTime)
+        
+        def getLightingControlStr(self, cntrlType, lightingPower = 250, lightingSetpoint = 300, ballastLossFactor = 20, standbyPower = 3, delayTime = 5):
+            
+            cntrlType += 1
+            
+            # manual control
+            lightingControlDict = {
+            1 : 'manualControl',
+            2 : 'onlyOffSensor',
+            3 : 'onWhenOccupied',
+            4 : 'dimming',
+            5 : 'onlyOffSensorAndDimming',
+            6 : 'onWithDimming'}
+            
+            lightingStr = `cntrlType` + " " + lightingControlDict[cntrlType] + " " + `lightingPower` + " 1 "
+            
+            if cntrlType != 1:
+                lightingStr += `standbyPower` + " "
+            
+            if cntrlType > 3:
+                lightingStr += `ballastLossFactor` + " " + `lightingSetpoint` + " "
+            
+            if cntrlType != 1 and cntrlType!=4:
+                lightingStr += `delayTime`
+            
+            lightingStr += "\n"
+            
+            return lightingStr
+    
+    
+    
     def isSensor(testPt, sensors):
         for pt in sensors:
             if pt==None: return False
@@ -177,7 +216,7 @@ def main(illFilesAddress, testPts, testVecs, occFiles, lightingControlGroups, SH
         except: testVectors.append([rc.Geometry.Vector3d.ZAxis] * testPts.Branch(branchNum).Count)
         
         try: lightingControls.append(list(lightingControlGroups.Branch(branchNum)))
-        except: lightingControls.append([])
+        except: lightingControls.append([genDefaultLightingControl()])
         try: SHDGroupISensors.append(SHDGroupSensors(SHDGroupI_Sensors.Branch(branchNum)))
         except: SHDGroupISensors.append(None)
         try: SHDGroupIISensors.append(SHDGroupSensors((SHDGroupII_Sensors.Branch(branchNum))))
@@ -521,7 +560,8 @@ def main(illFilesAddress, testPts, testVecs, occFiles, lightingControlGroups, SH
         try:
             lghtCtrls = lightingControls[spaceCount]
             lightingGroupSensors = []
-        except: lghtCtrls = []
+        except:
+            lghtCtrls = []
         
         if len(lghtCtrls)!=0:
             modifiedHea += "\n\nelectric_lighting_system " + str(len(lghtCtrls)) + "\n"
