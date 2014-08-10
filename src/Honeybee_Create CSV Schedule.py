@@ -32,6 +32,7 @@ except: pass
 
 import scriptcontext as sc
 import Grasshopper.Kernel as gh
+import os
 
 
 def checkTheInputs():
@@ -135,21 +136,28 @@ def checkTheInputs():
 def main(units, numericType, totalHOYS, totalDays, totalMonths, csvValues, scheduleName, timeStep):
     #Find the Ladybug default folder.
     lb_defaultFolder = sc.sticky["Ladybug_DefaultFolder"]
+    lb_preparation = sc.sticky["ladybug_Preparation"]()
+    
+    workingDir = lb_preparation.makeWorkingDir(os.path.join(lb_defaultFolder, "EPCSVSchedules")) 
+    
     
     #Create a csvFile.
-    filePath = lb_defaultFolder + scheduleName
+    if not scheduleName.strip().lower().endswith(".csv"): scheduleName += ".csv"
+    
+    filePath = os.path.join(workingDir, scheduleName)
+    
     csvfile = open(filePath, 'wb')
     
     #Create a file header.
-    header = "Schedule file (to be used in combination with a thermal simulation program)," + " , , " + numericType + ", " + units + "\n" +\
+    header = "Honeybee Schedule file (to be used in combination with a thermal simulation program)," + " , , " + numericType + ", " + units + "\n" +\
     "Schedule file address:" + filePath + "; " + scheduleName + ": This is a custom schedule created by the user.,,,Occupied Hours: N/A" + "\n" + \
-    str(timeStep) + ",,,Values [" + "units" + "],N/A" + "\n" + \
+    str(timeStep) + ",,,,Values [" + "units" + "],N/A" + "\n" + \
     "month, day, hour, values" + "\n"
     
     csvfile.write(header)
     
     for count, item in enumerate(csvValues):
-        line = str(totalMonths[count]) + ", " + str(totalDays[count]) + ", " + str(totalHOYS[count]) + ", " + str(item) + "\n"
+        line = str(totalMonths[count]) + ", " + str(totalDays[count]) + ", " + str(totalHOYS[count]) + ", ," + str(item) + "\n"
         csvfile.write(line)
     
     csvfile.close()
