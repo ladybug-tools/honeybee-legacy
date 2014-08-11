@@ -10,7 +10,7 @@ export geometries to idf file, and run the energy simulation
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_09_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_11_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -454,6 +454,10 @@ class WriteIDF(object):
         
         # Rest of the methods are not available from the interface right now
         scheduleName = zone.infiltrationSchedule
+        if scheduleName.lower().endswith(".csv"):
+            # find filebased schedule name
+            scheduleName = self.fileBasedSchedules[scheduleName.upper()]
+        
         method = 1 
         value = zone.infiltrationRatePerArea
         
@@ -489,7 +493,6 @@ class WriteIDF(object):
                 '\t,                        !- Velocity Term Coefficient\n' + \
                 '\t;                        !- Velocity Squared Term Coefficient\n'
     
-    
     def EPZoneElectricEquipment(self, zone, zoneListName = None):
             
         #name = 'largeOfficeElectricEquipment', zoneListName ='largeOffices', method = 2, value = 5.8125141276385044,
@@ -508,6 +511,10 @@ class WriteIDF(object):
         method = 1
         value = zone.equipmentLoadPerArea
         scheduleName = zone.equipmentSchedule
+        if scheduleName.lower().endswith(".csv"):
+            # find filebased schedule name
+            scheduleName = self.fileBasedSchedules[scheduleName.upper()]
+            
         endUseSub = 'ElectricEquipment'
 
         methods = {0: 'EquipmentLevel',
@@ -597,7 +604,15 @@ class WriteIDF(object):
         method = 1
         value = zone.numOfPeoplePerArea
         scheduleName = zone.occupancySchedule
+        if scheduleName.lower().endswith(".csv"):
+            # find filebased schedule name
+            scheduleName = self.fileBasedSchedules[scheduleName.upper()]
+        
         activityScheduleName = zone.occupancyActivitySch
+        if activityScheduleName.lower().endswith(".csv"):
+            # find filebased schedule name
+            activityScheduleName = self.fileBasedSchedules[activityScheduleName.upper()]
+        
         fractionRadiant = 0.3
         sensibleHeatFraction = 'autocalculate'
         
@@ -715,14 +730,14 @@ class WriteIDF(object):
                         
                         # prepare the schedulTypeLimitObject
                         schTypeLimitName = os.path.basename(scheduleName).lower(). \
-                                           replace(".", "").split("csv")[0]
+                                           replace(".", "").split("csv")[0] + "TypeLimit"
                         
-                        schTypeLimitStr = "ScheduleTypeLimits\t!Schedule Type\n" + \
-                                          schTypeLimitName + "\t! Name\n" + \
-                                          lowerLimit + "\t!- Lower Limit Value\n" + \
-                                          upperLimit + "\t!- Upper Limit Value\n" + \
-                                          numericType + "\t!- Numeric Type\n" + \
-                                          unitType + "\t!- Unit Type\n"
+                        schTypeLimitStr = "ScheduleTypeLimits,\t!Schedule Type\n" + \
+                                          schTypeLimitName + ",\t! Name\n" + \
+                                          lowerLimit.strip() + ",\t!- Lower Limit Value\n" + \
+                                          upperLimit.strip() + ",\t!- Upper Limit Value\n" + \
+                                          numericType.strip() + ",\t!- Numeric Type\n" + \
+                                          unitType.strip() + ";\t!- Unit Type\n\n"
                     elif lineCount == 2:
                         # check timestep
                         try: numOfHours *= int(line.split(",")[0])

@@ -24,7 +24,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Create CSV Schedule"
 ghenv.Component.NickName = 'csvSchedule'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_09_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_11_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "07 | Energy | Schedule"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
@@ -157,7 +157,8 @@ def main(units, numericType, totalHOYS, totalDays, totalMonths, csvValues, sched
     csvfile.write(header)
     
     for count, item in enumerate(csvValues):
-        line = str(totalMonths[count]) + ", " + str(totalDays[count]) + ", " + str(totalHOYS[count]) + ", ," + str(item) + "\n"
+        time = ((totalHOYS[count] -1 )%24) + .5
+        line = str(totalMonths[count]) + ", " + str(totalDays[count]) + ", " + str(time) + ", ," + str(item) + "\n"
         csvfile.write(line)
     
     csvfile.close()
