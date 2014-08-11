@@ -32,10 +32,10 @@ Provided by Ladybug 0.0.45
 
 ghenv.Component.Name = "Honeybee_Re-run IDF"
 ghenv.Component.NickName = 'Re-Run IDF'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_08_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_11_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
-ghenv.Component.AdditionalHelpFromDocStrings = "5"
+ghenv.Component.AdditionalHelpFromDocStrings = "0"
 
 
 import os

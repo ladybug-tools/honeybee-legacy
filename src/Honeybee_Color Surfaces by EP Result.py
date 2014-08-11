@@ -1,43 +1,42 @@
-# This component colors zones based on an energy simulation output.
+# This component colors zone surfaces based on an energy simulation output.
 # By Chris Mackey
 # Chris@MackeyArchitecture.com
 # Ladybug started by Mostapha Sadeghipour Roudsari is licensed
 # under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
 
 """
-Use this component to color zones based on EnergyPlus data out of the "Honeybee_Read EP Result" component or zone comfort analyses out of the comfort calculator components.
+Use this component to color zone surfaces based on EnergyPlus data out of the "Honeybee_Read EP Surface Result" component or zone comfort analyses out of the comfort calculator components.
 _
-By default, zones will be colored based on total energy per unit floor area of the zone in the case of energy input data or colored based on total average value of each zone in the case of temperature, humidity or comfort input data.
+By default, zone surfaces will be colored based on total energy per unit surface area in the case of energy input data or colored based on average value of each surface in the case of temperature or data that is already normalized.
 If total annual simulation data has been connected, the analysisPeriod_ input can be used to select out a specific period fo the year for coloration.
-In order to color zones by individual hours/months, connecting interger values to the "stepOfSimulation_" will allow you to scroll though each step of the input data.
+In order to color surfaces by individual hours/months, connecting interger values to the "stepOfSimulation_" will allow you to scroll though each step of the input data.
 -
 Provided by Honeybee 0.0.53
     
     Args:
-        _zoneData: A list zone data out of the Read EP Result component or the comfort calculator components that have zone data hooked up to them.
-        _HBZones: The HBZones out of any of the HB components that generate or alter zones.  Note that these should ideally be the zones that are fed into the Run Energy Simulation component.  Zones read back into Grasshopper from the Import idf component will not align correctly with the EP Result data.
+        _srfData: A list surface data out of the "Honeybee_Read EP Surface Result" component.
+        _HBZones: The HBZones out of any of the HB components that generate or alter zones.  Note that these should ideally be the zones that are fed into the Run Energy Simulation component as surfaces may not align otherwise.  Zones read back into Grasshopper from the Import idf component will not align correctly with the EP Result data.
         ===============: ...
-        normalizeByFloorArea_: Set boolean to "True" in order to normalize results by the floor area of the zone and set to "False" to color zones based on total zone values.  The default is set to "True" such that colored zones communicate energy intensity rather than total energy.  Note that this input will be ignored if connected data is Temperature, Humidity, a Comfort Metric, or already normalized data.
+        normalizeBySrfArea_: Set boolean to "True" in order to normalize results by the area of the surface and set to "False" to color zones based on total values for each surface.  The default is set to "True" such that colored surface communicate energy intensity rather than total energy.  Note that this input will be ignored if connected data is Temperature or values that are already normalized.
         analysisPeriod_: Optional analysisPeriod_ to take a slice out of an annual data stream.  Note that this will only work if the connected data is for a full year and the data is hourly.  Otherwise, this input will be ignored. Also note that connecting a value to "stepOfSimulation_" will override this input.
-        stepOfSimulation_: Optional interger for the hour of simulation to color the zones with.  Connecting a value here will override the analysisPeriod_ input.
+        stepOfSimulation_: Optional interger for the hour of simulation to color the surfaces with.  Connecting a value here will override the analysisPeriod_ input.
         legendPar_: Optional legend parameters from the Ladybug Legend Parameters component.
-        _runIt: Set boolean to "True" to run the component and color the zones.
+        _runIt: Set boolean to "True" to run the component and color the zone surfaces.
     Returns:
         readMe!: ...
-        zoneColoredMesh: A list of meshes for each zone, each of which is colored based on the input _zoneData.
-        zoneWireFrame: A list of curves representing the outlines of the zones.  This is particularly helpful if one wants to scroll through individual zone meshes but still see the outline of the building.
-        zoneNames: A set of surfaces indicating the names of each zone as they correspond to the branches in the EP results and the name of the zone in the headers of data.
-        legend: A legend of the zone colors. Connect this output to a grasshopper "Geo" component in order to preview the legend spearately in the Rhino scene.
+        srfColoredMesh: A list of meshes for each surface, each of which is colored based on the input _srfData.
+        zoneWireFrame: A list of curves representing the outlines of the zones.  This is particularly helpful if one wants to scroll through individual meshes but still see the outline of the building.
+        legend: A legend of the surface colors. Connect this output to a grasshopper "Geo" component in order to preview the legend spearately in the Rhino scene.
         legendBasePt: The legend base point, which can be used to move the legend in relation to the building with the grasshopper "move" component.
-        zoneBreps: A list of breps for each zone. This is essentially the same as the _HBZones input. Connecting this output and the following zoneColors to a Grasshopper 'Preview' component will thus allow you to see the zones colored transparently.
-        zoneColors: A list of colors that correspond to the colors of each zone.  These colors include alpha values to make them slightly transparent.  Connecting the previous output and this output to a Grasshopper 'Preview' component will thus allow you to see the zones colored transparently.
-        zoneValues: The values of the input data that are being used to color the zones.
-        floorNormZoneData: The input data normalized by the floor area of it corresponding zone.
+        srfBreps: A list of breps for each zone surface. Connecting this output and the following zoneColors to a Grasshopper 'Preview' component will thus allow you to see the surfaces colored transparently.
+        srfColors: A list of colors that correspond to the colors of each zone surface.  These colors include alpha values to make them slightly transparent.  Connecting the previous output and this output to a Grasshopper 'Preview' component will thus allow you to see the surfaces colored transparently.
+        srfValues: The values of the input data that are being used to color the surfaces.
+        normalizedSrfData: The input data normalized by the areas of each surface.
 """
 
-ghenv.Component.Name = "Honeybee_Color Zones by EP Result"
-ghenv.Component.NickName = 'ColorZones'
-ghenv.Component.Message = 'VER 0.0.57\nAUG_09_2014'
+ghenv.Component.Name = "Honeybee_Color Surfaces by EP Result"
+ghenv.Component.NickName = 'ColorSurfaces'
+ghenv.Component.Message = 'VER 0.0.57\nAUG_11_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
@@ -58,59 +57,62 @@ import scriptcontext as sc
 
 inputsDict = {
     
-0: ["_zoneData", "A list zone data out of the Read EP Result component or the comfort calculator components that have zone data hooked up to them."],
-1: ["_HBZones", "The HBZones out of any of the HB components that generate or alter zones.  Note that these should ideally be the zones that are fed into the Run Energy Simulation component or zones read back into Grasshopper from the Import idf component in order to ensure alignment with the EP Result data."],
+0: ["_srfData", "A list surface data out of the 'Honeybee_Read EP Surface Result' component."],
+1: ["_HBZones", "The HBZones out of any of the HB components that generate or alter zones.  Note that these should ideally be the zones that are fed into the Run Energy Simulation component as surfaces may not align otherwise.  Zones read back into Grasshopper from the Import idf component will not align correctly with the EP Result data."],
 2: ["===============", "..."],
-3: ["normalizeByFloorArea_", "Set boolean to 'True' in order to normalize results by the floor area of the zone and set to 'False' to color zones based on total zone values.  The default is set to 'True' such that colored zones communicate energy intensity rather than total energy.  Note that this input will be ignored if connected data is Temperature, Humidity, a Comfort Metric, or EUI (which is already normalized by floor area)."],
+3: ["normalizeBySrfArea_", "Set boolean to 'True' in order to normalize results by the area of the surface and set to 'False' to color zones based on total values for each surface.  The default is set to 'True' such that colored surface communicate energy intensity rather than total energy.  Note that this input will be ignored if connected data is Temperature or values that are already normalized."],
 4: ["analysisPeriod_", "Optional analysisPeriod_ to take a slice out of an annual data stream.  Note that this will only work if the connected data is for a full year and the data is hourly.  Otherwise, this input will be ignored. Also note that connecting a value to 'stepOfSimulation_' will override this input."],
-5: ["stepOfSimulation_", "Optional interger for the hour of simulation to color the zones with.  Connecting a value here will override the analysisPeriod_ input."],
+5: ["stepOfSimulation_", "Optional interger for the hour of simulation to color the surfaces with.  Connecting a value here will override the analysisPeriod_ input."],
 6: ["legendPar_", "Optional legend parameters from the Ladybug Legend Parameters component."],
-7: ["_runIt", "Set boolean to 'True' to run the component and color the zones."]
+7: ["_runIt", "Set boolean to 'True' to run the component and color the zone surfaces."]
 }
 
 outputsDict = {
     
 0: ["readMe!", "..."],
-1: ["zoneColoredMesh", "A list of meshes for each zone, each of which is colored based on the input _zoneData."],
-2: ["zoneWireFrame", "A list of curves representing the outlines of the zones.  This is particularly helpful if one wants to scroll through individual zone meshes but still see the outline of the building."],
-3: ["zoneNames", "A set of surfaces indicating the names of each zone as they correspond to the branches in the EP results and the name of the zone in the headers of data."],
-4: ["legend", "A legend of the zone colors. Connect this output to a grasshopper 'Geo' component in order to preview the legend spearately in the Rhino scene."],
-5: ["legendBasePt", "The legend base point, which can be used to move the legend in relation to the building with the grasshopper 'move' component."],
-6: ["zoneBreps", "A list of breps for each zone. This is essentially the same as the _HBZones input. Connecting this output and the following zoneColors to a Grasshopper 'Preview' component will thus allow you to see the zones colored transparently."],
-7: ["zoneColors", "A list of colors that correspond to the colors of each zone.  These colors include alpha values to make them slightly transparent.  Connecting the previous output and this output to a Grasshopper 'Preview' component will thus allow you to see the zones colored transparently."],
-8: ["zoneValues", "The values of the input data that are being used to color the zones."],
-9: ["floorNormZoneData", "The input data normalized by the floor area of it corresponding zone."]
+1: ["srfColoredMesh", "A list of meshes for each surface, each of which is colored based on the input _srfData."],
+2: ["zoneWireFrame", "A list of curves representing the outlines of the zones.  This is particularly helpful if one wants to scroll through individual meshes but still see the outline of the building."],
+3: ["legend", "A legend of the surface colors. Connect this output to a grasshopper 'Geo' component in order to preview the legend spearately in the Rhino scene."],
+4: ["legendBasePt", "The legend base point, which can be used to move the legend in relation to the building with the grasshopper 'move' component."],
+5: ["srfBreps", "A list of breps for each zone surface. Connecting this output and the following zoneColors to a Grasshopper 'Preview' component will thus allow you to see the surfaces colored transparently."],
+6: ["srfColors", "A list of colors that correspond to the colors of each zone surface.  These colors include alpha values to make them slightly transparent.  Connecting the previous output and this output to a Grasshopper 'Preview' component will thus allow you to see the surfaces colored transparently."],
+7: ["srfValues", "The values of the input data that are being used to color the surfaces."],
+8: ["normalizedSrfData", "The input data normalized by the areas of each surface."]
 }
 
 
 w = gh.GH_RuntimeMessageLevel.Warning
-
+tol = sc.doc.ModelAbsoluteTolerance
 
 def copyHBZoneData():
     hb_hive = sc.sticky["honeybee_Hive"]()
-    zoneNames = []
-    zoneFloors = []
+    surfaceNames = []
+    srfBreps = []
     zoneBreps = []
+    zoneCentPts = []
     
     for HZone in _HBZones:
         zoneBreps.append(HZone)
+        zoneCentPts.append(HZone.GetBoundingBox(False).Center)
         zone = hb_hive.callFromHoneybeeHive([HZone])[0]
-        zoneNames.append(zone.name)
-        floorGeo = []
         for srf in zone.surfaces:
-            if srf.type == 2: floorGeo.append(srf.geometry)
-            elif str(srf.type) == "2.5": floorGeo.append(srf.geometry)
-            elif str(srf.type) == "2.75": floorGeo.append(srf.geometry)
-            else: pass
-        zoneFloors.append(floorGeo)
+            surfaceNames.append(srf.name)
+            if srf.hasChild:
+                srfBreps.append(srf.punchedGeometry)
+                for childSrf in srf.childSrfs:
+                    surfaceNames.append(childSrf.name)
+                    srfBreps.append(childSrf.geometry)
+            else:
+                srfBreps.append(srf.geometry)
     
-    sc.sticky["Honeybee_ZoneData"] = [zoneBreps, zoneNames, zoneFloors]
+    sc.sticky["Honeybee_SrfData"] = [zoneBreps, surfaceNames, srfBreps, zoneCentPts]
+
 
 def checkTheInputs():
-    #Create a Python list from the _zoneData
+    #Create a Python list from the _srfData
     dataPyList = []
-    for i in range(_zoneData.BranchCount):
-        branchList = _zoneData.Branch(i)
+    for i in range(_srfData.BranchCount):
+        branchList = _srfData.Branch(i)
         dataVal = []
         for item in branchList:
             dataVal.append(item)
@@ -132,11 +134,11 @@ def checkTheInputs():
         checkData2 = True
     else:
         checkData2 = False
-        warning = "Not all of the connected _zoneData has a Ladybug/Honeybee header on it.  This header is necessary to color zones with this component."
+        warning = "Not all of the connected _srfData has a Ladybug/Honeybee header on it.  This header is necessary to color zones with this component."
         print warning
         ghenv.Component.AddRuntimeMessage(w, warning)
     
-    #Check to be sure that the lengths of data in in the _zoneData branches are all the same.
+    #Check to be sure that the lengths of data in in the _srfData branches are all the same.
     dataLength = len(dataNumbers[0])
     dataLenCheck = []
     for list in dataNumbers:
@@ -147,7 +149,7 @@ def checkTheInputs():
         checkData4 = True
     else:
         checkData4 = False
-        warning = "Not all of the connected _zoneData branches are of the same length or there are more than 8760 values in the list."
+        warning = "Not all of the connected _srfData branches are of the same length or there are more than 8760 values in the list."
         print warning
         ghenv.Component.AddRuntimeMessage(w, warning)
     
@@ -158,16 +160,19 @@ def checkTheInputs():
         header = dataHeaders[0]
         
         headerUnits = header[3]
+        headerStart = header[5]
+        headerEnd = header[6]
+        simStep = str(header[4])
         headUnitCheck = []
         for head in dataHeaders:
-            if head[3] == headerUnits:
+            if head[3] == headerUnits and str(head[4]) == simStep and head[5] == headerStart and head[6] == headerEnd:
                 headUnitCheck.append(1)
             else: pass
         if sum(headUnitCheck) == len(dataHeaders):
             checkData5 = True
         else:
             checkData5 = False
-            warning = "Not all of the connected _zoneData branches are of the same data type."
+            warning = "Not all of the connected _srfData branches are of the same data type or same analysis period.  All connected data must be of one unit type."
             print warning
             ghenv.Component.AddRuntimeMessage(w, warning)
         
@@ -176,48 +181,21 @@ def checkTheInputs():
             annualData = True
         else: annualData = False
         
-        #Check the simulation timestep of the data.
-        simStep = str(header[4])
-        
         #Check to see if the data is energy data and, if so, make a note that the data is normalizable by floor area and can be totalled instead of averaged.
         dataType = str(header[2])
         
-        if "Floor Normalized" in dataType:
+        if "Normalized" in dataType:
             normable = False
             total = True
-        elif "Total Thermal Energy for" in dataType: normable = True
-        elif "Total Energy for" in dataType: normable = True
-        elif "Thermal Energy Balance for" in dataType: normable = True
-        elif "Cooling Energy for" in dataType: normable = True
-        elif "Heating Energy for" in dataType: normable = True
-        elif "Electric Lighting Energy for" in dataType: normable = True
-        elif "Electric Equipment Energy for" in dataType: normable = True
-        elif "People Energy for" in dataType: normable = True
-        elif "Total Solar Gain for" in dataType: normable = True
-        elif "Solar Beam Energy for" in dataType: normable = True
-        elif "Solar Diffuse Energy for" in dataType: normable = True
-        elif "Infiltration Energy Loss/Gain for" in dataType: normable = True
-        elif "Operative Temperature for" in dataType: normable = False
-        elif "Air Temperature for" in dataType: normable = False
-        elif "Radiant Temperature for" in dataType: normable = False
-        elif "Zone Air Relative Humidity" in dataType: normable = False
-        elif "Predicted Mean Vote" in dataType: normable = False
-        elif "Percentage of People Dissatisfied" in dataType: normable = False
-        elif "Standard Effective Temperature" in dataType: normable = False
-        elif "Comfortable Or Not" in dataType: normable = False
-        elif "Adaptive Comfort" in dataType: normable = False
-        elif "Universal Thermal Climate Index" in dataType: normable = False
-        elif "Outdoor Comfort" in dataType: normable = False
-        elif "Sensible Cooling Energy" in dataType: normable = True
-        elif "Latent Cooling Energy" in dataType: normable = True
-        elif "Sensible Heating Energy" in dataType: normable = True
-        elif "Latent Heating Energy" in dataType: normable = True
-        elif "Supply Air Mass Flow Rate" in dataType: normable = True
-        elif "Supply Air Temperature" in dataType: normable = False
-        elif "Supply Air Relative Humidity" in dataType: normable = False
+        elif "Surface Energy Loss/Gain for" in dataType: normable = True
+        elif "Window Total Transmitted Solar Energy for" in dataType: normable = True
+        elif "Window Transmitted Beam Energy for" in dataType: normable = True
+        elif "Window Transmitted Diffuse Energy for" in dataType: normable = True
+        elif "Outer Surface Temperature for" in dataType: normable = False
+        elif "Inner Surface Temperature for" in dataType: normable = False
         else:
             normable = False
-            warning = "Component cannot tell what data type is being connected.  Data will be averaged for each zone by default."
+            warning = "Component cannot tell what data type is being connected.  Data will be averaged for each surface by default."
             print warning
     else:
         checkData5 = True
@@ -227,7 +205,7 @@ def checkTheInputs():
         headerUnits = 'unknown units'
         normable = False
         dataHeaders = []
-        warning = "Component cannot tell what data type is being connected.  Data will be averaged for each zone by default."
+        warning = "Component cannot tell what data type is being connected.  Data will be averaged for each surface by default."
         print warning
     
     if checkData4 == True and checkData5 == True:
@@ -236,36 +214,40 @@ def checkTheInputs():
     
     return checkData, annualData, simStep, normable, dataNumbers, dataHeaders, headerUnits, total
 
-def checkZones(zoneHeaders, pyZoneData, hb_zoneData):
-    #Bring in the HB data on the connected zones and put the floors on their own list
-    zoneFloors = hb_zoneData[2]
+def getZoneSrfs(srfHeaders, pyZoneData, hb_zoneData):
+    #Bring in the HB data on the connected zones.
     zoneBreps = hb_zoneData[0]
-    zoneNames = hb_zoneData[1]
+    surfaceNames = hb_zoneData[1]
+    srfBreps = hb_zoneData[2]
     
     #Figure out which surfaces in the full list for the zones correspond to the connected srfHeaders.
-    zoneFlrAreas = []
-    newZoneFloors = []
+    finalSurfaceNames = []
+    finalSrfAreas = []
+    finalSrfBreps = []
     newPyZoneData = []
-    newZoneHeaders = []
-    finalZoneNames = []
+    newSrfHeaders = []
+    for listCount, list in enumerate(srfHeaders):
+        srfName = list[2].split(" for ")[-1]
+        try: srfName = srfName.split(":")[0]
+        except: pass
+        finalSurfaceNames.append(srfName)
+        for count, name in enumerate(surfaceNames):
+            if srfName == name.upper():
+                finalSrfBreps.append(srfBreps[count])
+                finalSrfAreas.append(rc.Geometry.AreaMassProperties.Compute(srfBreps[count]).Area)
+                newPyZoneData.append(pyZoneData[listCount])
+                newSrfHeaders.append(srfHeaders[listCount])
     
-    for list in zoneHeaders:
-        zoneName = list[2].split(" for ")[-1]
-        finalZoneNames.append(zoneName)
-        for count, name in enumerate(zoneNames):
-            if zoneName == name.upper():
-                newZoneFloors.append(zoneFloors[count])
-                zoneFlrAreas.append(rc.Geometry.AreaMassProperties.Compute(zoneFloors[count]).Area)
-                newPyZoneData.append(pyZoneData[count])
-                newZoneHeaders.append(zoneHeaders[count])
+    #Check if all of the data was found.
+    if len(srfHeaders) == len(finalSurfaceNames) and len(srfHeaders) == len(finalSrfBreps) and len(srfHeaders) == len(finalSrfAreas): pass
+    else: print "Not all of the connected surface data could be found in the connected zones.  You may want to connect all of your zones in order to see all of your connected surface data."
     
-    
-    return finalZoneNames, zoneFlrAreas, newZoneFloors, newPyZoneData, newZoneHeaders
+    return finalSurfaceNames, finalSrfAreas, finalSrfBreps, newPyZoneData, newSrfHeaders, zoneBreps
 
-def manageInputOutput(annualData, simStep, zoneNormalizable):
+def manageInputOutput(annualData, simStep, srfNormalizable):
     #If some of the component inputs and outputs are not right, blot them out or change them.
     for input in range(8):
-        if input == 3 and zoneNormalizable == False:
+        if input == 3 and srfNormalizable == False:
             ghenv.Component.Params.Input[input].NickName = "__________"
             ghenv.Component.Params.Input[input].Name = "."
             ghenv.Component.Params.Input[input].Description = " "
@@ -282,8 +264,8 @@ def manageInputOutput(annualData, simStep, zoneNormalizable):
             ghenv.Component.Params.Input[input].Name = inputsDict[input][0]
             ghenv.Component.Params.Input[input].Description = inputsDict[input][1]
     
-    for output in range(10):
-        if output == 10 and zoneNormalizable == False:
+    for output in range(9):
+        if output == 9 and srfNormalizable == False:
             ghenv.Component.Params.Output[output].NickName = "."
             ghenv.Component.Params.Output[output].Name = "."
             ghenv.Component.Params.Output[output].Description = " "
@@ -292,8 +274,8 @@ def manageInputOutput(annualData, simStep, zoneNormalizable):
             ghenv.Component.Params.Output[output].Name = outputsDict[output][0]
             ghenv.Component.Params.Output[output].Description = outputsDict[output][1]
     
-    if zoneNormalizable == False: normByFlr = False
-    else: normByFlr = normalizeByFloorArea_
+    if srfNormalizable == False: normByFlr = False
+    else: normByFlr = normalizeBySrfArea_
     if annualData == False: analysisPeriod = [0, 0]
     else: analysisPeriod = analysisPeriod_
     if simStep == "Annually" or simStep == "unknown timestep": stepOfSimulation = None
@@ -307,13 +289,13 @@ def restoreInputOutput():
         ghenv.Component.Params.Input[input].Name = inputsDict[input][0]
         ghenv.Component.Params.Input[input].Description = inputsDict[input][1]
     
-    for output in range(10):
+    for output in range(9):
         ghenv.Component.Params.Output[output].NickName = outputsDict[output][0]
         ghenv.Component.Params.Output[output].Name = outputsDict[output][0]
         ghenv.Component.Params.Output[output].Description = outputsDict[output][1]
 
 
-def getData(pyZoneData, zoneFlrAreas, annualData, simStep, zoneNormalizable, zoneHeaders, headerUnits, normByFlr, analysisPeriod, stepOfSimulation, total):
+def getData(pyZoneData, surfaceAreas, annualData, simStep, srfNormalizable, srfHeaders, headerUnits, normByFlr, analysisPeriod, stepOfSimulation, total):
     # import the classes
     if sc.sticky.has_key('ladybug_release'):
         lb_preparation = sc.sticky["ladybug_Preparation"]()
@@ -325,17 +307,17 @@ def getData(pyZoneData, zoneFlrAreas, annualData, simStep, zoneNormalizable, zon
         coloredUnits = None
         
         #Add basic stuff to the title.
-        if normByFlr == True and zoneNormalizable == True and zoneHeaders != []:
-            coloredTitle.append("Floor Normalized " + str(zoneHeaders[0][2].split("for")[0]) + " - " + headerUnits + "/" + str(sc.doc.ModelUnitSystem) + "2")
+        if normByFlr == True and srfNormalizable == True and srfHeaders != []:
+            coloredTitle.append("Area Normalized " + str(srfHeaders[0][2].split("for")[0]) + " - " + headerUnits + "/" + str(sc.doc.ModelUnitSystem) + "2")
             coloredUnits = headerUnits + "/" + str(sc.doc.ModelUnitSystem) + "2"
-        elif normByFlr == False and zoneNormalizable == True and zoneHeaders != []:
-            coloredTitle.append(str(zoneHeaders[0][2].split("for")[0]) + " - " + headerUnits)
+        elif normByFlr == False and srfNormalizable == True and srfHeaders != []:
+            coloredTitle.append(str(srfHeaders[0][2].split("for")[0]) + " - " + headerUnits)
             coloredUnits = headerUnits
         elif total == True:
-            coloredTitle.append(str(zoneHeaders[0][2].split("for")[0]) + " - " + headerUnits)
+            coloredTitle.append(str(srfHeaders[0][2].split("for")[0]) + " - " + headerUnits)
             coloredUnits = headerUnits
-        elif zoneNormalizable == False and zoneHeaders != []:
-            coloredTitle.append("Average " + str(zoneHeaders[0][2].split("for")[0] + " - " + headerUnits))
+        elif srfNormalizable == False and srfHeaders != []:
+            coloredTitle.append("Average " + str(srfHeaders[0][2].split("for")[0] + " - " + headerUnits))
             coloredUnits = headerUnits
         else:
             coloredTitle.append("Unknown Data")
@@ -346,19 +328,19 @@ def getData(pyZoneData, zoneFlrAreas, annualData, simStep, zoneNormalizable, zon
         timeNames = ["1:00", "2:00", "3:00", "4:00", "5:00", "6:00", "7:00", "8:00", "9:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00", "23:00", "24:00"]
         
         #If it is possible to normalize the data and the value is set to True (either by user request or default), norm the data.
-        if zoneNormalizable == True and normByFlr == True:
+        if srfNormalizable == True and normByFlr == True:
             for zone, list in enumerate(pyZoneData):
                 zoneNormData = []
                 for item in list:
-                    zoneNormData.append(item/(zoneFlrAreas[zone]))
+                    zoneNormData.append(item/(surfaceAreas[zone]))
                 normedZoneData.append(zoneNormData)
         
         #If none of the analysisperiod or stepOfSim are connected, just total or average all the data.
         def getColorData1():
-            if normByFlr == True and zoneNormalizable == True:
+            if normByFlr == True and srfNormalizable == True:
                 for list in normedZoneData:
                     dataForColoring.append(round(sum(list), 4))
-            elif normByFlr == False and zoneNormalizable == True:
+            elif normByFlr == False and srfNormalizable == True:
                 for list in pyZoneData:
                     dataForColoring.append(round(sum(list), 4))
             elif total == True:
@@ -369,27 +351,27 @@ def getData(pyZoneData, zoneFlrAreas, annualData, simStep, zoneNormalizable, zon
                     dataForColoring.append(round(sum(list), 4)/len(list))
         if analysisPeriod == [0, 0] and stepOfSimulation == None:
             getColorData1()
-            if zoneHeaders != []:
-                coloredTitle.append(str(monthNames[zoneHeaders[0][5][0]-1]) + " " + str(zoneHeaders[0][5][1]) + " " + str(timeNames[zoneHeaders[0][5][2]-1]) + " - " + str(monthNames[zoneHeaders[0][6][0]-1]) + " " + str(zoneHeaders[0][6][1]) + " " + str(timeNames[zoneHeaders[0][6][2]-1]))
+            if srfHeaders != []:
+                coloredTitle.append(str(monthNames[srfHeaders[0][5][0]-1]) + " " + str(srfHeaders[0][5][1]) + " " + str(timeNames[srfHeaders[0][5][2]-1]) + " - " + str(monthNames[srfHeaders[0][6][0]-1]) + " " + str(srfHeaders[0][6][1]) + " " + str(timeNames[srfHeaders[0][6][2]-1]))
             else: coloredTitle.append("Complete Time Period That Is Connected")
         if analysisPeriod == [] and stepOfSimulation == None:
             getColorData1()
-            if zoneHeaders != []:
-                coloredTitle.append(str(monthNames[zoneHeaders[0][5][0]-1]) + " " + str(zoneHeaders[0][5][1]) + " " + str(timeNames[zoneHeaders[0][5][2]-1]) + " - " + str(monthNames[zoneHeaders[0][6][0]-1]) + " " + str(zoneHeaders[0][6][1]) + " " + str(timeNames[zoneHeaders[0][6][2]-1]))
+            if srfHeaders != []:
+                coloredTitle.append(str(monthNames[srfHeaders[0][5][0]-1]) + " " + str(srfHeaders[0][5][1]) + " " + str(timeNames[srfHeaders[0][5][2]-1]) + " - " + str(monthNames[srfHeaders[0][6][0]-1]) + " " + str(srfHeaders[0][6][1]) + " " + str(timeNames[srfHeaders[0][6][2]-1]))
             else: coloredTitle.append("Complete Time Period That Is Connected")
         elif simStep == "Annually" or simStep == "unknown timestep":
             getColorData1()
-            if zoneHeaders != []:
-                coloredTitle.append(str(monthNames[zoneHeaders[0][5][0]-1]) + " " + str(zoneHeaders[0][5][1]) + " " + str(timeNames[zoneHeaders[0][5][2]-1]) + " - " + str(monthNames[zoneHeaders[0][6][0]-1]) + " " + str(zoneHeaders[0][6][1]) + " " + str(timeNames[zoneHeaders[0][6][2]-1]))
+            if srfHeaders != []:
+                coloredTitle.append(str(monthNames[srfHeaders[0][5][0]-1]) + " " + str(srfHeaders[0][5][1]) + " " + str(timeNames[srfHeaders[0][5][2]-1]) + " - " + str(monthNames[srfHeaders[0][6][0]-1]) + " " + str(srfHeaders[0][6][1]) + " " + str(timeNames[srfHeaders[0][6][2]-1]))
             else: coloredTitle.append("Complete Time Period That Is Connected")
         
         # If the user has connected a stepOfSim, make the step of sim the thing used to color zones.
         if stepOfSimulation != None:
             if stepOfSimulation < len(pyZoneData[0]):
-                if normByFlr == True and zoneNormalizable == True:
+                if normByFlr == True and srfNormalizable == True:
                     for list in normedZoneData:
                         dataForColoring.append(round(list[stepOfSimulation], 4))
-                elif normByFlr == False and zoneNormalizable == True:
+                elif normByFlr == False and srfNormalizable == True:
                     for list in pyZoneData:
                         dataForColoring.append(round(list[stepOfSimulation], 4))
                 elif total == True:
@@ -415,10 +397,10 @@ def getData(pyZoneData, zoneFlrAreas, annualData, simStep, zoneNormalizable, zon
             if simStep == "Monthly":
                 startMonth = analysisPeriod[0][0]
                 endMonth = analysisPeriod[1][0]
-                if normByFlr == True and zoneNormalizable == True:
+                if normByFlr == True and srfNormalizable == True:
                     for list in normedZoneData:
                         dataForColoring.append(round(sum(list[startMonth:endMonth+1]), 4))
-                elif normByFlr == False and zoneNormalizable == True:
+                elif normByFlr == False and srfNormalizable == True:
                     for list in pyZoneData:
                         dataForColoring.append(round(sum(list[startMonth:endMonth+1]), 4))
                 elif total == True:
@@ -464,10 +446,10 @@ def getData(pyZoneData, zoneFlrAreas, annualData, simStep, zoneNormalizable, zon
                 endIndex = startIndex + sum(simDays)
                 
                 #Get the data from the lists.
-                if normByFlr == True and zoneNormalizable == True:
+                if normByFlr == True and srfNormalizable == True:
                     for list in normedZoneData:
                         dataForColoring.append(round(sum(list[startIndex:endIndex+1]), 4))
-                elif normByFlr == False and zoneNormalizable == True:
+                elif normByFlr == False and srfNormalizable == True:
                     for list in pyZoneData:
                         dataForColoring.append(round(sum(list[startIndex:endIndex+1]), 4))
                 elif total == True:
@@ -492,10 +474,10 @@ def getData(pyZoneData, zoneFlrAreas, annualData, simStep, zoneNormalizable, zon
                 startIndex = HOYS[0]
                 endIndex = HOYS[-1]
                 #Get the data from the lists.
-                if normByFlr == True and zoneNormalizable == True:
+                if normByFlr == True and srfNormalizable == True:
                     for list in normedZoneData:
                         dataForColoring.append(round(sum(list[startIndex:endIndex+1]), 4))
-                elif normByFlr == False and zoneNormalizable == True:
+                elif normByFlr == False and srfNormalizable == True:
                     for list in pyZoneData:
                         dataForColoring.append(round(sum(list[startIndex:endIndex+1]), 4))
                 elif total == True:
@@ -509,29 +491,29 @@ def getData(pyZoneData, zoneFlrAreas, annualData, simStep, zoneNormalizable, zon
         
         #If there is floor normalized zone data, turn it into a data tree object.
         if normedZoneData != []:
-            floorNormData = DataTree[Object]()
+            normalizedSrfData = DataTree[Object]()
             for listCount, list in enumerate(normedZoneData):
-                floorNormData.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(listCount))
-                floorNormData.Add(str(zoneHeaders[listCount][1]), GH_Path(listCount))
-                floorNormData.Add("Floor Normalized " + str(zoneHeaders[listCount][1]), GH_Path(listCount))
-                floorNormData.Add(headerUnits + "/"+ str(sc.doc.ModelUnitSystem) + "2", GH_Path(listCount))
-                floorNormData.Add(str(zoneHeaders[listCount][4]), GH_Path(listCount))
-                floorNormData.Add(str(zoneHeaders[listCount][5]), GH_Path(listCount))
-                floorNormData.Add(str(zoneHeaders[listCount][6]), GH_Path(listCount))
+                normalizedSrfData.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(listCount))
+                normalizedSrfData.Add(str(srfHeaders[listCount][1]), GH_Path(listCount))
+                normalizedSrfData.Add("Floor Normalized " + str(srfHeaders[listCount][1]), GH_Path(listCount))
+                normalizedSrfData.Add(headerUnits + "/"+ str(sc.doc.ModelUnitSystem) + "2", GH_Path(listCount))
+                normalizedSrfData.Add(str(srfHeaders[listCount][4]), GH_Path(listCount))
+                normalizedSrfData.Add(str(srfHeaders[listCount][5]), GH_Path(listCount))
+                normalizedSrfData.Add(str(srfHeaders[listCount][6]), GH_Path(listCount))
                 for num in list:
-                    floorNormData.Add((num), GH_Path(listCount))
+                    normalizedSrfData.Add((num), GH_Path(listCount))
         else:
-            floorNormData = normedZoneData
+            normalizedSrfData = normedZoneData
         
         #Return all of the data
-        return dataForColoring, floorNormData, coloredTitle, coloredUnits, lb_preparation, lb_visualization
+        return dataForColoring, normalizedSrfData, coloredTitle, coloredUnits, lb_preparation, lb_visualization
     else:
         print "You should first let the Ladybug fly..."
         ghenv.Component.AddRuntimeMessage(w, "You should first let the Ladybug fly...")
         return [], [], [], None, None, None
 
 
-def main(zoneValues, zones, zoneFloors, zoneHeaders, title, legendTitle, lb_preparation, lb_visualization, legendPar):
+def main(zoneValues, zones, srfBreps, srfHeaders, title, legendTitle, lb_preparation, lb_visualization, legendPar):
     #Read the legend parameters.
     lowB, highB, numSeg, customColors, legendBasePoint, legendScale, legendFont, legendFontSize = lb_preparation.readLegendParameters(legendPar, False)
     
@@ -543,28 +525,20 @@ def main(zoneValues, zones, zoneFloors, zoneHeaders, title, legendTitle, lb_prep
     for color in colors:
         transparentColors.append(Drawing.Color.FromArgb(125, color.R, color.G, color.B))
     
-    #Create a series of colored zone meshes and zone curves
-    zoneMeshes = []
+    #Create a series of colored meshes and zone curves.
+    srfMeshes = []
     zoneWires = []
-    zoneCentPts = []
     
-    joinedFloors = []
-    for list in zoneFloors:
-        joinedFloor = rc.Geometry.Brep.JoinBreps(list, sc.doc.ModelAbsoluteTolerance)[0]
-        joinedFloors.append(joinedFloor)
-    
-    for count, brep in enumerate(joinedFloors):
-        zoneMeshSrfs = rc.Geometry.Mesh.CreateFromBrep(brep, rc.Geometry.MeshingParameters.Default)
-        for mesh in zoneMeshSrfs:
+    for count, brep in enumerate(srfBreps):
+        meshSrfs = rc.Geometry.Mesh.CreateFromBrep(brep, rc.Geometry.MeshingParameters.Default)
+        for mesh in meshSrfs:
             mesh.VertexColors.CreateMonotoneMesh(colors[count])
-            zoneMeshes.append(mesh)
+            srfMeshes.append(mesh)
     
     for brep in zones:
         wireFrame = brep.DuplicateEdgeCurves()
         for crv in wireFrame:
             zoneWires.append(crv)
-        bBox = brep.GetBoundingBox(False)
-        zoneCentPts.append(bBox.Center)
     
     #Create the legend.
     lb_visualization.calculateBB(zones, True)
@@ -572,19 +546,6 @@ def main(zoneValues, zones, zoneFloors, zoneHeaders, title, legendTitle, lb_prep
     legendSrfs, legendText, legendTextCrv, textPt, textSize = lb_visualization.createLegend(zoneValues, lowB, highB, numSeg, legendTitle, lb_visualization.BoundingBoxPar, legendBasePoint, legendScale, legendFont, legendFontSize)
     legendColors = lb_visualization.gradientColor(legendText[:-1], lowB, highB, customColors)
     legendSrfs = lb_visualization.colorMesh(legendColors, legendSrfs)
-    
-    #Create the zone names.
-    newTxtPts = []
-    for point in zoneCentPts:
-        newTxtPts.append(point + rc.Geometry.Point3d(-2*textSize, 0, 0))
-    zoneNames = []
-    for list in zoneHeaders:
-        zoneNames.append(list[2].split(' for ')[-1])
-    zoneNum = lb_visualization.text2srf(zoneNames, newTxtPts, legendFont, textSize/3)
-    zoneNumFinal = []
-    for list in zoneNum:
-        for brep in list:
-            zoneNumFinal.append(brep)
     
     #Create the Title.
     titleTxt = '\n' + title[0] + '\n' + title[1]
@@ -594,24 +555,31 @@ def main(zoneValues, zones, zoneFloors, zoneHeaders, title, legendTitle, lb_prep
     #Bring the legend and the title together.
     fullLegTxt = lb_preparation.flattenList(legendTextCrv + titleTextCurve)
     
-    
-    return transparentColors, zones, zoneMeshes, zoneWires, [legendSrfs, fullLegTxt], legendBasePoint, zoneNumFinal
+    return transparentColors, srfBreps, srfMeshes, zoneWires, [legendSrfs, fullLegTxt], legendBasePoint
 
 
 
 
 #If the HBzone data has not been copied to memory or if the data is old, get it.
 initCheck = False
-if _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('Honeybee_ZoneData') == False:
+if _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('Honeybee_SrfData') == False:
     copyHBZoneData()
-    hb_zoneData = sc.sticky["Honeybee_ZoneData"]
+    hb_zoneData = sc.sticky["Honeybee_SrfData"]
     initCheck = True
-elif _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('Honeybee_ZoneData') == True:
-    hb_zoneData = sc.sticky["Honeybee_ZoneData"]
-    if len(hb_zoneData[0]) == len(_HBZones): pass
+elif _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('Honeybee_SrfData') == True:
+    hb_zoneData = sc.sticky["Honeybee_SrfData"]
+    checkZones = True
+    if len(_HBZones) == len(hb_zoneData[0]):
+        for count, brep in enumerate(_HBZones):
+            boundBoxVert = brep.GetBoundingBox(False).Center
+            if boundBoxVert.X <= hb_zoneData[3][count].X+tol and boundBoxVert.X >= hb_zoneData[3][count].X-tol and boundBoxVert.Y <= hb_zoneData[3][count].Y+tol and boundBoxVert.Y >= hb_zoneData[3][count].Y-tol and boundBoxVert.Z <= hb_zoneData[3][count].Z+tol and boundBoxVert.Z >= hb_zoneData[3][count].Z-tol: pass
+            else:
+                checkZones = False
+    else: checkZones = False
+    if checkZones == True: pass
     else:
         copyHBZoneData()
-        hb_zoneData = sc.sticky["Honeybee_ZoneData"]
+        hb_zoneData = sc.sticky["Honeybee_SrfData"]
     initCheck = True
 elif _HBZones != [] and sc.sticky.has_key('honeybee_release') == False:
     print "You should first let Honeybee  fly..."
@@ -620,26 +588,26 @@ else:
     pass
 
 
-
 #Check the data input.
 checkData = False
-if _zoneData.BranchCount > 0 and str(_zoneData) != "tree {0}" and initCheck == True:
-    checkData, annualData, simStep, zoneNormalizable, pyZoneData, zoneHeaders, headerUnits, total = checkTheInputs()
+if _srfData.BranchCount > 0 and str(_srfData) != "tree {0}" and initCheck == True:
+    checkData, annualData, simStep, srfNormalizable, pyZoneData, srfHeaders, headerUnits, total = checkTheInputs()
 
 #Manage the inputs and outputs of the component based on the data that is hooked up.
 if checkData == True:
-    normByFlr, analysisPeriod, stepOfSimulation = manageInputOutput(annualData, simStep, zoneNormalizable)
+    normByFlr, analysisPeriod, stepOfSimulation = manageInputOutput(annualData, simStep, srfNormalizable)
 else: restoreInputOutput()
 
-#If the data is meant to be normalized by floor area, check the zones.
+#If the data is meant to be normalized by surface area, check the HBZones for surface names.
 if checkData == True and normByFlr == None: normByFlr = True
-if _runIt == True and checkData == True and _HBZones != []:
-    zoneNames, zoneFlrAreas, zoneFloors, pyZoneData, zoneHeaders = checkZones(zoneHeaders, pyZoneData, hb_zoneData)
-    zoneValues, floorNormZoneData, title, legendTitle, lb_preparation, lb_visualization = getData(pyZoneData, zoneFlrAreas, annualData, simStep, zoneNormalizable, zoneHeaders, headerUnits, normByFlr, analysisPeriod, stepOfSimulation, total)
 
-#Color the zones with the data and get all of the other cool stuff that this component does.
-if _runIt == True and checkData == True and _HBZones != [] and zoneValues != []:
-    zoneColors, zoneBreps, zoneColoredMesh, zoneWireFrame, legendInit, legendBasePt, zoneNames = main(zoneValues, _HBZones, zoneFloors, zoneHeaders, title, legendTitle, lb_preparation, lb_visualization, legendPar_)
+if _runIt == True and checkData == True and _HBZones != []:
+    surfaceNames, srfAreas, srfBreps, pyZoneData, srfHeaders, zoneBreps = getZoneSrfs(srfHeaders, pyZoneData, hb_zoneData)
+    srfValues, normalizedSrfData, title, legendTitle, lb_preparation, lb_visualization = getData(pyZoneData, srfAreas, annualData, simStep, srfNormalizable, srfHeaders, headerUnits, normByFlr, analysisPeriod, stepOfSimulation, total)
+
+#Color the surfaces with the data and get all of the other cool stuff that this component does.
+if _runIt == True and checkData == True and _HBZones != [] and srfValues != []:
+    srfColors, srfBreps, srfColoredMesh, zoneWireFrame, legendInit, legendBasePt = main(srfValues, _HBZones, srfBreps, srfHeaders, title, legendTitle, lb_preparation, lb_visualization, legendPar_)
     #Unpack the legend.
     legend = []
     for count, item in enumerate(legendInit):
@@ -650,5 +618,5 @@ if _runIt == True and checkData == True and _HBZones != [] and zoneValues != []:
                 legend.append(srf)
 
 #Hide unwanted outputs
+ghenv.Component.Params.Output[4].Hidden = True
 ghenv.Component.Params.Output[5].Hidden = True
-ghenv.Component.Params.Output[6].Hidden = True

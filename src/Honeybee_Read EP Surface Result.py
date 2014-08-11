@@ -27,7 +27,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Read EP Surface Result"
 ghenv.Component.NickName = 'readEPSrfResult'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_07_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_11_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "4"
@@ -226,10 +226,10 @@ if _resultFileAddress and gotZoneData == True:
                     elif 'Surface Average Face Conduction Heat Transfer Energy' in column:
                         if gotSrfData == True:
                             srfName, typeName = checkSrfName(srfName)
-                            makeHeaderGrafted(opaqueEnergyFlow, int(path[columnCount][0]), int(path[columnCount][1]), srfName, column.split('(')[-1].split(')')[0], "Opaque Conductive Energy Loss/Gain", "kWh", True, typeName)
+                            makeHeaderGrafted(opaqueEnergyFlow, int(path[columnCount][0]), int(path[columnCount][1]), srfName, column.split('(')[-1].split(')')[0], "Surface Energy Loss/Gain", "kWh", True, typeName)
                         else:
                             path.append([opaConduct])
-                            makeHeader(opaqueEnergyFlow, int(path[columnCount]), srfName, column.split('(')[-1].split(')')[0], "Opaque Conductive Energy Loss/Gain", "kWh")
+                            makeHeader(opaqueEnergyFlow, int(path[columnCount]), srfName, column.split('(')[-1].split(')')[0], "Surface Energy Loss/Gain", "kWh")
                             opaConduct += 1
                         key.append(3)
                         dataTypeList[3] = True
@@ -237,10 +237,10 @@ if _resultFileAddress and gotZoneData == True:
                     elif 'Surface Window Heat Gain Energy' in column:
                         if gotSrfData == True:
                             srfName, typeName = checkSrfName(srfName)
-                            makeHeaderGrafted(glazEnergyFlow, int(path[columnCount][0]), int(path[columnCount][1]), srfName, column.split('(')[-1].split(')')[0], "Glazing Energy Loss/Gain", "kWh", True, typeName)
+                            makeHeaderGrafted(glazEnergyFlow, int(path[columnCount][0]), int(path[columnCount][1]), srfName, column.split('(')[-1].split(')')[0], "Surface Energy Loss/Gain", "kWh", True, typeName)
                         else:
                             path.append([glzGain])
-                            makeHeader(glazEnergyFlow, int(path[columnCount]), srfName, column.split('(')[-1].split(')')[0], "Glazing Energy Loss/Gain", "kWh")
+                            makeHeader(glazEnergyFlow, int(path[columnCount]), srfName, column.split('(')[-1].split(')')[0], "Surface Energy Loss/Gain", "kWh")
                             glzGain += 1
                         key.append(4)
                         dataTypeList[4] = True
