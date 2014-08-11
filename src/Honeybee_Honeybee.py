@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.54\nAUG_10_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_11_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1273,7 +1273,7 @@ class WriteRADAUX(object):
                 "# end of sky definition for daylighting studies\n\n"
                     
                     
-    def exportView(self, viewName, radParameters, cameraType, imageSize, sectionPlane, nXDiv = 1, nYDiv = 1, vs = 0, vl = 0):
+    def exportView(self, viewName, radParameters, cameraType, imageSize, sectionPlane = None, nXDiv = 1, nYDiv = 1, vs = 0, vl = 0):
         
         if viewName in rs.ViewNames():
             viewName = rs.CurrentView(viewName, True)
@@ -1408,26 +1408,18 @@ class WriteRADAUX(object):
     
     def oconvLine(self, octFileName, radFilesList):
         # sence files
+        r = 1024 * 2
         senceFiles = ""
         for address in radFilesList: senceFiles = senceFiles + address.replace("\\" , "/") + " "
         
-        line = "oconv -f " +  senceFiles + " > " + octFileName + ".oct\n"
+        line = "oconv -r " + str(r) + " -f " +  senceFiles + " > " + octFileName + ".oct\n"
         
         return line
-
-    def rpictLine(self, viewFileName, projectName, viewName, radParameters):
-        line = "rpict -t 10 -i -ab " + `radParameters["_ab_"]` + \
-           " -ad " + `radParameters["_ad_"]` + " -as " +  `radParameters["_as_"]` + \
-           " -ar " + `radParameters["_ar_"]` + " -aa " +  `radParameters["_aa_"]` + \
-           " -vf " + viewFileName + " " + projectName + ".oct > " + \
-           projectName + "_" + viewName + "_RadStudy.pic\n"
-        return line
     
-    def rpictLineAlternate(self, view, projectName, viewName, radParameters, analysisType = 0, cpuCount = 0):
+    def overtureLine(self, view, projectName, viewName, radParameters, analysisType = 0):
         octFile = projectName + ".oct"
-        ambFile = projectName + "_" + viewName + "_" + `cpuCount` + ".amb"
-        unfFile = projectName + "_" + viewName + "_" + `cpuCount` + ".unf" 
-        outputFile = projectName + "_" + viewName + "_" + `cpuCount` + ".HDR"
+        ambFile = projectName + ".amb" #amb file is view independent and can be used globally
+        unfFile = projectName + ".unf" 
         
         if analysisType==0:
             # illuminance (lux)
@@ -1438,10 +1430,6 @@ class WriteRADAUX(object):
         else:
             # radiation analysis
             line0 = "rpict -i "
-        
-        # check got translucant materials
-        # St = A6*A7*( 1  photopic average (A1,A2,A3) * A4 )
-        # radParameters["_st_"]
         
         line1 = "-t 10 "+ \
                 view + " -af " + ambFile +  " " + \
@@ -1456,12 +1444,42 @@ class WriteRADAUX(object):
                 " -lr " + `radParameters["_lr_"]`  + " -lw " + '%.3f'%radParameters["_lw_"] + " -av 0 0 0 " + \
                 " " + octFile + " > " + unfFile + "\n"
     
-        line2 = "del " + ambFile + "\n"
+        line2 = "del " + unfFile + "\n"
         
-        line3 = "pfilt -1 -r .6 -x/2 -y/2 " + unfFile + " > " + outputFile + \
-                    "\nexit\n"
+        return line0 + line1 + line2
+
+    def rpictLine(self, view, projectName, viewName, radParameters, analysisType = 0, cpuCount = 0):
+        octFile = projectName + ".oct"
+        ambFile = projectName + ".amb" #amb file is view independent and can be used globally
+        unfFile = projectName + "_" + viewName + "_" + `cpuCount` + ".unf" 
+        outputFile = projectName + "_" + viewName + "_" + `cpuCount` + ".HDR"
         
-        return line0 + line1 + line2 + line0 + line1 + line3
+        if analysisType==0:
+            # illuminance (lux)
+            line0 = "rpict -i "
+        elif analysisType==2:
+            # luminance (cd)
+            line0 = "rpict "
+        else:
+            # radiation analysis
+            line0 = "rpict -i "
+        
+        line1 = "-t 10 "+ \
+                view + " -af " + ambFile +  " " + \
+                " -ps " + str(radParameters["_ps_"]) + " -pt " + str(radParameters["_pt_"]) + \
+                " -pj " + str(radParameters["_pj_"]) + " -dj " + str(radParameters["_dj_"]) + \
+                " -ds " + str(radParameters["_ds_"]) + " -dt " + str(radParameters["_dt_"]) + \
+                " -dc " + str(radParameters["_dc_"]) + " -dr " + str(radParameters["_dr_"]) + \
+                " -dp " + str(radParameters["_dp_"]) + " -st " + str(radParameters["_st_"])  + \
+                " -ab " + `radParameters["_ab_"]` + \
+                " -ad " + `radParameters["_ad_"]` + " -as " +  `radParameters["_as_"]` + \
+                " -ar " + `radParameters["_ar_"]` + " -aa " +  '%.3f'%radParameters["_aa_"] + \
+                " -lr " + `radParameters["_lr_"]`  + " -lw " + '%.3f'%radParameters["_lw_"] + " -av 0 0 0 " + \
+                " " + octFile + " > " + unfFile + "\n"
+    
+        line2 = "pfilt -1 -r .6 -x/2 -y/2 " + unfFile + " > " + outputFile + "\n"
+        
+        return line0 + line1 + line2
         
         
     def falsecolorLine(self, projectName, viewName):

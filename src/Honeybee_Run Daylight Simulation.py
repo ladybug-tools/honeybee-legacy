@@ -37,7 +37,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Run Daylight Simulation"
 ghenv.Component.NickName = 'runDaylightAnalysis'
-ghenv.Component.Message = 'VER 0.0.54\nAUG_07_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_11_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -717,7 +717,7 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
             # 3.  write the batch file
             if analysisRecipe.type == 0:
                 # image based
-                initBatchFileName = radFileFullName.replace('.rad', '.bat')
+                initBatchFileName = radFileFullName.replace('.rad', '_IMGInit.bat')
             else:
                 # not annual and not image based
                 initBatchFileName = radFileFullName.replace('.rad', '_RADInit.bat')
@@ -741,6 +741,15 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
                     
                 OCTLine = hb_writeRADAUX.oconvLine(OCTFileName, sceneRadFiles)
                 batchFile.write(OCTLine)
+                
+                # add overture line in case it is an image-based analysis
+                view = sc.doc.Views.ActiveView.ActiveViewport.Name
+                
+                viewLine = hb_writeRADAUX.exportView(view, radParameters, cameraType, imageSize = [64, 64])
+                        
+                # write rpict lines
+                overtureLine = hb_writeRADAUX.overtureLine(viewLine, OCTFileName, view, radParameters, int(simulationType))
+                batchFile.write(overtureLine)
                 
             if analysisRecipe.type == 0:
                 # write view files
@@ -791,7 +800,7 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
                         viewLine = hb_writeRADAUX.exportView(view, radParameters, cameraType, imageSize, sectionPlane, nXDiv, nYDiv, vs, vl)
                         
                         # write rpict lines
-                        RPICTLines = hb_writeRADAUX.rpictLineAlternate(viewLine, OCTFileName, view, radParameters, int(simulationType), cpuCount)
+                        RPICTLines = hb_writeRADAUX.rpictLine(viewLine, OCTFileName, view, radParameters, int(simulationType), cpuCount)
                         batchFile.write(RPICTLines)                    
                         
                     # close the file
