@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.54\nAUG_07_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_10_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -3120,6 +3120,8 @@ class EPZone(object):
         self.daylightThreshold = ""
         self.coolingSetPt= ""
         self.heatingSetPt= ""
+        self.coolingSetback= ""
+        self.heatingSetback= ""
         self.coolSupplyAirTemp= ""
         self.heatSupplyAirTemp= ""
         
