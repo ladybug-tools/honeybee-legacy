@@ -108,7 +108,7 @@ if _resultFileAddress:
                     zoneCounter += 1
                 else:
                     zoneSrfNameList[zoneCounter].append(line.split(",")[1])
-                    zoneSrfTypeList[zoneCounter].append(line.split(",")[5])
+                    zoneSrfTypeList[zoneCounter].append(line.split(",")[2])
                     zoneSrfAreaList[zoneCounter].append(float(line.split(",")[9]))
                 gotSrfData = True
             else: pass

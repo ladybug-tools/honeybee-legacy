@@ -11,18 +11,14 @@ Provided by Honeybee 0.0.53
     Args:
         _srfData: Any surface data out of the "Honeybee_Read EP Surface Result" component.
     Returns:
-        exteriorWalls = A grafted list of surface data for exterior walls.
-        interiorWalls = A grafted list of surface data for interior walls.
-        exteriorWindows = A grafted list of surface data for exterior windows.
-        interiorWindows = A grafted list of surface data for interior windows.
-        ceilings = A grafted list of surface data for to ceilings.
+        walls = A grafted list of surface data for walls.
+        windows = A grafted list of surface data for windows.
         roofs = A grafted list of surface data for to roofs.
         floors = A grafted list of surface data for to floors.
-        exposedFloors = A grafted list of surface data for to exposed floors.
 """
 ghenv.Component.Name = "Honeybee_Surface Data Based On Type"
 ghenv.Component.NickName = 'srfDataByType'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_09_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_11_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
@@ -38,14 +34,10 @@ from Grasshopper.Kernel.Data import GH_Path
 import scriptcontext as sc
 
 
-exteriorWalls = DataTree[Object]()
-interiorWalls = DataTree[Object]()
-exteriorWindows = DataTree[Object]()
-interiorWindows = DataTree[Object]()
-ceilings = DataTree[Object]()
+walls = DataTree[Object]()
+windows = DataTree[Object]()
 roofs = DataTree[Object]()
 floors = DataTree[Object]()
-exposedFloors = DataTree[Object]()
 
 
 def checkBranch():
@@ -74,22 +66,14 @@ def main(srfData):
         
         srfType = branchList[2].split(": ")[-1]
         
-        if srfType == "EXTERIOR WALL":
-            for item in branchList: exteriorWalls.Add(item, branchPath)
-        elif srfType == "INTERIOR WALL":
-            for item in branchList: interiorWalls.Add(item, branchPath)
-        elif srfType == "EXTERIOR WINDOW":
-            for item in branchList: exteriorWindows.Add(item, branchPath)
-        elif srfType == "INTERIOR WINDOW":
-            for item in branchList: interiorWindows.Add(item, branchPath)
-        elif srfType == "INTERIOR CEILING":
-            for item in branchList: ceilings.Add(item, branchPath)
-        elif srfType == "EXTERIOR ROOF":
+        if srfType == "Wall":
+            for item in branchList: walls.Add(item, branchPath)
+        elif srfType == "Window":
+            for item in branchList: windows.Add(item, branchPath)
+        elif srfType == "Roof":
             for item in branchList: roofs.Add(item, branchPath)
-        elif srfType == "INTERIOR FLOOR":
+        elif srfType == "Floor":
             for item in branchList: floors.Add(item, branchPath)
-        elif srfType == "EXTERIOS FLOOR":
-            for item in branchList: explosedFloors.Add(item, branchPath)
         else: pass
 
 
