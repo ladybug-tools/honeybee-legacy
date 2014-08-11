@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_07_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_11_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "4"
@@ -328,19 +328,19 @@ equipmentPyList = createPyList(electricEquip)
 
 if len(coolingPyList) > 0 and len(heatingPyList) > 0 and len(lightingPyList) > 0 and len(equipmentPyList) > 0:
     for listCount, list in enumerate(coolingPyList):
-        makeHeader(totalEnergy, listCount, zoneNameList[listCount], list[4].split('(')[-1].split(')')[0], "Total Energy", "kWh", True)
+        makeHeader(totalEnergy, listCount, list[2].split(' for')[-1], list[4].split('(')[-1].split(')')[0], "Total Energy", "kWh", True)
         for numCount, num in enumerate(list[7:]):
             totalEnergy.Add((num + heatingPyList[listCount][7:][numCount] + lightingPyList[listCount][7:][numCount] + equipmentPyList[listCount][7:][numCount]), GH_Path(listCount))
         dataTypeList[0] = True
 
 if len(coolingPyList) > 0 and len(heatingPyList) > 0:
     for listCount, list in enumerate(coolingPyList):
-        makeHeader(totalThermalEnergy, listCount, zoneNameList[listCount], list[4].split('(')[-1].split(')')[0], "Total Thermal Energy", "kWh", True)
+        makeHeader(totalThermalEnergy, listCount, list[2].split(' for')[-1], list[4].split('(')[-1].split(')')[0], "Total Thermal Energy", "kWh", True)
         for numCount, num in enumerate(list[7:]):
             totalThermalEnergy.Add((num + heatingPyList[listCount][7:][numCount]), GH_Path(listCount))
         dataTypeList[1] = True
         
-        makeHeader(thermalEnergyBalance, listCount, zoneNameList[listCount], list[4].split('(')[-1].split(')')[0], "Thermal Energy Balance", "kWh", True)
+        makeHeader(thermalEnergyBalance, listCount, list[2].split(' for')[-1], list[4].split('(')[-1].split(')')[0], "Thermal Energy Balance", "kWh", True)
         for numCount, num in enumerate(list[7:]):
             thermalEnergyBalance.Add((heatingPyList[listCount][7:][numCount] - num), GH_Path(listCount))
         dataTypeList[2] = True
