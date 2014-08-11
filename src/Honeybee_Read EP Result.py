@@ -103,6 +103,8 @@ if _resultFileAddress:
             else: pass
         eioResult.close()
     except:
+        try: eioResult.close()
+        except: pass 
         warning = 'No .eio file was found adjacent to the .csv _resultFileAddress.'+ \
                   'results cannot be read back into grasshopper without this file.'
         print warning

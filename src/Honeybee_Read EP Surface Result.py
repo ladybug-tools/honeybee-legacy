@@ -41,6 +41,7 @@ from Grasshopper import DataTree
 from Grasshopper.Kernel.Data import GH_Path
 import scriptcontext as sc
 import copy
+import os
 
 
 #Read the location and the analysis period info from the eio file, if there is one.
@@ -66,6 +67,15 @@ if _resultFileAddress:
         zoneCounter = -1
         
         eioFileAddress = _resultFileAddress[0:-3] + "eio"
+        if not os.path.isfile(eioFileAddress):
+            # try to find the file from the list
+            studyFolder = os.path.dirname(_resultFileAddress)
+            fileNames = os.listdir(studyFolder)
+            for fileName in fileNames:
+                if fileName.lower().endswith("eio"):
+                    eioFileAddress = os.path.join(studyFolder, fileName)
+                    break
+        
         eioResult = open(eioFileAddress, 'r')
         for lineCount, line in enumerate(eioResult):
             if "Site:Location," in line:
@@ -104,6 +114,8 @@ if _resultFileAddress:
             else: pass
         eioResult.close()
     except:
+        try: eioResult.close()
+        except: pass 
         warning = 'No .eio file was found adjacent to the .csv _resultFileAddress.'+ \
                   'Results cannot be read back into grasshopper without this file.'
         print warning
