@@ -9,6 +9,7 @@ Genrate Standard CIE Sky
 Provided by Honeybee 0.0.53
     
     Args:
+        north_: Input a vector to be used as a true North direction for the sun path or a number between 0 and 360 that represents the degrees off from the y-axis to make North.  The default North direction is set to the Y-axis (0 degrees).
         _weatherFile: epw file location on your system as a string
         _hour: Input a number to indicate hour
         _day: Input a number to indicate day
@@ -21,7 +22,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Generate Standard CIE Sky"
 ghenv.Component.NickName = 'genStandardCIESky'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_12_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "02 | Daylight | Sky"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -31,6 +32,7 @@ except: pass
 import os
 import scriptcontext as sc
 import Grasshopper.Kernel as gh
+import math
 
 
 def date2Hour(month, day, hour):
@@ -58,12 +60,12 @@ skyDict = {
 5 : ('-u', 'uniformSky')
 }
 
-def RADDaylightingSky(epwFileAddress, skyType, locName, lat, lngt, timeZone, hour, day, month):
+def RADDaylightingSky(epwFileAddress, skyType, locName, lat, lngt, timeZone, hour, day, month, north = 0):
     
     return  "# start of sky definition for daylighting studies\n" + \
             "# location name: " + locName + " LAT: " + lat + "\n" + \
             "!gensky " + `month` + ' ' + `day` + ' ' + `hour` + ' ' + skyDict[skyType][0] + \
-            " -a " + lat + " -o " + `-float(lngt)` + " -m " + `-float(timeZone) * 15` + "\n" + \
+            " -a " + lat + " -o " + `-float(lngt)` + " -m " + `-float(timeZone) * 15` + " | xform -rz " + str(north) + "\n" + \
             "skyfunc glow sky_mat\n" + \
             "0\n" + \
             "0\n" + \
@@ -87,7 +89,7 @@ def RADDaylightingSky(epwFileAddress, skyType, locName, lat, lngt, timeZone, hou
             "# end of sky definition for daylighting studies\n\n"
 
 
-def main(weatherFile, month, day, hour, skyType):
+def main(weatherFile, month, day, hour, skyType, north = 0):
     if sc.sticky.has_key('ladybug_release'):
         lb_preparation = sc.sticky["ladybug_Preparation"]()
     
@@ -111,7 +113,7 @@ def main(weatherFile, month, day, hour, skyType):
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, "epwWeatherFile address is not a valid .epw file")
         return -1
-        
+    
     # make new folder for each city
     subWorkingDir = os.path.join(sc.sticky["Honeybee_DefaultFolder"], "skylib\\CIESkies\\", newLocName)
     subWorkingDir = lb_preparation.makeWorkingDir(subWorkingDir)
@@ -120,17 +122,20 @@ def main(weatherFile, month, day, hour, skyType):
     outputFile = subWorkingDir + "\\CIE_" + skyDict[skyType][1] + "_sky_"+ `month` + \
                 "_" + `day` + "@" + ('%.2f'%hour).replace(".", "") + ".sky"
     
-    skyStr = RADDaylightingSky(weatherFile, skyType, newLocName, lat, lngt, timeZone, hour, day, month)
+    northAngle, northVector = lb_preparation.angle2north(north)
+    
+    skyStr = RADDaylightingSky(weatherFile, skyType, newLocName, lat, lngt, timeZone, hour, day, month, math.degrees(northAngle))
     
     skyFile = open(outputFile, 'w')
     skyFile.write(skyStr)
     skyFile.close()
     
+    
     return outputFile , `day` + "_" + `month` + "@" + ('%.2f'%hour).replace(".", "")
     
 if _weatherFile!=None and _month!=None and _day!=None and _hour!=None:
     if _skyType == None: _skyType = 5
-    result = main(_weatherFile, _month, _day, _hour, _skyType)
+    result = main(_weatherFile, _month, _day, _hour, _skyType, north_)
     
     if result!=-1:
        skyFilePath, skyDescription = result
