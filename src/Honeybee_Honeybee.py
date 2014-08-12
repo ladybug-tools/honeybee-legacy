@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.54\nAUG_11_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_12_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -864,7 +864,7 @@ class hb_MSHToRAD(object):
         else:
             self.matName = "radMaterial"
             
-            if userRADMateialName and radMaterial != None:
+            if radMaterial != None:
                 try:
                     self.matName = self.RADMaterial.split("\n")[0].split(" ")[2]
                 except:
