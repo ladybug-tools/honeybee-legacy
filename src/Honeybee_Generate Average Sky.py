@@ -11,6 +11,7 @@ This component generate an average climate based data for a single hour during a
 Provided by Honeybee 0.0.53
     
     Args:
+        north_: Input a vector to be used as a true North direction for the sun path or a number between 0 and 360 that represents the degrees off from the y-axis to make North.  The default North direction is set to the Y-axis (0 degrees).
         _weatherFile: epw weather file address on your system
         _month: Month of the study [1-12]
         _hour: Hour of the study [1-24]
@@ -21,7 +22,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Generate Average Sky"
 ghenv.Component.NickName = 'genAvgSky'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_12_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "02 | Daylight | Sky"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
@@ -32,6 +33,8 @@ import os
 import scriptcontext as sc
 import Rhino as rc
 import Grasshopper.Kernel as gh
+import math
+
 
 def date2Hour(month, day, hour):
     # fix the end day
@@ -60,7 +63,7 @@ def getAverageRadiationValues(epw_file, month, hour):
     
     return avrDirRad, avrDifRad
 
-def RADDaylightingSky(epwFileAddress, locName, lat, long, timeZone, hour, month, day = 21):
+def RADDaylightingSky(epwFileAddress, locName, lat, long, timeZone, hour, month, day = 21,  north = 0):
 
     dirNrmRad, difHorRad = getAverageRadiationValues(epwFileAddress, month, hour)
     
@@ -70,7 +73,8 @@ def RADDaylightingSky(epwFileAddress, locName, lat, long, timeZone, hour, month,
             "# location name: " + locName + " LAT: " + lat + "\n" + \
             "!gendaylit " + `month` + ' ' + `day` + ' ' + `hour` + \
             " -a " + lat + " -o " + `-float(long)` + " -m " + `-float(timeZone) * 15` + \
-            " -W " + `dirNrmRad` + " " + `difHorRad` + " -O " + `outputType` + "\n" + \
+            " -W " + `dirNrmRad` + " " + `difHorRad` + " -O " + `outputType` + \
+            " | xform -rz " + str(north) + "\n" + \
             "skyfunc glow sky_mat\n" + \
             "0\n" + \
             "0\n" + \
@@ -94,7 +98,7 @@ def RADDaylightingSky(epwFileAddress, locName, lat, long, timeZone, hour, month,
 
 
 
-def main(outputType, weatherFile, month, hour):
+def main(outputType, weatherFile, month, hour, north = 0):
     
     # import the classes
     if sc.sticky.has_key('honeybee_release') and sc.sticky.has_key('ladybug_release'):
@@ -139,7 +143,9 @@ def main(outputType, weatherFile, month, hour):
     
     outputFile = subWorkingDir + "\\averageClimateBasedSkies_" + `month` + "@" + ('%.2f'%hour).replace(".", "") + ".sky"
     
-    skyStr = RADDaylightingSky(weatherFile, newLocName, lat, lngt, timeZone, hour, month)
+    northAngle, northVector = lb_preparation.angle2north(north)
+    
+    skyStr = RADDaylightingSky(weatherFile, newLocName, lat, lngt, timeZone, hour, month, 21, math.degrees(northAngle))
     
     skyFile = open(outputFile, 'w')
     skyFile.write(skyStr)
@@ -149,6 +155,6 @@ def main(outputType, weatherFile, month, hour):
     
 if _weatherFile!=None and _month!=None and _hour!=None:
     outputType = 0
-    result = main(outputType, _weatherFile, _month, _hour)
+    result = main(outputType, _weatherFile, _month, _hour, north_)
     if result!= -1:
         skyFilePath, skyDescription = result
