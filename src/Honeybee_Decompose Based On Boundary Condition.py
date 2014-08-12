@@ -19,7 +19,7 @@ Provided by Honeybee 0.0.53
 """
 ghenv.Component.Name = "Honeybee_Decompose Based On Boundary Condition"
 ghenv.Component.NickName = 'decomposeByBC'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_15_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_12_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
@@ -49,10 +49,29 @@ def main(HBZone):
     zone = hb_hive.callFromHoneybeeHive([HBZone])[0]
 
     for srf in zone.surfaces:
-        if srf.BC.lower() == "outdoors": outdoors.append(srf.geometry)
-        elif srf.BC.lower() == "surface": surface.append(srf.geometry)
-        elif srf.BC.lower() == "adiabatic": adiabatic.append(srf.geometry)
-        elif srf.BC.lower() == "ground": ground.append(srf.geometry)
+        if srf.BC.lower() == "outdoors":
+            if srf.hasChild:
+                outdoors.append(srf.punchedGeometry)
+                for childSrf in srf.childSrfs:
+                    outdoors.append(childSrf.geometry)
+            else:
+                outdoors.append(srf.geometry)
+        elif srf.BC.lower() == "surface":
+            if srf.hasChild:
+                surface.append(srf.punchedGeometry)
+                for childSrf in srf.childSrfs:
+                    surface.append(childSrf.geometry)
+            else:
+                surface.append(srf.geometry)
+        elif srf.BC.lower() == "adiabatic":
+            if srf.hasChild:
+                adiabatic.append(srf.punchedGeometry)
+                for childSrf in srf.childSrfs:
+                    adiabatic.append(childSrf.geometry)
+            else:
+                adiabatic.append(srf.geometry)
+        elif srf.BC.lower() == "ground":
+            ground.append(srf.geometry)
         
     return outdoors, surface, adiabatic, ground
 
