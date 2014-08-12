@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.53
 """
 ghenv.Component.Name = "Honeybee_Read Annual Result I"
 ghenv.Component.NickName = 'readAnnualResultsI'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_10_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_11_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -182,7 +182,7 @@ def main(illFilesAddress, testPts, testVecs, occFiles, lightingControlGroups, SH
                 msg = "Occupancy file address is not valid."
                 return msg, None
     else:
-        daysimOccFile = "C:\\DAYSIM\\occ\\weekdays9to5withDST.60min.occ.csv"
+        daysimOccFile = os.path.join(sc.sticky["Honeybee_DefaultFolder"], "DaysimCSVOCC\\userDefinedOcc_9to17.csv")
         occFiles = [daysimOccFile] * numOfSpaces
         if not os.path.isfile(daysimOccFile):
             msg = "Can't find the default occupancy file at: " + daysimOccFile + \

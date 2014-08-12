@@ -156,7 +156,12 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
                 testPoints = analysisRecipe.testPts
                 ptsNormals = analysisRecipe.vectors
                 
-                if analysisRecipe.DSParameters == None: analysisRecipe.DSParameters = hb_dsParameters
+                if analysisRecipe.DSParameters == None:
+                    analysisRecipe.DSParameters = hb_dsParameters
+                    
+                runAnnualGlare = analysisRecipe.DSParameters.runAnnualGlare
+                onlyAnnualGlare = analysisRecipe.DSParameters.onlyAnnualGlare
+                annualGlareViews = analysisRecipe.DSParameters.RhinoViewsName
                 outputUnits = analysisRecipe.DSParameters.outputUnits
                 adaptiveZone = analysisRecipe.DSParameters.adaptiveZone
                 dgp_imageSize = analysisRecipe.DSParameters.dgp_imageSize
@@ -605,9 +610,19 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
                             ':: 1. Generate Daysim version of Radiance Files\n' + \
                             'radfiles2daysim ' + heaFileName + ' -m -g\n'
                             
+            if runAnnualGlare:
+                initBatchStr += \
+                ':: 2. Generate Values for annual glare\n' + \
+                'gen_dgp_profile ' + heaFileName
+                
             initBatchFile.write(initBatchStr)
             initBatchFile.close()
+            
             fileNames = []
+            # annual glare only needs one headeing file and will run on a single cpu
+            if runAnnualGlare and onlyAnnualGlare:
+                numOfCPUs = 1
+                
             # write the rest of the files
             for cpuCount in range(numOfCPUs):
                 heaFileName = radFileFullName.replace('.rad', '_' + `cpuCount` + '.hea')
@@ -621,15 +636,18 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
                 # if os.path.exists(tempDirName): lb_preparation.nukedir(tempDirName,rmdir = False)
                 tempWorkingDir = lb_preparation.makeWorkingDir(tempDirName)
                 
-                
                 heaFile.write(locationStr)
                 
                 heaFile.write(hb_writeDS.DSAnalysisUnits(outputUnits, lenOfPts[cpuCount]))
                 
-                # fake .vf file - it should be fixed later
-                fakeViewFileName = subWorkingDir + '\\' + projectName + '_' + 'fakeView.vf'
+                # write view for annual glare if any
+                fakeViewFileName = subWorkingDir + '\\' + projectName + '_' + 'annualGlareView.vf'
                 vfFile = open(fakeViewFileName, "w")
-                vfFile.write(' ')
+                vfFile.write('')
+                for view in annualGlareViews:
+                    viewLine = hb_writeRADAUX.exportView(view, radParameters, 1, [dgp_imageSize, dgp_imageSize])
+                    # I'm not sure why Daysim view file needs rview Perspective at the start line
+                    vfFile.write("rview Perspective " + viewLine + "\n")
                 vfFile.close()
                 
                 # building string
@@ -649,61 +667,75 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
                 
                 # heaFile.write(hb_writeDS.resultStr(projectName, cpuCount))
                 heaFile.close()
-
-                # ill files
-                DSResultFilesAddress.append(radFileFullName.replace('.rad', '_' + `cpuCount` + '.ill'))
-                # 3.  write the batch file
-                DSBatchFileName = radFileFullName.replace('.rad', '_' + `cpuCount` + '_DS.bat')
-                DSBatchFile = open(DSBatchFileName, "w")
                 
-                fileNames.append(DSBatchFileName.split("\\")[-1])
-                
-                heaFileName = radFileFullName.replace('.rad', '_' + `cpuCount` + '.hea')
-                
-                #SET PATH = " + subWorkingDir + "\n" + workingDrive +"\n"
-                DSBatchFile.write(pathStr)
-                
-                DSBatchStr = ':: Calculate Daylight Coefficient File (*.dc)\n' + \
-                            'gen_dc ' + heaFileName + ' -dif\n' + \
-                            'gen_dc ' + heaFileName + ' -dir\n' + \
-                            'gen_dc ' + heaFileName + ' -paste\n' + \
-                            '\n' + \
-                            ':: Generate Illuminance Files (*.ill)\n' + \
-                            'ds_illum  ' + heaFileName + '\n'
-                
-                DSBatchFile.write(DSBatchStr)
-                            
-                DSBatchFile.close()
+                if not(runAnnualGlare and onlyAnnualGlare):
+                    # ill files
+                    DSResultFilesAddress.append(radFileFullName.replace('.rad', '_' + `cpuCount` + '.ill'))
+                    # 3.  write the batch file
+                    DSBatchFileName = radFileFullName.replace('.rad', '_' + `cpuCount` + '_DS.bat')
+                    DSBatchFile = open(DSBatchFileName, "w")
+                    
+                    fileNames.append(DSBatchFileName.split("\\")[-1])
+                    
+                    heaFileName = radFileFullName.replace('.rad', '_' + `cpuCount` + '.hea')
+                    
+                    #SET PATH = " + subWorkingDir + "\n" + workingDrive +"\n"
+                    DSBatchFile.write(pathStr)
+                    
+                    DSBatchStr = ':: Calculate Daylight Coefficient File (*.dc)\n' + \
+                                'gen_dc ' + heaFileName + ' -dif\n' + \
+                                'gen_dc ' + heaFileName + ' -dir\n' + \
+                                'gen_dc ' + heaFileName + ' -paste\n' + \
+                                '\n' + \
+                                ':: Generate Illuminance Files (*.ill)\n' + \
+                                'ds_illum  ' + heaFileName + '\n'
+                    
+                    DSBatchFile.write(DSBatchStr)
+                                
+                    DSBatchFile.close()
                 
             if runRad:
                 os.system(initBatchFileName)
                 time.sleep(waitingTime)
-                for cpuCount in range(numOfCPUs):
-                    # running batch file in background
-                    DSBatchFileName = radFileFullName.replace('.rad', '_' + `cpuCount` + '_DS.bat')
-                    # print DSBatchFileName
-                    p = subprocess.Popen(r'start cmd /c ' + DSBatchFileName , shell=True)
-                    time.sleep(waitingTime)
-                    #p.wait()
-                    #os.system(DSBatchFileName)
-                # read the number of .ill files
-                # and the number of .dc files
-                if subWorkingDir[-1] == os.sep: subWorkingDir = subWorkingDir[:-1]
-                startTime = time.time()
-                # print fileNames
-                isTheStudyOver(fileNames)
-                # check if the results are available
-                files = os.listdir(subWorkingDir)
-                numIll = 0
-                numDc = 0
-                for file in files:
-                    if file.EndsWith('ill'): numIll+=1
-                    elif file.EndsWith('dc'): numDc+=1
-                if numIll!= numOfCPUs * numOfIllFiles or  numDc!= numOfCPUs * numOfIllFiles:
-                    print "Can't find the results for the study"
-                    DSResultFilesAddress = []
+                if not(runAnnualGlare and onlyAnnualGlare):
+                    for cpuCount in range(numOfCPUs):
+                        # running batch file in background
+                        DSBatchFileName = radFileFullName.replace('.rad', '_' + `cpuCount` + '_DS.bat')
+                        # print DSBatchFileName
+                        p = subprocess.Popen(r'start cmd /c ' + DSBatchFileName , shell=True)
+                        time.sleep(waitingTime)
+                        #p.wait()
+                        #os.system(DSBatchFileName)
+                    # read the number of .ill files
+                    # and the number of .dc files
+                    if subWorkingDir[-1] == os.sep: subWorkingDir = subWorkingDir[:-1]
+                    startTime = time.time()
+                    # print fileNames
+                    isTheStudyOver(fileNames)
+                    # check if the results are available
+                    files = os.listdir(subWorkingDir)
+                    numIll = 0
+                    numDc = 0
+                    for file in files:
+                        if file.EndsWith('ill'): numIll+=1
+                        elif file.EndsWith('dc'): numDc+=1
+                    if numIll!= numOfCPUs * numOfIllFiles or  numDc!= numOfCPUs * numOfIllFiles:
+                        print "Can't find the results for the study"
+                        DSResultFilesAddress = []
                 
-                return radFileFullName, [], [], testPoints, DSResultFilesAddress, [], subWorkingDir
+                annualGlareResults = []
+                dgpFile = radFileFullName.replace('.rad', '_0.dgp')
+                if runAnnualGlare and os.path.isfile(dgpFile):
+                    # put the heading together
+                    strToBeFound = 'key:location/dataType/units/frequency/startsAt/endsAt'
+                    annualGlareResults = [strToBeFound, "", "Daylight Glare Probability", \
+                                "%", 'Hourly', (1,1,1), (12, 31, 24)]
+                                
+                    with open(dgpFile, "r") as dgpRes:
+                        for line in dgpRes:
+                            try: annualGlareResults.append(line.split(" ")[-1].strip())
+                            except: pass
+                return radFileFullName, annualGlareResults, [], testPoints, DSResultFilesAddress, [], subWorkingDir
             else:
                 return radFileFullName, [], [], testPoints, [], [], subWorkingDir
                 
@@ -933,7 +965,7 @@ if _writeRad == True and _analysisRecipe!=None and ((len(_HBObjects)!=0 and _HBO
         analysisTypesDict = sc.sticky["honeybee_DLAnalaysisTypes"]
         
         # RADGeoFileAddress, radiationResult, RADResultFilesAddress, testPoints, DSResultFilesAddress, HDRFileAddress = result
-        radGeoFile, radiationResult, gridBasedResultFiles, testPoints, annualResultFiles, HDRFiles, studyFolder = result
+        radGeoFile, annualGlareResults, gridBasedResultFiles, testPoints, annualResultFiles, HDRFiles, studyFolder = result
         
         testPts = DataTree[System.Object]()
         for i, ptList in enumerate(testPoints):
@@ -949,6 +981,7 @@ if _writeRad == True and _analysisRecipe!=None and ((len(_HBObjects)!=0 and _HBO
             analysisTypeKey = _analysisRecipe.simulationType
         
         elif analysisType == 2:
+            # annual analysis
             analysisTypeKey = None
             
         try:
@@ -973,9 +1006,15 @@ if _writeRad == True and _analysisRecipe!=None and ((len(_HBObjects)!=0 and _HBO
             
         elif annualResultFiles != []:
             resultFiles = annualResultFiles
+            
         elif HDRFiles != []:
             resultFiles = HDRFiles
-            
+        
+        if annualGlareResults!=[]:
+            ghenv.Component.Params.Output[3].NickName = "dgp_values"
+            ghenv.Component.Params.Output[3].Name = "dgp_values"
+            dgp_values = annualGlareResults
+        
         done = True
 
         ghenv.Component.Params.Output[5].NickName = filesOutputName

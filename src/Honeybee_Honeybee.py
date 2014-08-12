@@ -1608,7 +1608,7 @@ class WriteDS(object):
                   'geometry_file          Daysim_'+ projectName + '.rad\n' + \
                   'radiance_source_files  2, ' + materialFileName + ', ' + radFileFullName + '\n' + \
                   'sensor_file            ' + projectName + '_' + `cpuCount` + '.pts\n' + \
-                  'viewpoint_file         ' + projectName + '_' + 'fakeView.vf\n' + \
+                  'viewpoint_file         ' + projectName + '_' + 'annualGlareView.vf\n' + \
                   'AdaptiveZoneApplies    ' + `adaptiveZone` + '\n' + \
                   'dgp_image_x_size       ' + `dgp_image_x` + '\n' + \
                   'dgp_image_y_size       ' + `dgp_image_y` + '\n'
@@ -4908,10 +4908,17 @@ class hb_RADParameters(object):
 
 class hb_DSParameters(object):
     
-    def __init__(self, outputUnits = [2], dynamicSHDGroup_1 = None,  dynamicSHDGroup_2 = None, RhinoViewsName = [] , adaptiveZone = False, dgp_imageSize = 250):
+    def __init__(self, outputUnits = [2], dynamicSHDGroup_1 = None,  dynamicSHDGroup_2 = None, RhinoViewsName = [] , adaptiveZone = False, dgp_imageSize = 250, onlyRunGlareAnalysis = True):
         
         if len(outputUnits)!=0 and outputUnits[0]!=None: self.outputUnits = outputUnits
         else: self.outputUnits = [2]
+        
+        self.onlyAnnualGlare = onlyRunGlareAnalysis
+        self.runAnnualGlare = False
+        
+        self.RhinoViewsName = RhinoViewsName
+        if RhinoViewsName != []:
+            self.runAnnualGlare = True
         
         if adaptiveZone == None: adaptiveZone = False
         self.adaptiveZone = adaptiveZone

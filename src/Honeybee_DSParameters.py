@@ -9,18 +9,19 @@ Analyses Recipe for Annual Daylight Simulation with Daysim
 Provided by Honeybee 0.0.53
     
     Args:
-        outputUnits: A list of numbers to indicate output units for test points. Defualt is 2. [1] solar irradiance (W/m2), [2] illumiance (lux) - Default is 2
-        dynamicShadingGroup_1: Use conceptual or advanced shading recipeis to define the dynamic shading. Leave it disconnected if you don't have any dynamic shading in the model
-        dynamicShadingGroup_2: Use conceptual or advanced shading recipeis to define the dynamic shading. Leave it disconnected if you don't have any dynamic shading in the model
+        _outputUnits_: A list of numbers to indicate output units for test points. Defualt is 2. [1] solar irradiance (W/m2), [2] illumiance (lux) - Default is 2
+        dynamicShadingGroup_1_: Use conceptual or advanced shading recipeis to define the dynamic shading. Leave it disconnected if you don't have any dynamic shading in the model
+        dynamicShadingGroup_2_: Use conceptual or advanced shading recipeis to define the dynamic shading. Leave it disconnected if you don't have any dynamic shading in the model
         ............................................: Graphical separator! Leave it empty. Thanks!
-        RhinoViewsName: List of view names that you want to be considered for annual glare analysis. Be aware that annual glare analysis with Daysim can take hours to days!
-        adaptiveZone: Set the Boolean to True if the user can adapt his/her view within the space. "The concept is based on the hypothesis that if a user is free to look in different directions or place him or herself in different positions within a space, he or she is going to pick the most comfortable one." Read more here > http://daysim.ning.com/page/daysim-header-file-deyword-adaptive-zone
-        dgp_imageSize: The size of the image to be used for daylight glare probability in pixels. Defult value is 250 px.
+        _RhinoViewsName: List of view names that you want to be considered for annual glare analysis. Be aware that annual glare analysis with Daysim can take hours to days!
+        _adaptiveZone_: Set the Boolean to True if the user can adapt his/her view within the space. "The concept is based on the hypothesis that if a user is free to look in different directions or place him or herself in different positions within a space, he or she is going to pick the most comfortable one." Read more here > http://daysim.ning.com/page/daysim-header-file-deyword-adaptive-zone
+        _dgp_imageSize_: The size of the image to be used for daylight glare probability in pixels. Defult value is 250 px.
+        onlyRunGlareAnalysis_: Set to False if you want the component run both annual glare analysis and calculate annula illuminance levels. Default is True.
 """
 
 ghenv.Component.Name = "Honeybee_DSParameters"
 ghenv.Component.NickName = 'DSParameters'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_11_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -32,11 +33,18 @@ import Grasshopper.Kernel as gh
 
 class SetDSParameters:
     
-    def __init__(self, outputUnits, dynamicSHDGroup_1,  dynamicSHDGroup_2, RhinoViewsName, adaptiveZone, dgp_imageSize):
+    def __init__(self, outputUnits, dynamicSHDGroup_1,  dynamicSHDGroup_2, RhinoViewsName, adaptiveZone, dgp_imageSize, onlyRunGlareAnalysis):
         
         if len(outputUnits)!=0 and outputUnits[0]!=None: self.outputUnits = outputUnits
         else: self.outputUnits = [2]
         
+        self.onlyAnnualGlare = onlyRunGlareAnalysis
+        self.runAnnualGlare = False
+        
+        self.RhinoViewsName = RhinoViewsName
+        if RhinoViewsName!=[]:
+            self.runAnnualGlare = True
+            
         if adaptiveZone == None: adaptiveZone = False
         self.adaptiveZone = adaptiveZone
         
@@ -80,7 +88,7 @@ class SetDSParameters:
 
 
 
-def main(outputUnits, dynamicSHDGroup_1,  dynamicSHDGroup_2, RhinoViewsName, adaptiveZone, dgp_imageSize):
+def main(outputUnits, dynamicSHDGroup_1,  dynamicSHDGroup_2, RhinoViewsName, adaptiveZone, dgp_imageSize, onlyRunGlareAnalysis = True):
     msg = None
     
     # make sure shading groups don't have similar names
@@ -99,19 +107,15 @@ def main(outputUnits, dynamicSHDGroup_1,  dynamicSHDGroup_2, RhinoViewsName, ada
     except:
         pass            
         
-    DSParameters = SetDSParameters(outputUnits, dynamicSHDGroup_1,  dynamicSHDGroup_2, RhinoViewsName, adaptiveZone, dgp_imageSize)
+    DSParameters = SetDSParameters(outputUnits, dynamicSHDGroup_1,  dynamicSHDGroup_2, RhinoViewsName, adaptiveZone, dgp_imageSize, onlyRunGlareAnalysis)
     
     return msg, DSParameters
 
 
 
 
-msg, DSParameters = main(outputUnits, dynamicSHDGroup_1,  dynamicSHDGroup_2, RhinoViewsName, adaptiveZone, dgp_imageSize)
-if len(RhinoViewsName)!= 0:
-    
-    warnMsg = "View based glare analysis hasn't been implemented yet!\nWill be implemented soon. =)"
-    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warnMsg)                
-    
+msg, DSParameters = main(_outputUnits_, dynamicSHDGroup_1_,  dynamicSHDGroup_2_, _RhinoViewsName, _adaptiveZone_, _dgp_imageSize_, onlyRunGlareAnalysis_)
+
 if msg != None:
     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Error, msg)                
 
