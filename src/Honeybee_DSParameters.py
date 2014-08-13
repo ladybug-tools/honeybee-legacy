@@ -30,6 +30,9 @@ except: pass
 
 
 import Grasshopper.Kernel as gh
+import scriptcontext as sc
+import rhinoscriptsyntax as rs
+import Rhino as rc
 
 class SetDSParameters:
     
@@ -41,8 +44,28 @@ class SetDSParameters:
         self.onlyAnnualGlare = onlyRunGlareAnalysis
         self.runAnnualGlare = False
         
-        self.RhinoViewsName = RhinoViewsName
+        validViews = []
         if RhinoViewsName!=[]:
+            for viewName in RhinoViewsName:
+                # check viewes
+                if viewName in rs.ViewNames():
+                    validViews.append(rs.CurrentView(viewName, True))
+                else:
+                    # change to RhinoDoc to get access to NamedViews
+                    sc.doc = rc.RhinoDoc.ActiveDoc
+                    namedViews = rs.NamedViews()
+                    if viewName in namedViews:
+                        validViews.append(rs.RestoreNamedView(viewName))
+                    else:
+                        warning = viewName + " is not a valid Rhino view name in this document."
+                        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning) 
+                    # change back to Grasshopper
+                    sc.doc = ghdoc
+                    viewName = rs.CurrentView(viewName, True)
+            
+        self.RhinoViewsName = validViews
+        
+        if self.RhinoViewsName!=[]:
             self.runAnnualGlare = True
             
         if adaptiveZone == None: adaptiveZone = False

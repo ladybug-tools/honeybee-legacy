@@ -1027,7 +1027,8 @@ if _writeRad == True and _analysisRecipe!=None and ((len(_HBObjects)!=0 and _HBO
                 strToBeFound = 'key:location/dataType/units/frequency/startsAt/endsAt'
                 annualGlareHeading = [strToBeFound, "view: " + key, "Daylight Glare Probability", \
                             "%", 'Hourly', (1,1,1), (12, 31, 24)]
-                item = annualGlareHeading + item
+                if len(item)!=0:
+                    item = annualGlareHeading + item
                 dgp_values.AddRange(item, p)
                 keyCount+=1
         
