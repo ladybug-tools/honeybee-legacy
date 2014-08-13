@@ -23,11 +23,12 @@ Provided by Honeybee 0.0.53
         windowTotalSolarEnergy: The total solar energy transmitted through each of the glazing surfaces to the zone (kWh).
         windowBeamEnergy: The total direct solar beam energy transmitted through each of the glazing surfaces to the zone (kWh).
         windowDiffEnergy: The total diffuse solar energy transmitted through each of the glazing surfaces to the zone (kWh).
+        otherSurfaceData: Other surface data that is in the result file (in no particular order).  Note that this data cannot be normalized by floor area as the component does not know if it can be normalized.
 """
 
 ghenv.Component.Name = "Honeybee_Read EP Surface Result"
 ghenv.Component.NickName = 'readEPSrfResult'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_11_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_12_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "4"
@@ -154,7 +155,7 @@ windowDiffEnergy = DataTree[Object]()
 windowTotalSolarEnergy = DataTree[Object]()
 
 #Make a list to keep track of what outputs are in the result file.
-dataTypeList = [False, False, False, False, False, False, False, False]
+dataTypeList = [False, False, False, False, False, False, False, False, False]
 parseSuccess = False
 
 # If zone names are not included, make lists to keep track of the number of surfaces that have been imported so far.
@@ -199,6 +200,21 @@ def checkSrfName(csvName):
                 typeName = zoneSrfTypeList[branch][count]
     
     return srfName, typeName
+
+
+def checkSrfNameOther(dataIndex, csvName):
+    srfName = None
+    for branch, list in enumerate(zoneSrfNameList):
+        for count, name in enumerate(list):
+            if name == csvName:
+                srfName = name
+                path.append([branch, count+(dataIndex[branch])])
+                typeName = zoneSrfTypeList[branch][count]
+                dataIndex[branch] += 1
+    
+    return srfName, typeName
+dataIndex = []
+for zone in range(len(zoneSrfNameList)): dataIndex.append(0)
 
 
 # PARSE THE RESULT FILE.
@@ -298,6 +314,17 @@ if _resultFileAddress and gotZoneData == True:
                         key.append(8)
                         dataTypeList[5] = True
                     
+                    elif 'Surface' in column:
+                        if gotSrfData == True:
+                            srfName, typeName = checkSrfNameOther(dataIndex, srfName)
+                            makeHeaderGrafted(otherSurfaceData, int(path[columnCount][0]), int(path[columnCount][1]), srfName, column.split('(')[-1].split(')')[0], column.split(':')[-1].split(' [')[0], column.split('[')[-1].split(']')[0], True, typeName)
+                        else:
+                            path.append([otherIndex])
+                            makeHeader(otherSurfaceData, int(path[columnCount]), srfName, column.split('(')[-1].split(')')[0], column.split(':')[-1].split(' [')[0], column.split('[')[-1].split(']')[0],)
+                            otherIndex += 1
+                        key.append(9)
+                        dataTypeList[6] = True
+                    
                     else:
                         key.append(-1)
                         path.append(-1)
@@ -367,12 +394,13 @@ outputsDict = {
 4: ["glazEnergyFlow", "The heat loss (negative) or heat gain (positive) through each building glazing surface (kWh).  Note that the value here includes both solar gains and conduction losses/gains."],
 5: ["windowTotalSolarEnergy", "The total solar energy transmitted through each of the glazing surfaces to the zone (kWh)."],
 6: ["windowBeamEnergy", "The total direct solar beam energy transmitted through each of the glazing surfaces to the zone (kWh)."],
-7: ["windowDiffEnergy", "The total diffuse solar energy transmitted through each of the glazing surfaces to the zone (kWh)."]
+7: ["windowDiffEnergy", "The total diffuse solar energy transmitted through each of the glazing surfaces to the zone (kWh)."],
+8: ["otherSurfaceData", "Other surface data that is in the result file (in no particular order).  Note that this data cannot be normalized by floor area as the component does not know if it can be normalized."]
 }
 
 
 if _resultFileAddress and parseSuccess == True:
-    for output in range(8):
+    for output in range(9):
         if dataTypeList[output] == False:
             ghenv.Component.Params.Output[output].NickName = "."
             ghenv.Component.Params.Output[output].Name = "."
@@ -382,7 +410,7 @@ if _resultFileAddress and parseSuccess == True:
             ghenv.Component.Params.Output[output].Name = outputsDict[output][0]
             ghenv.Component.Params.Output[output].Description = outputsDict[output][1]
 else:
-    for output in range(8):
+    for output in range(9):
         ghenv.Component.Params.Output[output].NickName = outputsDict[output][0]
         ghenv.Component.Params.Output[output].Name = outputsDict[output][0]
         ghenv.Component.Params.Output[output].Description = outputsDict[output][1]

@@ -31,11 +31,12 @@ Provided by Honeybee 0.0.53
         airTemperature: The mean air temperature of each zone (degrees Celcius).
         meanRadTemperature: The mean radiant temperature of each zone (degrees Celcius).
         relativeHumidity: The relative humidity of each zone (%).
+        otherZoneData: Other zone data that is in the result file (in no particular order).  Note that this data cannot be normalized by floor area as the component does not know if it can be normalized.
 """
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_11_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_12_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "4"
@@ -141,9 +142,10 @@ operativeTemperature = DataTree[Object]()
 airTemperature = DataTree[Object]()
 meanRadTemperature = DataTree[Object]()
 relativeHumidity = DataTree[Object]()
+otherZoneData = DataTree[Object]()
 
 #Make a list to keep track of what outputs are in the result file.
-dataTypeList = [False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False]
+dataTypeList = [False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False]
 parseSuccess = False
 
 #Make a function to add headers.
@@ -167,6 +169,14 @@ def checkZone(csvName):
             path.append(count)
     return zoneName
 
+def checkZoneOther(dataIndex, csvName):
+    zoneName = None
+    for count, name in enumerate(zoneNameList):
+        if name == csvName:
+            zoneName = name
+            path.append(count+dataIndex)
+    return zoneName
+dataIndex = 0
 
 # PARSE THE RESULT FILE.
 if _resultFileAddress and gotData == True:
@@ -262,6 +272,13 @@ if _resultFileAddress and gotData == True:
                         makeHeader(relativeHumidity, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Relative Humidity", "%", False)
                         dataTypeList[15] = True
                     
+                    elif 'Zone' in column:
+                        key.append(14)
+                        zoneName = checkZoneOther(dataIndex, (" " + column.split(':')[0]))
+                        makeHeader(otherZoneData, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], column.split(':')[-1].split(' [')[0], column.split('[')[-1].split(']')[0], False)
+                        dataTypeList[16] = True
+                        dataIndex += 1
+                    
                     else:
                         key.append(-1)
                         path.append(-1)
@@ -302,6 +319,8 @@ if _resultFileAddress and gotData == True:
                         meanRadTemperature.Add(float(column), p)
                     elif key[columnCount] == 13:
                         relativeHumidity.Add(float(column), p)
+                    elif key[columnCount] == 14:
+                        otherZoneData.Add(float(column), p)
                     
         result.close()
         parseSuccess = True
@@ -367,11 +386,12 @@ outputsDict = {
 12: ["operativeTemperature", "The mean operative temperature of each zone (degrees Celcius)."],
 13: ["airTemperature", "The mean air temperature of each zone (degrees Celcius)."],
 14: ["meanRadTemperature", "The mean radiant temperature of each zone (degrees Celcius)."],
-15: ["relativeHumidity", "The relative humidity of each zone (%)."]
+15: ["relativeHumidity", "The relative humidity of each zone (%)."],
+16: ["otherZoneData", "Other zone data that is in the result file (in no particular order). Note that this data cannot be normalized by floor area as the component does not know if it can be normalized."]
 }
 
 if _resultFileAddress and parseSuccess == True:
-    for output in range(16):
+    for output in range(17):
         if dataTypeList[output] == False:
             ghenv.Component.Params.Output[output].NickName = "."
             ghenv.Component.Params.Output[output].Name = "."
@@ -381,7 +401,7 @@ if _resultFileAddress and parseSuccess == True:
             ghenv.Component.Params.Output[output].Name = outputsDict[output][0]
             ghenv.Component.Params.Output[output].Description = outputsDict[output][1]
 else:
-    for output in range(16):
+    for output in range(17):
         ghenv.Component.Params.Output[output].NickName = outputsDict[output][0]
         ghenv.Component.Params.Output[output].Name = outputsDict[output][0]
         ghenv.Component.Params.Output[output].Description = outputsDict[output][1]
