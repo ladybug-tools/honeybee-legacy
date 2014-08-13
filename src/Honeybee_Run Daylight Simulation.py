@@ -37,7 +37,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Run Daylight Simulation"
 ghenv.Component.NickName = 'runDaylightAnalysis'
-ghenv.Component.Message = 'VER 0.0.54\nAUG_11_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_12_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -723,18 +723,24 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
                         print "Can't find the results for the study"
                         DSResultFilesAddress = []
                 
-                annualGlareResults = []
+                annualGlareResults = {}
+                for view in annualGlareViews:
+                    if view not in annualGlareResults.keys():
+                        annualGlareResults[view] = []
+                        
                 dgpFile = radFileFullName.replace('.rad', '_0.dgp')
                 if runAnnualGlare and os.path.isfile(dgpFile):
-                    # put the heading together
-                    strToBeFound = 'key:location/dataType/units/frequency/startsAt/endsAt'
-                    annualGlareResults = [strToBeFound, "", "Daylight Glare Probability", \
-                                "%", 'Hourly', (1,1,1), (12, 31, 24)]
                                 
                     with open(dgpFile, "r") as dgpRes:
                         for line in dgpRes:
-                            try: annualGlareResults.append(line.split(" ")[-1].strip())
-                            except: pass
+                            try:
+                                hourlyRes = line.split(" ")[4:]
+                                # for each view there should be a number
+                                for view, res in zip(annualGlareViews, hourlyRes):
+                                    annualGlareResults[view].append(res.strip())
+                            except:
+                                pass
+                                
                 return radFileFullName, annualGlareResults, [], testPoints, DSResultFilesAddress, [], subWorkingDir
             else:
                 return radFileFullName, [], [], testPoints, [], [], subWorkingDir
@@ -1010,10 +1016,20 @@ if _writeRad == True and _analysisRecipe!=None and ((len(_HBObjects)!=0 and _HBO
         elif HDRFiles != []:
             resultFiles = HDRFiles
         
-        if annualGlareResults!=[]:
+        if annualGlareResults!=[] and annualGlareResults!={}:
             ghenv.Component.Params.Output[3].NickName = "dgp_values"
             ghenv.Component.Params.Output[3].Name = "dgp_values"
-            dgp_values = annualGlareResults
+            dgp_values = DataTree[System.Object]()
+            keyCount = 0
+            for key, item in annualGlareResults.items():
+                p = GH_Path(keyCount)
+                # add heading
+                strToBeFound = 'key:location/dataType/units/frequency/startsAt/endsAt'
+                annualGlareHeading = [strToBeFound, "view: " + key, "Daylight Glare Probability", \
+                            "%", 'Hourly', (1,1,1), (12, 31, 24)]
+                item = annualGlareHeading + item
+                dgp_values.AddRange(item, p)
+                keyCount+=1
         
         done = True
 

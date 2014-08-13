@@ -21,7 +21,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_DSParameters"
 ghenv.Component.NickName = 'DSParameters'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_11_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_12_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -113,7 +113,7 @@ def main(outputUnits, dynamicSHDGroup_1,  dynamicSHDGroup_2, RhinoViewsName, ada
 
 
 
-
+_adaptiveZone_ = False
 msg, DSParameters = main(_outputUnits_, dynamicSHDGroup_1_,  dynamicSHDGroup_2_, _RhinoViewsName, _adaptiveZone_, _dgp_imageSize_, onlyRunGlareAnalysis_)
 
 if msg != None:
