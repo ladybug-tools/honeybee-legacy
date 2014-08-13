@@ -1496,7 +1496,7 @@ class WriteRADAUX(object):
         elif simulationType == 2:
             line0 = "rtrace "
         else:
-            print "Fix this for radiation analysis"
+            # print "Fix this for radiation analysis"
             line0 = "rtrace -I "
             
         line1 = " -h -ms 0.063 -dp " + str(radParameters["_dp_"]) + \
