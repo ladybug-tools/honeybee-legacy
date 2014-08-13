@@ -37,7 +37,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Run Daylight Simulation"
 ghenv.Component.NickName = 'runDaylightAnalysis'
-ghenv.Component.Message = 'VER 0.0.54\nAUG_12_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_13_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -360,13 +360,14 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
                             geoRadFile.write(hb_writeRAD.RADSurface(srf))
                         else:
                             geoRadFile.write(hb_writeRAD.RADNonPlanarSurface(srf))
-                            if srf.hasChild:
-                                # collect the custom material informations
-                                for childSrf in srf.childSrfs:
-                                    if childSrf.RadMaterial!=None:
-                                        customRADMat, customMixFunRadMat = hb_RADMaterialAUX.addRADMatToDocumentDict(childSrf, customRADMat, customMixFunRadMat)
-                                geoRadFile.write(hb_writeRAD.RADNonPlanarChildSurface(srf))
-                
+                        
+                        if srf.hasChild:
+                            # collect the custom material informations
+                            for childSrf in srf.childSrfs:
+                                if childSrf.RadMaterial!=None:
+                                    customRADMat, customMixFunRadMat = hb_RADMaterialAUX.addRADMatToDocumentDict(childSrf, customRADMat, customMixFunRadMat)
+                            geoRadFile.write(hb_writeRAD.RADNonPlanarChildSurface(srf))
+            
                 elif HBObj.objectType == "HBSurface":
                     
                     # I should wrap this in a function as I'm using it multiple times with minor changes
@@ -780,14 +781,15 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
                 OCTLine = hb_writeRADAUX.oconvLine(OCTFileName, sceneRadFiles)
                 batchFile.write(OCTLine)
                 
-                # add overture line in case it is an image-based analysis
-                view = sc.doc.Views.ActiveView.ActiveViewport.Name
-                
-                viewLine = hb_writeRADAUX.exportView(view, radParameters, cameraType, imageSize = [64, 64])
-                        
-                # write rpict lines
-                overtureLine = hb_writeRADAUX.overtureLine(viewLine, OCTFileName, view, radParameters, int(simulationType))
-                batchFile.write(overtureLine)
+                if analysisRecipe.type == 0:
+                    # add overture line in case it is an image-based analysis
+                    view = sc.doc.Views.ActiveView.ActiveViewport.Name
+                    
+                    viewLine = hb_writeRADAUX.exportView(view, radParameters, cameraType, imageSize = [64, 64])
+                            
+                    # write rpict lines
+                    overtureLine = hb_writeRADAUX.overtureLine(viewLine, OCTFileName, view, radParameters, int(simulationType))
+                    batchFile.write(overtureLine)
                 
             if analysisRecipe.type == 0:
                 # write view files

@@ -9,7 +9,7 @@ EnergyPlus Shadow Parameters
 Provided by Honeybee 0.0.53
 
     Args:
-        calculationMethod_:...
+        calculationMethod_: This can be either "AverageOverDaysInFrequency" or "DetailedTimestepIntegration".  The  latter is more accurate but will take longer to run.  The default is set to ""AverageOverDaysInFrequency"" for a fast simulation
         frequency_: ...
         maximumFigure_: ...
     Returns:
@@ -18,7 +18,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_ShadowPar"
 ghenv.Component.NickName = 'shadowPar'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_12_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"

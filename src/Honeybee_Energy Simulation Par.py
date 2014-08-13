@@ -21,7 +21,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Energy Simulation Par"
 ghenv.Component.NickName = 'EnergySimPar'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_12_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -46,7 +46,7 @@ def main(timestep, shadowCalcPar, solarDistribution, simulationControls, ddyFile
     if timestep == None: timestep = 6
     if shadowCalcPar == []: shadowCalcPar = ["AverageOverDaysInFrequency", 30, 3000]
     if solarDistribution == None:
-        solarDistribution = solarDist["1"]
+        solarDistribution = solarDist["4"]
     else:
         solarDistribution = solarDist[solarDistribution]
     if simulationControls == []: simulationControls= [True, True, True, False, True]
