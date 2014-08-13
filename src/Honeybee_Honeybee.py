@@ -4635,10 +4635,11 @@ class hb_EPZoneSurface(hb_EPSurface):
                 if self.isPlanar:
                     area = rc.Geometry.AreaMassProperties.Compute(jGlzCrv).Area
                 else:
-                    area = rc.Geometry.AreaMassProperties.Compute(glzSrf).Area
+                    area = rc.Geometry.AreaMassProperties.Compute(glzSrf.geometry).Area
             except:
-                #in case area calulation fails 
-                area = 0.0
+                # in case area calulation fails
+                # let it go anyways!
+                area = 10 * sc.doc.ModelAbsoluteTolerance
             
             if  area > sc.doc.ModelAbsoluteTolerance and checkCrvsPts(jGlzCrv):
                 
