@@ -28,7 +28,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Read EP Surface Result"
 ghenv.Component.NickName = 'readEPSrfResult'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_13_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "4"
@@ -153,6 +153,7 @@ glazEnergyFlow = DataTree[Object]()
 windowBeamEnergy = DataTree[Object]()
 windowDiffEnergy = DataTree[Object]()
 windowTotalSolarEnergy = DataTree[Object]()
+otherSurfaceData = DataTree[Object]()
 
 #Make a list to keep track of what outputs are in the result file.
 dataTypeList = [False, False, False, False, False, False, False, False, False]
@@ -323,7 +324,7 @@ if _resultFileAddress and gotZoneData == True:
                             makeHeader(otherSurfaceData, int(path[columnCount]), srfName, column.split('(')[-1].split(')')[0], column.split(':')[-1].split(' [')[0], column.split('[')[-1].split(']')[0],)
                             otherIndex += 1
                         key.append(9)
-                        dataTypeList[6] = True
+                        dataTypeList[8] = True
                     
                     else:
                         key.append(-1)
@@ -334,10 +335,13 @@ if _resultFileAddress and gotZoneData == True:
             else:
                 for columnCount, column in enumerate(line.split(',')):
                     if path[columnCount] != -1:
-                        if gotSrfData == True:
+                        if gotSrfData == True and key[columnCount] != 9:
                             p = GH_Path(int(path[columnCount][0]), int(path[columnCount][1]))
                             if normBySrf == True: srfArea = zoneSrfAreaList[int(path[columnCount][0])][int(path[columnCount][1])]
                             else: srfArea = 1
+                        elif gotSrfData == True and key[columnCount] == 9:
+                            p = GH_Path(int(path[columnCount][0]), int(path[columnCount][1]))
+                            srfArea = 1
                         else:
                             p = GH_Path(int(path[columnCount][0]))
                             srfArea = 1
@@ -358,6 +362,8 @@ if _resultFileAddress and gotZoneData == True:
                             windowDiffEnergy.Add(((float(column))/3600000)/srfArea, p)
                         elif key[columnCount] == 8:
                             windowTotalSolarEnergy.Add(((float(column))/3600000)/srfArea, p)
+                        elif key[columnCount] == 9:
+                            otherSurfaceData.Add(float(column), p)
                     
         result.close()
         parseSuccess = True
