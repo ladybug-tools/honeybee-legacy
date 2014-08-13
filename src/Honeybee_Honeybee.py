@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.54\nAUG_12_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_13_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1824,7 +1824,7 @@ class hb_EnergySimulatioParameters(object):
             
             shadowPar = ["AverageOverDaysInFrequency", 30, 3000]
             
-            solarDistribution = "FullExterior"
+            solarDistribution = "FullInteriorAndExteriorWithReflections"
             
             simulationControl = [True, True, True, False, True]
             
