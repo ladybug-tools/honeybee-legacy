@@ -22,7 +22,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Lookup Daylighting Folder"
 ghenv.Component.NickName = 'LookupFolder_Daylighting'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_05_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_12_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
@@ -68,6 +68,7 @@ def main(studyFolder):
     
     radianceFiles = []
     materialFiles = []
+    dgpFiles = []
     skyFiles = []
     
     if studyFolder!=None:
@@ -102,6 +103,8 @@ def main(studyFolder):
             elif fileName.lower().endswith(".typ"):
                 with open(os.path.join(studyFolder, fileName), "r") as typf:
                     analysisType = typf.readline().strip()
+            elif fileName.lower().endswith(".dgp"):
+                dgpFiles.append(os.path.join(studyFolder, fileName))
             elif fileName.lower().endswith(".msh"):
                 try:
                     meshFilePath = os.path.join(studyFolder, fileName)
@@ -156,7 +159,7 @@ def main(studyFolder):
     
     imgFiles = gifFiles + tifFiles + bmpFiles + jpgFiles
     
-    return msg, [illFiles, resFiles, ptsFiles, hdrFiles, imgFiles, epwFile, analysisType, analysisMesh, radianceFiles, materialFiles, skyFiles]
+    return msg, [illFiles, resFiles, ptsFiles, hdrFiles, imgFiles, epwFile, analysisType, analysisMesh, radianceFiles, materialFiles, skyFiles, dgpFiles]
     
 
 ghenv.Component.Params.Output[1].NickName = "resultFiles"
@@ -169,7 +172,7 @@ if msg!=str.Empty:
     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
 else:
     illFiles, resFiles, ptsFiles, hdrFiles, imageFiles, epwFile, analysisType, \
-    analysisMesh, radianceFiles, materialFiles, skyFiles = results
+    analysisMesh, radianceFiles, materialFiles, skyFiles, dgpFiles = results
 
     if resFiles != []:
         resultFiles = resFiles
