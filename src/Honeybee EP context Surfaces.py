@@ -65,19 +65,21 @@ def main():
         
         for brepCount, brep in enumerate(shdBreps):
             if len(brep.DuplicateEdgeCurves(False))>1:
-                meshedGeo = rc.Geometry.Mesh.CreateFromBrep(brep, mp)
-                for brepFaceIndex in range(brep.Faces.Count):
-                    mesh = meshedGeo[brepFaceIndex]
-                    #for meshCount, mesh in enumerate(meshedGeo):
-                    thisShading = hb_EPSHDSurface(brep.Faces[brepFaceIndex].ToBrep(), 1000*brepCount + brepFaceIndex, 'shdSrf_' + `brepCount` + '_' + `brepFaceIndex` + "_" + str(uuid.uuid4()))
-                    for faceIndex in  range(mesh.Faces.Count):
-                        thisShading.collectMeshFaces(mesh.Faces.GetFaceVertices(faceIndex))
-                    if EPConstruction!=None: thisShading.EPConstruction = EPConstruction
-                    if RADConstruction!=None: thisShading.RadMaterial = getRadMaterialName(RADConstruction)
-                    shadingClasses.append(thisShading)
-                    # shadingMeshPreview.append(thisShading.meshedFace)
-                    brepFaceIndex += 1
-        
+                
+                meshArray = rc.Geometry.Mesh.CreateFromBrep(brep, mp)
+                for mesh in meshArray:
+                    for meshFace in range(mesh.Faces.Count):
+                        vertices = list(mesh.Faces.GetFaceVertices(meshFace))[1:]
+                        vertices = vertices + [sc.doc.ModelAbsoluteTolerance]
+                        # create the brep from mesh
+                        shdBrep = rc.Geometry.Brep.CreateFromCornerPoints(*vertices)
+                        
+                        thisShading = hb_EPSHDSurface(shdBrep, 1000*brepCount + meshFace, 'shdSrf_' + `brepCount` + '_' + `meshFace` + "_" + str(uuid.uuid4()))
+                        
+                        if EPConstruction!=None: thisShading.EPConstruction = EPConstruction
+                        if RADConstruction!=None: thisShading.RadMaterial = getRadMaterialName(RADConstruction)
+                        shadingClasses.append(thisShading)
+            
         # add to the hive
         hb_hive = sc.sticky["honeybee_Hive"]()
         HBContext  = hb_hive.addToHoneybeeHive(shadingClasses, ghenv.Component.InstanceGuid.ToString())
