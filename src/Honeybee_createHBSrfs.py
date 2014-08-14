@@ -33,7 +33,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_createHBSrfs'
 ghenv.Component.NickName = 'createHBSrfs'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_08_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_14_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -195,6 +195,7 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
                     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
                     return
                 
+                addedToLib = True
             else:
                 
                 # try to add the material to the library
