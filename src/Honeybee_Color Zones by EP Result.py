@@ -26,7 +26,6 @@ Provided by Honeybee 0.0.53
         readMe!: ...
         zoneColoredMesh: A list of meshes for each zone, each of which is colored based on the input _zoneData.
         zoneWireFrame: A list of curves representing the outlines of the zones.  This is particularly helpful if one wants to scroll through individual zone meshes but still see the outline of the building.
-        zoneNames: A set of surfaces indicating the names of each zone as they correspond to the branches in the EP results and the name of the zone in the headers of data.
         legend: A legend of the zone colors. Connect this output to a grasshopper "Geo" component in order to preview the legend spearately in the Rhino scene.
         legendBasePt: The legend base point, which can be used to move the legend in relation to the building with the grasshopper "move" component.
         zoneBreps: A list of breps for each zone. This is essentially the same as the _HBZones input. Connecting this output and the following zoneColors to a Grasshopper 'Preview' component will thus allow you to see the zones colored transparently.
@@ -37,7 +36,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Color Zones by EP Result"
 ghenv.Component.NickName = 'ColorZones'
-ghenv.Component.Message = 'VER 0.0.57\nAUG_09_2014'
+ghenv.Component.Message = 'VER 0.0.57\nAUG_15_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
@@ -73,17 +72,17 @@ outputsDict = {
 0: ["readMe!", "..."],
 1: ["zoneColoredMesh", "A list of meshes for each zone, each of which is colored based on the input _zoneData."],
 2: ["zoneWireFrame", "A list of curves representing the outlines of the zones.  This is particularly helpful if one wants to scroll through individual zone meshes but still see the outline of the building."],
-3: ["zoneNames", "A set of surfaces indicating the names of each zone as they correspond to the branches in the EP results and the name of the zone in the headers of data."],
-4: ["legend", "A legend of the zone colors. Connect this output to a grasshopper 'Geo' component in order to preview the legend spearately in the Rhino scene."],
-5: ["legendBasePt", "The legend base point, which can be used to move the legend in relation to the building with the grasshopper 'move' component."],
-6: ["zoneBreps", "A list of breps for each zone. This is essentially the same as the _HBZones input. Connecting this output and the following zoneColors to a Grasshopper 'Preview' component will thus allow you to see the zones colored transparently."],
-7: ["zoneColors", "A list of colors that correspond to the colors of each zone.  These colors include alpha values to make them slightly transparent.  Connecting the previous output and this output to a Grasshopper 'Preview' component will thus allow you to see the zones colored transparently."],
-8: ["zoneValues", "The values of the input data that are being used to color the zones."],
-9: ["floorNormZoneData", "The input data normalized by the floor area of it corresponding zone."]
+3: ["legend", "A legend of the zone colors. Connect this output to a grasshopper 'Geo' component in order to preview the legend spearately in the Rhino scene."],
+4: ["legendBasePt", "The legend base point, which can be used to move the legend in relation to the building with the grasshopper 'move' component."],
+5: ["zoneBreps", "A list of breps for each zone. This is essentially the same as the _HBZones input. Connecting this output and the following zoneColors to a Grasshopper 'Preview' component will thus allow you to see the zones colored transparently."],
+6: ["zoneColors", "A list of colors that correspond to the colors of each zone.  These colors include alpha values to make them slightly transparent.  Connecting the previous output and this output to a Grasshopper 'Preview' component will thus allow you to see the zones colored transparently."],
+7: ["zoneValues", "The values of the input data that are being used to color the zones."],
+8: ["floorNormZoneData", "The input data normalized by the floor area of it corresponding zone."]
 }
 
 
 w = gh.GH_RuntimeMessageLevel.Warning
+tol = sc.doc.ModelAbsoluteTolerance
 
 
 def copyHBZoneData():
@@ -91,9 +90,11 @@ def copyHBZoneData():
     zoneNames = []
     zoneFloors = []
     zoneBreps = []
+    zoneCentPts = []
     
     for HZone in _HBZones:
         zoneBreps.append(HZone)
+        zoneCentPts.append(HZone.GetBoundingBox(False).Center)
         zone = hb_hive.callFromHoneybeeHive([HZone])[0]
         zoneNames.append(zone.name)
         floorGeo = []
@@ -104,7 +105,7 @@ def copyHBZoneData():
             else: pass
         zoneFloors.append(floorGeo)
     
-    sc.sticky["Honeybee_ZoneData"] = [zoneBreps, zoneNames, zoneFloors]
+    sc.sticky["Honeybee_ZoneData"] = [zoneBreps, zoneNames, zoneFloors, zoneCentPts]
 
 def checkTheInputs():
     #Create a Python list from the _zoneData
@@ -282,8 +283,8 @@ def manageInputOutput(annualData, simStep, zoneNormalizable):
             ghenv.Component.Params.Input[input].Name = inputsDict[input][0]
             ghenv.Component.Params.Input[input].Description = inputsDict[input][1]
     
-    for output in range(10):
-        if output == 10 and zoneNormalizable == False:
+    for output in range(9):
+        if output == 9 and zoneNormalizable == False:
             ghenv.Component.Params.Output[output].NickName = "."
             ghenv.Component.Params.Output[output].Name = "."
             ghenv.Component.Params.Output[output].Description = " "
@@ -307,7 +308,7 @@ def restoreInputOutput():
         ghenv.Component.Params.Input[input].Name = inputsDict[input][0]
         ghenv.Component.Params.Input[input].Description = inputsDict[input][1]
     
-    for output in range(10):
+    for output in range(9):
         ghenv.Component.Params.Output[output].NickName = outputsDict[output][0]
         ghenv.Component.Params.Output[output].Name = outputsDict[output][0]
         ghenv.Component.Params.Output[output].Description = outputsDict[output][1]
@@ -573,19 +574,6 @@ def main(zoneValues, zones, zoneFloors, zoneHeaders, title, legendTitle, lb_prep
     legendColors = lb_visualization.gradientColor(legendText[:-1], lowB, highB, customColors)
     legendSrfs = lb_visualization.colorMesh(legendColors, legendSrfs)
     
-    #Create the zone names.
-    newTxtPts = []
-    for point in zoneCentPts:
-        newTxtPts.append(point + rc.Geometry.Point3d(-2*textSize, 0, 0))
-    zoneNames = []
-    for list in zoneHeaders:
-        zoneNames.append(list[2].split(' for ')[-1])
-    zoneNum = lb_visualization.text2srf(zoneNames, newTxtPts, legendFont, textSize/3)
-    zoneNumFinal = []
-    for list in zoneNum:
-        for brep in list:
-            zoneNumFinal.append(brep)
-    
     #Create the Title.
     titleTxt = '\n' + title[0] + '\n' + title[1]
     titleBasePt = lb_visualization.BoundingBoxPar[5]
@@ -595,7 +583,7 @@ def main(zoneValues, zones, zoneFloors, zoneHeaders, title, legendTitle, lb_prep
     fullLegTxt = lb_preparation.flattenList(legendTextCrv + titleTextCurve)
     
     
-    return transparentColors, zones, zoneMeshes, zoneWires, [legendSrfs, fullLegTxt], legendBasePoint, zoneNumFinal
+    return transparentColors, zones, zoneMeshes, zoneWires, [legendSrfs, fullLegTxt], legendBasePoint
 
 
 
@@ -608,7 +596,15 @@ if _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and sc.stick
     initCheck = True
 elif _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('Honeybee_ZoneData') == True:
     hb_zoneData = sc.sticky["Honeybee_ZoneData"]
-    if len(hb_zoneData[0]) == len(_HBZones): pass
+    initCheck = True
+    if len(_HBZones) == len(hb_zoneData[0]):
+        for count, brep in enumerate(_HBZones):
+            boundBoxVert = brep.GetBoundingBox(False).Center
+            if boundBoxVert.X <= hb_zoneData[3][count].X+tol and boundBoxVert.X >= hb_zoneData[3][count].X-tol and boundBoxVert.Y <= hb_zoneData[3][count].Y+tol and boundBoxVert.Y >= hb_zoneData[3][count].Y-tol and boundBoxVert.Z <= hb_zoneData[3][count].Z+tol and boundBoxVert.Z >= hb_zoneData[3][count].Z-tol: pass
+            else:
+                initCheck = False
+    else: initCheck = False
+    if initCheck == True: pass
     else:
         copyHBZoneData()
         hb_zoneData = sc.sticky["Honeybee_ZoneData"]
@@ -639,7 +635,7 @@ if _runIt == True and checkData == True and _HBZones != []:
 
 #Color the zones with the data and get all of the other cool stuff that this component does.
 if _runIt == True and checkData == True and _HBZones != [] and zoneValues != []:
-    zoneColors, zoneBreps, zoneColoredMesh, zoneWireFrame, legendInit, legendBasePt, zoneNames = main(zoneValues, _HBZones, zoneFloors, zoneHeaders, title, legendTitle, lb_preparation, lb_visualization, legendPar_)
+    zoneColors, zoneBreps, zoneColoredMesh, zoneWireFrame, legendInit, legendBasePt = main(zoneValues, _HBZones, zoneFloors, zoneHeaders, title, legendTitle, lb_preparation, lb_visualization, legendPar_)
     #Unpack the legend.
     legend = []
     for count, item in enumerate(legendInit):

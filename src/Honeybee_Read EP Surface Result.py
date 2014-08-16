@@ -28,7 +28,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Read EP Surface Result"
 ghenv.Component.NickName = 'readEPSrfResult'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_13_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_15_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "4"
@@ -59,13 +59,20 @@ gotSrfData = False
 
 if _resultFileAddress:
     try:
-        numZonesLine = 2000
+        numZonesLine = 100000
+        numShadesLine = 100000
         numZonesIndex = 0
         numSrfsIndex = 0
+        numFixShdIndex = 0
+        numBldgShdIndex = 0
+        numAttShdIndex = 0
         zoneAreaLines = []
         srfAreaLines = []
         areaIndex = 0
         zoneCounter = -1
+        numFixShd = 0
+        numBldgShd = 0
+        numAttShd = 0
         
         eioFileAddress = _resultFileAddress[0:-3] + "eio"
         if not os.path.isfile(eioFileAddress):
@@ -84,6 +91,17 @@ if _resultFileAddress:
             elif "WeatherFileRunPeriod" in line:
                 start = (int(line.split(",")[3].split("/")[0]), int(line.split(",")[3].split("/")[1]), 1)
                 end = (int(line.split(",")[4].split("/")[0]), int(line.split(",")[4].split("/")[1]), 24)
+            elif "Shading Summary" in line and "Number of Building Detached Shades" in line:
+                for index, text in enumerate(line.split(",")):
+                    numShadesLine = lineCount+1
+                    if "Number of Fixed Detached Shades" in text: numFixShdIndex = index
+                    elif "Number of Building Detached Shades" in text: numBldgShdIndex = index
+                    elif "Number of Attached Shades" in text: numAttShdIndex = index
+                    else: pass
+            elif lineCount == numShadesLine:
+                numFixShd = line.split(",")[numFixShdIndex]
+                numBldgShd = line.split(",")[numBldgShdIndex]
+                numAttShd = line.split(",")[numAttShdIndex]
             elif "Zone Summary" in line and "Number of Zones" in line:
                 for index, text in enumerate(line.split(",")):
                     numZonesLine = lineCount+1
@@ -103,9 +121,13 @@ if _resultFileAddress:
                 zoneNameList.append(line.split(",")[1])
                 gotZoneData = True
             elif "Surface Name" in line and "Area (Gross)" in line:
-                srfAreaLines = range(lineCount+2, lineCount+2+int(numZones)+int(numSrfs))
+                if numFixShd>0 or numBldgShd>0 or numAttShd>0:
+                    srfAreaLines = range(lineCount+3, lineCount+3+int(numZones)+int(numSrfs)+int(numFixShd)+int(numBldgShd)+int(numAttShd))
+                else:
+                    srfAreaLines = range(lineCount+2, lineCount+2+int(numZones)+int(numSrfs))
             elif lineCount in srfAreaLines:
-                if "Zone_Surfaces" in line:
+                if "Shading_Surface" in line: pass
+                elif "Zone_Surfaces" in line:
                     zoneCounter += 1
                 else:
                     zoneSrfNameList[zoneCounter].append(line.split(",")[1])

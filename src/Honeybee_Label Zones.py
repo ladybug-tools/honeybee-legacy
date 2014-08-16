@@ -11,18 +11,19 @@ Provided by Honeybee 0.0.53
     
     Args:
         _HBZones: The HBZones out of any of the HB components that generate or alter zones.  Note that these should ideally be the zones that are fed into the Run Energy Simulation component.  Zones read back into Grasshopper from the Import idf component will not align correctly with the EP Result data.
+        attribute_: A text string for the zone attribute that you are interested in lableing the zones with.  Possible inputs include "name", "zoneProgram", "isConditioned" or any other Honeybee attribute.
         textHeight_: An optional number for text height in Rhino model units that can be used to change the size of the label text in the Rhino scene.  The default is set based on the dimensions of the zones.
         font_: An optional number that can be used to change the font of the label in the Rhino scene. The default is set to "Verdana".
     Returns:
-        zoneNames: The names of each of the connected zones.
-        labelBasePts: The basepoint of the text labels.  Use this along with the zoneNames ouput above and a GH "TexTag3D" component to make your own lables.
-        zoneLabels: A set of surfaces indicating the names of each zone as they correspond to the branches in the EP results and the name of the zone in the headers of data.
+        zoneTxtLabels: The label names of each of the connected zones.  Connect this ouput and the one bleow to a Grasshopper "TexTag3D" component to make your own lables.
+        labelBasePts: The basepoint of the text labels.  Use this along with the ouput above and a Grasshopper "TexTag3D" component to make your own lables.
+        brepTxtLabels: A set of surfaces indicating the names of each zone as they correspond to the branches in the EP results and the name of the zone in the headers of data.
         zoneWireFrame: A list of curves representing the outlines of the zones.
 """
 
 ghenv.Component.Name = "Honeybee_Label Zones"
 ghenv.Component.NickName = 'LabelZones'
-ghenv.Component.Message = 'VER 0.0.57\nAUG_11_2014'
+ghenv.Component.Message = 'VER 0.0.57\nAUG_15_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
@@ -38,6 +39,23 @@ from Grasshopper import DataTree
 from Grasshopper.Kernel.Data import GH_Path
 import Rhino as rc
 import scriptcontext as sc
+
+tol = sc.doc.ModelAbsoluteTolerance
+
+
+def copyHBZoneData():
+    hb_hive = sc.sticky["honeybee_Hive"]()
+    zones = []
+    zoneBreps = []
+    zoneCentPts = []
+    
+    for HZone in _HBZones:
+        zoneBreps.append(HZone)
+        zoneCentPts.append(HZone.GetBoundingBox(False).Center)
+        zone = hb_hive.callFromHoneybeeHive([HZone])[0]
+        zones.append(zone)
+    
+    sc.sticky["Honeybee_LabelZoneData"] = [zoneBreps, zones, zoneCentPts]
 
 
 def setDefaults():
@@ -64,56 +82,82 @@ def setDefaults():
     else:
         textSize = textHeight_
     
+    if attribute_ == None: attribute = "name"
+    else: attribute = attribute_
     
-    return zoneCentPts, textSize, font
+    return zoneCentPts, textSize, font, attribute
 
 
-def main(basePts, textSize, font):
-    #import the classes.
-    if sc.sticky.has_key('honeybee_release') and sc.sticky.has_key('ladybug_release'):
-        hb_hive = sc.sticky["honeybee_Hive"]()
-        lb_visualization = sc.sticky["ladybug_ResultVisualization"]()
-        
-        #Make lists to be filled.
-        zoneNames =[]
-        wireFrames =[]
-        zoneNameLength = []
-        
-        #Get the zone names.
-        for HZone in _HBZones:
-            wireFrames.append(HZone.DuplicateEdgeCurves())
-            zone = hb_hive.callFromHoneybeeHive([HZone])[0]
-            theName = zone.name
-            zoneNames.append(theName)
-            zoneNameLength.append(len(list(str(theName))))
-        
-        #Adjust the position of the label base points depending on the length of the length of the zone name.
-        newPts = []
-        for ptCount, length in enumerate(zoneNameLength):
-            basePtMove = textSize*(length/2.1)
-            newPt = rc.Geometry.Point3d(basePts[ptCount].X-basePtMove, basePts[ptCount].Y, basePts[ptCount].Z)
-            newPts.append(newPt)
-        
-        #Make the zone labels.
-        zoneLabels = lb_visualization.text2srf(zoneNames, newPts, font, textSize)
-        
-        return zoneNames, zoneLabels, wireFrames, newPts
+def main(hb_zones, basePts, textSize, font, attribute):
+    lb_visualization = sc.sticky["ladybug_ResultVisualization"]()
+    
+    #Make lists to be filled.
+    zoneProperties =[]
+    wireFrames =[]
+    zoneNameLength = []
+    
+    #Get the zone properties.
+    for count, HZone in enumerate(hb_zones):
+        wireFrames.append(_HBZones[count].DuplicateEdgeCurves())
+        theProp = getattr(HZone, attribute)
+        zoneProperties.append(str(theProp))
+        zoneNameLength.append(len(list(str(theProp))))
+    
+    #Adjust the position of the label base points depending on the length of the length of the zone name.
+    newPts = []
+    for ptCount, length in enumerate(zoneNameLength):
+        basePtMove = textSize*(length/2.1)
+        newPt = rc.Geometry.Point3d(basePts[ptCount].X-basePtMove, basePts[ptCount].Y, basePts[ptCount].Z)
+        newPts.append(newPt)
+    
+    #Make the zone labels.
+    zoneLabels = lb_visualization.text2srf(zoneProperties, newPts, font, textSize)
+    
+    return zoneProperties, zoneLabels, wireFrames, newPts
+
+
+#If the HBzone data has not been copied to memory or if the data is old, get it.
+initCheck = False
+if not (attribute_ == None or attribute_ != "name" or attribute_ != "program" or attribute_ != "isConditioned"):
+    copyHBZoneData()
+elif _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('ladybug_release') == True and sc.sticky.has_key('Honeybee_LabelZoneData') == False:
+    copyHBZoneData()
+    hb_zoneData = sc.sticky["Honeybee_LabelZoneData"]
+    initCheck = True
+elif _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('Honeybee_LabelZoneData') == True:
+    hb_zoneData = sc.sticky["Honeybee_LabelZoneData"]
+    checkZones = True
+    if len(_HBZones) == len(hb_zoneData[0]):
+        for count, brep in enumerate(_HBZones):
+            boundBoxVert = brep.GetBoundingBox(False).Center
+            if boundBoxVert.X <= hb_zoneData[2][count].X+tol and boundBoxVert.X >= hb_zoneData[2][count].X-tol and boundBoxVert.Y <= hb_zoneData[2][count].Y+tol and boundBoxVert.Y >= hb_zoneData[2][count].Y-tol and boundBoxVert.Z <= hb_zoneData[2][count].Z+tol and boundBoxVert.Z >= hb_zoneData[2][count].Z-tol: pass
+            else:
+                checkZones = False
+    else: checkZones = False
+    if checkZones == True: pass
     else:
-        return [], [], []
-        print "You should first let both Ladybug and Honeybee  fly..."
-        ghenv.Component.AddRuntimeMessage(w, "You should first let both Ladybug and Honeybee  fly...")
+        copyHBZoneData()
+        hb_zoneData = sc.sticky["Honeybee_LabelZoneData"]
+    initCheck = True
+elif sc.sticky.has_key('honeybee_release') == False or sc.sticky.has_key('ladybug_release') == False:
+    print "You should first let Honeybee amd Ladybug fly..."
+    ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee and Ladybug fly...")
+else:
+    pass
 
 
-if _HBZones != []:
-    labelCentPts, textSize, font = setDefaults()
-    zoneNames, zoneTextLabels, wireFrames, labelBasePts = main(labelCentPts, textSize, font)
+
+
+if _HBZones != [] and initCheck == True:
+    labelCentPts, textSize, font, attribute = setDefaults()
+    zoneTxtLabels, zoneTextLabels, wireFrames, labelBasePts = main(hb_zoneData[1], labelCentPts, textSize, font, attribute)
     
     #Unpack the data trees of curves and label text.
-    zoneLabels = DataTree[Object]()
+    brepTxtLabels = DataTree[Object]()
     zoneWireFrames = DataTree[Object]()
     for listCount, lists in enumerate(zoneTextLabels):
         for item in lists:
-            zoneLabels.Add(item, GH_Path(listCount))
+            brepTxtLabels.Add(item, GH_Path(listCount))
     for listCount, lists in enumerate(wireFrames):
         for item in lists:
             zoneWireFrames.Add(item, GH_Path(listCount))
