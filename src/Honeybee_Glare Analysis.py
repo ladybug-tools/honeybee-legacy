@@ -31,7 +31,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Glare Analysis"
 ghenv.Component.NickName = 'glareAnalysis'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -156,11 +156,10 @@ def main(HDRImagePath, taskPosition, taskPositionAngle):
     # check size and proportion of the image
     command = "/c getinfo -d " + HDRImagePath
     out, err = runCmdAndGetTheResults(command)
-    
     # image size
     x = float(out.split(" ")[-1].strip())
     y = float(out.split(" ")[-3].strip())
-    
+
     if x!=y:
         msg = "You need a fisheye HDR image for an accurate study.\nThis image seems not to  be a fisheye image which may produce inaccurate results.\n"
         print msg
@@ -193,6 +192,13 @@ def main(HDRImagePath, taskPosition, taskPositionAngle):
     # run the analysis
     evalGlareLine = "/c evalglare -c " +  glareNoTextImage + " " + HDRImagePath
     glareRes, err = runCmdAndGetTheResults(evalGlareLine)
+    
+    if err.strip() == "error: no valid view specified":
+        # since I use pcomp to merge images HDR image doesn't have HDR view information
+        # adding default Honeybee view information for fish-eye camera
+        evalGlareLine = "/c evalglare -vth -vv 180 -vh 180 -c " +  glareNoTextImage + " " + HDRImagePath
+        glareRes, err = runCmdAndGetTheResults(evalGlareLine)
+        
     
     notes += "Results for the image:\n" + glareRes + "\n"
     
@@ -230,6 +236,13 @@ def main(HDRImagePath, taskPosition, taskPositionAngle):
         
         glareTaskRes, err = runCmdAndGetTheResults(evalGlareTaskPLine)
         notes += "Results for the task position:\n" + glareTaskRes + "\n"
+        
+        if err.strip() == "error: no valid view specified":
+            # since I use pcomp to merge images HDR image doesn't have HDR view information
+            # adding default Honeybee view information for fish-eye camera
+            evalGlareTaskPLine = "/c evalglare -vth -vv 180 -vh 180 -c " +  glareTaskPNoText + " -T " + \
+            TArguments + " " + HDRImagePath
+            glareTaskRes, err = runCmdAndGetTheResults(evalGlareTaskPLine)        
         
         taskPGlareResultDict, possibleNotice = readGlareResults(glareTaskRes)
         
