@@ -17,7 +17,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Generate Sky With Certain Illuminance level"
 ghenv.Component.NickName = 'genSkyIlluminanceLevel'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "02 | Daylight | Sky"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
@@ -58,7 +58,13 @@ def RADDaylightingSky(illuminanceValue):
 
 
 def main(illuminanceValue):
-    
+    # check for Honeybee
+    if not sc.sticky.has_key('honeybee_release'):
+        msg = "You should first let Honeybee to fly..."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, msg)
+        return None, None
+        
     path  = os.path.join(sc.sticky["Honeybee_DefaultFolder"], "skylib\\basedOnIlluminanceLevel\\")
     
     if not os.path.isdir(path): os.mkdir(path)
