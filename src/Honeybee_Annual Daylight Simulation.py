@@ -20,7 +20,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Annual Daylight Simulation"
 ghenv.Component.NickName = 'annualDaylightSimulation'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_03_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_12_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -50,8 +50,9 @@ def main():
     
     analysisRecipe = DLAnalysisRecipe(2, _epwWeatherFile, _testPoints, ptsVectors_,
                                       _radParameters_, _DSParameters_, testMesh_)
-    
-    if _testPoints.DataCount==0 or isAllNone(_testPoints.AllData()):
+    if (_testPoints.DataCount==0 or isAllNone(_testPoints.AllData())) \
+        and not (_DSParameters_ and _DSParameters_.runAnnualGlare \
+        and _DSParameters_.onlyAnnualGlare):
         analysisRecipe = None
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, "testPoints are missing!")
