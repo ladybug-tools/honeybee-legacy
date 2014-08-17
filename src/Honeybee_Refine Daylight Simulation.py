@@ -104,6 +104,15 @@ def main(octFile, analysisRecipe, numOfCPUs, thisRunName, runIt):
         hb_writeRADAUX.copyFile(octFile, newOctFileName)
     except:
         newOctFileName = octFile
+        
+    # copy amb file if any
+    fileNames = os.listdir(workingDir)
+    for fileName in fileNames:
+        if fileName.lower().endswith(".amb"):
+            ambFile = os.path.join(workingDir, fileName)
+            newambFile = os.path.join(subWorkingDir, radFileName + ".amb")
+            hb_writeRADAUX.copyFile(ambFile, newambFile)
+            break
     
     # export mesh
     hb_writeRADAUX.exportTestMesh(subWorkingDir, radFileName)
