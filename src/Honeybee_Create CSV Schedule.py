@@ -24,7 +24,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Create CSV Schedule"
 ghenv.Component.NickName = 'csvSchedule'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_11_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_17_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "07 | Energy | Schedule"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
@@ -130,7 +130,7 @@ def checkTheInputs():
     else:
         print "You should first let the Ladybug fly..."
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, "You should first let the Ladybug fly...")
-        return False, None, None, [], [], [], [], None
+        return False, None, None, [], [], [], [], None, 1
 
 
 def main(units, numericType, totalHOYS, totalDays, totalMonths, csvValues, scheduleName, timeStep):
