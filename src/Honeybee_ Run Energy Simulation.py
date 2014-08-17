@@ -10,7 +10,7 @@ export geometries to idf file, and run the energy simulation
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_11_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_17_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -147,11 +147,16 @@ class WriteIDF(object):
         coordinatesList = surface.extractPoints()
         if type(coordinatesList[0])is not list and type(coordinatesList[0]) is not tuple: coordinatesList = [coordinatesList]
         
+        scheduleName = surface.TransmittanceSCH
+        if scheduleName.lower().endswith(".csv"):
+            # find filebased schedule name
+            scheduleName = self.fileBasedSchedules[scheduleName.upper()]
+        
         fullString = ''
         for count, coordinates in enumerate(coordinatesList):
             str_1 = '\nShading:Building:Detailed,\n' + \
                     '\t' + surface.name + '_' + `count` + ',\t!- Name\n' + \
-                    '\t' + surface.TransmittanceSCH + ',\t!- Transmittance Schedule Name\n' + \
+                    '\t' + scheduleName + ',\t!- Transmittance Schedule Name\n' + \
                     '\t' + `len(coordinates)` + ',\t!- Number of Vertices\n'    
     
             str_2 = '\t';
@@ -922,6 +927,11 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     
     # Geometry rules
     idfFile.write(hb_writeIDF.EPGeometryRules())
+
+    EPConstructionsCollection = []
+    EPMaterialCollection = []
+    EPScheduleCollection = []
+    
     
     # Shading Surfaces
     if HBContext and HBContext[0]!=None:
@@ -929,8 +939,22 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         # call the objects from the lib
         shadingPyClasses = hb_hive.callFromHoneybeeHive(HBContext)
         for shading in shadingPyClasses:
-            #print shading.name
-            #print hb_writeIDF.EPShdSurface(shading)
+            
+            # take care of shcedule
+            schedule = shading.TransmittanceSCH
+            if schedule!="" and schedule.upper() not in EPScheduleCollection:
+                # add schedule
+                scheduleValues, comments = hb_EPScheduleAUX.getScheduleDataByName(schedule, ghenv.Component)
+                if comments == "csv":
+                    # create a new schedule object based on file
+                    # and write it to idf
+                    idfFile.write(hb_writeIDF.EPSCHStr(schedule))
+                else:
+                    # collect shchedule name
+                    EPScheduleCollection.append(schedule.upper())
+                    
+                hb_writeIDF.EPSCHStr(shading.TransmittanceSCH.upper())
+                
             idfFile.write(hb_writeIDF.EPShdSurface(shading))
     else:
         print "[2 of 6] No context surfaces..."
@@ -938,10 +962,8 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         
     #################  BODY #####################
     print "[3 of 6] Writing geometry..."
-    EPConstructionsCollection = []
-    EPMaterialCollection = []
-    EPScheduleCollection = []
     ZoneCollectionBasedOnSchAndLoads = {} # This will be used to create zoneLists
+    
     
     # write idf file
     for zone in thermalZonesPyClasses:
