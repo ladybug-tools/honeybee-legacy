@@ -4,7 +4,7 @@
 # under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
 
 """
-Set Schedules
+Create EP Plenum Zone
 -
 Provided by Honeybee 0.0.53
 
@@ -12,7 +12,7 @@ Provided by Honeybee 0.0.53
         _HBZones:...
         
     Returns:
-        HBZones:...
+        HBZPlenumones:...
 """
 
 ghenv.Component.Name = "Honeybee_Create EP Plenum"
@@ -72,4 +72,4 @@ def main(HBZones):
 if _HBZones and _HBZones[0]!=None:
     results = main(_HBZones)
     
-    if results != -1: HBZones = results
+    if results != -1: HBPlenumZones = results
