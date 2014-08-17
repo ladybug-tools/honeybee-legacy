@@ -1509,12 +1509,18 @@ class WriteRAD(object):
             self.rhinoViewNames = analysisRecipe.viewNames
             # image based
             initBatchFileName = os.path.join(subWorkingDir, radFileName + '_IMGInit.bat')
-            OCTFileName = radFileName + '_IMG'
+            if readyOCTFile ==None:
+                OCTFileName = radFileName + '_IMG'
+            else:
+                OCTFileName = (".").join(os.path.basename(readyOCTFile).split(".")[:-1])
             
         else:
             # not annual and not image based
             initBatchFileName = os.path.join(subWorkingDir, radFileName + '_RADInit.bat')
-            OCTFileName = radFileName + '_RAD'
+            if readyOCTFile ==None:
+                OCTFileName = radFileName + '_RAD'
+            else:
+                OCTFileName = (".").join(os.path.basename(readyOCTFile).split(".")[:-1])
             
         
         # create the batch file that initiate the simulation

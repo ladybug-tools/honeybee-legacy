@@ -22,7 +22,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Lookup Daylighting Folder"
 ghenv.Component.NickName = 'LookupFolder_Daylighting'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
@@ -70,6 +70,7 @@ def main(studyFolder):
     materialFiles = []
     dgpFiles = []
     skyFiles = []
+    octFiles = []
     
     if studyFolder!=None:
         fileNames = os.listdir(studyFolder)
@@ -87,6 +88,8 @@ def main(studyFolder):
                 hdrFiles.append(os.path.join(studyFolder, fileName))
             elif fileName.lower().endswith(".gif"):
                 gifFiles.append(os.path.join(studyFolder, fileName))
+            elif fileName.lower().endswith(".oct"):
+                octFiles.append(os.path.join(studyFolder, fileName))            
             elif fileName.lower().endswith(".tif") or fileName.lower().endswith(".tiff"):
                 tifFiles.append(os.path.join(studyFolder, fileName))
             elif fileName.lower().endswith(".bmp"):
@@ -159,7 +162,9 @@ def main(studyFolder):
     
     imgFiles = gifFiles + tifFiles + bmpFiles + jpgFiles
     
-    return msg, [illFiles, resFiles, ptsFiles, hdrFiles, imgFiles, epwFile, analysisType, analysisMesh, radianceFiles, materialFiles, skyFiles, dgpFiles]
+    return msg, [illFiles, resFiles, ptsFiles, hdrFiles, imgFiles, epwFile, \
+           analysisType, analysisMesh, radianceFiles, materialFiles, skyFiles, \
+           dgpFiles, octFiles]
     
 
 ghenv.Component.Params.Output[1].NickName = "resultFiles"
@@ -172,7 +177,7 @@ if msg!=str.Empty:
     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
 else:
     illFiles, resFiles, ptsFiles, hdrFiles, imageFiles, epwFile, analysisType, \
-    analysisMesh, radianceFiles, materialFiles, skyFiles, dgpFiles = results
+    analysisMesh, radianceFiles, materialFiles, skyFiles, dgpFiles, octFiles = results
 
     if resFiles != []:
         resultFiles = resFiles
