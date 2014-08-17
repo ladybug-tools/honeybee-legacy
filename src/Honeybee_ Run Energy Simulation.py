@@ -37,14 +37,31 @@ class WriteIDF(object):
         self.workingDir = workingDir
         
     def EPZone(self, zone):
-        return '\nZone,\n' + \
-        '\t' + zone.name + ',\n' + \
-        '\t' + `zone.north` + ',\t!-Direction of Relative North {deg}\n' + \
-        '\t' + `zone.origin.X` + ',\t!- X Origin {m}\n' + \
-        '\t' + `zone.origin.Y` + ',\t!- Y Origin {m}\n' + \
-        '\t' + `zone.origin.Z` + ',\t!- Z Origin {m}\n' + \
-        '\t1;\t!- Type\n'
-    
+        
+        zoneStr = '\nZone,\n' + \
+                '\t' + zone.name + ',\n' + \
+                '\t' + `zone.north` + ',\t!-Direction of Relative North {deg}\n' + \
+                '\t' + `zone.origin.X` + ',\t!- X Origin {m}\n' + \
+                '\t' + `zone.origin.Y` + ',\t!- Y Origin {m}\n' + \
+                '\t' + `zone.origin.Z` + ',\t!- Z Origin {m}\n'
+                
+        try:
+            if zone.isPlenum:
+                return zoneStr + \
+                '\t1,\t!- Type\n' + \
+                '\t,\t!- Multiplier\n' + \
+                '\t,\t!- Ceiling Height\n' + \
+                '\t,\t!- Volume\n' + \
+                '\t,\t!- Floor Area\n' + \
+                '\t,\t!- Zone Inside Convection Algorithm\n' + \
+                '\t,\t!- Zone Outside Convection Algorithm\n' + \
+                '\tNo;\t!- Part of Total Floor Area\n'                
+            else:
+                return zoneStr + '\t1;\t!- Type\n'
+        except:
+            #older versions
+            return zoneStr + '\t1;\t!- Type\n'
+            
     def EPZoneSurface (self, surface):
         
         coordinates = surface.coordinates
