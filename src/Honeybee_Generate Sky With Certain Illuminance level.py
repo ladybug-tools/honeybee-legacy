@@ -26,6 +26,7 @@ except: pass
 
 import os
 import scriptcontext as sc
+import Grasshopper.Kernel as gh
 
 def RADDaylightingSky(illuminanceValue):
     
