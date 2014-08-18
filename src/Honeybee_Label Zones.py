@@ -11,7 +11,7 @@ Provided by Honeybee 0.0.53
     
     Args:
         _HBZones: The HBZones out of any of the HB components that generate or alter zones.  Note that these should ideally be the zones that are fed into the Run Energy Simulation component.  Zones read back into Grasshopper from the Import idf component will not align correctly with the EP Result data.
-        attribute_: A text string for the zone attribute that you are interested in lableing the zones with.  Possible inputs include "name", "zoneProgram", "isConditioned" or any other Honeybee attribute.
+        attribute_: A text string for the zone attribute that you are interested in lableing the zones with.  Possible inputs include "name", "zoneProgram", "isConditioned" or any other Honeybee attribute. Use the "Honeybee_Zone Attribute List" to see all possibilities.
         textHeight_: An optional number for text height in Rhino model units that can be used to change the size of the label text in the Rhino scene.  The default is set based on the dimensions of the zones.
         font_: An optional number that can be used to change the font of the label in the Rhino scene. The default is set to "Verdana".
     Returns:
@@ -23,7 +23,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Label Zones"
 ghenv.Component.NickName = 'LabelZones'
-ghenv.Component.Message = 'VER 0.0.57\nAUG_15_2014'
+ghenv.Component.Message = 'VER 0.0.57\nAUG_18_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
@@ -59,7 +59,7 @@ def copyHBZoneData():
 
 
 def setDefaults():
-    #Check the font and seta a default one.
+    #Check the font and set a default one.
     if font_ == None: font = "Verdana"
     else: font = font_
     
@@ -100,6 +100,8 @@ def main(hb_zones, basePts, textSize, font, attribute):
     for count, HZone in enumerate(hb_zones):
         wireFrames.append(_HBZones[count].DuplicateEdgeCurves())
         theProp = getattr(HZone, attribute)
+        if theProp == "":
+            theProp = "Not Assigned"
         zoneProperties.append(str(theProp))
         zoneNameLength.append(len(list(str(theProp))))
     
@@ -118,9 +120,7 @@ def main(hb_zones, basePts, textSize, font, attribute):
 
 #If the HBzone data has not been copied to memory or if the data is old, get it.
 initCheck = False
-if not (attribute_ == None or attribute_ != "name" or attribute_ != "program" or attribute_ != "isConditioned"):
-    copyHBZoneData()
-elif _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('ladybug_release') == True and sc.sticky.has_key('Honeybee_LabelZoneData') == False:
+if _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('ladybug_release') == True and sc.sticky.has_key('Honeybee_LabelZoneData') == False:
     copyHBZoneData()
     hb_zoneData = sc.sticky["Honeybee_LabelZoneData"]
     initCheck = True
