@@ -4610,11 +4610,15 @@ class hb_reEvaluateHBZones(object):
     
     def checkSrfNameDuplication(self, surface):
         if surface.name in self.srfNames:
-                warning = "Duplicate surface name!"
-                print warning
-                # return -1
-        else:
-            self.srfNames.append(surface.name)            
+            warning = "Duplicate surface name!"
+            name = surface.name
+            while name in self.srfNames:
+                name += "_Dup"
+                
+            surface.name = name
+            print warning + " Name is changed to: " + surface.name
+            
+        self.srfNames.append(surface.name)            
         
         if not surface.isChild and surface.hasChild:
             for child in surface.childSrfs:
@@ -4624,10 +4628,14 @@ class hb_reEvaluateHBZones(object):
         
         if HBZone.name in self.zoneNames:
             warning = "Duplicate zone name!"
-            print warning
-            # return -1
-        else:
-            self.zoneNames.append(HBZone.name)            
+            name = HBZone.name
+            while name in self.zoneNames:
+                name += "_Dup"
+            
+            HBZone.name = name            
+            print warning + " Name is changed to: " + HBZone.name
+            
+        self.zoneNames.append(HBZone.name)
         
         for surface in HBZone.surfaces:
             self.checkSrfNameDuplication(surface)
