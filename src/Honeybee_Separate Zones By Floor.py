@@ -19,7 +19,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = 'Honeybee_Separate Zones By Floor'
 ghenv.Component.NickName = 'separateZonesByFloor'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_17_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_18_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
@@ -50,25 +50,25 @@ def main(HBZones):
             HBZones[floorH] = []
         
         HBZones[floorH].append(zone)
-        
-        
+    
+    HBZones = sorted(HBZones.items(), key = lambda d: float(d[0]))
+    
     return HBZones
 
 if _HBZones and _HBZones!=None:
     
-    orderedHBZones = main(_HBZones)
-    
-    keys = orderedHBZones.keys()
-    keys.sort()
+    HBSortedZones = main(_HBZones)
     
     hb_hive = sc.sticky["honeybee_Hive"]()
     
     HBZones = DataTree[Object]()
     floorHeights = []
     
-    for count, key in enumerate(keys):
+    for count, floorInfo in enumerate(HBSortedZones):
         p = GH_Path(count)
-        floorHeights.append(key)
-        
-        zones = hb_hive.addToHoneybeeHive(orderedHBZones[key], ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+        flrH = floorInfo[0]
+        zoneList = floorInfo[1]
+        floorHeights.append(flrH)
+        # item 0 is the heights
+        zones = hb_hive.addToHoneybeeHive(zoneList, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
         HBZones.AddRange(zones, p)
