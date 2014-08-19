@@ -12,7 +12,7 @@ prepare shading/context geometries
 
 ghenv.Component.Name = 'Honeybee EP context Surfaces'
 ghenv.Component.NickName = 'HB_EPContextSrf'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_17_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_19_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -97,6 +97,37 @@ def main(shdSurfaces, EPTransSchedule, meshingSettings, justBoundingBox):
                                     return -1
                             
                             thisShading.TransmittanceSCH = schedule
+                        
+                        # add the Rad Material if any
+                        if RADMaterial!=None:
+                            # if it is just the name of the material make sure it is already defined
+                            if len(RADMaterial.split(" ")) == 1:
+                                # if the material is not in the library add it to the library
+                                if RADMaterial not in sc.sticky ["honeybee_RADMaterialLib"].keys():
+                                    warningMsg = "Can't find " + RADMaterial + " in RAD Material Library.\n" + \
+                                                "Add the material to the library and try again."
+                                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
+                                    return
+                                
+                                try:
+                                    thisShading.setRADMaterial(RADMaterial)
+                                except Exception, e:
+                                    print e
+                                    warningMsg = "You are using an old version of Honeybee_Honeybee! Update your files and try again."
+                                    print warningMsg
+                                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
+                                    return
+                                
+                                addedToLib = True
+                            else:
+                                
+                                # try to add the material to the library
+                                addedToLib, thisShading.RadMaterial = hb_RADMaterialAUX.analyseRadMaterials(RADMaterial, True)
+                                
+                            if addedToLib==False:
+                                warningMsg = "Failed to add " + RADMaterial + " to the Library."
+                                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
+                                return
                         
                         # add shading to the list
                         shadingClasses.append(thisShading)
