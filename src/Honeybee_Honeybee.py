@@ -1125,7 +1125,8 @@ class WriteRAD(object):
         self.hb_DSLibPath = hb_folders["DSLibPath"]
         
         
-    def writeRADAndMaterialFiles(self, originalHBObjects, subWorkingDir, radFileName, analysisRecipe):
+    def writeRADAndMaterialFiles(self, originalHBObjects, subWorkingDir, radFileName, \
+                                 analysisRecipe, meshParameters, exportInteriorWalls):
         
         # collect information from analysis recipe
         radParameters = analysisRecipe.radParameters
@@ -1761,7 +1762,7 @@ class WriteRAD(object):
                         numIll+=1
                     elif file.EndsWith('dc'):
                         numDc+=1
-                if numIll!= len(batchFileNames) * numOfIllFiles or  numDc!=len(batchFileNames) * numOfIllFiles:
+                if numIll!= numOfCPUs * numOfIllFiles or  numDc!= numOfCPUs * numOfIllFiles:
                     print "Can't find the results for the study"
                     DSResultFilesAddress = []
             
@@ -1771,7 +1772,7 @@ class WriteRAD(object):
                 if view not in annualGlareResults.keys():
                     annualGlareResults[view] = []
                     
-            dgpFile = radFileFullName.replace('.rad', '_0.dgp')
+            dgpFile = os.path.join(subWorkingDir, radFileName + '_0.dgp')
             
             if runAnnualGlare and os.path.isfile(dgpFile):
                 with open(dgpFile, "r") as dgpRes:

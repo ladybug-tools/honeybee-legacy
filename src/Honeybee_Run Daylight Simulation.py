@@ -134,7 +134,9 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
     # it to write DS later
 
     radFileFullName, materialFileName = \
-        hb_writeRAD.writeRADAndMaterialFiles(originalHBObjects, subWorkingDir, radFileName, analysisRecipe)
+        hb_writeRAD.writeRADAndMaterialFiles(originalHBObjects, subWorkingDir, \
+                                             radFileName, analysisRecipe, \
+                                             meshParameters, exportInteriorWalls)
     
     
     ######################## GENERATE POINT FILES #######################
@@ -159,19 +161,18 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
         
         if analysisRecipe.type == 2:
             DSResultFilesAddress, annualGlareResults = results
-            return radFileFullName, annualGlareResults, [], analysisRecipe.testPoints, DSResultFilesAddress, [], subWorkingDir
+            return radFileFullName, annualGlareResults, [], analysisRecipe.testPts, DSResultFilesAddress, [], subWorkingDir
             
         elif analysisRecipe.type == 0:
             HDRFileAddress = results
             return radFileFullName, [], [], [], [], HDRFileAddress, subWorkingDir
         else:
-            print analysisRecipe.type
             RADResultFilesAddress = results
             return radFileFullName, [], RADResultFilesAddress, analysisRecipe.testPts, [], [], subWorkingDir
     else:
         # return name of the file
         if  analysisRecipe.type == 0: return radFileFullName, [], [], [], [], [], subWorkingDir
-        else: return radFileFullName, [], [], analysisRecipe.testPoints, [], [], subWorkingDir
+        else: return radFileFullName, [], [], analysisRecipe.testPts, [], [], subWorkingDir
                 
 
 
