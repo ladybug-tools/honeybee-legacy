@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.54\nAUG_16_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_19_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -159,6 +159,53 @@ class CheckIn():
         
 
 checkIn = CheckIn()
+
+
+class versionCheck(object):
+    
+    def __init__(self):
+        self.version = self.getVersion(ghenv.Component.Message)
+    
+    def getVersion(self, LBComponentMessage):
+        monthDict = {'JAN':'01', 'FEB':'02', 'MAR':'03', 'APR':'04', 'MAY':'05', 'JUN':'06',
+                     'JUL':'07', 'AUG':'08', 'SEP':'09', 'OCT':'10', 'NOV':'11', 'DEC':'12'}
+        # convert component version to standard versioning
+        try: ver, verDate = LBComponentMessage.split("\n")
+        except: ver, verDate = LBComponentMessage.split("\\n")
+        ver = ver.split(" ")[1].strip()
+        month, day, year = verDate.split("_")
+        month = monthDict[month.upper()]
+        version = ".".join([year, month, day, ver])
+        return version
+    
+    def isCurrentVersionNewer(self, desiredVersion):
+        return int(self.version.replace(".", "")) >= int(desiredVersion.replace(".", ""))
+    
+    def isCompatible(self, LBComponent):
+        code = LBComponent.Code
+        # find the version that is supposed to be flying
+        try:
+            version = code.split("compatibleHBVersion")[1].split("=")[1].split("\n")[0].strip()
+        except Exception, e:
+            print e
+            self.giveWarning(LBComponent)
+            return False
+            
+        desiredVersion = self.getVersion(version)
+        
+        if not self.isCurrentVersionNewer(desiredVersion):
+            self.giveWarning(LBComponent)
+            return False
+        
+        return True
+        
+    def giveWarning(self, GHComponent):
+        warningMsg = "You need a newer version of Honeybee to use this compoent." + \
+                     "Use updateHoneybee component to update userObjects.\n" + \
+                     "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+                     "into canvas and try again."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        GHComponent.AddRuntimeMessage(w, warningMsg)
 
 
 class hb_findFolders():
@@ -6009,7 +6056,7 @@ if not checkGHPythonVersion(GHPythonTargetVersion):
 if letItFly:
     if not sc.sticky.has_key("honeybee_release") or True:
         w = gh.GH_RuntimeMessageLevel.Warning
-        sc.sticky["honeybee_release"] = True
+        sc.sticky["honeybee_release"] = versionCheck()
         folders = hb_findFolders()
         
         sc.sticky["honeybee_folders"] = {}

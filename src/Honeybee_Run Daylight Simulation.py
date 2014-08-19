@@ -37,7 +37,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Run Daylight Simulation"
 ghenv.Component.NickName = 'runDaylightAnalysis'
-ghenv.Component.Message = 'VER 0.0.54\nAUG_16_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_19_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -55,6 +55,9 @@ import Grasshopper.Kernel as gh
 import math
 from Grasshopper import DataTree
 from Grasshopper.Kernel.Data import GH_Path
+
+#compatibleLBVersion = VER 0.0.57\nAUG_19_2014
+#compatibleHBVersion = VER 0.0.54\nAUG_19_2014
 
 
 ghenv.Component.Params.Output[5].NickName = "resultFiles"
@@ -75,6 +78,19 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
         ghenv.Component.AddRuntimeMessage(w, "You should first let both Ladybug and Honeybee to fly...")
         return -1
     
+    #try:
+    if not sc.sticky['ladybug_release'].isCompatible(ghenv.Component): return -1
+    if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+    #except Exception, e:
+    """    print e
+        warning = "You need a newer version of Ladybug and/or Honeybee to use this compoent." + \
+                 "Use updateLadybug and/or updateHoneybee component to update userObjects.\n" + \
+                 "If you have already updated userObjects drag Ladybug_Ladybug component " + \
+                 "and/or Honeybee_Honeybee component into canvas and try again."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+        return -1
+    """
     lb_preparation = sc.sticky["ladybug_Preparation"]()
     hb_writeRAD = sc.sticky["honeybee_WriteRAD"]()
     hb_writeRADAUX = sc.sticky["honeybee_WriteRADAUX"]()
