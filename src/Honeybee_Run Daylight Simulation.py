@@ -78,11 +78,11 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
         ghenv.Component.AddRuntimeMessage(w, "You should first let both Ladybug and Honeybee to fly...")
         return -1
     
-    #try:
-    if not sc.sticky['ladybug_release'].isCompatible(ghenv.Component): return -1
-    if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
-    #except Exception, e:
-    """    print e
+    try:
+        if not sc.sticky['ladybug_release'].isCompatible(ghenv.Component): return -1
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+    except Exception, e:
+        print e
         warning = "You need a newer version of Ladybug and/or Honeybee to use this compoent." + \
                  "Use updateLadybug and/or updateHoneybee component to update userObjects.\n" + \
                  "If you have already updated userObjects drag Ladybug_Ladybug component " + \
@@ -90,7 +90,7 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, warning)
         return -1
-    """
+    
     lb_preparation = sc.sticky["ladybug_Preparation"]()
     hb_writeRAD = sc.sticky["honeybee_WriteRAD"]()
     hb_writeRADAUX = sc.sticky["honeybee_WriteRADAUX"]()
