@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.54\nAUG_19_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_20_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -5781,6 +5781,9 @@ class hb_EPFenSurface(hb_EPSurface):
             srfName: the unique name for this surface
             parentZone: class of the zone that this surface belongs to"""
         hb_EPSurface.__init__(self, surface, srfNumber, srfName, parentSurface, surafceType)
+        
+        self.blindsMaterial = ""
+        self.shadingControl = ""
         
         if not self.isPlanar:
             try:
