@@ -2164,7 +2164,7 @@ class WriteRADAUX(object):
         # try to write mesh file if any
         if analysisType != 0 and testMesh !=[]:
             meshFilePath = os.path.join(subWorkingDir, radFileName + ".msh")
-            serializer = hb_serializeObjects(meshFilePath, testMesh)
+            serializer = self.hb_serializeObjects(meshFilePath, testMesh)
             serializer.saveToFile()
 
     def exportTypeFile(self, subWorkingDir, radFileName, analysisRecipe = None):
