@@ -83,6 +83,9 @@ def main(weatherFile, analysisPeriod):
         # import data from epw file data
         locName, lat, lngt, timeZone, elev, locationStr = lb_preparation.epwLocation(weatherFile)
         newLocName = lb_preparation.removeBlank(locName)
+        if len(list(newLocName)) > 15:
+            newName = list(newLocName)[:-15]
+            newLocName = ''.join(newName)
     else:
         print "epwWeatherFile address is not a valid .epw file"
         w = gh.GH_RuntimeMessageLevel.Warning
