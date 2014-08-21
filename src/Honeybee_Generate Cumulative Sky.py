@@ -22,7 +22,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Generate Cumulative Sky"
 ghenv.Component.NickName = 'genCumSky'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_21_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "02 | Daylight | Sky"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
