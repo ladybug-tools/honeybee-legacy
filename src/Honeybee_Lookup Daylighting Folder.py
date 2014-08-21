@@ -84,7 +84,7 @@ def main(studyFolder):
                 ptsFiles.append(os.path.join(studyFolder, fileName))
             elif fileName.lower().endswith(".epw"):
                 epwFile = os.path.join(studyFolder, fileName)
-            elif fileName.lower().endswith(".hdr"):
+            elif fileName.lower().endswith(".hdr") or fileName.lower().endswith(".pic"):
                 hdrFiles.append(os.path.join(studyFolder, fileName))
             elif fileName.lower().endswith(".gif"):
                 gifFiles.append(os.path.join(studyFolder, fileName))
