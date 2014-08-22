@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.54\nAUG_20_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_22_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -2164,7 +2164,7 @@ class WriteRADAUX(object):
         # try to write mesh file if any
         if analysisType != 0 and testMesh !=[]:
             meshFilePath = os.path.join(subWorkingDir, radFileName + ".msh")
-            serializer = self.hb_serializeObjects(meshFilePath, testMesh)
+            serializer = hb_serializeObjects(meshFilePath, testMesh)
             serializer.saveToFile()
 
     def exportTypeFile(self, subWorkingDir, radFileName, analysisRecipe = None):
@@ -4735,6 +4735,9 @@ class hb_reEvaluateHBZones(object):
         newFenSrf.shadingControlName = baseChildSurface.shadingControlName
         newFenSrf.frameName = baseChildSurface.frameName
         newFenSrf.Multiplier = baseChildSurface.Multiplier
+        newFenSrf.blindsMaterial = baseChildSurface.blindsMaterial
+        newFenSrf.shadingControl = baseChildSurface.shadingControl
+        newFenSrf.shadingSchName = baseChildSurface.shadingSchName
         
         # Will be overwritten later if needed
         newFenSrf.BCObject = baseChildSurface.BCObject
@@ -5784,6 +5787,7 @@ class hb_EPFenSurface(hb_EPSurface):
         
         self.blindsMaterial = ""
         self.shadingControl = ""
+        self.shadingSchName = ""
         
         if not self.isPlanar:
             try:

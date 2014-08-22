@@ -45,7 +45,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Window Shade Generator"
 ghenv.Component.NickName = 'EPWindowShades'
-ghenv.Component.Message = 'VER 0.0.57\nAUG_20_2014'
+ghenv.Component.Message = 'VER 0.0.57\nAUG_22_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -64,6 +64,7 @@ import rhinoscriptsyntax as rs
 import scriptcontext as sc
 import uuid
 import math
+import os
 
 
 w = gh.GH_RuntimeMessageLevel.Warning
@@ -159,7 +160,6 @@ def checkTheInputs(zoneNames, windowNames, windowSrfs, isZone):
             print warning
             ghenv.Component.AddRuntimeMessage(w, warning)
     
-    
     #Align all of the lists to each window.
     windowNamesFinal = []
     windowBrepsFinal = []
@@ -196,7 +196,7 @@ def checkTheInputs(zoneNames, windowNames, windowSrfs, isZone):
                 if zoneData == False and srfData == False and alignedDataTree != [[], [], []]:
                     print "A window was not matched with its respective zone/surface data."
     
-    if checkData2 == True and checkData3 == True and checkData4 == True: checkData = True
+    if checkData2 == True and checkData3 == True and checkData4 == True and checkData5 == True: checkData = True
     else: checkData = False
     
     
@@ -414,6 +414,8 @@ def makeShade(_glzSrf, depth, numShds, distBtwn):
     
     if normalVector != rc.Geometry.Vector3d.ZAxis:
         normalVectorPerp = rc.Geometry.Vector3d(normalVector.X, normalVector.Y, 0)
+    angleFromNorm = math.degrees(rc.Geometry.Vector3d.VectorAngle(normalVectorPerp, normalVector))
+    if normalVector.Z < 0: angleFromNorm = angleFromNorm*(-1)
     
     #If the user has set the shades to generate on the interior, flip the normal vector.
     if interiorOrExter == True:
@@ -436,11 +438,17 @@ def makeShade(_glzSrf, depth, numShds, distBtwn):
         shdAngle = 0
     
     #Make EP versions of some of the outputs.
-    if shdAngle >= 0: EPshdAngle = 90 - shdAngle
-    else: EPshdAngle = 90 + (shdAngle)*-1
+    EPshdAngleInint = angleFromNorm+shdAngle
+    if EPshdAngleInint >= 0: EPshdAngle = 90 - EPshdAngleInint
+    else: EPshdAngle = 90 + (EPshdAngleInint)*-1
+    if EPshdAngle > 180 or EPshdAngle < 0:
+        warning = "The input shdAngle_ value will cause EnergyPlus to crash."
+        print warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+    
     if horOrVertical == True: EPSlatOrient = 'Horizontal'
     else: EPSlatOrient = 'Vertical'
-    if interiorOrExter == False: EPinteriorOrExter = 'InteriorBlind'
+    if interiorOrExter == True: EPinteriorOrExter = 'InteriorBlind'
     else: EPinteriorOrExter = 'ExteriorBlind'
     
     #Generate the shade curves based on the planes and extrusion vectors
@@ -463,8 +471,29 @@ def makeShade(_glzSrf, depth, numShds, distBtwn):
     else:
         distToGlass = 0
     
+    #Get the EnergyPlus distance to glass.
+    EPDistToGlass = distToGlass + (depth)*(0.5)*math.cos(math.radians(EPshdAngle))
+    if EPDistToGlass < 0.01: EPDistToGlass = 0.01
+    elif EPDistToGlass > 1:
+        warning = "The input distToGlass_ value is so large that it will cause EnergyPlus to crash."
+        print warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
     
-    return shadingSurfaces, EPSlatOrient, depth, shadingHeight, EPshdAngle, distToGlass, EPinteriorOrExter
+    #Check the depth and the shadingHeight to see if E+ will crash.
+    assignEPCheckInit = True
+    if depth > 1:
+        assignEPCheckInit = False
+        warning = "Note that E+ does not like shading depths greater than 1. HBObjWShades will not be generated.  shadeBreps will still be produced and you can account for these shades using a 'Honeybee_EP Context Surfaces' component."
+        print warning
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Remark, warning)
+    if shadingHeight > 1:
+        assignEPCheckInit = False
+        warning = "Note that E+ does not like distances between shades that are greater than 1. HBObjWShades will not be generated.  shadeBreps will still be produced and you can account for these shades using a 'Honeybee_EP Context Surfaces' component."
+        print warning
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Remark, warning)
+    
+    
+    return shadingSurfaces, EPSlatOrient, depth, shadingHeight, EPshdAngle, EPDistToGlass, EPinteriorOrExter, assignEPCheckInit
 
 def deconstructBlindMaterial(material):
     matLines = material.split('\n')
@@ -513,19 +542,25 @@ def createEPBlindMat(blindsMaterial, EPSlatOrient, depth, shadingHeight, EPshdAn
     return EPBlindMat
 
 def createEPBlindControl(blindsMaterial, schedule, EPinteriorOrExter, name):
-    if schedule == 'ALWAYSON': schedCntrl = 'No'
-    else: schedCntrl = 'Yes'
+    if schedule == 'ALWAYSON':
+        schedCntrlType = 'ALWAYSON'
+        schedCntrl = 'No'
+        schedName = ''
+    else:
+        schedName = schedule
+        schedCntrlType = 'OnIfScheduleAllows'
+        schedCntrl = 'Yes'
     
     EPBlindControl = 'WindowProperty:ShadingControl,\n' + \
         '\t' + 'BlindCntrlFor_' + name +',            !- Name\n' + \
         '\t' + EPinteriorOrExter + ',           !- Shading Type\n' + \
         '\t' + ',                        !- Construction with Shading Name\n' + \
-        '\t' + schedule + ',                !- Shading Control Type\n' + \
-        '\t' + ',                        !- Schedule Name\n' + \
+        '\t' + schedCntrlType + ',                !- Shading Control Type\n' + \
+        '\t' + schedName + ',                        !- Schedule Name\n' + \
         '\t' + ',                        !- Setpoint {W/m2, W or deg C}\n' + \
         '\t' + schedCntrl + ',                      !- Shading Control Is Scheduled\n' + \
         '\t' + 'No,                      !- Glare Control Is Active\n' + \
-        '\t' + blindsMaterial[0] + ',           !- Shading Device Material Name\n' + \
+        '\t' + blindsMaterial[0] + "_" + name + ',           !- Shading Device Material Name\n' + \
         '\t' + 'FixedSlatAngle,          !- Type of Slat Angle Control for Blinds\n' + \
         '\t' + ';                        !- Slat Angle Schedule Name\n'
     
@@ -628,7 +663,7 @@ def main():
         if checkData == True:
             shadings = []
             for window in windowSrfsInit:
-                shadeBreps, EPSlatOrient, depth, shadingHeight, EPshdAngle, distToGlass, EPinteriorOrExter = makeShade(window, depths, numOfShd, _distBetween)
+                shadeBreps, EPSlatOrient, depth, shadingHeight, EPshdAngle, distToGlass, EPinteriorOrExter, assignEPCheckInit = makeShade(window, depths, numOfShd, _distBetween)
                 shadings.append(shadeBreps)
                 EPSlatOrientList.append(EPSlatOrient)
                 depthList.append(depth)
@@ -636,12 +671,15 @@ def main():
                 EPshdAngleList.append(EPshdAngle)
                 distToGlassList.append(distToGlass)
                 EPinteriorOrExterList.append(EPinteriorOrExter)
+                if assignEPCheckInit == False: assignEPCheck = False
             
             #Create the EnergyPlus blinds material and assign it to the windows with shades.
             if assignEPCheck == True:
                 for count, windowObj in enumerate(windowObjects):
                     windowObj.blindsMaterial = createEPBlindMat(blindsMaterial, EPSlatOrientList[count], depthList[count], shadingHeightList[count], EPshdAngleList[count], distToGlassList[count], windowObj.name)
                     windowObj.shadingControl = createEPBlindControl(blindsMaterial, schedule, EPinteriorOrExterList[count], windowObj.name)
+                    windowObj.shadingControlName = 'BlindCntrlFor_' + windowObj.name
+                    windowObj.shadingSchName = schedule
                 
                 ModifiedHBZones  = hb_hive.addToHoneybeeHive(HBZoneObjects, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
             else: ModifiedHBZones = []
@@ -657,7 +695,8 @@ def main():
 
 
 
-#Run the main functions
+#Run the main functions.
+checkData = False
 if _HBObjects != [] and _runIt == True:
     checkData, windowSrfsInit, shadings, alignedDataTree, HBObjWShades = main()
 

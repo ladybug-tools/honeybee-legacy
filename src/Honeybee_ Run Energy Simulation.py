@@ -10,7 +10,7 @@ export geometries to idf file, and run the energy simulation
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_17_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_22_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -691,6 +691,11 @@ class WriteIDF(object):
                 else:
                     materialStr =  materialStr + "  " + str(materialData[layer][0]) + ";   !- " +  materialData[layer][1] + "\n\n"
             return materialStr
+        else:
+            warning = "Failed to find " + materialName + " in library."
+            print warning
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+            return None
        
     def EPConstructionStr(self, constructionName):
         constructionData = None
@@ -713,7 +718,9 @@ class WriteIDF(object):
                 
             return constructionStr, materials
         else:
-            print "Failed to find " + constructionName + " in library."
+            warning = "Failed to find " + constructionName + " in library."
+            print warning
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
             return None, None
             
     def EPSCHStr(self, scheduleName):
@@ -1028,6 +1035,12 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                     # the surface will use the default construction
                     if not childSrf.construction.upper() in EPConstructionsCollection:
                             EPConstructionsCollection.append(childSrf.construction.upper())
+                    # Check if there is any shading for the window.
+                    if childSrf.blindsMaterial != "" and childSrf.shadingControl != "":
+                        idfFile.write(childSrf.blindsMaterial)
+                        idfFile.write(childSrf.shadingControl)
+                        if childSrf.shadingSchName != 'ALWAYSON':
+                            EPScheduleCollection.append(childSrf.shadingSchName.upper())
                     
                 # write the glazing strings
                 idfFile.write(hb_writeIDF.EPFenSurface(srf))
