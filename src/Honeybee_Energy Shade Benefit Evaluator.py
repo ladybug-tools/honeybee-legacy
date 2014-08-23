@@ -51,7 +51,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Energy Shade Benefit Evaluator"
 ghenv.Component.NickName = 'EnergyShadeBenefit'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_17_2014'
+ghenv.Component.Message = 'VER 0.0.53\nJUL_18_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
@@ -96,34 +96,37 @@ def checkTheInputs():
     
     #Check to make see if users have connected a grid size and balance point.  If not, assign a grid size based on a bounding box around the test shade and altert the user that they should select a balance point.
     if gridSize_:
-        try:
-            if gridSize_ > 0:
-                gridSize = float(gridSize_)
+        if gridSize_ > 0:
+            gridSize = float(gridSize_)
+            checkData3 = True
+        else:
+            try:
+                boundBox = _testShades.GetBoundingBox(False)
+                box = rc.Geometry.Box(boundBox)
+                if box.X[1] - box.X[0] < box.Y[1] - box.Y[0]:
+                    gridSize = (box.X[1] - box.X[0])/5
+                else:
+                    gridSize = (box.Y[1] - box.Y[0])/5
                 checkData3 = True
+                print 'There is no positive value connected for gridSize_. A default value will be used based on the dimensions of the _testShades.'
+            except:
+                gridSize = 0
+                checkData3 = False
+                print 'Invalid value is connected for gridSize_.'
+    else:
+        try:
+            boundBox = _testShades.GetBoundingBox(False)
+            box = rc.Geometry.Box(boundBox)
+            if box.X[1] - box.X[0] < box.Y[1] - box.Y[0]:
+                gridSize = (box.X[1] - box.X[0])/5
             else:
-                try:
-                    boundBox = _testShades.GetBoundingBox(False)
-                    box = rc.Geometry.Box(boundBox)
-                    if box.X[1] - box.X[0] < box.Y[1] - box.Y[0]:
-                        gridSize = (box.X[1] - box.X[0])/5
-                    else:
-                        gridSize = (box.Y[1] - box.Y[0])/5
-                    checkData3 = True
-                    print 'There is no positive value connected for gridSize_. A default value will be used based on the dimensions of the _testShades.'
-                except:
-                    gridSize = 0
-                    checkData3 = False
-                    print 'No value is connected for gridSize_.'
+                gridSize = (box.Y[1] - box.Y[0])/5
+            checkData3 = True
+            print 'There is no value connected for gridSize_. A default value will be used based on the dimensions of the _testShades.'
         except:
             gridSize = 0
             checkData3 = False
-            print "An invalid value is connected for grid Size_.  The gridSize_ must be a number."
-            w = gh.GH_RuntimeMessageLevel.Warning
-            ghenv.Component.AddRuntimeMessage(w, "An invalid value is connected for grid Size_.  The gridSize_ must be a number.")
-    else:
-        gridSize = 0
-        checkData3 = False
-        print 'No value is connected for gridSize_.'
+            print 'A default gridSize_ could not be generated.'
     
     #Check if runIt is set to true.
     if _runIt == True:
