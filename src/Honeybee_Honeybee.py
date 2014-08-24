@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.54\nAUG_22_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_24_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1499,11 +1499,11 @@ class WriteRAD(object):
                 heaFile.write(self.hb_writeDS.DSAnalysisUnits(outputUnits, lenOfPts[cpuCount]))
                 
                 # write view for annual glare if any
-                fakeViewFileName = subWorkingDir + '\\' + projectName + '_' + 'annualGlareView.vf'
-                vfFile = open(fakeViewFileName, "w")
+                glareViewFileName = subWorkingDir + '\\' + projectName + '_' + 'annualGlareView.vf'
+                vfFile = open(glareViewFileName, "w")
                 vfFile.write('')
                 for view in annualGlareViews:
-                    viewLine = hb_writeRADAUX.exportView(view, analysisRecipe.radParameters, 1, [dgp_imageSize, dgp_imageSize])
+                    viewLine = self.hb_writeRADAUX.exportView(view, analysisRecipe.radParameters, 1, [dgp_imageSize, dgp_imageSize])
                     # I'm not sure why Daysim view file needs rview Perspective at the start line
                     vfFile.write("rview Perspective " + viewLine + "\n")
                 vfFile.close()
