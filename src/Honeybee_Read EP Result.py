@@ -36,7 +36,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_12_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_25_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "4"
@@ -272,7 +272,8 @@ if _resultFileAddress and gotData == True:
                         makeHeader(relativeHumidity, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Relative Humidity", "%", False)
                         dataTypeList[15] = True
                     
-                    elif 'Zone' in column:
+                    elif 'Zone' in column and not "ZONEHVAC" in column:
+                        print column
                         key.append(14)
                         zoneName = checkZoneOther(dataIndex, (" " + column.split(':')[0]))
                         makeHeader(otherZoneData, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], column.split(':')[-1].split(' [')[0], column.split('[')[-1].split(']')[0], False)
