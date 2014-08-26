@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.54\nAUG_24_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -2164,7 +2164,7 @@ class WriteRADAUX(object):
         # try to write mesh file if any
         if analysisType != 0 and testMesh !=[]:
             meshFilePath = os.path.join(subWorkingDir, radFileName + ".msh")
-            serializer = hb_serializeObjects(meshFilePath, testMesh)
+            serializer = self.hb_serializeObjects(meshFilePath, testMesh)
             serializer.saveToFile()
 
     def exportTypeFile(self, subWorkingDir, radFileName, analysisRecipe = None):
