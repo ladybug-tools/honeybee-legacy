@@ -178,6 +178,7 @@ def checkZoneOther(dataIndex, csvName):
     return zoneName
 dataIndex = 0
 
+
 # PARSE THE RESULT FILE.
 if _resultFileAddress and gotData == True:
     try:
@@ -326,6 +327,8 @@ if _resultFileAddress and gotData == True:
         result.close()
         parseSuccess = True
     except:
+        try: result.close()
+        except: pass
         parseSuccess = False
         warn = 'Failed to parse the result file.  The csv file might not have existed when connected or the simulation did not run correctly.'+ \
                   'Try reconnecting the _resultfileAddress to this component or re-running your simulation.'
