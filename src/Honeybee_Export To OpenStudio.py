@@ -6,7 +6,7 @@
 """
 Export Honeybee Objects to OpenStudio
 -
-Provided by Honeybee 0.0.53
+Provided by Honeybee 0.0.54
     
     Args:
         openStudioLibFolder:
@@ -71,7 +71,7 @@ else:
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_08_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_21_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -227,8 +227,9 @@ class WriteOPS(object):
         scheduleConstant = ops.ScheduleConstant(model)
         scheduleConstant.setName(schName)
         scheduleConstant.setValue(float(values[2]))
-        typeLimitName = values[1]
-        sscheduleConstant.setScheduleTypeLimits(self.getScheduleFromLib(typeLimitName))
+        if values[1] != None:
+            typeLimitName = values[1]
+            sscheduleConstant.setScheduleTypeLimits(self.getScheduleFromLib(typeLimitName))
         return scheduleConstant
         
     def createDayOSSchedule(self, schName, values, model):
@@ -327,6 +328,7 @@ class WriteOPS(object):
         return schedule
         
     def getOSSchedule(self, schName, model):
+        print schName
         values, comments = self.hb_EPScheduleAUX.getScheduleDataByName(schName, ghenv.Component)
         
         if values[0].lower() != "schedule:week:daily":
@@ -363,13 +365,221 @@ class WriteOPS(object):
         # Will change it to what it used to be later
         thermalZone.setName(zone.name)
         return space, thermalZone
-    
+
+        
+        
+    def recallOASys(self,HVACDetails):
+        #do not modify these strings unless EnergyPlus strings change
+        contrlType = {
+        0:'FixedDryBulb',
+        1:'DifferentialDryBulb',
+        2:'FixedEnthalpy',
+        3:'DifferentialEnthalpy',
+        4:'ElectronicEnthalpy',
+        5:'FixedDewPointAndDryBulb',
+        6:'DifferentialDryBulbAndEnthalpy',
+        7:'NoEconomizer'
+        }
+        
+        ctrlAction={
+        0:'ModulateFlow',
+        1:'MinimumFlowWithBypass'
+        }
+        lockout={
+        0:'NoLockout',
+        1:'LockoutWithHeating',
+        2:'LockoutWithCompressor'
+        }
+        minLimit={
+        0:'ProportionalMinimum',
+        1:'FixedMinimum'
+        }
+        
+        print 'getting oasys from the hive'
+        print HVACDetails
+        oaDesc = {
+        'name' : HVACDetails['airsideEconomizer']['name'],
+        'econoControl': HVACDetails['airsideEconomizer']['econoControl'],
+        'sensedMin' : HVACDetails['airsideEconomizer']['sensedMin'],
+        'sensedMax' : HVACDetails['airsideEconomizer']['sensedMax'],
+        'maxLimitDewpoint' : HVACDetails['airsideEconomizer']['maxLimitDewpoint'],
+        'minAirFlowRate' : HVACDetails['airsideEconomizer']['minAirFlowRate'],
+        'maxAirFlowRate' : HVACDetails['airsideEconomizer']['maxAirFlowRate'],
+        'minLimitType' : minLimit[HVACDetails['airsideEconomizer']['minLimitType']],
+        'controlAction' : ctrlAction[HVACDetails['airsideEconomizer']['controlAction']],
+        'minOASchedule' : HVACDetails['airsideEconomizer']['minOutdoorAirSchedule'],
+        'minOAFracSchedule' : HVACDetails['airsideEconomizer']['minOutdoorAirFracSchedule'],
+        'DXLockoutMethod' : lockout[HVACDetails['airsideEconomizer']['DXLockoutMethod']]
+        }
+        return oaDesc
+    def updateOASys(self,econo,oactrl):
+        if econo['econoControl'] == 0:
+            oactrl.setEconomizerControlType("FixedDryBulb")
+            if econo['sensedMin'] != None:
+                mindb = econo['sensedMin']
+            if econo['sensedMax'] != None:
+                maxdb = econo['sensedMax']
+                oactrl.setEconomizerMinimumLimitDryBulbTemperature(mindb)
+                oactrl.setEconomizerMaximumLimitDryBulbTemperature(maxdb)
+        elif econo['econoControl'] == 1:
+            oactrl.setEconomizerControlType("DifferentialDryBulb")
+        elif econo['econoControl'] == 2:
+            oactrl.setEconomizerControlType("FixedEnthalpy")
+            if sensedMax != None:
+                maxenth = econo['sensedMax']
+                oactrl.setEconomizerMaximumLimitEnthalpy(maxenth)
+                #can sensed min still be dry bulb?
+        elif econo['econoControl'] == 3:
+            oactrl.setEconomizerControlType("DifferentialEnthalpy")
+        elif econo['econoControl'] == 4:
+            oactrl.setEconomizerControlType("ElectronicEnthalpy")
+            #set curve in future releases
+        elif econo['econoControl'] == 5:
+            oactrl.setEconomizerControlType("FixedDewpointAndDryBulb")
+            if econo['sensedMin'] != None:
+                mindb = econo['sensedMin']
+                oactrl.setEconomizerMinimumLimitDryBulbTemperature(mindb)
+            if econo['sensedMax'] != None:
+                maxdb = econo['sensedMax']
+                oactrl.setEconomizerMaximumLimitDryBulbTemperature(maxdb)
+            if econo['maxLimitDewpoint'] != None:
+                maxdp = econo['maxLimitDewpoint']
+                oactrl.setEconomizerMaximumLimitDewpointTemperature(maxdp)
+        elif econo['econoControl'] == 6:
+            oactrl.setEconomizerControlType("DifferentialDryBulbAndEnthalpy")
+            if sensedMax != None:
+                maxenth = econo['sensedMax']
+                oactrl.setEconomizerMaximumLimitEnthalpy(maxenth)
+        else:
+            oactrl.setEconomizerControlType("NoEconomizer")
+        print 'economizer control type set'
+        
+        #set min and max flows
+        if econo['minAirFlowRate']=='Autosize' or econo['minAirFlowRate']==None:
+            oactrl.autosizeMinimumOutdoorAirFlowRate()
+        else:
+            minFlow = econo['minAirFlowRate']
+            oactrl.setMinimumOutdoorAirFlowRate(minFlow)
+        if econo['maxAirFlowRate']=='Autosize' or econo['maxAirFlowRate']==None:
+            oactrl.autosizeMaximumOutdoorAirFlowRate()
+        else:
+            maxFlow = econo['maxAirFlowRate']
+            oactrl.setMaximumOutdoorAirFlowRate(maxFlow)
+        print 'set min and max flow rates'
+        #set control action
+        if econo['controlAction']!=None:
+            oactrl.setEconomizerControlActionType(econo['controlAction'])
+        print 'set control action'
+        #set minLimit type
+        if econo['minLimitType']!=None:
+            oactrl.setMinimumLimitType(econo['minLimitType'])
+        print 'set min limit type'
+        #set lockout type (applies to DX systems only)
+        if econo['DXLockoutMethod'] != None:
+            oactrl.setLockoutType(econo['DXLockoutMethod'])
+        print 'set dx lockout method'
+        print "success for economizer!"
+        return oactrl
+        
+    def recallCVFan(self,HVACDetails):
+        print 'getting supply fan from the hive'
+        sfdesc = {
+        'name':HVACDetails['constVolSupplyFanDef']['name'],
+        'motorEfficiency':HVACDetails['constVolSupplyFanDef']['motorEfficiency'],
+        'fanEfficiency':HVACDetails['constVolSupplyFanDef']['fanEfficiency'],
+        'pressureRise':HVACDetails['constVolSupplyFanDef']['pressureRise'],
+        'airStreamHeatPct':HVACDetails['constVolSupplyFanDef']['airStreamHeatPct'],
+        'maxFlowRate':HVACDetails['constVolSupplyFanDef']['maxFlowRate']
+        }
+        return sfdesc
+        
+    def updateCVFan(self,sf,cvfan):
+        if sf['motorEfficiency'] != None: 
+            cvfan.setMotorEfficiency(sf['motorEfficiency'])
+            print 'motor efficiency updated'
+        if sf['fanEfficiency'] != None: 
+            cvfan.setFanEfficiency(sf['fanEfficiency'])
+            print 'fan efficiency updated'
+        if sf['pressureRise'] != None: 
+            cvfan.setPressureRise(sf['pressureRise'])
+            print 'pressure rise updated'
+        if sf['airStreamHeatPct'] != None: 
+            cvfan.setMotorInAirstreamFraction(sf['airStreamHeatPct'])
+            print 'motor air stream heat updated'
+        if sf['maxFlowRate'] != None:
+            if sf['maxFlowRate'] != 'Autosize':
+                cvfan.setMaximumFlowRate(float(sf['maxFlowRate']))
+                print 'max flow rate updated'
+            else:
+                print 'fan size remains autosized'
+        print 'success updating fan!'
+        return cvfan
+        
+    def recallVVFan(self,HVACDetails):
+            print 'getting supply fan from the hive'
+            sfdesc = {
+            'name':HVACDetails['varVolSupplyFanDef']['name'],
+            'motorEfficiency':HVACDetails['varVolSupplyFanDef']['motorEfficiency'],
+            'fanEfficiency':HVACDetails['varVolSupplyFanDef']['fanEfficiency'],
+            'pressureRise':HVACDetails['varVolSupplyFanDef']['pressureRise'],
+            'airStreamHeatPct':HVACDetails['varVolSupplyFanDef']['airStreamHeatPct'],
+            'maxFlowRate':HVACDetails['varVolSupplyFanDef']['maxFlowRate'],
+            'minFlowFrac':HVACDetails['varVolSupplyFanDef']['minFlowFrac'],
+            'fanPowerCoefficient1':HVACDetails['varVolSupplyFanDef']['fanPowerCoefficient1'],
+            'fanPowerCoefficient2':HVACDetails['varVolSupplyFanDef']['fanPowerCoefficient2'],
+            'fanPowerCoefficient3':HVACDetails['varVolSupplyFanDef']['fanPowerCoefficient3'],
+            'fanPowerCoefficient4':HVACDetails['varVolSupplyFanDef']['fanPowerCoefficient4'],
+            'fanPowerCoefficient5':HVACDetails['varVolSupplyFanDef']['fanPowerCoefficient5']
+            }
+            return sfdesc
+            
+    def updateVVFan(self,sf,vvfan):
+        if sf['motorEfficiency'] != None: 
+            vvfan.setMotorEfficiency(sf['motorEfficiency'])
+            print 'motor efficiency updated'
+        if sf['fanEfficiency'] != None: 
+            vvfan.setFanEfficiency(sf['fanEfficiency'])
+            print 'fan efficiency updated'
+        if sf['pressureRise'] != None: 
+            vvfan.setPressureRise(sf['pressureRise'])
+            print 'pressure rise updated'
+        if sf['airStreamHeatPct'] != None: 
+            vvfan.setMotorInAirstreamFraction(sf['airStreamHeatPct'])
+            print 'motor air stream heat updated'
+        if sf['maxFlowRate'] != None:
+            if sf['maxFlowRate'] != 'Autosize':
+                vvfan.setMaximumFlowRate(float(sf['maxFlowRate']))
+                print 'max flow rate updated'
+            else:
+                print 'fan size remains autosized'
+        if sf['minFlowFrac'] != None:
+            vvfan.setFanPowerMinimumFlowFraction(sf['minFlowFrac'])
+            print 'min flow frac updated'
+        if sf['fanPowerCoefficient1'] != None:
+            vvfan.setFanPowerCoefficient1(sf['fanPowerCoefficient1'])
+            print 'Power Coefficient 1 updated'
+        if sf['fanPowerCoefficient2'] != None:
+            vvfan.setFanPowerCoefficient2(sf['fanPowerCoefficient2'])
+            print 'Power Coefficient 2 updated'
+        if sf['fanPowerCoefficient3'] != None:
+            vvfan.setFanPowerCoefficient3(sf['fanPowerCoefficient3'])
+            print 'Power Coefficient 3 updated'
+        if sf['fanPowerCoefficient4'] != None:
+            vvfan.setFanPowerCoefficient4(sf['fanPowerCoefficient4'])
+            print 'Power Coefficient 4 updated'
+        if sf['fanPowerCoefficient5'] != None:
+            vvfan.setFanPowerCoefficient5(sf['fanPowerCoefficient5'])
+            print 'Power Coefficient 5 updated'
+        print 'success updating fan!'
+        return vvfan
+        
     def addSystemsToZones(self, model):
         
         for HAVCGroupID in self.HVACSystemDict.keys():
             #print self.HVACSystemDict.keys()
             # HAVC system index for this group and thermal zones
-            systemIndex, thermalZones = self.HVACSystemDict[HAVCGroupID]
+            systemIndex, thermalZones, HVACDetails = self.HVACSystemDict[HAVCGroupID]
+            #print systemIndex
             #print len(thermalZones)
             # put thermal zones into a vector
             thermalZoneVector = ops.ThermalZoneVector(thermalZones)
@@ -379,14 +589,124 @@ class WriteOPS(object):
                 for zone in thermalZoneVector: zone.setUseIdealAirLoads(True)
             
             elif systemIndex == 1:
+                #template values
+                availability = sc.sticky['System_1']['availSch']
+                fanplacement = sc.sticky['System_1']['fanPlacement']
+                airflowinCool = sc.sticky['System_1']['coolingAirflow']
+                oaflowinCool = sc.sticky['System_1']['coolingOAflow']
+                airflowinHeat = sc.sticky['System_1']['heatingAirflow']
+                oaflowinHeat = sc.sticky['System_1']['heatingOAflow']
+                airflowinFloat = sc.sticky['System_1']['floatingAirflow']
+                oaflowinFloat = sc.sticky['System_1']['floatingOAflow']
+                try:
+                    supplyFan = sc.sticky['System_1']['supplyFanDef']
+                    print supplyFan
+                    sfFanEff = supplyFan['fanEfficiency']
+                    sfPressureRise = supplyFan['pressureRise']
+                    sfMaxFlow = supplyFan['maxFlowRate']
+                    sfMotorEff = supplyFan['motorEfficiency']
+                    sfAirStreamPup = supplyFan['airStreamHeatPct']
+                except:
+                    pass
+                #does my avail schedule exists?
+                
+                schedExists = False
+                scheds = model.getScheduleConstants()
+                print scheds
+                for sched in scheds:
+                    print 'here'
+                    if sched.value() == str(availability): schedExists = True
+                if schedExists:
+                    print 'availability schedule found'
+                else:
+                    print 'creating availability schedule'
+                    schName = 'a grasshopper schedule'
+                    values = [schName,None,str(availability)]
+                    availability = self.createConstantOSSchedule(schName, values, model)
                 # 1: PTAC, Residential - thermalZoneVector because ZoneHVAC
                 ops.OpenStudioModelHVAC.addSystemType1(model, thermalZoneVector)
+                allptacs = model.getZoneHVACPackagedTerminalAirConditioners()
+                #print allptacs
+                for ptac in allptacs:
+                    hvacHandle = ptac.handle()
+                    
+                    if availability != None: ptac.setAvailabilitySchedule(availability)
+                    if fanplacement != None: ptac.setFanPlacement(fanplacement)
+                    if airflowinCool != None:
+                        ptac.setSupplyAirFlowRateDuringCoolingOperation(airflowinCool)
+                    if oaflowinCool != None:
+                        ptac.setOutdoorAirFlowRateDuringCoolingOperation(oaflowinCool)
+                    if airflowinHeat != None:
+                        ptac.setSupplyAirFlowRateDuringHeatingOperation(airflowinHeat)
+                    if oaflowinHeat != None:
+                        ptac.setOutdoorAirFlowRateDuringHeatingOperation(oaflowinHeat)
+                    if airflowinFloat != None:
+                        ptac.setSupplyAirFlowRateWhenNoCoolingorHeatingisNeeded(airflowinFloat)
+                    if oaflowinFloat != None:
+                        ptac.setOutdoorAirFlowRateWhenNoCoolingorHeatingisNeeded(oaflowinFloat)
+                    sch = ptac.availabilitySchedule()
+                    try:
+                        sfname = ptac.supplyAirFan().name()
+                        sf = model.getFanConstantVolumeByName(str(sfname)).get()
+                        if sfFanEff != None: sf.setFanEfficiency(sfFanEff)
+                        if sfPressureRise != None: sf.setPressureRise(sfPressureRise)
+                        if sfMaxFlow != None: sf.setMaximumFlowRate(sfMaxFlow)
+                        if sfMotorEff != None: sf.setMotorEfficiency(sfMotorEff)
+                        if sfAirStreamPup != None: sf.setMotorInAirstreamFraction(sfAirStreamPup)
+                        print sf
+                    except:
+                        print 'no supply fan defined'
+                        pass
+                    
+                    #print sch
+                    #print ptac
                 #hvac.setName = "PTAC_i"
-            
+
+                
             elif systemIndex == 2:
                 # 2: PTHP, Residential - thermalZoneVector because ZoneHVAC
                 ops.OpenStudioModelHVAC.addSystemType2(model, thermalZoneVector)
                 
+            elif systemIndex == 3:
+                print ''
+                for zone in thermalZoneVector:
+                    handle = ops.OpenStudioModelHVAC.addSystemType3(model).handle()
+                    print handle
+                    print HVACDetails
+                    airloop = model.getAirLoopHVAC(handle).get()
+                    airloop.addBranchForZone(zone)
+                    print 'zone added to PSZ air loop'
+                    oasys = airloop.airLoopHVACOutdoorAirSystem()
+                    if oasys.is_initialized():
+                        print 'overriding the OpenStudio airside economizer settings'
+                        oactrl = oasys.get().getControllerOutdoorAir()
+                        #set control type
+                        #can sensed min still be dry bulb for any of these?  Future release question
+                        econo = self.recallOASys(HVACDetails)
+                        oactrl = self.updateOASys(econo,oactrl)
+                        print 'economizer settings updated to economizer name: ' + HVACDetails['airsideEconomizer']['name']
+                        print ''
+
+                    #apply fan changes
+                    if len(HVACDetails['constVolSupplyFanDef']) > 0:
+                        print 'overriding the OpenStudio supply fan settings'
+                        x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:ConstantVolume"))
+                        cvfan = model.getFanConstantVolume(x[0].handle()).get()
+                        sf = self.recallCVFan(HVACDetails)
+                        cvfan = self.updateCVFan(sf,cvfan)
+                        print 'supply fan settings updated to supply fan name: ' + HVACDetails['constVolSupplyFanDef']['name']
+
+                    comps = airloop.supplyComponents()
+                    #the default is a single speed compressor
+                    #what happens if the user changes to a 2speed compressor?
+                    c = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:DX:SingleSpeed"))
+                    handle = c[0].handle()
+                    coil = model.getCoilCoolingDXSingleSpeed(handle).get()
+                    print type(coil)
+            elif systemIndex == 4:
+                for zone in thermalZoneVector:
+                    handle = ops.OpenStudioModelHVAC.addSystemType4(model).handle()
+                    print handle
             elif systemIndex == 5:
                 hvacHandle = ops.OpenStudioModelHVAC.addSystemType5(model).handle()
                 # get the airloop
@@ -394,40 +714,68 @@ class WriteOPS(object):
                 # add branches
                 for zone in thermalZoneVector:
                     airloop.addBranchForZone(zone)
-                
+
+                    
                 oasys = airloop.airLoopHVACOutdoorAirSystem() 
                 
                 if oasys.is_initialized():
+                    print 'overriding the OpenStudio airside economizer settings'
                     oactrl = oasys.get().getControllerOutdoorAir()
-                    oactrl.autosizeMinimumOutdoorAirFlowRate()
-                    oactrl.setEconomizerControlType("FixedDryBulb")
-                    oactrl.setEconomizerMinimumLimitDryBulbTemperature(12)
-                    oactrl.setEconomizerMaximumLimitDryBulbTemperature(21)
-                    oactrl.setLockoutType("LockoutWithCompressor")
-                    print "success for economizer!"
+
+
+
+
+
+
+                    #set control type
+                    #can sensed min still be dry bulb for any of these?  Future release question
+                    print HVACDetails
+                    econo = self.recallOASys(HVACDetails)
+                    oactrl = self.updateOASys(econo,oactrl)
+                    print 'economizer settings updated to economizer name: ' + HVACDetails['airsideEconomizer']['name']
+                    print ''
+                #the fan by default is variable volume, it will never be constant volume
+                x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:VariableVolume"))
+                sf = model.getFanVariableVolume(x[0].handle()).get()
+                if len(HVACDetails['varVolSupplyFanDef']) > 0:
+                    print 'overriding the OpenStudio supply fan settings'
                     x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:VariableVolume"))
-                    fan = model.getFanVariableVolume(x[0].handle()).get()
+                    vvfan = model.getFanVariableVolume(x[0].handle()).get()
+
+
+
+
+
+
+
+                    sf = self.recallVVFan(HVACDetails)
+                    vvfan = self.updateVVFan(sf,vvfan)
+                    print 'supply fan settings updated to supply fan name: ' + HVACDetails['varVolSupplyFanDef']['name']
+                
+                #the default is s two speed coil.  not sure what happens if they assign a one speed
+                x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:DX:TwoSpeed"))
+                coolcoil = model.getCoilCoolingDXTwoSpeed(x[0].handle()).get()
+                print coolcoil.getRatedHighSpeedAirFlowRate() #OpenStudio blank
+                print coolcoil.getRatedHighSpeedTotalCoolingCapacity() #OpensStudio blank
+                print coolcoil.getRatedHighSpeedSensibleHeatRatio() #OpenStudio blank
+                print coolcoil.getRatedHighSpeedCOP() #OpenStudio 3
+                print coolcoil.getRatedLowSpeedCOP() # OpenStudio 3
+                print coolcoil.getRatedLowSpeedTotalCoolingCapacity() # OpenStudio blank
+                print coolcoil.getRatedLowSpeedSensibleHeatRatio() # OpenStudio 0.69
+                print coolcoil.getRatedLowSpeedAirFlowRate() #OpenStudio blank
+                coolcoil.setRatedHighSpeedCOP(4.5)
+                coolcoil.setRatedLowSpeedCOP(3.7)
+                coolcoil.setCondenserType("EvaporativelyCooled")
+                coolcoil.setHighSpeedEvaporativeCondenserEffectiveness(0.9)
+                coolcoil.setHighSpeedEvaporativeCondenserAirFlowRate(ops.OptionalDouble(3.5))
+                coolcoil.setLowSpeedEvaporativeCondenserEffectiveness(0.85)
+                coolcoil.setLowSpeedEvaporativeCondenserAirFlowRate(ops.OptionalDouble(2.0))
                     
-                    fan.setFanEfficiency(0.79)
-                    fan.setMotorEfficiency(0.92)
-                    fan.setPressureRise(1000)
-                    fan.setFanPowerMinimumFlowFraction(0.2)
-                    print "success for fan setup"
-                    
-                    x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:DX:TwoSpeed"))
-                    coolcoil = model.getCoilCoolingDXTwoSpeed(x[0].handle()).get()
-                    coolcoil.setRatedHighSpeedCOP(4.5)
-                    coolcoil.setRatedLowSpeedCOP(3.7)
-                    coolcoil.setCondenserType("EvaporativelyCooled")
-                    coolcoil.setHighSpeedEvaporativeCondenserEffectiveness(0.9)
-                    coolcoil.setHighSpeedEvaporativeCondenserAirFlowRate(ops.OptionalDouble(3.5))
-                    coolcoil.setLowSpeedEvaporativeCondenserEffectiveness(0.85)
-                    coolcoil.setLowSpeedEvaporativeCondenserAirFlowRate(ops.OptionalDouble(2.0))
-                    
-                    print "success for cooling coil"
-                    #x = airloop.supplyComponents(ops.IddObjectType("")
-                else:
-                    print "failed to init oasys"
+                print "success for cooling coil"
+                #x = airloop.supplyComponents(ops.IddObjectType("")
+
+
+                
                 
             elif systemIndex == 7:
                 hvacHandle = ops.OpenStudioModelHVAC.addSystemType7(model).handle()
@@ -734,6 +1082,7 @@ class WriteOPS(object):
         
         # call the layers form HB library
         materialNames, comments, UVSI, UVIP = self.hb_EPMaterialAUX.decomposeEPCnstr(HBConstructionlName)
+
         
         # create an empty vector to collect the materials
         materials = ops.MaterialVector()
@@ -1290,7 +1639,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     if fileName == None: fileName = "unnamed"
     
     subWorkingDir = lb_preparation.makeWorkingDir(os.path.join(workingDir, fileName, "OpenStudio")).replace("\\\\", "\\")
-    
+
     print 'Current working directory is set to: ', subWorkingDir
     
     fname = os.path.join(subWorkingDir, fileName + ".osm")
@@ -1341,6 +1690,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         space = hb_writeOPS.setupLevels(zone, space)
         
         # schedules
+        
         space = hb_writeOPS.setDefaultSchedule(zone, space, model)
         
         # infiltration
@@ -1362,17 +1712,18 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         space, thermalZone = hb_writeOPS.assignThermalZone(zone, space, model)
         
         # add HVAC system
-        HAVCGroupID, HVACIndex = zone.HVACSystem
+        HAVCGroupID, HVACIndex, HVACDetails = zone.HVACSystem
         
         if HAVCGroupID!= -1:
             if HAVCGroupID not in hb_writeOPS.HVACSystemDict.keys():
                 # add place holder for lists 
                 
-                hb_writeOPS.HVACSystemDict[HAVCGroupID] = [HVACIndex,[]]
+                hb_writeOPS.HVACSystemDict[HAVCGroupID] = [HVACIndex,[],HVACDetails]
         
         # collect informations for systems here
         hb_writeOPS.HVACSystemDict[HAVCGroupID][1].append(thermalZone)
-        print zone.HVACSystem
+
+
         # add thermostat
         thermalZone = hb_writeOPS.addThermostat(zone, thermalZone, space, model)
         
