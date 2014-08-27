@@ -7,7 +7,7 @@
 Radiance Mirror Material By Color
 Read more here to understand Radiance materials: http://www.artifice.com/radiance/rad_materials.html
 -
-Provided by Honeybee 0.0.53
+Provided by Honeybee 0.0.54
 
     Args:
         _materialName: Unique name for this material
@@ -20,9 +20,11 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Radiance Mirror Material By Color"
 ghenv.Component.NickName = 'radMirrorMaterialByColor'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_20_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "01 | Daylight | Material"
+#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
+#compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
 
@@ -51,26 +53,42 @@ def createRadMaterial(modifier, name, *args):
     return radMaterial + "\n"
 
 
-modifier = "mirror"
-
-if sc.sticky.has_key('honeybee_release'):
-    if _materialName!=None and _color != None:
-        RTransmittance = _color.R/255
-        GTransmittance = _color.G/255
-        BTransmittance = _color.B/255
-        
-        if 0 <= RTransmittance <= 1 and 0 <= GTransmittance <= 1 and 0 <= BTransmittance <= 1:
-            avrgTrans = (0.265 * RTransmittance + 0.670 * GTransmittance + 0.065 * BTransmittance)
+def main():
+    modifier = "mirror"
+    
+    if sc.sticky.has_key('honeybee_release'):
+        try:
+            if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+        except:
+            warning = "You need a newer version of Honeybee to use this compoent." + \
+            "Use updateHoneybee component to update userObjects.\n" + \
+            "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+            "into canvas and try again."
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+            return -1
+    
+        if _materialName!=None and _color != None:
+            RTransmittance = _color.R/255
+            GTransmittance = _color.G/255
+            BTransmittance = _color.B/255
             
-            materialName = _materialName.Replace(" ", "_")
-            
-            RADMaterial = createRadMaterial(modifier, materialName, RTransmittance, GTransmittance, BTransmittance)
-        else:
-            msg =  "Transmittance values should be between 0 and 1"
-            e = gh.GH_RuntimeMessageLevel.Error
-            ghenv.Component.AddRuntimeMessage(e, msg)
-else:
-    print "You should first let Honeybee to fly..."
-    w = gh.GH_RuntimeMessageLevel.Warning
-    ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee to fly...")
+            if 0 <= RTransmittance <= 1 and 0 <= GTransmittance <= 1 and 0 <= BTransmittance <= 1:
+                avrgTrans = (0.265 * RTransmittance + 0.670 * GTransmittance + 0.065 * BTransmittance)
+                
+                materialName = _materialName.Replace(" ", "_")
+                
+                RADMaterial = createRadMaterial(modifier, materialName, RTransmittance, GTransmittance, BTransmittance)
+                
+                return RADMaterial
+                
+            else:
+                msg =  "Transmittance values should be between 0 and 1"
+                e = gh.GH_RuntimeMessageLevel.Error
+                ghenv.Component.AddRuntimeMessage(e, msg)
+    else:
+        print "You should first let Honeybee to fly..."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee to fly...")
 
+RADMaterial = main()

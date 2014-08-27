@@ -9,7 +9,7 @@ Daysim calculates the outputs for the hours that the space is occupied. This com
 You can use this component to generate a Daysim schedule based of EnergyPlus schedule.
 
 -
-Provided by Honeybee 0.0.53
+Provided by Honeybee 0.0.54
     Args:
         _occValues: A list of 0 and 1 that indicates the occupancy schedule. The length of the list should be equal to 8760. 
         _fileName_: Optional fileName for this schedule. Files will be saved to C:\Honeybee\DaysimOcc
@@ -21,9 +21,11 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Daysim Occupancy Generator Based On List"
 ghenv.Component.NickName = 'occupancyGenerator'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_10_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
+#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
+#compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
 except: pass
 
@@ -43,6 +45,28 @@ def main(hourlyValues, fileName):
     if not sc.sticky.has_key('ladybug_release') or not sc.sticky.has_key('honeybee_release'):
         msg = " You need to let Ladybug and honeybee to fly first!"
         return msg, None
+
+    try:
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+    except:
+        warning = "You need a newer version of Honeybee to use this compoent." + \
+        " Use updateHoneybee component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+        "into canvas and try again."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+        return -1
+
+    try:
+        if not sc.sticky['ladybug_release'].isCompatible(ghenv.Component): return -1
+    except:
+        warning = "You need a newer version of Ladybug to use this compoent." + \
+        " Use updateLadybug component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Ladybug_Ladybug component " + \
+        "into canvas and try again."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+        return -1
     
     lb_preparation = sc.sticky["ladybug_Preparation"]()
     

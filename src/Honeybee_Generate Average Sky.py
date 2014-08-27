@@ -8,7 +8,7 @@ Generate Average Climate Based Sky
 
 This component generate an average climate based data for a single hour during a month
 -
-Provided by Honeybee 0.0.53
+Provided by Honeybee 0.0.54
     
     Args:
         north_: Input a vector to be used as a true North direction for the sun path or a number between 0 and 360 that represents the degrees off from the y-axis to make North.  The default North direction is set to the Y-axis (0 degrees).
@@ -22,9 +22,11 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Generate Average Sky"
 ghenv.Component.NickName = 'genAvgSky'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_12_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "02 | Daylight | Sky"
+#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
+#compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
 
@@ -102,6 +104,17 @@ def main(outputType, weatherFile, month, hour, north = 0):
     
     # import the classes
     if sc.sticky.has_key('honeybee_release') and sc.sticky.has_key('ladybug_release'):
+
+        try:
+            if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+        except:
+            warning = "You need a newer version of Honeybee to use this compoent." + \
+            "Use updateHoneybee component to update userObjects.\n" + \
+            "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+            "into canvas and try again."
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+            return -1
         lb_preparation = sc.sticky["ladybug_Preparation"]()
         hb_folders = sc.sticky["honeybee_folders"]
         hb_RADPath = hb_folders["RADPath"]

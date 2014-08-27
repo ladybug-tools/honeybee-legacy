@@ -6,7 +6,7 @@
 """
 Use this component to separate grafed lists of surface data that come out of the "Honeybee_Read EP Surface Result" component based on rough surface type.  This component separates all surface types but takes sevaral seconds to load and requires HBZones.  For a quicker splitting of data, use the "Honeybee_Surface Data Based On Type" component.
 -
-Provided by Honeybee 0.0.53
+Provided by Honeybee 0.0.54
 
     Args:
         _HBZone: Honeybee Zones for which you are interested in surface data.
@@ -26,9 +26,11 @@ Provided by Honeybee 0.0.53
 """
 ghenv.Component.Name = "Honeybee_Surface Data Based On Type Detailed"
 ghenv.Component.NickName = 'srfDataByTypeDetailed'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_07_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
+#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
+#compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
 except: pass
 
@@ -148,6 +150,18 @@ def main(HBZones, srfData):
         print "You should first let Honeybee to fly..."
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee to fly...")
+        return
+
+    try:
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+    except:
+        warning = "You need a newer version of Honeybee to use this compoent." + \
+        " Use updateHoneybee component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+        "into canvas and try again."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+        return -1
         return
         
     #Get the surface names from the HBZones.

@@ -13,7 +13,7 @@ Check this link for more information about glare analysis. Thanks to Christoph R
 http://web.mit.edu/tito_/www/Projects/Glare/GlareRecommendationsForPractice.html
 
 -
-Provided by Honeybee 0.0.53
+Provided by Honeybee 0.0.54
     
     Args:
         _HDRImagePath: Path to an HDR image file
@@ -31,9 +31,11 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Glare Analysis"
 ghenv.Component.NickName = 'glareAnalysis'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_16_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
+#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
+#compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
 
@@ -72,6 +74,18 @@ def readGlareResults(glareRes):
 def main(HDRImagePath, taskPosition, taskPositionAngle):
     # import the classes
     if sc.sticky.has_key('honeybee_release'):
+
+        try:
+            if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+        except:
+            warning = "You need a newer version of Honeybee to use this compoent." + \
+            " Use updateHoneybee component to update userObjects.\n" + \
+            "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+            "into canvas and try again."
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+            return -1
+            
         hb_folders = sc.sticky["honeybee_folders"]
         hb_RADPath = hb_folders["RADPath"]
         hb_RADLibPath = hb_folders["RADLibPath"]

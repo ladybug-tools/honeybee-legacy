@@ -6,7 +6,7 @@
 """
 Look up loads for an specific bldgProgram and zoneProgram
 -
-Provided by Honeybee 0.0.53
+Provided by Honeybee 0.0.54
 
     Args:
         bldgProgram_:...
@@ -22,9 +22,11 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Get EnergyPlus Loads"
 ghenv.Component.NickName = 'getEPLoads'
-ghenv.Component.Message = 'VER 0.0.53\nJUN_29_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "07 | Energy | Schedule"
+#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
+#compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
 
@@ -38,6 +40,18 @@ def main(HBZoneProgram):
         print "You should first let Honeybee to fly..."
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee to fly...")
+        return -1
+
+    try:
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+    except:
+        warning = "You need a newer version of Honeybee to use this compoent." + \
+        " Use updateHoneybee component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+        "into canvas and try again."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+        return -1
         return -1
     
     openStudioStandardLib = sc.sticky ["honeybee_OpenStudioStandardsFile"]

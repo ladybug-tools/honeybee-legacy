@@ -8,7 +8,7 @@ This component helps select simulation outputs that can be hooked into the Write
 http://apps1.eere.energy.gov/buildings/energyplus/pdfs/inputoutputreference.pdf
 
 -
-Provided by Honeybee 0.0.53
+Provided by Honeybee 0.0.54
     
     Args:
         zoneEnergyUse_: Set to "True" to have EnergyPlus solve for basic building energy use such as heating, cooling, electricity for lights and electricity for plug loads for each zone.
@@ -27,9 +27,11 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Write EP Result Parameters"
 ghenv.Component.NickName = 'writeResultParameters'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_09_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
+#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
+#compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 ghenv.Component.AdditionalHelpFromDocStrings = "3"
 
 

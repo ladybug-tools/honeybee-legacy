@@ -7,7 +7,7 @@
 Advanced Shading Recipe for Annual Simulation with Daysim. This component prepares one shading group
 You need to add sensor points later in the Daysim result reader.
 -
-Provided by Honeybee 0.0.53
+Provided by Honeybee 0.0.54
     
     Args:
         SHDGroupName: Unique name of this shading group
@@ -19,9 +19,11 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Advanced Dynamic Shading Recipe"
 ghenv.Component.NickName = 'advancedDynamicSHDRecipe'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"
+#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
+#compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
 

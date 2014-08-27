@@ -8,7 +8,7 @@ Daysim User Profiles
 Read here for details: http://daysim.ning.com/page/daysim-header-file-keyword-user-profile
 
 -
-Provided by Honeybee 0.0.53
+Provided by Honeybee 0.0.54
 
     Args:
         _lightingControl_: 0 > Passive, 1 > active
@@ -19,9 +19,11 @@ Provided by Honeybee 0.0.53
 """
 ghenv.Component.Name = "Honeybee_Daysim User Profiles"
 ghenv.Component.NickName = 'DSUserProfiles'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
+#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
+#compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
 except: pass
 

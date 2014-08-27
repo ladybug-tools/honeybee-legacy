@@ -6,7 +6,7 @@
 """
 Radiance Materials Info
 -
-Provided by Honeybee 0.0.53
+Provided by Honeybee 0.0.54
 
     Args:
         _RADMaterial: Radiance material name
@@ -17,9 +17,11 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Radiance Materials Info"
 ghenv.Component.NickName = 'RADMaterialsInfo'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_20_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "01 | Daylight | Material"
+#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
+#compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
 except: pass
 
@@ -27,20 +29,35 @@ except: pass
 import scriptcontext as sc
 import Grasshopper.Kernel as gh
 
-
-if sc.sticky.has_key('honeybee_release'):
+def main():
     
-    hb_RADMaterialAUX = sc.sticky["honeybee_RADMaterialAUX"]()
+    if sc.sticky.has_key('honeybee_release'):
     
-    if _RADMaterial!= None:
-        # check if the name is in the library
-        addedToLib, materialName = hb_RADMaterialAUX.analyseRadMaterials(_RADMaterial, False)
+        try:
+            if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+        except:
+            warning = "You need a newer version of Honeybee to use this compoent." + \
+            "Use updateHoneybee component to update userObjects.\n" + \
+            "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+            "into canvas and try again."
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+            return -1
         
-        if materialName in sc.sticky["honeybee_RADMaterialLib"].keys():
-            RADMaterialStr = hb_RADMaterialAUX.getRADMaterialString(materialName)
+        hb_RADMaterialAUX = sc.sticky["honeybee_RADMaterialAUX"]()
         
-else:
-    print "You should first let Honeybee to fly..."
-    w = gh.GH_RuntimeMessageLevel.Warning
-    ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee to fly...")
+        if _RADMaterial!= None:
+            # check if the name is in the library
+            addedToLib, materialName = hb_RADMaterialAUX.analyseRadMaterials(_RADMaterial, False)
+            
+            if materialName in sc.sticky["honeybee_RADMaterialLib"].keys():
+                RADMaterialStr = hb_RADMaterialAUX.getRADMaterialString(materialName)
+                
+                return RADMaterialStr
+            
+    else:
+        print "You should first let Honeybee to fly..."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee to fly...")
 
+RADMaterialStr = main()

@@ -6,7 +6,7 @@
 """
 EnergyPlus Shadow Parameters
 -
-Provided by Honeybee 0.0.53
+Provided by Honeybee 0.0.54
 
     Args:
         doZoneSizingCalculation_:...
@@ -20,9 +20,11 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Simulation Control"
 ghenv.Component.NickName = 'simControl'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
+#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
+#compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
 except: pass
 

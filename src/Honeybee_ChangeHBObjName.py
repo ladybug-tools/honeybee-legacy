@@ -7,7 +7,7 @@
 Change Honeybee Object Names
 
 -
-Provided by Honeybee 0.0.53
+Provided by Honeybee 0.0.54
 
     Args:
         HBObjects: Any valid Honeybee object
@@ -17,9 +17,11 @@ Provided by Honeybee 0.0.53
 """
 ghenv.Component.Name = "Honeybee_ChangeHBObjName"
 ghenv.Component.NickName = 'changeHBObjName'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_04_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
+#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
+#compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
 
@@ -34,6 +36,17 @@ def main(HBObjects, names):
         msg = "You should first let Honeybee fly..."
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
         return
+
+    try:
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+    except:
+        warning = "You need a newer version of Honeybee to use this compoent." + \
+        "Use updateHoneybee component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+        "into canvas and try again."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+        return -1
     
     # call the objects from the lib
     hb_hive = sc.sticky["honeybee_Hive"]()

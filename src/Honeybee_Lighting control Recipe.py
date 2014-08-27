@@ -6,7 +6,7 @@
 """
 Daysim electrical lighting control. Check this link for more information about lighting control types. http://daysim.ning.com/page/keyword-lighting-control
 -
-Provided by Honeybee 0.0.53
+Provided by Honeybee 0.0.54
     
     Returns:
         lightingControlGroup: Lighting control Recipe
@@ -14,9 +14,11 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Lighting control Recipe"
 ghenv.Component.NickName = 'lightingControl'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_07_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
+#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
+#compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
 except: pass
 

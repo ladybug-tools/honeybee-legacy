@@ -6,7 +6,7 @@
 """
 Genrate a Uniform CIE Sky Based on Illuminace Value
 -
-Provided by Honeybee 0.0.53
+Provided by Honeybee 0.0.54
     
     Args:
         _illuminanceValue : Desired value for horizontal sky illuminance in Lux
@@ -17,9 +17,11 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Generate Sky With Certain Illuminance level"
 ghenv.Component.NickName = 'genSkyIlluminanceLevel'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_16_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "02 | Daylight | Sky"
+#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
+#compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
 
@@ -65,6 +67,17 @@ def main(illuminanceValue):
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, msg)
         return None, None
+
+    try:
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+    except:
+        warning = "You need a newer version of Honeybee to use this compoent." + \
+        "Use updateHoneybee component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+        "into canvas and try again."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+        return -1
         
     path  = os.path.join(sc.sticky["Honeybee_DefaultFolder"], "skylib\\basedOnIlluminanceLevel\\")
     
@@ -81,4 +94,5 @@ def main(illuminanceValue):
     return outputFile , "Sky with horizontal illuminance of: " + `illuminanceValue` + " lux"
     
 if not _illuminanceValue: _illuminanceValue = 1000
-skyFilePath, skyDescription = main(_illuminanceValue)
+results = main(_illuminanceValue)
+if results != -1: skyFilePath, skyDescription

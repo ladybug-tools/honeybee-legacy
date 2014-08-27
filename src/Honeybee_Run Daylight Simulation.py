@@ -7,7 +7,7 @@
 export geometries to rad file, and run daylighting/energy simulation
 
 -
-Provided by Honeybee 0.0.53
+Provided by Honeybee 0.0.54
 
     Args:
         north_: ...
@@ -37,9 +37,11 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Run Daylight Simulation"
 ghenv.Component.NickName = 'runDaylightAnalysis'
-ghenv.Component.Message = 'VER 0.0.54\nAUG_19_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
+#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
+#compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
 
@@ -55,9 +57,6 @@ import Grasshopper.Kernel as gh
 import math
 from Grasshopper import DataTree
 from Grasshopper.Kernel.Data import GH_Path
-
-#compatibleLBVersion = VER 0.0.57\nAUG_19_2014
-#compatibleHBVersion = VER 0.0.54\nAUG_19_2014
 
 
 ghenv.Component.Params.Output[5].NickName = "resultFiles"
@@ -77,16 +76,25 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, "You should first let both Ladybug and Honeybee to fly...")
         return -1
-    
+
+    try:
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+    except:
+        warning = "You need a newer version of Honeybee to use this compoent." + \
+        " Use updateHoneybee component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+        "into canvas and try again."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+        return -1
+
     try:
         if not sc.sticky['ladybug_release'].isCompatible(ghenv.Component): return -1
-        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
-    except Exception, e:
-        print e
-        warning = "You need a newer version of Ladybug and/or Honeybee to use this compoent." + \
-                 "Use updateLadybug and/or updateHoneybee component to update userObjects.\n" + \
-                 "If you have already updated userObjects drag Ladybug_Ladybug component " + \
-                 "and/or Honeybee_Honeybee component into canvas and try again."
+    except:
+        warning = "You need a newer version of Ladybug to use this compoent." + \
+        " Use updateLadybug component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Ladybug_Ladybug component " + \
+        "into canvas and try again."
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, warning)
         return -1

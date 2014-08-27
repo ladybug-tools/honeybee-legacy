@@ -7,7 +7,7 @@
 Add EnergyPlus Material, Construction or Schedule to Library
 
 -
-Provided by Honeybee 0.0.53
+Provided by Honeybee 0.0.54
     
     Args:
         _EPObject: EnergyPlus material, construction or schedule definition
@@ -21,9 +21,11 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Add to EnergyPlus Library"
 ghenv.Component.NickName = 'addToEPLibrary'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_19_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
+#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
+#compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
 except: pass
 
@@ -40,6 +42,28 @@ def main(EPObject, addToProjectLib, overwrite):
     if not sc.sticky.has_key('ladybug_release')and sc.sticky.has_key('honeybee_release'):
         print "You should first let both Ladybug and Honeybee to fly..."
         ghenv.Component.AddRuntimeMessage(w, "You should first let both Ladybug and Honeybee to fly...")
+        return -1
+
+    try:
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+    except:
+        warning = "You need a newer version of Honeybee to use this compoent." + \
+        " Use updateHoneybee component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+        "into canvas and try again."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+        return -1
+
+    try:
+        if not sc.sticky['ladybug_release'].isCompatible(ghenv.Component): return -1
+    except:
+        warning = "You need a newer version of Ladybug to use this compoent." + \
+        " Use updateLadybug component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Ladybug_Ladybug component " + \
+        "into canvas and try again."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
         return -1
     
     hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()

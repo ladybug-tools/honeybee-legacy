@@ -10,7 +10,7 @@ Read more about the parameters at: http://daysim.ning.com/
 Here is my favorite presentation by John Mardaljevic: http://radiance-online.org/community/workshops/2011-berkeley-ca/presentations/day1/JM_AmbientCalculation.pdf
 
 -
-Provided by Honeybee 0.0.53
+Provided by Honeybee 0.0.54
     
     Args:
         _quality: 0 > low, 1 > Medium, 2 > High
@@ -24,9 +24,11 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_RADParameters"
 ghenv.Component.NickName = 'RADParameters'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"
+#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
+#compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
 except: pass
 
@@ -66,6 +68,7 @@ class dictToClass(object):
         self.d = pyDict
         
 if sc.sticky.has_key('honeybee_release'):
+
     hb_radParDict = sc.sticky["honeybee_RADParameters"]().radParDict
     
     # there should be a smarter way to read the input values

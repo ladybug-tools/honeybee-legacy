@@ -8,7 +8,7 @@ Import a rad file to gh
 This component is just a proof of concept for now and needs major modifications
 
 -
-Provided by Honeybee 0.0.53
+Provided by Honeybee 0.0.54
 
     Args:
         _radianceFile: File path to radiance file
@@ -18,9 +18,11 @@ Provided by Honeybee 0.0.53
 """
 ghenv.Component.Name = "Honeybee_Import rad"
 ghenv.Component.NickName = 'importRad'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
+#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
+#compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
 except: pass
 

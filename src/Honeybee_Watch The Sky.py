@@ -6,7 +6,7 @@
 """
 Watch The Sky
 -
-Provided by Honeybee 0.0.53
+Provided by Honeybee 0.0.54
     
     Args:
         _skyFilePath: Path to a radiance sky file
@@ -20,9 +20,11 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Watch The Sky"
 ghenv.Component.NickName = 'watchTheSky'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "02 | Daylight | Sky"
+#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
+#compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
 

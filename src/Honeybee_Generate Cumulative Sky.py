@@ -10,7 +10,7 @@ For more information, reference: "http://plea-arch.net/PLEA/ConferenceResources/
 
 The first time you use this component, you need to be connected to the internet so the component can download GenCumulativeSky.exe to the working directory.
 -
-Provided by Honeybee 0.0.53
+Provided by Honeybee 0.0.54
     
     Args:
         _weatherFile: epw weather file address on your system
@@ -22,9 +22,11 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Generate Cumulative Sky"
 ghenv.Component.NickName = 'genCumSky'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_21_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "02 | Daylight | Sky"
+#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
+#compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
 

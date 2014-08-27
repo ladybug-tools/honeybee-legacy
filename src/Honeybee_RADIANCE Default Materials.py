@@ -7,7 +7,7 @@
 """
 Radiance Default Materials
 -
-Provided by Honeybee 0.0.53
+Provided by Honeybee 0.0.54
 
     Args:
         _newWallMaterial_: Optional wall material to overwrite the default wall material
@@ -27,9 +27,11 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_RADIANCE Default Materials"
 ghenv.Component.NickName = 'RADDefaultMaterials'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_20_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "01 | Daylight | Material"
+#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
+#compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
 except: pass
 
@@ -50,7 +52,18 @@ def setToDefault(hb_RADMaterialAUX):
 def main():
     
     if sc.sticky.has_key('honeybee_release'):
-        
+
+        try:
+            if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+        except:
+            warning = "You need a newer version of Honeybee to use this compoent." + \
+            "Use updateHoneybee component to update userObjects.\n" + \
+            "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+            "into canvas and try again."
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+            return -1
+
         hb_RADMaterialAUX = sc.sticky["honeybee_RADMaterialAUX"]()
         
         # reset to defaults

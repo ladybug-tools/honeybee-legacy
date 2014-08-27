@@ -7,7 +7,7 @@
 Radiance Glass Material By Color
 Read more here to understand Radiance materials: http://www.artifice.com/radiance/rad_materials.html
 -
-Provided by Honeybee 0.0.53
+Provided by Honeybee 0.0.54
 
     Args:
         _materialName: Unique name for this material
@@ -21,9 +21,11 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Radiance Glass Material By Color"
 ghenv.Component.NickName = 'radGlassMaterialByColor'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_20_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "01 | Daylight | Material"
+#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
+#compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
 
@@ -55,7 +57,7 @@ def createRadMaterial(modifier, name, *args):
 
 modifier = "glass"
 
-if sc.sticky.has_key('ladybug_release')and sc.sticky.has_key('honeybee_release'):
+if sc.sticky.has_key('honeybee_release'):
     if _materialName!=None and _color != None:
         RTransmittance = _color.R/255
         GTransmittance = _color.G/255
@@ -71,7 +73,7 @@ if sc.sticky.has_key('ladybug_release')and sc.sticky.has_key('honeybee_release')
             e = gh.GH_RuntimeMessageLevel.Error
             ghenv.Component.AddRuntimeMessage(e, msg)
 else:
-    print "You should first let both Ladybug and Honeybee to fly..."
+    print "You should first let Honeybee to fly..."
     w = gh.GH_RuntimeMessageLevel.Warning
-    ghenv.Component.AddRuntimeMessage(w, "You should first let both Ladybug and Honeybee to fly...")
+    ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee to fly...")
 

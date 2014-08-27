@@ -9,7 +9,7 @@ Radiance BSDF Material
 Create RADIANCE BSDF material
 
 -
-Provided by Honeybee 0.0.53
+Provided by Honeybee 0.0.54
 
     Args:
         _materialName: Name of material
@@ -20,9 +20,11 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Radiance BSDF Material"
 ghenv.Component.NickName = 'radBSDFMaterial'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_20_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "01 | Daylight | Material"
+#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
+#compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
 
@@ -53,25 +55,42 @@ def createBSDFMaterial(modifier, name, *args):
 modifier = "BSDF"
 function = "."
 
-if sc.sticky.has_key('honeybee_release'):
-    if _materialName!=None and _XMLFilePath!=None:
-        
-        # check filepath for xml file
-        if os.path.isfile(_XMLFilePath):
-            
-            materialName = _materialName.Replace(" ", "_")
-            
-            RADMaterial = createBSDFMaterial(modifier, materialName, thickness_, \
-                                            _XMLFilePath.replace("\\", "/"), \
-                                            _upOrientation_.X, _upOrientation_.Y, _upOrientation_.Z, function)
-            
-        else:
-            msg =  "Wrong path for XML file!"
-            e = gh.GH_RuntimeMessageLevel.Warning
-            ghenv.Component.AddRuntimeMessage(e, msg)
-else:
-    print "You should first let Honeybee to fly..."
-    w = gh.GH_RuntimeMessageLevel.Warning
-    ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee to fly...")
+def main():
     
+    if sc.sticky.has_key('honeybee_release'):
+    
+        try:
+            if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+        except:
+            warning = "You need a newer version of Honeybee to use this compoent." + \
+            "Use updateHoneybee component to update userObjects.\n" + \
+            "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+            "into canvas and try again."
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+            return -1
+    
+        if _materialName!=None and _XMLFilePath!=None:
+            
+            # check filepath for xml file
+            if os.path.isfile(_XMLFilePath):
+                
+                materialName = _materialName.Replace(" ", "_")
+                
+                RADMaterial = createBSDFMaterial(modifier, materialName, thickness_, \
+                                                _XMLFilePath.replace("\\", "/"), \
+                                                _upOrientation_.X, _upOrientation_.Y, _upOrientation_.Z, function)
+                
+                return RADMaterial
+                
+            else:
+                msg =  "Wrong path for XML file!"
+                e = gh.GH_RuntimeMessageLevel.Warning
+                ghenv.Component.AddRuntimeMessage(e, msg)
+    else:
+        print "You should first let Honeybee to fly..."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee to fly...")
+        
 
+RADMaterial = main()

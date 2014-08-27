@@ -7,7 +7,7 @@
 """
 Convert Image
 -
-Provided by Honeybee 0.0.53
+Provided by Honeybee 0.0.54
     
     Args:
         _imageFilePath: Path to an image file(BMP, GIF, JPEG, PNG, TIFF)
@@ -18,9 +18,11 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Convert IMG"
 ghenv.Component.NickName = 'IMG>IMG'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | WIP"
+#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
+#compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
 

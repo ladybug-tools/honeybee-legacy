@@ -6,7 +6,7 @@
 """
 Search Simulation Folder
 -
-Provided by Honeybee 0.0.53
+Provided by Honeybee 0.0.54
     
     Args:
         studyFolder: Path to study folder
@@ -22,9 +22,11 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Lookup Daylighting Folder"
 ghenv.Component.NickName = 'LookupFolder_Daylighting'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_16_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
+#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
+#compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
 except: pass
 
@@ -42,6 +44,28 @@ def main(studyFolder):
     if not (sc.sticky.has_key('ladybug_release')and sc.sticky.has_key('honeybee_release')):
         msg = "You should first let Ladybug and Honeybee fly..."
         return msg, None
+
+    try:
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+    except:
+        warning = "You need a newer version of Honeybee to use this compoent." + \
+        " Use updateHoneybee component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+        "into canvas and try again."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+        return -1
+
+    try:
+        if not sc.sticky['ladybug_release'].isCompatible(ghenv.Component): return -1
+    except:
+        warning = "You need a newer version of Ladybug to use this compoent." + \
+        " Use updateLadybug component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Ladybug_Ladybug component " + \
+        "into canvas and try again."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+        return -1
     
     lb_preparation = sc.sticky["ladybug_Preparation"]()
     hb_serializeObjects = sc.sticky["honeybee_SerializeObjects"]
@@ -171,19 +195,22 @@ ghenv.Component.Params.Output[1].NickName = "resultFiles"
 ghenv.Component.Params.Output[1].Name = "resultFiles"
 resultFiles = []
 
-msg, results = main(studyFolder)
+res = main(studyFolder)
 
-if msg!=str.Empty:
-    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
-else:
-    illFiles, resFiles, ptsFiles, hdrFiles, imageFiles, epwFile, analysisType, \
-    analysisMesh, radianceFiles, materialFiles, skyFiles, dgpFiles, octFiles = results
-
-    if resFiles != []:
-        resultFiles = resFiles
+if res != -1:
+    msg, results = res
+    
+    if msg!=str.Empty:
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
     else:
-        resultFiles = illFiles
-        filesOutputName = "illFiles"
-        ghenv.Component.Params.Output[1].NickName = filesOutputName
-        ghenv.Component.Params.Output[1].Name = filesOutputName
-        exec(filesOutputName + "= resultFiles")
+        illFiles, resFiles, ptsFiles, hdrFiles, imageFiles, epwFile, analysisType, \
+        analysisMesh, radianceFiles, materialFiles, skyFiles, dgpFiles, octFiles = results
+    
+        if resFiles != []:
+            resultFiles = resFiles
+        else:
+            resultFiles = illFiles
+            filesOutputName = "illFiles"
+            ghenv.Component.Params.Output[1].NickName = filesOutputName
+            ghenv.Component.Params.Output[1].Name = filesOutputName
+            exec(filesOutputName + "= resultFiles")

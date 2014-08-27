@@ -6,7 +6,7 @@
 """
 Set schedules and loads for zones based on program 
 -
-Provided by Honeybee 0.0.51
+Provided by Honeybee 0.0.54
 
     Args:
         _HBZones:...
@@ -20,9 +20,11 @@ Provided by Honeybee 0.0.51
 
 ghenv.Component.Name = "Honeybee_Set Loads And Schedules"
 ghenv.Component.NickName = 'SetLoadsAndSchedules'
-ghenv.Component.Message = 'VER 0.0.53\nJUN_29_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
+#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
+#compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
 
@@ -36,6 +38,18 @@ def main(HBZones, zonePrograms):
         print "You should first let Honeybee to fly..."
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee to fly...")
+        return -1
+
+    try:
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+    except:
+        warning = "You need a newer version of Honeybee to use this compoent." + \
+        " Use updateHoneybee component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+        "into canvas and try again."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+        return -1
         return -1
         
     # call the objects from the lib

@@ -9,7 +9,7 @@ Radiance Trans Material
 This component is useful to create translucent materials. Many thanks to David Mead for his slides at:
 http://radiance-online.org/community/workshops/2010-freiburg/PDF/DavidMead.pdf
 -
-Provided by Honeybee 0.0.53
+Provided by Honeybee 0.0.54
     
     Args:
         _materialName: Unique name for this material
@@ -28,9 +28,11 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Radiance Trans Material"
 ghenv.Component.NickName = 'radTransMaterial'
-ghenv.Component.Message = 'VER 0.0.53\nMAY_12_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "01 | Daylight | Material"
+#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
+#compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
 
@@ -39,7 +41,6 @@ except: pass
 import math
 import scriptcontext as sc
 from clr import AddReference
-AddReference('Grasshopper')
 import Grasshopper.Kernel as gh
 
 import scriptcontext as sc
@@ -96,7 +97,7 @@ def createRadMaterial(modifier, name, *args):
 
 
 
-if sc.sticky.has_key('ladybug_release')and sc.sticky.has_key('honeybee_release'):
+if sc.sticky.has_key('honeybee_release'):
     modifier = "trans"
 
     if _materialName and _RDiffReflectance!=None and _GDiffReflectance!=None and _BDiffReflectance!=None and _specularReflection!=None and _diffuseTransmission!=None and _specularTransmission!=None:
@@ -113,6 +114,6 @@ if sc.sticky.has_key('ladybug_release')and sc.sticky.has_key('honeybee_release')
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
         
 else:
-    print "You should first let both Ladybug and Honeybee to fly..."
+    print "You should first let Honeybee to fly..."
     w = gh.GH_RuntimeMessageLevel.Warning
-    ghenv.Component.AddRuntimeMessage(w, "You should first let both Ladybug and Honeybee to fly...")
+    ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee to fly...")

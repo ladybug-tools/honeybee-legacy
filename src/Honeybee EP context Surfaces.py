@@ -12,9 +12,11 @@ prepare shading/context geometries
 
 ghenv.Component.Name = 'Honeybee EP context Surfaces'
 ghenv.Component.NickName = 'HB_EPContextSrf'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_19_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
+#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
+#compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
 import rhinoscriptsyntax as rs
@@ -33,6 +35,17 @@ def main(shdSurfaces, EPTransSchedule, meshingSettings, justBoundingBox):
     
     # import the classes
     if sc.sticky.has_key('honeybee_release'):
+
+        try:
+            if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+        except:
+            warning = "You need a newer version of Honeybee to use this compoent." + \
+            " Use updateHoneybee component to update userObjects.\n" + \
+            "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+            "into canvas and try again."
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+            return -1
         
         # don't customize this part
         hb_EPSrf = sc.sticky["honeybee_EPSurface"]
