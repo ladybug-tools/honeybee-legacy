@@ -19,7 +19,7 @@ http://creativecommons.org/licenses/by-sa/3.0/deed.en_US
 Source code is available at:
 https://github.com/mostaphaRoudsari/Honeybee
 -
-Provided by Honeybee 0.0.53
+Provided by Honeybee 0.0.55
     
     Args:
         letItFly: Set Boolean to True to let the Honeybee fly!
@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
+ghenv.Component.Message = 'VER 0.0.55\nAUG_25_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -6042,6 +6042,84 @@ class SerializeObjects(object):
             self.data = pickle.load(inf)
 
 
+class hb_airsideEconoParams(object):
+    def __init__(self):
+        self.airEconoDict = {
+        'name':'honeybeeDefaultEconomizer',
+        'econoControl':0,
+        'controlAction':0,
+        'maxAirFlowRate':'Autosize',
+        'minAirFlowRate':'Autosize',
+        'minLimitType':0,
+        'minOutdoorAirSchedule':'OpenStudio Default',
+        'minOutdoorAirFracSchedule':None,
+        'maxLimitDewpoint':None,
+        'sensedMin':12,
+        'sensedMax':22,
+        'DXLockoutMethod':None
+        }
+
+class hb_constVolFanParams(object):
+    def __init__(self):
+        self.cvFanDict = {
+        'name':'honeybeeConstVolFan',
+        'fanEfficiency':0.6,
+        'pressureRise':892.9,
+        'maxFlowRate':'Autosize',
+        'motorEfficiency':0.825,
+        'airStreamHeatPct':100.0
+        }
+
+class hb_varVolFanParams(object):
+    def __init__(self):
+        self.vvFanDict = {
+        'name':'honeybeeConstVolFan',
+        'fanEfficiency':0.6,
+        'pressureRise':892.9,
+        'maxFlowRate':'Autosize',
+        'motorEfficiency':0.825,
+        'airStreamHeatPct':100.0,
+        'minFlowFrac':0.2,
+        'fanPowerCoefficient1':0.04076,
+        'fanPowerCoefficient2':0.08804,
+        'fanPowerCoefficient3':-0.07292,
+        'fanPowerCoefficient4':0.94373,
+        'fanPowerCoefficient5':0.00000
+        }
+        
+class hb_AirHandlerParams(object):
+    def __init__(self):
+        self.airHandlerDict = {
+        'availSch':'OpenStudio Default',
+        'fanPlacement':'DrawThrough',
+        'coolingAirflow':'Autosize',
+        'coolingOAflow':'Autosize',
+        'heatingAirflow': 'Autosize',
+        'heatingOAflow': 'Autosize',
+        'floatingAirflow':'Autosize',
+        'floatingOAflow':'Autosize',
+        'constVolSupplyFanDef':hb_constVolFanParams,
+        'varVolSupplyFanDef':hb_varVolFanParams,
+        'airsideEconomizer':hb_airsideEconoParams,
+        'coolingCoil': None
+        }
+
+class hb_2xDXCoilParams(object):
+    def __init__(self):
+        self.twoSpeedDXDict = {
+        'name':'honeybee Default 2 Speed DX Coil',
+        'availSch':'OpenStudio Default',
+        'ratedHighSpeedTotalCooling':'Autosize',
+        'ratedHighSpeedSHR':0.85,
+        'ratedHighSpeedCOP':3.0,
+        'ratedLowSpeedTotalCooling':'Autosize',
+        'ratedLowSpeedSHR':0.85,
+        'ratedLowSpeedCOP':3.0,
+        'condenserType':'AirCooled',
+        'evaporativeCondenserDesc':None,
+        'Curves':None
+        }
+
 
 letItFly = True
 
@@ -6167,6 +6245,11 @@ if letItFly:
         sc.sticky["honeybee_EPTypes"] = EPTypes()
         sc.sticky["honeybee_EPZone"] = EPZone
         sc.sticky["honeybee_reEvaluateHBZones"] = hb_reEvaluateHBZones
+        sc.sticky["honeybee_AirsideEconomizerParams"] = hb_airsideEconoParams
+        sc.sticky["honeybee_constantVolumeFanParams"] = hb_constVolFanParams
+        sc.sticky["honeybee_variableVolumeFanParams"] = hb_varVolFanParams
+        sc.sticky["honeybee_AirHandlerParams"] = hb_AirHandlerParams
+        sc.sticky["honeybee_2xDXCoilParams"] = hb_2xDXCoilParams
         sc.sticky["honeybee_EPSurface"] = hb_EPSurface
         sc.sticky["honeybee_EPShdSurface"] = hb_EPShdSurface
         sc.sticky["honeybee_EPZoneSurface"] = hb_EPZoneSurface
