@@ -36,7 +36,7 @@ Provided by Honeybee 0.0.54
 
 ghenv.Component.Name = "Honeybee_Color Surfaces by EP Result"
 ghenv.Component.NickName = 'ColorSurfaces'
-ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_28_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -239,10 +239,16 @@ def getZoneSrfs(srfHeaders, pyZoneData, hb_zoneData):
                 newSrfHeaders.append(srfHeaders[listCount])
     
     #Check if all of the data was found.
+    dataCheck = True
     if len(srfHeaders) == len(finalSurfaceNames) and len(srfHeaders) == len(finalSrfBreps) and len(srfHeaders) == len(finalSrfAreas): pass
+    elif len(finalSrfBreps) == 0:
+        dataCheck = False
+        warning = "None of the connected data could be matched with the surfaces in the connected HBZones. Make sure that the names of the surfaces in the connected srfData headers match those of the connected zones (use the 'Label Zone Surfaces' component to see the names of surfaces)."
+        print warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
     else: print "Not all of the connected surface data could be found in the connected zones.  You may want to connect all of your zones in order to see all of your connected surface data."
     
-    return finalSurfaceNames, finalSrfAreas, finalSrfBreps, newPyZoneData, newSrfHeaders, zoneBreps
+    return dataCheck, finalSurfaceNames, finalSrfAreas, finalSrfBreps, newPyZoneData, newSrfHeaders, zoneBreps
 
 def manageInputOutput(annualData, simStep, srfNormalizable):
     #If some of the component inputs and outputs are not right, blot them out or change them.
@@ -601,12 +607,14 @@ else: restoreInputOutput()
 #If the data is meant to be normalized by surface area, check the HBZones for surface names.
 if checkData == True and normByFlr == None: normByFlr = True
 
+dataCheck = False
 if _runIt == True and checkData == True and _HBZones != []:
-    surfaceNames, srfAreas, srfBreps, pyZoneData, srfHeaders, zoneBreps = getZoneSrfs(srfHeaders, pyZoneData, hb_zoneData)
-    srfValues, normalizedSrfData, title, legendTitle, lb_preparation, lb_visualization = getData(pyZoneData, srfAreas, annualData, simStep, srfNormalizable, srfHeaders, headerUnits, normByFlr, analysisPeriod, stepOfSimulation, total)
+    dataCheck, surfaceNames, srfAreas, srfBreps, pyZoneData, srfHeaders, zoneBreps = getZoneSrfs(srfHeaders, pyZoneData, hb_zoneData)
+    if dataCheck == True:
+        srfValues, normalizedSrfData, title, legendTitle, lb_preparation, lb_visualization = getData(pyZoneData, srfAreas, annualData, simStep, srfNormalizable, srfHeaders, headerUnits, normByFlr, analysisPeriod, stepOfSimulation, total)
 
 #Color the surfaces with the data and get all of the other cool stuff that this component does.
-if _runIt == True and checkData == True and _HBZones != [] and srfValues != []:
+if _runIt == True and checkData == True and _HBZones != [] and srfValues != [] and dataCheck == True:
     srfColors, srfBreps, srfColoredMesh, zoneWireFrame, legendInit, legendBasePt = main(srfValues, _HBZones, srfBreps, srfHeaders, title, legendTitle, lb_preparation, lb_visualization, legendPar_)
     #Unpack the legend.
     legend = []
