@@ -42,6 +42,7 @@ class dictToClass(object):
         
 
 def main():
+    cvFanParameters = []
     
     if sc.sticky.has_key('honeybee_release'):
         #check Honeybee version
@@ -112,7 +113,6 @@ def main():
         print "You should first let Honeybee to fly..."
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, "You should let Honeybee to fly...")
-        cvFanParameters = []
     
     return cvFanParameters
 

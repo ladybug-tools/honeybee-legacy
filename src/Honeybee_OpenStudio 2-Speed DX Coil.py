@@ -59,6 +59,9 @@ condType = {
 }
 
 def main():
+    
+    twoSpeedDXCoil = []
+    
     if sc.sticky.has_key('honeybee_release'):
         #check Honeybee version
         try:
@@ -145,7 +148,6 @@ def main():
         print "You should first let Honeybee to fly..."
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, "You should let Honeybee to fly...")
-        twoSpeedDXCoil = []
 
     return twoSpeedDXCoil
 
