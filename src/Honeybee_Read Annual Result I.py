@@ -96,6 +96,7 @@ def main(illFilesAddress, testPts, testVecs, occFiles, lightingControlGroups, SH
             w = gh.GH_RuntimeMessageLevel.Warning
             ghenv.Component.AddRuntimeMessage(w, warning)
             return -1
+            
         hb_folders = sc.sticky["honeybee_folders"]
         hb_RADPath = hb_folders["RADPath"]
         hb_RADLibPath = hb_folders["RADLibPath"]
@@ -763,49 +764,52 @@ if _runIt and not isAllNone(_illFilesAddress) and not isAllNone(_testPoints):
     lightingControlGroups_.SimplifyPaths()
     _illFilesAddress.SimplifyPaths()
     
-    msg, results = main(_illFilesAddress, _testPoints, ptsVectors_, occupancyFiles_, lightingControlGroups_, SHDGroupI_Sensors_, SHDGroupII_Sensors_, _DLAIllumThresholds_)
+    res = main(_illFilesAddress, _testPoints, ptsVectors_, occupancyFiles_, lightingControlGroups_, SHDGroupI_Sensors_, SHDGroupII_Sensors_, _DLAIllumThresholds_)
     
-    if msg!=None:
-        w = gh.GH_RuntimeMessageLevel.Warning
-        ghenv.Component.AddRuntimeMessage(w, msg)
+    if res!= -1:
+        msg, results = res
         
-    else:
-        DLALists, underUDLILists, inRangeUDLILists, overUDLILists, CDALists, EPLSchLists, htmLists = results
-        DLA = DataTree[Object]()
-        UDLI_Less_100 = DataTree[Object]()    
-        UDLI_100_2000 = DataTree[Object]()
-        UDLI_More_2000 = DataTree[Object]()
-        CDA = DataTree[Object]()
-        annualProfiles = DataTree[Object]()
-        sDA = DataTree[Object]()
-        htmReport = DataTree[Object]()
-        
-        def readDSStandardResults(filePath):
-            results = []
-            with open(filePath, "r") as inf:
-                for line in inf:
-                    if not line.startswith("#"):
-                        results.append(float(line.split("\t")[-1]))
-            return results
-        
-        def getsDA(DLARes, threshold = 50):
-            moreThan = 0
-            for res in DLARes:
-                if res >= threshold:
-                    moreThan += 1
-            return "%.2f"%((moreThan/len(DLARes)) * 100)
-        
-        
-        for branchNum in range(_testPoints.BranchCount):
-            p = GH_Path(branchNum)
-            DLARes = readDSStandardResults(DLALists[branchNum])
-            DLA.AddRange(DLARes, p)
-            UDLI_Less_100.AddRange(readDSStandardResults(underUDLILists[branchNum]), p)
-            UDLI_100_2000.AddRange(readDSStandardResults(inRangeUDLILists[branchNum]), p)
-            UDLI_More_2000.AddRange(readDSStandardResults(overUDLILists[branchNum]), p)
-            CDA.AddRange(readDSStandardResults(CDALists[branchNum]), p)
-            annualProfiles.Add(EPLSchLists[branchNum], p)
-            sDA.Add(getsDA(DLARes), p)
-            htmReport.Add(htmLists[branchNum], p)
-                
-
+        if msg!=None:
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, msg)
+            
+        else:
+            DLALists, underUDLILists, inRangeUDLILists, overUDLILists, CDALists, EPLSchLists, htmLists = results
+            DLA = DataTree[Object]()
+            UDLI_Less_100 = DataTree[Object]()    
+            UDLI_100_2000 = DataTree[Object]()
+            UDLI_More_2000 = DataTree[Object]()
+            CDA = DataTree[Object]()
+            annualProfiles = DataTree[Object]()
+            sDA = DataTree[Object]()
+            htmReport = DataTree[Object]()
+            
+            def readDSStandardResults(filePath):
+                results = []
+                with open(filePath, "r") as inf:
+                    for line in inf:
+                        if not line.startswith("#"):
+                            results.append(float(line.split("\t")[-1]))
+                return results
+            
+            def getsDA(DLARes, threshold = 50):
+                moreThan = 0
+                for res in DLARes:
+                    if res >= threshold:
+                        moreThan += 1
+                return "%.2f"%((moreThan/len(DLARes)) * 100)
+            
+            
+            for branchNum in range(_testPoints.BranchCount):
+                p = GH_Path(branchNum)
+                DLARes = readDSStandardResults(DLALists[branchNum])
+                DLA.AddRange(DLARes, p)
+                UDLI_Less_100.AddRange(readDSStandardResults(underUDLILists[branchNum]), p)
+                UDLI_100_2000.AddRange(readDSStandardResults(inRangeUDLILists[branchNum]), p)
+                UDLI_More_2000.AddRange(readDSStandardResults(overUDLILists[branchNum]), p)
+                CDA.AddRange(readDSStandardResults(CDALists[branchNum]), p)
+                annualProfiles.Add(EPLSchLists[branchNum], p)
+                sDA.Add(getsDA(DLARes), p)
+                htmReport.Add(htmLists[branchNum], p)
+                    
+    

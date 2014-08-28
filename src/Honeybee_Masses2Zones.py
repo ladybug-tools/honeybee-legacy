@@ -6,7 +6,7 @@
 """
 Convert Mass to Honeybee Zones
 -
-Provided by Honeybee 0.0.53
+Provided by Honeybee 0.0.54
 
     Args:
         _zoneMasses: List of closed Breps
@@ -34,9 +34,11 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_Masses2Zones'
 ghenv.Component.NickName = 'Mass2Zone'
-ghenv.Component.Message = 'VER 0.0.53\nJUN_23_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
+#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
+#compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
 except: pass
 
@@ -54,6 +56,17 @@ def main(maximumRoofAngle, zoneMasses, zoneNames, zonePrograms, isConditioned):
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
         return -1
     
+    try:
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+    except:
+        warning = "You need a newer version of Honeybee to use this compoent." + \
+        "Use updateHoneybee component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+        "into canvas and try again."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+        return -1
+            
     # import the classes
     # don't customize this part
     hb_EPZone = sc.sticky["honeybee_EPZone"]

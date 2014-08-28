@@ -38,7 +38,7 @@ def main(HBZone):
         print "You should first let Honeybee to fly..."
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee to fly...")
-        return
+        return -1
 
     try:
         if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
@@ -50,7 +50,6 @@ def main(HBZone):
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, warning)
         return -1
-        return
     
     outdoors = []
     surface = []
@@ -97,7 +96,7 @@ def main(HBZone):
 if _HBZone!= None:
     HBSurfaces = main(_HBZone)
     
-    if HBSurfaces:
+    if HBSurfaces != -1:
         outdoors = HBSurfaces[0]
         surface = HBSurfaces[1]
         adiabatic = HBSurfaces[2]

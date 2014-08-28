@@ -56,6 +56,17 @@ def main(weatherFile, analysisPeriod):
         return skyStr
         
     if sc.sticky.has_key('ladybug_release'):
+        try:
+            if not sc.sticky['ladybug_release'].isCompatible(ghenv.Component): return -1
+        except:
+            warning = "You need a newer version of Ladybug to use this compoent." + \
+            "Use updateLadybug component to update userObjects.\n" + \
+            "If you have already updated userObjects drag Ladybug_Ladybug component " + \
+            "into canvas and try again."
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+            return -1
+            
         lb_preparation = sc.sticky["ladybug_Preparation"]()
         
         # make working directory

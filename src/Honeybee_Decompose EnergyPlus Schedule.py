@@ -39,7 +39,18 @@ def main(schName):
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, "You should first let the Honeybee fly...")
         return -1
-    
+
+    try:
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+    except:
+        warning = "You need a newer version of Honeybee to use this compoent." + \
+        "Use updateHoneybee component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+        "into canvas and try again."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+        return -1    
+
     hb_EPScheduleAUX = sc.sticky["honeybee_EPScheduleAUX"]()
     hb_EPObjectsAUX = sc.sticky["honeybee_EPObjectsAUX"]()
     

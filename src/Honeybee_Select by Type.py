@@ -30,6 +30,7 @@ except: pass
 
 
 import scriptcontext as sc
+import Grasshopper.Kernel as gh
 
 surfaces = []
 showCases = []
@@ -39,11 +40,28 @@ if _showFloors_: showCases.append(2)
 if _showCeilings_: showCases.append(3)
 if _showRoofs_: showCases.append(1)
 
-if _HBZones and _HBZones[0]!=None:
+def main(HBZones):
+
+    if not sc.sticky.has_key("honeybee_release"):
+        print "You should first let the Honeybee fly..."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, "You should first let the Honeybee fly...")
+        return -1
+    
+    try:
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+    except:
+        warning = "You need a newer version of Honeybee to use this compoent." + \
+        "Use updateHoneybee component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+        "into canvas and try again."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+        return -1
     
     # call the objects from the lib
     hb_hive = sc.sticky["honeybee_Hive"]()
-    HBZoneObjects = hb_hive.callFromHoneybeeHive(_HBZones)
+    HBZoneObjects = hb_hive.callFromHoneybeeHive(HBZones)
     
     for zone in HBZoneObjects:
         for srf in zone.surfaces:
@@ -58,3 +76,10 @@ if _HBZones and _HBZones[0]!=None:
                     for childSrf in srf.childSrfs: surfaces.append(childSrf.geometry)
             except:
                 pass
+    
+    return surfaces
+    
+if _HBZones and _HBZones[0]!=None:
+    results = main(_HBZones)
+    if results!=-1:
+        surfaces = results

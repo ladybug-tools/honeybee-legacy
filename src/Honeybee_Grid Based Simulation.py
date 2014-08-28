@@ -46,7 +46,7 @@ def main():
         msg = "You should first let Honeybee to fly..."
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, msg)
-        return
+        return -1
 
     try:
         if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
@@ -58,7 +58,6 @@ def main():
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, warning)
         return -1
-        return
         
     DLAnalysisRecipe = sc.sticky["honeybee_DLAnalysisRecipe"]
     
@@ -79,7 +78,7 @@ if _skyFile and _testPoints:
     
     recipe = main()
     
-    if recipe != None and recipe.skyFile != None:
+    if recipe != -1 and recipe.skyFile != None:
         analysisRecipe = recipe
         if _testPoints.DataCount==0 or isAllNone(_testPoints.AllData()):
             analysisRecipe = None

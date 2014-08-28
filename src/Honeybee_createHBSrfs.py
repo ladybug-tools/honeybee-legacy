@@ -235,4 +235,5 @@ if _geometry != None:
     
     result= main(_geometry, srfName_, srfType_, EPBC_, _EPConstruction_, _RADMaterial_)
     
-    HBSurface = result
+    if result!=-1:
+        HBSurface = result

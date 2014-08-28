@@ -204,7 +204,6 @@ def main(HBZones, daylightThreshold, coolingSetPt, heatingSetPt, coolingSetback,
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, warning)
         return -1
-        return -1
         
     # call the objects from the lib
     hb_hive = sc.sticky["honeybee_Hive"]()
@@ -268,8 +267,11 @@ if _HBZones:
     daylightThreshold, coolingSetPt, coolingSetback, heatingSetPt, \
     heatingSetback, coolSupplyAirTemp, heatSupplyAirTemp = checkTheInputs()
     
-    HBZones = main(_HBZones, daylightThreshold, coolingSetPt, heatingSetPt, \
+    zones = main(_HBZones, daylightThreshold, coolingSetPt, heatingSetPt, \
                    coolingSetback, heatingSetback, coolSupplyAirTemp, heatSupplyAirTemp)
+    
+    if zones!=-1:
+        HBZones = zones
 
 
 

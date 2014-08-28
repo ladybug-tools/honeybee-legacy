@@ -9,9 +9,9 @@ Set Exposure for HDR
 Provided by Honeybee 0.0.54
     
     Args:
-        HDRFilePath: Path to an HDR image file
-        exposure: A number between 0 and 1
-        render: Set to True to render the new image
+        _HDRFilePath: Path to an HDR image file
+        _exposure_: A number between 0 and 1
+        _render: Set to True to render the new image
     Returns:
         outputFilePath: Path to the result HDR file
 
@@ -39,11 +39,10 @@ def runCmdAndGetTheResults(command, shellKey = True):
     # p.kill()
     return out, err
 
-def main():
+def main(_HDRFilePath, _render, _exposure_):
     
     # import the classes
     if sc.sticky.has_key('honeybee_release'):
-
         try:
             if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
         except:
@@ -53,7 +52,8 @@ def main():
             "into canvas and try again."
             w = gh.GH_RuntimeMessageLevel.Warning
             ghenv.Component.AddRuntimeMessage(w, warning)
-            return -1
+            return
+            
         hb_folders = sc.sticky["honeybee_folders"]
         hb_RADPath = hb_folders["RADPath"]
         hb_RADLibPath = hb_folders["RADLibPath"]
@@ -98,6 +98,6 @@ def main():
     return outputFile
 
 
-if HDRFilePath and render:
-    if exposure == None: exposure = 1
-    outputFilePath = main()
+if _HDRFilePath and _render:
+    if _exposure_ == None: _exposure_ = 1
+    outputFilePath = main(_HDRFilePath, _render, _exposure_)

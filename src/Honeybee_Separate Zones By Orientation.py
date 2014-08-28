@@ -60,6 +60,24 @@ def getOrientation(HBZone, onlyWGlz):
 
 
 def main(HBZones, onlyWGlz):
+    
+    if not sc.sticky.has_key("honeybee_release"):
+        print "You should first let the Honeybee fly..."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, "You should first let the Honeybee fly...")
+        return -1
+    
+    try:
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+    except:
+        warning = "You need a newer version of Honeybee to use this compoent." + \
+        "Use updateHoneybee component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+        "into canvas and try again."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+        return -1
+    
     hb_hive = sc.sticky["honeybee_Hive"]()
     HBZonesFromHive = hb_hive.callFromHoneybeeHive(HBZones)
     
@@ -88,17 +106,18 @@ if _HBZones and _HBZones!=None:
     
     orderedHBZones = main(_HBZones, onlyWGlz_)
     
-    keys = orderedHBZones.keys()
-    keys.sort()
-    
-    hb_hive = sc.sticky["honeybee_Hive"]()
-    
-    HBZones = DataTree[Object]()
-    orientations = DataTree[Object]()
-    
-    for count, key in enumerate(keys):
-        p = GH_Path(count)
-        orientations.AddRange(orderedHBZones[key][0],p)
+    if orderedHBZones!= -1:
+        keys = orderedHBZones.keys()
+        keys.sort()
         
-        zones = hb_hive.addToHoneybeeHive(orderedHBZones[key][1], ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
-        HBZones.AddRange(zones, p)
+        hb_hive = sc.sticky["honeybee_Hive"]()
+        
+        HBZones = DataTree[Object]()
+        orientations = DataTree[Object]()
+        
+        for count, key in enumerate(keys):
+            p = GH_Path(count)
+            orientations.AddRange(orderedHBZones[key][0],p)
+            
+            zones = hb_hive.addToHoneybeeHive(orderedHBZones[key][1], ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+            HBZones.AddRange(zones, p)

@@ -52,7 +52,6 @@ def main(HBZoneProgram):
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, warning)
         return -1
-        return -1
     
     openStudioStandardLib = sc.sticky ["honeybee_OpenStudioStandardsFile"]
     

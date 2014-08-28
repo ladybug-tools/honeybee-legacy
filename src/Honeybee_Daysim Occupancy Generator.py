@@ -52,12 +52,34 @@ def main(analysisPeriod, dailyOffHours, weekendDays, fileName):
         weekendDays = []
     
     # create the folder if not exist
-        
-    # import the classes
-    if not sc.sticky.has_key('ladybug_release'):
-        msg = " You need to let Ladybug fly first!\nI know this is a Honeybee component but it actually uses Ladybug's functions."
-        return msg, None
     
+    # import the classes
+    if not sc.sticky.has_key('ladybug_release') or not sc.sticky.has_key('honeybee_release'):
+        msg = " You need to let Ladybug and honeybee to fly first!"
+        return msg, None
+
+    try:
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+    except:
+        warning = "You need a newer version of Honeybee to use this compoent." + \
+        " Use updateHoneybee component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+        "into canvas and try again."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+        return -1
+
+    try:
+        if not sc.sticky['ladybug_release'].isCompatible(ghenv.Component): return -1
+    except:
+        warning = "You need a newer version of Ladybug to use this compoent." + \
+        " Use updateLadybug component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Ladybug_Ladybug component " + \
+        "into canvas and try again."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+        return -1
+        
     lb_preparation = sc.sticky["ladybug_Preparation"]()
     
     # create the folder if not exist
@@ -115,9 +137,12 @@ def main(analysisPeriod, dailyOffHours, weekendDays, fileName):
 
 
 if _writeTheOcc==True:
-    msg, occupancyFile = main(_occupancyPeriod_, dailyOffHours_, weekendDays_, _fileName_)
+    results = main(_occupancyPeriod_, dailyOffHours_, weekendDays_, _fileName_)
     
-    if msg!=None:
-        w = gh.GH_RuntimeMessageLevel.Warning
-        ghenv.Component.AddRuntimeMessage(w, msg)
+    if results!=-1:
+        msg, occupancyFile = results
+        
+        if msg!=None:
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, msg)
 

@@ -55,7 +55,6 @@ def main(HBZones, occupancySchedule, occupancyActivitySch, heatingSetPtSchedule,
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, warning)
         return -1
-        return -1
     
     # make sure schedules are in HB schedule 
     schedules = [occupancySchedule, heatingSetPtSchedule, coolingSetPtSchedule, lightingSchedule, equipmentSchedule, infiltrationSchedule]

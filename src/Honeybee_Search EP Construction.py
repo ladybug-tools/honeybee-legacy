@@ -55,8 +55,6 @@ def main(constrList, standard, climateZone, surfaceType, bldgProgram, constructi
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, warning)
         return -1
-        return -1
-    
     
     # get the constuction
     try:
@@ -73,4 +71,5 @@ def main(constrList, standard, climateZone, surfaceType, bldgProgram, constructi
     
 if len(_EPConstrList)!=0 and _standard:
     result = main(_EPConstrList, _standard, climateZone_, surfaceType_, altBldgProgram_, constructionType_)
-    if result!= -1: EPSelectedConstr = result
+    if result!= -1:
+        EPSelectedConstr = result

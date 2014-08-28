@@ -25,8 +25,6 @@ import scriptcontext as sc
 import os
 import sys
 import System
-from clr import AddReference
-AddReference('Grasshopper')
 import Grasshopper.Kernel as gh
 import uuid
 import math
@@ -57,7 +55,8 @@ def main(zoneName,  HBZoneProgram, HBSurfaces, isConditioned):
             "into canvas and try again."
             w = gh.GH_RuntimeMessageLevel.Warning
             ghenv.Component.AddRuntimeMessage(w, warning)
-            return -1
+            return
+            
         # don't customize this part
         hb_EPZone = sc.sticky["honeybee_EPZone"]
         hb_EPSrf = sc.sticky["honeybee_EPSurface"]

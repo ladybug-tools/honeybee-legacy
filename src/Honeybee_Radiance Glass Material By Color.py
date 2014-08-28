@@ -67,7 +67,7 @@ if sc.sticky.has_key('honeybee_release'):
             avrgTrans = (0.265 * RTransmittance + 0.670 * GTransmittance + 0.065 * BTransmittance)
             
             materialName = _materialName.Replace(" ", "_")
-            RADMaterial = createRadMaterial(modifier, materialName, RTransmittance, GTransmittance, BTransmittance, refractiveIndex)
+            RADMaterial = createRadMaterial(modifier, materialName, RTransmittance, GTransmittance, BTransmittance, refractiveIndex_)
         else:
             msg =  "Transmittance values should be between 0 and 1"
             e = gh.GH_RuntimeMessageLevel.Error

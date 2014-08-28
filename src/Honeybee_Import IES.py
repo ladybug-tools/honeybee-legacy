@@ -150,7 +150,6 @@ def main(iesFilePath, newName, modifier):
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, warning)
         return -1
-        return -1
     
     if modifier!=None and not 0 <= modifier <= 1:
         msg = "Modifier should be a number between 0 and 1"

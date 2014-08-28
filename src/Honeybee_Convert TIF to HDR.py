@@ -52,7 +52,8 @@ def main(TIFFFilePath):
             "into canvas and try again."
             w = gh.GH_RuntimeMessageLevel.Warning
             ghenv.Component.AddRuntimeMessage(w, warning)
-            return -1
+            return
+            
         hb_folders = sc.sticky["honeybee_folders"]
         hb_RADPath = hb_folders["RADPath"]
         hb_RADLibPath = hb_folders["RADLibPath"]

@@ -38,8 +38,7 @@ from Grasshopper.Kernel.Data import GH_Path
 pointsF = []
 vectorsF = []
 
-#
-if len(ptsFileAddress)!=0 and ptsFileAddress[0]!=None:
+def main(ptsFileAddress):
     
     for fileAddress in ptsFileAddress:
         with open(fileAddress, 'r') as pts:
@@ -79,3 +78,8 @@ if len(ptsFileAddress)!=0 and ptsFileAddress[0]!=None:
         # no pattern do just put them together
         points = pointsF
         vectors = vectorsF
+
+    return points, vectors
+
+if len(_ptsFileAddress)!=0 and _ptsFileAddress[0]!=None:
+    points, vectors = main(_ptsFileAddress)

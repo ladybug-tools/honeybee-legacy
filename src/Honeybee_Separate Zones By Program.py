@@ -24,7 +24,7 @@ ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
 #compatibleLBVersion = VER 0.0.58\nAUG_20_2014
-try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
 
 
@@ -36,10 +36,26 @@ import Grasshopper.Kernel as gh
 from Grasshopper import DataTree
 from Grasshopper.Kernel.Data import GH_Path
 
-try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
-except: pass
+
 
 def main(HBZones):
+    if not sc.sticky.has_key("honeybee_release"):
+        print "You should first let the Honeybee fly..."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, "You should first let the Honeybee fly...")
+        return -1
+    
+    try:
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+    except:
+        warning = "You need a newer version of Honeybee to use this compoent." + \
+        "Use updateHoneybee component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+        "into canvas and try again."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+        return -1
+        
     hb_hive = sc.sticky["honeybee_Hive"]()
     HBZonesFromHive = hb_hive.callFromHoneybeeHive(HBZones)
     
@@ -53,24 +69,25 @@ def main(HBZones):
         
         HBZones[zoneProgram].append(zone)
         
-        
     return HBZones
 
 if _HBZones and _HBZones!=None:
     
     orderedHBZones = main(_HBZones)
     
-    keys = orderedHBZones.keys()
-    keys.sort()
-    
-    hb_hive = sc.sticky["honeybee_Hive"]()
-    
-    HBZones = DataTree[Object]()
-    zonePrograms = []
-    
-    for count, key in enumerate(keys):
-        p = GH_Path(count)
-        zonePrograms.append(key)
+    if orderedHBZones!= -1:
         
-        zones = hb_hive.addToHoneybeeHive(orderedHBZones[key], ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
-        HBZones.AddRange(zones, p)
+        keys = orderedHBZones.keys()
+        keys.sort()
+        
+        hb_hive = sc.sticky["honeybee_Hive"]()
+        
+        HBZones = DataTree[Object]()
+        zonePrograms = []
+        
+        for count, key in enumerate(keys):
+            p = GH_Path(count)
+            zonePrograms.append(key)
+            
+            zones = hb_hive.addToHoneybeeHive(orderedHBZones[key], ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+            HBZones.AddRange(zones, p)

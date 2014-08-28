@@ -55,7 +55,6 @@ def main(mesh, radFileName, workingDir, RADMaterial, HDRTexture = None):
         "into canvas and try again."
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, warning)
-        return -1
         return None, None
     
     MSHToRAD = sc.sticky["honeybee_MeshToRAD"]

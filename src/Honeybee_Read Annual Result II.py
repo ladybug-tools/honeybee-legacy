@@ -48,7 +48,8 @@ def isAllNone(dataList):
         if item!=None: return False
     return True
 
-if (testPts.DataCount!=0 or not isAllNone(testPts.AllData())) and resultFilesAddress and resultFilesAddress[0]!=None:
+if _runIt and (testPts.DataCount!=0 or not isAllNone(testPts.AllData())) \
+   and resultFilesAddress and resultFilesAddress[0]!=None:
     
     numOfPts = 0
     testPts.SimplifyPaths()
@@ -56,7 +57,7 @@ if (testPts.DataCount!=0 or not isAllNone(testPts.AllData())) and resultFilesAdd
     for branchNum in range(numOfBranches):
         numOfPts = numOfPts + len(testPts.Branch(branchNum))
     #print numOfPts
-# for path in range(len(testPts.Branch(branchNum))): print testPts.Branch(branchNum)[path]
+    # for path in range(len(testPts.Branch(branchNum))): print testPts.Branch(branchNum)[path]
     
     
     # setting up work hours

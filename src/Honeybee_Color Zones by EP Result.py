@@ -47,8 +47,6 @@ except: pass
 
 from System import Object
 from System import Drawing
-from clr import AddReference
-AddReference('Grasshopper')
 import Grasshopper.Kernel as gh
 from Grasshopper import DataTree
 from Grasshopper.Kernel.Data import GH_Path

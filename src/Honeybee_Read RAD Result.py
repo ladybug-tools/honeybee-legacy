@@ -54,7 +54,6 @@ def main(resultFiles, analysisType):
         "into canvas and try again."
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, warning)
-        return -1
         return
         
     CalculateGridBasedDLAnalysisResults = sc.sticky["honeybee_GridBasedDLResults"]

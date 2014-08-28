@@ -50,7 +50,6 @@ def main(HBZones, zonePrograms):
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, warning)
         return -1
-        return -1
         
     # call the objects from the lib
     hb_hive = sc.sticky["honeybee_Hive"]()

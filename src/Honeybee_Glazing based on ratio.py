@@ -8,7 +8,7 @@
 """
 Generate window based on a desired percentage of glazing and possibly other inputs such as window height and sill height.
 -
-Provided by Honeybee 0.0.53
+Provided by Honeybee 0.0.54
     
     Args:
         _HBObjects: Honeybee thermal zones or surfaces for which glazing should be generated.
@@ -25,9 +25,11 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Glazing based on ratio"
 ghenv.Component.NickName = 'glazingCreator'
-ghenv.Component.Message = 'VER 0.0.53\nJUL_16_2014'
+ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
+#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
+#compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
 except: pass
 
@@ -39,8 +41,6 @@ import math
 import uuid
 
 # all this only to graft the data at the end! booooooo
-from clr import AddReference
-AddReference('Grasshopper')
 import Grasshopper.Kernel as gh
 import System
 from Grasshopper import DataTree
@@ -833,6 +833,27 @@ def main(windowHeight, sillHeight, glzRatio, skyLightRatio, breakUpWindow):
     # check if honeybee is flying
     # import the classes
     if sc.sticky.has_key('ladybug_release')and sc.sticky.has_key('honeybee_release'):
+        try:
+            if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+        except:
+            warning = "You need a newer version of Honeybee to use this compoent." + \
+            " Use updateHoneybee component to update userObjects.\n" + \
+            "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+            "into canvas and try again."
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+            return -1
+    
+        try:
+            if not sc.sticky['ladybug_release'].isCompatible(ghenv.Component): return -1
+        except:
+            warning = "You need a newer version of Ladybug to use this compoent." + \
+            " Use updateLadybug component to update userObjects.\n" + \
+            "If you have already updated userObjects drag Ladybug_Ladybug component " + \
+            "into canvas and try again."
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+            return -1
         
         # don't customize this part
         hb_EPZone = sc.sticky["honeybee_EPZone"]
@@ -963,9 +984,6 @@ def main(windowHeight, sillHeight, glzRatio, skyLightRatio, breakUpWindow):
     return zonesWithOpeningsGeometry, ModifiedHBZones
 
 if _runIt:
-    glazingSrf, ModifiedHBZones = main(windowHeight_, sillHeight_, _glzRatio, skyLightRatio_, breakUpWindow_)
-    
-    HBObjWGLZ = ModifiedHBZones
-    #HBZonesWGLZ = DataTree[System.Object]()
-    #HBZonesWGLZ.AddRange(ModifiedHBZones, GH_Path(0))
-    #HBZonesWGLZ.AddRange(glazingSrf, GH_Path(1))
+    results = main(windowHeight_, sillHeight_, _glzRatio, skyLightRatio_, breakUpWindow_)
+    if results!= -1:
+        glazingSrf, HBObjWGLZ = results

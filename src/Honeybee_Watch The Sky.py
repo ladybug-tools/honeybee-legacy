@@ -91,18 +91,29 @@ def checkSky(skyFile):
     return skyFileOut
     
 def main(skyFilePath, imageSize):
-    if sc.sticky.has_key('ladybug_release')and sc.sticky.has_key('honeybee_release'):
+    if sc.sticky.has_key('honeybee_release'):
+        
+        try:
+            if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+        except:
+            warning = "You need a newer version of Honeybee to use this compoent." + \
+            "Use updateHoneybee component to update userObjects.\n" + \
+            "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+            "into canvas and try again."
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+            return -1
+        
         hb_radParDict = sc.sticky["honeybee_RADParameters"]().radParDict
         hb_folders = sc.sticky["honeybee_folders"]
         hb_RADPath = hb_folders["RADPath"]
         hb_RADLibPath = hb_folders["RADLibPath"]
         
     else:
-        print "You should first let both Ladybug and Honeybee to fly..."
+        print "You should first let Honeybee to fly..."
         w = gh.GH_RuntimeMessageLevel.Warning
-        ghenv.Component.AddRuntimeMessage(w, "You should first let both Ladybug and Honeybee to fly...")
+        ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee to fly...")
         return None, None
-    
     
     fileNames = ["oconv.exe", "rpict.exe", "pcond.exe", "pflip.exe"]
     # check for files
@@ -172,4 +183,8 @@ if _runIt and _skyFilePath:
     if _imageSize_ == None:
         _imageSize_ = 500 #pixles
     print "Image size:", _imageSize_
-    HDRImagePath, globalHorIrradiance = main(_skyFilePath, _imageSize_)
+    
+    results = main(_skyFilePath, _imageSize_)
+    
+    if results!=-1:
+        HDRImagePath, globalHorIrradiance = results

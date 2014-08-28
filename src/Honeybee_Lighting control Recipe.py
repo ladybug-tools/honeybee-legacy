@@ -27,13 +27,13 @@ import Grasshopper.Kernel as gh
 
 inputsDict = {
      
-0 : ["controlType", "Lighting controlType: [0] Manual on/off switch, [1] Automate switch off occupancy sensor, [2] Always on during active occupancy hours, [3] Manual On/off with auto Dimming [4] Auto dimming with swith off occupancy sensor [5] Always on during active occupancy hours with auto dimming"],
-1: ["sensorPoints", "Selected list of test points that indicates where lighting sensor points are located."],
-2: ["lightingPower", " Lighting power in watts. Default is 250 w."],
-3: ["lightingSetpoint", "Target illuminance for the space. Default is 300 lux."],
-4: ["ballastLossFactor", "Minimum electric dimming level in percentages."],
-5: ["standbyPower", "Standby power in watts. Default is 3 w."],
-6: ["delayTime", "Switch-off delay time in minutes. Default is 5 minutes."]
+0 : ["_controlType_", "Lighting controlType: [0] Manual on/off switch, [1] Automate switch off occupancy sensor, [2] Always on during active occupancy hours, [3] Manual On/off with auto Dimming [4] Auto dimming with swith off occupancy sensor [5] Always on during active occupancy hours with auto dimming"],
+1: ["sensorPoints_", "Selected list of test points that indicates where lighting sensor points are located."],
+2: ["_lightingPower_", " Lighting power in watts. Default is 250 w."],
+3: ["_lightingSetpoint_", "Target illuminance for the space. Default is 300 lux."],
+4: ["_ballastLossFactor_", "Minimum electric dimming level in percentages."],
+5: ["_standbyPower_", "Standby power in watts. Default is 3 w."],
+6: ["_delayTime_", "Switch-off delay time in minutes. Default is 5 minutes."]
 }
 
 # manage component inputs
@@ -90,9 +90,9 @@ class LightingControl(object):
         return lightingStr
 
 try:
-    lightingControlGroup = LightingControl(sensorPoints, controlType, lightingPower, lightingSetpoint, ballastLossFactor, standbyPower, delayTime)
+    lightingControlGroup = LightingControl(sensorPoints_, _controlType_, _lightingPower_, _lightingSetpoint_, _ballastLossFactor_, _standbyPower_, _delayTime_)
 except:
     # controlType 0
-    lightingControlGroup = LightingControl(sensorPoints, controlType, lightingPower, 300, 20, 3, 5)
+    lightingControlGroup = LightingControl(sensorPoints_, _controlType_, _lightingPower_, 300, 20, 3, 5)
     
 print lightingControlGroup.lightingControlStr

@@ -32,8 +32,6 @@ ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
 
-from clr import AddReference
-AddReference('Grasshopper')
 import Grasshopper.Kernel as gh
 w = gh.GH_RuntimeMessageLevel.Warning
 

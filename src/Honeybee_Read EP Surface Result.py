@@ -37,8 +37,6 @@ ghenv.Component.AdditionalHelpFromDocStrings = "4"
 
 
 from System import Object
-from clr import AddReference
-AddReference('Grasshopper')
 import Grasshopper.Kernel as gh
 from Grasshopper import DataTree
 from Grasshopper.Kernel.Data import GH_Path

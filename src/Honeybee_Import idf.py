@@ -24,8 +24,6 @@ import os
 import sys
 import System
 import uuid
-from clr import AddReference
-AddReference('Grasshopper')
 import Grasshopper.Kernel as gh
 
 tolerance = sc.doc.ModelAbsoluteTolerance
@@ -95,6 +93,30 @@ srfTypeDict = {0:'WALL',
 def main(idfFile):
     # import the classes
     if sc.sticky.has_key('ladybug_release')and sc.sticky.has_key('honeybee_release'):
+
+        try:
+            if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+        except:
+            warning = "You need a newer version of Honeybee to use this compoent." + \
+            " Use updateHoneybee component to update userObjects.\n" + \
+            "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+            "into canvas and try again."
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+            return -1
+    
+        try:
+            if not sc.sticky['ladybug_release'].isCompatible(ghenv.Component): return -1
+        except:
+            warning = "You need a newer version of Ladybug to use this compoent." + \
+            " Use updateLadybug component to update userObjects.\n" + \
+            "If you have already updated userObjects drag Ladybug_Ladybug component " + \
+            "into canvas and try again."
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+            return -1        
+        
+        
         lb_preparation = sc.sticky["ladybug_Preparation"]()
         lb_mesh = sc.sticky["ladybug_Mesh"]()
         lb_runStudy_GH = sc.sticky["ladybug_RunAnalysis"]()

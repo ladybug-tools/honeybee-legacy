@@ -124,4 +124,7 @@ def main():
 #        libFile.write(constructionStr)
 
 if _name and _layer_1:
-    EPConstruction = main()
+    constr = main()
+    
+    if constr!=-1:
+        EPConstruction = constr

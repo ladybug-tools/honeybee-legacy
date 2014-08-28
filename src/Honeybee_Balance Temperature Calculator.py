@@ -15,7 +15,7 @@ Provided by Honeybee 0.0.53
     Args:
         _zoneThermalEnergyBal: The output "thermalEnergyBalance" from the "Honeybee_Read EP Result" component.  This can be for a single zone if you select out one branch of this thermalEnergyBalance output or it can be for the whole simulated building if you connect the whole output.  Note that, in order to use this component correclty, you must run either a simulation with either an hourly or daily timestep.
         _outdoorAirTemp: The "dryBulbTemperature" output from the "Ladybug_Import epw" component.
-        analysisPeriod_: An optional number of days with a low thermal energy load that will be averaged together to yield the balance point.  This is done to help avoid anomalies introduced by variations between weekday and weekend shcedules.  The default is set to 10 but you may want to drop this down if there is little variation between weekday and weekend schedule or you might increase this number is there is a high variation.
+        numDaysToAverage_: An optional number of days with a low thermal energy load that will be averaged together to yield the balance point.  This is done to help avoid anomalies introduced by variations between weekday and weekend shcedules.  The default is set to 10 but you may want to drop this down if there is little variation between weekday and weekend schedule or you might increase this number is there is a high variation.
     Returns:
         energyUsedOnBalDay: The amount of energy used on the balbnce day.  This number should be close to 0 and is mostly meant to give a sense of the accuracy of the temperature value below
         balanceTemperature: The outdoor balance temperature of the connected zone or building data.
@@ -30,8 +30,6 @@ try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
 except: pass
 
 from System import Object
-from clr import AddReference
-AddReference('Grasshopper')
 import Grasshopper.Kernel as gh
 from Grasshopper import DataTree
 import scriptcontext as sc

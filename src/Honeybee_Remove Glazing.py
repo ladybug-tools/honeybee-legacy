@@ -47,7 +47,6 @@ def main(HBObjects, srfIndex, pattern):
         "into canvas and try again."
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, warning)
-        return -1
         return
     
     # call the objects from the lib

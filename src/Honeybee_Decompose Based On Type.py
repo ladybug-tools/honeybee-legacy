@@ -42,7 +42,7 @@ def main(HBZone):
         print "You should first let Honeybee to fly..."
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee to fly...")
-        return
+        return -1
 
     try:
         if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
@@ -54,7 +54,6 @@ def main(HBZone):
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, warning)
         return -1
-        return
         
     walls = []
     interiorWalls = []
@@ -132,7 +131,7 @@ def main(HBZone):
 if _HBZone!= None:
     HBSurfaces = main(_HBZone)
     
-    if HBSurfaces:
+    if HBSurfaces != -1:
         walls = HBSurfaces[0]
         interiorWalls = HBSurfaces[1]
         windows = HBSurfaces[2]

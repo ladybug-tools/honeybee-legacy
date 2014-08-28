@@ -51,7 +51,6 @@ def main(cnstrName):
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, warning)
         return -1
-        return -1
     
     try:
         hb_EPMaterialAUX = sc.sticky["honeybee_EPMaterialAUX"]()
@@ -66,7 +65,9 @@ def main(cnstrName):
 if _cnstrName != None:
     data = main(_cnstrName)
     
-    if data!=-1: materials, comments, UValue_SI, UValue_IP = data
-    if UValue_SI and UValue_IP:
-        RValue_SI = 1/UValue_SI
-        RValue_IP = 1/UValue_IP
+    if data!=-1:
+        materials, comments, UValue_SI, UValue_IP = data
+        
+        if UValue_SI and UValue_IP:
+            RValue_SI = 1/UValue_SI
+            RValue_IP = 1/UValue_IP

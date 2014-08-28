@@ -108,9 +108,11 @@ def main(hourlyValues, fileName):
 
 if _occValues and _writeTheOcc==True:
     
-    msg, occupancyFile = main(_occValues, _fileName_)
-    
-    if msg!=None:
-        w = gh.GH_RuntimeMessageLevel.Warning
-        ghenv.Component.AddRuntimeMessage(w, msg)
+    results = main(_occValues, _fileName_)
+    if results != -1:
+        msg, occupancyFile = results
+        
+        if msg!=None:
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, msg)
 

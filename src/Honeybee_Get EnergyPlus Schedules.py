@@ -50,7 +50,6 @@ def main(HBZoneProgram):
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, warning)
         return -1
-        return -1
     
     bldgProgram, zoneProgram = HBZoneProgram.split("::")
     

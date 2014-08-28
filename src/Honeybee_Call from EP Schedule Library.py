@@ -32,20 +32,38 @@ except: pass
 import scriptcontext as sc
 import Grasshopper.Kernel as gh
 
-if sc.sticky.has_key("honeybee_release") and sc.sticky.has_key("honeybee_ScheduleLib"):
-    
-    hb_EPMaterialAUX = sc.sticky["honeybee_EPMaterialAUX"]()
-    scheduleList = sc.sticky["honeybee_ScheduleLib"]["List"]
-    scheduleTypeLimits = sc.sticky["honeybee_ScheduleTypeLimitsLib"]["List"]
-
-    scheduleList.sort()
-    scheduleTypeLimits.sort()
-    
-    if len(keywords_)!=0 and keywords_[0]!=None:
-        scheduleList = hb_EPMaterialAUX.searchListByKeyword(scheduleList, keywords_)
-        scheduleTypeLimits = hb_EPMaterialAUX.searchListByKeyword(scheduleTypeLimits, keywords_)
+def main(keywords_):
+    if sc.sticky.has_key("honeybee_release") and sc.sticky.has_key("honeybee_ScheduleLib"):
         
-else:
-    print "You should first let the Honeybee fly..."
-    w = gh.GH_RuntimeMessageLevel.Warning
-    ghenv.Component.AddRuntimeMessage(w, "You should first let the Honeybee fly...")
+        try:
+            if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+        except:
+            warning = "You need a newer version of Honeybee to use this compoent." + \
+            "Use updateHoneybee component to update userObjects.\n" + \
+            "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+            "into canvas and try again."
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+            return -1
+            
+        hb_EPMaterialAUX = sc.sticky["honeybee_EPMaterialAUX"]()
+        scheduleList = sc.sticky["honeybee_ScheduleLib"]["List"]
+        scheduleTypeLimits = sc.sticky["honeybee_ScheduleTypeLimitsLib"]["List"]
+    
+        scheduleList.sort()
+        scheduleTypeLimits.sort()
+        
+        if len(keywords_)!=0 and keywords_[0]!=None:
+            scheduleList = hb_EPMaterialAUX.searchListByKeyword(scheduleList, keywords_)
+            scheduleTypeLimits = hb_EPMaterialAUX.searchListByKeyword(scheduleTypeLimits, keywords_)
+            
+    else:
+        print "You should first let the Honeybee fly..."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, "You should first let the Honeybee fly...")
+        return -1
+
+results = main(keywords_)
+
+if results!=-1:
+    scheduleTypeLimits, scheduleList = results

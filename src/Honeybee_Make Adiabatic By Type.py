@@ -39,7 +39,7 @@ def main(HBZones, walls, roofs, floors, ceilings):
         return
 
     try:
-        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return
     except:
         warning = "You need a newer version of Honeybee to use this compoent." + \
         " Use updateHoneybee component to update userObjects.\n" + \
@@ -47,7 +47,6 @@ def main(HBZones, walls, roofs, floors, ceilings):
         "into canvas and try again."
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, warning)
-        return -1
         return
     
     # call the objects from the lib

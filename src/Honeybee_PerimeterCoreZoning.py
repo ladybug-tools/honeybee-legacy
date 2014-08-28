@@ -4,7 +4,7 @@
 # under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
 
 """
-Separate zones into perimeter and core.
+Separate zones into perimeter and core
 -
 Provided by Honeybee 0.0.54
 
@@ -26,17 +26,35 @@ ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
 #compatibleLBVersion = VER 0.0.58\nAUG_20_2014
-try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
 
 
 import uuid
 
 import scriptcontext as sc
-try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
-except: pass
+import Grasshopper.Kernel as gh
+
 
 def main(HBZones):
+    
+    if not sc.sticky.has_key("honeybee_release"):
+        print "You should first let the Honeybee fly..."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, "You should first let the Honeybee fly...")
+        return -1
+    
+    try:
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+    except:
+        warning = "You need a newer version of Honeybee to use this compoent." + \
+        "Use updateHoneybee component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+        "into canvas and try again."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+        return -1
+    
     hb_hive = sc.sticky["honeybee_Hive"]()
     HBZonesFromHive = hb_hive.callFromHoneybeeHive(HBZones)
     print len(HBZonesFromHive)
@@ -59,4 +77,7 @@ def main(HBZones):
     return perims,ints
 
 
-perimeters,interiors = main(_HBZones)
+zones = main(_HBZones)
+
+if zones!=-1:
+    perimeters, interiors = zones

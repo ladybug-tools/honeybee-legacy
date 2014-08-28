@@ -38,10 +38,9 @@ def runCmdAndGetTheResults(command, shellKey = True):
     # p.kill()
     return out, err
 
-def main():
+def main(HDRFilePath):
     # import the classes
     if sc.sticky.has_key('honeybee_release'):
-
         try:
             if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
         except:
@@ -51,7 +50,8 @@ def main():
             "into canvas and try again."
             w = gh.GH_RuntimeMessageLevel.Warning
             ghenv.Component.AddRuntimeMessage(w, warning)
-            return -1
+            return
+            
         hb_folders = sc.sticky["honeybee_folders"]
         hb_RADPath = hb_folders["RADPath"]
         hb_RADLibPath = hb_folders["RADLibPath"]
@@ -122,5 +122,5 @@ def main():
         return
 
 
-if HDRFilePath: GIFFilePath = main()
+if _HDRFilePath: GIFFilePath = main(_HDRFilePath)
 

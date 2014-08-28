@@ -9,7 +9,7 @@ Convert HDR to TIF
 Provided by Honeybee 0.0.54
     
     Args:
-        HDRFilePath: Path to an HDR image file
+        _HDRFilePath: Path to an HDR image file
         adjustExposure_: "Mimic human visual response in the output. The goal of this process is to produce output that correlates strongly with a persons subjective impression of a scene."
         
     Returns:
@@ -38,7 +38,7 @@ def runCmdAndGetTheResults(command, shellKey = True):
     # p.kill()
     return out, err
     
-def main():
+def main(HDRFilePath):
 
     # import the classes
     if sc.sticky.has_key('honeybee_release'):
@@ -52,7 +52,8 @@ def main():
             "into canvas and try again."
             w = gh.GH_RuntimeMessageLevel.Warning
             ghenv.Component.AddRuntimeMessage(w, warning)
-            return -1
+            return
+            
         hb_folders = sc.sticky["honeybee_folders"]
         hb_RADPath = hb_folders["RADPath"]
         hb_RADLibPath = hb_folders["RADLibPath"]
@@ -121,5 +122,6 @@ def main():
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
         return
 
-if HDRFilePath!=None: TIFFFilePath = main()
+if _HDRFilePath!=None:
+    TIFFFilePath = main(HDRFilePath)
 

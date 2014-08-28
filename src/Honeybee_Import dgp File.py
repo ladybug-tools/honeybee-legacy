@@ -32,14 +32,13 @@ import os
 import scriptcontext as sc
 import Rhino as rc
 from System import Object
-from clr import AddReference
-AddReference('Grasshopper')
 import Grasshopper.Kernel as gh
 from Grasshopper import DataTree
 from Grasshopper.Kernel.Data import GH_Path
 
 
 def importDGP(dgpFile):
+    
     # check Honeybee is flying
     if not sc.sticky.has_key('honeybee_release'):
         msg = "You should first let Honeybee to fly..."
@@ -56,7 +55,6 @@ def importDGP(dgpFile):
         "into canvas and try again."
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, warning)
-        return -1
         return
         
     # check the name is accurate
@@ -106,33 +104,31 @@ def importDGP(dgpFile):
                 
                 views[view]["dgpValues"].append(res)
                 
-            #except:
-            #    pass    
-    # return the results
     return views
 
 
 if _dgpFile!=None:
     views = importDGP(_dgpFile)
     
-    # graft the data based on the pattern
-    viewPoints = DataTree[Object]()
-    viewDirections = DataTree[Object]()
-    dgpValues =  DataTree[Object]()
-    
-    keyCount = 0
-    for key, item in views.items():
-        p = GH_Path(keyCount)
-        # add heading
-        strToBeFound = 'key:location/dataType/units/frequency/startsAt/endsAt'
-        annualGlareHeading = [strToBeFound, "view: " + key, "Daylight Glare Probability", \
-                    "%", 'Hourly', (1,1,1), (12, 31, 24)]
+    if views!=None:
+        # graft the data based on the pattern
+        viewPoints = DataTree[Object]()
+        viewDirections = DataTree[Object]()
+        dgpValues =  DataTree[Object]()
         
-        try:
-            viewPoints.Add(item["viewPoint"], p)
-            viewDirections.Add(item["viewDirection"], p)
-        except:
-            pass # there is no vf file
-        
-        dgpValues.AddRange(annualGlareHeading + item["dgpValues"], p)
-        keyCount+=1
+        keyCount = 0
+        for key, item in views.items():
+            p = GH_Path(keyCount)
+            # add heading
+            strToBeFound = 'key:location/dataType/units/frequency/startsAt/endsAt'
+            annualGlareHeading = [strToBeFound, "view: " + key, "Daylight Glare Probability", \
+                        "%", 'Hourly', (1,1,1), (12, 31, 24)]
+            
+            try:
+                viewPoints.Add(item["viewPoint"], p)
+                viewDirections.Add(item["viewDirection"], p)
+            except:
+                pass # there is no vf file
+            
+            dgpValues.AddRange(annualGlareHeading + item["dgpValues"], p)
+            keyCount+=1

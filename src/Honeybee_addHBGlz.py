@@ -57,6 +57,7 @@ def main(HBSurface, childSurfaces, EPConstruction, RADMaterial, tolerance):
             w = gh.GH_RuntimeMessageLevel.Warning
             ghenv.Component.AddRuntimeMessage(w, warning)
             return -1
+            
         # don't customize this part
         hb_EPZone = sc.sticky["honeybee_EPZone"]
         hb_EPSrf = sc.sticky["honeybee_EPSurface"]
@@ -119,7 +120,7 @@ def main(HBSurface, childSurfaces, EPConstruction, RADMaterial, tolerance):
                         warningMsg = "You are using an old version of Honeybee_Honeybee! Update your files and try again."
                         print warningMsg
                         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
-                        return  
+                        return -1
                     
                     
                 if RADMaterial!=None:
@@ -137,6 +138,7 @@ def main(HBSurface, childSurfaces, EPConstruction, RADMaterial, tolerance):
                           "It can be because of document tolerance. Try to project the opening surfcae on base surface and try again."
                 w = gh.GH_RuntimeMessageLevel.Warning
                 ghenv.Component.AddRuntimeMessage(w, warning)
+                return -1
                 
         # send the HB surface back to the hive
         # add to the hive
@@ -155,4 +157,7 @@ if _HBSurface!=None and len(_childSurfaces)!=0:
     # if tolerance_==None:
     tolerance_ = sc.doc.ModelAbsoluteTolerance
         
-    HBSrfWGLZ = main(_HBSurface, _childSurfaces, EPConstruction_, RADMaterial_, tolerance_)
+    results = main(_HBSurface, _childSurfaces, EPConstruction_, RADMaterial_, tolerance_)
+    
+    if results != -1:
+        HBSrfWGLZ = results
