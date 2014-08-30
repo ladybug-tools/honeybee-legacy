@@ -21,10 +21,10 @@ http://www.gsd.harvard.edu/research/gsdsquare/Publications/Shaderade_BS2011.pdf
 The heating/cooling degree-day calculation used here works by first getting the percentage of sun blocked by the test cell for each hour of the year using the Shaderade method.  Next, this percentage for each hour is multiplied by the temperature above or below the balance point for each hour to get a "degree-hour" for each hour of the year for a cell.  Then, all the cooling-degree hours (above the balance point) and heating degree-hours (below the balance point) are summed to give the total heating or cooling degree-hours helped or harmed respectively.  This number is divided by 24 hours of a day to give degree-days.  These degree days are normalized by the area of the cell to make the metric consistent across cells of different area.  Lastly, the negative heating degree-days are added to the positive cooling degree-days to give a net effect for the cell.
 
 -
-Provided by Honeybee 0.0.54
+Provided by Honeybee 0.0.53
     
     Args:
-        _sunVectors: The sunVectors output from the Ladybug_SunPath component.  Note that you can adjust the analysis period of the sun vectors to look at shade benefit over an entire year or just for a few months (for example, when you have an outdoor space that you know will only be occupied for a few months of the year or when the outside is above a certain temperature).
+        _location: The output from the importEPW or constructLocation component.  This is essentially a list of text summarizing a location on the earth.
         _coolingLoad: The selHourlyData output of the Ladybug_SunPath component when the window's zone hourly cooling load is connected to the SunPath's annualHourlyData_ input.
         _heatingLoad: The selHourlyData output of the Ladybug_SunPath component when the window's zone hourly heating load is connected to the SunPath's annualHourlyData_ input.
         _beamGain: The selHourlyData output of the Ladybug_SunPath component when the window's zone hourly beam gain is connected to the SunPath's annualHourlyData_ input.
@@ -32,7 +32,10 @@ Provided by Honeybee 0.0.54
         _testShade: A brep or list of breps representing shading to be evaluated in terms of its benefit. Note that, in the case that multiple shading breps are connected, this component does not account for the interaction between the different shading surfaces. Note that only breps with a single surface are supported now and volumetric breps will be included at a later point.
         _testWindow: A brep representing a window for which shading is being considered. Note that only breps with a single surface are supported now and volumetric breps will be included at a later point.
         gridSize_: The length of each of the shade's test cells in model units.  Please note that, as this value gets lower, simulation times will increase exponentially even though this will give a higher resolution of shade benefit.
+        context_: If there is static external context that could block sun vectors at certain hours, connect context breps here to account for them in the shade benefit evaluation. 
         ============: ...
+        north_: Input a vector to be used as a true North direction for the sun path or a number between 0 and 360 that represents the degrees off from the y-axis to make North.  The default North direction is set to the Y-axis (0 degrees).
+        skyResolution_: An interger between 0 and 4 to set the number of times that the tergenza sky patches are split.  A higher number will ensure a greater accuracy but will take longer.  At a sky resolution of 4, each hour's heating, cooling and beam gain are essentially matched with an individual sun vector for that hour.  The default is set to 0 for quick calculations.
         delNonIntersect_: Set to "True" to delete mesh cells with no intersection with sun vectors.  Mesh cells where shading will have little effect because an equal amount of warm and cool temperature vectors will still be left in white.
         legendPar_: Legend parameters that can be used to re-color the shade, change the high and low boundary, or sync multiple evaluated shades with the same colors and legend parameters.
         parallel_: Set to "True" to run the simulation with multiple cores.  This can increase the speed of the calculation substantially and is recommended if you are not running other big or important processes.
@@ -40,6 +43,7 @@ Provided by Honeybee 0.0.54
     Returns:
         readMe!: ...
         ==========: ...
+        sunVectors: The sun vectors that were used to evaluate the shade (note that these will increase as the sky desnity increases).
         windowTestPts: Points across the window surface from which sun vectors will be projected
         shadeMesh: A colored mesh of the _testShades showing where shading is helpful (in satuated blue), harmful (in saturated red), or does not make much of a difference (white or desaturated colors).
         legend: Legend showing the numeric values of degree-days that correspond to the colors in the shade mesh.
@@ -51,11 +55,9 @@ Provided by Honeybee 0.0.54
 
 ghenv.Component.Name = "Honeybee_Energy Shade Benefit Evaluator"
 ghenv.Component.NickName = 'EnergyShadeBenefit'
-ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
+ghenv.Component.Message = 'VER 0.0.53\nAUG_30_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
-#compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
 except: pass
 
@@ -71,104 +73,255 @@ from clr import AddReference
 AddReference('Grasshopper')
 import Grasshopper.Kernel as gh
 
+from System import Object
+from Grasshopper import DataTree
+from Grasshopper.Kernel.Data import GH_Path
 
+
+w = gh.GH_RuntimeMessageLevel.Warning
 
 def checkTheInputs():
-    #Check the lists of data to ensure that they are all the same length and all for sun-up hours
-    if len(_sunVectors) == len(_coolingLoad) and len(_sunVectors) == len(_heatingLoad) and len(_sunVectors) == len(_beamGain) and len(_sunVectors) > 0:
-        checkData1 = True
-    else:
-        checkData1 = False
-        print 'Connect sunVectors and selHourlyData from a sun path component that has the coolingLoad, heatingLoad, and beamGain plugged in as the annualHourlyData_.'
+    #Create a dictionary of all of the input heatingloads, coolingLoads and beam gains.
+    checkData1 = True
+    allDataDict = {}
     
-    #Check that both a window brep and test shade brep are connected and are a single surface.
-    if _testShades and _testWindow:
-        if _testShades.Faces.Count == 1:
-            if _testWindow.Faces.Count == 1:
-                checkData2 = True
+    for i in range(_testWindow.BranchCount):
+        path = []
+        for index in _testWindow.Path(i):
+            path.append(index)
+        path = str(path)
+        
+        if not allDataDict.has_key(path):
+            allDataDict[path] = {}
+        
+        if len(_testWindow.Branch(i)) == 1:
+            allDataDict[path]["windowSrf"] = _testWindow.Branch(i)[0]
+        else:
+            checkData1 = False
+            warning = "This component can only accept one window brep per branch.  Separate windows into different branches if you have multiple windows."
+            print warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+        
+        allDataDict[path]["shadeSrfs"] = _testShades.Branch(i)
+        allDataDict[path]["coolingLoad"] = _coolingLoad.Branch(i)
+        allDataDict[path]["heatingLoad"] = _heatingLoad.Branch(i)
+        allDataDict[path]["beamGain"] = _beamGain.Branch(i)
+    
+    
+    #Check that both a window brep and test shade brep have only one surface.
+    checkData2 = True
+    if _testShades.BranchCount != 0 and _testWindow.BranchCount != 0:
+        for path in allDataDict:
+            if allDataDict[path]["windowSrf"].Faces.Count == 1:
+                shadeCheck = True
+                for srf in allDataDict[path]["shadeSrfs"]:
+                    if srf.Faces.Count == 1: pass
+                    else: shadeCheck = False
+                if shadeCheck == False:
+                    checkData2 = False
+                    warning ='The _testShades must each be a brep with a single surface.  Polysurface or volumetric Breps are not supported at this time. Try breaking your Brep up into single surfaces.'
+                    print warning
+                    ghenv.Component.AddRuntimeMessage(w, warning)
             else:
                 checkData2 = False
-                print 'The _testWindow must be a brep with a single surface.  Polysurface or volumetric Breps are not supported at this time. Try breaking your Brep up into single surfaces.'
-        else:
-            checkData2 = False
-            print 'The _testShades must each be a brep with a single surface.  Polysurface or volumetric Breps are not supported at this time. Try breaking your Brep up into single surfaces.'
+                warning ='The _testWindows must each be a brep with a single surface.  Polysurface or volumetric Breps are not supported at this time. Try breaking your Brep up into single surfaces.'
+                print warning
+                ghenv.Component.AddRuntimeMessage(w, warning)
     else:
         checkData2 = False
         print 'Connect a brep for both the _testWindow and the _testShade.'
     
-    #Check to make see if users have connected a grid size and balance point.  If not, assign a grid size based on a bounding box around the test shade and altert the user that they should select a balance point.
+    
+    #Check to see if users have connected a grid size.  If not, assign a grid size based on a bounding box around the test shade.
+    checkData3 = True
     if gridSize_:
-        if gridSize_ > 0:
-            gridSize = float(gridSize_)
-            checkData3 = True
-        else:
-            try:
-                boundBox = _testShades.GetBoundingBox(False)
-                box = rc.Geometry.Box(boundBox)
-                if box.X[1] - box.X[0] < box.Y[1] - box.Y[0]:
-                    gridSize = (box.X[1] - box.X[0])/5
-                else:
-                    gridSize = (box.Y[1] - box.Y[0])/5
-                checkData3 = True
-                print 'There is no positive value connected for gridSize_. A default value will be used based on the dimensions of the _testShades.'
-            except:
+            if gridSize_ > 0: gridSize = float(gridSize_)
+            else:
+                warning = 'Values for gridSize_ must be positive.'
+                print warning
+                ghenv.Component.AddRuntimeMessage(w, warning)
                 gridSize = 0
                 checkData3 = False
-                print 'Invalid value is connected for gridSize_.'
     else:
-        try:
-            boundBox = _testShades.GetBoundingBox(False)
-            box = rc.Geometry.Box(boundBox)
-            if box.X[1] - box.X[0] < box.Y[1] - box.Y[0]:
-                gridSize = (box.X[1] - box.X[0])/5
-            else:
-                gridSize = (box.Y[1] - box.Y[0])/5
-            checkData3 = True
-            print 'There is no value connected for gridSize_. A default value will be used based on the dimensions of the _testShades.'
-        except:
-            gridSize = 0
-            checkData3 = False
-            print 'A default gridSize_ could not be generated.'
+        boundBox = _testShades.GetBoundingBox(False)
+        box = rc.Geometry.Box(boundBox)
+        if box.X[1] - box.X[0] < box.Y[1] - box.Y[0]:
+            gridSize = (box.X[1] - box.X[0])/5
+        else:
+            gridSize = (box.Y[1] - box.Y[0])/5
+        print "A default coarse grid size was chosen for your shades since you did not input a grid size."
     
-    #Check if runIt is set to true.
-    if _runIt == True:
-        checkData4 = True
+    
+    #Test to be sure that each window has a respective shade, heating load, cooling load, and beam gain. If not, take them out of the dictionary.
+    newAllDataDict = {}
+    for branch in allDataDict:
+        if allDataDict[branch].has_key('windowSrf') and allDataDict[branch].has_key('shadeSrfs') and allDataDict[branch].has_key('coolingLoad') and allDataDict[branch].has_key('heatingLoad') and allDataDict[branch].has_key('beamGain'):
+            if not newAllDataDict.has_key(branch):
+                newAllDataDict[branch] = {}
+                newAllDataDict[branch]["windowSrf"] = allDataDict[branch]["windowSrf"]
+                newAllDataDict[branch]["shadeSrfs"] = allDataDict[branch]["shadeSrfs"]
+                newAllDataDict[branch]["coolingLoad"] = allDataDict[branch]["coolingLoad"]
+                newAllDataDict[branch]["heatingLoad"] = allDataDict[branch]["heatingLoad"]
+                newAllDataDict[branch]["beamGain"] = allDataDict[branch]["beamGain"]
+        else:
+            print "One of the data tree branches of the input data does not have all 5 required inputs of window, shade, cooling load, heating load, and beam gain and has thus been disconted from the shade benefit evaluation."
+    
+    #Test to be sure that the correct headers are on the heating, cooling and beam gain and that the correct data type is referenced in these headers.  Also check to be sure that the data is hourly.
+    checkData4 = True
+    analysisPeriods = []
+    locations = []
+    zones = []
+    
+    def checkDataHeaders(dataBranch, dataType, dataName, bCount, numKey):
+        if str(dataBranch[0]) == "key:location/dataType/units/frequency/startsAt/endsAt":
+            analysisPeriods.append([dataBranch[5], dataBranch[6]])
+            locations.append(dataBranch[1])
+            if dataType != "Beam":
+                zones[bCount].append(dataBranch[2].split(' for ')[-1])
+            if dataType in dataBranch[2] and dataBranch[4] == "Hourly":
+                newList = []
+                for itemCount, item in enumerate(dataBranch):
+                    if itemCount > 6:
+                        newList.append(item)
+                newAllDataDict[branch][numKey] = newList
+            else:
+                checkData4 = False
+                warning = "Data in the " + dataName + " input is not cooling load data or data is not hourly.  Data must be of the correct type and must be hourly."
+                print warning
+                ghenv.Component.AddRuntimeMessage(w, warning)
+        else:
+            warning = 'Data in the ' + dataName + ' input does not possess a valid Ladybug header.  Data must have a header to use this component.'
+            print warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+    
+    for branchCount, branch in enumerate(newAllDataDict):
+        zones.append([])
+        checkDataHeaders(newAllDataDict[branch]["coolingLoad"], "Cooling", "_coolingLoad", branchCount, "cooling")
+        checkDataHeaders(newAllDataDict[branch]["heatingLoad"], "Heating", "_heatingLoad", branchCount, "heating")
+        checkDataHeaders(newAllDataDict[branch]["beamGain"], "Beam", "_beamGain", branchCount, "beam")
+    
+    #Make sure that the analysis periods, zones and locations are all the same.
+    checkData5 = True
+    checkData6 = True
+    checkData7 = True
+    analysisPeriod = None
+    location = None
+    
+    if checkData4 == True:
+        if len(analysisPeriods) != 0:
+            analysisPeriod = analysisPeriods[0]
+            for period in analysisPeriods:
+                if period  == analysisPeriod: pass
+                else: checkData5 = False
+        if checkData5 == False:
+            warning = 'All of the analysis periods on the connected data are not the same.  Data must all be from the same analysis period.'
+            print warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+        
+        if len(locations) != 0:
+            location = locations[0]
+            for loc in locations:
+                if loc  == location: pass
+                else: checkData6 = False
+        if checkData6 == False:
+            warning = 'All of the locations on the connected data are not the same.  Data must all be from the same location.'
+            print warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+        
+        for zoneList in zones:
+            if len(zoneList) != 0:
+                theZone = zoneList[0]
+                for zone in zoneList:
+                    if zone  == theZone: pass
+                    else: checkData7 = False
+        if checkData7 == False:
+            warning = 'The branches of the data trees for _heatingLoad, _coolingLoad and _beamGain are not all for the same zone.'
+            print warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+    
+    #Check the sky resolution and set a default.
+    checkData8 = True
+    if skyResolution_ == None:
+        skyResolution = 0
+        print "Sky resolution has been set to 0 for a fast simulation."
     else:
-        checkData4 = False
-        print 'Set _runIt to True to perform the shade benefit calculation.'
+        if skyResolution_ <= 4 and skyResolution_ >= 0:
+            skyResolution = skyResolution_
+            print "Sky resolution set to " + str(skyResolution)
+        else:
+            checkData8 = False
+            warning = 'Sky resolution must be a value between 0 and 4.'
+            print warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+    
+    #Check the location, make sure that it matches the location of the inputData, and get the latitude, longitude, and time zone.
+    checkData9 = True
+    latitude = None
+    longitude = None
+    timeZone = None
+    
+    if _location != None:
+        try:
+            locList = _location.split('\n')
+            for line in locList:
+                if "Latitude" in line: latitude = float(line.split(',')[0])
+                elif "Longitude" in line: longitude = float(line.split(',')[0])
+                elif "Time Zone" in line: timeZone = float(line.split(',')[0])
+        except:
+            checkData9 = False
+            warning = 'The connected _location is not a valid location from the "Ladybug_Import EWP" component or the "Ladybug_Construct Location" component.'
+            print warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+    else:
+        checkData9 = False
+        print 'Connect a _location from the "Ladybug_Import EWP" component or the "Ladybug_Construct Location" component.'
+    
+    #Check the north direction and, if none is given, set a default to the Y-Axis.
+    if north_ == None: north = 0
+    else: north = north_
     
     #Check if all of the above Checks are True
-    if checkData1 == True and checkData2 == True and checkData3 == True and checkData4 == True:
+    if checkData1 == True and checkData2 == True and checkData3 == True and checkData4 == True and checkData5 == True and checkData6 == True and checkData7 == True and checkData8 == True and checkData9 == True:
         checkData = True
     else:
         checkData = False
     
-    return checkData, gridSize
+    return checkData, gridSize, newAllDataDict, skyResolution, analysisPeriod, location, latitude, longitude, timeZone, north
 
 
-def meshTheShade(gridSize, testShade):
-    #Generate Meshes for the Shade
+def meshTheShade(gridSize, testShades):
+    #Set the paramters for meshing the shade
     meshPar = rc.Geometry.MeshingParameters.Default
     meshPar.MinimumEdgeLength = gridSize
     meshPar.MaximumEdgeLength = gridSize
     
-    analysisMesh = rc.Geometry.Mesh.CreateFromBrep(testShade, meshPar)[0]
-    
-    #Generate breps of the mesh faces so that users can see how the shade will be divided before they run the analysis
+    #Create the lists of variables to be meshed.
     analysisBreps = []
-    for face in analysisMesh.Faces:
-        if face.IsQuad:
-            analysisBreps.append(rc.Geometry.Brep.CreateFromCornerPoints(rc.Geometry.Point3d(analysisMesh.Vertices[face.A]), rc.Geometry.Point3d(analysisMesh.Vertices[face.B]), rc.Geometry.Point3d(analysisMesh.Vertices[face.C]), rc.Geometry.Point3d(analysisMesh.Vertices[face.D]), sc.doc.ModelAbsoluteTolerance))
-        if face.IsTriangle:
-            analysisBreps.append(rc.Geometry.Brep.CreateFromCornerPoints(rc.Geometry.Point3d(analysisMesh.Vertices[face.A]), rc.Geometry.Point3d(analysisMesh.Vertices[face.B]), rc.Geometry.Point3d(analysisMesh.Vertices[face.C]), sc.doc.ModelAbsoluteTolerance))
+    analysisAreasList = []
+    analysisMeshList = []
     
-    #Calculate the areas of the breps for later use in the normalization of shade benefit values.
-    analysisAreas = []
-    for brep in analysisBreps:
-        area = rc.Geometry.AreaMassProperties.Compute(brep).Area
-        analysisAreas.append(area)
+    for testShade in testShades:
+        analysisMesh = rc.Geometry.Mesh.CreateFromBrep(testShade, meshPar)[0]
+        
+        #Generate breps of the mesh faces so that users can see how the shade will be divided before they run the analysis
+        
+        for face in analysisMesh.Faces:
+            if face.IsQuad:
+                analysisBreps.append(rc.Geometry.Brep.CreateFromCornerPoints(rc.Geometry.Point3d(analysisMesh.Vertices[face.A]), rc.Geometry.Point3d(analysisMesh.Vertices[face.B]), rc.Geometry.Point3d(analysisMesh.Vertices[face.C]), rc.Geometry.Point3d(analysisMesh.Vertices[face.D]), sc.doc.ModelAbsoluteTolerance))
+            if face.IsTriangle:
+                analysisBreps.append(rc.Geometry.Brep.CreateFromCornerPoints(rc.Geometry.Point3d(analysisMesh.Vertices[face.A]), rc.Geometry.Point3d(analysisMesh.Vertices[face.B]), rc.Geometry.Point3d(analysisMesh.Vertices[face.C]), sc.doc.ModelAbsoluteTolerance))
+        
+        #Calculate the areas of the breps for later use in the normalization of shade benefit values.
+        analysisAreas = []
+        for brep in analysisBreps:
+            area = rc.Geometry.AreaMassProperties.Compute(brep).Area
+            analysisAreas.append(area)
+        
+        #Append the lists to the total list.
+        analysisAreasList.append(analysisAreas)
+        analysisMeshList.append(analysisMesh)
     
-    return analysisMesh, analysisBreps, analysisAreas
+    return analysisMeshList, analysisBreps, analysisAreasList
 
 
 def generateTestPoints(gridSize, testWindow):
@@ -208,10 +361,112 @@ def generateTestPoints(gridSize, testWindow):
         if pointOK == True:
             windowTestPtsFinal.append(point)
     
-    return windowTestPtsFinal, windowMesh
+    return windowTestPtsFinal
 
 
-def nonparallel_projection(analysisMesh, sunLines):
+def prepareGeometry(gridSize, allDataDict):
+    #Things to generate: shadeFaceAreas, allShadeBreps, windowTestPts, shadeMesh, shadeMeshBreps
+    #Create the lists that will be filled.
+    windowTestPts = []
+    shadeMeshBreps = []
+    
+    for branchCount, branch in enumerate(allDataDict):
+        #Mesh the shade.
+        shadeMesh, shadeMeshBrepList, shadeMeshAreas = meshTheShade(gridSize, allDataDict[branch]["shadeSrfs"])
+        shadeMeshBreps.append(shadeMeshBrepList)
+        allDataDict[branch]["shadeMesh"] = shadeMesh
+        allDataDict[branch]["shadeMeshAreas"] = shadeMeshAreas
+        
+        #Generate window test points.
+        windowPoints = generateTestPoints(gridSize, allDataDict[branch]["windowSrf"])
+        windowTestPts.append(windowPoints)
+        allDataDict[branch]["windowPts"] = windowPoints
+    
+    return windowTestPts, shadeMeshBreps, allDataDict
+
+
+def checkSkyResolution(skyResolution, allDataDict, analysisPeriod, latitude, longitude, timeZone, north, lb_sunpath, lb_preparation):
+    # Make lists for all of the sun up hours of the data dictionary.
+    for path in allDataDict:
+        allDataDict[path]["coolingSun"] = []
+        allDataDict[path]["heatingSun"] = []
+        allDataDict[path]["beamSun"] = []
+    
+    #Get all of the sun vectors for the analysis period.
+    sunVectors = []
+    lb_sunpath.initTheClass(latitude, north, rc.Geometry.Point3d.Origin, 1, longitude, timeZone)
+    
+    HOYs, months, days = lb_preparation.getHOYsBasedOnPeriod(analysisPeriod, 1)
+    
+    for hoy in HOYs:
+        month, day, hour = lb_preparation.hour2Date(hoy, True)
+        lb_sunpath.solInitOutput(month, day, hour)
+        sunVec = lb_sunpath.sunReverseVectorCalc()
+        if sunVec.Z > 0:
+            sunVectors.append(sunVec)
+            
+            for path in allDataDict:
+                allDataDict[path]["coolingSun"].append(allDataDict[path]["cooling"][hoy-1])
+                allDataDict[path]["heatingSun"].append(allDataDict[path]["heating"][hoy-1])
+                allDataDict[path]["beamSun"].append(allDataDict[path]["beam"][hoy-1])
+    
+    #Check to see if the user has requested the highest resolution and, if not, consolidate the sun vectors into sky patches.
+    finalSunVecs = []
+    finalPatchHOYs = []
+    for path in allDataDict:
+        allDataDict[path]["coolingFinal"] = []
+        allDataDict[path]["heatingFinal"] = []
+        allDataDict[path]["beamFinal"] = []
+    
+    if skyResolution != 4:
+        newVecs = []
+        skyPatches = lb_preparation.generateSkyGeo(rc.Geometry.Point3d.Origin, skyResolution, .5)
+        skyPatchMeshes = []
+        for patch in skyPatches:
+            verts = patch.DuplicateVertices()
+            if len(verts) == 4:
+                patchBrep = rc.Geometry.Brep.CreateFromCornerPoints(verts[0], verts[1], verts[2], verts[3], sc.doc.ModelAbsoluteTolerance)
+            else: patchBrep = patch
+            skyPatchMeshes.append(rc.Geometry.Mesh.CreateFromBrep(patchBrep, rc.Geometry.MeshingParameters.Coarse)[0])
+            patchPt = rc.Geometry.AreaMassProperties.Compute(patch).Centroid
+            newVec = rc.Geometry.Vector3d(patchPt)
+            newVecs.append(newVec)
+            finalPatchHOYs.append([])
+        
+        
+        for vecCount, vector in enumerate(sunVectors):
+            ray = rc.Geometry.Ray3d(rc.Geometry.Point3d.Origin, vector)
+            for patchCount, patch in enumerate(skyPatchMeshes):
+                if rc.Geometry.Intersect.Intersection.MeshRay(patch, ray) >= 0:
+                    finalPatchHOYs[patchCount].append(vecCount)
+        
+        vecCount = -1
+        for patchCount, hourList in enumerate(finalPatchHOYs):
+            if hourList != []:
+                vecCount += 1
+                finalSunVecs.append(newVecs[patchCount])
+                for path in allDataDict:
+                    allDataDict[path]["coolingFinal"].append(0)
+                    allDataDict[path]["heatingFinal"].append(0)
+                    allDataDict[path]["beamFinal"].append(0)
+                
+                for hour in hourList:
+                    for path in allDataDict:
+                        allDataDict[path]["coolingFinal"][vecCount] = allDataDict[path]["coolingFinal"][vecCount] + allDataDict[path]["coolingSun"][hour]
+                        allDataDict[path]["heatingFinal"][vecCount] = allDataDict[path]["heatingFinal"][vecCount] + allDataDict[path]["heatingSun"][hour]
+                        allDataDict[path]["beamFinal"][vecCount] = allDataDict[path]["beamFinal"][vecCount] + allDataDict[path]["beamSun"][hour]
+    else:
+        finalSunVecs = sunVectors
+        for path in allDataDict:
+            allDataDict[path]["coolingFinal"] = allDataDict[path]["coolingSun"]
+            allDataDict[path]["heatingFinal"] = allDataDict[path]["heatingSun"]
+            allDataDict[path]["beamFinal"] = allDataDict[path]["beamSun"]
+    
+    
+    return allDataDict, finalSunVecs
+
+
+def nonparallel_projection(analysisMesh, sunLines, windowTestPts):
     #Intersect the sun lines with the test mesh
     faceInt = []
     for face in range(analysisMesh.Faces.Count): faceInt.append([])
@@ -229,7 +484,7 @@ def nonparallel_projection(analysisMesh, sunLines):
     return faceInt
 
 
-def parallel_projection(analysisMesh, sunLines):
+def parallel_projection(analysisMesh, sunLines, windowTestPts):
     #Intersect the sun lines with the test mesh using parallel processing
     faceInt = []
     for face in range(analysisMesh.Faces.Count): faceInt.append([]) #place holder for result
@@ -287,206 +542,256 @@ def valCalc(percentBlocked, ECool, EBeam, cellArea):
     
     return coolEffect, heatEffect, netEffect
 
-
-def main(gridSize, coolingLoad, heatingLoad, beamGain, analysisMesh, analysisAreas, windowMesh, windowTestPts, legendPar):
-    # import the classes
-    if sc.sticky.has_key('ladybug_release'):
-        lb_preparation = sc.sticky["ladybug_Preparation"]()
-        lb_visualization = sc.sticky["ladybug_ResultVisualization"]()
-        
-        #Reverse the sun vectors to ensure that they are facing the right direction
-        for vec in _sunVectors:
-            vec.Unitize()
-            vec.Reverse()
-        
-        #Determine the length to make the sun lines based on the scale of the bounding box around the input geometry.
-        def joinMesh(meshList):
-            joinedMesh = rc.Geometry.Mesh()
-            for m in meshList: joinedMesh.Append(m)
-            return joinedMesh
-        
-        joinedMesh = joinMesh([analysisMesh, windowMesh])
-        
-        boundBox = rc.Geometry.Mesh.GetBoundingBox(joinedMesh, rc.Geometry.Plane.WorldXY)
-        
-        #Multiply the largest dimension of the bounding box by 2 to ensure that the lines are definitely long enough to intersect the shade.
-        lineLength = (max(boundBox.Max - boundBox.Min)) * 2
-        
-        #Generate the sun lines for intersection and discount the vector if it intersects a context.
-        sunLines = []
-        if context_:
-            contextMeshes = []
-            for brep in context_:
-                contextMeshes.extend(rc.Geometry.Mesh.CreateFromBrep(brep, rc.Geometry.MeshingParameters.Default))
-            contextMesh = joinMesh(contextMeshes)
-        else: pass
-        
-        for pt in windowTestPts: sunLines.append([]) 
-        
-        for ptCount, pt in enumerate(windowTestPts):
-            for vec in _sunVectors:
-                if context_:
-                    if rc.Geometry.Intersect.Intersection.MeshRay(contextMesh, rc.Geometry.Ray3d(pt, vec)) < 0:
-                        sunLines[ptCount].append(rc.Geometry.Line(pt, lineLength * vec))
-                    else: sunLines[ptCount].append(0)
-                else:
+def evaluateShade(coolingLoad, heatingLoad, beamGain, analysisMesh, analysisAreas, windowMesh, windowTestPts, sunVectors):
+    #Determine the length to make the sun lines based on the scale of the bounding box around the input geometry.
+    def joinMesh(meshList):
+        joinedMesh = rc.Geometry.Mesh()
+        for m in meshList: joinedMesh.Append(m)
+        return joinedMesh
+    
+    joinedMesh = joinMesh([analysisMesh, windowMesh])
+    
+    boundBox = rc.Geometry.Mesh.GetBoundingBox(joinedMesh, rc.Geometry.Plane.WorldXY)
+    
+    #Multiply the largest dimension of the bounding box by 2 to ensure that the lines are definitely long enough to intersect the shade.
+    lineLength = (max(boundBox.Max - boundBox.Min)) * 2
+    
+    #Generate the sun lines for intersection and discount the vector if it intersects a context.
+    sunLines = []
+    if context_:
+        contextMeshes = []
+        for brep in context_:
+            contextMeshes.extend(rc.Geometry.Mesh.CreateFromBrep(brep, rc.Geometry.MeshingParameters.Default))
+        contextMesh = joinMesh(contextMeshes)
+    else: pass
+    
+    for pt in windowTestPts: sunLines.append([]) 
+    
+    for ptCount, pt in enumerate(windowTestPts):
+        for vec in sunVectors:
+            if context_:
+                if rc.Geometry.Intersect.Intersection.MeshRay(contextMesh, rc.Geometry.Ray3d(pt, vec)) < 0:
                     sunLines[ptCount].append(rc.Geometry.Line(pt, lineLength * vec))
-                
-        
-        #If parallel is true, then run the intersection through the parallel function.  If not, run it through the normal function.
-        if parallel_ == True:
-            faceInt = parallel_projection(analysisMesh, sunLines)
-        else:
-            faceInt = nonparallel_projection(analysisMesh, sunLines)
-        
-        #Convert the Number Of Intersections for Each Mesh Face into a Percent of Sun Blocked by Each Mesh Face for Each Hour of the Year.
-        percentBlocked = []
-        for face in range(analysisMesh.Faces.Count):
-            percentBlocked.append(len(_sunVectors) *[0])
-        
-        testPtsCount = len(windowTestPts) 
-        # for each mesh surface,
-        for faceCount, faceData in enumerate(faceInt):
-            # check the number of intersections for each hour
-            counter= collections.Counter(faceData)
+                else: sunLines[ptCount].append(0)
+            else:
+                sunLines[ptCount].append(rc.Geometry.Line(pt, lineLength * vec))
             
-            for hour in counter.keys():
-                 # store the result in the new percentBlocked list
-                 percentBlocked[faceCount][hour] = counter[hour]/testPtsCount
-        
-        #Calculate ECool and EBeam, which signify the cooling energy at stake and the solar energy at stake respectively.
-        ECool = [a-b for a,b in zip(coolingLoad,heatingLoad)]
-        EBeam = beamGain
-        
-        #Compare the percent blocked for each hour with the temperatre at that hour in relation to the balance point in order to determine the net value of shading.
-        shadeHelpfulness = []
-        shadeHarmfulness = []
-        shadeNetEffect = []
-        for cellCount, cell in enumerate(percentBlocked):
-            shadeHelp, shadeHarm, shadeNet = valCalc(cell, ECool, EBeam, analysisAreas[cellCount])
-            shadeHelpfulness.append(shadeHelp)
-            shadeHarmfulness.append(shadeHarm)
-            shadeNetEffect.append(shadeNet)
-        
-        #Sort the net effects to find the highest and lowest values which will be used to generate colors and a legend for the mesh.
-        shadeNetSorted = []
-        for value in shadeNetEffect:
-            shadeNetSorted.append(value)
-        shadeNetSorted.sort()
-        mostHelp = shadeNetSorted[-1]
-        mostHarm = shadeNetSorted[0]
-        if abs(mostHelp) > abs(mostHarm): legendVal = abs(mostHelp)
-        else: legendVal = abs(mostHarm)
-        
-        #Get the colors for the analysis mesh based on the calculated benefit values unless a user has connected specific legendPar.
-        legendFont = 'Verdana'
-        if legendPar:
-            lowB, highB, numSeg, customColors, legendBasePoint, legendScale, legendFont, legendFontSize = lb_preparation.readLegendParameters(legendPar, False)
-        else:
-            lowB = -1 * legendVal
-            highB = legendVal
-            numSeg = 11
-            customColors = [System.Drawing.Color.FromArgb(255,0,0), System.Drawing.Color.FromArgb(255,51,51), System.Drawing.Color.FromArgb(255,102,102), System.Drawing.Color.FromArgb(255,153,153), System.Drawing.Color.FromArgb(255,204,204), System.Drawing.Color.FromArgb(255,255,255), System.Drawing.Color.FromArgb(204,204,255), System.Drawing.Color.FromArgb(153,153,255), System.Drawing.Color.FromArgb(102,102,255), System.Drawing.Color.FromArgb(51,51,255), System.Drawing.Color.FromArgb(0,0,255)]
-            legendBasePoint = None
-            legendScale = 1
-        
-        colors = lb_visualization.gradientColor(shadeNetEffect, lowB, highB, customColors)
-        
-        #Color the shade mesh based on the colors.
-        shadeMesh = lb_visualization.colorMesh(colors, analysisMesh)
-        
-        # If the user has set "delNonIntersect_" to True, delete those mesh values that do not have ny solar intersections.
-        if delNonIntersect_ == True:
-            deleteFaces = []
-            newShadeHelpfulness = []
-            newShadeHarmfulness = []
-            newShadeNetEffect = []
-            for cellCount, cell in enumerate(colors):
-                if shadeHelpfulness[cellCount] == 0.0 and shadeHarmfulness[cellCount] == 0.0:
-                    deleteFaces.append(cellCount)
-                else:
-                    newShadeHelpfulness.append(shadeHelpfulness[cellCount])
-                    newShadeHarmfulness.append(shadeHarmfulness[cellCount])
-                    newShadeNetEffect.append(shadeNetEffect[cellCount])
-            shadeMesh.Faces.DeleteFaces(deleteFaces)
-            shadeHelpfulness = newShadeHelpfulness
-            shadeHarmfulness = newShadeHarmfulness
-            shadeNetEffect = newShadeNetEffect
-        else:
-            pass
-        
-        #Generate a legend for the mesh.
-        lb_visualization.calculateBB([shadeMesh], True)
-        
-        units = sc.doc.ModelUnitSystem
-        legendTitle = 'kWh Saved/(' + str(units) + ')2'
-        analysisTitle = '\nShade Benefit Analysis'
-        if legendBasePoint == None: legendBasePoint = lb_visualization.BoundingBoxPar[0]
-        
-        legendSrfs, legendText, legendTextCrv, textPt, textSize = lb_visualization.createLegend(shadeNetEffect, lowB, highB, numSeg, legendTitle, lb_visualization.BoundingBoxPar, legendBasePoint, legendScale)
-        legendColors = lb_visualization.gradientColor(legendText[:-1], lowB, highB, customColors)
-        legendSrfs = lb_visualization.colorMesh(legendColors, legendSrfs)
-        
-        titlebasePt = lb_visualization.BoundingBoxPar[-2]
-        titleTextCurve = lb_visualization.text2srf([analysisTitle], [titlebasePt], legendFont, legendScale * (lb_visualization.BoundingBoxPar[2]/20))
-        
-        #Package the final legend together.
-        legend = [legendSrfs, [lb_preparation.flattenList(legendTextCrv + titleTextCurve)]]
-        
-        
-        
-        
-        #If we have got all of the outputs, let the user know that the calculation has been successful.
-        if shadeHelpfulness and shadeHarmfulness and shadeNetEffect and shadeMesh and legend and legendBasePoint:
-            print 'Shade benefit caclculation successful!'
-        else: pass
-        
-        return shadeHelpfulness, shadeHarmfulness, shadeNetEffect, shadeMesh, legend, legendBasePoint
     
-    
+    #If parallel is true, then run the intersection through the parallel function.  If not, run it through the normal function.
+    if parallel_ == True:
+        faceInt = parallel_projection(analysisMesh, sunLines, windowTestPts)
     else:
-        print "You should let the Ladybug fly first..."
-        w = gh.GH_RuntimeMessageLevel.Warning
-        ghenv.Component.AddRuntimeMessage(w, "You should let the Ladybug fly first...")
-        return -1
-
-
-def openLegend(legendRes):
-    if len(legendRes)!=0:
-        meshAndCrv = []
-        meshAndCrv.append(legendRes[0])
-        [meshAndCrv.append(curve) for curveList in legendRes[1] for curve in curveList]
-        return meshAndCrv
-    else: return
-
-
-
-#Check the inputs and generate default values for grid size and balance temp if the user has given none.
-checkData, gridSize = checkTheInputs()
-
-#If the user has connected any breps to _testShades or _testWindow, output the window test points and an initial uncolored shadeMesh such that users can get a sense of what to expect before running the whole simulation.
-if gridSize > 0 and _testShades:
-    analysisMesh, shadeMesh, analysisAreas = meshTheShade(gridSize, _testShades)
-else: pass
-
-if gridSize > 0 and shadeMesh and _testWindow:
-    windowTestPts, windowMesh = generateTestPoints(gridSize, _testWindow)
-else: pass
-
-#If all of the data is good, run the shade benefit calculation to generate all results.
-if checkData == True:
-    result = main(gridSize, _coolingLoad, _heatingLoad, _beamGain, analysisMesh, analysisAreas, windowMesh, windowTestPts, legendPar_)
-    if result != -1:
-        shadeHelpfulness = result[0]
-        shadeHarmfulness = result[1]
-        shadeNetEffect = result[2]
-        shadeMesh = result[3]
-        legendBasePoint = result[5]
-        legend = []
-        [legend.append(item) for item in openLegend(result[4])]
+        faceInt = nonparallel_projection(analysisMesh, sunLines, windowTestPts)
     
-    ghenv.Component.Params.Output[2].Hidden = True
-    ghenv.Component.Params.Output[5].Hidden = True
+    #Convert the Number Of Intersections for Each Mesh Face into a Percent of Sun Blocked by Each Mesh Face for Each Hour of the Year.
+    percentBlocked = []
+    for face in range(analysisMesh.Faces.Count):
+        percentBlocked.append(len(sunVectors) *[0])
+    
+    testPtsCount = len(windowTestPts) 
+    # for each mesh surface,
+    for faceCount, faceData in enumerate(faceInt):
+        # check the number of intersections for each hour
+        counter= collections.Counter(faceData)
+        
+        for hour in counter.keys():
+             # store the result in the new percentBlocked list
+             percentBlocked[faceCount][hour] = counter[hour]/testPtsCount
+    
+    #Calculate ECool and EBeam, which signify the cooling energy at stake and the solar energy at stake respectively.
+    ECool = [a-b for a,b in zip(coolingLoad,heatingLoad)]
+    EBeam = beamGain
+    
+    #Compare the percent blocked for each hour with the temperatre at that hour in relation to the balance point in order to determine the net value of shading.
+    shadeHelpfulness = []
+    shadeHarmfulness = []
+    shadeNetEffect = []
+    for cellCount, cell in enumerate(percentBlocked):
+        shadeHelp, shadeHarm, shadeNet = valCalc(cell, ECool, EBeam, analysisAreas[cellCount])
+        shadeHelpfulness.append(shadeHelp)
+        shadeHarmfulness.append(shadeHarm)
+        shadeNetEffect.append(shadeNet)
+    
+    return shadeHelpfulness, shadeHarmfulness, shadeNetEffect
+
+
+
+def main(allDataDict, sunVectors, legendPar, lb_preparation, lb_visualization):
+    #Create lists to be filled.
+    totalNetEffect = []
+    totalShadeGeo = []
+    shadeHelpfulnessList = []
+    shadeHarmfulnessList = []
+    shadeNetEffectList = []
+    shadeMeshListInit = []
+    shadeMeshList = []
+    
+    #Evaluate each shade.
+    for windowCount, path in enumerate(allDataDict):
+        shadeHelpfulnessList.append([])
+        shadeHarmfulnessList.append([])
+        shadeNetEffectList.append([])
+        shadeMeshListInit.append([])
+        shadeMeshList.append([])
+        
+        coolingLoad = allDataDict[path]["coolingFinal"]
+        heatingLoad = allDataDict[path]["heatingFinal"]
+        beamGain = allDataDict[path]["beamFinal"]
+        
+        windowMesh = rc.Geometry.Mesh.CreateFromBrep(allDataDict[path]["windowSrf"])[0]
+        windowPoints = allDataDict[path]["windowPts"]
+        
+        for shadeCount, shadeMesh in enumerate(allDataDict[path]["shadeMesh"]):
+            totalShadeGeo.append(shadeMesh)
+            shadeMeshListInit[windowCount].append(shadeMesh)
+            shadeMeshAreas = allDataDict[path]["shadeMeshAreas"][shadeCount]
+            shadeHelpfulness, shadeHarmfulness, shadeNetEffect = evaluateShade(coolingLoad, heatingLoad, beamGain, shadeMesh, shadeMeshAreas, windowMesh, windowPoints, sunVectors)
+            
+            
+            for item in shadeNetEffect: totalNetEffect.append(item)
+            shadeHelpfulnessList[windowCount].append(shadeHelpfulness)
+            shadeHarmfulnessList[windowCount].append(shadeHarmfulness)
+            shadeNetEffectList[windowCount].append(shadeNetEffect)
+    
+    #Sort the net effects to find the highest and lowest values which will be used to generate colors and a legend for the mesh.
+    shadeNetSorted = totalNetEffect[:]
+    shadeNetSorted.sort()
+    mostHelp = shadeNetSorted[-1]
+    mostHarm = shadeNetSorted[0]
+    if abs(mostHelp) > abs(mostHarm): legendVal = abs(mostHelp)
+    else: legendVal = abs(mostHarm)
+    
+    #Get the colors for the analysis mesh based on the calculated benefit values unless a user has connected specific legendPar.
+    legendFont = 'Verdana'
+    if legendPar:
+        lowB, highB, numSeg, customColors, legendBasePoint, legendScale, legendFont, legendFontSize = lb_preparation.readLegendParameters(legendPar, False)
+    else:
+        lowB = -1 * legendVal
+        highB = legendVal
+        numSeg = 11
+        customColors = [System.Drawing.Color.FromArgb(255,0,0), System.Drawing.Color.FromArgb(255,51,51), System.Drawing.Color.FromArgb(255,102,102), System.Drawing.Color.FromArgb(255,153,153), System.Drawing.Color.FromArgb(255,204,204), System.Drawing.Color.FromArgb(255,255,255), System.Drawing.Color.FromArgb(204,204,255), System.Drawing.Color.FromArgb(153,153,255), System.Drawing.Color.FromArgb(102,102,255), System.Drawing.Color.FromArgb(51,51,255), System.Drawing.Color.FromArgb(0,0,255)]
+        legendBasePoint = None
+        legendScale = 1
+    
+    #Color each of the meshes with shade benefit.
+    for windowCount, shadeMeshGroup in enumerate(shadeMeshListInit):
+        for shadeCount, shadeMesh in enumerate(shadeMeshGroup):
+            shadeMeshNetEffect = shadeNetEffectList[windowCount][shadeCount]
+            colors = lb_visualization.gradientColor(shadeMeshNetEffect, lowB, highB, customColors)
+            coloredShadeMesh = lb_visualization.colorMesh(colors, shadeMesh)
+            shadeMeshList[windowCount].append(coloredShadeMesh)
+    
+    # If the user has set "delNonIntersect_" to True, delete those mesh values that do not have any solar intersections.
+    if delNonIntersect_ == True:
+        for windowCount, shadeMeshGroup in enumerate(shadeMeshList):
+            for shadeCount, shadeMesh in enumerate(shadeMeshGroup):
+                deleteFaces = []
+                newShadeHelpfulness = []
+                newShadeHarmfulness = []
+                newShadeNetEffect = []
+                shadeMeshNetEffect = shadeNetEffectList[windowCount][shadeCount]
+                for cellCount, cell in enumerate(shadeMeshNetEffect):
+                    if shadeHelpfulnessList[windowCount][shadeCount][cellCount] == 0.0 and shadeHarmfulnessList[windowCount][shadeCount][cellCount] == 0.0:
+                        deleteFaces.append(cellCount)
+                    else:
+                        newShadeHelpfulness.append(shadeHelpfulnessList[windowCount][shadeCount][cellCount])
+                        newShadeHarmfulness.append(shadeHarmfulnessList[windowCount][shadeCount][cellCount])
+                        newShadeNetEffect.append(cell)
+                shadeMesh.Faces.DeleteFaces(deleteFaces)
+                shadeHelpfulnessList[windowCount][shadeCount] = newShadeHelpfulness
+                shadeHarmfulnessList[windowCount][shadeCount] = newShadeHarmfulness
+                shadeNetEffectList[windowCount][shadeCount] = newShadeNetEffect
+    
+    #Generate a legend for all of the meshes.
+    lb_visualization.calculateBB(totalShadeGeo, True)
+    
+    units = sc.doc.ModelUnitSystem
+    legendTitle = 'kWh Saved/(' + str(units) + ')2'
+    analysisTitle = '\nShade Benefit Analysis'
+    if legendBasePoint == None: legendBasePoint = lb_visualization.BoundingBoxPar[0]
+    
+    legendSrfs, legendText, legendTextCrv, textPt, textSize = lb_visualization.createLegend(shadeNetEffect, lowB, highB, numSeg, legendTitle, lb_visualization.BoundingBoxPar, legendBasePoint, legendScale)
+    legendColors = lb_visualization.gradientColor(legendText[:-1], lowB, highB, customColors)
+    legendSrfs = lb_visualization.colorMesh(legendColors, legendSrfs)
+    
+    titlebasePt = lb_visualization.BoundingBoxPar[-2]
+    titleTextCurve = lb_visualization.text2srf([analysisTitle], [titlebasePt], legendFont, legendScale * (lb_visualization.BoundingBoxPar[2]/20))
+    
+    #Package the final legend together.
+    legend = []
+    legend.append(legendSrfs)
+    for item in lb_preparation.flattenList(legendTextCrv + titleTextCurve):
+        legend.append(item)
+    
+    #If we have got all of the outputs, let the user know that the calculation has been successful.
+    print 'Shade benefit caclculation successful!'
+    
+    
+    return shadeHelpfulnessList, shadeHarmfulnessList, shadeNetEffectList, shadeMeshList, legend, legendBasePoint
+
+
+
+
+
+#Import the classes, check the inputs, and generate default values for grid size if the user has given none.
+checkLB = True
+if sc.sticky.has_key('ladybug_release'):
+    lb_preparation = sc.sticky["ladybug_Preparation"]()
+    lb_visualization = sc.sticky["ladybug_ResultVisualization"]()
+    lb_sunpath = sc.sticky["ladybug_SunPath"]()
 else:
-    ghenv.Component.Params.Output[2].Hidden = False
-    ghenv.Component.Params.Output[5].Hidden = False
+    checkLB = False
+    print "You should let the Ladybug fly first..."
+    w = gh.GH_RuntimeMessageLevel.Warning
+    ghenv.Component.AddRuntimeMessage(w, "You should let the Ladybug fly first...")
+
+#Check the inputs.
+checkData = False
+if _coolingLoad.BranchCount > 0 and _heatingLoad.BranchCount > 0 and _beamGain.BranchCount > 0 and _testShades.BranchCount > 0 and _testWindow.BranchCount > 0 and _location != None:
+    checkData, gridSize, allDataDict, skyResolution, analysisPeriod, locationData, latitude, longitude, timeZone, north = checkTheInputs()
+
+#If everything passes above, prepare the geometry for analysis.
+if checkLB == True and checkData == True:
+    windowTestPtsInit, shadeMeshInit, geoAllDataDict = prepareGeometry(gridSize, allDataDict)
+    
+    #Unpack the data trees of test pts and shade mesh breps so that the user can see them and get a sense of what to expect from the evaluation.
+    windowTestPts = DataTree[Object]()
+    shadeMesh = DataTree[Object]()
+    for brCount, branch in enumerate(windowTestPtsInit):
+        for item in branch:
+            windowTestPts.Add(item, GH_Path(brCount))
+    for brCount, branch in enumerate(shadeMeshInit):
+        for item in branch:
+            shadeMesh.Add(item, GH_Path(brCount))
+
+
+#If all of the data is good and the user has set "_runIt" to "True", run the shade benefit calculation to generate all results.
+if checkLB == True and checkData == True and _runIt == True:
+    finalAllDataDict, sunVectors = checkSkyResolution(skyResolution, geoAllDataDict, analysisPeriod, latitude, longitude, timeZone, north, lb_sunpath, lb_preparation)
+    shadeHelpfulnessList, shadeHarmfulnessList, shadeNetEffectList, shadeMeshList, legend, legendBasePt = main(finalAllDataDict, sunVectors, legendPar_, lb_preparation, lb_visualization)
+    
+    shadeMesh = DataTree[Object]()
+    shadeHelpfulness = DataTree[Object]()
+    shadeHarmfulness = DataTree[Object]()
+    shadeNetEffect = DataTree[Object]()
+    
+    for windowCount, path in enumerate(finalAllDataDict):
+        for shadeCount, shade in enumerate(shadeMeshList[windowCount]):
+            newPath = path.split(']')[0].split('[')[-1]
+            finalPath = ()
+            for item in newPath.split(','):
+                num = int(item)
+                finalPath = finalPath + (num,)
+            b = shadeCount
+            finalPath = finalPath + (b,)
+            
+            shadeMesh.Add(shade, GH_Path(finalPath))
+            for item in shadeHelpfulnessList[windowCount][shadeCount]: shadeHelpfulness.Add(item, GH_Path(finalPath))
+            for item in shadeHarmfulnessList[windowCount][shadeCount]: shadeHarmfulness.Add(item, GH_Path(finalPath))
+            for item in shadeNetEffectList[windowCount][shadeCount]: shadeNetEffect.Add(item, GH_Path(finalPath))
+    
+    ghenv.Component.Params.Output[3].Hidden = True
+    ghenv.Component.Params.Output[6].Hidden = True
+else:
+    ghenv.Component.Params.Output[3].Hidden = False
+    ghenv.Component.Params.Output[6].Hidden = False
