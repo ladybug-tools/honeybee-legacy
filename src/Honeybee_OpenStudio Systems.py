@@ -9,18 +9,11 @@ OpenStudio Systems
 Provided by Honeybee 0.0.53
 
     Args:
-
-
-
-
-
-
         _HBZones:...
         _HVACSystems: ...
         _details_: ...
-.		_seeHVACDesc_
+.
     Returns:
-
         HBZones:...
 """
 from clr import AddReference
@@ -39,29 +32,12 @@ ghenv.Component.SubCategory = "09 | Energy | Energy"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
 except: pass
 
-
-
-
-
 def main(HBZones, HVACSystems,seeHVACDesc):
     # check for Honeybee
-
-
-
-
-
-
-
-
-
     results = []
     
-
-
     if sc.sticky.has_key('honeybee_release'):
     
-
-
     # call the objects from the lib
         hb_hive = sc.sticky["honeybee_Hive"]()
         HBZonesFromHive = hb_hive.callFromHoneybeeHive(HBZones)
@@ -122,12 +98,6 @@ def main(HBZones, HVACSystems,seeHVACDesc):
         # send the zones back to the hive
         HBZones  = hb_hive.addToHoneybeeHive(HBZonesFromHive, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
         
-
-
-
-
-
-
         
     else:
         results.append("You should first let Honeybee to fly...")
