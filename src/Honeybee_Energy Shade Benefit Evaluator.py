@@ -55,7 +55,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Energy Shade Benefit Evaluator"
 ghenv.Component.NickName = 'EnergyShadeBenefit'
-ghenv.Component.Message = 'VER 0.0.53\nAUG_30_2014'
+ghenv.Component.Message = 'VER 0.0.53\nSEP_02_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
@@ -748,7 +748,8 @@ else:
 #Check the inputs.
 checkData = False
 if _coolingLoad.BranchCount > 0 and _heatingLoad.BranchCount > 0 and _beamGain.BranchCount > 0 and _testShades.BranchCount > 0 and _testWindow.BranchCount > 0 and _location != None:
-    checkData, gridSize, allDataDict, skyResolution, analysisPeriod, locationData, latitude, longitude, timeZone, north = checkTheInputs()
+    if _coolingLoad.Branch(0)[0] != None and _heatingLoad.Branch(0)[0] != None and _beamGain.Branch(0)[0] != None and _testShades.Branch(0)[0] != None and _testWindow.Branch(0)[0] != None:
+        checkData, gridSize, allDataDict, skyResolution, analysisPeriod, locationData, latitude, longitude, timeZone, north = checkTheInputs()
 
 #If everything passes above, prepare the geometry for analysis.
 if checkLB == True and checkData == True:
