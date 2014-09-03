@@ -6,7 +6,7 @@
 """
 Grizzlybear exports Honeybee zones to gbXML file
 -
-Provided by Honeybee 0.0.55
+Provided by Honeybee 0.0.54
 
     Args:
         EquipRange: reserved for future use
@@ -27,11 +27,11 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_GrizzlyBear"
 ghenv.Component.NickName = 'grizzlyBear'
-ghenv.Component.Message = 'VER 0.0.55\nSEPT_1_2014'
+ghenv.Component.Message = 'VER 0.0.54\nSEP_03_2014'
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "11 | WIP"
-
-
+ghenv.Component.SubCategory = "12 | WIP"
+#compatibleHBVersion = VER 0.0.55\nSEP_03_2014
+#compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
 
@@ -41,6 +41,7 @@ import re
 import logging
 import Grasshopper.Kernel as gh
 import datetime
+import Rhino as rc
 
 gbXMLLibFolder = "C:\\gbXML"
 
@@ -206,14 +207,11 @@ class WritegbXML(object):
             tilt=gbx.prod.FindTilt(normal)
             print "tilt: ",tilt
             if(tilt == 180):
-
-                print 'found a floor!'
-                z = coordlist[0][2]
-                print z
+                print 'slab on grade'
                 #then we have found the floor
                 area = v.Vector.GetAreaofMemSafeCoords(memsafelist[0])
                 logging.info('Successfully found floor and calculated area.')
-                return area, z
+                return area
 
         
     def makeLevelCoords(self,zheight):
@@ -649,7 +647,7 @@ class WritegbXML(object):
         logging.info('First node gb written successfully.')
         return gb
     
-    def makeSpace(self,zone,totalarea, uniqueSched,rhinolevels):
+    def makeSpace(self,zone,totalarea, uniqueSched):
         
         logging.debug('Making gb spaces from hb zones.')
         space = gbx.Space()
@@ -657,13 +655,9 @@ class WritegbXML(object):
         space.Name = "Space_"+zone.name
         area = gbx.Area()
         
-        floorarea = 0 #zone.getFloorArea()
+        floorarea = zone.getFloorArea()
         if floorarea == 0 :
-            floorarea,z = wgb.findZoneFloorArea(zone.surfaces)
-            if z in rhinolevels:
-                pass
-            else:
-                rhinolevels.append(z)
+            floorarea = wgb.findZoneFloorArea(zone.surfaces)
         
         totalarea+=floorarea
         area.val = str(floorarea)
@@ -779,7 +773,7 @@ class WritegbXML(object):
         #infiltrationSchedule
         
         
-        return space,totalarea,uniqueSched,rhinoLevels
+        return space,totalarea,uniqueSched
         
     def makeUniqueSched(self,schedict):
         logging.debug('Filtering out only unique schedules so they are not duplicated.')
@@ -1217,12 +1211,11 @@ class WritegbXML(object):
         logging.info('Openings for gb successfully made.')
         return gbopenings,usedopening
 
-    def makegbXMLevels(self,rhinolevels, bldg):
-        print ('Making gbxml Levels.')
-
-        print rhinolevels
+    def makegbXMLevels(self,rhinolevels):
+        logging.debug('Making gbxml Levels.')
+        rhinolevels = [0.0000]
         bldlevels = gbx.BasicSerialization.setLevelsArray(len(rhinolevels))
-        bldg.bldgStories = bldlevels
+        cmp.Buildings[0].bldgStories = bldlevels
         for lcount, level in enumerate(rhinolevels):
             storey = gbx.BuildingStorey()
             storey.id = 'bldg-story-'+str(lcount+1)
@@ -1244,9 +1237,8 @@ class WritegbXML(object):
                 #for the list holding all surface polyloops, 1 point = cp
                 pl.Points[count] = cp
             storey.PlanarGeo = pg
-            bldg.bldgStories[lcount] = storey
+            cmp.Buildings[bcount].bldgStories[lcount] = storey
         logging.info('gbXML Levels made successfully.')
-        return bldg
 
     def makegbCartesianPt(self,pt):
         logging.debug('Making a gb cartesian point object.')
@@ -1629,6 +1621,8 @@ if gbXMLIsReady and _location and _writegbXML:
             
             HBZones = hb_hive.callFromHoneybeeHive(_HBZones)
             # reEvaluate zones
+            if meshSettings_ == None:
+                meshSettings_ = rc.Geometry.MeshingParameters.Default
             reEvaluate = hb_reEvaluateHBZones(HBZones, meshSettings_)
             reEvaluate.evaluateZones()
             if HBContext_ and HBContext_[0]!=None:
@@ -1639,7 +1633,6 @@ if gbXMLIsReady and _location and _writegbXML:
                 
 
 
-				
         #a list to store shared interior surfaces
         sharedint = []
         #variable to store unique surface count
@@ -1672,14 +1665,13 @@ if gbXMLIsReady and _location and _writegbXML:
             #this is the total area of all spaces, to be applied elsewhere
             totalarea = 0
             uniqueSched = []
-            rhinoLevels = []
             for zonecounter, zone in enumerate(HBZones):
                 print "zonecounter:",zonecounter
                 if zone.hasNonPlanarSrf or zone.hasInternalEdge:
                     zone.prepareNonPlanarZone(1)
                 
                 # create a space, calculate total area, find all unique schedules
-                space,totalarea,uniqueSched,rhinoLevels = wgb.makeSpace(zone,totalarea, uniqueSched,rhinoLevels)
+                space,totalarea,uniqueSched = wgb.makeSpace(zone,totalarea, uniqueSched)
                 
                 space = wgb.writeShellGeo(zone.surfaces, space)
                 cid = gbx.CADObjectId()
@@ -1689,8 +1681,6 @@ if gbXMLIsReady and _location and _writegbXML:
                 #gbspaces.append(space)
                 cmp.Buildings[bcount].Spaces[zonecounter] = space
             cmp.Buildings[bcount].Area = totalarea
-            cmp.Buildings[bcount] = wgb.makegbXMLevels(rhinoLevels,cmp.Buildings[bcount])
-            
 
         #createsurface elements, keep track of all constructions and openings
         usedconstructions = []

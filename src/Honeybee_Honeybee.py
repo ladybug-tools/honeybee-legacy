@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.55\nAUG_25_2014'
+ghenv.Component.Message = 'VER 0.0.55\nSEP_03_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -4487,12 +4487,11 @@ class EPZone(object):
         joinedBrep = rc.Geometry.Brep.JoinBreps(srfsToBeMeshed, sc.doc.ModelAbsoluteTolerance)[0]
         
         # mesh the geometry
-        if meshingParameters == None:
+        if meshingParameters == None or type(meshingParameters)!= rc.Geometry.MeshingParameters:
             mp = rc.Geometry.MeshingParameters.Default; disFactor = 3
         else:
             disFactor = 1
             mp = meshingParameters
-            
         meshedGeo = rc.Geometry.Mesh.CreateFromBrep(joinedBrep, mp)
         
         for mesh in meshedGeo:
@@ -4704,7 +4703,7 @@ class hb_reEvaluateHBZones(object):
             newAdjcSurface = self.hb_EPZoneSurface(self.createSurface(coordinates),
                                            count, newAdjcSurfaceName, adjcSurface.parent, adjcSurface.type)
             # reverse the order of points
-            restOfcoordinates = coordinates[1:]
+            restOfcoordinates = list(coordinates[1:])
             restOfcoordinates.reverse()
             newAdjcSurface.coordinates = [coordinates[0]] + restOfcoordinates
             newAdjcSurface.type = adjcSurface.type
