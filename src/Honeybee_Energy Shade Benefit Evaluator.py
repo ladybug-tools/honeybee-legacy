@@ -53,7 +53,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Energy Shade Benefit Evaluator"
 ghenv.Component.NickName = 'EnergyShadeBenefit'
-ghenv.Component.Message = 'VER 0.0.53\nSEP_06_2014'
+ghenv.Component.Message = 'VER 0.0.53\nSEP_07_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
@@ -524,24 +524,24 @@ def valCalc(percentBlocked, ECool, EBeam, cellArea):
     DeltaHeat1 = sum(BeamEffectHeat)
     
     BeamEffectMid = [item1 for item1, item2, item3 in zip(ECoolPercent , EBeamPercent , NegBeam) if item1 < item2 and item1 > item3]
-    DeltaMid = sum(BeamEffectMid)
+    DeltaMidCoolList = []
+    DeltaMidHeatList = []
+    for item in BeamEffectMid:
+        if item > 0: DeltaMidCoolList.append(item)
+        else: DeltaMidHeatList.append(item)
     
-    if DeltaMid > 0:
-        deltaCooling = DeltaCool1 + DeltaMid
-    else:
-        deltaCooling = DeltaCool1
+    DeltaMidCool = sum(DeltaMidCoolList)
+    DeltaMidHeat = sum(DeltaMidHeatList)
     
-    if DeltaMid < 0:
-        deltaHeating = DeltaHeat1 + DeltaMid
-    else:
-        deltaHeating = DeltaHeat1
+    deltaCooling = DeltaCool1 + DeltaMidCool
+    deltaHeating = DeltaHeat1 + DeltaMidHeat
     
     netEffecting = deltaCooling + deltaHeating
     
-    #Normalize the effects by the area of the cell such that there is a consistent metric between cells of different areas.  Also, divide the value by 24 such that the final unit is in degree-days/model unit instead of degree-hours/model unit.
-    coolEffect = (deltaCooling/cellArea)/24
-    heatEffect = (deltaHeating/cellArea)/24
-    netEffect = (netEffecting/cellArea)/24
+    #Normalize the effects by the area of the cell such that there is a consistent metric between cells of different areas.
+    coolEffect = (deltaCooling/cellArea)
+    heatEffect = (deltaHeating/cellArea)
+    netEffect = (netEffecting/cellArea)
     
     return coolEffect, heatEffect, netEffect
 
