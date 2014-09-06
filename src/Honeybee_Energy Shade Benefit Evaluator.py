@@ -23,9 +23,9 @@ Provided by Honeybee 0.0.53
     
     Args:
         _location: The output from the importEPW or constructLocation component.  This is essentially a list of text summarizing a location on the earth.
-        _coolingLoad: The selHourlyData output of the Ladybug_SunPath component when the window's zone hourly cooling load is connected to the SunPath's annualHourlyData_ input.
-        _heatingLoad: The selHourlyData output of the Ladybug_SunPath component when the window's zone hourly heating load is connected to the SunPath's annualHourlyData_ input.
-        _beamGain: The selHourlyData output of the Ladybug_SunPath component when the window's zone hourly beam gain is connected to the SunPath's annualHourlyData_ input.
+        _coolingLoad: The hourly cooling load of the window's corresponding zone (including ladybug header).
+        _heatingLoad: The hourly heating load of the window's corresponding zone (including ladybug header).
+        _beamGain: The hourly beam gain through the window (including ladybug header).
         ============: ...
         _testShade: A brep or list of breps representing shading to be evaluated in terms of its benefit. Note that, in the case that multiple shading breps are connected, this component does not account for the interaction between the different shading surfaces. Note that only breps with a single surface are supported now and volumetric breps will be included at a later point.
         _testWindow: A brep representing a window for which shading is being considered. Note that only breps with a single surface are supported now and volumetric breps will be included at a later point.
