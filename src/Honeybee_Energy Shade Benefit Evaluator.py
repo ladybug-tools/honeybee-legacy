@@ -5,20 +5,18 @@
 # under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
 
 """
-This is a component for visualizing the desirability of shade in terms of comfort temperature by using solar vectors, the outdoor temperature, and an assumed balance temperature.  The balance temperature represents either a median temperature of outdoor comfort if this component is being used to evaluate shade in an open space, or the outside temperature at which the energy passively flowing into a building is equal to that flowing out if the component is being used to evaluate shading over windows.
-
-Solar vectors for hours when the temperature is above the balance point contribute positively to shade desirability while solar vectors for hours when the temperature is below the balance point contribute negatively.
-
+This is a component for visualizing the desirability of shade in terms of energy simulation results by using solar vectors, the outdoor temperature, and the simulation hating load, cooling load, and beam gain.
+_
+Solar vectors for hours when the building is heating contribute positively to shade desirability while solar vectors for hours when the building is cooling contribute negatively.  This conrtibution is weighted by how much the building is cooling or heating in realtion to the solar beam gain through the window in question.
+_
 The component outputs a colored mesh of the shade illustrating the net effect of shading each mesh face.  A higher saturation of blue indicates that shading the cell is very desirable.  A higher saturation of red indicates that shading the cell is harmful (blocking more winter sun than summer sun). Desaturated cells indicate that shading the cell will have relatively little effect on outdoor comfort or building performance.
-
-The units for shade desirability are net cooling degree-days helped per unit area of shade if the test cell is blue.  If the test cell is red, the units are net heating degree-days harmed per unit area of shade.
-
-The method used by this component is based off of the Shaderade method developed by Christoph Reinhart, Jon Sargent, Jeffrey Niemasz.  This component uses Shaderade's method for evaluating shade and window geometry in terms of solar vectors but substitutes Shaderade's energy simulation for an evaluation of heating and cooling degree-days about a balance temperature. 
-
+_
+The units for shade desirability are net kWh saved per unit area of shade if the test cell is blue.  If the test cell is red, the units are net heating kWh harmed per unit area of shade.
+_
+The method used by this component is based off of the Shaderade method developed by Christoph Reinhart, Jon Sargent, Jeffrey Niemasz.  This component uses Shaderade's method for evaluating shade and window geometry in terms of solar vectors.
+_
 A special thanks goes to them and their research.  A paper detailing the Shaderade method is available at:
 http://www.gsd.harvard.edu/research/gsdsquare/Publications/Shaderade_BS2011.pdf
-
-The heating/cooling degree-day calculation used here works by first getting the percentage of sun blocked by the test cell for each hour of the year using the Shaderade method.  Next, this percentage for each hour is multiplied by the temperature above or below the balance point for each hour to get a "degree-hour" for each hour of the year for a cell.  Then, all the cooling-degree hours (above the balance point) and heating degree-hours (below the balance point) are summed to give the total heating or cooling degree-hours helped or harmed respectively.  This number is divided by 24 hours of a day to give degree-days.  These degree days are normalized by the area of the cell to make the metric consistent across cells of different area.  Lastly, the negative heating degree-days are added to the positive cooling degree-days to give a net effect for the cell.
 
 -
 Provided by Honeybee 0.0.53
@@ -55,7 +53,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Energy Shade Benefit Evaluator"
 ghenv.Component.NickName = 'EnergyShadeBenefit'
-ghenv.Component.Message = 'VER 0.0.53\nSEP_02_2014'
+ghenv.Component.Message = 'VER 0.0.53\nSEP_06_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
@@ -143,12 +141,14 @@ def checkTheInputs():
                 gridSize = 0
                 checkData3 = False
     else:
-        boundBox = _testShades.GetBoundingBox(False)
+        for branch in allDataDict:
+            testKey = branch
+        boundBox = allDataDict[testKey]["shadeSrfs"][0].GetBoundingBox(False)
         box = rc.Geometry.Box(boundBox)
         if box.X[1] - box.X[0] < box.Y[1] - box.Y[0]:
-            gridSize = (box.X[1] - box.X[0])/5
+            gridSize = (box.X[1] - box.X[0])/10
         else:
-            gridSize = (box.Y[1] - box.Y[0])/5
+            gridSize = (box.Y[1] - box.Y[0])/10
         print "A default coarse grid size was chosen for your shades since you did not input a grid size."
     
     
@@ -360,6 +360,9 @@ def generateTestPoints(gridSize, testWindow):
             else:pass
         if pointOK == True:
             windowTestPtsFinal.append(point)
+    
+    if windowTestPtsFinal == []:
+        windowTestPtsFinal.append(rc.Geometry.AreaMassProperties.Compute(testWindow).Centroid)
     
     return windowTestPtsFinal
 
