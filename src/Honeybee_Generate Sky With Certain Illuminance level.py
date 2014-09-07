@@ -95,4 +95,5 @@ def main(illuminanceValue):
     
 if not _illuminanceValue: _illuminanceValue = 1000
 results = main(_illuminanceValue)
-if results != -1: skyFilePath, skyDescription
+if results != -1:
+    skyFilePath, skyDescription = results
