@@ -33,7 +33,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_addHBGlz'
 ghenv.Component.NickName = 'addHBGlz'
-ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
+ghenv.Component.Message = 'VER 0.0.54\nSEP_07_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -134,11 +134,12 @@ def main(HBSurface, childSurfaces, EPConstruction, RADMaterial, tolerance):
                 HBSurface.addChildSrf(HBFenSrf)
                 HBSurface.calculatePunchedSurface()
             else:
-                warning = "Surface number " + str(srfCount) + " can't be a child surface for base surface.\n" + \
-                          "It can be because of document tolerance. Try to project the opening surfcae on base surface and try again."
+                warning = "Surface number " + str(srfCount) + " can't be a child surface for base surface. \n" + \
+                          "If you are feeding multiple child surfaces at the same time you can disregard this warning, otherwise " + \
+                          "it can be because of document tolerance. Try to project the opening surfcae on base surface and try again."
                 w = gh.GH_RuntimeMessageLevel.Warning
                 ghenv.Component.AddRuntimeMessage(w, warning)
-                return -1
+                
                 
         # send the HB surface back to the hive
         # add to the hive
