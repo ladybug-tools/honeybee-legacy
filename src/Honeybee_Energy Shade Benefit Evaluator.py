@@ -53,7 +53,7 @@ Provided by Honeybee 0.0.53
 
 ghenv.Component.Name = "Honeybee_Energy Shade Benefit Evaluator"
 ghenv.Component.NickName = 'EnergyShadeBenefit'
-ghenv.Component.Message = 'VER 0.0.53\nSEP_07_2014'
+ghenv.Component.Message = 'VER 0.0.53\nSEP_08_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
@@ -402,10 +402,12 @@ def checkSkyResolution(skyResolution, allDataDict, analysisPeriod, latitude, lon
     HOYs, months, days = lb_preparation.getHOYsBasedOnPeriod(analysisPeriod, 1)
     
     for hoy in HOYs:
-        month, day, hour = lb_preparation.hour2Date(hoy, True)
-        lb_sunpath.solInitOutput(month, day, hour)
-        sunVec = lb_sunpath.sunReverseVectorCalc()
-        if sunVec.Z > 0:
+        d, m, h = lb_preparation.hour2Date(hoy, True)
+        m += 1
+        lb_sunpath.solInitOutput(m, d, h)
+        
+        if lb_sunpath.solAlt >= 0:
+            sunVec = lb_sunpath.sunReverseVectorCalc()
             sunVectors.append(sunVec)
             
             for path in allDataDict:
