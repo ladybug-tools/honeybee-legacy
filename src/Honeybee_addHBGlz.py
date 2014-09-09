@@ -33,7 +33,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_addHBGlz'
 ghenv.Component.NickName = 'addHBGlz'
-ghenv.Component.Message = 'VER 0.0.54\nSEP_07_2014'
+ghenv.Component.Message = 'VER 0.0.54\nSEP_08_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -125,14 +125,15 @@ def main(HBSurface, childSurfaces, EPConstruction, RADMaterial, tolerance):
                     
                 if RADMaterial!=None:
                     addedToLib, HBFenSrf.RadMaterial = hb_RADMaterialAUX.analyseRadMaterials(RADMaterial, True)
-                
+                    
                     # if the material is not in the library add it to the library
                     if HBFenSrf.RadMaterial not in sc.sticky ["honeybee_RADMaterialLib"].keys():
-                        hb_RADMaterialAUX.analyseRadMaterials(RADMaterial, True)
-                        
+                        addedToLib, HBFenSrf.RadMaterial = hb_RADMaterialAUX.analyseRadMaterials(RADMaterial, True)
+
                 # add it to the base surface
                 HBSurface.addChildSrf(HBFenSrf)
                 HBSurface.calculatePunchedSurface()
+                
             else:
                 warning = "Surface number " + str(srfCount) + " can't be a child surface for base surface. \n" + \
                           "If you are feeding multiple child surfaces at the same time you can disregard this warning, otherwise " + \

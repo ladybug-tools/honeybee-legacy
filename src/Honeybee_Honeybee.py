@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_03_2014'
+ghenv.Component.Message = 'VER 0.0.55\nSEP_08_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1178,7 +1178,7 @@ class WriteRAD(object):
                             for childSrf in srf.childSrfs:
                                 if childSrf.RadMaterial!=None:
                                     customRADMat, customMixFunRadMat = self.hb_RADMaterialAUX.addRADMatToDocumentDict(childSrf, customRADMat, customMixFunRadMat)
-                            
+                                    
                             if not srf.isPlanar or len(srf.childSrfs) > 1:
                                 geoRadFile.write(self.RADNonPlanarChildSurface(srf))
                             
@@ -1196,22 +1196,25 @@ class WriteRAD(object):
                             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
                             return -1
                             
-                            
+                    # check for material in child surfaces
+                    if not HBObj.isChild and HBObj.hasChild:
+                        # collect the custom material informations
+                        for childSrf in HBObj.childSrfs:
+                            if childSrf.RadMaterial!=None:
+                                try:
+                                    customRADMat, customMixFunRadMat = self.hb_RADMaterialAUX.addRADMatToDocumentDict(childSrf, customRADMat, customMixFunRadMat)
+                                except:
+                                    msg = childSrf.RadMaterial + " is not defined in the material library! Add the material to library and try again."
+                                    print msg
+                                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                                    return -1                    
+
                     if HBObj.isPlanar and (not HBObj.isChild and len(HBObj.childSrfs)<2):
+                        # check for rad material
                         geoRadFile.write(self.RADSurface(HBObj))
                     else:
                         geoRadFile.write(self.RADNonPlanarSurface(HBObj))
                         if not HBObj.isChild and HBObj.hasChild:
-                            # collect the custom material informations
-                            for childSrf in HBObj.childSrfs:
-                                if childSrf.RadMaterial!=None:
-                                    try:
-                                        customRADMat, customMixFunRadMat = self.hb_RADMaterialAUX.addRADMatToDocumentDict(childSrf, customRADMat, customMixFunRadMat)
-                                    except:
-                                        msg = childSrf.RadMaterial + " is not defined in the material library! Add the material to library and try again."
-                                        print msg
-                                        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
-                                        return -1
                             geoRadFile.write(self.RADNonPlanarChildSurface(HBObj))
                 
                 elif HBObj.objectType == "HBIES":
