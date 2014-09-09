@@ -24,7 +24,7 @@ Provided by Honeybee 0.0.54
 
 ghenv.Component.Name = "Honeybee_Label Zone Surfaces"
 ghenv.Component.NickName = 'LabelSurfaces'
-ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
+ghenv.Component.Message = 'VER 0.0.54\nSEP_09_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -35,8 +35,6 @@ except: pass
 
 from System import Object
 from System import Drawing
-from clr import AddReference
-AddReference('Grasshopper')
 import Grasshopper.Kernel as gh
 from Grasshopper import DataTree
 from Grasshopper.Kernel.Data import GH_Path
@@ -216,7 +214,7 @@ elif _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and sc.sti
     initCheck = True
 elif sc.sticky.has_key('honeybee_release') == False or sc.sticky.has_key('ladybug_release') == False:
     print "You should first let Honeybee amd Ladybug fly..."
-    ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee and Ladybug fly...")
+    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, "You should first let Honeybee and Ladybug fly...")
 else:
     pass
 
