@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_08_2014'
+ghenv.Component.Message = 'VER 0.0.55\nSEP_09_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -5188,18 +5188,19 @@ class hb_EPSurface(object):
         #coordinatesList.reverse()
         return coordinatesList
     
-    def extractPoints(self, method = 1, triangulate = False):
+    def extractPoints(self, method = 1, triangulate = False, meshPar = None):
         # if not self.meshedFace.IsValid:
         # meshed surface will be generated regardless
         # to make sure it won't fail for surfaces with multiple openings
-        if self.isPlanar:
-            meshPar = rc.Geometry.MeshingParameters.Coarse
-            meshPar.SimplePlanes = True
-        else:
-            meshPar = rc.Geometry.MeshingParameters.Smooth
-        
+        if meshPar == None:
+            if self.isPlanar:
+                meshPar = rc.Geometry.MeshingParameters.Coarse
+                meshPar.SimplePlanes = True
+            else:
+                meshPar = rc.Geometry.MeshingParameters.Smooth
+                
         self.meshedFace = rc.Geometry.Mesh.CreateFromBrep(self.geometry, meshPar)[0]
-            
+        
         if self.meshedFace.IsValid or self.hasInternalEdge:
             if self.isPlanar and not self.hasInternalEdge:
                 plSegments = self.meshedFace.GetNakedEdges()
