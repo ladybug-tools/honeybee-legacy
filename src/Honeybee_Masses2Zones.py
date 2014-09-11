@@ -6,7 +6,7 @@
 """
 Convert Mass to Honeybee Zones
 -
-Provided by Honeybee 0.0.54
+Provided by Honeybee 0.0.55
 
     Args:
         _zoneMasses: List of closed Breps
@@ -34,7 +34,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_Masses2Zones'
 ghenv.Component.NickName = 'Mass2Zone'
-ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
+ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014

@@ -7,7 +7,7 @@
 Add Glazing
 
 -
-Provided by Honeybee 0.0.54
+Provided by Honeybee 0.0.55
 
     Args:
         _name_: The name of the zone as a string
@@ -33,7 +33,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_addHBGlz'
 ghenv.Component.NickName = 'addHBGlz'
-ghenv.Component.Message = 'VER 0.0.54\nSEP_08_2014'
+ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014

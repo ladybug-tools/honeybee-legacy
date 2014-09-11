@@ -6,7 +6,7 @@
 """
 Export Honeybee Objects to OpenStudio
 -
-Provided by Honeybee 0.0.54
+Provided by Honeybee 0.0.55
     
     Args:
         openStudioLibFolder:
@@ -71,7 +71,7 @@ else:
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.54\nSEP_10_2014'
+ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nSEP_10_2014

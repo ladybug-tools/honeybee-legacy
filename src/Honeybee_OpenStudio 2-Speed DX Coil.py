@@ -6,7 +6,7 @@
 """
 Two Speed DX Coil
 -
-Provided by Honeybee 0.0.54
+Provided by Honeybee 0.0.55
 
     Args:
         _name:
@@ -38,7 +38,7 @@ import Grasshopper.Kernel as gh
 
 ghenv.Component.Name = "Honeybee_OpenStudio 2-Speed DX Coil"
 ghenv.Component.NickName = '2SpeedDXCoil'
-ghenv.Component.Message = 'VER 0.0.54\nAUG_22_2014'
+ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | AirsideSystems"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014

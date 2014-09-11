@@ -8,7 +8,7 @@ Genrate Climate Based Sky
 
 This component generate a climate based sky for any hour of the year
 -
-Provided by Honeybee 0.0.54
+Provided by Honeybee 0.0.55
     
     Args:
         north_: Input a vector to be used as a true North direction for the sun path or a number between 0 and 360 that represents the degrees off from the y-axis to make North.  The default North direction is set to the Y-axis (0 degrees).
@@ -23,7 +23,7 @@ Provided by Honeybee 0.0.54
 
 ghenv.Component.Name = "Honeybee_Generate Climate Based Sky"
 ghenv.Component.NickName = 'genClimateBasedSky'
-ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
+ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "02 | Daylight | Sky"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014

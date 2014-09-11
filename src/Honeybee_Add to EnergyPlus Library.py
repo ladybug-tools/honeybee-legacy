@@ -7,7 +7,7 @@
 Add EnergyPlus Material, Construction or Schedule to Library
 
 -
-Provided by Honeybee 0.0.54
+Provided by Honeybee 0.0.55
     
     Args:
         _EPObject: EnergyPlus material, construction or schedule definition
@@ -21,7 +21,7 @@ Provided by Honeybee 0.0.54
 
 ghenv.Component.Name = "Honeybee_Add to EnergyPlus Library"
 ghenv.Component.NickName = 'addToEPLibrary'
-ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
+ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014

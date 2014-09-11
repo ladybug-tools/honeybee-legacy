@@ -6,7 +6,7 @@
 """
 Constant Volume Fan
 -
-Provided by Honeybee 0.0.54
+Provided by Honeybee 0.0.55
 
     Args:
         _fanName:
@@ -27,7 +27,7 @@ import Grasshopper.Kernel as gh
 
 ghenv.Component.Name = "Honeybee_OpenStudio Systems Detail"
 ghenv.Component.NickName = 'ConstantVolumeFan'
-ghenv.Component.Message = 'VER 0.0.54\nAUG_21_2014'
+ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | AirsideSystems"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014

@@ -6,7 +6,7 @@
 """
 Separate surfaces by normal
 -
-Provided by Honeybee 0.0.54
+Provided by Honeybee 0.0.55
 
     Args:
         _geometry: Brep geometries
@@ -25,7 +25,7 @@ import math
 
 ghenv.Component.Name = "Honeybee_Separate By Normal"
 ghenv.Component.NickName = 'separateByNormal'
-ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
+ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014

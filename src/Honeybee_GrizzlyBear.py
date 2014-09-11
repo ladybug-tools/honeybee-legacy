@@ -6,7 +6,7 @@
 """
 Grizzlybear exports Honeybee zones to gbXML file
 -
-Provided by Honeybee 0.0.54
+Provided by Honeybee 0.0.55
 
     Args:
         EquipRange: reserved for future use
@@ -27,7 +27,7 @@ Provided by Honeybee 0.0.54
 
 ghenv.Component.Name = "Honeybee_GrizzlyBear"
 ghenv.Component.NickName = 'grizzlyBear'
-ghenv.Component.Message = 'VER 0.0.54\nSEP_03_2014'
+ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.55\nSEP_03_2014

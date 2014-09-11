@@ -7,7 +7,7 @@
 Make Adiabatic
 
 -
-Provided by Honeybee 0.0.54
+Provided by Honeybee 0.0.55
 
     Args:
         HBSrfs_: A list of valid Honeybee surfaces
@@ -17,7 +17,7 @@ Provided by Honeybee 0.0.54
 
 ghenv.Component.Name = "Honeybee_Make Adiabatic"
 ghenv.Component.NickName = 'makeAdiabatic'
-ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
+ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014

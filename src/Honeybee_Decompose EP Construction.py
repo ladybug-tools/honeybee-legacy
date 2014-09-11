@@ -8,7 +8,7 @@
 Filter EnergyPlus construction based on Energy modeling standards, climate zone, surface type and building program
 
 -
-Provided by Honeybee 0.0.54
+Provided by Honeybee 0.0.55
     
     Args:
         _cnstrName: EnergyPlus construction name
@@ -22,7 +22,7 @@ Provided by Honeybee 0.0.54
 
 ghenv.Component.Name = "Honeybee_Decompose EP Construction"
 ghenv.Component.NickName = 'DecomposeEPConstruction'
-ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
+ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014

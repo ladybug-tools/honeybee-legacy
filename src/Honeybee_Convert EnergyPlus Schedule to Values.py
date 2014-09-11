@@ -18,7 +18,7 @@ Provided by Ladybug 0.0.57
 
 ghenv.Component.Name = "Honeybee_Convert EnergyPlus Schedule to Values"
 ghenv.Component.NickName = 'convertEPSCHValues'
-ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
+ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "07 | Energy | Schedule"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014

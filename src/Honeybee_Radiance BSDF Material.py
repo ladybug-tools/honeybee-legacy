@@ -9,7 +9,7 @@ Radiance BSDF Material
 Create RADIANCE BSDF material
 
 -
-Provided by Honeybee 0.0.54
+Provided by Honeybee 0.0.55
 
     Args:
         _materialName: Name of material
@@ -20,7 +20,7 @@ Provided by Honeybee 0.0.54
 
 ghenv.Component.Name = "Honeybee_Radiance BSDF Material"
 ghenv.Component.NickName = 'radBSDFMaterial'
-ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
+ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "01 | Daylight | Material"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
