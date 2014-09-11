@@ -11,7 +11,7 @@ By default, zones will be colored based on total energy per unit floor area of t
 If total annual simulation data has been connected, the analysisPeriod_ input can be used to select out a specific period fo the year for coloration.
 In order to color zones by individual hours/months, connecting interger values to the "stepOfSimulation_" will allow you to scroll though each step of the input data.
 -
-Provided by Honeybee 0.0.55
+Provided by Honeybee 0.0.54
     
     Args:
         _zoneData: A list zone data out of the Read EP Result component or the comfort calculator components that have zone data hooked up to them.
@@ -36,7 +36,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Color Zones by EP Result"
 ghenv.Component.NickName = 'ColorZones'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.54\nSEP_11_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -207,6 +207,8 @@ def checkTheInputs():
         elif "Standard Effective Temperature" in dataType: normable = False
         elif "Comfortable Or Not" in dataType: normable = False
         elif "Adaptive Comfort" in dataType: normable = False
+        elif "Degrees from Target Temperature" in dataType: normable = False
+        elif "Adaptive Target Temperature" in dataType: normable = False
         elif "Universal Thermal Climate Index" in dataType: normable = False
         elif "Outdoor Comfort" in dataType: normable = False
         elif "Sensible Cooling Energy" in dataType: normable = True
