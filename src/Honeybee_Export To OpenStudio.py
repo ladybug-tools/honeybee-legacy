@@ -71,7 +71,7 @@ else:
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
+ghenv.Component.Message = 'VER 0.0.54\nSEP_10_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -330,7 +330,7 @@ class WriteOPS(object):
         return schedule
         
     def getOSSchedule(self, schName, model):
-        print schName
+        # print schName
         values, comments = self.hb_EPScheduleAUX.getScheduleDataByName(schName, ghenv.Component)
         
         if values[0].lower() != "schedule:week:daily":
@@ -1243,6 +1243,12 @@ class WriteOPS(object):
             if type(coordinates[0])is not list and type(coordinates[0]) is not tuple:
                 coordinates = [coordinates]
             
+            shadingSch = ""
+            schedule = surface.TransmittanceSCH
+            if schedule!="":
+                # transmittance schedule
+                shadingSch = self.getOSSchedule(schedule, model)
+            
             # generate OpenStudio points
             shdPointVectors = ops.Point3dVector();
             
@@ -1254,6 +1260,8 @@ class WriteOPS(object):
                 shdSurface = ops.ShadingSurface(shdPointVectors, model)
                 shdSurface.setName("shdSurface_" + str(surfaceCount) + "_" + str(shadingCount))
                 shdSurface.setShadingSurfaceGroup(shadingGroup)
+                if shadingSch!="": shdSurface.setTransmittanceSchedule(shadingSch)
+                
                 
     def setAdjacentSurfaces(self):
         for surfaceName in self.adjacentSurfacesDict.keys():

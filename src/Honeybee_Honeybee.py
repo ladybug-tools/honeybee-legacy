@@ -4173,8 +4173,8 @@ class EPZone(object):
         # assign loads
         self.assignLoadsBasedOnProgram()
         
-        if isConditioned: self.HVACSystem = ["GroupI", 0] # assign ideal loads as default
-        else: self.HVACSystem = ["NoHVAC", -1] # no system        
+        if isConditioned: self.HVACSystem = ["GroupI", 0, -1] # assign ideal loads as default
+        else: self.HVACSystem = ["NoHVAC", -1, -1] # no system        
         
         self.isConditioned = isConditioned
         self.isThisTheTopZone = False

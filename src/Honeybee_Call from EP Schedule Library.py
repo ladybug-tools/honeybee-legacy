@@ -20,7 +20,7 @@ Provided by Honeybee 0.0.54
 
 ghenv.Component.Name = "Honeybee_Call from EP Schedule Library"
 ghenv.Component.NickName = 'callFromEPSCHLibrary'
-ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
+ghenv.Component.Message = 'VER 0.0.54\nSEP_10_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "07 | Energy | Schedule"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -56,7 +56,8 @@ def main(keywords_):
         if len(keywords_)!=0 and keywords_[0]!=None:
             scheduleList = hb_EPMaterialAUX.searchListByKeyword(scheduleList, keywords_)
             scheduleTypeLimits = hb_EPMaterialAUX.searchListByKeyword(scheduleTypeLimits, keywords_)
-            
+        
+        return scheduleTypeLimits, scheduleList
     else:
         print "You should first let the Honeybee fly..."
         w = gh.GH_RuntimeMessageLevel.Warning
