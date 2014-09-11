@@ -10,7 +10,7 @@ export geometries to idf file, and run the energy simulation
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.54\nSEP_09_2014'
+ghenv.Component.Message = 'VER 0.0.54\nSEP_10_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -854,7 +854,13 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         print "You should first let both Ladybug and Honeybee to fly..."
         ghenv.Component.AddRuntimeMessage(w, "You should first let both Ladybug and Honeybee to fly...")
         return -1
-
+    
+    units = sc.doc.ModelUnitSystem
+    if `units` != 'Rhino.UnitSystem.Meters':
+        msg = "Currently the EnergyPlus component only works in meters. Change the units to Meters and try again!"
+        ghenv.Component.AddRuntimeMessage(w, msg)
+        return -1
+    
     try:
         if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
     except:

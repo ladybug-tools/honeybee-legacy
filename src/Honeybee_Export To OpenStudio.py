@@ -1632,6 +1632,12 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         ghenv.Component.AddRuntimeMessage(w, "You should first let both Ladybug and Honeybee to fly...")
         return -1
     
+    units = sc.doc.ModelUnitSystem
+    if `units` != 'Rhino.UnitSystem.Meters':
+        msg = "Currently the OpenStudio component only works in meters. Change the units to Meters and try again!"
+        ghenv.Component.AddRuntimeMessage(w, msg)
+        return -1
+    
     # version check
     try:
         if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1

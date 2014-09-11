@@ -37,7 +37,7 @@ Provided by Honeybee 0.0.54
 
 ghenv.Component.Name = "Honeybee_Run Daylight Simulation"
 ghenv.Component.NickName = 'runDaylightAnalysis'
-ghenv.Component.Message = 'VER 0.0.54\nAUG_25_2014'
+ghenv.Component.Message = 'VER 0.0.54\nSEP_10_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -71,12 +71,18 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
          radFileName, meshParameters, waitingTime, additionalRadFiles, overwriteResults,
          exportInteriorWalls):
     # import the classes
+    w = gh.GH_RuntimeMessageLevel.Warning
+    
     if not sc.sticky.has_key('ladybug_release') or not sc.sticky.has_key('honeybee_release'):
         print "You should first let both Ladybug and Honeybee to fly..."
-        w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, "You should first let both Ladybug and Honeybee to fly...")
         return -1
-
+    
+    units = sc.doc.ModelUnitSystem
+    if `units` != 'Rhino.UnitSystem.Meters':
+        msg = "Default Radiance parameters are set based on meters. Make sure to modify the parameters for document units or change the units to Meters."
+        ghenv.Component.AddRuntimeMessage(w, msg)
+        
     try:
         if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
     except:
