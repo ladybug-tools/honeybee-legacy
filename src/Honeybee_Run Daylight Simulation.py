@@ -255,7 +255,22 @@ if _writeRad == True and _analysisRecipe!=None and ((len(_HBObjects)!=0 and _HBO
             values = calculateResults.getResults()
             ghenv.Component.Params.Output[3].NickName = resultsOutputName
             ghenv.Component.Params.Output[3].Name = resultsOutputName
-            exec(resultsOutputName + "= values")
+            
+            # branch values based on test points
+            # this is really ugly - should fix it later
+            numOfPts = []
+            numOfBranches = testPts.BranchCount
+            for branchNum in range(numOfBranches):
+                numOfPts.append(len(testPts.Branch(branchNum)))
+            
+            exec(resultsOutputName + "= DataTree[System.Object]()")
+            totalPtsCount = 0
+            for branchNum in range(numOfBranches):
+                p = GH_Path(branchNum)
+                for ptCount in range(numOfPts[branchNum]):
+                    resValue = "%.2f"%values[totalPtsCount]
+                    exec(resultsOutputName + ".Add(resValue, p)")
+                    totalPtsCount += 1
             
         elif annualResultFiles != []:
             resultFiles = annualResultFiles
