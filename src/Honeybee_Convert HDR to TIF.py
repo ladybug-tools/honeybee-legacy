@@ -123,5 +123,5 @@ def main(HDRFilePath):
         return
 
 if _HDRFilePath!=None:
-    TIFFFilePath = main(HDRFilePath)
+    TIFFFilePath = main(_HDRFilePath)
 
