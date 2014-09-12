@@ -1211,6 +1211,14 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
             idfFile.write(line + '\n')
     else:
         print "[7 of 7] No outputs! You usually want to get some outputs when you run an analysis. Just saying..."
+        print "We'll just request some energy-related outputs for you that are monthly."
+        outPutsDefalut = 'OutputControl:Table:Style,Comma; \n' + \
+            'Output:Variable,*,Zone Ideal Loads Zone Total Cooling Energy, monthly; \n' + \
+            'Output:Variable,*,Zone Ideal Loads Zone Total Heating Energy, monthly; \n' + \
+            'Output:Variable,*,Zone Lights Electric Energy, monthly; \n' + \
+            'Output:Variable,*,Zone Electric Equipment Electric Energy, monthly;'
+        idfFile.write('\n')
+        idfFile.write(outPutsDefalut + '\n')
         
     idfFile.close()
     
