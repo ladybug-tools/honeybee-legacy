@@ -189,14 +189,16 @@ if _resultFileAddress and gotData == True:
                 for columnCount, column in enumerate(line.split(',')):
                     if 'Zone Air System Sensible Cooling Energy' in column or 'Zone Ideal Loads Zone Total Cooling Energy' in column:
                         key.append(0)
-                        if 'Zone Ideal Loads Zone Total Cooling Energy' in column: zoneName = checkZone(" " + column.split(':')[0].split('ZONEHVAC')[0])
+                        if 'Zone Ideal Loads Zone Total Cooling Energy' in column and 'ZONEHVAC' in column: zoneName = checkZone(" " + column.split(':')[0].split('ZONEHVAC')[0])
+                        elif 'IDEAL LOADS AIR SYSTEM' in column: zoneName = checkZone(" " + column.split(':')[0].split(' IDEAL LOADS AIR SYSTEM')[0])
                         else: zoneName = checkZone(" " + column.split(':')[0])
                         makeHeader(cooling, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Cooling Energy", "kWh", True)
                         dataTypeList[3] = True
                     
                     elif 'Zone Air System Sensible Heating Energy' in column or 'Zone Ideal Loads Zone Total Heating Energy' in column:
                         key.append(1)
-                        if 'Zone Ideal Loads Zone Total Heating Energy' in column: zoneName = checkZone(" " + column.split(':')[0].split('ZONEHVAC')[0])
+                        if 'Zone Ideal Loads Zone Total Heating Energy' in column and 'ZONEHVAC' in column: zoneName = checkZone(" " + column.split(':')[0].split('ZONEHVAC')[0])
+                        elif 'IDEAL LOADS AIR SYSTEM' in column: zoneName = checkZone(" " + column.split(':')[0].split(' IDEAL LOADS AIR SYSTEM')[0])
                         else: zoneName = checkZone(" " + column.split(':')[0])
                         makeHeader(heating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Heating Energy", "kWh", True)
                         dataTypeList[4] = True
