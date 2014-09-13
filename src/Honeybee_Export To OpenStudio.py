@@ -1458,7 +1458,7 @@ class RunOPS(object):
         #execute the batch file
         os.system(batchFileAddress)
         
-        return fullPath + "Zsz.csv"
+        return fullPath + ".csv"
 
 class RunOPSRManage(object):
     def __init__(self, model, measuredict, weatherFilePath = r"C:\EnergyPlusV8-1-0\WeatherData\USA_CA_San.Francisco.Intl.AP.724940_TMY3.epw"):
