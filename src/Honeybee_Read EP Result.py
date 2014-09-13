@@ -18,10 +18,11 @@ Provided by Honeybee 0.0.55
         totalEnergy: The total energy used by each zone in kWh.  This includes cooling, heating, lighting, and equipment.
         totalThermalEnergy: The total thermal energy used by each zone in kWh.  This includes cooling and heating.
         thermalEnergyBalance: The thermal energy used by each zone in kWh.  Heating values are positive while cooling values are negative.
-        cooling: The ideal air load cooling energy needed for each zone in kWh.
-        heating: The ideal air load heating energy needed for each zone in kWh.
+        cooling: The cooling energy needed in kWh. For Ideal Air loads, this is the sum of sensible and latent heat that must be removed from each zone.  For distributed OpenStudio systems like Packaged Terminal Heat Pumps (PTHP), this will be electric energy for each zone. For central OpenStudio systems, this ouput will be a single list for the whole building.
+        heating: The heating energy needed in kWh. For Ideal Air loads, this is the sum of sensible heat that must be added to each zone.  For distributed OpenStudio Systems like Packaged Terminal Heat Pumps (PTHP), this will be electric energy for each zone. For central OpenStudio systems, this ouput will be a single list for the whole building.
         electricLight: The electric lighting energy needed for each zone in kWh.
         electricEquip: The electric equipment energy needed for each zone in kWh.
+        fanElectric: The fan electric energy for a central heating or cooling system in kWh.  This ouput will not appear when there is no central system.
         peopleGains: The internal heat gains in each zone resulting from people (kWh).
         totalSolarGain: The total solar gain in each zone(kWh).
         exterSolarBeamGains: The direct solar beam gain in each zone from exterior windows (kWh).
@@ -131,6 +132,7 @@ cooling = DataTree[Object]()
 heating = DataTree[Object]()
 electricLight = DataTree[Object]()
 electricEquip = DataTree[Object]()
+fanElectric = DataTree[Object]()
 peopleGains = DataTree[Object]()
 totalSolarGain = DataTree[Object]()
 exterSolarBeamGains = DataTree[Object]()
@@ -143,8 +145,9 @@ relativeHumidity = DataTree[Object]()
 otherZoneData = DataTree[Object]()
 
 #Make a list to keep track of what outputs are in the result file.
-dataTypeList = [False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False]
+dataTypeList = [False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False]
 parseSuccess = False
+centralSys = False
 
 #Make a function to add headers.
 def makeHeader(list, path, zoneName, timestep, name, units, normable):
@@ -165,6 +168,21 @@ def checkZone(csvName):
         if name == csvName:
             zoneName = name
             path.append(count)
+    
+    return zoneName
+
+def checkZoneSys(sysInt):
+    zoneName = zoneNameList[int(sysInt)-1]
+    path.append(int(sysInt)-1)
+    return zoneName
+
+def checkCentralSys(sysInt, sysType):
+    if sysType == 0: zoneName = " Chiller" + sysInt
+    elif sysType == 1: zoneName = " Boiler" + sysInt
+    elif sysType == 2: zoneName = " Fan" + sysInt
+    else: zoneName = 'Unknown'
+    path.append(int(sysInt)-1)
+    
     return zoneName
 
 def checkZoneOther(dataIndex, csvName):
@@ -187,18 +205,26 @@ if _resultFileAddress and gotData == True:
                 #ANALYZE THE FILE HEADING
                 key = []; path = []
                 for columnCount, column in enumerate(line.split(',')):
-                    if 'Zone Air System Sensible Cooling Energy' in column or 'Zone Ideal Loads Zone Total Cooling Energy' in column:
+                    if 'Zone Air System Sensible Cooling Energy' in column or 'Zone Ideal Loads Zone Total Cooling Energy' in column or 'Zone Packaged Terminal Heat Pump Total Cooling Energy' in column or 'Chiller Electric Energy' in column:
                         key.append(0)
                         if 'Zone Ideal Loads Zone Total Cooling Energy' in column and 'ZONEHVAC' in column: zoneName = checkZone(" " + column.split(':')[0].split('ZONEHVAC')[0])
                         elif 'IDEAL LOADS AIR SYSTEM' in column: zoneName = checkZone(" " + column.split(':')[0].split(' IDEAL LOADS AIR SYSTEM')[0])
+                        elif 'ZONE HVAC PACKAGED TERMINAL HEAT PUMP' in column: zoneName = checkZoneSys(" " + column.split(':')[0].split('ZONE HVAC PACKAGED TERMINAL HEAT PUMP ')[-1])
+                        elif 'CHILLER ELECTRIC EIR' in column:
+                            zoneName = checkCentralSys(" " + column.split(':')[0].split('CHILLER ELECTRIC EIR ')[-1], 0)
+                            centralSys = True
                         else: zoneName = checkZone(" " + column.split(':')[0])
                         makeHeader(cooling, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Cooling Energy", "kWh", True)
                         dataTypeList[3] = True
                     
-                    elif 'Zone Air System Sensible Heating Energy' in column or 'Zone Ideal Loads Zone Total Heating Energy' in column:
+                    elif 'Zone Air System Sensible Heating Energy' in column or 'Zone Ideal Loads Zone Total Heating Energy' in column or 'Zone Packaged Terminal Heat Pump Total Heating Energy' in column or 'Boiler Heating Energy' in column:
                         key.append(1)
                         if 'Zone Ideal Loads Zone Total Heating Energy' in column and 'ZONEHVAC' in column: zoneName = checkZone(" " + column.split(':')[0].split('ZONEHVAC')[0])
                         elif 'IDEAL LOADS AIR SYSTEM' in column: zoneName = checkZone(" " + column.split(':')[0].split(' IDEAL LOADS AIR SYSTEM')[0])
+                        elif 'ZONE HVAC PACKAGED TERMINAL HEAT PUMP' in column: zoneName = checkZoneSys(" " + column.split(':')[0].split('ZONE HVAC PACKAGED TERMINAL HEAT PUMP ')[-1])
+                        elif 'BOILER HOT WATER' in column:
+                            zoneName = checkCentralSys(" " + column.split(':')[0].split('BOILER HOT WATER ')[-1], 1)
+                            centralSys = True
                         else: zoneName = checkZone(" " + column.split(':')[0])
                         makeHeader(heating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Heating Energy", "kWh", True)
                         dataTypeList[4] = True
@@ -215,35 +241,44 @@ if _resultFileAddress and gotData == True:
                         makeHeader(electricEquip, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Electric Equipment Energy", "kWh", True)
                         dataTypeList[6] = True
                     
+                    elif 'Fan Electric Energy' in column:
+                        key.append(15)
+                        if 'FAN CONSTANT VOLUME' in column: zoneName = checkZoneSys(" " + column.split(':')[0].split('FAN CONSTANT VOLUME ')[-1])
+                        elif 'FAN VARIABLE VOLUME' in column:
+                            centralSys = True
+                            zoneName = checkCentralSys(" " + column.split(':')[0].split('FAN VARIABLE VOLUME ')[-1], 2)
+                        makeHeader(fanElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Fan Electric Energy", "kWh", True)
+                        dataTypeList[7] = True
+                    
                     elif 'Zone People Total Heating Energy' in column:
                         key.append(4)
                         zoneName = checkZone(" " + column.split(':')[0])
                         makeHeader(peopleGains, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "People Energy", "kWh", True)
-                        dataTypeList[7] = True
+                        dataTypeList[8] = True
                     
                     elif 'Zone Windows Total Transmitted Solar Radiation Energy' in column:
                         key.append(5)
                         zoneName = checkZone(" " + column.split(':')[0])
                         makeHeader(totalSolarGain, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Total Solar Gain", "kWh", True)
-                        dataTypeList[8] = True
+                        dataTypeList[9] = True
                     
                     elif 'Zone Exterior Windows Total Transmitted Beam Solar Radiation Energy' in column:
                         key.append(6)
                         zoneName = checkZone(" " + column.split(':')[0])
                         makeHeader(exterSolarBeamGains, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Solar Beam Energy", "kWh", True)
-                        dataTypeList[9] = True
+                        dataTypeList[10] = True
                     
                     elif 'Zone Exterior Windows Total Transmitted Diffuse Solar Radiation Energy' in column:
                         key.append(7)
                         zoneName = checkZone(" " + column.split(':')[0])
                         makeHeader(exterSolarDiffuseGains, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Solar Diffuse Energy", "kWh", True)
-                        dataTypeList[10] = True
+                        dataTypeList[11] = True
                     
                     elif 'Zone Infiltration Total Heat Loss Energy ' in column:
                         key.append(8)
                         zoneName = checkZone(" " + column.split(':')[0])
                         makeHeader(infiltrationEnergy, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Infiltration Energy", "kWh", True)
-                        dataTypeList[11] = True
+                        dataTypeList[12] = True
                     
                     elif 'Zone Infiltration Total Heat Gain Energy' in column:
                         key.append(9)
@@ -253,32 +288,31 @@ if _resultFileAddress and gotData == True:
                         key.append(10)
                         zoneName = checkZone(" " + column.split(':')[0])
                         makeHeader(operativeTemperature, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Operative Temperature", "C", False)
-                        dataTypeList[12] = True
+                        dataTypeList[13] = True
                     
                     elif 'Zone Mean Air Temperature' in column:
                         key.append(11)
                         zoneName = checkZone(" " + column.split(':')[0])
                         makeHeader(airTemperature, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Air Temperature", "C", False)
-                        dataTypeList[13] = True
+                        dataTypeList[14] = True
                     
                     elif 'Zone Mean Radiant Temperature' in column:
                         key.append(12)
                         zoneName = checkZone(" " + column.split(':')[0])
                         makeHeader(meanRadTemperature, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Radiant Temperature", "C", False)
-                        dataTypeList[14] = True
+                        dataTypeList[15] = True
                     
                     elif 'Zone Air Relative Humidity' in column:
                         key.append(13)
                         zoneName = checkZone(" " + column.split(':')[0])
                         makeHeader(relativeHumidity, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Relative Humidity", "%", False)
-                        dataTypeList[15] = True
+                        dataTypeList[16] = True
                     
                     elif 'Zone' in column and not "ZONEHVAC" in column:
-                        print column
                         key.append(14)
                         zoneName = checkZoneOther(dataIndex, (" " + column.split(':')[0]))
                         makeHeader(otherZoneData, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], column.split(':')[-1].split(' [')[0], column.split('[')[-1].split(']')[0], False)
-                        dataTypeList[16] = True
+                        dataTypeList[17] = True
                         dataIndex += 1
                     
                     else:
@@ -323,6 +357,8 @@ if _resultFileAddress and gotData == True:
                         relativeHumidity.Add(float(column), p)
                     elif key[columnCount] == 14:
                         otherZoneData.Add(float(column), p)
+                    elif key[columnCount] == 15:
+                        fanElectric.Add((float(column)/3600000)/flrArea, p)
                     
         result.close()
         parseSuccess = True
@@ -351,7 +387,7 @@ heatingPyList = createPyList(heating)
 lightingPyList = createPyList(electricLight)
 equipmentPyList = createPyList(electricEquip)
 
-if len(coolingPyList) > 0 and len(heatingPyList) > 0 and len(lightingPyList) > 0 and len(equipmentPyList) > 0:
+if len(coolingPyList) > 0 and len(heatingPyList) > 0 and len(lightingPyList) > 0 and len(equipmentPyList) > 0 and centralSys == False:
     for listCount, list in enumerate(coolingPyList):
         makeHeader(totalEnergy, listCount, list[2].split(' for')[-1], list[4].split('(')[-1].split(')')[0], "Total Energy", "kWh", True)
         for numCount, num in enumerate(list[7:]):
@@ -378,24 +414,25 @@ outputsDict = {
 0: ["totalEnergy", "The total energy used by each zone in kWh.  This includes cooling, heating, lighting, and equipment."],
 1: ["totalThermalEnergy", "The total thermal energy used by each zone in kWh.  This includes cooling and heating."],
 2: ["thermalEnergyBalance", "The thermal energy used by each zone in kWh.  Heating values are positive while cooling values are negative."],
-3: ["cooling", "The ideal air load cooling energy needed for each zone in kWh."],
-4: ["heating", "The ideal air load heating energy needed for each zone in kWh."],
+3: ["cooling", "The cooling energy needed in kWh. For Ideal Air loads, this is the sum of sensible and latent heat that must be removed from each zone.  For distributed OpenStudio systems like Packaged Terminal Heat Pumps (PTHP), this will be electric energy for each zone. For central OpenStudio systems, this ouput will be a single list of chiller electric energy for the whole building."],
+4: ["heating", "The heating energy needed in kWh. For Ideal Air loads, this is the sum of sensible and latent heat that must be removed from each zone.  For distributed OpenStudio systems like Packaged Terminal Heat Pumps (PTHP), this will be electric energy for each zone.  For central OpenStudio systems, this ouput will be a single list of boiler heat energy for the whole building."],
 5: ["electricLight", "The electric lighting energy needed for each zone in kWh."],
 6: ["electricEquip", "The electric equipment energy needed for each zone in kWh."],
-7: ["peopleGains", "The internal heat gains in each zone resulting from people (kWh)."],
-8: ["totalSolarGain", "The total solar gain in each zone(kWh)."],
-9: ["exterSolarBeamGains", "The direct solar beam gain in each zone from exterior windows(kWh)."],
-10: ["exterSolarDiffuseGains", "The diffuse solar gain in each zone from exterior windows(kWh)."],
-11: ["infiltrationEnergy", "The heat loss (negative) or heat gain (positive) in each zone resulting from infiltration (kWh)."],
-12: ["operativeTemperature", "The mean operative temperature of each zone (degrees Celcius)."],
-13: ["airTemperature", "The mean air temperature of each zone (degrees Celcius)."],
-14: ["meanRadTemperature", "The mean radiant temperature of each zone (degrees Celcius)."],
-15: ["relativeHumidity", "The relative humidity of each zone (%)."],
-16: ["otherZoneData", "Other zone data that is in the result file (in no particular order). Note that this data cannot be normalized by floor area as the component does not know if it can be normalized."]
+7: ["fanElectric", "The fan electric energy for a central heating or cooling system in kWh.  This ouput will not appear when there is no central system assigned in OpenStudio."],
+8: ["peopleGains", "The internal heat gains in each zone resulting from people (kWh)."],
+9: ["totalSolarGain", "The total solar gain in each zone(kWh)."],
+10: ["exterSolarBeamGains", "The direct solar beam gain in each zone from exterior windows(kWh)."],
+11: ["exterSolarDiffuseGains", "The diffuse solar gain in each zone from exterior windows(kWh)."],
+12: ["infiltrationEnergy", "The heat loss (negative) or heat gain (positive) in each zone resulting from infiltration (kWh)."],
+13: ["operativeTemperature", "The mean operative temperature of each zone (degrees Celcius)."],
+14: ["airTemperature", "The mean air temperature of each zone (degrees Celcius)."],
+15: ["meanRadTemperature", "The mean radiant temperature of each zone (degrees Celcius)."],
+16: ["relativeHumidity", "The relative humidity of each zone (%)."],
+17: ["otherZoneData", "Other zone data that is in the result file (in no particular order). Note that this data cannot be normalized by floor area as the component does not know if it can be normalized."]
 }
 
 if _resultFileAddress and parseSuccess == True:
-    for output in range(17):
+    for output in range(18):
         if dataTypeList[output] == False:
             ghenv.Component.Params.Output[output].NickName = "."
             ghenv.Component.Params.Output[output].Name = "."
@@ -405,7 +442,7 @@ if _resultFileAddress and parseSuccess == True:
             ghenv.Component.Params.Output[output].Name = outputsDict[output][0]
             ghenv.Component.Params.Output[output].Description = outputsDict[output][1]
 else:
-    for output in range(17):
+    for output in range(18):
         ghenv.Component.Params.Output[output].NickName = outputsDict[output][0]
         ghenv.Component.Params.Output[output].Name = outputsDict[output][0]
         ghenv.Component.Params.Output[output].Description = outputsDict[output][1]
