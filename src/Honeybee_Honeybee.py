@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.55\nSEP_13_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -2104,7 +2104,7 @@ class WriteRADAUX(object):
                     
                     # copy the files into the folder
                     imageExtensions = ["JPEG", "JPG", "GIF", "TIFF", "TIF", "HDR", "PIC"]
-                    timeID = hb_writeRADAUX.getTime()
+                    timeID = self.getTime()
                     fileNames = os.listdir(subWorkingDir)
                     
                 if backupImages == 1:
@@ -2114,7 +2114,7 @@ class WriteRADAUX(object):
                             newFileName = (".").join(fileName.split(".")[:-1])
                             extension = fileName.split(".")[-1]
                             newFullName = newFileName + "_" + timeID + "." + extension
-                            hb_writeRADAUX.copyFile(os.path.join(subWorkingDir, fileName), os.path.join(imageFolder, newFullName) , True)
+                            self.copyFile(os.path.join(subWorkingDir, fileName), os.path.join(imageFolder, newFullName) , True)
                     
                 elif backupImages == 2:
                     for fileName in fileNames:
@@ -2122,7 +2122,7 @@ class WriteRADAUX(object):
                             if not os.path.exists(imageFolder + "\\" + timeID):
                                 os.mkdir(imageFolder + "\\" + timeID)
                             # copy the files to image backup folder with data and time added
-                            hb_writeRADAUX.copyFile(os.path.join(subWorkingDir, fileName), os.path.join(imageFolder + "\\" + timeID, fileName) , True)
+                            self.copyFile(os.path.join(subWorkingDir, fileName), os.path.join(imageFolder + "\\" + timeID, fileName) , True)
             try:
                 if not overwriteResults:
                     fileNames = os.listdir(subWorkingDir)
