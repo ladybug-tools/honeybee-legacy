@@ -331,6 +331,13 @@ class WriteOPS(object):
         
     def getOSSchedule(self, schName, model):
         # print schName
+        if schName.lower().endswith(".csv"):
+            msg = "Currently OpenStudio component cannot use .csv file as an schedule.\n" + \
+                      "Use EnergyPlus component or replace " + schName + " with an EP schedule and try again."
+            print msg
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+            return None
+            
         values, comments = self.hb_EPScheduleAUX.getScheduleDataByName(schName, ghenv.Component)
         
         if values[0].lower() != "schedule:week:daily":
@@ -349,7 +356,7 @@ class WriteOPS(object):
             elif values[0].lower() == "schedule:constant":
                 OSSchedule = self.createConstantOSSchedule(schName, values, model)
             else:
-                print values[0]
+                # print values[0]
                 OSSchedule = None
             
             if OSSchedule!=None:
