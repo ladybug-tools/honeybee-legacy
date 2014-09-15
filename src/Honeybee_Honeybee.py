@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_13_2014'
+ghenv.Component.Message = 'VER 0.0.55\nSEP_15_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -4173,8 +4173,8 @@ class EPZone(object):
         # assign loads
         self.assignLoadsBasedOnProgram()
         
-        if isConditioned: self.HVACSystem = ["GroupI", 0, -1] # assign ideal loads as default
-        else: self.HVACSystem = ["NoHVAC", -1, -1] # no system        
+        if isConditioned: self.HVACSystem = ["GroupI", 0, None] # assign ideal loads as default
+        else: self.HVACSystem = ["NoHVAC", -1, None] # no system        
         
         self.isConditioned = isConditioned
         self.isThisTheTopZone = False

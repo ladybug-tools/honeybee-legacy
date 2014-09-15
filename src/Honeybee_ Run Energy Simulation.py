@@ -10,10 +10,10 @@ export geometries to idf file, and run the energy simulation
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.55\nSEP_15_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
+#compatibleHBVersion = VER 0.0.55\nSEP_15_2014
 #compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
 
@@ -1150,7 +1150,15 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         
         for zone in zones:
             #zone = zones[0]
-            
+            if zone.HVACSystem[-1]!=None:
+                warning = "An HVAC system is applied to " + zone.name + \
+                          ".\n" + \
+                          "EnergyPlus component will replace this HVAC system with an Ideal Air Loads system.\n" + \
+                          " To model advanced HVAC systems use OpenStudio component."
+                w = gh.GH_RuntimeMessageLevel.Warning
+                ghenv.Component.AddRuntimeMessage(w, warning)
+                print warning
+                
             if listName!=None:
                 for zone in zones:
                     idfFile.write(hb_writeIDF.writeThemostat(zone.name, zone))
