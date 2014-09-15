@@ -71,7 +71,7 @@ else:
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.55\nSEP_15_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nSEP_10_2014
@@ -591,6 +591,10 @@ class WriteOPS(object):
                 for zone in thermalZoneVector: zone.setUseIdealAirLoads(True)
             
             elif systemIndex == 1:
+                msg = "HVAC system index " + str(systemIndex) +  " is not implemented yet!"
+                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                return
+                
                 #template values
                 availability = sc.sticky['System_1']['availSch']
                 fanplacement = sc.sticky['System_1']['fanPlacement']
@@ -670,6 +674,9 @@ class WriteOPS(object):
                 ops.OpenStudioModelHVAC.addSystemType2(model, thermalZoneVector)
                 
             elif systemIndex == 3:
+                msg = "HVAC system index " + str(systemIndex) +  " is not implemented yet!"
+                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                return
                 print ''
                 for zone in thermalZoneVector:
                     handle = ops.OpenStudioModelHVAC.addSystemType3(model).handle()
@@ -710,6 +717,9 @@ class WriteOPS(object):
                     handle = ops.OpenStudioModelHVAC.addSystemType4(model).handle()
                     print handle
             elif systemIndex == 5:
+                msg = "HVAC system index " + str(systemIndex) +  " is not implemented yet!"
+                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                return 
                 hvacHandle = ops.OpenStudioModelHVAC.addSystemType5(model).handle()
                 # get the airloop
                 airloop = model.getAirLoopHVAC(hvacHandle).get()
@@ -806,11 +816,11 @@ class WriteOPS(object):
                     fan.setFanPowerMinimumFlowFraction(0.2)
                     print "Sys 7:  success for fan setup"
                 
-
             else:
                 msg = "HVAC system index " + str(systemIndex) +  " is not implemented yet!"
                 ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
-            
+                
+                
     def addThermostat(self, HBZone, OSThermalZone, space, model):
         # create a dual set point
         thermostat = ops.ThermostatSetpointDualSetpoint(model)
