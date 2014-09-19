@@ -16,6 +16,7 @@ Provided by Honeybee 0.0.55
         breakUpWindow_: Set to "True" to break up windows on walls that contain rectangles.  Set to "False" to generate one window per quadrilateral wall.  The default is set to "True."
         windowHeight_: This input it optional and will only have relevance to HBObjects that contain a rectangle, which can be used to generate orthagonal windows.  Use this input to set the height of your windows in model units.  This input can also accept lists of values and will assign different window heights based on cardinal direction, starting with north and moving counter-clockwise.  Note that this input will be over-ridden at high glazing ratios.
         sillHeight_: This input it optional and will only have relevance to HBObjects that contain a rectangle, which can be used to generate orthagonal windows.  Use this input to set the distance from the floor to the bottom of your windows in model units.  This input can also accept lists of values and will assign different sill heights based on cardinal direction, starting with north and moving counter-clockwise.  Note that this input will be over-ridden at high glazing ratios or window heights.
+        breakUpDist_: An optional number in Rhino model units to set the distance between individual windows.  Note that this value is ignored when breakUpWindow_ is set to "False."
         skyLightRatio_: If you have input a full zone or list of zones as your HBObjects, use this input to generate skylights on the roof surfaces.
         _runIt: set runIt to True to generate the glazing
     Returns:
@@ -25,7 +26,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Glazing based on ratio"
 ghenv.Component.NickName = 'glazingCreator'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.55\nSEP_19_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -257,7 +258,9 @@ def createGlazingForRect(rectBrep, glazingRatio, windowHeight, sillHeight):
     else:
         silHeight = 0.8
     
-    if `units` == 'Rhino.UnitSystem.Meters':
+    if breakUpDist_:
+        distBreakup = breakUpDist_
+    elif `units` == 'Rhino.UnitSystem.Meters':
         distBreakup = 2
     elif `units` == 'Rhino.UnitSystem.Centimeters':
         distBreakup = 200
@@ -516,7 +519,9 @@ def createSkylightGlazing(baseSrf, glazingRatio, planarBool):
     #Define the grid size break down based on the model units.
     units = sc.doc.ModelUnitSystem
     
-    if `units` == 'Rhino.UnitSystem.Meters':
+    if breakUpDist_:
+        distBreakup = breakUpDist_
+    elif `units` == 'Rhino.UnitSystem.Meters':
         distBreakup = 2
     elif `units` == 'Rhino.UnitSystem.Centimeters':
         distBreakup = 200
