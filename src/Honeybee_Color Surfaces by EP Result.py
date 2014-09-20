@@ -5,7 +5,7 @@
 # under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
 
 """
-Use this component to color zone surfaces based on EnergyPlus data out of the "Honeybee_Read EP Surface Result" component or zone comfort analyses out of the comfort calculator components.
+Use this component to color zone surfaces based on EnergyPlus data out of the "Honeybee_Read EP Surface Result" component.
 _
 By default, zone surfaces will be colored based on total energy per unit surface area in the case of energy input data or colored based on average value of each surface in the case of temperature or data that is already normalized.
 If total annual simulation data has been connected, the analysisPeriod_ input can be used to select out a specific period fo the year for coloration.
@@ -36,7 +36,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Color Surfaces by EP Result"
 ghenv.Component.NickName = 'ColorSurfaces'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.55\nSEP_19_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -134,7 +134,7 @@ def checkTheInputs():
         checkData2 = True
     else:
         checkData2 = False
-        warning = "Not all of the connected _srfData has a Ladybug/Honeybee header on it.  This header is necessary to color zones with this component."
+        warning = "Not all of the connected _srfData has a Ladybug/Honeybee header on it.  This header is necessary to color zone surfaces with this component."
         print warning
         ghenv.Component.AddRuntimeMessage(w, warning)
     
