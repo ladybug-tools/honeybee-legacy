@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_15_2014'
+ghenv.Component.Message = 'VER 0.0.55\nSEP_21_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -4803,7 +4803,7 @@ class hb_reEvaluateHBZones(object):
                 else:
                     # surface is planar but glazing is not rectangular
                     # and so it is meshed now and is multiple glazing
-                    glzSurfaceName = "glzSrf_" + `count` + "_" + surface.name
+                    glzSurfaceName = child.name
                     
                     # create glazing surface
                     HBGlzSrf = self.createSubGlzSurfaceFromBaseSrf(child, surface, glzSurfaceName, count, coordinates)
@@ -4817,7 +4817,7 @@ class hb_reEvaluateHBZones(object):
                         
                         # add glazing to adjacent surface
                         adjcSrf = surface.BCObject
-                        glzAdjcSrfName = "glzSrf_" + `count` + "_" + adjcSrf.name
+                        glzAdjcSrfName = adjcSrf.name + "_glz_" + `count`
                             
                         adjcGlzPt = glzCoordinates[1:]
                         adjcGlzPt.reverse()
@@ -4876,7 +4876,7 @@ class hb_reEvaluateHBZones(object):
                     insetPts = self.getInsetGlazingCoordinates(insetGlzCoordinate)
 
                     # create new window and go for it
-                    glzSurfaceName = "glzSrf_" + `count` + "_" + newSurface.name
+                    glzSurfaceName = newSurface.name + "_glz_" + `count`
                     
                     HBGlzSrf = self.createSubGlzSurfaceFromBaseSrf(baseChildSrf, newSurface, glzSurfaceName, count, insetPts)
                     
@@ -4888,7 +4888,7 @@ class hb_reEvaluateHBZones(object):
                         
                         # add glazing to adjacent surface
                         adjcSrf = newSurface.BCObject
-                        glzAdjcSrfName = "glzSrf_" + `count` + "_" + adjcSrf.name
+                        glzAdjcSrfName = adjcSrf.name + "_glz_" + `count`
                             
                         adjcGlzPt = insetPts[1:]
                         adjcGlzPt.reverse()
