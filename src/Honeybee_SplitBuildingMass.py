@@ -27,7 +27,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = 'Honeybee_SplitBuildingMass'
 ghenv.Component.NickName = 'SplitMass'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.55\nSEP_22_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -42,6 +42,7 @@ import Grasshopper.Kernel as gh
 from System import Object
 from Grasshopper import DataTree
 from Grasshopper.Kernel.Data import GH_Path
+import rhinoscriptsyntax as rs
 
 
 tolerance = sc.doc.ModelAbsoluteTolerance
@@ -1048,6 +1049,25 @@ if checkData == True:
         for i, buildingMasses in enumerate(splitBldgMassesLists):
             for j, mass in enumerate(buildingMasses):
                 p = GH_Path(i,j)
+                
+                newMass = []
+                for brep in mass:
+                    #Bake the objects into the Rhino scene to ensure that surface normals are facing the correct direction
+                    sc.doc = rc.RhinoDoc.ActiveDoc #change target document
+                    rs.EnableRedraw(False)
+                    guid1 = [sc.doc.Objects.AddBrep(brep)]
+                    
+                    if guid1:
+                        a = [rs.coercegeometry(a) for a in guid1]
+                        for g in a: g.EnsurePrivateCopy() #must ensure copy if we delete from doc
+                        
+                        rs.DeleteObjects(guid1)
+                    
+                    sc.doc = ghdoc #put back document
+                    rs.EnableRedraw()
+                    newMass.append(g)
+                mass = newMass
+                
                 try:
                     splitBldgMasses.AddRange(mass, p)
                     #zoneNames = [str(i) + "_" + str(m) for m in range(len(mass))]

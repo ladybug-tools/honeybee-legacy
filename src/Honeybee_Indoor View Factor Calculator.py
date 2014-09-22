@@ -32,7 +32,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_21_2014'
+ghenv.Component.Message = 'VER 0.0.55\nSEP_22_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -211,6 +211,7 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, hb_zoneData):
     srfMeshPar = rc.Geometry.MeshingParameters.Coarse
     
     #Create the lists that will be filled.
+    geoCheck = True
     testPts = []
     MRTMeshBreps = []
     MRTMeshInit = []
@@ -285,59 +286,74 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, hb_zoneData):
         zoneSrfs = newZoneSrfs
         zoneSrfTypes = newZoneSrfTypes
     
-    for zoneCount, srfList in enumerate(zoneSrfs):
-        #Extract the wireframe.
-        wireFrame = zoneBreps[zoneCount].DuplicateEdgeCurves()
-        for crv in wireFrame:
-            zoneWires.append(crv)
-        
-        #Add lists to the final lists.
-        testPts.append([])
-        MRTMeshBreps.append([])
-        MRTMeshInit.append([])
-        zoneSrfsMesh.append([])
-        surfaceNames.append([])
-        
-        #Select out just the floor geometry.
-        floorBreps = []
-        for srfCount, srf in enumerate(srfList):
-            zoneSrfsMesh[zoneCount].append(rc.Geometry.Mesh.CreateFromBrep(srf, srfMeshPar)[0])
-            if zoneSrfTypes[zoneCount][srfCount] == 2 or zoneSrfTypes[zoneCount][srfCount] == 2.25 or zoneSrfTypes[zoneCount][srfCount] == 2.5 or zoneSrfTypes[zoneCount][srfCount] == 2.75:
-                floorBreps.append(srf)
-        
-        #If there are multiple floor breps, join them together.
-        dataCheck = True
-        if len(floorBreps) == 1: floorBrep = floorBreps
-        elif len(floorBreps) > 1: floorBrep = rc.Geometry.Brep.JoinBreps(floorBreps, tol)
+    for brep in zoneBreps:
+        if brep.IsSolid: pass
         else:
-            dataCheck = False
-            floorBrep = []
-        
-        #Move the surface upwards by the offsetDist and keep track of planarity.
-        floorBrepsMoved = []
-        translation = rc.Geometry.Transform.Translation(0,0,distFromFloor)
-        planarList = []
-        if len(floorBrep) == 1: isPlanar = True
-        else: isPlanar = False
-        for brep in floorBrep:
-            for face in brep.Faces:
-                if not face.IsPlanar: isPlanar = False
-            planarList.append(isPlanar)
-            newBrep = brep.Duplicate()
-            newBrep.Transform(translation)
-            floorBrepsMoved.append(newBrep)
-        
-        finalBreps = []
-        for count, brep in enumerate(floorBrepsMoved):
-            #If the surface is planar, intersect the surface with the walls of the zone and rebuild the surface from the curve.
-            if planarList[count] == True:
-                intersectLineList = rc.Geometry.Intersect.Intersection.BrepBrep(brep, zoneBreps[zoneCount], tol)[1]
-                try: intersectLineList = rc.Geometry.Curve.JoinCurves(intersectLineList, tol)
-                except: pass
-                if len(intersectLineList) == 1:
-                    if intersectLineList[0].IsClosed:
-                        finalBrep = rc.Geometry.Brep.CreatePlanarBreps(intersectLineList[0])
-                        finalBreps.append(finalBrep)
+            geoCheck = False
+            warning = "Getting rid of interior walls has caused the connected zone geometry to not be closed.  Try connecting all zones of your building or all zones for each floor."
+            print warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+    
+    if geoCheck == True:
+        for zoneCount, srfList in enumerate(zoneSrfs):
+            #Extract the wireframe.
+            wireFrame = zoneBreps[zoneCount].DuplicateEdgeCurves()
+            for crv in wireFrame:
+                zoneWires.append(crv)
+            
+            #Add lists to the final lists.
+            testPts.append([])
+            MRTMeshBreps.append([])
+            MRTMeshInit.append([])
+            zoneSrfsMesh.append([])
+            surfaceNames.append([])
+            
+            #Select out just the floor geometry.
+            floorBreps = []
+            for srfCount, srf in enumerate(srfList):
+                zoneSrfsMesh[zoneCount].append(rc.Geometry.Mesh.CreateFromBrep(srf, srfMeshPar)[0])
+                if zoneSrfTypes[zoneCount][srfCount] == 2 or zoneSrfTypes[zoneCount][srfCount] == 2.25 or zoneSrfTypes[zoneCount][srfCount] == 2.5 or zoneSrfTypes[zoneCount][srfCount] == 2.75:
+                    floorBreps.append(srf)
+            
+            #If there are multiple floor breps, join them together.
+            dataCheck = True
+            if len(floorBreps) == 1: floorBrep = floorBreps
+            elif len(floorBreps) > 1: floorBrep = rc.Geometry.Brep.JoinBreps(floorBreps, tol)
+            else:
+                dataCheck = False
+                floorBrep = []
+            
+            #Move the surface upwards by the offsetDist and keep track of planarity.
+            floorBrepsMoved = []
+            translation = rc.Geometry.Transform.Translation(0,0,distFromFloor)
+            planarList = []
+            if len(floorBrep) == 1: isPlanar = True
+            else: isPlanar = False
+            for brep in floorBrep:
+                for face in brep.Faces:
+                    if not face.IsPlanar: isPlanar = False
+                planarList.append(isPlanar)
+                newBrep = brep.Duplicate()
+                newBrep.Transform(translation)
+                floorBrepsMoved.append(newBrep)
+            
+            finalBreps = []
+            for count, brep in enumerate(floorBrepsMoved):
+                #If the surface is planar, intersect the surface with the walls of the zone and rebuild the surface from the curve.
+                if planarList[count] == True:
+                    intersectLineList = rc.Geometry.Intersect.Intersection.BrepBrep(brep, zoneBreps[zoneCount], tol)[1]
+                    try: intersectLineList = rc.Geometry.Curve.JoinCurves(intersectLineList, tol)
+                    except: pass
+                    if len(intersectLineList) == 1:
+                        if intersectLineList[0].IsClosed:
+                            finalBrep = rc.Geometry.Brep.CreatePlanarBreps(intersectLineList[0])
+                            finalBreps.append(finalBrep)
+                        else:
+                            finalBrepInit = splitOffsetFloor(brep, zoneBreps[zoneCount])
+                            edges = finalBrepInit.DuplicateEdgeCurves()
+                            joinedEdges = rc.Geometry.Curve.JoinCurves(edges, tol)
+                            finalBrep = rc.Geometry.Brep.CreatePlanarBreps(joinedEdges[0])
+                            finalBreps.append(finalBrep)
                     else:
                         finalBrepInit = splitOffsetFloor(brep, zoneBreps[zoneCount])
                         edges = finalBrepInit.DuplicateEdgeCurves()
@@ -345,74 +361,68 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, hb_zoneData):
                         finalBrep = rc.Geometry.Brep.CreatePlanarBreps(joinedEdges[0])
                         finalBreps.append(finalBrep)
                 else:
-                    finalBrepInit = splitOffsetFloor(brep, zoneBreps[zoneCount])
-                    edges = finalBrepInit.DuplicateEdgeCurves()
-                    joinedEdges = rc.Geometry.Curve.JoinCurves(edges, tol)
-                    finalBrep = rc.Geometry.Brep.CreatePlanarBreps(joinedEdges[0])
-                    finalBreps.append(finalBrep)
-            else:
-                #If the surface is curved or has multiple elements, try to trim it with the closed zone brep.
-                try:
-                    finalBrep = splitOffsetFloor(brep, zoneBreps[zoneCount])
-                    finalBreps.append(finalBrep)
-                except: finalBreps.append(brep)
-        
-        #Generate the meshes and test points of the final surface.
-        for brep in finalBreps:
-            finalMesh = createMesh(brep, gridSize)[0]
-            finalTestPts = []
-            finalFaceBreps = []
-            deleteIndices = []
-            for faceCount, face in enumerate(finalMesh.Faces):
-                if face.IsQuad:
-                    faceBrep = rc.Geometry.Brep.CreateFromCornerPoints(rc.Geometry.Point3d(finalMesh.Vertices[face.A]), rc.Geometry.Point3d(finalMesh.Vertices[face.B]), rc.Geometry.Point3d(finalMesh.Vertices[face.C]), rc.Geometry.Point3d(finalMesh.Vertices[face.D]), sc.doc.ModelAbsoluteTolerance)
-                if face.IsTriangle:
-                    faceBrep = rc.Geometry.Brep.CreateFromCornerPoints(rc.Geometry.Point3d(finalMesh.Vertices[face.A]), rc.Geometry.Point3d(finalMesh.Vertices[face.B]), rc.Geometry.Point3d(finalMesh.Vertices[face.C]), sc.doc.ModelAbsoluteTolerance)
-                centPt = rc.Geometry.AreaMassProperties.Compute(faceBrep).Centroid
-                #Check to be sure that the test point does not lie outside the zone and, if so, delete the mesh face, and don't append the point.
-                #Right now, this does not work beause of the GH bug in having a closed solid with reversed normals.
-                #if zoneBreps[zoneCount].IsPointInside(centPt, tol, True) == False:
-                #    deleteIndices.append(faceCount)
-                #else:
-                finalFaceBreps.append(faceBrep)
-                finalTestPts.append(centPt)
-            finalMesh = rc.Geometry.Mesh()
-            for brep in finalFaceBreps:
-                if brep.Vertices.Count == 4:
-                    facePt1 = rc.Geometry.Point3d(brep.Vertices[0].Location)
-                    facePt2 = rc.Geometry.Point3d(brep.Vertices[1].Location)
-                    facePt3 = rc.Geometry.Point3d(brep.Vertices[2].Location)
-                    facePt4 = rc.Geometry.Point3d(brep.Vertices[3].Location)
-                    
-                    meshFacePts = [facePt1, facePt2, facePt3, facePt4]
-                    mesh = rc.Geometry.Mesh()
-                    for point in meshFacePts:
-                        mesh.Vertices.Add(point)
-                    
-                    mesh.Faces.AddFace(0, 1, 2, 3)
-                    finalMesh.Append(mesh)
-                else:
-                    facePt1 = rc.Geometry.Point3d(brep.Vertices[0].Location)
-                    facePt2 = rc.Geometry.Point3d(brep.Vertices[1].Location)
-                    facePt3 = rc.Geometry.Point3d(brep.Vertices[2].Location)
-                    
-                    meshFacePts = [facePt1, facePt2, facePt3]
-                    mesh = rc.Geometry.Mesh()
-                    for point in meshFacePts:
-                        mesh.Vertices.Add(point)
-                    
-                    mesh.Faces.AddFace(0, 1, 2)
-                    finalMesh.Append(mesh)
+                    #If the surface is curved or has multiple elements, try to trim it with the closed zone brep.
+                    try:
+                        finalBrep = splitOffsetFloor(brep, zoneBreps[zoneCount])
+                        finalBreps.append(finalBrep)
+                    except: finalBreps.append(brep)
             
-            if len(deleteIndices) > 0:
-                finalMesh.Faces.DeleteFaces(deleteIndices)
-            
-            MRTMeshInit[zoneCount].append(finalMesh)
-            MRTMeshBreps[zoneCount].extend(finalFaceBreps)
-            testPts[zoneCount].extend(finalTestPts)
+            #Generate the meshes and test points of the final surface.
+            for brep in finalBreps:
+                finalMesh = createMesh(brep, gridSize)[0]
+                finalTestPts = []
+                finalFaceBreps = []
+                deleteIndices = []
+                for faceCount, face in enumerate(finalMesh.Faces):
+                    if face.IsQuad:
+                        faceBrep = rc.Geometry.Brep.CreateFromCornerPoints(rc.Geometry.Point3d(finalMesh.Vertices[face.A]), rc.Geometry.Point3d(finalMesh.Vertices[face.B]), rc.Geometry.Point3d(finalMesh.Vertices[face.C]), rc.Geometry.Point3d(finalMesh.Vertices[face.D]), sc.doc.ModelAbsoluteTolerance)
+                    if face.IsTriangle:
+                        faceBrep = rc.Geometry.Brep.CreateFromCornerPoints(rc.Geometry.Point3d(finalMesh.Vertices[face.A]), rc.Geometry.Point3d(finalMesh.Vertices[face.B]), rc.Geometry.Point3d(finalMesh.Vertices[face.C]), sc.doc.ModelAbsoluteTolerance)
+                    centPt = rc.Geometry.AreaMassProperties.Compute(faceBrep).Centroid
+                    #Check to be sure that the test point does not lie outside the zone and, if so, delete the mesh face, and don't append the point.
+                    if zoneBreps[zoneCount].IsPointInside(centPt, tol, True) == False:
+                        deleteIndices.append(faceCount)
+                        print "One of the gnerated test points was not inside the zone."
+                    else:
+                        finalFaceBreps.append(faceBrep)
+                        finalTestPts.append(centPt)
+                finalMesh = rc.Geometry.Mesh()
+                for brep in finalFaceBreps:
+                    if brep.Vertices.Count == 4:
+                        facePt1 = rc.Geometry.Point3d(brep.Vertices[0].Location)
+                        facePt2 = rc.Geometry.Point3d(brep.Vertices[1].Location)
+                        facePt3 = rc.Geometry.Point3d(brep.Vertices[2].Location)
+                        facePt4 = rc.Geometry.Point3d(brep.Vertices[3].Location)
+                        
+                        meshFacePts = [facePt1, facePt2, facePt3, facePt4]
+                        mesh = rc.Geometry.Mesh()
+                        for point in meshFacePts:
+                            mesh.Vertices.Add(point)
+                        
+                        mesh.Faces.AddFace(0, 1, 2, 3)
+                        finalMesh.Append(mesh)
+                    else:
+                        facePt1 = rc.Geometry.Point3d(brep.Vertices[0].Location)
+                        facePt2 = rc.Geometry.Point3d(brep.Vertices[1].Location)
+                        facePt3 = rc.Geometry.Point3d(brep.Vertices[2].Location)
+                        
+                        meshFacePts = [facePt1, facePt2, facePt3]
+                        mesh = rc.Geometry.Mesh()
+                        for point in meshFacePts:
+                            mesh.Vertices.Add(point)
+                        
+                        mesh.Faces.AddFace(0, 1, 2)
+                        finalMesh.Append(mesh)
+                
+                if len(deleteIndices) > 0:
+                    finalMesh.Faces.DeleteFaces(deleteIndices)
+                
+                MRTMeshInit[zoneCount].append(finalMesh)
+                MRTMeshBreps[zoneCount].extend(finalFaceBreps)
+                testPts[zoneCount].extend(finalTestPts)
+    else: pass
     
-    
-    return testPts, MRTMeshBreps, MRTMeshInit, zoneWires, zoneSrfsMesh, surfaceNames
+    return geoCheck, testPts, MRTMeshBreps, MRTMeshInit, zoneWires, zoneSrfsMesh, surfaceNames
 
 def checkViewResolution(viewResolution, lb_preparation):
     newVecs = []
@@ -520,25 +530,27 @@ def main(testPts, zoneSrfsMesh, viewVectors):
 
 #If the HBzone data has not been copied to memory or if the data is old, get it.
 initCheck = False
-if _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('ladybug_release') == True and sc.sticky.has_key('Honeybee_ViewFacotrSrfData') == False:
-    copyHBZoneData()
-    hb_zoneData = sc.sticky["Honeybee_ViewFacotrSrfData"]
-    initCheck = True
-elif _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('ladybug_release') == True and sc.sticky.has_key('Honeybee_ViewFacotrSrfData') == True:
-    hb_zoneData = sc.sticky["Honeybee_ViewFacotrSrfData"]
-    checkZones = True
-    if len(_HBZones) == len(hb_zoneData[0]):
-        for count, brep in enumerate(_HBZones):
-            boundBoxVert = brep.GetBoundingBox(False).Center
-            if boundBoxVert.X <= hb_zoneData[3][count].X+tol and boundBoxVert.X >= hb_zoneData[3][count].X-tol and boundBoxVert.Y <= hb_zoneData[3][count].Y+tol and boundBoxVert.Y >= hb_zoneData[3][count].Y-tol and boundBoxVert.Z <= hb_zoneData[3][count].Z+tol and boundBoxVert.Z >= hb_zoneData[3][count].Z-tol: pass
-            else:
-                checkZones = False
-    else: checkZones = False
-    if checkZones == True: pass
-    else:
+if _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('ladybug_release') == True and sc.sticky.has_key('Honeybee_ViewFacotrSrfData') == False and len(_HBZones) > 0:
+    if _HBZones[0] != None:
         copyHBZoneData()
         hb_zoneData = sc.sticky["Honeybee_ViewFacotrSrfData"]
-    initCheck = True
+        initCheck = True
+elif _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('ladybug_release') == True and sc.sticky.has_key('Honeybee_ViewFacotrSrfData') == True and len(_HBZones) > 0:
+    if _HBZones[0] != None:
+        hb_zoneData = sc.sticky["Honeybee_ViewFacotrSrfData"]
+        checkZones = True
+        if len(_HBZones) == len(hb_zoneData[0]):
+            for count, brep in enumerate(_HBZones):
+                boundBoxVert = brep.GetBoundingBox(False).Center
+                if boundBoxVert.X <= hb_zoneData[3][count].X+tol and boundBoxVert.X >= hb_zoneData[3][count].X-tol and boundBoxVert.Y <= hb_zoneData[3][count].Y+tol and boundBoxVert.Y >= hb_zoneData[3][count].Y-tol and boundBoxVert.Z <= hb_zoneData[3][count].Z+tol and boundBoxVert.Z >= hb_zoneData[3][count].Z-tol: pass
+                else:
+                    checkZones = False
+        else: checkZones = False
+        if checkZones == True: pass
+        else:
+            copyHBZoneData()
+            hb_zoneData = sc.sticky["Honeybee_ViewFacotrSrfData"]
+        initCheck = True
 elif _HBZones != [] and sc.sticky.has_key('honeybee_release') == False:
     print "You should first let Honeybee fly..."
     ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee fly...")
@@ -557,8 +569,9 @@ if initCheck == True:
     checkData, gridSize, distFromFloor, viewResolution, removeInt = checkTheInputs()
 
 #Create a mesh of the area to calculate the view factor from.
+geoCheck = False
 if checkData == True:
-    testPtsInit, viewFactorBrep, viewFactorMeshActual, zoneWireFrame, zoneSrfsMesh, surfaceNames = prepareGeometry(gridSize, distFromFloor, removeInt, hb_zoneData)
+    geoCheck, testPtsInit, viewFactorBrep, viewFactorMeshActual, zoneWireFrame, zoneSrfsMesh, surfaceNames = prepareGeometry(gridSize, distFromFloor, removeInt, hb_zoneData)
     
     #Unpack the data trees of test pts and mesh breps so that the user can see them and get a sense of what to expect from the view factor calculation.
     testPts = DataTree[Object]()
@@ -572,7 +585,7 @@ if checkData == True:
         for item in branch: zoneSrfNames.Add(item, GH_Path(brCount))
 
 #If all of the data is good and the user has set "_runIt" to "True", run the shade benefit calculation to generate all results.
-if checkData == True and _runIt == True:
+if checkData == True and _runIt == True and geoCheck == True:
     viewVectors = checkViewResolution(viewResolution, lb_preparation)
     testPtViewFactorInit = main(testPtsInit, zoneSrfsMesh, viewVectors)
     
