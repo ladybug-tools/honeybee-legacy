@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_21_2014'
+ghenv.Component.Message = 'VER 0.0.55\nSEP_22_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -3048,7 +3048,7 @@ class EPMaterialAux(object):
             sourceComponent.AddRuntimeMessage(w, msg)
             standard = "ASHRAE 90.1"
         
-        if surfaceType:
+        if surfaceType or surfaceType == 0:
             
             try:
                 try: surfaceType = hb_EPTypes.srfType[surfaceType]
@@ -3520,12 +3520,32 @@ class EPTypes(object):
                    'WINDOW':'WINDOW',
                    'SHADING': 'SHADING'}
             
-        self.bldgTypes = {0:'RES',
-                   'RESIDENTIAL':'RES',
-                   1:'OFFICE',
+        self.bldgTypes = {0:'OFFICE',
                    'OFFICE':'OFFC',
-                   2:'HOSP',
-                   'HOSPITAL':'HOSP'
+                   1:'RETAIL',
+                   'RETAIL':'RETAIL',
+                   2:'APT',
+                   'MIDRISEAPARTMENT':'APT',
+                   3:'PRIMSCH',
+                   'PRIMARYSCHOOL':'PRIMSCH',
+                   4:'SECSCH',
+                   'SECONDARYSCHOOL':'SECSCH',
+                   5:'SMLHOTL',
+                   'SMALLHOTEL':'SMLHOTL',
+                   6:'LRGHTL',
+                   'LARGEHOTEL':'LRGHTL',
+                   7:'HOSP',
+                   'HOSPITAL':'HOSP',
+                   8:'OUTPT',
+                   'OUTPATIENT':'OUTPT',
+                   9:'WARE',
+                   'WAREHOUSE':'WARE',
+                   10:'MARKET',
+                   'SUPERMARKET':'MARKET',
+                   11:'FULLREST',
+                   'FULLSERVICERESTAURANT':'FULLREST',
+                   12:'QUICKREST',
+                   'QUICKSERVICERESTAURANT':'QUICKREST'
                    }
                 #Restaurant(Full Service)  = "FullServiceRestaurant"
                 #Restaurant(Quick Service) = "QuickServiceRestaurant"

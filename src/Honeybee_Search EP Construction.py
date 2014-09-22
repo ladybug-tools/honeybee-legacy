@@ -14,17 +14,18 @@ Provided by Honeybee 0.0.55
         _EPConstrList: List of EPConstructions from Honeybee construction library
         _standard: Energy modeling standard [0:"ASHRAE 90.1", 1:"ASHRAE 189.1", 2:"CBECS 1980-2004", 3:"CBECS Before-1980"]
         climateZone_: Optional input for climate zone
-        surfaceType_: Optional input for surface type > 0:'WALL', 1:'ROOF', 2:'FLOOR', 3:'CEILING', 4:'WINDOW'
-        altBldgProgram_: Optional input for building type > 0:'RESIDENTIAL', 1:'OFFICE', 2:'HOSPITAL'
+        surfaceType_: Optional input for surface type > 0:'WALL', 0.5: 'UNDERGOUNDWALL', 1:'ROOF', 2:'FLOOR', 3:'CEILING', 4:'WINDOW'
+        altBldgProgram_: Optional input for building type > 0:'OFFICE', 1:'RETAIL', 2:'APT',3:'PRIMSCH', 4:'SECSCH', 5:'SMLHOTL', 6:'LRGHTL', 7:'HOSP', 8:'OUTPT', 9:'WARE', 10:'MARKET', 11:'FULLREST', 12:'QUICKREST'
         constructionType_:
     Returns:
         EPSelectedConstr:  List of selected EP constructions that matches the the inputs
 
 """
 
+
 ghenv.Component.Name = "Honeybee_Search EP Construction"
 ghenv.Component.NickName = 'searchEPConstruction'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.55\nSEP_22_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -63,6 +64,12 @@ def main(constrList, standard, climateZone, surfaceType, bldgProgram, constructi
         msg = "Failed to load EP constructions!"
         ghenv.Component.AddRuntimeMessage(w, msg)
         return -1
+    
+    try: surfaceType = int(surfaceType)
+    except: pass
+    
+    try: bldgProgram = int(bldgProgram)
+    except: pass
     
     selConstruction = hb_EPMaterialAUX.filterMaterials(constrList, standard, climateZone, surfaceType, bldgProgram, constructionType, ghenv.Component)
     
