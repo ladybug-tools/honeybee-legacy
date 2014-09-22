@@ -16,6 +16,7 @@ Provided by Honeybee 0.0.55
         gridSize_: A number in Rhino model units to make each cell of the radiant temperature mesh.
         distFromFloor_: A number in Rhino model units to set the distance of the radiant temperature mesh from the ground.
         viewResolution_: An interger between 0 and 4 to set the number of times that the tergenza skyview patches are split.  A higher number will ensure a greater accuracy but will take longer.  The default is set to 0 for a quick calculation.
+        removeInteriorWalls_: Set to "True" to remove interior walls from the view factor calculation.  This is useful if your interior walls are air walls.  The default is set to "False" and will treat each surface as opaque.
         parallel_: Set to "True" to run the calculation with multiple cores.  This can increase the speed of the calculation substantially and is recommended if you are not running other big or important processes.
         _runIt: Set boolean to "True" to run the component and calculate viewFactors from each test point to surrounding surfaces.
     Returns:
@@ -31,7 +32,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_19_2014'
+ghenv.Component.Message = 'VER 0.0.55\nSEP_21_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -60,27 +61,35 @@ def copyHBZoneData():
     zoneBreps = []
     zoneCentPts = []
     srfTypes = []
+    srfInteriorList = []
     
     for zoneCount, HZone in enumerate(_HBZones):
         surfaceNames.append([])
         srfBreps.append([])
         srfTypes.append([])
+        srfInteriorList.append([])
         zoneBreps.append(HZone)
         zoneCentPts.append(HZone.GetBoundingBox(False).Center)
         zone = hb_hive.callFromHoneybeeHive([HZone])[0]
         for srf in zone.surfaces:
             surfaceNames[zoneCount].append(srf.name)
             srfTypes[zoneCount].append(srf.type)
+            if srf.type == 0 and srf.BC.lower() == "surface":
+                srfInteriorList[zoneCount].append(str(srf.BCObject).split('\n')[0].split(': ')[-1])
+            else: srfInteriorList[zoneCount].append(None)
             if srf.hasChild:
                 srfBreps[zoneCount].append(srf.punchedGeometry)
-                for childSrf in srf.childSrfs:
+                for srfCount, childSrf in enumerate(srf.childSrfs):
                     srfTypes[zoneCount].append(childSrf.type)
                     surfaceNames[zoneCount].append(childSrf.name)
                     srfBreps[zoneCount].append(childSrf.geometry)
+                    if srf.type == 0 and srf.BC.lower() == "surface":
+                        srfInteriorList[zoneCount].append(str(srf.BCObject).split('\n')[0].split(': ')[-1] + '_glz_' + str(srfCount))
+                    else: srfInteriorList[zoneCount].append(None)
             else:
                 srfBreps[zoneCount].append(srf.geometry)
     
-    sc.sticky["Honeybee_ViewFacotrSrfData"] = [zoneBreps, surfaceNames, srfBreps, zoneCentPts, srfTypes]
+    sc.sticky["Honeybee_ViewFacotrSrfData"] = [zoneBreps, surfaceNames, srfBreps, zoneCentPts, srfTypes, srfInteriorList]
 
 
 def checkTheInputs():
@@ -158,12 +167,16 @@ def checkTheInputs():
             print warning
             ghenv.Component.AddRuntimeMessage(w, warning)
     
+    #Check the removeInteriorWalls_ option.
+    if removeInteriorWalls_ == None: removeInt = False
+    else: removeInt = removeInteriorWalls_
+    
     #Do a final check of everything.
     if checkData1 == True and checkData2 == True and checkData3 == True:
         checkData = True
     else: checkData = False
     
-    return checkData, gridSize, distFromFloor, viewResolution
+    return checkData, gridSize, distFromFloor, viewResolution, removeInt
 
 def createMesh(brep, gridSize):
     ## mesh breps
@@ -188,12 +201,13 @@ def createMesh(brep, gridSize):
     
     return mesh
 
-def prepareGeometry(gridSize, distFromFloor, hb_zoneData):
+def prepareGeometry(gridSize, distFromFloor, removeInt, hb_zoneData):
     #Separate the HBZoneData.
     zoneBreps = hb_zoneData[0]
     surfaceNames = hb_zoneData[1]
     zoneSrfs = hb_zoneData[2]
     zoneSrfTypes = hb_zoneData[4]
+    srfInteriorList = hb_zoneData[5]
     srfMeshPar = rc.Geometry.MeshingParameters.Coarse
     
     #Create the lists that will be filled.
@@ -214,6 +228,63 @@ def prepareGeometry(gridSize, distFromFloor, hb_zoneData):
         
         return finalBrep
     
+    #If interior walls have ben removed, see which surfaces are adjacent and re-make the lists fo zones.
+    if removeInt == True:
+        #Make a function to remove duplicates from a list.
+        def removeDup(seq):
+            seen = set()
+            seen_add = seen.add
+            return [ x for x in seq if not (x in seen or seen_add(x))]
+        
+        #Make blank lists that will re-create the original lists.
+        newZoneBreps = []
+        newSurfaceNames = []
+        newZoneSrfs = []
+        newZoneSrfTypes = []
+        
+        adjacentList = []
+        adjCounter = 0
+        for zoneCount, srfList in enumerate(zoneSrfs):
+            for srfCount, srf in enumerate(srfList):
+                if srfInteriorList[zoneCount][srfCount] != None:
+                    if len(adjacentList) == 0:
+                        adjacentList.append([])
+                        adjCounter += 1
+                        adjacentList[adjCounter-1].append(zoneCount)
+                    elif zoneCount in adjacentList[adjCounter-1]: pass
+                    else:
+                        adjacentList.append([])
+                        adjCounter += 1
+                        adjacentList[adjCounter-1].append(zoneCount)
+                    
+                    #Find the adjacent zone and append it to the list.
+                    adjSrf = srfInteriorList[zoneCount][srfCount]
+                    for zoneCount2, srfList in enumerate(surfaceNames):
+                        for srfName in srfList:
+                            if adjSrf == srfName: adjacentList[adjCounter-1].append(zoneCount2)
+        for listCount, list in enumerate(adjacentList):
+            adjacentList[listCount] = removeDup(list)
+        
+        for listCount, list in enumerate(adjacentList):
+            newSurfaceNames.append([])
+            newZoneSrfs.append([])
+            newZoneSrfTypes.append([])
+            
+            for zoneCount in list:
+                for srfCount, surface in enumerate(zoneSrfs[zoneCount]):
+                    if srfInteriorList[zoneCount][srfCount] == None:
+                        newZoneSrfs[listCount].append(surface)
+                        newSurfaceNames[listCount].append(surfaceNames[zoneCount][srfCount])
+                        newZoneSrfTypes[listCount].append(zoneSrfTypes[zoneCount][srfCount])
+        
+        for srfList in newZoneSrfs:
+            newZoneBreps.append(rc.Geometry.Brep.JoinBreps(srfList, tol)[0])
+        
+        zoneBreps = newZoneBreps
+        surfaceNames = newSurfaceNames
+        zoneSrfs = newZoneSrfs
+        zoneSrfTypes = newZoneSrfTypes
+    
     for zoneCount, srfList in enumerate(zoneSrfs):
         #Extract the wireframe.
         wireFrame = zoneBreps[zoneCount].DuplicateEdgeCurves()
@@ -225,6 +296,7 @@ def prepareGeometry(gridSize, distFromFloor, hb_zoneData):
         MRTMeshBreps.append([])
         MRTMeshInit.append([])
         zoneSrfsMesh.append([])
+        surfaceNames.append([])
         
         #Select out just the floor geometry.
         floorBreps = []
@@ -304,6 +376,34 @@ def prepareGeometry(gridSize, distFromFloor, hb_zoneData):
                 #else:
                 finalFaceBreps.append(faceBrep)
                 finalTestPts.append(centPt)
+            finalMesh = rc.Geometry.Mesh()
+            for brep in finalFaceBreps:
+                if brep.Vertices.Count == 4:
+                    facePt1 = rc.Geometry.Point3d(brep.Vertices[0].Location)
+                    facePt2 = rc.Geometry.Point3d(brep.Vertices[1].Location)
+                    facePt3 = rc.Geometry.Point3d(brep.Vertices[2].Location)
+                    facePt4 = rc.Geometry.Point3d(brep.Vertices[3].Location)
+                    
+                    meshFacePts = [facePt1, facePt2, facePt3, facePt4]
+                    mesh = rc.Geometry.Mesh()
+                    for point in meshFacePts:
+                        mesh.Vertices.Add(point)
+                    
+                    mesh.Faces.AddFace(0, 1, 2, 3)
+                    finalMesh.Append(mesh)
+                else:
+                    facePt1 = rc.Geometry.Point3d(brep.Vertices[0].Location)
+                    facePt2 = rc.Geometry.Point3d(brep.Vertices[1].Location)
+                    facePt3 = rc.Geometry.Point3d(brep.Vertices[2].Location)
+                    
+                    meshFacePts = [facePt1, facePt2, facePt3]
+                    mesh = rc.Geometry.Mesh()
+                    for point in meshFacePts:
+                        mesh.Vertices.Add(point)
+                    
+                    mesh.Faces.AddFace(0, 1, 2)
+                    finalMesh.Append(mesh)
+            
             if len(deleteIndices) > 0:
                 finalMesh.Faces.DeleteFaces(deleteIndices)
             
@@ -375,7 +475,6 @@ def main(testPts, zoneSrfsMesh, viewVectors):
     testPtViewFactor = []
     
     for zoneCount, pointList in enumerate(testPts):
-        
         if parallel_ == True:
             viewFactors = parallel_projection(zoneSrfsMesh[zoneCount], viewVectors, testPts[zoneCount])
             testPtViewFactor.append(viewFactors)
@@ -455,11 +554,11 @@ else:
 checkData = False
 if initCheck == True:
     lb_preparation = sc.sticky["ladybug_Preparation"]()
-    checkData, gridSize, distFromFloor, viewResolution = checkTheInputs()
+    checkData, gridSize, distFromFloor, viewResolution, removeInt = checkTheInputs()
 
 #Create a mesh of the area to calculate the view factor from.
 if checkData == True:
-    testPtsInit, viewFactorBrep, viewFactorMeshActual, zoneWireFrame, zoneSrfsMesh, surfaceNames = prepareGeometry(gridSize, distFromFloor, hb_zoneData)
+    testPtsInit, viewFactorBrep, viewFactorMeshActual, zoneWireFrame, zoneSrfsMesh, surfaceNames = prepareGeometry(gridSize, distFromFloor, removeInt, hb_zoneData)
     
     #Unpack the data trees of test pts and mesh breps so that the user can see them and get a sense of what to expect from the view factor calculation.
     testPts = DataTree[Object]()
