@@ -6145,6 +6145,18 @@ class hb_2xDXCoilParams(object):
         'Curves':None
         }
 
+class hb_1xDXCoilParams(object):
+    def __init__(self):
+        self.oneSpeedDXDict = {
+        'name':'honeybee Default 1 Speed DX Coil',
+        'availSch':'OpenStudio Default',
+        'ratedTotalCooling':'Autosize',
+        'ratedSHR':0.85,
+        'ratedCOP':3.0,
+        'condenserType':'AirCooled',
+        'evaporativeCondenserDesc':None,
+        'Curves':None
+        }
 
 letItFly = True
 
@@ -6275,6 +6287,7 @@ if letItFly:
         sc.sticky["honeybee_variableVolumeFanParams"] = hb_varVolFanParams
         sc.sticky["honeybee_AirHandlerParams"] = hb_AirHandlerParams
         sc.sticky["honeybee_2xDXCoilParams"] = hb_2xDXCoilParams
+		sc.sticky["honeybee_1xDXCoilParams"] = hb_1xDXCoilParams
         sc.sticky["honeybee_EPSurface"] = hb_EPSurface
         sc.sticky["honeybee_EPShdSurface"] = hb_EPShdSurface
         sc.sticky["honeybee_EPZoneSurface"] = hb_EPZoneSurface
