@@ -27,7 +27,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = 'Honeybee_SplitBuildingMass'
 ghenv.Component.NickName = 'SplitMass'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_22_2014'
+ghenv.Component.Message = 'VER 0.0.55\nSEP_27_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -997,6 +997,7 @@ def main(mass, floorHeights, perimDepth):
         #If the user has specified a floor height, split the mass up by floor.
         if floorHeights != []:
             splitFloors, floorCrvs, topInc, nurbsList, lastFloorInclud = splitFloorHeights(mass, floorHeights, lb_preparation, lb_visualization)
+            
         else:
             splitFloors = [mass]
             floorCrvs = []
@@ -1029,6 +1030,7 @@ def main(mass, floorHeights, perimDepth):
                     splitZones.append(mass[:-1])
         
         return splitZones
+        
     else:
         print "You should first let both Ladybug and Honeybee to fly..."
         w = gh.GH_RuntimeMessageLevel.Warning
@@ -1049,6 +1051,10 @@ if checkData == True:
         for i, buildingMasses in enumerate(splitBldgMassesLists):
             for j, mass in enumerate(buildingMasses):
                 p = GH_Path(i,j)
+                
+                # in case mass is not a list change it to list
+                try: mass[0]
+                except: mass = [mass]
                 
                 newMass = []
                 for brep in mass:
