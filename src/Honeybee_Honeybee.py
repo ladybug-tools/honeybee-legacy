@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_22_2014'
+ghenv.Component.Message = 'VER 0.0.55\nSEP_27_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -4823,7 +4823,7 @@ class hb_reEvaluateHBZones(object):
                 else:
                     # surface is planar but glazing is not rectangular
                     # and so it is meshed now and is multiple glazing
-                    glzSurfaceName = child.name
+                    glzSurfaceName = surface.name + "_glz_" + `count`
                     
                     # create glazing surface
                     HBGlzSrf = self.createSubGlzSurfaceFromBaseSrf(child, surface, glzSurfaceName, count, coordinates)
@@ -6145,18 +6145,6 @@ class hb_2xDXCoilParams(object):
         'Curves':None
         }
 
-class hb_1xDXCoilParams(object):
-    def __init__(self):
-        self.oneSpeedDXDict = {
-        'name':'honeybee Default 1 Speed DX Coil',
-        'availSch':'OpenStudio Default',
-        'ratedTotalCooling':'Autosize',
-        'ratedSHR':0.85,
-        'ratedCOP':3.0,
-        'condenserType':'AirCooled',
-        'evaporativeCondenserDesc':None,
-        'Curves':None
-        }
 
 letItFly = True
 
@@ -6287,7 +6275,6 @@ if letItFly:
         sc.sticky["honeybee_variableVolumeFanParams"] = hb_varVolFanParams
         sc.sticky["honeybee_AirHandlerParams"] = hb_AirHandlerParams
         sc.sticky["honeybee_2xDXCoilParams"] = hb_2xDXCoilParams
-		sc.sticky["honeybee_1xDXCoilParams"] = hb_1xDXCoilParams
         sc.sticky["honeybee_EPSurface"] = hb_EPSurface
         sc.sticky["honeybee_EPShdSurface"] = hb_EPShdSurface
         sc.sticky["honeybee_EPZoneSurface"] = hb_EPZoneSurface
