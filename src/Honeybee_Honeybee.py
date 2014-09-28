@@ -4367,27 +4367,29 @@ class EPZone(object):
         # this method is useufl when the zone is going to be constructed from a closed brep
         # materials will be applied based on the zones construction set
         
+        #This check fails for any L-shaped zone so it has been disabled.  We check the normals well elsewhere.
         def checkGHSrfNormal(GHSrf, printAngle = False):
             
             cenPt, normalVector = self.getSrfCenPtandNormal(surface)
             
             #create a plane from the surface
-            srfPlane = rc.Geometry.Plane(cenPt, normalVector)
+            #srfPlane = rc.Geometry.Plane(cenPt, normalVector)
             
             # project center point of the geometry to surface plane
-            projectedPt = srfPlane.ClosestPoint(self.cenPt)
+            #projectedPt = srfPlane.ClosestPoint(self.cenPt)
         
             # make a vector from the center point of the zone to center point of the surface
-            testVector = rc.Geometry.Vector3d(projectedPt - self.cenPt)
+            #testVector = rc.Geometry.Vector3d(projectedPt - self.cenPt)
             # check the direction of the vectors and flip zone surfaces if needed
-            vecAngleDiff = math.degrees(rc.Geometry.Vector3d.VectorAngle(testVector, normalVector))
+            #vecAngleDiff = math.degrees(rc.Geometry.Vector3d.VectorAngle(testVector, normalVector))
             
             # vecAngleDiff should be 0 otherwise the normal is reversed
-            if printAngle:
-                print vecAngleDiff
-            if vecAngleDiff > 10:
-                GHSrf.Flip()
-                normalVector.Reverse()
+            #if printAngle:
+            #    print vecAngleDiff
+            #if vecAngleDiff > 10:
+            #    print vecAngleDiff
+            #    GHSrf.Flip()
+            #    normalVector.Reverse()
         
             return normalVector, GHSrf
             
