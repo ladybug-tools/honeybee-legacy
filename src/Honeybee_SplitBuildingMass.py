@@ -1050,34 +1050,37 @@ if checkData == True:
         names = DataTree[Object]()
         for i, buildingMasses in enumerate(splitBldgMassesLists):
             for j, mass in enumerate(buildingMasses):
+                
                 p = GH_Path(i,j)
                 
                 # in case mass is not a list change it to list
                 try: mass[0]
                 except: mass = [mass]
                 
+                
                 newMass = []
                 for brep in mass:
-                    #Bake the objects into the Rhino scene to ensure that surface normals are facing the correct direction
-                    sc.doc = rc.RhinoDoc.ActiveDoc #change target document
-                    rs.EnableRedraw(False)
-                    guid1 = [sc.doc.Objects.AddBrep(brep)]
-                    
-                    if guid1:
-                        a = [rs.coercegeometry(a) for a in guid1]
-                        for g in a: g.EnsurePrivateCopy() #must ensure copy if we delete from doc
+                    if brep != None:
+                        #Bake the objects into the Rhino scene to ensure that surface normals are facing the correct direction
+                        sc.doc = rc.RhinoDoc.ActiveDoc #change target document
+                        rs.EnableRedraw(False)
+                        guid1 = [sc.doc.Objects.AddBrep(brep)]
                         
-                        rs.DeleteObjects(guid1)
+                        if guid1:
+                            a = [rs.coercegeometry(a) for a in guid1]
+                            for g in a: g.EnsurePrivateCopy() #must ensure copy if we delete from doc
+                            
+                            rs.DeleteObjects(guid1)
+                        
+                        sc.doc = ghdoc #put back document
+                        rs.EnableRedraw()
+                        newMass.append(g)
+                    mass = newMass
                     
-                    sc.doc = ghdoc #put back document
-                    rs.EnableRedraw()
-                    newMass.append(g)
-                mass = newMass
-                
-                try:
-                    splitBldgMasses.AddRange(mass, p)
-                    #zoneNames = [str(i) + "_" + str(m) for m in range(len(mass))]
-                    #names.AddRange(zoneNames, p)
-                except:
-                    splitBldgMasses.Add(mass, p)
-                    #names.Add(str(i) + "_" + str(j), p)
+                    try:
+                        splitBldgMasses.AddRange(mass, p)
+                        #zoneNames = [str(i) + "_" + str(m) for m in range(len(mass))]
+                        #names.AddRange(zoneNames, p)
+                    except:
+                        splitBldgMasses.Add(mass, p)
+                        #names.Add(str(i) + "_" + str(j), p)
