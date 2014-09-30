@@ -20,7 +20,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Annual Daylight Simulation"
 ghenv.Component.NickName = 'annualDaylightSimulation'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.55\nSEP_30_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -77,6 +77,12 @@ def main():
             for pt in ptList:
                 analysisRecipe.vectors[ptListCount].append(rc.Geometry.Vector3d.ZAxis)
     
+    # add a single test point if it is only glare analysis so Daysim won't crash
+    if (_DSParameters_ and _DSParameters_.runAnnualGlare \
+        and _DSParameters_.onlyAnnualGlare):
+            analysisRecipe.testPts = [[rc.Geometry.Point3d.Origin]]
+            analysisRecipe.vectors = [[rc.Geometry.Vector3d.ZAxis]]
+            
     if not os.path.isfile(_epwWeatherFile):
         analysisRecipe = None
         print "Can't find the weather file at: " + _epwWeatherFile
