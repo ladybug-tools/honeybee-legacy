@@ -914,8 +914,9 @@ class hb_MSHToRAD(object):
             
             if radMaterial != None:
                 try:
-                    self.matName = self.RADMaterial.split("\n")[0].split(" ")[2]
-                except:
+                    self.matName = radMaterial.split("\n")[0].split(" ")[2]
+                except: # Exception, e:
+                    # print `e`
                     # not a standard radiance material
                     pass
             
