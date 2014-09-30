@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_27_2014'
+ghenv.Component.Message = 'VER 0.0.55\nSEP_30_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1588,9 +1588,9 @@ class WriteRAD(object):
             sceneRadFiles = [materialFileName, radSkyFileName, radFileFullName]
             
             if additionalRadFiles:
-                for additionalFile in additionalFiles:
+                for additionalFile in additionalRadFiles:
                     if additionalFile!=None:
-                        sceneRadFiles.append(additionalRadFile)
+                        sceneRadFiles.append(additionalFile)
                 
             OCTLine = self.hb_writeRADAUX.oconvLine(OCTFileName, sceneRadFiles)
             if readyOCTFile ==None: batchFile.write(OCTLine)
