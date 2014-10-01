@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_30_2014'
+ghenv.Component.Message = 'VER 0.0.55\nOCT_01_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -944,6 +944,9 @@ class hb_MSHToRAD(object):
                 #objTxt += "usemtl " + matName + "\n"
                 outfile.write("usemtl " + self.matName + "\n")
                 
+                if Tmesh.Normals.Count == 0:
+                    Tmesh.Normals.ComputeNormals()
+                    
                 # add vertices
                 for v in Tmesh.Vertices:
                     XYZ = v.X, v.Y, v.Z
