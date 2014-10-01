@@ -1457,7 +1457,8 @@ class WriteRAD(object):
             locationStr, locName = self.hb_writeDS.DSLocationStr(self.hb_writeRADAUX, self.lb_preparation, epwFileAddress)
             
             newLocName = self.lb_preparation.removeBlankLight(locName)
-            
+            newLocName = newLocName.replace("/", "_")
+
             # copy .epw file to sub-directory
             self.lb_preparation.copyFile(epwFileAddress, subWorkingDir + "\\" + newLocName + '.epw')
             
@@ -2581,7 +2582,7 @@ class WriteDS(object):
     def DSLocationStr(self, hb_writeRADAUX,  lb_preparation, epwFileAddress):
         # location information
         locName, lat, long, timeZone, elev = hb_writeRADAUX.RADLocation(epwFileAddress)
-        
+        locName = locName.replace("/", "_")
         
         return'\n\n#################################\n' + \
                   '#      LOCATION INFORMATION      \n' + \
