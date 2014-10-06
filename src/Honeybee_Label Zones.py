@@ -14,6 +14,7 @@ Provided by Honeybee 0.0.55
         attribute_: A text string for the zone attribute that you are interested in lableing the zones with.  Possible inputs include "name", "zoneProgram", "isConditioned" or any other Honeybee attribute. Use the "Honeybee_Zone Attribute List" to see all possibilities.
         textHeight_: An optional number for text height in Rhino model units that can be used to change the size of the label text in the Rhino scene.  The default is set based on the dimensions of the zones.
         font_: An optional number that can be used to change the font of the label in the Rhino scene. The default is set to "Verdana".
+        recallHBHive_: Set to "True" to recall the zones from the hive each time the input changes and "False" to simply copy the zones to memory.  Calling the zones from the hive can take some more time but this is necessary if you are making changes to the zones and you want to check them.  Otherwise, if you are just scrolling through attributes, it is nice to set this to "False" for speed.  The default is set to "True" as this is safer.
     Returns:
         zoneTxtLabels: The label names of each of the connected zones.  Connect this ouput and the one bleow to a Grasshopper "TexTag3D" component to make your own lables.
         labelBasePts: The basepoint of the text labels.  Use this along with the ouput above and a Grasshopper "TexTag3D" component to make your own lables.
@@ -23,7 +24,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Label Zones"
 ghenv.Component.NickName = 'LabelZones'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.55\nOCT_03_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -119,10 +120,16 @@ def main(hb_zones, basePts, textSize, font, attribute):
     
     return zoneProperties, zoneLabels, wireFrames, newPts
 
+if recallHBHive_ == None: recallHBHive = True
+else: recallHBHive = recallHBHive_
 
 #If the HBzone data has not been copied to memory or if the data is old, get it.
 initCheck = False
-if _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('ladybug_release') == True and sc.sticky.has_key('Honeybee_LabelZoneData') == False:
+if recallHBHive == True:
+    copyHBZoneData()
+    hb_zoneData = sc.sticky["Honeybee_LabelZoneData"]
+    initCheck = True
+elif _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('ladybug_release') == True and sc.sticky.has_key('Honeybee_LabelZoneData') == False:
     copyHBZoneData()
     hb_zoneData = sc.sticky["Honeybee_LabelZoneData"]
     initCheck = True
@@ -133,8 +140,7 @@ elif _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and sc.sti
         for count, brep in enumerate(_HBZones):
             boundBoxVert = brep.GetBoundingBox(False).Center
             if boundBoxVert.X <= hb_zoneData[2][count].X+tol and boundBoxVert.X >= hb_zoneData[2][count].X-tol and boundBoxVert.Y <= hb_zoneData[2][count].Y+tol and boundBoxVert.Y >= hb_zoneData[2][count].Y-tol and boundBoxVert.Z <= hb_zoneData[2][count].Z+tol and boundBoxVert.Z >= hb_zoneData[2][count].Z-tol: pass
-            else:
-                checkZones = False
+            else: checkZones = False
     else: checkZones = False
     if checkZones == True: pass
     else:

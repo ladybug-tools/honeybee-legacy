@@ -27,7 +27,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = 'Honeybee_SplitBuildingMass'
 ghenv.Component.NickName = 'SplitMass'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_27_2014'
+ghenv.Component.Message = 'VER 0.0.55\nOCT_03_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -1047,10 +1047,8 @@ if checkData == True:
     
     if splitBldgMassesLists!= -1:
         splitBldgMasses = DataTree[Object]()
-        names = DataTree[Object]()
         for i, buildingMasses in enumerate(splitBldgMassesLists):
             for j, mass in enumerate(buildingMasses):
-                
                 p = GH_Path(i,j)
                 
                 # in case mass is not a list change it to list
@@ -1077,10 +1075,7 @@ if checkData == True:
                         newMass.append(g)
                     mass = newMass
                     
-                    try:
-                        splitBldgMasses.AddRange(mass, p)
-                        #zoneNames = [str(i) + "_" + str(m) for m in range(len(mass))]
-                        #names.AddRange(zoneNames, p)
-                    except:
-                        splitBldgMasses.Add(mass, p)
-                        #names.Add(str(i) + "_" + str(j), p)
+                try:
+                    splitBldgMasses.AddRange(mass, p)
+                except:
+                    splitBldgMasses.Add(mass, p)

@@ -15,6 +15,7 @@ Provided by Honeybee 0.0.55
         windows_: Set to "True" to have the component label the window surfaces in the model instead of the opaque surfaces.  By default, this is set to "False" to label just the opaque surfaces.
         textHeight_: An optional number for text height in Rhino model units that can be used to change the size of the label text in the Rhino scene.  The default is set based on the dimensions of the zones.
         font_: An optional number that can be used to change the font of the label in the Rhino scene. The default is set to "Verdana".
+        recallHBHive_: Set to "True" to recall the zones from the hive each time the input changes and "False" to simply copy the zones to memory.  Calling the zones from the hive can take some more time but this is necessary if you are making changes to the zones and you want to check them.  Otherwise, if you are just scrolling through attributes, it is nice to set this to "False" for speed.  The default is set to "True" as this is safer.
     Returns:
         surfaceAttributes: The names of each of the connected zone surfaces.
         labelBasePts: The basepoint of the text labels.  Use this along with the surfaceAttributes ouput above and a GH "TexTag3D" component to make your own lables.
@@ -24,7 +25,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Label Zone Surfaces"
 ghenv.Component.NickName = 'LabelSurfaces'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.55\nOCT_03_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -189,11 +190,16 @@ def main(hb_zones, textSize, font, windows, attribute):
     
     return surfaceAttributes, surfaceLabels, wireFrames, newPts
 
-
+if recallHBHive_ == None: recallHBHive = True
+else: recallHBHive = recallHBHive_
 
 #If the HBzone data has not been copied to memory or if the data is old, get it.
 initCheck = False
-if _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('ladybug_release') == True and sc.sticky.has_key('Honeybee_LabelSrfData') == False:
+if recallHBHive == True:
+    copyHBZoneData()
+    hb_zoneData = sc.sticky["Honeybee_LabelSrfData"]
+    initCheck = True
+elif _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('ladybug_release') == True and sc.sticky.has_key('Honeybee_LabelSrfData') == False:
     copyHBZoneData()
     hb_zoneData = sc.sticky["Honeybee_LabelSrfData"]
     initCheck = True

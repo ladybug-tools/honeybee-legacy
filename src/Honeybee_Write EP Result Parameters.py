@@ -27,13 +27,14 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Write EP Result Parameters"
 ghenv.Component.NickName = 'writeResultParameters'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.55\nOCT_04_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
 #compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 ghenv.Component.AdditionalHelpFromDocStrings = "3"
 
+import Grasshopper.Kernel as gh
 
 
 
@@ -96,10 +97,17 @@ def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, zoneHVACMetrics,
 
 
 #Check the inputs to be sure that the right data types are selected.
+initCheck = True
 if timestep_ == "monthly" or timestep_ == "hourly" or timestep_ == "daily" or timestep_ == "annually": pass
-else:timestep_ = "hourly"
+elif timestep_ == None:
+    timestep_ = "hourly"
+else:
+    initCheck = False
+    print "Incorrect value connected for timestep_.  Allowable inputs include monthly, hourly, daily or annually."
+    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, "Incorrect value connected for timestep_.  Allowable inputs include monthly, hourly, daily or annually.")
 
 
 #Generate the simulation outputs if the above checks are sucessful.
-simulationOutputs = main(zoneEnergyUse_, zoneGainsAndLosses_, zoneComfortMetrics_, zoneHVACParams_, surfaceTempAnalysis_, surfaceEnergyAnalysis_, glazingSolarAnalysis_, timestep_)
-print "Simulation outputs generated successfully!"
+if initCheck == True:
+    simulationOutputs = main(zoneEnergyUse_, zoneGainsAndLosses_, zoneComfortMetrics_, zoneHVACParams_, surfaceTempAnalysis_, surfaceEnergyAnalysis_, glazingSolarAnalysis_, timestep_)
+    print "Simulation outputs generated successfully!"
