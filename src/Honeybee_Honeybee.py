@@ -6140,18 +6140,59 @@ class hb_2xDXCoilParams(object):
         self.twoSpeedDXDict = {
         'name':'honeybee Default 2 Speed DX Coil',
         'availSch':'OpenStudio Default',
+        'ratedHighSpeedAirflowRate':'Autosize',
         'ratedHighSpeedTotalCooling':'Autosize',
-        'ratedHighSpeedSHR':0.85,
+        'ratedHighSpeedSHR':'Autosize',
         'ratedHighSpeedCOP':3.0,
+        'ratedLowSpeedAirflowRate':'Autosize',
         'ratedLowSpeedTotalCooling':'Autosize',
-        'ratedLowSpeedSHR':0.85,
+        'ratedLowSpeedSHR':'Autosize',
         'ratedLowSpeedCOP':3.0,
         'condenserType':'AirCooled',
         'evaporativeCondenserDesc':None,
         'Curves':None
         }
 
+class hb_1xDXCoilParams(object):
+        def __init__(self):
+            self.oneSpeedDXDict = {
+            'name':'honeybee Default 1 Speed DX Coil',
+            'availSch':'OpenStudio Default',
+            'ratedAirflowRate':'Autosize',
+            'ratedTotalCooling':'Autosize',
+            'ratedSHR':'Autosize',
+            'ratedCOP':3.0,
+            'condenserType':'Air Cooled',
+            'evaporativeCondenserDesc':None,
+            'Curves':None
+            }
 
+class hb_lspeedEvapCondParams(object):
+    def __init__(self):
+            self.lspeedevapCond = {
+            'name':'honeybee default 1 speed DX condenser',
+            'serviceType':0,
+            'evapEffectiveness':0.9,
+            'evapCondAirflowRate':'Autosize',
+            'evapPumpPower':'Autosize',
+            'storageTank':None,
+            'curves':None
+            }
+
+class hb_hspeedEvapCondParams(object):
+    def __init__(self):
+        self.hspeedevapCond = {
+        'name':'honeybee default 1 speed DX condenser',
+        'serviceType':0,
+        'evapEffectiveness':0.9,
+        'evapCondAirflowRate':'Autosize',
+        'evapPumpPower':'Autosize',
+        'hiEvapEffectiveness':0.9,
+        'hiEvapCondAirflowRate':'Autosize',
+        'hiEvapPumpPower':'Autosize',
+        'storageTank':None,
+        'curves':None
+        }
 letItFly = True
 
 def checkGHPythonVersion(target = "0.6.0.3"):
@@ -6281,6 +6322,9 @@ if letItFly:
         sc.sticky["honeybee_variableVolumeFanParams"] = hb_varVolFanParams
         sc.sticky["honeybee_AirHandlerParams"] = hb_AirHandlerParams
         sc.sticky["honeybee_2xDXCoilParams"] = hb_2xDXCoilParams
+        sc.sticky["honeybee_1xDXCoilParams"] = hb_1xDXCoilParams
+        sc.sticky["honeybee_lspeedevapcondParams"] = hb_lspeedEvapCondParams
+        sc.sticky["honeybee_hspeedevapcondParams"] = hb_hspeedEvapCondParams
         sc.sticky["honeybee_EPSurface"] = hb_EPSurface
         sc.sticky["honeybee_EPShdSurface"] = hb_EPShdSurface
         sc.sticky["honeybee_EPZoneSurface"] = hb_EPZoneSurface
