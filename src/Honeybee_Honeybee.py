@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.55\nOCT_01_2014'
+ghenv.Component.Message = 'VER 0.0.55\nOCT_06_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1458,7 +1458,7 @@ class WriteRAD(object):
             
             newLocName = self.lb_preparation.removeBlankLight(locName)
             newLocName = newLocName.replace("/", "_")
-
+            
             # copy .epw file to sub-directory
             self.lb_preparation.copyFile(epwFileAddress, subWorkingDir + "\\" + newLocName + '.epw')
             
