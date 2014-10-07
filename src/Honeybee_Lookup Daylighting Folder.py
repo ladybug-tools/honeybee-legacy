@@ -22,7 +22,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Lookup Daylighting Folder"
 ghenv.Component.NickName = 'LookupFolder_Daylighting'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.55\nOCT_07_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -102,9 +102,9 @@ def main(studyFolder):
         for fileName in fileNames:
             if fileName.lower().endswith(".res"):
                 resFiles.append(os.path.join(studyFolder, fileName))
-            elif fileName.lower().endswith(".ill") and fileName.split("_")[-2]!="space":
+            elif fileName.lower().endswith(".ill") and (fileName.find("space")== -1 or fileName.split("_")[-2]!="space"):
                 illFilesTemp.append(os.path.join(studyFolder, fileName))
-            elif fileName.lower().endswith(".pts") and fileName.split("_")[-2]!="space":
+            elif fileName.lower().endswith(".pts") and (fileName.find("space")== -1 or fileName.split("_")[-2]!="space"):
                 ptsFiles.append(os.path.join(studyFolder, fileName))
             elif fileName.lower().endswith(".epw"):
                 epwFile = os.path.join(studyFolder, fileName)

@@ -16,7 +16,7 @@ Provided by Honeybee 0.0.55
 """
 ghenv.Component.Name = "Honeybee_Import Pts File"
 ghenv.Component.NickName = 'importPts'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.55\nOCT_07_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -43,13 +43,13 @@ def main(ptsFileAddress):
     for fileAddress in ptsFileAddress:
         with open(fileAddress, 'r') as pts:
             for lineCount, line in enumerate(pts):
-                line = line.replace('\n', '', 10)
+                line = ' '.join(line.split())
                 lineSeg = line.Split(' ')
                 if len(lineSeg)!=6: lineSeg = line.Split('\t')
                 if len(lineSeg)==6:
                     pointsF.append(rc.Geometry.Point3d(float(lineSeg[0]), float(lineSeg[1]), float(lineSeg[2])))
                     vectorsF.append(rc.Geometry.Vector3d(float(lineSeg[3]), float(lineSeg[4]), float(lineSeg[5])))
-            
+                
     # check if there is a pattern file in thr folder
     workingDir = os.path.dirname(ptsFileAddress[0])
     dirFiles = os.listdir(workingDir)
