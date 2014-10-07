@@ -24,7 +24,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Label Zones"
 ghenv.Component.NickName = 'LabelZones'
-ghenv.Component.Message = 'VER 0.0.55\nOCT_03_2014'
+ghenv.Component.Message = 'VER 0.0.55\nOCT_06_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -102,7 +102,15 @@ def main(hb_zones, basePts, textSize, font, attribute):
     #Get the zone properties.
     for count, HZone in enumerate(hb_zones):
         wireFrames.append(_HBZones[count].DuplicateEdgeCurves())
-        theProp = getattr(HZone, attribute)
+        theProp = ""
+        try:
+            theProp = getattr(HZone, attribute)
+        except:
+            if attribute == "zoneFloorArea":
+                theProp = "%.3f"%HZone.getFloorArea()
+            elif attribute == "zoneVolume":
+                theProp = "%.3f"%HZone.getZoneVolume()
+                
         if theProp == "":
             theProp = "Not Assigned"
         zoneProperties.append(str(theProp))
