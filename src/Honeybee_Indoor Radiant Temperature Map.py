@@ -20,7 +20,6 @@ Provided by Honeybee 0.0.55
         _zoneSrfNames: The data tree of zone surface names that comes out of the "Honeybee_Indoor View Factor Calculator".  This is essentially a branched data tree with the names of each of the surfaces for each zone.
         ===============: ...
         analysisPeriod_: Optional analysisPeriod_ to take a slice out of an annual data stream.  Note that this will only work if the connected data is for a full year and the data is hourly.  Otherwise, this input will be ignored. Also note that connecting a value to "stepOfSimulation_" will override this input.
-        periodTotal_: Set to 'True' to have a connected analysis period be totaled from the start hour all of the way to the end hour.  Set to 'False' to have the start and end hours constrict the time period of each day of the analysisPeriod_.  The default is set to 'False'.
         stepOfSimulation_: Optional interger for the hour of simulation to color the surfaces with.  Connecting a value here will override the analysisPeriod_ input.
         legendPar_: Optional legend parameters from the Ladybug Legend Parameters component.
         _runIt: Set boolean to "True" to run the component and color the zone surfaces.
@@ -37,7 +36,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Indoor Radiant Temperature Map"
 ghenv.Component.NickName = 'RadiantTempMap'
-ghenv.Component.Message = 'VER 0.0.55\nOCT_02_2014'
+ghenv.Component.Message = 'VER 0.0.55\nOCT_08_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -65,10 +64,9 @@ inputsDict = {
 3: ["_zoneSrfNames", "The data tree of zone surface names that comes out of the 'Honeybee_Indoor View Factor Calculator'.  This is essentially a branched data tree with the names of each of the surfaces for each zone."],
 4: ["===============", "..."],
 5: ["analysisPeriod_", "Optional analysisPeriod_ to take a slice out of an annual data stream.  Note that this will only work if the connected data is for a full year and the data is hourly.  Otherwise, this input will be ignored. Also note that connecting a value to 'stepOfSimulation_' will override this input."],
-6: ["periodTotal_", "Set to 'True' to have a connected analysis period be totaled from the start hour all of the way to the end hour.  Set to 'False' to have the start and end hours constrict the time period of each day of the analysisPeriod_.  The default is set to 'False'."],
-7: ["stepOfSimulation_", "Optional interger for the hour of simulation to color the surfaces with.  Connecting a value here will override the analysisPeriod_ input."],
-8: ["legendPar_", "Optional legend parameters from the Ladybug Legend Parameters component."],
-9: ["_runIt", "Set boolean to 'True' to run the component and color the zone surfaces."]
+6: ["stepOfSimulation_", "Optional interger for the hour of simulation to color the surfaces with.  Connecting a value here will override the analysisPeriod_ input."],
+7: ["legendPar_", "Optional legend parameters from the Ladybug Legend Parameters component."],
+8: ["_runIt", "Set boolean to 'True' to run the component and color the zone surfaces."]
 }
 
 outputsDict = {
@@ -250,14 +248,18 @@ def checkTheInputs():
                 if totalFaces == len(testPtsViewFactor[zoneCount]): pass
                 else:
                     checkData8 = False
-                    warning = "The number of test points in the _testPtsViewFactor and mesh faces in the _viewFactorMesh do not match."
+                    warning = "For one of the meshes in the _viewFactorMesh, the number of faces in the mesh and test points in the _testPtsViewFactor do not match.\n" + \
+                    "This can sometimes happen when you have geometry created with one Rhino model tolerance and you generate a mesh off of it with a different tolerance.\n"+ \
+                    "Try changing your Rhino model tolerance and seeing if it works."
                     print warning
                     ghenv.Component.AddRuntimeMessage(w, warning)
             else:
                 if zone[0].Faces.Count == len(testPtsViewFactor[zoneCount]): pass
                 else:
                     checkData8 = False
-                    warning = "The number of test points in the _testPtsViewFactor and mesh faces in the _viewFactorMesh do not match."
+                    warning = "For one of the meshes in the _viewFactorMesh, the number of faces in the mesh and test points in the _testPtsViewFactor do not match.\n" + \
+                    "This can sometimes happen when you have geometry created with one Rhino model tolerance and you generate a mesh off of it with a different tolerance.\n"+ \
+                    "Try changing your Rhino model tolerance and seeing if it works."
                     print warning
                     ghenv.Component.AddRuntimeMessage(w, warning)
     
@@ -272,13 +274,12 @@ def checkTheInputs():
 
 def manageInputOutput(annualData, simStep):
     #If some of the component inputs and outputs are not right, blot them out or change them.
-    for input in range(10):
-        if annualData == False:
-            if input == 5 or input == 6:
-                ghenv.Component.Params.Input[input].NickName = "___________"
-                ghenv.Component.Params.Input[input].Name = "."
-                ghenv.Component.Params.Input[input].Description = " "
-        elif input == 7 and (simStep == "Annually" or simStep == "unknown timestep"):
+    for input in range(9):
+        if input == 5 and annualData == False:
+            ghenv.Component.Params.Input[input].NickName = "___________"
+            ghenv.Component.Params.Input[input].Name = "."
+            ghenv.Component.Params.Input[input].Description = " "
+        elif input == 6 and (simStep == "Annually" or simStep == "unknown timestep"):
             ghenv.Component.Params.Input[input].NickName = "____________"
             ghenv.Component.Params.Input[input].Name = "."
             ghenv.Component.Params.Input[input].Description = " "
@@ -300,7 +301,7 @@ def manageInputOutput(annualData, simStep):
     return analysisPeriod, stepOfSimulation
 
 def restoreInputOutput():
-    for input in range(10):
+    for input in range(9):
         ghenv.Component.Params.Input[input].NickName = inputsDict[input][0]
         ghenv.Component.Params.Input[input].Name = inputsDict[input][0]
         ghenv.Component.Params.Input[input].Description = inputsDict[input][1]
@@ -425,13 +426,7 @@ def getSrfTempData(pyZoneData, annualData, simStep, srfHeaders, headerUnits, ana
             endIndex = HOYS[-1]
             #Get the data from the lists.
             for list in pyZoneData:
-                if periodTotal_ == True:
-                    dataForColoring.append(round(sum(list[startIndex:endIndex+1])/len(list[startIndex:endIndex+1]), 4))
-                else:
-                    dataInit = []
-                    for hour in HOYS:
-                        dataInit.append(list[hour-1])
-                    dataForColoring.append(round(sum(dataInit)/len(dataInit), 4))
+                dataForColoring.append(round(sum(list[startIndex:endIndex+1])/len(list[startIndex:endIndex+1]), 4))
             #Add the analysis period to the title.
             coloredTitle.append(str(monthNames[startMonth-1]) + " " + str(startDay) + " " + str(timeNames[startHour-1]) + " - " + str(monthNames[endMonth-1]) + " " + str(endDay) + " " + str(timeNames[endHour-1]))
     
