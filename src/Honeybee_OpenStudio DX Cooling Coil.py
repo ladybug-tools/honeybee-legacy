@@ -41,9 +41,9 @@ import scriptcontext as sc
 import pprint
 import Grasshopper.Kernel as gh
 
-ghenv.Component.Name = "Honeybee_OpenStudio DX Coil"
-ghenv.Component.NickName = 'EPlusDXCoil'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_22_2014'
+ghenv.Component.Name = "Honeybee_OpenStudio DX Cooling Coil"
+ghenv.Component.NickName = 'EPlusDXCoolingCoil'
+ghenv.Component.Message = 'VER 0.0.55\nOCT_14_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | AirsideSystems"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
