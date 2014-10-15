@@ -105,7 +105,8 @@ def main():
             print "changed to"
             pp.pprint(_fanDetail_.d)
             
-    #dx coil assignment errors
+    #dx coil assignment errors (single speed where dual speed, etc. , using DX heating where hot water)
+    
     
     if sc.sticky.has_key('honeybee_release'):
         hb_airHandler = sc.sticky["honeybee_AirHandlerParams"]().airHandlerDict
@@ -160,6 +161,11 @@ def main():
                     pass
                 if _coolingCoil_ != None : 
                     sysdict['coolingCoil'] = _coolingCoil_.d
+                else:
+                    pass
+                if _heatingCoil_ != None:
+                    print _heatingCoil_.d
+                    sysdict['heatingCoil'] = _heatingCoil_.d
                 else:
                     pass
             

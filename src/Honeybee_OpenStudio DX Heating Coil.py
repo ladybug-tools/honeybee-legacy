@@ -24,7 +24,7 @@ Provided by Honeybee 0.0.55
         _outdoorDryBulbDefrostDisabled_ :... If left blank, the default is 5C (41F).  It is the temperature, below which, defrost is enabled to de-ice the heat source.
         _maxOutdoorDryBulbForCrankcase_: ... If left blank, the default is 10C (50F).  It is the temperature above which the compressor crankcase heater is disabled.
         _crankCaseHeaterCapacity_ :... If left blank, the default is zero.  It is the capacity of the compressor crankcase heater (Watts), which will turn on if below the stated temperature and the compressor is not running.
-        _defrostStrategy_: ... If left blank, the default is 'reverse-cycle'.  Two options for this 'reverse-cycle', 'resistive'.  It is the type of heating cycle used to melt frost accumulated on the outdoor coil.
+        _defrostStrategy_: ... If left blank, the default is 'ReverseCycle'.  Two options for this 'ReverseCycle', 'Resistive'.  Spelling must be correct.  It is the type of heating cycle used to melt frost accumulated on the outdoor coil.
         _defrostControl_: ... If left blank, the default is 'timed'.  Two options are 'timed' and 'on-demand'.
         _resistiveDefrostHeatCap_:  If left blank, the default is 0.  It is the capacity in Watts of the resistive element used for defrost.
         _Curves_ ... Not yet implemented.  Allows you to specify custom part load curves for DX coils.
