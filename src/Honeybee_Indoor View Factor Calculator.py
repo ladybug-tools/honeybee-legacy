@@ -32,7 +32,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_22_2014'
+ghenv.Component.Message = 'VER 0.0.55\nOCT_15_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -388,11 +388,11 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, hb_zoneData):
                         finalTestPts.append(centPt)
                 finalMesh = rc.Geometry.Mesh()
                 for brep in finalFaceBreps:
-                    if brep.Vertices.Count == 4:
-                        facePt1 = rc.Geometry.Point3d(brep.Vertices[0].Location)
-                        facePt2 = rc.Geometry.Point3d(brep.Vertices[1].Location)
-                        facePt3 = rc.Geometry.Point3d(brep.Vertices[2].Location)
-                        facePt4 = rc.Geometry.Point3d(brep.Vertices[3].Location)
+                    if brep.DuplicateVertices().Count == 4:
+                        facePt1 = rc.Geometry.Point3d(brep.DuplicateVertices()[0])
+                        facePt2 = rc.Geometry.Point3d(brep.DuplicateVertices()[1])
+                        facePt3 = rc.Geometry.Point3d(brep.DuplicateVertices()[2])
+                        facePt4 = rc.Geometry.Point3d(brep.DuplicateVertices()[3])
                         
                         meshFacePts = [facePt1, facePt2, facePt3, facePt4]
                         mesh = rc.Geometry.Mesh()
@@ -402,9 +402,9 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, hb_zoneData):
                         mesh.Faces.AddFace(0, 1, 2, 3)
                         finalMesh.Append(mesh)
                     else:
-                        facePt1 = rc.Geometry.Point3d(brep.Vertices[0].Location)
-                        facePt2 = rc.Geometry.Point3d(brep.Vertices[1].Location)
-                        facePt3 = rc.Geometry.Point3d(brep.Vertices[2].Location)
+                        facePt1 = rc.Geometry.Point3d(brep.DuplicateVertices()[0])
+                        facePt2 = rc.Geometry.Point3d(brep.DuplicateVertices()[1])
+                        facePt3 = rc.Geometry.Point3d(brep.DuplicateVertices()[2])
                         
                         meshFacePts = [facePt1, facePt2, facePt3]
                         mesh = rc.Geometry.Mesh()
