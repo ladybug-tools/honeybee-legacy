@@ -4,20 +4,22 @@
 # under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
 
 """
-Convert Mass to Honeybee Zones
+Use this component to take any list of closed breps and turn them into Honeybee Zones with all of the properties needed to run them through an energy simulation.
+_
+This includes constructions of the surfaces, boundary condtions of all of the surfaces (ie ground, exterior, etc), schedules+ loads for occupancy/internal electronics, and settings for an HVAC system if isContitioned_ is set to True.
 -
 Provided by Honeybee 0.0.55
 
     Args:
-        _zoneMasses: List of closed Breps
-        zoneNames_: List of names for zone names. Default names will be applied to zones if empty
-        zonePrograms_: List of programs for zone programs. Office::OpenOffice will be applied to zones if empty
-        isConditioned_: List of True/False. IdealLoadsAirSystem will be assigned to the zone if True.
-        maximumRoofAngle_: Maximum angle from z vector that the surface will be assumed as a roof. Default is 30 degrees
-        _createHBZones: Set Boolean to True to generate the zones
+        _zoneMasses: A list of closed breps or a  single closed brep that represents the geometry of the zone(s) that will be output from this component.
+        zoneNames_: A list of names for the zones that will be output from this component. Default names will be applied to zones based on their order in the list if this value is left empty.
+        zonePrograms_: A list of zone programs from the Honeybee_ListZonePrograms component that matches the number of breps in the _zoneMasses list.  These zone programs will be applied to the zones that are output from this component and will be used to set the shcedules and loads of these programs. This input can also be a single zoneProgram to be applied to all of the coneected zones.  If no value is connected here, the zone program Office::OpenOffice will be applied to the zones.
+        isConditioned_: A list of True/False values that matches the number of breps in the _zoneMasses list. These True/False values will be applied to the ouput zones to either condition them with an Ideal Air Loads System (True) or not condition them at all (False).  This input can also be a single True/False value that can be applied to all of the connected zones.  If no value is connected here, all zones will be conditioned with an Ideal Air Loads System by default.
+        maximumRoofAngle_: A maximum angle from the z vector in degrees that will be used to decide whether a given surface in the connected _zoneMasses is assigned as a roof or a wall. The default is 30 degrees but you may want to increase this if you have a roof that is at a steeper slope (ie. 45 degrees).
+        _createHBZones: Set to True to generate the zones and assign energy simulation properties to your connected _zoneMasses.
     Returns:
         readMe!: ...
-        HBZones: Honeybee zones in case of success
+        HBZones: Honeybee zones that have all of the properties necessary for an energy simulation assigned to them.  Connect these to a "Honeybee_Label Zones" component to see some of these properties.
 """
 
 import rhinoscriptsyntax as rs
@@ -34,7 +36,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_Masses2Zones'
 ghenv.Component.NickName = 'Mass2Zone'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.55\nOCT_18_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -72,6 +74,51 @@ def main(maximumRoofAngle, zoneMasses, zoneNames, zonePrograms, isConditioned):
     hb_EPZone = sc.sticky["honeybee_EPZone"]
     hb_EPSrf = sc.sticky["honeybee_EPSurface"]
     hb_EPZoneSurface = sc.sticky["honeybee_EPZoneSurface"]
+    
+    #Have a function to duplicate data.
+    def duplicateData(data, calcLength):
+        dupData = []
+        for count in range(calcLength):
+            dupData.append(data[0])
+        return dupData
+    
+    zoneNumber = len(zoneMasses)
+    
+    #If the length of the zonePrograms_ is 1, duplicate it to apply it to all zones.  Give a warning if the length of the list does not match the number of zones.
+    if len(zonePrograms) == 1:
+        zonePrograms = duplicateData(zonePrograms, zoneNumber)
+        print "Zone program " + str(zonePrograms[0]) + " has been applied to all " + str(zoneNumber) + " connected zones."
+    elif len(zonePrograms) == 0:
+        print "No value connected for zoneProgram_.  Office::OpenOffice has been assigned by default."
+    elif len(zonePrograms) != zoneNumber:
+        warning = "The number of items in the connected zonePrograms_ list does not match the number of connected _zoneMasses. Office::OpenOffice will be assigned by default to zones that have no program in the list."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+    else:
+        print "Zones will be assigned a zone program based on the list of connected zonePrograms_."
+    
+    #If the length of the isConditioned_ is 1, duplicate it to apply it to all zones.  Give a warning if the length of the list does not match the number of zones.
+    if len(isConditioned) == 1:
+        isConditioned = duplicateData(isConditioned, zoneNumber)
+        print "An IsConditioned value of " + str(isConditioned[0]) + " has been applied to all " + str(zoneNumber) + " connected zones."
+    elif len(isConditioned) == 0:
+        print "No value connected for isConditioned_.  All zones will be conditioned by default."
+    elif len(isConditioned) != zoneNumber:
+        warning = "The number of items in the connected isConditioned_ list does not match the number of connected _zoneMasses. Zones will be conditioned by default to if there is not isConditioned_ value for them in the list."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+    else:
+        print "Zones will be assigned an isConditioned value based on the list of connected isConditioned_ list."
+    
+    #Give a warning if the length of the zoneNames_ list does not match the number of zones.
+    if len(zoneNames) == 0:
+        print "No value connected for zoneNames_.  All zones will be assigned a default name based on their order in the list."
+    elif len(zoneNames) != zoneNumber:
+        warning = "The number of items in the connected zoneNames_ list does not match the number of connected _zoneMasses. Zones without a name in the list will be be assigned a default name based on their order in the list."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+    else:
+        print "Zones will be assigned a zoneName based on the list of connected zoneName_ list."
     
     HBZones = []
     # create zones out of masses
