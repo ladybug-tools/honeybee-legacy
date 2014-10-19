@@ -527,18 +527,45 @@ class WriteOPS(object):
     
         #right now, this only works for a one speed coil
         #will need to add something about type to distinguish between other coils
+        if hbhc['type'] == 0:
+            if hbhc['ratedAirflowRate'] != None:
+                if hbhc['ratedAirflowRate'] != 'Autosize':
+                    modelhc.setRatedAirFlowRate(hbhc['ratedAirflowRate'])
+                    print 'coil rated airflow rate now set to: ' + str(hbhc['ratedAirflowRate'])
+            if hbhc['ratedTotalHeating'] != None:
+                if hbhc['ratedTotalHeating'] != 'Autosize':
+                    modelhc.setRatedTotalHeatingCapacity(hbhc['ratedTotalHeating'])
+                    print 'coil rated total heating capacity now set to: ' + str(hbhc['ratedTotalHeating'])
+            if hbhc['ratedCOP'] != None:
+                modelhc.setRatedCOP(hbhc['ratedCOP'])
+                print 'coil rated COP now set to: ' + str(hbhc['ratedCOP'])
+        elif hbhc['type'] == 1:
+            pass
+            #OpenStudio currently does not support 2Speed DX Coils.
+        if hbhc['minOutdoorDryBulb'] != None:
+            modelhc.setMinimumOutdoorDryBulbTemperatureforCompressorOperation(hbhc['minOutdoorDryBulb'])
+            print "min outdoor dry bulb for compressor operation set: " + str(hbhc['minOutdoorDryBulb'])
+        if hbhc['outdoorDBDefrostEnabled'] != None:
+            modelhc.setMaximumOutdoorDryBulbTemperatureforDefrostOperation(hbhc['outdoorDBDefrostEnabled'])
+            print 'the temperature at which the coil goes into defrost mode is: ' + str(hbhc['outdoorDBDefrostEnabled'])
+        if hbhc['outdoorDBCrankcase'] != None:
+            modelhc.setMaximumOutdoorDryBulbTemperatureforCrankcaseHeaterOperation(hbhc['outdoorDBCrankcase'])
+            print "max crankcase temperature set to: " + str(hbhc['outdoorDBCrankcase'])
+        if hbhc['crankcaseCapacity'] != None:
+            modelhc.setCrankcaseHeaterCapacity(hbhc['crankcaseCapacity'])
+            print 'crankcase capacity of coil now set to: ' + str(hbhc['crankcaseCapacity'])
         if hbhc['defrostStrategy'] != None:
             modelhc.setDefrostStrategy(hbhc['defrostStrategy'])
             print "defrost strategy updated to: " + hbhc['defrostStrategy']
         if hbhc['defrostControl'] != None:
             modelhc.setDefrostControl(hbhc['defrostControl'])
             print "defrost control updated to: " +hbhc['defrostControl']
-        if hbhc['outdoorDBCrankcase'] != None:
-            modelhc.setMaximumOutdoorDryBulbTemperatureforCrankcaseHeaterOperation(hbhc['outdoorDBCrankcase'])
-            print "max crankcase temperature set to: " + str(hbhc['outdoorDBCrankcase'])
-        if hbhc['minOutdoorDryBulb'] != None:
-            modelhc.setMinimumOutdoorDryBulbTemperatureforCompressorOperation(hbhc['minOutdoorDryBulb'])
-            print "min outdoor dry bulb for compressor operation set: " + str(hbhc['minOutdoorDryBulb'])
+        if hbhc['resistiveDefrostCap'] != None:
+            modelhc.setResistiveDefrostHeaterCapacity(hbhc['resistiveDefrostCap'])
+            print "resistiveDefrostHeaterCapacity set to: " + str(hbhc['resistiveDefrostCap'])
+        #curves for future will be defined here
+        
+
         return modelhc
     
     def updateCVFan(self,sf,cvfan):
@@ -862,9 +889,7 @@ class WriteOPS(object):
                             sf = self.recallCVFan(HVACDetails)
                             cvfan = self.updateCVFan(sf,cvfan)
                             print 'supply fan settings updated to supply fan name: ' + HVACDetails['constVolSupplyFanDef']['name']
-                        else:
-                            print 'no supply fan defined'
-                            pass
+
                         if len(HVACDetails['heatingCoil']) > 0:
                             print 'overriding the OpenStudio DX heating coil settings'
                             modelhandle = pthp.heatingCoil().handle()
@@ -960,6 +985,18 @@ class WriteOPS(object):
                             coolcoil = model.getCoilCoolingDXSingleSpeed(handle).get()
                             cc = self.recallCoolingCoil(HVACDetails)
                             coolcoil = self.updateCoolingCoil(cc,coolcoil)
+                            
+                        if len(HVACDetails['heatingCoil']) > 0:
+                            print 'overriding the OpenStudio DX heating coil settings'
+                            print airloop
+                            hc = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Heating:DX:SingleSpeed"))
+                            handle = hc[0].handle()
+                            modelhc = model.getCoilHeatingDXSingleSpeed(handle).get()
+
+                            hbhc = HVACDetails['heatingCoil']
+                            modelhc = self.updateDXHeatingCoil(hbhc,modelhc)
+                            print 'New Heating Coil Definition:'
+                            print modelhc
                     
             elif systemIndex == 5:
                 #print HVACDetails

@@ -8,7 +8,6 @@
 This component carries all of Honeybee's main classes. Other components refer to these
 classes to run the studies. Therefore, you need to let her fly before running the studies so the
 classes will be copied to Rhinos shared space. So let her fly!
--
 Honeybee started by Mostapha Sadeghipour Roudsari is licensed
 under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
 Based on a work at https://github.com/mostaphaRoudsari/Honeybee.
@@ -29,7 +28,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.55\nOCT_06_2014'
+ghenv.Component.Message = 'VER 0.0.55\nOCT_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1457,7 +1456,6 @@ class WriteRAD(object):
             locationStr, locName = self.hb_writeDS.DSLocationStr(self.hb_writeRADAUX, self.lb_preparation, epwFileAddress)
             
             newLocName = self.lb_preparation.removeBlankLight(locName)
-            newLocName = newLocName.replace("/", "_")
             
             # copy .epw file to sub-directory
             self.lb_preparation.copyFile(epwFileAddress, subWorkingDir + "\\" + newLocName + '.epw')
@@ -2582,7 +2580,7 @@ class WriteDS(object):
     def DSLocationStr(self, hb_writeRADAUX,  lb_preparation, epwFileAddress):
         # location information
         locName, lat, long, timeZone, elev = hb_writeRADAUX.RADLocation(epwFileAddress)
-        locName = locName.replace("/", "_")
+        
         
         return'\n\n#################################\n' + \
                   '#      LOCATION INFORMATION      \n' + \
@@ -6095,6 +6093,7 @@ class hb_constVolFanParams(object):
     def __init__(self):
         self.cvFanDict = {
         'name':'honeybeeConstVolFan',
+        'type':0,
         'fanEfficiency':0.6,
         'pressureRise':892.9,
         'maxFlowRate':'Autosize',
@@ -6106,6 +6105,7 @@ class hb_varVolFanParams(object):
     def __init__(self):
         self.vvFanDict = {
         'name':'honeybeeConstVolFan',
+        'type':1,
         'fanEfficiency':0.6,
         'pressureRise':892.9,
         'maxFlowRate':'Autosize',
@@ -6133,7 +6133,9 @@ class hb_AirHandlerParams(object):
         'constVolSupplyFanDef':hb_constVolFanParams,
         'varVolSupplyFanDef':hb_varVolFanParams,
         'airsideEconomizer':hb_airsideEconoParams,
-        'coolingCoil': None
+        'coolingCoil': None,
+        'heatingCoil': None,
+        'evaporativeCondenser': None
         }
 
 class hb_2xDXCoilParams(object):
@@ -6154,19 +6156,58 @@ class hb_2xDXCoilParams(object):
         'Curves':None
         }
 
+class hb_2xDXHeatingCoilParams(object):
+    def __init__(self):
+        self.twoSpeedDXDict = {
+        'name':'honeybee Default 2 Speed DX Heating Coil',
+        'availSch':'OpenStudio Default',
+        'ratedHighSpeedAirflowRate':'Autosize',
+        'ratedHighSpeedTotalHeating':'Autosize',
+        'ratedHighSpeedCOP':4.0,
+        'ratedLowSpeedAirflowRate':'Autosize',
+        'ratedLowSpeedTotalCooling':'Autosize',
+        'ratedLowSpeedCOP':5.0,
+        'minOutdoorDryBulb':-8,
+        'outdoorDBDefrostEnabled': 5,
+        'outdoorDBCrankcase':10,
+        'crankcaseCapacity': 0,
+        'defrostStrategy':'reverse-cycle',
+        'defrostControl':'timed',
+        'resistiveDefrostCap':0,
+        'Curves': None
+        }
+
 class hb_1xDXCoilParams(object):
-        def __init__(self):
-            self.oneSpeedDXDict = {
-            'name':'honeybee Default 1 Speed DX Coil',
-            'availSch':'OpenStudio Default',
-            'ratedAirflowRate':'Autosize',
-            'ratedTotalCooling':'Autosize',
-            'ratedSHR':'Autosize',
-            'ratedCOP':3.0,
-            'condenserType':'Air Cooled',
-            'evaporativeCondenserDesc':None,
-            'Curves':None
-            }
+    def __init__(self):
+        self.oneSpeedDXDict = {
+        'name':'honeybee Default 1 Speed DX Coil',
+        'availSch':'OpenStudio Default',
+        'ratedAirflowRate':'Autosize',
+        'ratedTotalCooling':'Autosize',
+        'ratedSHR':'Autosize',
+        'ratedCOP':3.0,
+        'condenserType':'Air Cooled',
+        'evaporativeCondenserDesc':None,
+        'Curves':None
+        }
+            
+class hb_1xDXHeatingCoilParams(object):
+    def __init__(self):
+        self.oneSpeedDXDict = {
+        'name':'honeybee Default 1 speed DX Heating Coil',
+        'availSch':'OpenStudio Default',
+        'ratedAirflowRate':'Autosize',
+        'ratedTotalHeating':'Autosize',
+        'ratedCOP':3.0,
+        'minOutdoorDryBulb': -8,
+        'outdoorDBDefrostEnabled': 5,
+        'outdoorDBCrankcase':10,
+        'crankcaseCapacity': 0,
+        'defrostStrategy':'reverse-cycle',
+        'defrostControl':'timed',
+        'resistiveDefrostCap':0,
+        'Curves': None
+        }
 
 class hb_lspeedEvapCondParams(object):
     def __init__(self):
@@ -6323,7 +6364,9 @@ if letItFly:
         sc.sticky["honeybee_variableVolumeFanParams"] = hb_varVolFanParams
         sc.sticky["honeybee_AirHandlerParams"] = hb_AirHandlerParams
         sc.sticky["honeybee_2xDXCoilParams"] = hb_2xDXCoilParams
+        sc.sticky["honeybee_2xDXHeatingCoilParams"] = hb_2xDXHeatingCoilParams
         sc.sticky["honeybee_1xDXCoilParams"] = hb_1xDXCoilParams
+        sc.sticky["honeybee_1xDXHeatingCoilParams"] = hb_1xDXHeatingCoilParams
         sc.sticky["honeybee_lspeedevapcondParams"] = hb_lspeedEvapCondParams
         sc.sticky["honeybee_hspeedevapcondParams"] = hb_hspeedEvapCondParams
         sc.sticky["honeybee_EPSurface"] = hb_EPSurface
