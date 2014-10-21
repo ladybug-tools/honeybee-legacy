@@ -36,7 +36,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Indoor Radiant Temperature Map"
 ghenv.Component.NickName = 'RadiantTempMap'
-ghenv.Component.Message = 'VER 0.0.55\nOCT_08_2014'
+ghenv.Component.Message = 'VER 0.0.55\nOCT_20_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -77,7 +77,7 @@ outputsDict = {
 3: ["legendBasePt", "The legend base point, which can be used to move the legend in relation to the building with the grasshopper 'move' component."],
 4: ["==========", "..."],
 5: ["testPtsMRT", "The values of mean radiant temperture (MRT) at each of the test points (this is what is used to  being used to color the surfaces."],
-6: ["pointColors:", "The colors that correspond to each of the test points."]
+6: ["pointColors", "The colors that correspond to each of the test points."]
 }
 
 
@@ -92,7 +92,14 @@ def checkTheInputs():
         branchList = _srfIndoorTemp.Branch(i)
         dataVal = []
         for item in branchList:
-            dataVal.append(item)
+            try: dataVal.append(float(item))
+            except:
+                if item.startswith('('):
+                    try:
+                        numlist = item.split('(')[-1].split(')')[0].split(', ')
+                        dataVal.append([int(numlist[0]), int(numlist[1]), int(numlist[2])])
+                    except: dataVal.append(item)
+                else: dataVal.append(item)
         dataPyList.append(dataVal)
     
     #Test to see if the data has a header on it, which is necessary to know if it is the right data type.  If there's no header, the data should not be vizualized with this component.
