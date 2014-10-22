@@ -36,7 +36,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Color Surfaces by EP Result"
 ghenv.Component.NickName = 'ColorSurfaces'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_19_2014'
+ghenv.Component.Message = 'VER 0.0.55\nOCT_21_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -115,7 +115,14 @@ def checkTheInputs():
         branchList = _srfData.Branch(i)
         dataVal = []
         for item in branchList:
-            dataVal.append(item)
+            try: dataVal.append(float(item))
+            except:
+                if item.startswith('('):
+                    try:
+                        numlist = item.split('(')[-1].split(')')[0].split(', ')
+                        dataVal.append([int(numlist[0]), int(numlist[1]), int(numlist[2])])
+                    except: dataVal.append(item)
+                else: dataVal.append(item)
         dataPyList.append(dataVal)
     
     #Test to see if the data has a header on it, which is necessary to know whether to total the data or average it.  If there's no header, the data should not be vizualized with this component.
