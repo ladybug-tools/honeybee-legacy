@@ -36,7 +36,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Indoor Radiant Temperature Map"
 ghenv.Component.NickName = 'RadiantTempMap'
-ghenv.Component.Message = 'VER 0.0.55\nOCT_20_2014'
+ghenv.Component.Message = 'VER 0.0.55\nOCT_23_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
