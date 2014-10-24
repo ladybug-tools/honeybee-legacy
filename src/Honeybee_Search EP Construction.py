@@ -35,7 +35,7 @@ import scriptcontext as sc
 import Grasshopper.Kernel as gh
 
 
-def main(constrList, standard, climateZone, keyword, bldgProgram, constructionType):
+def main(constrList, standard, climateZone, keyword):
     
     # Make sure Honeybee is flying
     if not sc.sticky.has_key('honeybee_release'):
@@ -63,19 +63,13 @@ def main(constrList, standard, climateZone, keyword, bldgProgram, constructionTy
         ghenv.Component.AddRuntimeMessage(w, msg)
         return -1
     
-    try:
-        surfaceType = keyword
-    except: pass
     
-    try: bldgProgram = int(bldgProgram)
-    except: pass
-    
-    selConstruction = hb_EPMaterialAUX.filterMaterials(constrList, standard, climateZone, surfaceType, bldgProgram, constructionType, ghenv.Component)
+    selConstruction = hb_EPMaterialAUX.filterMaterials(constrList, standard, climateZone, keyword, "", "", ghenv.Component)
     
     return selConstruction
     
     
 if len(_EPConstrList)!=0 and _standard:
-    result = main(_EPConstrList, _standard, climateZone_, keyWord_, altBldgProgram_, constructionType_)
+    result = main(_EPConstrList, _standard, climateZone_, keyWord_)
     if result!= -1:
         EPSelectedConstr = result
