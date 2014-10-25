@@ -4,7 +4,7 @@
 # under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
 
 """
-Use this component to make your own EnergyPlus construction.  Inputs can be either the name of a matterial form the Openstudio construction library or a custom material made with any of the EnergyPlus Material components.  Only all custom materials or all existing Openstudio materials can be used in a given construction.
+Use this component to make your own EnergyPlus construction.  Inputs can be either the name of a matterial form the Openstudio construction library or a custom material made with any of the EnergyPlus Material components.
 _
 Note that the last layer in the component is always the innermost layer and _layer_1 is always the outermost layer.
 _
@@ -13,16 +13,21 @@ To add more layers in the construction, simply zoom into the component and hit t
 Provided by Honeybee 0.0.55
     
     Args:
-        _name: ...
-        _layer_1
+        _name: A text name for your custom construction. This is what you will use as an input to other components in order to reference your custom construction.
+        _layer_1: The first and outer-most layer of your construction.
+        _layer_2: The second outer-most layer of your construction.
+        _layer_3: The third outer-most layer of your construction.
+        _layer_4: The fourth outer-most layer of your construction.
+        _layer_5: The fifth outer-most layer of your construction.
+        _layer_6: The sixth outer-most layer of your construction.
     Returns:
-        EPConstruction: ...
+        EPConstruction: An EnergyPlus construction that can be plugged into the "Honeybee_Add to EnergyPlus Library" component in order to write the construction into the project library.
 
 """
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Construction"
 ghenv.Component.NickName = 'EPConstruction'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.55\nOCT_24_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014

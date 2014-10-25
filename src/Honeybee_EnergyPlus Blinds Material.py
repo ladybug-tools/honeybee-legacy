@@ -24,7 +24,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Blinds Material"
 ghenv.Component.NickName = 'EPBlindsMat'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.55\nOCT_24_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -80,7 +80,7 @@ def setDefaults():
     
     
     if checkData1 == True and checkData2 == True and checkData3 == True: checkData = True
-    else: ckeckData = False
+    else: checkData = False
     
     
     return checkData, materialName, reflectance, transmittance, emissivity, slatThickness, conductivity
