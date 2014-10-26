@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.55\nOCT_23_2014'
+ghenv.Component.Message = 'VER 0.0.55\nOCT_25_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -4720,8 +4720,9 @@ class hb_reEvaluateHBZones(object):
             adjcSurface = surface.BCObject
             
             if not glazingBase:
-                newAdjcSurfaceName = adjcSurface.name + "_" + `count`
+                newAdjcSurfaceName = adjcSurface.name + "_srfP_" + `count`
             else:
+                print "hey"
                 newAdjcSurfaceName = adjcSurface.name + nameAddition
             
             newAdjcSurface = self.hb_EPZoneSurface(self.createSurface(coordinates),
@@ -4970,7 +4971,7 @@ class hb_reEvaluateHBZones(object):
                 # copy.deepcopy fails on a number of systems I just create
                 # a new surface and assign necessary data to write the surface
                 
-                newSurfaceName = surface.name + "_" + `count`
+                newSurfaceName = surface.name + "_srfP_" + `count`
                 
                 newSurface = self.createSubSurfaceFromBaseSrf(surface, newSurfaceName, count, coordinates)
                 

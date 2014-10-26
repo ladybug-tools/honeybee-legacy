@@ -32,7 +32,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.55\nOCT_24_2014'
+ghenv.Component.Message = 'VER 0.0.55\nOCT_25_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -220,7 +220,7 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, hb_zoneData):
     
     #Write a function to split breps with the zone and pull out the correctly split surface.
     def splitOffsetFloor(brep, zone):
-        splitBrep = brep.split(zone, tol)
+        splitBrep = rc.Geometry.Brep.Split(brep, zone, tol)
         distToCent = []
         for element in splitBrep:
             distToCent.append(rc.Geometry.Point3d.DistanceTo(rc.Geometry.AreaMassProperties.Compute(element).Centroid, rc.Geometry.AreaMassProperties.Compute(zone).Centroid))
