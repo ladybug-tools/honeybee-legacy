@@ -4,24 +4,26 @@
 # under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
 
 """
-EnergyPlus Window Air Gap
+Use this component to create a custom material for a window air gap, which can be plugged into the "Honeybee_EnergyPlus Construction" component.
+_
+It is important to note that this component only creates gaps of air and not other gasses.
+Also, the material out of this component represents only a single layer of air, which can be combined with the "Honeybee_EnergyPlus Glass Material" to make multi-pane windows.
+If you have specifications for a whole window element and not individual panes of glass and gas, you are better-off using the "Honeybee_EnergyPlus Window Material" component instead of this one.
 
 -
 Provided by Honeybee 0.0.55
     
     Args:
-        _name: ...
-        _U_Value: ...
-        _SHGC: ...
-        _VT: ...
+        _name: A text name for your window air gap material.
+        _thickness_: A number that represents the thickness of the air gap in meters.  The default is set to 0.0125 meters (1.25 cm).
     Returns:
-        readMe!: ...
+        EPMaterial: A window air gap material that can be plugged into the "Honeybee_EnergyPlus Construction" component.
 
 """
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Window Air Gap"
 ghenv.Component.NickName = 'EPWindowAirGap'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.55\nOCT_24_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -29,10 +31,10 @@ ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
 
-def main(name, gasType, thickness):
+def main(name, thickness):
     
     if name == None: name = "AIRGAP"
-    if gasType == None: gasType = "AIR"
+    gasType = "AIR"
     if thickness == None: thickness = .0125
     
     values = [name.upper(), gasType, thickness]
@@ -48,4 +50,4 @@ def main(name, gasType, thickness):
             
     return materialStr
 
-EPMaterial = main(_name_, _gasType_, _thickness_)
+EPMaterial = main(_name_, _thickness_)

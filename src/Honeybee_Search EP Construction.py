@@ -14,9 +14,7 @@ Provided by Honeybee 0.0.55
         _EPConstrList: List of EPConstructions from Honeybee construction library
         _standard: Energy modeling standard [0:"ASHRAE 90.1", 1:"ASHRAE 189.1", 2:"CBECS 1980-2004", 3:"CBECS Before-1980"]
         climateZone_: Optional input for climate zone
-        surfaceType_: Optional input for surface type > 0:'WALL', 0.5: 'UNDERGOUNDWALL', 1:'ROOF', 2:'FLOOR', 3:'CEILING', 4:'WINDOW'
-        altBldgProgram_: Optional input for building type > 0:'OFFICE', 1:'RETAIL', 2:'APT',3:'PRIMSCH', 4:'SECSCH', 5:'SMLHOTL', 6:'LRGHTL', 7:'HOSP', 8:'OUTPT', 9:'WARE', 10:'MARKET', 11:'FULLREST', 12:'QUICKREST'
-        constructionType_:
+        keyWord_: Optional keyword in the name of the construction (ie. METAL, MASS, WOODFRAME).
     Returns:
         EPSelectedConstr:  List of selected EP constructions that matches the the inputs
 
@@ -25,7 +23,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Search EP Construction"
 ghenv.Component.NickName = 'searchEPConstruction'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_22_2014'
+ghenv.Component.Message = 'VER 0.0.55\nOCT_23_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -37,7 +35,7 @@ import scriptcontext as sc
 import Grasshopper.Kernel as gh
 
 
-def main(constrList, standard, climateZone, surfaceType, bldgProgram, constructionType):
+def main(constrList, standard, climateZone, keyword):
     
     # Make sure Honeybee is flying
     if not sc.sticky.has_key('honeybee_release'):
@@ -65,18 +63,13 @@ def main(constrList, standard, climateZone, surfaceType, bldgProgram, constructi
         ghenv.Component.AddRuntimeMessage(w, msg)
         return -1
     
-    try: surfaceType = int(surfaceType)
-    except: pass
     
-    try: bldgProgram = int(bldgProgram)
-    except: pass
-    
-    selConstruction = hb_EPMaterialAUX.filterMaterials(constrList, standard, climateZone, surfaceType, bldgProgram, constructionType, ghenv.Component)
+    selConstruction = hb_EPMaterialAUX.filterMaterials(constrList, standard, climateZone, keyword, "", "", ghenv.Component)
     
     return selConstruction
     
     
 if len(_EPConstrList)!=0 and _standard:
-    result = main(_EPConstrList, _standard, climateZone_, surfaceType_, altBldgProgram_, constructionType_)
+    result = main(_EPConstrList, _standard, climateZone_, keyWord_)
     if result!= -1:
         EPSelectedConstr = result

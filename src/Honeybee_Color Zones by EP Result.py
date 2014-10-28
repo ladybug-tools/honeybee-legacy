@@ -36,7 +36,7 @@ Provided by Honeybee 0.0.54
 
 ghenv.Component.Name = "Honeybee_Color Zones by EP Result"
 ghenv.Component.NickName = 'ColorZones'
-ghenv.Component.Message = 'VER 0.0.54\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.54\nOCT_23_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -251,19 +251,20 @@ def checkZones(zoneHeaders, pyZoneData, hb_zoneData):
     newPyZoneData = []
     newZoneHeaders = []
     finalZoneNames = []
+    newZoneBreps = []
     
-    for list in zoneHeaders:
+    for listCount, list in enumerate(zoneHeaders):
         zoneName = list[2].split(" for ")[-1]
         finalZoneNames.append(zoneName)
         for count, name in enumerate(zoneNames):
             if zoneName == name.upper():
                 newZoneFloors.append(zoneFloors[count])
                 zoneFlrAreas.append(rc.Geometry.AreaMassProperties.Compute(zoneFloors[count]).Area)
-                newPyZoneData.append(pyZoneData[count])
-                newZoneHeaders.append(zoneHeaders[count])
+                newZoneBreps.append(zoneBreps[count])
+                newZoneHeaders.append(zoneHeaders[listCount])
+                newPyZoneData.append(pyZoneData[listCount])
     
-    
-    return finalZoneNames, zoneFlrAreas, newZoneFloors, newPyZoneData, newZoneHeaders
+    return finalZoneNames, zoneFlrAreas, newZoneFloors, newPyZoneData, newZoneHeaders, newZoneBreps
 
 def manageInputOutput(annualData, simStep, zoneNormalizable):
     #If some of the component inputs and outputs are not right, blot them out or change them.
@@ -534,7 +535,7 @@ def getData(pyZoneData, zoneFlrAreas, annualData, simStep, zoneNormalizable, zon
         return [], [], [], None, None, None
 
 
-def main(zoneValues, zones, zoneFloors, zoneHeaders, title, legendTitle, lb_preparation, lb_visualization, legendPar):
+def main(zoneValues, zones, zoneFloors, newZoneBreps, zoneHeaders, title, legendTitle, lb_preparation, lb_visualization, legendPar):
     #Read the legend parameters.
     lowB, highB, numSeg, customColors, legendBasePoint, legendScale, legendFont, legendFontSize = lb_preparation.readLegendParameters(legendPar, False)
     
@@ -550,6 +551,7 @@ def main(zoneValues, zones, zoneFloors, zoneHeaders, title, legendTitle, lb_prep
     zoneMeshes = []
     zoneWires = []
     zoneCentPts = []
+    zoneBreps = []
     
     joinedFloors = []
     for list in zoneFloors:
@@ -558,9 +560,11 @@ def main(zoneValues, zones, zoneFloors, zoneHeaders, title, legendTitle, lb_prep
     
     for count, brep in enumerate(joinedFloors):
         zoneMeshSrfs = rc.Geometry.Mesh.CreateFromBrep(brep, rc.Geometry.MeshingParameters.Default)
+        joinedFloorMesh = rc.Geometry.Mesh()
         for mesh in zoneMeshSrfs:
             mesh.VertexColors.CreateMonotoneMesh(colors[count])
-            zoneMeshes.append(mesh)
+            joinedFloorMesh.Append(mesh)
+        zoneMeshes.append(joinedFloorMesh)
     
     for brep in zones:
         wireFrame = brep.DuplicateEdgeCurves()
@@ -585,7 +589,7 @@ def main(zoneValues, zones, zoneFloors, zoneHeaders, title, legendTitle, lb_prep
     fullLegTxt = lb_preparation.flattenList(legendTextCrv + titleTextCurve)
     
     
-    return transparentColors, zones, zoneMeshes, zoneWires, [legendSrfs, fullLegTxt], legendBasePoint
+    return transparentColors, newZoneBreps, zoneMeshes, zoneWires, [legendSrfs, fullLegTxt], legendBasePoint
 
 
 
@@ -632,12 +636,12 @@ else: restoreInputOutput()
 #If the data is meant to be normalized by floor area, check the zones.
 if checkData == True and normByFlr == None: normByFlr = True
 if _runIt == True and checkData == True and _HBZones != []:
-    zoneNames, zoneFlrAreas, zoneFloors, pyZoneData, zoneHeaders = checkZones(zoneHeaders, pyZoneData, hb_zoneData)
+    zoneNames, zoneFlrAreas, zoneFloors, pyZoneData, zoneHeaders, newZoneBreps = checkZones(zoneHeaders, pyZoneData, hb_zoneData)
     zoneValues, floorNormZoneData, title, legendTitle, lb_preparation, lb_visualization = getData(pyZoneData, zoneFlrAreas, annualData, simStep, zoneNormalizable, zoneHeaders, headerUnits, normByFlr, analysisPeriod, stepOfSimulation, total)
 
 #Color the zones with the data and get all of the other cool stuff that this component does.
 if _runIt == True and checkData == True and _HBZones != [] and zoneValues != []:
-    zoneColors, zoneBreps, zoneColoredMesh, zoneWireFrame, legendInit, legendBasePt = main(zoneValues, _HBZones, zoneFloors, zoneHeaders, title, legendTitle, lb_preparation, lb_visualization, legendPar_)
+    zoneColors, zoneBreps, zoneColoredMesh, zoneWireFrame, legendInit, legendBasePt = main(zoneValues, _HBZones, zoneFloors, newZoneBreps, zoneHeaders, title, legendTitle, lb_preparation, lb_visualization, legendPar_)
     #Unpack the legend.
     legend = []
     for count, item in enumerate(legendInit):

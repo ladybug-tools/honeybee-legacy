@@ -71,7 +71,7 @@ else:
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_28_2014'
+ghenv.Component.Message = 'VER 0.0.55\nOCT_27_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -1416,7 +1416,11 @@ class WriteOPS(object):
             thisSurface = ops.Surface(pointVectors, model);
             thisSurface.setName(surfaceName);
             thisSurface.setSpace(space);
-            thisSurface.setSurfaceType(surface.srfType[surface.type]);
+            srfType = surface.srfType[int(surface.type)]
+            if srfType.upper().Contains("ROOF") or srfType.upper().Contains("CEILING"):
+                srfType = "RoofCeiling" # This is an OpenStudio type that will be converted as a roof or ceiling in idf file
+                
+            thisSurface.setSurfaceType(srfType);
             
             # create construction
             if not self.isConstructionInLib(surface.EPConstruction):

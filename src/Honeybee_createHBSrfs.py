@@ -33,7 +33,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_createHBSrfs'
 ghenv.Component.NickName = 'createHBSrfs'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.55\nOCT_23_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -108,7 +108,12 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
             
             try:
                 # if user uses a number to input type
-                surfaceType = int(srfType)
+                try: surfaceType = int(srfType)
+                except:
+                    if float(srfType) == 0.5 or float(srfType) == 0.25 or float(srfType) == 0.75:
+                        surfaceType = srfType
+                    else: pass
+                
                 if surfaceType == 4:
                     surfaceType = 5
                     warningMsg = "If you want to use this model for energy simulation, use addGlazing to add window to surfaces.\n" + \

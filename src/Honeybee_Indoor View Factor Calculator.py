@@ -32,7 +32,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.55\nOCT_15_2014'
+ghenv.Component.Message = 'VER 0.0.55\nOCT_25_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -220,7 +220,7 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, hb_zoneData):
     
     #Write a function to split breps with the zone and pull out the correctly split surface.
     def splitOffsetFloor(brep, zone):
-        splitBrep = brep.split(zone, tol)
+        splitBrep = rc.Geometry.Brep.Split(brep, zone, tol)
         distToCent = []
         for element in splitBrep:
             distToCent.append(rc.Geometry.Point3d.DistanceTo(rc.Geometry.AreaMassProperties.Compute(element).Centroid, rc.Geometry.AreaMassProperties.Compute(zone).Centroid))
@@ -388,11 +388,11 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, hb_zoneData):
                         finalTestPts.append(centPt)
                 finalMesh = rc.Geometry.Mesh()
                 for brep in finalFaceBreps:
-                    if brep.DuplicateVertices().Count == 4:
-                        facePt1 = rc.Geometry.Point3d(brep.DuplicateVertices()[0])
-                        facePt2 = rc.Geometry.Point3d(brep.DuplicateVertices()[1])
-                        facePt3 = rc.Geometry.Point3d(brep.DuplicateVertices()[2])
-                        facePt4 = rc.Geometry.Point3d(brep.DuplicateVertices()[3])
+                    if brep.Vertices.Count == 4:
+                        facePt1 = rc.Geometry.Point3d(brep.Vertices[0].Location)
+                        facePt2 = rc.Geometry.Point3d(brep.Vertices[1].Location)
+                        facePt3 = rc.Geometry.Point3d(brep.Vertices[2].Location)
+                        facePt4 = rc.Geometry.Point3d(brep.Vertices[3].Location)
                         
                         meshFacePts = [facePt1, facePt2, facePt3, facePt4]
                         mesh = rc.Geometry.Mesh()
@@ -402,9 +402,9 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, hb_zoneData):
                         mesh.Faces.AddFace(0, 1, 2, 3)
                         finalMesh.Append(mesh)
                     else:
-                        facePt1 = rc.Geometry.Point3d(brep.DuplicateVertices()[0])
-                        facePt2 = rc.Geometry.Point3d(brep.DuplicateVertices()[1])
-                        facePt3 = rc.Geometry.Point3d(brep.DuplicateVertices()[2])
+                        facePt1 = rc.Geometry.Point3d(brep.Vertices[0].Location)
+                        facePt2 = rc.Geometry.Point3d(brep.Vertices[1].Location)
+                        facePt3 = rc.Geometry.Point3d(brep.Vertices[2].Location)
                         
                         meshFacePts = [facePt1, facePt2, facePt3]
                         mesh = rc.Geometry.Mesh()
@@ -530,26 +530,10 @@ def main(testPts, zoneSrfsMesh, viewVectors):
 
 #If the HBzone data has not been copied to memory or if the data is old, get it.
 initCheck = False
-if _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('ladybug_release') == True and sc.sticky.has_key('Honeybee_ViewFacotrSrfData') == False and len(_HBZones) > 0:
+if _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('ladybug_release') == True and len(_HBZones) > 0:
     if _HBZones[0] != None:
         copyHBZoneData()
         hb_zoneData = sc.sticky["Honeybee_ViewFacotrSrfData"]
-        initCheck = True
-elif _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('ladybug_release') == True and sc.sticky.has_key('Honeybee_ViewFacotrSrfData') == True and len(_HBZones) > 0:
-    if _HBZones[0] != None:
-        hb_zoneData = sc.sticky["Honeybee_ViewFacotrSrfData"]
-        checkZones = True
-        if len(_HBZones) == len(hb_zoneData[0]):
-            for count, brep in enumerate(_HBZones):
-                boundBoxVert = brep.GetBoundingBox(False).Center
-                if boundBoxVert.X <= hb_zoneData[3][count].X+tol and boundBoxVert.X >= hb_zoneData[3][count].X-tol and boundBoxVert.Y <= hb_zoneData[3][count].Y+tol and boundBoxVert.Y >= hb_zoneData[3][count].Y-tol and boundBoxVert.Z <= hb_zoneData[3][count].Z+tol and boundBoxVert.Z >= hb_zoneData[3][count].Z-tol: pass
-                else:
-                    checkZones = False
-        else: checkZones = False
-        if checkZones == True: pass
-        else:
-            copyHBZoneData()
-            hb_zoneData = sc.sticky["Honeybee_ViewFacotrSrfData"]
         initCheck = True
 elif _HBZones != [] and sc.sticky.has_key('honeybee_release') == False:
     print "You should first let Honeybee fly..."
