@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.55\nOCT_25_2014'
+ghenv.Component.Message = 'VER 0.0.55\nOCT_28_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -812,6 +812,7 @@ class DLAnalysisRecipe(object):
             except: self.radParameters = arg[3]
             self.DSParameters = arg[4]
             self.testMesh = self.convertTreeToLists(arg[5])
+            self.northDegrees = arg[6]
             self.studyFolder = "\\annualSimulation\\"
         
         elif type == 3:
@@ -1447,6 +1448,7 @@ class WriteRAD(object):
             dgp_imageSize = analysisRecipe.DSParameters.dgp_imageSize
             dynamicShadingRecipes = analysisRecipe.DSParameters.DShdR
             numOfIllFiles = analysisRecipe.DSParameters.numOfIll
+            northAngleRotation = analysisRecipe.northDegrees
             
             # empty list for result file names
             DSResultFilesAddress = []
@@ -1477,7 +1479,13 @@ class WriteRAD(object):
                             'epw2wea  ' + subWorkingDir + "\\" + self.lb_preparation.removeBlankLight(locName) + '.epw ' + subWorkingDir + "\\" +  self.lb_preparation.removeBlankLight(locName) + '.wea\n' + \
                             ':: 1. Generate Daysim version of Radiance Files\n' + \
                             'radfiles2daysim ' + heaFileName + ' -m -g\n'
-                            
+            
+            # rotate scene if angle is not 0!
+            if northAngleRotation!=0:
+                initBatchStr += \
+                ':: 1.5. Roate geometry and test points\n' + \
+                'rotate_scene ' + heaFileName + '\n'
+            
             if runAnnualGlare:
                 initBatchStr += \
                 ':: 2. Generate Values for annual glare\n' + \
@@ -1517,7 +1525,8 @@ class WriteRAD(object):
                 vfFile.close()
                 
                 # building string
-                heaFile.write(self.hb_writeDS.DSBldgStr(projectName, materialFileName, radFileFullName, adaptiveZone, dgp_imageSize, dgp_imageSize, cpuCount))
+                heaFile.write(self.hb_writeDS.DSBldgStr(projectName, materialFileName, radFileFullName, \
+                                                        adaptiveZone, dgp_imageSize, dgp_imageSize, cpuCount, northAngleRotation))
                 
                 # radiance parameters string
                 heaFile.write(self.hb_writeDS.DSRADStr(analysisRecipe.radParameters))
@@ -2617,7 +2626,7 @@ class WriteDS(object):
             return outputStr +"\n"
             
     # building information
-    def DSBldgStr(self, projectName, materialFileName, radFileFullName, adaptiveZone, dgp_image_x = 500, dgp_image_y = 500, cpuCount = 0):
+    def DSBldgStr(self, projectName, materialFileName, radFileFullName, adaptiveZone, dgp_image_x = 500, dgp_image_y = 500, cpuCount = 0, northAngle = 0):
         return'\n\n#################################\n' + \
                   '#      BUILDING INFORMATION      \n' + \
                   '#################################\n' + \
@@ -2628,7 +2637,8 @@ class WriteDS(object):
                   'viewpoint_file         ' + projectName + '_' + 'annualGlareView.vf\n' + \
                   'AdaptiveZoneApplies    ' + `adaptiveZone` + '\n' + \
                   'dgp_image_x_size       ' + `dgp_image_x` + '\n' + \
-                  'dgp_image_y_size       ' + `dgp_image_y` + '\n'
+                  'dgp_image_y_size       ' + `dgp_image_y` + '\n' + \
+                  'scene_rotation_angle ' + `northAngle` + '\n'
     
     # radiance parameters
     def DSRADStr(self, radParameters):
@@ -5261,17 +5271,24 @@ class hb_EPSurface(object):
         
         # sort based on parameter on curve
         pointsSorted = sorted(pts, key =lambda pt: joinedBorder[0].ClosestPoint(pt)[1])
+            
+        def crossProduct(vector1, vector2):
+            return vector1.X * vector2.X + vector1.Y * vector2.Y + vector1.Z * vector2.Z
         
-        def isClockWise(pts, basePlane):
-            vector0 = rc.Geometry.Vector3d(pts[0]- basePlane.Origin)
-            vector1 = rc.Geometry.Vector3d(pts[1]- basePlane.Origin)
-            vector2 =  rc.Geometry.Vector3d(pts[-1]- basePlane.Origin)
-            if rc.Geometry.Vector3d.VectorAngle(vector0, vector1, basePlane) < rc.Geometry.Vector3d.VectorAngle(vector0, vector2, basePlane):
+        def isAntiClockWise(pts, basePlane):
+            
+            # check if the order if clock-wise
+            vector0 = rc.Geometry.Vector3d(pts[1]- pts[0])
+            vector1 = rc.Geometry.Vector3d(pts[-1]- pts[0])
+            ptsNormal = rc.Geometry.Vector3d.CrossProduct(vector0, vector1)
+            
+            # in case points are ani
+            if crossProduct(ptsNormal, basePlane.Normal) > 0:
                 return True
             return False
-            
+        
         # check if clockWise and reverse the list in case it is
-        if not isClockWise(pointsSorted, basePlane): pointsSorted.reverse()
+        if not isAntiClockWise(pointsSorted, basePlane): pointsSorted.reverse()
         
 
         # in case the surface still doesn't have a type
