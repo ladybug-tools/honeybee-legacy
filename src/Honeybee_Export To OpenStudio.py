@@ -592,6 +592,7 @@ class WriteOPS(object):
     #using a recall function is optional.  It is only designed to make reading the code easier
     def recallVVFan(self,HVACDetails):
         print 'getting supply fan from the hive'
+        print HVACDetails['varVolSupplyFanDef']
         sfdesc = {
         'name':HVACDetails['varVolSupplyFanDef']['name'],
         'motorEfficiency':HVACDetails['varVolSupplyFanDef']['motorEfficiency'],

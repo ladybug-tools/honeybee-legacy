@@ -11,7 +11,7 @@ Provided by Honeybee 0.0.55
     Args:
         _HBZones:...
         _HVACSystems: ...
-        _details_: Use Honeybee_OpenStudio detail component to define the details
+        _airSideDetails_: Use Honeybee_OpenStudio detail component to define the details
         _seeHVACDesc_: Set to True to see the HVAC system description
     Returns:
         HBZones:...
@@ -26,7 +26,7 @@ import pprint
 
 ghenv.Component.Name = "Honeybee_OpenStudio Systems"
 ghenv.Component.NickName = 'OSHVACSystems'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.55\nOCT_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -51,22 +51,23 @@ def main(HBZones, HVACSystems,seeHVACDesc):
             try: 
                 #in the case where the user enters multiple HVAC Indices
                 HVACIndex = HVACSystems[zoneCount]
+                
                 results.append('creating HVAC descriptions for Honeybee zones (method 1)')
                 #and they enter different HVAC details for each HVAC Index (not ideal, but possible)
-                if (len(_details_) > 1):
+                if (len(_airSideDetails_) > 1):
                     results.append('Individual details have been supplied by user for each system, which will be assigned to each.')
                     HVACGroupID = ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4())
-                    zone.HVACSystem = [HVACGroupID, HVACIndex, _details_[zoneCount].d]
+                    zone.HVACSystem = [HVACGroupID, HVACIndex, _airSideDetails_[zoneCount].d]
                     results.append('HVAC detail ' +str(zoneCount+1)+ ' has been applied to this HVAC system.')
                     if(seeHVACDesc):
-                        results.append(_details_[zoneCount].d)
+                        results.append(_airSideDetails_[zoneCount].d)
                 else:
                     #there is only one detail, or no details
-                    if len(_details_) == 1: 
-                        zone.HVACSystem = [HVACGroupID, HVACIndex, _details_[0].d]
+                    if len(_airSideDetails_) == 1: 
+                        zone.HVACSystem = [HVACGroupID, HVACIndex, _airSideDetails_[0].d]
                         results.append('your single HVAC detail has been applied to this HVAC system.')
                         if(seeHVACDesc):
-                            results.append(_details_[zoneCount].d)
+                            results.append(_airSideDetails_[zoneCount].d)
                     else: 
                         zone.HVACSystem = [HVACGroupID, HVACIndex, None]
                         results.append('honeybee defaults will be applied to this HVAC system.')
@@ -74,26 +75,27 @@ def main(HBZones, HVACSystems,seeHVACDesc):
             except: 
                 HVACIndex = HVACSystems[0]
                 results.append('creating HVAC descriptions for Honeybee zones (method 2)')
-                if (len(_details_) > 1):
+                if (len(_airSideDetails_) > 1):
                     results.append('Individual details have been provided for the HVAC Systems, which will be applied now.')
                     HVACGroupID = ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4())
-                    zone.HVACSystem = [HVACGroupID, HVACIndex, _details_[zoneCount].d]
+                    zone.HVACSystem = [HVACGroupID, HVACIndex, _airSideDetails_[zoneCount].d]
                     results.append('HVAC detail ' +str(zoneCount+1)+ ' has been applied to this HVAC system.')
                     if(seeHVACDesc):
-                        results.append(_details_[zoneCount].d)
+                        results.append(_airSideDetails_[zoneCount].d)
                 else:
                     #there is only one detail, or no details
-                    if len(_details_) == 1: 
-                        zone.HVACSystem = [HVACGroupID, HVACIndex, _details_[0].d]
+                    if len(_airSideDetails_) == 1: 
+                        zone.HVACSystem = [HVACGroupID, HVACIndex, _airSideDetails_[0].d]
+                        print _airSideDetails_[0].d
                         results.append('your single HVAC detail has been applied to this HVAC system.')
                         results.append('HVAC system unique id: ' + HVACGroupID)
                         if(seeHVACDesc):
-                            results.append(_details_[0].d)
+                            results.append(_airSideDetails_[0].d)
                     else: 
                         zone.HVACSystem = [HVACGroupID, HVACIndex, None]
                         results.append('honeybee defaults will be used for the HVAC system.')
                         results.append('HVAC system unique id: ' + HVACGroupID)
-                    results.append('Index: ' + str(HVACIndex) + 'applied to this zone.')
+                    results.append('Index: ' + str(HVACIndex) + ' applied to this zone.')
                 results.append('HVAC system unique id: ' + HVACGroupID)
         # send the zones back to the hive
         HBZones  = hb_hive.addToHoneybeeHive(HBZonesFromHive, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
