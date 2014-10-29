@@ -8,7 +8,7 @@
 This component carries all of Honeybee's main classes. Other components refer to these
 classes to run the studies. Therefore, you need to let her fly before running the studies so the
 classes will be copied to Rhinos shared space. So let her fly!
--
+
 Honeybee started by Mostapha Sadeghipour Roudsari is licensed
 under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
 Based on a work at https://github.com/mostaphaRoudsari/Honeybee.
@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.55\nOCT_28_2014'
+ghenv.Component.Message = 'VER 0.0.55\nOCT_29_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -312,6 +312,7 @@ class hb_GetEPConstructions():
             except:
                 print 'Download failed!!! You need OpenStudio_Standards.json to use honeybee.' + \
                 '\nPlease check your internet connection, and try again!'
+                
         else:
             pass
         
@@ -812,7 +813,7 @@ class DLAnalysisRecipe(object):
             except: self.radParameters = arg[3]
             self.DSParameters = arg[4]
             self.testMesh = self.convertTreeToLists(arg[5])
-            self.northDegrees = arg[6]
+
             self.studyFolder = "\\annualSimulation\\"
         
         elif type == 3:
@@ -1450,6 +1451,7 @@ class WriteRAD(object):
             numOfIllFiles = analysisRecipe.DSParameters.numOfIll
             northAngleRotation = analysisRecipe.northDegrees
             
+            
             # empty list for result file names
             DSResultFilesAddress = []
             
@@ -1460,6 +1462,7 @@ class WriteRAD(object):
             
             newLocName = self.lb_preparation.removeBlankLight(locName)
             newLocName = newLocName.replace("/", "_")
+            
             
             # copy .epw file to sub-directory
             self.lb_preparation.copyFile(epwFileAddress, subWorkingDir + "\\" + newLocName + '.epw')
@@ -1479,13 +1482,14 @@ class WriteRAD(object):
                             'epw2wea  ' + subWorkingDir + "\\" + self.lb_preparation.removeBlankLight(locName) + '.epw ' + subWorkingDir + "\\" +  self.lb_preparation.removeBlankLight(locName) + '.wea\n' + \
                             ':: 1. Generate Daysim version of Radiance Files\n' + \
                             'radfiles2daysim ' + heaFileName + ' -m -g\n'
-            
-            # rotate scene if angle is not 0!
-            if northAngleRotation!=0:
-                initBatchStr += \
-                ':: 1.5. Roate geometry and test points\n' + \
-                'rotate_scene ' + heaFileName + '\n'
-            
+                            
+
+
+
+
+
+
+
             if runAnnualGlare:
                 initBatchStr += \
                 ':: 2. Generate Values for annual glare\n' + \
@@ -1525,8 +1529,8 @@ class WriteRAD(object):
                 vfFile.close()
                 
                 # building string
-                heaFile.write(self.hb_writeDS.DSBldgStr(projectName, materialFileName, radFileFullName, \
-                                                        adaptiveZone, dgp_imageSize, dgp_imageSize, cpuCount, northAngleRotation))
+                heaFile.write(self.hb_writeDS.DSBldgStr(projectName, materialFileName, radFileFullName, adaptiveZone, dgp_imageSize, dgp_imageSize, cpuCount))
+
                 
                 # radiance parameters string
                 heaFile.write(self.hb_writeDS.DSRADStr(analysisRecipe.radParameters))
@@ -2591,6 +2595,7 @@ class WriteDS(object):
     def DSLocationStr(self, hb_writeRADAUX,  lb_preparation, epwFileAddress):
         # location information
         locName, lat, long, timeZone, elev = hb_writeRADAUX.RADLocation(epwFileAddress)
+        
         locName = locName.replace("/", "_")
         
         return'\n\n#################################\n' + \
@@ -2626,7 +2631,7 @@ class WriteDS(object):
             return outputStr +"\n"
             
     # building information
-    def DSBldgStr(self, projectName, materialFileName, radFileFullName, adaptiveZone, dgp_image_x = 500, dgp_image_y = 500, cpuCount = 0, northAngle = 0):
+    def DSBldgStr(self, projectName, materialFileName, radFileFullName, adaptiveZone, dgp_image_x = 500, dgp_image_y = 500, cpuCount = 0):
         return'\n\n#################################\n' + \
                   '#      BUILDING INFORMATION      \n' + \
                   '#################################\n' + \
@@ -2637,8 +2642,8 @@ class WriteDS(object):
                   'viewpoint_file         ' + projectName + '_' + 'annualGlareView.vf\n' + \
                   'AdaptiveZoneApplies    ' + `adaptiveZone` + '\n' + \
                   'dgp_image_x_size       ' + `dgp_image_x` + '\n' + \
-                  'dgp_image_y_size       ' + `dgp_image_y` + '\n' + \
-                  'scene_rotation_angle ' + `northAngle` + '\n'
+                  'dgp_image_y_size       ' + `dgp_image_y` + '\n'
+
     
     # radiance parameters
     def DSRADStr(self, radParameters):
@@ -3063,6 +3068,7 @@ class EPMaterialAux(object):
             sourceComponent.AddRuntimeMessage(w, msg)
             standard = "ASHRAE 90.1"
         
+
         selConstr =[]
         for cnstrName in constrList:
            if cnstrName.upper().find(standard.upper())!=-1 and cnstrName.upper().find(surfaceType.upper())!=-1:
@@ -4730,9 +4736,9 @@ class hb_reEvaluateHBZones(object):
             adjcSurface = surface.BCObject
             
             if not glazingBase:
-                newAdjcSurfaceName = adjcSurface.name + "_srfP_" + `count`
+                newAdjcSurfaceName = adjcSurface.name + "_" + `count`
             else:
-                print "hey"
+
                 newAdjcSurfaceName = adjcSurface.name + nameAddition
             
             newAdjcSurface = self.hb_EPZoneSurface(self.createSurface(coordinates),
@@ -4981,7 +4987,7 @@ class hb_reEvaluateHBZones(object):
                 # copy.deepcopy fails on a number of systems I just create
                 # a new surface and assign necessary data to write the surface
                 
-                newSurfaceName = surface.name + "_srfP_" + `count`
+                newSurfaceName = surface.name + "_" + `count`
                 
                 newSurface = self.createSubSurfaceFromBaseSrf(surface, newSurfaceName, count, coordinates)
                 
@@ -5271,25 +5277,32 @@ class hb_EPSurface(object):
         
         # sort based on parameter on curve
         pointsSorted = sorted(pts, key =lambda pt: joinedBorder[0].ClosestPoint(pt)[1])
-            
+
+
+
+		
+                    
         def crossProduct(vector1, vector2):
             return vector1.X * vector2.X + vector1.Y * vector2.Y + vector1.Z * vector2.Z
         
         def isAntiClockWise(pts, basePlane):
+
             
             # check if the order if clock-wise
             vector0 = rc.Geometry.Vector3d(pts[1]- pts[0])
             vector1 = rc.Geometry.Vector3d(pts[-1]- pts[0])
+
             ptsNormal = rc.Geometry.Vector3d.CrossProduct(vector0, vector1)
             
             # in case points are ani
             if crossProduct(ptsNormal, basePlane.Normal) > 0:
                 return True
             return False
+
         
         # check if clockWise and reverse the list in case it is
         if not isAntiClockWise(pointsSorted, basePlane): pointsSorted.reverse()
-        
+                
 
         # in case the surface still doesn't have a type
         # it happens for radiance surfaces. For EP it won't happen
@@ -6083,6 +6096,25 @@ class SerializeObjects(object):
         with open(self.filePath, 'rb') as inf:
             self.data = pickle.load(inf)
 
+class hb_hwBoilerParams(object):
+    def __init__(self):
+        self.hwBoilerDict = {
+        'name':'honeybeeHotWaterBoiler',
+        'fueltype':1,
+        'nominalCapacity':'Autosize',
+        'sizingFactor':1.25,
+        'nominalEfficiency':0.80,
+        'designOutletTemperature':80,
+        'designWaterFlowRate':'Autosize',
+        'minPartLoad':0.15,
+        'maxPartLoadRatio':1.1,
+        'optimumPartLoadRatio':0.50,
+        'outletTempMaximum':95,
+        'boilerFlowMode':'NotModulated',
+        'parasiticElectricLoad':0,
+        'curveTemperatureVariable':'LeavingBoiler',
+        'Curves':None
+        }
 
 class hb_airsideEconoParams(object):
     def __init__(self):
@@ -6105,6 +6137,7 @@ class hb_constVolFanParams(object):
     def __init__(self):
         self.cvFanDict = {
         'name':'honeybeeConstVolFan',
+        'type':0,
         'fanEfficiency':0.6,
         'pressureRise':892.9,
         'maxFlowRate':'Autosize',
@@ -6116,6 +6149,7 @@ class hb_varVolFanParams(object):
     def __init__(self):
         self.vvFanDict = {
         'name':'honeybeeConstVolFan',
+        'type':1,
         'fanEfficiency':0.6,
         'pressureRise':892.9,
         'maxFlowRate':'Autosize',
@@ -6143,7 +6177,9 @@ class hb_AirHandlerParams(object):
         'constVolSupplyFanDef':hb_constVolFanParams,
         'varVolSupplyFanDef':hb_varVolFanParams,
         'airsideEconomizer':hb_airsideEconoParams,
-        'coolingCoil': None
+        'coolingCoil': None,
+        'heatingCoil': None,
+        'evaporativeCondenser': None
         }
 
 class hb_2xDXCoilParams(object):
@@ -6164,19 +6200,59 @@ class hb_2xDXCoilParams(object):
         'Curves':None
         }
 
+class hb_2xDXHeatingCoilParams(object):
+    def __init__(self):
+        self.twoSpeedDXDict = {
+        'name':'honeybee Default 2 Speed DX Heating Coil',
+        'availSch':'OpenStudio Default',
+        'ratedHighSpeedAirflowRate':'Autosize',
+        'ratedHighSpeedTotalHeating':'Autosize',
+        'ratedHighSpeedCOP':4.0,
+        'ratedLowSpeedAirflowRate':'Autosize',
+        'ratedLowSpeedTotalCooling':'Autosize',
+        'ratedLowSpeedCOP':5.0,
+        'minOutdoorDryBulb':-8,
+        'outdoorDBDefrostEnabled': 5,
+        'outdoorDBCrankcase':10,
+        'crankcaseCapacity': 0,
+        'defrostStrategy':'reverse-cycle',
+        'defrostControl':'timed',
+        'resistiveDefrostCap':0,
+        'Curves': None
+        }
+
 class hb_1xDXCoilParams(object):
-        def __init__(self):
-            self.oneSpeedDXDict = {
-            'name':'honeybee Default 1 Speed DX Coil',
-            'availSch':'OpenStudio Default',
-            'ratedAirflowRate':'Autosize',
-            'ratedTotalCooling':'Autosize',
-            'ratedSHR':'Autosize',
-            'ratedCOP':3.0,
-            'condenserType':'Air Cooled',
-            'evaporativeCondenserDesc':None,
-            'Curves':None
-            }
+    def __init__(self):
+        self.oneSpeedDXDict = {
+        'name':'honeybee Default 1 Speed DX Coil',
+        'availSch':'OpenStudio Default',
+        'ratedAirflowRate':'Autosize',
+        'ratedTotalCooling':'Autosize',
+        'ratedSHR':'Autosize',
+        'ratedCOP':3.0,
+        'condenserType':'Air Cooled',
+        'evaporativeCondenserDesc':None,
+        'Curves':None
+        }
+            
+class hb_1xDXHeatingCoilParams(object):
+    def __init__(self):
+        self.oneSpeedDXDict = {
+        'name':'honeybee Default 1 speed DX Heating Coil',
+        'availSch':'OpenStudio Default',
+        'ratedAirflowRate':'Autosize',
+        'ratedTotalHeating':'Autosize',
+        'ratedCOP':3.0,
+        'minOutdoorDryBulb': -8,
+        'outdoorDBDefrostEnabled': 5,
+        'outdoorDBCrankcase':10,
+        'crankcaseCapacity': 0,
+        'defrostStrategy':'reverse-cycle',
+        'defrostControl':'timed',
+        'resistiveDefrostCap':0,
+        'Curves': None
+        }
+
 
 class hb_lspeedEvapCondParams(object):
     def __init__(self):
@@ -6333,9 +6409,12 @@ if letItFly:
         sc.sticky["honeybee_variableVolumeFanParams"] = hb_varVolFanParams
         sc.sticky["honeybee_AirHandlerParams"] = hb_AirHandlerParams
         sc.sticky["honeybee_2xDXCoilParams"] = hb_2xDXCoilParams
+        sc.sticky["honeybee_2xDXHeatingCoilParams"] = hb_2xDXHeatingCoilParams
         sc.sticky["honeybee_1xDXCoilParams"] = hb_1xDXCoilParams
+        sc.sticky["honeybee_1xDXHeatingCoilParams"] = hb_1xDXHeatingCoilParams
         sc.sticky["honeybee_lspeedevapcondParams"] = hb_lspeedEvapCondParams
         sc.sticky["honeybee_hspeedevapcondParams"] = hb_hspeedEvapCondParams
+        sc.sticky["honeybee_hwBoilerParams"] = hb_hwBoilerParams
         sc.sticky["honeybee_EPSurface"] = hb_EPSurface
         sc.sticky["honeybee_EPShdSurface"] = hb_EPShdSurface
         sc.sticky["honeybee_EPZoneSurface"] = hb_EPZoneSurface
