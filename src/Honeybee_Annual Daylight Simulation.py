@@ -9,6 +9,7 @@ Analysis Recipe for Annual Daylighting Simulation
 Provided by Honeybee 0.0.55
     
     Args:
+        north_: Input a vector to be used as a true North direction for the sun path or a number between 0 and 360 that represents the degrees off from the y-axis to make North.  The default North direction is set to the Y-axis (0 degrees).
         _epwWeatherFile: epw weather file address on your system
         _testPoints: Test points
         ptsVectors_: Point vectors
@@ -20,10 +21,10 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Annual Daylight Simulation"
 ghenv.Component.NickName = 'annualDaylightSimulation'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_30_2014'
+ghenv.Component.Message = 'VER 0.0.55\nOCT_29_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"
-#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
+#compatibleHBVersion = VER 0.0.55\nOCT_27_2014
 #compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
@@ -33,6 +34,7 @@ import scriptcontext as sc
 import Rhino as rc
 import Grasshopper.Kernel as gh
 import os
+import math
 
 
 def isAllNone(dataList):
@@ -41,9 +43,11 @@ def isAllNone(dataList):
     return True
 
 def main():
+    north_ = 0
+    
     # check for Honeybee
-    if not sc.sticky.has_key('honeybee_release'):
-        msg = "You should first let Honeybee to fly..."
+    if not sc.sticky.has_key('honeybee_release') or not sc.sticky.has_key('ladybug_release'):
+        msg = "You should first let Honeybee and Ladybug to fly..."
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, msg)
         return
@@ -57,12 +61,20 @@ def main():
         "into canvas and try again."
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, warning)
-        return -1
+        return
+    
+    lb_preparation = sc.sticky["ladybug_Preparation"]()
+    
+    if north_!=None:
+        northAngle, northVector = lb_preparation.angle2north(north_)
+    else:
+        northAngle = 0
         
     DLAnalysisRecipe = sc.sticky["honeybee_DLAnalysisRecipe"]
     
     analysisRecipe = DLAnalysisRecipe(2, _epwWeatherFile, _testPoints, ptsVectors_,
-                                      _radParameters_, _DSParameters_, testMesh_)
+                                      _radParameters_, _DSParameters_, testMesh_, math.degrees(northAngle))
+                                      
     if (_testPoints.DataCount==0 or isAllNone(_testPoints.AllData())) \
         and not (_DSParameters_ and _DSParameters_.runAnnualGlare \
         and _DSParameters_.onlyAnnualGlare):
