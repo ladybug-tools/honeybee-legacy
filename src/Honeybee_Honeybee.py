@@ -8,7 +8,8 @@
 This component carries all of Honeybee's main classes. Other components refer to these
 classes to run the studies. Therefore, you need to let her fly before running the studies so the
 classes will be copied to Rhinos shared space. So let her fly!
--
+
+
 Honeybee started by Mostapha Sadeghipour Roudsari is licensed
 under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
 Based on a work at https://github.com/mostaphaRoudsari/Honeybee.
@@ -312,6 +313,7 @@ class hb_GetEPConstructions():
             except:
                 print 'Download failed!!! You need OpenStudio_Standards.json to use honeybee.' + \
                 '\nPlease check your internet connection, and try again!'
+                
         else:
             pass
         
@@ -812,7 +814,8 @@ class DLAnalysisRecipe(object):
             except: self.radParameters = arg[3]
             self.DSParameters = arg[4]
             self.testMesh = self.convertTreeToLists(arg[5])
-            self.northDegrees = arg[6]
+
+
             self.studyFolder = "\\annualSimulation\\"
         
         elif type == 3:
@@ -1450,6 +1453,7 @@ class WriteRAD(object):
             numOfIllFiles = analysisRecipe.DSParameters.numOfIll
             northAngleRotation = analysisRecipe.northDegrees
             
+            
             # empty list for result file names
             DSResultFilesAddress = []
             
@@ -1460,6 +1464,7 @@ class WriteRAD(object):
             
             newLocName = self.lb_preparation.removeBlankLight(locName)
             newLocName = newLocName.replace("/", "_")
+            
             
             # copy .epw file to sub-directory
             self.lb_preparation.copyFile(epwFileAddress, subWorkingDir + "\\" + newLocName + '.epw')
@@ -1479,13 +1484,19 @@ class WriteRAD(object):
                             'epw2wea  ' + subWorkingDir + "\\" + self.lb_preparation.removeBlankLight(locName) + '.epw ' + subWorkingDir + "\\" +  self.lb_preparation.removeBlankLight(locName) + '.wea\n' + \
                             ':: 1. Generate Daysim version of Radiance Files\n' + \
                             'radfiles2daysim ' + heaFileName + ' -m -g\n'
-            
             # rotate scene if angle is not 0!
             if northAngleRotation!=0:
                 initBatchStr += \
                 ':: 1.5. Roate geometry and test points\n' + \
                 'rotate_scene ' + heaFileName + '\n'
-            
+                           
+
+
+
+
+
+
+
             if runAnnualGlare:
                 initBatchStr += \
                 ':: 2. Generate Values for annual glare\n' + \
@@ -1527,6 +1538,7 @@ class WriteRAD(object):
                 # building string
                 heaFile.write(self.hb_writeDS.DSBldgStr(projectName, materialFileName, radFileFullName, \
                                                         adaptiveZone, dgp_imageSize, dgp_imageSize, cpuCount, northAngleRotation))
+
                 
                 # radiance parameters string
                 heaFile.write(self.hb_writeDS.DSRADStr(analysisRecipe.radParameters))
@@ -2591,6 +2603,7 @@ class WriteDS(object):
     def DSLocationStr(self, hb_writeRADAUX,  lb_preparation, epwFileAddress):
         # location information
         locName, lat, long, timeZone, elev = hb_writeRADAUX.RADLocation(epwFileAddress)
+        
         locName = locName.replace("/", "_")
         
         return'\n\n#################################\n' + \
@@ -2626,7 +2639,7 @@ class WriteDS(object):
             return outputStr +"\n"
             
     # building information
-    def DSBldgStr(self, projectName, materialFileName, radFileFullName, adaptiveZone, dgp_image_x = 500, dgp_image_y = 500, cpuCount = 0, northAngle = 0):
+    def DSBldgStr(self, projectName, materialFileName, radFileFullName, adaptiveZone, dgp_image_x = 500, dgp_image_y = 500, cpuCount = 0):
         return'\n\n#################################\n' + \
                   '#      BUILDING INFORMATION      \n' + \
                   '#################################\n' + \
@@ -2639,6 +2652,8 @@ class WriteDS(object):
                   'dgp_image_x_size       ' + `dgp_image_x` + '\n' + \
                   'dgp_image_y_size       ' + `dgp_image_y` + '\n' + \
                   'scene_rotation_angle ' + `northAngle` + '\n'
+
+
     
     # radiance parameters
     def DSRADStr(self, radParameters):
@@ -3063,6 +3078,7 @@ class EPMaterialAux(object):
             sourceComponent.AddRuntimeMessage(w, msg)
             standard = "ASHRAE 90.1"
         
+
         selConstr =[]
         for cnstrName in constrList:
            if cnstrName.upper().find(standard.upper())!=-1 and cnstrName.upper().find(surfaceType.upper())!=-1:
@@ -4730,11 +4746,13 @@ class hb_reEvaluateHBZones(object):
             adjcSurface = surface.BCObject
             
             if not glazingBase:
-                newAdjcSurfaceName = adjcSurface.name + "_srfP_" + `count`
+                newAdjcSurfaceName = adjcSurface.name + "_" + `count`
             else:
-                try: newAdjcSurfaceName = adjcSurface.name + str(nameAddition)
-                except: newAdjcSurfaceName = adjcSurface.name + "_"
-                
+
+                newAdjcSurfaceName = adjcSurface.name + nameAddition
+
+
+            
             newAdjcSurface = self.hb_EPZoneSurface(self.createSurface(coordinates),
                                            count, newAdjcSurfaceName, adjcSurface.parent, adjcSurface.type)
             # reverse the order of points
@@ -4838,7 +4856,7 @@ class hb_reEvaluateHBZones(object):
         for coorList in glzCoordinates:
             if not isAntiClockWise(coorList, surface.normalVector):
                 coorList.reverse()
-        
+
         glzSrfs = []
         if surface.isPlanar:
             
@@ -4908,7 +4926,8 @@ class hb_reEvaluateHBZones(object):
                 else:
                     # triangulate
                     insetGlzCoordinates = [glzCoordinate[:3], [glzCoordinate[0],glzCoordinate[2],glzCoordinate[3]]]
-                    
+
+                
                 for glzCount, insetGlzCoordinate in enumerate(insetGlzCoordinates):
                     
                     # self.modifiedGlzSrfsNames.append(child.name)
@@ -5002,7 +5021,7 @@ class hb_reEvaluateHBZones(object):
                 # copy.deepcopy fails on a number of systems I just create
                 # a new surface and assign necessary data to write the surface
                 
-                newSurfaceName = surface.name + "_srfP_" + `count`
+                newSurfaceName = surface.name + "_" + `count`
                 
                 newSurface = self.createSubSurfaceFromBaseSrf(surface, newSurfaceName, count, coordinates)
                 
@@ -5042,8 +5061,8 @@ class hb_EPSurface(object):
         
         self.cenPt, self.normalVector = self.getSrfCenPtandNormalAlternate()
         
-        self.basePlane = rc.Geometry.Plane(self.cenPt, self.normalVector)
-        
+
+
         # define if type and BC is defined by user and should be kept
         self.srfTypeByUser = False
         self.srfBCByUser = False
@@ -5239,12 +5258,13 @@ class hb_EPSurface(object):
             else:
                 meshVertices = mesh.Faces.GetFaceVertices(face)[1:4]
                 coordinatesList.append(list(meshVertices))
-        
+       
         # check order of the points
         for coorList in coordinatesList:
             # check if clockWise and reverse the list in case it is not
             if not self.isAntiClockWise(coorList):
                 coorList.reverse()
+
         #coordinatesList.reverse()
         return coordinatesList
         
@@ -5264,7 +5284,6 @@ class hb_EPSurface(object):
             return True
         return False
 
-    
     def extractPoints(self, method = 1, triangulate = False, meshPar = None):
         # if not self.meshedFace.IsValid:
         # meshed surface will be generated regardless
@@ -5316,12 +5335,8 @@ class hb_EPSurface(object):
         
         # sort based on parameter on curve
         pointsSorted = sorted(pts, key =lambda pt: joinedBorder[0].ClosestPoint(pt)[1])
-            
-        
-        # check if clockWise and reverse the list in case it is
-        if not self.isAntiClockWise(pointsSorted):
-            pointsSorted.reverse()
-        
+
+                
 
         # in case the surface still doesn't have a type
         # it happens for radiance surfaces. For EP it won't happen
@@ -6120,13 +6135,15 @@ class hb_hwBoilerParams(object):
     def __init__(self):
         self.hwBoilerDict = {
         'name':'honeybeeHotWaterBoiler',
-        'fueltype':1,
+
+        'fuelType':1,
         'nominalCapacity':'Autosize',
         'sizingFactor':1.25,
         'nominalEfficiency':0.80,
         'designOutletTemperature':80,
         'designWaterFlowRate':'Autosize',
-        'minPartLoad':0.15,
+
+        'minPartLoadRatio':0.15,
         'maxPartLoadRatio':1.1,
         'optimumPartLoadRatio':0.50,
         'outletTempMaximum':95,
@@ -6219,7 +6236,8 @@ class hb_2xDXCoilParams(object):
         'evaporativeCondenserDesc':None,
         'Curves':None
         }
-        
+
+
 class hb_2xDXHeatingCoilParams(object):
     def __init__(self):
         self.twoSpeedDXDict = {
@@ -6255,6 +6273,7 @@ class hb_1xDXCoilParams(object):
         'Curves':None
         }
 
+            
 class hb_1xDXHeatingCoilParams(object):
     def __init__(self):
         self.oneSpeedDXDict = {
@@ -6272,7 +6291,9 @@ class hb_1xDXHeatingCoilParams(object):
         'resistiveDefrostCap':0,
         'Curves': None
         }
-        
+
+
+
 class hb_lspeedEvapCondParams(object):
     def __init__(self):
             self.lspeedevapCond = {
