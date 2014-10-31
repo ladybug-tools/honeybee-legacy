@@ -16,7 +16,7 @@ Provided by Honeybee 0.0.55
 
     Args:
         _bldgMasses: A Closed brep or list of closed breps representing a building massing.
-        bldgsFlr2FloorHeights_: A list of floor heights in Rhino model units that will be used to make each floor of the building.  The list should run from bottom floor to top floor.  Alternatively, you can input a text string that codes for how many floors of each height you want.  For example, inputting "2@4" (without quotations) will make two ground floors with a height of 4 Rhino model units.  Simply typing "@3" will make all floors 3 Rhino model units.  Putting in lists of these text strings will divide up floors accordingly.  For example, the list "1@5   2@4   @3"  will make a ground floor of 5 units, two floors above that at 4 units and all remaining floors at 3 units.
+        bldgsFlr2FlrHeights_: A list of floor heights in Rhino model units that will be used to make each floor of the building.  The list should run from bottom floor to top floor.  Alternatively, you can input a text string that codes for how many floors of each height you want.  For example, inputting "2@4" (without quotations) will make two ground floors with a height of 4 Rhino model units.  Simply typing "@3" will make all floors 3 Rhino model units.  Putting in lists of these text strings will divide up floors accordingly.  For example, the list "1@5   2@4   @3"  will make a ground floor of 5 units, two floors above that at 4 units and all remaining floors at 3 units.
         perimeterZoneDepth_: A list of perimeter zone depths in Rhino model units that will be used to divide up each floor of the building into core and perimeter zones.  The list should run from bottom floor to top floor.  Alternatively, you can input a text string that codes for which floors you want at which zone depth.  For example, inputting "2@4" (without quotations) will divide up the two ground floors with a perimeter zone depth of 4 Rhino model units.  Simply typing "@3" will divide up all floors with a zone depth of 3 Rhino model units.  Putting in lists of these text strings will divide up floors accordingly.  For example, the list "1@5   2@4   @3"  will make a ground floor divided up with a zone depth of 5 units, two floors divided at 4 units and all remaining floors at 3 units.
         _createHoneybeeZones: Set Boolean to "True" to split up the building mass into geometries for zones.
     Returns:
@@ -27,7 +27,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = 'Honeybee_SplitBuildingMass'
 ghenv.Component.NickName = 'SplitMass'
-ghenv.Component.Message = 'VER 0.0.55\nOCT_03_2014'
+ghenv.Component.Message = 'VER 0.0.55\nOCT_30_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -42,7 +42,6 @@ import Grasshopper.Kernel as gh
 from System import Object
 from Grasshopper import DataTree
 from Grasshopper.Kernel.Data import GH_Path
-import rhinoscriptsyntax as rs
 
 
 tolerance = sc.doc.ModelAbsoluteTolerance
@@ -332,31 +331,37 @@ def getFloorCrvs(buildingMass, floorHeights, maxHeights):
             crvAdjust = []
             
             for nurbCount, curve in enumerate(contourCrvs):
-                if nurbsList[nurbCount] == False and curveSegmentList[nurbCount] == False:
-                    curveParameter = curve.ClosestPoint(rc.Geometry.Intersect.Intersection.CurveCurve(curve, rc.Geometry.Line(rc.Geometry.AreaMassProperties.Compute(curve).Centroid, seamVectorPt).ToNurbsCurve(), sc.doc.ModelAbsoluteTolerance, sc.doc.ModelAbsoluteTolerance)[0].PointA)[1]
-                    curveParameterRound = round(curveParameter)
-                    curveParameterTol = round(curveParameter, (len(list(str(sc.doc.ModelAbsoluteTolerance)))-2))
-                    if curveParameterRound + sc.doc.ModelAbsoluteTolerance > curveParameter and curveParameterRound - sc.doc.ModelAbsoluteTolerance < curveParameter:
-                        curve.ChangeClosedCurveSeam(curveParameterRound)
-                        crvAdjust.append(curve)
-                    else:
-                        curve.ChangeClosedCurveSeam(curveParameter)
-                        if curve.IsClosed == True:
+                if curve.IsClosed:
+                    if nurbsList[nurbCount] == False and curveSegmentList[nurbCount] == False:
+                        curveParameter = curve.ClosestPoint(rc.Geometry.Intersect.Intersection.CurveCurve(curve, rc.Geometry.Line(rc.Geometry.AreaMassProperties.Compute(curve).Centroid, seamVectorPt).ToNurbsCurve(), sc.doc.ModelAbsoluteTolerance, sc.doc.ModelAbsoluteTolerance)[0].PointA)[1]
+                        curveParameterRound = round(curveParameter)
+                        curveParameterTol = round(curveParameter, (len(list(str(sc.doc.ModelAbsoluteTolerance)))-2))
+                        if curveParameterRound + sc.doc.ModelAbsoluteTolerance > curveParameter and curveParameterRound - sc.doc.ModelAbsoluteTolerance < curveParameter:
+                            curve.ChangeClosedCurveSeam(curveParameterRound)
                             crvAdjust.append(curve)
                         else:
-                            curve.ChangeClosedCurveSeam(curveParameter+sc.doc.ModelAbsoluteTolerance)
+                            curve.ChangeClosedCurveSeam(curveParameter)
                             if curve.IsClosed == True:
                                 crvAdjust.append(curve)
                             else:
-                                curve.ChangeClosedCurveSeam(curveParameter-sc.doc.ModelAbsoluteTolerance)
+                                curve.ChangeClosedCurveSeam(curveParameter+sc.doc.ModelAbsoluteTolerance)
                                 if curve.IsClosed == True:
                                     crvAdjust.append(curve)
                                 else:
-                                    curve.ChangeClosedCurveSeam(curveParameter)
-                                    curve.MakeClosed(sc.doc.ModelAbsoluteTolerance)
-                                    crvAdjust.append(curve)
+                                    curve.ChangeClosedCurveSeam(curveParameter-sc.doc.ModelAbsoluteTolerance)
+                                    if curve.IsClosed == True:
+                                        crvAdjust.append(curve)
+                                    else:
+                                        curve.ChangeClosedCurveSeam(curveParameter)
+                                        curve.MakeClosed(sc.doc.ModelAbsoluteTolerance)
+                                        crvAdjust.append(curve)
+                    else:
+                        crvAdjust.append(curve)
                 else:
                     crvAdjust.append(curve)
+                    warning = 'The top or bottom of your mass geometry is composed of multiple surfaces and this is causing the algorithm to mess up.\n  If you re-make your top and/or bottom of your mass to be a single surface, this component should work.'
+                    print warning
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
         
         #Simplify the contour curves to ensure that they do not mess up the next few steps.
         for curve in crvAdjust:
@@ -941,14 +946,18 @@ def splitPerimZones(mass, zoneDepth, floorCrvList, topInc, totalNurbsList):
                     for zone in floorZones:
                         if zone == None:
                             noneTest.append(1)
-                            print "The script has failed to create one of the zones because of a tolerance issue.  Try changing your Rhino Model's tolerance (prorbably try increasing) and recompute the GH definition to generate zones correctly."
+                            warning = "The script has failed to create one of the zones because of a tolerance issue.  Try changing your Rhino Model's tolerance (prorbably try increasing) and recompute the GH definition to generate zones correctly."
+                            print warning
+                            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
                         else: pass
                     
                     #Append the group to the full zone list.
                     if sum(noneTest) == len(floorZones):
                         genFailure = True
                         finalZones.append(mass[curveCount])
-                        print "Failed to generate the perimieter zones for one floor as the geometry broke the script.  The problematic floor will be returned as a single zone."
+                        warning = "Failed to generate the perimieter zones for one floor as the geometry broke the script.  The problematic floor will be returned as a single zone."
+                        print warning
+                        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
                     elif listCount == 0:
                         finalZones.append(floorZones)
                     else:
@@ -959,8 +968,12 @@ def splitPerimZones(mass, zoneDepth, floorCrvList, topInc, totalNurbsList):
             except:
                 if len(floorCrvList) > 1 and listCount > 0: pass
                 else:
-                    finalZones.append(mass[curveCount])
-                    print "Failed to generate the perimieter zones for one floor as the floor's geometry is not accomodated by the script.  The floor will be returned as a single zone."
+                    try:
+                        finalZones.append(mass[curveCount])
+                        warning = "Failed to generate the perimieter zones for one floor as the floor's geometry is not accomodated by the script.  The floor will be returned as a single zone."
+                        print warning
+                        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+                    except: pass
     
     # If the building is a courtyard building, generate the core zones and append them to the final zones.
     if len(coreZoneWallList) != 0 and genFailure == False:
@@ -997,7 +1010,6 @@ def main(mass, floorHeights, perimDepth):
         #If the user has specified a floor height, split the mass up by floor.
         if floorHeights != []:
             splitFloors, floorCrvs, topInc, nurbsList, lastFloorInclud = splitFloorHeights(mass, floorHeights, lb_preparation, lb_visualization)
-            
         else:
             splitFloors = [mass]
             floorCrvs = []
@@ -1030,7 +1042,6 @@ def main(mass, floorHeights, perimDepth):
                     splitZones.append(mass[:-1])
         
         return splitZones
-        
     else:
         print "You should first let both Ladybug and Honeybee to fly..."
         w = gh.GH_RuntimeMessageLevel.Warning
@@ -1047,35 +1058,14 @@ if checkData == True:
     
     if splitBldgMassesLists!= -1:
         splitBldgMasses = DataTree[Object]()
+        names = DataTree[Object]()
         for i, buildingMasses in enumerate(splitBldgMassesLists):
             for j, mass in enumerate(buildingMasses):
                 p = GH_Path(i,j)
-                
-                # in case mass is not a list change it to list
-                try: mass[0]
-                except: mass = [mass]
-                
-                
-                newMass = []
-                for brep in mass:
-                    if brep != None:
-                        #Bake the objects into the Rhino scene to ensure that surface normals are facing the correct direction
-                        sc.doc = rc.RhinoDoc.ActiveDoc #change target document
-                        rs.EnableRedraw(False)
-                        guid1 = [sc.doc.Objects.AddBrep(brep)]
-                        
-                        if guid1:
-                            a = [rs.coercegeometry(a) for a in guid1]
-                            for g in a: g.EnsurePrivateCopy() #must ensure copy if we delete from doc
-                            
-                            rs.DeleteObjects(guid1)
-                        
-                        sc.doc = ghdoc #put back document
-                        rs.EnableRedraw()
-                        newMass.append(g)
-                    mass = newMass
-                    
                 try:
                     splitBldgMasses.AddRange(mass, p)
+                    #zoneNames = [str(i) + "_" + str(m) for m in range(len(mass))]
+                    #names.AddRange(zoneNames, p)
                 except:
                     splitBldgMasses.Add(mass, p)
+                    #names.Add(str(i) + "_" + str(j), p)
