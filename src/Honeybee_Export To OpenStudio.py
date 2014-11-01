@@ -71,7 +71,7 @@ else:
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.55\nOCT_29_2014'
+ghenv.Component.Message = 'VER 0.0.55\nOCT_31_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nOCT_29_2014
@@ -757,20 +757,22 @@ class WriteOPS(object):
             if cc['name'] != None:
                 #the name can't be added to openstudio
                 pass
-            if cc['ratedHighSpeedCOP'] != None:
-                coolcoil.setRatedCOP(ops.OptionalDouble(cc['ratedHighSpeedCOP']))
-                print 'updated high speed rated COP'
-            if cc['ratedHighSpeedSHR'] != None and cc['ratedHighSpeedSHR'] != 'Autosize':
-                coolcoil.setRatedSensibleHeatRatio(ops.OptionalDouble(cc['ratedHighSpeedSHR']))
-                print 'updated high speed rated sensible heat ratio'
-            if cc['ratedHighSpeedAirflowRate'] != None:
-                if cc['ratedHighSpeedAirflowRate'] != 'Autosize':
-                    coolcoil.setRatedAirFlowRate(ops.OptionalDouble(cc['ratedHighSpeedAirflowRate']))
-                    print 'updated high speed design flow rate'
-            if cc['ratedHighSpeedTotalCooling'] != None:
-                if cc['ratedHighSpeedTotalCooling'] != 'Autosize':
-                    coocoil.setRatedTotalCooling(ops.OptionalDouble(cc['ratedHighSpeedTotalCooling']))
-                    print 'updated high speed total cooling'
+            if cc['ratedCOP'] != None:
+                coolcoil.setRatedCOP(ops.OptionalDouble(cc['ratedCOP']))
+                print 'updated rated COP'
+            if cc['ratedSHR'] != None and cc['ratedSHR'] != 'Autosize':
+                coolcoil.setRatedSensibleHeatRatio(ops.OptionalDouble(cc['ratedSHR']))
+                print 'updated rated sensible heat ratio'
+            if cc['ratedAirflowRate'] != None:
+
+                if cc['ratedAirflowRate'] != 'Autosize':
+                    coolcoil.setRatedAirFlowRate(ops.OptionalDouble(cc['ratedAirflowRate']))
+                    print 'updated design flow rate'
+            if cc['ratedTotalCooling'] != None:
+
+                if cc['ratedTotalCooling'] != 'Autosize':
+                    coocoil.setRatedTotalCooling(ops.OptionalDouble(cc['ratedTotalCooling']))
+                    print 'updated total cooling'
             if cc['condenserType'] != None:
                 #evaporatively cooled
                 if cc['condenserType'] == 1:
@@ -850,7 +852,14 @@ class WriteOPS(object):
                         else:
                             print 'no supply fan defined'
                             pass
-                    
+                        if HVACDetails['coolingCoil'] != None:
+                            print 'overriding the OpenStudio cooling coil settings.'
+                            ccname = ptac.coolingCoil().name()
+                            cc = model.getCoilCoolingDXSingleSpeedByName(str(ccname)).get()
+                            print cc
+                            coolcoil = self.updateCoolingCoil(HVACDetails['coolingCoil'],cc)
+                            
+
             elif systemIndex == 2:
                 # 2: PTHP, Residential - thermalZoneVector because ZoneHVAC
                 ops.OpenStudioModelHVAC.addSystemType2(model, thermalZoneVector)
@@ -883,7 +892,7 @@ class WriteOPS(object):
                             if HVACDetails['floatingOAflow'] != 'Autosize': 
                                 pthp.setOutdoorAirFlowRateWhenNoCoolingorHeatingisNeeded(HVACDetails['floatingOAflow'])
                         sch = pthp.availabilitySchedule()
-                        if len(HVACDetails['constVolSupplyFanDef']) > 0:
+                        if HVACDetails['constVolSupplyFanDef'] != None:
                             print 'overriding the OpenStudio supply fan settings'
                             sfname = pthp.supplyAirFan().name()
                             cvfan = model.getFanConstantVolumeByName(str(sfname)).get()
@@ -891,13 +900,20 @@ class WriteOPS(object):
                             cvfan = self.updateCVFan(sf,cvfan)
                             print 'supply fan settings updated to supply fan name: ' + HVACDetails['constVolSupplyFanDef']['name']
 
-                        if len(HVACDetails['heatingCoil']) > 0:
+                        if HVACDetails['heatingCoil'] != None:
                             print 'overriding the OpenStudio DX heating coil settings'
                             modelhandle = pthp.heatingCoil().handle()
                             modelhc = model.getCoilHeatingDXSingleSpeed(modelhandle).get()
                             hbhc = HVACDetails['heatingCoil']
                             modelhc = self.updateDXHeatingCoil(hbhc,modelhc)
                             print modelhc
+                            
+                        if HVACDetails['coolingCoil'] != None:
+                            print 'overriding the OpenStudio cooling coil settings.'
+                            ccname = pthp.coolingCoil().name()
+                            cc = model.getCoilCoolingDXSingleSpeedByName(str(ccname)).get()
+                            print cc
+                            coolcoil = self.updateCoolingCoil(HVACDetails['coolingCoil'],cc)
                 
             elif systemIndex == 3:
                 print 'Making ASHRAE System Type 3'
@@ -923,7 +939,7 @@ class WriteOPS(object):
 
                         #apply fan changes
                         print HVACDetails['constVolSupplyFanDef']
-                        if len(HVACDetails['constVolSupplyFanDef']) > 0:
+                        if HVACDetails['constVolSupplyFanDef'] != None:
                             print 'overriding the OpenStudio supply fan settings'
 
                             x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:ConstantVolume"))
@@ -941,8 +957,8 @@ class WriteOPS(object):
                             c = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:DX:SingleSpeed"))
                             handle = c[0].handle()
                             coolcoil = model.getCoilCoolingDXSingleSpeed(handle).get()
-                            cc = self.recallCoolingCoil(HVACDetails)
-                            coolcoil = self.updateCoolingCoil(cc,coolcoil)
+
+                            coolcoil = self.updateCoolingCoil(HVACDetails['coolingCoil'],coolcoil)
 
             elif systemIndex == 4:
                 for zone in thermalZoneVector:
@@ -966,7 +982,7 @@ class WriteOPS(object):
 
                         #apply fan changes
                         print HVACDetails['constVolSupplyFanDef']
-                        if len(HVACDetails['constVolSupplyFanDef']) > 0:
+                        if HVACDetails['constVolSupplyFanDef'] != 0:
                             print 'overriding the OpenStudio supply fan settings'
 
                             x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:ConstantVolume"))
@@ -984,10 +1000,10 @@ class WriteOPS(object):
                             c = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:DX:SingleSpeed"))
                             handle = c[0].handle()
                             coolcoil = model.getCoilCoolingDXSingleSpeed(handle).get()
-                            cc = self.recallCoolingCoil(HVACDetails)
-                            coolcoil = self.updateCoolingCoil(cc,coolcoil)
+
+                            coolcoil = self.updateCoolingCoil(HVACDetails['coolingCoil'],coolcoil)
                             
-                        if len(HVACDetails['heatingCoil']) > 0:
+                        if HVACDetails['heatingCoil'] != 0:
                             print 'overriding the OpenStudio DX heating coil settings'
                             print airloop
                             hc = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Heating:DX:SingleSpeed"))
@@ -1013,7 +1029,7 @@ class WriteOPS(object):
                 if(HVACDetails != None):
                     oasys = airloop.airLoopHVACOutdoorAirSystem() 
 
-                    
+
                     if oasys.is_initialized():
                         print 'overriding the OpenStudio airside economizer settings'
                         oactrl = oasys.get().getControllerOutdoorAir()
@@ -1026,7 +1042,7 @@ class WriteOPS(object):
                     #the fan by default is variable volume, it will never be constant volume
                     x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:VariableVolume"))
                     sf = model.getFanVariableVolume(x[0].handle()).get()
-                    if len(HVACDetails['varVolSupplyFanDef']) > 0:
+                    if HVACDetails['varVolSupplyFanDef'] != None:
                         print 'overriding the OpenStudio supply fan settings'
                         x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:VariableVolume"))
                         vvfan = model.getFanVariableVolume(x[0].handle()).get()
@@ -1040,8 +1056,8 @@ class WriteOPS(object):
                         print 'overriding the OpenStudio 2-stage cooling DX cooling coil defaults.'
                         x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:DX:TwoSpeed"))
                         coolcoil = model.getCoilCoolingDXTwoSpeed(x[0].handle()).get()
-                        cc = self.recallCoolingCoil(HVACDetails)
-                        coolcoil = self.updateCoolingCoil(cc,coolcoil)
+
+                        coolcoil = self.updateCoolingCoil(HVACDetails['coolingCoil'],coolcoil)
                         print "success for cooling coil"
                         print ''
                         #x = airloop.supplyComponents(ops.IddObjectType("")
@@ -1416,11 +1432,15 @@ class WriteOPS(object):
             thisSurface = ops.Surface(pointVectors, model);
             thisSurface.setName(surfaceName);
             thisSurface.setSpace(space);
+            thisSurface.setSurfaceType(surface.srfType[surface.type]);
             srfType = surface.srfType[int(surface.type)]
             if srfType.upper().Contains("ROOF") or srfType.upper().Contains("CEILING"):
                 srfType = "RoofCeiling" # This is an OpenStudio type that will be converted as a roof or ceiling in idf file
                 
             thisSurface.setSurfaceType(srfType);
+
+
+
             
             # create construction
             if not self.isConstructionInLib(surface.EPConstruction):
