@@ -43,7 +43,7 @@ import Grasshopper.Kernel as gh
 
 ghenv.Component.Name = "Honeybee_OpenStudio DX Cooling Coil"
 ghenv.Component.NickName = 'EPlusDXCoolingCoil'
-ghenv.Component.Message = 'VER 0.0.55\nOCT_14_2014'
+ghenv.Component.Message = 'VER 0.0.55\nOCT_31_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | AirsideSystems"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -66,7 +66,7 @@ condType = {
 
 
 
-def main():
+def main(evaporativeCondenserDescription):
     DXCoil = []
     if sc.sticky.has_key('honeybee_release'):
         #check Honeybee version
@@ -115,20 +115,28 @@ def main():
                 'ratedLowSpeedSHR':_ratedLowSpeedSensibleHeatRatio_,
                 'ratedLowSpeedCOP':_ratedLowSpeedCOP_,
                 'condenserType':_condenserType_,
-                'evaporativeCondenserDesc':_evaporativeCondenserDescription_,
+                'evaporativeCondenserDesc':evaporativeCondenserDescription,
                 'Curves':_Curves_
                 }
                 
                 #test to make sure the user inputs are correct, if not kill their description
                 if _condenserType_ != None and condType[_condenserType_] == "Evaporatively Cooled":
-                    if _evaporativeCondenserDescription_ == None:
+                    if evaporativeCondenserDescription == None:
                         print 'You have specified an Evaporatively Cooled Condenser,'
                         print 'But have not specified an evaporative condenser description.'
                         w = gh.GH_RuntimeMessageLevel.Warning
-                        ghenv.Component.AddRuntimeMessage(w, "You have specified an evaporatively cooled system.  Please specify an evaporative condenser description, or this component will be disabled.")
-                        DXCoil = []
+                        ghenv.Component.AddRuntimeMessage(w, "You have specified an evaporatively cooled system.  Please specify an evaporative condenser description, otherwise we will assume your coil to be aircooled.")
+                        coil['condenserType'] = 0
+                elif _condenserType_ == 0:
+                    if evaporativeCondenserDescription != None:
+                        print 'You have specified an evaporative condenser description but you have'
+                        print 'assigned a _condenserType_=0 (air cooled).  Your evaporative condenser'
+                        print 'description will be ignored unless you update _condenserType_=1 (evaporatively cooled)'
+                        print ''
+                        w = gh.GH_RuntimeMessageLevel.Warning
+                        ghenv.Component.AddRuntimeMessage(w, "You have input an evaporative condenser description with the wrong _condenserType_.  See 'out' for more instructions.")
+                        coil['evaporativeCondenserDesc'] = None
                         
-                
                 #update the hive
                 actions = []
                 updatedCoilParams = {}
@@ -163,13 +171,6 @@ def main():
             print 'We have found the Honeybee default for 1 Speed DX Coils: '
             hb_1xDXCoil = sc.sticky['honeybee_1xDXCoilParams']().oneSpeedDXDict
             pp = pprint.PrettyPrinter(indent=4)
-    
-    
-    
-    
-    
-    
-    
             if _name!=None:
                 pp.pprint(hb_1xDXCoil)
                 print ''
@@ -181,7 +182,7 @@ def main():
                 'ratedSHR':_ratedHighSpeedSensibleHeatRatio_,
                 'ratedCOP':_ratedHighSpeedCOP_,
                 'condenserType':_condenserType_,
-                'evaporativeCondenserDesc':_evaporativeCondenserDescription_,
+                'evaporativeCondenserDesc':evaporativeCondenserDescription,
                 'Curves':_Curves_
                 }
                 
@@ -203,14 +204,22 @@ def main():
                     ghenv.Component.AddRuntimeMessage(w, "You have selected a one speed coil.  All low speed definitions are ignored.")
                 #test to make sure the user inputs are correct, if not kill their description
                 if _condenserType_ != None and condType[_condenserType_] == "Evaporatively Cooled":
-                    if _evaporativeCondenserDescription_ == None:
+                    if evaporativeCondenserDescription == None:
                         print 'You have specified an Evaporatively Cooled Condenser,'
                         print 'But have not specified an evaporative condenser description.'
                         w = gh.GH_RuntimeMessageLevel.Error
-                        ghenv.Component.AddRuntimeMessage(w, "You have specified an evaporatively cooled system.  Please specify an evaporative condenser description.")
-                        DXCoil = []
+                        ghenv.Component.AddRuntimeMessage(w, "You have specified an evaporatively cooled system.  Please specify an evaporative condenser description, otherwise we will assume your coil to be aircooled.")
+                        coil['condenserType'] = 0
+                elif _condenserType_ == 0:
+                    if evaporativeCondenserDescription != None:
+                        print 'You have specified an evaporative condenser description but you have'
+                        print 'assigned a _condenserType_=0 (air cooled).  Your evaporative condenser'
+                        print 'description will be ignored unless you update _condenserType_=1 (evaporatively cooled)'
+                        print ''
+                        w = gh.GH_RuntimeMessageLevel.Warning
+                        ghenv.Component.AddRuntimeMessage(w, "You have input an evaporative condenser description with the wrong _condenserType_.  See 'out' for more instructions.")
+                        coil['evaporativeCondenserDesc'] = None
                         
-                
                 #update the hive
                 actions = []
                 updatedCoilParams = {}
@@ -250,4 +259,4 @@ def main():
     
     
     
-DXCoil = main()
+DXCoil = main(_evaporativeCondenserDescription_)

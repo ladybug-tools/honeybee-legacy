@@ -28,7 +28,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_OpenStudio Evaporative Condenser"
 ghenv.Component.NickName = 'EvaporativeCondenser'
-ghenv.Component.Message = 'VER 0.0.55\nOct_14_2014'
+ghenv.Component.Message = 'VER 0.0.55\nOct_31_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | AirsideSystems"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -176,9 +176,9 @@ def main():
                 hspeedevapcond = {
                 'name':_uniqueName,
                 'serviceType':_serviceType,
-                'evapEffectiveness':_evaporativeEffectiveness_,
-                'evapCondAirflowRate':_evaporativeCondAirflowRate_,
-                'evapPumpPower':_evapPumpPower_,
+                'evapEffectiveness':_loSpeedEvaporativeEffectiveness_,
+                'evapCondAirflowRate':_loSpeedEvaporativeCondAirflowRate_,
+                'evapPumpPower':_loSpeedEvapPumpPower_,
                 'hiEvapEffectiveness':_hiSpeedEvaporativeEffectiveness_,
                 'hiEvapCondAirflowRate':_hiSpeedEvaporativeCondAirflowRate_,
                 'hiEvapPumpPower':_hiSpeedEvapPumpPower_,
