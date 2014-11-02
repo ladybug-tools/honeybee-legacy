@@ -71,7 +71,7 @@ else:
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.55\nOCT_31_2014'
+ghenv.Component.Message = 'VER 0.0.55\nNOV_02_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nOCT_29_2014
@@ -1759,8 +1759,8 @@ class RunOPS(object):
         
         #execute the batch file
         os.system(batchFileAddress)
-        
-        return fullPath + "Zsz.csv"
+        print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"+fullPath
+        return fullPath + "Zsz.csv",fullPath+".sql"
 
 class RunOPSRManage(object):
     def __init__(self, model, measuredict, weatherFilePath = r"C:\EnergyPlusV8-1-0\WeatherData\USA_CA_San.Francisco.Intl.AP.724940_TMY3.epw"):
@@ -2123,3 +2123,4 @@ if _epwWeatherFile and _writeOSM and openStudioIsReady:
     
     if results!=-1:
         osmFileAddress, idfFileAddress, resultsFileAddress = results
+        
