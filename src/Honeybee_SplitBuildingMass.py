@@ -229,9 +229,11 @@ def getFloorCrvs(buildingMass, floorHeights, maxHeights):
         
         lastFloorHeight = (maxHeights)  - floorHeights[-1]
         
-        if lastFloorHeight < maxHeight:
-            lastFloorInc = False
-        else: lastFloorInc = True
+        if lastFloorHeight == 0.0: lastFloorInc = True
+        else:
+            if lastFloorHeight < maxHeight:
+                lastFloorInc = False
+            else: lastFloorInc = True
         
         #Check to see if the top surface is horizontal + planar and, if so, include it in the curve process below.
         if lastFloorInc == True:
