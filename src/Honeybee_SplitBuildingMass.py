@@ -27,7 +27,11 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = 'Honeybee_SplitBuildingMass'
 ghenv.Component.NickName = 'SplitMass'
+<<<<<<< HEAD
+ghenv.Component.Message = 'VER 0.0.55\nOCT_31_2014'
+=======
 ghenv.Component.Message = 'VER 0.0.55\nOCT_03_2014'
+>>>>>>> origin/master
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -1074,7 +1078,11 @@ if checkData == True:
                         rs.EnableRedraw()
                         newMass.append(g)
                     mass = newMass
+<<<<<<< HEAD
+                
+=======
                     
+>>>>>>> origin/master
                 try:
                     splitBldgMasses.AddRange(mass, p)
                 except:
