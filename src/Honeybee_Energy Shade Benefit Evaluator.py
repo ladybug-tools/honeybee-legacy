@@ -53,7 +53,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Energy Shade Benefit Evaluator"
 ghenv.Component.NickName = 'EnergyShadeBenefit'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.55\nNOV_03_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
@@ -418,7 +418,11 @@ def checkSkyResolution(skyResolution, allDataDict, analysisPeriod, latitude, lon
     sunVectors = []
     lb_sunpath.initTheClass(latitude, north, rc.Geometry.Point3d.Origin, 1, longitude, timeZone)
     
-    HOYs, months, days = lb_preparation.getHOYsBasedOnPeriod(analysisPeriod, 1)
+    if analysisPeriod != [(1,1,1), (12,31,24)]:
+        HOYs, months, days = lb_preparation.getHOYsBasedOnPeriod(analysisPeriod, 1)
+    else:
+        HOYs = range(8760)
+    HOYStart = HOYs[0]
     
     for hoy in HOYs:
         d, m, h = lb_preparation.hour2Date(hoy, True)
@@ -430,9 +434,9 @@ def checkSkyResolution(skyResolution, allDataDict, analysisPeriod, latitude, lon
             sunVectors.append(sunVec)
             
             for path in allDataDict:
-                allDataDict[path]["coolingSun"].append(allDataDict[path]["cooling"][hoy-1])
-                allDataDict[path]["heatingSun"].append(allDataDict[path]["heating"][hoy-1])
-                allDataDict[path]["beamSun"].append(allDataDict[path]["beam"][hoy-1])
+                allDataDict[path]["coolingSun"].append(allDataDict[path]["cooling"][hoy-HOYStart])
+                allDataDict[path]["heatingSun"].append(allDataDict[path]["heating"][hoy-HOYStart])
+                allDataDict[path]["beamSun"].append(allDataDict[path]["beam"][hoy-HOYStart])
     
     #Check to see if the user has requested the highest resolution and, if not, consolidate the sun vectors into sky patches.
     finalSunVecs = []
@@ -476,9 +480,9 @@ def checkSkyResolution(skyResolution, allDataDict, analysisPeriod, latitude, lon
                 
                 for hour in hourList:
                     for path in allDataDict:
-                        allDataDict[path]["coolingFinal"][vecCount] = allDataDict[path]["coolingFinal"][vecCount] + allDataDict[path]["coolingSun"][hour]
-                        allDataDict[path]["heatingFinal"][vecCount] = allDataDict[path]["heatingFinal"][vecCount] + allDataDict[path]["heatingSun"][hour]
-                        allDataDict[path]["beamFinal"][vecCount] = allDataDict[path]["beamFinal"][vecCount] + allDataDict[path]["beamSun"][hour]
+                        allDataDict[path]["coolingFinal"][vecCount] = allDataDict[path]["coolingFinal"][vecCount] + allDataDict[path]["coolingSun"][hour-HOYStart]
+                        allDataDict[path]["heatingFinal"][vecCount] = allDataDict[path]["heatingFinal"][vecCount] + allDataDict[path]["heatingSun"][hour-HOYStart]
+                        allDataDict[path]["beamFinal"][vecCount] = allDataDict[path]["beamFinal"][vecCount] + allDataDict[path]["beamSun"][hour-HOYStart]
     else:
         finalSunVecs = sunVectors
         for path in allDataDict:
