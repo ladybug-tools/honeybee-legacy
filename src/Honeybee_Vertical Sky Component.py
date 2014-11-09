@@ -20,10 +20,10 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Vertical Sky Component"
 ghenv.Component.NickName = 'verticalSkyComponent'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.55\nNOV_08_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"
-#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
+#compatibleHBVersion = VER 0.0.55\nNOV_08_2014
 #compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
@@ -120,7 +120,7 @@ def main():
     _testPoints.SimplifyPaths()
     ptsVectors_.SimplifyPaths()
     analysisRecipe = DLAnalysisRecipe(simulationType, skyFilePath, _testPoints,
-                                      ptsVectors_, radPar, testMesh_)
+                                      ptsVectors_, radPar, testMesh_, ghenv.Component)
     
         
     if _testPoints.DataCount==0 or isAllNone(_testPoints.AllData()):

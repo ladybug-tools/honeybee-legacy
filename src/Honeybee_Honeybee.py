@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.55\nOCT_29_2014'
+ghenv.Component.Message = 'VER 0.0.55\nNOV_08_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -781,6 +781,8 @@ class DLAnalysisRecipe(object):
         """
         self.type = type
         
+        self.component = arg[-1]
+        
         # based on the type it should return different outputs
         if type == 0:
             self.skyFile = arg[0]
@@ -858,7 +860,7 @@ class DLAnalysisRecipe(object):
                         self.skyFile = None
                         msg = "You need to use one of the climate-based skies for radiation analysis.\n" + \
                               "Change the skyFile and try again"
-                        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                        self.component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
                         return
                     elif line.startswith("!gendaylit"):
                         line = line.replace("-O 0", "-O 1")
@@ -878,7 +880,7 @@ class DLAnalysisRecipe(object):
                         self.skyFile = None
                         msg = "Cumulative sky can only be used for radiation analysis.\n" + \
                               "Change the skyFile and try again"
-                        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                        self.component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
                         return
 
 

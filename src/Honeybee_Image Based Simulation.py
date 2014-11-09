@@ -25,10 +25,10 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Image Based Simulation"
 ghenv.Component.NickName = 'imageBasedSimulation'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.55\nNOV_08_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"
-#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
+#compatibleHBVersion = VER 0.0.55\nNOV_08_2014
 #compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
@@ -62,7 +62,7 @@ def main():
     # As much as I dislike using global variables I feel lazy to change this now
     recipe = DLAnalysisRecipe(0, _skyFile, _rhinoViewsName_, _radParameters_,
                               _cameraType_, _simulationType_, _imageWidth_,
-                              _imageHeight_, sectionPlane_, backupImages_)
+                              _imageHeight_, sectionPlane_, backupImages_, ghenv.Component)
     
     return recipe
 

@@ -21,10 +21,10 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Annual Daylight Simulation"
 ghenv.Component.NickName = 'annualDaylightSimulation'
-ghenv.Component.Message = 'VER 0.0.55\nOCT_29_2014'
+ghenv.Component.Message = 'VER 0.0.55\nNOV_08_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"
-#compatibleHBVersion = VER 0.0.55\nOCT_27_2014
+#compatibleHBVersion = VER 0.0.55\nNOV_08_2014
 #compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
@@ -73,7 +73,7 @@ def main():
     DLAnalysisRecipe = sc.sticky["honeybee_DLAnalysisRecipe"]
     
     analysisRecipe = DLAnalysisRecipe(2, _epwWeatherFile, _testPoints, ptsVectors_,
-                                      _radParameters_, _DSParameters_, testMesh_, math.degrees(northAngle))
+                                      _radParameters_, _DSParameters_, testMesh_, math.degrees(northAngle), ghenv.Component)
                                       
     if (_testPoints.DataCount==0 or isAllNone(_testPoints.AllData())) \
         and not (_DSParameters_ and _DSParameters_.runAnnualGlare \
