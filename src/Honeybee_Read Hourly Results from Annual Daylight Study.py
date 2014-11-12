@@ -23,7 +23,7 @@ Provided by Honeybee 0.0.55
 """
 ghenv.Component.Name = "Honeybee_Read Hourly Results from Annual Daylight Study"
 ghenv.Component.NickName = 'readDSHourlyResults'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.55\nNOV_11_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -86,6 +86,7 @@ def main(illFilesAddress, testPoints, HOY, annualProfiles):
             return msg, None, None
         
         # sort the annual profiles
+        # there should be an annual profile for every single space
         try:
             annualProfiles = sorted(annualProfiles, key=lambda fileName: int(fileName.split(".")[-2].split("_")[-1]))
         except:
@@ -125,8 +126,8 @@ def main(illFilesAddress, testPoints, HOY, annualProfiles):
                 # looks right so let's sort them
                 # sort each list inside the branch and took the first one for sorting the branches!
                 illFileSets = sortIllFiles(illFilesAddress)
-
-                    
+                
+                
     elif illFilesAddress.BranchCount > 1 and illFilesAddress.BranchCount-1 != len(annualProfiles):
         tempmsg = "Annual profile files are not provided.\nThe result will be only calculated for the original case with no blinds."
         w = gh.GH_RuntimeMessageLevel.Warning
@@ -142,24 +143,33 @@ def main(illFilesAddress, testPoints, HOY, annualProfiles):
     
     # 3 place holderd for the potential 3 outputs
     # no blinds, shading group I and shading group II
-    illuminanceValues = {0: [],
+    illuminanceValues = {
+                         0: [],
                          1: [],
                          2: [],
-                         }
+                        }
+    
+    # create a sublist for every shading state
+    for shadingGroupCount in range(len(illFileSets.keys())):
+        # each file represnts one state of shading
+        for resultFile in illFileSets[shadingGroupCount]:
+            # add an empty list for each state
+            illuminanceValues[shadingGroupCount].append([])
     
     totalPtCount = 0
     ptsCountSoFar = 0
     for shadingGroupCount in range(len(illFileSets.keys())):
-        for resultFile in illFileSets[shadingGroupCount]:
+        # each file represnts one state of shading
+        for stateCount, resultFile in enumerate(illFileSets[shadingGroupCount]):
             result = open(resultFile, 'r')
             for lineCount, line in enumerate(result):
                 if lineCount == int(HOY-1):
                    line = line.replace('\n', '', 10)
                    lineSeg = line.Split(' ')
                    for hourLuxValue in lineSeg[4:]:
-                      illuminanceValues[shadingGroupCount].append(float(hourLuxValue))
+                      illuminanceValues[shadingGroupCount][stateCount].append(float(hourLuxValue))
             result.close()
-
+            
     return msg, illuminanceValues, shadingProfiles
 
 
@@ -184,27 +194,31 @@ if _HOY!=None and _illFilesAddress.DataCount!=0 and _illFilesAddress.Branch(0)[0
         iIllumLevelsDynamicSHDGroupII = DataTree[Object]()
         iIlluminanceBasedOnOccupancy = DataTree[Object]()
         
-        # now this is the time to create the mixed results
-        # I think I confused blind groups and shading states at some point or maybe I didn't!
-        # Fore now it will work for one shading with one state. I'll check for more later.
-        
         blindsGroupInEffect = 0
+        shadingGroupInEffect = "No blind"
         # for each space
         for spaceCount in range(len(numOfPtsInEachSpace)):
             p = GH_Path(spaceCount)
-            iIllumLevelsNoDynamicSHD.AddRange(illuminanceValues[0][sum(numOfPtsInEachSpace[:spaceCount]):sum(numOfPtsInEachSpace[:spaceCount+1])], p)
+            iIllumLevelsNoDynamicSHD.AddRange(illuminanceValues[0][0][sum(numOfPtsInEachSpace[:spaceCount]):sum(numOfPtsInEachSpace[:spaceCount+1])], p)
             
             if len(illuminanceValues[1])!=0 and shadingProfiles[spaceCount]!=[]:
-                
-                if shadingProfiles[spaceCount][0][_HOY-1] == 1: blindsGroupInEffect = 1
-                iIllumLevelsDynamicSHDGroupI.AddRange(illuminanceValues[1][sum(numOfPtsInEachSpace[:spaceCount]):sum(numOfPtsInEachSpace[:spaceCount+1])], p)
+                numberOfStates = len(illuminanceValues[1])
+                if shadingProfiles[spaceCount][0][_HOY-1] > 0:
+                    stateInEffect = int(round(numberOfStates * shadingProfiles[spaceCount][0][_HOY-1]))
+                    blindsGroupInEffect = 1
+                    shadingGroupInEffect = "Group_1_State:" + `stateInEffect`
+                iIllumLevelsDynamicSHDGroupI.AddRange(illuminanceValues[1][stateInEffect-1][sum(numOfPtsInEachSpace[:spaceCount]):sum(numOfPtsInEachSpace[:spaceCount+1])], p)
                 
             if len(illuminanceValues[2])!=0 and shadingProfiles[spaceCount]!=[]:
-                if shadingProfiles[spaceCount][1][_HOY-1] == 1: blindsGroupInEffect = 2
-                iIllumLevelsDynamicSHDGroupII.AddRange(illuminanceValues[2][sum(numOfPtsInEachSpace[:spaceCount]):sum(numOfPtsInEachSpace[:spaceCount+1])], p)
+                numberOfStates = len(illuminanceValues[2])
+                
+                if shadingProfiles[spaceCount][1][_HOY-1] > 0:
+                    stateInEffect = int(round(numberOfStates * shadingProfiles[spaceCount][1][_HOY-1]))
+                    blindsGroupInEffect = 2
+                    shadingGroupInEffect = "Group_2_State:" + `stateInEffect`
+                iIllumLevelsDynamicSHDGroupII.AddRange(illuminanceValues[2][stateInEffect-1][sum(numOfPtsInEachSpace[:spaceCount]):sum(numOfPtsInEachSpace[:spaceCount+1])], p)
                 
 
-            iIlluminanceBasedOnOccupancy.AddRange(illuminanceValues[blindsGroupInEffect][sum(numOfPtsInEachSpace[:spaceCount]):sum(numOfPtsInEachSpace[:spaceCount+1])], p)
+            iIlluminanceBasedOnOccupancy.AddRange(illuminanceValues[blindsGroupInEffect][stateInEffect-1][sum(numOfPtsInEachSpace[:spaceCount]):sum(numOfPtsInEachSpace[:spaceCount+1])], p)
             
-            shadingGroupInEffect =  blindsGroupInEffect
 
