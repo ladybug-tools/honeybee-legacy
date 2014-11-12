@@ -22,7 +22,7 @@ Provided by Honeybee 0.0.55
 """
 ghenv.Component.Name = "Honeybee_Read All the Hourly Results from Annual Daylight Study"
 ghenv.Component.NickName = 'readAllTheDSHourlyResults'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.55\nNOV_11_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -135,7 +135,7 @@ def main(illFilesAddress, testPoints, annualProfiles):
     else:
         # no profile
         illFileSets = sortIllFiles(illFilesAddress)
-        
+    
     # read the data for hour of the year and multiply it with the shading
     numOfPts = testPoints.DataCount
     
@@ -145,21 +145,28 @@ def main(illFilesAddress, testPoints, annualProfiles):
                          1: [],
                          2: [],
                          }
-    # make a place holder list for every hour
-    for placeHolder in illuminanceValues.values():
+    # create a sublist for every shading state
+    for shadingGroupCount in illuminanceValues.keys():
         for HOY in range(8760):
-            placeHolder.append([])
+            # separate list for every hour
+            illuminanceValues[shadingGroupCount].append([])
+            
+            # each file represnts one state of shading
+            if len(illFileSets) > shadingGroupCount:
+                for resultFile in illFileSets[shadingGroupCount]:
+                    # add an empty list for each state
+                    illuminanceValues[shadingGroupCount][HOY].append([])
     
     totalPtCount = 0
     ptsCountSoFar = 0
     for shadingGroupCount in range(len(illFileSets.keys())):
-        for resultFile in illFileSets[shadingGroupCount]:
+        for shadingState, resultFile in enumerate(illFileSets[shadingGroupCount]):
             result = open(resultFile, 'r')
             for HOY, line in enumerate(result):
                line = line.replace('\n', '', 10)
                lineSeg = line.Split(' ')
                for hourLuxValue in lineSeg[4:]:
-                  illuminanceValues[shadingGroupCount][HOY].append(float(hourLuxValue))
+                  illuminanceValues[shadingGroupCount][HOY][shadingState].append(float(hourLuxValue))
             result.close()
 
     return msg, illuminanceValues, shadingProfiles
@@ -185,31 +192,35 @@ if _illFilesAddress.DataCount!=0 and _illFilesAddress.Branch(0)[0]!=None and _te
         iIllumLevelsDynamicSHDGroupI = DataTree[Object]()
         iIllumLevelsDynamicSHDGroupII = DataTree[Object]()
         iIlluminanceBasedOnOccupancy = DataTree[Object]()
-        
-        # now this is the time to create the mixed results
-        # I think I confused blind groups and shading states at some point or maybe I didn't!
-        # Fore now it will work for one shading with one state. I'll check for more later.
-        
-        blindsGroupInEffect = 0
+        shadingGroupInEffect = DataTree[Object]()
+
         # for each space
         for spaceCount in range(len(numOfPtsInEachSpace)):
             for HOY in range(8760):
-                
                 p = GH_Path(spaceCount, HOY)
-                
-                iIllumLevelsNoDynamicSHD.AddRange(illuminanceValues[0][HOY][sum(numOfPtsInEachSpace[:spaceCount]):sum(numOfPtsInEachSpace[:spaceCount+1])], p)
+                stateInEffect = 0
+                blindsGroupInEffect = 0
+                shadingGroupInEffectForTheHour = "No blind"
+                iIllumLevelsNoDynamicSHD.AddRange(illuminanceValues[0][HOY][0][sum(numOfPtsInEachSpace[:spaceCount]):sum(numOfPtsInEachSpace[:spaceCount+1])], p)
                 
                 if len(illuminanceValues[1][HOY])!=0 and shadingProfiles[spaceCount]!=[]:
-                    
-                    if shadingProfiles[spaceCount][0][HOY-1] == 1: blindsGroupInEffect = 1
-                    iIllumLevelsDynamicSHDGroupI.AddRange(illuminanceValues[1][HOY][sum(numOfPtsInEachSpace[:spaceCount]):sum(numOfPtsInEachSpace[:spaceCount+1])], p)
-                    
-                if len(illuminanceValues[2][HOY])!=0 and shadingProfiles[spaceCount]!=[]:
-                    if shadingProfiles[spaceCount][1][HOY-1] == 1: blindsGroupInEffect = 2
-                    iIllumLevelsDynamicSHDGroupII.AddRange(illuminanceValues[2][HOY][sum(numOfPtsInEachSpace[:spaceCount]):sum(numOfPtsInEachSpace[:spaceCount+1])], p)
-                    
-    
-                iIlluminanceBasedOnOccupancy.AddRange(illuminanceValues[blindsGroupInEffect][HOY][sum(numOfPtsInEachSpace[:spaceCount]):sum(numOfPtsInEachSpace[:spaceCount+1])], p)
+                    numberOfStates = len(illuminanceValues[1][HOY])
+                    if shadingProfiles[spaceCount][0][HOY] > 0:
+                        stateInEffect = int(round(numberOfStates * shadingProfiles[spaceCount][0][HOY]))
+                        blindsGroupInEffect = 1
+                        shadingGroupInEffectForTheHour = "Group_1_State:" + `stateInEffect`
+                        iIllumLevelsDynamicSHDGroupI.AddRange(illuminanceValues[1][HOY][stateInEffect-1][sum(numOfPtsInEachSpace[:spaceCount]):sum(numOfPtsInEachSpace[:spaceCount+1])], p)
                 
-                shadingGroupInEffect =  blindsGroupInEffect
-
+                if len(illuminanceValues[2][HOY])!=0 and shadingProfiles[spaceCount]!=[]:
+                    numberOfStates = len(illuminanceValues[2][HOY])
+                    
+                    if shadingProfiles[spaceCount][1][HOY] > 0:
+                        stateInEffect = int(round(numberOfStates * shadingProfiles[spaceCount][1][HOY]))
+                        blindsGroupInEffect = 2
+                        shadingGroupInEffectForTheHour = "Group_2_State:" + `stateInEffect`
+                    iIllumLevelsDynamicSHDGroupII.AddRange(illuminanceValues[2][HOY][stateInEffect-1][sum(numOfPtsInEachSpace[:spaceCount]):sum(numOfPtsInEachSpace[:spaceCount+1])], p)
+                    
+                if stateInEffect!=0: stateInEffect-=1
+                iIlluminanceBasedOnOccupancy.AddRange(illuminanceValues[blindsGroupInEffect][HOY][stateInEffect][sum(numOfPtsInEachSpace[:spaceCount]):sum(numOfPtsInEachSpace[:spaceCount+1])], p)
+                
+                shadingGroupInEffect.Add(shadingGroupInEffectForTheHour, p)

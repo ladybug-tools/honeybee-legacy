@@ -194,11 +194,14 @@ if _HOY!=None and _illFilesAddress.DataCount!=0 and _illFilesAddress.Branch(0)[0
         iIllumLevelsDynamicSHDGroupII = DataTree[Object]()
         iIlluminanceBasedOnOccupancy = DataTree[Object]()
         
-        blindsGroupInEffect = 0
-        shadingGroupInEffect = "No blind"
         # for each space
         for spaceCount in range(len(numOfPtsInEachSpace)):
             p = GH_Path(spaceCount)
+            
+            stateInEffect = 0
+            blindsGroupInEffect = 0
+            shadingGroupInEffect = "No blind"
+            
             iIllumLevelsNoDynamicSHD.AddRange(illuminanceValues[0][0][sum(numOfPtsInEachSpace[:spaceCount]):sum(numOfPtsInEachSpace[:spaceCount+1])], p)
             
             if len(illuminanceValues[1])!=0 and shadingProfiles[spaceCount]!=[]:
@@ -218,7 +221,7 @@ if _HOY!=None and _illFilesAddress.DataCount!=0 and _illFilesAddress.Branch(0)[0
                     shadingGroupInEffect = "Group_2_State:" + `stateInEffect`
                 iIllumLevelsDynamicSHDGroupII.AddRange(illuminanceValues[2][stateInEffect-1][sum(numOfPtsInEachSpace[:spaceCount]):sum(numOfPtsInEachSpace[:spaceCount+1])], p)
                 
-
+            if stateInEffect!=0: stateInEffect-=1
             iIlluminanceBasedOnOccupancy.AddRange(illuminanceValues[blindsGroupInEffect][stateInEffect-1][sum(numOfPtsInEachSpace[:spaceCount]):sum(numOfPtsInEachSpace[:spaceCount+1])], p)
             
 
