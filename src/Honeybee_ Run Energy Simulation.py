@@ -1240,6 +1240,13 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         # write the batch file
         hb_runIDF.writeBatchFile(workingDir, idfFileName, epwFileAddress)
         resultFileFullName = idfFileFullName.replace('.idf', '.csv')
+        try:
+            print workingDir + '\eplusout.csv'
+            test = open(workingDir + '\eplusout.csv', 'r')
+            test.close()
+            resultFileFullName = workingDir + '\eplusout.csv'
+        except:
+            pass
         print "...\n...\n\nDone! Read below for errors and warnings:\n\n"
     else:
         print "Set runEnergyPlus to True!"
