@@ -10,7 +10,7 @@ export geometries to idf file, and run the energy simulation
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_15_2014'
+ghenv.Component.Message = 'VER 0.0.55\nNOV_14_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nSEP_15_2014
@@ -314,7 +314,7 @@ class WriteIDF(object):
             '\t' + 'None' + ',  !- Dehumidification Control Type\n' + \
             '\t' + ',  !- Cooling Sensible Heat Ratio\n' + \
             '\t' + 'None' + ',  !- Humidification Control Type\n' + \
-            '\t' + ',  !- Outside Air Object Name\n' + \
+            '\t' + 'DSOA' + zone.name + ',  !- Outside Air Object Name\n' + \
             '\t' + ',  !- Outside Air Inlet Name\n' + \
             '\t' + ',  !- Demand Controlled Ventilation Type\n' + \
             '\t' + ',  !- Outdoor Air Economizer Type\n' + \
@@ -453,10 +453,11 @@ class WriteIDF(object):
         """
         Returns design specification for outdoor air
         """
+        
         if zone.isConditioned:
             return "\nDesignSpecification:OutdoorAir,\n" + \
                    "\tDSOA" + zone.name + ", !- Name\n" + \
-                   "\tsum, !- Outdoor Air Method\n" + \
+                   "\tSum, !- Outdoor Air Method\n" + \
                    "\t" + str(zone.ventilationPerPerson) + ", !- Outdoor Air Flow per Person {m3/s-person}\n" + \
                    "\t" + str(zone.ventilationPerArea) + ", !- Outdoor Air Flow per Zone Floor Area {m3/s-m2}\n" + \
                    "\t0.0; !- Outdoor Air Flow per Zone {m3/s}"

@@ -26,7 +26,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Read EP HVAC Result"
 ghenv.Component.NickName = 'readEP_HVAC_Result'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.55\nNOV_14_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -94,6 +94,8 @@ if _resultFileAddress:
             else: pass
         eioResult.close()
     except:
+        try: eioResult.close()
+        except: pass 
         warning = 'No .eio file was found adjacent to the .csv _resultFileAddress.'+ \
                   'results cannot be read back into grasshopper without this file.'
         print warning
@@ -184,7 +186,7 @@ if _resultFileAddress and gotData == True:
                         dataTypeList[3] = True
                     
                     elif 'System Node Mass Flow Rate' in column:
-                        if column.startswith("NODE") or "RETURN" in column:
+                        if column.startswith("NODE") or "RETURN" in column or "OUTDOOR AIR" in column:
                             key.append(-1)
                             path.append(-1)
                         else:
@@ -194,7 +196,7 @@ if _resultFileAddress and gotData == True:
                             dataTypeList[4] = True
                     
                     elif 'System Node Temperature' in column:
-                        if column.startswith("NODE") or "RETURN" in column:
+                        if column.startswith("NODE") or "RETURN" in column or "OUTDOOR AIR" in column:
                             key.append(-1)
                             path.append(-1)
                         else:
@@ -204,7 +206,7 @@ if _resultFileAddress and gotData == True:
                             dataTypeList[5] = True
                     
                     elif 'System Node Relative Humidity' in column:
-                        if column.startswith("NODE") or "RETURN" in column:
+                        if column.startswith("NODE") or "RETURN" in column or "OUTDOOR AIR" in column:
                             key.append(-1)
                             path.append(-1)
                         else:
@@ -243,6 +245,8 @@ if _resultFileAddress and gotData == True:
         result.close()
         parseSuccess = True
     except:
+        try: result.close()
+        except: pass
         parseSuccess = False
         warn = 'Failed to parse the result file.  The csv file might not have existed when connected or the simulation did not run correctly.'+ \
                   'Try reconnecting the _resultfileAddress to this component or re-running your simulation.'
