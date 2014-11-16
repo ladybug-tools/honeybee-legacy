@@ -22,7 +22,7 @@ Provided by Honeybee 0.0.55
 """
 ghenv.Component.Name = "Honeybee_Read DS Result for a point"
 ghenv.Component.NickName = 'readDSHourlyResults'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.55\nNOV_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -208,22 +208,29 @@ def main(illFilesAddress, testPoints, targetPoint, annualProfiles):
     if targetSpace == None:
         targetSpace = len(numOfPtsInEachSpace)-1
     
-    # 4 place holderd for the potential 3 outputs
+    # 3 place holderd for the potential 3 outputs
     # no blinds, shading group I and shading group II
     illuminanceValues = {0: [],
                          1: [],
                          2: [],
                          }
-                         
+    # create a sublist for every shading state
     for shadingGroupCount in range(len(illFileSets.keys())):
-        targetIllFile = illFileSets[shadingGroupCount][targetListNumber]
-        result = open(targetIllFile, 'r')
-        for lineCount, line in enumerate(result):
-            hourLuxValue = line.strip().split(" ")[targetIndexNumber + 4]
-            illuminanceValues[shadingGroupCount].append(float(hourLuxValue))
-        result.close()
+        # each file represnts one state of shading
+        for resultFile in illFileSets[shadingGroupCount]:
+            # add an empty list for each state
+            illuminanceValues[shadingGroupCount].append([])
+    
+    for shadingGroupCount in illFileSets.keys():
+        for stateCount, targetIllFile in enumerate(illFileSets[shadingGroupCount]):
+            targetIllFile = illFileSets[shadingGroupCount][stateCount]
+            result = open(targetIllFile, 'r')
+            for lineCount, line in enumerate(result):
+                hourLuxValue = line.strip().split(" ")[targetIndexNumber + 4]
+                illuminanceValues[shadingGroupCount][stateCount].append(float(hourLuxValue))
+            result.close()
         
-    return msg, illuminanceValues, shadingProfiles[targetSpace]
+    return msg, illuminanceValues, shadingProfiles[branch]
 
 
 
@@ -237,47 +244,76 @@ if _targetPoint!=None and not isAllNone(_illFilesAddress) and not isAllNone(_tes
         numOfPtsInEachSpace.append(len(_testPoints.Branch(branch)))
     
     msg, illuminanceValues, shadingProfile = main(_illFilesAddress, _testPoints, _targetPoint, annualProfiles_)
-
+    
+    if shadingProfile!=[]: shadingProfile = shadingProfile[0]
+    
     if msg!=str.Empty:
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, msg)
         
     else:
-        annualIllumNoDynamicSHD = DataTree[Object]()
-        annualIllumDynamicSHDGroupI = DataTree[Object]()
-        iIllumLevelsDynamicSHDGroupII = DataTree[Object]()
-        iIlluminanceBasedOnOccupancy = DataTree[Object]()
+        annualIllumNoDynamicSHD = []
+        annualIllumDynamicSHDGroupI = []
+        annualIllumDynamicSHDGroupII = []
+        iIlluminanceBasedOnOccupancy = []
         
         heading = ["key:location/dataType/units/frequency/startsAt/endsAt",
                     " ", "Annual illuminance values", "lux", "Hourly",
                     (1, 1, 1), (12, 31, 24)]
-        # now this is the time to create the mixed results
-        # I think I confused blind groups and shading stats or maybe not!
-        # Fore now it will work for one shading with one state. I'll check for more later.
         
-        blindsGroupInEffect = []
-        annualIllumNoDynamicSHD.AddRange(heading + illuminanceValues[0])
+        # results with no blind is always the first output
+        blindsGroupInEffect = [[], []]
+        annualIllumNoDynamicSHD.extend(heading + illuminanceValues[0][0])
         
         if len(illuminanceValues[1])!=0:
-            blindsGroupInEffect.append(1)
-            annualIllumDynamicSHDGroupI.AddRange(heading + illuminanceValues[1])
+            # add heading
+            annualIllumDynamicSHDGroupI.extend(heading)
             
+            # let's mix the results based on the state in effect
+            numberOfStates = len(illuminanceValues[1])
+            
+            for HOY in range(8760):
+                if shadingProfile[HOY] > 0:
+                    stateInEffect = int(round(numberOfStates * shadingProfile[HOY]))
+                    blindsGroupInEffect[0].append(1)
+                    # shadingGroupInEffect = "Group_1_State:" + `stateInEffect`
+                    annualIllumDynamicSHDGroupI.append(illuminanceValues[1][stateInEffect-1][HOY])            
+                else:
+                    blindsGroupInEffect[0].append(0)
+                    annualIllumDynamicSHDGroupI.append(illuminanceValues[1][0][HOY])
+
         if len(illuminanceValues[2])!=0:
-            blindsGroupInEffect.append(2)
-            iIllumLevelsDynamicSHDGroupII.AddRange(heading + illuminanceValues[2])
-        
+            # add heading
+            annualIllumDynamicSHDGroupII.append(heading)
+            
+            # let's mix the results based on the state in effect
+            numberOfStates = len(illuminanceValues[2])
+            
+            for HOY in range(8760):
+                if shadingProfile[HOY] > 0:
+                    stateInEffect = int(round(numberOfStates * shadingProfile[HOY]))
+                    blindsGroupInEffect[1].append(2)
+                    # shadingGroupInEffect = "Group_1_State:" + `stateInEffect`
+                    annualIllumDynamicSHDGroupII.Add(illuminanceValues[2][stateInEffect-1][HOY])            
+                else:
+                    blindsGroupInEffect[1].append(0)
+                    annualIllumDynamicSHDGroupII.Add(illuminanceValues[2][0][HOY])
+
+
         # create the mixed result with the shadings
         mixResults = heading
-        for HOY in range(8760):
-            blindModeFound = False
-            for blindGroup in blindsGroupInEffect:
-                if shadingProfile[blindGroup-1][HOY]==1:
-                    mixResults.append(illuminanceValues[blindGroup][HOY])
-                    blindModeFound = True
-                    break
-            if blindModeFound != True:
-                mixResults.append(illuminanceValues[0][HOY])
+        for HOY, blindGroup in enumerate(blindsGroupInEffect[0]):
+            if blindGroup == 0:
+                mixResults.append(illuminanceValues[0][0][HOY])
+            elif blindGroup == 1:
                 
-
-        iIlluminanceBasedOnOccupancy.AddRange(mixResults)
-
+                mixResults.append(annualIllumDynamicSHDGroupI[HOY-7])
+        
+        if blindsGroupInEffect[1]!=[]:
+            msg = "Honeybee currently only supports one shading group for results visulaization."
+                    
+        iIlluminanceBasedOnOccupancy = mixResults
+        
+        if msg!=str.Empty:
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, msg)
