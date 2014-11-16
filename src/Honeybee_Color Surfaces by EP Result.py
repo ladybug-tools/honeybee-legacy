@@ -36,7 +36,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Color Surfaces by EP Result"
 ghenv.Component.NickName = 'ColorSurfaces'
-ghenv.Component.Message = 'VER 0.0.55\nOCT_21_2014'
+ghenv.Component.Message = 'VER 0.0.55\nNOV_15_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -522,7 +522,7 @@ def getData(pyZoneData, surfaceAreas, annualData, simStep, srfNormalizable, srfH
 
 def main(zoneValues, zones, srfBreps, srfHeaders, title, legendTitle, lb_preparation, lb_visualization, legendPar):
     #Read the legend parameters.
-    lowB, highB, numSeg, customColors, legendBasePoint, legendScale, legendFont, legendFontSize = lb_preparation.readLegendParameters(legendPar, False)
+    lowB, highB, numSeg, customColors, legendBasePoint, legendScale, legendFont, legendFontSize, legendBold = lb_preparation.readLegendParameters(legendPar, False)
     
     #Get the colors
     colors = lb_visualization.gradientColor(zoneValues, lowB, highB, customColors)
@@ -550,14 +550,14 @@ def main(zoneValues, zones, srfBreps, srfHeaders, title, legendTitle, lb_prepara
     #Create the legend.
     lb_visualization.calculateBB(zones, True)
     if legendBasePoint == None: legendBasePoint = lb_visualization.BoundingBoxPar[0]
-    legendSrfs, legendText, legendTextCrv, textPt, textSize = lb_visualization.createLegend(zoneValues, lowB, highB, numSeg, legendTitle, lb_visualization.BoundingBoxPar, legendBasePoint, legendScale, legendFont, legendFontSize)
+    legendSrfs, legendText, legendTextCrv, textPt, textSize = lb_visualization.createLegend(zoneValues, lowB, highB, numSeg, legendTitle, lb_visualization.BoundingBoxPar, legendBasePoint, legendScale, legendFont, legendFontSize, legendBold)
     legendColors = lb_visualization.gradientColor(legendText[:-1], lowB, highB, customColors)
     legendSrfs = lb_visualization.colorMesh(legendColors, legendSrfs)
     
     #Create the Title.
     titleTxt = '\n' + title[0] + '\n' + title[1]
     titleBasePt = lb_visualization.BoundingBoxPar[5]
-    titleTextCurve = lb_visualization.text2srf([titleTxt], [titleBasePt], legendFont, textSize)
+    titleTextCurve = lb_visualization.text2srf([titleTxt], [titleBasePt], legendFont, textSize, legendBold)
     
     #Bring the legend and the title together.
     fullLegTxt = lb_preparation.flattenList(legendTextCrv + titleTextCurve)
