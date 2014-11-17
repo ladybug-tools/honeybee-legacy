@@ -22,7 +22,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Lookup Daylighting Folder"
 ghenv.Component.NickName = 'LookupFolder_Daylighting'
-ghenv.Component.Message = 'VER 0.0.55\nOCT_07_2014'
+ghenv.Component.Message = 'VER 0.0.55\nNOV_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -36,7 +36,7 @@ import System
 import Grasshopper.Kernel as gh
 from Grasshopper import DataTree
 from Grasshopper.Kernel.Data import GH_Path
-
+from pprint import pprint
 
 def main(studyFolder):
     msg = str.Empty
@@ -140,19 +140,26 @@ def main(studyFolder):
                     analysisMesh = lb_preparation.flattenList(serializer.data)
                 except:
                     pass
+    
     # check if there are multiple ill files in the folder for different shading groups
     illFilesDict = {}
+    
     for fullPath in illFilesTemp:
         fileName = os.path.basename(fullPath)
+        
         if fileName.split("_")[:-1]!= []:
             if fileName.endswith("_down.ill") or fileName.endswith("_up.ill"):
                 # conceptual blind
                 gist = "_".join(fileName.split("_")[:-2]) + "_" + fileName.split("_")[-1]
+            elif fileName.Contains("_state_"):
+                # dynamic blinds with several states
+                gist = "_".join(fileName.split("_")[:-3]) + "_" + fileName.split("_")[-1]
             else:
                 gist = "_".join(fileName.split("_")[:-1])
                 
         else:
             gist = fileName
+            
         if gist not in illFilesDict.keys():
             illFilesDict[gist] = []
         illFilesDict[gist].append(fullPath)
