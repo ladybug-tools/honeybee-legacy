@@ -21,7 +21,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Import IES"
 ghenv.Component.NickName = 'importIES'
-ghenv.Component.Message = 'VER 0.0.55\nNOV_16_2014'
+ghenv.Component.Message = 'VER 0.0.55\nNOV_17_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -74,9 +74,10 @@ class HBIESSrf(object):
             return False
         elif self.type == "sphere":
             bbox = testBrep.GetBoundingBox(True)
-            if (bbox.Max - bbox.Min).X/2 != self.radius:
-                return False
-            return True
+            if (bbox.Max - bbox.Min).X/2 - self.radius > sc.doc.ModelAbsoluteTolerance:
+                return True
+            
+            return False
         
         
     def __str__(self):

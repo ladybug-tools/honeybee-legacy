@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.55\nNOV_08_2014'
+ghenv.Component.Message = 'VER 0.0.55\nNOV_17_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1115,7 +1115,9 @@ class hb_MSHToRAD(object):
 
 class WriteRAD(object):
     
-    def __init__(self):
+    def __init__(self, component = ghenv.Component):
+        
+        self.component = component
         
         self.hb_writeRADAUX = sc.sticky["honeybee_WriteRADAUX"]()
         self.hb_RADMaterialAUX = sc.sticky["honeybee_RADMaterialAUX"]()
@@ -1200,7 +1202,7 @@ class WriteRAD(object):
                         except:
                             msg = HBObj.RadMaterial + " is not defined in the material library! Add the material to library and try again."
                             print msg
-                            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                            self.component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
                             return -1
                             
                     # check for material in child surfaces
@@ -1213,7 +1215,7 @@ class WriteRAD(object):
                                 except:
                                     msg = childSrf.RadMaterial + " is not defined in the material library! Add the material to library and try again."
                                     print msg
-                                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                                    self.component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
                                     return -1                    
 
                     if HBObj.isPlanar and (not HBObj.isChild and len(HBObj.childSrfs)<2):
@@ -1233,7 +1235,7 @@ class WriteRAD(object):
                         msg = "IES luminaire " + HBObj.name + " is scaled or rotated" + \
                               " and cannot be added to the scene."
                         print msg
-                        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                        self.component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
                     
                     # check if the material name is already exist
                     if HBObj.name in customRADMat.keys():
@@ -1241,11 +1243,11 @@ class WriteRAD(object):
                         msg = "IES luminaire " + HBObj.name + " cannot be added to the scene.\n" + \
                                   "A material with the same name already exist."
                         print msg
-                        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                        self.component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
                     
                     # if it is all fine then write the geometry
                     if IESObjcIsFine:
-                        geoRadFile.write(self.getIESSurfaceStr(originalHBObjects[objCount], HBObj.name, IESCount))
+                        geoRadFile.write(self.getIESSurfaceStr(originalHBObjects[objCount], HBObj.name, IESCount, HBObj))
                         # downlight_light polygon downlight.d
                         # add to IES Objects list so I can add the materials to the list later
                         if HBObj.name not in IESObjects.keys():
@@ -1932,23 +1934,33 @@ class WriteRAD(object):
             fullStr = fullStr + self.getsurfaceStr(surface.childSrfs[0], glzCount, glzCoorList)
         return fullStr
     
-    def getIESSurfaceStr(self, surface, constructionName, count):
-        
-        coordinates = surface.DuplicateVertices()
-        construction = constructionName
+    def getIESSurfaceStr(self, surface, constructionName, count, IESObject):
+        if IESObject.type == "polygon":
+            coordinates = surface.DuplicateVertices()
+                
+            srfStr =  constructionName + "_light polygon " + constructionName + '_' + `count` + ".d\n" + \
+                "0\n" + \
+                "0\n" + \
+                `(len(coordinates)*3)` + "\n"
+                
+            ptStr = ''
+            for  pt in coordinates:
+                ptStr = ptStr + '%.4f'%pt.X + '  ' + '%.4f'%pt.Y + '  ' + '%.4f'%pt.Z + '\n'
+            ptStr = ptStr + '\n'
             
-        srfStr =  constructionName + "_light polygon " + constructionName + '_' + `count` + ".d\n" + \
-            "0\n" + \
-            "0\n" + \
-            `(len(coordinates)*3)` + "\n"
-            
-        ptStr = ''
-        for  pt in coordinates:
-            ptStr = ptStr + '%.4f'%pt.X + '  ' + '%.4f'%pt.Y + '  ' + '%.4f'%pt.Z + '\n'
-        ptStr = ptStr + '\n'
+            return srfStr + ptStr
         
-        return srfStr + ptStr
-
+        elif IESObject.type == "sphere":
+            center = surface.GetBoundingBox(True).Center
+            radius = IESObject.radius
+            
+            srfStr =  constructionName + "_light sphere " + constructionName + '_' + `count` + ".d\n" + \
+                "0\n" + \
+                "0\n" + \
+                "4 " + `center.X` + " " + `center.Y` + " " + `center.Z` + " " + `radius` + "\n"
+            
+            return srfStr
+            
 class WriteRADAUX(object):
     
     def __init__(self):

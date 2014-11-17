@@ -37,7 +37,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Run Daylight Simulation"
 ghenv.Component.NickName = 'runDaylightAnalysis'
-ghenv.Component.Message = 'VER 0.0.55\nNOV_16_2014'
+ghenv.Component.Message = 'VER 0.0.55\nNOV_17_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -106,7 +106,7 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
         return -1
     
     lb_preparation = sc.sticky["ladybug_Preparation"]()
-    hb_writeRAD = sc.sticky["honeybee_WriteRAD"]()
+    hb_writeRAD = sc.sticky["honeybee_WriteRAD"](ghenv.Component)
     hb_writeRADAUX = sc.sticky["honeybee_WriteRADAUX"]()
     hb_materilaLib = sc.sticky["honeybee_materialLib"]
     hb_scheduleLib = sc.sticky["honeybee_ScheduleLib"]
