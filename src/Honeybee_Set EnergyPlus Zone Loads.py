@@ -14,8 +14,8 @@ Provided by Honeybee 0.0.55
         infiltrationRatePerArea_: The desired rate of outside air infiltration into the zone per square meter of floor.  Values here should be in m3/s-m2 (Cubic meters per second per square meter of floor).  Typical values tend to be around 0.002 m3/s-m2 for tightly sealed buildings but you can make this much higher if you want to simulate a lot of air entering the zone for ventilation. 
         lightingDensityPerArea_: The desired lighting load per square meter of floor.  Values here should be in W/m2 (Watts per square meter).  Typical values can range from 3 W/m2 for efficeint LED bulbs to 15 W/m2 for incandescent heat lamps.
         numOfPeoplePerArea_: The desired number of per square meter of floor at peak occupancy.  Values here should be in ppl/m2 (People per square meter).  Typical values can range from 0.02 ppl/m2 for a lightly-occupied household to 0.5 ppl/m2 for a tightly packed auditorium.
-        ventilationPerArea_: The desired minimum rate of ventilation through the mechanical system into the zone per square meter of floor.  Values here should be in m3/s-m2 (Cubic meters per second per square meter of floor).  Typical values can range from 0.02 m3/s-m2 for lightly-occupied houses to 0.5 m3/s-m2 for packed auditoriums. The general rule of thumb is that you should have 1 l/s for each person in the zone.
-        ventilationPerPerson_: Use this to override the value above and set a desired minimum rate of ventilation through the mechanical system into the zone per person in the zone.  Values here should be in l/s-ppl (Liters per second per person in the zone). In effect, an input here will mimic demand controlled ventilation, where the ventilation through the mechincal system will change depending upon the occupancy. Most standards suggest that you should have 1 l/s for each person in the zone.
+        ventilationPerArea_: The desired minimum rate of ventilation through the mechanical system into the zone per square meter of floor.  Values here should be in m3/s-m2 (Cubic meters per second per square meter of floor).  Often, this total value over the zone should be much lower than the ventilation per person (below).  Typical values can range from 0.0002 m3/s-m2 for lightly-occupied houses to 0.0025 m3/s-m2 for spaces like laboratories and cleanrooms where dust contamination is a major concern.
+        ventilationPerPerson_: The desired minimum rate of ventilation through the mechanical system into the zone per person in the zone.  Values here should be in m3/s-person (Liters per second per person in the zone). In effect, an input here will mimic demand controlled ventilation, where the ventilation through the mechanical system will change depending upon the occupancy. Most standards suggest that you should have at least 0.001 m3/s for each person in the zone but this may be increased sometimes to avoid odors or exposure to indoor pollutants.
     Returns:
         loads: The current loads of the HBZones.
         HBZones: Honeybee zones with modifided loads.
@@ -23,7 +23,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Set EnergyPlus Zone Loads"
 ghenv.Component.NickName = 'setEPZoneLoads'
-ghenv.Component.Message = 'VER 0.0.55\nOCT_23_2014'
+ghenv.Component.Message = 'VER 0.0.55\nNOV_17_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
