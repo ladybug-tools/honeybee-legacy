@@ -36,7 +36,7 @@ Provided by Honeybee 0.0.54
 
 ghenv.Component.Name = "Honeybee_Color Zones by EP Result"
 ghenv.Component.NickName = 'ColorZones'
-ghenv.Component.Message = 'VER 0.0.54\nNOV_15_2014'
+ghenv.Component.Message = 'VER 0.0.54\nNOV_23_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -652,5 +652,5 @@ if _runIt == True and checkData == True and _HBZones != [] and zoneValues != []:
                 legend.append(srf)
 
 #Hide unwanted outputs
+ghenv.Component.Params.Output[4].Hidden = True
 ghenv.Component.Params.Output[5].Hidden = True
-ghenv.Component.Params.Output[6].Hidden = True
