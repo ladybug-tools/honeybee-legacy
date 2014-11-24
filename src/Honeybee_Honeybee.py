@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.55\nNOV_17_2014'
+ghenv.Component.Message = 'VER 0.0.55\nNOV_24_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -5255,10 +5255,13 @@ class hb_EPSurface(object):
                 coordinatesList.append(list(meshVertices))
         
         # check order of the points
-        for coorList in coordinatesList:
+        for coorCount, coorList in enumerate(coordinatesList):
             # check if clockWise and reverse the list in case it is not
             if not self.isAntiClockWise(coorList):
-                coorList.reverse()
+                try: coorList.reverse()
+                except:
+                    try: coordinatesList[coorCount] = [coorList[3], coorList[2], coorList[1], coorList[0]]
+                    except: coordinatesList[coorCount] = [coorList[2], coorList[1], coorList[0]]
         #coordinatesList.reverse()
         return coordinatesList
         
