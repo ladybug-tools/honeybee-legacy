@@ -18,7 +18,7 @@ Provided by Honeybee 0.0.55
 """
 ghenv.Component.Name = "Honeybee_Solve Adjacencies"
 ghenv.Component.NickName = 'solveAdjc'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.55\nNOV_25_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -160,7 +160,7 @@ def main(HBZones, altConstruction, altBC, tol, remCurrent):
                     raysDict[meshSrfCen] = rc.Geometry.Ray3d(meshSrfCen, srfNormal)
                 
                 for targetZone in HBZoneObjects:
-                    if targetZone.name != testZone.name:
+                    if targetZone.name != testZone.name and targetZone.cenPt.DistanceTo(testZone.cenPt) > sc.doc.ModelAbsoluteTolerance :
                         # check ray intersection to see if this zone is next to the surface
                         if shootIt(raysDict.values(), [targetZone.geometry], tol + sc.doc.ModelAbsoluteTolerance):
                             for surface in targetZone.surfaces:
