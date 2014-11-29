@@ -162,11 +162,21 @@ def main(idfFile):
     # create HBZones
     # print idfFileDict.keys()
     for EPZoneName in idfFileDict["EPZONES"]:
+        zoneData = idfFileDict["EPZONES"][EPZoneName]
+        try: x = float(zoneData[2][0])
+        except: x = 0
+        try: y = float(zoneData[3][0])
+        except: y = 0
+        try: z = float(zoneData[4][0])
+        except: z = 0
+        
+        movingVector = rc.Geometry.Vector3d(x, y, z)
+        
         # initiate the zone
         zoneID = str(uuid.uuid4())
         thisZone = hb_EPZone(None, zoneID, EPZoneName, program = [None, None], isConditioned = True)
         # I can also set the zone origin here
-        HBZones[EPZoneName.lower()] = thisZone
+        HBZones[EPZoneName.lower()] = [thisZone, movingVector]
         pass
     
     HBSurfaces = {}
@@ -184,11 +194,14 @@ def main(idfFile):
             numOfKeys = len(idfFileDict["BuildingSurface:Detailed"][surfaceName].keys())
             pts = []
             
+            # find moving vector based on parent zone
+            movingVector = HBZones[parentZone.lower()][1]
+            
             for coordinate in range(10, numOfKeys, 3):
                 x = idfFileDict["BuildingSurface:Detailed"][surfaceName][coordinate][0]
                 y = idfFileDict["BuildingSurface:Detailed"][surfaceName][coordinate + 1][0]
                 z = idfFileDict["BuildingSurface:Detailed"][surfaceName][coordinate + 2][0]
-                pts.append(rc.Geometry.Point3d(float(x), float(y), float(z)))
+                pts.append(rc.Geometry.Point3d.Add(rc.Geometry.Point3d(float(x), float(y), float(z)), movingVector))
             pts.append(pts[0])
             polyline = rc.Geometry.Polyline(pts).ToNurbsCurve()
             geometry = rc.Geometry.Brep.CreatePlanarBreps(polyline)[0]
@@ -199,7 +212,7 @@ def main(idfFile):
             #print parentZone
             
             #assign properties
-            thisEPSrf.parent = HBZones[parentZone.lower()]
+            thisEPSrf.parent = HBZones[parentZone.lower()][0]
             thisEPSrf.type = srfTypeDict[srfType.ToUpper()]
             thisEPSrf.construction = thisEPSrf.cnstrSet[thisEPSrf.type]
             thisEPSrf.EPConstruction = EPConstruction
@@ -220,7 +233,7 @@ def main(idfFile):
                 thisEPSrf.setWindExposure('NoWind')
             
             # add surface to the zone
-            HBZones[parentZone.lower()].addSrf(thisEPSrf)
+            HBZones[parentZone.lower()][0].addSrf(thisEPSrf)
             # add to surfaces dictionary
             HBSurfaces[surfaceName] = thisEPSrf
             
@@ -238,17 +251,23 @@ def main(idfFile):
             multiplier = idfFileDict["FenestrationSurface:Detailed"][surfaceName][8][0]
             numOfVertices = idfFileDict["FenestrationSurface:Detailed"][surfaceName][9][0]
             numOfKeys = len(idfFileDict["FenestrationSurface:Detailed"][surfaceName].keys())
+            
             pts = []
+            
+            # find moving vector based on parent zone
+            movingVector = HBZones[HBSurfaces[parentSrf].parent.name.lower()][1]
+            
             for coordinate in range(10, numOfKeys, 3):
                 x = idfFileDict["FenestrationSurface:Detailed"][surfaceName][coordinate][0]
                 y = idfFileDict["FenestrationSurface:Detailed"][surfaceName][coordinate + 1][0]
                 z = idfFileDict["FenestrationSurface:Detailed"][surfaceName][coordinate + 2][0]
-                pts.append(rc.Geometry.Point3d(float(x), float(y), float(z)))
+                pts.append(rc.Geometry.Point3d.Add(rc.Geometry.Point3d(float(x), float(y), float(z)), movingVector))
+                
             pts.append(pts[0])
             polyline = rc.Geometry.Polyline(pts).ToNurbsCurve()
             geometry = rc.Geometry.Brep.CreatePlanarBreps(polyline)[0]
-            #create the surface
             
+            #create the surface
             thisEPFenSrf = hb_EPFenSurface(geometry, 1, surfaceName, HBSurfaces[parentSrf], 5)
             
             #assign properties
@@ -335,7 +354,7 @@ def main(idfFile):
     # recalculate the zone
     zonesList = []
     for zoneName in HBZones.keys():
-        HBZone = HBZones[zoneName.lower()]
+        HBZone = HBZones[zoneName.lower()][0]
         HBZone.createZoneFromSurfaces()
         zonesList.append(HBZone)
         
