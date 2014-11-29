@@ -21,7 +21,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Call from EP Construction Library"
 ghenv.Component.NickName = 'callFromEPConstrLibrary'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.55\nNOV_29_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -37,9 +37,9 @@ if sc.sticky.has_key("honeybee_release") and sc.sticky.has_key("honeybee_constru
     
     hb_EPMaterialAUX = sc.sticky["honeybee_EPMaterialAUX"]()
     
-    EPConstructions = sc.sticky ["honeybee_constructionLib"]["List"]
-    EPMaterials =  sc.sticky ["honeybee_materialLib"]["List"]
-    EPWindowMaterils = sc.sticky ["honeybee_windowMaterialLib"]["List"]
+    EPConstructions = sc.sticky ["honeybee_constructionLib"].keys()
+    EPMaterials =  sc.sticky ["honeybee_materialLib"].keys()
+    EPWindowMaterils = sc.sticky ["honeybee_windowMaterialLib"].keys()
     
     EPConstructions.sort()
     EPMaterials.sort()

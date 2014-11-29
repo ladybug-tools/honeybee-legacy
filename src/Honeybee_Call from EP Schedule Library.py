@@ -20,7 +20,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Call from EP Schedule Library"
 ghenv.Component.NickName = 'callFromEPSCHLibrary'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.55\nNOV_29_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "07 | Energy | Schedule"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -47,8 +47,8 @@ def main(keywords_):
             return -1
             
         hb_EPMaterialAUX = sc.sticky["honeybee_EPMaterialAUX"]()
-        scheduleList = sc.sticky["honeybee_ScheduleLib"]["List"]
-        scheduleTypeLimits = sc.sticky["honeybee_ScheduleTypeLimitsLib"]["List"]
+        scheduleList = sc.sticky["honeybee_ScheduleLib"].keys()
+        scheduleTypeLimits = sc.sticky["honeybee_ScheduleTypeLimitsLib"].keys()
     
         scheduleList.sort()
         scheduleTypeLimits.sort()

@@ -12,10 +12,10 @@ prepare shading/context geometries
 
 ghenv.Component.Name = 'Honeybee EP context Surfaces'
 ghenv.Component.NickName = 'HB_EPContextSrf'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.55\nNOV_29_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
+#compatibleHBVersion = VER 0.0.55\nNOV_29_2014
 #compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
@@ -52,7 +52,7 @@ def main(shdSurfaces, EPTransSchedule, meshingSettings, justBoundingBox):
         hb_EPSHDSurface = sc.sticky["honeybee_EPShdSurface"]
         hb_RADMaterialAUX = sc.sticky["honeybee_RADMaterialAUX"]()
         hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
-        HBScheduleList = sc.sticky["honeybee_ScheduleLib"]["List"]
+        HBScheduleList = sc.sticky["honeybee_ScheduleLib"].keys()
 
         ########################################################################
         #----------------------------------------------------------------------#

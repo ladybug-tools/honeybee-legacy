@@ -3,16 +3,19 @@ import an idf file to gh
 This version only imports the geometries
 Constructions, schedules and systems will be neglected
     Args:
-        input1: ...
+        _idfFile: File path to an idf file
+        importEPObjects_: Set to True if you want Honeybee import constructions, materials and schedules from this file. You need to do it only once. In case there is an object with similar name already in Honeybee library object will not be imported and you need to rename it in the idf file.
     Returns:
         readMe!: ...
+        HBZones: List of Honeybee zones imported from .idf file
+        shadings: Shading objects if any
 """
 ghenv.Component.Name = "Honeybee_Import idf"
 ghenv.Component.NickName = 'importIdf'
-ghenv.Component.Message = 'VER 0.0.55\nNOV_28_2014'
+ghenv.Component.Message = 'VER 0.0.55\nNOV_29_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.55\nNOV_24_2014
+#compatibleHBVersion = VER 0.0.55\nNOV_29_2014
 #compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 ghenv.Component.AdditionalHelpFromDocStrings = "4"
 
@@ -47,7 +50,7 @@ def createEPObject(idfFile, resultDict, key, type = None):
             continue
         elif lineCount == 0:
             # first line is the name of the object
-            nameKey = line.split("!")[0].strip()[:-1]
+            nameKey = line.split("!")[0].strip()[:-1].strip()
             if nameKey in resultDict[key].keys():
                 # this means the object is already in the library
                 warning = "The " + key + ": " + nameKey + " is already existed in the libaray.\n" + \
@@ -94,7 +97,7 @@ srfTypeDict = {0:'WALL',
    'SHADING': 6}
 
 
-def main(idfFile):
+def main(idfFile, importEPObjects = False):
     # import the classes
     if sc.sticky.has_key('ladybug_release')and sc.sticky.has_key('honeybee_release'):
 
@@ -134,6 +137,8 @@ def main(idfFile):
         hb_EPFenSurface = sc.sticky["honeybee_EPFenSurface"]
         hb_EPSHDSurface = sc.sticky["honeybee_EPShdSurface"]
         
+        hb_GetEPLibs = sc.sticky["honeybee_GetEPLibs"]
+        
     else:
         print "You should first let both Ladybug and Honeybee to fly..."
         w = gh.GH_RuntimeMessageLevel.Warning
@@ -141,6 +146,13 @@ def main(idfFile):
         return -1
     
     conversionFac = lb_preparation.checkUnits()
+    
+    # import libraries if needed
+    if importEPObjects:
+        EPLibs = hb_GetEPLibs()
+        EPLibs.loadEPConstructionsAndMaterials([idfFile], False)
+        EPLibs.loadEPSchedules([idfFile], False)
+    
     
     
     EPKeys = ["Zone,", "BuildingSurface:Detailed", "FenestrationSurface:Detailed", "Shading:Site:Detailed", "Shading:Building:Detailed", "Shading:Zone:Detailed", "Window,"]
@@ -232,6 +244,9 @@ def main(idfFile):
                 thisEPSrf.setSunExposure('NoSun')
                 thisEPSrf.setWindExposure('NoWind')
             
+            if srfBC.lower()== "outdoors" or srfBC.lower()== "ground":
+                thisEPSrf.setBCObjectToOutdoors()
+            
             # add surface to the zone
             HBZones[parentZone.lower()][0].addSrf(thisEPSrf)
             # add to surfaces dictionary
@@ -281,7 +296,9 @@ def main(idfFile):
             thisEPFenSrf.groundViewFactor = viewFactor
             thisEPFenSrf.numOfVertices = numOfVertices
             
-            
+            if thisEPFenSrf.parent.BC.lower()== "outdoors":
+                thisEPFenSrf.setBCObjectToOutdoors()
+                
             # add the child surface to the surface
             HBSurfaces[parentSrf].addChildSrf(thisEPFenSrf)
     
@@ -319,7 +336,7 @@ def main(idfFile):
             
             geometry = rc.Geometry.Brep.CreatePlanarBreps(polyline)[0]
             #create the surface
-            thisEPFenSrf = hb_EPFenSurface(geometry, 1, surfaceName, parentSrf, 5)
+            thisEPFenSrf = hb_EPFenSurface(geometry, 1, windowName, parentSrf, 5)
             
             #assign properties
             thisEPFenSrf.parent = parentSrf
@@ -332,6 +349,9 @@ def main(idfFile):
             thisEPFenSrf.groundViewFactor = viewFactor
             thisEPFenSrf.numOfVertices = numOfVertices
             
+            if thisEPFenSrf.parent.BC.lower()== "outdoors":
+                thisEPFenSrf.setBCObjectToOutdoors()
+                
             # add the child surface to the surface
             parentSrf.addChildSrf(thisEPFenSrf)
             
@@ -356,10 +376,15 @@ def main(idfFile):
     for zoneName in HBZones.keys():
         HBZone = HBZones[zoneName.lower()][0]
         HBZone.createZoneFromSurfaces()
+        
+        # replace BCObjects with HBObjects
+        for HBS in HBZone.surfaces:
+            if HBS.BC.lower() == "surface":
+                HBS.BCObject = HBSurfaces[HBS.BCObject]
+        
         zonesList.append(HBZone)
         
-        #for HBS in HBZone.surfaces:
-        #    print HBS.BC
+    
     # add to the hive
     hb_hive = sc.sticky["honeybee_Hive"]()
     HBZones  = hb_hive.addToHoneybeeHive(zonesList, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
@@ -368,7 +393,7 @@ def main(idfFile):
     return HBZones, shadings
 
 if _idfFile!=None:
-    results = main(_idfFile)
+    results = main(_idfFile, importEPObjects_)
 
     if results!=-1:
         HBZones, shadings = results

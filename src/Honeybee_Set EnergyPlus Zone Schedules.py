@@ -23,7 +23,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Set EnergyPlus Zone Schedules"
 ghenv.Component.NickName = 'setEPZoneSchedules'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.55\nNOV_29_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -58,7 +58,7 @@ def main(HBZones, occupancySchedule, occupancyActivitySch, heatingSetPtSchedule,
     
     # make sure schedules are in HB schedule 
     schedules = [occupancySchedule, heatingSetPtSchedule, coolingSetPtSchedule, lightingSchedule, equipmentSchedule, infiltrationSchedule]
-    HBScheduleList = sc.sticky["honeybee_ScheduleLib"]["List"]
+    HBScheduleList = sc.sticky["honeybee_ScheduleLib"].keys()
     
     for scheduleList in schedules:
         for schedule in scheduleList: 

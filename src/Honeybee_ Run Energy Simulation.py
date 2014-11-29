@@ -10,10 +10,10 @@ export geometries to idf file, and run the energy simulation
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.55\nNOV_14_2014'
+ghenv.Component.Message = 'VER 0.0.55\nNOV_29_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.55\nSEP_15_2014
+#compatibleHBVersion = VER 0.0.55\nNOV_29_2014
 #compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
 
@@ -676,6 +676,7 @@ class WriteIDF(object):
     
     def EPMaterialStr(self, materialName):
         materialData = None
+        materialName = materialName.strip()
         if materialName in sc.sticky ["honeybee_windowMaterialLib"].keys():
             materialData = sc.sticky ["honeybee_windowMaterialLib"][materialName]
         elif materialName in sc.sticky ["honeybee_materialLib"].keys():
@@ -687,7 +688,6 @@ class WriteIDF(object):
             
             # add the name
             materialStr =  materialStr + "  " + materialName + ",   !- name\n"
-            
             for layer in range(1, numberOfLayers):
                 if layer < numberOfLayers-1:
                     materialStr =  materialStr + "  " + str(materialData[layer][0]) + ",   !- " +  materialData[layer][1] + "\n"
@@ -975,7 +975,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     idfFile.write(hb_writeIDF.EPRunPeriod('customRun', stDay, stMonth, endDay, endMonth))
     
     # for now I write all the type limits but it can be cleaner
-    scheduleTypeLimits = sc.sticky["honeybee_ScheduleTypeLimitsLib"]["List"]
+    scheduleTypeLimits = sc.sticky["honeybee_ScheduleTypeLimitsLib"].keys()
     for scheduleTypeLimit in scheduleTypeLimits:
         try: idfFile.write(hb_writeIDF.EPSCHStr(scheduleTypeLimit))
         except: pass

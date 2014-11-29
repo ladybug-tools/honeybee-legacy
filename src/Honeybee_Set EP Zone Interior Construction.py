@@ -23,7 +23,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Set EP Zone Interior Construction"
 ghenv.Component.NickName = 'setEPZoneIntCnstr'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.55\nNOV_29_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -60,7 +60,7 @@ def main(HBZone, wallEPCnst, windowEPCnst, flrEPCnst, ceilEPCnst):
     except Exception, e: HBZoneObject = None
     
     # here I should check for each construction to be in the library
-    EPConstructios = sc.sticky ["honeybee_constructionLib"]["List"]
+    EPConstructios = sc.sticky ["honeybee_constructionLib"].keys()
     warning = ""
     if wallEPCnst not in EPConstructios:
         if wallEPCnst != None:
