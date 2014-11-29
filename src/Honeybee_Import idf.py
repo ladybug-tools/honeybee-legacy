@@ -266,16 +266,56 @@ def main(idfFile):
             # add the child surface to the surface
             HBSurfaces[parentSrf].addChildSrf(thisEPFenSrf)
     
+    winPts = []
     if idfFileDict.has_key("Window,"):
         for windowName in idfFileDict["Window,"].keys():
             windowObject = idfFileDict["Window,"][windowName]
-            windowConstruction = windowObject[1][0]
-            parentSrf = windowObject[2][0]
-            xCoor = windowObject[8][0]
-            zCoor = windowObject[9][0]
-            length = windowObject[10][0]
-            height = windowObject[11][0]
-    
+            srfType = 5
+            EPConstruction = windowObject[1][0]
+            parentSrfName = windowObject[2][0]
+            viewFactor = windowObject[3][0]
+            shadingControlName = windowObject[4][0]
+            frameName = windowObject[5][0]
+            numOfVertices = 4
+            multiplier = windowObject[7][0]
+            xCoor = float(windowObject[8][0])
+            zCoor = float(windowObject[9][0])
+            length = float(windowObject[10][0])
+            height = float(windowObject[11][0])
+
+            # find surface plane
+            parentSrf = HBSurfaces[parentSrfName]
+            coordinates = parentSrf.extractPoints()
+            SrfPlane = rc.Geometry.Plane(coordinates[0], coordinates[1], coordinates[3])
+            
+            # create four points on XZ Plane
+            pt1 = rc.Geometry.Point3d.Add(rc.Geometry.Point3d.Origin, rc.Geometry.Vector3d(xCoor, zCoor, 0))
+            pt2 = rc.Geometry.Point3d.Add(rc.Geometry.Point3d.Origin, rc.Geometry.Vector3d(xCoor + length, zCoor, 0))
+            pt3 = rc.Geometry.Point3d.Add(rc.Geometry.Point3d.Origin, rc.Geometry.Vector3d(xCoor + length, zCoor + height, 0))
+            pt4 = rc.Geometry.Point3d.Add(rc.Geometry.Point3d.Origin, rc.Geometry.Vector3d(xCoor, zCoor + height, 0))
+            
+            transform = rc.Geometry.Transform.PlaneToPlane(rc.Geometry.Plane.WorldXY, SrfPlane)
+            polyline = rc.Geometry.Polyline([pt1, pt2, pt3, pt4, pt1]).ToNurbsCurve()
+            polyline.Transform(transform)
+            
+            geometry = rc.Geometry.Brep.CreatePlanarBreps(polyline)[0]
+            #create the surface
+            thisEPFenSrf = hb_EPFenSurface(geometry, 1, surfaceName, parentSrf, 5)
+            
+            #assign properties
+            thisEPFenSrf.parent = parentSrf
+            thisEPFenSrf.construction = thisEPFenSrf.cnstrSet[thisEPFenSrf.type]
+            thisEPFenSrf.EPConstruction = EPConstruction
+            thisEPFenSrf.BCObject = BCObject
+            thisEPFenSrf.shadingControlName = shadingControlName
+            thisEPFenSrf.frameName = frameName
+            thisEPFenSrf.multiplier = multiplier
+            thisEPFenSrf.groundViewFactor = viewFactor
+            thisEPFenSrf.numOfVertices = numOfVertices
+            
+            # add the child surface to the surface
+            parentSrf.addChildSrf(thisEPFenSrf)
+            
     shadingList = []
     if idfFileDict.has_key("Shading:Site:Detailed"):
         for shadingName in idfFileDict["Shading:Site:Detailed"].keys():
@@ -305,14 +345,6 @@ def main(idfFile):
     hb_hive = sc.sticky["honeybee_Hive"]()
     HBZones  = hb_hive.addToHoneybeeHive(zonesList, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
     shadings = hb_hive.addToHoneybeeHive(shadingList, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
-    #for EPKey in EPKeys:
-    #    if EPKey in resultDict.keys():
-    #        try:
-    #            for key in resultDict[EPKey].keys(): outputs[EPKey].append(key)
-    #            print  `len(resultDict[EPKey].keys())` + " " + EPKey.lower() + " found in " + libFilePath
-    #        except:
-    #            outputs[key] = " 0 " + EPKey.lower() + " found in " + libFilePath
-    
     
     return HBZones, shadings
 
