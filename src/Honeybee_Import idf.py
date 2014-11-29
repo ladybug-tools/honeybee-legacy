@@ -9,10 +9,10 @@ Constructions, schedules and systems will be neglected
 """
 ghenv.Component.Name = "Honeybee_Import idf"
 ghenv.Component.NickName = 'importIdf'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.55\nNOV_28_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
+#compatibleHBVersion = VER 0.0.55\nNOV_24_2014
 #compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 ghenv.Component.AdditionalHelpFromDocStrings = "4"
 
@@ -40,8 +40,12 @@ def createEPObject(idfFile, resultDict, key, type = None):
     
     # store the data into the dictionary
     inLine = 0
+    recounter = 0
     for lineCount, line in enumerate(idfFile):
-        if lineCount == 0:
+        if line.strip().startswith("!"):
+            recounter -= 1
+            continue
+        elif lineCount == 0:
             # first line is the name of the object
             nameKey = line.split("!")[0].strip()[:-1]
             if nameKey in resultDict[key].keys():
@@ -60,7 +64,7 @@ def createEPObject(idfFile, resultDict, key, type = None):
             
             try: objDescription = line.split("!")[1].strip()
             except:  objDescription = ""
-            objKey = lineCount #+ '_' + line.split("!-")[1].strip()
+            objKey = lineCount + recounter #+ '_' + line.split("!-")[1].strip()
             for objCount, objValue in enumerate(objValues):
                 if not objValue.endswith(";"):
                     if objCount == 0 or len(objValue.strip())!=0: # get rid of empty items
@@ -128,6 +132,7 @@ def main(idfFile):
         hb_EPSrf = sc.sticky["honeybee_EPSurface"]
         hb_EPZoneSurface = sc.sticky["honeybee_EPZoneSurface"]
         hb_EPFenSurface = sc.sticky["honeybee_EPFenSurface"]
+        hb_EPSHDSurface = sc.sticky["honeybee_EPShdSurface"]
         
     else:
         print "You should first let both Ladybug and Honeybee to fly..."
@@ -138,7 +143,7 @@ def main(idfFile):
     conversionFac = lb_preparation.checkUnits()
     
     
-    EPKeys = ["Zone,", "BuildingSurface:Detailed", "FenestrationSurface:Detailed", "Shading:Site:Detailed", "Shading:Building:Detailed", "Shading:Zone:Detailed"]
+    EPKeys = ["Zone,", "BuildingSurface:Detailed", "FenestrationSurface:Detailed", "Shading:Site:Detailed", "Shading:Building:Detailed", "Shading:Zone:Detailed", "Window,"]
     EPKeys.extend(["Material", "WindowMaterial", "Construction"])
     idfFileDict = {}
     
@@ -198,18 +203,27 @@ def main(idfFile):
             thisEPSrf.type = srfTypeDict[srfType.ToUpper()]
             thisEPSrf.construction = thisEPSrf.cnstrSet[thisEPSrf.type]
             thisEPSrf.EPConstruction = EPConstruction
-            thisEPSrf.BC = srfBC
+            thisEPSrf.setBC(srfBC, isUserInput= True)
             thisEPSrf.BCObject = BCObject
             thisEPSrf.sunExposure = sunExposure
             thisEPSrf.windExposure = windExposure
             thisEPSrf.groundViewFactor = viewFactor
             thisEPSrf.numOfVertices = numOfVertices
             
+            # change type of surface if BC is set to ground
+            if srfBC.lower()== "ground":
+                thisEPSrf.setType(int(thisEPSrf.type) + 0.5, isUserInput= True)
+            
+            
+            if srfBC.lower()== "ground" or srfBC.lower()== "adiabatic":
+                thisEPSrf.setSunExposure('NoSun')
+                thisEPSrf.setWindExposure('NoWind')
+            
             # add surface to the zone
             HBZones[parentZone.lower()].addSrf(thisEPSrf)
             # add to surfaces dictionary
             HBSurfaces[surfaceName] = thisEPSrf
-        
+            
     HBFenSurfaces = {}
     if idfFileDict.has_key("FenestrationSurface:Detailed"):
         # add child surfaces
@@ -248,20 +262,49 @@ def main(idfFile):
             thisEPFenSrf.groundViewFactor = viewFactor
             thisEPFenSrf.numOfVertices = numOfVertices
             
+            
             # add the child surface to the surface
             HBSurfaces[parentSrf].addChildSrf(thisEPFenSrf)
-        
+    
+    if idfFileDict.has_key("Window,"):
+        for windowName in idfFileDict["Window,"].keys():
+            windowObject = idfFileDict["Window,"][windowName]
+            windowConstruction = windowObject[1][0]
+            parentSrf = windowObject[2][0]
+            xCoor = windowObject[8][0]
+            zCoor = windowObject[9][0]
+            length = windowObject[10][0]
+            height = windowObject[11][0]
+    
+    shadingList = []
+    if idfFileDict.has_key("Shading:Site:Detailed"):
+        for shadingName in idfFileDict["Shading:Site:Detailed"].keys():
+            shadingObj = idfFileDict["Shading:Site:Detailed"][shadingName]
+            pts = []
+            for coordinate in range(3, len(shadingObj.keys()), 3):
+                x = shadingObj[coordinate][0]
+                y = shadingObj[coordinate + 1][0]
+                z = shadingObj[coordinate + 2][0]
+                pts.append(rc.Geometry.Point3d(float(x), float(y), float(z)))
+            pts.append(pts[0])
+            polyline = rc.Geometry.Polyline(pts).ToNurbsCurve()
+            geometry = rc.Geometry.Brep.CreatePlanarBreps(polyline)[0]
+            thisShading = hb_EPSHDSurface(geometry, 1, shadingName)
+            
+            shadingList.append(thisShading)
     # recalculate the zone
     zonesList = []
     for zoneName in HBZones.keys():
         HBZone = HBZones[zoneName.lower()]
         HBZone.createZoneFromSurfaces()
         zonesList.append(HBZone)
-    
+        
+        #for HBS in HBZone.surfaces:
+        #    print HBS.BC
     # add to the hive
     hb_hive = sc.sticky["honeybee_Hive"]()
-    HBZones  = hb_hive.addToHoneybeeHive(zonesList, ghenv.Component.InstanceGuid.ToString())
-    
+    HBZones  = hb_hive.addToHoneybeeHive(zonesList, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+    shadings = hb_hive.addToHoneybeeHive(shadingList, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
     #for EPKey in EPKeys:
     #    if EPKey in resultDict.keys():
     #        try:
@@ -271,7 +314,7 @@ def main(idfFile):
     #            outputs[key] = " 0 " + EPKey.lower() + " found in " + libFilePath
     
     
-    return HBZones, None
+    return HBZones, shadings
 
 if _idfFile!=None:
     results = main(_idfFile)
