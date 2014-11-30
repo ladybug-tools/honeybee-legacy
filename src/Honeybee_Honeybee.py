@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.55\nNOV_29_2014'
+ghenv.Component.Message = 'VER 0.0.55\nNOV_30_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -3255,7 +3255,7 @@ class EPMaterialAux(object):
                 break
         
         # add name to list
-        sc.sticky [HBLibrarieNames[key]]["List"].append(name)
+        # sc.sticky [HBLibrarieNames[key]]["List"].append(name)
         
         return True, name
     
@@ -3477,7 +3477,7 @@ class EPObjectsAux(object):
                 break
         
         # add name to list
-        sc.sticky [HBLibrarieNames[key]]["List"].append(name)
+        #sc.sticky [HBLibrarieNames[key]]["List"].append(name)
         
         return True, name
     
