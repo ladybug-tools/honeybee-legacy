@@ -12,7 +12,7 @@ Constructions, schedules and systems will be neglected
 """
 ghenv.Component.Name = "Honeybee_Import idf"
 ghenv.Component.NickName = 'importIdf'
-ghenv.Component.Message = 'VER 0.0.55\nNOV_29_2014'
+ghenv.Component.Message = 'VER 0.0.55\nDEC_03_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nNOV_29_2014
@@ -155,8 +155,10 @@ def main(idfFile, importEPObjects = False):
     
     
     
-    EPKeys = ["Zone,", "BuildingSurface:Detailed", "FenestrationSurface:Detailed", "Shading:Site:Detailed", "Shading:Building:Detailed", "Shading:Zone:Detailed", "Window,"]
-    EPKeys.extend(["Material", "WindowMaterial", "Construction"])
+    EPKeys = ["Zone,", "BuildingSurface:Detailed", "FenestrationSurface:Detailed", \
+              "Shading:Site:Detailed", "Shading:Building:Detailed", "Shading:Zone:Detailed", \
+              "Window,", "WindowMaterial:Blind", "WindowMaterial:Shade", "WindowProperty:ShadingControl"]
+    EPKeys.extend(["Material,", "WindowMaterial,", "Construction,"])
     idfFileDict = {}
     
     with open(idfFile, 'r') as inf:
@@ -269,6 +271,17 @@ def main(idfFile, importEPObjects = False):
             
             pts = []
             
+            
+            # let the user know that we don't support shading control right now and we are sorry
+            if shadingControlName.strip()!="":
+                msg = "Currently Honeybee doesn't support importing shading controls!" +\
+                      "\nSorry and it will be added soon!"
+                w = gh.GH_RuntimeMessageLevel.Warning
+                ghenv.Component.AddRuntimeMessage(w, msg)
+                
+                shadingControlName = ""
+            
+            
             # find moving vector based on parent zone
             movingVector = HBZones[HBSurfaces[parentSrf].parent.name.lower()][1]
             
@@ -318,6 +331,15 @@ def main(idfFile, importEPObjects = False):
             zCoor = float(windowObject[9][0])
             length = float(windowObject[10][0])
             height = float(windowObject[11][0])
+
+            # let the user know that we don't support shading control right now and we are sorry
+            if shadingControlName.strip()!="":
+                msg = "Currently Honeybee doesn't support importing shading controls!" +\
+                      "\nSorry and it will be added soon!"
+                w = gh.GH_RuntimeMessageLevel.Warning
+                ghenv.Component.AddRuntimeMessage(w, msg)
+                
+                shadingControlName = ""
 
             # find surface plane
             parentSrf = HBSurfaces[parentSrfName]
