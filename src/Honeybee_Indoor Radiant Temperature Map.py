@@ -36,11 +36,11 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Indoor Radiant Temperature Map"
 ghenv.Component.NickName = 'RadiantTempMap'
-ghenv.Component.Message = 'VER 0.0.55\nNOV_15_2014'
+ghenv.Component.Message = 'VER 0.0.55\nNOV_30_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
-#compatibleLBVersion = VER 0.0.58\nAUG_20_2014
+#compatibleLBVersion = VER 0.0.58\nDEC_02_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
 except: pass
 
@@ -467,7 +467,7 @@ def calculatePointMRT(srfTempValues, zoneSrfNames, testPtsViewFactor, srfHeaders
     if len(srfHeaders) == len(srfTempDict) and len(srfHeaders) == len(tempMatchedList): pass
     elif len(tempMatchedList) == 0:
         dataCheck = False
-        warning = "None of the connected srfIndoorTemp could be matched with the connected surface names and view factors. Note that this component does not currenlty work for curved geometry E+ simulations because the surfaces are broken up and meshed in order to run it through E+."
+        warning = "None of the connected srfIndoorTemp could be matched with the connected surface names and view factors. You should consider re-running your simulation since it is likely that the imported surface results are not for the _HBZones connected to the ViewFactor Component."
         print warning
         ghenv.Component.AddRuntimeMessage(w, warning)
     else: print "Not all of the connected surface data could be found in the connected surface names and view factors.  You may want to do a view factor calculation for all of your zones in order to see all of your connected surface data."
