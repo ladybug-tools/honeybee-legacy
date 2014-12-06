@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.55\nNOV_30_2014'
+ghenv.Component.Message = 'VER 0.0.55\nDEC_05_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -5665,6 +5665,8 @@ class hb_EPZoneSurface(hb_EPSurface):
             self.BCObject = self.outdoorBCObject()
             self.sunExposure = self.srfSunExposure[srfType]
             self.windExposure = self.srfWindExposure[srfType]
+            self.getAngle2North()
+            
         
         if hasattr(self, 'parent') and self.parent!=None:
             # in both of this cases the zone should be meshed
