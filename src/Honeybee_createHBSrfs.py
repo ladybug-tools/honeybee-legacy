@@ -4,20 +4,31 @@
 # under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
 
 """
-Create a Honeybee surface
+Create a Honeybee surface, which can be plugged into the "Run Daylight Sumilation" component or combined with other surfaces to make HBZones with the "createHBZones" component.
 -
 Provided by Honeybee 0.0.55
 
     Args:
         _geometry: List of Breps
         srfName_: Optional name for surface
-        srfType_: Optional input for surface type > 0:'WALL', 1:'ROOF', 2:'FLOOR', 3:'CEILING', 4:'WINDOW'
-        EPBC_: 'Ground', 'Adiabatic'
+        srfType_: Optional input for surface type >
+            0- 'WALL'
+            1- 'ROOF'
+            0.5- 'UndergroundWall'
+            2- 'FLOOR'
+            3- 'CEILING'
+            4- 'WALL'
+            2.25- 'UndergroundSlab'
+            2.5- 'SlabOnGrade'
+            6- 'SHADING'
+            2.75- 'ExposedFloor'
+            1.5- 'UndergroundCeiling'
+        EPBC_: 'Ground', 'Adiabatic', 'Outdoors'
         _EPConstruction_: Optional EnergyPlus construction
-        _RadMaterial_: Optional Radiance Material
+        _RADMaterial_: Optional Radiance Material
     Returns:
         readMe!:...
-        HBZone: Honeybee zone as the result
+        HBZone: A Honeybee Surface, which can be plugged into the "Run Daylight Sumilation" component or combined with other surfaces to make HBZones with the "createHBZones" component.
 """
 
 import rhinoscriptsyntax as rs
@@ -33,7 +44,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_createHBSrfs'
 ghenv.Component.NickName = 'createHBSrfs'
-ghenv.Component.Message = 'VER 0.0.55\nOCT_23_2014'
+ghenv.Component.Message = 'VER 0.0.55\nDEC_05_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -105,7 +116,6 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
 
         # 1.1 check for surface type
         if srfType!=None:
-            
             try:
                 # if user uses a number to input type
                 try: surfaceType = int(srfType)
@@ -113,6 +123,7 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
                     if float(srfType) == 0.5 or float(srfType) == 0.25 or float(srfType) == 0.75:
                         surfaceType = srfType
                     else: pass
+                print "HBSurface Type has been set to " + HBSurface.srfType[float(srfType)]
                 
                 if surfaceType == 4:
                     surfaceType = 5
@@ -123,9 +134,10 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
             except:
                 # user uses text as an input (e.g.: wall)
                 # convert it to a number if a valid input
-                surfaceType = surfaceType.ToUpper()
+                surfaceType = srfType.ToUpper()
                 if surfaceType in HBSurface.srfType.keys():
                    surfaceType = HBSurface.srfType[surfaceType.ToUpper()]
+                   print "HBSurface Type has been set to " + surfaceType.ToUpper()
             
             if surfaceType in HBSurface.srfType.keys():
                 acceptableCombination = [[1,3], [3,1], [0,5], [5,0], [1,5], [5,1]]
@@ -143,6 +155,7 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
                     print warningMsg
                     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
                     return
+            
         
         # 1.2 assign boundary condition
         if EPBC!= None:
@@ -160,11 +173,15 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
                     if EPBC.lower()== "ground" or EPBC.lower()== "adiabatic":
                         HBSurface.setSunExposure('NoSun')
                         HBSurface.setWindExposure('NoWind')
+                    
+                    print "HBSurface boundary condition has been set to " + EPBC.upper()
                 except:
                     warningMsg = "You are using an old version of Honeybee_Honeybee! Update your files and try again."
                     print warningMsg
                     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
-                    return                
+                    return               
+            else:
+                print "HBSurface BOUNDARY CONDITION IS NOT VALID."
         
         # 1.3 assign construction for EnergyPlus
         if EPConstruction!=None:
@@ -174,6 +191,7 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
                 if not hb_EPObjectsAux.isEPConstruction(EPConstruction):
                     warningMsg = "Can't find " + EPConstruction + " in EP Construction Library.\n" + \
                                 "Add the construction to the library and try again."
+                    print warningMsg
                     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
                     return
             else:
@@ -188,6 +206,7 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
             
             try:
                 HBSurface.setEPConstruction(EPConstruction)
+                print "HBSurface construction has been set to " + EPConstruction
             except:
                 warningMsg = "You are using an old version of Honeybee_Honeybee! Update your files and try again."
                 print warningMsg
@@ -207,6 +226,7 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
                 
                 try:
                     HBSurface.setRADMaterial(RADMaterial)
+                    print "HBSurface Radiance Material has been set to " + RADMaterial
                 except Exception, e:
                     print e
                     warningMsg = "You are using an old version of Honeybee_Honeybee! Update your files and try again."
