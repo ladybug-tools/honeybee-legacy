@@ -37,7 +37,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.55\nDEC_07_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "4"
@@ -164,6 +164,7 @@ def makeHeader(list, path, zoneName, timestep, name, units, normable):
 #Make a function to check the zone name.
 def checkZone(csvName):
     zoneName = None
+    
     for count, name in enumerate(zoneNameList):
         if name == csvName:
             zoneName = name
@@ -207,7 +208,9 @@ if _resultFileAddress and gotData == True:
                 for columnCount, column in enumerate(line.split(',')):
                     if 'Zone Air System Sensible Cooling Energy' in column or 'Zone Ideal Loads Zone Total Cooling Energy' in column or 'Zone Packaged Terminal Heat Pump Total Cooling Energy' in column or 'Chiller Electric Energy' in column:
                         key.append(0)
-                        if 'Zone Ideal Loads Zone Total Cooling Energy' in column and 'ZONEHVAC' in column: zoneName = checkZone(" " + column.split(':')[0].split('ZONEHVAC')[0])
+                        if 'Zone Ideal Loads Zone Total Cooling Energy' in column and 'ZONEHVAC' in column:
+                            zoneName = checkZone(" " + column.split(':')[0].split('ZONEHVAC')[0])
+                            if zoneName == None: zoneName = checkZone(" " + column.split(':')[0].split(' ZONEHVAC')[0])
                         elif 'IDEAL LOADS AIR SYSTEM' in column: zoneName = checkZone(" " + column.split(':')[0].split(' IDEAL LOADS AIR SYSTEM')[0])
                         elif 'ZONE HVAC PACKAGED TERMINAL HEAT PUMP' in column: zoneName = checkZoneSys(" " + column.split(':')[0].split('ZONE HVAC PACKAGED TERMINAL HEAT PUMP ')[-1])
                         elif 'CHILLER ELECTRIC EIR' in column:
@@ -219,7 +222,9 @@ if _resultFileAddress and gotData == True:
                     
                     elif 'Zone Air System Sensible Heating Energy' in column or 'Zone Ideal Loads Zone Total Heating Energy' in column or 'Zone Packaged Terminal Heat Pump Total Heating Energy' in column or 'Boiler Heating Energy' in column:
                         key.append(1)
-                        if 'Zone Ideal Loads Zone Total Heating Energy' in column and 'ZONEHVAC' in column: zoneName = checkZone(" " + column.split(':')[0].split('ZONEHVAC')[0])
+                        if 'Zone Ideal Loads Zone Total Heating Energy' in column and 'ZONEHVAC' in column:
+                            zoneName = checkZone(" " + column.split(':')[0].split('ZONEHVAC')[0])
+                            if zoneName == None: zoneName = checkZone(" " + column.split(':')[0].split(' ZONEHVAC')[0])
                         elif 'IDEAL LOADS AIR SYSTEM' in column: zoneName = checkZone(" " + column.split(':')[0].split(' IDEAL LOADS AIR SYSTEM')[0])
                         elif 'ZONE HVAC PACKAGED TERMINAL HEAT PUMP' in column: zoneName = checkZoneSys(" " + column.split(':')[0].split('ZONE HVAC PACKAGED TERMINAL HEAT PUMP ')[-1])
                         elif 'BOILER HOT WATER' in column:
@@ -370,6 +375,7 @@ if _resultFileAddress and gotData == True:
                   'Try reconnecting the _resultfileAddress to this component or re-running your simulation.'
         print warn
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warn)
+
 
 #Construct the total energy and energy balance outputs.  Also, construct the total solar and operative temperature outputs
 def createPyList(ghTree):
