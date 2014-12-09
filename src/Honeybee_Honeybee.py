@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.55\nDEC_05_2014'
+ghenv.Component.Message = 'VER 0.0.55\nDEC_08_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -4749,6 +4749,7 @@ class hb_reEvaluateHBZones(object):
         newSurface.coordinates = coordinates
         newSurface.type = surface.type # protect the surface from reEvaluate
         newSurface.construction = surface.construction
+        newSurface.EPConstruction = surface.EPConstruction
         newSurface.BC = surface.BC
         newSurface.sunExposure = surface.sunExposure
         newSurface.windExposure = surface.windExposure
@@ -4771,6 +4772,7 @@ class hb_reEvaluateHBZones(object):
             newAdjcSurface.coordinates = [coordinates[0]] + restOfcoordinates
             newAdjcSurface.type = adjcSurface.type
             newAdjcSurface.construction = adjcSurface.construction
+            newAdjcSurface.EPConstruction = adjcSurface.EPConstruction
             newAdjcSurface.BC = adjcSurface.BC
             newAdjcSurface.sunExposure = adjcSurface.sunExposure
             newAdjcSurface.windExposure = adjcSurface.windExposure
@@ -4792,6 +4794,7 @@ class hb_reEvaluateHBZones(object):
         newFenSrf.coordinates = coordinates
         newFenSrf.type = baseChildSurface.type
         newFenSrf.construction = baseChildSurface.construction
+        newFenSrf.EPConstruction = baseChildSurface.EPConstruction
         newFenSrf.parent = parentSurface
         newFenSrf.groundViewFactor = baseChildSurface.groundViewFactor
         newFenSrf.shadingControlName = baseChildSurface.shadingControlName
