@@ -15,7 +15,7 @@ Provided by Honeybee 0.0.55
 """
 ghenv.Component.Name = "Honeybee_IntersectMasses"
 ghenv.Component.NickName = 'IntersectMass'
-ghenv.Component.Message = 'VER 0.0.55\nOCT_31_2014'
+ghenv.Component.Message = 'VER 0.0.55\nDEC_08_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -25,6 +25,7 @@ except: pass
 
 import Rhino as rc
 import scriptcontext as sc
+import Grasshopper.Kernel as gh
 
 tol = sc.doc.ModelAbsoluteTolerance
 
@@ -203,6 +204,39 @@ def main(bldgMassesBefore):
     
     return intersectedBldgs
 
-if _bldgMassesBefore and _bldgMassesBefore[0]!=None:
-    bldgMassesAfter = main(_bldgMassesBefore)
 
+
+success = True
+Hzones = False
+
+if sc.sticky.has_key('ladybug_release')and sc.sticky.has_key('honeybee_release'):
+    try:
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): success = False
+    except:
+        warning = "You need a newer version of Honeybee to use this compoent." + \
+        " Use updateHoneybee component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+        "into canvas and try again."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+        success = False
+    
+    if success == True:
+        hb_hive = sc.sticky["honeybee_Hive"]()
+        try:
+            for HZone in _bldgMassesBefore:
+                zone = hb_hive.callFromHoneybeeHive([HZone])[0]
+                Hzones = True
+        except: pass
+    
+    if Hzones == True:
+        warning = "This component only works with raw Rhino brep geometry and not HBZones.  Use this component before you turn your breps into HBZones."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+else:
+    warning = "You should first let Honeybee fly!"
+    w = gh.GH_RuntimeMessageLevel.Warning
+    ghenv.Component.AddRuntimeMessage(w, warning)
+
+if _bldgMassesBefore and _bldgMassesBefore[0]!=None and Hzones == False:
+    bldgMassesAfter = main(_bldgMassesBefore)
