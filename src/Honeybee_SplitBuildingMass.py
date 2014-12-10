@@ -27,7 +27,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = 'Honeybee_SplitBuildingMass'
 ghenv.Component.NickName = 'SplitMass'
-ghenv.Component.Message = 'VER 0.0.55\nOCT_31_2014'
+ghenv.Component.Message = 'VER 0.0.55\nDEC_08_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -181,15 +181,6 @@ def getFloorCrvs(buildingMass, floorHeights, maxHeights):
                 nurbsList.append(True)
         contourCrvs = goodContourCrvs
         
-        #Check if there are any curved segments in the polycurve and if so, make a note of it
-        curveSegmentList = []
-        for curve in contourCrvs:
-            curved = False
-            for segment in curve.DuplicateSegments():
-                if segment.IsLinear(): pass
-                else: curved = True
-            curveSegmentList.append(curved)
-        
         #Check if any of the generated curves have no area and, if so, discount them from the list. Make a note if the curves are at the top, which happens a lot with gabled roofs.  This can be corrected later.
         newContourCrvs = []
         problemIndices = []
@@ -319,6 +310,16 @@ def getFloorCrvs(buildingMass, floorHeights, maxHeights):
                 if dir == True:
                     contourCrvs[count].Reverse()
         
+        #Check if there are any curved segments in the polycurve and if so, make a note of it
+        curveSegmentList = []
+        for curve in contourCrvs:
+            curved = False
+            for segment in curve.DuplicateSegments():
+                if segment.IsLinear(): pass
+                else: curved = True
+            curveSegmentList.append(curved)
+        
+        
         #Match the curve seams in order to ensure proper zone splitting later.
         if len(contourCrvs)!= 0:
             crvCentPt = rc.Geometry.AreaMassProperties.Compute(contourCrvs[0]).Centroid
@@ -330,41 +331,43 @@ def getFloorCrvs(buildingMass, floorHeights, maxHeights):
             longestCurveLength = curveLengths[-1]
             factor = ((longestCurveLength)/(contourCrvs[0].PointAtStart.X - crvCentPt.X))*2
             seamVectorPt = rc.Geometry.Vector3d((contourCrvs[0].PointAtStart.X - crvCentPt.X)*factor, (contourCrvs[0].PointAtStart.Y - crvCentPt.Y)*factor, 0)
-            # adjust the seam of the curves.
-            crvAdjust = []
             
-            for nurbCount, curve in enumerate(contourCrvs):
-                if curve.IsClosed:
-                    if nurbsList[nurbCount] == False and curveSegmentList[nurbCount] == False:
-                        curveParameter = curve.ClosestPoint(rc.Geometry.Intersect.Intersection.CurveCurve(curve, rc.Geometry.Line(rc.Geometry.AreaMassProperties.Compute(curve).Centroid, seamVectorPt).ToNurbsCurve(), sc.doc.ModelAbsoluteTolerance, sc.doc.ModelAbsoluteTolerance)[0].PointA)[1]
-                        curveParameterRound = round(curveParameter)
-                        curveParameterTol = round(curveParameter, (len(list(str(sc.doc.ModelAbsoluteTolerance)))-2))
-                        if curveParameterRound + sc.doc.ModelAbsoluteTolerance > curveParameter and curveParameterRound - sc.doc.ModelAbsoluteTolerance < curveParameter:
-                            curve.ChangeClosedCurveSeam(curveParameterRound)
-                            crvAdjust.append(curve)
-                        else:
-                            curve.ChangeClosedCurveSeam(curveParameter)
-                            if curve.IsClosed == True:
+            # Try to adjust the seam of the curves.
+            crvAdjust = []
+            try:
+                for nurbCount, curve in enumerate(contourCrvs):
+                    if curve.IsClosed:
+                        if nurbsList[nurbCount] == False and curveSegmentList[nurbCount] == False:
+                            curveParameter = curve.ClosestPoint(rc.Geometry.Intersect.Intersection.CurveCurve(curve, rc.Geometry.Line(rc.Geometry.AreaMassProperties.Compute(curve).Centroid, seamVectorPt).ToNurbsCurve(), sc.doc.ModelAbsoluteTolerance, sc.doc.ModelAbsoluteTolerance)[0].PointA)[1]
+                            curveParameterRound = round(curveParameter)
+                            curveParameterTol = round(curveParameter, (len(list(str(sc.doc.ModelAbsoluteTolerance)))-2))
+                            if curveParameterRound + sc.doc.ModelAbsoluteTolerance > curveParameter and curveParameterRound - sc.doc.ModelAbsoluteTolerance < curveParameter:
+                                curve.ChangeClosedCurveSeam(curveParameterRound)
                                 crvAdjust.append(curve)
                             else:
-                                curve.ChangeClosedCurveSeam(curveParameter+sc.doc.ModelAbsoluteTolerance)
+                                curve.ChangeClosedCurveSeam(curveParameter)
                                 if curve.IsClosed == True:
                                     crvAdjust.append(curve)
                                 else:
-                                    curve.ChangeClosedCurveSeam(curveParameter-sc.doc.ModelAbsoluteTolerance)
+                                    curve.ChangeClosedCurveSeam(curveParameter+sc.doc.ModelAbsoluteTolerance)
                                     if curve.IsClosed == True:
                                         crvAdjust.append(curve)
                                     else:
-                                        curve.ChangeClosedCurveSeam(curveParameter)
-                                        curve.MakeClosed(sc.doc.ModelAbsoluteTolerance)
-                                        crvAdjust.append(curve)
+                                        curve.ChangeClosedCurveSeam(curveParameter-sc.doc.ModelAbsoluteTolerance)
+                                        if curve.IsClosed == True:
+                                            crvAdjust.append(curve)
+                                        else:
+                                            curve.ChangeClosedCurveSeam(curveParameter)
+                                            curve.MakeClosed(sc.doc.ModelAbsoluteTolerance)
+                                            crvAdjust.append(curve)
+                        else:
+                            crvAdjust.append(curve)
                     else:
                         crvAdjust.append(curve)
-                else:
-                    crvAdjust.append(curve)
-                    warning = 'The top or bottom of your mass geometry is composed of multiple surfaces and this is causing the algorithm to mess up.\n  If you re-make your top and/or bottom of your mass to be a single surface, this component should work.'
-                    print warning
-                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+                        warning = 'The top or bottom of your mass geometry is composed of multiple surfaces and this is causing the algorithm to mess up.\n  If you re-make your top and/or bottom of your mass to be a single surface, this component should work.'
+                        print warning
+                        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+            except: crvAdjust = contourCrvs
         
         #Simplify the contour curves to ensure that they do not mess up the next few steps.
         for curve in crvAdjust:
@@ -1035,8 +1038,6 @@ def main(mass, floorHeights, perimDepth):
                 splitZones.append(splitPerimZones(mass, perimDepth, floorCrvs[count], topInc[count], nurbsList[count]))
         else:
             for count, mass in enumerate(splitFloors):
-                print topInc[count][0]
-                print lastFloorInclud[count]
                 if topInc[count][0] == True and lastFloorInclud[count] == True:
                     splitZones.append(mass)
                 elif topInc[count][0] == False and lastFloorInclud[count] == False:
