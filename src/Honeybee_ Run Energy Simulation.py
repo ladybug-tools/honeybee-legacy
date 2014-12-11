@@ -10,10 +10,10 @@ export geometries to idf file, and run the energy simulation
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.55\nNOV_29_2014'
+ghenv.Component.Message = 'VER 0.0.55\nDEC_10_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.55\nNOV_29_2014
+#compatibleHBVersion = VER 0.0.55\nDEC_08_2014
 #compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
 
@@ -249,10 +249,21 @@ class WriteIDF(object):
     
     def writeSetpoint(self, zone, name):
         if zone.isConditioned:
+            heatingSetPtSchedule = zone.heatingSetPtSchedule
+            coolingSetPtSchedule = zone.coolingSetPtSchedule
+            
+            if heatingSetPtSchedule.lower().endswith(".csv"):
+                # find filebased schedule name
+                heatingSetPtSchedule = self.fileBasedSchedules[heatingSetPtSchedule.upper()]            
+            
+            if coolingSetPtSchedule.lower().endswith(".csv"):
+                # find filebased schedule name
+                coolingSetPtSchedule = self.fileBasedSchedules[coolingSetPtSchedule.upper()]            
+            
             return '\nThermostatSetpoint:DualSetpoint,\n' + \
             '\t' + name + ' Thermostat Dual SP Control' + ',  !- Name\n' + \
-            '\t' + zone.heatingSetPtSchedule + ',  !- Heating Setpoint Temperature Schedule Name\n' + \
-            '\t' + zone.coolingSetPtSchedule + ';  !- Cooling Setpoint Temperature Schedule Name\n'
+            '\t' + heatingSetPtSchedule + ',  !- Heating Setpoint Temperature Schedule Name\n' + \
+            '\t' + coolingSetPtSchedule + ';  !- Cooling Setpoint Temperature Schedule Name\n'
         else:
             return "\n"
     
