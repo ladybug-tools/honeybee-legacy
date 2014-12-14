@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.55\nDEC_08_2014'
+ghenv.Component.Message = 'VER 0.0.55\nDEC_13_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -4199,6 +4199,10 @@ class EPZone(object):
         self.name = zoneName
         self.hasNonPlanarSrf = False
         self.hasInternalEdge = False
+        
+        self.mixAir = False
+        self.mixAirZoneList = []
+        self.mixAirFlowList = []
         
         self.surfaces = []
         

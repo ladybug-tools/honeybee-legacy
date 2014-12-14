@@ -9,16 +9,20 @@ Solve adjacencies
 Provided by Honeybee 0.0.55
 
     Args:
-        _HBZones: List of Honeybee zones
-        altConstruction_: Optional alternate EP construction
-        altBC_: Optional alternate boundary condition
+        _HBZones: A list of Honeybee zones for which you want to calculate whether they are next to each other.
+        altConstruction_: An optional alternate EP construction to assign to all adjacent surfaces.  The default is set to be "Interior Wall", "Interior Foor" or "Interior Ceiling" or "Interior Window" depending on the type of surface that is adjacent.
+        altBC_: An optional alternate boundary condition such as "Adiabatic".  The default will be "Surafce", which ensures that heat flows across each adjacent surface to a neighboring zone.
+        mixZoneAir_: Set to "True" to have the energy simulation mix the zone air in between adjacent zones.  Use this to model cases such as virtual partitions or instances where there is free-flowing air in between zones (note that you should also set the altConstruction_ to "AIR WALL" for these cases).  The flow rate of mixed air will be proportional to the contact surface area of adjacent zones (0.0963 m3/s for each square meter of adjacent surface).  The default is set to "False" in order to not mix the air.
+        tolerance_: The tolerance in Rhino model units that will be used determine whether two zones are adjacent to each other.  If no value is input here, the component will use the tolerance of the Rhino model document.
+        remCurrentAdjc_: If you are using this component after already solving for the adjacencies between some of the zones previously, set this to "True" in order to remeber the previously determined adcacency conditions.  The default is set to "False" in order to overwirte existing adjacencies each time.\
+        _findAdjc: Set to "True" to solve adjacencies between zones.
     Returns:
-        readMe!: Report of the adjacencies
-        HBZonesWADJ: List of Honeybee zones with adjacencies
+        readMe!: A report of the found adjacencies.
+        HBZonesWADJ: A list of Honeybee zones with adjacencies solved.
 """
 ghenv.Component.Name = "Honeybee_Solve Adjacencies"
 ghenv.Component.NickName = 'solveAdjc'
-ghenv.Component.Message = 'VER 0.0.55\nNOV_25_2014'
+ghenv.Component.Message = 'VER 0.0.55\nDEC_13_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -40,6 +44,25 @@ def shootIt(rayList, geometry, tol = 0.01, bounce =1):
         if intPt:
             if ray.Position.DistanceTo(intPt[0]) <= tol:
                 return True #'Bang!'
+
+def updateZoneMixing(surface1, zone1, zone2):
+    #Change the air mixing between the zone and other zones to "True"
+    zone1.mixAir = True
+    zone2.mixAir = True
+    
+    #Append the zone to be mixed with to the mixAirZoneList.
+    zone1.mixAirZoneList.append(zone2.name)
+    zone2.mixAirZoneList.append(zone1.name)
+    
+    #Calculate a rough flow rate of air based on the cross-sectional area of the surface between them.
+    flowFactor = 0.0963
+    flowRate = (rc.Geometry.AreaMassProperties.Compute(surface1.geometry).Area)*flowFactor
+    
+    #Append the flow rate of mixing to the mixAirFlowList
+    zone1.mixAirFlowList.append(flowRate)
+    zone2.mixAirFlowList.append(flowRate)
+    
+    return flowRate
 
 def updateAdj(surface1, surface2, altConstruction, altBC, tol):
     # change roof to ceiling
@@ -186,7 +209,10 @@ def main(HBZones, altConstruction, altBC, tol, remCurrent):
                                             #    ghenv.Component.AddRuntimeMessage(w, msg)
                                                 
                                             updateAdj(srf, surface, altConstruction, altBC, tol)                                        
-    
+                                            if mixZoneAir_ == True:
+                                                flowRate = updateZoneMixing(srf, testZone, targetZone)
+                                                print "Air has been mixed between " + testZone.name + " and " + targetZone.name + " with a flow rate of " + str(flowRate) + " m3/s."
+                                            
                                             break
                     
                 #if srf.type == 3 and srf.BCObject.name == '':

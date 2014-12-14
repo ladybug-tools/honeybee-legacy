@@ -10,7 +10,7 @@ export geometries to idf file, and run the energy simulation
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.55\nDEC_10_2014'
+ghenv.Component.Message = 'VER 0.0.55\nDEC_13_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nDEC_08_2014
@@ -528,6 +528,26 @@ class WriteIDF(object):
                 '\t,                        !- Temperature Term Coefficient\n' + \
                 '\t,                        !- Velocity Term Coefficient\n' + \
                 '\t;                        !- Velocity Squared Term Coefficient\n'
+    
+    def EPZoneAirMixing(self, zone, zoneMixName, mixFlowRate, objCount):
+        return '\nZoneMixing,\n' + \
+                '\t' + zone.name + zoneMixName + 'AirMix' + str(objCount) + ',  !- Name\n' + \
+                '\t' + zone.name + ',  !- Zone Name\n' + \
+                '\t' + 'ALWAYS ON' + ',  !- Schedule Name\n' + \
+                '\t' + 'Flow/Zone' + ',  !- Design Flow Rate Calculation Method\n' + \
+                '\t' + str(mixFlowRate) + ',   !- Design Flow Rate {m3/s}\n' + \
+                '\t' + ',  !- Flow per Zone Floor Area {m3/s-m2}\n' + \
+                '\t' + ', !- Flow per Exterior Surface Area {m3/s-m2}\n' + \
+                '\t' + ',    !- Air Changes per Hour\n' + \
+                '\t' + zoneMixName  + ',     !- Source Zone Name\n' + \
+                '\t' + '0'  + ',     !- Delta Temperature\n' + \
+                '\t,                        !- Delta Temperature Schedule Name\n' + \
+                '\t,                        !- Minimum Zone Temperature Schedule Name\n' + \
+                '\t,                        !- Maximum Zone Temperature Schedule Name\n' + \
+                '\t,                        !- Minimum Source Zone Temperature Schedule Name\n' + \
+                '\t,                        !- Maximum Source Zone Temperature Schedule Name\n' + \
+                '\t,                        !- Minimum Outdoor Temperature Schedule Name\n' + \
+                '\t;                        !- Maximum Outdoor Temperature Schedule Name\n'
     
     def EPZoneElectricEquipment(self, zone, zoneListName = None):
             
@@ -1108,6 +1128,15 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     ################ BODYII #####################
     print "[5 of 7] Writing schedules..."
     
+    #Check if the ALWAYS ON schedule needs to be written for air mixing.
+    needToWriteMixSched = False
+    for key, zones in ZoneCollectionBasedOnSchAndLoads.items():
+        for zone in zones:
+            if zone.mixAir == True: needToWriteMixSched = True
+    if needToWriteMixSched == True:
+        if 'ALWAYS ON' not in EPScheduleCollection:
+            EPScheduleCollection.append('ALWAYS ON')
+    
     # Write Schedules
     for schedule in EPScheduleCollection:
         scheduleValues, comments = hb_EPScheduleAUX.getScheduleDataByName(schedule, ghenv.Component)
@@ -1215,6 +1244,11 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         
             #   INFILTRATION
             idfFile.write(hb_writeIDF.EPZoneInfiltration(zone, listName))
+            
+            #   AIR MIXING
+            if zone.mixAir == True:
+                for mixZoneCount, zoneMixName in enumerate(zone.mixAirZoneList):
+                    idfFile.write(hb_writeIDF.EPZoneAirMixing(zone, zoneMixName, zone.mixAirFlowList[mixZoneCount], mixZoneCount))
             
             # Specification Outdoor Air
             idfFile.write(hb_writeIDF.EPDesignSpecOA(zone))
