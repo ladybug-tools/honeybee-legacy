@@ -549,6 +549,31 @@ class WriteIDF(object):
                 '\t,                        !- Minimum Outdoor Temperature Schedule Name\n' + \
                 '\t;                        !- Maximum Outdoor Temperature Schedule Name\n'
     
+    def EPNatVentSimple(self, zone):
+        if zone.natVentSchedule == None: natVentSched = 'ALWAYS ON'
+        else: natVentSched = zone.natVentSchedule
+        
+        return '\nZoneVentilation:WindandStackOpenArea,\n' + \
+                '\t' + zone.name + 'NatVent' + ',  !- Name\n' + \
+                '\t' + zone.name + ',  !- Zone Name\n' + \
+                '\t' + str(zone.windowOpeningArea) + ',  !- Opening Area\n' + \
+                '\t' + natVentSched + ',  !- Design Flow Rate Calculation Method\n' + \
+                '\t' + 'autocalculate' + ',   !- Opening Effectiveness\n' + \
+                '\t' + ',  !- Effective Angle\n' + \
+                '\t' + str(zone.windowHeightDiff) + ', !- Height Difference\n' + \
+                '\t' + 'autocalculate' + ',    !- Discharge Coefficient for Opening\n' + \
+                '\t' + str(zone.natVentMinIndoorTemp)  + ',     !- Minimum Indoor Temperature\n' + \
+                '\t' + ',     !- Minimum Indoor Temperature Shcedule Name\n' + \
+                '\t' + str(zone.natVentMaxIndoorTemp)  + ',     !- Maximum Indoor Temperature\n' + \
+                '\t' + ',     !- Maximum Indoor Temperature Shcedule Name\n' + \
+                '\t' + '-100'  + ',     !- Delta Temperature\n' + \
+                '\t' + ',     !- Delta Temperature Shcedule Name\n' + \
+                '\t' + str(zone.natVentMinOutdoorTemp)  + ',     !- Minimum Outdoor Temperature\n' + \
+                '\t' + ',     !- Minimum Outdoor Temperature Shcedule Name\n' + \
+                '\t' + str(zone.natVentMaxOutdoorTemp)  + ',     !- Maximum Outdoor Temperature\n' + \
+                '\t' + ',     !- Maximum Outdoor Temperature Shcedule Name\n' + \
+                '\t' + '40' + ';                        !- Maximum Wind Speed\n'
+    
     def EPZoneElectricEquipment(self, zone, zoneListName = None):
             
         #name = 'largeOfficeElectricEquipment', zoneListName ='largeOffices', method = 2, value = 5.8125141276385044,
@@ -1128,14 +1153,17 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     ################ BODYII #####################
     print "[5 of 7] Writing schedules..."
     
-    #Check if the ALWAYS ON schedule needs to be written for air mixing.
+    #Check if schedules need to be written for air mixing or natural ventilation.
     needToWriteMixSched = False
     for key, zones in ZoneCollectionBasedOnSchAndLoads.items():
         for zone in zones:
+            if zone.natVent == True:
+                if zone.natVentSchedule != None:
+                    if zone.natVentSchedule not in EPScheduleCollection: EPScheduleCollection.append(zone.natVentSchedule)
+                else: needToWriteMixSched = True
             if zone.mixAir == True: needToWriteMixSched = True
     if needToWriteMixSched == True:
-        if 'ALWAYS ON' not in EPScheduleCollection:
-            EPScheduleCollection.append('ALWAYS ON')
+        if 'ALWAYS ON' not in EPScheduleCollection: EPScheduleCollection.append('ALWAYS ON')
     
     # Write Schedules
     for schedule in EPScheduleCollection:
@@ -1249,6 +1277,10 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
             if zone.mixAir == True:
                 for mixZoneCount, zoneMixName in enumerate(zone.mixAirZoneList):
                     idfFile.write(hb_writeIDF.EPZoneAirMixing(zone, zoneMixName, zone.mixAirFlowList[mixZoneCount], mixZoneCount))
+            
+            #   SIMPLE NATURAL VENTILATION
+            if zone.natVent == True:
+                idfFile.write(hb_writeIDF.EPNatVentSimple(zone))
             
             # Specification Outdoor Air
             idfFile.write(hb_writeIDF.EPDesignSpecOA(zone))

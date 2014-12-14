@@ -4204,6 +4204,15 @@ class EPZone(object):
         self.mixAirZoneList = []
         self.mixAirFlowList = []
         
+        self.natVent = False
+        self.natVentMinIndoorTemp = 24.0
+        self.natVentMaxIndoorTemp = 100.0
+        self.natVentMinOutdoorTemp = -100.0
+        self.natVentMaxOutdoorTemp = 100.0
+        self.windowOpeningArea = 0.0
+        self.windowHeightDiff = 0.0
+        self.natVentSchedule = None
+        
         self.surfaces = []
         
         self.daylightThreshold = ""
