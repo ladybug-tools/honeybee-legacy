@@ -72,7 +72,7 @@ else:
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.55\nNOV_02_2014'
+ghenv.Component.Message = 'VER 0.0.55\nDEC_12_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nOCT_29_2014
@@ -420,12 +420,14 @@ class WriteOPS(object):
         'maxAirFlowRate' : HVACDetails['airsideEconomizer']['maxAirFlowRate'],
         'minLimitType' : minLimit[HVACDetails['airsideEconomizer']['minLimitType']],
         'controlAction' : ctrlAction[HVACDetails['airsideEconomizer']['controlAction']],
-        'minOASchedule' : HVACDetails['airsideEconomizer']['minOutdoorAirSchedule'],
+        'minOutdoorAirSchedule' : HVACDetails['airsideEconomizer']['minOutdoorAirSchedule'],
         'minOAFracSchedule' : HVACDetails['airsideEconomizer']['minOutdoorAirFracSchedule'],
-        'DXLockoutMethod' : lockout[HVACDetails['airsideEconomizer']['DXLockoutMethod']]
+        'DXLockoutMethod' : lockout[HVACDetails['airsideEconomizer']['DXLockoutMethod']],
+        'timeOfDaySch' : HVACDetails['airsideEconomizer']['timeOfDaySch'],
+        'mvCtrl' : HVACDetails['airsideEconomizer']['mvCtrl']
         }
         return oaDesc
-    def updateOASys(self,econo,oactrl):
+    def updateOASys(self,econo,oactrl,model):
         if econo['econoControl'] == 0:
             oactrl.setEconomizerControlType("FixedDryBulb")
             if econo['sensedMin'] != None:
@@ -478,6 +480,8 @@ class WriteOPS(object):
         else:
             maxFlow = econo['maxAirFlowRate']
             oactrl.setMaximumOutdoorAirFlowRate(maxFlow)
+        if econo['minOutdoorAirSchedule'] != 'OpenStudio Default':
+            oactrl.setMinimumOutdoorAirSchedule(self.getOSSchedule(econo['minOutdoorAirSchedule'], model))
         print 'set min and max flow rates'
         #set control action
         if econo['controlAction']!=None:
@@ -491,6 +495,18 @@ class WriteOPS(object):
         if econo['DXLockoutMethod'] != None:
             oactrl.setLockoutType(econo['DXLockoutMethod'])
         print 'set dx lockout method'
+        if econo['timeOfDaySch']!=None:
+            oactrl.setTimeofDayEconomizerControlSchedule(self.getOSSchedule(econo['timeOfDaySch'], model))
+            print 'set Economizer Time of Day Schedule'
+        if econo['mvCtrl'] != None:
+            #create mechanical ventilation controller
+            mvc = oactrl.controllerMechanicalVentilation()
+            mvc.setAvailabilitySchedule(self.getOSSchedule(econo['mvCtrl']['availSch'],model))
+            if econo['mvCtrl']['DCV'] == True:
+                mvc.setDemandControlledVentilation(True)
+            else:
+                mvc.setDemandControlledVentilation(False)
+            print 'Mechanical controller updated.'
         print "success for economizer!"
         return oactrl
         
@@ -933,7 +949,7 @@ class WriteOPS(object):
                             #set control type
                             #can sensed min still be dry bulb for any of these?  Future release question
                             econo = self.recallOASys(HVACDetails)
-                            oactrl = self.updateOASys(econo,oactrl)
+                            oactrl = self.updateOASys(econo,oactrl,model)
                             print 'economizer settings updated to economizer name: ' + HVACDetails['airsideEconomizer']['name']
                             print ''
 
@@ -976,7 +992,7 @@ class WriteOPS(object):
                             #set control type
                             #can sensed min still be dry bulb for any of these?  Future release question
                             econo = self.recallOASys(HVACDetails)
-                            oactrl = self.updateOASys(econo,oactrl)
+                            oactrl = self.updateOASys(econo,oactrl,model)
                             print 'economizer settings updated to economizer name: ' + HVACDetails['airsideEconomizer']['name']
                             print ''
 
@@ -1019,7 +1035,7 @@ class WriteOPS(object):
                 #print HVACDetails
 
 
-
+                print ops.AvailabilityManagerScheduled(model)
                 hvacHandle = ops.OpenStudioModelHVAC.addSystemType5(model).handle()
                 # get the airloop
                 airloop = model.getAirLoopHVAC(hvacHandle).get()
@@ -1036,7 +1052,7 @@ class WriteOPS(object):
                         #set control type
                         #can sensed min still be dry bulb for any of these?  Future release question
                         econo = self.recallOASys(HVACDetails)
-                        oactrl = self.updateOASys(econo,oactrl)
+                        oactrl = self.updateOASys(econo,oactrl,model)
                         print 'economizer settings updated to economizer name: ' + HVACDetails['airsideEconomizer']['name']
                         print ''
                     #the fan by default is variable volume, it will never be constant volume
@@ -1079,7 +1095,7 @@ class WriteOPS(object):
                     #set control type
                     #can sensed min still be dry bulb for any of these?  Future release question
                     econo = self.recallOASys(HVACDetails)
-                    oactrl = self.updateOASys(econo,oactrl)
+                    oactrl = self.updateOASys(econo,oactrl,model)
                     print 'economizer settings updated to economizer name: ' + HVACDetails['airsideEconomizer']['name']
                     print ''
                     
@@ -1967,12 +1983,7 @@ class RunOPS(object):
                         lines.append("    Cogeneration:DistrictCooling,!- Variable or Meter 13 Name"+"\n")
                         lines.append("    ValueWhenMaximumOrMinimum;            !- Aggregation Type for Variable or Meter 13"+"\n")
                         lines.append("\n")
-                        lines.append("Output:Meter,Electricity:Facility,Timestep; !- [J]"+"\n")
-                        lines.append("Output:Meter,Gas:Facility,Timestep; !- [J]"+"\n")
-                        lines.append("Output:Meter,Water:Facility,Timestep; !- [m3]"+"\n")
-                        lines.append("Output:Meter,DistrictCooling:Facility,Timestep; !- [J]"+"\n")
-                        lines.append("Output:Meter,DistrictHeating:Facility,Timestep; !- [J]"+"\n")
-                        lines.append("\n")
+
                     else:
                         lines.append(line)
                 else: 

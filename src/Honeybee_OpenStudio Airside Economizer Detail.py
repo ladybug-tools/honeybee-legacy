@@ -4,14 +4,14 @@
 # under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
 
 """
-Constant Volume Fan
+Airside Economizer
 -
 Provided by Honeybee 0.0.55
 
     Args:
         _uniqueName : a required field to uniquely name the economizer
         _economizerControlType_:... supply nothing and it defaults
-        _controlAction_: ... supply nothing and it defaults
+        _controlAction_: ... Requires an integer.  See ecdict for different values to supply.  Supply nothing and it defaults to "No Economizer", i.e. - always deliver Min Fresh Air only (the OpenStudio Default)
         _maximumAirFlowRate_: ... supply nothing and it autosizes
         _minimumAirFlowRate_: ... do nothing and it autosizes
         _minimumLimitType_: ... do nothing and it defaults to Proportional Minimum (min depends on the supply air flow rate as opposed to an absolute number)
@@ -21,13 +21,15 @@ Provided by Honeybee 0.0.55
         _sensedMinimum_: ... is the minimum of whatever the control type, at this point the system goes to minimum flow
         _sensedMaximum_: ... is the maximum of whatever the control type, at this point the system goes to minimum flow
         _economizerLockoutMethod_: ... should only used when the HVAC system is packaged DX
+        _timeOfDaySchedule_: provide this to command the economizer dampers into the "closed" position at night.  Do nothing and it defaults to the OpenStudio default (always open...which is typically not what you want)
+        _mechVentController_: an optional field, though highly recommended.  Open Studio provides default behavoir for this controller.
     Returns:
-        fanDefinition:...
+        airsideEconomizerParameters:...
 """
 
 ghenv.Component.Name = "Honeybee_OpenStudio Airside Economizer Detail"
 ghenv.Component.NickName = 'AirSideEconomizer'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_22_2014'
+ghenv.Component.Message = 'VER 0.0.55\nDEC_14_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | AirsideSystems"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -55,6 +57,7 @@ def clearInputs(econocomponent):
     econocomponent['sensedMin'] = None
     econocomponent['sensedMax'] = None
     econocomponent['DXlockoutMethod'] = None
+    econocomponent['timeOfDaySch'] = None
     return econocomponent
 
 class dictToClass(object):
@@ -112,6 +115,8 @@ if sc.sticky.has_key('honeybee_release'):
     econocomponent['sensedMin'] = _sensedMinimum_
     econocomponent['sensedMax'] = _sensedMaximum_
     econocomponent['DXLockoutMethod'] = _economizerLockoutMethod_
+    econocomponent['timeOfDaySch'] = _timeOfDaySchedule_
+    econocomponent['mvCtrl'] = _mechVentController_.d
 
     
     if _uniqueName != None:
