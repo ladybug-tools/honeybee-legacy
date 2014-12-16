@@ -19,7 +19,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Set Exposure for HDR"
 ghenv.Component.NickName = 'setHDRExposure'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.55\nDEC_16_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -39,7 +39,7 @@ def runCmdAndGetTheResults(command, shellKey = True):
     # p.kill()
     return out, err
 
-def main(_HDRFilePath, _render, _exposure_):
+def main(HDRFilePath, exposure):
     
     # import the classes
     if sc.sticky.has_key('honeybee_release'):
@@ -100,4 +100,4 @@ def main(_HDRFilePath, _render, _exposure_):
 
 if _HDRFilePath and _render:
     if _exposure_ == None: _exposure_ = 1
-    outputFilePath = main(_HDRFilePath, _render, _exposure_)
+    outputFilePath = main(_HDRFilePath, _exposure_)
