@@ -36,7 +36,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Color Surfaces by EP Result"
 ghenv.Component.NickName = 'ColorSurfaces'
-ghenv.Component.Message = 'VER 0.0.55\nDEC_05_2014'
+ghenv.Component.Message = 'VER 0.0.55\nDEC_17_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -483,16 +483,28 @@ def getData(pyZoneData, surfaceAreas, annualData, simStep, srfNormalizable, srfH
                 #Get the data from the lists.
                 if normByFlr == True and srfNormalizable == True:
                     for list in normedZoneData:
-                        dataForColoring.append(round(sum(list[startIndex:endIndex+1]), 4))
+                        dataToAppend = []
+                        for hourPeriod in HOYS:
+                            dataToAppend.append(list[hourPeriod-1])
+                        dataForColoring.append(round(sum(dataToAppend), 4))
                 elif normByFlr == False and srfNormalizable == True:
                     for list in pyZoneData:
-                        dataForColoring.append(round(sum(list[startIndex:endIndex+1]), 4))
+                        dataToAppend = []
+                        for hourPeriod in HOYS:
+                            dataToAppend.append(list[hourPeriod-1])
+                        dataForColoring.append(round(sum(dataToAppend), 4))
                 elif total == True:
                     for list in pyZoneData:
-                        dataForColoring.append(round(sum(list[startIndex:endIndex+1]), 4))
+                        dataToAppend = []
+                        for hourPeriod in HOYS:
+                            dataToAppend.append(list[hourPeriod-1])
+                        dataForColoring.append(round(sum(dataToAppend), 4))
                 else:
                     for list in pyZoneData:
-                        dataForColoring.append(round(sum(list[startIndex:endIndex+1])/len(list[startIndex:endIndex+1]), 4))
+                        dataToAppend = []
+                        for hourPeriod in HOYS:
+                            dataToAppend.append(list[hourPeriod-1])
+                        dataForColoring.append(round(sum(dataToAppend)/len(dataToAppend), 4))
                 #Add the analysis period to the title.
                 coloredTitle.append(str(monthNames[startMonth-1]) + " " + str(startDay) + " " + str(timeNames[startHour-1]) + " - " + str(monthNames[endMonth-1]) + " " + str(endDay) + " " + str(timeNames[endHour-1]))
         
