@@ -53,11 +53,11 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Energy Shade Benefit Evaluator"
 ghenv.Component.NickName = 'EnergyShadeBenefit'
-ghenv.Component.Message = 'VER 0.0.55\nDEC_05_2014'
+ghenv.Component.Message = 'VER 0.0.55\nDEC_20_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
-#compatibleLBVersion = VER 0.0.58\nDEC_02_2014
+#compatibleLBVersion = VER 0.0.58\nDEC_16_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
 except: pass
 
@@ -707,6 +707,8 @@ def main(allDataDict, sunVectors, legendPar, lb_preparation, lb_visualization):
             customColors = [System.Drawing.Color.FromArgb(255,0,0), System.Drawing.Color.FromArgb(255,51,51), System.Drawing.Color.FromArgb(255,102,102), System.Drawing.Color.FromArgb(255,153,153), System.Drawing.Color.FromArgb(255,204,204), System.Drawing.Color.FromArgb(255,255,255), System.Drawing.Color.FromArgb(204,204,255), System.Drawing.Color.FromArgb(153,153,255), System.Drawing.Color.FromArgb(102,102,255), System.Drawing.Color.FromArgb(51,51,255), System.Drawing.Color.FromArgb(0,0,255)]
             legendBasePoint = None
             legendScale = 1
+            legendFontSize = None
+            legendBold = False
         
         #Color each of the meshes with shade benefit.
         for windowCount, shadeMeshGroup in enumerate(shadeMeshListInit):
