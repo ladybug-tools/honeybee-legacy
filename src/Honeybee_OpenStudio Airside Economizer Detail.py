@@ -58,6 +58,8 @@ def clearInputs(econocomponent):
     econocomponent['sensedMax'] = None
     econocomponent['DXlockoutMethod'] = None
     econocomponent['timeOfDaySch'] = None
+    econocomponent['mvCtrl'] = None
+    econocomponent['availManagerList'] = None
     return econocomponent
 
 class dictToClass(object):
@@ -116,8 +118,14 @@ if sc.sticky.has_key('honeybee_release'):
     econocomponent['sensedMax'] = _sensedMaximum_
     econocomponent['DXLockoutMethod'] = _economizerLockoutMethod_
     econocomponent['timeOfDaySch'] = _timeOfDaySchedule_
-    econocomponent['mvCtrl'] = _mechVentController_.d
-
+    if _mechVentController_ != None:
+        econocomponent['mvCtrl'] = _mechVentController_.d
+    else:
+        econocomponent['mvCtrl'] = _mechVentController_
+    if _availabilityManagerList_ != None:
+        econocomponent['availManagerList'] = _availabilityManagerList_.d
+    else:
+        econocomponent['availManagerList'] = _availabilityManagerList_
     
     if _uniqueName != None:
         if (_economizerControlType_ == 5 and _maximumLimitDewpoint_== None):
