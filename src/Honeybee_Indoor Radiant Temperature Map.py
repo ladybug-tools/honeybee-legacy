@@ -1,4 +1,4 @@
-# This component colors zone surfaces based on an energy simulation output.
+# This component creates a radiant temperature map based on an energy simulation output.
 # By Chris Mackey
 # Chris@MackeyArchitecture.com
 # Ladybug started by Mostapha Sadeghipour Roudsari is licensed
@@ -9,7 +9,7 @@ Use this component to create an indoor MRT map based on srfIndoorTemp data out o
 _
 By default, the temperature map will be created based on the average value of mean radiant temperature for each surface.
 If total annual simulation data has been connected, the analysisPeriod_ input can be used to select out a specific period fo the year for coloration.
-In order to color surfaces by individual hours/months, connecting interger values to the "stepOfSimulation_" will allow you to scroll though each step of the input data.
+In order to color surfaces by individual hours, connecting interger values to the "stepOfSimulation_" will allow you to scroll though each step of the input data.
 -
 Provided by Honeybee 0.0.55
     
@@ -21,27 +21,27 @@ Provided by Honeybee 0.0.55
         ===============: ...
         analysisPeriod_: Optional analysisPeriod_ to take a slice out of an annual data stream.  Note that this will only work if the connected data is for a full year and the data is hourly.  Otherwise, this input will be ignored. Also note that connecting a value to "stepOfSimulation_" will override this input.
         stepOfSimulation_: Optional interger for the hour of simulation to color the surfaces with.  Connecting a value here will override the analysisPeriod_ input.
-        legendPar_: Optional legend parameters from the Ladybug Legend Parameters component.
-        _runIt: Set boolean to "True" to run the component and color the zone surfaces.
+        legendPar_: Optional legend parameters from the Ladybug "Legend Parameters" component.
+        _runIt: Set boolean to "True" to run the component and create the indoor radiant temperature map.
     Returns:
         readMe!: ...
         MRTMesh: A list of colored meshes showing the distribution of radiant temperature over each input _HBZone.
-        legend: A legend of the radiant temperature mpa. Connect this output to a grasshopper "Geo" component in order to preview the legend spearately in the Rhino scene.
+        legend: A legend for the air temperature map. Connect this output to a grasshopper "Geo" component in order to preview the legend spearately in the Rhino scene.
         legendBasePt: The legend base point, which can be used to move the legend in relation to the building with the grasshopper "move" component.
         ==========: ...
-        testPtsMRT: The values of mean radiant temperture (MRT) at each of the test points (this is what is used to  being used to color the surfaces.
+        testPtsMRT: The values of mean radiant temperture (MRT) at each of the test points (this is what is used to  being used to color the mesh).
         pointColors: The colors that correspond to each of the test points.
 
 """
 
 ghenv.Component.Name = "Honeybee_Indoor Radiant Temperature Map"
 ghenv.Component.NickName = 'RadiantTempMap'
-ghenv.Component.Message = 'VER 0.0.55\nNOV_30_2014'
+ghenv.Component.Message = 'VER 0.0.55\nDEC_20_2014'
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "09 | Energy | Energy"
+ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
 #compatibleLBVersion = VER 0.0.58\nDEC_02_2014
-try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
 except: pass
 
 
@@ -53,6 +53,7 @@ from Grasshopper import DataTree
 from Grasshopper.Kernel.Data import GH_Path
 import Rhino as rc
 import scriptcontext as sc
+import math
 
 
 
@@ -63,21 +64,20 @@ inputsDict = {
 2: ["_testPtsViewFactor", "The data tree of view factors that comes out of the 'Honeybee_Indoor View Factor Calculator'.  These will be used to weight the temperature effect of each surface for each of the points in the test mesh."],
 3: ["_zoneSrfNames", "The data tree of zone surface names that comes out of the 'Honeybee_Indoor View Factor Calculator'.  This is essentially a branched data tree with the names of each of the surfaces for each zone."],
 4: ["===============", "..."],
-5: ["analysisPeriod_", "Optional analysisPeriod_ to take a slice out of an annual data stream.  Note that this will only work if the connected data is for a full year and the data is hourly.  Otherwise, this input will be ignored. Also note that connecting a value to 'stepOfSimulation_' will override this input."],
-6: ["stepOfSimulation_", "Optional interger for the hour of simulation to color the surfaces with.  Connecting a value here will override the analysisPeriod_ input."],
-7: ["legendPar_", "Optional legend parameters from the Ladybug Legend Parameters component."],
-8: ["_runIt", "Set boolean to 'True' to run the component and color the zone surfaces."]
-}
-
-outputsDict = {
-    
-0: ["readMe!", "..."],
-1: ["MRTMesh", "A list of colored meshes showing the distribution of radiant temperature over each input _HBZone."],
-2: ["legend", "A legend of the surface colors. Connect this output to a grasshopper 'Geo' component in order to preview the legend spearately in the Rhino scene."],
-3: ["legendBasePt", "The legend base point, which can be used to move the legend in relation to the building with the grasshopper 'move' component."],
-4: ["==========", "..."],
-5: ["testPtsMRT", "The values of mean radiant temperture (MRT) at each of the test points (this is what is used to  being used to color the surfaces."],
-6: ["pointColors", "The colors that correspond to each of the test points."]
+5: ["_location_", "..."],
+6: ["_dirNormRad_", "..."],
+7: ["_diffuseHorizRad_", "..."],
+8: ["_testPts_", "..."],
+9: ["_testPtSkyView_", "..."],
+10: ["_shadingContext_", "..."],
+11: ["windowTransmissivity_", "..."],
+12: ["floorReflectivity_", "..."],
+13: ["cloAbsorptivity_", "..."],
+14: ["===============", "..."],
+15: ["analysisPeriod_", "Optional analysisPeriod_ to take a slice out of an annual data stream.  Note that this will only work if the connected data is for a full year and the data is hourly.  Otherwise, this input will be ignored. Also note that connecting a value to 'stepOfSimulation_' will override this input."],
+16: ["stepOfSimulation_", "Optional interger for the hour of simulation to color the surfaces with.  Connecting a value here will override the analysisPeriod_ input."],
+17: ["legendPar_", "Optional legend parameters from the Ladybug Legend Parameters component."],
+18: ["_runIt", "Set boolean to 'True' to run the component and color the zone surfaces."]
 }
 
 
@@ -264,23 +264,235 @@ def checkTheInputs():
                     print warning
                     ghenv.Component.AddRuntimeMessage(w, warning)
     
+    #Check the solar-related inputs to see if the effects of direct sun should be considered.
+    calcSolar = False
+    
+    #Check to be sure the there is a _dirNormRad_ and use it to set the method of the component.
+    checkData9 = True
+    directSolarRad = []
+    if len(_dirNormRad_) > 0:
+        if _dirNormRad_ != [None]:
+            try:
+                if 'Direct Normal Radiation' in _dirNormRad_[2] and len(_dirNormRad_) == 8767:
+                    location = _dirNormRad_[1]
+                    directSolarRad = _dirNormRad_[7:]
+                else:
+                    checkData9 = False
+                    warning = 'Weather data connected to _dirNormRad_ is not Direct Normal Radiation or is not hourly data for a full year.'
+                    print warning
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+            except:
+                checkData9 = False
+                warning = 'Invalid value for _dirNormRad_.'
+                print warning
+                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+        else:
+            checkData9 = False
+            warning = 'Null value connected for _dirNormRad_.'
+            print warning
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+    
+    # Get the diffuse Horizontal radiation.
+    checkData10 = True
+    diffSolarRad = []
+    if len(_diffuseHorizRad_) > 0:
+        if _diffuseHorizRad_ != [None]:
+            if str(_diffuseHorizRad_[0]) == 'key:location/dataType/units/frequency/startsAt/endsAt':
+                try:
+                    if 'Diffuse Horizontal Radiation' in _diffuseHorizRad_[2] and len(_diffuseHorizRad_) == 8767:
+                        diffSolarRad = _diffuseHorizRad_[7:]
+                    else:
+                        checkData10 = False
+                        warning = 'Weather data connected to _diffuseHorizRad_ is not Diffuse Horizontal Radiation or is not hourly data for a full year.'
+                        print warning
+                        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+                except:
+                    checkData10 = False
+                    warning = 'Invalid value for _diffuseHorizRad_.'
+                    print warning
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+            else:
+                checkData10 = False
+                warning = 'Invalid value for _diffuseHorizRad_.'
+                print warning
+                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+        else:
+            checkData10 = False
+            warning = 'Null value connected for _diffuseHorizRad_.'
+            print warning
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+    
+    #Pull the location data from the inputs.
+    checkData11 = True
+    latitude = None
+    longitude = None
+    timeZone = None
+    if _location_ != None:
+        try:
+            locList = _location_.split('\n')
+            for line in locList:
+                if "Latitude" in line: latitude = float(line.split(',')[0])
+                elif "Longitude" in line: longitude = float(line.split(',')[0])
+                elif "Time Zone" in line: timeZone = float(line.split(',')[0])
+        except:
+            checkData11 = False
+            warning = 'The connected _location_ is not a valid location from the "Ladybug_Import EWP" component or the "Ladybug_Construct Location" component.'
+            print warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+    
+    #Check the ground reflectivity.
+    checkData12 = True
+    if floorReflectivity_ != None:
+        if floorReflectivity_ < 1 and floorReflectivity_ > 0:
+            floorR = floorReflectivity_
+        else:
+            floorR = None
+            checkData12 = False
+            warning = '_floorReflectivity_ must be a value between 0 and 1.'
+            print warning
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+    else:
+        floorR = 0.25
+        print 'No value found for floorReflectivity_.  The ground reflectivity will be set to 0.25 for grass or light bare soil.'
+    
+    #Check the clothing absorptivity.
+    checkData13 = True
+    if cloAbsorptivity_ != None:
+        if cloAbsorptivity_ < 1 and cloAbsorptivity_ > 0:
+            cloA = cloAbsorptivity_
+        else:
+            cloA = None
+            checkData13 = False
+            warning = 'cloAbsorptivity_ must be a value between 0 and 1.'
+            print warning
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+    else:
+        cloA = 0.7
+        print 'No value found for cloAbsorptivity_.  The clothing absorptivity will be set to 0.7 for (average/brown) skin and average clothing.'
+    
+    #Check the windowTransmissivity_.
+    checkData14 = True
+    winTrans = []
+    if windowTransmissivity_ != []:
+        if len(windowTransmissivity_) == 8760:
+            allGood = True
+            for transVal in windowTransmissivity_:
+                transFloat = float(transVal)
+                if transFloat <= 1.0 and transFloat >= 0.0: winTrans.append(transFloat)
+                else: allGood = False
+            if allGood == False:
+                checkData14 = False
+                warning = 'windowTransmissivity_ must be a value between 0 and 1.'
+                print warning
+                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+        elif len(windowTransmissivity_) == 1:
+            if windowTransmissivity_[0] <= 1.0 and windowTransmissivity_[0] >= 0.0:
+                for count in range(8760):
+                    winTrans.append(windowTransmissivity_[0])
+            else:
+                checkData14 = False
+                warning = 'windowTransmissivity_ must be a value between 0 and 1.'
+                print warning
+                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+        else:
+            checkData14 = False
+            warning = 'windowTransmissivity_ must be either a list of 8760 values that correspond to hourly changing transmissivity over the year or a single constant value for the whole year.'
+            print warning
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+    else:
+        for count in range(8760):
+            winTrans.append(0.7)
+        print 'No value found for windowTransmissivity_.  The window transmissivity will be set to 0.7 for a typical double-glazed window without a low-E coating.'
+    
+    #Convert the data tree of _testPtSkyView_ to py data.
+    testPtSkyView = []
+    checkData15 = True
+    if _testPtSkyView_.BranchCount != 0:
+        if _testPtSkyView_.Branch(0)[0] != None:
+            for i in range(_testPtSkyView_.BranchCount):
+                zoneBranch = _testPtSkyView_.Path(i)[0]
+                branchList = _testPtSkyView_.Branch(i)
+                dataVal = []
+                for item in branchList:
+                    dataVal.append(item)
+                try: testPtSkyView[zoneBranch].extend(dataVal)
+                except:
+                    testPtSkyView.append([])
+                    testPtSkyView[zoneBranch].extend(dataVal)
+        else:
+            checkData15 = False
+            warning = "Connect a data tree of test point sky view factors from the 'Honeybee_Indoor View Factor Calculator' component."
+            print warning
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+    
+    #Convert the data tree of _shadingContext_ to py data.
+    shadingContext = []
+    checkData16 = True
+    if _shadingContext_.BranchCount != 0:
+        if _shadingContext_.Branch(0)[0] != None:
+            for i in range(_shadingContext_.BranchCount):
+                zoneBranch = _shadingContext_.Path(i)[0]
+                branchList = _shadingContext_.Branch(i)
+                dataVal = []
+                for item in branchList:
+                    dataVal.append(item)
+                try: shadingContext[zoneBranch].extend(dataVal)
+                except:
+                    shadingContext.append([])
+                    shadingContext[zoneBranch].extend(dataVal)
+        else:
+            checkData16 = False
+            warning = "Connect a data tree of shadingContext from the 'Honeybee_Indoor View Factor Calculator' component."
+            print warning
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+    
+    #Convert the data tree of _testPts_ to py data.
+    testPts = []
+    checkData17 = True
+    if _testPts_.BranchCount != 0:
+        if _testPts_.Branch(0)[0] != None:
+            for i in range(_testPts_.BranchCount):
+                zoneBranch = _testPts_.Path(i)[0]
+                branchList = _testPts_.Branch(i)
+                dataVal = []
+                for item in branchList:
+                    dataVal.append(item)
+                try: testPts[zoneBranch].extend(dataVal)
+                except:
+                    testPts.append([])
+                    testPts[zoneBranch].extend(dataVal)
+        else:
+            checkData17 = False
+            warning = "Connect a data tree of testPts from the 'Honeybee_Indoor View Factor Calculator' component."
+            print warning
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+    
+    
+    #Check to see if all of the solar inputs are there in order to account for solar radiation in the rad temp calculation.
+    if latitude != None and longitude != None and timeZone != None and diffSolarRad != [] and directSolarRad != [] and testPtSkyView != [] and shadingContext != [] and testPts != []:
+        calcSolar = True
+    elif latitude != None or longitude != None or timeZone != None or diffSolarRad != [] or directSolarRad != [] or testPtSkyView != [] or shadingContext != [] or testPts != []:
+        warning = "You must connect all required solar inputs to account for direct solar radiation falling on occupants."
+        print warning
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+    else: print "None of the inputs for solar radiation are connected and so the generated MRT maps will only use the zone surface temperature data."
     
     #Do a final check of everything.
-    if checkData1 == True and checkData2 == True and checkData3 == True and checkData4 == True and checkData5 == True and checkData6 == True and checkData7 == True and checkData8 == True:
+    if checkData1 == True and checkData2 == True and checkData3 == True and checkData4 == True and checkData5 == True and checkData6 == True and checkData7 == True and checkData8 == True and checkData9 == True and checkData10 == True and checkData11 == True and checkData12 == True and checkData13 == True and checkData14 == True and checkData15 == True and checkData16 == True and checkData17 == True:
         checkData = True
     else: checkData = False
     
-    return checkData, annualData, simStep, dataNumbers, dataHeaders, headerUnits, zoneSrfNames, testPtsViewFactor, viewFactorMesh
+    return checkData, annualData, simStep, dataNumbers, dataHeaders, headerUnits, zoneSrfNames, testPtsViewFactor, viewFactorMesh, calcSolar, latitude, longitude, timeZone, diffSolarRad, directSolarRad, testPtSkyView, testPts, shadingContext, winTrans, cloA, floorR
 
 
 def manageInputOutput(annualData, simStep):
     #If some of the component inputs and outputs are not right, blot them out or change them.
-    for input in range(9):
-        if input == 5 and annualData == False:
+    for input in range(19):
+        if input == 15 and annualData == False:
             ghenv.Component.Params.Input[input].NickName = "___________"
             ghenv.Component.Params.Input[input].Name = "."
             ghenv.Component.Params.Input[input].Description = " "
-        elif input == 6 and (simStep == "Annually" or simStep == "unknown timestep"):
+        elif input == 16 and (simStep == "Annually" or simStep == "unknown timestep"):
             ghenv.Component.Params.Input[input].NickName = "____________"
             ghenv.Component.Params.Input[input].Name = "."
             ghenv.Component.Params.Input[input].Description = " "
@@ -288,11 +500,6 @@ def manageInputOutput(annualData, simStep):
             ghenv.Component.Params.Input[input].NickName = inputsDict[input][0]
             ghenv.Component.Params.Input[input].Name = inputsDict[input][0]
             ghenv.Component.Params.Input[input].Description = inputsDict[input][1]
-    
-    for output in range(7):
-        ghenv.Component.Params.Output[output].NickName = outputsDict[output][0]
-        ghenv.Component.Params.Output[output].Name = outputsDict[output][0]
-        ghenv.Component.Params.Output[output].Description = outputsDict[output][1]
     
     if annualData == False: analysisPeriod = [0, 0]
     else: analysisPeriod = analysisPeriod_
@@ -302,15 +509,10 @@ def manageInputOutput(annualData, simStep):
     return analysisPeriod, stepOfSimulation
 
 def restoreInputOutput():
-    for input in range(9):
+    for input in range(19):
         ghenv.Component.Params.Input[input].NickName = inputsDict[input][0]
         ghenv.Component.Params.Input[input].Name = inputsDict[input][0]
         ghenv.Component.Params.Input[input].Description = inputsDict[input][1]
-    
-    for output in range(7):
-        ghenv.Component.Params.Output[output].NickName = outputsDict[output][0]
-        ghenv.Component.Params.Output[output].Name = outputsDict[output][0]
-        ghenv.Component.Params.Output[output].Description = outputsDict[output][1]
 
 
 def getSrfTempData(pyZoneData, annualData, simStep, srfHeaders, headerUnits, analysisPeriod, stepOfSimulation, lb_preparation, lb_visualization):
@@ -488,6 +690,76 @@ def calculatePointMRT(srfTempValues, zoneSrfNames, testPtsViewFactor, srfHeaders
     
     return dataCheck, pointMRTValues
 
+def calculateSolarAdjustedMRT(pointMRTValues, testPts, stepOfSimulation, latitude, longitude, timeZone, diffSolarRad, directSolarRad, testPtSkyView, shadingContext, winTrans, cloA, floorR, lb_sunpath, lb_comfortModels):
+    #Calculate the altitude and azimuth of the hour.
+    lb_sunpath.initTheClass(float(latitude), 0.0, rc.Geometry.Point3d.Origin, 100, float(longitude), float(timeZone))
+    d, m, t = lb_preparation.hour2Date(stepOfSimulation, True)
+    lb_sunpath.solInitOutput(m+1, d, t)
+    altitude = math.degrees(lb_sunpath.solAlt)
+    azimuth = math.degrees(lb_sunpath.solAz)
+    if altitude > 0:
+        sunVec = lb_sunpath.sunReverseVectorCalc()
+    else: sunVec = None
+    
+    ##Calculate the diffuse, direct, and global horizontal components of the solar radiation at the hour.
+    diffRad = diffSolarRad[stepOfSimulation-1]
+    dirNormRad = directSolarRad[stepOfSimulation-1]
+    globHorizRad = dirNormRad*(math.sin(altitude)) + diffRad
+    
+    #Define the Altitide and Azimuth as the SolarCal function understands it.
+    azFinal = azimuth
+    if azFinal > 180:
+        while azFinal > 180:
+            azFinal = azFinal-180
+    elif azFinal < 0:
+        while azFinal < 0:
+            azFinal = azFinal+180
+    azFinal = int(azFinal)
+    
+    altFinal = altitude
+    if altFinal > 90: altFinal = altFinal-90
+    altFinal = int(altFinal)
+    
+    #Compute the projected area factor and the fractional efficiency of a seated person.
+    ProjAreaFac = lb_comfortModels.splineSit(azFinal, altFinal)
+    fracEff = 0.696
+    
+    #Define a good guess of a radiative heat transfer coefficient.
+    radTransCoeff = 6.012
+    
+    #Compute the solar adjusted temperature for each point.
+    solarAdjustedPointMRTValues = []
+    if sunVec != None:
+        for zoneCount, zonePtsList in enumerate(pointMRTValues):
+            solarAdjustedPointMRTValues.append([])
+            for pointCount, pointMRT in enumerate(zonePtsList):
+                #First get the sunRay.
+                sunRay = rc.Geometry.Ray3d(testPts[zoneCount][pointCount], sunVec)
+                
+                #Next check if the sunray is blocked.
+                sunBlocked = False
+                for mesh in shadingContext[zoneCount]:
+                    rayIntersect = rc.Geometry.Intersect.Intersection.MeshRay(mesh, sunRay)
+                    if rayIntersect > 0: sunBlocked = True
+                
+                #If the ray was not blocked, then adjust then get rid of direct solar radiation.
+                if sunBlocked == True:
+                    dirRadFinal = 0.0
+                    globHorizRadFinal = diffRad
+                else:
+                    dirRadFinal = dirNormRad
+                    globHorizRadFinal = globHorizRad
+                
+                hourERF = ((0.5*fracEff*testPtSkyView[zoneCount][pointCount]*(diffRad + (globHorizRadFinal*floorR))+ (fracEff*ProjAreaFac*dirRadFinal))*winTrans[stepOfSimulation-1])*(cloA/0.95)
+                #Calculate the MRT delta, the solar adjusted MRT, and the solar adjusted operative temperature.
+                mrtDelt = (hourERF/(fracEff*radTransCoeff))
+                hourMRT = mrtDelt + (pointMRT)
+                solarAdjustedPointMRTValues[zoneCount].append(hourMRT)
+    else:
+        solarAdjustedPointMRTValues = pointMRTValues
+    
+    
+    return solarAdjustedPointMRTValues
 
 
 def main(pointMRTValues, viewFactorMesh, title, legendTitle, lb_preparation, lb_visualization, legendPar):
@@ -577,6 +849,8 @@ checkLB = True
 if sc.sticky.has_key('ladybug_release'):
     lb_preparation = sc.sticky["ladybug_Preparation"]()
     lb_visualization = sc.sticky["ladybug_ResultVisualization"]()
+    lb_sunpath = sc.sticky["ladybug_SunPath"]()
+    lb_comfortModels = sc.sticky["ladybug_ComfortModels"]()
 else:
     checkLB = False
     print "You should let the Ladybug fly first..."
@@ -587,9 +861,9 @@ else:
 #Check the data input.
 checkData = False
 if _srfIndoorTemp.BranchCount > 0 and str(_srfIndoorTemp) != "tree {0}" and checkLB == True:
-    checkData, annualData, simStep, pyZoneData, srfHeaders, headerUnits, zoneSrfNames, testPtsViewFactor, viewFactorMesh = checkTheInputs()
+    checkData, annualData, simStep, pyZoneData, srfHeaders, headerUnits, zoneSrfNames, testPtsViewFactor, viewFactorMesh, calcSolar, latitude, longitude, timeZone, diffSolarRad, directSolarRad, testPtSkyView, testPts, shadingContext, winTrans, cloA, floorR = checkTheInputs()
 
-#Create a mesh of the area to take MRT results and manage the inputs and outputs of the component based on the data that is hooked up.
+#Manage the inputs and outputs of the component based on the data that is hooked up.
 if checkData == True:
     analysisPeriod, stepOfSimulation = manageInputOutput(annualData, simStep)
 else: restoreInputOutput()
@@ -600,6 +874,8 @@ dataCheck = False
 if _runIt == True and checkData == True:
     srfTempValues, title, legendTitle = getSrfTempData(pyZoneData, annualData, simStep, srfHeaders, headerUnits, analysisPeriod, stepOfSimulation, lb_preparation, lb_visualization)
     dataCheck, pointMRTValues = calculatePointMRT(srfTempValues, zoneSrfNames, testPtsViewFactor, srfHeaders)
+    if calcSolar == True and stepOfSimulation != None and annualData == True and dataCheck == True and simStep == 'Hourly':
+        pointMRTValues = calculateSolarAdjustedMRT(pointMRTValues, testPts, stepOfSimulation, latitude, longitude, timeZone, diffSolarRad, directSolarRad, testPtSkyView, shadingContext, winTrans, cloA, floorR, lb_sunpath, lb_comfortModels)
 
 
 #Color the surfaces with the data and get all of the other cool stuff that this component does.
@@ -626,3 +902,4 @@ if _runIt == True and checkData == True and pointMRTValues != [] and dataCheck =
     for brCount, branch in enumerate(MRTMeshInit):
         for item in branch:MRTMesh.Add(item, GH_Path(brCount))
 
+ghenv.Component.Params.Output[3].Hidden = True
