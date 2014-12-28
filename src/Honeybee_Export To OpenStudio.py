@@ -594,9 +594,33 @@ class WriteOPS(object):
     def recallBoiler(self,plantDetails):
         return plantDetails['boiler']
     
+    def recallChiller(self,plantDetails):
+        return plantDetails['chiller']
+        
+    def updateChiller(self,uchiller,oschiller):
+        #print oschiller
+        #print uchiller
+        oschiller.setCondenserType(uchiller['condenserType'])
+        if uchiller['condenserFanPowerRatio']!=None:
+            oschiller.setCondenserFanPowerRatio(uchiller['condenserFanPowerRatio'])
+        oschiller.setMaximumPartLoadRatio(uchiller['maxPartLoadRatio'])
+        oschiller.setOptimumPartLoadRatio(uchiller['optimumPartLoadRatio'])
+        oschiller.setMinimumPartLoadRatio(uchiller['minPartLoadRatio'])
+        oschiller.setMinimumUnloadingRatio(uchiller['minUnloadingRatio'])
+        oschiller.setSizingFactor(uchiller['sizingFactor'])
+        oschiller.setReferenceCOP(uchiller['rCOP'])
+        if uchiller['rCWFlowRate'] != 'Autosize':
+            oschiller.setReferenceCondenserFluidFlowRate(uchiller['rCWFlowRate'])
+        if uchiller['rChWFlowRate'] != 'Autosize':
+            oschiller.setReferenceChilledWaterFlowRate(uchiller['rCWFlowRate'])
+        oschiller.setReferenceLeavingChilledWaterTemperature(uchiller['rLeavingChWt'])
+        oschiller.setReferenceEnteringCondenserFluidTemperature(uchiller['rEnteringCWT'])
+        oschiller.setChillerFlowMode(uchiller['chillerFlowMode'])
+        return oschiller
+        
     def updateBoiler(self,uboil,osboiler):
-        print osboiler
-        print uboil
+        #print osboiler
+        #print uboil
         osboiler.setFuelType(uboil['fueltype'])
         osboiler.setMinimumPartLoadRatio(uboil['minPartLoad'])
         osboiler.setMaximumPartLoadRatio(uboil['maxPartLoadRatio'])
@@ -615,6 +639,7 @@ class WriteOPS(object):
         else:
             osboiler.setDesignWaterFlowRate(uboil['designWaterFlowRate'])
         osboiler.setSizingFactor(uboil['sizingFactor'])
+        return osboiler
     #using a recall function is optional.  It is only designed to make reading the code easier
     def recallVVFan(self,HVACDetails):
         print 'getting supply fan from the hive'
@@ -1152,13 +1177,20 @@ class WriteOPS(object):
                         osboiler = model.getBoilerHotWater(boiler.handle()).get()
                         uboil = self.recallBoiler(plantDetails)
                         osboiler = self.updateBoiler(uboil,osboiler)
-                        
-                    #for resource in x[0].resources():
-                    #    print resource
-                    #rels = x[0].relationships()
-                    #for rel in rels:
-                        #print rel.relatedModelObject()
-                    
+                if plantDetails['chiller'] != None:
+                    print 'overrideing OpenStudio chiller description'
+                    x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:Water"))
+                    cc = model.getCoilCoolingWater(x[0].handle()).get()
+                    print cc
+                    chl = cc.plantLoop().get()
+                    print type(chl)
+                    chillervec = chl.supplyComponents(ops.IddObjectType("OS:Chiller:Electric:EIR"))
+                    for ccount,chiller in enumerate(chillervec):
+                        #sequencing, is this possible?
+                        oschiller = model.getChillerElectricEIR(chiller.handle()).get()
+                        print oschiller
+                        uchiller = self.recallChiller(plantDetails)
+                        oschiller = self.updateChiller(uchiller,oschiller)
 
             else:
                 msg = "HVAC system index " + str(systemIndex) +  " is not implemented yet!"
