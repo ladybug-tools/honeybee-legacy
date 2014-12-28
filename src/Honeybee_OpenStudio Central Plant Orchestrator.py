@@ -81,8 +81,11 @@ def main(sysID, boiler,chiller,coolingTower):
             else:
                 storedParams['boiler']={}
                 print "No Boiler has been specified.  A blank Boiler added to plant params."
-            if (len(chiller) >1):
-                pass
+            if (len(chiller) >= 1):
+                print str(len(chiller)) + " chiller definitions located."
+                for ccount,c in enumerate(chiller):
+                    print "Chiller " + str(ccount+1) + " being added."
+                    storedParams['chiller']= c.d
             else:
                 storedParams['chiller']={}
                 print "No Chiller has been specified.  A blank Chiller added to plant params."
