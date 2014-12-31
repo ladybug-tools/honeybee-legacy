@@ -13,6 +13,7 @@ Provided by Honeybee 0.0.55
     Args:
         _testPoints: Test points
         ptsVectors_: Point vectors
+        _ad_: Number of ambient divisions. "The error in the Monte Carlo calculation of indirect illuminance will be inversely proportional to the square root of this number. A value of zero implies no indirect calculation."
         uniformSky_: Set to true to run the study under a CIE uniform sky. Default is set to cloudy sky
     Returns:
         analysisRecipe: Recipe for vertical sky component
@@ -20,10 +21,10 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Vertical Sky Component"
 ghenv.Component.NickName = 'verticalSkyComponent'
-ghenv.Component.Message = 'VER 0.0.55\nNOV_08_2014'
+ghenv.Component.Message = 'VER 0.0.55\nDEC_31_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"
-#compatibleHBVersion = VER 0.0.55\nNOV_08_2014
+#compatibleHBVersion = VER 0.0.55\nMAR_27_2014
 #compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
@@ -73,7 +74,7 @@ def isAllNone(dataList):
     return True
 
 
-def main():
+def main(ad):
     # check for Honeybee
     if not sc.sticky.has_key('honeybee_release'):
         msg = "You should first let Honeybee to fly..."
@@ -108,7 +109,7 @@ def main():
     for key in hb_radParDict.keys():
         print key + " is set to " + str(hb_radParDict[key][quality])
         radPar[key] = hb_radParDict[key][quality]
-        radPar["_ad_"] = 2400
+        radPar["_ad_"] = ad
         radPar["_as_"] = 20
         radPar["_ar_"] = 300
         radPar["_aa_"] = 0.1
@@ -137,7 +138,9 @@ def main():
     
     return analysisRecipe
 
-analysisRecipe = main()
+try: ad = int(_ad_)
+except: ad = 4800
+analysisRecipe = main(ad)
 
 
 
