@@ -27,7 +27,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Construction"
 ghenv.Component.NickName = 'EPConstruction'
-ghenv.Component.Message = 'VER 0.0.55\nOCT_24_2014'
+ghenv.Component.Message = 'VER 0.0.55\nDEC_30_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -98,7 +98,8 @@ def main():
             exec('materialName = ' + layerName) #that's why I love Python. Yo!
             # check if it is a full string definition
             if materialName != None:
-                 # double check and make sure material already exists
+                materialName = materialName.upper()
+                # double check and make sure material already exists
                 if materialName not in sc.sticky ["honeybee_materialLib"].keys() and materialName not in sc.sticky ["honeybee_windowMaterialLib"].keys():
                     added, materialName = hb_EPMaterialAUX.addEPConstructionToLib(materialName, overwrite = True)
                     # double check and make sure material already exists
