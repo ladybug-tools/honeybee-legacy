@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.55\nDEC_27_2014'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_02_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -248,25 +248,40 @@ class hb_findFolders():
                     return path, exe_file
         return None, None
 
-class hb_GetEPConstructions():
-    
+
+class PrepareTemplateEPLibFiles(object):
+    """
+    Download Template files and check for available libraries for EnergyPlus
+    """
     def __init__(self, downloadTemplate = False, workingDir = sc.sticky["Honeybee_DefaultFolder"]):
         
+        if not sc.sticky.has_key("honeybee_constructionLib"): sc.sticky ["honeybee_constructionLib"] = {}
+        if not sc.sticky.has_key("honeybee_materialLib"): sc.sticky ["honeybee_materialLib"] = {}
+        if not sc.sticky.has_key("honeybee_windowMaterialLib"): sc.sticky ["honeybee_windowMaterialLib"] = {}
+        if not sc.sticky.has_key("honeybee_ScheduleLib"): sc.sticky["honeybee_ScheduleLib"] = {}
+        if not sc.sticky.has_key("honeybee_ScheduleTypeLimitsLib"): sc.sticky["honeybee_ScheduleTypeLimitsLib"] = {}
         
-        def downloadFile(url, workingDir):
-            import urllib
-            webFile = urllib.urlopen(url)
-            localFile = open(workingDir + '/' + url.split('/')[-1], 'wb')
-            localFile.write(webFile.read())
-            webFile.close()
-            localFile.close()
+        self.downloadTemplate = downloadTemplate
+        self.workingDir = workingDir
         
-        def cleanHBLib():
-            sc.sticky ["honeybee_constructionLib"] = {}
-            sc.sticky ["honeybee_materialLib"] = {}
-            sc.sticky ["honeybee_windowMaterialLib"] = {}
-            sc.sticky["honeybee_ScheduleLib"] = {}
-            sc.sticky["honeybee_ScheduleTypeLimitsLib"] = {}
+    def downloadFile(self, url, workingDir):
+        import urllib
+        webFile = urllib.urlopen(url)
+        localFile = open(workingDir + '/' + url.split('/')[-1], 'wb')
+        localFile.write(webFile.read())
+        webFile.close()
+        localFile.close()
+        
+    def cleanHBLib(self):
+        sc.sticky ["honeybee_constructionLib"] = {}
+        sc.sticky ["honeybee_materialLib"] = {}
+        sc.sticky ["honeybee_windowMaterialLib"] = {}
+        sc.sticky["honeybee_ScheduleLib"] = {}
+        sc.sticky["honeybee_ScheduleTypeLimitsLib"] = {}
+    
+    def downloadTemplates(self):
+        
+        workingDir = self.workingDir
         
         # create the folder if it is not there
         if not os.path.isdir(workingDir): os.mkdir(workingDir)
@@ -276,7 +291,7 @@ class hb_GetEPConstructions():
         bckupfile = os.path.join(workingDir, 'OpenStudioMasterTemplate_' + str(int(time.time())) +'.idf')
         
         # download template file
-        if downloadTemplate or not os.path.isfile(templateFile):
+        if self.downloadTemplate or not os.path.isfile(templateFile):
             # create a backup from users library
             try: shutil.copyfile(templateFile, bckupfile)
             except: pass
@@ -287,9 +302,9 @@ class hb_GetEPConstructions():
                 updatedLink = "https://dl.dropboxusercontent.com/u/16228160/honeybee/template/OpenStudioMasterTemplate.idf"
                 # This is the current link for current available version of Honeybee. Once we release the new version it can be removed.
                 #downloadFile(r'https://dl.dropboxusercontent.com/u/16228160/honeybee/OpenStudioMasterTemplate.idf', workingDir)
-                downloadFile(updatedLink, workingDir)
+                self.downloadFile(updatedLink, workingDir)
                 # clean current library
-                cleanHBLib()
+                self.cleanHBLib()
             except:
                 print 'Download failed!!! You need OpenStudioMasterTemplate.idf to use honeybee.' + \
                 '\nPlease check your internet connection, and try again!'
@@ -308,7 +323,7 @@ class hb_GetEPConstructions():
             try:
                 ## download File
                 print 'Downloading OpenStudio_Standards.json to ', workingDir
-                downloadFile(r'https://dl.dropboxusercontent.com/u/16228160/honeybee/OpenStudio_Standards.json', workingDir)
+                self.downloadFile(r'https://dl.dropboxusercontent.com/u/16228160/honeybee/OpenStudio_Standards.json', workingDir)
             except:
                 print 'Download failed!!! You need OpenStudio_Standards.json to use honeybee.' + \
                 '\nPlease check your internet connection, and try again!'
@@ -340,109 +355,117 @@ class hb_GetEPConstructions():
         if os.path.isfile(customEPLib):
             libFilePaths.append(customEPLib)
         
-        def createObject(openFile, resultDict, key, scheduleType = None):
-            # This function creates a dictionary from EPObjects
-            if key not in resultDict.keys():
-                # create an empty dictionary for the key
-                resultDict[key] = {}
-                
-            # store the data into the dictionary
-            for lineCount, line in enumerate(inf):
-                if lineCount == 0:
-                    nameKey = line.split("!")[0].strip()[:-1].upper()
-                    
-                    if nameKey in resultDict[key].keys():
-                        # this means the material is already in the lib
-                        # I can rename it but for now I rather to give a warning
-                        # and break the loop
-                        warning = key + ": " + nameKey + " is already existed in the libaray. " + \
-                                  "Rename one of the " + nameKey + " and try again."
-                        print warning
-                        break
-                    else:
-                        # add the material to the library
-                        resultDict[key][nameKey] = {}
-                        if scheduleType!=None: resultDict[key][nameKey][0] = scheduleType
-                        
-                else:
-                    objValue = line.split("!")[0].strip()
-                    try: objDescription = line.split("!")[1].strip()
-                    except:  objDescription = ""
-                    objKey = lineCount #+ '_' + line.split("!-")[1].strip()
-        
-                    if objValue.endswith(","):
-                        resultDict[key][nameKey][objKey] = objValue[:-1], objDescription
-                    elif objValue.endswith(";"):
-                        resultDict[key][nameKey][objKey] = objValue[:-1], objDescription
-                        break
-            return resultDict
+        return libFilePaths
         
         
-        if True: #not sc.sticky.has_key("honeybee_constructionLib") or sc.sticky["honeybee_constructionLib"] == {}:
-            print "Loading EP construction library..."
-            resultDict = {}
-            EPKeys = ["Material", "WindowMaterial", "Construction"]
-            for libFilePath in libFilePaths:
-                with open(libFilePath, 'r') as inf:
-                    for line in inf:
-                        for key in EPKeys:
-                            if line.strip().startswith(key):
-                                resultDict = createObject(inf, resultDict, key, line.strip()[:-1])
-                
-                outputs = { "Material" : [],
-                            "WindowMaterial" : [],
-                            "Construction" : []}
-                
-                materialList = outputs["Material"]
-                windowMat =  outputs["WindowMaterial"]
-                constrList = outputs["Construction"]
-                
-                sc.sticky ["honeybee_constructionLib"] = resultDict["Construction"]
-                sc.sticky ["honeybee_materialLib"] = resultDict["Material"]
-                sc.sticky ["honeybee_windowMaterialLib"] = resultDict["WindowMaterial"]
-                sc.sticky ["honeybee_constructionLib"]["List"] = outputs["Construction"]
-                sc.sticky ["honeybee_materialLib"]["List"] = outputs["Material"]
-                sc.sticky ["honeybee_windowMaterialLib"]["List"] = outputs["WindowMaterial"]
-        
-            for EPKey in EPKeys:
-                if EPKey in resultDict.keys():
-                    try:
-                        for key in resultDict[EPKey].keys(): outputs[EPKey].append(key)
-                        # List shouldn't be counted
-                        print  `len(resultDict[EPKey].keys())-1` + " " + EPKey.lower() + " found in " + " & ".join(libFilePaths)
-                    except:
-                        outputs[key] = " 0 " + EPKey.lower() + " found in " + " & ".join(libFilePaths)
-                
-        if True: #not sc.sticky.has_key("honeybee_ScheduleLib") or sc.sticky["honeybee_ScheduleLib"] == {}:
-            print "\nLoading EP schedules..."
-            EPKeys = ["ScheduleTypeLimits", "Schedule"]
-            schedulesDict = {}
-            for libFilePath in libFilePaths:
-                with open(libFilePath, 'r') as inf:
-                    for line in inf:
-                        for key in EPKeys:
-                            if line.strip().startswith(key):
-                                schedulesDict = createObject(inf, schedulesDict, key, line.strip()[:-1])
-                                break
-                
-                scheduleOutputs = { "Schedule" : [],
-                                    "ScheduleTypeLimits" : []}
-                            
-                sc.sticky["honeybee_ScheduleLib"] = schedulesDict["Schedule"]
-                sc.sticky["honeybee_ScheduleTypeLimitsLib"] = schedulesDict["ScheduleTypeLimits"]
-                sc.sticky["honeybee_ScheduleLib"]["List"] = scheduleOutputs["Schedule"]
-                sc.sticky["honeybee_ScheduleTypeLimitsLib"]["List"] = scheduleOutputs["ScheduleTypeLimits"]
+class HB_GetEPLibraries(object):
+    
+    def __init__(self):
+        pass
+    
+    def cleanHBLib(self, construction = True, schedule = True):
+        if construction:
+            sc.sticky ["honeybee_constructionLib"] = {}
+            sc.sticky ["honeybee_materialLib"] = {}
+            sc.sticky ["honeybee_windowMaterialLib"] = {}
+        if schedule:
+            sc.sticky["honeybee_ScheduleLib"] = {}
+            sc.sticky["honeybee_ScheduleTypeLimitsLib"] = {}
+    
+    def createEPObject(self, openFile, resultDict, key, scheduleType = None):
             
-            for EPKey in EPKeys:
-                if EPKey in schedulesDict.keys():
-                    try:
-                        for key in schedulesDict[EPKey].keys():
-                            scheduleOutputs[EPKey].append(key)
+        # store the data into the dictionary
+        recounter = 0
+        for lineCount, line in enumerate(openFile):
+            if line.strip().startswith("!") or line.strip()=="":
+                recounter -= 1
+                continue
+            if lineCount == 0:
+                nameKey = line.split("!")[0].strip()[:-1].strip().upper()
+                
+                if nameKey in resultDict[key].keys():
+                    # this means the material is already in the lib
+                    # I can rename it but for now I rather to give a warning
+                    # and break the loop
+                    warning = key + ": " + nameKey + " is already existed in the libaray. " + \
+                              "Rename one of the " + nameKey + " and try again."
+                    print warning
+                    break
+                else:
+                    # add the material to the library
+                    resultDict[key][nameKey] = {}
+                    if scheduleType!=None: resultDict[key][nameKey][0] = scheduleType
+                    
+            else:
+                objValue = line.split("!")[0].strip()
+                try: objDescription = line.split("!")[1].strip()
+                except:  objDescription = ""
+                objKey = lineCount + recounter #+ '_' + line.split("!-")[1].strip()
+    
+                if objValue.endswith(","):
+                    resultDict[key][nameKey][objKey] = objValue[:-1], objDescription
+                elif objValue.endswith(";"):
+                    resultDict[key][nameKey][objKey] = objValue[:-1], objDescription
+                    break
+        return resultDict
+        
+    def loadEPConstructionsAndMaterials(self, idfFilePaths, cleanCurrentLib = True):
+        
+        if cleanCurrentLib:
+            self.cleanHBLib(True, False)
+            
+        # add current library here
+        resultDict = {"Material": sc.sticky["honeybee_materialLib"],
+                      "WindowMaterial": sc.sticky["honeybee_windowMaterialLib"],
+                      "Construction": sc.sticky ["honeybee_constructionLib"]}
+            
+        print "Loading EP construction library..."
+        
+        EPKeys = ["Material", "WindowMaterial", "Construction"]
+        for libFilePath in idfFilePaths:
+            with open(libFilePath, 'r') as inf:
+                for line in inf:
+                    for key in EPKeys:
+                        if line.lower().strip().startswith(key.lower() + ",") \
+                            or line.lower().strip().startswith(key.lower() + ":"):
+                            resultDict = self.createEPObject(inf, resultDict, key, line.strip()[:-1])
+        
+        # add them to libraries
+        sc.sticky ["honeybee_constructionLib"] = resultDict["Construction"]
+        sc.sticky ["honeybee_materialLib"] = resultDict["Material"]
+        sc.sticky ["honeybee_windowMaterialLib"] = resultDict["WindowMaterial"]
+        
+        print str(len(sc.sticky["honeybee_constructionLib"].keys())) + " EPConstruction are loaded available in Honeybee library"
+        print str(len(sc.sticky["honeybee_materialLib"].keys())) + " EPMaterial are now loaded in Honeybee library"
+        print str(len(sc.sticky["honeybee_windowMaterialLib"].keys())) + " EPWindowMaterial are loaded in Honeybee library"
+    
+    
+    def loadEPSchedules(self, idfFilePaths, cleanCurrentLib = True):
+        if cleanCurrentLib:
+            self.cleanHBLib(False, True)
+            
+        schedulesDict = {"ScheduleTypeLimits": sc.sticky["honeybee_ScheduleTypeLimitsLib"],
+                         "Schedule": sc.sticky["honeybee_ScheduleLib"]
+                        }
+        
+        print "\nLoading EP schedules..."
+        EPKeys = ["ScheduleTypeLimits", "Schedule"]
+        for libFilePath in libFilePaths:
+            with open(libFilePath, 'r') as inf:
+                for line in inf:
+                    for key in EPKeys:
+                        if line.lower().strip().startswith(key.lower() + ",") \
+                           or line.lower().strip().startswith(key.lower() + ":"):
+                            schedulesDict = self.createEPObject(inf, schedulesDict, key, line.strip()[:-1])
+                            break
                         
-                        print  `len(schedulesDict[EPKey].keys())-1` + " " + EPKey.lower() + " found in " + " & ".join(libFilePaths)
-                    except:
-                        scheduleOutputs[key] = " 0 " + EPKey.lower() + " found in "  + " & ".join(libFilePaths)
-            print "\n"
+        sc.sticky["honeybee_ScheduleLib"] = schedulesDict["Schedule"]
+        sc.sticky["honeybee_ScheduleTypeLimitsLib"] = schedulesDict["ScheduleTypeLimits"]
+
+        print str(len(sc.sticky["honeybee_ScheduleLib"].keys())) + " schedules are loaded available in Honeybee library"
+        print str(len(sc.sticky["honeybee_ScheduleTypeLimitsLib"].keys())) + " schedule type limits are now loaded in Honeybee library"        
+        
+
 
 class RADMaterialAux(object):
     
@@ -2855,7 +2878,6 @@ class WriteDS(object):
                 'direct_sunlight_file ' + projectName  + '_' + `cpuCount` + '.dir\n' + \
                 'thermal_simulation ' + projectName  + '_' + `cpuCount` + '_intgain.csv\n'
 
-
 class hb_EnergySimulatioParameters(object):
     
     def readEPParams(self, EPParameters):
@@ -2883,7 +2905,6 @@ class hb_EnergySimulatioParameters(object):
             ddyFile = EPParameters[10]
         
         return timestep, shadowPar, solarDistribution, simulationControl, ddyFile
-
 
 class EPMaterialAux(object):
     
@@ -3234,7 +3255,7 @@ class EPMaterialAux(object):
                 break
         
         # add name to list
-        sc.sticky [HBLibrarieNames[key]]["List"].append(name)
+        # sc.sticky [HBLibrarieNames[key]]["List"].append(name)
         
         return True, name
     
@@ -3322,7 +3343,6 @@ class EPScheduleAux(object):
                 comments.append("Schedule Type")
         
         return values, comments
-
 
 class EPObjectsAux(object):
     
@@ -3457,7 +3477,7 @@ class EPObjectsAux(object):
                 break
         
         # add name to list
-        sc.sticky [HBLibrarieNames[key]]["List"].append(name)
+        #sc.sticky [HBLibrarieNames[key]]["List"].append(name)
         
         return True, name
     
@@ -3518,7 +3538,6 @@ class EPObjectsAux(object):
         up = rc.UI.Dialogs.ShowMessageBox(msg, "Duplicate Material Name", buttons, icon)
         
         return returnYN[up.ToString().ToUpper()]
-
 
 class EPTypes(object):
     def __init__(self):
@@ -3582,7 +3601,6 @@ class EPTypes(object):
                 #Strip Mall                = "StripMall"
                 #Retail                    = "Retail"
                 #Warehouse                 = "Warehouse"
-        
 
 class materialLibrary(object):
     
@@ -3611,7 +3629,6 @@ class materialLibrary(object):
                    1: 'OFFICE_SCH',
                    2: 'RESIDENTIAL_SCH',
                    3: 'HOTEL_SCH'}
-                   
 
 class scheduleLibrary(object):
     
@@ -3946,7 +3963,6 @@ class scheduleLibrary(object):
             '\tFor: AllOtherDays,       !- Field 38\n' + \
             '\tUntil: 24:00,            !- Field 39\n' + \
             '\t0.05;                    !- Field 40\n'
-    
 
 class BuildingProgramsLib(object):
     def __init__(self):
@@ -4128,7 +4144,6 @@ class BuildingProgramsLib(object):
                                     }
                     }
 
-
 class EPSurfaceLib(object):
     # I think I can remove this now
     def __init__(self):
@@ -4170,7 +4185,6 @@ class EPSurfaceLib(object):
                   4:'NoWind',
                   5:'WindExposed'}
 
-
 class EPZone(object):
     """This calss represents a honeybee zone that will be used for energy and daylighting
     simulatios"""
@@ -4185,6 +4199,19 @@ class EPZone(object):
         self.name = zoneName
         self.hasNonPlanarSrf = False
         self.hasInternalEdge = False
+        
+        self.mixAir = False
+        self.mixAirZoneList = []
+        self.mixAirFlowList = []
+        
+        self.natVent = False
+        self.natVentMinIndoorTemp = 24.0
+        self.natVentMaxIndoorTemp = 100.0
+        self.natVentMinOutdoorTemp = -100.0
+        self.natVentMaxOutdoorTemp = 100.0
+        self.windowOpeningArea = 0.0
+        self.windowHeightDiff = 0.0
+        self.natVentSchedule = None
         
         self.surfaces = []
         
@@ -4735,6 +4762,7 @@ class hb_reEvaluateHBZones(object):
         newSurface.coordinates = coordinates
         newSurface.type = surface.type # protect the surface from reEvaluate
         newSurface.construction = surface.construction
+        newSurface.EPConstruction = surface.EPConstruction
         newSurface.BC = surface.BC
         newSurface.sunExposure = surface.sunExposure
         newSurface.windExposure = surface.windExposure
@@ -4757,6 +4785,7 @@ class hb_reEvaluateHBZones(object):
             newAdjcSurface.coordinates = [coordinates[0]] + restOfcoordinates
             newAdjcSurface.type = adjcSurface.type
             newAdjcSurface.construction = adjcSurface.construction
+            newAdjcSurface.EPConstruction = adjcSurface.EPConstruction
             newAdjcSurface.BC = adjcSurface.BC
             newAdjcSurface.sunExposure = adjcSurface.sunExposure
             newAdjcSurface.windExposure = adjcSurface.windExposure
@@ -4778,6 +4807,7 @@ class hb_reEvaluateHBZones(object):
         newFenSrf.coordinates = coordinates
         newFenSrf.type = baseChildSurface.type
         newFenSrf.construction = baseChildSurface.construction
+        newFenSrf.EPConstruction = baseChildSurface.EPConstruction
         newFenSrf.parent = parentSurface
         newFenSrf.groundViewFactor = baseChildSurface.groundViewFactor
         newFenSrf.shadingControlName = baseChildSurface.shadingControlName
@@ -5032,7 +5062,6 @@ class hb_reEvaluateHBZones(object):
                 
             return newSurfaces
 
-
 class hb_EPSurface(object):
     def __init__(self, surface, srfNumber, srfID, *arg):
         """EP surface Class
@@ -5255,10 +5284,13 @@ class hb_EPSurface(object):
                 coordinatesList.append(list(meshVertices))
         
         # check order of the points
-        for coorList in coordinatesList:
+        for coorCount, coorList in enumerate(coordinatesList):
             # check if clockWise and reverse the list in case it is not
             if not self.isAntiClockWise(coorList):
-                coorList.reverse()
+                try: coorList.reverse()
+                except:
+                    try: coordinatesList[coorCount] = [coorList[3], coorList[2], coorList[1], coorList[0]]
+                    except: coordinatesList[coorCount] = [coorList[2], coorList[1], coorList[0]]
         #coordinatesList.reverse()
         return coordinatesList
         
@@ -5623,7 +5655,6 @@ class hb_EPSurface(object):
         except:
             return 'Surface name: ' + self.name + '\n' + 'Surface number: ' + str(self.num) + \
                    '\nSurface type is not assigned. Honeybee thinks this is a ' + str(self.srfType[self.getTypeByNormalAngle()]) + "."
-                   
 
 class hb_EPZoneSurface(hb_EPSurface):
     """..."""
@@ -5650,6 +5681,8 @@ class hb_EPZoneSurface(hb_EPSurface):
             self.BCObject = self.outdoorBCObject()
             self.sunExposure = self.srfSunExposure[srfType]
             self.windExposure = self.srfWindExposure[srfType]
+            self.getAngle2North()
+            
         
         if hasattr(self, 'parent') and self.parent!=None:
             # in both of this cases the zone should be meshed
@@ -5862,7 +5895,6 @@ class hb_EPShdSurface(hb_EPSurface):
         normalVector.Unitize()
         return centerPt, normalVector
 
-
 class hb_EPFenSurface(hb_EPSurface):
     """..."""
     def __init__(self, surface, srfNumber, srfName, parentSurface, surafceType, punchedWall = None):
@@ -5892,7 +5924,6 @@ class hb_EPFenSurface(hb_EPSurface):
         self.BCObject = self.outdoorBCObject()
         self.groundViewFactor = 'autocalculate'
         self.isChild = True # is it really useful?
-        
         
 class hb_Hive(object):
     
@@ -5990,7 +6021,6 @@ class hb_Hive(object):
                 
         return HBObjects
 
-
 class hb_RADParameters(object):
     def __init__(self):
         self.radParDict = {
@@ -6015,7 +6045,6 @@ class hb_RADParameters(object):
         "xScale": [1, 2, 6],
         "yScale": [1, 2, 6]
         }
-
 
 class hb_DSParameters(object):
     
@@ -6063,7 +6092,6 @@ class hb_DSParameters(object):
                 self.numOfIll += len(shadingRecipe.shadingStates) - 1
         
         # print "number of ill files = " + str(self.numOfIll)
-
 
 class CalculateGridBasedDLAnalysisResults(object):
     """
@@ -6129,7 +6157,6 @@ class SerializeObjects(object):
         with open(self.filePath, 'rb') as inf:
             self.data = pickle.load(inf)
 
-
 class hb_hwBoilerParams(object):
     def __init__(self):
         self.hwBoilerDict = {
@@ -6171,7 +6198,8 @@ class hb_chillerEIRParams(object):
             'sizingFactor':1.15,
             'Curves':None
             }
-
+            
+            
 class hb_airsideEconoParams(object):
     def __init__(self):
         self.airEconoDict = {
@@ -6335,6 +6363,7 @@ class hb_hspeedEvapCondParams(object):
         'storageTank':None,
         'curves':None
         }
+
 letItFly = True
 
 def checkGHPythonVersion(target = "0.6.0.3"):
@@ -6440,21 +6469,30 @@ if letItFly:
         # set up radiance materials
         sc.sticky["honeybee_RADMaterialAUX"](True)
         
-        try:
-            hb_GetEPConstructions(downloadTemplate)
-            
-            sc.sticky["honeybee_EPMaterialAUX"] = EPMaterialAux
-            sc.sticky["honeybee_EPScheduleAUX"] = EPScheduleAux
-            sc.sticky["honeybee_EPObjectsAUX"] = EPObjectsAux
-            
-        except Exception, e:
-            print e
-            print "Failed to load EP constructions!"
+        # Download EP libraries
+        templateFilesPrep = PrepareTemplateEPLibFiles(downloadTemplate)
+        libFilePaths = templateFilesPrep.downloadTemplates()
         
+        if libFilePaths != -1:
+            EPLibs = HB_GetEPLibraries()
+            EPLibs.loadEPConstructionsAndMaterials(libFilePaths)
+            EPLibs.loadEPSchedules(libFilePaths)
+        else:
+            msg = "Failed to load EP constructions! You won't be able to run analysis with Honeybee!\n" + \
+                      "Download the files from address below and copy them to: " + sc.sticky["Honeybee_DefaultFolder"] + \
+                      "\nhttps://app.box.com/s/bh9sbpgajdtmmystv3n4"
+            print msg
+            ghenv.Component.AddRuntimeMessage(w, msg)
+            
+            
         sc.sticky["honeybee_Hive"] = hb_Hive
+        sc.sticky["honeybee_GetEPLibs"] = HB_GetEPLibraries
         sc.sticky["honeybee_DefaultMaterialLib"] = materialLibrary
         sc.sticky["honeybee_DefaultScheduleLib"] = scheduleLibrary
         sc.sticky["honeybee_DefaultSurfaceLib"] = EPSurfaceLib
+        sc.sticky["honeybee_EPMaterialAUX"] = EPMaterialAux
+        sc.sticky["honeybee_EPScheduleAUX"] = EPScheduleAux
+        sc.sticky["honeybee_EPObjectsAUX"] = EPObjectsAux
         sc.sticky["honeybee_BuildingProgramsLib"] = BuildingProgramsLib
         sc.sticky["honeybee_EPTypes"] = EPTypes()
         sc.sticky["honeybee_EPZone"] = EPZone
