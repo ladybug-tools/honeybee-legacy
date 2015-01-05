@@ -21,6 +21,7 @@ Provided by Honeybee 0.0.55
         analysisPeriod_: Optional analysisPeriod_ to take a slice out of an annual data stream.  Note that this will only work if the connected data is for a full year and the data is hourly.  Otherwise, this input will be ignored. Also note that connecting a value to "stepOfSimulation_" will override this input.
         stepOfSimulation_: Optional interger for the hour of simulation to color the surfaces with.  Connecting a value here will override the analysisPeriod_ input.
         legendPar_: Optional legend parameters from the Ladybug Legend Parameters component.
+        recallHBHive_: Set to "True" to recall the zones from the hive each time the input changes and "False" to simply copy the zones to memory.  Calling the zones from the hive can take some more time but this is necessary if you are making changes to the zones and you want to check them.  Otherwise, if you are just scrolling through attributes, it is nice to set this to "False" for speed.  The default is set to "False" for speed.
         _runIt: Set boolean to "True" to run the component and color the zone surfaces.
     Returns:
         readMe!: ...
@@ -36,7 +37,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Color Surfaces by EP Result"
 ghenv.Component.NickName = 'ColorSurfaces'
-ghenv.Component.Message = 'VER 0.0.55\nDEC_17_2014'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_04_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -64,7 +65,8 @@ inputsDict = {
 4: ["analysisPeriod_", "Optional analysisPeriod_ to take a slice out of an annual data stream.  Note that this will only work if the connected data is for a full year and the data is hourly.  Otherwise, this input will be ignored. Also note that connecting a value to 'stepOfSimulation_' will override this input."],
 5: ["stepOfSimulation_", "Optional interger for the hour of simulation to color the surfaces with.  Connecting a value here will override the analysisPeriod_ input."],
 6: ["legendPar_", "Optional legend parameters from the Ladybug Legend Parameters component."],
-7: ["_runIt", "Set boolean to 'True' to run the component and color the zone surfaces."]
+7: ["recallHBHive_", "Set to 'True' to recall the zones from the hive each time the input changes and 'False' to simply copy the zones to memory.  Calling the zones from the hive can take some more time but this is necessary if you are making changes to the zones and you want to check them.  Otherwise, if you are just scrolling through attributes, it is nice to set this to 'False' for speed.  The default is set to 'False' for speed."],
+8: ["_runIt", "Set boolean to 'True' to run the component and color the zone surfaces."]
 }
 
 outputsDict = {
@@ -253,7 +255,7 @@ def getZoneSrfs(srfHeaders, pyZoneData, hb_zoneData):
 
 def manageInputOutput(annualData, simStep, srfNormalizable):
     #If some of the component inputs and outputs are not right, blot them out or change them.
-    for input in range(8):
+    for input in range(9):
         if input == 3 and srfNormalizable == False:
             ghenv.Component.Params.Input[input].NickName = "__________"
             ghenv.Component.Params.Input[input].Name = "."
@@ -291,7 +293,7 @@ def manageInputOutput(annualData, simStep, srfNormalizable):
     return normByFlr, analysisPeriod, stepOfSimulation
 
 def restoreInputOutput():
-    for input in range(8):
+    for input in range(9):
         ghenv.Component.Params.Input[input].NickName = inputsDict[input][0]
         ghenv.Component.Params.Input[input].Name = inputsDict[input][0]
         ghenv.Component.Params.Input[input].Description = inputsDict[input][1]
@@ -581,7 +583,11 @@ def main(zoneValues, zones, srfBreps, srfHeaders, title, legendTitle, lb_prepara
 
 #If the HBzone data has not been copied to memory or if the data is old, get it.
 initCheck = False
-if _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('Honeybee_SrfData') == False:
+if _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and recallHBHive_ == True:
+    copyHBZoneData()
+    hb_zoneData = sc.sticky["Honeybee_SrfData"]
+    initCheck = True
+elif _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('Honeybee_SrfData') == False:
     copyHBZoneData()
     hb_zoneData = sc.sticky["Honeybee_SrfData"]
     initCheck = True
