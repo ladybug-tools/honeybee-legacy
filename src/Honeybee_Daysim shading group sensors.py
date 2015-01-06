@@ -10,8 +10,8 @@ Read here for more information about Daysim sensors here: http://daysim.ning.com
 Provided by Honeybee 0.0.55
 
     Args:
-        interiorSensors_: Selected list of test points that indicates where occupants sit. If empty Daysim will consider all the test points as sensors.
-        exteriorSensors_: Selected list of test points that indicates the location of the exterior sensor. Exterior sensor will be only used if you are using the glare control. If empty Daysim will consider all the test points as sensors.
+        interiorSensors_: Selected list of test points that indicates where occupants sit.
+        exteriorSensors_: Selected list of test points that indicates the location of the exterior sensor. Exterior sensor will be only used if you are using the glare control.
     
     Returns:
         shadingGroupSensors: Shading group sensors to be used for read Daysim result
@@ -19,7 +19,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Daysim shading group sensors"
 ghenv.Component.NickName = 'shadingGroupSensors'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_05_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014

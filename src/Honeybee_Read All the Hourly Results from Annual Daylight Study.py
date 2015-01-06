@@ -22,7 +22,7 @@ Provided by Honeybee 0.0.55
 """
 ghenv.Component.Name = "Honeybee_Read All the Hourly Results from Annual Daylight Study"
 ghenv.Component.NickName = 'readAllTheDSHourlyResults'
-ghenv.Component.Message = 'VER 0.0.55\nNOV_11_2014'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_05_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -39,30 +39,38 @@ from Grasshopper import DataTree
 from Grasshopper.Kernel.Data import GH_Path
 
 
-def sortIllFiles(illFilesAddress):
-    sortedIllFiles = []
-    for shadingGroupCount in range(illFilesAddress.BranchCount):
-        fileNames = list(illFilesAddress.Branch(shadingGroupCount))
+def convertIllFileDaraTreeIntoSortedDictionary(illFilesAddress):
+    
+    # I should move this function into Honeybee_Honeybee #BadPractice!
+    
+    shadingGroupsCount = 0
+    shadingGroups = []
+    
+    # get number of shading groups
+    for branch in range(illFilesAddress.BranchCount):
+        if illFilesAddress.Path(branch).Indices[0] not in shadingGroups:
+            shadingGroups.append(illFilesAddress.Path(branch).Indices[0])
+            shadingGroupsCount+=1    
+    
+    illFileSets = {}
+    for branch in range(illFilesAddress.BranchCount):
+        # sort files inside each branch if they are not sorted
+        fileNames = list(illFilesAddress.Branch(branch))
         try:
             fileNames = sorted(fileNames, key=lambda fileName: int(fileName.split(".")[-2].split("_")[-1]))
-            sortedIllFiles.append(fileNames)
         except:
-            tmpmsg = "Can't sort the files based on the file names. Make sure the branches are sorted correctly."
+            tmpmsg = "Can't sort .ill files based on the file names. Make sure the branches are sorted correctly."
             w = gh.GH_RuntimeMessageLevel.Warning
             ghenv.Component.AddRuntimeMessage(w, tmpmsg)
-    
-    # sort shading states inside sortedIllFiles
-    illFileSets = {}
-    for listCount, fileNames in enumerate(sortedIllFiles):
-        try:
-            if len(fileNames[0].split("_state_"))==1:
-                illFileSets[0] = fileNames
-            else:
-                key = int(fileNames[0].split("_state_")[1].split("_")[0])-1
-                illFileSets[key] = fileNames
-        except Exception, e:
-            print "sortinng the branches failed!"
-            illFileSets[listCount] = fileNames
+        
+        #convert data tree to a useful dictionary
+        shadingGroupNumber = illFilesAddress.Path(branch).Indices[0]
+        if shadingGroupNumber not in illFileSets.keys():
+            illFileSets[shadingGroupNumber] = []
+        
+        # create a separate list for each state
+        # the structure now is like llFileSets[shadingGroupNumber][[state 1], [state 2],..., [state n]]
+        illFileSets[shadingGroupNumber].append(fileNames)
     
     return illFileSets
 
@@ -70,13 +78,14 @@ def main(illFilesAddress, testPoints, annualProfiles):
     msg = str.Empty
     
     shadingProfiles = []
+    shadingGroupsCount = 0 # assume there in no shading groups
     
     #groups of groups here
     for resultGroup in  range(testPoints.BranchCount):
         shadingProfiles.append([])
     
     # print len(shadingProfiles)
-    if len(annualProfiles)!=0:
+    if len(annualProfiles)!=0 and annualProfiles[0]!=None:
         # check if the number of profiles matches the number of spaces (point groups)
         if testPoints.BranchCount!=len(annualProfiles):
             msg = "Number of annual profiles doesn't match the number of point groups!\n" + \
@@ -85,6 +94,7 @@ def main(illFilesAddress, testPoints, annualProfiles):
             return msg, None, None
         
         # sort the annual profiles
+        # there should be an annual profile for every single space
         try:
             annualProfiles = sorted(annualProfiles, key=lambda fileName: int(fileName.split(".")[-2].split("_")[-1]))
         except:
@@ -114,27 +124,27 @@ def main(illFilesAddress, testPoints, annualProfiles):
                         shadingCounter += 1
         # make sure number of ill files matches the number of the shading groups
         # and sort them to work together
+        shadingGroups = []
+        
+        # get number of shading groups
+        for branch in range(illFilesAddress.BranchCount):
+            if illFilesAddress.Path(branch).Indices[0] not in shadingGroups:
+                shadingGroups.append(illFilesAddress.Path(branch).Indices[0])
+                shadingGroupsCount+=1
+        
         for shadingProfile in shadingProfiles:
-            if len(shadingProfile)!= illFilesAddress.BranchCount - 1:
+            if len(shadingProfile)!= shadingGroupsCount - 1:
                 msg = "Number of annual profiles doesn't match the number of shading groups!\n" + \
                       "NOTE: If you have no idea what I'm talking about just disconnect the annual Profiles\n" + \
                       "In that case the component will give you the results with no dynamic shadings."
                 return msg, None, None
-            else:
-                # looks right so let's sort them
-                # sort each list inside the branch and took the first one for sorting the branches!
-                illFileSets = sortIllFiles(illFilesAddress)
-
-                    
+                
     elif illFilesAddress.BranchCount > 1 and illFilesAddress.BranchCount-1 != len(annualProfiles):
         tempmsg = "Annual profile files are not provided.\nThe result will be only calculated for the original case with no blinds."
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, tempmsg)
-        # copy the files into the 
-        illFileSets = sortIllFiles(illFilesAddress)
-    else:
-        # no profile
-        illFileSets = sortIllFiles(illFilesAddress)
+    
+    illFileSets = convertIllFileDaraTreeIntoSortedDictionary(illFilesAddress)
     
     # read the data for hour of the year and multiply it with the shading
     numOfPts = testPoints.DataCount
@@ -145,29 +155,30 @@ def main(illFilesAddress, testPoints, annualProfiles):
                          1: [],
                          2: [],
                          }
+    
     # create a sublist for every shading state
-    for shadingGroupCount in illuminanceValues.keys():
+    for shadingGroupCount in illFileSets.keys():
         for HOY in range(8760):
             # separate list for every hour
             illuminanceValues[shadingGroupCount].append([])
             
             # each file represnts one state of shading
-            if len(illFileSets) > shadingGroupCount:
-                for resultFile in illFileSets[shadingGroupCount]:
-                    # add an empty list for each state
-                    illuminanceValues[shadingGroupCount][HOY].append([])
+            for shadingState in illFileSets[shadingGroupCount]:
+                # add an empty list for each state
+                illuminanceValues[shadingGroupCount][HOY].append([])
     
     totalPtCount = 0
     ptsCountSoFar = 0
     for shadingGroupCount in range(len(illFileSets.keys())):
-        for shadingState, resultFile in enumerate(illFileSets[shadingGroupCount]):
-            result = open(resultFile, 'r')
-            for HOY, line in enumerate(result):
-               line = line.replace('\n', '', 10)
-               lineSeg = line.Split(' ')
-               for hourLuxValue in lineSeg[4:]:
-                  illuminanceValues[shadingGroupCount][HOY][shadingState].append(float(hourLuxValue))
-            result.close()
+        for shadingState, resultFiles in enumerate(illFileSets[shadingGroupCount]):
+            for resultFile in resultFiles:
+                result = open(resultFile, 'r')
+                for HOY, line in enumerate(result):
+                   line = line.replace('\n', '', 10)
+                   lineSeg = line.Split(' ')
+                   for hourLuxValue in lineSeg[4:]:
+                      illuminanceValues[shadingGroupCount][HOY][shadingState].append(float(hourLuxValue))
+                result.close()
 
     return msg, illuminanceValues, shadingProfiles
 
@@ -203,23 +214,35 @@ if _illFilesAddress.DataCount!=0 and _illFilesAddress.Branch(0)[0]!=None and _te
                 shadingGroupInEffectForTheHour = "No blind"
                 iIllumLevelsNoDynamicSHD.AddRange(illuminanceValues[0][HOY][0][sum(numOfPtsInEachSpace[:spaceCount]):sum(numOfPtsInEachSpace[:spaceCount+1])], p)
                 
-                if len(illuminanceValues[1][HOY])!=0 and shadingProfiles[spaceCount]!=[]:
+                if illuminanceValues[1]!=[] and len(illuminanceValues[1][HOY])!=0 and shadingProfiles[spaceCount]!=[]:
                     numberOfStates = len(illuminanceValues[1][HOY])
                     if shadingProfiles[spaceCount][0][HOY] > 0:
                         stateInEffect = int(round(numberOfStates * shadingProfiles[spaceCount][0][HOY]))
                         blindsGroupInEffect = 1
                         shadingGroupInEffectForTheHour = "Group_1_State:" + `stateInEffect`
+                    
+                    if numberOfStates>1:
+                        for state in range(numberOfStates):
+                            pp = GH_Path(spaceCount, HOY, state)
+                            iIllumLevelsDynamicSHDGroupI.AddRange(illuminanceValues[1][HOY][stateInEffect-1][sum(numOfPtsInEachSpace[:spaceCount]):sum(numOfPtsInEachSpace[:spaceCount+1])], pp)
+                    else:
                         iIllumLevelsDynamicSHDGroupI.AddRange(illuminanceValues[1][HOY][stateInEffect-1][sum(numOfPtsInEachSpace[:spaceCount]):sum(numOfPtsInEachSpace[:spaceCount+1])], p)
-                
-                if len(illuminanceValues[2][HOY])!=0 and shadingProfiles[spaceCount]!=[]:
+               
+                if illuminanceValues[2]!=[] and len(illuminanceValues[2][HOY])!=0 and shadingProfiles[spaceCount]!=[]:
                     numberOfStates = len(illuminanceValues[2][HOY])
                     
                     if shadingProfiles[spaceCount][1][HOY] > 0:
                         stateInEffect = int(round(numberOfStates * shadingProfiles[spaceCount][1][HOY]))
                         blindsGroupInEffect = 2
                         shadingGroupInEffectForTheHour = "Group_2_State:" + `stateInEffect`
-                    iIllumLevelsDynamicSHDGroupII.AddRange(illuminanceValues[2][HOY][stateInEffect-1][sum(numOfPtsInEachSpace[:spaceCount]):sum(numOfPtsInEachSpace[:spaceCount+1])], p)
                     
+                    if numberOfStates>1:
+                        for state in range(numberOfStates):
+                            pp = GH_Path(spaceCount, HOY, state)
+                            iIllumLevelsDynamicSHDGroupII.AddRange(illuminanceValues[2][HOY][stateInEffect-1][sum(numOfPtsInEachSpace[:spaceCount]):sum(numOfPtsInEachSpace[:spaceCount+1])], pp)
+                    else:
+                        iIllumLevelsDynamicSHDGroupII.AddRange(illuminanceValues[2][HOY][stateInEffect-1][sum(numOfPtsInEachSpace[:spaceCount]):sum(numOfPtsInEachSpace[:spaceCount+1])], p)
+                
                 if stateInEffect!=0: stateInEffect-=1
                 iIlluminanceBasedOnOccupancy.AddRange(illuminanceValues[blindsGroupInEffect][HOY][stateInEffect][sum(numOfPtsInEachSpace[:spaceCount]):sum(numOfPtsInEachSpace[:spaceCount+1])], p)
                 

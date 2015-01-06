@@ -37,10 +37,10 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Run Daylight Simulation"
 ghenv.Component.NickName = 'runDaylightAnalysis'
-ghenv.Component.Message = 'VER 0.0.55\nNOV_17_2014'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_05_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
-#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
+#compatibleHBVersion = VER 0.0.55\nJAN_05_2015
 #compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
@@ -216,6 +216,7 @@ if _writeRad == True and _analysisRecipe!=None and ((len(_HBObjects)!=0 and _HBO
     if result!= -1:
         
         analysisTypesDict = sc.sticky["honeybee_DLAnalaysisTypes"]
+        hb_readAnnualResultsAux = sc.sticky["honeybee_ReadAnnualResultsAux"]()
         
         # RADGeoFileAddress, radiationResult, RADResultFilesAddress, testPoints, DSResultFilesAddress, HDRFileAddress = result
         radGeoFile, annualGlareResults, gridBasedResultFiles, testPoints, annualResultFiles, HDRFiles, studyFolder = result
@@ -274,50 +275,7 @@ if _writeRad == True and _analysisRecipe!=None and ((len(_HBObjects)!=0 and _HBO
             
         elif annualResultFiles != []:
             # sort ill files
-            # check if there are multiple ill files in the folder for different shading groups
-            illFilesDict = {}
-            
-            for fullPath in annualResultFiles:
-                fileName = os.path.basename(fullPath)
-                
-                if fileName.split("_")[:-1]!= []:
-                    if fileName.endswith("_down.ill") or fileName.endswith("_up.ill"):
-                        # conceptual blind
-                        gist = "_".join(fileName.split("_")[:-2]) + "_" + fileName.split("_")[-1]
-                    elif fileName.Contains("_state_"):
-                        # dynamic blinds with several states
-                        gist = "_".join(fileName.split("_")[:-3]) + "_" + fileName.split("_")[-1]
-                    else:
-                        gist = "_".join(fileName.split("_")[:-1])
-                        
-                else:
-                    gist = fileName
-                    
-                if gist not in illFilesDict.keys():
-                    illFilesDict[gist] = []
-                illFilesDict[gist].append(fullPath)
-            
-            # sort the lists
-            #try:
-            illFiles = DataTree[System.Object]()
-            for listCount, fileListKey in enumerate(illFilesDict.keys()):
-                p = GH_Path(listCount)
-                fileList = illFilesDict[fileListKey]
-                try:
-                    if fileName.endswith("_down.ill") or fileName.endswith("_up.ill"):
-                        # conceptual blind
-                        if fileList[0].endswith("_down.ill"):
-                            p = GH_Path(1)
-                        else:
-                            p = GH_Path(0)
-                        
-                        illFiles.AddRange(sorted(fileList, key=lambda fileName: int(fileName.split(".")[-2].split("_")[-2])), p)
-                    else:
-                        illFiles.AddRange(sorted(fileList, key=lambda fileName: int(fileName.split(".")[-2].split("_")[-1])), p)
-                except:
-                    illFiles.AddRange(fileList, p)
-            
-            resultFiles = illFiles
+            resultFiles = hb_readAnnualResultsAux.sortIllFiles(annualResultFiles)
             
         elif HDRFiles != []:
             resultFiles = HDRFiles

@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.55\nJAN_02_2015'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_05_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -40,9 +40,9 @@ except: pass
 import rhinoscriptsyntax as rs
 import Rhino as rc
 import scriptcontext as sc
-from clr import AddReference
-AddReference('Grasshopper')
 import Grasshopper.Kernel as gh
+from Grasshopper import DataTree
+from Grasshopper.Kernel.Data import GH_Path
 import math
 import shutil
 import sys
@@ -1136,7 +1136,7 @@ class hb_MSHToRAD(object):
     
         return matFile, radFile
 
-class WriteRAD(object):
+class hb_WriteRAD(object):
     
     def __init__(self, component = ghenv.Component):
         
@@ -1984,7 +1984,7 @@ class WriteRAD(object):
             
             return srfStr
             
-class WriteRADAUX(object):
+class hb_WriteRADAUX(object):
     
     def __init__(self):
         self.hb_radParDict = sc.sticky["honeybee_RADParameters"]().radParDict
@@ -2604,7 +2604,7 @@ class WriteRADAUX(object):
         else:
             return False
         
-class WriteDS(object):
+class hb_WriteDS(object):
     
     def isSensor(self, testPt, sensors):
         for pt in sensors:
@@ -2878,6 +2878,110 @@ class WriteDS(object):
                 'direct_sunlight_file ' + projectName  + '_' + `cpuCount` + '.dir\n' + \
                 'thermal_simulation ' + projectName  + '_' + `cpuCount` + '_intgain.csv\n'
 
+
+class hb_ReadAnnualResultsAux(object):
+    
+    def sortIllFiles(self, illFilesTemp):
+        """
+        This function sorts a list of *.ill for an annual study
+        and put them in different branches based on shading groups and blind states
+        ---------------------------------------------------------------------------
+        {0}
+        .ill files with no dynamic blinds. When there is no dynamic blinds or when
+        there are advanced dynamic blind these files should look like:
+            workingDir + ProjectName + "_" + CPUCount + ".ill"
+        and should be sorted based on CPUCount.
+        In case of conceptualBlinds the files will look like:
+            workingDir + ProjectName + "_" + CPUCount + "_up.ill"
+            
+        {1,0}
+         Branches with two numbers contain .ill files for shading groups with different
+         states. First number represents the shading group (which starts from 1) and
+         second number represents the state. For instance {1,0} includes .ill files
+         for first shading group and the first state of the blinds which is the most
+         open state. In case of simple blinds the file should look like:
+            workingDir + ProjectName + "_" + CPUCount + "_down.ill"
+         for advanced dynamic blinds the file should looks like:
+             workingDir + ProjectName + "_" shadingGroupName + "_state_" + stateCount+ "_" + CPUCount + ".ill"
+        """
+        
+        # check if there are multiple ill files in the folder for different shading groups
+        illFilesDict = {}
+        
+        for fullPath in illFilesTemp:
+            fileName = os.path.basename(fullPath)
+            
+            if fileName.split("_")[:-1]!= []:
+                if fileName.endswith("_down.ill") or fileName.endswith("_up.ill"):
+                    # conceptual blind
+                    stateName = "_".join(fileName.split("_")[:-2]) + "_" + fileName.split("_")[-1]
+                    if fileName.endswith("_up.ill"):
+                        groupName = -1
+                        stateName = "up"
+                        stateNumber = 0
+                    else:
+                        groupName = "conceptualBlinds"
+                        stateName = "down"
+                        stateNumber = 0
+                        
+                elif fileName.Contains("_state_"):
+                    # dynamic blinds with several states
+                    groupName = "_".join(fileName.split("_")[:-3])
+                    stateName = "_".join(fileName.split("_")[-3:-1])
+                    stateNumber = fileName.split("_")[-2]
+                else:
+                    groupName = -1
+                    stateName = "_".join(fileName.split("_")[:-1])
+                    stateNumber = -1 # no states
+            else:
+                groupName = -1
+                stateName = fileName
+                stateNumber = -1 # no states
+            
+            # create an empty dictionary
+            if groupName not in illFilesDict.keys():
+                illFilesDict[groupName] = {}
+            
+            # create an empty dictionary for each state
+            if stateName not in illFilesDict[groupName].keys():
+                illFilesDict[groupName][stateName] = []
+            
+            # append the file to the list
+            illFilesDict[groupName][stateName].append(fullPath)
+        
+        # sort the keys
+        illFiles = DataTree[System.Object]()
+        shadingGroupCount = 0
+        
+        for key, fileListDict in illFilesDict.items():
+            stateCount = 0
+            shadingGroupCount+=1
+            for state, fileList in fileListDict.items():
+                if key== -1:
+                    p = GH_Path(0)
+                    shadingGroupCount-=1
+                else:
+                    p = GH_Path(shadingGroupCount, stateCount)
+                    stateCount+=1
+                    
+                try:
+                    if fileName.endswith("_down.ill") or fileName.endswith("_up.ill"):
+                        # conceptual blind
+                        if fileList[0].endswith("_down.ill"):
+                            p = GH_Path(1,0)
+                        else:
+                            p = GH_Path(0)
+                        
+                        illFiles.AddRange(sorted(fileList, key=lambda fileName: int(fileName.split(".")[-2].split("_")[-2])), p)
+                    else:
+                        illFiles.AddRange(sorted(fileList, key=lambda fileName: int(fileName.split(".")[-2].split("_")[-1])), p)
+                        
+                except Exception, e:
+                    # failed to sort!
+                    illFiles.AddRange(fileList, p)
+        
+        return illFiles
+    
 class hb_EnergySimulatioParameters(object):
     
     def readEPParams(self, EPParameters):
@@ -6515,11 +6619,12 @@ if letItFly:
         sc.sticky["honeybee_EPFenSurface"] = hb_EPFenSurface
         sc.sticky["honeybee_DLAnalysisRecipe"] = DLAnalysisRecipe
         sc.sticky["honeybee_MeshToRAD"] = hb_MSHToRAD
-        sc.sticky["honeybee_WriteRAD"] = WriteRAD
-        sc.sticky["honeybee_WriteRADAUX"] = WriteRADAUX
-        sc.sticky["honeybee_WriteDS"] = WriteDS
+        sc.sticky["honeybee_WriteRAD"] = hb_WriteRAD
+        sc.sticky["honeybee_WriteRADAUX"] = hb_WriteRADAUX
+        sc.sticky["honeybee_WriteDS"] = hb_WriteDS
         sc.sticky["honeybee_RADParameters"] = hb_RADParameters
         sc.sticky["honeybee_DSParameters"] = hb_DSParameters
+        sc.sticky["honeybee_ReadAnnualResultsAux"] = hb_ReadAnnualResultsAux
         sc.sticky["honeybee_EPParameters"] = hb_EnergySimulatioParameters
         sc.sticky["honeybee_SerializeObjects"] = SerializeObjects
         sc.sticky["honeybee_GridBasedDLResults"] = CalculateGridBasedDLAnalysisResults
