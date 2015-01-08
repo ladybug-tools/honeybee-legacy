@@ -22,7 +22,7 @@ Provided by Honeybee 0.0.55
 """
 ghenv.Component.Name = "Honeybee_Solve Adjacencies"
 ghenv.Component.NickName = 'solveAdjc'
-ghenv.Component.Message = 'VER 0.0.55\nDEC_13_2014'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_08_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.55\nDEC_13_2014
@@ -207,10 +207,10 @@ def main(HBZones, altConstruction, altBC, tol, remCurrent):
                                             #    print msg
                                             #    w = gh.GH_RuntimeMessageLevel.Warning
                                             #    ghenv.Component.AddRuntimeMessage(w, msg)
-                                                
+                                            
                                             updateAdj(srf, surface, altConstruction, altBC, tol)                                        
                                             if mixZoneAir_ == True:
-                                                flowRate = updateZoneMixing(srf, testZone, targetZone)
+                                                flowRate = updateZoneMixing(surface, testZone, targetZone)
                                                 print "Air has been mixed between " + testZone.name + " and " + targetZone.name + " with a flow rate of " + str(flowRate) + " m3/s."
                                             
                                             break
