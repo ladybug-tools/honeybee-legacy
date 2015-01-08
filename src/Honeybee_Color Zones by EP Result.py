@@ -37,7 +37,7 @@ Provided by Honeybee 0.0.54
 
 ghenv.Component.Name = "Honeybee_Color Zones by EP Result"
 ghenv.Component.NickName = 'ColorZones'
-ghenv.Component.Message = 'VER 0.0.54\nJAN_04_2015'
+ghenv.Component.Message = 'VER 0.0.54\nJAN_07_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -497,19 +497,35 @@ def getData(pyZoneData, zoneFlrAreas, annualData, simStep, zoneNormalizable, zon
                 HOYS, months, days = lb_preparation.getHOYsBasedOnPeriod(analysisPeriod, 1)
                 startIndex = HOYS[0]
                 endIndex = HOYS[-1]
-                #Get the data from the lists.
+                
+                #select out the data.
+                theHourlyData = []
                 if normByFlr == True and zoneNormalizable == True:
                     for list in normedZoneData:
-                        dataForColoring.append(round(sum(list[startIndex:endIndex+1]), 4))
-                elif normByFlr == False and zoneNormalizable == True:
-                    for list in pyZoneData:
-                        dataForColoring.append(round(sum(list[startIndex:endIndex+1]), 4))
-                elif total == True:
-                    for list in pyZoneData:
-                        dataForColoring.append(round(sum(list[startIndex:endIndex+1]), 4))
+                        lstData = []
+                        for hour in HOYS:
+                            lstData.append(list[hour-1])
+                        theHourlyData.append(lstData)
                 else:
-                    for list in pyZoneData:
-                        dataForColoring.append(round(sum(list[startIndex:endIndex+1])/len(list[startIndex:endIndex+1]), 4))
+                    for list in  pyZoneData:
+                        lstData = []
+                        for hour in HOYS:
+                            lstData.append(list[hour-1])
+                        theHourlyData.append(lstData)
+                
+                #Get the data from the lists.
+                if normByFlr == True and zoneNormalizable == True:
+                    for list in theHourlyData:
+                        dataForColoring.append(round(sum(list), 4))
+                elif normByFlr == False and zoneNormalizable == True:
+                    for list in theHourlyData:
+                        dataForColoring.append(round(sum(list), 4))
+                elif total == True:
+                    for list in theHourlyData:
+                        dataForColoring.append(round(sum(list), 4))
+                else:
+                    for list in theHourlyData:
+                        dataForColoring.append(round(sum(list)/len(list), 4))
                 #Add the analysis period to the title.
                 coloredTitle.append(str(monthNames[startMonth-1]) + " " + str(startDay) + " " + str(timeNames[startHour-1]) + " - " + str(monthNames[endMonth-1]) + " " + str(endDay) + " " + str(timeNames[endHour-1]))
         
