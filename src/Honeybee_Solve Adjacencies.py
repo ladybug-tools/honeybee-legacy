@@ -14,7 +14,7 @@ Provided by Honeybee 0.0.55
         altBC_: An optional alternate boundary condition such as "Adiabatic".  The default will be "Surafce", which ensures that heat flows across each adjacent surface to a neighboring zone.
         mixZoneAir_: Set to "True" to have the energy simulation mix the zone air in between adjacent zones.  Use this to model cases such as virtual partitions or instances where there is free-flowing air in between zones (note that you should also set the altConstruction_ to "AIR WALL" for these cases).  The flow rate of mixed air will be proportional to the contact surface area of adjacent zones (0.0963 m3/s for each square meter of adjacent surface).  The default is set to "False" in order to not mix the air.
         tolerance_: The tolerance in Rhino model units that will be used determine whether two zones are adjacent to each other.  If no value is input here, the component will use the tolerance of the Rhino model document.
-        remCurrentAdjc_: If you are using this component after already solving for the adjacencies between some of the zones previously, set this to "True" in order to remeber the previously determined adcacency conditions.  The default is set to "False" in order to overwirte existing adjacencies each time.\
+        removeCurrentAdjc_: If you are using this component after already solving for the adjacencies between some of the zones previously, set this to "False" in order to remeber the previously determined adcacency conditions.  If set to "True", the current adjacencies will be removed. The default is set to "False" in order to remeber your previously-set adjacencies.
         _findAdjc: Set to "True" to solve adjacencies between zones.
     Returns:
         readMe!: A report of the found adjacencies.
@@ -234,7 +234,7 @@ if _findAdjc and _HBZones and _HBZones[0]!=None:
     if tol < sc.doc.ModelAbsoluteTolerance:
         tol = sc.doc.ModelAbsoluteTolerance
         
-    results = main(_HBZones, altConstruction_, altBC_, tol, remCurrentAdjc_)
+    results = main(_HBZones, altConstruction_, altBC_, tol, removeCurrentAdjc_)
     
     if results!=-1:
         HBZonesWADJ = results
