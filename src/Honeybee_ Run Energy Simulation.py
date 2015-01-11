@@ -10,7 +10,7 @@ export geometries to idf file, and run the energy simulation
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.55\nDEC_13_2014'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_10_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nDEC_13_2014
@@ -201,139 +201,6 @@ class WriteIDF(object):
                 str_2 = str_2 + '\t' + zone.name + ';\n\n'
         return str_1 + str_2
     
-    def writeHVACSched0(self):
-        return '\nScheduleTypeLimits, \n' + \
-        '\t' + 'Control Type, !- Name\n' + \
-        '\t0,                       !- Lower Limit Value\n' + \
-        '\t4,                       !- Upper Limit Value\n' + \
-        '\t' + 'DISCRETE;                !- Numeric Type\n'
-    
-    def writeHVACSched1(self):
-        return '\nSchedule:Year, HVAC Operation Schedule, Control Type,\n' + \
-        '\t' + 'Winter Control Type Week Sch, 1, 1, 3, 31' + ',  !- End winter\n' + \
-        '\t' + 'Summer Control Type Week Sch, 4, 1, 9, 30' + ',  !- Summer\n' + \
-        '\t' + 'Winter Control Type Week Sch, 10, 1, 12, 31' + ';  !- Start winter\n'
-    
-    def writeHVACSched2(self):
-        return '\nSchedule:Day:Hourly, Summer Control Type Day Sch, Control Type,\n' + \
-        '\t' + '4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4' + ';\n'
-    
-    def writeHVACSched3(self):
-        return '\nSchedule:Day:Hourly, Winter Control Type Day Sch, Control Type,\n' + \
-        '\t' + '4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4' + ';\n'
-    
-    def writeHVACSched4(self):
-        return '\nSchedule:Week:Daily, Summer Control Type Week Sch,\n' + \
-        '\t' + 'Summer Control Type Day Sch,Summer Control Type Day Sch,Summer Control Type Day Sch,' + '\n' + \
-        '\t' + 'Summer Control Type Day Sch,Summer Control Type Day Sch,Summer Control Type Day Sch,' + '\n' + \
-        '\t' + 'Summer Control Type Day Sch,Summer Control Type Day Sch,Summer Control Type Day Sch,' + '\n' + \
-        '\t' + 'Summer Control Type Day Sch,Summer Control Type Day Sch,Summer Control Type Day Sch;'+ '\n'
-    
-    def writeHVACSched5(self):
-        return '\nSchedule:Week:Daily, Winter Control Type Week Sch,\n' + \
-        '\t' + 'Winter Control Type Day Sch,Winter Control Type Day Sch,Winter Control Type Day Sch,' + '\n' + \
-        '\t' + 'Winter Control Type Day Sch,Winter Control Type Day Sch,Winter Control Type Day Sch,' + '\n' + \
-        '\t' + 'Winter Control Type Day Sch,Winter Control Type Day Sch,Winter Control Type Day Sch,' + '\n' + \
-        '\t' + 'Winter Control Type Day Sch,Winter Control Type Day Sch,Winter Control Type Day Sch;'+ '\n'
-    
-    def writeThemostat(self, name, zone):
-        if zone.isConditioned:
-            return '\nZoneControl:Thermostat,\n' + \
-            '\t' + name + ' Thermostat' + ',  !- Thermostat Name\n' + \
-            '\t' + name + ',  !- Zone Name\n' + \
-            '\t' + 'HVAC Operation Schedule' + ',  !- Control Type Schedule Name\n' + \
-            '\t' + 'ThermostatSetpoint:DualSetpoint' + ',  !- Control Type\n' + \
-            '\t' + name + ' Thermostat Dual SP Control' + ';  !- Control Type Name\n'
-        else:
-            return "\n"
-    
-    def writeSetpoint(self, zone, name):
-        if zone.isConditioned:
-            heatingSetPtSchedule = zone.heatingSetPtSchedule
-            coolingSetPtSchedule = zone.coolingSetPtSchedule
-            
-            if heatingSetPtSchedule.lower().endswith(".csv"):
-                # find filebased schedule name
-                heatingSetPtSchedule = self.fileBasedSchedules[heatingSetPtSchedule.upper()]            
-            
-            if coolingSetPtSchedule.lower().endswith(".csv"):
-                # find filebased schedule name
-                coolingSetPtSchedule = self.fileBasedSchedules[coolingSetPtSchedule.upper()]            
-            
-            return '\nThermostatSetpoint:DualSetpoint,\n' + \
-            '\t' + name + ' Thermostat Dual SP Control' + ',  !- Name\n' + \
-            '\t' + heatingSetPtSchedule + ',  !- Heating Setpoint Temperature Schedule Name\n' + \
-            '\t' + coolingSetPtSchedule + ';  !- Cooling Setpoint Temperature Schedule Name\n'
-        else:
-            return "\n"
-    
-    def writeEquipConnect(self, name, zone):
-        if zone.isConditioned:
-            return '\nZoneHVAC:EquipmentConnections,\n' + \
-            '\t' + name + ',  !- Zone Name\n' + \
-            '\t' + name + " Equipment" + ',  !- Zone Conditioning Equipment List Name\n' + \
-            '\t' + name + " Inlets" + ',  !- List Name: Zone Air Inlet Nodes\n' + \
-            '\t' + ',  !- List Name: Zone Air Exhaust Nodes\n' + \
-            '\t' + name + " Zone Air Node" + ',  !- Zone Air Node Name\n' + \
-            '\t' + name + " Return Outlet" + ';  !- Zone Return Air Node Name\n'
-        else:
-            return "\n"
-    
-    def writeEquipList(self, name, zone):
-        if zone.isConditioned:
-            return '\nZoneHVAC:EquipmentList,\n' + \
-            '\t' + name + ' Equipment' + ',  !- Name\n' + \
-            '\t' + "ZoneHVAC:IdealLoadsAirSystem" + ',  !- Zone Equipment 1 Object Type\n' + \
-            '\t' + name + "ZoneHVAC:IdealLoadsAirSystem" + ',  !- Zone Equipment 1 Name\n' + \
-            '\t' + '1' + ',  !- Zone Equipment 1 Cooling Sequence\n' + \
-            '\t' + "1" + ';  !- Zone Equipment 1 Heating or No-Load Sequence\n'
-        else:
-            return "\n"
-    
-    def writeNodeList(self, name, zone):
-        if zone.isConditioned:
-            return '\nNodeList,\n' + \
-            '\t' + name + ' Inlets' + ',  !- List Name\n' + \
-            '\t' + "Node " + name + " In" + ';  !- Node Name\n'
-        else:
-            return "\n"
-    
-    def writeIdealAirSys(self, name, zone):
-        if zone.isConditioned:
-            if zone.coolSupplyAirTemp == "": coolSupply = "11"
-            else: coolSupply = zone.coolSupplyAirTemp
-            if zone.heatSupplyAirTemp == "": heatSupply = "40"
-            else: heatSupply = zone.heatSupplyAirTemp
-            # print coolSupply 
-            return '\nZoneHVAC:IdealLoadsAirSystem,\n' + \
-            '\t' + name + "ZoneHVAC:IdealLoadsAirSystem" + ',  !- Ideal Loads Air Name\n' + \
-            '\t' + ',  !- Availability Schedule Name\n' + \
-            '\t' + "Node " + name + " In" + ',  !- Zone Supply Air Node Name\n' + \
-            '\t' + ',  !- Zone Exhaust Air Node Name\n' + \
-            '\t' + heatSupply + ',  !- Heating Supply Air Temp {C}\n' + \
-            '\t' + coolSupply + ',  !- Cooling Supply Air Temp {C}\n' + \
-            '\t' + ',  !- Max Heating Supply Air Humidity Ratio {kg-H2O/kg-air}\n' + \
-            '\t' + ',  !- Min Cooling Supply Air Humidity Ratio {kg-H2O/kg-air}\n' + \
-            '\t' + "NoLimit" + ',  !- Heating Limit\n' + \
-            '\t' + ',  !- Maximum Heating Air Flow Rate {m3/s}\n' + \
-            '\t' + ',  !- Maximum Sensible Heat Capacity\n' + \
-            '\t' + "NoLimit" + ',  !- Cooling Limit\n' + \
-            '\t' + ',  !- Maximum Cooling Air Flow Rate {m3/s}\n' + \
-            '\t' + ',  !- Maximum Total Cooling Capacity\n' + \
-            '\t' + ',  !- Heating Availability Schedule\n' + \
-            '\t' + ',  !- Cooling Availability Schedule\n' + \
-            '\t' + 'None' + ',  !- Dehumidification Control Type\n' + \
-            '\t' + ',  !- Cooling Sensible Heat Ratio\n' + \
-            '\t' + 'None' + ',  !- Humidification Control Type\n' + \
-            '\t' + 'DSOA' + zone.name + ',  !- Outside Air Object Name\n' + \
-            '\t' + ',  !- Outside Air Inlet Name\n' + \
-            '\t' + ',  !- Demand Controlled Ventilation Type\n' + \
-            '\t' + ',  !- Outdoor Air Economizer Type\n' + \
-            '\t' + ',  !- Heat Recovery Type\n' + \
-            '\t' + ',  !- Seneible HEat Recovery Effectiveness\n' + \
-            '\t' + ';  !- Latent HEat Recovery Effectiveness\n'
-        else:
-            return "\n"
     
     def EPHVACTemplate( self, name, zone):
         if zone.isConditioned:
@@ -360,12 +227,54 @@ class WriteIDF(object):
             
     def EPIdealAirSystem(self, zone, thermostatName):
         if zone.isConditioned:
+            
+            if zone.coolSupplyAirTemp == "": coolSupply = "13"
+            else: coolSupply = zone.coolSupplyAirTemp
+            if zone.heatSupplyAirTemp == "": heatSupply = "50"
+            else: heatSupply = zone.heatSupplyAirTemp
+            if zone.coolingCapacity == "": coolLimit = "NoLimit"
+            else: coolLimit = 'LimitCapacity'
+            if zone.heatingCapacity == "": heatLimit = "NoLimit"
+            else: heatLimit = 'LimitCapacity'
+            if zone.HVACAvailabilitySched != "":
+                scheduleFileName = os.path.basename(zone.HVACAvailabilitySched)
+                scheduleObjectName = "_".join(scheduleFileName.split(".")[:-1])
+            else: scheduleObjectName = ""
+            
             return '\nHVACTemplate:Zone:IdealLoadsAirSystem,\n' + \
                 '\t' + zone.name + ',\t!- Zone Name\n' + \
-                '\t' + thermostatName + ';\t!- Template Thermostat Name\n\n'
+                '\t' + thermostatName + ',\t!- Template Thermostat Name\n' + \
+                '\t' + scheduleObjectName + ',  !- Availability Schedule Name\n' + \
+                '\t' + heatSupply + ',  !- Heating Supply Air Temp {C}\n' + \
+                '\t' + coolSupply + ',  !- Cooling Supply Air Temp {C}\n' + \
+                '\t' + ',  !- Max Heating Supply Air Humidity Ratio {kg-H2O/kg-air}\n' + \
+                '\t' + ',  !- Min Cooling Supply Air Humidity Ratio {kg-H2O/kg-air}\n' + \
+                '\t' + heatLimit + ',  !- Heating Limit\n' + \
+                '\t' + ',  !- Maximum Heating Air Flow Rate {m3/s}\n' + \
+                '\t' + zone.heatingCapacity + ',  !- Maximum Sensible Heat Capacity\n' + \
+                '\t' + coolLimit + ',  !- Cooling Limit\n' + \
+                '\t' + ',  !- Maximum Cooling Air Flow Rate {m3/s}\n' + \
+                '\t' + zone.coolingCapacity + ',  !- Maximum Total Cooling Capacity\n' + \
+                '\t' + ',  !- Heating Availability Schedule\n' + \
+                '\t' + ',  !- Cooling Availability Schedule\n' + \
+                '\t' + '' + ',  !- Dehumidification Control Type\n' + \
+                '\t' + ',  !- Cooling Sensible Heat Ratio\n' + \
+                '\t' + '' + ',  !- Dehumidification Setpoint\n' + \
+                '\t' + 'None' + ',  !- Humidification Control Type\n' + \
+                '\t' + '' + ',  !- Humidification Setpoint\n' + \
+                '\t' + 'DetailedSpecification' + ',  !- Outdoor Air Method\n' + \
+                '\t' + ',  !- Outdoor Air Flow Rate Per Person\n' + \
+                '\t' + ',  !- Outdoor Air Flow Rate Per Floor Zone Area\n' + \
+                '\t' + ',  !- Outdoor Air Flow Rate Per Zone\n' + \
+                '\t' + "DSOA" + zone.name + ',  !- Design Specification Outdoor Air Object Name\n' + \
+                '\t' + zone.demandVent + ',  !- Demand Controlled Ventilation Type\n' + \
+                '\t' + zone.airSideEconomizer + ',  !- Outdoor Air Economizer Type\n' + \
+                '\t' + zone.heatRecovery + ',  !- Heat Recovery Type\n' + \
+                '\t' + zone.heatRecoveryEffectiveness + ',  !- Seneible Heat Recovery Effectiveness\n' + \
+                '\t' + ';  !- Latent Heat Recovery Effectiveness\n'
         else:
             return "\n"
-
+    
     def EPSiteLocation(self, epw_file):
         epwfile = open(epw_file,"r")
         headline = epwfile.readline()
@@ -383,7 +292,16 @@ class WriteIDF(object):
             '\t' + elev + ';   !Elevation\n'
         epwfile.close()
         return locationString
-
+    
+    def EPSizingPeriod(self, weatherFilePeriod):
+        sizingString = "\nSizingPeriod:WeatherFileConditionType,\n" + \
+            '\t' + 'ExtremeSizing'+ weatherFilePeriod + ',\n' + \
+            '\t' + weatherFilePeriod + ',    !Period Selection\n' + \
+            '\t' + 'Monday' + ',   !Day of Week for Start Day\n' + \
+            '\t' + 'Yes' + ', !Use Weather File Daylight Davings Period\n' + \
+            '\t' + 'Yes' + ';   !Use WeatherFile Rain and Snow Indicators\n'
+        return sizingString
+    
     def EPVersion(self, version = 8.1):
         return '\nVersion, ' + `version` + ';\n'
     
@@ -468,7 +386,7 @@ class WriteIDF(object):
         if zone.isConditioned:
             return "\nDesignSpecification:OutdoorAir,\n" + \
                    "\tDSOA" + zone.name + ", !- Name\n" + \
-                   "\tSum, !- Outdoor Air Method\n" + \
+                   "\tMaximum, !- Outdoor Air Method\n" + \
                    "\t" + str(zone.ventilationPerPerson) + ", !- Outdoor Air Flow per Person {m3/s-person}\n" + \
                    "\t" + str(zone.ventilationPerArea) + ", !- Outdoor Air Flow per Zone Floor Area {m3/s-m2}\n" + \
                    "\t0.0; !- Outdoor Air Flow per Zone {m3/s}"
@@ -1024,6 +942,10 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     # Location
     idfFile.write(hb_writeIDF.EPSiteLocation(epwFileAddress))
     
+    # SizingPeriod
+    idfFile.write(hb_writeIDF.EPSizingPeriod('WinterExtreme'))
+    idfFile.write(hb_writeIDF.EPSizingPeriod('SummerExtreme'))
+    
     # simulationControl
     idfFile.write(hb_writeIDF.EPSimulationControl(*simulationControl))
     
@@ -1095,7 +1017,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         
         # collect unique schedules
         for schedule in schedules.values():
-            if schedule.upper() not in EPScheduleCollection:
+            if schedule != "" and schedule.upper() not in EPScheduleCollection:
                 EPScheduleCollection.append(schedule.upper())
                 
         for srf in zone.surfaces:
@@ -1198,13 +1120,6 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     listCount = 0
     listName = None
     
-    idfFile.write(hb_writeIDF.writeHVACSched0())
-    idfFile.write(hb_writeIDF.writeHVACSched1())
-    idfFile.write(hb_writeIDF.writeHVACSched2())
-    idfFile.write(hb_writeIDF.writeHVACSched3())
-    idfFile.write(hb_writeIDF.writeHVACSched4())
-    idfFile.write(hb_writeIDF.writeHVACSched5())
-    
     
     for key, zones in ZoneCollectionBasedOnSchAndLoads.items():
         
@@ -1227,38 +1142,19 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                 w = gh.GH_RuntimeMessageLevel.Warning
                 ghenv.Component.AddRuntimeMessage(w, warning)
                 print warning
-                
-            if listName!=None:
-                for zone in zones:
-                    idfFile.write(hb_writeIDF.writeThemostat(zone.name, zone))
-                    idfFile.write(hb_writeIDF.writeSetpoint(zone, zone.name))
-                    idfFile.write(hb_writeIDF.writeEquipConnect(zone.name, zone))
-                    idfFile.write(hb_writeIDF.writeEquipList(zone.name, zone))
-                    idfFile.write(hb_writeIDF.writeNodeList(zone.name, zone))
-                    idfFile.write(hb_writeIDF.writeIdealAirSys(zone.name, zone))
-            else:
-                idfFile.write(hb_writeIDF.writeThemostat(zone.name, zone))
-                idfFile.write(hb_writeIDF.writeSetpoint(zone, zone.name))
-                idfFile.write(hb_writeIDF.writeEquipConnect(zone.name, zone))
-                idfFile.write(hb_writeIDF.writeEquipList(zone.name, zone))
-                idfFile.write(hb_writeIDF.writeNodeList(zone.name, zone))
-                idfFile.write(hb_writeIDF.writeIdealAirSys(zone.name, zone))
             
-            
-            #This is the old HVAC Template.  It has been replaced with one that allows humidity control and adjusting of supply temperature.
             #   HAVC System
-            #if listName!=None:
-            #    HAVCTemplateName = listName + "_HVAC"
-            #    for zone in zones:
-            #        idfFile.write(hb_writeIDF.EPIdealAirSystem(zone, HAVCTemplateName))
-            #    
-            #else:
-            #    HAVCTemplateName = zone.name + "_HVAC"
-            #    idfFile.write(hb_writeIDF.EPIdealAirSystem(zone, HAVCTemplateName))
+            if listName!=None:
+                HAVCTemplateName = listName + "_HVAC"
+                for zone in zones:
+                    idfFile.write(hb_writeIDF.EPIdealAirSystem(zone, HAVCTemplateName))
+                
+            else:
+                HAVCTemplateName = zone.name + "_HVAC"
+                idfFile.write(hb_writeIDF.EPIdealAirSystem(zone, HAVCTemplateName))
             
-            #   Thermostat
-            #idfFile.write(hb_writeIDF.EPHVACTemplate(HAVCTemplateName, zone))
-            #            
+            #Thermostat
+            idfFile.write(hb_writeIDF.EPHVACTemplate(HAVCTemplateName, zone))
             
             
             #   LOADS - INTERNAL LOADS + PLUG LOADS

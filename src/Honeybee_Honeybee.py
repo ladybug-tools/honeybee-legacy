@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.55\nJAN_07_2015'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_10_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -4328,6 +4328,15 @@ class EPZone(object):
         self.heatingSetback= ""
         self.coolSupplyAirTemp= ""
         self.heatSupplyAirTemp= ""
+        self.coolingCapacity= ""
+        self.heatingCapacity= ""
+        
+        self.demandVent= ""
+        self.airSideEconomizer= ""
+        self.heatRecovery= ""
+        self.heatRecoveryEffectiveness= ""
+        
+        self.HVACAvailabilitySched = ""
         
         if zoneBrep != None:
             self.isClosed = self.geometry.IsSolid
@@ -4425,7 +4434,8 @@ class EPZone(object):
             "coolingSetPtSchedule: " + str(self.coolingSetPtSchedule) + "\n" + \
             "lightingSchedule: " + str(self.lightingSchedule) + "\n" + \
             "equipmentSchedule: " + str(self.equipmentSchedule) + "\n" + \
-            "infiltrationSchedule: " + str(self.infiltrationSchedule) + "."
+            "infiltrationSchedule: " + str(self.infiltrationSchedule)+ "\n" + \
+            "HVACAvailabilitySched: " + str(self.HVACAvailabilitySched) + "."
             
             return report
         
@@ -4436,7 +4446,8 @@ class EPZone(object):
                             "coolingSetPtSchedule" : str(self.coolingSetPtSchedule),
                             "lightingSchedule" : str(self.lightingSchedule),
                             "equipmentSchedule" : str(self.equipmentSchedule),
-                            "infiltrationSchedule" : str(self.infiltrationSchedule)}
+                            "infiltrationSchedule" : str(self.infiltrationSchedule),
+                            "HVACAvailabilitySched" : str(self.HVACAvailabilitySched)}
             
             return scheduleDict
 

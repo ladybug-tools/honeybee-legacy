@@ -4,26 +4,24 @@
 # under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
 
 """
-Set Zone Thresholds
+Use this component to set Zone Thresholds like daylighting thresholds and setpoints.
 -
 Provided by Honeybee 0.0.55
 
     Args:
-        _HBZones:...
-        daylightThreshold_: ...
-        coolingSetPt_: ...
-        coolingSetback_: ...
-        heatingSetPt_: ...
-        heatingSetback_: ...
-        coolSuplyAirTemp_: ...
-        heatSupplyAirTemp_: ...
+        _HBZones: HBZones for which zone thresholds will be set.
+        daylightThreshold_: A number or list of numbers that represent the minimum lux to be achieved in the zone.  This can be either a single number to be applied to all connected zones or a list of numbers for each different zone.
+        coolingSetPt_: A number or list of numbers that represent the thermostat cooling setpoint in degrees Celcius.  The cooling setpoint is effectively the indoor temperature above which the cooling system is turned on.  This can be either a single number to be applied to all connected zones or a list of numbers for each different zone.
+        coolingSetback_: A number or list of numbers that represent the thermostat cooling setback in degrees Celcius.  The cooling setback is the indoor temperature that the space will be kept at when it is unoccipied.  Note that not all building types have a setback.  This can be either a single number to be applied to all connected zones or a list of numbers for each different zone.
+        heatingSetPt_: A number or list of numbers that represent the thermostat heating setpoint in degrees Celcius.  The heating setpoint is effectively the indoor temperature below which the heating system is turned on.  This can be either a single number to be applied to all connected zones or a list of numbers for each different zone.
+        heatingSetback_: A number or list of numbers that represent the thermostat heating setback in degrees Celcius.  The heating setback is the indoor temperature that the space will be kept at when it is unoccipied.  Note that not all building types have a setback.  This can be either a single number to be applied to all connected zones or a list of numbers for each different zone.
     Returns:
-        HBZones:...
+        HBZones: HBZones with thresolds set.
 """
 
 ghenv.Component.Name = "Honeybee_Set EnergyPlus Zone Thresholds"
 ghenv.Component.NickName = 'setEPZoneThresholds'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_10_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -59,14 +57,8 @@ def checkTheInputs():
     if len(heatingSetback_) == 1: heatingSetback = duplicateData(heatingSetback_, len(_HBZones))
     else: heatingSetback = heatingSetback_
     
-    if len(coolSupplyAirTemp_) == 1: coolSupplyAirTemp = duplicateData(coolSupplyAirTemp_, len(_HBZones))
-    else: coolSupplyAirTemp = coolSupplyAirTemp_
     
-    if len(heatSupplyAirTemp_) == 1: heatSupplyAirTemp = duplicateData(heatSupplyAirTemp_, len(_HBZones))
-    else: heatSupplyAirTemp = heatSupplyAirTemp_
-    
-    
-    return daylightThreshold, coolingSetPt, coolingSetback, heatingSetPt, heatingSetback, coolSupplyAirTemp, heatSupplyAirTemp
+    return daylightThreshold, coolingSetPt, coolingSetback, heatingSetPt, heatingSetback
 
 def updateSetPoints(schName, setPt, setBk):
     """
@@ -185,7 +177,7 @@ def updateSetPoints(schName, setPt, setBk):
     return name
 
 def main(HBZones, daylightThreshold, coolingSetPt, heatingSetPt, coolingSetback, \
-         heatingSetback, coolSupplyAirTemp, heatSupplyAirTemp):
+         heatingSetback):
     
     # check for Honeybee
     if not sc.sticky.has_key('honeybee_release'):
@@ -245,17 +237,6 @@ def main(HBZones, daylightThreshold, coolingSetPt, heatingSetPt, coolingSetback,
         zone.heatingSetPtSchedule = updateSetPoints(zone.heatingSetPtSchedule, \
                                                     zone.heatingSetPt, zone.heatingSetback)
         
-        try:
-            zone.coolSupplyAirTemp = str(coolSupplyAirTemp[zoneCount])
-            print "Cooling supply air temperture for " + zone.name + " is set to: " + zone.coolSupplyAirTemp
-        except: pass
-        
-        
-        try:
-            zone.heatSupplyAirTemp = str(heatSupplyAirTemp[zoneCount])
-            print "Heating supply air temperture for " + zone.name + " is set to: " + zone.heatSupplyAirTemp
-        except: pass
-        
         
         
     # send the zones back to the hive
@@ -265,10 +246,10 @@ def main(HBZones, daylightThreshold, coolingSetPt, heatingSetPt, coolingSetback,
 
 if _HBZones:
     daylightThreshold, coolingSetPt, coolingSetback, heatingSetPt, \
-    heatingSetback, coolSupplyAirTemp, heatSupplyAirTemp = checkTheInputs()
+    heatingSetback = checkTheInputs()
     
     zones = main(_HBZones, daylightThreshold, coolingSetPt, heatingSetPt, \
-                   coolingSetback, heatingSetback, coolSupplyAirTemp, heatSupplyAirTemp)
+                   coolingSetback, heatingSetback)
     
     if zones!=-1:
         HBZones = zones

@@ -4,26 +4,28 @@
 # under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
 
 """
-Set Schedules
+Use this component to change the schedules of your HBZones.
 -
 Provided by Honeybee 0.0.55
 
     Args:
-        _HBZones:...
-        occupancySchedule_: ...
-        heatingSetPtSchedule_: ...
-        coolingSetPtSchedule_: ...
-        lightingSchedule_: ...
-        equipmentSchedule_: ...
-        infiltrationSchedule_: ...
+        _HBZones: HBZones for which you want to change shcedules.
+        occupancySchedule_: A text string representing the occupancy shceudle that you want to use.  This can be either a shcedule from the schedule libirary or a CSV file path to a CSV schedule you created with the "Honeybee_Create CSV Schedule" component.
+        occupancyActivitySchs_: A text string representing the shceudle for the metabolic rate of the occupants that you want to use.  This can be either a shcedule from the schedule libirary or a CSV file path to a CSV schedule you created with the "Honeybee_Create CSV Schedule" component. If this is a CSV schedule, the values in it should be Watts and the "units_" input should be "ActivityLevel."
+        heatingSetPtSchedule_: A text string representing the heating setpoint shceudle that you want to use.  This can be either a shcedule from the schedule libirary or a CSV file path to a CSV schedule you created with the "Honeybee_Create CSV Schedule" component.  If it is a CSV schedule, the values in it should be temperature values in Celcius and the "units_" input should be "Temperature."
+        coolingSetPtSchedule_: A text string representing the cooling setpoint shceudle that you want to use.  This can be either a shcedule from the schedule libirary or a CSV file path to a CSV schedule you created with the "Honeybee_Create CSV Schedule" component.  If it is a CSV schedule, the values in it should be temperature values in Celcius and the "units_" input should be "Temperature."
+        lightingSchedule_: A text string representing the lighting shceudle that you want to use.  This can be either a shcedule from the schedule libirary or a CSV file path to a CSV schedule you created with the "Honeybee_Create CSV Schedule" component.
+        equipmentSchedule_: A text string representing the equipment shceudle that you want to use.  This can be either a shcedule from the schedule libirary or a CSV file path to a CSV schedule you created with the "Honeybee_Create CSV Schedule" component.
+        infiltrationSchedule_: A text string representing the infiltration shceudle that you want to use.  This can be either a shcedule from the schedule libirary or a CSV file path to a CSV schedule you created with the "Honeybee_Create CSV Schedule" component.
+        HVACAvailabiltySchs_: A text string representing the HVAC availability that you want to use.  This can be either a shcedule from the schedule libirary or a CSV file path to a CSV schedule you created with the "Honeybee_Create CSV Schedule" component.
     Returns:
-        schedules:...
-        HBZones:...
+        schedules: A report of what shcedules are assigned to each zone.
+        HBZones: HBZones that have had thier shcedules modified.
 """
 
 ghenv.Component.Name = "Honeybee_Set EnergyPlus Zone Schedules"
 ghenv.Component.NickName = 'setEPZoneSchedules'
-ghenv.Component.Message = 'VER 0.0.55\nNOV_29_2014'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_10_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -37,7 +39,44 @@ import Grasshopper.Kernel as gh
 import os
 
 
-def main(HBZones, occupancySchedule, occupancyActivitySch, heatingSetPtSchedule, coolingSetPtSchedule, lightingSchedule, equipmentSchedule, infiltrationSchedule):
+
+def checkTheInputs():
+    #If the user puts in only one value, apply that value to all of the zones.
+    def duplicateData(data, calcLength):
+        dupData = []
+        for count in range(calcLength):
+            dupData.append(data[0])
+        return dupData
+    
+    if len(occupancySchedules_) == 1: occupancySchedules = duplicateData(occupancySchedules_, len(_HBZones))
+    else: occupancySchedules = occupancySchedules_
+    
+    if len(occupancyActivitySchs_) == 1: occupancyActivitySchs = duplicateData(occupancyActivitySchs_, len(_HBZones))
+    else: occupancyActivitySchs = occupancyActivitySchs_
+
+    if len(coolingSetPtSchedules_) == 1: coolingSetPtSchedules = duplicateData(coolingSetPtSchedules_, len(_HBZones))
+    else: coolingSetPtSchedules = coolingSetPtSchedules_
+    
+    if len(heatingSetPtSchedules_) == 1: heatingSetPtSchedules = duplicateData(heatingSetPtSchedules_, len(_HBZones))
+    else: heatingSetPtSchedules = heatingSetPtSchedules_
+    
+    if len(lightingSchedules_) == 1: lightingSchedules = duplicateData(lightingSchedules_, len(_HBZones))
+    else: lightingSchedules = lightingSchedules_
+    
+    if len(equipmentSchedules_) == 1: equipmentSchedules = duplicateData(equipmentSchedules_, len(_HBZones))
+    else: equipmentSchedules = equipmentSchedules_
+    
+    if len(infiltrationSchedules_) == 1: infiltrationSchedules = duplicateData(infiltrationSchedules_, len(_HBZones))
+    else: infiltrationSchedules = infiltrationSchedules_
+    
+    if len(HVACAvailabilitySchs_) == 1: HVACAvailabilitySchs = duplicateData(HVACAvailabilitySchs_, len(_HBZones))
+    else: HVACAvailabilitySchs = HVACAvailabilitySchs_
+    
+    
+    return occupancySchedules, occupancyActivitySchs, coolingSetPtSchedules, heatingSetPtSchedules, lightingSchedules, equipmentSchedules, infiltrationSchedules, HVACAvailabilitySchs
+
+
+def main(HBZones, occupancySchedule, occupancyActivitySch, heatingSetPtSchedule, coolingSetPtSchedule, lightingSchedule, equipmentSchedule, infiltrationSchedule, HVACAvailabilitySchs):
     # check for Honeybee
     if not sc.sticky.has_key('honeybee_release'):
         print "You should first let Honeybee to fly..."
@@ -57,7 +96,7 @@ def main(HBZones, occupancySchedule, occupancyActivitySch, heatingSetPtSchedule,
         return -1
     
     # make sure schedules are in HB schedule 
-    schedules = [occupancySchedule, heatingSetPtSchedule, coolingSetPtSchedule, lightingSchedule, equipmentSchedule, infiltrationSchedule]
+    schedules = [occupancySchedule, heatingSetPtSchedule, coolingSetPtSchedule, lightingSchedule, equipmentSchedule, infiltrationSchedule, HVACAvailabilitySchs]
     HBScheduleList = sc.sticky["honeybee_ScheduleLib"].keys()
     
     for scheduleList in schedules:
@@ -105,6 +144,9 @@ def main(HBZones, occupancySchedule, occupancyActivitySch, heatingSetPtSchedule,
         if infiltrationSchedule != [] and infiltrationSchedule[0] != None:
             try: HBZone.infiltrationSchedule = infiltrationSchedule[zoneCount]
             except: HBZone.infiltrationSchedule = infiltrationSchedule[0]
+        if HVACAvailabilitySchs != [] and HVACAvailabilitySchs[0] != None:
+            try: HBZone.HVACAvailabilitySched = HVACAvailabilitySchs[zoneCount]
+            except: HBZone.HVACAvailabilitySched = HVACAvailabilitySchs[0]
         
         schedules.append(HBZone.getCurrentSchedules())
     
@@ -113,7 +155,12 @@ def main(HBZones, occupancySchedule, occupancyActivitySch, heatingSetPtSchedule,
     return HBZones, schedules
     
 
+
+occupancySchedules, occupancyActivitySchs, coolingSetPtSchedules, heatingSetPtSchedules, lightingSchedules, equipmentSchedules, infiltrationSchedules, HVACAvailabilitySchs = checkTheInputs()
+
 if _HBZones and _HBZones[0]!=None:
-    results = main(_HBZones, occupancySchedules_, occupancyActivitySchs_, heatingSetPtSchedules_, coolingSetPtSchedules_, lightingSchedules_, equipmentSchedules_, infiltrationSchedules_)
+    occupancySchedules, occupancyActivitySchs, coolingSetPtSchedules, heatingSetPtSchedules, lightingSchedules, equipmentSchedules, infiltrationSchedules, HVACAvailabilitySchs = checkTheInputs()
+    
+    results = main(_HBZones, occupancySchedules, occupancyActivitySchs, heatingSetPtSchedules, coolingSetPtSchedules, lightingSchedules, equipmentSchedules, infiltrationSchedules, HVACAvailabilitySchs)
     
     if results != -1: HBZones, schedules = results
