@@ -45,7 +45,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Window Shade Generator"
 ghenv.Component.NickName = 'EPWindowShades'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_09_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -424,6 +424,8 @@ def makeShade(_glzSrf, depth, numShds, distBtwn):
         normalVectorPerp.Reverse()
     else: interiorOrExter = False
     
+    normalVecOrignal = rc.Geometry.Vector3d(normalVectorPerp)
+    
     #If a shdAngle is provided, use it to rotate the planes by that angle
     if shdAngle != None:
         if horOrVertical == True or horOrVertical == None:
@@ -463,7 +465,7 @@ def makeShade(_glzSrf, depth, numShds, distBtwn):
     
     #If the user has specified a distance to move the shades, move them along the normal vector.
     if distToGlass != None:
-        transVec = normalVectorPerp
+        transVec = normalVecOrignal
         transVec.Unitize()
         finalTransVec = rc.Geometry.Vector3d.Multiply(distToGlass, transVec)
         blindsTransform =  rc.Geometry.Transform.Translation(finalTransVec)
