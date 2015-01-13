@@ -134,15 +134,15 @@ def checkNatVentMethod():
             elif input == 9:
                 ghenv.Component.Params.Input[input].NickName = "_fanFlowRate"
                 ghenv.Component.Params.Input[input].Name = "_fanFlowRate"
-                ghenv.Component.Params.Input[input].Description = "A number representing the flow rate of the fan in m3/s.  The flow rate of the fan will depend upon its size."
+                ghenv.Component.Params.Input[input].Description = "A number representing the flow rate of the fan in m3/s.  The flow rate of the fan will depend upon its size and can range from 0.05 m3/s for a small desk fan to 6.00 m3/s for a large industrial fan."
             elif input == 10:
                 ghenv.Component.Params.Input[input].NickName = "fanEfficiency_"
                 ghenv.Component.Params.Input[input].Name = "fanEfficiency_"
-                ghenv.Component.Params.Input[input].Description = "A number between 0 and 1 that represents the efficiency of the fan.  This will effect the energy use of the fan in the results.  The default is set to 0.9."
+                ghenv.Component.Params.Input[input].Description = "A number between 0 and 1 that represents the efficiency of the fan.  This will effect the energy use of the fan in the results.  The default is set to 0.9 but this can be as low as 0.7 in some cases."
             elif input == 11:
                 ghenv.Component.Params.Input[input].NickName = "fanPressureRise_"
                 ghenv.Component.Params.Input[input].Name = "fanPressureRise_"
-                ghenv.Component.Params.Input[input].Description = "A number that represents the fan pressure rise in Pa.  This will effect the energy use of the fan in the results.  The default is set to 70 for a relatively small fan with a flow rate of 0.05 m3/s."
+                ghenv.Component.Params.Input[input].Description = "A number that represents the fan pressure rise in Pa.  This will effect the energy use of the fan in the results.  The default is set to 70 for a relatively small fan with a flow rate of 0.05 m3/s but values can be as high as 400 Pa for large industrial fans."
             else:
                 ghenv.Component.Params.Input[input].NickName = inputsDict[input][0]
                 ghenv.Component.Params.Input[input].Name = inputsDict[input][0]
