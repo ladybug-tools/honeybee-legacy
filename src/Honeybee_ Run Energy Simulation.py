@@ -2,18 +2,41 @@
 export geometries to idf file, and run the energy simulation
 
     Args:
-        input1: ...
-        meshSettings_: Custom mesh setting. Use Grasshopper mesh setting components
-        
+        north_: Input a vector to be used as a true North direction for the energy simulation or a number between 0 and 360 that represents the degrees off from the y-axis to make North.  The default North direction is set to the Y-axis (0 degrees).
+        _epwFile: An .epw file path on your system as a text string.
+        _analysisPeriod_: An optional analysis period from the Ladybug_Analysis Period component.  If no Analysis period is given, the energy simulation will be run for the enitre year.
+        +++++++++++++++: ...
+        _energySimPar_: Optional Energy Simulation Parameters from the "Honeybee_Energy Simulation Par" component.  If no value is connected here, the simulation will run with the following parameters:
+            1 - 6 timeSteps per hour
+            2 - A shadow calculation that averages over multiple days (as opposed to running it for each timeStep)
+            3 - A shadow calculation frequency of 30 (meaning that the shadow calulation is averaged over every 30 days)
+            4 - A maximum of 3000 points used in the shadow calculation. (This may need to be higher if you have a lot of detailed context geometry)
+            5 - An colar energy calculation that includes both interior and exterior light reflections.
+            6 - A simulation including a zone sizing calculation, a system sizing calculation, a plat sizing calculation, and a full run of the energy use ofver the analysis period.  The simulation is not run for the sizing period by default.
+            7 - A system sizing period that runs from the extreme periods of the weather file and not a ddy file.
+            8 - City terrian.
+        _HBZones: The HBZones that you wish to write into an IDF and/or run through EnergyPlus.  These can be from any of the components that output HBZones.
+        HBContext_: Optional HBContext geometry from the "Honeybee_EP Context Surfaces." component.
+        simulationOutputs_: A list of the outputs that you would like EnergyPlus to write into the result CSV file.  This can be any set of any outputs that you would like from EnergyPlus, writen as a list of text that will be written into the IDF.  It is recommended that, if you are not expereinced with writing EnergyPlus outputs, you should use the "Honeybee_Write EP Result Parameters" component to request certain types of common outputs.  If no value is input here, this component will automatically request outputs of heating, cooling, lighting, and equipment energy use.  
+        +++++++++++++++: ...
+        _writeIdf: Set to "True" to have the component take your HBZones and other inputs and write them into an IDF file.  The file path of the resulting file will appear in the idfFileAddress output of this component.  Note that only setting thie to "True" and not setting the output below to True will not automatically run the IDF through tEnergyPlus for you.
+        runEnergyPlus_: Set to "True" to have the component run your IDF through EnergyPlus once it has finished writing it.  This will ensure that a CSV result file appears in the resultFileAddress output.
+        +++++++++++++++: ...
+        _woringDir_: An optional working directory to a folder on your system, into which your IDF and result files will be written.  NOTE THAT DIRECTORIES INPUT HERE SHOULD NOT HAVE ANY SPACES OR UNDERSCORES IN THE FILE PATH.
+        _idfFileName_: Optional text which will be used to name your IDF and result files.  Change this to aviod over-writing results of previous energy simulations.
+        +++++++++++++++: ...
+        meshSettings_: Optional mesh settings for your geometry from any one of the native Grasshopper mesh setting components.  These will be used to change the meshing of curved surfaces before they are run through EnergyPlus (note that meshing of curved surfaces is done since Energyplus is not able to calculate heat flow through non-planar surfaces).  Default Grasshopper meshing is used if nothing is input here but you may want to decrease your calculation time by changing it to Coarse or increase your curvature definition (and calculation time) by making it finer.
     Returns:
-        readMe!: ...
+        report: Check here to see a report of the EnergyPlus run, including errors.
+        idfFileAddress: The file path of the IDF file that has been generated on your machine.
+        resultFileAddress: The file path of the CSV result file that has been generated on your machine.  This only happens when you set "runEnergyPlus_" to "True."
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.55\nJAN_10_2015'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_11_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.55\nDEC_13_2014
+#compatibleHBVersion = VER 0.0.55\nJAN_11_2015
 #compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
 
@@ -69,6 +92,8 @@ class WriteIDF(object):
         coordinates = surface.coordinates
         
         checked, coordinates= self.checkCoordinates(coordinates)
+        
+        if int(surface.type) == 4: surface.type = 0
         
         if checked:
             str_1 = '\nBuildingSurface:Detailed,\n' + \
@@ -467,28 +492,64 @@ class WriteIDF(object):
                 '\t,                        !- Minimum Outdoor Temperature Schedule Name\n' + \
                 '\t;                        !- Maximum Outdoor Temperature Schedule Name\n'
     
-    def EPNatVentSimple(self, zone):
-        if zone.natVentSchedule == None: natVentSched = 'ALWAYS ON'
-        else: natVentSched = zone.natVentSchedule
+    def EPNatVentSimple(self, zone, natVentCount):
+        if zone.natVentSchedule[natVentCount] == None: natVentSched = 'ALWAYS ON'
+        else:
+            natVentSchedFileName = os.path.basename(zone.natVentSchedule[natVentCount])
+            natVentSched = "_".join(natVentSchedFileName.split(".")[:-1])
         
         return '\nZoneVentilation:WindandStackOpenArea,\n' + \
-                '\t' + zone.name + 'NatVent' + ',  !- Name\n' + \
+                '\t' + zone.name + 'NatVent' + str(natVentCount) + ',  !- Name\n' + \
                 '\t' + zone.name + ',  !- Zone Name\n' + \
-                '\t' + str(zone.windowOpeningArea) + ',  !- Opening Area\n' + \
-                '\t' + natVentSched + ',  !- Design Flow Rate Calculation Method\n' + \
-                '\t' + 'autocalculate' + ',   !- Opening Effectiveness\n' + \
-                '\t' + ',  !- Effective Angle\n' + \
-                '\t' + str(zone.windowHeightDiff) + ', !- Height Difference\n' + \
-                '\t' + 'autocalculate' + ',    !- Discharge Coefficient for Opening\n' + \
-                '\t' + str(zone.natVentMinIndoorTemp)  + ',     !- Minimum Indoor Temperature\n' + \
+                '\t' + str(zone.windowOpeningArea[natVentCount]) + ',  !- Opening Area\n' + \
+                '\t' + natVentSched + ',  !- Nat Vent Schedule\n' + \
+                '\t' + str(zone.natVentWindDischarge[natVentCount]) + ',   !- Opening Effectiveness\n' + \
+                '\t' + str(zone.windowAngle[natVentCount]) + ',  !- Effective Angle\n' + \
+                '\t' + str(zone.windowHeightDiff[natVentCount]) + ', !- Height Difference\n' + \
+                '\t' + str(zone.natVentStackDischarge[natVentCount]) + ',    !- Discharge Coefficient for Opening\n' + \
+                '\t' + str(zone.natVentMinIndoorTemp[natVentCount])  + ',     !- Minimum Indoor Temperature\n' + \
                 '\t' + ',     !- Minimum Indoor Temperature Shcedule Name\n' + \
-                '\t' + str(zone.natVentMaxIndoorTemp)  + ',     !- Maximum Indoor Temperature\n' + \
+                '\t' + str(zone.natVentMaxIndoorTemp[natVentCount])  + ',     !- Maximum Indoor Temperature\n' + \
                 '\t' + ',     !- Maximum Indoor Temperature Shcedule Name\n' + \
                 '\t' + '-100'  + ',     !- Delta Temperature\n' + \
                 '\t' + ',     !- Delta Temperature Shcedule Name\n' + \
-                '\t' + str(zone.natVentMinOutdoorTemp)  + ',     !- Minimum Outdoor Temperature\n' + \
+                '\t' + str(zone.natVentMinOutdoorTemp[natVentCount])  + ',     !- Minimum Outdoor Temperature\n' + \
                 '\t' + ',     !- Minimum Outdoor Temperature Shcedule Name\n' + \
-                '\t' + str(zone.natVentMaxOutdoorTemp)  + ',     !- Maximum Outdoor Temperature\n' + \
+                '\t' + str(zone.natVentMaxOutdoorTemp[natVentCount])  + ',     !- Maximum Outdoor Temperature\n' + \
+                '\t' + ',     !- Maximum Outdoor Temperature Shcedule Name\n' + \
+                '\t' + '40' + ';                        !- Maximum Wind Speed\n'
+    
+    def EPNatVentFan(self, zone, natVentCount):
+        if zone.natVentSchedule[natVentCount] == None: natVentSched = 'ALWAYS ON'
+        else:
+            natVentSchedFileName = os.path.basename(zone.natVentSchedule[natVentCount])
+            natVentSched = "_".join(natVentSchedFileName.split(".")[:-1])
+        
+        return '\nZoneVentilation:DesignFlowRate,\n' + \
+                '\t' + zone.name + 'NatVent' + str(natVentCount) + ',  !- Name\n' + \
+                '\t' + zone.name + ',  !- Zone Name\n' + \
+                '\t' + natVentSched + ',  !- Nat Vent Schedule\n' + \
+                '\t' + 'Flow/Zone' + ',  !- Design Flow Rate Calculation Method\n' + \
+                '\t' + str(zone.fanFlow[natVentCount]) + ',   !- Design flow rate m3/s\n' + \
+                '\t' + ',  !- Design flow rate per floor area\n' + \
+                '\t' + ', !- Flow Rate per person\n' + \
+                '\t' + ',    !- Air chancges per hour\n' + \
+                '\t' + 'Intake' + ',  !- Ventilation Type\n' + \
+                '\t' + str(zone.FanPressure[natVentCount]) + ',   !- Fan Pressure Rise (Pa)\n' + \
+                '\t' + str(zone.FanEfficiency[natVentCount]) + ',   !- Fan Efficiency (Pa)\n' + \
+                '\t' + '1' + ',  !- Constant Term Coefficient\n' + \
+                '\t' + '0' + ',  !- Temperature Term Coefficient\n' + \
+                '\t' + '0' + ',  !- Velocity Term Coefficient\n' + \
+                '\t' + '0' + ',  !- Velocity Squared Term Coefficient\n' + \
+                '\t' + str(zone.natVentMinIndoorTemp[natVentCount])  + ',     !- Minimum Indoor Temperature\n' + \
+                '\t' + ',     !- Minimum Indoor Temperature Shcedule Name\n' + \
+                '\t' + str(zone.natVentMaxIndoorTemp[natVentCount])  + ',     !- Maximum Indoor Temperature\n' + \
+                '\t' + ',     !- Maximum Indoor Temperature Shcedule Name\n' + \
+                '\t' + '-100'  + ',     !- Delta Temperature\n' + \
+                '\t' + ',     !- Delta Temperature Shcedule Name\n' + \
+                '\t' + str(zone.natVentMinOutdoorTemp[natVentCount])  + ',     !- Minimum Outdoor Temperature\n' + \
+                '\t' + ',     !- Minimum Outdoor Temperature Shcedule Name\n' + \
+                '\t' + str(zone.natVentMaxOutdoorTemp[natVentCount])  + ',     !- Maximum Outdoor Temperature\n' + \
                 '\t' + ',     !- Maximum Outdoor Temperature Shcedule Name\n' + \
                 '\t' + '40' + ';                        !- Maximum Wind Speed\n'
     
@@ -784,6 +845,10 @@ class WriteIDF(object):
     def requestSrfeio(self):
         return '\nOutput:Surfaces:List,\n' + \
         '\t' + 'Details;                 !- Report Type' + '\n'
+    
+    def requestVarDict(self):
+        return '\nOutput:VariableDictionary,\n' + \
+        '\t' + 'regular;                 !- Key Field' + '\n'
 
 class RunIDF(object):
     
@@ -915,7 +980,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     idfFile.write(hb_writeIDF.EPVersion())
     
     # Read simulation parameters
-    timestep, shadowPar, solarDistribution, simulationControl, ddyFile = hb_EPPar.readEPParams(EPParameters)
+    timestep, shadowPar, solarDistribution, simulationControl, ddyFile, terrain = hb_EPPar.readEPParams(EPParameters)
     
     # Timestep,6;
     idfFile.write(hb_writeIDF.EPTimestep(timestep))
@@ -927,9 +992,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     idfFile.write(hb_writeIDF.EPProgramControl())
     
     # Building
-    EPBuilding = hb_writeIDF.EPBuilding(idfFileName, math.degrees(northAngle),
-                                        'City', 0.04, 0.4, solarDistribution,
-                                        maxWarmUpDays =25, minWarmUpDays = 6)
+    EPBuilding = hb_writeIDF.EPBuilding(idfFileName, math.degrees(northAngle), terrain, 0.04, 0.4, solarDistribution, maxWarmUpDays =25, minWarmUpDays = 6)
                     
     idfFile.write(EPBuilding)
     
@@ -1080,9 +1143,10 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     for key, zones in ZoneCollectionBasedOnSchAndLoads.items():
         for zone in zones:
             if zone.natVent == True:
-                if zone.natVentSchedule != None:
-                    if zone.natVentSchedule not in EPScheduleCollection: EPScheduleCollection.append(zone.natVentSchedule)
-                else: needToWriteMixSched = True
+                for schedule in zone.natVentSchedule:
+                    if schedule != None:
+                        if schedule not in EPScheduleCollection: EPScheduleCollection.append(schedule)
+                    else: needToWriteMixSched = True
             if zone.mixAir == True: needToWriteMixSched = True
     if needToWriteMixSched == True:
         if 'ALWAYS ON' not in EPScheduleCollection: EPScheduleCollection.append('ALWAYS ON')
@@ -1176,7 +1240,11 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
             
             #   SIMPLE NATURAL VENTILATION
             if zone.natVent == True:
-                idfFile.write(hb_writeIDF.EPNatVentSimple(zone))
+                for natVentCount, natVentObj in enumerate(zone.natVentType):
+                    if natVentObj == 1 or natVentObj == 2:
+                        idfFile.write(hb_writeIDF.EPNatVentSimple(zone, natVentCount))
+                    elif natVentObj == 3:
+                        idfFile.write(hb_writeIDF.EPNatVentFan(zone, natVentCount))
             
             # Specification Outdoor Air
             idfFile.write(hb_writeIDF.EPDesignSpecOA(zone))
@@ -1185,6 +1253,10 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     # write output lines
     # request surface information in the eio file.
     idfFile.write(hb_writeIDF.requestSrfeio())
+    
+    # request an output variable dictionary.
+    idfFile.write(hb_writeIDF.requestVarDict())
+    
     # write the outputs requested by the user.
     if simulationOutputs:
         print "[7 of 7] Writing outputs..."

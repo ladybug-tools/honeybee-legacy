@@ -23,10 +23,10 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Set EP Zone Interior Construction"
 ghenv.Component.NickName = 'setEPZoneIntCnstr'
-ghenv.Component.Message = 'VER 0.0.55\nNOV_29_2014'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_11_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
-#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
+#compatibleHBVersion = VER 0.0.55\nJAN_11_2015
 #compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
@@ -34,6 +34,31 @@ except: pass
 import scriptcontext as sc
 import Rhino as rc
 import Grasshopper.Kernel as gh
+
+
+def updateZoneMixing(surface1, zone1, zone2):
+    #Change the air mixing between the zone and other zones to "True"
+    zone1.mixAir = True
+    zone2.mixAir = True
+    
+    #Append the zone to be mixed with to the mixAirZoneList.
+    zone1.mixAirZoneList.append(zone2.name)
+    zone2.mixAirZoneList.append(zone1.name)
+    
+    #Calculate a rough flow rate of air based on the cross-sectional area of the surface between them.
+    flowFactor = zone1.mixAirFlowRate
+    flowRate = (rc.Geometry.AreaMassProperties.Compute(surface1.geometry).Area)*flowFactor
+    
+    #Append the flow rate of mixing to the mixAirFlowList
+    zone1.mixAirFlowList.append(flowRate)
+    zone2.mixAirFlowList.append(flowRate)
+    
+    return flowRate
+
+def checkAirWalls(construction, srf):
+    if construction.ToUpper() == "AIR WALL":
+        srf.setType(4, isUserInput= True)
+        updateZoneMixing(srf, srf.parent, srf.BCObject.parent)
 
 def main(HBZone, wallEPCnst, windowEPCnst, flrEPCnst, ceilEPCnst):
     # Make sure Honeybee is flying
@@ -87,15 +112,20 @@ def main(HBZone, wallEPCnst, windowEPCnst, flrEPCnst, ceilEPCnst):
                 if windowEPCnst!=None and srf.hasChild:
                     for childSrf in srf.childSrfs:
                         childSrf.EPConstruction = windowEPCnst
+                        if windowEPCnst.ToUpper() == "AIR WALL":
+                            updateZoneMixing(childSrf, srf.parent, srf.BCObject.parent)
                 if srf.type == 0 and wallEPCnst!=None:
                     srf.EPConstruction = wallEPCnst
                     srf.BCObject.EPConstruction = wallEPCnst
+                    checkAirWalls(wallEPCnst, srf)
                 elif srf.type == 2 and flrEPCnst!=None:
                     srf.EPConstruction = flrEPCnst
                     srf.BCObject.EPConstruction = flrEPCnst
+                    checkAirWalls(flrEPCnst, srf)
                 elif srf.type == 3 and ceilEPCnst!=None:
                     srf.EPConstruction = ceilEPCnst
                     srf.BCObject.EPConstruction = ceilEPCnst
+                    checkAirWalls(ceilEPCnst, srf)
                     
         # add zones to dictionary
         HBZones  = hb_hive.addToHoneybeeHive([HBZoneObject], ghenv.Component.InstanceGuid.ToString())

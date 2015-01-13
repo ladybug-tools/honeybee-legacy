@@ -12,7 +12,6 @@ Provided by Honeybee 0.0.55
         _HBZones: A list of Honeybee zones for which you want to calculate whether they are next to each other.
         altConstruction_: An optional alternate EP construction to assign to all adjacent surfaces.  The default is set to be "Interior Wall", "Interior Foor" or "Interior Ceiling" or "Interior Window" depending on the type of surface that is adjacent.
         altBC_: An optional alternate boundary condition such as "Adiabatic".  The default will be "Surafce", which ensures that heat flows across each adjacent surface to a neighboring zone.
-        mixZoneAir_: Set to "True" to have the energy simulation mix the zone air in between adjacent zones.  Use this to model cases such as virtual partitions or instances where there is free-flowing air in between zones (note that you should also set the altConstruction_ to "AIR WALL" for these cases).  The flow rate of mixed air will be proportional to the contact surface area of adjacent zones (0.0963 m3/s for each square meter of adjacent surface).  The default is set to "False" in order to not mix the air.
         tolerance_: The tolerance in Rhino model units that will be used determine whether two zones are adjacent to each other.  If no value is input here, the component will use the tolerance of the Rhino model document.
         removeCurrentAdjc_: If you are using this component after already solving for the adjacencies between some of the zones previously, set this to "False" in order to remeber the previously determined adcacency conditions.  If set to "True", the current adjacencies will be removed. The default is set to "False" in order to remeber your previously-set adjacencies.
         _findAdjc: Set to "True" to solve adjacencies between zones.
@@ -22,7 +21,7 @@ Provided by Honeybee 0.0.55
 """
 ghenv.Component.Name = "Honeybee_Solve Adjacencies"
 ghenv.Component.NickName = 'solveAdjc'
-ghenv.Component.Message = 'VER 0.0.55\nJAN_08_2015'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_11_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.55\nDEC_13_2014
@@ -55,7 +54,7 @@ def updateZoneMixing(surface1, zone1, zone2):
     zone2.mixAirZoneList.append(zone1.name)
     
     #Calculate a rough flow rate of air based on the cross-sectional area of the surface between them.
-    flowFactor = 0.0963
+    flowFactor = zone1.mixAirFlowRate
     flowRate = (rc.Geometry.AreaMassProperties.Compute(surface1.geometry).Area)*flowFactor
     
     #Append the flow rate of mixing to the mixAirFlowList
@@ -69,9 +68,18 @@ def updateAdj(surface1, surface2, altConstruction, altBC, tol):
     if surface1.type == 1: surface1.setType(3) # roof + adjacent surface = ceiling
     elif surface2.type == 1: surface2.setType(3)
     
-    
+    # Change exposed floors to floors between zones.
     if surface1.type == 2.75: surface1.setType(2)
-    if surface2.type == 2.75:  surface2.setType(2) 
+    if surface2.type == 2.75:  surface2.setType(2)
+    
+    # If the alternate construction is set to air wall, we should also change the surface type to air wall
+    try:
+        if altConstruction.ToUpper() == "AIR WALL":
+            surface1.setType(4)
+            surface2.setType(4)
+            infoMsg = "Setting the altConstruction to Air Wall will also ensure that surfaces have the air wall srfType_ and that air is mixed between zones."
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Remark, infoMsg)
+    except: pass
     
     # change construction
     if altConstruction == None:
@@ -209,7 +217,7 @@ def main(HBZones, altConstruction, altBC, tol, remCurrent):
                                             #    ghenv.Component.AddRuntimeMessage(w, msg)
                                             
                                             updateAdj(srf, surface, altConstruction, altBC, tol)                                        
-                                            if mixZoneAir_ == True:
+                                            if surface.type == 4:
                                                 flowRate = updateZoneMixing(surface, testZone, targetZone)
                                                 print "Air has been mixed between " + testZone.name + " and " + targetZone.name + " with a flow rate of " + str(flowRate) + " m3/s."
                                             

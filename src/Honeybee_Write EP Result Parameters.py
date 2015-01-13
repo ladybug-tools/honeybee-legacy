@@ -27,10 +27,10 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Write EP Result Parameters"
 ghenv.Component.NickName = 'writeResultParameters'
-ghenv.Component.Message = 'VER 0.0.55\nOCT_04_2014'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_11_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
+#compatibleHBVersion = VER 0.0.55\nJAN_11_2015
 #compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 ghenv.Component.AdditionalHelpFromDocStrings = "3"
 
@@ -52,6 +52,7 @@ def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, zoneHVACMetrics,
         simulationOutputs.append("Output:Variable,*,Chiller Electric Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Boiler Heating Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Fan Electric Energy, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Zone Ventilation Fan Electric Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Lights Electric Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Electric Equipment Electric Energy, " + timePeriod)
     
@@ -68,6 +69,7 @@ def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, zoneHVACMetrics,
         simulationOutputs.append("Output:Variable,*,Zone Mean Air Temperature, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Mean Radiant Temperature, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Air Relative Humidity, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Zone Ventilation Standard Density Volume Flow Rate, " + timePeriod)
     
     if zoneHVACMetrics == True:
         simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Zone Latent Heating Energy, " + timePeriod)

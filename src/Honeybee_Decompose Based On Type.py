@@ -4,29 +4,35 @@
 # under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
 
 """
-Decompose zone by type
+Use this component to break down the geometry of your zone by the surface type.  This is useful for previewing your zones in the rhino scene and making sure that each surface of your zones has the correct surface type.
 -
 Provided by Honeybee 0.0.55
 
     Args:
-        _HBZone: Honeybee Zone
+        _HBZone: Honeybee Zones for which you want to preview the different surface types.
     Returns:
-        walls: A list of walls as breps.
-        windows: A list of windows as breps.
-        skylights: A list of skylights as breps.
-        roofs: A list of roofs as breps.
-        floors: A list of floors as breps.
-        groundFloors: A list of ground floors as breps.
-        ceilings: A list of ceilings as breps.
-        airWalls: A list of airWalls as breps.
-        shadings: A list of shadings as breps.
+        walls: A list of the exterior walls of your zones as breps.  Connect to a Grasshopper "Preview" component to add color to the breps.
+        interiorWalls: A list of the interior walls of your zones as breps.  Connect to a Grasshopper "Preview" component to add color to the breps.
+        airWalls: A list of the air walls of your zones as breps.  Connect to a Grasshopper "Preview" component to add color to the breps.
+        windows: A list of windows of your zones as breps.  Connect to a Grasshopper "Preview" component to add color to the breps.
+        interiorWindows: A list of interior windows of your zones as breps.  Connect to a Grasshopper "Preview" component to add color to the breps.
+        skylights: A list of skylights of your zones as breps.  Connect to a Grasshopper "Preview" component to add color to the breps.
+        roofs: A list of roofs of your zones as breps.  Connect to a Grasshopper "Preview" component to add color to the breps.
+        ceilings: A list of ceilings of your zones as breps.  Connect to a Grasshopper "Preview" component to add color to the breps.
+        floors: A list of floors of your zones as breps.  Connect to a Grasshopper "Preview" component to add color to the breps.
+        exposedFloors: A list of floors exposed to the outside air as breps.  Connect to a Grasshopper "Preview" component to add color to the breps.
+        groundFloors: A list of ground floors of your zones as breps.  Connect to a Grasshopper "Preview" component to add color to the breps.
+        undergroundWalls: A list of underground walls of your zones as breps.  Connect to a Grasshopper "Preview" component to add color to the breps.
+        undergroundSlabs: A list of underground floor slabs of your zones as breps.  Connect to a Grasshopper "Preview" component to add color to the breps.
+        undergroundCeilings: A list of underground ceilings of your zones as breps.  Connect to a Grasshopper "Preview" component to add color to the breps.
+        shadings: A list of shadings of your zones as breps.  Connect to a Grasshopper "Preview" component to add color to the breps.
 """
 ghenv.Component.Name = "Honeybee_Decompose Based On Type"
 ghenv.Component.NickName = 'decomposeByType'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_27_2014'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_11_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
-#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
+#compatibleHBVersion = VER 0.0.55\nJAN_11_2015
 #compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
 except: pass
@@ -69,6 +75,7 @@ def main(HBZone):
     undergroundSlabs = []
     undergroundCeilings = []
     shadings = []
+    airWalls = []
 
     # call the objects from the lib
     hb_hive = sc.sticky["honeybee_Hive"]()
@@ -121,7 +128,7 @@ def main(HBZone):
         elif srf.type == 6: shadings.append(srf.geometry)
         
         
-    return walls, interiorWalls, windows, interiorWindows, skylights, roofs, \
+    return walls, interiorWalls, airWalls, windows, interiorWindows, skylights, roofs, \
            ceilings, floors, exposedFloors, groundFloors, undergroundWalls, \
            undergroundSlabs, undergroundCeilings, shadings
 
@@ -136,15 +143,16 @@ if _HBZone!= None:
     if HBSurfaces != -1:
         walls = HBSurfaces[0]
         interiorWalls = HBSurfaces[1]
-        windows = HBSurfaces[2]
-        interiorWindows = HBSurfaces[3]
-        skylights = HBSurfaces[4]
-        roofs = HBSurfaces[5]
-        ceilings = HBSurfaces[6]
-        floors = HBSurfaces[7]
-        exposedFloors = HBSurfaces[8]
-        groundFloors = HBSurfaces[9]
-        undergroundWalls = HBSurfaces[10]
-        undergroundSlabs = HBSurfaces[11]
-        undergroundCeilings = HBSurfaces[12]
-        shadings = HBSurfaces[13]
+        airWalls = HBSurfaces[2]
+        windows = HBSurfaces[3]
+        interiorWindows = HBSurfaces[4]
+        skylights = HBSurfaces[5]
+        roofs = HBSurfaces[6]
+        ceilings = HBSurfaces[7]
+        floors = HBSurfaces[8]
+        exposedFloors = HBSurfaces[9]
+        groundFloors = HBSurfaces[10]
+        undergroundWalls = HBSurfaces[11]
+        undergroundSlabs = HBSurfaces[12]
+        undergroundCeilings = HBSurfaces[13]
+        shadings = HBSurfaces[14]

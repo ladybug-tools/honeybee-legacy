@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.55\nJAN_10_2015'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_11_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -2986,7 +2986,7 @@ class hb_EnergySimulatioParameters(object):
     
     def readEPParams(self, EPParameters):
         
-        if EPParameters == [] or len(EPParameters)!=11:
+        if EPParameters == [] or len(EPParameters)!=12:
             timestep = 6
             
             shadowPar = ["AverageOverDaysInFrequency", 30, 3000]
@@ -2996,6 +2996,8 @@ class hb_EnergySimulatioParameters(object):
             simulationControl = [True, True, True, False, True]
             
             ddyFile = None
+            
+            terrain = 'City'
         
         else:
             timestep = int(EPParameters[0])
@@ -3007,8 +3009,10 @@ class hb_EnergySimulatioParameters(object):
             simulationControl = EPParameters[5:10]
             
             ddyFile = EPParameters[10]
+            
+            terrain = EPParameters[11]
         
-        return timestep, shadowPar, solarDistribution, simulationControl, ddyFile
+        return timestep, shadowPar, solarDistribution, simulationControl, ddyFile, terrain
 
 class EPMaterialAux(object):
     
@@ -3654,7 +3658,7 @@ class EPTypes(object):
                    2.5: 'SlabOnGrade',
                    2.75: 'ExposedFloor',
                    3:'CEILING',
-                   4:'WALL',
+                   4:'AIRWALL',
                    5:'WINDOW',
                    6:'SHADING',
                    'WALL': 'WALL',
@@ -4256,7 +4260,7 @@ class EPSurfaceLib(object):
                1:'ROOF',
                2:'FLOOR',
                3:'CEILING',
-               4:'WALL',
+               4:'AIRWALL',
                5:'WINDOW'}
         
         # surface construction should change later
@@ -4307,17 +4311,23 @@ class EPZone(object):
         self.mixAir = False
         self.mixAirZoneList = []
         self.mixAirFlowList = []
+        self.mixAirFlowRate = 0.0963
         
         self.natVent = False
-        self.natVentMinIndoorTemp = 24.0
-        self.natVentMaxIndoorTemp = 100.0
-        self.natVentMinOutdoorTemp = -100.0
-        self.natVentMaxOutdoorTemp = 100.0
-        self.windowOpeningArea = 0.0
-        self.windowHeightDiff = 0.0
-        self.natVentSchedule = None
-        self.natVentWindDischarge = "Autocalculate"
-        self.natVentStackDischarge = "Autocalculate"
+        self.natVentType = []
+        self.natVentMinIndoorTemp = []
+        self.natVentMaxIndoorTemp = []
+        self.natVentMinOutdoorTemp = []
+        self.natVentMaxOutdoorTemp = []
+        self.windowOpeningArea = []
+        self.windowHeightDiff = []
+        self.natVentSchedule = []
+        self.natVentWindDischarge = []
+        self.natVentStackDischarge = []
+        self.windowAngle = []
+        self.fanFlow = []
+        self.FanEfficiency = []
+        self.FanPressure = []
         
         self.surfaces = []
         
@@ -5218,7 +5228,7 @@ class hb_EPSurface(object):
            2.5: 'SlabOnGrade',
            2.75: 'ExposedFloor',
            3:'CEILING',
-           4:'WALL',
+           4:'AIRWALL',
            5:'WINDOW',
            6:'SHADING',
            'WALL': 'WALL',

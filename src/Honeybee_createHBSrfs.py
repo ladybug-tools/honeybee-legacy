@@ -13,16 +13,16 @@ Provided by Honeybee 0.0.55
         srfName_: Optional name for surface
         srfType_: Optional input for surface type >
             0- 'WALL'
-            1- 'ROOF'
             0.5- 'UndergroundWall'
+            1- 'ROOF'
+            1.5- 'UndergroundCeiling'
             2- 'FLOOR'
-            3- 'CEILING'
-            4- 'WALL'
             2.25- 'UndergroundSlab'
             2.5- 'SlabOnGrade'
-            6- 'SHADING'
             2.75- 'ExposedFloor'
-            1.5- 'UndergroundCeiling'
+            3- 'CEILING'
+            4- 'AIRWALL'
+            6- 'SHADING'
         EPBC_: 'Ground', 'Adiabatic', 'Outdoors'
         _EPConstruction_: Optional EnergyPlus construction
         _RADMaterial_: Optional Radiance Material
@@ -44,7 +44,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_createHBSrfs'
 ghenv.Component.NickName = 'createHBSrfs'
-ghenv.Component.Message = 'VER 0.0.55\nDEC_05_2014'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_11_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -113,20 +113,38 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
             
         # 1. create initial surface
         HBSurface = hb_EPZoneSurface(geometry.Faces[faceCount].DuplicateFace(False), number, srfName)
-
+        
+        # If the user has set a construction as Air Wall, change the surface type to air wall.
+        try:
+            if EPConstruction.ToUpper() == "AIR WALL":
+                srfType = 4
+                infoMsg = "Setting the construction to Air Wall will also ensure that the surface has the air wall srfType_."
+                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Remark, infoMsg)
+        except: pass
+        
+        if srfType == 4 or srfType == 4.0 or srfType == "4" or srfType == "4.0":
+            try:
+                if EPConstruction.ToUpper() == "AIR WALL": pass
+                else:
+                    infoMsg = "Setting the srfType to 4 will also ensure that the surface has the air wall construction."
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Remark, infoMsg)
+            except:
+                infoMsg = "Setting the srfType to 4 will also ensure that the surface has the air wall construction."
+                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Remark, infoMsg)
+            EPConstruction = "AIR WALL"
+        
         # 1.1 check for surface type
         if srfType!=None:
             try:
                 # if user uses a number to input type
                 try: surfaceType = int(srfType)
                 except:
-                    if float(srfType) == 0.5 or float(srfType) == 0.25 or float(srfType) == 0.75:
+                    if float(srfType) == 0.5 or float(srfType) == 1.5 or float(srfType) == 2.25 or float(srfType) == 2.5 or float(srfType) == 2.75:
                         surfaceType = srfType
                     else: pass
                 print "HBSurface Type has been set to " + HBSurface.srfType[float(srfType)]
                 
-                if surfaceType == 4:
-                    surfaceType = 5
+                if surfaceType == 5.0:
                     warningMsg = "If you want to use this model for energy simulation, use addGlazing to add window to surfaces.\n" + \
                                  "It will be fine for Daylighting simulation though."
                     print warningMsg
@@ -140,7 +158,7 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
                    print "HBSurface Type has been set to " + surfaceType.ToUpper()
             
             if surfaceType in HBSurface.srfType.keys():
-                acceptableCombination = [[1,3], [3,1], [0,5], [5,0], [1,5], [5,1]]
+                acceptableCombination = [[1,3], [3,1], [0,5], [5,0], [1,5], [5,1], [4,0], [4,1], [4,2], [4,3], [0,4], [1,4], [2,4], [3,4]]
                 try:
                     if int(HBSurface.type) != surfaceType and [int(HBSurface.type), surfaceType] not in acceptableCombination:
                         warningMsg = "Normal direction of the surface is not expected for a " + HBSurface.srfType[surfaceType] + ". " + \

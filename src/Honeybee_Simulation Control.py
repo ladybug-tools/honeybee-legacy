@@ -4,23 +4,23 @@
 # under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
 
 """
-EnergyPlus Shadow Parameters
+Use this component to set EnergyPlus Simulation Controls such as whether to run certain types of HVAC sizing calculations, etc.
 -
 Provided by Honeybee 0.0.55
 
     Args:
-        doZoneSizingCalculation_:...
-        doSystemSizingCalculation_: ...
-        doPlantSizingCalculation_: ...
-        runSimForSizingPeriods_: ...
-        runSimForRunPeriods_: ...
+        doZoneSizingCalculation_: Set to "True" to have EnergyPlus do a sizing calculation for the zones.  The default is set to "True."
+        doSystemSizingCalculation_: Set to "True" to have EnergyPlus do a sizing calculation for the HVAC system.  The default is set to "True."
+        doPlantSizingCalculation_: Set to "True" to have EnergyPlus do a sizing calculation for the HVAC plant (boiler and chiller).  The default is set to "True", although with ideal air loads, there is no plant as each zone has its own ideal air system and there is no central plant between zones.
+        runSimForSizingPeriods_: Set to "True" to have EnergyPlus run a simulation for the Sizing periods specified in the IDF.  The default is set to "False."  By default, the sizing periods are set to the extreme hot and extreme cold weeks of the weather file but a custom ddy file can also be specified with the "Honeybee_Energy Simulation Par" component.
+        runSimForRunPeriods_: Set to "True" to have EnergyPlus run the simulation for energy use over the entire year of the EPW.  The default is set to "True."
     Returns:
-        simControls:...
+        simControls: A set of simulation controls tha can be plugged into the "Honeybee_Energy Simulation Par" component.
 """
 
 ghenv.Component.Name = "Honeybee_Simulation Control"
 ghenv.Component.NickName = 'simControl'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_11_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014

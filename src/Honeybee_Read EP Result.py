@@ -15,7 +15,7 @@ Provided by Honeybee 0.0.55
         _resultFileAddress: The result file address that comes out of the WriteIDF component.
         normByFloorArea_: Set to 'True' to normalize all zone energy data by floor area (note that the resulting units will be kWh/m2 as EnergyPlus runs in the metric system).  The default is set to "False."
     Returns:
-        totalEnergy: The total energy used by each zone in kWh.  This includes cooling, heating, lighting, and equipment.
+        totalElectricEnergy: The total electric energy used by each zone in kWh.  This includes lighting, fan electric energy, and equipment(including appliances/pulg loads).
         totalThermalEnergy: The total thermal energy used by each zone in kWh.  This includes cooling and heating.
         thermalEnergyBalance: The thermal energy used by each zone in kWh.  Heating values are positive while cooling values are negative.
         cooling: The cooling energy needed in kWh. For Ideal Air loads, this is the sum of sensible and latent heat that must be removed from each zone.  For distributed OpenStudio systems like Packaged Terminal Heat Pumps (PTHP), this will be electric energy for each zone. For central OpenStudio systems, this ouput will be a single list for the whole building.
@@ -32,12 +32,13 @@ Provided by Honeybee 0.0.55
         airTemperature: The mean air temperature of each zone (degrees Celcius).
         meanRadTemperature: The mean radiant temperature of each zone (degrees Celcius).
         relativeHumidity: The relative humidity of each zone (%).
+        airFlowVolume: The total volume of air flowing into the room through both the windows and the mechanical system (m3/s).  This is the voulme of air at standard density (20 C and adjusted for the elevation above sea level of the weather file).
         otherZoneData: Other zone data that is in the result file (in no particular order).  Note that this data cannot be normalized by floor area as the component does not know if it can be normalized.
 """
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.55\nJAN_10_2015'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_11_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "4"
@@ -125,7 +126,7 @@ elif normByFlr == True:
 else: pass
 
 # Make data tree objects for all of the outputs.
-totalEnergy = DataTree[Object]()
+totalElectricEnergy = DataTree[Object]()
 totalThermalEnergy = DataTree[Object]()
 thermalEnergyBalance = DataTree[Object]()
 cooling = DataTree[Object]()
@@ -142,10 +143,11 @@ operativeTemperature = DataTree[Object]()
 airTemperature = DataTree[Object]()
 meanRadTemperature = DataTree[Object]()
 relativeHumidity = DataTree[Object]()
+airFlowVolume = DataTree[Object]()
 otherZoneData = DataTree[Object]()
 
 #Make a list to keep track of what outputs are in the result file.
-dataTypeList = [False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False]
+dataTypeList = [False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False]
 parseSuccess = False
 centralSys = False
 
@@ -252,6 +254,8 @@ if _resultFileAddress and gotData == True:
                         elif 'FAN VARIABLE VOLUME' in column:
                             centralSys = True
                             zoneName = checkCentralSys(" " + column.split(':')[0].split('FAN VARIABLE VOLUME ')[-1], 2)
+                        elif 'Zone Ventilation Fan Electric Energy' in column:
+                            zoneName = checkZone(" " + column.split(':')[0])
                         makeHeader(fanElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Fan Electric Energy", "kWh", True)
                         dataTypeList[7] = True
                     
@@ -313,11 +317,17 @@ if _resultFileAddress and gotData == True:
                         makeHeader(relativeHumidity, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Relative Humidity", "%", False)
                         dataTypeList[16] = True
                     
-                    elif 'Zone' in column and not "System" in column and not "SYSTEM" in column:
+                    elif 'Zone Ventilation Standard Density Volume Flow Rate' in column:
+                        key.append(16)
+                        zoneName = checkZone(" " + column.split(':')[0])
+                        makeHeader(airFlowVolume, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Air Flow Volume", "m3/s", False)
+                        dataTypeList[17] = True
+                    
+                    elif 'Zone' in column and not "System" in column and not "SYSTEM" in column and not "ZONEHVAC" in column:
                         key.append(14)
                         zoneName = checkZoneOther(dataIndex, (" " + column.split(':')[0]))
                         makeHeader(otherZoneData, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], column.split(':')[-1].split(' [')[0], column.split('[')[-1].split(']')[0], False)
-                        dataTypeList[17] = True
+                        dataTypeList[18] = True
                         dataIndex += 1
                     
                     else:
@@ -364,6 +374,8 @@ if _resultFileAddress and gotData == True:
                         otherZoneData.Add(float(column), p)
                     elif key[columnCount] == 15:
                         fanElectric.Add((float(column)/3600000)/flrArea, p)
+                    elif key[columnCount] == 16:
+                        airFlowVolume.Add(float(column), p)
                     
         result.close()
         parseSuccess = True
@@ -392,13 +404,33 @@ coolingPyList = createPyList(cooling)
 heatingPyList = createPyList(heating)
 lightingPyList = createPyList(electricLight)
 equipmentPyList = createPyList(electricEquip)
+fanPyList = createPyList(fanElectric)
 
-if len(coolingPyList) > 0 and len(heatingPyList) > 0 and len(lightingPyList) > 0 and len(equipmentPyList) > 0 and centralSys == False:
-    for listCount, list in enumerate(coolingPyList):
-        makeHeader(totalEnergy, listCount, list[2].split(' for')[-1], list[4].split('(')[-1].split(')')[0], "Total Energy", "kWh", True)
-        for numCount, num in enumerate(list[7:]):
-            totalEnergy.Add((num + heatingPyList[listCount][7:][numCount] + lightingPyList[listCount][7:][numCount] + equipmentPyList[listCount][7:][numCount]), GH_Path(listCount))
-        dataTypeList[0] = True
+theList = []
+otherList1 = []
+otherList2 = []
+if centralSys == False:
+    if len(lightingPyList) > 0 or len(equipmentPyList) > 0 or len(fanPyList) > 0:
+        if len(lightingPyList) > 0:
+            theList = lightingPyList
+        if len(equipmentPyList) > 0:
+            if theList == []: theList = equipmentPyList
+            else: otherList1 = equipmentPyList
+        if len(fanPyList) > 0:
+            if theList == []: theList = fanPyList
+            elif otherList1 == []: otherList1 = fanPyList
+            else: otherList2 = fanPyList
+        
+        for listCount, list in enumerate(theList):
+            makeHeader(totalElectricEnergy, listCount, list[2].split(' for')[-1], list[4].split('(')[-1].split(')')[0], "Total Electric Energy", "kWh", True)
+            for numCount, num in enumerate(list[7:]):
+                if otherList1 != [] and otherList2 != []:
+                    totalElectricEnergy.Add((num + otherList1[listCount][7:][numCount] + otherList2[listCount][7:][numCount]), GH_Path(listCount))
+                elif otherList1 != []:
+                    totalElectricEnergy.Add((num + otherList1[listCount][7:][numCount]), GH_Path(listCount))
+                else:
+                    totalElectricEnergy.Add(num, GH_Path(listCount))
+            dataTypeList[0] = True
 
 if len(coolingPyList) > 0 and len(heatingPyList) > 0:
     for listCount, list in enumerate(coolingPyList):
@@ -417,7 +449,7 @@ if len(coolingPyList) > 0 and len(heatingPyList) > 0:
 
 outputsDict = {
      
-0: ["totalEnergy", "The total energy used by each zone in kWh.  This includes cooling, heating, lighting, and equipment."],
+0: ["totalElectricEnergy", "The total electric energy used by each zone in kWh.  This includes lighting, fan electric energy, and equipment(including appliances/pulg loads)."],
 1: ["totalThermalEnergy", "The total thermal energy used by each zone in kWh.  This includes cooling and heating."],
 2: ["thermalEnergyBalance", "The thermal energy used by each zone in kWh.  Heating values are positive while cooling values are negative."],
 3: ["cooling", "The cooling energy needed in kWh. For Ideal Air loads, this is the sum of sensible and latent heat that must be removed from each zone.  For distributed OpenStudio systems like Packaged Terminal Heat Pumps (PTHP), this will be electric energy for each zone. For central OpenStudio systems, this ouput will be a single list of chiller electric energy for the whole building."],
@@ -434,11 +466,12 @@ outputsDict = {
 14: ["airTemperature", "The mean air temperature of each zone (degrees Celcius)."],
 15: ["meanRadTemperature", "The mean radiant temperature of each zone (degrees Celcius)."],
 16: ["relativeHumidity", "The relative humidity of each zone (%)."],
-17: ["otherZoneData", "Other zone data that is in the result file (in no particular order). Note that this data cannot be normalized by floor area as the component does not know if it can be normalized."]
+17: ["airFlowVolume", "The total volume of air flowing into the room through both the windows and the mechanical system (m3/s).  This is the voulme of air at standard density (20 C and adjusted for the elevation above sea level of the weather file)."],
+18: ["otherZoneData", "Other zone data that is in the result file (in no particular order). Note that this data cannot be normalized by floor area as the component does not know if it can be normalized."]
 }
 
 if _resultFileAddress and parseSuccess == True:
-    for output in range(18):
+    for output in range(19):
         if dataTypeList[output] == False:
             ghenv.Component.Params.Output[output].NickName = "."
             ghenv.Component.Params.Output[output].Name = "."
@@ -448,7 +481,7 @@ if _resultFileAddress and parseSuccess == True:
             ghenv.Component.Params.Output[output].Name = outputsDict[output][0]
             ghenv.Component.Params.Output[output].Description = outputsDict[output][1]
 else:
-    for output in range(18):
+    for output in range(19):
         ghenv.Component.Params.Output[output].NickName = outputsDict[output][0]
         ghenv.Component.Params.Output[output].Name = outputsDict[output][0]
         ghenv.Component.Params.Output[output].Description = outputsDict[output][1]
