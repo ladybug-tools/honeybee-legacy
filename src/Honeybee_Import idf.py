@@ -12,7 +12,7 @@ Constructions, schedules and systems will be neglected
 """
 ghenv.Component.Name = "Honeybee_Import idf"
 ghenv.Component.NickName = 'importIdf'
-ghenv.Component.Message = 'VER 0.0.55\nDEC_03_2014'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_14_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nNOV_29_2014
@@ -391,8 +391,24 @@ def main(idfFile, importEPObjects = False):
             polyline = rc.Geometry.Polyline(pts).ToNurbsCurve()
             geometry = rc.Geometry.Brep.CreatePlanarBreps(polyline)[0]
             thisShading = hb_EPSHDSurface(geometry, 1, shadingName)
+    
+    if idfFileDict.has_key("Shading:Building:Detailed"):
+        for shadingName in idfFileDict["Shading:Building:Detailed"].keys():
+            shadingObj = idfFileDict["Shading:Building:Detailed"][shadingName]
+            pts = []
+            for coordinate in range(3, len(shadingObj.keys()), 3):
+                x = shadingObj[coordinate][0]
+                y = shadingObj[coordinate + 1][0]
+                z = shadingObj[coordinate + 2][0]
+                pts.append(rc.Geometry.Point3d(float(x), float(y), float(z)))
+            pts.append(pts[0])
+            polyline = rc.Geometry.Polyline(pts).ToNurbsCurve()
+            geometry = rc.Geometry.Brep.CreatePlanarBreps(polyline)[0]
+            thisShading = hb_EPSHDSurface(geometry, 1, shadingName)
             
+    
             shadingList.append(thisShading)
+    
     # recalculate the zone
     zonesList = []
     for zoneName in HBZones.keys():
@@ -416,6 +432,5 @@ def main(idfFile, importEPObjects = False):
 
 if _idfFile!=None:
     results = main(_idfFile, importEPObjects_)
-
     if results!=-1:
         HBZones, shadings = results
