@@ -34,10 +34,10 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.55\nDEC_12_2014'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_12_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
-#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
+#compatibleHBVersion = VER 0.0.55\nJAN_11_2015
 #compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
 except: pass
@@ -78,7 +78,7 @@ def copyHBZoneData():
         for srf in zone.surfaces:
             surfaceNames[zoneCount].append(srf.name)
             srfTypes[zoneCount].append(srf.type)
-            if srf.type == 0 and srf.BC.lower() == "surface":
+            if srf.type == 4 and srf.BC.lower() == "surface":
                 srfInteriorList[zoneCount].append(str(srf.BCObject).split('\n')[0].split(': ')[-1])
             else: srfInteriorList[zoneCount].append(None)
             if srf.hasChild:
