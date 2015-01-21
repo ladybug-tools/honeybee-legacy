@@ -94,11 +94,13 @@ class CheckIn():
     
     def checkForUpdates(self, LB= True, HB= True, OpenStudio = True, template = True):
         
-        url = "https://dl.dropboxusercontent.com/u/16228160/honeybee/versions.txt"
-        webFile = urllib.urlopen(url, timeout = 10)
-        versions= eval(webFile.read())
-        webFile.close()
-        
+        url = "https://github.com/mostaphaRoudsari/ladybug/raw/master/resources/versions.txt"
+        versionFile = os.path.join(sc.sticky["Honeybee_DefaultFolder"], "versions.txt")
+        client = System.Net.WebClient()
+        client.DownloadFile(url, versionFile)
+        with open("c:/ladybug/versions.txt", "r")as vf:
+            versions= eval("\n".join(vf.readlines()))
+            
         if LB:
             ladybugVersion = versions['Ladybug']
             currentLadybugVersion = self.getComponentVersion() # I assume that this function will be called inside Ladybug_ladybug Component
@@ -265,13 +267,10 @@ class PrepareTemplateEPLibFiles(object):
         self.workingDir = workingDir
         
     def downloadFile(self, url, workingDir):
-        import urllib2 as urllib
-        webFile = urllib.urlopen(url, timeout)
-        localFile = open(workingDir + '/' + url.split('/')[-1], 'wb')
-        localFile.write(webFile.read())
-        webFile.close()
-        localFile.close()
-        
+        localFilePath = workingDir + '/' + url.split('/')[-1]
+        client = System.Net.WebClient()
+        client.DownloadFile(url, localFilePath)
+    
     def cleanHBLib(self):
         sc.sticky ["honeybee_constructionLib"] = {}
         sc.sticky ["honeybee_materialLib"] = {}
@@ -299,9 +298,7 @@ class PrepareTemplateEPLibFiles(object):
             try:
                 ## download File
                 print 'Downloading OpenStudioMasterTemplate.idf to ', workingDir
-                updatedLink = "https://dl.dropboxusercontent.com/u/16228160/honeybee/template/OpenStudioMasterTemplate.idf"
-                # This is the current link for current available version of Honeybee. Once we release the new version it can be removed.
-                #downloadFile(r'https://dl.dropboxusercontent.com/u/16228160/honeybee/OpenStudioMasterTemplate.idf', workingDir)
+                updatedLink = "https://github.com/mostaphaRoudsari/Honeybee/raw/master/resources/OpenStudioMasterTemplate.idf"
                 self.downloadFile(updatedLink, workingDir)
                 # clean current library
                 self.cleanHBLib()
@@ -314,10 +311,7 @@ class PrepareTemplateEPLibFiles(object):
         if not os.path.isfile(workingDir + '\OpenStudioMasterTemplate.idf'):
             iplibPath = ghenv.Script.GetStandardLibPath()
             print 'Download failed!!! You need OpenStudioMasterTemplate.idf to use honeybee.' + \
-                '\nPlease check your internet connection, and try again!' + \
-                'In case you are already connected to internet, and downlod still fails then' + \
-                'download ssl.py from the link below and copy the file to " + iplibPath + " and try again!' + \
-                'https://app.box.com/s/jvsj1ic60vnficptlktt0jpfutcktemq'
+                '\nPlease check your internet connection, and try again!'
             return -1
         else:
             libFilePaths = [os.path.join(workingDir, 'OpenStudioMasterTemplate.idf')]
@@ -327,13 +321,10 @@ class PrepareTemplateEPLibFiles(object):
             try:
                 ## download File
                 print 'Downloading OpenStudio_Standards.json to ', workingDir
-                self.downloadFile(r'https://dl.dropboxusercontent.com/u/16228160/honeybee/OpenStudio_Standards.json', workingDir)
+                self.downloadFile(r'https://github.com/mostaphaRoudsari/Honeybee/raw/master/resources/OpenStudio_Standards.json', workingDir)
             except:
                 print 'Download failed!!! You need OpenStudio_Standards.json to use honeybee.' + \
-                '\nPlease check your internet connection, and try again!' + \
-                'In case you are already connected to internet, and downlod still fails then' + \
-                'download ssl.py from the link below and copy the file to " + iplibPath + " and try again!' + \
-                'https://app.box.com/s/jvsj1ic60vnficptlktt0jpfutcktemq'
+                '\nPlease check your internet connection, and try again!'
         else:
             pass
         
