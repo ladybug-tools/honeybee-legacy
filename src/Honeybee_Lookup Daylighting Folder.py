@@ -23,10 +23,10 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Lookup Daylighting Folder"
 ghenv.Component.NickName = 'LookupFolder_Daylighting'
-ghenv.Component.Message = 'VER 0.0.55\nJAN_05_2015'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_21_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
-#compatibleHBVersion = VER 0.0.55\nJAN_05_2015
+#compatibleHBVersion = VER 0.0.55\nJAN_21_2015
 #compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
 except: pass
@@ -71,6 +71,7 @@ def main(studyFolder):
     lb_preparation = sc.sticky["ladybug_Preparation"]()
     hb_serializeObjects = sc.sticky["honeybee_SerializeObjects"]
     hb_readAnnualResultsAux = sc.sticky["honeybee_ReadAnnualResultsAux"]()
+    analysisTypesDict = sc.sticky["honeybee_DLAnalaysisTypes"]
     if studyFolder==None:
         msg = " "
         return msg, None
@@ -133,6 +134,8 @@ def main(studyFolder):
             elif fileName.lower().endswith(".typ"):
                 with open(os.path.join(studyFolder, fileName), "r") as typf:
                     analysisType = typf.readline().strip()
+                try: analysisType = analysisTypesDict[float(analysisType)]
+                except: pass
             elif fileName.lower().endswith(".dgp"):
                 dgpFiles.append(os.path.join(studyFolder, fileName))
             elif fileName.lower().endswith(".msh"):

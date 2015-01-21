@@ -132,7 +132,7 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
     hb_writeRADAUX.exportTestMesh(subWorkingDir, radFileName)
     
     # write analysis type to folder
-    hb_writeRADAUX.exportTypeFile(subWorkingDir, radFileName)
+    hb_writeRADAUX.exportTypeFile(subWorkingDir, radFileName, analysisRecipe)
     
     # copy the sky file to the local folder except for annual analysis
     radSkyFileName = hb_writeRADAUX.copySkyFile(subWorkingDir, radFileName)

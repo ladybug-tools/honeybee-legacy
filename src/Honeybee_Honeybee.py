@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.55\nJAN_20_2015'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_21_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -2233,15 +2233,21 @@ class hb_WriteRADAUX(object):
     def exportTypeFile(self, subWorkingDir, radFileName, analysisRecipe = None):
         
         if analysisRecipe != None:
-            analysisType = analysisRecipe.type
+            try:
+                simulationType = analysisRecipe.simulationType
+            except:
+                simulationType = 5 # annual
         else:
-            analysisType = self.analysisType
-            
+            try:
+                simulationType = self.simulationType
+            except:
+                simulationType = 5 # annual
+                
         # try to write mesh file if any
         typeFile = os.path.join(subWorkingDir, radFileName + ".typ")
         
         with open(typeFile, "w") as typf:
-            typf.write(str(analysisType))
+            typf.write(str(simulationType))
         
     def copySkyFile(self, subWorkingDir, radFileName, analysisRecipe = None):
         
