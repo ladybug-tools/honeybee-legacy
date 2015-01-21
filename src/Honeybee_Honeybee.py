@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.55\nJAN_13_2015'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_20_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -54,7 +54,7 @@ from itertools import chain
 import datetime
 import json
 import copy
-import urllib
+import urllib2 as urllib
 import cPickle as pickle
 import subprocess
 
@@ -95,7 +95,7 @@ class CheckIn():
     def checkForUpdates(self, LB= True, HB= True, OpenStudio = True, template = True):
         
         url = "https://dl.dropboxusercontent.com/u/16228160/honeybee/versions.txt"
-        webFile = urllib.urlopen(url)
+        webFile = urllib.urlopen(url, timeout = 10)
         versions= eval(webFile.read())
         webFile.close()
         
@@ -265,8 +265,8 @@ class PrepareTemplateEPLibFiles(object):
         self.workingDir = workingDir
         
     def downloadFile(self, url, workingDir):
-        import urllib
-        webFile = urllib.urlopen(url)
+        import urllib2 as urllib
+        webFile = urllib.urlopen(url, timeout)
         localFile = open(workingDir + '/' + url.split('/')[-1], 'wb')
         localFile.write(webFile.read())
         webFile.close()
@@ -312,8 +312,12 @@ class PrepareTemplateEPLibFiles(object):
             pass
         
         if not os.path.isfile(workingDir + '\OpenStudioMasterTemplate.idf'):
+            iplibPath = ghenv.Script.GetStandardLibPath()
             print 'Download failed!!! You need OpenStudioMasterTemplate.idf to use honeybee.' + \
-                '\nPlease check your internet connection, and try again!'
+                '\nPlease check your internet connection, and try again!' + \
+                'In case you are already connected to internet, and downlod still fails then' + \
+                'download ssl.py from the link below and copy the file to " + iplibPath + " and try again!' + \
+                'https://app.box.com/s/jvsj1ic60vnficptlktt0jpfutcktemq'
             return -1
         else:
             libFilePaths = [os.path.join(workingDir, 'OpenStudioMasterTemplate.idf')]
@@ -326,7 +330,10 @@ class PrepareTemplateEPLibFiles(object):
                 self.downloadFile(r'https://dl.dropboxusercontent.com/u/16228160/honeybee/OpenStudio_Standards.json', workingDir)
             except:
                 print 'Download failed!!! You need OpenStudio_Standards.json to use honeybee.' + \
-                '\nPlease check your internet connection, and try again!'
+                '\nPlease check your internet connection, and try again!' + \
+                'In case you are already connected to internet, and downlod still fails then' + \
+                'download ssl.py from the link below and copy the file to " + iplibPath + " and try again!' + \
+                'https://app.box.com/s/jvsj1ic60vnficptlktt0jpfutcktemq'
         else:
             pass
         
