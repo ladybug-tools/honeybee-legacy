@@ -232,7 +232,7 @@ def main(sourceDirectory, updateThisFile, updateAllUObjects):
             # check for ladybug userObjects and delete the files if they are not
             # in source anymore
             if fileName.StartsWith('Honeybee') and fileName not in srcFiles:
-                fullPath = os.path.join(folder, fileName)
+                fullPath = os.path.join(destinationDirectory, fileName)
                 os.remove(fullPath)        
         
         print 'Updating...'
