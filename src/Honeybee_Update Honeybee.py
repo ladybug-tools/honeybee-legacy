@@ -18,7 +18,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Update Honeybee"
 ghenv.Component.NickName = 'updateHoneybee'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_20_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | Developers"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -76,15 +76,22 @@ def downloadSourceAndUnzip(lb_preparation):
     if not os.path.isdir(targetDirectory): os.mkdir(targetDirectory)
     
     if download:
-        webFile = urllib.urlopen(url)
-        localFile = open(zipFile, 'wb')
-        localFile.write(webFile.read())
-        webFile.close()
-        localFile.close()
-        if not os.path.isfile(zipFile):
-            print "Download failed! Try to download and unzip the file manually form:\n" + url
+        try:
+            webFile = urllib.urlopen(url)
+            localFile = open(zipFile, 'wb')
+            localFile.write(webFile.read())
+            webFile.close()
+            localFile.close()
+            if not os.path.isfile(zipFile):
+                print "Download failed! Try to download and unzip the file manually form:\n" + url
+                return
+        except Exception, e:
+            iplibPath = ghenv.Script.GetStandardLibPath()
+            print `e` + \
+            "\nDownload ssl.py from the link below and copy the file to " + iplibPath + " and try again!"
+            print "https://app.box.com/s/jvsj1ic60vnficptlktt0jpfutcktemq"
             return
-    
+        
     #unzip the file
     with zipfile.ZipFile(zipFile) as zf:
         for f in zf.namelist():
@@ -216,6 +223,18 @@ def main(sourceDirectory, updateThisFile, updateAllUObjects):
             w = gh.GH_RuntimeMessageLevel.Warning
             ghenv.Component.AddRuntimeMessage(w, warning)
             return -1
+
+        srcFiles = os.listdir(userObjectsFolder)
+        print 'Removing Old Version...'
+        # remove userobjects that are currently removed
+        fileNames = os.listdir(destinationDirectory)
+        for fileName in fileNames:
+            # check for ladybug userObjects and delete the files if they are not
+            # in source anymore
+            if fileName.StartsWith('Honeybee') and fileName not in srcFiles:
+                fullPath = os.path.join(folder, fileName)
+                os.remove(fullPath)        
+        
         print 'Updating...'
         srcFiles = os.listdir(userObjectsFolder)
         for srcFileName in srcFiles:
