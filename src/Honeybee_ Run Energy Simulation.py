@@ -33,7 +33,7 @@ export geometries to idf file, and run the energy simulation
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.55\nJAN_11_2015'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_20_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nJAN_11_2015
@@ -865,7 +865,7 @@ class RunIDF(object):
         
         folderName = workingDir.replace( (workingDrive + '\\'), '')
         batchStr = workingDrive + '\ncd\\' +  folderName + '\n' + EPDirectory + \
-                '\\Epl-run ' + fullPath + ' ' + fullPath + ' idf ' + epwFileAddress + ' EP N nolimit N N 0 Y'
+                '\Epl-run ' + fullPath + ' ' + fullPath + ' idf "' + epwFileAddress + '" EP N nolimit N N 0 Y'
     
         batchFileAddress = fullPath +'.bat'
         batchfile = open(batchFileAddress, 'w')
