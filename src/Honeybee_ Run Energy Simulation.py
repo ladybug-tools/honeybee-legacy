@@ -33,7 +33,7 @@ export geometries to idf file, and run the energy simulation
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.55\nJAN_20_2015'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_21_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nJAN_11_2015
@@ -229,24 +229,27 @@ class WriteIDF(object):
     
     def EPHVACTemplate( self, name, zone):
         if zone.isConditioned:
-            heatingSCHName = zone.heatingSetPtSchedule
-            if zone.heatingSetPtSchedule != "":
-                constantHeatingSetPoint = zone.heatingSetPtSchedule
-            else:
-                constantHeatingSetPoint = '' # I should add this to zones later
+            heatingSetPtSchedule = zone.heatingSetPtSchedule
+            coolingSetPtSchedule = zone.coolingSetPtSchedule
             
-            coolingSCHName = zone.coolingSetPtSchedule
-            if zone.heatingSetPtSchedule != "":
-                constantCoolingSetPoint = zone.coolingSetPtSchedule
+            if heatingSetPtSchedule.lower().endswith(".csv"):
+                # find filebased schedule name
+                heatingSetPtSchedule = self.fileBasedSchedules[heatingSetPtSchedule.upper()]            
             else:
-                constantCoolingSetPoint = ''
-            
+                heatingSetPtSchedule = ""
+                
+            if coolingSetPtSchedule.lower().endswith(".csv"):
+                # find filebased schedule name
+                coolingSetPtSchedule = self.fileBasedSchedules[coolingSetPtSchedule.upper()]
+            else:
+                coolingSetPtSchedule = ""
+                
             return '\nHVACTemplate:Thermostat,\n' + \
                     '\t' + name + ',                    !- Name\n' + \
-                    '\t' + heatingSCHName + ',          !- Heating Setpoint Schedule Name\n' + \
-                    '\t' + constantHeatingSetPoint + ', !- Constant Heating Setpoint {C}\n' + \
-                    '\t' + coolingSCHName + ',          !- Cooling Setpoint Schedule Name\n' + \
-                    '\t' + constantCoolingSetPoint + '; !- Constant Cooling Setpoint {C}\n'
+                    '\t' + heatingSetPtSchedule + ',          !- Heating Setpoint Schedule Name\n' + \
+                    '\t' + `zone.heatingSetPt` + ', !- Constant Heating Setpoint {C}\n' + \
+                    '\t' + coolingSetPtSchedule + ',          !- Cooling Setpoint Schedule Name\n' + \
+                    '\t' + `zone.coolingSetPt` + '; !- Constant Cooling Setpoint {C}\n'
         else:
             return "\n"
             
