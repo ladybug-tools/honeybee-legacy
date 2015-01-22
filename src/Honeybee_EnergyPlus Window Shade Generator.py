@@ -45,7 +45,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Window Shade Generator"
 ghenv.Component.NickName = 'EPWindowShades'
-ghenv.Component.Message = 'VER 0.0.55\nJAN_09_2015'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_21_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -464,16 +464,17 @@ def makeShade(_glzSrf, depth, numShds, distBtwn):
             except: pass
     
     #If the user has specified a distance to move the shades, move them along the normal vector.
-    if distToGlass != None:
-        transVec = normalVecOrignal
-        transVec.Unitize()
-        finalTransVec = rc.Geometry.Vector3d.Multiply(distToGlass, transVec)
-        blindsTransform =  rc.Geometry.Transform.Translation(finalTransVec)
-        
-        for shdSrf in shadingSurfaces:
-            shdSrf.Transform(blindsTransform)
-    else:
-        distToGlass = 0
+    if distToGlass != None: pass
+    else: distToGlass = depth/2
+    
+    transVec = normalVecOrignal
+    transVec.Unitize()
+    finalTransVec = rc.Geometry.Vector3d.Multiply(distToGlass, transVec)
+    blindsTransform =  rc.Geometry.Transform.Translation(finalTransVec)
+    
+    for shdSrf in shadingSurfaces:
+        shdSrf.Transform(blindsTransform)
+    
     
     #Get the EnergyPlus distance to glass.
     EPDistToGlass = distToGlass + (depth)*(0.5)*math.cos(math.radians(EPshdAngle))
