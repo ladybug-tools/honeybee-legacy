@@ -22,6 +22,7 @@ Provided by Honeybee 0.0.55
             2.75- 'ExposedFloor'
             3- 'CEILING'
             4- 'AIRWALL'
+            5- 'WINDOW'
             6- 'SHADING'
         EPBC_: 'Ground', 'Adiabatic', 'Outdoors'
         _EPConstruction_: Optional EnergyPlus construction
@@ -44,7 +45,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_createHBSrfs'
 ghenv.Component.NickName = 'createHBSrfs'
-ghenv.Component.Message = 'VER 0.0.55\nJAN_11_2015'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_22_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
