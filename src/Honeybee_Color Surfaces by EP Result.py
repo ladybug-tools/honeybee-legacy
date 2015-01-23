@@ -41,7 +41,7 @@ ghenv.Component.Message = 'VER 0.0.55\nJAN_22_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
-#compatibleLBVersion = VER 0.0.58\nDEC_02_2014
+#compatibleLBVersion = VER 0.0.58\nDEC_25_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
 except: pass
 
