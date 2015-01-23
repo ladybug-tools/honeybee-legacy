@@ -72,10 +72,10 @@ else:
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.55\nDEC_18_2014'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_23_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.55\nOCT_29_2014
+#compatibleHBVersion = VER 0.0.55\nJAN_23_2015
 #compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
 
@@ -407,6 +407,8 @@ class WriteOPS(object):
         1:'FixedMinimum'
         }
         
+        if HVACDetails == None: return
+        
         print 'getting oasys from the hive'
         print HVACDetails['airsideEconomizer']['DXLockoutMethod']
         'airsideEconomizer'
@@ -425,7 +427,9 @@ class WriteOPS(object):
         'DXLockoutMethod' : lockout[HVACDetails['airsideEconomizer']['DXLockoutMethod']]
         }
         return oaDesc
+        
     def updateOASys(self,econo,oactrl):
+        if econo == None: return
         if econo['econoControl'] == 0:
             oactrl.setEconomizerControlType("FixedDryBulb")
             if econo['sensedMin'] != None:
@@ -1143,54 +1147,56 @@ class WriteOPS(object):
                 for zone in thermalZoneVector:
                     airloop.addBranchForZone(zone)
                 
-                oasys = airloop.airLoopHVACOutdoorAirSystem() 
-                if oasys.is_initialized():
-                    print 'overriding the OpenStudio airside economizer settings'
-                    oactrl = oasys.get().getControllerOutdoorAir()
-                    #set control type
-                    #can sensed min still be dry bulb for any of these?  Future release question
-                    econo = self.recallOASys(HVACDetails)
-                    oactrl = self.updateOASys(econo,oactrl)
-                    print 'economizer settings updated to economizer name: ' + HVACDetails['airsideEconomizer']['name']
-                    print ''
-                    
-                if HVACDetails['varVolSupplyFanDef'] != None:
-                    print 'overriding the OpenStudio supply fan settings'
-                    x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:VariableVolume"))
-                    vvfan = model.getFanVariableVolume(x[0].handle()).get()
-                    sf = self.recallVVFan(HVACDetails)
-                    vvfan = self.updateVVFan(sf,vvfan)
-                    print 'supply fan settings updated to supply fan name: ' + HVACDetails['varVolSupplyFanDef']['name']
-                    print ''
+                if HVACDetails!=None:
+                    oasys = airloop.airLoopHVACOutdoorAirSystem() 
+                    if oasys.is_initialized():
+                        print 'overriding the OpenStudio airside economizer settings'
+                        oactrl = oasys.get().getControllerOutdoorAir()
+                        #set control type
+                        #can sensed min still be dry bulb for any of these?  Future release question
+                        econo = self.recallOASys(HVACDetails)
+                        oactrl = self.updateOASys(econo,oactrl)
+                        print 'economizer settings updated to economizer name: ' + HVACDetails['airsideEconomizer']['name']
+                        print ''
+                        
+                    if HVACDetails['varVolSupplyFanDef'] != None:
+                        print 'overriding the OpenStudio supply fan settings'
+                        x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:VariableVolume"))
+                        vvfan = model.getFanVariableVolume(x[0].handle()).get()
+                        sf = self.recallVVFan(HVACDetails)
+                        vvfan = self.updateVVFan(sf,vvfan)
+                        print 'supply fan settings updated to supply fan name: ' + HVACDetails['varVolSupplyFanDef']['name']
+                        print ''
                 
-                #I think the idea here is to see if there is a hot water plant update(not sure how)
-                if plantDetails['boiler'] != None:
-                    print 'overriding the OpenStudio hot water boiler description'
-                    x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Heating:Water"))
-                    hc = model.getCoilHeatingWater(x[0].handle()).get()
-                    hwl = hc.plantLoop().get()
-                    print type(hwl)
-                    boilervec = hwl.supplyComponents(ops.IddObjectType("OS:Boiler:HotWater"))
-                    for bc,boiler in enumerate(boilervec):
-                        #sequencing, is this possible?
-                        #below's example has no sequencing capabilities
-                        osboiler = model.getBoilerHotWater(boiler.handle()).get()
-                        uboil = self.recallBoiler(plantDetails)
-                        osboiler = self.updateBoiler(uboil,osboiler)
-                if plantDetails['chiller'] != None:
-                    print 'overrideing OpenStudio chiller description'
-                    x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:Water"))
-                    cc = model.getCoilCoolingWater(x[0].handle()).get()
-                    print cc
-                    chl = cc.plantLoop().get()
-                    print type(chl)
-                    chillervec = chl.supplyComponents(ops.IddObjectType("OS:Chiller:Electric:EIR"))
-                    for ccount,chiller in enumerate(chillervec):
-                        #sequencing, is this possible?
-                        oschiller = model.getChillerElectricEIR(chiller.handle()).get()
-                        print oschiller
-                        uchiller = self.recallChiller(plantDetails)
-                        oschiller = self.updateChiller(uchiller,oschiller)
+                if plantDetails!=None:
+                    #I think the idea here is to see if there is a hot water plant update(not sure how)
+                    if plantDetails['boiler'] != None:
+                        print 'overriding the OpenStudio hot water boiler description'
+                        x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Heating:Water"))
+                        hc = model.getCoilHeatingWater(x[0].handle()).get()
+                        hwl = hc.plantLoop().get()
+                        print type(hwl)
+                        boilervec = hwl.supplyComponents(ops.IddObjectType("OS:Boiler:HotWater"))
+                        for bc,boiler in enumerate(boilervec):
+                            #sequencing, is this possible?
+                            #below's example has no sequencing capabilities
+                            osboiler = model.getBoilerHotWater(boiler.handle()).get()
+                            uboil = self.recallBoiler(plantDetails)
+                            osboiler = self.updateBoiler(uboil,osboiler)
+                    if plantDetails['chiller'] != None:
+                        print 'overrideing OpenStudio chiller description'
+                        x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:Water"))
+                        cc = model.getCoilCoolingWater(x[0].handle()).get()
+                        print cc
+                        chl = cc.plantLoop().get()
+                        print type(chl)
+                        chillervec = chl.supplyComponents(ops.IddObjectType("OS:Chiller:Electric:EIR"))
+                        for ccount,chiller in enumerate(chillervec):
+                            #sequencing, is this possible?
+                            oschiller = model.getChillerElectricEIR(chiller.handle()).get()
+                            print oschiller
+                            uchiller = self.recallChiller(plantDetails)
+                            oschiller = self.updateChiller(uchiller,oschiller)
 
             else:
                 msg = "HVAC system index " + str(systemIndex) +  " is not implemented yet!"
@@ -2454,7 +2460,9 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         
         # add HVAC system
         HAVCGroupID, HVACIndex, HVACDetails, plantDetails = zone.HVACSystem
-        print HAVCGroupID,HVACIndex,HVACDetails,plantDetails
+        
+        # print HAVCGroupID,HVACIndex,HVACDetails,plantDetails
+        
         if HAVCGroupID!= -1:
             if HAVCGroupID not in hb_writeOPS.HVACSystemDict.keys():
                 # add place holder for lists 
