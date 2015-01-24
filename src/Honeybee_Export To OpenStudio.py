@@ -75,7 +75,7 @@ ghenv.Component.NickName = 'exportToOpenStudio'
 ghenv.Component.Message = 'VER 0.0.55\nJAN_23_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.55\nJAN_23_2015
+#compatibleHBVersion = VER 0.0.55\nJAN_24_2015
 #compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
 
@@ -1401,13 +1401,15 @@ class WriteOPS(object):
         standardGlazing.setConductivity(float(values[12]))
         try: standardGlazing.setDirtCorrectionFactorforSolarandVisibleTransmittance(float(values[13]))
         except: pass
+        """
         try:
             if values[14].lower() == "no":
                 standardGlazing.setSolarDiffusing(False)
             else:
                 standardGlazing.setSolarDiffusing(True)
-        except:
+        except Exception, e:
             pass
+        """
         return standardGlazing
     
     def createOSNoMassMaterial(self, HBMaterialName, values, model):
