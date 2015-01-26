@@ -22,7 +22,7 @@ Provided by Honeybee 0.0.55
 ghenv.Component.Name = "Honeybee_OpenStudio Mechanical Controller"
 ghenv.Component.NickName = 'MechVentController'
 ghenv.Component.Message = 'VER 0.0.55\nDEC_14_2014'
-ghenv.Component.Category = "Honeybee"
+ghenv.Component.Category = "Honeybee@E"
 ghenv.Component.SubCategory = "10 | Energy | AirsideSystems"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
 except: pass

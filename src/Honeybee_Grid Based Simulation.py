@@ -22,7 +22,7 @@ Provided by Honeybee 0.0.55
 ghenv.Component.Name = "Honeybee_Grid Based Simulation"
 ghenv.Component.NickName = 'gridBasedSimulation'
 ghenv.Component.Message = 'VER 0.0.55\nNOV_08_2014'
-ghenv.Component.Category = "Honeybee"
+ghenv.Component.Category = "Honeybee@DL"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"
 #compatibleHBVersion = VER 0.0.55\nNOV_08_2014
 #compatibleLBVersion = VER 0.0.58\nAUG_20_2014

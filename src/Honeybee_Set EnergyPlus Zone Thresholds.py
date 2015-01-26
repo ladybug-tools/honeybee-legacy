@@ -22,7 +22,7 @@ Provided by Honeybee 0.0.55
 ghenv.Component.Name = "Honeybee_Set EnergyPlus Zone Thresholds"
 ghenv.Component.NickName = 'setEPZoneThresholds'
 ghenv.Component.Message = 'VER 0.0.55\nJAN_10_2015'
-ghenv.Component.Category = "Honeybee"
+ghenv.Component.Category = "Honeybee@E"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
 #compatibleLBVersion = VER 0.0.58\nAUG_20_2014

@@ -43,7 +43,7 @@ import Grasshopper.Kernel as gh
 ghenv.Component.Name = "Honeybee_OpenStudio Hot Water Boiler"
 ghenv.Component.NickName = 'EPlusHotWaterBoiler'
 ghenv.Component.Message = 'VER 0.0.55\nDEC_16_2014'
-ghenv.Component.Category = "Honeybee"
+ghenv.Component.Category = "Honeybee@E"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
 #compatibleLBVersion = VER 0.0.58\nAUG_20_2014

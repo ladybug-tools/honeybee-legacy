@@ -17,7 +17,7 @@ Provided by Honeybee 0.0.55
 ghenv.Component.Name = "Honeybee_Read Indoor Comfort Result"
 ghenv.Component.NickName = 'readComfortResult'
 ghenv.Component.Message = 'VER 0.0.55\nDEC_20_2014'
-ghenv.Component.Category = "Honeybee"
+ghenv.Component.Category = "Honeybee@E"
 ghenv.Component.SubCategory = "12 | WIP"
 ghenv.Component.AdditionalHelpFromDocStrings = "3"
 

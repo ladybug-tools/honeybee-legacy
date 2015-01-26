@@ -25,7 +25,7 @@ Provided by Honeybee 0.0.55
 ghenv.Component.Name = "Honeybee_EnergyPlus Blinds Material"
 ghenv.Component.NickName = 'EPBlindsMat'
 ghenv.Component.Message = 'VER 0.0.55\nOCT_24_2014'
-ghenv.Component.Category = "Honeybee"
+ghenv.Component.Category = "Honeybee@E"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
 #compatibleLBVersion = VER 0.0.58\nAUG_20_2014

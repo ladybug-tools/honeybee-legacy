@@ -22,8 +22,8 @@ Provided by Honeybee 0.0.55
 ghenv.Component.Name = "Honeybee_Import IES"
 ghenv.Component.NickName = 'importIES'
 ghenv.Component.Message = 'VER 0.0.55\nNOV_17_2014'
-ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "12 | WIP"
+ghenv.Component.Category = "Honeybee@DL"
+ghenv.Component.SubCategory = "05 | WIP"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
 #compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"

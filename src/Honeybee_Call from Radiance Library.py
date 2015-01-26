@@ -21,7 +21,7 @@ Provided by Honeybee 0.0.55
 ghenv.Component.Name = "Honeybee_Call from Radiance Library"
 ghenv.Component.NickName = 'callFromLibrary'
 ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
-ghenv.Component.Category = "Honeybee"
+ghenv.Component.Category = "Honeybee@DL"
 ghenv.Component.SubCategory = "01 | Daylight | Material"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
 #compatibleLBVersion = VER 0.0.58\nAUG_20_2014
