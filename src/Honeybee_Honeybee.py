@@ -30,8 +30,8 @@ Provided by Honeybee 0.0.55
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
 ghenv.Component.Message = 'VER 0.0.55\nJAN_25_2015'
-ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "00 | Honeybee"
+ghenv.Component.Category = "Ladybug"
+ghenv.Component.SubCategory = "0 | Ladybug"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
 

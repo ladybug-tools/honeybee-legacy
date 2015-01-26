@@ -30,8 +30,8 @@ Provided by Honeybee 0.0.55
 ghenv.Component.Name = "Honeybee_Decompose Based On Type"
 ghenv.Component.NickName = 'decomposeByType'
 ghenv.Component.Message = 'VER 0.0.55\nJAN_11_2015'
-ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "00 | Honeybee"
+ghenv.Component.Category = "Ladybug"
+ghenv.Component.SubCategory = "1 | Honeybee"
 #compatibleHBVersion = VER 0.0.55\nJAN_11_2015
 #compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "4"

@@ -39,8 +39,8 @@ Provided by Honeybee 0.0.55
 ghenv.Component.Name = "Honeybee_Glazing Parameters List"
 ghenv.Component.NickName = 'glzParamList'
 ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
-ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "00 | Honeybee"
+ghenv.Component.Category = "Ladybug"
+ghenv.Component.SubCategory = "1 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
 except: pass
 

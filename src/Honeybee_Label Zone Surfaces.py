@@ -26,8 +26,8 @@ Provided by Honeybee 0.0.55
 ghenv.Component.Name = "Honeybee_Label Zone Surfaces"
 ghenv.Component.NickName = 'LabelSurfaces'
 ghenv.Component.Message = 'VER 0.0.55\nOCT_03_2014'
-ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "00 | Honeybee"
+ghenv.Component.Category = "Ladybug"
+ghenv.Component.SubCategory = "1 | Honeybee"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
 #compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
