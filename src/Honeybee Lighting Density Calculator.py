@@ -41,7 +41,7 @@ Provided by Honeybee 0.0.55
 """
 ghenv.Component.Name = "Honeybee Lighting Density Calculator"
 ghenv.Component.NickName = 'Lighting Density Per Area Calculator'
-ghenv.Component.Message = 'VER 0.0.55\nJAN_23_2015'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_24_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
@@ -61,10 +61,11 @@ def checkInputs():
         try:
             if _lightLevel > 0:
                 checkData1 = True
-            else: pass
+            else:
+                warning = "Give a positive value for Light Level."
+                print warning
+                ghenv.Component.AddRuntimeMessage(w, warning)
         except: pass
-    else:
-        print 'Give a positive value for Light Level'
         
     checkData2 = False # Check luminous Efficacy
     luminousEfficacy = None
@@ -121,9 +122,9 @@ def checkInputs():
         checkData = True
     else:
         checkData = False
-        msg = "At least one of the inputs is incorrect. Fix it according to the hints of each of them."
-        ghenv.Component.AddRuntimeMessage(w, msg)
-
+        msg = "Connect a desired lighting level."
+    
+    
     return checkData, luminousEfficacy, maintenanceFactor, coefficientOfUtilization
 
 def main(lightLevel, luminousEfficacy, maintenanceFactor, coefficientOfUtilization):
