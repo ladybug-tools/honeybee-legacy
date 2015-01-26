@@ -12,9 +12,11 @@ Provided by Honeybee 0.0.55
     
     Args:
         _EPConstrList: List of EPConstructions from Honeybee construction library
-        _standard: Energy modeling standard [0:"ASHRAE 90.1", 1:"ASHRAE 189.1", 2:"CBECS 1980-2004", 3:"CBECS Before-1980"]
+        _standard: Energy modeling standard [0:"ASHRAE 90.1-2004", 1:"ASHRAE 90.1-2007", 2:"ASHRAE 90.1-2010", 3:"ASHRAE 189.1", 4:"CBECS 1980-2004", 5:"CBECS Before-1980"]
         climateZone_: Optional input for climate zone
-        keyWord_: Optional keyword in the name of the construction (ie. METAL, MASS, WOODFRAME).
+        surfaceType_: Optional input for surface type > 0:'WALL', 1:'ROOF', 2:'FLOOR', 3:'CEILING', 4:'WINDOW'
+        altBldgProgram_: Optional input for building type > 0:'RESIDENTIAL', 1:'OFFICE', 2:'HOSPITAL'
+        keyword_: List of optional keywords in the name of the construction (ie. METAL, MASS, WOODFRAME).
     Returns:
         EPSelectedConstr:  List of selected EP constructions that matches the the inputs
 
@@ -23,10 +25,10 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Search EP Construction"
 ghenv.Component.NickName = 'searchEPConstruction'
-ghenv.Component.Message = 'VER 0.0.55\nOCT_23_2014'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_25_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
-#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
+#compatibleHBVersion = VER 0.0.55\nJAN_25_2015
 #compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
@@ -35,7 +37,7 @@ import scriptcontext as sc
 import Grasshopper.Kernel as gh
 
 
-def main(constrList, standard, climateZone, keyword):
+def main(constrList, standard, climateZone, surfaceType, keywords):
     
     # Make sure Honeybee is flying
     if not sc.sticky.has_key('honeybee_release'):
@@ -63,13 +65,20 @@ def main(constrList, standard, climateZone, keyword):
         ghenv.Component.AddRuntimeMessage(w, msg)
         return -1
     
+    surfaceTypesDict = {'0':'WALL', '1':'ROOF', '2':'FLOOR', '3':'CEILING', '4':'WINDOW',
+                        'WALL':'WALL', 'ROOF':'ROOF', 'FLOOR':'FLOOR', 'CEILING':'CEILING', 'CEILING':'WINDOW',
+                        '':'', None:''}
     
-    selConstruction = hb_EPMaterialAUX.filterMaterials(constrList, standard, climateZone, keyword, "", "", ghenv.Component)
+    selConstruction = hb_EPMaterialAUX.filterMaterials(constrList, standard, \
+                        climateZone, surfaceTypesDict[surfaceType.upper()], \
+                        "", keywords, ghenv.Component)
+    
+    # constrList, standard, climateZone, surfaceType, bldgProgram, constructionType, ghenv.Component
     
     return selConstruction
     
     
 if len(_EPConstrList)!=0 and _standard:
-    result = main(_EPConstrList, _standard, climateZone_, keyWord_)
+    result = main(_EPConstrList, _standard, climateZone_, surfaceType_, keywords_)
     if result!= -1:
         EPSelectedConstr = result

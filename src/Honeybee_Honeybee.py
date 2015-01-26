@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.55\nJAN_23_2015'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_25_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -3021,11 +3021,15 @@ class hb_EnergySimulatioParameters(object):
 class EPMaterialAux(object):
     
     def __init__(self):
-        self.energyModelingStandards = {"0" : "ASHRAE 90.1",
-                                        "1" : "ASHRAE 189.1",
-                                        "2" : "CBECS 1980-2004",
-                                        "3" : "CBECS Before-1980",
-                                        "ASHRAE901" : "ASHRAE 90.1",
+        self.energyModelingStandards = {"0" : "ASHRAE 90.1-2004",
+                                        "1" : "ASHRAE 90.1-2007",
+                                        "2" : "ASHRAE 90.1-2010",
+                                        "3" : "ASHRAE 189.1",
+                                        "4" : "CBECS 1980-2004",
+                                        "5" : "CBECS Before-1980",
+                                        "ASHRAE9012004" : "ASHRAE 90.1-2004",
+                                        "ASHRAE9012007" : "ASHRAE 90.1-2007",
+                                        "ASHRAE9012010" : "ASHRAE 90.1-2010",
                                         "ASHRAE1891" : "ASHRAE 189.1",
                                         "CBECS19802004" : "CBECS 1980-2004",
                                         "CBECSBEFORE1980" : "CBECS Before-1980"}
@@ -3196,7 +3200,7 @@ class EPMaterialAux(object):
     
         return selectedItems
     
-    def filterMaterials(self, constrList, standard, climateZone, surfaceType, bldgProgram, constructionType, sourceComponent):
+    def filterMaterials(self, constrList, standard, climateZone, surfaceType, bldgProgram, keywords, sourceComponent):
         hb_EPTypes = EPTypes()
         
         w = gh.GH_RuntimeMessageLevel.Warning
@@ -3211,7 +3215,11 @@ class EPMaterialAux(object):
             standard = "ASHRAE 90.1"
         
         selConstr =[]
-        for cnstrName in constrList:
+        
+        filtConstr =self.searchListByKeyword(constrList, keywords)
+        
+        
+        for cnstrName in filtConstr:
            if cnstrName.upper().find(standard.upper())!=-1 and cnstrName.upper().find(surfaceType.upper())!=-1:
                 # check for climate zone
                 if climateZone!="":
@@ -3235,42 +3243,7 @@ class EPMaterialAux(object):
                         selConstr.append(cnstrName)
                 else:
                     selConstr.append(cnstrName)
-                    
-        # check if any alternate 
-        alternateFit = []
-        if bldgProgram!=None and bldgProgram!="":
-            bldgProgram = hb_EPTypes.bldgTypes[int(bldgProgram)]
-            # print bldgProgram
-            for cnstrName in selConstr:
-                possibleAlt = cnstrName.split(" ")[-2].split("-")
-                if possibleAlt[0].upper().find("ALT")!= -1:
-                    if bldgProgram.upper().find(possibleAlt[1].upper())!= -1:
-                        # if there is an alternate fit the rest should be removed
-                        gistName = " ".join(cnstrName.split(" ")[:-2])
-                        gistName.replace
-                        alternateFit.append(gistName)
-                    else:
-                        selConstr.remove(cnstrName)
-        
-        # check if there is a best fit and if not just return the list
-        if alternateFit!=[]:
-            for cnstrName in selConstr:
-                for gistName in alternateFit:
-                    if cnstrName.upper().find(gistName.upper())!= -1 and cnstrName.split(" ")[-2].split("-")[0].upper() != "ALT":
-                        try: selConstr.remove(cnstrName)
-                        except: pass
-        
-        # if there are multiple options they should be for different construction types
-        # so let check that
-        if len(selConstr) > 1 and constructionType != "":
-            tempSelConstr = []
-            for cnstrName in selConstr:
-                if cnstrName.upper().find(constructionType.upper())!= -1:
-                    tempSelConstr.append(cnstrName)
-            
-            if len(tempSelConstr)!=0:
-                selConstr = tempSelConstr
-        
+
         return selConstr
 
     def isEPMaterialObjectAlreadyExists(self, name):
