@@ -23,7 +23,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Set EP Zone Interior Construction"
 ghenv.Component.NickName = 'setEPZoneIntCnstr'
-ghenv.Component.Message = 'VER 0.0.55\nJAN_11_2015'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_27_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
 #compatibleHBVersion = VER 0.0.55\nJAN_11_2015
@@ -84,27 +84,42 @@ def main(HBZone, wallEPCnst, windowEPCnst, flrEPCnst, ceilEPCnst):
     try: HBZoneObject = hb_hive.callFromHoneybeeHive([HBZone])[0]
     except Exception, e: HBZoneObject = None
     
-    # here I should check for each construction to be in the library
-    EPConstructios = sc.sticky ["honeybee_constructionLib"].keys()
-    warning = ""
-    if wallEPCnst not in EPConstructios:
-        if wallEPCnst != None:
-            warning += "Can't find wall construction in Honeybee library.\n"
-            wallEPCnst = None
-    if windowEPCnst not in EPConstructios:
-        if windowEPCnst != None:
-            warning += "Can't find window construction in Honeybee library.\n"
-            windowEPCnst = None
-    if flrEPCnst not in EPConstructios:
-        if flrEPCnst != None:
-            warning += "Can't find floor construction in Honeybee library.\n"
-            flrEPCnst = None
-    if ceilEPCnst not in EPConstructios:
-        if ceilEPCnst != None:
-            warning += "Can't find ceiling construction in Honeybee library.\n"
-            ceilEPCnst = None
+    #Have a function to check whether a construction is in a library.
+    def checkConstruction(EPConstruction):
+        # if it is just the name of the material make sure it is already defined
+        if len(EPConstruction.split("\n")) == 1:
+            # if the material is not in the library add it to the library
+            if not hb_EPObjectsAux.isEPConstruction(EPConstruction):
+                warningMsg = "Can't find " + EPConstruction + " in EP Construction Library.\n" + \
+                            "Add the construction to the library and try again."
+                print warningMsg
+                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
+                return None
+            else:
+                return EPConstruction
+        else:
+            # it is a full string
+            added, EPConstruction = hb_EPObjectsAux.addEPObjectToLib(EPConstruction, overwrite = True)
+            
+            if not added:
+                msg = name + " is not added to the project library!"
+                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                print msg
+                return None
+            else:
+                return EPConstruction
     
-    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+    # here I should check for each construction to be in the library
+    hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
+    
+    if wallEPCnst != None:
+        wallEPCnst = checkConstruction(wallEPCnst)
+    if windowEPCnst != None:
+        windowEPCnst = checkConstruction(windowEPCnst)
+    if flrEPCnst != None:
+        flrEPCnst = checkConstruction(flrEPCnst)
+    if ceilEPCnst != None:
+        ceilEPCnst = checkConstruction(ceilEPCnst)
     
     if HBZoneObject != None:
         for srf in HBZoneObject.surfaces:
