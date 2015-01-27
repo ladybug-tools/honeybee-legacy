@@ -39,7 +39,7 @@ Provided by Honeybee 0.0.55
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
 ghenv.Component.Message = 'VER 0.0.55\nJAN_11_2015'
-ghenv.Component.Category = "Honeybee@E"
+ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "4"
 

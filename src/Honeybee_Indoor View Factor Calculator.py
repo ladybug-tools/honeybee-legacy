@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.55
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
 ghenv.Component.Message = 'VER 0.0.55\nJAN_12_2015'
-ghenv.Component.Category = "Honeybee@E"
+ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.55\nJAN_11_2015
 #compatibleLBVersion = VER 0.0.58\nAUG_20_2014

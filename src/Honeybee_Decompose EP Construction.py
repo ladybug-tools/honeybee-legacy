@@ -23,7 +23,7 @@ Provided by Honeybee 0.0.55
 ghenv.Component.Name = "Honeybee_Decompose EP Construction"
 ghenv.Component.NickName = 'DecomposeEPConstruction'
 ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
-ghenv.Component.Category = "Honeybee@E"
+ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
 #compatibleLBVersion = VER 0.0.58\nAUG_20_2014

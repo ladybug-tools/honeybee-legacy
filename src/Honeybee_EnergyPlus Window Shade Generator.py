@@ -46,7 +46,7 @@ Provided by Honeybee 0.0.55
 ghenv.Component.Name = "Honeybee_EnergyPlus Window Shade Generator"
 ghenv.Component.NickName = 'EPWindowShades'
 ghenv.Component.Message = 'VER 0.0.55\nJAN_21_2015'
-ghenv.Component.Category = "Honeybee@E"
+ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
 #compatibleLBVersion = VER 0.0.58\nAUG_20_2014

@@ -36,7 +36,7 @@ Provided by Honeybee 0.0.55
 ghenv.Component.Name = "Honeybee_Annual Comfort Analysis Recipe"
 ghenv.Component.NickName = 'AdaptIndoorComfAnalysis'
 ghenv.Component.Message = 'VER 0.0.55\nDEC_20_2014'
-ghenv.Component.Category = "Honeybee@E"
+ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
 #compatibleLBVersion = VER 0.0.58\nDEC_02_2014

@@ -25,7 +25,7 @@ Provided by Honeybee 0.0.55
 ghenv.Component.Name = "Honeybee_Set Ideal Air Loads Parameters"
 ghenv.Component.NickName = 'setEPIdealAir'
 ghenv.Component.Message = 'VER 0.0.55\nJAN_10_2015'
-ghenv.Component.Category = "Honeybee@E"
+ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
 #compatibleLBVersion = VER 0.0.58\nAUG_20_2014

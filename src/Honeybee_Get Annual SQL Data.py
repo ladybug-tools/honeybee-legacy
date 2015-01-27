@@ -72,7 +72,7 @@ else:
 ghenv.Component.Name = "Honeybee_Get Annual SQL Data"
 ghenv.Component.NickName = 'getAnnualSQLData'
 ghenv.Component.Message = 'VER 0.0.55\nNOV_2_2014'
-ghenv.Component.Category = "Honeybee@E"
+ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
 
