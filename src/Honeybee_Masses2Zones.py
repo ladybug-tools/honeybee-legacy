@@ -28,6 +28,8 @@ import scriptcontext as sc
 import os
 import sys
 import System
+from clr import AddReference
+AddReference('Grasshopper')
 import Grasshopper.Kernel as gh
 import uuid
 
@@ -35,8 +37,8 @@ import uuid
 ghenv.Component.Name = 'Honeybee_Masses2Zones'
 ghenv.Component.NickName = 'Mass2Zone'
 ghenv.Component.Message = 'VER 0.0.55\nOCT_18_2014'
-ghenv.Component.Category = "Ladybug"
-ghenv.Component.SubCategory = "1 | Honeybee"
+ghenv.Component.Category = "Honeybee"
+ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
 #compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
