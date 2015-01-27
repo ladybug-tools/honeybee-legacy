@@ -243,11 +243,11 @@ if len(_HBZones)!=0 and _HBZones[0]!=0:
                                 AreaNorthEast = AreaNorthEast + wallsarea
                             #print wallsO
 
-"""
 roofArea = roofA[0]
 print roofArea
 floorArea =floorA[0]
 print floorArea
+"""
 print glazingA
 print glazingO 
 print wallsA 
