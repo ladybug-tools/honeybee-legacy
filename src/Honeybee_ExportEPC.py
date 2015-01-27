@@ -13,7 +13,7 @@ Export to Energy Performace Calculator (EPC)
 +Developed for 20 years at the Georgia Institute of Technology - Building Technology Lab.
 +EPC is proven to be accurate to within 5-6% of more sophisticated tools such as EnergyPlus or eQuest.
 +Normative energy calculator defined by ISO 13970 and CEN 15603.
-+Monthly and Hourly versions proven superior to dynamic simulation dynamic simulation methods in ASHRAE 90.1, Appendix G.
++Monthly and Hourly versions proven superior to dynamic simulation methods in ASHRAE 90.1, Appendix G.
 
 -
 Provided by Honeybee 0.0.55
