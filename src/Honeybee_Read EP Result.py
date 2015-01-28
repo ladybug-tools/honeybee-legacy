@@ -38,7 +38,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.55\nJAN_11_2015'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_27_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "4"
@@ -409,6 +409,7 @@ fanPyList = createPyList(fanElectric)
 theList = []
 otherList1 = []
 otherList2 = []
+
 if centralSys == False:
     if len(lightingPyList) > 0 or len(equipmentPyList) > 0 or len(fanPyList) > 0:
         if len(lightingPyList) > 0:
@@ -427,6 +428,22 @@ if centralSys == False:
                 if otherList1 != [] and otherList2 != []:
                     totalElectricEnergy.Add((num + otherList1[listCount][7:][numCount] + otherList2[listCount][7:][numCount]), GH_Path(listCount))
                 elif otherList1 != []:
+                    totalElectricEnergy.Add((num + otherList1[listCount][7:][numCount]), GH_Path(listCount))
+                else:
+                    totalElectricEnergy.Add(num, GH_Path(listCount))
+            dataTypeList[0] = True
+else:
+    if len(lightingPyList) > 0 or len(equipmentPyList) > 0:
+        if len(lightingPyList) > 0:
+                theList = lightingPyList
+        if len(equipmentPyList) > 0:
+            if theList == []: theList = equipmentPyList
+            else: otherList1 = equipmentPyList
+    
+    for listCount, list in enumerate(theList):
+            makeHeader(totalElectricEnergy, listCount, list[2].split(' for')[-1], list[4].split('(')[-1].split(')')[0], "Total Electric Energy", "kWh", True)
+            for numCount, num in enumerate(list[7:]):
+                if otherList1 != []:
                     totalElectricEnergy.Add((num + otherList1[listCount][7:][numCount]), GH_Path(listCount))
                 else:
                     totalElectricEnergy.Add(num, GH_Path(listCount))

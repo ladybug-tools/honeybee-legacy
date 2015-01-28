@@ -1,6 +1,15 @@
-"""
-export geometries to idf file, and run the energy simulation
+# This component exports HBZones into an IDF file
+# By Mostapha Sadeghipour Roudsari and Chris Mackey
+# Sadeghipour@gmail.com and Chris@MackeyArchitecture.com
+# Ladybug started by Mostapha Sadeghipour Roudsari is licensed
+# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
 
+"""
+Use this component to export HBZones into an IDF file, and run them through EnergyPlus.
+_
+The component outputs the report from the simulation, the file path of the IDF file, and the CSV result file from the EnergyPlus run.
+-
+Provided by Honeybee 0.0.55
     Args:
         north_: Input a vector to be used as a true North direction for the energy simulation or a number between 0 and 360 that represents the degrees off from the y-axis to make North.  The default North direction is set to the Y-axis (0 degrees).
         _epwFile: An .epw file path on your system as a text string.
@@ -15,14 +24,15 @@ export geometries to idf file, and run the energy simulation
             6 - A simulation including a zone sizing calculation, a system sizing calculation, a plat sizing calculation, and a full run of the energy use ofver the analysis period.  The simulation is not run for the sizing period by default.
             7 - A system sizing period that runs from the extreme periods of the weather file and not a ddy file.
             8 - City terrian.
+        +++++++++++++++: ...
         _HBZones: The HBZones that you wish to write into an IDF and/or run through EnergyPlus.  These can be from any of the components that output HBZones.
         HBContext_: Optional HBContext geometry from the "Honeybee_EP Context Surfaces." component.
         simulationOutputs_: A list of the outputs that you would like EnergyPlus to write into the result CSV file.  This can be any set of any outputs that you would like from EnergyPlus, writen as a list of text that will be written into the IDF.  It is recommended that, if you are not expereinced with writing EnergyPlus outputs, you should use the "Honeybee_Write EP Result Parameters" component to request certain types of common outputs.  If no value is input here, this component will automatically request outputs of heating, cooling, lighting, and equipment energy use.  
         +++++++++++++++: ...
-        _writeIdf: Set to "True" to have the component take your HBZones and other inputs and write them into an IDF file.  The file path of the resulting file will appear in the idfFileAddress output of this component.  Note that only setting thie to "True" and not setting the output below to True will not automatically run the IDF through tEnergyPlus for you.
+        _writeIdf: Set to "True" to have the component take your HBZones and other inputs and write them into an IDF file.  The file path of the resulting file will appear in the idfFileAddress output of this component.  Note that only setting this to "True" and not setting the output below to "True" will not automatically run the IDF through EnergyPlus for you.
         runEnergyPlus_: Set to "True" to have the component run your IDF through EnergyPlus once it has finished writing it.  This will ensure that a CSV result file appears in the resultFileAddress output.
         +++++++++++++++: ...
-        _woringDir_: An optional working directory to a folder on your system, into which your IDF and result files will be written.  NOTE THAT DIRECTORIES INPUT HERE SHOULD NOT HAVE ANY SPACES OR UNDERSCORES IN THE FILE PATH.
+        _workingDir_: An optional working directory to a folder on your system, into which your IDF and result files will be written.  NOTE THAT DIRECTORIES INPUT HERE SHOULD NOT HAVE ANY SPACES OR UNDERSCORES IN THE FILE PATH.
         _idfFileName_: Optional text which will be used to name your IDF and result files.  Change this to aviod over-writing results of previous energy simulations.
         +++++++++++++++: ...
         meshSettings_: Optional mesh settings for your geometry from any one of the native Grasshopper mesh setting components.  These will be used to change the meshing of curved surfaces before they are run through EnergyPlus (note that meshing of curved surfaces is done since Energyplus is not able to calculate heat flow through non-planar surfaces).  Default Grasshopper meshing is used if nothing is input here but you may want to decrease your calculation time by changing it to Coarse or increase your curvature definition (and calculation time) by making it finer.

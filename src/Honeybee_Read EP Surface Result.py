@@ -28,7 +28,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Read EP Surface Result"
 ghenv.Component.NickName = 'readEPSrfResult'
-ghenv.Component.Message = 'VER 0.0.55\nOCT_25_2014'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_27_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -293,8 +293,8 @@ for zone in range(len(zoneSrfNameList)): dataIndex.append(0)
 
 
 # PARSE THE RESULT FILE.
-if _resultFileAddress and gotZoneData == True:
-    #try:
+if _resultFileAddress and gotZoneData == True and gotSrfData == True:
+    try:
         result = open(_resultFileAddress, 'r')
         
         for lineCount, line in enumerate(result):
@@ -500,12 +500,12 @@ if _resultFileAddress and gotZoneData == True:
                     
         result.close()
         parseSuccess = True
-    #except:
-    #    parseSuccess = False
-    #    warn = 'Failed to parse the result file.  The csv file might not have existed when connected or the simulation did not run correctly.'+ \
-    #              'Try reconnecting the _resultfileAddress to this component or re-running your simulation.'
-    #    print warn
-    #    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warn)
+    except:
+        parseSuccess = False
+        warn = 'Failed to parse the result file.  The csv file might not have existed when connected or the simulation did not run correctly.'+ \
+                  'Try reconnecting the _resultfileAddress to this component or re-running your simulation.'
+        print warn
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warn)
 
 
 #If there was curved geometry, go through the data and see if there were any lists of curved pieces that should be added to the data trees.

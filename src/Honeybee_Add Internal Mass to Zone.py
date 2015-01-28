@@ -1,6 +1,6 @@
 # This component assigns internal masses to zones
 # By Chris Mackey
-# Chris@MackeyArchitecture.co
+# Chris@MackeyArchitecture.com
 # Honeybee started by Mostapha Sadeghipour Roudsari is licensed
 # under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
 
