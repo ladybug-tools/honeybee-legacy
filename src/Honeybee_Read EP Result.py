@@ -25,8 +25,8 @@ Provided by Honeybee 0.0.55
         fanElectric: The fan electric energy for a central heating or cooling system in kWh.  This ouput will not appear when there is no central system.
         peopleGains: The internal heat gains in each zone resulting from people (kWh).
         totalSolarGain: The total solar gain in each zone(kWh).
-        exterSolarBeamGains: The direct solar beam gain in each zone from exterior windows (kWh).
-        exterSolarDiffuseGains: The diffuse solar gain in each zone from exterior windows (kWh).
+        solarBeamGains: The direct solar beam gain in each zone from exterior windows (kWh).
+        solarDiffuseGains: The diffuse solar gain in each zone from exterior windows (kWh).
         infiltrationEnergy: The heat loss (negative) or heat gain (positive) in each zone resulting from infiltration (kWh).
         operativeTemperature: The mean operative temperature of each zone (degrees Celcius).
         airTemperature: The mean air temperature of each zone (degrees Celcius).
@@ -38,7 +38,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.55\nJAN_27_2015'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_28_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "4"
@@ -136,8 +136,8 @@ electricEquip = DataTree[Object]()
 fanElectric = DataTree[Object]()
 peopleGains = DataTree[Object]()
 totalSolarGain = DataTree[Object]()
-exterSolarBeamGains = DataTree[Object]()
-exterSolarDiffuseGains = DataTree[Object]()
+solarBeamGains = DataTree[Object]()
+solarDiffuseGains = DataTree[Object]()
 infiltrationEnergy = DataTree[Object]()
 operativeTemperature = DataTree[Object]()
 airTemperature = DataTree[Object]()
@@ -274,13 +274,13 @@ if _resultFileAddress and gotData == True:
                     elif 'Zone Exterior Windows Total Transmitted Beam Solar Radiation Energy' in column:
                         key.append(6)
                         zoneName = checkZone(" " + column.split(':')[0])
-                        makeHeader(exterSolarBeamGains, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Solar Beam Energy", "kWh", True)
+                        makeHeader(solarBeamGains, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Solar Beam Energy", "kWh", True)
                         dataTypeList[10] = True
                     
                     elif 'Zone Exterior Windows Total Transmitted Diffuse Solar Radiation Energy' in column:
                         key.append(7)
                         zoneName = checkZone(" " + column.split(':')[0])
-                        makeHeader(exterSolarDiffuseGains, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Solar Diffuse Energy", "kWh", True)
+                        makeHeader(solarDiffuseGains, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Solar Diffuse Energy", "kWh", True)
                         dataTypeList[11] = True
                     
                     elif 'Zone Infiltration Total Heat Loss Energy ' in column:
@@ -355,9 +355,9 @@ if _resultFileAddress and gotData == True:
                     elif key[columnCount] == 5:
                         totalSolarGain.Add((float(column)/3600000)/flrArea, p)
                     elif key[columnCount] == 6:
-                        exterSolarBeamGains.Add((float(column)/3600000)/flrArea, p)
+                        solarBeamGains.Add((float(column)/3600000)/flrArea, p)
                     elif key[columnCount] == 7:
-                        exterSolarDiffuseGains.Add((float(column)/3600000)/flrArea, p)
+                        solarDiffuseGains.Add((float(column)/3600000)/flrArea, p)
                     elif key[columnCount] == 8:
                         infiltrationEnergy.Add((((float(column))*(-1)/3600000) + ((float( line.split(',')[columnCount+1] ))/3600000))/flrArea, p)
                     elif key[columnCount] == 9:
@@ -476,8 +476,8 @@ outputsDict = {
 7: ["fanElectric", "The fan electric energy for a central heating or cooling system in kWh.  This ouput will not appear when there is no central system assigned in OpenStudio."],
 8: ["peopleGains", "The internal heat gains in each zone resulting from people (kWh)."],
 9: ["totalSolarGain", "The total solar gain in each zone(kWh)."],
-10: ["exterSolarBeamGains", "The direct solar beam gain in each zone from exterior windows(kWh)."],
-11: ["exterSolarDiffuseGains", "The diffuse solar gain in each zone from exterior windows(kWh)."],
+10: ["solarBeamGains", "The direct solar beam gain in each zone from exterior windows(kWh)."],
+11: ["solarDiffuseGains", "The diffuse solar gain in each zone from exterior windows(kWh)."],
 12: ["infiltrationEnergy", "The heat loss (negative) or heat gain (positive) in each zone resulting from infiltration (kWh)."],
 13: ["operativeTemperature", "The mean operative temperature of each zone (degrees Celcius)."],
 14: ["airTemperature", "The mean air temperature of each zone (degrees Celcius)."],
