@@ -33,7 +33,7 @@ export geometries to idf file, and run the energy simulation
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.55\nJAN_23_2015'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_27_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nJAN_11_2015
@@ -213,7 +213,16 @@ class WriteIDF(object):
             fullString = fullString + str_1 + str_2
         
         return fullString
-
+    
+    def EPInternalMass(self, zone, massName, srfArea, constructionName):
+        internalMassStr = '\nInternalMass,\n' + \
+                    '\t' + massName + ',\t!- Name\n' + \
+                    '\t' + constructionName + ',\t!- Construction Name\n' + \
+                    '\t' + zone.name + ',\t!- Zone Name\n' + \
+                    '\t' + str(srfArea) + ';\t!- Surface Area\n' 
+        
+        return internalMassStr
+    
     def EPZoneListStr(self, zoneListName, zones):
         str_1 = 'ZoneList,\n' + \
                 '\t' + zoneListName + ',\n'
@@ -1116,6 +1125,16 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                 # write the glazing strings
                 idfFile.write(hb_writeIDF.EPFenSurface(srf))
                 # else: idfFile.write(hb_writeIDF.EPNonPlanarFenSurface(srf))
+        
+        #If there are internal masses assigned to the zone, write them into the IDF.
+        if len(zone.internalMassNames) > 0:
+            for massCount, massName in enumerate(zone.internalMassNames):
+                #Write the internal mass construction into the IDF if it is not there yet.
+                if not zone.internalMassConstructions[massCount].upper() in EPConstructionsCollection:
+                    EPConstructionsCollection.append(zone.internalMassConstructions[massCount].upper())
+                
+                #Write the internal mass into the IDF
+                idfFile.write(hb_writeIDF.EPInternalMass(zone, massName, zone.internalMassSrfAreas[massCount], zone.internalMassConstructions[massCount]))
         
     ################ Construction #####################
     print "[4 of 6] Writing materials and constructions..."

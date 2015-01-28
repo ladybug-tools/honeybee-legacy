@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.55\nJAN_25_2015'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_27_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -4285,11 +4285,13 @@ class EPZone(object):
         self.hasNonPlanarSrf = False
         self.hasInternalEdge = False
         
+        #Air Mixing with Adjacent Zones
         self.mixAir = False
         self.mixAirZoneList = []
         self.mixAirFlowList = []
         self.mixAirFlowRate = 0.0963
         
+        #Natural Ventilation Properties
         self.natVent = False
         self.natVentType = []
         self.natVentMinIndoorTemp = []
@@ -4306,23 +4308,30 @@ class EPZone(object):
         self.FanEfficiency = []
         self.FanPressure = []
         
+        #Zone Internal Masses (or Furniture)
+        self.internalMassNames = []
+        self.internalMassSrfAreas = []
+        self.internalMassConstructions = []
+        
+        #Zone Surfaces
         self.surfaces = []
         
+        #Zone Thresholds
         self.daylightThreshold = ""
         self.coolingSetPt= ""
         self.heatingSetPt= ""
         self.coolingSetback= ""
         self.heatingSetback= ""
+        
+        #Ideal Air System Properties
         self.coolSupplyAirTemp= ""
         self.heatSupplyAirTemp= ""
         self.coolingCapacity= ""
         self.heatingCapacity= ""
-        
         self.demandVent= ""
         self.airSideEconomizer= ""
         self.heatRecovery= ""
         self.heatRecoveryEffectiveness= ""
-        
         self.HVACAvailabilitySched = ""
         
         if zoneBrep != None:
