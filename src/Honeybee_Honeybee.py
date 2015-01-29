@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.55\nJAN_27_2015'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_28_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -4332,7 +4332,7 @@ class EPZone(object):
         self.airSideEconomizer= ""
         self.heatRecovery= ""
         self.heatRecoveryEffectiveness= ""
-        self.HVACAvailabilitySched = ""
+        self.HVACAvailabilitySched = "ALWAYS ON"
         
         if zoneBrep != None:
             self.isClosed = self.geometry.IsSolid
