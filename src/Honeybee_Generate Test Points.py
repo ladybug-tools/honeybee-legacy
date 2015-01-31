@@ -9,9 +9,9 @@ Genrate Test Points
 Provided by Honeybee 0.0.55
     
     Args:
-        testSurface: Test surface as a Brep
-        gridSize: Size of the test grid
-        distBaseSrf: Distance from base surface
+        _testSurface: Test surface as a Brep
+        _gridSize: Size of the test grid
+        _distBaseSrf: Distance from base surface
     Returns:
         readMe!: ...
         testPoints: Test points
@@ -22,7 +22,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Generate Test Points"
 ghenv.Component.NickName = 'genTestPts'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_30_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -117,18 +117,17 @@ def getTestPts(inputMesh, movingDis, parallel = True):
         return flattenList(testPoint), flattenList(srfNormals), flattenList(meshSrfArea)
 
 
-if testSurface!=None and gridSize!=None and distBaseSrf!=None:
+if _testSurface!=None and _gridSize!=None and _distBaseSrf!=None:
     
-    if distBaseSrf<0:
+    if _distBaseSrf<0:
         msg = "Distance from base should be greater than 0. Flip the input surface instead of using a negative number."
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
         
     else:
-        initMesh = createMesh([testSurface], gridSize)
+        initMesh = createMesh([_testSurface], _gridSize)
     
         inputMesh = []
         for m in initMesh: inputMesh.append(m)
     
-        testPoints, ptsVectors, facesArea = getTestPts(inputMesh, distBaseSrf)
+        testPoints, ptsVectors, facesArea = getTestPts(inputMesh, _distBaseSrf)
         mesh = inputMesh
-
