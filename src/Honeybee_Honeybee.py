@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.55\nJAN_28_2015'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_31_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -3623,6 +3623,37 @@ class EPObjectsAux(object):
         up = rc.UI.Dialogs.ShowMessageBox(msg, "Duplicate Material Name", buttons, icon)
         
         return returnYN[up.ToString().ToUpper()]
+        
+    def assignEPConstruction(self, HBSrf, EPConstruction, component):
+
+        if not EPConstruction: return
+        
+        # if it is just the name of the material make sure it is already defined
+        if len(EPConstruction.split("\n")) == 1:
+            # if the material is not in the library add it to the library
+            if not self.isEPConstruction(EPConstruction):
+                warningMsg = "Can't find " + EPConstruction + " in EP Construction Library.\n" + \
+                            "Add the construction to the library and try again."
+                component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
+                return
+        else:
+            # it is a full string
+            added, EPConstruction = self.addEPObjectToLib(EPConstruction, overwrite = True)
+    
+            if not added:
+                msg = name + " cannot be added to the project library! Make sure it is an standard EP construction."
+                component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                print msg
+                return
+        
+        try:
+            HBSrf.setEPConstruction(EPConstruction)
+        except:
+            warningMsg = "You are using an old version of Honeybee_Honeybee! Update your files and try again."
+            print warningMsg
+            component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
+            return
+    
 
 class EPTypes(object):
     def __init__(self):
