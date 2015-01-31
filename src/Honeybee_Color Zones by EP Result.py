@@ -37,7 +37,7 @@ Provided by Honeybee 0.0.54
 
 ghenv.Component.Name = "Honeybee_Color Zones by EP Result"
 ghenv.Component.NickName = 'ColorZones'
-ghenv.Component.Message = 'VER 0.0.54\nJAN_07_2015'
+ghenv.Component.Message = 'VER 0.0.54\nJAN_30_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -199,7 +199,8 @@ def checkTheInputs():
         elif "Total Solar Gain for" in dataType: normable = True
         elif "Solar Beam Energy for" in dataType: normable = True
         elif "Solar Diffuse Energy for" in dataType: normable = True
-        elif "Infiltration Energy Loss/Gain for" in dataType: normable = True
+        elif "Infiltration Energy for" in dataType: normable = True
+        elif "Natural Ventilation Energy for" in dataType: normable = True
         elif "Operative Temperature for" in dataType: normable = False
         elif "Air Temperature for" in dataType: normable = False
         elif "Radiant Temperature for" in dataType: normable = False
@@ -220,6 +221,7 @@ def checkTheInputs():
         elif "Supply Air Mass Flow Rate" in dataType: normable = True
         elif "Supply Air Temperature" in dataType: normable = False
         elif "Supply Air Relative Humidity" in dataType: normable = False
+        elif "Air Flow Volume" in dataType: normable = True
         else:
             normable = False
             warning = "Component cannot tell what data type is being connected.  Data will be averaged for each zone by default."
