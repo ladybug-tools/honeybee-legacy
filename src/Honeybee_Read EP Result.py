@@ -159,8 +159,7 @@ parseSuccess = False
 centralSys = False
 
 #If the energy values are set to be normalized, make the units in kWh/m2.
-if normByFloorArea_ == True: totalUnit = "kWh/m2"
-else: totalUnit = "kWh"
+energyUnit = "kWh"
 
 #Make a function to add headers.
 def makeHeader(list, path, zoneName, timestep, name, units, normable):
@@ -230,7 +229,7 @@ if _resultFileAddress and gotData == True:
                             zoneName = checkCentralSys(" " + column.split(':')[0].split('CHILLER ELECTRIC EIR ')[-1], 0)
                             centralSys = True
                         else: zoneName = checkZone(" " + column.split(':')[0])
-                        makeHeader(cooling, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Cooling Energy", totalUnit, True)
+                        makeHeader(cooling, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Cooling Energy", energyUnit, True)
                         dataTypeList[2] = True
                     
                     elif 'Zone Air System Sensible Heating Energy' in column or 'Zone Ideal Loads Zone Total Heating Energy' in column or 'Zone Packaged Terminal Heat Pump Total Heating Energy' in column or 'Boiler Heating Energy' in column:
@@ -244,19 +243,19 @@ if _resultFileAddress and gotData == True:
                             zoneName = checkCentralSys(" " + column.split(':')[0].split('BOILER HOT WATER ')[-1], 1)
                             centralSys = True
                         else: zoneName = checkZone(" " + column.split(':')[0])
-                        makeHeader(heating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Heating Energy", totalUnit, True)
+                        makeHeader(heating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Heating Energy", energyUnit, True)
                         dataTypeList[3] = True
                     
                     elif 'Zone Lights Electric Energy' in column:
                         key.append(2)
                         zoneName = checkZone(" " + column.split(':')[0])
-                        makeHeader(electricLight, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Electric Lighting Energy", totalUnit, True)
+                        makeHeader(electricLight, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Electric Lighting Energy", energyUnit, True)
                         dataTypeList[4] = True
                     
                     elif 'Zone Electric Equipment Electric Energy' in column:
                         key.append(3)
                         zoneName = checkZone(" " + column.split(':')[0])
-                        makeHeader(electricEquip, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Electric Equipment Energy", totalUnit, True)
+                        makeHeader(electricEquip, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Electric Equipment Energy", energyUnit, True)
                         dataTypeList[5] = True
                     
                     elif 'Fan Electric Energy' in column:
@@ -267,25 +266,25 @@ if _resultFileAddress and gotData == True:
                             zoneName = checkCentralSys(" " + column.split(':')[0].split('FAN VARIABLE VOLUME ')[-1], 2)
                         elif 'Zone Ventilation Fan Electric Energy' in column:
                             zoneName = checkZone(" " + column.split(':')[0])
-                        makeHeader(fanElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Fan Electric Energy", totalUnit, True)
+                        makeHeader(fanElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Fan Electric Energy", energyUnit, True)
                         dataTypeList[6] = True
                     
                     elif 'Zone People Total Heating Energy' in column:
                         key.append(4)
                         zoneName = checkZone(" " + column.split(':')[0])
-                        makeHeader(peopleGains, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "People Energy", totalUnit, True)
+                        makeHeader(peopleGains, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "People Energy", energyUnit, True)
                         dataTypeList[8] = True
                     
                     elif 'Zone Windows Total Transmitted Solar Radiation Energy' in column:
                         key.append(5)
                         zoneName = checkZone(" " + column.split(':')[0])
-                        makeHeader(totalSolarGain, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Total Solar Gain", totalUnit, True)
+                        makeHeader(totalSolarGain, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Total Solar Gain", energyUnit, True)
                         dataTypeList[9] = True
                     
                     elif 'Zone Ventilation Total Heat Loss Energy ' in column:
                         key.append(6)
                         zoneName = checkZone(" " + column.split(':')[0])
-                        makeHeader(natVentEnergy, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Natural Ventilation Energy", totalUnit, True)
+                        makeHeader(natVentEnergy, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Natural Ventilation Energy", energyUnit, True)
                         dataTypeList[11] = True
                     
                     elif 'Zone Ventilation Total Heat Gain Energy' in column:
@@ -295,7 +294,7 @@ if _resultFileAddress and gotData == True:
                     elif 'Zone Infiltration Total Heat Loss Energy ' in column:
                         key.append(8)
                         zoneName = checkZone(" " + column.split(':')[0])
-                        makeHeader(infiltrationEnergy, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Infiltration Energy", totalUnit, True)
+                        makeHeader(infiltrationEnergy, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Infiltration Energy", energyUnit, True)
                         dataTypeList[10] = True
                     
                     elif 'Zone Infiltration Total Heat Gain Energy' in column:
@@ -425,12 +424,12 @@ if dataTypeList[2] == True and dataTypeList[3] == True:
     
     if len(coolingPyList) > 0 and len(heatingPyList) > 0:
         for listCount, list in enumerate(coolingPyList):
-            makeHeader(totalThermalEnergy, listCount, list[2].split(' for')[-1], list[4].split('(')[-1].split(')')[0], "Total Thermal Energy", totalUnit, True)
+            makeHeader(totalThermalEnergy, listCount, list[2].split(' for')[-1], list[4].split('(')[-1].split(')')[0], "Total Thermal Energy", energyUnit, True)
             for numCount, num in enumerate(list[7:]):
                 totalThermalEnergy.Add((num + heatingPyList[listCount][7:][numCount]), GH_Path(listCount))
             dataTypeList[1] = True
             
-            makeHeader(thermalEnergyBalance, listCount, list[2].split(' for')[-1], list[4].split('(')[-1].split(')')[0], "Thermal Energy Balance", totalUnit, True)
+            makeHeader(thermalEnergyBalance, listCount, list[2].split(' for')[-1], list[4].split('(')[-1].split(')')[0], "Thermal Energy Balance", energyUnit, True)
             for numCount, num in enumerate(list[7:]):
                 thermalEnergyBalance.Add((heatingPyList[listCount][7:][numCount] - num), GH_Path(listCount))
             dataTypeList[2] = True
