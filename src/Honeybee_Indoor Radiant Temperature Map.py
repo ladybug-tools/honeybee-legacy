@@ -36,7 +36,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Indoor Radiant Temperature Map"
 ghenv.Component.NickName = 'RadiantTempMap'
-ghenv.Component.Message = 'VER 0.0.55\nDEC_20_2014'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_30_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -772,7 +772,7 @@ def main(pointMRTValues, viewFactorMesh, title, legendTitle, lb_preparation, lb_
         for mrt in list: allMRT.append(mrt)
     allMRT.sort()
     if lowB == "min": lowB = allMRT[0]
-    if highB == "min": highB = allMRT[-1]
+    if highB == "max": highB = allMRT[-1]
     
     #Get the colors for each zone.
     allColors = []

@@ -16,8 +16,14 @@ Provided by Honeybee 0.0.55
     Args:
         _zoneAirTemp: The airTemperature output of the "Honeybee_Read EP Result" component.
         _zoneRelHumid: The relativeHumidity output of the "Honeybee_Read EP Result" component.
+        _zoneAirFlowVol: The airFlowVolume output of the "Honeybee_Read EP Result" component.
+        _zoneTotalIntGain: The totalIntHeatGain output of the "Honeybee_Read EP Result" component.
+        ===============: ...
         _viewFactorMesh: The list of view factor meshes that comes out of the  "Honeybee_Indoor View Factor Calculator".  These will be colored with air temperature data.
+        _testPtZoneWeights: The testPtZoneWeights output of the 'Honeybee_Indoor View Factor Calculator' component.  This is essentially a branched data tree with the weights of values of each zone for each of the test points.
         _testPtZoneNames: The testPtZoneNames output of the "Honeybee_Indoor View Factor Calculator" component.  This is essentially a branched data tree with the zone name of each of the test points.
+        _ptHeightWeights: The ptHeightWeights output of the 'Honeybee_Indoor View Factor Calculator' component.  This is essentially a branched data tree with weights of values for each point depending upon their height in the space and will be used to account for stratification in each zone.
+        _zoneInletInfo: The zoneInletInfo output of the 'Honeybee_Indoor View Factor Calculator' component.  Tis is essentially a data tree that carries information about the height of the zone and the height of inlets through the windows and is used in the calculation of thermal stratification.
         ===============: ...
         analysisPeriod_: Optional analysisPeriod_ to take a slice out of an annual data stream.  Note that this will only work if the connected data is for a full year and the data is hourly.  Otherwise, this input will be ignored. Also note that connecting a value to "stepOfSimulation_" will override this input.
         stepOfSimulation_: Optional interger for the hour of simulation to color the surfaces with.  Connecting a value here will override the analysisPeriod_ input.
@@ -36,7 +42,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Indoor Air Temperature Map"
 ghenv.Component.NickName = 'AirTempMap'
-ghenv.Component.Message = 'VER 0.0.55\nDEC_20_2014'
+ghenv.Component.Message = 'VER 0.0.55\nJAN_30_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.55\nAUG_25_2014
@@ -61,22 +67,24 @@ inputsDict = {
     
 0: ["_zoneAirTemp", "The airTemperature output of the 'Honeybee_Read EP Result' component."],
 1: ["_zoneRelHumid", "The relativeHumidity output of the 'Honeybee_Read EP Result' component."],
-2: ["_viewFactorMesh", "The list of view factor meshes that comes out of the  'Honeybee_Indoor View Factor Calculator'.  These will be colored with air temperature data."],
-3: ["_testPtZoneWeights", "The testPtZoneWeights output of the 'Honeybee_Indoor View Factor Calculator' component.  This is essentially a branched data tree with the weights of values of each zone for each of the test points."],
-4: ["_testPtZoneNames", "The testPtZoneNames output of the 'Honeybee_Indoor View Factor Calculator' component.  This is essentially a list with the names of each zone."],
-5: ["_ptHeightWeights", "The ptHeightWeights output of the 'Honeybee_Indoor View Factor Calculator' component.  This is essentially a branched data tree with weights of values for each point depending upon their height in the space and will be used to account for stratification in each zone."],
-6: ["=============", "..."],
-7: ["analysisPeriod_", "Optional analysisPeriod_ to take a slice out of an annual data stream.  Note that this will only work if the connected data is for a full year and the data is hourly.  Otherwise, this input will be ignored. Also note that connecting a value to 'stepOfSimulation_' will override this input."],
-8: ["stepOfSimulation_", "Optional interger for the hour of simulation to color the surfaces with.  Connecting a value here will override the analysisPeriod_ input."],
-9: ["legendPar_", "Optional legend parameters from the Ladybug 'Legend Parameters' component."],
-10: ["_runIt", "Set boolean to 'True' to run the component and create the indoor air temperature map.."]
+2: ["_zoneAirFlowVol", "The airFlowVolume output of the 'Honeybee_Read EP Result' component."],
+3: ["_zoneTotalIntGain", "The totalIntHeatGain output of the 'Honeybee_Read EP Result' component."],
+4: ["=============", "..."],
+5: ["_viewFactorMesh", "The list of view factor meshes that comes out of the  'Honeybee_Indoor View Factor Calculator'.  These will be colored with air temperature data."],
+6: ["_testPtZoneWeights", "The testPtZoneWeights output of the 'Honeybee_Indoor View Factor Calculator' component.  This is essentially a branched data tree with the weights of values of each zone for each of the test points."],
+7: ["_testPtZoneNames", "The testPtZoneNames output of the 'Honeybee_Indoor View Factor Calculator' component.  This is essentially a list with the names of each zone."],
+8: ["_ptHeightWeights", "The ptHeightWeights output of the 'Honeybee_Indoor View Factor Calculator' component.  This is essentially a branched data tree with weights of values for each point depending upon their height in the space and will be used to account for stratification in each zone."],
+9: ["_zoneInletInfo", "The zoneInletInfo output of the 'Honeybee_Indoor View Factor Calculator' component.  Tis is essentially a data tree that carries information about the height of the zone and the height of inlets through the windows and is used in the calculation of thermal stratification."],
+10: ["=============", "..."],
+11: ["analysisPeriod_", "Optional analysisPeriod_ to take a slice out of an annual data stream.  Note that this will only work if the connected data is for a full year and the data is hourly.  Otherwise, this input will be ignored. Also note that connecting a value to 'stepOfSimulation_' will override this input."],
+12: ["stepOfSimulation_", "Optional interger for the hour of simulation to color the surfaces with.  Connecting a value here will override the analysisPeriod_ input."],
+13: ["legendPar_", "Optional legend parameters from the Ladybug 'Legend Parameters' component."],
+14: ["_runIt", "Set boolean to 'True' to run the component and create the indoor air temperature map.."]
 }
 
 
 w = gh.GH_RuntimeMessageLevel.Warning
 tol = sc.doc.ModelAbsoluteTolerance
-
-
 
 
 def checkTheInputs():
@@ -178,22 +186,42 @@ def checkTheInputs():
     
     checkData1, checkData2, annualData1, simStep1, airTempUnits, airTempDataHeaders, airTempDataNumbers = checkCreateDataTree(_zoneAirTemp, "_zoneAirTemp", "Air Temperature")
     checkData3, checkData4, annualData2, simStep2, humidityUnits, relHumidDataHeaders, relHumidDataNumbers = checkCreateDataTree(_zoneRelHumid, "_zoneRelHumid", "Relative Humidity")
+    checkData14, checkData15, annualData3, simStep3, flowVolUnits, flowVolDataHeaders, flowVolDataNumbers = checkCreateDataTree(_zoneAirFlowVol, "_zoneAirFlowVol", "Air Flow Volume")
+    checkData16, checkData17, annualData4, simStep4, heatGainUnits, heatGainDataHeaders, heatGainDataNumbers = checkCreateDataTree(_zoneTotalIntGain, "_zoneTotalIntGain", "Total Internal Heat Gain")
     
+    #Check to be sure that the units of flowVol and heat gain are correct.
+    checkData19 = True
+    if flowVolUnits == "m3/s": pass
+    else:
+        checkData19 = False
+        warning = "_zoneFlowVol must be in m3/s."
+        print warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+    
+    checkData20 = True
+    if heatGainUnits == "kWh": pass
+    else:
+        checkData19 = False
+        warning = "_zoneHeatGain must be in kWh and cannot be normalized by floor area."
+        print warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+    
+    #Check to be sure that info matches between the lists.
     checkData7 = True
-    if annualData1 == annualData2: annualData = annualData1
+    if annualData1 == annualData2 == annualData3 == annualData4: annualData = annualData1
     else:
         annualData = None
         checkData7 = False
-        warning = "_zoneAirTemp and _zoneRelHumid are for different time periods."
+        warning = "_zoneAirTemp, _zoneRelHumid, _zoneAirFlowVol or _zoneTotalIntGain are for different time periods."
         print warning
         ghenv.Component.AddRuntimeMessage(w, warning)
     
     checkData8 = True
-    if simStep1 == simStep2: simStep = simStep1
+    if simStep1 == simStep2 == simStep3 == simStep4: simStep = simStep1
     else:
         simStep = None
         checkData8 = False
-        warning = "_zoneAirTemp and _zoneRelHumid are for different simulation steps."
+        warning = "_zoneAirTemp, _zoneRelHumid, _zoneAirFlowVol or _zoneTotalIntGain are for different simulation steps."
         print warning
         ghenv.Component.AddRuntimeMessage(w, warning)
     
@@ -293,22 +321,47 @@ def checkTheInputs():
                     print warning
                     ghenv.Component.AddRuntimeMessage(w, warning)
     
+    #Convert the list of zoneInletInfo to py data.
+    zoneInletInfo = []
+    checkData18 = True
+    if _zoneInletInfo.BranchCount != 0:
+        if _zoneInletInfo.Branch(0)[0] != None:
+            for i in range(_zoneInletInfo.BranchCount):
+                zoneBranch = _zoneInletInfo.Path(i)[0]
+                branchList = _zoneInletInfo.Branch(i)
+                dataVal = []
+                for item in branchList:
+                    dataVal.append(item)
+                try: zoneInletInfo[zoneBranch].extend(dataVal)
+                except:
+                    zoneInletInfo.append([])
+                    zoneInletInfo[zoneBranch].extend(dataVal)
+        else:
+            checkData18 = False
+            print "Connect a data tree of zoneInletInfo from the 'Honeybee_Indoor View Factor Calculator' component."
+    else:
+        checkData18 = False
+        print "Connect a data tree of zoneInletInfo from the 'Honeybee_Indoor View Factor Calculator' component."
+    if len(zoneInletInfo) != len(testPtZoneNames):
+        checkData18 = False
+        print "The length of the _testPtZoneNames list does not match the number of branches in the _zoneInletInfo."
+    
     
     #Do a final check of everything.
-    if checkData1 == True and checkData2 == True and checkData3 == True and checkData4 == True and checkData7 == True and checkData8 == True and checkData9 == True and checkData10 == True and checkData11 == True and checkData12 == True and checkData13 == True:
+    if checkData1 == True and checkData2 == True and checkData3 == True and checkData4 == True and checkData7 == True and checkData8 == True and checkData9 == True and checkData10 == True and checkData11 == True and checkData12 == True and checkData13 == True and checkData14 == True and checkData15 == True and checkData16 == True and checkData17 == True and checkData18 == True and checkData19 == True and checkData20 == True:
         checkData = True
     else: checkData = False
     
-    return checkData, annualData, simStep, airTempUnits, airTempDataHeaders, airTempDataNumbers, relHumidDataHeaders, relHumidDataNumbers, testPtZoneNames, testPtZoneWeights, ptHeightWeights, viewFactorMesh
+    return checkData, annualData, simStep, airTempUnits, airTempDataHeaders, airTempDataNumbers, relHumidDataHeaders, relHumidDataNumbers, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, testPtZoneNames, testPtZoneWeights, ptHeightWeights, viewFactorMesh, zoneInletInfo
 
 def manageInputOutput(annualData, simStep):
     #If some of the component inputs and outputs are not right, blot them out or change them.
-    for input in range(11):
-        if input == 7 and annualData == False:
+    for input in range(15):
+        if input == 10 and annualData == False:
             ghenv.Component.Params.Input[input].NickName = "___________"
             ghenv.Component.Params.Input[input].Name = "."
             ghenv.Component.Params.Input[input].Description = " "
-        elif input == 8 and (simStep == "Annually" or simStep == "unknown timestep"):
+        elif input == 11 and (simStep == "Annually" or simStep == "unknown timestep"):
             ghenv.Component.Params.Input[input].NickName = "____________"
             ghenv.Component.Params.Input[input].Name = "."
             ghenv.Component.Params.Input[input].Description = " "
@@ -325,7 +378,7 @@ def manageInputOutput(annualData, simStep):
     return analysisPeriod, stepOfSimulation
 
 def restoreInputOutput():
-    for input in range(11):
+    for input in range(15):
         ghenv.Component.Params.Input[input].NickName = inputsDict[input][0]
         ghenv.Component.Params.Input[input].Name = inputsDict[input][0]
         ghenv.Component.Params.Input[input].Description = inputsDict[input][1]
@@ -492,9 +545,9 @@ def getPointValue(zoneValues, testPtZoneNames, testPtZoneWeights, dataHeaders):
     pointValues = []
     for zoneCount, pointList in enumerate(testPtZoneWeights):
         pointValues.append([])
-        for pointWeght in pointList:
+        for pointWeight in pointList:
             pointValue = 0
-            for Count, weight in enumerate(pointWeght):
+            for Count, weight in enumerate(pointWeight):
                 path  = Count
                 weightedPointVal = weight*(zoneValueDict[path]["zoneValues"])
                 pointValue = pointValue+weightedPointVal
@@ -502,7 +555,33 @@ def getPointValue(zoneValues, testPtZoneNames, testPtZoneWeights, dataHeaders):
     
     return dataCheck, pointValues
 
-def warpByHeight(pointAirTempValues, ptHeightWeights):
+def warpByHeight(pointAirTempValues, ptHeightWeights, flowVolValues, heatGainValues, testPtZoneNames, testPtZoneWeights, zoneInletInfo):
+    #First figure out which zones are connected from the testPtZoneWeights.
+    adjacentList = []
+    adjacentNameList = []
+    for falseZone in testPtZoneWeights:
+        for pt in falseZone:
+            ptAdjList = []
+            ptNameList = []
+            for zoneCount, zone in enumerate(pt):
+                if zone != 0:
+                    ptAdjList.append(zoneCount)
+                    ptNameList.append(testPtZoneNames[zoneCount])
+            if ptAdjList not in adjacentList: adjacentList.append(ptAdjList)
+            if ptNameList not in adjacentNameList: adjacentNameList.append(ptNameList)
+    
+    print adjacentList
+    print flowVolValues
+    print heatGainValues
+    #Get a list of total heat gain for each of the grouped zones.
+    
+    #Get a list of total flow volume for each of the grouped zones.
+    
+    #Figure out what the height of the grouped zones should be and what the average height of the windows is.
+    
+    #Calculate the Archimedes number of the grouped zones.
+    
+    
     for zoneCount, zone in enumerate(pointAirTempValues):
         for ptCount, ptValue in enumerate(zone):
             pointAirTempValues[zoneCount][ptCount] = ptValue + ptHeightWeights[zoneCount][ptCount]
@@ -520,7 +599,7 @@ def main(pointAirTempValues, viewFactorMesh, title, legendTitle, lb_preparation,
         for mrt in list: allAirTemp.append(mrt)
     allAirTemp.sort()
     if lowB == "min": lowB = allAirTemp[0]
-    if highB == "min": highB = allAirTemp[-1]
+    if highB == "max": highB = allAirTemp[-1]
     
     #Get the colors for each zone.
     allColors = []
@@ -606,7 +685,7 @@ else:
 #Check the data input.
 checkData = False
 if _zoneAirTemp.BranchCount > 0 and str(_zoneAirTemp) != "tree {0}" and _zoneRelHumid.BranchCount > 0 and str(_zoneRelHumid) != "tree {0}" and checkLB == True:
-    checkData, annualData, simStep, airTempUnits, airTempDataHeaders, airTempDataNumbers, relHumidDataHeaders, relHumidDataNumbers, testPtZoneNames, testPtZoneWeights, ptHeightWeights, viewFactorMesh = checkTheInputs()
+    checkData, annualData, simStep, airTempUnits, airTempDataHeaders, airTempDataNumbers, relHumidDataHeaders, relHumidDataNumbers, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, testPtZoneNames, testPtZoneWeights, ptHeightWeights, viewFactorMesh, zoneInletInfo = checkTheInputs()
 
 #Manage the inputs and outputs of the component based on the data that is hooked up.
 if checkData == True:
@@ -619,10 +698,12 @@ dataCheck2 = False
 if _runIt == True and checkData == True:
     airTempValues, title, legendTitle = getData(airTempDataNumbers, annualData, simStep, airTempDataHeaders, airTempUnits, analysisPeriod, stepOfSimulation, lb_preparation, lb_visualization)
     relHumidValues, humidTitle, humidLegendTitle = getData(relHumidDataNumbers, annualData, simStep, relHumidDataHeaders, "%", analysisPeriod, stepOfSimulation, lb_preparation, lb_visualization)
+    flowVolValues, flowVolTitle, flowVolLegendTitle = getData(flowVolDataNumbers, annualData, simStep, flowVolDataHeaders, "m3/s", analysisPeriod, stepOfSimulation, lb_preparation, lb_visualization)
+    heatGainValues, heatGainTitle, heatGainLegendTitle = getData(heatGainDataNumbers, annualData, simStep, heatGainDataHeaders, "kWh", analysisPeriod, stepOfSimulation, lb_preparation, lb_visualization)
     dataCheck1, pointAirTempValues = getPointValue(airTempValues, testPtZoneNames, testPtZoneWeights, airTempDataHeaders)
     dataCheck2, pointRelHumidValues = getPointValue(relHumidValues, testPtZoneNames, testPtZoneWeights, relHumidDataHeaders)
     if dataCheck1 == True:
-        pointAirTempValues = warpByHeight(pointAirTempValues, ptHeightWeights)
+        pointAirTempValues = warpByHeight(pointAirTempValues, ptHeightWeights, flowVolValues, heatGainValues, testPtZoneNames, testPtZoneWeights, zoneInletInfo)
 
 
 #Color the mesh with the data and get all of the other cool stuff that this component does.
