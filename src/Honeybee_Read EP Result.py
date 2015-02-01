@@ -37,7 +37,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.55\nJAN_30_2015'
+ghenv.Component.Message = 'VER 0.0.55\nFEB_01_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "4"
@@ -147,10 +147,12 @@ otherZoneData = DataTree[Object]()
 #Create py lists to hold the sirflow data.
 infiltrationFlow = []
 natVentFlow = []
+testTracker = []
 try:
     for zone in zoneNameList:
         infiltrationFlow.append([])
         natVentFlow.append([])
+        testTracker.append([])
 except: pass
 
 #Make a list to keep track of what outputs are in the result file.
@@ -454,7 +456,7 @@ if dataTypeList[4] == True and dataTypeList[5] == True and dataTypeList[8] == Tr
             dataTypeList[7] = True
 
 #If we have information on volumetric flow for infiltration and natural ventilation, add them together.
-if infiltrationFlow != [] and natVentFlow != []:
+if infiltrationFlow != testTracker and natVentFlow != testTracker:
     for listCount, list in enumerate(infiltrationFlow):
         makeHeader(airFlowVolume, listCount, list[0], list[1], "Air Flow Volume", "m3/s", False)
         for numCount, num in enumerate(list[2:]):
