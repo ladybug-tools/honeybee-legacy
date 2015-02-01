@@ -11,7 +11,7 @@ By default, the temperature map will be created based on the average value of ai
 If total annual simulation data has been connected, the analysisPeriod_ input can be used to select out a specific period fo the year for coloration.
 In order to color surfaces by individual hours, connecting interger values to the "stepOfSimulation_" will allow you to scroll though each step of the input data.
 -
-Provided by Honeybee 0.0.55
+Provided by Honeybee 0.0.56
     
     Args:
         _zoneAirTemp: The airTemperature output of the "Honeybee_Read EP Result" component.
@@ -42,11 +42,11 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Indoor Air Temperature Map"
 ghenv.Component.NickName = 'AirTempMap'
-ghenv.Component.Message = 'VER 0.0.55\nJAN_30_2015'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
-#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
-#compatibleLBVersion = VER 0.0.58\nDEC_02_2014
+#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
 except: pass
 

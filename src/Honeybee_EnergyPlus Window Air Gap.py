@@ -11,7 +11,7 @@ Also, the material out of this component represents only a single layer of air, 
 If you have specifications for a whole window element and not individual panes of glass and gas, you are better-off using the "Honeybee_EnergyPlus Window Material" component instead of this one.
 
 -
-Provided by Honeybee 0.0.55
+Provided by Honeybee 0.0.56
     
     Args:
         _name: A text name for your window air gap material.
@@ -23,11 +23,11 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Window Air Gap"
 ghenv.Component.NickName = 'EPWindowAirGap'
-ghenv.Component.Message = 'VER 0.0.55\nOCT_24_2014'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
-#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
-#compatibleLBVersion = VER 0.0.58\nAUG_20_2014
+#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
 

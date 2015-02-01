@@ -13,7 +13,7 @@
 Use this component to generate lists of glazing ratios, window heigths, and sill heights for different cardinal directions to be plugged into the glzRatio, windowHeight, and sillHeight inputs of the "Glazing based on ratio" component.
 
 -
-Provided by Honeybee 0.0.55
+Provided by Honeybee 0.0.56
 
     Args:
         _northGlzRatio_: Glazing ratio for the north side of a building.
@@ -38,7 +38,7 @@ Provided by Honeybee 0.0.55
 """
 ghenv.Component.Name = "Honeybee_Glazing Parameters List"
 ghenv.Component.NickName = 'glzParamList'
-ghenv.Component.Message = 'VER 0.0.55\nSEP_11_2014'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"

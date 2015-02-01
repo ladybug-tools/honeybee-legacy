@@ -6,7 +6,7 @@
 """
 OpenStudio Systems
 -
-Provided by Honeybee 0.0.55
+Provided by Honeybee 0.0.56
 
     Args:
         _HBZones:...
@@ -26,7 +26,7 @@ import pprint
 
 ghenv.Component.Name = "Honeybee_OpenStudio Systems"
 ghenv.Component.NickName = 'OSHVACSystems'
-ghenv.Component.Message = 'VER 0.0.55\nOCT_16_2014'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"

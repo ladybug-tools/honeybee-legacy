@@ -6,7 +6,7 @@
 """
 Export Honeybee Objects to OpenStudio
 -
-Provided by Honeybee 0.0.53
+Provided by Honeybee 0.0.56
     
     Args:
         openStudioLibFolder:
@@ -71,7 +71,7 @@ else:
     
 ghenv.Component.Name = "Honeybee_Get Annual SQL Data"
 ghenv.Component.NickName = 'getAnnualSQLData'
-ghenv.Component.Message = 'VER 0.0.55\nNOV_2_2014'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 ghenv.Component.AdditionalHelpFromDocStrings = "2"

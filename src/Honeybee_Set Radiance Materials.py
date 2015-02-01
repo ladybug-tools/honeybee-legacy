@@ -7,7 +7,7 @@
 """
 Radiance Default Materials
 -
-Provided by Honeybee 0.0.55
+Provided by Honeybee 0.0.56
 
     Args:
         HBObject_: List of Honeybee zones or surfaces
@@ -24,11 +24,11 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Set Radiance Materials"
 ghenv.Component.NickName = 'setRADMaterials'
-ghenv.Component.Message = 'VER 0.0.55\nFEB_01_2015'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "01 | Daylight | Material"
-#compatibleHBVersion = VER 0.0.55\nFEB_01_2015
-#compatibleLBVersion = VER 0.0.58\nAUG_20_2014
+#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
 except: pass
 

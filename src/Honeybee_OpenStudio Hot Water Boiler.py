@@ -9,7 +9,7 @@
 """
 EPlus Hot Water Boiler
 -
-Provided by Honeybee 0.0.55
+Provided by Honeybee 0.0.56
 
     Args:
         _name : ... provide a unique name for each boiler that you specify
@@ -42,11 +42,11 @@ import Grasshopper.Kernel as gh
 
 ghenv.Component.Name = "Honeybee_OpenStudio Hot Water Boiler"
 ghenv.Component.NickName = 'EPlusHotWaterBoiler'
-ghenv.Component.Message = 'VER 0.0.55\nDEC_16_2014'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
-#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
-#compatibleLBVersion = VER 0.0.58\nAUG_20_2014
+#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
 except: pass

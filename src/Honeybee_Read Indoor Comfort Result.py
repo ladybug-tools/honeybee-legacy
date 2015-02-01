@@ -6,7 +6,7 @@
 """
 This component reads the results of an Adaptive Indoor Comfort Analysis.  Note that this usually takes about a minute
 -
-Provided by Honeybee 0.0.55
+Provided by Honeybee 0.0.56
     
     Args:
         _comfResultFileAddress: Any one of the result file addresses that comes out of the Honeybee Adaptive Indoor Comfort Analysis component.
@@ -16,7 +16,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Read Indoor Comfort Result"
 ghenv.Component.NickName = 'readComfortResult'
-ghenv.Component.Message = 'VER 0.0.55\nDEC_20_2014'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 ghenv.Component.AdditionalHelpFromDocStrings = "3"

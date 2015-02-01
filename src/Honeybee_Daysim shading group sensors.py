@@ -7,7 +7,7 @@
 Daysim shading group sensors
 Read here for more information about Daysim sensors here: http://daysim.ning.com/page/daysim-header-file-keyword-sensor-file-info-1
 -
-Provided by Honeybee 0.0.55
+Provided by Honeybee 0.0.56
 
     Args:
         interiorSensors_: Selected list of test points that indicates where occupants sit.
@@ -19,11 +19,11 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Daysim shading group sensors"
 ghenv.Component.NickName = 'shadingGroupSensors'
-ghenv.Component.Message = 'VER 0.0.55\nJAN_05_2015'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
-#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
-#compatibleLBVersion = VER 0.0.58\nAUG_20_2014
+#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
 except: pass
 

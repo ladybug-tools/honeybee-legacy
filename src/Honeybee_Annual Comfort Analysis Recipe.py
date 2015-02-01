@@ -7,7 +7,7 @@
 """
 Use this component to assemble a recipe for the "Honeybee_Annual Adaptive Indoor Comfort Analysis" component.
 -
-Provided by Honeybee 0.0.55
+Provided by Honeybee 0.0.56
     
     Args:
         _viewFactorMesh: The list of view factor meshes that comes out of the  "Honeybee_Indoor View Factor Calculator".
@@ -35,11 +35,11 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Annual Comfort Analysis Recipe"
 ghenv.Component.NickName = 'AdaptIndoorComfAnalysis'
-ghenv.Component.Message = 'VER 0.0.55\nDEC_20_2014'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
-#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
-#compatibleLBVersion = VER 0.0.58\nDEC_02_2014
+#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
 except: pass
 

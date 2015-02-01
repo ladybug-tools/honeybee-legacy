@@ -8,7 +8,7 @@
 Use this component runs an annual adaptive comfort assessment off of EnergyPlus results and write all values into csv files.
 The results in these files can be used for creating indoor comfort maps.
 -
-Provided by Honeybee 0.0.55
+Provided by Honeybee 0.0.56
     
     Args:
         _comfAnalysisRecipe: A comfort analysis recipe out of the Honeybee_Annual Comfort Analysis Recipe" component.
@@ -36,11 +36,11 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Annual Adaptive Indoor Comfort Analysis"
 ghenv.Component.NickName = 'AdaptIndoorComfAnalysis'
-ghenv.Component.Message = 'VER 0.0.55\nDEC_20_2014'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
-#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
-#compatibleLBVersion = VER 0.0.58\nDEC_02_2014
+#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
 except: pass
 

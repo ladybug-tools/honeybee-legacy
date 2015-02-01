@@ -9,7 +9,7 @@ This is an optional field that overrides the economizer behavior
 It adds DCV if you want it as well.
 It can also be tricked into providing a mini purge cycle too if you want it.
 -
-Provided by Honeybee 0.0.55
+Provided by Honeybee 0.0.56
 
     Args:
         _uniqueName : a required field to uniquely name the economizer
@@ -21,7 +21,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_OpenStudio Mechanical Controller"
 ghenv.Component.NickName = 'MechVentController'
-ghenv.Component.Message = 'VER 0.0.55\nDEC_14_2014'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | AirsideSystems"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
