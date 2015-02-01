@@ -21,10 +21,10 @@ Provided by Honeybee 0.0.55
 """
 ghenv.Component.Name = "Honeybee_Solve Adjacencies"
 ghenv.Component.NickName = 'solveAdjc'
-ghenv.Component.Message = 'VER 0.0.55\nJAN_11_2015'
+ghenv.Component.Message = 'VER 0.0.55\nFEB_02_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
-#compatibleHBVersion = VER 0.0.55\nDEC_13_2014
+#compatibleHBVersion = VER 0.0.55\nFEB_02_2015
 #compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
 except: pass
@@ -65,12 +65,14 @@ def updateZoneMixing(surface1, zone1, zone2):
 
 def updateAdj(surface1, surface2, altConstruction, altBC, tol):
     # change roof to ceiling
-    if surface1.type == 1: surface1.setType(3) # roof + adjacent surface = ceiling
-    elif surface2.type == 1: surface2.setType(3)
+    # the same for ceiling on ground
+    if int(surface1.type) == 1: surface1.setType(3) # roof + adjacent surface = ceiling
+    elif int(surface2.type) == 1: surface2.setType(3)
     
-    # Change exposed floors to floors between zones.
-    if surface1.type == 2.75: surface1.setType(2)
-    if surface2.type == 2.75:  surface2.setType(2)
+    # Change different floor types to be floors between zones.
+    if int(surface1.type) == 2: surface1.setType(2)
+    if int(surface2.type) == 2:  surface2.setType(2)
+    
     
     # If the alternate construction is set to air wall, we should also change the surface type to air wall
     try:
