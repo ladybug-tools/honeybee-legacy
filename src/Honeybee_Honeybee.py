@@ -522,15 +522,15 @@ class RADMaterialAux(object):
             if not sc.sticky.has_key("honeybee_RADMaterialLib"): sc.sticky ["honeybee_RADMaterialLib"] = {}
             
             # add default materials to the library
-            self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', 'Context_Material', .35, .35, .35, 0, 0.1), True, True)
-            self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', 'Interior_Ceiling', .80, .80, .80, 0, 0.1), True, True)
-            self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', 'Interior_Floor', .2, .2, .2, 0, 0.1), True, True)
-            self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', 'Exterior_Floor', .2, .2, .2, 0, 0.1), True, True)
+            self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', 'Context_Material', .35, .35, .35, 0, 0.05), True, True)
+            self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', 'Interior_Ceiling', .80, .80, .80, 0, 0.05), True, True)
+            self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', 'Interior_Floor', .2, .2, .2, 0, 0.05), True, True)
+            self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', 'Exterior_Floor', .2, .2, .2, 0, 0.05), True, True)
             self.analyseRadMaterials(self.createRadMaterialFromParameters('glass', 'Exterior_Window', .60, .60, .60), True, True)
             self.analyseRadMaterials(self.createRadMaterialFromParameters('glass', 'Interior_Window', .60, .60, .60), True, True)
-            self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', 'Exterior_Roof', .35, .35, .35, 0, 0.1), True, True)
-            self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', 'Exterior_Wall', .50, .50, .50, 0, 0.1), True, True)
-            self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', 'Interior_Wall', .50, .50, .50, 0, 0.1), True, True)
+            self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', 'Exterior_Roof', .80, .80, .80, 0, 0.05), True, True) # it is actually a ceiling in most of cases
+            self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', 'Exterior_Wall', .50, .50, .50, 0, 0.05), True, True)
+            self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', 'Interior_Wall', .50, .50, .50, 0, 0.05), True, True)
             
             # import user defined RAD library
             RADLibraryFile = os.path.join(sc.sticky["Honeybee_DefaultFolder"], "HoneybeeRadMaterials.mat")
