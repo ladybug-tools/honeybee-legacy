@@ -198,7 +198,7 @@ def main(sourceDirectory, updateThisFile, updateAllUObjects):
         userObjectsFolder = sourceDirectory
     
     destinationDirectory = folders.ClusterFolders[0]
-    
+
     if updateThisFile:
         # find all the userObjects
         ghComps = getAllTheComponents()
@@ -238,10 +238,17 @@ def main(sourceDirectory, updateThisFile, updateAllUObjects):
                 srcFullPath = os.path.join(userObjectsFolder, srcFileName)
                 dstFullPath = os.path.join(destinationDirectory, srcFileName)
                 
-                # check if a newer version is not aleady exist
+                # check if a newer version is not already exist
                 if not os.path.isfile(dstFullPath): shutil.copy2(srcFullPath, dstFullPath)
                 # or is older than the new file
                 elif os.stat(srcFullPath).st_mtime - os.stat(dstFullPath).st_mtime > 1: shutil.copy2(srcFullPath, dstFullPath)
+            
+        # if item selector is not already copied, copy it to component folder
+        srcFullPath = os.path.join(userObjectsFolder, "ItemSelector.gha")
+        dstFullPath = os.path.join(folders.DefaultAssemblyFolder, "ItemSelector.gha")
+        if not os.path.isfile(dstFullPath):
+            shutil.copy2(srcFullPath, dstFullPath)
+        
         return "Done!" , True
 
 if _updateThisFile or _updateAllUObjects:
