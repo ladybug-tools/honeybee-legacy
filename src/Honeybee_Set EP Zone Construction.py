@@ -13,21 +13,22 @@ Provided by Honeybee 0.0.55
     Args:
         _HBZone: Honeybee zone
         wallEPConstruction_: Optional new construction for walls
-        windowEPConstruction_: Optional new construction for window 
-        roofEPConstruction_: Optional new construction for roof
-        floorEPConstruction_: Optional new construction for floor
-        ceilingEPConstruction_: Optional new construction for ceiling
+        windowEPConstruction_: Optional new construction for windows
+        roofEPConstruction_: Optional new construction for roofs
+        floorEPConstruction_: Optional new construction for floors
+        expFloorEPConstruction_: Optional new construction for exposed floors
+        skylightEPConstruction_: Optional new construction for skylights
     Returns:
-        modifiedHBZone:  Honeybee zone with update construction assigned
+        modifiedHBZone:  Honeybee zone with updated constructions
 
 """
 
 ghenv.Component.Name = "Honeybee_Set EP Zone Construction"
 ghenv.Component.NickName = 'setEPZoneCnstr'
-ghenv.Component.Message = 'VER 0.0.55\nJAN_27_2015'
+ghenv.Component.Message = 'VER 0.0.55\nFEB_01_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
-#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
+#compatibleHBVersion = VER 0.0.55\nJAN_31_2014
 #compatibleLBVersion = VER 0.0.58\nAUG_20_2014
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
@@ -36,7 +37,9 @@ import scriptcontext as sc
 import Rhino as rc
 import Grasshopper.Kernel as gh
 
-def main(HBZone, wallEPCnst, windowEPCnst, roofEPCnst, flrEPCnst, ceilEPCnst):
+def main(HBZone, wallEPCnst, windowEPCnst, roofEPCnst, flrEPCnst, expFlrEpCnst, \
+        skylightEPCnst):
+            
     # Make sure Honeybee is flying
     if not sc.sticky.has_key('honeybee_release'):
         print "You should first let Honeybee to fly..."
@@ -60,60 +63,30 @@ def main(HBZone, wallEPCnst, windowEPCnst, roofEPCnst, flrEPCnst, ceilEPCnst):
     try: HBZoneObject = hb_hive.callFromHoneybeeHive([HBZone])[0]
     except Exception, e: HBZoneObject = None
     
-    #Have a function to check whether a construction is in a library.
-    def checkConstruction(EPConstruction):
-        # if it is just the name of the material make sure it is already defined
-        if len(EPConstruction.split("\n")) == 1:
-            # if the material is not in the library add it to the library
-            if not hb_EPObjectsAux.isEPConstruction(EPConstruction):
-                warningMsg = "Can't find " + EPConstruction + " in EP Construction Library.\n" + \
-                            "Add the construction to the library and try again."
-                print warningMsg
-                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
-                return None
-            else:
-                return EPConstruction
-        else:
-            # it is a full string
-            added, EPConstruction = hb_EPObjectsAux.addEPObjectToLib(EPConstruction, overwrite = True)
-            
-            if not added:
-                msg = name + " is not added to the project library!"
-                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
-                print msg
-                return None
-            else:
-                return EPConstruction
-    
     # here I should check for each construction to be in the library
     hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
-    
-    if wallEPCnst != None:
-        wallEPCnst = checkConstruction(wallEPCnst)
-    if windowEPCnst != None:
-        windowEPCnst = checkConstruction(windowEPCnst)
-    if roofEPCnst != None:
-        roofEPCnst = checkConstruction(roofEPCnst)
-    if flrEPCnst != None:
-        flrEPCnst = checkConstruction(flrEPCnst)
-    if ceilEPCnst != None:
-        ceilEPCnst = checkConstruction(ceilEPCnst)
     
     if HBZoneObject != None:
         for srf in HBZoneObject.surfaces:
             if srf.BCObject.name == "": # not internal surfaces 
-                if windowEPCnst!=None and srf.hasChild:
+                if windowEPCnst!=None and srf.type != 1 and srf.type != 1.5 and srf.hasChild:
                     for childSrf in srf.childSrfs:
-                        childSrf.EPConstruction = windowEPCnst
-                if srf.type == 0 and wallEPCnst!=None:
-                    srf.EPConstruction = wallEPCnst
-                elif srf.type == 1 and roofEPCnst!=None:
-                    srf.EPConstruction = roofEPCnst
-                elif srf.type == 2 and flrEPCnst!=None:
-                    srf.EPConstruction = flrEPCnst
-                elif srf.type == 3 and ceilEPCnst!=None:
-                    srf.EPConstruction = ceilEPCnst
+                        hb_EPObjectsAux.assignEPConstruction(childSrf, windowEPCnst, ghenv.Component)
                 
+                # check for slab on grade and roofs
+                if skylightEPCnst!=None and (srf.type == 1 or srf.type == 1.5) and srf.hasChild:
+                    for childSrf in srf.childSrfs:
+                        hb_EPObjectsAux.assignEPConstruction(childSrf, skylightEPCnst, ghenv.Component)
+                
+                if srf.type == 0 and wallEPCnst!=None:
+                    hb_EPObjectsAux.assignEPConstruction(srf, wallEPCnst, ghenv.Component)
+                elif srf.type == 1 and roofEPCnst!=None:
+                    hb_EPObjectsAux.assignEPConstruction(srf, roofEPCnst, ghenv.Component)
+                elif srf.type == 2 and flrEPCnst!=None:
+                    hb_EPObjectsAux.assignEPConstruction(srf, flrEPCnst, ghenv.Component)
+                elif srf.type == 2.75 and expFlrEpCnst!=None:
+                    hb_EPObjectsAux.assignEPConstruction(srf, expFlrEpCnst, ghenv.Component)
+
         # add zones to dictionary
         HBZones  = hb_hive.addToHoneybeeHive([HBZoneObject], ghenv.Component.InstanceGuid.ToString())
         
@@ -124,5 +97,8 @@ def main(HBZone, wallEPCnst, windowEPCnst, roofEPCnst, flrEPCnst, ceilEPCnst):
         return -1
 
 if _HBZone:
-    result = main(_HBZone, wallEPConstruction_, windowEPConstruction_, roofEPConstruction_, floorEPConstruction_, ceilingEPConstruction_)
+    result = main(_HBZone, wallEPConstruction_, windowEPConstruction_, \
+        roofEPConstruction_, floorEPConstruction_, expFloorEPConstruction_, \
+        skylightEPConstruction_)
+    
     if result!=-1: modifiedHBZone = result

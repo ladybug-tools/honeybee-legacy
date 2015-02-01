@@ -851,7 +851,7 @@ class RADMaterialAux(object):
                     print "HBSurface Radiance Material has been set to " + RADMaterial
                 except Exception, e:
                     print e
-                    warningMsg = "You are using an old version of Honeybee_Honeybee! Update your files and try again."
+                    warningMsg = "Failed to assign RADMaterial to " + HBSurface.name
                     print warningMsg
                     component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
                     return
@@ -3221,7 +3221,6 @@ class EPMaterialAux(object):
             print "Failed to find " + matName + " in the Honeybee material library."
             return -1
     
-    
     def decomposeEPCnstr(self, cnstrName, GHComponent = None):
         try:
             constructionObj = sc.sticky ["honeybee_constructionLib"][cnstrName.upper()]
@@ -3362,7 +3361,6 @@ class EPMaterialAux(object):
                     objectStr =  objectStr + "  " + str(objectData[layer][0]) + ";   !- " +  objectData[layer][1] + "\n\n"
             return objectStr
             
-    
     def getObjectKey(self, EPObject):
         
         EPKeys = ["Material", "WindowMaterial", "Construction"]
@@ -3726,8 +3724,8 @@ class EPObjectsAux(object):
         
         try:
             HBSrf.setEPConstruction(EPConstruction)
-        except:
-            warningMsg = "You are using an old version of Honeybee_Honeybee! Update your files and try again."
+        except Exception, e:
+            warningMsg = "Failed to assign new EPConstruction to " + HBSrf.name + "."
             print warningMsg
             component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
             return
@@ -4722,6 +4720,7 @@ class EPZone(object):
             # assign construction
             srf.construction = srf.cnstrSet[srf.type]
             if srf.EPConstruction == "":
+                # if it is not already assigned by user then use default based on type
                 srf.EPConstruction = srf.construction
             
         try:
@@ -5872,8 +5871,9 @@ class hb_EPSurface(object):
     def setRADMaterial(self, RADMaterial):
         self.RadMaterial = RADMaterial
     
-    def setName(self, newName):
+    def setName(self, newName, isUserInput = False):
         self.name = newName
+        self.srfNameByUser = isUserInput
         
     def setSunExposure(self, exposure = 'NoSun'):
         self.sunExposure = exposure

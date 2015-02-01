@@ -1,27 +1,28 @@
-# Set EP Zone Interior Construction
+# Update EP
 # By Mostapha Sadeghipour Roudsari
 # Sadeghipour@gmail.com
 # Honeybee started by Mostapha Sadeghipour Roudsari is licensed
 # under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
 
 """
-Set EP Zone Interior Construction
+Update EP construction of zone based on type
 
 -
 Provided by Honeybee 0.0.55
     
     Args:
         _HBZone: Honeybee zone
-        intWallEPConstruction_: Optional new construction for interior walls
-        intWindowEPConstruction_: Optional new construction for interior windows 
-        intFloorEPConstruction_: Optional new construction for interior floors and ceilings
+        undergroundWallEPConstruction_: Optional new construction for underground walls
+        groundFloorEPConstruction_: Optional new construction for ground floors
+        undergroundSlabEPConstruction_: Optional new construction for underground slabs
+        undergroundCeilingEPConstruction_: Optional new construction for underground ceilings
     Returns:
         modifiedHBZone:  Honeybee zone with updated constructions
 
 """
 
-ghenv.Component.Name = "Honeybee_Set EP Zone Interior Construction"
-ghenv.Component.NickName = 'setEPZoneIntCnstr'
+ghenv.Component.Name = "Honeybee_Set EP Zone Underground Construction"
+ghenv.Component.NickName = 'setEPZoneUnderGroundCnstr'
 ghenv.Component.Message = 'VER 0.0.55\nFEB_01_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
@@ -59,7 +60,7 @@ def checkAirWalls(construction, srf):
         srf.setType(4, isUserInput= True)
         updateZoneMixing(srf, srf.parent, srf.BCObject.parent)
 
-def main(HBZone, wallEPCnst, windowEPCnst, flrEPCnst):
+def main(HBZone, ugWallEPCnst, gFlrEPCnst, ugSlabEPCnst, ugCeilEPCnst):
     
     # Make sure Honeybee is flying
     if not sc.sticky.has_key('honeybee_release'):
@@ -88,24 +89,27 @@ def main(HBZone, wallEPCnst, windowEPCnst, flrEPCnst):
 
     if HBZoneObject != None:
         for srf in HBZoneObject.surfaces:
-            if srf.BCObject.name != "": # only internal surfaces
-                print srf.BCObject.name
-                print srf.BCObject
-                if windowEPCnst!=None and srf.hasChild:
-                    for childSrf in srf.childSrfs:
-                        hb_EPObjectsAux.assignEPConstruction(childSrf, windowEPCnst, ghenv.Component)
-                        hb_EPObjectsAux.assignEPConstruction(childSrf.BCObject, windowEPCnst, ghenv.Component)
-                        if windowEPCnst.ToUpper() == "AIR WALL":
-                            updateZoneMixing(childSrf, srf.parent, srf.BCObject.parent)
-                if srf.type == 0 and wallEPCnst!=None:
-                    hb_EPObjectsAux.assignEPConstruction(srf, wallEPCnst, ghenv.Component)
-                    hb_EPObjectsAux.assignEPConstruction(srf.BCObject, wallEPCnst, ghenv.Component)
-                    checkAirWalls(wallEPCnst, srf)
-                elif (srf.type == 2 or srf.type == 3) and flrEPCnst!=None:
-                    hb_EPObjectsAux.assignEPConstruction(srf, flrEPCnst, ghenv.Component)
-                    hb_EPObjectsAux.assignEPConstruction(srf.BCObject, flrEPCnst, ghenv.Component)
-                    checkAirWalls(flrEPCnst, srf)
-                    
+            if srf.type == 0.5 and ugWallEPCnst!=None:
+                hb_EPObjectsAux.assignEPConstruction(srf, ugWallEPCnst, ghenv.Component)
+                if srf.BCObject.name != "":
+                    hb_EPObjectsAux.assignEPConstruction(srf.BCObject, ugWallEPCnst, ghenv.Component)
+                    checkAirWalls(ugWallEPCnst, srf)
+            elif srf.type == 2.5 and gFlrEPCnst!=None:
+                hb_EPObjectsAux.assignEPConstruction(srf, gFlrEPCnst, ghenv.Component)
+                if srf.BCObject.name != "":
+                    hb_EPObjectsAux.assignEPConstruction(srf.BCObject, gFlrEPCnst, ghenv.Component)
+                    checkAirWalls(gFlrEPCnst, srf)
+            elif srf.type == 2.25 and ugSlabEPCnst!=None:
+                hb_EPObjectsAux.assignEPConstruction(srf, ugSlabEPCnst, ghenv.Component)
+                if srf.BCObject.name != "":
+                    hb_EPObjectsAux.assignEPConstruction(srf.BCObject, ugSlabEPCnst, ghenv.Component)
+                    checkAirWalls(ugSlabEPCnst, srf)
+            elif srf.type == 1.5 and ugCeilEPCnst!=None:
+                hb_EPObjectsAux.assignEPConstruction(srf, ugCeilEPCnst, ghenv.Component)
+                if srf.BCObject.name != "":
+                    hb_EPObjectsAux.assignEPConstruction(srf.BCObject, ugCeilEPCnst, ghenv.Component)
+                    checkAirWalls(ugCeilEPCnst, srf)
+                
         # add zones to dictionary
         HBZones  = hb_hive.addToHoneybeeHive([HBZoneObject], ghenv.Component.InstanceGuid.ToString())
         
@@ -116,6 +120,7 @@ def main(HBZone, wallEPCnst, windowEPCnst, flrEPCnst):
         return -1
 
 if _HBZone:
-    result = main(_HBZone, intWallEPConstruction_, intWindowEPConstruction_, \
-            intFloorEPConstruction_)
+    result = main(_HBZone, undergroundWallEPConstruction_, groundFloorEPConstruction_, \
+            undergroundSlabEPConstruction_, undergroundCeilingEPConstruction_)
+    
     if result!=-1: modifiedHBZone = result
