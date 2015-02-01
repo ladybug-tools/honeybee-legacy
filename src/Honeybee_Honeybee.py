@@ -19,7 +19,7 @@ http://creativecommons.org/licenses/by-sa/3.0/deed.en_US
 Source code is available at:
 https://github.com/mostaphaRoudsari/Honeybee
 -
-Provided by Honeybee 0.0.56
+Provided by Honeybee 0.0.55
     
     Args:
         defaultFolder_: Optional input for Honeybee default folder.
@@ -30,7 +30,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
+ghenv.Component.Message = 'VER 0.0.55\nFEB_02_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -2075,6 +2075,14 @@ class hb_WriteRADAUX(object):
                        4: '-s',
                        5: '+s'}
         
+        self.DLAnalaysisTypes = {0: ["0: illuminance" , "lux"],
+                      1: ["1: radiation" , "wh/m2"],
+                      1.1: ["1.1: cumulative radiation" , "kWh/m2"],
+                      2: ["2: luminance" , "cd/m2"],
+                      3: ["3: DF", "%"],
+                      4: ["4: VSC", "%"],
+                      5: ["5: annual analysis", "var"]}
+        
     def readAnalysisRecipe(self, analysisRecipe):
         
         self.analysisType = analysisRecipe.type
@@ -2299,25 +2307,27 @@ class hb_WriteRADAUX(object):
             serializer = self.hb_serializeObjects(meshFilePath, testMesh)
             serializer.saveToFile()
 
-    def exportTypeFile(self, subWorkingDir, radFileName, analysisRecipe = None):
+    def exportTypeFile(self, subWorkingDir, radFileName, analysisRecipe):
         
-        if analysisRecipe != None:
-            try:
-                simulationType = analysisRecipe.simulationType
-            except:
-                simulationType = 5 # annual
-        else:
-            try:
-                simulationType = self.simulationType
-            except:
-                simulationType = 5 # annual
+        analysisType = analysisRecipe.type
+        
+        if analysisType == 3 or analysisType == 4:
+            analysisTypeKey = analysisType
+        
+        elif analysisType == 0 or analysisType == 1:
+            analysisTypeKey = analysisRecipe.simulationType
+        
+        elif analysisType == 2:
+            # annual analysis
+            analysisTypeKey = 5
                 
         # try to write mesh file if any
         typeFile = os.path.join(subWorkingDir, radFileName + ".typ")
         
         with open(typeFile, "w") as typf:
-            typf.write(str(simulationType))
-        
+            typf.write(str(analysisTypeKey))
+    
+    
     def copySkyFile(self, subWorkingDir, radFileName, analysisRecipe = None):
         
         if analysisRecipe != None:
