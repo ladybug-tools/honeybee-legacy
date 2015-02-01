@@ -30,7 +30,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.55\nJAN_31_2015'
+ghenv.Component.Message = 'VER 0.0.55\nFEB_02_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -833,6 +833,39 @@ class RADMaterialAux(object):
         # print self.outFileStr
         with open(RADLibraryFile, "w") as inRadf:
             inRadf.write(self.outFileStr)
+    
+    def setRADMaterial(self, RADMaterial, HBSurface, component):
+        # 1.4 assign RAD Material
+        if RADMaterial!=None:
+            # if it is just the name of the material make sure it is already defined
+            if len(RADMaterial.split(" ")) == 1:
+                # if the material is not in the library add it to the library
+                if RADMaterial not in sc.sticky ["honeybee_RADMaterialLib"].keys():
+                    warningMsg = "Can't find " + RADMaterial + " in RAD Material Library.\n" + \
+                                "Add the material to the library and try again."
+                    component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
+                    return
+                
+                try:
+                    HBSurface.setRADMaterial(RADMaterial)
+                    print "HBSurface Radiance Material has been set to " + RADMaterial
+                except Exception, e:
+                    print e
+                    warningMsg = "You are using an old version of Honeybee_Honeybee! Update your files and try again."
+                    print warningMsg
+                    component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
+                    return
+                
+                addedToLib = True
+            else:
+                
+                # try to add the material to the library
+                addedToLib, HBSurface.RadMaterial = self.analyseRadMaterials(RADMaterial, True)
+                
+            if addedToLib==False:
+                warningMsg = "Failed to add " + RADMaterial + " to the Library."
+                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
+                return
 
 class DLAnalysisRecipe(object):
     
@@ -5110,7 +5143,7 @@ class hb_reEvaluateHBZones(object):
                         # add glazing to adjacent surface
                         adjcSrf = surface.BCObject
                         if len(surface.childSrfs) == len(glzCoordinates):
-                            glzAdjcSrfName = childSrfsNames[count].name
+                            glzAdjcSrfName = childSrfsNames[count]
                         else:
                             glzAdjcSrfName = adjcSrf.name + "_glz_" + `count`
                             
