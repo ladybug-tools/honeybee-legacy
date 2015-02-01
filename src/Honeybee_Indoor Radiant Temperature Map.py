@@ -11,7 +11,7 @@ By default, the temperature map will be created based on the average value of me
 If total annual simulation data has been connected, the analysisPeriod_ input can be used to select out a specific period fo the year for coloration.
 In order to color surfaces by individual hours, connecting interger values to the "stepOfSimulation_" will allow you to scroll though each step of the input data.
 -
-Provided by Honeybee 0.0.56
+Provided by Honeybee 0.0.55
     
     Args:
         _srfIndoorTemp: A list surfaceIndoorTemp data out of the "Honeybee_Read EP Surface Result" component.

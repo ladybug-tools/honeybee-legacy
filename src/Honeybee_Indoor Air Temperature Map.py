@@ -11,13 +11,13 @@ By default, the temperature map will be created based on the average value of ai
 If total annual simulation data has been connected, the analysisPeriod_ input can be used to select out a specific period fo the year for coloration.
 In order to color surfaces by individual hours, connecting interger values to the "stepOfSimulation_" will allow you to scroll though each step of the input data.
 -
-Provided by Honeybee 0.0.56
+Provided by Honeybee 0.0.55
     
     Args:
         _zoneAirTemp: The airTemperature output of the "Honeybee_Read EP Result" component.
         _zoneRelHumid: The relativeHumidity output of the "Honeybee_Read EP Result" component.
         _zoneAirFlowVol: The airFlowVolume output of the "Honeybee_Read EP Result" component.
-        _zoneTotalIntGain: The totalIntHeatGain output of the "Honeybee_Read EP Result" component.
+        _zoneAirHeatGain: The airHeatGainRate output of the "Honeybee_Read EP Result" component.
         ===============: ...
         _viewFactorMesh: The list of view factor meshes that comes out of the  "Honeybee_Indoor View Factor Calculator".  These will be colored with air temperature data.
         _testPtZoneWeights: The testPtZoneWeights output of the 'Honeybee_Indoor View Factor Calculator' component.  This is essentially a branched data tree with the weights of values of each zone for each of the test points.
@@ -68,7 +68,7 @@ inputsDict = {
 0: ["_zoneAirTemp", "The airTemperature output of the 'Honeybee_Read EP Result' component."],
 1: ["_zoneRelHumid", "The relativeHumidity output of the 'Honeybee_Read EP Result' component."],
 2: ["_zoneAirFlowVol", "The airFlowVolume output of the 'Honeybee_Read EP Result' component."],
-3: ["_zoneTotalIntGain", "The totalIntHeatGain output of the 'Honeybee_Read EP Result' component."],
+3: ["_zoneAirHeatGain", "The totalIntHeatGain output of the 'Honeybee_Read EP Result' component."],
 4: ["=============", "..."],
 5: ["_viewFactorMesh", "The list of view factor meshes that comes out of the  'Honeybee_Indoor View Factor Calculator'.  These will be colored with air temperature data."],
 6: ["_testPtZoneWeights", "The testPtZoneWeights output of the 'Honeybee_Indoor View Factor Calculator' component.  This is essentially a branched data tree with the weights of values of each zone for each of the test points."],
@@ -163,7 +163,7 @@ def checkTheInputs():
                 checkData6 = True
             else:
                 checkData6 = False
-                warning = "Not all of the connected " + dataName + " data is for indoor surface temperture."
+                warning = "Not all of the connected " + dataName + " data correct."
                 print warning
                 ghenv.Component.AddRuntimeMessage(w, warning)
             
@@ -174,7 +174,7 @@ def checkTheInputs():
             
         else:
             checkData5 = False
-            checkData6 == False
+            checkData6 = False
             if dataLength == 8760: annualData = True
             else: annualData = False
             simStep = 'unknown timestep'
@@ -187,7 +187,7 @@ def checkTheInputs():
     checkData1, checkData2, annualData1, simStep1, airTempUnits, airTempDataHeaders, airTempDataNumbers = checkCreateDataTree(_zoneAirTemp, "_zoneAirTemp", "Air Temperature")
     checkData3, checkData4, annualData2, simStep2, humidityUnits, relHumidDataHeaders, relHumidDataNumbers = checkCreateDataTree(_zoneRelHumid, "_zoneRelHumid", "Relative Humidity")
     checkData14, checkData15, annualData3, simStep3, flowVolUnits, flowVolDataHeaders, flowVolDataNumbers = checkCreateDataTree(_zoneAirFlowVol, "_zoneAirFlowVol", "Air Flow Volume")
-    checkData16, checkData17, annualData4, simStep4, heatGainUnits, heatGainDataHeaders, heatGainDataNumbers = checkCreateDataTree(_zoneTotalIntGain, "_zoneTotalIntGain", "Total Internal Heat Gain")
+    checkData16, checkData17, annualData4, simStep4, heatGainUnits, heatGainDataHeaders, heatGainDataNumbers = checkCreateDataTree(_zoneAirHeatGain, "_zoneAirHeatGain", "Air Heat Gain Rate")
     
     #Check to be sure that the units of flowVol and heat gain are correct.
     checkData19 = True
@@ -199,10 +199,10 @@ def checkTheInputs():
         ghenv.Component.AddRuntimeMessage(w, warning)
     
     checkData20 = True
-    if heatGainUnits == "kWh": pass
+    if heatGainUnits == "W": pass
     else:
         checkData19 = False
-        warning = "_zoneHeatGain must be in kWh and cannot be normalized by floor area."
+        warning = "_zoneHeatGain must be in W."
         print warning
         ghenv.Component.AddRuntimeMessage(w, warning)
     
@@ -212,7 +212,7 @@ def checkTheInputs():
     else:
         annualData = None
         checkData7 = False
-        warning = "_zoneAirTemp, _zoneRelHumid, _zoneAirFlowVol or _zoneTotalIntGain are for different time periods."
+        warning = "_zoneAirTemp, _zoneRelHumid, _zoneAirFlowVol or _zoneAirHeatGain are for different time periods."
         print warning
         ghenv.Component.AddRuntimeMessage(w, warning)
     
@@ -221,7 +221,7 @@ def checkTheInputs():
     else:
         simStep = None
         checkData8 = False
-        warning = "_zoneAirTemp, _zoneRelHumid, _zoneAirFlowVol or _zoneTotalIntGain are for different simulation steps."
+        warning = "_zoneAirTemp, _zoneRelHumid, _zoneAirFlowVol or _zoneAirHeatGain are for different simulation steps."
         print warning
         ghenv.Component.AddRuntimeMessage(w, warning)
     
@@ -570,21 +570,155 @@ def warpByHeight(pointAirTempValues, ptHeightWeights, flowVolValues, heatGainVal
             if ptAdjList not in adjacentList: adjacentList.append(ptAdjList)
             if ptNameList not in adjacentNameList: adjacentNameList.append(ptNameList)
     
-    print adjacentList
-    print flowVolValues
-    print heatGainValues
     #Get a list of total heat gain for each of the grouped zones.
-    
     #Get a list of total flow volume for each of the grouped zones.
+    groupedHeatGains = []
+    groupedFlowVol = []
+    groupedTotalVol = []
+    groupedInletArea = []
+    groupedInletAreaList = []
+    groupedMinHeightsInit = []
+    groupedMaxHeightsInit = []
+    groupedGlzHeightsInit = []
+    for zoneList in adjacentList:
+        zoneHeatG = 0
+        zoneFlowV = 0
+        zoneTotV = 0
+        inletA = 0
+        inletAList = []
+        minHeightList = []
+        maxHeightList = []
+        glzHeightList = []
+        for val in zoneList:
+            zoneHeatG += heatGainValues[val]
+            zoneFlowV += flowVolValues[val]
+            zoneTotV += zoneInletInfo[val][-2]
+            inletA += zoneInletInfo[val][-1]
+            inletAList.append(zoneInletInfo[val][-1])
+            minHeightList.append(zoneInletInfo[val][0])
+            maxHeightList.append(zoneInletInfo[val][1])
+            glzHeightList.append(zoneInletInfo[val][2])
+        groupedHeatGains.append(zoneHeatG)
+        groupedFlowVol.append(zoneFlowV)
+        if inletA != 0: groupedInletArea.append(inletA)
+        else: groupedInletArea.append(0.0025*zoneTotV)
+        groupedInletAreaList.append(inletAList)
+        groupedMinHeightsInit.append(minHeightList)
+        groupedMaxHeightsInit.append(maxHeightList)
+        groupedGlzHeightsInit.append(glzHeightList)
     
     #Figure out what the height of the grouped zones should be and what the average height of the windows is.
+    groupedZoneHeights = []
+    groupedGlzHeights = []
+    groupedWinCeilDiffs = []
+    for zoneCount in range(len(adjacentList)):
+        if len(groupedMinHeightsInit[zoneCount]) != 1:
+            groupedMinHeightsInit[zoneCount].sort()
+            minHeight = groupedMinHeightsInit[zoneCount][0]
+            groupedMaxHeightsInit[zoneCount].sort()
+            maxHeight = groupedMaxHeightsInit[zoneCount][-1]
+            roomHeight = maxHeight - minHeight
+            groupedZoneHeights.append(roomHeight)
+            areaWeights = []
+            for area in groupedInletAreaList[zoneCount]:
+                areaWeights.append(area/sum(groupedInletAreaList[zoneCount]))
+            weightedGlzHeights = []
+            for count, height in enumerate(groupedGlzHeightsInit[zoneCount]):
+                try:
+                    weightedHeight = (height - minHeight)*areaWeights[count]
+                    weightedGlzHeights.append(weightedHeight)
+                except:
+                    weightedGlzHeights.append(0)
+            weightedAvgGlzHeight = sum(weightedGlzHeights)
+            groupedGlzHeights.append(weightedAvgGlzHeight)
+            groupedWinCeilDiffs.append(roomHeight - weightedAvgGlzHeight)
+        else:
+            roomHeight = groupedMaxHeightsInit[zoneCount][0] - groupedMinHeightsInit[zoneCount][0]
+            groupedZoneHeights.append(roomHeight)
+            if groupedGlzHeightsInit[zoneCount][0] != None: glzHeight = groupedGlzHeightsInit[zoneCount][0] - groupedMinHeightsInit[zoneCount][0]
+            else: glzHeight = (groupedMaxHeightsInit[zoneCount][0] - groupedMinHeightsInit[zoneCount][0])/2
+            groupedGlzHeights.append(glzHeight)
+            groupedWinCeilDiffs.append(roomHeight - glzHeight)
     
-    #Calculate the Archimedes number of the grouped zones.
+    #Calculate the Archimedes numbers and the temperature change of the grouped zones.
+    tempChanges = []
+    archimedesNumbers = []
+    archiNumWinScale = []
+    for zoneCount in range(len(adjacentList)):
+        if groupedHeatGains[zoneCount] > 0:
+            tempChange = (groupedHeatGains[zoneCount])/(1.2*1012*groupedFlowVol[zoneCount])
+            tempChanges.append(tempChange)
+            
+            archiNumberNum = (9.806*0.0034*groupedHeatGains[zoneCount])*(groupedWinCeilDiffs[zoneCount]*groupedWinCeilDiffs[zoneCount]*groupedWinCeilDiffs[zoneCount])
+            archiNumberDenom = (1.2*1012*groupedFlowVol[zoneCount]*groupedFlowVol[zoneCount]*(groupedFlowVol[zoneCount]/groupedInletArea[zoneCount]))
+            archiNumber = archiNumberNum/archiNumberDenom
+            archimedesNumbers.append(archiNumber)
+            
+            archiNumWinScaleNum = (9.806*0.0034*groupedHeatGains[zoneCount])*(groupedGlzHeights[zoneCount]*groupedGlzHeights[zoneCount]*groupedGlzHeights[zoneCount])
+            archiNumWinScale.append(archiNumWinScaleNum/archiNumberDenom)
+        else:
+            tempChanges.append(0)
+            archimedesNumbers.append(0)
+            archiNumWinScale.append(0)
     
+    #Calculate the dimensionless temperature change over the room.
+    dimTempDeltas = []
+    dimInterfHeights = []
+    cielTemps = []
+    for zoneCount in range(len(adjacentList)):
+        if archimedesNumbers[zoneCount] < 59 and archimedesNumbers[zoneCount] != 0:
+            #Linear stratification profile.
+            dimInterfHeights.append(0)
+            dimensionlessTempDelta = 0.58 - (0.14 * math.log10(archiNumWinScale[zoneCount]))
+            dimTempDeltas.append(dimensionlessTempDelta)
+            cielTemps.append((dimensionlessTempDelta/2)*tempChanges[zoneCount])
+        elif archimedesNumbers[zoneCount] != 0:
+            #Two-Layer stratification profile.
+            dimensionlessInterfHeight = 0.92 - (0.18 * math.log10(archimedesNumbers[zoneCount]))
+            dimInterfHeights.append(dimensionlessInterfHeight)
+            dimensionlessTempDelta = 0.58 - (0.14 * math.log10(archiNumWinScale[zoneCount]))
+            if dimensionlessTempDelta > 0:
+                dimTempDeltas.append(dimensionlessTempDelta)
+                cielTemps.append(((dimensionlessTempDelta*dimensionlessInterfHeight)/2)*tempChanges[zoneCount])
+            else:
+                dimTempDeltas.append(0)
+                cielTemps.append(0)
+                dimInterfHeights.append(0)
+        else:
+            dimTempDeltas.append(0)
+            cielTemps.append(0)
+            dimInterfHeights.append(0)
     
+    #Calculate the dimensionless temperature at the dimensionless height and convert to final temperature.
     for zoneCount, zone in enumerate(pointAirTempValues):
-        for ptCount, ptValue in enumerate(zone):
-            pointAirTempValues[zoneCount][ptCount] = ptValue + ptHeightWeights[zoneCount][ptCount]
+        if archimedesNumbers[zoneCount] < 59 and dimTempDeltas[zoneCount] != 0:
+            #Linear stratification profile.
+            cielTemp = cielTemps[zoneCount]
+            dimTempDelta = dimTempDeltas[zoneCount]
+            for ptCount, ptValue in enumerate(zone):
+                ptTemp = ptValue + cielTemp - dimTempDelta*tempChanges[zoneCount]*(1-ptHeightWeights[zoneCount][ptCount])
+                pointAirTempValues[zoneCount][ptCount] = ptTemp
+        elif dimTempDeltas[zoneCount] != 0:
+            #Two-Layer stratification profile.
+            cielTemp = cielTemps[zoneCount]
+            dimTempDelta = dimTempDeltas[zoneCount]
+            dimInterHeight = dimInterfHeights[zoneCount]
+            
+            for ptCount, ptValue in enumerate(zone):
+                if ptHeightWeights[zoneCount][ptCount] < dimInterHeight:
+                    ptTemp = ptValue + cielTemp - dimTempDelta*tempChanges[zoneCount]*(dimInterHeight - ptHeightWeights[zoneCount][ptCount])
+                else:
+                    ptTemp = ptValue + cielTemp
+                pointAirTempValues[zoneCount][ptCount] = ptTemp
+        else: pass
+        
+        print "Air temperature difference of " + str(tempChanges[zoneCount]*dimTempDeltas[zoneCount]) + " C."
+        if archimedesNumbers[zoneCount] < 59 and archimedesNumbers[zoneCount] != 0: print "Linear stratification profile."
+        elif archimedesNumbers[zoneCount] != 0 and dimTempDeltas[zoneCount] != 0: print "Two-Layer stratification profile."
+        elif archimedesNumbers[zoneCount] != 0: print "Completely stratified."
+        else: print "No Stratification"
+        print " "
+    
     
     return pointAirTempValues
 

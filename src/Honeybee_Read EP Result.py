@@ -22,7 +22,6 @@ Provided by Honeybee 0.0.56
         electricLight: The electric lighting energy needed for each zone in kWh.
         electricEquip: The electric equipment energy needed for each zone in kWh.
         fanElectric: The fan electric energy for a central heating or cooling system in kWh.  This ouput will not appear when there is no central system.
-        totalIntHeatGain: The total heat gain into each zone in kWh (excluding possible conduction gains through the envelope or gains that might happen through natural ventilation or infiltration).  This includes lighting, equipment(appliances/pulg loads), people, solar gains, and gains through the heating system.  This output is useful for the estimation of air stratification in the Comfort Analysis workflow.
         peopleGains: The internal heat gains in each zone resulting from people (kWh).
         totalSolarGain: The total solar gain in each zone(kWh).
         infiltrationEnergy: The heat loss (negative) or heat gain (positive) in each zone resulting from infiltration (kWh).
@@ -32,6 +31,7 @@ Provided by Honeybee 0.0.56
         meanRadTemperature: The mean radiant temperature of each zone (degrees Celcius).
         relativeHumidity: The relative humidity of each zone (%).
         airFlowVolume: The total volume of air flowing into the room through both the windows and infiltration (m3/s).  This is voulme of air is at standard density (20 C and adjusted for the elevation above sea level of the weather file).
+        airHeatGainRate: The total heat transfer rate to the air from lighting, equipment(appliances/pulg loads), people, the surfaces of the zone, and gains through the heating system.  This output is useful for the estimation of air stratification in the Comfort Analysis workflow.
         otherZoneData: Other zone data that is in the result file (in no particular order).  Note that this data cannot be normalized by floor area as the component does not know if it can be normalized.
 """
 
@@ -132,7 +132,6 @@ heating = DataTree[Object]()
 electricLight = DataTree[Object]()
 electricEquip = DataTree[Object]()
 fanElectric = DataTree[Object]()
-totalIntHeatGain = DataTree[Object]()
 peopleGains = DataTree[Object]()
 totalSolarGain = DataTree[Object]()
 infiltrationEnergy = DataTree[Object]()
@@ -142,16 +141,23 @@ airTemperature = DataTree[Object]()
 meanRadTemperature = DataTree[Object]()
 relativeHumidity = DataTree[Object]()
 airFlowVolume = DataTree[Object]()
+airHeatGainRate = DataTree[Object]()
 otherZoneData = DataTree[Object]()
 
 #Create py lists to hold the sirflow data.
 infiltrationFlow = []
 natVentFlow = []
+internalAirGain = []
+surfaceAirGain = []
+systemAirGain = []
 testTracker = []
 try:
     for zone in zoneNameList:
         infiltrationFlow.append([])
         natVentFlow.append([])
+        internalAirGain.append([])
+        surfaceAirGain.append([])
+        systemAirGain.append([])
         testTracker.append([])
 except: pass
 
@@ -275,19 +281,19 @@ if _resultFileAddress and gotData == True:
                         key.append(4)
                         zoneName = checkZone(" " + column.split(':')[0])
                         makeHeader(peopleGains, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "People Energy", energyUnit, True)
-                        dataTypeList[8] = True
+                        dataTypeList[7] = True
                     
                     elif 'Zone Windows Total Transmitted Solar Radiation Energy' in column:
                         key.append(5)
                         zoneName = checkZone(" " + column.split(':')[0])
                         makeHeader(totalSolarGain, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Total Solar Gain", energyUnit, True)
-                        dataTypeList[9] = True
+                        dataTypeList[8] = True
                     
                     elif 'Zone Ventilation Total Heat Loss Energy ' in column:
                         key.append(6)
                         zoneName = checkZone(" " + column.split(':')[0])
                         makeHeader(natVentEnergy, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Natural Ventilation Energy", energyUnit, True)
-                        dataTypeList[11] = True
+                        dataTypeList[10] = True
                     
                     elif 'Zone Ventilation Total Heat Gain Energy' in column:
                         key.append(7)
@@ -297,7 +303,7 @@ if _resultFileAddress and gotData == True:
                         key.append(8)
                         zoneName = checkZone(" " + column.split(':')[0])
                         makeHeader(infiltrationEnergy, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Infiltration Energy", energyUnit, True)
-                        dataTypeList[10] = True
+                        dataTypeList[9] = True
                     
                     elif 'Zone Infiltration Total Heat Gain Energy' in column:
                         key.append(9)
@@ -307,25 +313,25 @@ if _resultFileAddress and gotData == True:
                         key.append(10)
                         zoneName = checkZone(" " + column.split(':')[0])
                         makeHeader(operativeTemperature, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Operative Temperature", "C", False)
-                        dataTypeList[12] = True
+                        dataTypeList[11] = True
                     
                     elif 'Zone Mean Air Temperature' in column:
                         key.append(11)
                         zoneName = checkZone(" " + column.split(':')[0])
                         makeHeader(airTemperature, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Air Temperature", "C", False)
-                        dataTypeList[13] = True
+                        dataTypeList[12] = True
                     
                     elif 'Zone Mean Radiant Temperature' in column:
                         key.append(12)
                         zoneName = checkZone(" " + column.split(':')[0])
                         makeHeader(meanRadTemperature, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Radiant Temperature", "C", False)
-                        dataTypeList[14] = True
+                        dataTypeList[13] = True
                     
                     elif 'Zone Air Relative Humidity' in column:
                         key.append(13)
                         zoneName = checkZone(" " + column.split(':')[0])
                         makeHeader(relativeHumidity, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Relative Humidity", "%", False)
-                        dataTypeList[15] = True
+                        dataTypeList[14] = True
                     
                     elif 'Zone Ventilation Standard Density Volume Flow Rate' in column:
                         key.append(16)
@@ -338,6 +344,24 @@ if _resultFileAddress and gotData == True:
                         zoneName = checkZone(" " + column.split(':')[0])
                         infiltrationFlow[int(path[-1])].append(zoneName)
                         infiltrationFlow[int(path[-1])].append(column.split('(')[-1].split(')')[0])
+                    
+                    elif 'Zone Air Heat Balance Internal Convective Heat Gain Rate' in column:
+                        key.append(18)
+                        zoneName = checkZone(" " + column.split(':')[0])
+                        internalAirGain[int(path[-1])].append(zoneName)
+                        internalAirGain[int(path[-1])].append(column.split('(')[-1].split(')')[0])
+                    
+                    elif 'Zone Air Heat Balance Surface Convection Rate' in column:
+                        key.append(19)
+                        zoneName = checkZone(" " + column.split(':')[0])
+                        surfaceAirGain[int(path[-1])].append(zoneName)
+                        surfaceAirGain[int(path[-1])].append(column.split('(')[-1].split(')')[0])
+                    
+                    elif 'Zone Air Heat Balance System Air Transfer Rate' in column:
+                        key.append(20)
+                        zoneName = checkZone(" " + column.split(':')[0])
+                        systemAirGain[int(path[-1])].append(zoneName)
+                        systemAirGain[int(path[-1])].append(column.split('(')[-1].split(')')[0])
                     
                     elif 'Zone' in column and not "System" in column and not "SYSTEM" in column and not "ZONEHVAC" in column:
                         key.append(14)
@@ -394,6 +418,12 @@ if _resultFileAddress and gotData == True:
                         natVentFlow[int(path[columnCount])].append(float(column))
                     elif key[columnCount] == 17:
                         infiltrationFlow[int(path[columnCount])].append(float(column))
+                    elif key[columnCount] == 18:
+                        internalAirGain[int(path[columnCount])].append(float(column))
+                    elif key[columnCount] == 19:
+                        surfaceAirGain[int(path[columnCount])].append(float(column))
+                    elif key[columnCount] == 20:
+                        systemAirGain[int(path[columnCount])].append(float(column))
                     
         result.close()
         parseSuccess = True
@@ -405,6 +435,7 @@ if _resultFileAddress and gotData == True:
                   'Try reconnecting the _resultfileAddress to this component or re-running your simulation.'
         print warn
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warn)
+
 
 
 #Construct the total energy and energy balance outputs.  Also, construct the total solar and operative temperature outputs
@@ -429,31 +460,25 @@ if dataTypeList[2] == True and dataTypeList[3] == True:
             makeHeader(totalThermalEnergy, listCount, list[2].split(' for')[-1], list[4].split('(')[-1].split(')')[0], "Total Thermal Energy", energyUnit, True)
             for numCount, num in enumerate(list[7:]):
                 totalThermalEnergy.Add((num + heatingPyList[listCount][7:][numCount]), GH_Path(listCount))
-            dataTypeList[1] = True
+            dataTypeList[0] = True
             
             makeHeader(thermalEnergyBalance, listCount, list[2].split(' for')[-1], list[4].split('(')[-1].split(')')[0], "Thermal Energy Balance", energyUnit, True)
             for numCount, num in enumerate(list[7:]):
                 thermalEnergyBalance.Add((heatingPyList[listCount][7:][numCount] - num), GH_Path(listCount))
-            dataTypeList[2] = True
+            dataTypeList[1] = True
 
-# If we have information on lighting, equipment(appliances/pulg loads), people, solar gains, and gains through the heating system, group them all into a total gains list.
-if dataTypeList[4] == True and dataTypeList[5] == True and dataTypeList[8] == True and dataTypeList[9] == True:
-    lightingPyList = createPyList(electricLight)
-    equipPyList = createPyList(electricEquip)
-    peoplePyList = createPyList(peopleGains)
-    solarPyList = createPyList(totalSolarGain)
-    
-    if len(lightingPyList) > 0 and len(equipPyList) > 0 and len(peoplePyList) > 0 and len(solarPyList) > 0:
-        for listCount, list in enumerate(lightingPyList):
-            makeHeader(totalIntHeatGain, listCount, list[2].split(' for')[-1], list[4].split('(')[-1].split(')')[0], "Total Internal Heat Gain", "kWh", True)
-            if heatingPyList == None:
-                for numCount, num in enumerate(list[7:]):
-                    totalIntHeatGain.Add((num + equipPyList[listCount][7:][numCount] + peoplePyList[listCount][7:][numCount] + solarPyList[listCount][7:][numCount]), GH_Path(listCount))
-            else:
-                for numCount, num in enumerate(list[7:]):
-                    totalIntHeatGain.Add((num + equipPyList[listCount][7:][numCount] + peoplePyList[listCount][7:][numCount] + solarPyList[listCount][7:][numCount] + heatingPyList[listCount][7:][numCount]), GH_Path(listCount))
-            
-            dataTypeList[7] = True
+# If we have information on gains through the air, group them all into a total air gains list.
+if internalAirGain != testTracker and surfaceAirGain != testTracker:
+    for listCount, list in enumerate(internalAirGain):
+        makeHeader(airHeatGainRate, listCount, list[0], list[1], "Air Heat Gain Rate", "W", False)
+        if systemAirGain == testTracker:
+            for numCount, num in enumerate(list[7:]):
+                airHeatGainRate.Add((num + surfaceAirGain[listCount][2:][numCount]), GH_Path(listCount))
+        else:
+            for numCount, num in enumerate(list[7:]):
+                airHeatGainRate.Add((num + surfaceAirGain[listCount][2:][numCount] + systemAirGain[listCount][2:][numCount]), GH_Path(listCount))
+        
+        dataTypeList[16] = True
 
 #If we have information on volumetric flow for infiltration and natural ventilation, add them together.
 if infiltrationFlow != testTracker and natVentFlow != testTracker:
@@ -464,7 +489,7 @@ if infiltrationFlow != testTracker and natVentFlow != testTracker:
                 airFlowVolume.Add((num + natVentFlow[listCount][2:][numCount]), GH_Path(listCount))
             except:
                 airFlowVolume.Add(num, GH_Path(listCount))
-        dataTypeList[16] = True
+        dataTypeList[15] = True
 
 
 #If some of the component outputs are not in the result csv file, blot the variable out of the component.
@@ -477,16 +502,16 @@ outputsDict = {
 4: ["electricLight", "The electric lighting energy needed for each zone in kWh."],
 5: ["electricEquip", "The electric equipment energy needed for each zone in kWh."],
 6: ["fanElectric", "The fan electric energy for a central heating or cooling system in kWh.  This ouput will not appear when there is no central system assigned in OpenStudio."],
-7: ["totalIntHeatGain", "The total heat gain into each zone in kWh (excluding possible conduction gains through the envelope or gains that might happen through natural ventilation or infiltration).  This includes lighting, equipment(appliances/pulg loads), people, solar gains, and gains through the heating system.  This output is useful for the estimation of air stratification in the Comfort Analysis workflow."],
-8: ["peopleGains", "The internal heat gains in each zone resulting from people (kWh)."],
-9: ["totalSolarGain", "The total solar gain in each zone(kWh)."],
-10: ["infiltrationEnergy", "The heat loss (negative) or heat gain (positive) in each zone resulting from infiltration (kWh)."],
-11: ["natVentEnergy", "The heat loss (negative) or heat gain (positive) in each zone resulting from natural ventilation (kWh)."],
-12: ["operativeTemperature", "The mean operative temperature of each zone (degrees Celcius)."],
-13: ["airTemperature", "The mean air temperature of each zone (degrees Celcius)."],
-14: ["meanRadTemperature", "The mean radiant temperature of each zone (degrees Celcius)."],
-15: ["relativeHumidity", "The relative humidity of each zone (%)."],
-16: ["airFlowVolume", "The total volume of air flowing into the room through both the windows and infiltration (m3/s).  This is voulme of air is at standard density (20 C and adjusted for the elevation above sea level of the weather file)."],
+7: ["peopleGains", "The internal heat gains in each zone resulting from people (kWh)."],
+8: ["totalSolarGain", "The total solar gain in each zone(kWh)."],
+9: ["infiltrationEnergy", "The heat loss (negative) or heat gain (positive) in each zone resulting from infiltration (kWh)."],
+10: ["natVentEnergy", "The heat loss (negative) or heat gain (positive) in each zone resulting from natural ventilation (kWh)."],
+11: ["operativeTemperature", "The mean operative temperature of each zone (degrees Celcius)."],
+12: ["airTemperature", "The mean air temperature of each zone (degrees Celcius)."],
+13: ["meanRadTemperature", "The mean radiant temperature of each zone (degrees Celcius)."],
+14: ["relativeHumidity", "The relative humidity of each zone (%)."],
+15: ["airFlowVolume", "The total volume of air flowing into the room through both the windows and infiltration (m3/s).  This is voulme of air is at standard density (20 C and adjusted for the elevation above sea level of the weather file)."],
+16: ["airHeatGainRate", "The total heat transfer rate to the air from lighting, equipment(appliances/pulg loads), people, the surfaces of the zone, and gains through the heating system.  This output is useful for the estimation of air stratification in the Comfort Analysis workflow."],
 17: ["otherZoneData", "Other zone data that is in the result file (in no particular order). Note that this data cannot be normalized by floor area as the component does not know if it can be normalized."]
 }
 

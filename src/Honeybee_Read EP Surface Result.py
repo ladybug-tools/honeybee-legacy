@@ -421,7 +421,7 @@ if _resultFileAddress and gotZoneData == True and gotSrfData == True:
                         key.append(8)
                         dataTypeList[5] = True
                     
-                    elif 'Surface' in column:
+                    elif 'Surface' in column and not "Heat Balance Surface Convection Rate"  in column:
                         if gotSrfData == True:
                             srfName, typeName = checkSrfNameOther(dataIndex, srfName)
                             duplicateList.append(duplicate)

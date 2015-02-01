@@ -9,7 +9,7 @@ Use this component to generate test points within a zone an calculate view facto
 _
 This component is a necessary step before creating an MRT map of a zone.
 -
-Provided by Honeybee 0.0.56
+Provided by Honeybee 0.0.55
     
     Args:
         _HBZones: The HBZones out of any of the HB components that generate or alter zones.  Note that these should ideally be the zones that are fed into the Run Energy Simulation component as surfaces may not align otherwise.  Zones read back into Grasshopper from the Import idf component will not align correctly with the EP Result data.
@@ -74,6 +74,8 @@ def copyHBZoneData():
     srfTypes = []
     srfInteriorList = []
     zoneNames = []
+    zoneNatVentArea = []
+    zoneVolumes = []
     
     for zoneCount, HZone in enumerate(_HBZones):
         surfaceNames.append([])
@@ -84,6 +86,8 @@ def copyHBZoneData():
         zoneCentPts.append(HZone.GetBoundingBox(False).Center)
         zone = hb_hive.callFromHoneybeeHive([HZone])[0]
         zoneNames.append(zone.name)
+        zoneNatVentArea.append(zone.windowOpeningArea)
+        zoneVolumes.append(zone.getZoneVolume())
         for srf in zone.surfaces:
             surfaceNames[zoneCount].append(srf.name)
             srfTypes[zoneCount].append(srf.type)
@@ -102,7 +106,7 @@ def copyHBZoneData():
             else:
                 srfBreps[zoneCount].append(srf.geometry)
     
-    sc.sticky["Honeybee_ViewFacotrSrfData"] = [zoneBreps, surfaceNames, srfBreps, zoneCentPts, srfTypes, srfInteriorList, zoneNames]
+    sc.sticky["Honeybee_ViewFacotrSrfData"] = [zoneBreps, surfaceNames, srfBreps, zoneCentPts, srfTypes, srfInteriorList, zoneNames, zoneNatVentArea, zoneVolumes]
 
 
 def checkTheInputs():
@@ -235,6 +239,8 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
     zoneSrfTypes = hb_zoneData[4]
     srfInteriorList = hb_zoneData[5]
     zoneNames = hb_zoneData[6]
+    zoneNatVentArea = hb_zoneData[7]
+    zoneVolumes = hb_zoneData[8]
     
     #Make copies of the original zones in the event that some are combined as air walls are removed.
     oldZoneBreps = zoneBreps[:]
@@ -310,6 +316,11 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                 adjCounter += 1
                 adjacentList.append([zoneCount])
         
+        #Order the list based on the most connected zones.
+        lengthsList = []
+        for zoneList in adjacentList:
+            lengthsList.append(len(zoneList))
+        lengthsList, adjacentList = zip(*sorted(zip(lengthsList, adjacentList)))
         
         #Remove duplicates found in the process of looking for adjacencies.
         fullAdjacentList = []
@@ -535,10 +546,9 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
             zoneBB = rc.Geometry.Brep.GetBoundingBox(zoneBreps[falseZoneCount], rc.Geometry.Plane.WorldXY)
             max = zoneBB.Max.Z
             min = zoneBB.Min.Z
-            difference = (max-min)/2
-            center = min + difference
+            difference = max-min
             for pointCount, point in enumerate(falseZone):
-                heightWeight = (point.Z-center)/difference
+                heightWeight = (point.Z-min)/difference
                 heightWeights[falseZoneCount].append(heightWeight)
         
         #Calculate the heights of the original zones and the average heights of the windows (to be used in the stratification calculation).
@@ -562,6 +572,15 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                 glzMidHeight = glzCentPt.Z
                 zoneInletParams[orignalZoneCount].append(glzMidHeight)
             else: zoneInletParams[orignalZoneCount].append(None)
+            
+            #Get the volume of each zone.
+            zoneInletParams[orignalZoneCount].append(zoneVolumes[orignalZoneCount])
+            
+            #Get the area of operable glazing.
+            opGlzArea = 0
+            for val in zoneNatVentArea[orignalZoneCount]:
+                if val != None: opGlzArea += float(val)
+            zoneInletParams[orignalZoneCount].append(opGlzArea)
         
         # Pull out the geometry that can block sun vectors.
         for zCount, zoneSrfTList in enumerate(zoneSrfTypes):

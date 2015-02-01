@@ -189,7 +189,6 @@ def checkTheInputs():
             normable = False
             total = True
         elif "Total Thermal Energy for" in dataType: normable = True
-        elif "Total Energy for" in dataType: normable = True
         elif "Thermal Energy Balance for" in dataType: normable = True
         elif "Cooling Energy for" in dataType: normable = True
         elif "Heating Energy for" in dataType: normable = True
@@ -222,6 +221,7 @@ def checkTheInputs():
         elif "Supply Air Temperature" in dataType: normable = False
         elif "Supply Air Relative Humidity" in dataType: normable = False
         elif "Air Flow Volume" in dataType: normable = True
+        elif "Air Heat Gain Rate" in dataType: normable = False
         else:
             normable = False
             warning = "Component cannot tell what data type is being connected.  Data will be averaged for each zone by default."
