@@ -22,7 +22,8 @@ https://github.com/mostaphaRoudsari/Honeybee
 Provided by Honeybee 0.0.55
     
     Args:
-        letItFly: Set Boolean to True to let the Honeybee fly!
+        defaultFolder_: Optional input for Honeybee default folder.
+                       If empty default folder will be set to C:\ladybug or C:\Users\%USERNAME%\AppData\Roaming\Ladybug\
     Returns:
         report: Current Honeybee mood!!!
 """
@@ -65,18 +66,62 @@ rc.Runtime.HostUtils.DisplayOleAlerts(False)
 
 class CheckIn():
     
-    def __init__(self):
+    def __init__(self, defaultFolder, folderIsSetByUser = False):
+        
+        self.folderIsSetByUser = folderIsSetByUser
+        self.letItFly = True
+        
+        if defaultFolder:
+            # user is setting up the folder
+            defaultFolder = os.path.normpath(defaultFolder) + os.sep
+            
+            # check if path has white space
+            if (" " in defaultFolder):
+                msg = "Default file path can't have white space. Please set the path to another folder." + \
+                      "\nHoneybee failed to fly! :("
+                print msg
+                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                self.letItFly = False
+                return
+            else:
+                # create the folder if it is not created
+                if not os.path.isdir(defaultFolder):
+                    try: os.mkdir(defaultFolder)
+                    except:
+                        msg = "Cannot create default folder! Try a different filepath" + \
+                              "\nHoneybee failed to fly! :("
+                        print msg
+                        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                        self.letItFly = False
+                        return
+            
+            # looks fine so let's set it up
+            sc.sticky["Honeybee_DefaultFolder"] = defaultFolder
+            self.folderIsSetByUser = True
+        
         #set up default pass
-        if os.path.exists("c:\\ladybug\\") and os.access(os.path.dirname("c:\\ladybug\\"), os.F_OK):
-            # folder already exists so it is all fine
-            sc.sticky["Honeybee_DefaultFolder"] = "c:\\ladybug\\"
-        elif os.access(os.path.dirname("c:\\"), os.F_OK):
-            #the folder does not exists but write privileges are given so it is fine
-            sc.sticky["Honeybee_DefaultFolder"] = "c:\\ladybug\\"
-        else:
-            # let's use the user folder
-            sc.sticky["Honeybee_DefaultFolder"] = os.path.join("C:\\Users\\", os.getenv("USERNAME"), "AppData\\Roaming\\Ladybug\\")
-    
+        if not self.folderIsSetByUser:
+            if os.path.exists("c:\\ladybug\\") and os.access(os.path.dirname("c:\\ladybug\\"), os.F_OK):
+                # folder already exists so it is all fine
+                sc.sticky["Honeybee_DefaultFolder"] = "c:\\ladybug\\"
+            elif os.access(os.path.dirname("c:\\"), os.F_OK):
+                #the folder does not exists but write privileges are given so it is fine
+                sc.sticky["Honeybee_DefaultFolder"] = "c:\\ladybug\\"
+            else:
+                # let's use the user folder
+                username = os.getenv("USERNAME")
+                # make sure username doesn't have space
+                if (" " in username):
+                    msg = "User name on this system: " + username + " has white space." + \
+                          " Default fodelr cannot be set.\nUse defaultFolder_ to set the path to another folder and try again!" + \
+                          "\nHoneybee failed to fly! :("
+                    print msg
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                    self.letItFly = False
+                    return
+                
+                sc.sticky["Honeybee_DefaultFolder"] = os.path.join("C:\\Users\\", username, "AppData\\Roaming\\Ladybug\\")
+                
     def getComponentVersion(self):
         monthDict = {'JAN':'01', 'FEB':'02', 'MAR':'03', 'APR':'04', 'MAY':'05', 'JUN':'06',
                      'JUL':'07', 'AUG':'08', 'SEP':'09', 'OCT':'10', 'NOV':'11', 'DEC':'12'}        
@@ -160,7 +205,7 @@ class CheckIn():
             return self.isNewerVersionAvailable(currentTemplateVersion, templateVersion)
         
 
-checkIn = CheckIn()
+checkIn = CheckIn(defaultFolder_)
 
 
 class versionCheck(object):
@@ -6536,16 +6581,19 @@ except:
 
 GHPythonTargetVersion = "0.6.0.3"
 
-if not checkGHPythonVersion(GHPythonTargetVersion):
+try:
+    if not checkGHPythonVersion(GHPythonTargetVersion):
+        assert False
+except:
     msg =  "Honeybee failed to fly! :(\n" + \
            "You are using an old version of GHPython. " +\
            "Please update to version: " + GHPythonTargetVersion
     print msg
     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
-    letItFly = False
+    checkIn.letItFly = False
     sc.sticky["honeybee_release"] = False
 
-if letItFly:
+if checkIn.letItFly:
     if not sc.sticky.has_key("honeybee_release") or True:
         w = gh.GH_RuntimeMessageLevel.Warning
         sc.sticky["honeybee_release"] = versionCheck()
