@@ -834,7 +834,7 @@ class RADMaterialAux(object):
         with open(RADLibraryFile, "w") as inRadf:
             inRadf.write(self.outFileStr)
     
-    def setRADMaterial(self, RADMaterial, HBSurface, component):
+    def assignRADMaterial(self, HBSurface, RADMaterial, component):
         # 1.4 assign RAD Material
         if RADMaterial!=None:
             # if it is just the name of the material make sure it is already defined
