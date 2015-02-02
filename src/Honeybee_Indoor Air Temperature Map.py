@@ -818,7 +818,7 @@ else:
 
 #Check the data input.
 checkData = False
-if _zoneAirTemp.BranchCount > 0 and str(_zoneAirTemp) != "tree {0}" and _zoneRelHumid.BranchCount > 0 and str(_zoneRelHumid) != "tree {0}" and checkLB == True:
+if _zoneAirTemp.BranchCount > 0 and str(_zoneAirTemp) != "tree {0}" and _zoneRelHumid.BranchCount > 0 and str(_zoneRelHumid) != "tree {0}" and _zoneAirFlowVol.BranchCount > 0 and str(_zoneAirFlowVol) != "tree {0}" and _zoneAirHeatGain.BranchCount > 0 and str(_zoneAirHeatGain) != "tree {0}" and checkLB == True:
     checkData, annualData, simStep, airTempUnits, airTempDataHeaders, airTempDataNumbers, relHumidDataHeaders, relHumidDataNumbers, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, testPtZoneNames, testPtZoneWeights, ptHeightWeights, viewFactorMesh, zoneInletInfo = checkTheInputs()
 
 #Manage the inputs and outputs of the component based on the data that is hooked up.
