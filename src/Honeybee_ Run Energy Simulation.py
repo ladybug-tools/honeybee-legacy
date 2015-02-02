@@ -512,9 +512,10 @@ class WriteIDF(object):
     
     def EPNatVentSimple(self, zone, natVentCount):
         if zone.natVentSchedule[natVentCount] == None: natVentSched = 'ALWAYS ON'
-        else:
+        elif zone.natVentSchedule[natVentCount].upper().endswith('CSV'):
             natVentSchedFileName = os.path.basename(zone.natVentSchedule[natVentCount])
             natVentSched = "_".join(natVentSchedFileName.split(".")[:-1])
+        else: natVentSched = zone.natVentSchedule[natVentCount]
         
         return '\nZoneVentilation:WindandStackOpenArea,\n' + \
                 '\t' + zone.name + 'NatVent' + str(natVentCount) + ',  !- Name\n' + \
@@ -1173,7 +1174,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
             if zone.natVent == True:
                 for schedule in zone.natVentSchedule:
                     if schedule != None:
-                        if schedule not in EPScheduleCollection: EPScheduleCollection.append(schedule)
+                        if schedule.upper() not in EPScheduleCollection: EPScheduleCollection.append(schedule)
                     else: needToWriteMixSched = True
             if zone.mixAir == True: needToWriteMixSched = True
     if needToWriteMixSched == True:
