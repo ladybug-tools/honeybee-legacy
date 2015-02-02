@@ -8,7 +8,7 @@ Use this component to take any list of closed breps and turn them into Honeybee 
 _
 This includes constructions of the surfaces, boundary condtions of all of the surfaces (ie ground, exterior, etc), schedules+ loads for occupancy/internal electronics, and settings for an HVAC system if isContitioned_ is set to True.
 -
-Provided by Honeybee 0.0.55
+Provided by Honeybee 0.0.56
 
     Args:
         _zoneMasses: A list of closed breps or a  single closed brep that represents the geometry of the zone(s) that will be output from this component.
@@ -36,11 +36,11 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_Masses2Zones'
 ghenv.Component.NickName = 'Mass2Zone'
-ghenv.Component.Message = 'VER 0.0.55\nOCT_18_2014'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
-#compatibleHBVersion = VER 0.0.55\nAUG_25_2014
-#compatibleLBVersion = VER 0.0.58\nAUG_20_2014
+#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
 except: pass
 
