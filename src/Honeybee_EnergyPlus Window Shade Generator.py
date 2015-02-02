@@ -551,6 +551,11 @@ def createEPBlindControl(blindsMaterial, schedule, EPinteriorOrExter, name):
         schedCntrlType = 'ALWAYSON'
         schedCntrl = 'No'
         schedName = ''
+    elif schedule.upper().endswith('CSV'):
+        schedFileName = os.path.basename(schedule)
+        schedName = "_".join(schedFileName.split(".")[:-1])
+        schedCntrlType = 'OnIfScheduleAllows'
+        schedCntrl = 'Yes'
     else:
         schedName = schedule
         schedCntrlType = 'OnIfScheduleAllows'
