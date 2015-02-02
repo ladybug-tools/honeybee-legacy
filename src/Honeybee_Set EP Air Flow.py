@@ -474,9 +474,9 @@ def main(HBZones, natVentMethod, interZoneFlow, minIndoorTemp, maxIndoorTemp, mi
                         HBZone.fanFlow.append(None)
                         HBZone.FanEfficiency.append(None)
                         HBZone.FanPressure.append(None)
-            else:
-                warning = "One of the connected HBZones does not have any windows and so natural ventilation will not be assigned."
-                readMe.append(warning)
+                else:
+                    warning = "One of the connected HBZones does not have any windows and so natural ventilation will not be assigned."
+                    readMe.append(warning)
         elif natVentMethod == 2:
             for zoneCount, HBZone in enumerate(HBObjectsFromHive):
                 HBZone.natVent = True
