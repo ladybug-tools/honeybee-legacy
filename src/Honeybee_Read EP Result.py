@@ -481,7 +481,7 @@ if internalAirGain != testTracker and surfaceAirGain != testTracker:
         dataTypeList[16] = True
 
 #If we have information on volumetric flow for infiltration and natural ventilation, add them together.
-if infiltrationFlow != testTracker and natVentFlow != testTracker:
+if infiltrationFlow != testTracker:
     for listCount, list in enumerate(infiltrationFlow):
         makeHeader(airFlowVolume, listCount, list[0], list[1], "Air Flow Volume", "m3/s", False)
         for numCount, num in enumerate(list[2:]):
