@@ -98,7 +98,12 @@ def copyHBZoneData():
         zoneBreps.append(HZone)
         zoneCentPts.append(HZone.GetBoundingBox(False).Center)
         zone = hb_hive.callFromHoneybeeHive([HZone])[0]
-        zoneNames.append(zone.name)
+        if zone.name.endswith(" "):
+            zoneNames.append(''.join(list(zone.name)[:-1]))
+        elif zone.name.startswith(" "):
+            zoneNames.append(''.join(list(zone.name)[1:]))
+        else: zoneNames.append(zone.name)
+        
         floorGeo = []
         for srf in zone.surfaces:
             if srf.type == 2: floorGeo.append(srf.geometry)
