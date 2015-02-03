@@ -590,7 +590,7 @@ def main(HBZones, natVentMethod, interZoneFlow, minIndoorTemp, maxIndoorTemp, mi
     
 
 checkData = False
-if _HBZones and _HBZones[0]!=None and _naturalVentilationType:
+if _HBZones and _HBZones[0]!=None and _naturalVentilationType != None:
     natVentMethod = checkNatVentMethod()
     
     if natVentMethod != None:
