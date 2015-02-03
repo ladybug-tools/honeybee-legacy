@@ -31,7 +31,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Glare Analysis"
 ghenv.Component.NickName = 'glareAnalysis'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_02_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -168,12 +168,20 @@ def main(HDRImagePath, taskPosition, taskPositionAngle):
     notes += msg + "\n"
     
     # check size and proportion of the image
-    command = "/c getinfo -d " + HDRImagePath
+    command = '/c getinfo -d ' + HDRImagePath
     out, err = runCmdAndGetTheResults(command)
-    # image size
-    x = float(out.split(" ")[-1].strip())
-    y = float(out.split(" ")[-3].strip())
 
+    try:
+        # image size
+        x = float(out.split(" ")[-1].strip())
+        y = float(out.split(" ")[-3].strip())
+    except:
+        msg = "Failed to find size of the picture. It will be set to 800.\n"
+        print msg
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+        notes += msg + "\n"
+        x = y = 800
+        
     if x!=y:
         msg = "You need a fisheye HDR image for an accurate study.\nThis image seems not to  be a fisheye image which may produce inaccurate results.\n"
         print msg
