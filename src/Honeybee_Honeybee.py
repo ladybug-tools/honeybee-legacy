@@ -2654,7 +2654,7 @@ class hb_WriteRADAUX(object):
             # print "Fix this for radiation analysis"
             line0 = "rtrace -I "
             
-        line1 = " -h -ms 0.063 -dp " + str(radParameters["_dp_"]) + \
+        line1 = " -h -dp " + str(radParameters["_dp_"]) + \
                 " -ds " + str(radParameters["_ds_"]) + " -dt " + str(radParameters["_dt_"]) + \
                 " -dc " + str(radParameters["_dc_"]) + " -dr " + str(radParameters["_dr_"]) + \
                 " -st " + str(radParameters["_st_"]) + " -lr " + str(radParameters["_lr_"]) + \
