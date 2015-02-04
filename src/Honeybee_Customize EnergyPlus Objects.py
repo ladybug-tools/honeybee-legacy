@@ -72,6 +72,6 @@ def main(EPObjectName, indexes, inValues):
 
 
 if _EPObjectName:
-    reuslts = main(_EPObjectName, indexes_, values_)
+    results = main(_EPObjectName, indexes_, values_)
     if results!=-1:
         originalObj, modifiedObj = results
