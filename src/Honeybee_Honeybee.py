@@ -30,7 +30,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_04_2015'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_02_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -81,7 +81,6 @@ class CheckIn():
                       "\nHoneybee failed to fly! :("
                 print msg
                 ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
-                sc.sticky["Honeybee_DefaultFolder"] = ""
                 self.letItFly = False
                 return
             else:
@@ -93,7 +92,6 @@ class CheckIn():
                               "\nHoneybee failed to fly! :("
                         print msg
                         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
-                        sc.sticky["Honeybee_DefaultFolder"] = ""
                         self.letItFly = False
                         return
             
@@ -119,7 +117,6 @@ class CheckIn():
                           "\nHoneybee failed to fly! :("
                     print msg
                     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
-                    sc.sticky["Honeybee_DefaultFolder"] = ""
                     self.letItFly = False
                     return
                 
@@ -303,7 +300,7 @@ class PrepareTemplateEPLibFiles(object):
     """
     Download Template files and check for available libraries for EnergyPlus
     """
-    def __init__(self, downloadTemplate = False, workingDir = None):
+    def __init__(self, downloadTemplate = False, workingDir = sc.sticky["Honeybee_DefaultFolder"]):
         
         if not sc.sticky.has_key("honeybee_constructionLib"): sc.sticky ["honeybee_constructionLib"] = {}
         if not sc.sticky.has_key("honeybee_materialLib"): sc.sticky ["honeybee_materialLib"] = {}
@@ -312,9 +309,7 @@ class PrepareTemplateEPLibFiles(object):
         if not sc.sticky.has_key("honeybee_ScheduleTypeLimitsLib"): sc.sticky["honeybee_ScheduleTypeLimitsLib"] = {}
         
         self.downloadTemplate = downloadTemplate
-        
-        if workingDir == None: self.workingDir = sc.sticky["Honeybee_DefaultFolder"]
-        else: self.workingDir = workingDir
+        self.workingDir = workingDir
         
     def downloadFile(self, url, workingDir):
         localFilePath = workingDir + '/' + url.split('/')[-1]
