@@ -27,7 +27,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Construction"
 ghenv.Component.NickName = 'EPConstruction'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_04_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -96,27 +96,29 @@ def main():
         if inputCount!=0 and inputCount < ghenv.Component.Params.Input.Count:
             layerName = ghenv.Component.Params.Input[inputCount].NickName
             exec('materialName = ' + layerName) #that's why I love Python. Yo!
-            # check if it is a full string definition
-            if materialName != None:
+            # check if it is only the name
+            if materialName != None and len(materialName.split("\n")) == 1:
                 materialName = materialName.upper()
-                # double check and make sure material already exists
-                if materialName not in sc.sticky ["honeybee_materialLib"].keys() and materialName not in sc.sticky ["honeybee_windowMaterialLib"].keys():
-                    added, materialName = hb_EPMaterialAUX.addEPConstructionToLib(materialName, overwrite = True)
-                    # double check and make sure material already exists
-                    if materialName in sc.sticky ["honeybee_materialLib"].keys():
-                        pass
-                    elif materialName in sc.sticky ["honeybee_windowMaterialLib"].keys():
-                        pass
-                    else:
-                        msg = "layer_" + str(inputCount) + " is not a valid material name/definition.\n" + \
-                            "Create the material first and try again."
-                        ghenv.Component.AddRuntimeMessage(w, msg)
-                        return
-                
-                if inputCount!= ghenv.Component.Params.Input.Count - 1:
-                    constructionStr += materialName + ",    !- Layer " + str(inputCount) + "\n"
-                else:
-                    constructionStr += materialName + ";    !- Layer " + str(inputCount) + "\n"
+            elif materialName!=None:
+                # it is a full string
+                added, materialName = hb_EPMaterialAUX.addEPConstructionToLib(materialName, overwrite = True)
+                materialName = materialName.upper()
+            
+            # double check that everything is fine
+            if materialName in sc.sticky ["honeybee_materialLib"].keys():
+                pass
+            elif materialName in sc.sticky ["honeybee_windowMaterialLib"].keys():
+                pass
+            else:
+                msg = "layer_" + str(inputCount) + " is not a valid material name/definition.\n" + \
+                    "Create the material first and try again."
+                ghenv.Component.AddRuntimeMessage(w, msg)
+                return
+            
+            if inputCount!= ghenv.Component.Params.Input.Count - 1:
+                constructionStr += materialName + ",    !- Layer " + str(inputCount) + "\n"
+            else:
+                constructionStr += materialName + ";    !- Layer " + str(inputCount) + "\n"
                     
     return constructionStr
 
