@@ -13,6 +13,7 @@ Provided by Honeybee 0.0.56
     Returns:
         walls: A grafted list of surface data for walls.
         interiorWalls: A grafted list of surface data for interior walls.
+        airWalls: A grafted list of surface data for air walls.
         windows: A grafted list of surface data for exterior windows.
         interiorWindows: A grafted list of surface data for interior windows.
         skylights: A grafted list of surface data for skylights.
@@ -26,7 +27,7 @@ Provided by Honeybee 0.0.56
 """
 ghenv.Component.Name = "Honeybee_Surface Data Based On Type Detailed"
 ghenv.Component.NickName = 'srfDataByTypeDetailed'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_03_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -46,6 +47,7 @@ import scriptcontext as sc
 
 walls = DataTree[Object]()
 interiorWalls = DataTree[Object]()
+airWalls = DataTree[Object]()
 windows = DataTree[Object]()
 interiorWindows = DataTree[Object]()
 skylights = DataTree[Object]()
@@ -79,6 +81,7 @@ def checkBranch():
 def getSrfNames(HBZones):
     wall = []
     interiorWall = []
+    airWall = []
     window = []
     interiorWindow = []
     skylight =[]
@@ -137,9 +140,10 @@ def getSrfNames(HBZones):
             elif srf.type == 2.5: groundFloor.append(srf.name)
             elif srf.type == 2.75: exposedFloor.append(srf.name)
             elif srf.type == 3: ceiling.append(srf.name)
+            elif srf.type == 4: airWall.append(srf.name)
         
         
-    return wall, interiorWall, window, interiorWindow, skylight, roof, \
+    return wall, interiorWall, airWall, window, interiorWindow, skylight, roof, \
            ceiling, floor, exposedFloor, groundFloor, undergroundWall, \
            undergroundCeiling
 
@@ -165,7 +169,7 @@ def main(HBZones, srfData):
         return
         
     #Get the surface names from the HBZones.
-    wall, interiorWall, window, interiorWindow, skylight, roof, ceiling, floor, exposedFloor, groundFloor, undergroundWall, undergroundCeiling = getSrfNames(HBZones)
+    wall, interiorWall, airWall, window, interiorWindow, skylight, roof, ceiling, floor, exposedFloor, groundFloor, undergroundWall, undergroundCeiling = getSrfNames(HBZones)
     
     #Write a function to check if a name is in the list.
     def checkList(list, dataTree, name, branchList, branchPath):
@@ -187,6 +191,7 @@ def main(HBZones, srfData):
         
         itemFound = checkList(wall, walls, srfName, branchList, branchPath)
         if itemFound == False: itemFound = checkList(interiorWall, interiorWalls, srfName, branchList, branchPath)
+        if itemFound == False: itemFound = checkList(airWall, airWalls, srfName, branchList, branchPath)
         if itemFound == False: itemFound = checkList(window, windows, srfName, branchList, branchPath)
         if itemFound == False: itemFound = checkList(interiorWindow, interiorWindows, srfName, branchList, branchPath)
         if itemFound == False: itemFound = checkList(skylight, skylights, srfName, branchList, branchPath)

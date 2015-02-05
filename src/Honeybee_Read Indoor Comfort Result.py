@@ -16,10 +16,10 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Read Indoor Comfort Result"
 ghenv.Component.NickName = 'readComfortResult'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_03_2015'
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "12 | WIP"
-ghenv.Component.AdditionalHelpFromDocStrings = "3"
+ghenv.Component.SubCategory = "09 | Energy | Energy"
+ghenv.Component.AdditionalHelpFromDocStrings = "6"
 
 
 import Grasshopper.Kernel as gh

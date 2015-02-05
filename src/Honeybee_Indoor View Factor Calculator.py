@@ -18,24 +18,15 @@ Provided by Honeybee 0.0.55
         viewResolution_: An interger between 0 and 4 to set the number of times that the tergenza skyview patches are split.  A higher number will ensure a greater accuracy but will take longer.  The default is set to 0 for a quick calculation.
         removeAirWalls_: Set to "True" to remove air walls from the view factor calculation.  The default is set to "True" sinc you usually want to remove air walls from your view factor calculations.
         additionalShading_: Add in additional shading breps here for geometry that is not a part of the zone but can still block direct sunlight to occupants.  Examples include outdoor context shading and indoor furniture.
-        parallel_: Set to "True" to run the calculation with multiple cores.  This can increase the speed of the calculation substantially and is recommended if you are not running other big or important processes.
+        parallel_: Set to "True" to run the calculation with multiple cores and "False" to run it with a single core.  Multiple cores can increase the speed of the calculation substantially and is recommended if you are not running other big or important processes.  The default is set to "True."
         _runIt: Set boolean to "True" to run the component and calculate viewFactors from each test point to surrounding surfaces.
     Returns:
         readMe!: ...
-        viewFactorMesh: A list of meshes to be used in the Comfort Analysis workflow.
-        testPtsViewFactor: A branched data tree with the view factors of each test point to a corresponding zone surfaces in the list below.
-        zoneSrfNames: A branched data tree with the names of each of the surfaces for each zone.
-        testPtZoneNames: A data tree of zone names that correspond to each of the test points.
         ==========: ...
-        testPts: The test points, which lie in the center of the mesh faces and correspond with the view factors.
-        testPtSkyView: The sky view for each of the test points (as seen through the zone's windows).  This will be used to esimate diffuse radiation for each of the points.
-        testPtBlockedVec: A grafted list of boolean values that denote which of the view vectors were blocked by the opaque surfaces of the zone and which ones were visible.  This will be used to determine which points will be affected by direct sun in a given hour.
+        viewFactorMesh: A data tree of meshes to be plugged into the "Annual Comfort Analysis Recipe" component.
+        viewFactorInfo: A list of python data that carries essential numerical information for the Comfort Analysis Workflow, including the view factors from each test point to a zone's surfaces, the sky view factors of the test points, and information related to window plaement, used to estimate stratification in the zone.  This should be plugged into the "Annual Comfort Analysis Recipe" component.
         ==========: ...
-        testPtZoneWeights: A grafted list of values that denote how much of each zone should be factored in when determining air temperature values for a point.  If a zone shares an air wall adjacency with another zone, this weighting will ensure that a point between the two zones will have a linearly interpolated air temperature between the two zones.
-        testPtZoneNames: The names of the zones that correspond with the weighting lists above.
-        ptHeightWeights: Numbers that denote the relative height of a point in a zone.  Values range from +1 (ceiling) to -1 (floor) and are used in the assigning of stratification to each of the points.
-        zoneInletInfo: A grafted list that carries information about the height of the windows and the height of the zone.  These values are used in the air stratifcation calculation.
-        ==========: ...
+        testPts: The test points, which lie in the center of the mesh faces at which comfort parameters are being evaluated.
         zoneWireFrame: A list of curves representing the outlines of the zones.  This is particularly helpful if you want to see the outline of the building in relation to the temperature and comfort maps that you might produce off of these results.
         viewVectors: The vectors that were used to caclulate the view factor (note that these will increase as the viewResolution increases).
         shadingContext: A list of meshes representing the opaque surfaces of the zone.  These are what were used to determine the sky view factor and the direct sun falling on occupants.
@@ -43,12 +34,12 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_03_2015'
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "12 | WIP"
+ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
-try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "6"
 except: pass
 
 
@@ -76,24 +67,34 @@ def copyHBZoneData():
     zoneNames = []
     zoneNatVentArea = []
     zoneVolumes = []
+    srfAirWallAdjList = []
     
     for zoneCount, HZone in enumerate(_HBZones):
         surfaceNames.append([])
         srfBreps.append([])
         srfTypes.append([])
         srfInteriorList.append([])
+        srfAirWallAdjList.append([])
         zoneBreps.append(HZone)
         zoneCentPts.append(HZone.GetBoundingBox(False).Center)
         zone = hb_hive.callFromHoneybeeHive([HZone])[0]
         zoneNames.append(zone.name)
         zoneNatVentArea.append(zone.windowOpeningArea)
         zoneVolumes.append(zone.getZoneVolume())
+        
         for srf in zone.surfaces:
             surfaceNames[zoneCount].append(srf.name)
             srfTypes[zoneCount].append(srf.type)
-            if srf.type == 4 and srf.BC.lower() == "surface":
-                srfInteriorList[zoneCount].append(str(srf.BCObject).split('\n')[0].split(': ')[-1])
-            else: srfInteriorList[zoneCount].append(None)
+            if srf.BC.lower() == "surface":
+                if srf.type == 4:
+                    srfInteriorList[zoneCount].append(str(srf.BCObject).split('\n')[0].split(': ')[-1])
+                    srfAirWallAdjList[zoneCount].append(str(srf.BCObject.parent).split('\n')[0].split(': ')[-1])
+                else:
+                    srfInteriorList[zoneCount].append(None)
+                    srfAirWallAdjList[zoneCount].append(str(srf.BCObject.parent).split('\n')[0].split(': ')[-1])
+            else:
+                srfInteriorList[zoneCount].append(None)
+                srfAirWallAdjList[zoneCount].append(None)
             if srf.hasChild:
                 srfBreps[zoneCount].append(srf.punchedGeometry)
                 for srfCount, childSrf in enumerate(srf.childSrfs):
@@ -102,11 +103,27 @@ def copyHBZoneData():
                     srfBreps[zoneCount].append(childSrf.geometry)
                     if srf.type == 0 and srf.BC.lower() == "surface":
                         srfInteriorList[zoneCount].append(str(srf.BCObject).split('\n')[0].split(': ')[-1] + '_glz_' + str(srfCount))
-                    else: srfInteriorList[zoneCount].append(None)
+                        srfAirWallAdjList[zoneCount].append(None)
+                    else:
+                        srfInteriorList[zoneCount].append(None)
+                        srfAirWallAdjList[zoneCount].append(None)
             else:
                 srfBreps[zoneCount].append(srf.geometry)
     
-    sc.sticky["Honeybee_ViewFacotrSrfData"] = [zoneBreps, surfaceNames, srfBreps, zoneCentPts, srfTypes, srfInteriorList, zoneNames, zoneNatVentArea, zoneVolumes]
+    #Change the list of adjacent zones to be based on the list item of the zone
+    srfAirWallAdjNumList = []
+    for srfListCount, zoneSrfList in enumerate(srfAirWallAdjList):
+        srfAirWallAdjNumList.append([])
+        for surface in zoneSrfList:
+            foundZone = False
+            for zoneCount, zoneName in enumerate(zoneNames):
+                if surface == zoneName:
+                    srfAirWallAdjNumList[srfListCount].append(zoneCount)
+                    foundZone = True
+            if foundZone == False:
+                srfAirWallAdjNumList[srfListCount].append(None)
+    
+    sc.sticky["Honeybee_ViewFacotrSrfData"] = [zoneBreps, surfaceNames, srfBreps, zoneCentPts, srfTypes, srfInteriorList, zoneNames, zoneNatVentArea, zoneVolumes, srfAirWallAdjNumList]
 
 
 def checkTheInputs():
@@ -241,6 +258,8 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
     zoneNames = hb_zoneData[6]
     zoneNatVentArea = hb_zoneData[7]
     zoneVolumes = hb_zoneData[8]
+    srfAirWallAdjList = hb_zoneData[9]
+    
     
     #Make copies of the original zones in the event that some are combined as air walls are removed.
     oldZoneBreps = zoneBreps[:]
@@ -260,6 +279,7 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
     zoneOpaqueMesh = []
     zoneWeights = []
     zoneInletParams = []
+    zoneBrepsNonSolid = []
     
     #Write a function to split breps with the zone and pull out the correctly split surface.
     def splitOffsetFloor(brep, zone):
@@ -289,6 +309,7 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
         newSurfaceNames = []
         newZoneSrfs = []
         newZoneSrfTypes = []
+        newZoneSolidSrfs = []
         
         adjacentList = []
         totalAdjList = []
@@ -344,16 +365,25 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
             listMarker = len(newSurfaceNames)
             newSurfaceNames.append([])
             newZoneSrfs.append([])
+            newZoneSolidSrfs.append([])
             newZoneSrfTypes.append([])
+            zoneBrepsNonSolid.append([])
             
             for zoneCount in list:
                 for srfCount, surface in enumerate(zoneSrfs[zoneCount]):
-                    if srfInteriorList[zoneCount][srfCount] == None:
+                    
+                    if srfInteriorList[zoneCount][srfCount] == None and srfAirWallAdjList[zoneCount][srfCount] not in list:
+                        newZoneSolidSrfs[listMarker].append(surface)
+                        newZoneSrfs[listMarker].append(surface)
+                        newSurfaceNames[listMarker].append(surfaceNames[zoneCount][srfCount])
+                        newZoneSrfTypes[listMarker].append(zoneSrfTypes[zoneCount][srfCount])
+                    elif srfInteriorList[zoneCount][srfCount] == None and srfAirWallAdjList[zoneCount][srfCount] in list:
                         newZoneSrfs[listMarker].append(surface)
                         newSurfaceNames[listMarker].append(surfaceNames[zoneCount][srfCount])
                         newZoneSrfTypes[listMarker].append(zoneSrfTypes[zoneCount][srfCount])
             
-            newZoneBreps.append(rc.Geometry.Brep.JoinBreps(newZoneSrfs[listMarker], tol)[0])
+            zoneBrepsNonSolid.append(rc.Geometry.Brep.JoinBreps(newZoneSrfs[listMarker], tol))
+            newZoneBreps.append(rc.Geometry.Brep.JoinBreps(newZoneSolidSrfs[listMarker], tol)[0])
         
         zoneBreps = newZoneBreps
         surfaceNames = newSurfaceNames
@@ -568,9 +598,11 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                     zoneGlzMesh.Append(rc.Geometry.Mesh.CreateFromBrep(srf, srfMeshPar)[0])
                     glzTracker += 1
             if glzTracker != 0:
+                glzBB = rc.Geometry.Brep.GetBoundingBox(zoneGlzMesh, rc.Geometry.Plane.WorldXY)
+                glzMinHeight = glzBB.Min.Z
                 glzCentPt = rc.Geometry.AreaMassProperties.Compute(zoneGlzMesh).Centroid
                 glzMidHeight = glzCentPt.Z
-                zoneInletParams[orignalZoneCount].append(glzMidHeight)
+                zoneInletParams[orignalZoneCount].append(glzMidHeight - glzMinHeight)
             else: zoneInletParams[orignalZoneCount].append(None)
             
             #Get the volume of each zone.
@@ -608,7 +640,7 @@ def checkViewResolution(viewResolution, lb_preparation):
         patchPt = rc.Geometry.AreaMassProperties.Compute(patch).Centroid
         Vec = rc.Geometry.Vector3d(patchPt.X, patchPt.Y, patchPt.Z)
         revVec = rc.Geometry.Vector3d(-patchPt.X, -patchPt.Y, -patchPt.Z)
-        skyViewVecs.append(revVec)
+        skyViewVecs.append(Vec)
         newVecs.append(Vec)
         newVecs.append(revVec)
     
@@ -709,7 +741,7 @@ def skyViewCalc(testPts, zoneOpaqueMesh, skyViewVecs):
     testPtSkyBlockedList = []
     
     for zoneCount, pointList in enumerate(testPts):
-        if parallel_ == True:
+        if parallel_ == True or parallel_ == None:
             skyViewFactors, skyBlockedList = parallel_skyProjection(zoneOpaqueMesh[zoneCount], skyViewVecs, testPts[zoneCount])
             testPtSkyView.append(skyViewFactors)
             testPtSkyBlockedList.append(skyBlockedList)
@@ -758,7 +790,7 @@ def main(testPts, zoneSrfsMesh, viewVectors):
     testPtViewFactor = []
     
     for zoneCount, pointList in enumerate(testPts):
-        if parallel_ == True:
+        if parallel_ == True  or parallel_ == None:
             viewFactors = parallel_projection(zoneSrfsMesh[zoneCount], viewVectors, testPts[zoneCount])
             testPtViewFactor.append(viewFactors)
         else:
@@ -830,52 +862,32 @@ geoCheck = False
 if checkData == True:
     goodGeo = prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBreps, hb_zoneData)
     if goodGeo != -1:
-        geoCheck, testPtsInit, viewFactorBrep, viewFactorMeshActual, zoneWireFrame, zoneSrfsMesh, surfaceNames, zoneOpaqueMesh, testPtZoneNames, zoneWeightsInit, heightWeightsInit, zoneInletInfoInit = goodGeo
+        geoCheck, testPtsInit, viewFactorBrep, viewFactorMeshActual, zoneWireFrame, zoneSrfsMesh, zoneSrfNames, zoneOpaqueMesh, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo = goodGeo
     
     #Unpack the data trees of test pts and mesh breps so that the user can see them and get a sense of what to expect from the view factor calculation.
     testPts = DataTree[Object]()
     viewFactorMesh = DataTree[Object]()
-    zoneSrfNames = DataTree[Object]()
     shadingContext = DataTree[Object]()
-    testPtZoneWeights = DataTree[Object]()
-    ptHeightWeights = DataTree[Object]()
-    zoneInletInfo = DataTree[Object]()
     for brCount, branch in enumerate(testPtsInit):
         for item in branch:testPts.Add(item, GH_Path(brCount))
     for brCount, branch in enumerate(viewFactorBrep):
         for item in branch: viewFactorMesh.Add(item, GH_Path(brCount))
-    for brCount, branch in enumerate(surfaceNames):
-        for item in branch: zoneSrfNames.Add(item, GH_Path(brCount))
     for brCount, branch in enumerate(zoneOpaqueMesh):
         for item in branch: shadingContext.Add(item, GH_Path(brCount))
-    for brCount, branch in enumerate(heightWeightsInit):
-        for item in branch: ptHeightWeights.Add(item, GH_Path(brCount))
-    for brCount, branch in enumerate(zoneInletInfoInit):
-        for item in branch: zoneInletInfo.Add(item, GH_Path(brCount))
-    for brCount, branch in enumerate(zoneWeightsInit):
-        for listCount, list in enumerate(branch):
-            for item in list: testPtZoneWeights.Add(item, GH_Path(brCount, listCount))
 
 #If all of the data is good and the user has set "_runIt" to "True", run the shade benefit calculation to generate all results.
 if checkData == True and _runIt == True and geoCheck == True:
     viewVectors, skyViewVecs = checkViewResolution(viewResolution, lb_preparation)
-    testPtViewFactorInit = main(testPtsInit, zoneSrfsMesh, viewVectors)
-    testPtSkyViewInit, testPtBlockedVecInit = skyViewCalc(testPtsInit, zoneOpaqueMesh, skyViewVecs)
+    testPtViewFactor = main(testPtsInit, zoneSrfsMesh, viewVectors)
+    testPtSkyView, testPtBlockedVec = skyViewCalc(testPtsInit, zoneOpaqueMesh, skyViewVecs)
     
-    #Unpack the data trees of meshes and view factors.
-    testPtViewFactor = DataTree[Object]()
-    testPtSkyView = DataTree[Object]()
+    #Put all of the information into a list that will carry the data onto the next component easily.
+    viewFactorInfo = [testPtViewFactor, zoneSrfNames, testPtSkyView, testPtBlockedVec, testPtZoneWeights, testPtZoneNames, ptHeightWeights, zoneInletInfo]
+    
+    #Unpack the data trees of meshes.
     viewFactorMesh = DataTree[Object]()
-    testPtBlockedVec = DataTree[Object]()
     for brCount, branch in enumerate(viewFactorMeshActual):
         for item in branch: viewFactorMesh.Add(item, GH_Path(brCount))
-    for brCount, branch in enumerate(testPtViewFactorInit):
-        for listCount, list in enumerate(branch):
-            for item in list: testPtViewFactor.Add(item, GH_Path(brCount, listCount))
-    for brCount, branch in enumerate(testPtSkyViewInit):
-        for item in branch: testPtSkyView.Add(item, GH_Path(brCount))
-    for brCount, branch in enumerate(testPtBlockedVecInit):
-        for item in branch:
-            testPtBlockedVec.Add(item, GH_Path(brCount))
 
-ghenv.Component.Params.Output[16].Hidden = True
+ghenv.Component.Params.Output[5].Hidden = True
+ghenv.Component.Params.Output[8].Hidden = True

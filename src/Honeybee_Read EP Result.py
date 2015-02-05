@@ -37,7 +37,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_03_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "4"
@@ -229,143 +229,143 @@ if _resultFileAddress and gotData == True:
                     if 'Zone Air System Sensible Cooling Energy' in column or 'Zone Ideal Loads Zone Total Cooling Energy' in column or 'Zone Packaged Terminal Heat Pump Total Cooling Energy' in column or 'Chiller Electric Energy' in column:
                         key.append(0)
                         if 'Zone Ideal Loads Zone Total Cooling Energy' in column and 'ZONEHVAC' in column:
-                            zoneName = checkZone(" " + column.split(':')[0].split('ZONEHVAC')[0])
-                            if zoneName == None: zoneName = checkZone(" " + column.split(':')[0].split(' ZONEHVAC')[0])
-                        elif 'IDEAL LOADS AIR SYSTEM' in column: zoneName = checkZone(" " + column.split(':')[0].split(' IDEAL LOADS AIR SYSTEM')[0])
-                        elif 'ZONE HVAC PACKAGED TERMINAL HEAT PUMP' in column: zoneName = checkZoneSys(" " + column.split(':')[0].split('ZONE HVAC PACKAGED TERMINAL HEAT PUMP ')[-1])
+                            zoneName = checkZone(" " + ":".join(column.split(":")[:-1]).split('ZONEHVAC')[0])
+                            if zoneName == None: zoneName = checkZone(" " + ":".join(column.split(":")[:-1]).split(' ZONEHVAC')[0])
+                        elif 'IDEAL LOADS AIR SYSTEM' in column: zoneName = checkZone(" " + ":".join(column.split(":")[:-1]).split(' IDEAL LOADS AIR SYSTEM')[0])
+                        elif 'ZONE HVAC PACKAGED TERMINAL HEAT PUMP' in column: zoneName = checkZoneSys(" " + ":".join(column.split(":")[:-1]).split('ZONE HVAC PACKAGED TERMINAL HEAT PUMP ')[-1])
                         elif 'CHILLER ELECTRIC EIR' in column:
-                            zoneName = checkCentralSys(" " + column.split(':')[0].split('CHILLER ELECTRIC EIR ')[-1], 0)
+                            zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('CHILLER ELECTRIC EIR ')[-1], 0)
                             centralSys = True
-                        else: zoneName = checkZone(" " + column.split(':')[0])
+                        else: zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
                         makeHeader(cooling, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Cooling Energy", energyUnit, True)
                         dataTypeList[2] = True
                     
                     elif 'Zone Air System Sensible Heating Energy' in column or 'Zone Ideal Loads Zone Total Heating Energy' in column or 'Zone Packaged Terminal Heat Pump Total Heating Energy' in column or 'Boiler Heating Energy' in column:
                         key.append(1)
                         if 'Zone Ideal Loads Zone Total Heating Energy' in column and 'ZONEHVAC' in column:
-                            zoneName = checkZone(" " + column.split(':')[0].split('ZONEHVAC')[0])
-                            if zoneName == None: zoneName = checkZone(" " + column.split(':')[0].split(' ZONEHVAC')[0])
-                        elif 'IDEAL LOADS AIR SYSTEM' in column: zoneName = checkZone(" " + column.split(':')[0].split(' IDEAL LOADS AIR SYSTEM')[0])
-                        elif 'ZONE HVAC PACKAGED TERMINAL HEAT PUMP' in column: zoneName = checkZoneSys(" " + column.split(':')[0].split('ZONE HVAC PACKAGED TERMINAL HEAT PUMP ')[-1])
+                            zoneName = checkZone(" " + ":".join(column.split(":")[:-1]).split('ZONEHVAC')[0])
+                            if zoneName == None: zoneName = checkZone(" " + ":".join(column.split(":")[:-1]).split(' ZONEHVAC')[0])
+                        elif 'IDEAL LOADS AIR SYSTEM' in column: zoneName = checkZone(" " + ":".join(column.split(":")[:-1]).split(' IDEAL LOADS AIR SYSTEM')[0])
+                        elif 'ZONE HVAC PACKAGED TERMINAL HEAT PUMP' in column: zoneName = checkZoneSys(" " + ":".join(column.split(":")[:-1]).split('ZONE HVAC PACKAGED TERMINAL HEAT PUMP ')[-1])
                         elif 'BOILER HOT WATER' in column:
-                            zoneName = checkCentralSys(" " + column.split(':')[0].split('BOILER HOT WATER ')[-1], 1)
+                            zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('BOILER HOT WATER ')[-1], 1)
                             centralSys = True
-                        else: zoneName = checkZone(" " + column.split(':')[0])
+                        else: zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
                         makeHeader(heating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Heating Energy", energyUnit, True)
                         dataTypeList[3] = True
                     
                     elif 'Zone Lights Electric Energy' in column:
                         key.append(2)
-                        zoneName = checkZone(" " + column.split(':')[0])
+                        zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
                         makeHeader(electricLight, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Electric Lighting Energy", energyUnit, True)
                         dataTypeList[4] = True
                     
                     elif 'Zone Electric Equipment Electric Energy' in column:
                         key.append(3)
-                        zoneName = checkZone(" " + column.split(':')[0])
+                        zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
                         makeHeader(electricEquip, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Electric Equipment Energy", energyUnit, True)
                         dataTypeList[5] = True
                     
                     elif 'Fan Electric Energy' in column:
                         key.append(15)
-                        if 'FAN CONSTANT VOLUME' in column: zoneName = checkZoneSys(" " + column.split(':')[0].split('FAN CONSTANT VOLUME ')[-1])
+                        if 'FAN CONSTANT VOLUME' in column: zoneName = checkZoneSys(" " + ":".join(column.split(":")[:-1]).split('FAN CONSTANT VOLUME ')[-1])
                         elif 'FAN VARIABLE VOLUME' in column:
                             centralSys = True
-                            zoneName = checkCentralSys(" " + column.split(':')[0].split('FAN VARIABLE VOLUME ')[-1], 2)
+                            zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('FAN VARIABLE VOLUME ')[-1], 2)
                         elif 'Zone Ventilation Fan Electric Energy' in column:
-                            zoneName = checkZone(" " + column.split(':')[0])
+                            zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
                         makeHeader(fanElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Fan Electric Energy", energyUnit, True)
                         dataTypeList[6] = True
                     
                     elif 'Zone People Total Heating Energy' in column:
                         key.append(4)
-                        zoneName = checkZone(" " + column.split(':')[0])
+                        zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
                         makeHeader(peopleGains, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "People Energy", energyUnit, True)
                         dataTypeList[7] = True
                     
                     elif 'Zone Windows Total Transmitted Solar Radiation Energy' in column:
                         key.append(5)
-                        zoneName = checkZone(" " + column.split(':')[0])
+                        zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
                         makeHeader(totalSolarGain, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Total Solar Gain", energyUnit, True)
                         dataTypeList[8] = True
                     
                     elif 'Zone Ventilation Total Heat Loss Energy ' in column:
                         key.append(6)
-                        zoneName = checkZone(" " + column.split(':')[0])
+                        zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
                         makeHeader(natVentEnergy, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Natural Ventilation Energy", energyUnit, True)
                         dataTypeList[10] = True
                     
                     elif 'Zone Ventilation Total Heat Gain Energy' in column:
                         key.append(7)
-                        zoneName = checkZone(" " + column.split(':')[0])
+                        zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
                     
                     elif 'Zone Infiltration Total Heat Loss Energy ' in column:
                         key.append(8)
-                        zoneName = checkZone(" " + column.split(':')[0])
+                        zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
                         makeHeader(infiltrationEnergy, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Infiltration Energy", energyUnit, True)
                         dataTypeList[9] = True
                     
                     elif 'Zone Infiltration Total Heat Gain Energy' in column:
                         key.append(9)
-                        zoneName = checkZone(" " + column.split(':')[0])
+                        zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
                     
                     elif 'Zone Operative Temperature' in column:
                         key.append(10)
-                        zoneName = checkZone(" " + column.split(':')[0])
+                        zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
                         makeHeader(operativeTemperature, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Operative Temperature", "C", False)
                         dataTypeList[11] = True
                     
                     elif 'Zone Mean Air Temperature' in column:
                         key.append(11)
-                        zoneName = checkZone(" " + column.split(':')[0])
+                        zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
                         makeHeader(airTemperature, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Air Temperature", "C", False)
                         dataTypeList[12] = True
                     
                     elif 'Zone Mean Radiant Temperature' in column:
                         key.append(12)
-                        zoneName = checkZone(" " + column.split(':')[0])
+                        zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
                         makeHeader(meanRadTemperature, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Radiant Temperature", "C", False)
                         dataTypeList[13] = True
                     
                     elif 'Zone Air Relative Humidity' in column:
                         key.append(13)
-                        zoneName = checkZone(" " + column.split(':')[0])
+                        zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
                         makeHeader(relativeHumidity, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Relative Humidity", "%", False)
                         dataTypeList[14] = True
                     
                     elif 'Zone Ventilation Standard Density Volume Flow Rate' in column:
                         key.append(16)
-                        zoneName = checkZone(" " + column.split(':')[0])
+                        zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
                         natVentFlow[int(path[-1])].append(zoneName)
                         natVentFlow[int(path[-1])].append(column.split('(')[-1].split(')')[0])
                     
                     elif 'Zone Infiltration Standard Density Volume Flow Rate' in column:
                         key.append(17)
-                        zoneName = checkZone(" " + column.split(':')[0])
+                        zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
                         infiltrationFlow[int(path[-1])].append(zoneName)
                         infiltrationFlow[int(path[-1])].append(column.split('(')[-1].split(')')[0])
                     
                     elif 'Zone Air Heat Balance Internal Convective Heat Gain Rate' in column:
                         key.append(18)
-                        zoneName = checkZone(" " + column.split(':')[0])
+                        zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
                         internalAirGain[int(path[-1])].append(zoneName)
                         internalAirGain[int(path[-1])].append(column.split('(')[-1].split(')')[0])
                     
                     elif 'Zone Air Heat Balance Surface Convection Rate' in column:
                         key.append(19)
-                        zoneName = checkZone(" " + column.split(':')[0])
+                        zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
                         surfaceAirGain[int(path[-1])].append(zoneName)
                         surfaceAirGain[int(path[-1])].append(column.split('(')[-1].split(')')[0])
                     
                     elif 'Zone Air Heat Balance System Air Transfer Rate' in column:
                         key.append(20)
-                        zoneName = checkZone(" " + column.split(':')[0])
+                        zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
                         systemAirGain[int(path[-1])].append(zoneName)
                         systemAirGain[int(path[-1])].append(column.split('(')[-1].split(')')[0])
                     
                     elif 'Zone' in column and not "System" in column and not "SYSTEM" in column and not "ZONEHVAC" in column:
                         key.append(14)
-                        zoneName = checkZoneOther(dataIndex, (" " + column.split(':')[0]))
+                        zoneName = checkZoneOther(dataIndex, (" " + ":".join(column.split(":")[:-1])))
                         makeHeader(otherZoneData, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], column.split(':')[-1].split(' [')[0], column.split('[')[-1].split(']')[0], False)
                         dataTypeList[17] = True
                         dataIndex += 1
@@ -472,10 +472,10 @@ if internalAirGain != testTracker and surfaceAirGain != testTracker:
     for listCount, list in enumerate(internalAirGain):
         makeHeader(airHeatGainRate, listCount, list[0], list[1], "Air Heat Gain Rate", "W", False)
         if systemAirGain == testTracker:
-            for numCount, num in enumerate(list[7:]):
+            for numCount, num in enumerate(list[2:]):
                 airHeatGainRate.Add((num + surfaceAirGain[listCount][2:][numCount]), GH_Path(listCount))
         else:
-            for numCount, num in enumerate(list[7:]):
+            for numCount, num in enumerate(list[2:]):
                 airHeatGainRate.Add((num + surfaceAirGain[listCount][2:][numCount] + systemAirGain[listCount][2:][numCount]), GH_Path(listCount))
         
         dataTypeList[16] = True

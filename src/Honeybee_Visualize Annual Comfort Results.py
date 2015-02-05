@@ -10,11 +10,11 @@ Use this component to produce a colored mesh from a comfResultsMtx.
 Provided by Honeybee 0.0.56
     
     Args:
-        _comfResultsMtx: Any matrix output from the "Honeybee_Annual Adaptive Comfort Analysis" component or the "Honeybee_Read Indoor Comfort Result" component.
+        _comfResultsMtx: Any matrix output from the 'Honeybee_Annual Comfort Analysis' component or the 'Honeybee_Read Indoor Comfort Result' component.
         _viewFactorMesh: The list of view factor meshes that comes out of the  "Honeybee_Indoor View Factor Calculator".  These will be colored with result data.
-        ===============: ...
-        analysisPeriod_: Optional analysisPeriod_ to take a slice out of an annual data stream.  Note that connecting a value to "stepOfSimulation_" will override this input.
-        stepOfSimulation_: Optional interger between 1 and 8761 for the hour of simulation to color the mesh with.  Connecting a value here will override the analysisPeriod_ input.
+        ===========: ...
+        analysisPeriod_: Optional analysisPeriod_ to take a slice out of an annual data stream.  Note that this will only work if the connected data is for a full year.  Otherwise, this input will be ignored. Also note that connecting a value to 'stepOfSimulation_' will override this input.
+        stepOfSimulation_: Optional interger to select out a step of the simulation to color the mesh with.  Connecting a value here will override the analysisPeriod_ input.
         legendPar_: Optional legend parameters from the Ladybug "Legend Parameters" component.
         _runIt: Set boolean to "True" to run the component and produce a colored mesh from a comfResultsMtx.
     Returns:
@@ -31,12 +31,12 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Visualize Annual Comfort Results"
 ghenv.Component.NickName = 'VisualizeComfort'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_03_2015'
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "12 | WIP"
+ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
-try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "6"
 except: pass
 
 
@@ -53,6 +53,19 @@ import math
 
 w = gh.GH_RuntimeMessageLevel.Warning
 
+
+inputsDict = {
+    
+0: ["_comfResultsMtx", "Any matrix output from the 'Honeybee_Annual Comfort Analysis' component or the 'Honeybee_Read Indoor Comfort Result' component."],
+1: ["_viewFactorMesh", "The list of view factor meshes that comes out of the  'Honeybee_Indoor View Factor Calculator'.  These will be colored with result data."],
+2: ["===========", "..."],
+3: ["analysisPeriod_", "Optional analysisPeriod_ to take a slice out of an annual data stream.  Note that this will only work if the connected data is for a full year.  Otherwise, this input will be ignored. Also note that connecting a value to 'stepOfSimulation_' will override this input."],
+4: ["stepOfSimulation_", "Optional interger to select out a step of the simulation to color the mesh with.  Connecting a value here will override the analysisPeriod_ input."],
+5: ["legendPar_", "Optional legend parameters from the Ladybug Legend Parameters component."],
+6: ["_runIt", "Set boolean to 'True' to run the component and visualize indoor comfort."]
+}
+
+
 def checkTheInputs():
     #Convert the data tree of _viewFactorMesh to py data.
     viewFactorMesh = []
@@ -67,7 +80,7 @@ def checkTheInputs():
     checkData2 = False
     dataType = None
     if len(_comfResultsMtx) > 0 and len(viewFactorMesh) > 0:
-        dataType = _comfResultsMtx[0]
+        dataType = _comfResultsMtx[0].split(";")[0]
         ptLen1 = len(_comfResultsMtx[1])
         meshFaceCount = []
         for mesh in viewFactorMesh:
@@ -80,22 +93,57 @@ def checkTheInputs():
             ghenv.Component.AddRuntimeMessage(w, warning)
     else: pass
     
+    #Check the analysis period.
+    try:
+        analysisPeriod1 = (int(_comfResultsMtx[0].split(";")[-2].split(",")[0].split("(")[-1]), int(_comfResultsMtx[0].split(";")[-2].split(",")[1].split(" ")[-1]), int(_comfResultsMtx[0].split(";")[-2].split(",")[-1].split(" ")[-1].split(")")[0]))
+        analysisPeriod2 = (int(_comfResultsMtx[0].split(";")[-1].split(",")[0].split("(")[-1]), int(_comfResultsMtx[0].split(";")[-1].split(",")[1].split(" ")[-1]), int(_comfResultsMtx[0].split(";")[-1].split(",")[-1].split(" ")[-1].split(")")[0]))
+        analysisPeriod = [analysisPeriod1, analysisPeriod2]
+    except:
+        analysisPeriod = []
+    if _comfResultsMtx[0].split(";")[-2] == "(1, 1, 1)" and _comfResultsMtx[0].split(";")[-1] == "(12, 31, 24)": annualData = True
+    else: annualData = False
+    if len(_comfResultsMtx[1:]) == 1: simStepPossible = False
+    else: simStepPossible = True
+    
     #Do a final check of everything.
     if checkData1 == True and checkData2 == True: checkData = True
     else: checkData = False
     
-    return checkData, viewFactorMesh, dataType
+    return checkData, viewFactorMesh, dataType, annualData, simStepPossible, analysisPeriod
 
 
-def computeComfFactor(comfResultsMtx, analysisPeriod, stepOfSimulation, lb_preparation):
+def manageInputOutput(annualData, simStep):
+    #If some of the component inputs and outputs are not right, blot them out or change them.
+    for input in range(7):
+        if input == 3 and annualData == False:
+            ghenv.Component.Params.Input[input].NickName = "__________"
+            ghenv.Component.Params.Input[input].Name = "."
+            ghenv.Component.Params.Input[input].Description = " "
+        elif input == 4 and simStep == False:
+            ghenv.Component.Params.Input[input].NickName = "___________"
+            ghenv.Component.Params.Input[input].Name = "."
+            ghenv.Component.Params.Input[input].Description = " "
+        else:
+            ghenv.Component.Params.Input[input].NickName = inputsDict[input][0]
+            ghenv.Component.Params.Input[input].Name = inputsDict[input][0]
+            ghenv.Component.Params.Input[input].Description = inputsDict[input][1]
+
+def restoreInputOutput():
+    for input in range(7):
+        ghenv.Component.Params.Input[input].NickName = inputsDict[input][0]
+        ghenv.Component.Params.Input[input].Name = inputsDict[input][0]
+        ghenv.Component.Params.Input[input].Description = inputsDict[input][1]
+
+
+def computeComfFactor(comfResultsMtx, analysisP, stepOfSimulation, annualData, simStepPossible, lb_preparation):
     #Create a list to be filled with values of comfort.
     comfortFactorVals = []
     
-    if stepOfSimulation != None:
+    if stepOfSimulation != None and simStepPossible == True:
         comfortFactorVals = comfResultsMtx[stepOfSimulation]
-    elif len(analysisPeriod) > 0:
+    elif len(analysisP) > 0 and annualData == True:
         #Get the HOYs of the analysis period
-        HOYS, months, days = lb_preparation.getHOYsBasedOnPeriod(analysisPeriod, 1)
+        HOYS, months, days = lb_preparation.getHOYsBasedOnPeriod(analysisP, 1)
         
         #Pick out just the hours that are in the analysis period.
         newcomfResultsMtx = []
@@ -123,29 +171,44 @@ def computeComfFactor(comfResultsMtx, analysisPeriod, stepOfSimulation, lb_prepa
 
 
 
-def main(pointValues, viewFactorMesh, dataType, lb_preparation, lb_visualization, legendPar):
+def main(pointValues, viewFactorMesh, dataType, lb_preparation, lb_visualization, legendPar, analysisPeriod, simStepPossible, annualData):
     #Read the legend parameters.
     lowB, highB, numSeg, customColors, legendBasePoint, legendScale, legendFont, legendFontSize, legendBold = lb_preparation.readLegendParameters(legendPar, False)
-    
+    defaultCustomColor1 = System.Drawing.Color.FromArgb(255, 75, 107, 169)
+    defaultCustomColor2 = System.Drawing.Color.FromArgb(255, 234, 38, 0)
     
     #Read the data type and assign default values for mesh types.
-    if dataType == 'Degrees From Target':
-        legendTitle = 'C'
-        dataType = dataType + ' Temperature'
+    if dataType == 'Degrees From Target' or dataType == 'Predicted Mean Vote':
+        if dataType == 'Degrees From Target': legendTitle = 'C'
+        else: legendTitle = 'PMV'
+        if dataType == 'Degrees From Target': dataType = dataType + ' Temperature'
         if len(legendPar_) == 0:
-            numSeg = 11
-            lowB = -3
-            highB = 3
             customColors = [System.Drawing.Color.FromArgb(0,136,255), System.Drawing.Color.FromArgb(255,255,255), System.Drawing.Color.FromArgb(255,0,0)]
-    elif dataType == 'Adaptive Comfort':
+            print dataType
+            if dataType == 'Degrees From Target Temperature':
+                numSeg = 11
+                lowB = -5
+                highB = 5
+            else:
+                numSeg = 11
+                lowB = -2
+                highB = 2
+        elif customColors[0] == defaultCustomColor1 and customColors[-1] == defaultCustomColor2:
+            customColors = [System.Drawing.Color.FromArgb(0,136,255), System.Drawing.Color.FromArgb(255,255,255), System.Drawing.Color.FromArgb(255,0,0)]
+    elif dataType == 'Adaptive Comfort' or dataType == 'Percentage of People Dissatisfied':
         legendTitle = '%'
-        for valCount, value in enumerate(pointValues):
-            pointValues[valCount] = value*100
+        if dataType == 'Adaptive Comfort':
+            for valCount, value in enumerate(pointValues):
+                pointValues[valCount] = value*100
         if len(legendPar_) == 0:
             lowB = 0
             highB = 100
-            numSeg = 10
-            customColors = [System.Drawing.Color.FromArgb(0,0,0), System.Drawing.Color.FromArgb(127,127,127), System.Drawing.Color.FromArgb(255,255,255)]
+            numSeg = 11
+            if dataType == 'Adaptive Comfort': customColors = [System.Drawing.Color.FromArgb(0,0,0), System.Drawing.Color.FromArgb(127,127,127), System.Drawing.Color.FromArgb(255,255,255)]
+            else: customColors = [System.Drawing.Color.FromArgb(255,255,255), System.Drawing.Color.FromArgb(127,127,127), System.Drawing.Color.FromArgb(0,0,0)]
+        elif customColors[0] == defaultCustomColor1 and customColors[-1] == defaultCustomColor2:
+            if dataType == 'Adaptive Comfort': customColors = [System.Drawing.Color.FromArgb(0,0,0), System.Drawing.Color.FromArgb(127,127,127), System.Drawing.Color.FromArgb(255,255,255)]
+            else: customColors = [System.Drawing.Color.FromArgb(255,255,255), System.Drawing.Color.FromArgb(127,127,127), System.Drawing.Color.FromArgb(0,0,0)]
     else:
         legendTitle = 'C'
     
@@ -202,20 +265,43 @@ def main(pointValues, viewFactorMesh, dataType, lb_preparation, lb_visualization
     
     
     #If there is an analysis period, format the text for it in the legend title.
-    if len(analysisPeriod_) > 0:
-        startMonth = analysisPeriod_[0][0]
-        endMonth = analysisPeriod_[1][0]
-        startDay = analysisPeriod_[0][1]
-        endDay = analysisPeriod_[1][1]
-        startHour = analysisPeriod_[0][2]
-        endHour = analysisPeriod_[1][2]
-        titleDate = str(monthNames[startMonth-1]) + " " + str(startDay) + " " + str(timeNames[startHour-1]) + " - " + str(monthNames[endMonth-1]) + " " + str(endDay) + " " + str(timeNames[endHour-1])
-    else: titleDate = None
+    try:
+        if len(analysisPeriod_) == 0 or annualData == False:
+            startMonth = analysisPeriod[0][0]
+            endMonth = analysisPeriod[1][0]
+            startDay = analysisPeriod[0][1]
+            endDay = analysisPeriod[1][1]
+            startHour = analysisPeriod[0][2]
+            endHour = analysisPeriod[1][2]
+            if analysisPeriod[0] != analysisPeriod[1]:
+                titleDate = str(monthNames[startMonth-1]) + " " + str(startDay) + " " + str(timeNames[startHour-1]) + " - " + str(monthNames[endMonth-1]) + " " + str(endDay) + " " + str(timeNames[endHour-1])
+            else: titleDate = str(monthNames[startMonth]) + " " + str(startDay) + " " + str(timeNames[startHour-1])
+        else:
+            startMonth = analysisPeriod_[0][0]
+            endMonth = analysisPeriod_[1][0]
+            startDay = analysisPeriod_[0][1]
+            endDay = analysisPeriod_[1][1]
+            startHour = analysisPeriod_[0][2]
+            endHour = analysisPeriod_[1][2]
+            titleDate = str(monthNames[startMonth-1]) + " " + str(startDay) + " " + str(timeNames[startHour-1]) + " - " + str(monthNames[endMonth-1]) + " " + str(endDay) + " " + str(timeNames[endHour-1])
+    except:
+        startMonth = analysisPeriod[0][0]
+        endMonth = analysisPeriod[1][0]
+        startDay = analysisPeriod[0][1]
+        endDay = analysisPeriod[1][1]
+        startHour = analysisPeriod[0][2]
+        endHour = analysisPeriod[1][2]
+        if analysisPeriod[0] != analysisPeriod[1]:
+            titleDate = str(monthNames[startMonth-1]) + " " + str(startDay) + " " + str(timeNames[startHour-1]) + " - " + str(monthNames[endMonth-1]) + " " + str(endDay) + " " + str(timeNames[endHour-1])
+        else: titleDate = str(monthNames[startMonth]) + " " + str(startDay) + " " + str(timeNames[startHour-1])
     
     #Create the Title.
-    if stepOfSimulation_ != None: titleTxt = '\n' + dataType + '\n' + 'Hour ' + str(stepOfSimulation_) + ' of the year.'
-    elif len(analysisPeriod_) > 0: titleTxt = '\n' + dataType + '\n' + titleDate
-    else: titleTxt = '\n' + 'Annual ' + dataType
+    try:
+        if stepOfSimulation_ != None and simStepPossible == True: titleTxt = '\n' + dataType + '\n' + 'Hour ' + str(stepOfSimulation_) + ' of simulation.'
+        elif len(analysisPeriod) > 0: titleTxt = '\n' + dataType + '\n' + titleDate
+        else: titleTxt = '\n' + 'Average ' + dataType
+    except:
+        titleTxt = '\n' + 'Average ' + dataType
     titleBasePt = lb_visualization.BoundingBoxPar[5]
     titleTextCurve = lb_visualization.text2srf([titleTxt], [titleBasePt], legendFont, textSize, legendBold)
     
@@ -241,11 +327,21 @@ else:
     ghenv.Component.AddRuntimeMessage(w, "You should let the Ladybug fly first...")
 
 checkData = False
-checkData, viewFactorMesh, dataType = checkTheInputs()
+annualData = True
+simStepPossible = True
+if len(_comfResultsMtx) > 0 and len(_viewFactorMesh) > 0:
+    if _comfResultsMtx[0] != None and _viewFactorMesh[0] != None:
+        checkData, viewFactorMesh, dataType, annualData, simStepPossible, analysisPeriod = checkTheInputs()
 
-if checkData == True and _runIt == True and len(_comfResultsMtx) == 8761:
-    resultValues = computeComfFactor(_comfResultsMtx, analysisPeriod_, stepOfSimulation_, lb_preparation)
-    resultValuesInit, resultColorsInit, resultMesh, legendInit, legendBasePt = main(resultValues, viewFactorMesh, dataType, lb_preparation, lb_visualization, legendPar_)
+if annualData == False or simStepPossible == False:
+    manageInputOutput(annualData, simStepPossible)
+else:
+    restoreInputOutput()
+
+if checkData == True and _runIt == True:
+    try: resultValues = computeComfFactor(_comfResultsMtx, analysisPeriod_, stepOfSimulation_, annualData, simStepPossible, lb_preparation)
+    except: resultValues = computeComfFactor(_comfResultsMtx, [], None, annualData, simStepPossible, lb_preparation)
+    resultValuesInit, resultColorsInit, resultMesh, legendInit, legendBasePt = main(resultValues, viewFactorMesh, dataType, lb_preparation, lb_visualization, legendPar_, analysisPeriod, simStepPossible, annualData)
     
     #Unpack the legend.
     legend = []
