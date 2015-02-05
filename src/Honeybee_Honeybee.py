@@ -30,7 +30,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_04_2015'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_05_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -426,9 +426,8 @@ class HB_GetEPLibraries(object):
             if line.strip().startswith("!") or line.strip()=="":
                 recounter -= 1
                 continue
-            if lineCount == 0:
+            if lineCount + recounter == 0:
                 nameKey = line.split("!")[0].strip()[:-1].strip().upper()
-                
                 if nameKey in resultDict[key].keys():
                     # this means the material is already in the lib
                     # I can rename it but for now I rather to give a warning
