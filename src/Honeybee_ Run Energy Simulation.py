@@ -43,7 +43,7 @@ Provided by Honeybee 0.0.56
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_04_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -942,13 +942,22 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         ghenv.Component.AddRuntimeMessage(w, warning)
         return -1
     
+    
     # make sure epw file address is correct
     if not epwFileAddress.endswith(epwFileAddress) or not os.path.isfile(epwFileAddress):
         msg = "Wrong weather file!"
         print msg
         ghenv.Component.AddRuntimeMessage(w, msg)
         return -1
-    
+    else:
+        illegalChar = ["&", "%", "'", "^", "=", ","] # based on EP error message
+        for c in illegalChar:
+            if c in epwFileAddress:
+                msg = "Illegal charecter in weather file path: " + c
+                print msg
+                ghenv.Component.AddRuntimeMessage(w, msg)
+                return -1
+        
     
     lb_preparation = sc.sticky["ladybug_Preparation"]()
     hb_scheduleLib = sc.sticky["honeybee_DefaultScheduleLib"]()
