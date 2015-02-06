@@ -40,7 +40,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Indoor Comfort Analysis"
 ghenv.Component.NickName = 'IndoorComfAnalysis'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_03_2015'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_06_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -219,9 +219,8 @@ def calculatePointMRT(srfTempDict, testPtsViewFactor, hour):
     return pointMRTValues
 
 
-def calculateSolarAdjustedMRT(pointMRTValues, stepOfSimulation, latitude, longitude, timeZone, diffSolarRad, directSolarRad, testPtSkyView, testPtBlockedVec, winTrans, cloA, floorR, skyPatchMeshes, lb_sunpath, lb_comfortModels):
+def calculateSolarAdjustedMRT(pointMRTValues, stepOfSimulation, diffSolarRad, directSolarRad, testPtSkyView, testPtBlockedVec, winTrans, cloA, floorR, skyPatchMeshes, lb_sunpath, lb_comfortModels):
     #Calculate the altitude and azimuth of the hour.
-    lb_sunpath.initTheClass(float(latitude), 0.0, rc.Geometry.Point3d.Origin, 100, float(longitude), float(timeZone))
     d, m, t = lb_preparation.hour2Date(stepOfSimulation, True)
     lb_sunpath.solInitOutput(m+1, d, t)
     altitude = math.degrees(lb_sunpath.solAlt)
@@ -562,6 +561,9 @@ def mainAdapt(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataN
         else: patchBrep = patch
         skyPatchMeshes.append(rc.Geometry.Mesh.CreateFromBrep(patchBrep, rc.Geometry.MeshingParameters.Coarse)[0])
     
+    #Initiate the sun vector calculator.
+    lb_sunpath.initTheClass(float(latitude), 0.0, rc.Geometry.Point3d.Origin, 100, float(longitude), float(timeZone))
+    
     #Make a dictionary that will relate the testPtZoneNames to the air temperatures.
     airTempDict = createZoneDict(testPtZoneNames, "zoneName", "airTemp", airTempDataHeaders, airTempDataNumbers)
     
@@ -587,7 +589,7 @@ def mainAdapt(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataN
             
             #Compute the radiant temperature.
             pointMRTValues = calculatePointMRT(srfTempDict, testPtsViewFactor, hour-1)
-            pointMRTValues = calculateSolarAdjustedMRT(pointMRTValues, hour, latitude, longitude, timeZone, diffSolarRad, directSolarRad, testPtSkyView, testPtBlockedVec, winTrans, cloA, floorR, skyPatchMeshes, lb_sunpath, lb_comfortModels)
+            pointMRTValues = calculateSolarAdjustedMRT(pointMRTValues, hour, diffSolarRad, directSolarRad, testPtSkyView, testPtBlockedVec, winTrans, cloA, floorR, skyPatchMeshes, lb_sunpath, lb_comfortModels)
             pointMRTValues = lb_preparation.flattenList(pointMRTValues)
             radTempMtx[count+1] = pointMRTValues
             
@@ -669,6 +671,9 @@ def mainPMV(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNum
         else: patchBrep = patch
         skyPatchMeshes.append(rc.Geometry.Mesh.CreateFromBrep(patchBrep, rc.Geometry.MeshingParameters.Coarse)[0])
     
+    #Initiate the sun vector calculator.
+    lb_sunpath.initTheClass(float(latitude), 0.0, rc.Geometry.Point3d.Origin, 100, float(longitude), float(timeZone))
+    
     #Make a dictionary that will relate the testPtZoneNames to the air temperatures.
     airTempDict = createZoneDict(testPtZoneNames, "zoneName", "airTemp", airTempDataHeaders, airTempDataNumbers)
     relHumidDict = createZoneDict(testPtZoneNames, "zoneName", "airTemp", relHumidDataHeaders, relHumidDataNumbers)
@@ -695,7 +700,7 @@ def mainPMV(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNum
             
             #Compute the radiant temperature.
             pointMRTValues = calculatePointMRT(srfTempDict, testPtsViewFactor, hour-1)
-            pointMRTValues = calculateSolarAdjustedMRT(pointMRTValues, hour, latitude, longitude, timeZone, diffSolarRad, directSolarRad, testPtSkyView, testPtBlockedVec, winTrans, cloA, floorR, skyPatchMeshes, lb_sunpath, lb_comfortModels)
+            pointMRTValues = calculateSolarAdjustedMRT(pointMRTValues, hour, diffSolarRad, directSolarRad, testPtSkyView, testPtBlockedVec, winTrans, cloA, floorR, skyPatchMeshes, lb_sunpath, lb_comfortModels)
             pointMRTValues = lb_preparation.flattenList(pointMRTValues)
             radTempMtx[count+1] = pointMRTValues
             
