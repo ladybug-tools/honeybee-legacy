@@ -9,8 +9,14 @@ Search Simulation Folder
 Provided by Honeybee 0.0.56
     
     Args:
-        studyFolder: Path to study folder
-        refresh: Refresh the list
+        _studyFolder: Path to base study folder. If _studyType is empty then it should be full path to study folder
+        _studyType_: Optional input for Honeybee study type
+                    1 > imageBasedSimulation
+                    2 > gridBasedSimulation
+                    3 > DF
+                    4 > VSC
+                    5 > annualSimulation
+        refresh_: Refresh
     Returns:
         resFiles: List of result files from grid based analysis
         illFiles: List of ill files from annual analysis
@@ -23,7 +29,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Lookup Daylighting Folder"
 ghenv.Component.NickName = 'LookupFolder_Daylighting'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_06_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -40,6 +46,7 @@ from Grasshopper.Kernel.Data import GH_Path
 from pprint import pprint
 
 def main(studyFolder):
+    
     msg = str.Empty
     
     if not (sc.sticky.has_key('ladybug_release')and sc.sticky.has_key('honeybee_release')):
@@ -172,23 +179,40 @@ ghenv.Component.Params.Output[1].NickName = "resultFiles"
 ghenv.Component.Params.Output[1].Name = "resultFiles"
 resultFiles = []
 
-res = main(studyFolder)
+studyTypes = {
+        1: "imageBasedSimulation",
+        2: "gridBasedSimulation",
+        3: "DF",
+        4: "VSC",
+        5: "annualSimulation"
+        }
 
-if res != -1:
-    msg, results = res
+
+if _studyFolder!=None:
     
-    if msg!=str.Empty:
-        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+    # check if the type is provided
+    if _studyType_!=None:
+        studyFolder = os.path.join(_studyFolder, studyTypes[_studyType_])
     else:
-        illFiles, resFiles, ptsFiles, hdrFiles, imageFiles, epwFile, analysisType, \
-        analysisMesh, radianceFiles, materialFiles, skyFiles, dgpFiles, octFiles, \
-        annualProfiles, htmReport = results
+        studyFolder = _studyFolder
+        
+    res = main(studyFolder)
     
-        if resFiles != []:
-            resultFiles = resFiles
+    if res != -1:
+        msg, results = res
+        
+        if msg!=str.Empty:
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
         else:
-            resultFiles = illFiles
-            filesOutputName = "illFiles"
-            ghenv.Component.Params.Output[1].NickName = filesOutputName
-            ghenv.Component.Params.Output[1].Name = filesOutputName
-            exec(filesOutputName + "= resultFiles")
+            illFiles, resFiles, ptsFiles, hdrFiles, imageFiles, epwFile, analysisType, \
+            analysisMesh, radianceFiles, materialFiles, skyFiles, dgpFiles, octFiles, \
+            annualProfiles, htmReport = results
+        
+            if resFiles != []:
+                resultFiles = resFiles
+            else:
+                resultFiles = illFiles
+                filesOutputName = "illFiles"
+                ghenv.Component.Params.Output[1].NickName = filesOutputName
+                ghenv.Component.Params.Output[1].Name = filesOutputName
+                exec(filesOutputName + "= resultFiles")
