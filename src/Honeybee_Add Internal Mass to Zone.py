@@ -213,13 +213,14 @@ else:
 #Run the Component
 checkData = False
 if _HBZones != [] and _srfsOrSrfArea != [] and _EPConstruction != None and initCheck == True:
-    checkData, HBZonesFromHive, srfAreas, EPConstruction, massNames = checkTheInputs()
-    
-    if checkData == True:
-        zones = main(HBZonesFromHive, srfAreas, EPConstruction, massNames)
+    if _HBZones[0] != None:
+        checkData, HBZonesFromHive, srfAreas, EPConstruction, massNames = checkTheInputs()
         
-        if zones!=-1:
-            HBZones = zones
+        if checkData == True:
+            zones = main(HBZonesFromHive, srfAreas, EPConstruction, massNames)
+            
+            if zones!=-1:
+                HBZones = zones
 
 
 
