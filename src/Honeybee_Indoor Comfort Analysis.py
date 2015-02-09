@@ -40,7 +40,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Indoor Comfort Analysis"
 ghenv.Component.NickName = 'IndoorComfAnalysis'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_06_2015'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_07_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -339,17 +339,22 @@ def warpByHeight(pointAirTempValues, ptHeightWeights, flowVolValues, heatGainVal
     archimedesNumbers = []
     archiNumWinScale = []
     for zoneCount in range(len(adjacentList)):
-        if groupedHeatGains[zoneCount] > 0:
-            tempChange = (groupedHeatGains[zoneCount])/(1.2*1012*groupedFlowVol[zoneCount])
-            tempChanges.append(tempChange)
-            
-            archiNumberNum = (9.806*0.0034*groupedHeatGains[zoneCount])*(groupedWinCeilDiffs[zoneCount]*groupedWinCeilDiffs[zoneCount]*groupedWinCeilDiffs[zoneCount])
-            archiNumberDenom = (1.2*1012*groupedFlowVol[zoneCount]*groupedFlowVol[zoneCount]*(groupedFlowVol[zoneCount]/groupedInletArea[zoneCount]))
-            archiNumber = archiNumberNum/archiNumberDenom
-            archimedesNumbers.append(archiNumber)
-            
-            archiNumWinScaleNum = (9.806*0.0034*groupedHeatGains[zoneCount])*(groupedGlzHeights[zoneCount]*groupedGlzHeights[zoneCount]*groupedGlzHeights[zoneCount])
-            archiNumWinScale.append(archiNumWinScaleNum/archiNumberDenom)
+        if groupedHeatGains[zoneCount] > 0.0:
+            try:
+                tempChange = (groupedHeatGains[zoneCount])/(1.2*1012*groupedFlowVol[zoneCount])
+                tempChanges.append(tempChange)
+                
+                archiNumberNum = (9.806*0.0034*groupedHeatGains[zoneCount])*(groupedWinCeilDiffs[zoneCount]*groupedWinCeilDiffs[zoneCount]*groupedWinCeilDiffs[zoneCount])
+                archiNumberDenom = (1.2*1012*groupedFlowVol[zoneCount]*groupedFlowVol[zoneCount]*(groupedFlowVol[zoneCount]/groupedInletArea[zoneCount]))
+                archiNumber = archiNumberNum/archiNumberDenom
+                archimedesNumbers.append(archiNumber)
+                
+                archiNumWinScaleNum = (9.806*0.0034*groupedHeatGains[zoneCount])*(groupedGlzHeights[zoneCount]*groupedGlzHeights[zoneCount]*groupedGlzHeights[zoneCount])
+                archiNumWinScale.append(archiNumWinScaleNum/archiNumberDenom)
+            except:
+                tempChanges.append(0)
+                archimedesNumbers.append(0)
+                archiNumWinScale.append(0)
         else:
             tempChanges.append(0)
             archimedesNumbers.append(0)
@@ -623,6 +628,7 @@ def mainAdapt(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataN
         calcCancelled = True
     
     #Create placeholders for all of the hours.
+    
     for hour in HOYs:
         radTempMtx.append(0)
         airTempMtx.append(0)
