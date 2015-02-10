@@ -34,7 +34,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_03_2015'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_09_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -277,6 +277,7 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
     zoneSrfsMesh = []
     zoneWires = []
     zoneOpaqueMesh = []
+    zoneHasWindows = []
     zoneWeights = []
     zoneInletParams = []
     zoneBrepsNonSolid = []
@@ -622,13 +623,17 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                     opaqueMesh = rc.Geometry.Mesh.CreateFromBrep(item, rc.Geometry.MeshingParameters.Coarse)[0]
                     zoneOpaqueMesh[zCount].append(opaqueMesh)
             
+            hasWindows = 0
             for sCount, srfT in enumerate(zoneSrfTList):
                 if srfT != 5:
                     opaqueMesh = rc.Geometry.Mesh.CreateFromBrep(zoneSrfs[zCount][sCount], rc.Geometry.MeshingParameters.Coarse)[0]
                     zoneOpaqueMesh[zCount].append(opaqueMesh)
+                else:
+                    hasWindows = 1
+            zoneHasWindows.append(hasWindows)
         
         
-        return geoCheck, testPts, MRTMeshBreps, MRTMeshInit, zoneWires, zoneSrfsMesh, surfaceNames, zoneOpaqueMesh, zoneNames, zoneWeights, heightWeights, zoneInletParams
+        return geoCheck, testPts, MRTMeshBreps, MRTMeshInit, zoneWires, zoneSrfsMesh, surfaceNames, zoneOpaqueMesh, zoneNames, zoneWeights, heightWeights, zoneInletParams, zoneHasWindows
     else:
         return -1
 
@@ -736,52 +741,56 @@ def parallel_skyProjection(zoneOpaqueMesh, skyViewVecs, pointList):
     return pointIntList, skyBlockedList
 
 
-def skyViewCalc(testPts, zoneOpaqueMesh, skyViewVecs):
+def skyViewCalc(testPts, zoneOpaqueMesh, skyViewVecs, zoneHasWindows):
     testPtSkyView = []
     testPtSkyBlockedList = []
     
     for zoneCount, pointList in enumerate(testPts):
-        if parallel_ == True or parallel_ == None:
-            skyViewFactors, skyBlockedList = parallel_skyProjection(zoneOpaqueMesh[zoneCount], skyViewVecs, testPts[zoneCount])
-            testPtSkyView.append(skyViewFactors)
-            testPtSkyBlockedList.append(skyBlockedList)
+        if zoneHasWindows[zoneCount] == True:
+            if parallel_ == True or parallel_ == None:
+                skyViewFactors, skyBlockedList = parallel_skyProjection(zoneOpaqueMesh[zoneCount], skyViewVecs, testPts[zoneCount])
+                testPtSkyView.append(skyViewFactors)
+                testPtSkyBlockedList.append(skyBlockedList)
+            else:
+                testPtSkyView.append([])
+                testPtSkyBlockedList.append([])
+                for pointCount, point in enumerate(pointList):
+                    #Make the list that will eventually hold the view factors of each surface.
+                    divisor = len(skyViewVecs)
+                    
+                    #Create the rays to be projected from each point.
+                    pointRays = []
+                    for vec in skyViewVecs: pointRays.append(rc.Geometry.Ray3d(point, vec))
+                    
+                    #Perform the intersection of the rays with the opaque mesh.
+                    pointIntersectList = []
+                    for rayCount, ray in enumerate(pointRays):
+                        pointIntersectList.append([])
+                        for srf in zoneOpaqueMesh[zoneCount]:
+                            intersect = rc.Geometry.Intersect.Intersection.MeshRay(srf, ray)
+                            if intersect == -1:
+                                pointIntersectList[rayCount].append(0)
+                            else: pointIntersectList[rayCount].append(1)
+                    
+                    #See if the ray passed all of the context meshes.
+                    finalIntersectList = []
+                    for ray in pointRays:
+                        finalIntersectList.append([])
+                    for listCt, rayList in enumerate(pointIntersectList):
+                        for intersect in rayList:
+                            finalIntersectList[listCt].append(intersect)
+                    
+                    finalViewCount = []
+                    for rayList in finalIntersectList:
+                        if sum(rayList) == 0: finalViewCount.append(1)
+                        else: finalViewCount.append(0)
+                    
+                    #Sum up the lists and divide by the total rays to get the view factor.
+                    testPtSkyBlockedList[zoneCount].append(finalViewCount)
+                    testPtSkyView[zoneCount].append(sum(finalViewCount)/divisor)
         else:
-            testPtSkyView.append([])
-            testPtSkyBlockedList.append([])
-            for pointCount, point in enumerate(pointList):
-                #Make the list that will eventually hold the view factors of each surface.
-                divisor = len(skyViewVecs)
-                
-                #Create the rays to be projected from each point.
-                pointRays = []
-                for vec in skyViewVecs: pointRays.append(rc.Geometry.Ray3d(point, vec))
-                
-                #Perform the intersection of the rays with the opaque mesh.
-                pointIntersectList = []
-                for rayCount, ray in enumerate(pointRays):
-                    pointIntersectList.append([])
-                    for srf in zoneOpaqueMesh[zoneCount]:
-                        intersect = rc.Geometry.Intersect.Intersection.MeshRay(srf, ray)
-                        if intersect == -1:
-                            pointIntersectList[rayCount].append(0)
-                        else: pointIntersectList[rayCount].append(1)
-                
-                #See if the ray passed all of the context meshes.
-                finalIntersectList = []
-                for ray in pointRays:
-                    finalIntersectList.append([])
-                for listCt, rayList in enumerate(pointIntersectList):
-                    for intersect in rayList:
-                        finalIntersectList[listCt].append(intersect)
-                
-                finalViewCount = []
-                for rayList in finalIntersectList:
-                    if sum(rayList) == 0: finalViewCount.append(1)
-                    else: finalViewCount.append(0)
-                
-                #Sum up the lists and divide by the total rays to get the view factor.
-                testPtSkyBlockedList[zoneCount].append(finalViewCount)
-                testPtSkyView[zoneCount].append(sum(finalViewCount)/divisor)
+            testPtSkyView.append(0)
+            testPtSkyBlockedList.append([range(len(skyViewVecs))])
     
     return testPtSkyView, testPtSkyBlockedList
 
@@ -862,7 +871,7 @@ geoCheck = False
 if checkData == True:
     goodGeo = prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBreps, hb_zoneData)
     if goodGeo != -1:
-        geoCheck, testPtsInit, viewFactorBrep, viewFactorMeshActual, zoneWireFrame, zoneSrfsMesh, zoneSrfNames, zoneOpaqueMesh, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo = goodGeo
+        geoCheck, testPtsInit, viewFactorBrep, viewFactorMeshActual, zoneWireFrame, zoneSrfsMesh, zoneSrfNames, zoneOpaqueMesh, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, zoneHasWindows = goodGeo
     
     #Unpack the data trees of test pts and mesh breps so that the user can see them and get a sense of what to expect from the view factor calculation.
     testPts = DataTree[Object]()
@@ -879,10 +888,10 @@ if checkData == True:
 if checkData == True and _runIt == True and geoCheck == True:
     viewVectors, skyViewVecs = checkViewResolution(viewResolution, lb_preparation)
     testPtViewFactor = main(testPtsInit, zoneSrfsMesh, viewVectors)
-    testPtSkyView, testPtBlockedVec = skyViewCalc(testPtsInit, zoneOpaqueMesh, skyViewVecs)
+    testPtSkyView, testPtBlockedVec = skyViewCalc(testPtsInit, zoneOpaqueMesh, skyViewVecs, zoneHasWindows)
     
     #Put all of the information into a list that will carry the data onto the next component easily.
-    viewFactorInfo = [testPtViewFactor, zoneSrfNames, testPtSkyView, testPtBlockedVec, testPtZoneWeights, testPtZoneNames, ptHeightWeights, zoneInletInfo]
+    viewFactorInfo = [testPtViewFactor, zoneSrfNames, testPtSkyView, testPtBlockedVec, testPtZoneWeights, testPtZoneNames, ptHeightWeights, zoneInletInfo, zoneHasWindows]
     
     #Unpack the data trees of meshes.
     viewFactorMesh = DataTree[Object]()

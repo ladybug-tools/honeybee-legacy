@@ -40,7 +40,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Indoor Comfort Analysis"
 ghenv.Component.NickName = 'IndoorComfAnalysis'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_07_2015'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_09_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -219,32 +219,26 @@ def calculatePointMRT(srfTempDict, testPtsViewFactor, hour):
     return pointMRTValues
 
 
-def calculateSolarAdjustedMRT(pointMRTValues, stepOfSimulation, diffSolarRad, directSolarRad, testPtSkyView, testPtBlockedVec, winTrans, cloA, floorR, skyPatchMeshes, lb_sunpath, lb_comfortModels):
-    #Calculate the altitude and azimuth of the hour.
-    d, m, t = lb_preparation.hour2Date(stepOfSimulation, True)
-    lb_sunpath.solInitOutput(m+1, d, t)
-    altitude = math.degrees(lb_sunpath.solAlt)
-    azimuth = math.degrees(lb_sunpath.solAz)
-    if altitude > 0:
-        sunVec = lb_sunpath.sunReverseVectorCalc()
-    else: sunVec = None
+def calculateSolarAdjustedMRT(pointMRTValues, stepOfSimulation, diffSolarRad, directSolarRad, count, sunVecInfo, testPtSkyView, testPtBlockedVec, winTrans, cloA, floorR, skyPatchMeshes, zoneHasWindows, lb_comfortModels):
+    #Pull out the correct sun vector.
+    sunVec = sunVecInfo[0][count]
+    altitude = sunVecInfo[1][count]
+    azimuth = sunVecInfo[2][count]
     
     #Assign the sun vector to a sky patch that aligns with the testPtBlockedVec list.
     vectorskyPatches = []
     
-    for vecCount, vector in enumerate([sunVec]):
-        
-        if sunVec != None:
-            intersected = False
-            ray = rc.Geometry.Ray3d(rc.Geometry.Point3d.Origin, vector)
-            for patchCount, patch in enumerate(skyPatchMeshes):
-                if rc.Geometry.Intersect.Intersection.MeshRay(patch, ray) >= 0:
-                    vectorskyPatches.append(patchCount)
-                    intersected = True
-            if intersected == False:
-                vectorskyPatches.append(None)
-        else:
+    if sunVec != None:
+        intersected = False
+        ray = rc.Geometry.Ray3d(rc.Geometry.Point3d.Origin, sunVec)
+        for patchCount, patch in enumerate(skyPatchMeshes):
+            if rc.Geometry.Intersect.Intersection.MeshRay(patch, ray) >= 0:
+                vectorskyPatches.append(patchCount)
+                intersected = True
+        if intersected == False:
             vectorskyPatches.append(None)
+    else:
+        vectorskyPatches.append(None)
     
     ##Calculate the diffuse, direct, and global horizontal components of the solar radiation at the hour.
     diffRad = diffSolarRad[stepOfSimulation-1]
@@ -276,27 +270,30 @@ def calculateSolarAdjustedMRT(pointMRTValues, stepOfSimulation, diffSolarRad, di
     solarAdjustedPointMRTValues = []
     if sunVec != None:
         for zoneCount, zonePtsList in enumerate(pointMRTValues):
-            solarAdjustedPointMRTValues.append([])
-            for pointCount, pointMRT in enumerate(zonePtsList):
-                #Check if the sunray is blocked.
-                if vectorskyPatches[0] != None:
-                    if testPtBlockedVec[zoneCount][pointCount][vectorskyPatches[0]] == 0: sunBlocked = True
-                    else: sunBlocked = False
-                else: sunBlocked = True
-                
-                #If the ray was not blocked, then adjust then get rid of direct solar radiation.
-                if sunBlocked == True:
-                    dirRadFinal = 0.0
-                    globHorizRadFinal = diffRad
-                else:
-                    dirRadFinal = dirNormRad
-                    globHorizRadFinal = globHorizRad
-                
-                hourERF = ((0.5*fracEff*testPtSkyView[zoneCount][pointCount]*(diffRad + (globHorizRadFinal*floorR))+ (fracEff*ProjAreaFac*dirRadFinal))*winTrans[stepOfSimulation-1])*(cloA/0.95)
-                #Calculate the MRT delta, the solar adjusted MRT, and the solar adjusted operative temperature.
-                mrtDelt = (hourERF/(fracEff*radTransCoeff))
-                hourMRT = mrtDelt + (pointMRT)
-                solarAdjustedPointMRTValues[zoneCount].append(hourMRT)
+            if zoneHasWindows[zoneCount] != 0:
+                solarAdjustedPointMRTValues.append([])
+                for pointCount, pointMRT in enumerate(zonePtsList):
+                    #Check if the sunray is blocked.
+                    if vectorskyPatches[0] != None:
+                        if testPtBlockedVec[zoneCount][pointCount][vectorskyPatches[0]] == 0: sunBlocked = True
+                        else: sunBlocked = False
+                    else: sunBlocked = True
+                    
+                    #If the ray was not blocked, then adjust then get rid of direct solar radiation.
+                    if sunBlocked == True:
+                        dirRadFinal = 0.0
+                        globHorizRadFinal = diffRad
+                    else:
+                        dirRadFinal = dirNormRad
+                        globHorizRadFinal = globHorizRad
+                    
+                    hourERF = ((0.5*fracEff*testPtSkyView[zoneCount][pointCount]*(diffRad + (globHorizRadFinal*floorR))+ (fracEff*ProjAreaFac*dirRadFinal))*winTrans[stepOfSimulation-1])*(cloA/0.95)
+                    #Calculate the MRT delta, the solar adjusted MRT, and the solar adjusted operative temperature.
+                    mrtDelt = (hourERF/(fracEff*radTransCoeff))
+                    hourMRT = mrtDelt + pointMRT
+                    solarAdjustedPointMRTValues[zoneCount].append(hourMRT)
+            else:
+                solarAdjustedPointMRTValues[zoneCount].append(pointMRT)
     else:
         solarAdjustedPointMRTValues = pointMRTValues
     
@@ -542,7 +539,7 @@ def computeGroupedRoomProperties(testPtZoneWeights, testPtZoneNames, zoneInletIn
     return adjacentList, adjacentNameList, groupedInletArea, groupedZoneHeights, groupedGlzHeights, groupedWinCeilDiffs
 
 
-def mainAdapt(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, zoneSrfNames, testPtsViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, prevailingOutdoorTemp, eightyPercentComf, mixedAirOverride, lb_preparation, lb_sunpath, lb_comfortModels):
+def mainAdapt(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, zoneSrfNames, testPtsViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, prevailingOutdoorTemp, eightyPercentComf, mixedAirOverride, zoneHasWindows, lb_preparation, lb_sunpath, lb_comfortModels):
     #Set up matrices to be filled.
     radTempMtx = ['Radiant Temperature;' + str(analysisPeriod[0]) + ";" + str(analysisPeriod[1])]
     airTempMtx = ['Air Temperature;' + str(analysisPeriod[0]) + ";" + str(analysisPeriod[1])]
@@ -550,24 +547,51 @@ def mainAdapt(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataN
     adaptComfMtx = ['Adaptive Comfort;' + str(analysisPeriod[0]) + ";" + str(analysisPeriod[1])]
     degFromTargetMtx = ['Degrees From Target;' + str(analysisPeriod[0]) + ";" + str(analysisPeriod[1])]
     
+    #Create placeholders for all of the hours.
+    for hour in HOYs:
+        radTempMtx.append(0)
+        airTempMtx.append(0)
+        operativeTempMtx.append(0)
+        adaptComfMtx.append(0)
+        degFromTargetMtx.append(0)
+    
     #Get the prevailing outdoor temperature for the whole analysis.
     prevailTemp = processPrevailOutdoorTemp(prevailingOutdoorTemp)
     
     #Make a dictionary that will relate the zoneSrfNames to the srfTempValues.
     srfTempDict = createSrfDict(zoneSrfNames, "srfName", "srfTemp", srfTempHeaders, srfTempNumbers)
     
-    #Create a meshed sky dome to assist with direct sunlight falling on occupants.
-    skyPatches = lb_preparation.generateSkyGeo(rc.Geometry.Point3d.Origin, numSkyPatchDivs, .5)
-    skyPatchMeshes = []
-    for patch in skyPatches:
-        verts = patch.DuplicateVertices()
-        if len(verts) == 4:
-            patchBrep = rc.Geometry.Brep.CreateFromCornerPoints(verts[0], verts[1], verts[2], verts[3], sc.doc.ModelAbsoluteTolerance)
-        else: patchBrep = patch
-        skyPatchMeshes.append(rc.Geometry.Mesh.CreateFromBrep(patchBrep, rc.Geometry.MeshingParameters.Coarse)[0])
-    
-    #Initiate the sun vector calculator.
-    lb_sunpath.initTheClass(float(latitude), 0.0, rc.Geometry.Point3d.Origin, 100, float(longitude), float(timeZone))
+    #Make sure that there are windows in the model and a good reason to generate solar outputs.
+    if sum(zoneHasWindows) != 0:
+        #Create a meshed sky dome to assist with direct sunlight falling on occupants.
+        skyPatches = lb_preparation.generateSkyGeo(rc.Geometry.Point3d.Origin, numSkyPatchDivs, .5)
+        skyPatchMeshes = []
+        for patch in skyPatches:
+            verts = patch.DuplicateVertices()
+            if len(verts) == 4:
+                patchBrep = rc.Geometry.Brep.CreateFromCornerPoints(verts[0], verts[1], verts[2], verts[3], sc.doc.ModelAbsoluteTolerance)
+            else: patchBrep = patch
+            skyPatchMeshes.append(rc.Geometry.Mesh.CreateFromBrep(patchBrep, rc.Geometry.MeshingParameters.Coarse)[0])
+        
+        #Initiate the sun vector calculator.
+        lb_sunpath.initTheClass(float(latitude), 0.0, rc.Geometry.Point3d.Origin, 100, float(longitude), float(timeZone))
+        
+        #Calculate the altitude and azimuth of the different hours.
+        sunVecs = []
+        altitudes = []
+        azimuths = []
+        for hour in HOYs:
+            d, m, t = lb_preparation.hour2Date(hour, True)
+            lb_sunpath.solInitOutput(m+1, d, t)
+            altitude = math.degrees(lb_sunpath.solAlt)
+            azimuth = math.degrees(lb_sunpath.solAz)
+            if altitude > 0:
+                sunVec = lb_sunpath.sunReverseVectorCalc()
+            else: sunVec = None
+            sunVecs.append(sunVec)
+            altitudes.append(altitude)
+            azimuths.append(azimuth)
+        sunVecInfo = [sunVecs, altitudes, azimuths]
     
     #Make a dictionary that will relate the testPtZoneNames to the air temperatures.
     airTempDict = createZoneDict(testPtZoneNames, "zoneName", "airTemp", airTempDataHeaders, airTempDataNumbers)
@@ -594,7 +618,8 @@ def mainAdapt(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataN
             
             #Compute the radiant temperature.
             pointMRTValues = calculatePointMRT(srfTempDict, testPtsViewFactor, hour-1)
-            pointMRTValues = calculateSolarAdjustedMRT(pointMRTValues, hour, diffSolarRad, directSolarRad, testPtSkyView, testPtBlockedVec, winTrans, cloA, floorR, skyPatchMeshes, lb_sunpath, lb_comfortModels)
+            if sum(zoneHasWindows) != 0:
+                pointMRTValues = calculateSolarAdjustedMRT(pointMRTValues, hour, diffSolarRad, directSolarRad, count, sunVecInfo, testPtSkyView, testPtBlockedVec, winTrans, cloA, floorR, skyPatchMeshes, zoneHasWindows, lb_comfortModels)
             pointMRTValues = lb_preparation.flattenList(pointMRTValues)
             radTempMtx[count+1] = pointMRTValues
             
@@ -627,14 +652,6 @@ def mainAdapt(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataN
         ghenv.Component.AddRuntimeMessage(e, "The calculation has been terminated by the user!")
         calcCancelled = True
     
-    #Create placeholders for all of the hours.
-    
-    for hour in HOYs:
-        radTempMtx.append(0)
-        airTempMtx.append(0)
-        operativeTempMtx.append(0)
-        adaptComfMtx.append(0)
-        degFromTargetMtx.append(0)
     
     #Run through every hour of the analysis to fill up the matrices.
     try:
@@ -656,7 +673,7 @@ def mainAdapt(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataN
     else:
         return -1
 
-def mainPMV(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, clothingLevel, metabolicRate, zoneSrfNames, testPtsViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, eightyPercentComf, humidRatioUp, humidRatioLow, mixedAirOverride, lb_preparation, lb_sunpath, lb_comfortModels):
+def mainPMV(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, clothingLevel, metabolicRate, zoneSrfNames, testPtsViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, eightyPercentComf, humidRatioUp, humidRatioLow, mixedAirOverride, zoneHasWindows, lb_preparation, lb_sunpath, lb_comfortModels):
     #Set up matrices to be filled.
     radTempMtx = ['Radiant Temperature;' + str(analysisPeriod[0]) + ";" + str(analysisPeriod[1])]
     airTempMtx = ['Air Temperature;' + str(analysisPeriod[0]) + ";" + str(analysisPeriod[1])]
@@ -664,21 +681,48 @@ def mainPMV(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNum
     PPD_Mtx = ['Percentage of People Dissatisfied;' + str(analysisPeriod[0]) + ";" + str(analysisPeriod[1])]
     PMV_Mtx = ['Predicted Mean Vote;' + str(analysisPeriod[0]) + ";" + str(analysisPeriod[1])]
     
+    #Create placeholders for all of the hours.
+    for hour in HOYs:
+        radTempMtx.append(0)
+        airTempMtx.append(0)
+        SET_Mtx.append(0)
+        PPD_Mtx.append(0)
+        PMV_Mtx.append(0)
+    
     #Make a dictionary that will relate the zoneSrfNames to the srfTempValues.
     srfTempDict = createSrfDict(zoneSrfNames, "srfName", "srfTemp", srfTempHeaders, srfTempNumbers)
     
-    #Create a meshed sky dome to assist with direct sunlight falling on occupants.
-    skyPatches = lb_preparation.generateSkyGeo(rc.Geometry.Point3d.Origin, numSkyPatchDivs, .5)
-    skyPatchMeshes = []
-    for patch in skyPatches:
-        verts = patch.DuplicateVertices()
-        if len(verts) == 4:
-            patchBrep = rc.Geometry.Brep.CreateFromCornerPoints(verts[0], verts[1], verts[2], verts[3], sc.doc.ModelAbsoluteTolerance)
-        else: patchBrep = patch
-        skyPatchMeshes.append(rc.Geometry.Mesh.CreateFromBrep(patchBrep, rc.Geometry.MeshingParameters.Coarse)[0])
-    
-    #Initiate the sun vector calculator.
-    lb_sunpath.initTheClass(float(latitude), 0.0, rc.Geometry.Point3d.Origin, 100, float(longitude), float(timeZone))
+    #Make sure that there are windows in the model and a good reason to generate solar outputs.
+    if sum(zoneHasWindows) != 0:
+        #Create a meshed sky dome to assist with direct sunlight falling on occupants.
+        skyPatches = lb_preparation.generateSkyGeo(rc.Geometry.Point3d.Origin, numSkyPatchDivs, .5)
+        skyPatchMeshes = []
+        for patch in skyPatches:
+            verts = patch.DuplicateVertices()
+            if len(verts) == 4:
+                patchBrep = rc.Geometry.Brep.CreateFromCornerPoints(verts[0], verts[1], verts[2], verts[3], sc.doc.ModelAbsoluteTolerance)
+            else: patchBrep = patch
+            skyPatchMeshes.append(rc.Geometry.Mesh.CreateFromBrep(patchBrep, rc.Geometry.MeshingParameters.Coarse)[0])
+        
+        #Initiate the sun vector calculator.
+        lb_sunpath.initTheClass(float(latitude), 0.0, rc.Geometry.Point3d.Origin, 100, float(longitude), float(timeZone))
+        
+        #Calculate the altitude and azimuth of the different hours.
+        sunVecs = []
+        altitudes = []
+        azimuths = []
+        for hour in HOYs:
+            d, m, t = lb_preparation.hour2Date(hour, True)
+            lb_sunpath.solInitOutput(m+1, d, t)
+            altitude = math.degrees(lb_sunpath.solAlt)
+            azimuth = math.degrees(lb_sunpath.solAz)
+            if altitude > 0:
+                sunVec = lb_sunpath.sunReverseVectorCalc()
+            else: sunVec = None
+            sunVecs.append(sunVec)
+            altitudes.append(altitude)
+            azimuths.append(azimuth)
+        sunVecInfo = [sunVecs, altitudes, azimuths]
     
     #Make a dictionary that will relate the testPtZoneNames to the air temperatures.
     airTempDict = createZoneDict(testPtZoneNames, "zoneName", "airTemp", airTempDataHeaders, airTempDataNumbers)
@@ -706,7 +750,8 @@ def mainPMV(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNum
             
             #Compute the radiant temperature.
             pointMRTValues = calculatePointMRT(srfTempDict, testPtsViewFactor, hour-1)
-            pointMRTValues = calculateSolarAdjustedMRT(pointMRTValues, hour, diffSolarRad, directSolarRad, testPtSkyView, testPtBlockedVec, winTrans, cloA, floorR, skyPatchMeshes, lb_sunpath, lb_comfortModels)
+            if sum(zoneHasWindows) != 0:
+                pointMRTValues = calculateSolarAdjustedMRT(pointMRTValues, hour, diffSolarRad, directSolarRad, count, sunVecInfo, testPtSkyView, testPtBlockedVec, winTrans, cloA, floorR, skyPatchMeshes, zoneHasWindows, lb_comfortModels)
             pointMRTValues = lb_preparation.flattenList(pointMRTValues)
             radTempMtx[count+1] = pointMRTValues
             
@@ -741,13 +786,6 @@ def mainPMV(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNum
         ghenv.Component.AddRuntimeMessage(e, "The calculation has been terminated by the user!")
         calcCancelled = True
     
-    #Create placeholders for all of the hours.
-    for hour in HOYs:
-        radTempMtx.append(0)
-        airTempMtx.append(0)
-        SET_Mtx.append(0)
-        PPD_Mtx.append(0)
-        PMV_Mtx.append(0)
     
     #Run through every hour of the analysis to fill up the matrices.
     try:
@@ -956,11 +994,11 @@ else:
 recipeRecognized = False
 comfortModel = None
 if len(_comfAnalysisRecipe) > 0:
-    if len(_comfAnalysisRecipe) == 31 and _comfAnalysisRecipe[0] == "Adaptive":
-        comfortModel, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, prevailingOutdoorTemp, eightyPercentComf, mixedAirOverride = _comfAnalysisRecipe
+    if len(_comfAnalysisRecipe) == 32 and _comfAnalysisRecipe[0] == "Adaptive":
+        comfortModel, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, prevailingOutdoorTemp, eightyPercentComf, mixedAirOverride, zoneHasWindows = _comfAnalysisRecipe
         recipeRecognized = True
-    elif len(_comfAnalysisRecipe) == 36 and _comfAnalysisRecipe[0] == "PMV":
-        comfortModel, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, clothingLevel, metabolicRate, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, eightyPercentComf, humidRatioUp, humidRatioLow, mixedAirOverride = _comfAnalysisRecipe
+    elif len(_comfAnalysisRecipe) == 37 and _comfAnalysisRecipe[0] == "PMV":
+        comfortModel, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, clothingLevel, metabolicRate, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, eightyPercentComf, humidRatioUp, humidRatioLow, mixedAirOverride, zoneHasWindows = _comfAnalysisRecipe
         recipeRecognized = True
     else:
         warning = 'Comfort recipe not recognized.'
@@ -977,13 +1015,13 @@ if recipeRecognized == True and checkLB == True:
 
 if checkData == True and _runIt == True:
     if comfortModel == "Adaptive":
-        result = mainAdapt(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, prevailingOutdoorTemp, eightyPercentComf, mixedAirOverride, lb_preparation, lb_sunpath, lb_comfortModels)
+        result = mainAdapt(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, prevailingOutdoorTemp, eightyPercentComf, mixedAirOverride, zoneHasWindows, lb_preparation, lb_sunpath, lb_comfortModels)
         if result != -1:
             radTempMtx, airTempMtx, operativeTempMtx, adaptComfMtx, degFromTargetMtx = result
             if writeResultFile_ != False:
                 radTempResult, airTempResult, operativeTempResult, adaptComfResult, degFromTargetResult = writeCSVAdapt(lb_preparation, directory, fileName, radTempMtx, airTempMtx, operativeTempMtx, adaptComfMtx, degFromTargetMtx)
     elif comfortModel == "PMV":
-        result = mainPMV(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, clothingLevel, metabolicRate, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, eightyPercentComf, humidRatioUp, humidRatioLow, mixedAirOverride, lb_preparation, lb_sunpath, lb_comfortModels)
+        result = mainPMV(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, clothingLevel, metabolicRate, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, eightyPercentComf, humidRatioUp, humidRatioLow, mixedAirOverride, zoneHasWindows, lb_preparation, lb_sunpath, lb_comfortModels)
         if result != -1:
             radTempMtx, airTempMtx, SET_Mtx, PPD_Mtx, PMV_Mtx = result
             if writeResultFile_ != False:
