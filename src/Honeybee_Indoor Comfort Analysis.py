@@ -468,6 +468,7 @@ def computeGroupedRoomProperties(testPtZoneWeights, testPtZoneNames, zoneInletIn
     
     #Compute the grouped window heights and zone heights for the stratification calculation
     groupedTotalVol = []
+    groupedTotalVolList = []
     groupedInletArea = []
     groupedInletAreaList = []
     groupedMinHeightsInit = []
@@ -480,8 +481,10 @@ def computeGroupedRoomProperties(testPtZoneWeights, testPtZoneNames, zoneInletIn
         minHeightList = []
         maxHeightList = []
         glzHeightList = []
+        volList = []
         for val in zoneList:
             zoneTotV += zoneInletInfo[val][-2]
+            volList.append(zoneInletInfo[val][-2])
             inletA += zoneInletInfo[val][-1]
             inletAList.append(zoneInletInfo[val][-1])
             minHeightList.append(zoneInletInfo[val][0])
@@ -493,6 +496,8 @@ def computeGroupedRoomProperties(testPtZoneWeights, testPtZoneNames, zoneInletIn
         groupedMinHeightsInit.append(minHeightList)
         groupedMaxHeightsInit.append(maxHeightList)
         groupedGlzHeightsInit.append(glzHeightList)
+        groupedTotalVol.append(zoneTotV)
+        groupedTotalVolList.append(volList)
     
     #Figure out what the height of the grouped zones should be and what the average height of the windows is.
     groupedZoneHeights = []
@@ -508,12 +513,15 @@ def computeGroupedRoomProperties(testPtZoneWeights, testPtZoneNames, zoneInletIn
             groupedZoneHeights.append(roomHeight)
             if inletHeightOverride == []:
                 areaWeights = []
-                for area in groupedInletAreaList[zoneCount]:
-                    areaWeights.append(area/sum(groupedInletAreaList[zoneCount]))
+                for areaCount, area in enumerate(groupedInletAreaList[zoneCount]):
+                    try:
+                        areaWeights.append(area/sum(groupedInletAreaList[zoneCount]))
+                    except:
+                        areaWeights.append(groupedTotalVolList[zoneCount][areaCount]/groupedTotalVol[zoneCount])
                 weightedGlzHeights = []
                 for count, height in enumerate(groupedGlzHeightsInit[zoneCount]):
                     try:
-                        weightedHeight = (height - minHeight)*areaWeights[count]
+                        weightedHeight = (height)*areaWeights[count]
                         weightedGlzHeights.append(weightedHeight)
                     except:
                         weightedGlzHeights.append(0)
