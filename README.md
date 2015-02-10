@@ -35,4 +35,4 @@ Patrick Chopson @pchopson
 Sandeep Ahuja @sahuja9
 
 
-So many thanks to Radiance, EnergyPlus and OpenStudio!
+So many thanks to Radiance, Daysim, EnergyPlus and OpenStudio!
