@@ -43,7 +43,7 @@ Provided by Honeybee 0.0.56
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_04_2015'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_11_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -1260,10 +1260,12 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
             
             
             #   LOADS - INTERNAL LOADS + PLUG LOADS
-            idfFile.write(hb_writeIDF.EPZoneElectricEquipment(zone, listName))
+            if zone.equipmentSchedule != None:
+                idfFile.write(hb_writeIDF.EPZoneElectricEquipment(zone, listName))
         
             #   PEOPLE
-            idfFile.write(hb_writeIDF.EPZonePeople(zone, listName))
+            if zone.occupancySchedule != None:
+                idfFile.write(hb_writeIDF.EPZonePeople(zone, listName))
         
             #   LIGHTs
             idfFile.write(hb_writeIDF.EPZoneLights(zone, listName))

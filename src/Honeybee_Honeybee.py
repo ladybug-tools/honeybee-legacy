@@ -3467,11 +3467,11 @@ class EPScheduleAux(object):
         try:
             scheduleObj = sc.sticky["honeybee_ScheduleLib"][schName.upper()]
         except Exception, e:
-            #print e
-            msg = "Failed to find " + schName + " in the Honeybee schedule library."
-            print msg
-            if component is not None:
-                component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+            if schName != "NONE":
+                msg = "Failed to find " + schName + " in the Honeybee schedule library."
+                print msg
+                if component is not None:
+                    component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
             
             return None, None
             
@@ -3494,11 +3494,11 @@ class EPScheduleAux(object):
         try:
             scheduleObj = sc.sticky["honeybee_ScheduleTypeLimitsLib"][schName.upper()]
         except Exception, e:
-            #print e
-            msg = "Failed to find " + schName + " in the Honeybee schedule type limits library."
-            print msg
-            if component is not None:
-                component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+            if schName != "NONE":
+                msg = "Failed to find " + schName + " in the Honeybee schedule type limits library."
+                print msg
+                if component is not None:
+                    component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
             
             return None, None
             
@@ -6444,35 +6444,7 @@ class hb_chillerEIRParams(object):
             'Curves':None
             }
             
-class hb_coolingTowerParams(object):
-    def __init__(self):
-        self.coolTowerDict= {
-            'name':'honeybee default cooling tower',
-            'speedControl':'OneSpeed',
-            'inputMethod':'NominalCapacity',
-            'modelType':'CoolToolsCrossFlow',
-            'designWB':25.5556,
-            'designRange':5.5556,
-            'designApproach':3.8889,
-            'sizingFactor':1.15,
-            'nominalCapacity':'Autosized',
-            'designWaterFlowRate':'Autosized',
-            'airflowAtHighSpeed':'Autosized',
-            'fanPowerAtHighSpeed':'Autosized',
-            'lowSpeedCapacity':'Autosized',
-            'airflowAtLowSpeed':'Autosized',
-            'fanPowerAtLowSpeed':'Autosized',
-            'freeConvectionCapacity':'Autosized',
-            'airflowInFreeConvection':'Autosized',
-            'basinHeaterCapacity':0,
-            'basinHeaterSetpoint':2,
-            'basinHeaterSchedule':None,
-            'numberOfCells':1,
-            'cellControl':'NotNeeded',
-            'cellMinWaterFlowFraction':0.33,
-            'cellMaxWaterFlowFraction':2.5,
-            'fanPowerRatioFlowRatioCurve':None
-        }
+            
 class hb_airsideEconoParams(object):
     def __init__(self):
         self.airEconoDict = {
@@ -6785,7 +6757,6 @@ if checkIn.letItFly:
         sc.sticky["honeybee_hspeedevapcondParams"] = hb_hspeedEvapCondParams
         sc.sticky["honeybee_hwBoilerParams"] = hb_hwBoilerParams
         sc.sticky["honeybee_chillerEIRParams"] = hb_chillerEIRParams
-        sc.sticky["honeybee_coolingTowerParams"] = hb_coolingTowerParams
         sc.sticky["honeybee_EPSurface"] = hb_EPSurface
         sc.sticky["honeybee_EPShdSurface"] = hb_EPShdSurface
         sc.sticky["honeybee_EPZoneSurface"] = hb_EPZoneSurface
