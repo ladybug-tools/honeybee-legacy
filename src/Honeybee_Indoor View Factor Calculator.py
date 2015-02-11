@@ -34,7 +34,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_09_2015'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_11_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -423,8 +423,7 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                 
                 #If there are multiple floor breps, join them together.
                 dataCheck = True
-                if len(floorBreps) == 1: floorBrep = floorBreps
-                elif len(floorBreps) > 1: floorBrep = rc.Geometry.Brep.JoinBreps(floorBreps, tol)
+                if len(floorBreps) > 0: floorBrep = floorBreps
                 else:
                     dataCheck = False
                     floorBrep = []
@@ -474,7 +473,8 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                         try:
                             finalBrep = splitOffsetFloor(brep, zoneBreps[zoneCount])
                             finalBreps.append(finalBrep)
-                        except: finalBreps.append(brep)
+                        except:
+                            finalBreps.append([brep])
             else:
                 for srfCount, srf in enumerate(srfList):
                     zoneSrfsMesh[zoneCount].append(rc.Geometry.Mesh.CreateFromBrep(srf, srfMeshPar)[0])
