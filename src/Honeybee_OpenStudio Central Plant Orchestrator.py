@@ -7,7 +7,7 @@
 # inputs will always be ignored for 1 speed coil definitions
 
 """
-EPlus Hot Water Boiler
+EPlus Plantside Organizer
 -
 Provided by Honeybee 0.0.56
 
@@ -54,6 +54,18 @@ def main(sysID, boiler,chiller,coolingTower):
             print 'A chiller description is not necessary for system id: ' + str(sysID)
             print 'The chiller description will be ignored.'
             chiller=[]
+        if len(coolingTower) >= 1:
+            print 'A cooling tower description is not necessary for system id: ' + str(sysID)
+            print 'The cooling tower description will be ignored.'
+    else:
+        print len(coolingTower)
+        print coolingTower
+        if len(coolingTower) == 0:
+            print 'You have selected a system ID that requires a cooling tower.'
+            print 'We will revert to the Honeybee default until you provide one.'
+            hb_coolTower = dictToClass(sc.sticky["honeybee_coolingTowerParams"]().coolTowerDict)
+            coolingTower = [hb_coolTower]
+
     centralPlant={}
     pp = pprint.PrettyPrinter(indent=4)
     if sc.sticky.has_key('honeybee_release'):
@@ -74,6 +86,7 @@ def main(sysID, boiler,chiller,coolingTower):
         storedParams = {}
         try:
             if (len(boiler) >= 1):
+                print boiler
                 print str(len(boiler)) + " boiler definitions located."
                 for bcount,b in enumerate(boiler):
                     print "Boiler " + str(bcount+1) + " being added."
@@ -89,6 +102,12 @@ def main(sysID, boiler,chiller,coolingTower):
             else:
                 storedParams['chiller']={}
                 print "No Chiller has been specified.  A blank Chiller added to plant params."
+            if (len(coolingTower)) >= 1:
+                print str(len(coolingTower)) + ' cooling tower definitions located.'
+                for ctcount,ct in enumerate(coolingTower):
+                    print 'Tower ' + str(ctcount+1) + ' being added.'
+                    storedParams['coolingTower'] =ct.d
+                    print ct.d
             centralPlant = dictToClass(storedParams)
             print 'Your central plant definition: '
             pp.pprint(centralPlant.d)
@@ -96,6 +115,7 @@ def main(sysID, boiler,chiller,coolingTower):
         except:
             storedParams['boiler']={}
             storedParams['chiller']={}
+            storedParams['coolingTower']={}
             centralPlant = dictToClass(storedParams)
             print 'Central Plant could not create your central plant description.'
     else:
@@ -104,4 +124,5 @@ def main(sysID, boiler,chiller,coolingTower):
         ghenv.Component.AddRuntimeMessage(w, "You should let Honeybee to fly...")
     return centralPlant
     
+
 plantDetails = main(_HVACSystemID, _Boiler_,_Chiller_,_CoolingTower_)

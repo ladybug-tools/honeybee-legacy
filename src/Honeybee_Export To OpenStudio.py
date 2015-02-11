@@ -629,9 +629,55 @@ class WriteOPS(object):
     def recallChiller(self,plantDetails):
         return plantDetails['chiller']
         
+    def recallCoolingTower(self,plantDetails):
+        return plantDetails['coolingTower']
+        
+    def updateCoolingTower(self,utower,ostower):
+        #universal commands across all three cooling towers
+        ostower.setName(utower['name']) #defaults to a name always
+        ostower.setNumberofCells(utower['numberOfCells']) #defaults to 1
+        ostower.setSizingFactor(utower['sizingFactor']) # defaults to 1.0
+        ostower.setBasinHeaterCapacity(utower['basinHeaterCapacity']) #this is zero by default
+        #basin heater availablity schedule to be done in future
+        ostower.setBasinHeaterSetpointTemperature(utower['basinHeaterSetpoint']) #this is 2 by default
+        #all blowdown controls to be added at a later time
+        if utower['cellControl'] != 'NotRequired':
+            ostower.setCellControl(utower['cellControl'])
+        ostower.setCellMaximumWaterFlowRateFraction(utower['cellMaxWaterFlowFraction']) #2.5 by default
+        ostower.setCellMinimumWaterFlowRateFraction(utower['cellMinWaterFlowFraction']) #0.3 by default
+        if utower['airflowAtHighSpeed'] != "Autosized":
+            ostower.setDesignAirFlowRate(utower['airflowAtHighSpeed']) #design air flow rate
+        if utower['fanPowerAtHighSpeed'] != "Autosized":
+            ostower.setDesignFanPower(utower['fanPowerAtHighSpeed'])
+        if utower['designWaterFlowRate'] != "Autosized":
+            ostower.setDesignWaterFlowRate(utower['designWaterFlowRate'])
+        if utower['speedControl'] == 'SingleSpeed':
+            if utower['airflowInFreeConvection'] != 'Autosized':
+                ostower.setAirFlowRateinFreeConvectionRegime(utower['airflowInFreeConvection']) #autosized by default
+            #ostower.setCapacityControl(FanCycling or FluidBypass)  needs to be added to honeybee model before implementation
+            #setFreeConvectionCapacity?
+            #setNominalCapacity
+            #setPerformanceInputMethod
+            #setUFactorTimesAreaValueatDesignAirFlowRate
+            #setUFactorTimesAreaValueatFreeConvectionAirFlowRate
+        elif utower['speedControl'] == 'TwoSpeed':
+            pass
+        elif utower['speedControl'] == 'VariableSpeed':
+            #setDesignApproachTemperature to be done...this is specific to vfd cooling towers
+            #setDesignInletAirWetBulbTemperature appears specific to vfd tower
+            #setDesignRangeTemperature appears specific to VFD
+            #drift loss and evaporation loss later
+            #setFanPowerRatioFunctionofAirFlowRateRatioCurve for future
+            #setFractionofTowerCapacityinFreeConvectionRegime for future
+            #setMinimumAirFlowRateRatio for future (vfd specific?)
+            pass
+        print ostower
+        return ostower
+        
     def updateChiller(self,uchiller,oschiller):
         #print oschiller
         #print uchiller
+        oschiller.setName(uchiller['name'])
         oschiller.setCondenserType(uchiller['condenserType'])
         if uchiller['condenserFanPowerRatio']!=None:
             oschiller.setCondenserFanPowerRatio(uchiller['condenserFanPowerRatio'])
@@ -652,7 +698,7 @@ class WriteOPS(object):
         
     def updateBoiler(self,uboil,osboiler):
         #print osboiler
-        #print uboil
+        print uboil
         osboiler.setFuelType(uboil['fueltype'])
         osboiler.setMinimumPartLoadRatio(uboil['minPartLoad'])
         osboiler.setMaximumPartLoadRatio(uboil['maxPartLoadRatio'])
@@ -1224,7 +1270,36 @@ class WriteOPS(object):
                             oschiller = model.getChillerElectricEIR(chiller.handle()).get()
                             print oschiller
                             uchiller = self.recallChiller(plantDetails)
-                            oschiller = self.updateChiller(uchiller,oschiller)
+                            print uchiller
+                            oschiller = self.updateChiller(uchiller,oschiller) 
+                            if uchiller['condenserType'] == 'WaterCooled':
+                                towervec = model.getCoolingTowerSingleSpeeds() #get all towers on the loop (1 by default)
+                                print towervec
+                                for tcount, tower in enumerate(towervec):
+                                    print 'here'
+                                    print type(tower)
+                                    #the tower is by default a single speed tower
+                                    ostower = model.getCoolingTowerSingleSpeed(tower.handle()).get()
+                                    print ostower
+                                    cwl = ostower.plantLoop().get()
+                                    print cwl
+                                    node = cwl.supplyOutletNode()
+                                    print node
+                                    utower = self.recallCoolingTower(plantDetails)
+                                    print utower
+                                    if utower["speedControl"]=="SingleSpeed":
+                                        print "updating single speed cooling tower"
+                                        ostower = self.updateCoolingTower(utower, ostower) #we are all good and don't need to remove the existing CT
+                                    elif utower["speedControl"]=="TwoSpeed":
+                                        print "upgrading cooling tower to two speed"
+                                        newostower = ops.CoolingTowerTwoSpeed(model) # this is not working
+                                    elif utower["speedControl"]=="VariableSpeed":
+                                        print "upgrading cooling tower to variable speed"
+                                        newostower = ops.CoolingTowerVariableSpeed(model) # this seems to work
+                                        newostower.addToNode(node)
+                                        ostower.remove()
+                                        newostower = self.updateCoolingTower(utower,newostower)
+                                        print newostower
 
             else:
                 msg = "HVAC system index " + str(systemIndex) +  " is not implemented yet!"
