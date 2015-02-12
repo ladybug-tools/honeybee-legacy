@@ -37,7 +37,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Color Surfaces by EP Result"
 ghenv.Component.NickName = 'ColorSurfaces'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_012_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -76,10 +76,11 @@ outputsDict = {
 2: ["zoneWireFrame", "A list of curves representing the outlines of the zones.  This is particularly helpful if one wants to scroll through individual meshes but still see the outline of the building."],
 3: ["legend", "A legend of the surface colors. Connect this output to a grasshopper 'Geo' component in order to preview the legend spearately in the Rhino scene."],
 4: ["legendBasePt", "The legend base point, which can be used to move the legend in relation to the building with the grasshopper 'move' component."],
-5: ["srfBreps", "A list of breps for each zone surface. Connecting this output and the following zoneColors to a Grasshopper 'Preview' component will thus allow you to see the surfaces colored transparently."],
-6: ["srfColors", "A list of colors that correspond to the colors of each zone surface.  These colors include alpha values to make them slightly transparent.  Connecting the previous output and this output to a Grasshopper 'Preview' component will thus allow you to see the surfaces colored transparently."],
-7: ["srfValues", "The values of the input data that are being used to color the surfaces."],
-8: ["normalizedSrfData", "The input data normalized by the areas of each surface."]
+5: ["analysisTitle", "The title of the analysis stating what the surfaces are being colored with."],
+6: ["srfBreps", "A list of breps for each zone surface. Connecting this output and the following zoneColors to a Grasshopper 'Preview' component will thus allow you to see the surfaces colored transparently."],
+7: ["srfColors", "A list of colors that correspond to the colors of each zone surface.  These colors include alpha values to make them slightly transparent.  Connecting the previous output and this output to a Grasshopper 'Preview' component will thus allow you to see the surfaces colored transparently."],
+8: ["srfValues", "The values of the input data that are being used to color the surfaces."],
+9: ["normalizedSrfData", "The input data normalized by the areas of each surface."]
 }
 
 
@@ -273,7 +274,7 @@ def manageInputOutput(annualData, simStep, srfNormalizable):
             ghenv.Component.Params.Input[input].Name = inputsDict[input][0]
             ghenv.Component.Params.Input[input].Description = inputsDict[input][1]
     
-    for output in range(9):
+    for output in range(10):
         if output == 9 and srfNormalizable == False:
             ghenv.Component.Params.Output[output].NickName = "."
             ghenv.Component.Params.Output[output].Name = "."
@@ -298,7 +299,7 @@ def restoreInputOutput():
         ghenv.Component.Params.Input[input].Name = inputsDict[input][0]
         ghenv.Component.Params.Input[input].Description = inputsDict[input][1]
     
-    for output in range(9):
+    for output in range(10):
         ghenv.Component.Params.Output[output].NickName = outputsDict[output][0]
         ghenv.Component.Params.Output[output].Name = outputsDict[output][0]
         ghenv.Component.Params.Output[output].Description = outputsDict[output][1]
@@ -573,10 +574,11 @@ def main(zoneValues, zones, srfBreps, srfHeaders, title, legendTitle, lb_prepara
     titleBasePt = lb_visualization.BoundingBoxPar[5]
     titleTextCurve = lb_visualization.text2srf([titleTxt], [titleBasePt], legendFont, textSize, legendBold)
     
-    #Bring the legend and the title together.
-    fullLegTxt = lb_preparation.flattenList(legendTextCrv + titleTextCurve)
+    #Flatten the lists.
+    legendTextCrv = lb_preparation.flattenList(legendTextCrv)
+    titleTextCurve = lb_preparation.flattenList(titleTextCurve)
     
-    return transparentColors, srfBreps, srfMeshes, zoneWires, [legendSrfs, fullLegTxt], legendBasePoint
+    return transparentColors, srfBreps, srfMeshes, zoneWires, [legendSrfs, legendTextCrv, titleTextCurve], legendBasePoint
 
 
 
@@ -637,13 +639,17 @@ if _runIt == True and checkData == True and _HBZones != [] and srfValues != [] a
     srfColors, srfBreps, srfColoredMesh, zoneWireFrame, legendInit, legendBasePt = main(srfValues, _HBZones, srfBreps, srfHeaders, title, legendTitle, lb_preparation, lb_visualization, legendPar_)
     #Unpack the legend.
     legend = []
+    analysisTitle = []
     for count, item in enumerate(legendInit):
         if count == 0:
             legend.append(item)
         if count == 1:
             for srf in item:
                 legend.append(srf)
+        if count == 2:
+            for srf in item:
+                analysisTitle.append(srf)
 
 #Hide unwanted outputs
 ghenv.Component.Params.Output[4].Hidden = True
-ghenv.Component.Params.Output[5].Hidden = True
+ghenv.Component.Params.Output[6].Hidden = True
