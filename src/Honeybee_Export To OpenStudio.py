@@ -2626,7 +2626,7 @@ if _epwWeatherFile and _writeOSM and openStudioIsReady:
     results = main(_HBZones, HBContext_, north_, _epwWeatherFile,
                   _analysisPeriod_, _energySimPar_, simulationOutputs_,
                   runSimulation_, workingDir_, fileName_)
-    
+    print results
     if results!=-1:
         osmFileAddress, idfFileAddress, resultsFiles = results
         try:

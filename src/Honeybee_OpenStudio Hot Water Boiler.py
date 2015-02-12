@@ -48,7 +48,7 @@ ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 
-try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
 except: pass
 
 class dictToClass(object):
@@ -152,4 +152,6 @@ def main(name,fuelType,nominalCapacity,sizingFactor,nominalEfficiency,designOutl
     return boilerUpdates
 
 
-HotWaterBoiler = main(_name,_fuelType_,_nominalCapacity_,_sizingFactor_,_nominalEfficiency_,_designOutletTemperature_,_designWaterFlowRate_,_minPartLoadRatio_,_maxPartLoadRatio_,_optimumPartLoadRatio_,_outletTempMaximum_,_boilerFlowMode_,_parasiticElectricLoad_,_curveTemperatureVariable_,_Curves_)
+HotWaterBoiler = main(_name,_fuelType_,_nominalCapacity_,_sizingFactor_,_nominalEfficiency_,_designOutletTemperature_,
+_designWaterFlowRate_,_minPartLoadRatio_,_maxPartLoadRatio_,_optimumPartLoadRatio_,_outletTempMaximum_,_boilerFlowMode_,
+_parasiticElectricLoad_,_curveTemperatureVariable_,_Curves_)

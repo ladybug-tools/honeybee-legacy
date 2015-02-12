@@ -83,7 +83,7 @@ import Grasshopper.Kernel as gh
 
 ghenv.Component.Name = "Honeybee_OpenStudio Cooling Tower"
 ghenv.Component.NickName = 'EPlusCoolingTower'
-ghenv.Component.Message = 'VER 0.0.55\nFEB_08_2014'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_08_2014'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
