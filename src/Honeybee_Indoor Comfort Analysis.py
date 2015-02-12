@@ -40,7 +40,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Indoor Comfort Analysis"
 ghenv.Component.NickName = 'IndoorComfAnalysis'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_09_2015'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_11_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -213,7 +213,7 @@ def calculatePointMRT(srfTempDict, testPtsViewFactor, hour):
                 path  = str([zoneCount,srfCount])
                 weightedSrfTemp = srfView*(srfTempDict[path]["srfTemp"][hour])
                 pointMRT = pointMRT+weightedSrfTemp
-            pointMRTValues[zoneCount].append(pointMRT)
+            pointMRTValues[zoneCount].append(round(pointMRT, 3))
     
     
     return pointMRTValues
@@ -291,9 +291,9 @@ def calculateSolarAdjustedMRT(pointMRTValues, stepOfSimulation, diffSolarRad, di
                     #Calculate the MRT delta, the solar adjusted MRT, and the solar adjusted operative temperature.
                     mrtDelt = (hourERF/(fracEff*radTransCoeff))
                     hourMRT = mrtDelt + pointMRT
-                    solarAdjustedPointMRTValues[zoneCount].append(hourMRT)
+                    solarAdjustedPointMRTValues[zoneCount].append(round(hourMRT, 3))
             else:
-                solarAdjustedPointMRTValues[zoneCount].append(pointMRT)
+                solarAdjustedPointMRTValues[zoneCount].append(round(pointMRT, 3))
     else:
         solarAdjustedPointMRTValues = pointMRTValues
     
@@ -312,7 +312,7 @@ def getAirPointValue(airTempDict, testPtZoneWeights, hour):
                 path  = Count
                 weightedPointVal = weight*(airTempDict[path]["airTemp"][hour])
                 pointValue = pointValue+weightedPointVal
-            pointValues[zoneCount].append(pointValue)
+            pointValues[zoneCount].append(round(pointValue, 3))
     
     return pointValues
 
@@ -393,7 +393,7 @@ def warpByHeight(pointAirTempValues, ptHeightWeights, flowVolValues, heatGainVal
             dimTempDelta = dimTempDeltas[zoneCount]
             for ptCount, ptValue in enumerate(zone):
                 ptTemp = ptValue + cielTemp - dimTempDelta*tempChanges[zoneCount]*(1-ptHeightWeights[zoneCount][ptCount])
-                pointAirTempValues[zoneCount][ptCount] = ptTemp
+                pointAirTempValues[zoneCount][ptCount] = round(ptTemp, 3)
         elif dimTempDeltas[zoneCount] != 0:
             #Two-Layer stratification profile.
             cielTemp = cielTemps[zoneCount]
@@ -405,7 +405,7 @@ def warpByHeight(pointAirTempValues, ptHeightWeights, flowVolValues, heatGainVal
                     ptTemp = ptValue + cielTemp - dimTempDelta*tempChanges[zoneCount]*(dimInterHeight - ptHeightWeights[zoneCount][ptCount])
                 else:
                     ptTemp = ptValue + cielTemp
-                pointAirTempValues[zoneCount][ptCount] = ptTemp
+                pointAirTempValues[zoneCount][ptCount] = round(ptTemp, 3)
         else: pass
     
     
