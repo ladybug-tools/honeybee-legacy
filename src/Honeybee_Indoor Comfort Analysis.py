@@ -40,7 +40,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Indoor Comfort Analysis"
 ghenv.Component.NickName = 'IndoorComfAnalysis'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_11_2015'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_15_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -372,6 +372,7 @@ def warpByHeight(pointAirTempValues, ptHeightWeights, flowVolValues, heatGainVal
             #Two-Layer stratification profile.
             dimensionlessInterfHeight = 0.92 - (0.18 * math.log10(archimedesNumbers[zoneCount]))
             dimInterfHeights.append(dimensionlessInterfHeight)
+            
             dimensionlessTempDelta = 0.58 - (0.14 * math.log10(archiNumWinScale[zoneCount]))
             if dimensionlessTempDelta > 0:
                 dimTempDeltas.append(dimensionlessTempDelta)
@@ -535,7 +536,7 @@ def computeGroupedRoomProperties(testPtZoneWeights, testPtZoneNames, zoneInletIn
             roomHeight = groupedMaxHeightsInit[zoneCount][0] - groupedMinHeightsInit[zoneCount][0]
             groupedZoneHeights.append(roomHeight)
             if inletHeightOverride == []:
-                if groupedGlzHeightsInit[zoneCount][0] != None: glzHeight = groupedGlzHeightsInit[zoneCount][0] - groupedMinHeightsInit[zoneCount][0]
+                if groupedGlzHeightsInit[zoneCount][0] != None: glzHeight = groupedGlzHeightsInit[zoneCount][0]
                 else: glzHeight = (groupedMaxHeightsInit[zoneCount][0] - groupedMinHeightsInit[zoneCount][0])/2
                 groupedGlzHeights.append(glzHeight)
                 groupedWinCeilDiffs.append(roomHeight - glzHeight)
