@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+
+<html>
+	
+	<head>
+		<!-- Here are the examples that I used:
+			http://www.columbia.edu/~cme2126/datavisuals/bigdata_parallelcoordinates.html
+			https://syntagmatic.github.io/parallel-coordinates/
+		-->
+
+		<title>Pollination</title>
+
+		<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script> <!-- D3 -->
+
+		<script src = "./pc_source_files/d3/d3.parcoords.js"></script> <!-- D3 Parallel Coordinates Library -->
+		<link rel="stylesheet" type="text/css" href="./pc_source_files/css/d3.parcoords.css"> <!-- D3 Parallel Coordinates CSS -->
+
+		<script src="./pc_source_files/d3/d3.underscore.math.js"></script>
+
+    	<script src="./pc_source_files/d3/d3.divgrid.js"></script> <!-- D3 table grid -->
+
+    	<style>
+					
+			#wrapper {
+			   position: relative;
+			   float: left;
+			   top: 20px;
+			}
+			
+
+    	</style>
+	</head>
+	
+	<body>
+
+    	<div id="wrapper" class="parcoords" style="width:100%;height:340px">
+      	<div id="desc">
+      		<div id="title">
+      			<img src="http://goo.gl/qqjiVB" style="width: 7%; height: 7%; vertical-align:middle; float:right">
+      			<h1>Pollination</h1>
+      			<span class="large">Pollination is a web based result visualization interface</span>
+      			<br>
+      			<br><br>
+      			
+      			<input type="file" id="csv-file" name="files"/>
+      			<script type="text/javascript">
+      				var rawData;
+					
+					window.onload = function() {
+						var fileInput = document.getElementById('csv-file');
+
+						fileInput.addEventListener('change', function(e) {
+							
+							var file = fileInput.files[0];
+							var reader = new FileReader();
+							
+							reader.onload = function(e) {
+									rawData = reader.result;
+							
+									// parse data						
+									var data = d3.csv.parse(rawData);
+							
+									// remove old graph if any
+									d3.select('#wrapper svg')
+       						 			.remove();
+
+       						 		// draw new graph
+									var graph,
+										initialData;
+
+							var color_set = d3.scale.linear()
+								.range(["#d7191c", "#2b83ba", "#fdae61", "#abdda4"]);
+							
+							// get parallel coordinates
+							graph = d3.parcoords()('#wrapper')
+				            	.data(data)
+				            		.alpha(0.4)
+				            		.mode("queue")
+				            		.rate(5)
+				            		.render()
+				            		.brushMode("1D-axes")  // enable brushing
+				            		.interactive();
+
+				            
+				            // set the initial coloring
+				            // update_colors("Cooling");
+
+				            /*
+				             // click label to activate coloring
+							graph.svg.selectAll(".dimension")
+							    .on("click", update_colors)
+							    .selectAll(".label")
+							    	.style("font-size", "14px"); // change font sizes of selected lable
+							*/
+							}
+
+							reader.readAsText(file);
+								});
+					}
+
+      			</script>
+      			<br>
+      		</div>
+
+		
+		<script>
+			/*
+			// create global variables so I can access chart and data later
+			var graph,
+				initialData;
+
+			var color_set = d3.scale.linear()
+				.range(["#d7191c", "#2b83ba", "#fdae61", "#abdda4"]);
+
+			// load data
+			// this file is manually edited. I need to add some mapping later to get the data from a clean file
+			// d3.csv("https://dl.dropboxusercontent.com/u/16228160/equestResults.csv", function(data){
+			//d3.csv("http://www.columbia.edu/~cme2126/datavisuals/_include/data/cars.csv", function(data){
+			
+			initialData = d3.csv.parse(rawData);
+
+			d3.csv(initialData, function(data){
+				//initialData = data;
+
+				// get parallel coordinates
+				graph = d3.parcoords()('#wrapper')
+                	.data(data)
+                		.alpha(0.4)
+                		.mode("queue")
+                		.rate(5)
+                		.render()
+                		.brushMode("1D-axes")  // enable brushing
+                		.interactive();
+
+                
+                // set the initial coloring
+                update_colors("Cooling");
+
+                 // click label to activate coloring
+				graph.svg.selectAll(".dimension")
+				    .on("click", update_colors)
+				    .selectAll(".label")
+				    	.style("font-size", "14px"); // change font sizes of selected lable
+
+			});
+
+
+			// update color and font weight of chart based on selection
+            // modified from here: https://syntagmatic.github.io/parallel-coordinates/
+            function update_colors(dimension) { 
+				// change the fonts to bold
+				graph.svg.selectAll(".dimension")
+					.style("font-weight", "normal")
+					.filter(function(d) { return d == dimension; })
+						.style("font-weight", "bold");
+
+				// change color of lines
+				graph.color(graph.data(),dimension).render();
+			};
+
+			
+			// return color function based on plot and dimension
+			// modified from here: https://syntagmatic.github.io/parallel-coordinates/
+			function zcolor(col, dimension) {
+			  	// get z score for each number based on values under dimension (e.g. Heating)
+			  	var z = zscore(_(col).pluck(dimension).map(parseFloat));
+			  	
+			  	return function(d) { return color_set(z(d[dimension]));}
+			};
+
+
+			// color by zscore
+			// modified from here: https://syntagmatic.github.io/parallel-coordinates/
+			function zscore(col) {
+			  	var n = col.length,
+			      	mean = _(col).mean(),
+			      	sigma = _(col).stdDeviation();
+			  	return function(d) {return (d-mean)/sigma;};
+			};
+*/
+		</script>
+
+	</body>
+
+</html>
