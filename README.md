@@ -1,10 +1,8 @@
 ![Screenshot](http://api.ning.com/files/OsG-NixX39fgvBguMkfqhfQB8A6qoIOoishY-IJX5jjM5aTt7vHdO05*4SLN3rLPUVIksyARyzUIMt3w1gJPlWA3aO-DlMvQ/Merged_Icons_2.png?width=200)
 
-Honeybee for Grasshopper
+Pollination
 ========================================
-Honeybee connects Grasshopper3D to EnergyPlus, Radiance, Daysim and OpenStudio for building energy and daylighting simulation.The Honeybee project intends to make many of the features of these simulation tools available in a parametric way.
-
-![Screenshot](http://api.ning.com/files/n6JmThHrsca01EgtclZq-1juc3rkqHwBRDnTZKSn2xbRbec6mv3mUXqgsEXLZoshKBGDh0V31b0HriMS0IwvAe1DSfuBLFL7/IBPSANYCPresentationLadybugHoneybee2.png?width=1200)
+Pollination is an interactive ...
 
 Licence
 ========================================
@@ -20,19 +18,4 @@ Facebook page: https://www.facebook.com/LadyBugforGrasshopper
 
 Ladybug on Twitter: @ladybug_tool
 
-Contributors(a-z):
-========================================
-Abraham Yezioro @ayezioro
-
-Chien Si Harriman @chiensiTB
-
-Chris Mackey @chriswmackey
-
-Mostapha Roudsari @mostapharoudsari
-
-Patrick Chopson @pchopson
-
-Sandeep Ahuja @sahuja9
-
-
-So many thanks to Radiance, Daysim, EnergyPlus and OpenStudio!
+So many thanks to D3.js, ParallelCoordiates and Pollination team!
