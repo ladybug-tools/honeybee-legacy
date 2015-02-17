@@ -14,93 +14,83 @@
 
 		<script src = "./pc_source_files/d3/d3.parcoords.js"></script> <!-- D3 Parallel Coordinates Library -->
 		<link rel="stylesheet" type="text/css" href="./pc_source_files/css/d3.parcoords.css"> <!-- D3 Parallel Coordinates CSS -->
+		<link rel="stylesheet" type="text/css" href="./pc_source_files/css/pollination.css">
 
 		<script src="./pc_source_files/d3/d3.underscore.math.js"></script>
 
     	<script src="./pc_source_files/d3/d3.divgrid.js"></script> <!-- D3 table grid -->
 
-    	<style>
-					
-			#wrapper {
-			   position: relative;
-			   float: left;
-			   top: 20px;
-			}
-			
-
-    	</style>
 	</head>
 	
 	<body>
 
-    	<div id="wrapper" class="parcoords" style="width:100%;height:340px">
-      	<div id="desc">
-      		<div id="title">
-      			<img src="http://goo.gl/qqjiVB" style="width: 7%; height: 7%; vertical-align:middle; float:right">
-      			<h1>Pollination</h1>
-      			<span class="large">Pollination is a web based result visualization interface</span>
-      			<br>
-      			<br><br>
-      			
-      			<input type="file" id="csv-file" name="files"/>
-      			<script type="text/javascript">
-      				var rawData;
-					
-					window.onload = function() {
-						var fileInput = document.getElementById('csv-file');
+  		<div id="header">
+  			<img src="http://goo.gl/qqjiVB" style="width: 7%; height: 7%; vertical-align:middle; float:right">
+  			<h1>Pollination</h1>
+  			<span class="large">Use Pollination to explore results of parametric studies. This page is developed as a part of Honeybee. To start select a pollinator from your drive. </span>
+  			<br><br><br>
+  			
+  			<input type="file" id="csv-file" name="files"/>
+  		</div>
+		<div id="whitespace" style="width:100%; height:20px"></div>
+    	<div id="wrapper" class="parcoords" style="width:100%; height:420px"></div>
+		
+		<script type="text/javascript">
+			var rawData;
+		
+		window.onload = function() {
+			var fileInput = document.getElementById('csv-file');
 
-						fileInput.addEventListener('change', function(e) {
-							
-							var file = fileInput.files[0];
-							var reader = new FileReader();
-							
-							reader.onload = function(e) {
-									rawData = reader.result;
-							
-									// parse data						
-									var data = d3.csv.parse(rawData);
-							
-									// remove old graph if any
-									d3.select('#wrapper svg')
-       						 			.remove();
+			fileInput.addEventListener('change', function(e) {
+				
+				var file = fileInput.files[0];
+				var reader = new FileReader();
+				
+				reader.onload = function(e) {
+						rawData = reader.result;
+				
+						// parse data						
+						var data = d3.csv.parse(rawData);
+				
+						// remove old graph if any
+						d3.select('#wrapper svg')
+					 			.remove();
 
-       						 		// draw new graph
-									var graph,
-										initialData;
+					 		// draw new graph
+						var graph,
+							initialData;
 
-							var color_set = d3.scale.linear()
-								.range(["#d7191c", "#2b83ba", "#fdae61", "#abdda4"]);
-							
-							// get parallel coordinates
-							graph = d3.parcoords()('#wrapper')
-				            	.data(data)
-				            		.alpha(0.4)
-				            		.mode("queue")
-				            		.rate(5)
-				            		.render()
-				            		.brushMode("1D-axes")  // enable brushing
-				            		.interactive();
+				var color_set = d3.scale.linear()
+					.range(["#d7191c", "#2b83ba", "#fdae61", "#abdda4"]);
+				
+				// get parallel coordinates
+				graph = d3.parcoords()('#wrapper')
+	            	.data(data)
+	            		.alpha(0.4)
+	            		.mode("queue")
+	            		.rate(5)
+	            		.render()
+	            		.brushMode("1D-axes")  // enable brushing
+	            		.interactive();
 
-				            
-				            // set the initial coloring
-				            // update_colors("Cooling");
+	            
+	            // set the initial coloring
+	            // update_colors("Cooling");
 
-				            /*
-				             // click label to activate coloring
-							graph.svg.selectAll(".dimension")
-							    .on("click", update_colors)
-							    .selectAll(".label")
-							    	.style("font-size", "14px"); // change font sizes of selected lable
-							*/
-							}
+	            /*
+	             // click label to activate coloring
+				graph.svg.selectAll(".dimension")
+				    .on("click", update_colors)
+				    .selectAll(".label")
+				    	.style("font-size", "14px"); // change font sizes of selected lable
+				*/
+				}
 
-							reader.readAsText(file);
-								});
-					}
+				reader.readAsText(file);
+					});
+		}
 
-      			</script>
-      			<br>
-      		</div>
+		</script>
 
 		
 		<script>
