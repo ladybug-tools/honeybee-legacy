@@ -43,10 +43,10 @@ Provided by Honeybee 0.0.56
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_11_2015'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_16_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.56\nFEB_16_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
@@ -56,8 +56,6 @@ import scriptcontext as sc
 import rhinoscriptsyntax as rs
 import os
 import System
-from clr import AddReference
-AddReference('Grasshopper')
 import Grasshopper.Kernel as gh
 import math
 import shutil
@@ -1005,7 +1003,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     print "[1 of 7] Writing simulation parameters..."
     
     # Version,8.1;
-    idfFile.write(hb_writeIDF.EPVersion())
+    idfFile.write(hb_writeIDF.EPVersion(sc.sticky["honeybee_folders"]["EPVersion"]))
     
     # Read simulation parameters
     timestep, shadowPar, solarDistribution, simulationControl, ddyFile, terrain = hb_EPPar.readEPParams(EPParameters)
@@ -1323,7 +1321,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     if runEnergyPlus:
         print "Analysis is running!..."
         # write the batch file
-        hb_runIDF.writeBatchFile(workingDir, idfFileName, epwFileAddress)
+        hb_runIDF.writeBatchFile(workingDir, idfFileName, epwFileAddress, sc.sticky["honeybee_folders"]["EPPath"])
         resultFileFullName = idfFileFullName.replace('.idf', '.csv')
         try:
             print workingDir + '\eplusout.csv'

@@ -30,7 +30,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_11_2015'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_16_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -6697,10 +6697,14 @@ if checkIn.letItFly:
         sc.sticky["honeybee_folders"]["DSLibPath"] = hb_DSLibPath
     
         if folders.EPPath == None:
-            EPVersion = "V8-1-0"
-            if os.path.isdir("C:\EnergyPlus" + EPVersion + "\\"):
-                folders.EPPath = "C:\EnergyPlus" + EPVersion + "\\"
-            else:
+            EPVersions = ["V8-2-7", "V8-2-6", "V8-2-5", "V8-2-4", "V8-2-3", \
+                          "V8-2-2", "V8-2-1", "V8-2-0", "V8-1-0"]
+            for EPVersion in EPVersions:
+                if os.path.isdir("C:\EnergyPlus" + EPVersion + "\\"):
+                    folders.EPPath = "C:\EnergyPlus" + EPVersion + "\\"
+                    break
+
+            if folders.EPPath == None:
                 msg= "Honeybee cannot find EnergyPlus" + EPVersion + " folder on your system.\n" + \
                      "Make sure you have EnergyPlus" + EPVersion + " installed on your system.\n" + \
                      "You won't be able to run energy simulations without EnergyPlus.\n" + \
@@ -6711,7 +6715,7 @@ if checkIn.letItFly:
                 folders.EPPath = "C:\EnergyPlus" + EPVersion + "\\"
         
         sc.sticky["honeybee_folders"]["EPPath"] = folders.EPPath
-        
+        sc.sticky["honeybee_folders"]["EPVersion"] = EPVersion.replace("-", ".")[1:]
         sc.sticky["honeybee_RADMaterialAUX"] = RADMaterialAux
         
         # set up radiance materials
