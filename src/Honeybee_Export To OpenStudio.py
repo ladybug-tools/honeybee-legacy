@@ -100,7 +100,7 @@ else:
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_18_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -448,17 +448,19 @@ class WriteOPS(object):
         'maxLimitDewpoint' : HVACDetails['airsideEconomizer']['maxLimitDewpoint'],
         'minAirFlowRate' : HVACDetails['airsideEconomizer']['minAirFlowRate'],
         'maxAirFlowRate' : HVACDetails['airsideEconomizer']['maxAirFlowRate'],
-        'minLimitType' : minLimit[HVACDetails['airsideEconomizer']['minLimitType']],
-        'controlAction' : ctrlAction[HVACDetails['airsideEconomizer']['controlAction']],
+        'minLimitType' : HVACDetails['airsideEconomizer']['minLimitType'],
+        'controlAction' : HVACDetails['airsideEconomizer']['controlAction'],
         'minOASchedule' : HVACDetails['airsideEconomizer']['minOutdoorAirSchedule'],
         'minOAFracSchedule' : HVACDetails['airsideEconomizer']['minOutdoorAirFracSchedule'],
-        'DXLockoutMethod' : lockout[HVACDetails['airsideEconomizer']['DXLockoutMethod']]
+        'DXLockoutMethod' : HVACDetails['airsideEconomizer']['DXLockoutMethod'],
+        'timeOfDaySch':HVACDetails['airsideEconomizer']['timeOfDaySch'],
+        'mvCtrl':HVACDetails['airsideEconomizer']['mvCtrl']
         }
         return oaDesc
         
-    def updateOASys(self,econo,oactrl):
+    def updateOASys(self,econo,oactrl,model):
         if econo == None: return
-        if econo['econoControl'] == 0:
+        if econo['econoControl'] == "FixedDryBulb":
             oactrl.setEconomizerControlType("FixedDryBulb")
             if econo['sensedMin'] != None:
                 mindb = econo['sensedMin']
@@ -466,20 +468,20 @@ class WriteOPS(object):
                 maxdb = econo['sensedMax']
                 oactrl.setEconomizerMinimumLimitDryBulbTemperature(mindb)
                 oactrl.setEconomizerMaximumLimitDryBulbTemperature(maxdb)
-        elif econo['econoControl'] == 1:
+        elif econo['econoControl'] == "DifferentialDryBulb":
             oactrl.setEconomizerControlType("DifferentialDryBulb")
-        elif econo['econoControl'] == 2:
+        elif econo['econoControl'] == "FixedEnthalpy":
             oactrl.setEconomizerControlType("FixedEnthalpy")
             if sensedMax != None:
                 maxenth = econo['sensedMax']
                 oactrl.setEconomizerMaximumLimitEnthalpy(maxenth)
                 #can sensed min still be dry bulb?
-        elif econo['econoControl'] == 3:
+        elif econo['econoControl'] == "DifferentialEnthalpy":
             oactrl.setEconomizerControlType("DifferentialEnthalpy")
-        elif econo['econoControl'] == 4:
+        elif econo['econoControl'] == "ElectronicEnthalpy":
             oactrl.setEconomizerControlType("ElectronicEnthalpy")
             #set curve in future releases
-        elif econo['econoControl'] == 5:
+        elif econo['econoControl'] == "FixedDewpointAndDryBulb":
             oactrl.setEconomizerControlType("FixedDewpointAndDryBulb")
             if econo['sensedMin'] != None:
                 mindb = econo['sensedMin']
@@ -490,7 +492,7 @@ class WriteOPS(object):
             if econo['maxLimitDewpoint'] != None:
                 maxdp = econo['maxLimitDewpoint']
                 oactrl.setEconomizerMaximumLimitDewpointTemperature(maxdp)
-        elif econo['econoControl'] == 6:
+        elif econo['econoControl'] == "DifferentialDryBulbAndEnthalpy":
             oactrl.setEconomizerControlType("DifferentialDryBulbAndEnthalpy")
             if sensedMax != None:
                 maxenth = econo['sensedMax']
@@ -514,6 +516,7 @@ class WriteOPS(object):
         #set control action
         if econo['controlAction']!=None:
             oactrl.setEconomizerControlActionType(econo['controlAction'])
+            print econo['controlAction']
         print 'set control action'
         #set minLimit type
         if econo['minLimitType']!=None:
@@ -523,6 +526,18 @@ class WriteOPS(object):
         if econo['DXLockoutMethod'] != None:
             oactrl.setLockoutType(econo['DXLockoutMethod'])
         print 'set dx lockout method'
+        if econo['timeOfDaySch'] != None:
+            print 'updating economizer time of day schedule'
+            ossch = self.getOSSchedule(econo['timeOfDaySch'],model)
+            oactrl.setTimeofDayEconomizerControlSchedule(ossch)
+        print econo
+        if econo['mvCtrl'] != None:
+            print 'updating mechanical ventilation controller'
+            mv = oactrl.controllerMechanicalVentilation()
+            ossch = self.getOSSchedule(econo['mvCtrl']['availSch'],model)
+            mv.setAvailabilitySchedule(ossch)
+            mv.setName(econo['mvCtrl']['name'])
+            mv.setDemandControlledVentilation(econo['mvCtrl']['DCV'])
         print "success for economizer!"
         return oactrl
         
@@ -1071,7 +1086,7 @@ class WriteOPS(object):
                             #set control type
                             #can sensed min still be dry bulb for any of these?  Future release question
                             econo = self.recallOASys(HVACDetails)
-                            oactrl = self.updateOASys(econo,oactrl)
+                            oactrl = self.updateOASys(econo,oactrl,model)
                             print 'economizer settings updated to economizer name: ' + HVACDetails['airsideEconomizer']['name']
                             print ''
 
@@ -1113,7 +1128,7 @@ class WriteOPS(object):
                             #set control type
                             #can sensed min still be dry bulb for any of these?  Future release question
                             econo = self.recallOASys(HVACDetails)
-                            oactrl = self.updateOASys(econo,oactrl)
+                            oactrl = self.updateOASys(econo,oactrl,model)
                             print 'economizer settings updated to economizer name: ' + HVACDetails['airsideEconomizer']['name']
                             print ''
 
@@ -1165,15 +1180,13 @@ class WriteOPS(object):
                     airloop.addBranchForZone(zone)
                 if(HVACDetails != None):
                     oasys = airloop.airLoopHVACOutdoorAirSystem() 
-
-
                     if oasys.is_initialized():
                         print 'overriding the OpenStudio airside economizer settings'
                         oactrl = oasys.get().getControllerOutdoorAir()
                         #set control type
                         #can sensed min still be dry bulb for any of these?  Future release question
                         econo = self.recallOASys(HVACDetails)
-                        oactrl = self.updateOASys(econo,oactrl)
+                        oactrl = self.updateOASys(econo,oactrl,model)
                         print 'economizer settings updated to economizer name: ' + HVACDetails['airsideEconomizer']['name']
                         print ''
                     #the fan by default is variable volume, it will never be constant volume
@@ -1201,18 +1214,19 @@ class WriteOPS(object):
                     print 'updated packaged dx system!'
                     print ''
                     print 'overriding the OpenStudio hot water boiler description'
-                if plantDetails['boiler'] != None:
-                    x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Heating:Water"))
-                    hc = model.getCoilHeatingWater(x[0].handle()).get()
-                    hwl = hc.plantLoop().get()
-                    print type(hwl)
-                    boilervec = hwl.supplyComponents(ops.IddObjectType("OS:Boiler:HotWater"))
-                    for bc,boiler in enumerate(boilervec):
-                        #sequencing, is this possible?
-                        #below's example has no sequencing capabilities
-                        osboiler = model.getBoilerHotWater(boiler.handle()).get()
-                        uboil = self.recallBoiler(plantDetails)
-                        osboiler = self.updateBoiler(uboil,osboiler)
+                if plantDetails != None:
+                    if plantDetails['boiler'] != None:
+                        x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Heating:Water"))
+                        hc = model.getCoilHeatingWater(x[0].handle()).get()
+                        hwl = hc.plantLoop().get()
+                        print type(hwl)
+                        boilervec = hwl.supplyComponents(ops.IddObjectType("OS:Boiler:HotWater"))
+                        for bc,boiler in enumerate(boilervec):
+                            #sequencing, is this possible?
+                            #below's example has no sequencing capabilities
+                            osboiler = model.getBoilerHotWater(boiler.handle()).get()
+                            uboil = self.recallBoiler(plantDetails)
+                            osboiler = self.updateBoiler(uboil,osboiler)
             elif systemIndex == 7:
                 hvacHandle = ops.OpenStudioModelHVAC.addSystemType7(model).handle()
                 # get the airloop
@@ -1229,7 +1243,7 @@ class WriteOPS(object):
                         #set control type
                         #can sensed min still be dry bulb for any of these?  Future release question
                         econo = self.recallOASys(HVACDetails)
-                        oactrl = self.updateOASys(econo,oactrl)
+                        oactrl = self.updateOASys(econo,oactrl,model)
                         print 'economizer settings updated to economizer name: ' + HVACDetails['airsideEconomizer']['name']
                         print ''
                         
@@ -1300,6 +1314,27 @@ class WriteOPS(object):
                                         ostower.remove()
                                         newostower = self.updateCoolingTower(utower,newostower)
                                         print newostower
+                            elif uchiller['condenserType'] == 'AirCooled':
+                                #we are going to make the chiller air cooled, and rip out the cooling tower
+                                print 'You have specified an air cooled chiller.  Creating your chiller.'
+                                towervec = model.getCoolingTowerSingleSpeeds() #get all towers on the loop (1 by default)
+                                print towervec
+                                for tcount, tower in enumerate(towervec):
+                                    print 'here'
+                                    print type(tower)
+                                    #the tower is by default a single speed tower
+                                    ostower = model.getCoolingTowerSingleSpeed(tower.handle()).get()
+                                    print ostower
+                                    cwl = ostower.plantLoop().get()
+                                    print cwl
+                                    node = cwl.supplyOutletNode()
+                                    print node
+                                    print 'Removing cooling tower.'
+                                    ostower.remove()
+                                    print 'Cooling tower removed.'
+                                    print 'Condenser loop unneeded.'
+                                    cwl.remove()
+                                    print 'Condenser loop removed.'
 
             else:
                 msg = "HVAC system index " + str(systemIndex) +  " is not implemented yet!"

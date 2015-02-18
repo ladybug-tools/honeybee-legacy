@@ -21,10 +21,10 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_OpenStudio Mechanical Controller"
 ghenv.Component.NickName = 'MechVentController'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_18_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | AirsideSystems"
-try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
 except: pass
 
 from clr import AddReference
@@ -37,17 +37,19 @@ class dictToClass(object):
     def __init__(self,pyDict):
         self.d = pyDict
 
+dcvDict = {
+0:False,
+1:True
+}
+
 def main(uniqueName,availabilitySch,DCV):
+    if availabilitySch == None:
+        availabilitySch = "ALWAYS ON"
     if sc.sticky.has_key('honeybee_release'):
         mvCtrl={}
         if (_uniqueName==None):
             print 'A unique name must be provided.'
             msg = "A unique name must be provided."
-            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
-            return None
-        elif _availabilitySch==None:
-            print 'An availability Schedule must be provided.'
-            msg = "A availability Schedule must be provided."
             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
             return None
         else:
@@ -69,7 +71,7 @@ def main(uniqueName,availabilitySch,DCV):
             if DCV != None:
                 if isinstance(DCV,int):
                     if (DCV < 2):
-                        mvCtrl['DCV'] = DCV
+                        mvCtrl['DCV'] =  dcvDict[DCV]
                     else:
                         print 'The DCV input must be an integer with value of 0 or 1.'
                         msg = "The DCV input must be an integer with value of 0 or 1."

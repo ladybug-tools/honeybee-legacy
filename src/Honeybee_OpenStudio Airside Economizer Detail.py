@@ -10,18 +10,18 @@ Provided by Honeybee 0.0.56
 
     Args:
         _uniqueName : a required field to uniquely name the economizer
-        _economizerControlType_:... supply nothing and it defaults
-        _controlAction_: ... Requires an integer.  See ecdict for different values to supply.  Supply nothing and it defaults to "No Economizer", i.e. - always deliver Min Fresh Air only (the OpenStudio Default)
-        _maximumAirFlowRate_: ... supply nothing and it autosizes
-        _minimumAirFlowRate_: ... do nothing and it autosizes
+        _economizerControlType_:... requires an integer specifying the type of economizer 0:FixedDryBulb(default),1:DifferentialDryBulb,2:FixedEnthalpy,3:DifferentialEnthalpy,4:ElectronicEnthalpy,5:FixedDewPointAndDryBulb,6:DifferentialDryBulbAndEnthalpy,7:NoEconomizer
+        _controlAction_: ... Requires an integer.  See ecdict for different values to supply.  Supply nothing and it defaults to "ModulateFlow"
+        _maximumAirFlowRate_: ... supply nothing and it will Autosize (recommended)
+        _minimumAirFlowRate_: ... do nothing and it will Autosize (recommended)
         _minimumLimitType_: ... do nothing and it defaults to Proportional Minimum (min depends on the supply air flow rate as opposed to an absolute number)
-        _minimumOutdoorAirSchedule_: ... do nothing and it defaults to OS stettings
-        _minimumOutdoorAirFracSchedule_: ... this overrides minOutdoorAirSchedule and minAirflowRate
-        _maximumLimitDewpoint_: ... needed for when the ControlType is Fixed Dewpoint and Dry Bulb
+        _minimumOutdoorAirSchedule_: ... This is a schedule with values between 0 and 1, and it is multiplied by the minimumAirFlowRate.  It is usually left blank, but can be used to fine tune the economizer during warm-up time or after hours.
+        _minimumOutdoorAirFracSchedule_: ... this overrides minOutdoorAirSchedule and minAirflowRate.  It is a schedule between 0 and 1.  It is often used to create a 100% outside air system.
+        _maximumLimitDewpoint_: ... needed for when the ControlType is Fixed Dewpoint and Dry Bulb.  Otherwise leave blank
         _sensedMinimum_: ... is the minimum of whatever the control type, at this point the system goes to minimum flow
         _sensedMaximum_: ... is the maximum of whatever the control type, at this point the system goes to minimum flow
         _economizerLockoutMethod_: ... should only used when the HVAC system is packaged DX
-        _timeOfDaySchedule_: provide this to command the economizer dampers into the "closed" position at night.  Do nothing and it defaults to the OpenStudio default (always open...which is typically not what you want)
+        _timeOfDaySchedule_: this field is only used when the outdoor flow rate is based on a schedule.  It is rare for a normal economizer to have this value set.  If so, apply the name of a schedule.
         _mechVentController_: an optional field, though highly recommended.  Open Studio provides default behavoir for this controller.
     Returns:
         airsideEconomizerParameters:...
@@ -68,33 +68,37 @@ class dictToClass(object):
 
         
         
+        
+
+
 ecdict = {
-0:'Fixed Dry Bulb',
-1:'Differential Dry Bulb',
-2:'Fixed Enthalpy',
-3:'Differential Enthalply',
-4:'Electronic Enthalpy',
-5:'Fixed Dewpoint and Dry Bulb',
-6:'Differential Dry Bulb and Enthalpy'
+0:'FixedDryBulb',
+1:'DifferentialDryBulb',
+2:'FixedEnthalpy',
+3:'DifferentialEnthalply',
+4:'ElectronicEnthalpy',
+5:'FixedDewpointandDryBulb',
+6:'DifferentialDryBulbandEnthalpy',
+7:'NoEconomizer'
 }
 
 controlActdict = {
-0:'Modulate Flow',
-1:'Modulate Flow with Bypass'
+0:'ModulateFlow',
+1:'ModulateFlowwithBypass'
 }
 
 minLimitdict = {
-0:'Proportional Minimum',
-1:'Fixed Minimum'
+0:'ProportionalMinimum',
+1:'FixedMinimum'
 }
 
 dxLockoutdict = {
-0:'No Lockout',
-1:'Lockout with Heating',
-2:'Lockout with Compressor'
+0:'NoLockout',
+1:'LockoutwithHeating',
+2:'LockoutwithCompressor'
 }
 
-
+print _economizerControlType_
 if sc.sticky.has_key('honeybee_release'):
     print 'grabbed the Honeybee default AirSide Economizer Definition: '
     hb_AirsideEconomizerDef = sc.sticky['honeybee_AirsideEconomizerParams']().airEconoDict
@@ -106,17 +110,17 @@ if sc.sticky.has_key('honeybee_release'):
     #I agree with Mostapha, there should be a smarter way to read the input signals
     econocomponent={}
     econocomponent['name'] = _uniqueName
-    econocomponent['econoControl'] = _economizerControlType_
-    econocomponent['controlAction'] = _controlAction_
+    econocomponent['econoControl'] = ecdict[_economizerControlType_]
+    econocomponent['controlAction'] = controlActdict[_controlAction_]
     econocomponent['maxAirFlowRate'] = _maximumAirFlowRate_
     econocomponent['minAirFlowRate'] = _minimumAirFlowRate_
-    econocomponent['minLimitType'] = _minimumLimitType_
+    econocomponent['minLimitType'] = minLimitdict[_minimumLimitType_]
     econocomponent['minOutdoorAirSchedule'] = _minimumOutdoorAirSchedule_
     econocomponent['minOutdoorAirFracSchedule'] = _minimumOutdoorAirFracSchedule_
     econocomponent['maxLimitDewpoint'] = _maximumLimitDewpoint_
     econocomponent['sensedMin'] = _sensedMinimum_
     econocomponent['sensedMax'] = _sensedMaximum_
-    econocomponent['DXLockoutMethod'] = _economizerLockoutMethod_
+    econocomponent['DXLockoutMethod'] = dxLockoutdict[_economizerLockoutMethod_]
     econocomponent['timeOfDaySch'] = _timeOfDaySchedule_
     if _mechVentController_ != None:
         econocomponent['mvCtrl'] = _mechVentController_.d
@@ -150,7 +154,6 @@ if sc.sticky.has_key('honeybee_release'):
             if (_economizerControlType_ != 5):
                 if( _sensedMinimum_ == None or _sensedMaximum_ == None):
                     print 'Warning: you have chosen an control Type that is not based on dry bulb.'
-                    print 'The honeybee default economizer is a dry bulb economizer, and the default honeybee economizer assumes sensed min and sensed max values are based on outdoor dry bulb temperatures (C)'
                     print 'We strongly suggest you provide your own values for sensedMinimum and sensedMaximum inputs for this component.'
                     print 'If you have selected Enthalpy, units for sensedMax and sensed Min are in Joules/kg'
                     print 'Differential controllers are based upon the measured difference between exhaust and outdoor supply air streams.'
@@ -167,26 +170,40 @@ if sc.sticky.has_key('honeybee_release'):
     actions = []
     storedEconoPar = {}
     for key in hb_AirsideEconomizerDef.keys():
+        print key, econocomponent[key]
         if econocomponent.has_key(key) and econocomponent[key] != None:
             if key == 'econoControl':
-                s = key + ' has been updated to ' + ecdict[econocomponent[key]]
+                s = key + ' has been updated to ' + econocomponent[key]
                 actions.append(s)
             elif key =='controlAction':
-                s = key + ' has been updated to ' + controlActdict[econocomponent[key]]
+                s = key + ' has been updated to ' + econocomponent[key]
                 actions.append(s)
             elif key == 'minLimitType':
-                s = key + ' has been updated to ' + minLimitdict[econocomponent[key]]
+                s = key + ' has been updated to ' + econocomponent[key]
                 actions.append(s)
             elif key == 'DXLockoutMethod':
-                s = key + ' has been updated to ' + dxLockoutdict[econocomponent[key]]
+                s = key + ' has been updated to ' + econocomponent[key]
                 actions.append(s)
             else:
                 s = key + ' has been updated to ' + str(econocomponent[key])
                 actions.append(s)
             storedEconoPar[key] = econocomponent[key]
         else:
-            s = key + ' is still set to Honeybee Default: ' + str(hb_AirsideEconomizerDef[key])
-            actions.append(s)
+            if key == 'econoControl':
+                s = key + ' is still set to Honeybee Default: ' + hb_AirsideEconomizerDef[key]
+                actions.append(s)
+            elif key =='controlAction':
+                s = key + ' is still set to Honeybee Default: ' + hb_AirsideEconomizerDef[key]
+                actions.append(s)
+            elif key == 'minLimitType':
+                s = key + ' is still set to Honeybee Default: ' + hb_AirsideEconomizerDef[key]
+                actions.append(s)
+            elif key == 'DXLockoutMethod':
+                s = key + ' is still set to Honeybee Default: ' + hb_AirsideEconomizerDef[key]
+                actions.append(s)
+            else:
+                s = key + ' is still set to Honeybee Default: ' + str(hb_AirsideEconomizerDef[key])
+                actions.append(s)
             storedEconoPar[key] = hb_AirsideEconomizerDef[key]
     
     airsideEconomizerParameters = dictToClass(storedEconoPar)

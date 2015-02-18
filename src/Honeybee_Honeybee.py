@@ -30,7 +30,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_16_2015'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_18_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -3467,6 +3467,7 @@ class EPScheduleAux(object):
         try:
             scheduleObj = sc.sticky["honeybee_ScheduleLib"][schName.upper()]
         except Exception, e:
+            
             if schName != "NONE":
                 msg = "Failed to find " + schName + " in the Honeybee schedule library."
                 print msg
@@ -3494,6 +3495,7 @@ class EPScheduleAux(object):
         try:
             scheduleObj = sc.sticky["honeybee_ScheduleTypeLimitsLib"][schName.upper()]
         except Exception, e:
+            
             if schName != "NONE":
                 msg = "Failed to find " + schName + " in the Honeybee schedule type limits library."
                 print msg
@@ -6444,22 +6446,55 @@ class hb_chillerEIRParams(object):
             'Curves':None
             }
             
-            
+class hb_coolingTowerParams(object):
+    def __init__(self):
+        self.coolTowerDict= {
+            'name':'honeybee default cooling tower',
+            'speedControl':'OneSpeed',
+            'inputMethod':'NominalCapacity',
+            'modelType':'CoolToolsCrossFlow',
+            'designWB':25.5556,
+            'designRange':5.5556,
+            'designApproach':3.8889,
+            'sizingFactor':1.15,
+            'nominalCapacity':'Autosized',
+            'designWaterFlowRate':'Autosized',
+            'airflowAtHighSpeed':'Autosized',
+            'fanPowerAtHighSpeed':'Autosized',
+            'lowSpeedCapacity':'Autosized',
+            'airflowAtLowSpeed':'Autosized',
+            'fanPowerAtLowSpeed':'Autosized',
+            'freeConvectionCapacity':'Autosized',
+            'airflowInFreeConvection':'Autosized',
+            'basinHeaterCapacity':0,
+            'basinHeaterSetpoint':2,
+            'basinHeaterSchedule':None,
+            'numberOfCells':1,
+            'cellControl':'NotNeeded',
+            'cellMinWaterFlowFraction':0.33,
+            'cellMaxWaterFlowFraction':2.5,
+            'fanPowerRatioFlowRatioCurve':None
+        }
+
 class hb_airsideEconoParams(object):
     def __init__(self):
         self.airEconoDict = {
         'name':'honeybeeDefaultEconomizer',
-        'econoControl':0,
-        'controlAction':0,
+        'econoControl':'FixedDryBulb',
+        'controlAction':'Modulate Flow',
         'maxAirFlowRate':'Autosize',
         'minAirFlowRate':'Autosize',
-        'minLimitType':0,
+        'minLimitType':'Proportional Minimum',
+
         'minOutdoorAirSchedule':'OpenStudio Default',
         'minOutdoorAirFracSchedule':None,
         'maxLimitDewpoint':None,
         'sensedMin':12,
         'sensedMax':22,
-        'DXLockoutMethod':None
+        'DXLockoutMethod':None,
+        'timeOfDaySch':'ALWAYS ON',
+        'mvCtrl':None,
+        'availManagerList':None
         }
 
 class hb_constVolFanParams(object):
@@ -6697,11 +6732,13 @@ if checkIn.letItFly:
         sc.sticky["honeybee_folders"]["DSLibPath"] = hb_DSLibPath
     
         if folders.EPPath == None:
+		
             EPVersions = ["V8-2-7", "V8-2-6", "V8-2-5", "V8-2-4", "V8-2-3", \
                           "V8-2-2", "V8-2-1", "V8-2-0", "V8-1-0"]
             for EPVersion in EPVersions:
                 if os.path.isdir("C:\EnergyPlus" + EPVersion + "\\"):
                     folders.EPPath = "C:\EnergyPlus" + EPVersion + "\\"
+
                     break
 
             if folders.EPPath == None:
@@ -6714,7 +6751,8 @@ if checkIn.letItFly:
                 ghenv.Component.AddRuntimeMessage(w, msg)
                 folders.EPPath = "C:\EnergyPlus" + EPVersion + "\\"
         
-        sc.sticky["honeybee_folders"]["EPPath"] = folders.EPPath
+        sc.sticky["honeybee_folders"]["EPPath"] = folders.EPPath  
+
         sc.sticky["honeybee_folders"]["EPVersion"] = EPVersion.replace("-", ".")[1:]
         sc.sticky["honeybee_RADMaterialAUX"] = RADMaterialAux
         
@@ -6761,6 +6799,7 @@ if checkIn.letItFly:
         sc.sticky["honeybee_hspeedevapcondParams"] = hb_hspeedEvapCondParams
         sc.sticky["honeybee_hwBoilerParams"] = hb_hwBoilerParams
         sc.sticky["honeybee_chillerEIRParams"] = hb_chillerEIRParams
+        sc.sticky["honeybee_coolingTowerParams"] = hb_coolingTowerParams
         sc.sticky["honeybee_EPSurface"] = hb_EPSurface
         sc.sticky["honeybee_EPShdSurface"] = hb_EPShdSurface
         sc.sticky["honeybee_EPZoneSurface"] = hb_EPZoneSurface
