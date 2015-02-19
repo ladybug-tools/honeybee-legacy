@@ -81,7 +81,11 @@
 				
 					var file = fileInput.files[0];
 					var reader = new FileReader();
-				
+					
+					var regex = /^([a-zA-Z0-9\s_\\.\-:])+(.csv|.txt)$/;
+    				
+    				if (regex.test(file.name.toLowerCase())) {
+
 					reader.onload = function(e) {
 						
 						rawData = reader.result;
@@ -142,6 +146,10 @@
 			            
 						});
 					}
+				}else{
+
+					alert("Please upload a valid CSV file!");
+				}
 
 				reader.readAsText(file);
 				});
