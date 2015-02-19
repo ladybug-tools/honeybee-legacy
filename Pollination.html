@@ -42,12 +42,12 @@
 				left: 75px;
 				right: 20px;
 				}
-			.row, .header { clear: left; font-size: 14px; line-height: 18px; height: 20px; margin: 5px; width:85% }
+			.row, .header { clear: left; font-size: 14px; line-height: 18px; height: 20px; margin: 5px; width:90% }
 			.row:hover { font-weight: bold;  color: orange;}
 			.row:nth-child(odd) { background: rgba(0,0,0,0.05); }
 			.header { font-weight: bold;}
-			.cell { float: left; overflow: hidden; white-space: nowrap; width: 120px; height: 22px; }
-			.col-0 { width: 200px; }
+			.cell { float: left; overflow: hidden; white-space: nowrap; width: 100px; height: 22px; }
+			.col-0 { width: 180px; }
 
     	</style>
 	</head>
@@ -99,11 +99,19 @@
 
 
 						// initialData = data;
+						// collect text for first column to adjust left margin
+						var firstCell = data.map(function(d){return d3.values(d)[0]});
+						
+						var textLength = 0;
+						firstCell.forEach(function(d){
+							if (d.length > textLength) textLength = d.length;
+						});
+						
 
 						// get parallel coordinates
 						graph = d3.parcoords()('#wrapper')
 		                	.data(data)
-		                		.margin({ top: 25, left: 75, bottom: 10, right: 0 })
+		                		.margin({ top: 25, left: 3 * textLength, bottom: 10, right: 0 })
 		                		.alpha(0.6)
 		                		.mode("queue")
 		                		.rate(5)
