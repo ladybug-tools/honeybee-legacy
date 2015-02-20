@@ -46,8 +46,12 @@
 			.row:hover { font-weight: bold;  color: orange;}
 			.row:nth-child(odd) { background: rgba(0,0,0,0.05); }
 			.header { font-weight: bold;}
-			.cell { float: left; overflow: hidden; white-space: nowrap; width: 100px; height: 22px; }
-			.col-0 { width: 180px; }
+			.cell { float: left;
+					overflow: hidden;
+					white-space: nowrap;
+					width: 100px;
+					height: 22px;
+				}
 
     	</style>
 	</head>
@@ -69,6 +73,7 @@
 		
 		<script>
 			var rawData;
+			var totalWidth = .9 * window.innerWidth - 75;
 
 			var color_set = d3.scale.linear()
 				.range(["#3182bd", "#f33"]);
@@ -98,7 +103,7 @@
 					 			.remove();
 
 
-						// initialData = data;
+						//initialData = data;
 						// collect text for first column to adjust left margin
 						var firstCell = data.map(function(d){return d3.values(d)[0]});
 						
@@ -117,6 +122,7 @@
 		                		.rate(5)
 		                		.render()
 		                		.brushMode("1D-axes")  // enable brushing
+		                		.reorderable()
 		                		.interactive();
 
 		                
@@ -140,6 +146,15 @@
 		            			"mouseover": function(d) { graph.highlight([d]) },
 		            			"mouseout": graph.unhighlight
 		          			});
+
+		          		// set width size
+		          		cellWidth = parseInt(totalWidth/d3.keys(data[0]).length);
+		          		d3.selectAll(".cell").style("width", (cellWidth + "px"));
+
+		          		// It is good for now but at some point I can make it smarter
+		          		// I need to add more checks here and make sure that the size will be adjusted
+		          		// for columns with long contents and shrink for the rest.
+		          		// d3.selectAll(".col-0.cell").style("width", (textLength*8) + "px");
 
 		          		// update grid on brush event
 		          		graph.on("brush", function(d) {
