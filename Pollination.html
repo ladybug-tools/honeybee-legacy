@@ -166,7 +166,8 @@
 		            				"mouseover": function(d) { graph.highlight([d])},
 		            				"mouseout": graph.unhighlight
 		          					});
-			            
+
+		          			d3.selectAll(".cell").style("width", (cellWidth + "px"));
 						});
 					}
 				}else{
@@ -202,3 +203,5 @@
 	</body>
 
 </html>
+
+
