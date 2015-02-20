@@ -217,7 +217,8 @@ def main(fanDetail,coolingCoil,heatingCoil,airsideEconomizer,availabilityManager
             else:
                 pass
             if availabilityManagerList != None:
-                sysdict['availManagerList'] = availabilityManagerList.d 
+                print 'found availMan!!!!!!!!!1'
+                sysdict['availabilityManagerList'] = availabilityManagerList.d 
             actions = []
             storedAHUParams = {}
             for key in sorted(hb_airHandler.keys()):

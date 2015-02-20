@@ -407,6 +407,30 @@ class WriteOPS(object):
 
         
         
+    def recallAvailManager(self,HVACDetails):
+        #print HVACDetails['availabilityManagerList']
+        return HVACDetails['availabilityManagerList']
+    
+    def updateAvailManager(self,availManager,OSComponent):
+        #avail manager is the user's definition
+        #OS component is the OpenStudio object being updated
+        print availManager
+        print type(OSComponent)
+        #get the availability List Manager
+        #set the avail manager list name
+        #set the schedule of the availability manager
+        #set the night cycle controls, when applicable
+        if availManager != None:
+            if availManager['type'] == 'NightCycle':
+                try:
+                    print type(availManager['controlType'])
+                    OSComponent.setNightCycleControlType(availManager['controlType'])
+                    print 'set night cycle availability manager to: '+availManager['controlType'] 
+                except:
+                    print 'Error: OSComponent '+str(typ(OSComponent))+' cannot set night cycle availability manager!!'
+
+        return OSComponent
+        
     def recallOASys(self,HVACDetails):
         #do not modify these strings unless EnergyPlus strings change
         contrlType = {
@@ -538,6 +562,11 @@ class WriteOPS(object):
             mv.setAvailabilitySchedule(ossch)
             mv.setName(econo['mvCtrl']['name'])
             mv.setDemandControlledVentilation(econo['mvCtrl']['DCV'])
+        if econo['minOASchedule'] != None:
+            print 'updating minOA schedule'
+            minOASch = self.getOSSchedule(econo['minOASchedule'],model)
+            oactrl.setMinimumOutdoorAirSchedule(minOASch)
+            
         print "success for economizer!"
         return oactrl
         
@@ -1175,6 +1204,13 @@ class WriteOPS(object):
                 hvacHandle = ops.OpenStudioModelHVAC.addSystemType5(model).handle()
                 # get the airloop
                 airloop = model.getAirLoopHVAC(hvacHandle).get()
+                #modify the airLoopAvailabilityManager and the underlying availabilitySchedule
+                availManager=self.recallAvailManager(HVACDetails)
+                airloop = self.updateAvailManager(HVACDetails['availabilityManagerList'],airloop)
+                print sorted(HVACDetails)
+                if HVACDetails['availSch'] != None:
+                    availSch = self.getOSSchedule(HVACDetails['availSch'], model)
+                    airloop.setAvailabilitySchedule(availSch)
                 # add branches
                 for zone in thermalZoneVector:
                     airloop.addBranchForZone(zone)

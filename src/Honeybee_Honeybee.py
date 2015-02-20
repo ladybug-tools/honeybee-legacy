@@ -6424,6 +6424,15 @@ class hb_hwBoilerParams(object):
         'Curves':None
         }
 
+class hb_availManagerParams(object):
+    def __init__(self):
+        self.manListDict= {
+        'name':'honeybee default AvailabilityManagerList',
+        'type':'NightCycle',
+        'scheduleName':'ALWAYS ON',
+        'controlType':'CycleOnAny'
+        }
+
 class hb_chillerEIRParams(object):
     def __init__(self):
         self.chillerDict= {
@@ -6486,7 +6495,7 @@ class hb_airsideEconoParams(object):
         'minAirFlowRate':'Autosize',
         'minLimitType':'Proportional Minimum',
 
-        'minOutdoorAirSchedule':'OpenStudio Default',
+        'minOutdoorAirSchedule':None,
         'minOutdoorAirFracSchedule':None,
         'maxLimitDewpoint':None,
         'sensedMin':12,
@@ -6530,7 +6539,7 @@ class hb_varVolFanParams(object):
 class hb_AirHandlerParams(object):
     def __init__(self):
         self.airHandlerDict = {
-        'availSch':'OpenStudio Default',
+        'availSch':None,
         'fanPlacement':'DrawThrough',
         'coolingAirflow':'Autosize',
         'coolingOAflow':'Autosize',
@@ -6543,7 +6552,8 @@ class hb_AirHandlerParams(object):
         'airsideEconomizer':hb_airsideEconoParams,
         'coolingCoil': None,
         'heatingCoil': None,
-        'evaporativeCondenser': None
+        'evaporativeCondenser': None,
+        'availabilityManagerList':None
         }
 
 class hb_2xDXCoilParams(object):
@@ -6800,6 +6810,7 @@ if checkIn.letItFly:
         sc.sticky["honeybee_hwBoilerParams"] = hb_hwBoilerParams
         sc.sticky["honeybee_chillerEIRParams"] = hb_chillerEIRParams
         sc.sticky["honeybee_coolingTowerParams"] = hb_coolingTowerParams
+        sc.sticky["honeybee_availManagerList"] = hb_availManagerParams
         sc.sticky["honeybee_EPSurface"] = hb_EPSurface
         sc.sticky["honeybee_EPShdSurface"] = hb_EPShdSurface
         sc.sticky["honeybee_EPZoneSurface"] = hb_EPZoneSurface

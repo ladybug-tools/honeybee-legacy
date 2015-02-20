@@ -23,6 +23,7 @@ Provided by Honeybee 0.0.56
         _economizerLockoutMethod_: ... should only used when the HVAC system is packaged DX
         _timeOfDaySchedule_: this field is only used when the outdoor flow rate is based on a schedule.  It is rare for a normal economizer to have this value set.  If so, apply the name of a schedule.
         _mechVentController_: an optional field, though highly recommended.  Open Studio provides default behavoir for this controller.
+        _availabilityManagerList_ : allows you to toggle between different AvailabilityManagers.  Right now, we simply allow you to create a list that has only one AvailabilityManager, and the type of manager can be ScheduledOrNightCycle
     Returns:
         airsideEconomizerParameters:...
 """
