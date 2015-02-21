@@ -1038,9 +1038,10 @@ class WriteOPS(object):
                         for bc,boiler in enumerate(boilervec):
                             #sequencing, is this possible?
                             #below's example has no sequencing capabilities
-                            osboiler = model.getBoilerHotWater(boiler.handle()).get()
-                            uboil = self.recallBoiler(plantDetails)
-                            osboiler = self.updateBoiler(uboil,osboiler)
+                            if len(plantDetails['boiler']) > 0:
+                                osboiler = model.getBoilerHotWater(boiler.handle()).get()
+                                uboil = self.recallBoiler(plantDetails)
+                                osboiler = self.updateBoiler(uboil,osboiler)
             elif systemIndex == 2:
                 # 2: PTHP, Residential - thermalZoneVector because ZoneHVAC
                 ops.OpenStudioModelHVAC.addSystemType2(model, thermalZoneVector)
@@ -1184,7 +1185,7 @@ class WriteOPS(object):
 
                             coolcoil = self.updateCoolingCoil(HVACDetails['coolingCoil'],coolcoil)
                             
-                        if HVACDetails['heatingCoil'] != 0:
+                        if HVACDetails['heatingCoil'] != None:
                             print 'overriding the OpenStudio DX heating coil settings'
                             #print airloop
                             hc = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Heating:DX:SingleSpeed"))
@@ -1215,7 +1216,22 @@ class WriteOPS(object):
                 for zone in thermalZoneVector:
                     airloop.addBranchForZone(zone)
                 if(HVACDetails != None):
-                    oasys = airloop.airLoopHVACOutdoorAirSystem() 
+                    #update the airloopHVAC component with autosize information
+                    designAirflowRate = 0
+                    if HVACDetails['coolingAirflow'] != 'Autosize':
+                        if HVACDetails['coolingAirflow'] > designAirflowRate: 
+                            designAirflowRate = HVACDetails['coolingAirflow']
+                    if HVACDetails['heatingAirflow'] != 'Autosize':
+                        if HVACDetails['heatingAirflow'] > designAirflowRate:
+                            designAirflowRate = HVACDetails['heatingAirflow']
+                    if HVACDetails['floatingAirflow'] != 'Autosize':
+                        if HVACDetails['floatingAirflow'] > designAirflowRate:
+                            designAirflowRate = HVACDetails['floatingAirflow']
+                    if designAirflowRate != 0:
+                        airloop.setDesignSupplyAirFlowRate(designAirflowRate)
+                        print 'updated design airflow rate'
+                    
+                    oasys = airloop.airLoopHVACOutdoorAirSystem()
                     if oasys.is_initialized():
                         print 'overriding the OpenStudio airside economizer settings'
                         oactrl = oasys.get().getControllerOutdoorAir()
@@ -1260,9 +1276,10 @@ class WriteOPS(object):
                         for bc,boiler in enumerate(boilervec):
                             #sequencing, is this possible?
                             #below's example has no sequencing capabilities
-                            osboiler = model.getBoilerHotWater(boiler.handle()).get()
-                            uboil = self.recallBoiler(plantDetails)
-                            osboiler = self.updateBoiler(uboil,osboiler)
+                            if len(plantDetails['boiler']) > 0:
+                                osboiler = model.getBoilerHotWater(boiler.handle()).get()
+                                uboil = self.recallBoiler(plantDetails)
+                                osboiler = self.updateBoiler(uboil,osboiler)
             elif systemIndex == 7:
                 hvacHandle = ops.OpenStudioModelHVAC.addSystemType7(model).handle()
                 # get the airloop
@@ -1294,7 +1311,7 @@ class WriteOPS(object):
                 
                 if plantDetails!=None:
                     #I think the idea here is to see if there is a hot water plant update(not sure how)
-                    if plantDetails['boiler'] != None:
+                    if len(plantDetails['boiler']) > 0:
                         print 'overriding the OpenStudio hot water boiler description'
                         x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Heating:Water"))
                         hc = model.getCoilHeatingWater(x[0].handle()).get()
@@ -1307,7 +1324,7 @@ class WriteOPS(object):
                             osboiler = model.getBoilerHotWater(boiler.handle()).get()
                             uboil = self.recallBoiler(plantDetails)
                             osboiler = self.updateBoiler(uboil,osboiler)
-                    if plantDetails['chiller'] != None:
+                    if len(plantDetails['chiller']) > 0:
                         print 'overrideing OpenStudio chiller description'
                         x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:Water"))
                         cc = model.getCoilCoolingWater(x[0].handle()).get()
@@ -1335,21 +1352,22 @@ class WriteOPS(object):
                                     print cwl
                                     node = cwl.supplyOutletNode()
                                     print node
-                                    utower = self.recallCoolingTower(plantDetails)
-                                    print utower
-                                    if utower["speedControl"]=="SingleSpeed":
-                                        print "updating single speed cooling tower"
-                                        ostower = self.updateCoolingTower(utower, ostower) #we are all good and don't need to remove the existing CT
-                                    elif utower["speedControl"]=="TwoSpeed":
-                                        print "upgrading cooling tower to two speed"
-                                        newostower = ops.CoolingTowerTwoSpeed(model) # this is not working
-                                    elif utower["speedControl"]=="VariableSpeed":
-                                        print "upgrading cooling tower to variable speed"
-                                        newostower = ops.CoolingTowerVariableSpeed(model) # this seems to work
-                                        newostower.addToNode(node)
-                                        ostower.remove()
-                                        newostower = self.updateCoolingTower(utower,newostower)
-                                        print newostower
+                                    if len(plantDetails['coolingTower']) > 0:
+                                        utower = self.recallCoolingTower(plantDetails)
+                                        print utower
+                                        if utower["speedControl"]=="SingleSpeed":
+                                            print "updating single speed cooling tower"
+                                            ostower = self.updateCoolingTower(utower, ostower) #we are all good and don't need to remove the existing CT
+                                        elif utower["speedControl"]=="TwoSpeed":
+                                            print "upgrading cooling tower to two speed"
+                                            newostower = ops.CoolingTowerTwoSpeed(model) # this is not working
+                                        elif utower["speedControl"]=="VariableSpeed":
+                                            print "upgrading cooling tower to variable speed"
+                                            newostower = ops.CoolingTowerVariableSpeed(model) # this seems to work
+                                            newostower.addToNode(node)
+                                            ostower.remove()
+                                            newostower = self.updateCoolingTower(utower,newostower)
+                                            print newostower
                             elif uchiller['condenserType'] == 'AirCooled':
                                 #we are going to make the chiller air cooled, and rip out the cooling tower
                                 print 'You have specified an air cooled chiller.  Creating your chiller.'
