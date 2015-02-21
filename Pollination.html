@@ -97,7 +97,7 @@
 
 					reader.onload = function(e) {
 						
-						rawData = reader.result;
+						var rawData = reader.result;
 				
 						// parse data						
 						var data = d3.csv.parse(rawData);
@@ -107,10 +107,10 @@
 					 			.remove();
 
 
-						initialData = data;
 						// collect text for first column to adjust left margin
 						var firstCell = data.map(function(d){return d3.values(d)[0]});
 						
+						// find the longest text size in the first row to adjust left margin
 						var textLength = 0;
 						firstCell.forEach(function(d){
 							if (d.length > textLength) textLength = d.length;
@@ -126,11 +126,11 @@
 		                		.rate(5)
 		                		.render()
 		                		.brushMode("1D-axes")  // enable brushing
-		                		//.reorderable() // I removed this as it can mess up with tooltips
+		                		//.reorderable() // I removed this for now as it can mess up with tooltips
 		                		.interactive();
 
 		                
-		                // set the initial coloring
+		                // set the initial coloring based on the 3rd column
 		                update_colors(d3.keys(data[0])[2]);
 
 		                 // click label to activate coloring
@@ -146,19 +146,21 @@
 		          			.datum(data)
 		          			.call(grid)
 		          			.selectAll(".row")
-		          			.on({
-		            			"mouseover": function(d) { graph.highlight([d]) },
-		            			"mouseout": graph.unhighlight
-		          			});
+		          			.on("mouseover", function(d) {
+		          				// remove tooltips if any
+		          				cleanTooltip();
+						    	removeRowHighlight();
+		          				graph.highlight([d]);})
+		            		.on("mouseout", graph.unhighlight);
 
-		          		// set width size
-		          		cellWidth = parseInt(totalWidth/d3.keys(data[0]).length);
-		          		d3.selectAll(".cell").style("width", (cellWidth + "px"));
-
-		          		// It is good for now but at some point I can make it smarter
+		          		// set width size for grid based on number of columns
+		          		// This is good for now but at some point I can make it smarter
 		          		// I need to add more checks here and make sure that the size will be adjusted
 		          		// for columns with long contents and shrink for the rest.
 		          		// d3.selectAll(".col-0.cell").style("width", (textLength*8) + "px");
+		          		cellWidth = parseInt(totalWidth/d3.keys(data[0]).length);
+		          		d3.selectAll(".cell").style("width", (cellWidth + "px"));
+
 
 		          		// update grid on brush event
 		          		graph.on("brush", function(d) {
@@ -166,21 +168,30 @@
 		          				.datum(d)
 		          				.call(grid)
 		          				.selectAll(".row")
-		          				.on("mouseover", function(d) {graph.highlight([d]);})
+		          				.on("mouseover", function(d) {
+									// remove tooltips if any
+		          					cleanTooltip();
+		          					removeRowHighlight();
+		          					graph.highlight([d]);})
 		          				.on("mouseout", graph.unhighlight);
 
+		          			// re-adjust size of the cell
 		          			d3.selectAll(".cell").style("width", (cellWidth + "px"));
+		          			// remove tooltips if any
 		          			cleanTooltip();
+		          			removeRowHighlight();
 						});
 
 
-						// highlight line on hover
-						// This code add circles to the intersection points for first row of data
+						// Add highlight for every line on click
 						var svg = d3.select("svg");
 						var margins = graph.margin();
 						
-
 						function getCenPts(){
+							// this function returns centroid points for all brushed data. I had to change the source
+							// for parallelcoordinates and make compute_centroids public
+							// I assume this should be already somewhere in graph and I don't need to recalculate it
+							// but I couldn't find it so I just wrote this for now
 							var graphCentPts = [];
 							var activeData = [];
 
@@ -206,17 +217,10 @@
 							return [activeData, graphCentPts];
 						}
 						
-						// draw initial circles
-						//svg.selectAll("circle")
-						    //.data(cenPts).enter()
-						        //.append("circle")
-						        //.attr("cx", function(d){return d[0];})
-						        //.attr("cy", function(d){return d[1];});
-						        //.attr("r", "10px");
-
 
 						function isOnLine(startPt, endPt, testPt, tol){
-							//console.log(startPt, endPt, testPt);
+							// check if test point is close enough to a line
+							// between startPt and endPt. close enough means smaller than tolerance
 							var x0 = testPt[0];
 							var	y0 = testPt[1];
 							var x1 = startPt[0];
@@ -232,6 +236,7 @@
 						}
 
 						function findAxes(testPt, cenPts){
+							// finds between which two axis the mouse is
 							var x = testPt[0];
 							var y = testPt[1];
 
@@ -246,15 +251,20 @@
 						}
 
 						function cleanTooltip(){
+							// removes any object under #tooltip is
 							svg.selectAll("#tooltip")
 						    	.remove();
 						}
 
+
+
 						function addTooltip(clicked, clickedCenPts){
-						    
+							
+							// sdd tooltip to multiple clicked lines
 						    var clickedDataSet = [];
 
 						    // get all the values into a single list
+						    // I'm pretty sure there is a better way to write this is Javascript
 						    for (var i=0; i<clicked.length; i++){
 						    	for (var j=0; j<clickedCenPts[i].length; j++){
 						    		var text = d3.values(clicked[i])[j];
@@ -265,6 +275,7 @@
 								}
 							};
 
+							// add rectangles
 							svg.selectAll("rect[id='tooltip']")
 				                	.data(clickedDataSet).enter()
 				                	.append("rect")
@@ -278,6 +289,7 @@
 									.attr("width", function(d){return d[2].length * 10;})
 									.attr("height", "20px");
 
+							// add text on top of rectangle
 							svg.selectAll("text[id='tooltip']")
 						    	.data(clickedDataSet).enter()
 						    		.append("text")
@@ -291,8 +303,15 @@
 				            
 						}
 
-						// mouse position
+						function removeRowHighlight(){
+							    	d3.selectAll("div.row")
+							    		.style("color", "black")
+							    		.style("font-weight", "normal");
+							    }
+
+						// click event for lines
 						svg.on("click", function() {
+						    
 						    clickedPt = d3.mouse(this);
 						    // console.log(clickedPt);
 						    // find between which axes the point is
@@ -307,6 +326,7 @@
 						    //console.log(axeNum);
 						    var clicked = [];
 						    var clickedCenPts = [];
+						    var clickedRows = [];
 
 						    if (graphCentPts.length==0) return;
 
@@ -314,21 +334,29 @@
 							    if (isOnLine(d[axeNum-1], d[axeNum], clickedPt, 2)){
 							    	clicked.push(activeData[i]);
 							    	clickedCenPts.push(graphCentPts[i]);
+							    	clickedRows.push(i);
 							    }
 
 							if (clicked.length!=0){
+								// clean if anything is already selceted
+						    	cleanTooltip();
+						    	removeRowHighlight();	
 							    graph.highlight(clicked);
 							    addTooltip(clicked, clickedCenPts);
+							    // highlight row in grid
+							    selectedRows = d3.selectAll("div.row").filter(function(d, i){return clickedRows.indexOf(i)>-1;});
+							    selectedRows.style("color", "orange").style("font-weight", "bold");
 							}
 							else
 							{
 						    	graph.unhighlight();
 						    	cleanTooltip();
+						    	// remove highlight in grid
+						    	removeRowHighlight();
 							}
 							});
 						});
-
-						svg.on("mouseleave", function(){cleanTooltip();});
+						
 					}
 				}else{
 
