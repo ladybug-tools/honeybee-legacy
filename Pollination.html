@@ -10,14 +10,11 @@
 
 		<title>Pollination</title>
 
-		<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script> <!-- D3 -->
-
+		<script src="./pc_source_files/d3/d3.v3.min.js" charset="utf-8"></script> <!-- D3 -->
 		<script src = "./pc_source_files/d3/d3.parcoords.js"></script> <!-- D3 Parallel Coordinates Library -->
 		<link rel="stylesheet" type="text/css" href="./pc_source_files/css/d3.parcoords.css"> <!-- D3 Parallel Coordinates CSS -->
 		<!-- <link rel="stylesheet" type="text/css" href="./pc_source_files/css/pollination.css"> -->
-
 		<script src="./pc_source_files/d3/d3.underscore.math.js"></script>
-
     	<script src="./pc_source_files/d3/d3.divgrid.js"></script> <!-- D3 table grid -->
     	<style>
     		#header{
@@ -162,12 +159,115 @@
 		          				.datum(d)
 		          				.call(grid)
 		          				.selectAll(".row")
-		          				.on({
-		            				"mouseover": function(d) { graph.highlight([d])},
-		            				"mouseout": graph.unhighlight
-		          					});
+		          				.on("mouseover", function(d) { graph.highlight([d])})
+		          				.on("mouseout", graph.unhighlight);
 
 		          			d3.selectAll(".cell").style("width", (cellWidth + "px"));
+						});
+
+
+						// highlight line on hover
+						// This code add circles to the intersection points for first row of data
+						var svg = d3.select("svg");
+						var margins = graph.margin();
+						
+
+						function getCenPts(){
+							var graphCentPts = [];
+							var activeData = [];
+
+							if (graph.brushed()!=false)
+								{
+									activeData = graph.brushed();
+								}else{
+									activeData = graph.data();
+								}
+							
+							activeData.forEach(function(d){
+								// this is a test for the first row of data
+								var initCenPts = graph.compute_centroids(d).filter(function(d, i){return i%2==0;});
+								
+								// move points based on margins
+								var cenPts = initCenPts.map(function(d){
+									return [d[0] + margins["left"], d[1]+ margins["top"]]; 
+								});
+
+								graphCentPts.push(cenPts);
+							});
+
+							return [activeData, graphCentPts];
+						}
+						
+						// draw initial circles
+						//svg.selectAll("circle")
+						    //.data(cenPts).enter()
+						        //.append("circle")
+						        //.attr("cx", function(d){return d[0];})
+						        //.attr("cy", function(d){return d[1];});
+						        //.attr("r", "10px");
+
+						
+						function isOnLine(startPt, endPt, testPt, tol){
+							//console.log(startPt, endPt, testPt);
+							var x0 = testPt[0];
+							var	y0 = testPt[1];
+							var x1 = startPt[0];
+							var	y1 = startPt[1];
+							var x2 = endPt[0];
+							var	y2 = endPt[1];
+							var Dx = x2 - x1;
+        					var Dy = y2 - y1;
+        					var delta = Math.abs(Dy*x0 - Dx*y0 - x1*y2+x2*y1)/Math.sqrt(Math.pow(Dx, 2) + Math.pow(Dy, 2)); 
+							//console.log(delta);
+							if (delta <= tol) return true;
+							return false;
+						}
+
+						function findAxes(testPt, cenPts){
+							var x = testPt[0];
+							var y = testPt[1];
+
+							// make sure it is inside the range of x
+							if (cenPts[0][0] > x) return -1;
+							if (cenPts[cenPts.length-1][0] < x) return -1;
+
+							// find between which segment the point is
+							for (var i=0; i<cenPts.length; i++){
+								if (cenPts[i][0] > x) return i;
+							}
+						}
+
+						// mouse position
+						svg.on("click", function() {
+						    clickedPt = d3.mouse(this);
+						    // console.log(clickedPt);
+						    // find between which axes the point is
+						    var activeData,
+						    	graphCentPts;
+
+						   	var dataAndCenPts = getCenPts();
+						   	activeData = dataAndCenPts[0];
+							graphCentPts = dataAndCenPts[1];
+
+						    var axeNum = findAxes(clickedPt, graphCentPts[0]);
+						    //console.log(axeNum);
+						    var clicked = [];
+
+						    if (graphCentPts.length==0) return;
+
+						    graphCentPts.forEach(function(d, i){
+							    if (isOnLine(d[axeNum-1], d[axeNum], clickedPt, 2)){
+							    	clicked.push(activeData[i]);
+							    }
+
+							if (clicked.length!=0){
+							    graph.highlight(clicked);
+							}
+							else
+							{
+						    	graph.unhighlight();
+							}
+							});
 						});
 					}
 				}else{
