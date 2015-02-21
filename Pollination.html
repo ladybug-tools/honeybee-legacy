@@ -251,16 +251,22 @@
 						}
 
 						function addTooltip(clicked, clickedCenPts){
-						    // map values to cenPts
-						    var texts = d3.values(clicked[0]);
+						    
+						    var clickedDataSet = [];
 
-						  	// not clean at all!
-						  	if (clickedCenPts[0][0].length<3){
-						    for (var i=0; i< texts.length; i++){ clickedCenPts[0][i].push(texts[i]);};
+						    // get all the values into a single list
+						    for (var i=0; i<clicked.length; i++){
+						    	for (var j=0; j<clickedCenPts[i].length; j++){
+						    		var text = d3.values(clicked[i])[j];
+						  			// not clean at all!
+						  			var x = clickedCenPts[i][j][0];
+						  			var y = clickedCenPts[i][j][1];
+						  			clickedDataSet.push([x, y, text]);
+								}
 							};
 
 							svg.selectAll("rect[id='tooltip']")
-				                	.data(clickedCenPts[0]).enter()
+				                	.data(clickedDataSet).enter()
 				                	.append("rect")
 				                	.attr("x", function(d) { return d[0] - d[2].length * 5;})
 									.attr("y", function(d) { return d[1] - 25; })
@@ -273,7 +279,7 @@
 									.attr("height", "20px");
 
 							svg.selectAll("text[id='tooltip']")
-						    	.data(clickedCenPts[0]).enter()
+						    	.data(clickedDataSet).enter()
 						    		.append("text")
 									.attr("x", function(d) { return d[0];})
 									.attr("y", function(d) { return d[1] - 10; })
