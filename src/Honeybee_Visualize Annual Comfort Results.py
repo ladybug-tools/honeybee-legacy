@@ -31,7 +31,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Visualize Annual Comfort Results"
 ghenv.Component.NickName = 'VisualizeComfort'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_03_2015'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_21_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -183,7 +183,7 @@ def main(pointValues, viewFactorMesh, dataType, lb_preparation, lb_visualization
         else: legendTitle = 'PMV'
         if dataType == 'Degrees From Target': dataType = dataType + ' Temperature'
         if len(legendPar_) == 0:
-            customColors = [System.Drawing.Color.FromArgb(0,136,255), System.Drawing.Color.FromArgb(255,255,255), System.Drawing.Color.FromArgb(255,0,0)]
+            customColors = [System.Drawing.Color.FromArgb(0,136,255), System.Drawing.Color.FromArgb(200,225,255), System.Drawing.Color.FromArgb(255,255,255), System.Drawing.Color.FromArgb(255,230,230), System.Drawing.Color.FromArgb(255,0,0)]
             print dataType
             if dataType == 'Degrees From Target Temperature':
                 numSeg = 11
@@ -194,7 +194,7 @@ def main(pointValues, viewFactorMesh, dataType, lb_preparation, lb_visualization
                 lowB = -2
                 highB = 2
         elif customColors[0] == defaultCustomColor1 and customColors[-1] == defaultCustomColor2:
-            customColors = [System.Drawing.Color.FromArgb(0,136,255), System.Drawing.Color.FromArgb(255,255,255), System.Drawing.Color.FromArgb(255,0,0)]
+            customColors = [System.Drawing.Color.FromArgb(0,136,255), System.Drawing.Color.FromArgb(200,225,255), System.Drawing.Color.FromArgb(255,255,255), System.Drawing.Color.FromArgb(255,230,230), System.Drawing.Color.FromArgb(255,0,0)]
     elif dataType == 'Adaptive Comfort' or dataType == 'Percentage of People Dissatisfied':
         legendTitle = '%'
         if dataType == 'Adaptive Comfort':
