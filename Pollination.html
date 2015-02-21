@@ -50,6 +50,13 @@
 					height: 22px;
 				}
 
+			#tooltip{
+				font-family: sans-serif;
+				font-size: 14px;
+				font-weight: bold;
+				color:black;
+			}
+
     	</style>
 	</head>
 	
@@ -119,7 +126,7 @@
 		                		.rate(5)
 		                		.render()
 		                		.brushMode("1D-axes")  // enable brushing
-		                		.reorderable()
+		                		//.reorderable() // I removed this as it can mess up with tooltips
 		                		.interactive();
 
 		                
@@ -159,10 +166,11 @@
 		          				.datum(d)
 		          				.call(grid)
 		          				.selectAll(".row")
-		          				.on("mouseover", function(d) { graph.highlight([d])})
+		          				.on("mouseover", function(d) {graph.highlight([d]);})
 		          				.on("mouseout", graph.unhighlight);
 
 		          			d3.selectAll(".cell").style("width", (cellWidth + "px"));
+		          			cleanTooltip();
 						});
 
 
@@ -206,7 +214,7 @@
 						        //.attr("cy", function(d){return d[1];});
 						        //.attr("r", "10px");
 
-						
+
 						function isOnLine(startPt, endPt, testPt, tol){
 							//console.log(startPt, endPt, testPt);
 							var x0 = testPt[0];
@@ -237,6 +245,46 @@
 							}
 						}
 
+						function cleanTooltip(){
+							svg.selectAll("#tooltip")
+						    	.remove();
+						}
+
+						function addTooltip(clicked, clickedCenPts){
+						    // map values to cenPts
+						    var texts = d3.values(clicked[0]);
+
+						  	// not clean at all!
+						  	if (clickedCenPts[0][0].length<3){
+						    for (var i=0; i< texts.length; i++){ clickedCenPts[0][i].push(texts[i]);};
+							};
+
+							svg.selectAll("rect[id='tooltip']")
+				                	.data(clickedCenPts[0]).enter()
+				                	.append("rect")
+				                	.attr("x", function(d) { return d[0] - d[2].length * 5;})
+									.attr("y", function(d) { return d[1] - 25; })
+									.attr("rx", "2")
+									.attr("ry", "2")
+									.attr("id", "tooltip")
+									.attr("fill", "grey")
+									.attr("opacity", 0.9)
+									.attr("width", function(d){return d[2].length * 10;})
+									.attr("height", "20px");
+
+							svg.selectAll("text[id='tooltip']")
+						    	.data(clickedCenPts[0]).enter()
+						    		.append("text")
+									.attr("x", function(d) { return d[0];})
+									.attr("y", function(d) { return d[1] - 10; })
+									.attr("id", "tooltip")
+									.attr("fill", "white")
+									.attr("text-anchor", "middle")
+									.attr("font-size", "14px")
+				                	.text( function (d){ return d[2];})
+				            
+						}
+
 						// mouse position
 						svg.on("click", function() {
 						    clickedPt = d3.mouse(this);
@@ -252,23 +300,29 @@
 						    var axeNum = findAxes(clickedPt, graphCentPts[0]);
 						    //console.log(axeNum);
 						    var clicked = [];
+						    var clickedCenPts = [];
 
 						    if (graphCentPts.length==0) return;
 
 						    graphCentPts.forEach(function(d, i){
 							    if (isOnLine(d[axeNum-1], d[axeNum], clickedPt, 2)){
 							    	clicked.push(activeData[i]);
+							    	clickedCenPts.push(graphCentPts[i]);
 							    }
 
 							if (clicked.length!=0){
 							    graph.highlight(clicked);
+							    addTooltip(clicked, clickedCenPts);
 							}
 							else
 							{
 						    	graph.unhighlight();
+						    	cleanTooltip();
 							}
 							});
 						});
+
+						svg.on("mouseleave", function(){cleanTooltip();});
 					}
 				}else{
 
