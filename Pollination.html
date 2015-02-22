@@ -20,9 +20,36 @@
     	<script src="./pc_source_files/js/pace.min.js"></script>
 
     	<style>
+    		.heading{
+    			font-family: sans-serif;
+    			font-size: 13px;
+    			font-weight: normal;
+    		}
+
+    		.instructions{
+    			font-family: sans-serif;
+    			font-size: 11px;
+    			font-weight: normal;
+    		}
+    		
     		#header{
     			font-family: sans-serif;
     		}
+
+    		a:link {
+			    color: grey;
+			}
+
+			/* visited link */
+			a:visited {
+			    color: grey;
+			}
+
+			/* mouse over link */
+			a:hover {
+			    color: black;
+			}
+
 			#wrapper {
 			   position: relative;
 			   float: left;
@@ -39,7 +66,7 @@
 				clear: both; 
 				position:relative;
 				top: 60px;
-				left: 75px;
+				left: 50px;
 				right: 20px;
 				}
 			.row, .header { clear: left; font-size: 14px; line-height: 18px; height: 20px; margin: 5px; width:90% }
@@ -119,16 +146,22 @@
 	<body>
 
   		<div id="header">
-  			<img src="./pc_source_files/image/ladybug_honeybee_icon.png" style="width: 7%; height: 7%; vertical-align:middle; float:right">
-  			<h1>Pollination</h1>
-  			<span class="large">Use Pollination to explore results of parametric studies. </span>
-			<span>Load a .csv file from your system or download an example file from <a href= "./pc_source_files/sampledata/sampleParametricRunsResults.csv"> here</a>! </span>
-  			<br><br>
-  			
+  			<a href= "https://www.facebook.com/LadyBugforGrasshopper" target="_blank"><img src="./pc_source_files/image/ladybug_honeybee_icon.png" style="height: 60px; vertical-align:middle; float:left; padding:2px;"></a>
+	  		
+	  		<h3><br><a href="https://github.com/mostaphaRoudsari/Honeybee/tree/gh-pages" target="_blank">Pollination</a>
+	  			<span class="heading">[Vis] is a web-based application for exploring multi-dimensional data. <a href= "http://honeypatch.github.io/pollination/index" target="_blank">Pollination</a> started at the <a href="http://core.thorntontomasetti.com/aec-technology-symposium-2014/aec-technology-symposium-2014-hackathon/" target="_blank">AEC-TECH Hackathon</a>. Many thanks to the <a href= "http://honeypatch.github.io/pollination/team" target="_blank">team members.</a> Also many thanks to <a href="https://github.com/syntagmatic" target="_blank">Kai Chang</a> for developing <a href="https://syntagmatic.github.io/parallel-coordinates/" target="_blank">parcoords</a> library for <a href="http://d3js.org/" target="_blank">D3JS</a>. Creating Pollination would be very hard without his development.
+				</span>
+	  		</h3>
   			<input type="file" id="input-file" name="files"/>
+  			
+  			<span class="instructions">
+	  			>> Pollination visualizes structured .csv and .json files. You can use <a href="http://www.food4rhino.com/project/ladybug-honeybee" target="_blank">Honeybee</a> to generate the files or create them manually. <a href= "./pc_source_files/sampledata/sampleParametricRunsResults.csv">Here</a> is an example file.
+			</span>
+
   		</div>
 		<div id="whitespace" style="width:100%; height:5px"></div>
-    	<div id="wrapper" class="parcoords" style="width:100%; height:340px"></div>
+    	<div id="wrapper" class="parcoords" style="width:100%; height:400px"></div>
+    	
     	<div id="grid" class="parcoords" style="width:100%;height:340px"></div>
 		
 		<script>

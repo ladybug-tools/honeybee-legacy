@@ -13,7 +13,7 @@ function pollination(data){
 	// get parallel coordinates
 	graph = d3.parcoords()('#wrapper')
     	.data(data)
-    		.margin({ top: 25, left: 3 * textLength, bottom: 10, right: 0 })
+    		.margin({ top: 25, left: 3 * textLength, bottom: 40, right: 0 })
     		.alpha(0.6)
     		.mode("queue")
     		.rate(5)
@@ -22,6 +22,14 @@ function pollination(data){
     		//.reorderable() // I removed this for now as it can mess up with tooltips
     		.interactive();
 	
+   	// add instruction text
+   	var instructions = "-Drag around axis to begin brush. -Click axis to clear brush.    -Click a label to color data based on axis values.   -Click on each line or hover on table to highlight."
+   	d3.select("#wrapper svg").append("text")
+   		.text(instructions)
+   		//.attr("class", "instructions")
+		.attr("text-anchor", "middle")
+		.attr("text-decoration", "overline")
+   		.attr("transform", "translate(" + graph.width()/2 + "," + (graph.height()-5) + ")");;
 
     // set the initial coloring based on the 3rd column
     update_colors(d3.keys(data[0])[2]);
