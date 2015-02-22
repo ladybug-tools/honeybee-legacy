@@ -43,7 +43,7 @@ Provided by Honeybee 0.0.56
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_16_2015'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_22_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_16_2015
@@ -413,7 +413,7 @@ class WriteIDF(object):
                '\t' + 'Yes,              !- Use Weather File Rain Indicators\n' + \
                '\t' + 'Yes;              !- Use Weather File Snow Indicators\n'
 
-    def EPGeometryRules(self, stVertexPos = 'LowerLeftCorner', direction = 'CounterClockWise', coordinateSystem = 'Absolute'):
+    def EPGeometryRules(self, stVertexPos = 'LowerLeftCorner', direction = 'CounterClockWise', coordinateSystem = 'Relative'):
         return '\nGlobalGeometryRules,\n' + \
                 '\t' + stVertexPos + ',         !- Starting Vertex Position\n' + \
                 '\t' + direction + ',        !- Vertex Entry Direction\n' + \
