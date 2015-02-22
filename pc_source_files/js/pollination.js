@@ -168,8 +168,8 @@ function findAxes(testPt, cenPts){
 	var y = testPt[1];
 
 	// make sure it is inside the range of x
-	if (cenPts[0][0] > x) return -1;
-	if (cenPts[cenPts.length-1][0] < x) return -1;
+	if (cenPts[0][0] > x) return false;
+	if (cenPts[cenPts.length-1][0] < x) return false;
 
 	// find between which segment the point is
 	for (var i=0; i<cenPts.length; i++){
@@ -253,6 +253,7 @@ function getClickedLines(mouseClick){
 
 	// find between which axes the point is
     var axeNum = findAxes(mouseClick, graphCentPts[0]);
+    if (!axeNum) return false;
 
     graphCentPts.forEach(function(d, i){
 	    if (isOnLine(d[axeNum-1], d[axeNum], mouseClick, 2)){
