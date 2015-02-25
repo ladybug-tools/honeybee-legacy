@@ -43,7 +43,7 @@ Provided by Honeybee 0.0.56
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_22_2015'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_24_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_16_2015
@@ -341,6 +341,18 @@ class WriteIDF(object):
             '\t' + 'Monday' + ',   !Day of Week for Start Day\n' + \
             '\t' + 'Yes' + ', !Use Weather File Daylight Davings Period\n' + \
             '\t' + 'Yes' + ';   !Use WeatherFile Rain and Snow Indicators\n'
+        return sizingString
+    
+    def EPSizingPeriodMonth(self, designMonth):
+        sizingString = "\nSizingPeriod:WeatherFileDays,\n" + \
+            '\t' + 'ExtremeSizing'+ str(designMonth) + ',\n' + \
+            '\t' + str(designMonth) + ',    !Begin Month\n' + \
+            '\t' + '1' + ',   !Begin Day of Month\n' + \
+            '\t' + str(designMonth) + ', !End Month\n' + \
+            '\t' + '28' + ', !End Day of Month\n' + \
+            '\t' + '' + ', !Day of Week\n' + \
+            '\t' + '' + ', !Use WeatherFile Daylight Savings Period\n' + \
+            '\t' + '' + ';   !Use WeatherFile Rain and Snow Indicators\n'
         return sizingString
     
     def EPVersion(self, version = 8.1):
@@ -1032,8 +1044,35 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     idfFile.write(hb_writeIDF.EPSiteLocation(epwFileAddress))
     
     # SizingPeriod
-    idfFile.write(hb_writeIDF.EPSizingPeriod('WinterExtreme'))
-    idfFile.write(hb_writeIDF.EPSizingPeriod('SummerExtreme'))
+    #Check if there are sizing periods in the EPW file.
+    dbTemp = []
+    sizeWDesignWeeks = True
+    epwfile = open(_epwFile,"r")
+    lnum = 1 # line number
+    for line in epwfile:
+        if lnum == 2:
+            extremePeriods = line.split(',')
+            if len(extremePeriods) < 3: sizeWDesignWeeks = False
+        if lnum > 8:
+            dbTemp.append(float(line.split(',')[6]))
+        lnum += 1
+    
+    if sizeWDesignWeeks == True:
+        idfFile.write(hb_writeIDF.EPSizingPeriod('WinterExtreme'))
+        idfFile.write(hb_writeIDF.EPSizingPeriod('SummerExtreme'))
+    else:
+        # figure out a sizing period from the extreme temperatures in the weather file
+        HOYs = range(8760)
+        dbTemp, HOYs = zip(*sorted(zip(dbTemp, HOYs)))
+        HOYMax = HOYs[-1]
+        HOYMin = HOYs[0]
+        d, monthMax, t = lb_preparation.hour2Date(HOYMax+1, True)
+        d, monthMin, t = lb_preparation.hour2Date(HOYMin+1, True)
+        if monthMax != monthMin:
+            idfFile.write(hb_writeIDF.EPSizingPeriodMonth(monthMax+1))
+            idfFile.write(hb_writeIDF.EPSizingPeriodMonth(monthMin+1))
+        else:
+            idfFile.write(hb_writeIDF.EPSizingPeriodMonth(monthMin))
     
     # simulationControl
     idfFile.write(hb_writeIDF.EPSimulationControl(*simulationControl))
