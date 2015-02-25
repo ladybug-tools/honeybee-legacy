@@ -10,12 +10,13 @@ Provided by Honeybee 0.0.56
 
     Args:
         _HBZones: HBZones for which parameters of the ideal air system should be changed.
+        modulateFlowOrTemp_: Set to "True" to have the airflow of the system modulated while the volume is varied to meet the load.  Set to "False" to have the simulation use the specified vetilation per person and zone held constant and the temperature varied to meet the load.  The former (True) uses less energy but may not provide sufficient fresh air to occupants in tightly sealed or big buildings.  The latter (False) will ensure fresh air but may use more energy than needed.  The former (True) is the default as it more closely approximates today's common VAV or VRF systems.
         coolSuplyAirTemp_: A number or list of numbers that represent the temperature of the air used to cool the zone in degrees Celcius.  If no value is input here, the system will use air at 13 C.  This input can be either a single number to be applied to all connected zones or a list of numbers for each different zone.
         heatSupplyAirTemp_: A number or list of numbers that represent the temperature of the air used to heat the zone in degrees Celcius.  If no value is input here, the system will use air at 50 C.  This input can be either a single number to be applied to all connected zones or a list of numbers for each different zone.
         maxCoolingCapacity_:  A number or list of numbers that represent the maximum cooling power that the system can deliver in kiloWatts.  If no value is input here, the system will have no limit to its cooling capacity.  This input can be either a single number to be applied to all connected zones or a list of numbers for each different zone.
         maxHeatingCapacity_:  A number or list of numbers that represent the maximum heating power that the system can deliver in kiloWatts.  If no value is input here, the system will have no limit to its heating capacity.  This input can be either a single number to be applied to all connected zones or a list of numbers for each different zone.
-        demandCntrlVentilation_: Set to "True" to have the ideal air system use demand controlled ventilation.  This essentially means that the HVAC system will vary the ventilation as the occupancy of the zone changes.  If this input is set to "False" or left untouched, the HVAC system will constantly provide enough air to meet the maximum occupancy. This input can be either a single boolean value to be applied to all connected zones or a list of boolean values for each different zone.
-        airSideEconomizer_: Set to "True" to have the ideal air system include an air side economizer.  This essentially means that the HVAC system will increase the outdoor air flow rate when there is a cooling load and the outdoor air temperature is below the temperature of the exhaust air.  If this input is set to "False" or left untouched, the HVAC system will constantly provide the same amount of outdoor air and will run the compressor to remove heat. This may result in cases where there is a lot of cooling energy in winter or unexpected parts of the year.  This input can be either a single boolean value to be applied to all connected zones or a list of boolean values for each different zone.
+        modulateFlowOrTemp_: A number represeting the maximum amount of air that can flow through the system in m3/s
+        airSideEconomizer_: Set to "True" to have the ideal air system include an air side economizer.  This essentially means that the HVAC system will increase the outdoor air flow rate when there is a cooling load and the outdoor air temperature is below the temperature of the exhaust air.  If this input is set to "False" or left untouched, the HVAC system will constantly provide the same amount of outdoor air and will run the compressor to remove heat. This may result in cases where there is a lot of cooling energy in winter or unexpected parts of the year.  This input can be either a single boolean value to be applied to all connected zones or a list of boolean values for each different zone.  Often, to have tha sir side economizer be effective, you must also boost up the maximum air flow rate of the system above.
         heatRecovery_: Set to "True" to have the ideal air system include a heat recovery system.  This essentially means that the HVAC system will pass the outlet air through a heat exchanger with the inlet air before exhausting it, helping recover heat that would normally be lost through the exhaust.  If this input is set to "False" or left untouched, the HVAC system will simply exhaust air without having it interact with incoming air. This input can be either a single boolean value to be applied to all connected zones or a list of boolean values for each different zone.
         recoveryEffectiveness_: If the above input has been set to "True", input a number between 0 and 1 here to set the fraction of heat that is recovered by the heat recovery system.  By default, this value is 0.7.
     Returns:
@@ -24,7 +25,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Set Ideal Air Loads Parameters"
 ghenv.Component.NickName = 'setEPIdealAir'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_24_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -57,8 +58,8 @@ def checkTheInputs():
     if len(maxHeatingCapacity_) == 1: maxHeatingCapacity = duplicateData(maxHeatingCapacity_, len(_HBZones))
     else: maxHeatingCapacity = maxHeatingCapacity_
     
-    if len(demandCntrlVentilation_) == 1: demandCntrlVentilation = duplicateData(demandCntrlVentilation_, len(_HBZones))
-    else: demandCntrlVentilation = demandCntrlVentilation_
+    if len(modulateFlowOrTemp_) == 1: modulateFlowOrTemp = duplicateData(modulateFlowOrTemp_, len(_HBZones))
+    else: modulateFlowOrTemp = modulateFlowOrTemp_
     
     if len(airSideEconomizer_) == 1: airSideEconomizer = duplicateData(airSideEconomizer_, len(_HBZones))
     else: airSideEconomizer = airSideEconomizer_
@@ -70,10 +71,10 @@ def checkTheInputs():
     else: recoveryEffectiveness = recoveryEffectiveness_
     
     
-    return coolSupplyAirTemp, heatSupplyAirTemp, maxCoolingCapacity, maxHeatingCapacity, demandCntrlVentilation, airSideEconomizer, heatRecovery, recoveryEffectiveness
+    return coolSupplyAirTemp, heatSupplyAirTemp, maxCoolingCapacity, maxHeatingCapacity, modulateFlowOrTemp, airSideEconomizer, heatRecovery, recoveryEffectiveness
 
 
-def main(HBZones, coolSupplyAirTemp, heatSupplyAirTemp, maxCoolingCapacity, maxHeatingCapacity, demandCntrlVentilation, airSideEconomizer, heatRecovery, recoveryEffectiveness):
+def main(HBZones, coolSupplyAirTemp, heatSupplyAirTemp, maxCoolingCapacity, maxHeatingCapacity, modulateFlowOrTemp, airSideEconomizer, heatRecovery, recoveryEffectiveness):
     
     # check for Honeybee
     if not sc.sticky.has_key('honeybee_release'):
@@ -120,9 +121,9 @@ def main(HBZones, coolSupplyAirTemp, heatSupplyAirTemp, maxCoolingCapacity, maxH
         except: pass
         
         try:
-            if demandCntrlVentilation[zoneCount] == True:
-                zone.demandVent = 'OccupancySchedule'
-                print zone.name + " will have demand controlled ventailation."
+            zone.modulateAirFlow = modulateFlowOrTemp[zoneCount]
+            if modulateFlowOrTemp[zoneCount] == True: print zone.name + " will have its load met by modulating supply air flow volume into the zone."
+            else: print zone.name + " will have its load met by modulating supply air temperature into the zone."
         except: pass
         
         try:
@@ -150,9 +151,9 @@ def main(HBZones, coolSupplyAirTemp, heatSupplyAirTemp, maxCoolingCapacity, maxH
 
 
 if _HBZones:
-    coolSupplyAirTemp, heatSupplyAirTemp, maxCoolingCapacity, maxHeatingCapacity, demandCntrlVentilation, airSideEconomizer, heatRecovery, recoveryEffectiveness = checkTheInputs()
+    coolSupplyAirTemp, heatSupplyAirTemp, maxCoolingCapacity, maxHeatingCapacity, modulateFlowOrTemp, airSideEconomizer, heatRecovery, recoveryEffectiveness = checkTheInputs()
     
-    zones = main(_HBZones, coolSupplyAirTemp, heatSupplyAirTemp, maxCoolingCapacity, maxHeatingCapacity, demandCntrlVentilation, airSideEconomizer, heatRecovery, recoveryEffectiveness)
+    zones = main(_HBZones, coolSupplyAirTemp, heatSupplyAirTemp, maxCoolingCapacity, maxHeatingCapacity, modulateFlowOrTemp, airSideEconomizer, heatRecovery, recoveryEffectiveness)
     
     if zones!=-1:
         HBZones = zones

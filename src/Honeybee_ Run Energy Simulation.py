@@ -282,6 +282,20 @@ class WriteIDF(object):
                 scheduleObjectName = "_".join(scheduleFileName.split(".")[:-1])
             else: scheduleObjectName = ""
             
+            
+            if zone.airSideEconomizer == 'DifferentialDryBulb':
+                if coolLimit == "NoLimit" or coolLimit == "LimitFlowRate": coolLimit = 'LimitFlowRate'
+                else: coolLimit = 'LimitFlowRateAndCapacity'
+                maxAirFlowRate = 'autosize'
+            else: maxAirFlowRate = ''
+            
+            if zone.modulateAirFlow == True: outdoorAirMethod = 'None'
+            else: outdoorAirMethod = 'Maximum'
+            
+            flowPerPerson =  str(zone.ventilationPerPerson)
+            flowPerZoneArea = str(zone.ventilationPerArea)
+            
+            
             return '\nHVACTemplate:Zone:IdealLoadsAirSystem,\n' + \
                 '\t' + zone.name + ',\t!- Zone Name\n' + \
                 '\t' + thermostatName + ',\t!- Template Thermostat Name\n' + \
@@ -294,7 +308,7 @@ class WriteIDF(object):
                 '\t' + ',  !- Maximum Heating Air Flow Rate {m3/s}\n' + \
                 '\t' + zone.heatingCapacity + ',  !- Maximum Sensible Heat Capacity\n' + \
                 '\t' + coolLimit + ',  !- Cooling Limit\n' + \
-                '\t' + ',  !- Maximum Cooling Air Flow Rate {m3/s}\n' + \
+                '\t' + maxAirFlowRate + ',  !- Maximum Cooling Air Flow Rate {m3/s}\n' + \
                 '\t' + zone.coolingCapacity + ',  !- Maximum Total Cooling Capacity\n' + \
                 '\t' + ',  !- Heating Availability Schedule\n' + \
                 '\t' + ',  !- Cooling Availability Schedule\n' + \
@@ -303,12 +317,12 @@ class WriteIDF(object):
                 '\t' + '' + ',  !- Dehumidification Setpoint\n' + \
                 '\t' + 'None' + ',  !- Humidification Control Type\n' + \
                 '\t' + '' + ',  !- Humidification Setpoint\n' + \
-                '\t' + 'DetailedSpecification' + ',  !- Outdoor Air Method\n' + \
-                '\t' + ',  !- Outdoor Air Flow Rate Per Person\n' + \
-                '\t' + ',  !- Outdoor Air Flow Rate Per Floor Zone Area\n' + \
+                '\t' + outdoorAirMethod + ',  !- Outdoor Air Method\n' + \
+                '\t' + flowPerPerson + ',  !- Outdoor Air Flow Rate Per Person\n' + \
+                '\t' + flowPerZoneArea + ',  !- Outdoor Air Flow Rate Per Floor Zone Area\n' + \
                 '\t' + ',  !- Outdoor Air Flow Rate Per Zone\n' + \
-                '\t' + "DSOA" + zone.name + ',  !- Design Specification Outdoor Air Object Name\n' + \
-                '\t' + zone.demandVent + ',  !- Demand Controlled Ventilation Type\n' + \
+                '\t' + '' + ',  !- Design Specification Outdoor Air Object Name\n' + \
+                '\t' + '' + ',  !- Demand Controlled Ventilation Type\n' + \
                 '\t' + zone.airSideEconomizer + ',  !- Outdoor Air Economizer Type\n' + \
                 '\t' + zone.heatRecovery + ',  !- Heat Recovery Type\n' + \
                 '\t' + zone.heatRecoveryEffectiveness + ',  !- Seneible Heat Recovery Effectiveness\n' + \
@@ -430,21 +444,6 @@ class WriteIDF(object):
                 '\t' + stVertexPos + ',         !- Starting Vertex Position\n' + \
                 '\t' + direction + ',        !- Vertex Entry Direction\n' + \
                 '\t' + coordinateSystem + ';                !- Coordinate System\n'
-
-    def EPDesignSpecOA(self, zone):
-        """
-        Returns design specification for outdoor air
-        """
-        
-        if zone.isConditioned:
-            return "\nDesignSpecification:OutdoorAir,\n" + \
-                   "\tDSOA" + zone.name + ", !- Name\n" + \
-                   "\tMaximum, !- Outdoor Air Method\n" + \
-                   "\t" + str(zone.ventilationPerPerson) + ", !- Outdoor Air Flow per Person {m3/s-person}\n" + \
-                   "\t" + str(zone.ventilationPerArea) + ", !- Outdoor Air Flow per Zone Floor Area {m3/s-m2}\n" + \
-                   "\t0.0; !- Outdoor Air Flow per Zone {m3/s}"
-        else:
-            return "\n"
 
     def EPZoneInfiltration(self, zone, zoneListName = None):
         """ Methods: 
@@ -1322,9 +1321,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                         idfFile.write(hb_writeIDF.EPNatVentSimple(zone, natVentCount))
                     elif natVentObj == 3:
                         idfFile.write(hb_writeIDF.EPNatVentFan(zone, natVentCount))
-            
-            # Specification Outdoor Air
-            idfFile.write(hb_writeIDF.EPDesignSpecOA(zone))
+        
         
     ################## FOOTER ###################
     # write output lines
