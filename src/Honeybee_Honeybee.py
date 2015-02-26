@@ -30,7 +30,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_24_2015'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_26_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -718,7 +718,6 @@ class RADMaterialAux(object):
         PHAverage = 0.265 * properties[0] + 0.670 * properties[1] + 0.065 * properties[2]
         
         st = properties[5] * properties[6] * (1 - PHAverage * properties[3])
-        
         return st
     
     def importRadMatStr(self, firstline, inRadf):
@@ -1241,7 +1240,16 @@ class hb_WriteRAD(object):
         # collect information from analysis recipe
         radParameters = analysisRecipe.radParameters
         simulationType = analysisRecipe.type
-                
+        
+        # initiate RAD Parameters
+        if analysisRecipe.radParameters==None:
+            quality = 0
+            analysisRecipe.radParameters = {}
+            print "Default values are set for RAD parameters"
+            for key in self.hb_radParDict.keys():
+                #print key + " is set to " + str(hb_radParDict[key][quality])
+                analysisRecipe.radParameters[key] = self.hb_radParDict[key][quality]
+        
         radFileFullName = os.path.join(subWorkingDir, radFileName + '.rad')
         
         IESObjects = {}
