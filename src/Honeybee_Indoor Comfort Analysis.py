@@ -40,7 +40,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Indoor Comfort Analysis"
 ghenv.Component.NickName = 'IndoorComfAnalysis'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_15_2015'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_25_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -293,7 +293,9 @@ def calculateSolarAdjustedMRT(pointMRTValues, stepOfSimulation, diffSolarRad, di
                     hourMRT = mrtDelt + pointMRT
                     solarAdjustedPointMRTValues[zoneCount].append(round(hourMRT, 3))
             else:
-                solarAdjustedPointMRTValues[zoneCount].append(round(pointMRT, 3))
+                solarAdjustedPointMRTValues.append([])
+                for pointCount, pointMRT in enumerate(zonePtsList):
+                    solarAdjustedPointMRTValues[zoneCount].append(round(pointMRT, 3))
     else:
         solarAdjustedPointMRTValues = pointMRTValues
     
@@ -614,7 +616,7 @@ def mainAdapt(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataN
     try:
         def climateMap(count):
             #Ability to cancel with Esc
-            if gh.GH_Document.IsEscapeKeyDown(): assert False
+            #if gh.GH_Document.IsEscapeKeyDown(): assert False
             
             # Get the hour.
             hour = HOYs[count]
@@ -663,19 +665,19 @@ def mainAdapt(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataN
     
     
     #Run through every hour of the analysis to fill up the matrices.
-    try:
-        if parallel_ == True and len(HOYs) != 1:
-            tasks.Parallel.ForEach(range(len(HOYs)), climateMap)
-        else:
-            for hour in range(len(HOYs)):
-                #Ability to cancel with Esc
-                if gh.GH_Document.IsEscapeKeyDown(): assert False
-                climateMap(hour)
-    except:
-        print "The calculation has been terminated by the user!"
-        e = gh.GH_RuntimeMessageLevel.Warning
-        ghenv.Component.AddRuntimeMessage(e, "The calculation has been terminated by the user!")
-        calcCancelled = True
+    #try:
+    if parallel_ == True and len(HOYs) != 1:
+        tasks.Parallel.ForEach(range(len(HOYs)), climateMap)
+    else:
+        for hour in range(len(HOYs)):
+            #Ability to cancel with Esc
+            #if gh.GH_Document.IsEscapeKeyDown(): assert False
+            climateMap(hour)
+    #except:
+    #    print "The calculation has been terminated by the user!"
+    #    e = gh.GH_RuntimeMessageLevel.Warning
+    #    ghenv.Component.AddRuntimeMessage(e, "The calculation has been terminated by the user!")
+    #    calcCancelled = True
     
     if calcCancelled == False:
         return radTempMtx, airTempMtx, operativeTempMtx, adaptComfMtx, degFromTargetMtx
