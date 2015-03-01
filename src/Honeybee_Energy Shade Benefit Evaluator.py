@@ -53,7 +53,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Energy Shade Benefit Evaluator"
 ghenv.Component.NickName = 'EnergyShadeBenefit'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_28_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -709,6 +709,10 @@ def main(allDataDict, sunVectors, legendPar, lb_preparation, lb_visualization):
             legendScale = 1
             legendFontSize = None
             legendBold = False
+        
+        #If the user has not input custom boundaries, automatically choose the boundaries for them.
+        if lowB == "min": lowB = -1 * legendVal
+        if highB == "max": highB = legendVal
         
         #Color each of the meshes with shade benefit.
         for windowCount, shadeMeshGroup in enumerate(shadeMeshListInit):
