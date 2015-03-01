@@ -10,7 +10,10 @@ Provided by Honeybee 0.0.56
 
     Args:
         _HBZones: HBZones for which parameters of the ideal air system should be changed.
-        modulateFlowOrTemp_: Set to "True" to have the airflow of the system modulated while the volume is varied to meet the load.  Set to "False" to have the simulation use the specified vetilation per person and zone held constant and the temperature varied to meet the load.  The former (True) uses less energy but may not provide sufficient fresh air to occupants in tightly sealed or big buildings.  The latter (False) will ensure fresh air but may use more energy than needed.  The former (True) is the default as it more closely approximates today's common VAV or VRF systems.
+        outdoorAirReq_: By default, honeybee zones do not have a required fraction of outdoor air that must come through the mechanical system.  You can change this by inputting one of the following options:
+            0 - None - No outdoor air will come through the mechanical system and the heating/cooling will be applied only through re-circulation of indoor air.  This is the default.
+            1 - Maximum - The outdoor air coming through the mechnical system will be either the specified flow/m2 of zone floor area or the flow/person (depending on which is larger at a given hour).  Be warned that this can give misleading results when used with an ideal air system since this system does not differentiate between heating/cooling from outdoor air and that from a cooling/heating coil.
+            2 - Sum - The outdoor air coming through the mechnical system will be the sum of the specified flow/m2 of zone floor area and the flow/person.  Be warned that this can give misleading results when used with an ideal air system since this system does not differentiate between heating/cooling from outdoor air and that from a cooling/heating coil.
         coolSuplyAirTemp_: A number or list of numbers that represent the temperature of the air used to cool the zone in degrees Celcius.  If no value is input here, the system will use air at 13 C.  This input can be either a single number to be applied to all connected zones or a list of numbers for each different zone.
         heatSupplyAirTemp_: A number or list of numbers that represent the temperature of the air used to heat the zone in degrees Celcius.  If no value is input here, the system will use air at 50 C.  This input can be either a single number to be applied to all connected zones or a list of numbers for each different zone.
         maxCoolingCapacity_:  A number or list of numbers that represent the maximum cooling power that the system can deliver in kiloWatts.  If no value is input here, the system will have no limit to its cooling capacity.  This input can be either a single number to be applied to all connected zones or a list of numbers for each different zone.
@@ -24,10 +27,10 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Set Ideal Air Loads Parameters"
 ghenv.Component.NickName = 'setEPIdealAir'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_24_2015'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_28_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.56\nFEB_28_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
 except: pass
@@ -57,8 +60,29 @@ def checkTheInputs():
     if len(maxHeatingCapacity_) == 1: maxHeatingCapacity = duplicateData(maxHeatingCapacity_, len(_HBZones))
     else: maxHeatingCapacity = maxHeatingCapacity_
     
-    if len(modulateFlowOrTemp_) == 1: modulateFlowOrTemp = duplicateData(modulateFlowOrTemp_, len(_HBZones))
-    else: modulateFlowOrTemp = modulateFlowOrTemp_
+    if len(outdoorAirReq_) == 1: outdoorAirReq = duplicateData(outdoorAirReq_, len(_HBZones))
+    else: outdoorAirReq = outdoorAirReq_
+    
+    #Check to be sure the input is correct.
+    outdoorAirReqFinal = []
+    checkData = True
+    for outAirReq in outdoorAirReq:
+        if outAirReq == "0" or outAirReq == "1" or outAirReq == "2" or outAirReq.upper() == "NONE" or outAirReq.upper() == "MAXIMUM" or outAirReq == "SUM":
+            if outAirReq == "0": outdoorAirReqFinal.append("None")
+            elif outAirReq == "1": outdoorAirReqFinal.append("Maximum")
+            elif outAirReq == "2": outdoorAirReqFinal.append("Sum")
+            else: outdoorAirReqFinal.append(outAirReq)
+        else:
+            checkData = False
+            msg = "Invalid outdoorAirReq_ input."
+            print msg
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+    outdoorAirReq = outdoorAirReqFinal
+    
+    #Old options that used to be here but are misleading.
+    airSideEconomizer_ = []
+    heatRecovery_ = []
+    recoveryEffectiveness_ = []
     
     if len(airSideEconomizer_) == 1: airSideEconomizer = duplicateData(airSideEconomizer_, len(_HBZones))
     else: airSideEconomizer = airSideEconomizer_
@@ -70,10 +94,10 @@ def checkTheInputs():
     else: recoveryEffectiveness = recoveryEffectiveness_
     
     
-    return coolSupplyAirTemp, heatSupplyAirTemp, maxCoolingCapacity, maxHeatingCapacity, modulateFlowOrTemp, airSideEconomizer, heatRecovery, recoveryEffectiveness
+    return checkData, coolSupplyAirTemp, heatSupplyAirTemp, maxCoolingCapacity, maxHeatingCapacity, outdoorAirReq, airSideEconomizer, heatRecovery, recoveryEffectiveness
 
 
-def main(HBZones, coolSupplyAirTemp, heatSupplyAirTemp, maxCoolingCapacity, maxHeatingCapacity, modulateFlowOrTemp, airSideEconomizer, heatRecovery, recoveryEffectiveness):
+def main(HBZones, coolSupplyAirTemp, heatSupplyAirTemp, maxCoolingCapacity, maxHeatingCapacity, outdoorAirReq, airSideEconomizer, heatRecovery, recoveryEffectiveness):
     
     # check for Honeybee
     if not sc.sticky.has_key('honeybee_release'):
@@ -120,9 +144,8 @@ def main(HBZones, coolSupplyAirTemp, heatSupplyAirTemp, maxCoolingCapacity, maxH
         except: pass
         
         try:
-            zone.modulateAirFlow = modulateFlowOrTemp[zoneCount]
-            if modulateFlowOrTemp[zoneCount] == True: print zone.name + " will have its load met by modulating supply air flow volume into the zone."
-            else: print zone.name + " will have its load met by modulating supply air temperature into the zone."
+            zone.outdoorAirReq = outdoorAirReq[zoneCount]
+            print zone.name + " has its outdoor air requirement set to " + outdoorAirReq[zoneCount]
         except: pass
         
         try:
@@ -150,12 +173,13 @@ def main(HBZones, coolSupplyAirTemp, heatSupplyAirTemp, maxCoolingCapacity, maxH
 
 
 if _HBZones:
-    coolSupplyAirTemp, heatSupplyAirTemp, maxCoolingCapacity, maxHeatingCapacity, modulateFlowOrTemp, airSideEconomizer, heatRecovery, recoveryEffectiveness = checkTheInputs()
+    checkData, coolSupplyAirTemp, heatSupplyAirTemp, maxCoolingCapacity, maxHeatingCapacity, outdoorAirReq, airSideEconomizer, heatRecovery, recoveryEffectiveness = checkTheInputs()
     
-    zones = main(_HBZones, coolSupplyAirTemp, heatSupplyAirTemp, maxCoolingCapacity, maxHeatingCapacity, modulateFlowOrTemp, airSideEconomizer, heatRecovery, recoveryEffectiveness)
-    
-    if zones!=-1:
-        HBZones = zones
+    if checkData == True:
+        zones = main(_HBZones, coolSupplyAirTemp, heatSupplyAirTemp, maxCoolingCapacity, maxHeatingCapacity, outdoorAirReq, airSideEconomizer, heatRecovery, recoveryEffectiveness)
+        
+        if zones!=-1:
+            HBZones = zones
 
 
 

@@ -30,7 +30,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_26_2015'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_28_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -4453,7 +4453,7 @@ class EPZone(object):
         self.heatingSetback= ""
         
         #Ideal Air System Properties
-        self.modulateAirFlow = True
+        self.outdoorAirReq = "None"
         self.coolSupplyAirTemp= ""
         self.heatSupplyAirTemp= ""
         self.coolingCapacity= ""

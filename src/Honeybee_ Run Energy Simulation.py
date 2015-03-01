@@ -47,7 +47,7 @@ ghenv.Component.NickName = 'runEnergySimulation'
 ghenv.Component.Message = 'VER 0.0.56\nFEB_28_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nFEB_16_2015
+#compatibleHBVersion = VER 0.0.56\nFEB_28_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
@@ -290,9 +290,6 @@ class WriteIDF(object):
                 maxAirFlowRate = 'autosize'
             else: maxAirFlowRate = ''
             
-            if zone.modulateAirFlow == True: outdoorAirMethod = 'None'
-            else: outdoorAirMethod = 'Maximum'
-            
             flowPerPerson =  str(zone.ventilationPerPerson)
             flowPerZoneArea = str(zone.ventilationPerArea)
             
@@ -318,7 +315,7 @@ class WriteIDF(object):
                 '\t' + '' + ',  !- Dehumidification Setpoint\n' + \
                 '\t' + 'None' + ',  !- Humidification Control Type\n' + \
                 '\t' + '' + ',  !- Humidification Setpoint\n' + \
-                '\t' + outdoorAirMethod + ',  !- Outdoor Air Method\n' + \
+                '\t' + zone.outdoorAirReq + ',  !- Outdoor Air Method\n' + \
                 '\t' + flowPerPerson + ',  !- Outdoor Air Flow Rate Per Person\n' + \
                 '\t' + flowPerZoneArea + ',  !- Outdoor Air Flow Rate Per Floor Zone Area\n' + \
                 '\t' + ',  !- Outdoor Air Flow Rate Per Zone\n' + \
