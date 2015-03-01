@@ -36,6 +36,7 @@ Provided by Honeybee 0.0.56
         _idfFileName_: Optional text which will be used to name your IDF and result files.  Change this to aviod over-writing results of previous energy simulations.
         +++++++++++++++: ...
         meshSettings_: Optional mesh settings for your geometry from any one of the native Grasshopper mesh setting components.  These will be used to change the meshing of curved surfaces before they are run through EnergyPlus (note that meshing of curved surfaces is done since Energyplus is not able to calculate heat flow through non-planar surfaces).  Default Grasshopper meshing is used if nothing is input here but you may want to decrease your calculation time by changing it to Coarse or increase your curvature definition (and calculation time) by making it finer.
+        additionalStrings_: THIS OPTION IS JUST FOR ADVANCED USERS OF ENERGYPLUS.  You can input additional text strings here that you would like written into the IDF.  The strings input here should be complete EnergyPlus objects that are correctly formatted.  You can input as many objects as you like in a list.  This input can be used to write objects into the IDF that are not currently supported by Honeybee.
     Returns:
         report: Check here to see a report of the EnergyPlus run, including errors.
         idfFileAddress: The file path of the IDF file that has been generated on your machine.
@@ -43,7 +44,7 @@ Provided by Honeybee 0.0.56
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_24_2015'
+ghenv.Component.Message = 'VER 0.0.56\nFEB_28_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_16_2015
@@ -1321,8 +1322,15 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                         idfFile.write(hb_writeIDF.EPNatVentSimple(zone, natVentCount))
                     elif natVentObj == 3:
                         idfFile.write(hb_writeIDF.EPNatVentFan(zone, natVentCount))
-        
-        
+    
+    #Write any additional strings.
+    if additionalStrings_ != []:
+        for string in additionalStrings_:
+            idfFile.write("\n")
+            idfFile.write("\n")
+            idfFile.write(string)
+            idfFile.write("\n")
+    
     ################## FOOTER ###################
     # write output lines
     # request surface information in the eio file.
