@@ -44,7 +44,7 @@ Provided by Honeybee 0.0.56
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_28_2015'
+ghenv.Component.Message = 'VER 0.0.56\nMAR_02_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_28_2015
@@ -290,6 +290,9 @@ class WriteIDF(object):
                 maxAirFlowRate = 'autosize'
             else: maxAirFlowRate = ''
             
+            if zone.heatRecovery == 'Sensible' and zone.heatRecoveryEffectiveness == '':
+                zone.heatRecoveryEffectiveness = "0.7"
+            
             flowPerPerson =  str(zone.ventilationPerPerson)
             flowPerZoneArea = str(zone.ventilationPerArea)
             
@@ -323,7 +326,7 @@ class WriteIDF(object):
                 '\t' + '' + ',  !- Demand Controlled Ventilation Type\n' + \
                 '\t' + zone.airSideEconomizer + ',  !- Outdoor Air Economizer Type\n' + \
                 '\t' + zone.heatRecovery + ',  !- Heat Recovery Type\n' + \
-                '\t' + zone.heatRecoveryEffectiveness + ',  !- Seneible Heat Recovery Effectiveness\n' + \
+                '\t' + zone.heatRecoveryEffectiveness + ',  !- Sensible Heat Recovery Effectiveness\n' + \
                 '\t' + ';  !- Latent Heat Recovery Effectiveness\n'
         else:
             return "\n"

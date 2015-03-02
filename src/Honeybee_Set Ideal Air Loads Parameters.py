@@ -10,15 +10,15 @@ Provided by Honeybee 0.0.56
 
     Args:
         _HBZones: HBZones for which parameters of the ideal air system should be changed.
-        outdoorAirReq_: By default, honeybee zones do not have a required fraction of outdoor air that must come through the mechanical system.  You can change this by inputting one of the following options:
-            0 - None - No outdoor air will come through the mechanical system and the heating/cooling will be applied only through re-circulation of indoor air.  This is the default.
-            1 - Maximum - The outdoor air coming through the mechnical system will be either the specified flow/m2 of zone floor area or the flow/person (depending on which is larger at a given hour).  Be warned that this can give misleading results when used with an ideal air system since this system does not differentiate between heating/cooling from outdoor air and that from a cooling/heating coil.
-            2 - Sum - The outdoor air coming through the mechnical system will be the sum of the specified flow/m2 of zone floor area and the flow/person.  Be warned that this can give misleading results when used with an ideal air system since this system does not differentiate between heating/cooling from outdoor air and that from a cooling/heating coil.
+        outdoorAirReq_: An integer or text string value that changes the outdoor air requirement of the zone (the default is set to "0 - Sum").  Choose from the following options:
+            0 - Sum - The outdoor air coming through the mechnical system will be the sum of the specified flow/m2 of zone floor area and the flow/person.  This is the default and is the usual recommendation of ASHRAE
+            1 - Maximum - The outdoor air coming through the mechnical system will be either the specified flow/m2 of zone floor area or the flow/person (depending on which is larger at a given hour).   Choosing this option effectively implies that there is a demand-controlled ventilation system set up in the zone.
+            2 - None - No outdoor air will come through the mechanical system and the heating/cooling will be applied only through re-circulation of indoor air.  Be careful as this option might not bring enough fresh air to occupants if the zone's infiltration is very low.
         coolSuplyAirTemp_: A number or list of numbers that represent the temperature of the air used to cool the zone in degrees Celcius.  If no value is input here, the system will use air at 13 C.  This input can be either a single number to be applied to all connected zones or a list of numbers for each different zone.
         heatSupplyAirTemp_: A number or list of numbers that represent the temperature of the air used to heat the zone in degrees Celcius.  If no value is input here, the system will use air at 50 C.  This input can be either a single number to be applied to all connected zones or a list of numbers for each different zone.
         maxCoolingCapacity_:  A number or list of numbers that represent the maximum cooling power that the system can deliver in kiloWatts.  If no value is input here, the system will have no limit to its cooling capacity.  This input can be either a single number to be applied to all connected zones or a list of numbers for each different zone.
         maxHeatingCapacity_:  A number or list of numbers that represent the maximum heating power that the system can deliver in kiloWatts.  If no value is input here, the system will have no limit to its heating capacity.  This input can be either a single number to be applied to all connected zones or a list of numbers for each different zone.
-        airSideEconomizer_: Set to "True" to have the ideal air system include an air side economizer.  This essentially means that the HVAC system will increase the outdoor air flow rate when there is a cooling load and the outdoor air temperature is below the temperature of the exhaust air.  If this input is set to "False" or left untouched, the HVAC system will constantly provide the same amount of outdoor air and will run the compressor to remove heat. This may result in cases where there is a lot of cooling energy in winter or unexpected parts of the year.  This input can be either a single boolean value to be applied to all connected zones or a list of boolean values for each different zone.  Often, to have tha sir side economizer be effective, you must also boost up the maximum air flow rate of the system above.
+        airSideEconomizer_: Set to "True" to have the ideal air system include an air side economizer.  This essentially means that the HVAC system will increase the outdoor air flow rate when there is a cooling load and the outdoor air temperature is below the temperature of the exhaust air.  If this input is set to "False", the HVAC system will constantly provide the same amount of outdoor air and will run the compressor to remove heat. This may result in cases where there is a lot of cooling energy in winter or unexpected parts of the year.  This input can be either a single boolean value to be applied to all connected zones or a list of boolean values for each different zone. The defailt is set to "True" to include an air side economizer.
         heatRecovery_: Set to "True" to have the ideal air system include a heat recovery system.  This essentially means that the HVAC system will pass the outlet air through a heat exchanger with the inlet air before exhausting it, helping recover heat that would normally be lost through the exhaust.  If this input is set to "False" or left untouched, the HVAC system will simply exhaust air without having it interact with incoming air. This input can be either a single boolean value to be applied to all connected zones or a list of boolean values for each different zone.
         recoveryEffectiveness_: If the above input has been set to "True", input a number between 0 and 1 here to set the fraction of heat that is recovered by the heat recovery system.  By default, this value is 0.7.
     Returns:
@@ -27,7 +27,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Set Ideal Air Loads Parameters"
 ghenv.Component.NickName = 'setEPIdealAir'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_28_2015'
+ghenv.Component.Message = 'VER 0.0.56\nMAR_02_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_28_2015
@@ -68,9 +68,9 @@ def checkTheInputs():
     checkData = True
     for outAirReq in outdoorAirReq:
         if outAirReq == "0" or outAirReq == "1" or outAirReq == "2" or outAirReq.upper() == "NONE" or outAirReq.upper() == "MAXIMUM" or outAirReq == "SUM":
-            if outAirReq == "0": outdoorAirReqFinal.append("None")
+            if outAirReq == "0": outdoorAirReqFinal.append("Sum")
             elif outAirReq == "1": outdoorAirReqFinal.append("Maximum")
-            elif outAirReq == "2": outdoorAirReqFinal.append("Sum")
+            elif outAirReq == "2": outdoorAirReqFinal.append("None")
             else: outdoorAirReqFinal.append(outAirReq)
         else:
             checkData = False
@@ -79,10 +79,6 @@ def checkTheInputs():
             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
     outdoorAirReq = outdoorAirReqFinal
     
-    #Old options that used to be here but are misleading.
-    airSideEconomizer_ = []
-    heatRecovery_ = []
-    recoveryEffectiveness_ = []
     
     if len(airSideEconomizer_) == 1: airSideEconomizer = duplicateData(airSideEconomizer_, len(_HBZones))
     else: airSideEconomizer = airSideEconomizer_
@@ -152,12 +148,18 @@ def main(HBZones, coolSupplyAirTemp, heatSupplyAirTemp, maxCoolingCapacity, maxH
             if airSideEconomizer[zoneCount] == True:
                 zone.airSideEconomizer = 'DifferentialDryBulb'
                 print zone.name + " will have an air side economizer."
+            else:
+                zone.airSideEconomizer = ''
+                print zone.name + " will not have an air side economizer."
         except: pass
         
         try:
             if heatRecovery[zoneCount] == True:
                 zone.heatRecovery = 'Sensible'
                 print zone.name + " will have heat recovery."
+            else:
+                zone.heatRecovery = ''
+                print zone.name + " will NOT have heat recovery."
         except: pass
         
         try:

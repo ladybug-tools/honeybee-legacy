@@ -26,7 +26,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Read EP HVAC Result"
 ghenv.Component.NickName = 'readEP_HVAC_Result'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
+ghenv.Component.Message = 'VER 0.0.56\nMAR_02_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -161,25 +161,25 @@ if _resultFileAddress and gotData == True:
                 #ANALYZE THE FILE HEADING
                 key = []; path = []
                 for columnCount, column in enumerate(line.split(',')):
-                    if 'Zone Ideal Loads Zone Sensible Cooling Energy' in column:
+                    if 'Zone Ideal Loads Supply Air Sensible Cooling Energy' in column:
                         key.append(0)
                         zoneName = checkZone(" " + column.split(':')[0].split(' IDEAL LOADS AIR SYSTEM')[0])
                         makeHeader(sensibleCooling, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Sensible Cooling Energy", "kWh", True)
                         dataTypeList[0] = True
                     
-                    elif 'Zone Ideal Loads Zone Latent Cooling Energy' in column:
+                    elif 'Zone Ideal Loads Supply Air Latent Cooling Energy' in column:
                         key.append(1)
                         zoneName = checkZone(" " + column.split(':')[0].split(' IDEAL LOADS AIR SYSTEM')[0])
                         makeHeader(latentCooling, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Latent Cooling Energy", "kWh", True)
                         dataTypeList[1] = True
                     
-                    elif 'Zone Ideal Loads Zone Sensible Heating Energy' in column:
+                    elif 'Zone Ideal Loads Supply Air Sensible Heating Energy' in column:
                         key.append(2)
                         zoneName = checkZone(" " + column.split(':')[0].split(' IDEAL LOADS AIR SYSTEM')[0])
                         makeHeader(sensibleHeating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Sensible Heating Energy", "kWh", True)
                         dataTypeList[2] = True
                     
-                    elif 'Zone Ideal Loads Zone Latent Heating Energy' in column:
+                    elif 'Zone Ideal Loads Supply Air Latent Heating Energy' in column:
                         key.append(3)
                         zoneName = checkZone(" " + column.split(':')[0].split(' IDEAL LOADS AIR SYSTEM')[0])
                         makeHeader(latentHeating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Latent Heating Energy", "kWh", True)

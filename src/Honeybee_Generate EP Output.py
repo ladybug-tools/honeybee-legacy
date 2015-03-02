@@ -27,7 +27,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Generate EP Output"
 ghenv.Component.NickName = 'EPOutput'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
+ghenv.Component.Message = 'VER 0.0.56\nMAR_02_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -45,8 +45,8 @@ def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, zoneHVACMetrics,
     simulationOutputs.append("OutputControl:Table:Style,Comma;")
     
     if zoneEnergyUse == True:
-        simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Zone Total Cooling Energy, " + timePeriod)
-        simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Zone Total Heating Energy, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Supply Air Total Cooling Energy, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Supply Air Total Heating Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Packaged Terminal Heat Pump Total Cooling Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Packaged Terminal Heat Pump Total Heating Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Chiller Electric Energy, " + timePeriod)
@@ -76,10 +76,10 @@ def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, zoneHVACMetrics,
         simulationOutputs.append("Output:Variable,*,Zone Air Heat Balance System Air Transfer Rate, " + timePeriod)
     
     if zoneHVACMetrics == True:
-        simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Zone Latent Heating Energy, " + timePeriod)
-        simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Zone Latent Cooling Energy, " + timePeriod)
-        simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Zone Sensible Heating Energy, " + timePeriod)
-        simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Zone Sensible Cooling Energy, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Supply Air Latent Heating Energy, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Supply Air Latent Cooling Energy, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Supply Air Sensible Heating Energy, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Supply Air Sensible Cooling Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,System Node Mass Flow Rate, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,System Node Temperature, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,System Node Relative Humidity, " + timePeriod)

@@ -37,7 +37,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_03_2015'
+ghenv.Component.Message = 'VER 0.0.56\nMAR_02_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "4"
@@ -226,9 +226,9 @@ if _resultFileAddress and gotData == True:
                 #ANALYZE THE FILE HEADING
                 key = []; path = []
                 for columnCount, column in enumerate(line.split(',')):
-                    if 'Zone Air System Sensible Cooling Energy' in column or 'Zone Ideal Loads Zone Total Cooling Energy' in column or 'Zone Packaged Terminal Heat Pump Total Cooling Energy' in column or 'Chiller Electric Energy' in column:
+                    if 'Zone Air System Sensible Cooling Energy' in column or 'Zone Ideal Loads Supply Air Total Cooling Energy' in column or 'Zone Packaged Terminal Heat Pump Total Cooling Energy' in column or 'Chiller Electric Energy' in column:
                         key.append(0)
-                        if 'Zone Ideal Loads Zone Total Cooling Energy' in column and 'ZONEHVAC' in column:
+                        if 'Zone Ideal Loads Supply Air Total Cooling Energy' in column and 'ZONEHVAC' in column:
                             zoneName = checkZone(" " + ":".join(column.split(":")[:-1]).split('ZONEHVAC')[0])
                             if zoneName == None: zoneName = checkZone(" " + ":".join(column.split(":")[:-1]).split(' ZONEHVAC')[0])
                         elif 'IDEAL LOADS AIR SYSTEM' in column: zoneName = checkZone(" " + ":".join(column.split(":")[:-1]).split(' IDEAL LOADS AIR SYSTEM')[0])
@@ -240,9 +240,9 @@ if _resultFileAddress and gotData == True:
                         makeHeader(cooling, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Cooling Energy", energyUnit, True)
                         dataTypeList[2] = True
                     
-                    elif 'Zone Air System Sensible Heating Energy' in column or 'Zone Ideal Loads Zone Total Heating Energy' in column or 'Zone Packaged Terminal Heat Pump Total Heating Energy' in column or 'Boiler Heating Energy' in column:
+                    elif 'Zone Air System Sensible Heating Energy' in column or 'Zone Ideal Loads Supply Air Total Heating Energy' in column or 'Zone Packaged Terminal Heat Pump Total Heating Energy' in column or 'Boiler Heating Energy' in column:
                         key.append(1)
-                        if 'Zone Ideal Loads Zone Total Heating Energy' in column and 'ZONEHVAC' in column:
+                        if 'Zone Ideal Loads Supply Air Total Heating Energy' in column and 'ZONEHVAC' in column:
                             zoneName = checkZone(" " + ":".join(column.split(":")[:-1]).split('ZONEHVAC')[0])
                             if zoneName == None: zoneName = checkZone(" " + ":".join(column.split(":")[:-1]).split(' ZONEHVAC')[0])
                         elif 'IDEAL LOADS AIR SYSTEM' in column: zoneName = checkZone(" " + ":".join(column.split(":")[:-1]).split(' IDEAL LOADS AIR SYSTEM')[0])
