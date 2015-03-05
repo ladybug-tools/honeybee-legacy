@@ -14,12 +14,12 @@ Provided by Honeybee 0.0.56
         _evaporativeEffectiveness_:... provide no information and the value defaults 
         _evapCondenserAirFlowRate_: ... flow rate through the evap condenser, is autosized by default 0.000144 m3/s per Watt (850 cfm/ton)
         _evapPumpPower_: ... power in Watts is autosized by default 0.004266 Watts/Watt cooling or 15 W/ton cooling
-        _hiSpeedEvaporativeEffectiveness_:... only needed for two-speed condenser,supply no information and the value defaults to 0.9
-        _hiSpeedEevapCondenserFlowRate_: ... only needed for two speed condenser, flow rate through the evap condenser, is autosized by default 0.000144 m3/s per Watt (850 cfm/ton)
-        _hiSpeedevapPumpPower_: ... only needed for two-speed condenser, power in Watts is autosized by default 0.004266 Watts/Watt cooling or 15 W/ton cooling
-        _loSpeedEvaporativeEffectiveness_:... Used for both one stage and two stage condensers, supply no information and the value defaults to 0.9
+        _hiSpeedEvaporativeEffectiveness_:... Used for both one stage and two stage condensers, supply no information and the value defaults to 0.9
+        _hiSpeedEevapCondenserFlowRate_: ... Used for both one stage and two stage condensers, flow rate through the evap condenser, is autosized by default 0.000144 m3/s per Watt (850 cfm/ton)
+        _hiSpeedEvapPumpPower_: ... Used for both one stage and two stage condensers, power in Watts is autosized by default 0.004266 Watts/Watt cooling or 15 W/ton cooling
+        _loSpeedEvaporativeEffectiveness_:... only needed for two speed condenser, supply no information and the value defaults to 0.9
         _loSpeedEevapCondenserFlowRate_: ... only needed for two speed condenser, flow rate through the evap condenser, is autosized by default 0.000144 m3/s per Watt (850 cfm/ton)
-        _loSpeedevapPumpPower_: ... only needed for two-speed condenser, power in Watts is autosized by default 0.004266 Watts/Watt cooling or 15 W/ton cooling
+        _loSpeedEvapPumpPower_: ... only needed for two-speed condenser, power in Watts is autosized by default 0.004266 Watts/Watt cooling or 15 W/ton cooling
         _storageTank_:  the description of a storage tank used to hold the evaporative condenser water, if any
         _Curves_: this feature has not been implemented yet.
     Returns:
@@ -34,7 +34,7 @@ ghenv.Component.SubCategory = "10 | Energy | AirsideSystems"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 
-try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
 except: pass
 
 from clr import AddReference
@@ -74,11 +74,11 @@ def main():
             w = gh.GH_RuntimeMessageLevel.Remark
             ghenv.Component.AddRuntimeMessage(w, "You have selected a one speed Evaporative condenser.  All low speed definitions are ignored.")
         if _loSpeedEvaporativeCondAirflowRate_ != None:
-            print 'your hi Speed Evap Condenser Airflow Rate is Ignored'
+            print 'your low Speed Evap Condenser Airflow Rate is Ignored'
             w = gh.GH_RuntimeMessageLevel.Remark
             ghenv.Component.AddRuntimeMessage(w, "You have selected a one speed Evaporative condenser.  All low speed definitions are ignored.")
         if _loSpeedEvapPumpPower_ != None:
-            print 'your hi Speed Evaporative Pump Power is Ignored'
+            print 'your low Speed Evaporative Pump Power is Ignored'
             w = gh.GH_RuntimeMessageLevel.Remark
             ghenv.Component.AddRuntimeMessage(w, "You have selected a one speed Evaporative condenser.  All low speed definitions are ignored.")
     elif _serviceType > 1:
