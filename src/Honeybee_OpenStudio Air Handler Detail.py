@@ -34,7 +34,7 @@ import Grasshopper.Kernel as gh
 
 ghenv.Component.Name = "Honeybee_OpenStudio Air Handler Detail"
 ghenv.Component.NickName = 'AirHandlerDetails'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
+ghenv.Component.Message = 'VER 0.0.56\nMAR_04_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | AirsideSystems"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -93,7 +93,7 @@ def main(fanDetail,coolingCoil,heatingCoil,airsideEconomizer,availabilityManager
                 print "You have specified a variable volume fan for a system that is constant volume."
                 print "We are changing your fan definition to constant volume."
                 print "Either change your fan definition or system type to prevent this from happening in the future."
-                w = gh.GH_RuntimeMessageLevel.Warning
+                w = gh.GH_RuntimeMessageLevel.Remark
                 ghenv.Component.AddRuntimeMessage(w, "Variable Volume Fan changed to Constant Volume to Match the System Type: " +sysDict[_HVACSystemID])
                 pp.pprint(fanDetail.d)
                 fanDetail.d['type'] = 0
@@ -113,7 +113,6 @@ def main(fanDetail,coolingCoil,heatingCoil,airsideEconomizer,availabilityManager
                 print 'But you have specified system type:' +str(_HVACSystemID)
                 print 'This is not allowed.  We will override your coil with the Honeybee default 1 Speed DX Coil.'
                 print 'If you want to keep your coil definition, change the Cooling Coil type in the component to be zero (0) (1 speed DX)'
-                evapcond = None
                 if coolingCoil.d['condenserType'] == 1:
                     print 'We have kept the evaporative condenser definition that you have created.'
                     evapcond = coolingCoil.d['evaporativeCondenserDesc']
@@ -132,7 +131,6 @@ def main(fanDetail,coolingCoil,heatingCoil,airsideEconomizer,availabilityManager
                 print 'You have specified a single speed DX cooling coil and applied it to Packaged Variable Volume.'
                 print 'Because this is not allowed, we are converting your definition to the Honeybee default 2-speed DX coil.'
                 print 'If you want to keep your coil definition, change the coilType = 1 (two speed coil).'
-                evapcond=None
                 if coolingCoil.d['condenserType']==1:
                     print 'We have kept the evaporative condenser definition that you have created.'
                     evapcond = coolingCoil.d['evaporativeCondenserDesc']
@@ -144,12 +142,11 @@ def main(fanDetail,coolingCoil,heatingCoil,airsideEconomizer,availabilityManager
                 coolingCoil = dictToClass(coolingCoil)
         #this is under the current configuration of system types
         if fanDetail != None:
-            print fanDetail.d['type']
             if fanDetail.d['type'] != 1:
                 print "You have specified a constant volume fan for a system that is variable volume."
                 print "We are changing your fan definition to variable volume."
                 print "Either change your fan definition or system type to prevent this from happening in the future."
-                w = gh.GH_RuntimeMessageLevel.Warning
+                w = gh.GH_RuntimeMessageLevel.Remark
                 ghenv.Component.AddRuntimeMessage(w, "Constant Volume Fan changed to Variable Volume to Match the System Type: " +sysDict[_HVACSystemID])
                 print fanDetail.d
                 pp.pprint(fanDetail.d)
@@ -162,33 +159,7 @@ def main(fanDetail,coolingCoil,heatingCoil,airsideEconomizer,availabilityManager
                 fanDetail.d['fanPowerCoefficient5'] = hb_airHandler['varVolSupplyFanDef']().vvFanDict['fanPowerCoefficient5']
                 print "changed to"
                 pp.pprint(fanDetail.d)
-    elif (_HVACSystemID == 7):
-        if fanDetail != None:
-            print fanDetail.d['type']
-            if fanDetail.d['type'] != 1:
-                print "You have specified a constant volume fan for a system that is variable volume."
-                print "We are changing your fan definition to variable volume."
-                print "Either change your fan definition or system type to prevent this from happening in the future."
-                w = gh.GH_RuntimeMessageLevel.Warning
-                ghenv.Component.AddRuntimeMessage(w, "Constant Volume Fan changed to Variable Volume to Match the System Type: " +sysDict[_HVACSystemID])
-                print fanDetail.d
-                pp.pprint(fanDetail.d)
-                fanDetail.d['type'] = 1
-                fanDetail.d['minFlowFrac']=hb_airHandler['varVolSupplyFanDef']().vvFanDict['minFlowFrac']
-                fanDetail.d['fanPowerCoefficient1'] = hb_airHandler['varVolSupplyFanDef']().vvFanDict['fanPowerCoefficient1']
-                fanDetail.d['fanPowerCoefficient2'] = hb_airHandler['varVolSupplyFanDef']().vvFanDict['fanPowerCoefficient2']
-                fanDetail.d['fanPowerCoefficient3'] = hb_airHandler['varVolSupplyFanDef']().vvFanDict['fanPowerCoefficient3']
-                fanDetail.d['fanPowerCoefficient4'] = hb_airHandler['varVolSupplyFanDef']().vvFanDict['fanPowerCoefficient4']
-                fanDetail.d['fanPowerCoefficient5'] = hb_airHandler['varVolSupplyFanDef']().vvFanDict['fanPowerCoefficient5']
-                print "changed to"
-                pp.pprint(fanDetail.d)
-        if not isinstance(coolingCoil,str):
-            if coolingCoil.d['type'] != None:
-                w = gh.GH_RuntimeMessageLevel.Warning
-                ghenv.Component.AddRuntimeMessage(w, "Your cooling coil is ignored System Typ 7 uses chilled water.")
-                print 'System Type 7 uses a chiller and chilled water coil for cooling.'
-                print 'Your DX coil will be ignored.'
-                coolingCoil=None
+            
     #dx coil assignment errors (single speed where dual speed, etc. , using DX heating where hot water)
     
 
@@ -235,10 +206,9 @@ def main(fanDetail,coolingCoil,heatingCoil,airsideEconomizer,availabilityManager
             else:
                 pass
             if not isinstance(coolingCoil, str): 
-                if coolingCoil != None:
-                    print 'upgrading cooling coil detail'
-                    sysdict['coolingCoil'] = coolingCoil.d
-                    print sysdict['coolingCoil']
+                print 'upgrading cooling coil detail'
+                sysdict['coolingCoil'] = coolingCoil.d
+                print sysdict['coolingCoil']
             else:
                 pass
             if heatingCoil != None:
