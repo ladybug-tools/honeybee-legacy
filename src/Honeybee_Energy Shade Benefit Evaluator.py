@@ -46,14 +46,14 @@ Provided by Honeybee 0.0.56
         shadeMesh: A colored mesh of the _testShades showing where shading is helpful (in satuated blue), harmful (in saturated red), or does not make much of a difference (white or desaturated colors).
         legend: Legend showing the numeric values of degree-days that correspond to the colors in the shade mesh.
         ==========: ...
-        shadeHelpfulness: The cumulative cooling degree-days/square Rhino model unit helped by shading the given cell. (C-day/m2)*if your model units are meters.
-        shadeHarmfulness: The cumulative heating degree-days/square Rhino model unit harmed by shading the given cell. (C-day/m2)*if your model units are meters. Note that these values are all negative due to the fact that the shade is harmful. 
-        shadeNetEffect: The sum of the helpfulness and harmfulness for each cell.  This will be negative if shading the cell has a net harmful effect and positive if the shade has a net helpful effect.
+        shadeHelpfulness: The cumulative kWh/m2 of building operational energy helped by shading the given cell.
+        shadeHarmfulness: The cumulative kWh/m2 of building operational energy harmed by shading the given cell.  Note that these values are all negative due to the fact that the shade is harmful. 
+        shadeNetEffect: The sum of the helpfulness and harmfulness for each cell.  This will be negative if shading the cell has a net harmful effect and positive if the shade has a net helpful effect.  Values are in kWh/m2 of building operational energy helped/harmed by shading the given cell.
 """
 
 ghenv.Component.Name = "Honeybee_Energy Shade Benefit Evaluator"
 ghenv.Component.NickName = 'EnergyShadeBenefit'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_28_2015'
+ghenv.Component.Message = 'VER 0.0.56\nMAR_06_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

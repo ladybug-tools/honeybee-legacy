@@ -17,7 +17,7 @@ Provided by Honeybee 0.0.56
         levelOfPerform_: An optional number that represents the mimimum acceptable energy savings per square area unit to be included in the created shade.  An input here will override the percent input above.
     Returns:
         readMe!: ...
-        energySavedByShade: The anticipated energy savings (or degree-days helped) for the shade output below.
+        energySavedByShade: The anticipated energy savings (or degree-days helped) for the shade output below.  Values should be in kWh for energy shade benefit or degrees C for comfort shade benefit.
         areaOfShade: The area of the shade brep below in model units.
         newColoredMesh: A new colored mesh with the unhelpful cells deleted out of it.
         newShadeBrep: A new shade brep that represents the most effective shade possible.
@@ -25,7 +25,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Optimal Shade Creator"
 ghenv.Component.NickName = 'ShadeCreator'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
+ghenv.Component.Message = 'VER 0.0.56\nMAR_06_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
