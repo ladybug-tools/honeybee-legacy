@@ -44,7 +44,7 @@ Provided by Honeybee 0.0.56
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.56\nMAR_02_2015'
+ghenv.Component.Message = 'VER 0.0.56\nMAR_09_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_28_2015
@@ -1325,11 +1325,16 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     
     #Write any additional strings.
     if additionalStrings_ != []:
+        idfFile.write("\n")
         for string in additionalStrings_:
-            idfFile.write("\n")
-            idfFile.write("\n")
-            idfFile.write(string)
-            idfFile.write("\n")
+            if ":" in string:
+                idfFile.write("\n")
+                idfFile.write("\n")
+                idfFile.write(string)
+            else:
+                idfFile.write(string)
+                idfFile.write("\n")
+        idfFile.write("\n")
     
     ################## FOOTER ###################
     # write output lines
