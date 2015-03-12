@@ -20,7 +20,7 @@ Provided by Honeybee 0.0.56
         _radFileName_: Input the project name as a string
         meshSettings_: Custom mesh setting. Use Grasshopper mesh setting components
         additionalRadFiles_: A list of fullpath to valid radiance files which will be added to the scene
-        exportInteriorWalls_: Set to False if you don't want interior walls be exported
+        exportAirWalls_: Set to True if you want to export air walls as surfaces and False if you don't want air walls be exported.  The default is set to False.
         overwriteResults_: Set to False if you want the component create a copy of all the results. Default is True
         
     Returns:
@@ -37,10 +37,10 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Run Daylight Simulation"
 ghenv.Component.NickName = 'runDaylightAnalysis'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_26_2015'
+ghenv.Component.Message = 'VER 0.0.56\nMAR_11_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
-#compatibleHBVersion = VER 0.0.56\nFEB_26_2015
+#compatibleHBVersion = VER 0.0.56\nMAR_11_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
@@ -69,7 +69,7 @@ results = []
 
 def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir,
          radFileName, meshParameters, waitingTime, additionalRadFiles, overwriteResults,
-         exportInteriorWalls):
+         exportAirWalls):
     # import the classes
     w = gh.GH_RuntimeMessageLevel.Warning
     
@@ -137,6 +137,8 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
     # copy the sky file to the local folder except for annual analysis
     radSkyFileName = hb_writeRADAUX.copySkyFile(subWorkingDir, radFileName)
     
+    #Set a defalut of False for exporting Air Walls.
+    if exportAirWalls == None: exportAirWalls = False
     
     ######################### WRITE RAD FILES ###########################
     # 2.1 write the geometry file
@@ -150,7 +152,7 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
     radFileFullName, materialFileName = \
         hb_writeRAD.writeRADAndMaterialFiles(originalHBObjects, subWorkingDir, \
                                              radFileName, analysisRecipe, \
-                                             meshParameters, exportInteriorWalls)
+                                             meshParameters, exportAirWalls)
     
     
     ######################## GENERATE POINT FILES #######################
@@ -211,7 +213,7 @@ if _writeRad == True and _analysisRecipe!=None and ((len(_HBObjects)!=0 and _HBO
     
     result = main(north_, _HBObjects, _analysisRecipe, runRad_, numOfCPUs, \
                   _workingDir_, _radFileName_, meshSettings_, waitingTime, \
-                  additionalRadFiles_, overwriteResults_, exportInteriorWalls_)
+                  additionalRadFiles_, overwriteResults_, exportAirWalls_)
     
     if result!= -1:
         

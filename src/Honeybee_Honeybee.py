@@ -30,7 +30,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.56\nMAR_02_2015'
+ghenv.Component.Message = 'VER 0.0.56\nMAR_11_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -2701,7 +2701,7 @@ class hb_WriteRADAUX(object):
 
     def isSrfInterior(self, HBSrf):
         # This can be tricky since some of interior walls may or may not be air walls
-        if HBSrf.type == 0 and HBSrf.BC.lower() == "surface":
+        if HBSrf.type == 4 and HBSrf.BC.lower() == "surface":
             return True
         else:
             return False
