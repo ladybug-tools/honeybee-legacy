@@ -46,7 +46,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Set EP Air Flow"
 ghenv.Component.NickName = 'setEPNatVent'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
+ghenv.Component.Message = 'VER 0.0.56\nMAR_16_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -422,10 +422,9 @@ def main(HBZones, natVentMethod, interZoneFlow, minIndoorTemp, maxIndoorTemp, mi
                         #Assign the operable area.
                         if fractionOfArea == []: fractArea = 0.5
                         else: fractArea = fractionOfArea[zoneCount]
-                        openingArea = (fractArea*glazedArea)/2
-                        effectiveArea = math.sqrt((1/(openingArea*openingArea))+(1/(openingArea*openingArea)))
-                        HBZone.windowOpeningArea.append(str(effectiveArea))
-                        readMe.append(HBZone.name + " has surface with a glazed area of " + str(glazedArea) + " m2, has an operable area of " + str(openingArea*2) + " m2 and the effective area of the operable portion is " + str(fractArea*glazedArea) + " m2.")
+                        openingArea = fractArea*glazedArea
+                        HBZone.windowOpeningArea.append(str(openingArea))
+                        readMe.append(HBZone.name + " has surface with a glazed area of " + str(glazedArea) + " m2, has an operable area of " + str(openingArea) + " m2.")
                         
                         #Assign the heights of the windows.
                         if fractionOfHeight == []: fractHeight = 1
