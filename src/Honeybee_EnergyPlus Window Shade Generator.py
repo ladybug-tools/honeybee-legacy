@@ -45,7 +45,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Window Shade Generator"
 ghenv.Component.NickName = 'EPWindowShades'
-ghenv.Component.Message = 'VER 0.0.56\nMAR_11_2015'
+ghenv.Component.Message = 'VER 0.0.56\nMAR_16_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -361,7 +361,7 @@ def makeShade(_glzSrf, depth, numShds, distBtwn):
     
     #Define a function that can get the angle to North of any surface.
     def getAngle2North(normalVector):
-        if north_ != None and north_.IsValid():
+        if north_ != None:
             northVector = north_
         else:northVector = rc.Geometry.Vector3d.YAxis
         angle =  rc.Geometry.Vector3d.VectorAngle(northVector, normalVector, rc.Geometry.Plane.WorldXY)
@@ -524,13 +524,13 @@ def createEPBlindMat(blindsMaterial, EPSlatOrient, depth, shadingHeight, EPshdAn
         '\t' + str(blindsMaterial[2]) + ',                        !- Slat Beam Solar Transmittance\n' + \
         '\t' + str(blindsMaterial[1]) + ',                    !- Front Side Slat Beam Solar Reflectance\n' + \
         '\t' + str(blindsMaterial[1]) + ',                    !- Back Side Slat Beam Solar Reflectance\n' + \
-        '\t' + str(blindsMaterial[2]) + ',                        !- Slat Diffuse Solar Transmittance\n' + \
+        '\t' + ',                        !- Slat Diffuse Solar Transmittance\n' + \
         '\t' + str(blindsMaterial[1]) + ',                    !- Front Side Slat Diffuse Solar Reflectance\n' + \
         '\t' + str(blindsMaterial[1]) + ',                    !- Back Side Slat Diffuse Solar Reflectance\n' + \
         '\t' + str(blindsMaterial[2]) + ',                       !- Slat Beam Visible Transmittance\n' + \
         '\t' + ',                        !- Front Side Slat Beam Visible Reflectance\n' + \
         '\t' + ',                        !- Back Side Slat Beam Visible Reflectance\n' + \
-        '\t' + str(blindsMaterial[2]) + ',                        !- Slat Diffuse Visible Transmittance\n' + \
+        '\t' + ',                        !- Slat Diffuse Visible Transmittance\n' + \
         '\t' + ',                        !- Front Side Slat Diffuse Visible Reflectance\n' + \
         '\t' + ',                        !- Back Side Slat Diffuse Visible Reflectance\n' + \
         '\t' + ',                        !- Slat Infrared Hemispherical Transmittance\n' + \
