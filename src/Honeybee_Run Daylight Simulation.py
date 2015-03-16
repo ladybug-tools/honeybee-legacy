@@ -37,7 +37,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Run Daylight Simulation"
 ghenv.Component.NickName = 'runDaylightAnalysis'
-ghenv.Component.Message = 'VER 0.0.56\nMAR_11_2015'
+ghenv.Component.Message = 'VER 0.0.56\nMAR_16_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 #compatibleHBVersion = VER 0.0.56\nMAR_11_2015
@@ -67,9 +67,7 @@ ghenv.Component.Params.Output[3].NickName = "results"
 ghenv.Component.Params.Output[3].Name = "results"
 results = []
 
-def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir,
-         radFileName, meshParameters, waitingTime, additionalRadFiles, overwriteResults,
-         exportAirWalls):
+def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir, radFileName, meshParameters, waitingTime, additionalRadFiles, overwriteResults, exportAirWalls):
     # import the classes
     w = gh.GH_RuntimeMessageLevel.Warning
     
@@ -93,7 +91,7 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, warning)
         return -1
-
+    
     try:
         if not sc.sticky['ladybug_release'].isCompatible(ghenv.Component): return -1
     except:
@@ -148,7 +146,7 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
     # I'm not sure how do I take care of file names for dynamic shadings
     # inside this function. For now I just leave it as it is and I will move
     # it to write DS later
-
+    
     radFileFullName, materialFileName = \
         hb_writeRAD.writeRADAndMaterialFiles(originalHBObjects, subWorkingDir, \
                                              radFileName, analysisRecipe, \
