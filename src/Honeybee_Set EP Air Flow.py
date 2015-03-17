@@ -23,6 +23,7 @@ Provided by Honeybee 0.0.56
     Args:
         _HBZones: The HBZones out of any of the HB components that generate or alter zones.
         interZoneAirFlowRate_: An optional number that represents airflow in m3/s per square meter of air wall contatct surface area between zones.  By default, this value is set to 0.0963 m3/s for each square meter of air wall contact surface area, which is a decent assumption for conditions of relatively low indoor air velocity.  In cases of higher indoor air velocity, such as those that might occur with consistent wind-driven ventilation or ventilation with fans, you will likely want to increase this number. This can be either a single number to be applied to all connected zones or a list of numbers for each different zone.
+        interZoneAirFlowSched_: An optional schedule of fractional values to set when the air flows in between zones.
         _naturalVentilationType: Choose from the following options.
             0 - NO NATURAL VENTILATION - Choose this option if you do not want your zones to be naturally ventilated.
             1 - WINDOW NATURAL VENTILATION - Choose this to have the component automatically calculate natural ventilation potential based on ALL of your zone's windows and a specified fraction of operable glazing.  Note that your zone must have windows for this ventilation to occur.  It will be assumed that each window is divided into two equally-sized openings (one placed at the top and another at the bottom).
@@ -46,10 +47,10 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Set EP Air Flow"
 ghenv.Component.NickName = 'setEPNatVent'
-ghenv.Component.Message = 'VER 0.0.56\nMAR_16_2015'
+ghenv.Component.Message = 'VER 0.0.56\nMAR_17_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.56\nMAR_16_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
@@ -67,18 +68,19 @@ inputsDict = {
     
 0: ["_HBZones", "The HBZones out of any of the HB components that generate or alter zones."],
 1: ["interZoneAirFlowRate_", "An optional number that represents airflow in m3/s per square meter of air wall contatct surface area between zones.  By default, this value is set to 0.0963 m3/s for each square meter of air wall contact surface area, which is a decent assumption for conditions of relatively low indoor air velocity.  In cases of higher indoor air velocity, such as those that might occur with consistent wind-driven ventilation or ventilation with fans, you will likely want to increase this number. This can be either a single number to be applied to all connected zones or a list of numbers for each different zone."],
-2: ["_naturalVentilationType", "Choose from the following options. \n     0 - NO NATURAL VENTILATION - Choose this option if you do not want your zones to be naturally ventilated. \n     1 - WINDOW NATURAL VENTILATION - Choose this to have the component automatically calculate natural ventilation potential based on ALL of your zone's windows and a specified fraction of operable glazing.  Note that your zone must have windows for this ventilation to occur.  It will be assumed that each window is divided into two equally-sized openings (one placed at the top and another at the bottom). \n     2 - CUSTOM STACK / WIND VENTILATION - Choose this option either if you have window ventilation and it does not fit the description above or if you are trying to model a custom ventilation object like a chimney.  You will have to specify an effective window area for the object and the height between inlet and outlet.  You will also have to specify the angle2North for wind-driven calculations.  Note that you can eliminate either the wind or the stack part of the equation by setting the respective discharge coefficent to 0. \n     3 - FAN-DRIVEN VENTILATION - Choose this option to have your zones ventilated at a constant rate, representing fan-driven ventilation.  You will have to specify the design flow rate that the fan gives to the zone in m3/s.  You can also change the default fan efficiency, which will affect the electic consumption of the fan in the output."],
-3: ["--------------------", "..."],
-4: ["minIndoorTempForNatVent_", "A number or list of numbers between -100 and 100 that represents the minimum indoor temperature at which to naturally ventilate.  This can be either a single number to be applied to all connected zones or a list of numbers for each different zone."],
-5: ["maxIndoorTempForNatVent_", "A number or list of numbers between -100 and 100 that represents the maximum indoor temperature at which to naturally ventilate.  Use this to design mixed-mode buildings where you would like occupants to shut the windows and turn on a cooling system if it gets too hot inside.  This can be either a single number to be applied to all connected zones or a list of numbers for each different zone."],
-6: ["minOutdoorTempForNatVent_", "A number or list of numbers between -100 and 100 that represents the minimum outdoor temperature at which to naturally ventilate.  This can be either a single number to be applied to all connected zones or a list of numbers for each different zone."],
-7: ["maxOutdoorTempForNatVent_", "A number or list of numbers between -100 and 100 that represents the minimum outdoor temperature at which to naturally ventilate.  Use this to design night flushed buildings where windows are closed for daytime temperatures and opened at night or a mixed-mode buildings where you would like occupants to shut the windows and turn on a cooling system if it gets too hot outside. This can be either a single number to be applied to all connected zones or a list of numbers for each different zone."],
-8: ["openingAreaFractionalSched_", "An optional schedule to set the fraction of the window that is open at each hour."],
-9: ["fractionOfGlzAreaOperable_", "A number or list of numbers between 0.0 and 1.0 that represents the fraction of the window area that is operable.  By default, it will be assumed that this is 0.5 for double-hung windows."],
-10: ["fractionOfGlzHeightOperable_", "A number or list of numbers between 0.0 and 1.0 that represents the fraction of the distance from the bottom of the zones windows to the top that are operable.  By default, it will be assumed that this is 1.0 assuming windows with openings at both the very top and very bottom."],
-11: ["windDischargeCoeff_", "A number between 0.0 and 1.0 that will be multipled by the area of the window to account for the angle of the wind from the direction that the window faces.  This is the Cw in the equation given in this component's description.  If no value is unput here, it isautocalculated based on the angle of the window from North and the hourly wind direction.  Set to 0 to completely discount wind from the natural ventilation calculation."],
-12: ["stackDischargeCoeff_", "A number between 0.0 and 1.0 that will be multipled by the area of the window to account for additional friction from insect screens, etc.  This is the Cd in the equation given in this component's description.  The default is autocalculated and assumes a fully-open window area.  Set to 0 to completely discount stack ventilation from the natural ventilation calculation."],
-13: ["_windowAngle2North", "A number between 0 and 360 that sets the angle in degrees from North counting clockwise to the direction the window faces.  An angle of 0 denotes that the opening faces North, 90 denotes East, 180 denotes South, and 270 denotes West."]
+2: ["interZoneAirFlowSched_", "An optional schedule of fractional values to set when the air flows in between zones."],
+3: ["_naturalVentilationType", "Choose from the following options. \n     0 - NO NATURAL VENTILATION - Choose this option if you do not want your zones to be naturally ventilated. \n     1 - WINDOW NATURAL VENTILATION - Choose this to have the component automatically calculate natural ventilation potential based on ALL of your zone's windows and a specified fraction of operable glazing.  Note that your zone must have windows for this ventilation to occur.  It will be assumed that each window is divided into two equally-sized openings (one placed at the top and another at the bottom). \n     2 - CUSTOM STACK / WIND VENTILATION - Choose this option either if you have window ventilation and it does not fit the description above or if you are trying to model a custom ventilation object like a chimney.  You will have to specify an effective window area for the object and the height between inlet and outlet.  You will also have to specify the angle2North for wind-driven calculations.  Note that you can eliminate either the wind or the stack part of the equation by setting the respective discharge coefficent to 0. \n     3 - FAN-DRIVEN VENTILATION - Choose this option to have your zones ventilated at a constant rate, representing fan-driven ventilation.  You will have to specify the design flow rate that the fan gives to the zone in m3/s.  You can also change the default fan efficiency, which will affect the electic consumption of the fan in the output."],
+4: ["--------------------", "..."],
+5: ["minIndoorTempForNatVent_", "A number or list of numbers between -100 and 100 that represents the minimum indoor temperature at which to naturally ventilate.  This can be either a single number to be applied to all connected zones or a list of numbers for each different zone."],
+6: ["maxIndoorTempForNatVent_", "A number or list of numbers between -100 and 100 that represents the maximum indoor temperature at which to naturally ventilate.  Use this to design mixed-mode buildings where you would like occupants to shut the windows and turn on a cooling system if it gets too hot inside.  This can be either a single number to be applied to all connected zones or a list of numbers for each different zone."],
+7: ["minOutdoorTempForNatVent_", "A number or list of numbers between -100 and 100 that represents the minimum outdoor temperature at which to naturally ventilate.  This can be either a single number to be applied to all connected zones or a list of numbers for each different zone."],
+8: ["maxOutdoorTempForNatVent_", "A number or list of numbers between -100 and 100 that represents the minimum outdoor temperature at which to naturally ventilate.  Use this to design night flushed buildings where windows are closed for daytime temperatures and opened at night or a mixed-mode buildings where you would like occupants to shut the windows and turn on a cooling system if it gets too hot outside. This can be either a single number to be applied to all connected zones or a list of numbers for each different zone."],
+9: ["openingAreaFractionalSched_", "An optional schedule to set the fraction of the window that is open at each hour."],
+10: ["fractionOfGlzAreaOperable_", "A number or list of numbers between 0.0 and 1.0 that represents the fraction of the window area that is operable.  By default, it will be assumed that this is 0.5 for double-hung windows."],
+11: ["fractionOfGlzHeightOperable_", "A number or list of numbers between 0.0 and 1.0 that represents the fraction of the distance from the bottom of the zones windows to the top that are operable.  By default, it will be assumed that this is 1.0 assuming windows with openings at both the very top and very bottom."],
+12: ["windDischargeCoeff_", "A number between 0.0 and 1.0 that will be multipled by the area of the window to account for the angle of the wind from the direction that the window faces.  This is the Cw in the equation given in this component's description.  If no value is unput here, it isautocalculated based on the angle of the window from North and the hourly wind direction.  Set to 0 to completely discount wind from the natural ventilation calculation."],
+13: ["stackDischargeCoeff_", "A number between 0.0 and 1.0 that will be multipled by the area of the window to account for additional friction from insect screens, etc.  This is the Cd in the equation given in this component's description.  The default is autocalculated and assumes a fully-open window area.  Set to 0 to completely discount stack ventilation from the natural ventilation calculation."],
+14: ["_windowAngle2North", "A number between 0 and 360 that sets the angle in degrees from North counting clockwise to the direction the window faces.  An angle of 0 denotes that the opening faces North, 90 denotes East, 180 denotes South, and 270 denotes West."]
 }
 
 
@@ -92,8 +94,8 @@ def checkNatVentMethod():
         ghenv.Component.AddRuntimeMessage(w, warning)
     
     if natVentMethod == 0:
-        for input in range(14):
-            if input == 4 or input == 5 or input == 6 or input == 7 or input == 8 or input == 9 or input == 10 or input == 11 or input == 12 or input == 13:
+        for input in range(15):
+            if input == 5 or input == 6 or input == 7 or input == 8 or input == 9 or input == 10 or input == 11 or input == 12 or input == 13 or input == 14:
                 ghenv.Component.Params.Input[input].NickName = "__________"
                 ghenv.Component.Params.Input[input].Name = "."
                 ghenv.Component.Params.Input[input].Description = " "
@@ -102,8 +104,8 @@ def checkNatVentMethod():
                 ghenv.Component.Params.Input[input].Name = inputsDict[input][0]
                 ghenv.Component.Params.Input[input].Description = inputsDict[input][1]
     elif natVentMethod == 1:
-        for input in range(14):
-            if input == 13:
+        for input in range(15):
+            if input == 14:
                 ghenv.Component.Params.Input[input].NickName = "__________"
                 ghenv.Component.Params.Input[input].Name = "."
                 ghenv.Component.Params.Input[input].Description = " "
@@ -112,12 +114,12 @@ def checkNatVentMethod():
                 ghenv.Component.Params.Input[input].Name = inputsDict[input][0]
                 ghenv.Component.Params.Input[input].Description = inputsDict[input][1]
     elif natVentMethod == 2:
-        for input in range(14):
-            if input == 9:
+        for input in range(15):
+            if input == 10:
                 ghenv.Component.Params.Input[input].NickName = "_operableEffectiveArea"
                 ghenv.Component.Params.Input[input].Name = "_operableEffectiveArea"
                 ghenv.Component.Params.Input[input].Description = "A number representing the effective area of operable ventilation in square meters.  Note that effective area references both inlet and outlet area through the following formula: EffectiveArea = 1 / sqrt( (1/InletArea^2) + 1/OutletArea^2) ). This value will be decreased if there is further friction introduced by objects in between the inlet and outlet."
-            elif input == 10:
+            elif input == 11:
                 ghenv.Component.Params.Input[input].NickName = "_inletOutletHeight"
                 ghenv.Component.Params.Input[input].Name = "_inletOutletHeight"
                 ghenv.Component.Params.Input[input].Description = "A number representing the height between the inlet and outlet of the custom ventilation object in meters.  This is needed for the bouyancy calculation.  Note that this heght should be from the midpoint of the height of the inlet to the midpoint of the height of the outlet."
@@ -126,20 +128,20 @@ def checkNatVentMethod():
                 ghenv.Component.Params.Input[input].Name = inputsDict[input][0]
                 ghenv.Component.Params.Input[input].Description = inputsDict[input][1]
     elif natVentMethod == 3:
-        for input in range(14):
-            if input == 12 or input == 13:
+        for input in range(15):
+            if input == 13 or input == 14:
                 ghenv.Component.Params.Input[input].NickName = "__________"
                 ghenv.Component.Params.Input[input].Name = "."
                 ghenv.Component.Params.Input[input].Description = " "
-            elif input == 9:
+            elif input == 10:
                 ghenv.Component.Params.Input[input].NickName = "_fanFlowRate"
                 ghenv.Component.Params.Input[input].Name = "_fanFlowRate"
                 ghenv.Component.Params.Input[input].Description = "A number representing the flow rate of the fan in m3/s.  The flow rate of the fan will depend upon its size and can range from 0.05 m3/s for a small desk fan to 6.00 m3/s for a large industrial fan."
-            elif input == 10:
+            elif input == 11:
                 ghenv.Component.Params.Input[input].NickName = "fanEfficiency_"
                 ghenv.Component.Params.Input[input].Name = "fanEfficiency_"
                 ghenv.Component.Params.Input[input].Description = "A number between 0 and 1 that represents the efficiency of the fan.  This will effect the energy use of the fan in the results.  The default is set to 0.9 but this can be as low as 0.7 in some cases."
-            elif input == 11:
+            elif input == 12:
                 ghenv.Component.Params.Input[input].NickName = "fanPressureRise_"
                 ghenv.Component.Params.Input[input].Name = "fanPressureRise_"
                 ghenv.Component.Params.Input[input].Description = "A number that represents the fan pressure rise in Pa.  This will effect the energy use of the fan in the results.  The default is set to 70 for a relatively small fan with a flow rate of 0.05 m3/s but values can be as high as 400 Pa for large industrial fans."
@@ -151,7 +153,7 @@ def checkNatVentMethod():
     return natVentMethod
 
 def restoreInput():
-    for input in range(14):
+    for input in range(15):
         ghenv.Component.Params.Input[input].NickName = inputsDict[input][0]
         ghenv.Component.Params.Input[input].Name = inputsDict[input][0]
         ghenv.Component.Params.Input[input].Description = inputsDict[input][1]
@@ -192,8 +194,8 @@ def setDefaults(natVentMethod):
         return checkListLen, goodData
     
     #Check to make sure that everything matches with the HBZones.
-    #Check to make sure all data is in the right range.
     checkData14, interZoneFlow = checkWithHBZone(interZoneAirFlowRate_, "interZoneAirFlowRate_")
+    checkData26, interZoneFlowSched = checkWithHBZone(interZoneAirFlowSched_, "interZoneAirFlowSched_")
     
     #Check if the general inputs for natural ventilation match.
     if natVentMethod == 1 or natVentMethod == 2 or natVentMethod == 3:
@@ -303,12 +305,12 @@ def setDefaults(natVentMethod):
     
     #Check to be sure all is ok.
     checkData = False
-    if checkData1 == True and checkData2 == True and checkData3 == True and checkData4 == True and checkData5 == True and checkData6 == True and checkData7 == True and checkData8 == True and checkData9 == True and checkData10 == True and checkData11 == True and checkData12 == True and checkData13 == True and checkData14 == True and checkData15 == True and checkData16 == True and checkData17 == True and checkData18 == True and checkData19 == True and checkData20 == True and checkData21 == True and checkData22 == True and checkData23 == True and checkData24 == True and checkData25 == True:
+    if checkData1 == True and checkData2 == True and checkData3 == True and checkData4 == True and checkData5 == True and checkData6 == True and checkData7 == True and checkData8 == True and checkData9 == True and checkData10 == True and checkData11 == True and checkData12 == True and checkData13 == True and checkData14 == True and checkData15 == True and checkData16 == True and checkData17 == True and checkData18 == True and checkData19 == True and checkData20 == True and checkData21 == True and checkData22 == True and checkData23 == True and checkData24 == True and checkData25 == True and checkData26 == True:
         checkData = True
     
-    return checkData, interZoneFlow, minIndoorTemp, maxIndoorTemp, minOutdoorTemp, maxOutdoorTemp, windDisCoeff, stackDisCoeff, fractionOfArea, fractionOfHeight, areaSched, effectiveArea, inletOutletHeight, fanFlowRate, fanEfficiency, fanPressureRise, windowAngle2North
+    return checkData, interZoneFlow, interZoneFlowSched, minIndoorTemp, maxIndoorTemp, minOutdoorTemp, maxOutdoorTemp, windDisCoeff, stackDisCoeff, fractionOfArea, fractionOfHeight, areaSched, effectiveArea, inletOutletHeight, fanFlowRate, fanEfficiency, fanPressureRise, windowAngle2North
 
-def main(HBZones, natVentMethod, interZoneFlow, minIndoorTemp, maxIndoorTemp, minOutdoorTemp, maxOutdoorTemp, windDisCoeff, stackDisCoeff, fractionOfArea, fractionOfHeight, areaSched, effectiveAreas, inletOutletHeight, fanFlowRate, fanEfficiency, fanPressureRise, windowAngle2North):
+def main(HBZones, natVentMethod, interZoneFlow, interZoneFlowSched, minIndoorTemp, maxIndoorTemp, minOutdoorTemp, maxOutdoorTemp, windDisCoeff, stackDisCoeff, fractionOfArea, fractionOfHeight, areaSched, effectiveAreas, inletOutletHeight, fanFlowRate, fanEfficiency, fanPressureRise, windowAngle2North):
     # check for Honeybee
     if not sc.sticky.has_key('honeybee_release'):
         print "You should first let Honeybee to fly..."
@@ -333,7 +335,7 @@ def main(HBZones, natVentMethod, interZoneFlow, minIndoorTemp, maxIndoorTemp, mi
     hb_hive = sc.sticky["honeybee_Hive"]()
     HBObjectsFromHive = hb_hive.callFromHoneybeeHive(HBZones)
     
-    #If the user requests a chnage in inter-zone mixing, then do so.
+    #If the user requests a change in inter-zone mixing, then do so.
     if len(interZoneFlow) > 0:
         for zoneCount, HBZone in enumerate(HBObjectsFromHive):
             originalFlow = [HBZone.mixAirFlowRate][:][0]
@@ -345,6 +347,35 @@ def main(HBZones, natVentMethod, interZoneFlow, minIndoorTemp, maxIndoorTemp, mi
                     HBZone.mixAirFlowList[flowCount] = flowRate*originNewRatio
             HBZone.mixAirFlowRate = newFlow
     
+    #If the user requests a change in inter-zone mixing schedule, then do so.
+    if len(interZoneFlowSched) > 0:
+        # Make sure zoneMixing schedules are in HB schedule library.
+        HBScheduleList = sc.sticky["honeybee_ScheduleLib"].keys()
+        
+        for schedule in interZoneFlowSched: 
+            if schedule!=None:
+                schedule= schedule.upper()
+            
+            if schedule!=None and not schedule.lower().endswith(".csv") and schedule not in HBScheduleList:
+                msg = "Cannot find " + schedule + " in Honeybee schedule library."
+                print msg
+                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                return -1
+            elif schedule!=None and schedule.lower().endswith(".csv"):
+                # check if csv file exists
+                if not os.path.isfile(schedule):
+                    msg = "Cannot find the shchedule file: " + schedule
+                    print msg
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                    return -1
+        
+        #Assign the shcedules to the zones
+        for zoneCount, HBZone in enumerate(HBObjectsFromHive):
+            newFlowSched = interZoneFlowSched[zoneCount]
+            if HBZone.mixAir == True:
+                for flowCount, flowRate in enumerate(HBZone.mixAirFlowList):
+                    readMe.append("Mixing flow schedule between " + HBZone.name + " and " + HBZone.mixAirZoneList[flowCount] + " has been changed from " + str(HBZone.mixAirFlowSched[flowCount]) + " to " + str(newFlowSched) + ".")
+                    HBZone.mixAirFlowSched[flowCount] = newFlowSched
     
     if natVentMethod == 1 or natVentMethod == 2 or natVentMethod == 3:
         # make sure area schedules are in HB schedule library.
@@ -429,7 +460,7 @@ def main(HBZones, natVentMethod, interZoneFlow, minIndoorTemp, maxIndoorTemp, mi
                         #Assign the heights of the windows.
                         if fractionOfHeight == []: fractHeight = 1
                         else: fractHeight = fractionOfHeight[zoneCount]
-                        effectiveHeight = (0.5/((fractArea/2)+0.5))*fractHeight*glzHeights[glzCount]
+                        effectiveHeight = fractHeight*glzHeights[glzCount]
                         HBZone.windowHeightDiff.append(str(effectiveHeight))
                         readMe.append(HBZone.name + " has a glazed height of " + str(round(glzHeights[glzCount], 1)) + " m and " + str(round(effectiveHeight, 1)) + " m of it can be used for bouyancy-driven flow.")
                         
@@ -593,9 +624,9 @@ if _HBZones and _HBZones[0]!=None and _naturalVentilationType != None:
     natVentMethod = checkNatVentMethod()
     
     if natVentMethod != None:
-        checkData, interZoneFlow, minIndoorTemp, maxIndoorTemp, minOutdoorTemp, maxOutdoorTemp, windDisCoeff, stackDisCoeff, fractionOfArea, fractionOfHeight, areaSched, effectiveArea, inletOutletHeight, fanFlowRate, fanEfficiency, fanPressureRise, windowAngle2North = setDefaults(natVentMethod)
+        checkData, interZoneFlow, interZoneFlowSched, minIndoorTemp, maxIndoorTemp, minOutdoorTemp, maxOutdoorTemp, windDisCoeff, stackDisCoeff, fractionOfArea, fractionOfHeight, areaSched, effectiveArea, inletOutletHeight, fanFlowRate, fanEfficiency, fanPressureRise, windowAngle2North = setDefaults(natVentMethod)
         if checkData == True:
-            results = main(_HBZones, natVentMethod, interZoneFlow, minIndoorTemp, maxIndoorTemp, minOutdoorTemp, maxOutdoorTemp, windDisCoeff, stackDisCoeff, fractionOfArea, fractionOfHeight, areaSched, effectiveArea, inletOutletHeight, fanFlowRate, fanEfficiency, fanPressureRise, windowAngle2North)
+            results = main(_HBZones, natVentMethod, interZoneFlow, interZoneFlowSched, minIndoorTemp, maxIndoorTemp, minOutdoorTemp, maxOutdoorTemp, windDisCoeff, stackDisCoeff, fractionOfArea, fractionOfHeight, areaSched, effectiveArea, inletOutletHeight, fanFlowRate, fanEfficiency, fanPressureRise, windowAngle2North)
             
             if results != -1: HBZones, readMe = results
 else:

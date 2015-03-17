@@ -30,7 +30,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.56\nMAR_11_2015'
+ghenv.Component.Message = 'VER 0.0.56\nMAR_16_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -4419,6 +4419,7 @@ class EPZone(object):
         self.mixAirZoneList = []
         self.mixAirFlowList = []
         self.mixAirFlowRate = 0.0963
+        self.mixAirFlowSched = []
         
         #Natural Ventilation Properties
         self.natVent = False

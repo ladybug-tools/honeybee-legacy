@@ -44,10 +44,10 @@ Provided by Honeybee 0.0.56
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.56\nMAR_10_2015'
+ghenv.Component.Message = 'VER 0.0.56\nMAR_16_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nFEB_28_2015
+#compatibleHBVersion = VER 0.0.56\nMAR_16_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
@@ -501,10 +501,16 @@ class WriteIDF(object):
                 '\t;                        !- Velocity Squared Term Coefficient\n'
     
     def EPZoneAirMixing(self, zone, zoneMixName, mixFlowRate, objCount):
+        if zone.mixAirFlowSched[objCount].upper() == 'ALWAYS ON': mixingSched = 'ALWAYS ON'
+        elif zone.mixAirFlowSched[objCount].upper().endswith('CSV'):
+            mixingSchedFileName = os.path.basename(zone.mixAirFlowSched[objCount])
+            mixingSched = "_".join(mixingSchedFileName.split(".")[:-1])
+        else: mixingSched = zone.mixAirFlowSched[objCount]
+        
         return '\nZoneMixing,\n' + \
                 '\t' + zone.name + zoneMixName + 'AirMix' + str(objCount) + ',  !- Name\n' + \
                 '\t' + zone.name + ',  !- Zone Name\n' + \
-                '\t' + 'ALWAYS ON' + ',  !- Schedule Name\n' + \
+                '\t' + mixingSched + ',  !- Schedule Name\n' + \
                 '\t' + 'Flow/Zone' + ',  !- Design Flow Rate Calculation Method\n' + \
                 '\t' + str(mixFlowRate) + ',   !- Design Flow Rate {m3/s}\n' + \
                 '\t' + ',  !- Flow per Zone Floor Area {m3/s-m2}\n' + \
@@ -1088,7 +1094,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     
     # Geometry rules
     idfFile.write(hb_writeIDF.EPGeometryRules())
-
+    
     EPConstructionsCollection = []
     EPMaterialCollection = []
     EPScheduleCollection = []
@@ -1214,7 +1220,6 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     print "[5 of 7] Writing schedules..."
     
     #Check if schedules need to be written for air mixing or natural ventilation.
-    needToWriteMixSched = False
     for key, zones in ZoneCollectionBasedOnSchAndLoads.items():
         for zone in zones:
             if zone.natVent == True:
@@ -1222,9 +1227,11 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                     if schedule != None:
                         if schedule.upper() not in EPScheduleCollection: EPScheduleCollection.append(schedule)
                     else: needToWriteMixSched = True
-            if zone.mixAir == True: needToWriteMixSched = True
-    if needToWriteMixSched == True:
-        if 'ALWAYS ON' not in EPScheduleCollection: EPScheduleCollection.append('ALWAYS ON')
+            if zone.mixAir == True:
+                for schedule in zone.mixAirFlowSched:
+                    if schedule != None:
+                        if schedule.upper() not in EPScheduleCollection: EPScheduleCollection.append(schedule)
+                    else: needToWriteMixSched = True
     
     # Write Schedules
     for schedule in EPScheduleCollection:
