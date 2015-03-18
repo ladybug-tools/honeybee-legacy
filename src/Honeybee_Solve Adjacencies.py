@@ -21,10 +21,10 @@ Provided by Honeybee 0.0.56
 """
 ghenv.Component.Name = "Honeybee_Solve Adjacencies"
 ghenv.Component.NickName = 'solveAdjc'
-ghenv.Component.Message = 'VER 0.0.56\nMAR_16_2015'
+ghenv.Component.Message = 'VER 0.0.56\nMAR_18_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
-#compatibleHBVersion = VER 0.0.56\nMAR_16_2015
+#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
 except: pass
@@ -60,10 +60,6 @@ def updateZoneMixing(surface1, zone1, zone2):
     #Append the flow rate of mixing to the mixAirFlowList
     zone1.mixAirFlowList.append(flowRate)
     zone2.mixAirFlowList.append(flowRate)
-    
-    #Append a general schedule to the mix air flow shcedule.
-    zone1.mixAirFlowSched.append('ALWAYS ON')
-    zone2.mixAirFlowSched.append('ALWAYS ON')
     
     return flowRate
 
@@ -135,6 +131,12 @@ def updateAdj(surface1, surface2, altConstruction, altBC, tol):
                               '\t-> is adjacent to <-\t' + childSurface2.BCObject.name + '.'
         
 
+def notTheSameZone(targetZone, testZone):
+    if hasattr(testZone, 'cenPt')and hasattr(targetZone, 'cenPt'):
+        return targetZone.name != testZone.name and targetZone.cenPt.DistanceTo(testZone.cenPt) > sc.doc.ModelAbsoluteTolerance
+    else:
+        return targetZone.name != testZone.name
+    
 
 def main(HBZones, altConstruction, altBC, tol, remCurrent):
     
@@ -197,7 +199,7 @@ def main(HBZones, altConstruction, altBC, tol, remCurrent):
                     raysDict[meshSrfCen] = rc.Geometry.Ray3d(meshSrfCen, srfNormal)
                 
                 for targetZone in HBZoneObjects:
-                    if targetZone.name != testZone.name and targetZone.cenPt.DistanceTo(testZone.cenPt) > sc.doc.ModelAbsoluteTolerance :
+                    if notTheSameZone(targetZone, testZone):
                         # check ray intersection to see if this zone is next to the surface
                         if shootIt(raysDict.values(), [targetZone.geometry], tol + sc.doc.ModelAbsoluteTolerance):
                             for surface in targetZone.surfaces:
