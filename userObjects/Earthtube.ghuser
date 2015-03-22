@@ -51,6 +51,7 @@ except: pass
 import scriptcontext as sc
 import uuid
 import Grasshopper.Kernel as gh
+import os
 
 def checkTheInputs(Schedules_,design_flowrate,mincooling_temp,maxheating_temp,Delta_Temp,earthtube_type,fan_Prise,fan_n,pipe_radius,pipe_depth,soil_condition,condition_groundsurface,pipe_thermal_conductivity):
     
@@ -148,7 +149,7 @@ def checkTheInputs(Schedules_,design_flowrate,mincooling_temp,maxheating_temp,De
                     return -1
     
 
-def main(Schedules_,design_flowrate,mincooling_temp,maxheating_temp,Delta_Temp,earthtube_type,fan_Prise,fan_n,pipe_radius,pipe_thickness,pipe_length,pipe_depth,soil_condition,condition_groundsurface,pipe_thermal_conductivity):
+def main(Schedule_,design_flowrate,mincooling_temp,maxheating_temp,Delta_Temp,earthtube_type,fan_Prise,fan_n,pipe_radius,pipe_thickness,pipe_length,pipe_depth,soil_condition,condition_groundsurface,pipe_thermal_conductivity):
     
     """This function is the heart of this component it takes all the inputs and sets them to the properties of the Honeybee zone it is modifying it then returns the modified Honeybee zones which contained the add earth tube properties."""
     
