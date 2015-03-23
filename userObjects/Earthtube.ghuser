@@ -58,6 +58,7 @@ import scriptcontext as sc
 import uuid
 import Grasshopper.Kernel as gh
 import os
+import rhinoscriptsyntax as rs
 
 def checktheinputs(Schedules_,design_flowrate,mincooling_temp,maxheating_temp,delta_temp,earthtube_type,fan_Prise,fan_n,pipe_radius,pipe_depth,soil_condition,condition_groundsurface,pipe_thermal_conductivity):
     
@@ -190,12 +191,132 @@ def main(Schedule_,design_flowrate,mincooling_temp,maxheating_temp,delta_temp,ea
     Returns:
         The properties of the earth tubes of the Honeybee zones connected to this component these properties are then written to an IDF file in Honeybee_ Run Energy Simulation component."""
     
-    
     hb_hive = sc.sticky["honeybee_Hive"]()
     
     # Call the Honeybee zones from the hive
     
     HBObjectsFromHive = hb_hive.callFromHoneybeeHive(_HBZones)
+    
+    # The condition of the ground surrounding the earth tube used both writing to IDF and in CalcSoilSurfTemp preprocess
+        
+    def soilconditionforIDF(soil_condition):
+        
+        """ A function which takes the soil_condition from the panel and returns the required EnergyPlus IDF input for example an input on the panel of 1 corresponds to HeavyAndSaturated.
+            
+            Args:
+                soil_condition: As on the panel arguement soil_condition an integer between 1 to 4 that defines the actual condition of the soil surrounding the earth tube
+                
+            Returns:
+                soil_cond: A string which returns the EnergyPlus input which corresponds to 1,2,3 or 4 as described on the panel arguement soil_condition
+                e.g 1 = "HeavyAndSaturated"
+        """
+    
+        if soil_condition == 1:
+            
+            soil_cond = "HeavyAndSaturated"
+            
+        if soil_condition == 2:
+            
+            soil_cond = "HeavyAndDamp"
+            
+        if soil_condition == 3:
+            
+            soil_cond = "HeavyAndDry"
+            
+        if soil_condition == 4:
+            
+            soil_cond = "LightAndDry"  
+        
+        return soil_cond
+        
+    def calcsoilsurftempwrap(soil_condition,condition_groundsurface):
+        """This function is a wrapper for the EnergyPlus auxilary CalcSoilSurfTemp.exe
+        Normally the EnergyPlus user would manually open this exe and enter soil_condition and condition_groundsurface 
+        the 3 outputs from the exe would then need to be put into the IDF. Since these 3 outputs from the exe depend only on the epw weather file
+        This wrapper will only perform these actions everytime the weatherfile is changed.
+        
+        Args: soil_condition: A integer directly from the panel same as described in component arguements
+            condition_groundsurface: A integer directly from the panel same as described in component arguements
+            
+        Returns: 
+            annav: Annual Average Soil Surface Temperature C
+            amp: Amplitude of Soil Surface Temperature
+            phaseconstant: Phase Constant of Soil Surface Temperature
+        """
+        
+        EPfolder = sc.sticky["honeybee_folders"]["EPPath"] 
+        
+        # The process for creating the wrapper is below
+        
+        os.chdir(EPfolder +"\PreProcess\CalcSoilSurfTemp")
+        
+        # 1. Write soil_condition and condition_groundsurface to a text file so it can be read by the command line
+        # Create EnergyPlus file path
+        
+        auxfilepath = EPfolder +"PreProcess\CalcSoilSurfTemp"
+        filePath = os.path.join(auxfilepath,"exeinputs.txt")
+        fileWrite = open(filePath,"w")
+        
+        # Write soil_condition and condition_groundsurface to a text file
+        
+        fileWrite.write(str(soil_condition) + "\n"+ str(condition_groundsurface))
+        
+        fileWrite.close()
+        
+        # The EnergyPlus auxilary CalcSoilSurfTemp.exe takes EnergyPlus weather data epw as an arguement 
+        # Let the user select the epw file
+        
+        epwFile = rs.OpenFileName("Select .epw Weather File")
+        
+        # 2. A bat file is needed to open the exe give the epw as an arguement and feed the exe 
+        #the keystrokes soil_condition and condition_groundsurface 
+        
+        filePath1 = os.path.join(auxfilepath,"runwrapper.bat")
+        
+        fileWrite1 = open(filePath1,"w")
+        
+        fileWrite1.write(EPfolder+"PreProcess\CalcSoilSurfTemp\CalcSoilSurfTemp.exe "+ epwFile +" < "+EPfolder+"PreProcess\CalcSoilSurfTemp\exeinputs.txt")
+        
+        fileWrite1.close()
+        
+        # Run the batch script
+        
+        os.system(filePath1)
+        
+        def rchop(thestring, ending):
+            return thestring[len(ending):]
+        
+        filePath2 = os.path.join(auxfilepath,"CalcSoilSurfTemp.out")
+        
+        calcsoilsurftempout = open(filePath2,"r")
+        
+        count = 0
+        
+        for line in calcsoilsurftempout:
+        
+            if count == 1:
+                annav = float(rchop(line, "Annual Average Soil Surface Temperature   "))
+            if count == 2:
+                amp = float(rchop(line, "Amplitude of Soil Surface Temperature   "))
+            if count == 3:
+                phaseconstant = float(rchop(line, "Phase Constant of Soil Surface Temperature "))
+            count = count+1
+            
+        calcsoilsurftempout.close()
+            
+        # Delete the bat and textfile
+        
+        os.remove(filePath)
+        
+        # os.remove(filePath2) # XXX should delete bat file but not working???
+        
+        return annav,amp,phaseconstant
+            
+    # Create a wrapper for the EnergyPlus auxilary CalcSoilSurfTemp.exe
+    
+    annav,amp,phaseconstant = calcsoilsurftempwrap(soil_condition,condition_groundsurface)
+    
+    soil_cond = soilconditionforIDF(soil_condition)
     
     # Write the properties of the earth tube for each Honeybee zone connected to this component
     
@@ -265,52 +386,25 @@ def main(Schedule_,design_flowrate,mincooling_temp,maxheating_temp,delta_temp,ea
         
         zone.pipedepth = pipe_depth
         
-        # Soil condition USED in directly in IDF and USED in CalcSoilSurfTemp preprocess to get Annual Average Soil Surface Temperature,Amplitude of Soil Surface Temperature,Phase Constant of Soil Surface Temperature
+        # Writing the soil condition 
         
-        def soilconditionforIDF(soil_condition):
-            
-            """ A function which takes the soil_condition from the panel and returns the required EnergyPlus IDF input for example an input on the panel of 1 corresponds to HeavyAndSaturated.
-                
-                Args:
-                    soil_condition: As on the panel arguement soil_condition an integer between 1 to 4 that defines the actual condition of the soil surrounding the earth tube
-                    
-                Returns:
-                    soil_cond: A string which returns the EnergyPlus input which corresponds to 1,2,3 or 4 as described on the panel arguement soil_condition
-                    e.g 1 = "HeavyAndSaturated"
-            """
+        zone.soil_con = soil_cond 
         
-            if soil_condition == 1:
-                
-                soil_cond = "HeavyAndSaturated"
-                
-            if soil_condition == 2:
-                
-                soil_cond = "HeavyAndDamp"
-                
-            if soil_condition == 3:
-                
-                soil_cond = "HeavyAndDry"
-                
-            if soil_condition == 4:
-                
-                soil_cond = "LightAndDry"  
-            
-            return soil_cond
-            
-        # The condition of the ground surrounding the earth tube used both writing to IDF and in CalcSoilSurfTemp preprocess to get Annual Average Soil Surface Temperature,Amplitude of Soil Surface Temperature,Phase Constant of Soil Surface Temperature which are then subsequently used in IDF
+        # Writing zone Average Soil Surface Temperature,Amplitude of Soil Surface Temperature
+        # & Phase Constant of Soil Surface Temperature respectively
         
-        zone.soil_cond = soilconditionforIDF(soil_condition)
+        zone.soil_avannual = annav
         
-        # Condition of ground surface above the earth tube only used in CalcSoilSurfTemp preprocess to get Annual Average Soil Surface Temperature,Amplitude of Soil Surface Temperature,Phase Constant of Soil Surface Temperature which are then used in IDF
-
-        zone.cond_groundsurface = condition_groundsurface
+        zone.soil_amplitude = amp
+        
+        zone.soil_phaseconstant = phaseconstant
         
     # Add modified zones to dictionary
     
     ModifiedHBZones = hb_hive.addToHoneybeeHive(HBObjectsFromHive, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
     
     return ModifiedHBZones
-
+    
 
 if checktheinputs(Schedule_,design_flowrate,mincooling_temp,maxheating_temp,delta_temp,earthtube_type,fan_Prise,fan_n,pipe_radius,pipe_depth,soil_condition,condition_groundsurface,pipe_thermal_conductivity) != -1:
 
