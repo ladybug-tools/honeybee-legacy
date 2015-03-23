@@ -21,7 +21,7 @@ Provided by Honeybee 0.0.56
 """
 ghenv.Component.Name = "Honeybee_Solve Adjacencies"
 ghenv.Component.NickName = 'solveAdjc'
-ghenv.Component.Message = 'VER 0.0.56\nMAR_18_2015'
+ghenv.Component.Message = 'VER 0.0.56\nMAR_22_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -60,6 +60,10 @@ def updateZoneMixing(surface1, zone1, zone2):
     #Append the flow rate of mixing to the mixAirFlowList
     zone1.mixAirFlowList.append(flowRate)
     zone2.mixAirFlowList.append(flowRate)
+    
+    #Append the flow shcedule to the mixing list.
+    zone1.mixAirFlowSched.append('ALWAYS ON')
+    zone2.mixAirFlowSched.append('ALWAYS ON')
     
     return flowRate
 
