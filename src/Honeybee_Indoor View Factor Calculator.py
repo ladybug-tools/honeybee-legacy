@@ -398,13 +398,20 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
         zoneSrfs = newZoneSrfs
         zoneSrfTypes = newZoneSrfTypes
     
-    for brep in zoneBreps:
+    #Make sure points are inside the zones.
+    for brepCount, brep in enumerate(zoneBreps):
         if brep.IsSolid: pass
         else:
-            geoCheck = False
-            warning = "Getting rid of interior walls has caused the connected zone geometry to not be closed.  Try connecting all zones of your building or all zones for each floor."
-            print warning
-            ghenv.Component.AddRuntimeMessage(w, warning)
+            attemptToCap = brep.CapPlanarHoles(tol)
+            if attemptToCap != None: zoneBreps[brepCount] = attemptToCap
+            if zoneBreps[brepCount].IsSolid: pass
+            else:
+                geoCheck = False
+                warning = "Getting rid of interior walls has caused the connected zone geometry to not be closed.  Try connecting all zones of your building or all zones for each floor."
+                print warning
+                ghenv.Component.AddRuntimeMessage(w, warning)
+    
+    geoCheck = True
     
     if geoCheck == True:
         for zoneCount, srfList in enumerate(zoneSrfs):
@@ -882,15 +889,16 @@ if checkData == True:
         geoCheck, testPtsInit, viewFactorBrep, viewFactorMeshActual, zoneWireFrame, zoneSrfsMesh, zoneSrfNames, zoneOpaqueMesh, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, zoneHasWindows = goodGeo
     
     #Unpack the data trees of test pts and mesh breps so that the user can see them and get a sense of what to expect from the view factor calculation.
-    testPts = DataTree[Object]()
-    viewFactorMesh = DataTree[Object]()
-    shadingContext = DataTree[Object]()
-    for brCount, branch in enumerate(testPtsInit):
-        for item in branch:testPts.Add(item, GH_Path(brCount))
-    for brCount, branch in enumerate(viewFactorBrep):
-        for item in branch: viewFactorMesh.Add(item, GH_Path(brCount))
-    for brCount, branch in enumerate(zoneOpaqueMesh):
-        for item in branch: shadingContext.Add(item, GH_Path(brCount))
+    if geoCheck == True:
+        testPts = DataTree[Object]()
+        viewFactorMesh = DataTree[Object]()
+        shadingContext = DataTree[Object]()
+        for brCount, branch in enumerate(testPtsInit):
+            for item in branch:testPts.Add(item, GH_Path(brCount))
+        for brCount, branch in enumerate(viewFactorBrep):
+            for item in branch: viewFactorMesh.Add(item, GH_Path(brCount))
+        for brCount, branch in enumerate(zoneOpaqueMesh):
+            for item in branch: shadingContext.Add(item, GH_Path(brCount))
 
 #If all of the data is good and the user has set "_runIt" to "True", run the shade benefit calculation to generate all results.
 if checkData == True and _runIt == True and geoCheck == True:
