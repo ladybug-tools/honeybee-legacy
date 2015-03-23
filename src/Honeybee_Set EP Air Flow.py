@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Set EP Air Flow"
 ghenv.Component.NickName = 'setEPNatVent'
-ghenv.Component.Message = 'VER 0.0.56\nMAR_17_2015'
+ghenv.Component.Message = 'VER 0.0.56\nMAR_22_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
 #compatibleHBVersion = VER 0.0.56\nMAR_16_2015
@@ -374,8 +374,11 @@ def main(HBZones, natVentMethod, interZoneFlow, interZoneFlowSched, minIndoorTem
             newFlowSched = interZoneFlowSched[zoneCount]
             if HBZone.mixAir == True:
                 for flowCount, flowRate in enumerate(HBZone.mixAirFlowList):
-                    readMe.append("Mixing flow schedule between " + HBZone.name + " and " + HBZone.mixAirZoneList[flowCount] + " has been changed from " + str(HBZone.mixAirFlowSched[flowCount]) + " to " + str(newFlowSched) + ".")
-                    HBZone.mixAirFlowSched[flowCount] = newFlowSched
+                    try:
+                        readMe.append("Mixing flow schedule between " + HBZone.name + " and " + HBZone.mixAirZoneList[flowCount] + " has been changed from " + str(HBZone.mixAirFlowSched[flowCount]) + " to " + str(newFlowSched) + ".")
+                        HBZone.mixAirFlowSched[flowCount] = newFlowSched
+                    except:
+                        pass
     
     if natVentMethod == 1 or natVentMethod == 2 or natVentMethod == 3:
         # make sure area schedules are in HB schedule library.
