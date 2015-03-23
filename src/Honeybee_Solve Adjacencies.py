@@ -97,8 +97,10 @@ def updateAdj(surface1, surface2, altConstruction, altBC, tol):
         
     # change bc
     if altBC != None:
-        surface2.setBC(altBC)
-        surface1.setBC(altBC)
+        surface2.setBC(altBC.upper())
+        surface1.setBC(altBC.upper())
+        surface1.setBCObject(surface2)
+        surface2.setBCObject(surface1)
     else:
         surface1.setBC('SURFACE', True)
         surface2.setBC('SURFACE', True)
@@ -183,7 +185,7 @@ def main(HBZones, altConstruction, altBC, tol, remCurrent):
         # from other zones
         for srf in testZone.surfaces:
             #print srf.type, srf.BC 
-            if srf.BC.upper() == 'OUTDOORS' or srf.BC.upper() == 'GROUND':
+            if srf.BC.upper() == 'OUTDOORS' or srf.BC.upper() == 'GROUND' or srf.BC.upper() == 'ADIABATIC':
                 #Create a mesh of surface to use center points as test points
                 meshPar = rc.Geometry.MeshingParameters.Default
                 BrepMesh = rc.Geometry.Mesh.CreateFromBrep(srf.geometry, meshPar)[0]
