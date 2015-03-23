@@ -34,7 +34,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_11_2015'
+ghenv.Component.Message = 'VER 0.0.56\nMAR_22_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -57,6 +57,7 @@ w = gh.GH_RuntimeMessageLevel.Warning
 tol = sc.doc.ModelAbsoluteTolerance
 
 def copyHBZoneData():
+    checkZones = True
     hb_hive = sc.sticky["honeybee_Hive"]()
     surfaceNames = []
     srfBreps = []
@@ -87,8 +88,14 @@ def copyHBZoneData():
             srfTypes[zoneCount].append(srf.type)
             if srf.BC.lower() == "surface":
                 if srf.type == 4:
-                    srfInteriorList[zoneCount].append(str(srf.BCObject).split('\n')[0].split(': ')[-1])
-                    srfAirWallAdjList[zoneCount].append(str(srf.BCObject.parent).split('\n')[0].split(': ')[-1])
+                    try:
+                        srfInteriorList[zoneCount].append(str(srf.BCObject).split('\n')[0].split(': ')[-1])
+                        srfAirWallAdjList[zoneCount].append(str(srf.BCObject.parent).split('\n')[0].split(': ')[-1])
+                    except:
+                        checkZones = False
+                        warning = "Connected zones contain an outdoor airwall, which is currently not supported by this workflow."
+                        print warning
+                        ghenv.Component.AddRuntimeMessage(w, warning)
                 else:
                     srfInteriorList[zoneCount].append(None)
                     srfAirWallAdjList[zoneCount].append(str(srf.BCObject.parent).split('\n')[0].split(': ')[-1])
@@ -123,7 +130,7 @@ def copyHBZoneData():
             if foundZone == False:
                 srfAirWallAdjNumList[srfListCount].append(None)
     
-    sc.sticky["Honeybee_ViewFacotrSrfData"] = [zoneBreps, surfaceNames, srfBreps, zoneCentPts, srfTypes, srfInteriorList, zoneNames, zoneNatVentArea, zoneVolumes, srfAirWallAdjNumList]
+    sc.sticky["Honeybee_ViewFacotrSrfData"] = [zoneBreps, surfaceNames, srfBreps, zoneCentPts, srfTypes, srfInteriorList, zoneNames, zoneNatVentArea, zoneVolumes, srfAirWallAdjNumList, checkZones]
 
 
 def checkTheInputs():
@@ -863,8 +870,9 @@ else:
 #Check the data input.
 checkData = False
 if initCheck == True:
-    lb_preparation = sc.sticky["ladybug_Preparation"]()
-    checkData, gridSize, distFromFloor, viewResolution, removeInt, sectionMethod, sectionBreps = checkTheInputs()
+    if hb_zoneData[10] == True:
+        lb_preparation = sc.sticky["ladybug_Preparation"]()
+        checkData, gridSize, distFromFloor, viewResolution, removeInt, sectionMethod, sectionBreps = checkTheInputs()
 
 #Create a mesh of the area to calculate the view factor from.
 geoCheck = False
