@@ -100,7 +100,7 @@ else:
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_18_2015'
+ghenv.Component.Message = 'VER 0.0.56\nMAR_24_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -2612,7 +2612,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         
         # prepare non-planar zones
         if zone.hasNonPlanarSrf or zone.hasInternalEdge:
-            zone.prepareNonPlanarZone(meshingLevel = 1)
+            zone.prepareNonPlanarZone()
     
         # create a space - OpenStudio works based of space and not zone
         # Honeybee though is structured based on zones similar to EnergyPlus
