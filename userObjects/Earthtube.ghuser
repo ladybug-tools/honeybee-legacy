@@ -24,7 +24,7 @@ Provided by Honeybee 0.0.56
 
     Args:
         _HBZones: The Honeybee zones which Earthtubes will be added to.
-        location_epwFile: The epwFile of the location. Used to find the ground temperature of the site so Earthtube calculations can be undertaken.
+        _epwFile: An .epw file path on your system as a text string. Used to find the ground temperature of the site so Earthtube calculations can be undertaken.
         Schedules_: This field can be a number of schedules which correspond sequentially to the _HBZones, if no schedule is given for a zone the default schedule "ALWAYS ON" will be used.  XXX is the name of the schedule that modifies the maximum design volume flow rate parameter \. This fraction between 0.0 and 1.0 is noted as Fschedule in the EarthTubeFlowRate equation the  .
         design_flowrate: This number(noted as Edesign in the above equation)is the maximum amount of air mass flow rate of the earth tube expected at design conditions the default is 0 m3/s. The flow rate is expressed in units of m3/s. The design value is modified by the schedule fraction(see previous field) and user specified coefficients(see last four fields).
         mincooling_temp: This is the indoor temperature (in Celsius) below which the earth tube is shut off the default is -100 degrees C. This lower temperature limit is intended to avoid overcooling a space and thus result in a heating load. For example, if the user specifies a minimum temperature of 20 C, earth tube is assumed to be available if the zone air temperature is above 20 C. If the zone air temperature drops below 20C, then earth tube is automatically turned off.
@@ -37,8 +37,8 @@ Provided by Honeybee 0.0.56
         : This is the thickness of the pipe wall (in meters) the default is 0.2 meters. This plays a role in determining the amountof heat transferred from the surrounding soil to the air passing along the pipe.
         pipe_length: This is the total length of the pipe (in meters) the default is 15 meters. This plays a role in determining the amount of heat transferred from the surrounding soil to the air passing along the pipe. As the length of the pipe becomes longer, the amount of the heat transfer becomes larger
         pipe_depth: This is the depth of the pipe under the ground surface (in meters) the default is 3 meters. This plays a role in determining the temperature of the soil surrounding the pipe.
-        soil_condition: An integer between 1 to 4 that defines the actual condition of the soil surrounding the earth tube: HeavyAndSaturated a value of 1, HeavyAndDamp a value of 2, HeavyAndDry a value of 3 or LightAndDry a value of 4. This determines the thermal diffusivity and thermal conductivity of the surrounding soil, which play a role in determining the amount of heat transferred from the surrounding soil to the air passing along the pipe. The default is 1.
-        condition_groundsurface: An integer between 1 to 8 and defines the condition of the ground surface above the EarthTube, Bare and wet is a value of 1, Bare and moist is a value of 2, Bare and Arid is a value of 3, Bare and dry is a value of 4, Covered and wet is a value of 5, Covered and moist is a value of 6, Covered and arid is a value of 7, Covered and dry is a value of 8 the default is 1.
+        soil_condition: An integer between 1 to 4 that defines the actual condition of the soil surrounding the earth tube: HeavyAndSaturated a value of 1, HeavyAndDamp a value of 2, HeavyAndDry a value of 3 or LightAndDry a value of 4. This determines the thermal diffusivity and thermal conductivity of the surrounding soil, which play a role in determining the amount of heat transferred from the surrounding soil to the air passing along the pipe. The default is 1 - HeavyAndSaturated.
+        condition_groundsurface: An integer between 1 to 8 and defines the condition of the ground surface above the EarthTube, Bare and wet is a value of 1, Bare and moist is a value of 2, Bare and Arid is a value of 3, Bare and dry is a value of 4, Covered and wet is a value of 5, Covered and moist is a value of 6, Covered and arid is a value of 7, Covered and dry is a value of 8 the default is 1 - Bare and wet.
         pipe_thermal_conductivity: This is the thermal conductivity of the pipe (in W/m-K) default is 200 W/m-K. This plays a role in determining the amount of heat transferred from the surrounding soil to the air passing along the pipe.
         
     Returns:
@@ -264,9 +264,8 @@ def main(Schedule_,design_flowrate,mincooling_temp,maxheating_temp,delta_temp,ea
         fileWrite.close()
         
         # The EnergyPlus auxilary CalcSoilSurfTemp.exe takes EnergyPlus weather data epw as an arguement 
-        # Let the user select the epw file
         
-        epwFile = rs.OpenFileName("Select .epw Weather File")
+        epwFile = _epwFile
         
         # 2. A bat file is needed to open the exe give the epw as an arguement and feed the exe 
         #the keystrokes soil_condition and condition_groundsurface 
@@ -322,6 +321,8 @@ def main(Schedule_,design_flowrate,mincooling_temp,maxheating_temp,delta_temp,ea
     
     for zoneCount,zone in enumerate(HBObjectsFromHive):
         
+        zone.earthtube = True
+  
         # Writing earth tube schedules
         
         try: zone.ETschedule = Schedule_[zoneCount] # If zoneCount index in range of zoneCount
@@ -398,6 +399,13 @@ def main(Schedule_,design_flowrate,mincooling_temp,maxheating_temp,delta_temp,ea
         zone.soil_amplitude = amp
         
         zone.soil_phaseconstant = phaseconstant
+        
+        # XXX Add constants A,B,C,D use the following values for now add functionality to change in future
+        
+        zone.termflow = '0.6060000'
+        zone.tempflowco = '2.0199999E-02'
+        zone.veltermflow = '5.9800001E-04'
+        zone.velsquflow = '0.0000000E+00'
         
     # Add modified zones to dictionary
     
