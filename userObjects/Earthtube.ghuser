@@ -33,7 +33,7 @@ Provided by Honeybee 0.0.56
         earthtube_type: This input as an integer from 1 to 3 defines the type of earth tube as one of the following options: Natural a value of 1, Exhaust a value of 2, or Intake a value of 3. A natural earth tube is assumed to be air movement/exchange that will not consume any fan energy or is the result of natural air flow through the tube and into the building. Values for fan pressure and efficiency for a natural flow earth tube are ignored. For either Exhaust or Intake, values for fan pressure and efficiency define the fan electric consumption. For Natural and Exhaustearth tubes, the conditions of the air entering the space are assumed to be equivalent to the air which is cooled or heated by passing along the pipe. For Intake earth tubes, an appropriate amount of fan heat is added to the air stream. The default is a Natural Earthtube
         fan_Prise: This is the pressure rise experienced across the fan in Pascals (N/m2) the default is 150 Pascals. This is a function ofthe fan and plays a role in determining the amount of energy consumed by the fan.
         fan_n: This is the total fan efficiency (a decimal number between 0.0 and 1.0) the default is 1. This is a function of the fan and plays a role in determining the amount of energy consumed by the fan.
-        pipe_radius: This is the radius of the earth tube/pipe (in meters) the default is 1 meter. This plays a role in determining theamount of heat transferred from the surrounding soil to the air passing along the pipe. If the pipe has non-circular cross section, user can use the concept of hydraulic diameter where Radius = 2*Area/Perimeter.
+        pipe_radius: This is the radius of the earth tube/pipe (in meters) the default is 0.5 meter. This plays a role in determining theamount of heat transferred from the surrounding soil to the air passing along the pipe. If the pipe has non-circular cross section, user can use the concept of hydraulic diameter where Radius = 2*Area/Perimeter.
         : This is the thickness of the pipe wall (in meters) the default is 0.2 meters. This plays a role in determining the amountof heat transferred from the surrounding soil to the air passing along the pipe.
         pipe_length: This is the total length of the pipe (in meters) the default is 15 meters. This plays a role in determining the amount of heat transferred from the surrounding soil to the air passing along the pipe. As the length of the pipe becomes longer, the amount of the heat transfer becomes larger
         pipe_depth: This is the depth of the pipe under the ground surface (in meters) the default is 3 meters. This plays a role in determining the temperature of the soil surrounding the pipe.
@@ -110,6 +110,16 @@ def checktheinputs(Schedules_,design_flowrate,mincooling_temp,maxheating_temp,de
         ghenv.Component.AddRuntimeMessage(w, warnMsg)
         return -1
         
+    # Check that Pipe Depth Under Ground Surface is greater than 3*Pipe Radius otherwise EnergyPlus will create an error
+        
+    if (pipe_depth*3)+pipe_thickness <= pipe_radius:
+        
+        warnMsg= "Pipe Depth Under Ground Surface must be greater than 3*Pipe Radius + Pipe Thickness"
+        print warnMsg
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warnMsg)
+        return -1
+        
     # Check earthtube_type input
         
     if (earthtube_type < 1) or (earthtube_type > 3): # NOTE to self: if just earthtube_type == 1 or 2 or 3 the operator returns the first operand if it is True otherwise the 2nd operand this does NOT work!
@@ -149,6 +159,24 @@ def checktheinputs(Schedules_,design_flowrate,mincooling_temp,maxheating_temp,de
         ghenv.Component.AddRuntimeMessage(w, warnMsg)
         return -1
         
+    # Check that a epw file is connected
+    
+    if _epwFile == None:
+        
+        warnMsg = "Please connect a epw file to _epwFile!"
+        print warnMsg
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warnMsg)
+        return -1
+        
+    if not _epwFile and not _epwFile.endswith('.epw') and not _epwFile != 'C:\Example.epw':
+        
+        warnMsg = "Please connect a valid epw"
+        print warnMsg
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warnMsg)
+        return -1
+    
     # Check schedules by making sure that the schedules specified in Schedule_ exist lines 127 to 148 these lines of code are taken from setEPZoneSchedules component
     
     schedules = [Schedule_]
