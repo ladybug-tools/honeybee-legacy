@@ -20,7 +20,7 @@ Provided by Honeybee 0.0.56
 """
 ghenv.Component.Name = "Honeybee infORventPerArea Calculator"
 ghenv.Component.NickName = 'ACH2m3/s-m2 Calculator'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
+ghenv.Component.Message = 'VER 0.0.56\nMAR_26_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -109,7 +109,14 @@ def main(HBZones, airChangeHour):
         flrAreas.append(flrArea)
         
         #Calculate infiltration/ventilation per area (m3/s-m2).
-        infORventPerArea.append((airChangeHour * flrVolumes[count] / 3600) / flrAreas[count])
+        try:
+            infORventPerArea.append((airChangeHour * flrVolumes[count] / 3600) / flrAreas[count])
+        except:
+            warning = "One of the HBZones did not have any floor area.  The oringal air change values will be kept."
+            print warning
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+            infORventPerArea.append(HZone.ventilationPerArea)
         infORventPerAreaRes = 'infiltration/ventilationPerArea %.6f m3/second-m2' % (infORventPerArea[count])
     
         #print 'Area= , Volume= ', flrAreas[count], flrVolumes[count], infORventPerAreaRes
