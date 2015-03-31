@@ -18,6 +18,7 @@ Provided by Honeybee 0.0.56
         sillHeight_: This input it optional and will only have relevance to HBObjects that contain a rectangle, which can be used to generate orthagonal windows.  Use this input to set the distance from the floor to the bottom of your windows in model units.  This input can also accept lists of values and will assign different sill heights based on cardinal direction, starting with north and moving counter-clockwise.  Note that this input will be over-ridden at high glazing ratios or window heights.
         breakUpDist_: This input it optional and will only have relevance to HBObjects that contain a rectangle, which can be used to generate orthagonal windows.  Use this input to set the distance between individual windows.  This input can also accept lists of values and will assign different sill heights based on cardinal direction, starting with north and moving counter-clockwise.  Note that this input will be over-ridden at high glazing ratios or window heights.  Note that this value is ignored when breakUpWindow_ is set to "False."
         skyLightRatio_: If you have input a full zone or list of zones as your HBObjects, use this input to generate skylights on the roof surfaces.
+        skyLightBreakUpDist_: Use this input to change the distance between sky lights.
         _runIt: set runIt to True to generate the glazing
     Returns:
         readMe!: ...
@@ -26,7 +27,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Glazing based on ratio"
 ghenv.Component.NickName = 'glazingCreator'
-ghenv.Component.Message = 'VER 0.0.56\nMAR_11_2015'
+ghenv.Component.Message = 'VER 0.0.56\nMAR_31_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -512,76 +513,97 @@ def createGlazingThatContainsRectangle(topEdge, btmEdge, baseSrf, glazingRatio, 
     
     return glzSrf
 
-def createSkylightGlazing(baseSrf, glazingRatio, planarBool):
-    #Define the meshing paramters to break down the surface in a manner that produces only trinagles and quads.
-    meshPar = rc.Geometry.MeshingParameters.Default
-    
-    #Define the grid size break down based on the model units.
-    units = sc.doc.ModelUnitSystem
-    
-    if breakUpDist_ != []:
-        distBreakup = breakUpDist_[0]
-    elif `units` == 'Rhino.UnitSystem.Meters':
-        distBreakup = 2
-    elif `units` == 'Rhino.UnitSystem.Centimeters':
-        distBreakup = 200
-    elif `units` == 'Rhino.UnitSystem.Millimeters':
-        distBreakup = 2000
-    elif `units` == 'Rhino.UnitSystem.Feet':
-        distBreakup = 7
-    elif `units` == 'Rhino.UnitSystem.Inches':
-        distBreakup = 84
-    else:
-        distBreakup = 2
-    
-    meshPar.MinimumEdgeLength = (distBreakup)
-    meshPar.MaximumEdgeLength = (distBreakup*2)
-    
-    #Create a mesh of the base surface.
-    windowMesh = rc.Geometry.Mesh.CreateFromBrep(baseSrf, meshPar)[0]
-    
-    #Define all of the vairables that will be used in the following steps
-    glzSrf = []
-    srfFaceList = windowMesh.Faces
-    srfVertList = windowMesh.Vertices
-    curvedOk = True
-    lastSuccessfulRestOfSrf = []
-    
-    #If the surface is curved, check to see if all of the faces are quads, in which case, the generated glazing should look pretty nice.  Otherwise, abandon this method and use the offset algorithm.
-    if planarBool == False:
-        for face in srfFaceList:
-            if face.IsQuad == True: pass
-            else: curvedOk = False
-        if curvedOk == False:
-            glzSrf, lastSuccessfulRestOfSrf = createGlazingCurved(baseSrf, glazingRatio, planarBool)
-        else: pass
-    else:pass
-    
-    #Create breps of all of the mesh faces and use them to make each window.
-    if curvedOk == True:
-        for faceNum, face in enumerate(srfFaceList):
-            if face.IsQuad == True:
-                glzSrf.append(createGlazingQuad(rc.Geometry.Brep.CreateFromCornerPoints(srfVertList[face[0]], srfVertList[face[1]], srfVertList[face[2]], srfVertList[face[3]], sc.doc.ModelAbsoluteTolerance), glazingRatio, windowMesh.Faces.GetFaceCenter(faceNum))[0])
-            else:
-                glzSrf.append(createGlazingTri(rc.Geometry.Brep.CreateFromCornerPoints(srfVertList[face[0]], srfVertList[face[1]], srfVertList[face[2]], sc.doc.ModelAbsoluteTolerance), glazingRatio, windowMesh.Faces.GetFaceCenter(faceNum))[0])
-    
-    #If the surface is curved and has not been generated using the offset method, project the quad breps onto the curved surface and split it.
-    if planarBool == False and curvedOk == True:
-        faceNormals = []
-        curvedGlz = []
-        surface = baseSrf.Faces[0]
+def createSkylightGlazing(baseSrf, glazingRatio, planarBool, edgeLinear):
+    if breakUpWindow_ == True or breakUpWindow_ == None:
+        #Define the meshing paramters to break down the surface in a manner that produces only trinagles and quads.
+        meshPar = rc.Geometry.MeshingParameters.Default
         
-        for faceNum, face in enumerate(srfFaceList):
-            facePlane = rc.Geometry.Plane(srfVertList[face[0]], srfVertList[face[1]], srfVertList[face[2]])
-            faceNormals.append(facePlane.Normal)
-        for srfNum, srf in enumerate(glzSrf):
-            edges = srf.Edges
-            edge = rc.Geometry.Curve.JoinCurves(edges)
-            projectEdge = rc.Geometry.Curve.ProjectToBrep(edge, [baseSrf], faceNormals[srfNum], sc.doc.ModelAbsoluteTolerance)[0]
-            projectBrep = surface.Split([projectEdge], sc.doc.ModelAbsoluteTolerance)
-            splSurface = projectBrep.Faces.ExtractFace(1)
-            curvedGlz.append(splSurface)
-        glzSrf = curvedGlz
+        #Define the grid size break down based on the model units.
+        units = sc.doc.ModelUnitSystem
+        
+        if skyLightBreakUpDist_ != None:
+            distBreakup = skyLightBreakUpDist_
+        elif `units` == 'Rhino.UnitSystem.Meters':
+            distBreakup = 2
+        elif `units` == 'Rhino.UnitSystem.Centimeters':
+            distBreakup = 200
+        elif `units` == 'Rhino.UnitSystem.Millimeters':
+            distBreakup = 2000
+        elif `units` == 'Rhino.UnitSystem.Feet':
+            distBreakup = 7
+        elif `units` == 'Rhino.UnitSystem.Inches':
+            distBreakup = 84
+        else:
+            distBreakup = 2
+        
+        meshPar.MinimumEdgeLength = (distBreakup)
+        meshPar.MaximumEdgeLength = (distBreakup*2)
+        
+        #Create a mesh of the base surface.
+        windowMesh = rc.Geometry.Mesh.CreateFromBrep(baseSrf, meshPar)[0]
+        
+        #Define all of the vairables that will be used in the following steps
+        glzSrf = []
+        srfFaceList = windowMesh.Faces
+        srfVertList = windowMesh.Vertices
+        curvedOk = True
+        lastSuccessfulRestOfSrf = []
+        
+        #If the surface is curved, check to see if all of the faces are quads, in which case, the generated glazing should look pretty nice.  Otherwise, abandon this method and use the offset algorithm.
+        if planarBool == False:
+            for face in srfFaceList:
+                if face.IsQuad == True: pass
+                else: curvedOk = False
+            if curvedOk == False:
+                glzSrf, lastSuccessfulRestOfSrf = createGlazingCurved(baseSrf, glazingRatio, planarBool)
+            else: pass
+        else:pass
+        
+        #Create breps of all of the mesh faces and use them to make each window.
+        if curvedOk == True:
+            for faceNum, face in enumerate(srfFaceList):
+                if face.IsQuad == True:
+                    glzSrf.append(createGlazingQuad(rc.Geometry.Brep.CreateFromCornerPoints(srfVertList[face[0]], srfVertList[face[1]], srfVertList[face[2]], srfVertList[face[3]], sc.doc.ModelAbsoluteTolerance), glazingRatio, windowMesh.Faces.GetFaceCenter(faceNum))[0])
+                else:
+                    glzSrf.append(createGlazingTri(rc.Geometry.Brep.CreateFromCornerPoints(srfVertList[face[0]], srfVertList[face[1]], srfVertList[face[2]], sc.doc.ModelAbsoluteTolerance), glazingRatio, windowMesh.Faces.GetFaceCenter(faceNum))[0])
+        
+        #If the surface is curved and has not been generated using the offset method, project the quad breps onto the curved surface and split it.
+        if planarBool == False and curvedOk == True:
+            faceNormals = []
+            curvedGlz = []
+            surface = baseSrf.Faces[0]
+            
+            for faceNum, face in enumerate(srfFaceList):
+                facePlane = rc.Geometry.Plane(srfVertList[face[0]], srfVertList[face[1]], srfVertList[face[2]])
+                faceNormals.append(facePlane.Normal)
+            for srfNum, srf in enumerate(glzSrf):
+                edges = srf.Edges
+                edge = rc.Geometry.Curve.JoinCurves(edges)
+                projectEdge = rc.Geometry.Curve.ProjectToBrep(edge, [baseSrf], faceNormals[srfNum], sc.doc.ModelAbsoluteTolerance)[0]
+                projectBrep = surface.Split([projectEdge], sc.doc.ModelAbsoluteTolerance)
+                splSurface = projectBrep.Faces.ExtractFace(1)
+                curvedGlz.append(splSurface)
+            glzSrf = curvedGlz
+    else:
+        #Check to see if it is a triangle for which we can use a simple mathematical relation.
+        if planarBool == True and baseSrf.Edges.Count == 3:
+            glzSrf = createGlazingTri(baseSrf, glazingRatio, None)
+            lastSuccessfulRestOfSrf = []
+        
+        #Since the surface does not seem to have a rectangle and is not a triangle, check to see if it is a just an odd-shaped quarilateral for which we can use a mathematical relation.
+        elif planarBool == True and edgeLinear == True and baseSrf.Edges.Count == 4:
+            glzSrf = createGlazingQuad(baseSrf, glazingRatio, None)
+            lastSuccessfulRestOfSrf = []
+        
+        #Since the surface does not have a rectangle, is not a triangle, and is not a quadrilateral but still may be planar, we will break it into triangles and quads by meshing it such that we can use the previous formulas.
+        elif planarBool == True and edgeLinear == True:
+            glzSrf = createGlazingOddPlanarGeo(baseSrf, glazingRatio)
+            lastSuccessfulRestOfSrf = []
+        
+        #If everything has failed up until this point, this means that the wall geometry is likely curved.  The best way forward is just to try to offset the curve on the surface to get the window.
+        else:
+            glzSrf, lastSuccessfulRestOfSrf = createGlazingCurved(baseSrf, glazingRatio, planarBool)
+    
     
     return glzSrf, lastSuccessfulRestOfSrf
 
@@ -745,12 +767,12 @@ def findGlzBasedOnRatio(baseSrf, glzRatio, windowHeight, sillHeight, surfaceType
     
     #Check if the surface is a planar skylight that can be broken up into quads and, if so, send it through the skylight generator
     if surfaceType == 1:
-        glazing, lastSuccessfulRestOfSrf = createSkylightGlazing(baseSrf, glzRatio, planarBool)
+        glazing, lastSuccessfulRestOfSrf = createSkylightGlazing(baseSrf, glzRatio, planarBool, edgeLinear)
     
     #Check if the wall surface has horizontal top and bottom curves and contains a rectangle that can be extracted such that we can apply the windowHeight and sillHeight inputs to it.
     elif surfaceType == 0 and planarBool == True and edgeLinear == True and getTopBottomCurves(baseSrf)[1] == True and getTopBottomCurves(baseSrf)[3] == True:
         glazing = createGlazingThatContainsRectangle(getTopBottomCurves(baseSrf)[2], getTopBottomCurves(baseSrf)[0], baseSrf, glzRatio, windowHeight, sillHeight, breakUpWindow, breakUpDist)
-
+    
     #Check if the wall surface has vertical sides and contains a rectangle that can be extracted such that we can apply the windowheight and sill height inputs to it.
     elif surfaceType == 0 and planarBool == True and edgeLinear == True and getTopBottomCurves(baseSrf)[5] == True:
         glazing = createGlazingThatContainsRectangle(getTopBottomCurves(baseSrf)[4][0], getTopBottomCurves(baseSrf)[4][1], baseSrf, glzRatio, windowHeight, sillHeight, breakUpWindow, breakUpDist)
