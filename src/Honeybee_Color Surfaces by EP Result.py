@@ -37,7 +37,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Color Surfaces by EP Result"
 ghenv.Component.NickName = 'ColorSurfaces'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_12_2015'
+ghenv.Component.Message = 'VER 0.0.56\nMAR_31_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -241,6 +241,17 @@ def getZoneSrfs(srfHeaders, pyZoneData, hb_zoneData):
                 finalSrfAreas.append(rc.Geometry.AreaMassProperties.Compute(srfBreps[count]).Area)
                 newPyZoneData.append(pyZoneData[listCount])
                 newSrfHeaders.append(srfHeaders[listCount])
+            elif name.upper() in srfName and "GLZ" in name.upper():
+                if srfName == name.upper() + "_0":
+                    finalSrfBreps.append(srfBreps[count])
+                    finalSrfAreas.append(rc.Geometry.AreaMassProperties.Compute(srfBreps[count]).Area)
+                    newPyZoneData.append(pyZoneData[listCount])
+                    newSrfHeaders.append(srfHeaders[listCount])
+                elif srfName == name.upper() + "_1":
+                    finalSrfBreps.append(srfBreps[count])
+                    finalSrfAreas.append(rc.Geometry.AreaMassProperties.Compute(srfBreps[count]).Area)
+                    newPyZoneData.append(pyZoneData[listCount])
+                    newSrfHeaders.append(srfHeaders[listCount])
     
     #Check if all of the data was found.
     dataCheck = True
