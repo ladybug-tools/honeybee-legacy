@@ -37,7 +37,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.56\nMAR_02_2015'
+ghenv.Component.Message = 'VER 0.0.56\nMAR_31_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "4"
@@ -198,9 +198,9 @@ def checkZoneSys(sysInt):
     return zoneName
 
 def checkCentralSys(sysInt, sysType):
-    if sysType == 0: zoneName = " Chiller" + sysInt
-    elif sysType == 1: zoneName = " Boiler" + sysInt
-    elif sysType == 2: zoneName = " Fan" + sysInt
+    if sysType == 0: zoneName = " Chiller " + str(sysInt)
+    elif sysType == 1: zoneName = " Boiler " + str(sysInt)
+    elif sysType == 2: zoneName = " Fan" + str(sysInt)
     else: zoneName = 'Unknown'
     path.append(int(sysInt)-1)
     
@@ -233,8 +233,8 @@ if _resultFileAddress and gotData == True:
                             if zoneName == None: zoneName = checkZone(" " + ":".join(column.split(":")[:-1]).split(' ZONEHVAC')[0])
                         elif 'IDEAL LOADS AIR SYSTEM' in column: zoneName = checkZone(" " + ":".join(column.split(":")[:-1]).split(' IDEAL LOADS AIR SYSTEM')[0])
                         elif 'ZONE HVAC PACKAGED TERMINAL HEAT PUMP' in column: zoneName = checkZoneSys(" " + ":".join(column.split(":")[:-1]).split('ZONE HVAC PACKAGED TERMINAL HEAT PUMP ')[-1])
-                        elif 'CHILLER ELECTRIC EIR' in column:
-                            zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('CHILLER ELECTRIC EIR ')[-1], 0)
+                        elif 'Chiller Electric Energy' in column:
+                            zoneName = checkCentralSys(1, 0)
                             centralSys = True
                         else: zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
                         makeHeader(cooling, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Cooling Energy", energyUnit, True)
@@ -247,8 +247,8 @@ if _resultFileAddress and gotData == True:
                             if zoneName == None: zoneName = checkZone(" " + ":".join(column.split(":")[:-1]).split(' ZONEHVAC')[0])
                         elif 'IDEAL LOADS AIR SYSTEM' in column: zoneName = checkZone(" " + ":".join(column.split(":")[:-1]).split(' IDEAL LOADS AIR SYSTEM')[0])
                         elif 'ZONE HVAC PACKAGED TERMINAL HEAT PUMP' in column: zoneName = checkZoneSys(" " + ":".join(column.split(":")[:-1]).split('ZONE HVAC PACKAGED TERMINAL HEAT PUMP ')[-1])
-                        elif 'BOILER HOT WATER' in column:
-                            zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('BOILER HOT WATER ')[-1], 1)
+                        elif 'Boiler Heating Energy' in column:
+                            zoneName = checkCentralSys(1, 1)
                             centralSys = True
                         else: zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
                         makeHeader(heating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Heating Energy", energyUnit, True)
