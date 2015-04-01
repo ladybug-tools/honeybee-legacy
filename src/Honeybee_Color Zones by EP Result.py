@@ -37,7 +37,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Color Zones by EP Result"
 ghenv.Component.NickName = 'ColorZones'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_12_2015'
+ghenv.Component.Message = 'VER 0.0.56\nAPR_01_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -152,7 +152,7 @@ def checkTheInputs():
         if len(list) == dataLength:
             dataLenCheck.append(1)
         else: pass
-    if sum(dataLenCheck) == len(dataNumbers) and dataLength <8761:
+    if sum(dataLenCheck) == len(dataNumbers):
         checkData4 = True
     else:
         checkData4 = False
@@ -284,6 +284,10 @@ def manageInputOutput(annualData, simStep, zoneNormalizable):
             ghenv.Component.Params.Input[input].Name = "."
             ghenv.Component.Params.Input[input].Description = " "
         elif input == 4 and annualData == False:
+            ghenv.Component.Params.Input[input].NickName = "___________"
+            ghenv.Component.Params.Input[input].Name = "."
+            ghenv.Component.Params.Input[input].Description = " "
+        elif input == 4 and simStep == "TimeStep":
             ghenv.Component.Params.Input[input].NickName = "___________"
             ghenv.Component.Params.Input[input].Name = "."
             ghenv.Component.Params.Input[input].Description = " "
