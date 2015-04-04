@@ -44,7 +44,7 @@ Provided by Honeybee 0.0.56
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_03_2015'
+ghenv.Component.Message = 'VER 0.0.56\nAPR_04_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nAPR_03_2015
@@ -1068,7 +1068,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     #Ground Temperatures.
     if grndTemps == []:
         groundtemp = lb_preparation.groundTempData(_epwFile,[])
-        groundtempNum = groundtemp[1][8:]
+        groundtempNum = groundtemp[1][7:]
         for temp in groundtempNum:
             if temp < 18: grndTemps.append(18)
             elif temp < 24: grndTemps.append(temp)
