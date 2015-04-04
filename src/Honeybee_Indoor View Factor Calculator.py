@@ -49,6 +49,7 @@ import Grasshopper.Kernel as gh
 from Grasshopper import DataTree
 from Grasshopper.Kernel.Data import GH_Path
 import Rhino as rc
+import rhinoscriptsyntax as rs
 import scriptcontext as sc
 import operator
 import System.Threading.Tasks as tasks
@@ -335,26 +336,42 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                                 for srfName in srfList:
                                     if adjSrf == srfName: adjZone = zoneCount2
                             
+                            #Have a value to keep trak of whether a match has been found for a zone.
+                            matchFound = False
+                            
                             #Check the current adjacencies list to find out where to place the zone.
                             for zoneAdjListCount, zoneAdjList in enumerate(adjacentList):
                                 #Maybe we already have both of the zones as adjacent.
-                                if zoneCount in zoneAdjList and adjZone in zoneAdjList: pass
+                                if zoneCount in zoneAdjList and adjZone in zoneAdjList:
+                                    matchFound = True
                                 #If we have the zone but not the adjacent zone, append it to the list.
                                 elif zoneCount in zoneAdjList and adjZone not in zoneAdjList:
                                     adjacentList[zoneAdjListCount].append(adjZone)
+                                    matchFound = True
                                 #If we have the adjacent zone but not the zone itself, append it to the list.
                                 elif zoneCount not in zoneAdjList and adjZone in zoneAdjList:
                                     adjacentList[zoneAdjListCount].append(zoneCount)
+                                    matchFound = True
                                 else: pass
+                            
+                            #If no match was found, start a new list.
+                            if matchFound == False:
+                                adjacentList.append([zoneCount])
             else:
                 #The zone is not adjacent to any other zones so we will put it in its own list.
                 adjacentList.append([zoneCount])
         
-        #Order the list based on the most connected zones.
-        lengthsList = []
-        for zoneList in adjacentList:
-            lengthsList.append(len(zoneList))
-        lengthsList, adjacentList = zip(*sorted(zip(lengthsList, adjacentList)))
+        #Remove duplicates found in the process of looking for adjacencies.
+        fullAdjacentList = []
+        newAjdacenList = []
+        for listCount, zoneList in enumerate(adjacentList):
+            good2Go = True
+            for zoneNum in zoneList:
+                if zoneNum in fullAdjacentList: good2Go = False
+            if good2Go == True:
+                newAjdacenList.append(zoneList)
+                fullAdjacentList.extend(adjacentList[listCount])
+        adjacentList = newAjdacenList
         
         #Get all of the data of the new zone together.
         for listCount, list in enumerate(adjacentList):
@@ -378,8 +395,45 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                         newSurfaceNames[listMarker].append(surfaceNames[zoneCount][srfCount])
                         newZoneSrfTypes[listMarker].append(zoneSrfTypes[zoneCount][srfCount])
             
-            zoneBrepsNonSolid.append(rc.Geometry.Brep.JoinBreps(newZoneSrfs[listMarker], tol))
-            newZoneBreps.append(rc.Geometry.Brep.JoinBreps(newZoneSolidSrfs[listMarker], tol)[0])
+            joinedTest = rc.Geometry.Brep.JoinBreps(newZoneSolidSrfs[listMarker], tol)
+            if joinedTest[0].IsSolid:
+                zoneBrepsNonSolid[listCount].extend(joinedTest)
+                newZoneBreps.append(joinedTest[0])
+            else:
+                #brepToJoin = newZoneSolidSrfs[listMarker][0]
+                #for srfCount, surface in enumerate(newZoneSolidSrfs[listMarker]):
+                #    if srfCount != 1:
+                #        brepToJoin = rc.Geometry.Brep.JoinBreps([brepToJoin, surface], tol)[0]
+                #zoneBrepsNonSolid[listCount].append(brepToJoin)
+                #newZoneBreps.append(brepToJoin)
+                
+                #Since rhino common's function to join surfaces into a closed brep is buggy, I have another option here with Rhinoscript.
+                allSurfaceGUIDs = []
+                sc.doc = rc.RhinoDoc.ActiveDoc #change target document
+                rs.EnableRedraw(False)
+                for srf in newZoneSolidSrfs[listMarker]:
+                    guid1 = [sc.doc.Objects.AddBrep(srf)]
+                    allSurfaceGUIDs.append(guid1)
+                
+                joinedPolySrfID = rs.JoinSurfaces(allSurfaceGUIDs, True)
+                
+                if joinedPolySrfID:
+                    try:
+                        a = [rs.coercegeometry(a) for a in joinedPolySrfID]
+                    except:
+                        a = [rs.coercegeometry(joinedPolySrfID)]
+                    
+                    for g in a: g.EnsurePrivateCopy() #must ensure copy if we delete from doc
+                    
+                    rs.DeleteObjects(joinedPolySrfID)
+                
+                sc.doc = ghdoc #put back document
+                rs.EnableRedraw()
+                
+                newSolidMass = g
+                
+                zoneBrepsNonSolid[listCount].append(newSolidMass)
+                newZoneBreps.append(newSolidMass)
         
         zoneBreps = newZoneBreps
         surfaceNames = newSurfaceNames
@@ -399,7 +453,6 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                 print warning
                 ghenv.Component.AddRuntimeMessage(w, warning)
     
-    geoCheck = True
     
     if geoCheck == True:
         for zoneCount, srfList in enumerate(zoneSrfs):
@@ -635,9 +688,9 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
             zoneHasWindows.append(hasWindows)
         
         
-        return geoCheck, testPts, MRTMeshBreps, MRTMeshInit, zoneWires, zoneSrfsMesh, surfaceNames, zoneOpaqueMesh, zoneNames, zoneWeights, heightWeights, zoneInletParams, zoneHasWindows
+        return geoCheck, testPts, MRTMeshBreps, MRTMeshInit, zoneWires, zoneSrfsMesh, surfaceNames, zoneOpaqueMesh, zoneNames, zoneWeights, heightWeights, zoneInletParams, zoneHasWindows, zoneBrepsNonSolid
     else:
-        return -1
+        return geoCheck, testPts, MRTMeshBreps, MRTMeshInit, zoneWires, zoneSrfsMesh, surfaceNames, zoneOpaqueMesh, zoneNames, zoneWeights, [], zoneInletParams, zoneHasWindows, zoneBrepsNonSolid
 
 def checkViewResolution(viewResolution, lb_preparation):
     newVecs = []
@@ -874,19 +927,21 @@ geoCheck = False
 if checkData == True:
     goodGeo = prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBreps, hb_zoneData)
     if goodGeo != -1:
-        geoCheck, testPtsInit, viewFactorBrep, viewFactorMeshActual, zoneWireFrame, zoneSrfsMesh, zoneSrfNames, zoneOpaqueMesh, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, zoneHasWindows = goodGeo
+        geoCheck, testPtsInit, viewFactorBrep, viewFactorMeshActual, zoneWireFrame, zoneSrfsMesh, zoneSrfNames, zoneOpaqueMesh, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, zoneHasWindows, zoneBrepsNonSolid = goodGeo
     
     #Unpack the data trees of test pts and mesh breps so that the user can see them and get a sense of what to expect from the view factor calculation.
-    if geoCheck == True:
-        testPts = DataTree[Object]()
-        viewFactorMesh = DataTree[Object]()
-        shadingContext = DataTree[Object]()
-        for brCount, branch in enumerate(testPtsInit):
-            for item in branch:testPts.Add(item, GH_Path(brCount))
-        for brCount, branch in enumerate(viewFactorBrep):
-            for item in branch: viewFactorMesh.Add(item, GH_Path(brCount))
-        for brCount, branch in enumerate(zoneOpaqueMesh):
-            for item in branch: shadingContext.Add(item, GH_Path(brCount))
+    testPts = DataTree[Object]()
+    viewFactorMesh = DataTree[Object]()
+    shadingContext = DataTree[Object]()
+    closedAirVolumes = DataTree[Object]()
+    for brCount, branch in enumerate(testPtsInit):
+        for item in branch:testPts.Add(item, GH_Path(brCount))
+    for brCount, branch in enumerate(viewFactorBrep):
+        for item in branch: viewFactorMesh.Add(item, GH_Path(brCount))
+    for brCount, branch in enumerate(zoneOpaqueMesh):
+        for item in branch: shadingContext.Add(item, GH_Path(brCount))
+    for brCount, branch in enumerate(zoneBrepsNonSolid):
+        for item in branch: closedAirVolumes.Add(item, GH_Path(brCount))
 
 #If all of the data is good and the user has set "_runIt" to "True", run the shade benefit calculation to generate all results.
 if checkData == True and _runIt == True and geoCheck == True:
@@ -904,3 +959,4 @@ if checkData == True and _runIt == True and geoCheck == True:
 
 ghenv.Component.Params.Output[5].Hidden = True
 ghenv.Component.Params.Output[8].Hidden = True
+ghenv.Component.Params.Output[9].Hidden = True
