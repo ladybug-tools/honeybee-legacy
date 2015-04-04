@@ -34,7 +34,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.56\nMAR_22_2015'
+ghenv.Component.Message = 'VER 0.0.56\nAPR_04_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -321,28 +321,33 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
         
         adjacentList = []
         totalAdjList = []
-        adjCounter = 0
+        
         for zoneCount, srfList in enumerate(zoneSrfs):
             if allSame(srfInteriorList[zoneCount]) == False:
                 for srfCount, srf in enumerate(srfList):
                     if srfInteriorList[zoneCount][srfCount] != None:
                         if len(adjacentList) == 0:
-                            adjacentList.append([])
-                            adjCounter += 1
-                            adjacentList[adjCounter-1].append(zoneCount)
-                        elif zoneCount in adjacentList[adjCounter-1]: pass
+                            adjacentList.append([zoneCount])
                         else:
-                            adjacentList.append([])
-                            adjCounter += 1
-                            adjacentList[adjCounter-1].append(zoneCount)
-                        
-                        #Find the adjacent zone and append it to the list.
-                        adjSrf = srfInteriorList[zoneCount][srfCount]
-                        for zoneCount2, srfList in enumerate(surfaceNames):
-                            for srfName in srfList:
-                                if adjSrf == srfName: adjacentList[adjCounter-1].append(zoneCount2)
+                            #Find the adjacent zone.
+                            adjSrf = srfInteriorList[zoneCount][srfCount]
+                            for zoneCount2, srfList in enumerate(surfaceNames):
+                                for srfName in srfList:
+                                    if adjSrf == srfName: adjZone = zoneCount2
+                            
+                            #Check the current adjacencies list to find out where to place the zone.
+                            for zoneAdjListCount, zoneAdjList in enumerate(adjacentList):
+                                #Maybe we already have both of the zones as adjacent.
+                                if zoneCount in zoneAdjList and adjZone in zoneAdjList: pass
+                                #If we have the zone but not the adjacent zone, append it to the list.
+                                elif zoneCount in zoneAdjList and adjZone not in zoneAdjList:
+                                    adjacentList[zoneAdjListCount].append(adjZone)
+                                #If we have the adjacent zone but not the zone itself, append it to the list.
+                                elif zoneCount not in zoneAdjList and adjZone in zoneAdjList:
+                                    adjacentList[zoneAdjListCount].append(zoneCount)
+                                else: pass
             else:
-                adjCounter += 1
+                #The zone is not adjacent to any other zones so we will put it in its own list.
                 adjacentList.append([zoneCount])
         
         #Order the list based on the most connected zones.
@@ -350,23 +355,6 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
         for zoneList in adjacentList:
             lengthsList.append(len(zoneList))
         lengthsList, adjacentList = zip(*sorted(zip(lengthsList, adjacentList)))
-        
-        #Remove duplicates found in the process of looking for adjacencies.
-        fullAdjacentList = []
-        newAjdacenList = []
-        newCounter = 0
-        for listCount, zoneList in enumerate(adjacentList):
-            good2Go = True
-            for zoneNum in zoneList:
-                if zoneNum in fullAdjacentList: good2Go = False
-            if good2Go == True:
-                newAjdacenList.append(removeDup(zoneList))
-                fullAdjacentList.extend(adjacentList[listCount])
-                newCounter += 1
-            else:
-                newAjdacenList[newCounter-1] = removeDup(zoneList)
-                fullAdjacentList.extend(adjacentList[listCount])
-        adjacentList = newAjdacenList
         
         #Get all of the data of the new zone together.
         for listCount, list in enumerate(adjacentList):
