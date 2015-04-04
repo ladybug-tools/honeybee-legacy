@@ -30,7 +30,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_03_2015'
+ghenv.Component.Message = 'VER 0.0.56\nAPR_04_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1502,10 +1502,21 @@ class hb_WriteRAD(object):
     
         if numOfCPUs > numOfPoints: numOfCPUs = numOfCPUs
     
-        if numOfCPUs > 1: ptsEachCpu = int(numOfPoints/(numOfCPUs))
-        else: ptsEachCpu = numOfPoints
-    
+        if numOfCPUs > 1:
+            ptsEachCpu = int(numOfPoints/(numOfCPUs))
+            remainder = numOfPoints%numOfCPUs
+        else:
+            ptsEachCpu = numOfPoints
+            remainder = 0
+        
         lenOfPts = []
+        
+        for cpuCount in range(numOfCPUs):
+            if cpuCount < remainder:
+                lenOfPts.append(ptsEachCpu+1)
+            else:
+                lenOfPts.append(ptsEachCpu)
+        
         testPtsEachCPU = []
         
         for cpuCount in range(numOfCPUs):
@@ -1514,22 +1525,15 @@ class hb_WriteRAD(object):
             ptsFileName = os.path.join(subWorkingDir, radFileName + '_' + `cpuCount` + '.pts')
             
             ptsFile = open(ptsFileName, "w")
-            if cpuCount + 1 != numOfCPUs:
-                for ptCount in range(cpuCount * ptsEachCpu, (cpuCount + 1) * ptsEachCpu):
-                    ptsFile.write(self.hb_writeRADAUX.testPtsStr(flattenTestPoints[ptCount], flattenPtsNormals[ptCount]))
-                    ptsForThisCPU.append(flattenTestPoints[ptCount])
-                lenOfPts.append(ptsEachCpu)
-                
-            else:
-                for ptCount in range(cpuCount * ptsEachCpu, numOfPoints):
-                    ptsFile.write(self.hb_writeRADAUX.testPtsStr(flattenTestPoints[ptCount], flattenPtsNormals[ptCount]))
-                    ptsForThisCPU.append(flattenTestPoints[ptCount])
-                lenOfPts.append(numOfPoints - (cpuCount * ptsEachCpu))
+            
+            for ptCount in range(sum(lenOfPts[:cpuCount]), sum(lenOfPts[:cpuCount+1])):
+                ptsFile.write(self.hb_writeRADAUX.testPtsStr(flattenTestPoints[ptCount], flattenPtsNormals[ptCount]))
+                ptsForThisCPU.append(flattenTestPoints[ptCount])
             
             ptsFile.close()
             
             testPtsEachCPU.append(ptsForThisCPU)        
-            
+        
         return testPtsEachCPU, lenOfPts
     
     def writeBatchFiles(self, subWorkingDir, radFileName, radSkyFileName, \
