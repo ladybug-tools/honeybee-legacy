@@ -30,7 +30,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.56\nMAR_16_2015'
+ghenv.Component.Message = 'VER 0.0.56\nAPR_03_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -3100,6 +3100,8 @@ class hb_EnergySimulatioParameters(object):
             ddyFile = None
             
             terrain = 'City'
+            
+            grndTemps = []
         
         else:
             timestep = int(EPParameters[0])
@@ -3113,8 +3115,10 @@ class hb_EnergySimulatioParameters(object):
             ddyFile = EPParameters[10]
             
             terrain = EPParameters[11]
+            
+            grndTemps = EPParameters[12]
         
-        return timestep, shadowPar, solarDistribution, simulationControl, ddyFile, terrain
+        return timestep, shadowPar, solarDistribution, simulationControl, ddyFile, terrain, grndTemps
 
 class EPMaterialAux(object):
     

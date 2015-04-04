@@ -24,22 +24,23 @@ Provided by Honeybee 0.0.56
             1 = Suburbs: suburbs, wooded areas.
             2 = Country: open, with scattered objects generally less than 10m high.
             3 = Ocean: Flat, unobstructed areas exposed to wind flowing over a large water body (no more than 500m inland).
+        monthlyGrndTemps_: An optional list of 12 monthly ground temperatures to be used by those surfaces in contact with the ground in the simulation.  Please note that the EPW values out of the Import Ground Temp component are usually too extreme for a conditioned building.  If no values are input here, the model will attempt to estimate a reasonable starting base temperature from these results by using a value of 18C in cases of monthly ground temperatures below 18C, 24C in cases of monthly ground temperatures above 24C, and the actual ground temperature if the monthly average falls in between 18C and 24C.  Usually, ground temperatures will be about 2C lower than the overage indoor air temperature for a given month.
     Returns:
         energySimPar: Energy simulation parameters that can be plugged into the "Honeybee_ Run Energy Simulation" component.
 """
 
 ghenv.Component.Name = "Honeybee_Energy Simulation Par"
 ghenv.Component.NickName = 'EnergySimPar'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_03_2015'
+ghenv.Component.Message = 'VER 0.0.56\nAPR_03_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.56\nAPR_03_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
 
 
-def main(timestep, shadowCalcPar, solarDistribution, simulationControls, ddyFile, terrain):
+def main(timestep, shadowCalcPar, solarDistribution, simulationControls, ddyFile, terrain, monthlyGrndTemps):
     solarDist = {
                 "0" : "MinimalShadowing",
                 "1" : "FullExterior",
@@ -77,10 +78,16 @@ def main(timestep, shadowCalcPar, solarDistribution, simulationControls, ddyFile
     else:
         terrain = terrainDict[terrain]
     
-    return [timestep] + shadowCalcPar + [solarDistribution] + simulationControls + [ddyFile] + [terrain]
+    if monthlyGrndTemps == [] or len(monthlyGrndTemps) == 12:
+        return [timestep] + shadowCalcPar + [solarDistribution] + simulationControls + [ddyFile] + [terrain] + monthlyGrndTemps
+    else:
+        return None
+        warning = 'monthlyGrndTemps_ must either be left blank or contain 12 values representing the average ground temperature for each month.'
+        print warning
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
 
 energySimPar = main(timestep_,
                    shadowCalcPar_,
                    solarDistribution_,
                    simulationControls_,
-                   ddyFile_, terrain_)
+                   ddyFile_, terrain_, monthlyGrndTemps_)

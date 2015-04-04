@@ -44,10 +44,10 @@ Provided by Honeybee 0.0.56
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.56\nMAR_16_2015'
+ghenv.Component.Message = 'VER 0.0.56\nAPR_03_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nMAR_16_2015
+#compatibleHBVersion = VER 0.0.56\nAPR_03_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
@@ -348,6 +348,22 @@ class WriteIDF(object):
             '\t' + elev + ';   !Elevation\n'
         epwfile.close()
         return locationString
+    
+    def EPGroundTemp(self, grndTemps):
+        grndString = "\nSite:GroundTemperature:BuildingSurface,\n" + \
+            '\t' + str(grndTemps[0]) + ',    !Jan Ground Temperature (C)\n' + \
+            '\t' + str(grndTemps[1]) + ',    !Feb Ground Temperature (C)\n' + \
+            '\t' + str(grndTemps[2]) + ',    !Mar Ground Temperature (C)\n' + \
+            '\t' + str(grndTemps[3]) + ',    !Apr Ground Temperature (C)\n' + \
+            '\t' + str(grndTemps[4]) + ',    !May Ground Temperature (C)\n' + \
+            '\t' + str(grndTemps[5]) + ',    !Jun Ground Temperature (C)\n' + \
+            '\t' + str(grndTemps[6]) + ',    !Jul Ground Temperature (C)\n' + \
+            '\t' + str(grndTemps[7]) + ',    !Aug Ground Temperature (C)\n' + \
+            '\t' + str(grndTemps[8]) + ',    !Sep Ground Temperature (C)\n' + \
+            '\t' + str(grndTemps[9]) + ',    !Oct Ground Temperature (C)\n' + \
+            '\t' + str(grndTemps[10]) + ',    !Nov Ground Temperature (C)\n' + \
+            '\t' +  str(grndTemps[11]) + ';   !Dec Ground Temperature (C)\n'
+        return grndString
     
     def EPSizingPeriod(self, weatherFilePeriod):
         sizingString = "\nSizingPeriod:WeatherFileConditionType,\n" + \
@@ -1024,7 +1040,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     idfFile.write(hb_writeIDF.EPVersion(sc.sticky["honeybee_folders"]["EPVersion"]))
     
     # Read simulation parameters
-    timestep, shadowPar, solarDistribution, simulationControl, ddyFile, terrain = hb_EPPar.readEPParams(EPParameters)
+    timestep, shadowPar, solarDistribution, simulationControl, ddyFile, terrain, grndTemps = hb_EPPar.readEPParams(EPParameters)
     
     # Timestep,6;
     idfFile.write(hb_writeIDF.EPTimestep(timestep))
@@ -1048,6 +1064,17 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     
     # Location
     idfFile.write(hb_writeIDF.EPSiteLocation(epwFileAddress))
+    
+    #Ground Temperatures.
+    if grndTemps == []:
+        groundtemp = lb_preparation.groundTempData(_epwFile,[])
+        groundtempNum = groundtemp[1][8:]
+        for temp in groundtempNum:
+            if temp < 18: grndTemps.append(18)
+            elif temp < 24: grndTemps.append(temp)
+            else: grndTemps.append(24)
+    
+    idfFile.write(hb_writeIDF.EPGroundTemp(grndTemps))
     
     # SizingPeriod
     #Check if there are sizing periods in the EPW file.
