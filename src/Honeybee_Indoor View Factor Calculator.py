@@ -34,7 +34,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_04_2015'
+ghenv.Component.Message = 'VER 0.0.56\nAPR_05_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -395,45 +395,11 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                         newSurfaceNames[listMarker].append(surfaceNames[zoneCount][srfCount])
                         newZoneSrfTypes[listMarker].append(zoneSrfTypes[zoneCount][srfCount])
             
-            joinedTest = rc.Geometry.Brep.JoinBreps(newZoneSolidSrfs[listMarker], tol)
-            if joinedTest[0].IsSolid:
-                zoneBrepsNonSolid[listCount].extend(joinedTest)
-                newZoneBreps.append(joinedTest[0])
-            else:
-                #brepToJoin = newZoneSolidSrfs[listMarker][0]
-                #for srfCount, surface in enumerate(newZoneSolidSrfs[listMarker]):
-                #    if srfCount != 1:
-                #        brepToJoin = rc.Geometry.Brep.JoinBreps([brepToJoin, surface], tol)[0]
-                #zoneBrepsNonSolid[listCount].append(brepToJoin)
-                #newZoneBreps.append(brepToJoin)
-                
-                #Since rhino common's function to join surfaces into a closed brep is buggy, I have another option here with Rhinoscript.
-                allSurfaceGUIDs = []
-                sc.doc = rc.RhinoDoc.ActiveDoc #change target document
-                rs.EnableRedraw(False)
-                for srf in newZoneSolidSrfs[listMarker]:
-                    guid1 = [sc.doc.Objects.AddBrep(srf)]
-                    allSurfaceGUIDs.append(guid1)
-                
-                joinedPolySrfID = rs.JoinSurfaces(allSurfaceGUIDs, True)
-                
-                if joinedPolySrfID:
-                    try:
-                        a = [rs.coercegeometry(a) for a in joinedPolySrfID]
-                    except:
-                        a = [rs.coercegeometry(joinedPolySrfID)]
-                    
-                    for g in a: g.EnsurePrivateCopy() #must ensure copy if we delete from doc
-                    
-                    rs.DeleteObjects(joinedPolySrfID)
-                
-                sc.doc = ghdoc #put back document
-                rs.EnableRedraw()
-                
-                newSolidMass = g
-                
-                zoneBrepsNonSolid[listCount].append(newSolidMass)
-                newZoneBreps.append(newSolidMass)
+            joinedBrep = rc.Geometry.Brep.JoinBreps(newZoneSolidSrfs[listMarker], tol)
+            
+            zoneBrepsNonSolid[listCount].extend(joinedBrep)
+            newZoneBreps.append(joinedBrep[0])
+        
         
         zoneBreps = newZoneBreps
         surfaceNames = newSurfaceNames
@@ -442,16 +408,28 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
     
     #Make sure points are inside the zones.
     for brepCount, brep in enumerate(zoneBreps):
-        if brep.IsSolid: pass
+        if zoneBrepsNonSolid[brepCount][0].IsSolid: pass
         else:
             attemptToCap = brep.CapPlanarHoles(tol)
             if attemptToCap != None: zoneBreps[brepCount] = attemptToCap
             if zoneBreps[brepCount].IsSolid: pass
             else:
-                geoCheck = False
-                warning = "Getting rid of interior walls has caused the connected zone geometry to not be closed.  Try connecting all zones of your building or all zones for each floor."
-                print warning
-                ghenv.Component.AddRuntimeMessage(w, warning)
+                edgeCrv = rc.Geometry.Brep.DuplicateEdgeCurves(brep, True)
+                buggyEdge = False
+                for crv in edgeCrv:
+                    if crv.SpanCount == 1:
+                        buggyEdge = True
+                
+                if buggyEdge == False:
+                    geoCheck = False
+                    warning = "Getting rid of interior walls has caused the connected zone geometry to not be closed.  Make sure that you do not have an airwall bounding the outdoors and, if not, make sure that all zones of your building are connected here."
+                    print warning
+                    ghenv.Component.AddRuntimeMessage(w, warning)
+                else:
+                    geoCheck = False
+                    warning = "One of your continuous closed air volumes has an overlapping edge that is causing it to not read as a solid. \n Bake the closedAirVolumes output and do a DupBorder command on the polysurface to see the buggy edge. \n Rhino's solid operations are buggy. Hopefully McNeel fix this one soon."
+                    print warning
+                    ghenv.Component.AddRuntimeMessage(w, warning)
     
     
     if geoCheck == True:
