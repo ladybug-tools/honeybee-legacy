@@ -31,7 +31,7 @@ import math
 
 ghenv.Component.Name = 'Honeybee_createHBZones'
 ghenv.Component.NickName = 'createHBZones'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
+ghenv.Component.Message = 'VER 0.0.56\nAPR_04_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -81,7 +81,7 @@ def main(zoneName,  HBZoneProgram, HBSurfaces, isConditioned):
     # initiate the zone
     zoneID = str(uuid.uuid4())
     
-    HBZone = hb_EPZone(None, zoneID, zoneName, (bldgProgram, zoneProgram), isConditioned)
+    HBZone = hb_EPZone(None, zoneID, zoneName.strip(), (bldgProgram, zoneProgram), isConditioned)
     
     for hbSrf in HBSurfaces:
         HBZone.addSrf(hbSrf)

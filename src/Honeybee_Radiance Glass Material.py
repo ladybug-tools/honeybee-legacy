@@ -23,7 +23,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Radiance Glass Material"
 ghenv.Component.NickName = 'radGlassMaterial'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
+ghenv.Component.Message = 'VER 0.0.56\nAPR_04_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "01 | Daylight | Material"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -88,7 +88,7 @@ def main():
                 
                 avrgTrans = (0.265 * _RTransmittance + 0.670 * _GTransmittance + 0.065 * _BTransmittance)
                 
-                materialName = _materialName.Replace(" ", "_")
+                materialName = _materialName.strip().Replace(" ", "_")
                 RADMaterial = createRadMaterial(modifier, materialName, getTransmissivity(_RTransmittance), getTransmissivity(_GTransmittance), getTransmissivity(_BTransmittance), refractiveIndex_)
                 
                 return avrgTrans, RADMaterial

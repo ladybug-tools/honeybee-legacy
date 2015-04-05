@@ -24,7 +24,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Radiance Opaque Material"
 ghenv.Component.NickName = 'radOpaqueMaterial'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
+ghenv.Component.Message = 'VER 0.0.56\nAPR_04_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "01 | Daylight | Material"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -72,7 +72,7 @@ def main():
                 
                 avrgRef = (0.265 * _RReflectance + 0.670 * _GReflectance + 0.065 * _BReflectance) * (1 - _specularity_) + _specularity_
                 
-                materialName = _materialName.Replace(" ", "_")
+                materialName = _materialName.strip().Replace(" ", "_")
                 
                 RADMaterial = createRadMaterial(modifier, materialName, _RReflectance, _GReflectance, _BReflectance, _specularity_, _roughness_)
                 

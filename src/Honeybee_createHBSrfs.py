@@ -38,14 +38,12 @@ import scriptcontext as sc
 import os
 import sys
 import System
-from clr import AddReference
-AddReference('Grasshopper')
 import Grasshopper.Kernel as gh
 import uuid
 
 ghenv.Component.Name = 'Honeybee_createHBSrfs'
 ghenv.Component.NickName = 'createHBSrfs'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
+ghenv.Component.Message = 'VER 0.0.56\nAPR_04_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -105,6 +103,7 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
         number = guid.split("-")[-1]
 
         if srfName != None:
+            srfName = srfName.strip()
             if geometry.Faces.Count != 1:
                 srfName = srfName + "_" + `faceCount`
         else:
