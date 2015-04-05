@@ -1199,9 +1199,9 @@ class hb_MSHToRAD(object):
             #mapFile = objFile.replace(".obj", ".map")
             #with open(mapFile, "w") as mapf:
             #    mapf.write(self.matName + " (Object \"" + self.matName + "\");")
-            #cmd = "c:\\radiance\\bin\\obj2rad -m " + mapFile + " " + objFile + " > " +  radFile
+            #cmd = "c:\\radiance\\bin\\obj2rad -f -m " + mapFile + " " + objFile + " > " +  radFile
             
-            cmd = "c:\\radiance\\bin\\obj2rad " + objFile + " > " +  radFile
+            cmd = "c:\\radiance\\bin\\obj2rad -f " + objFile + " > " +  radFile
             
             with open(batFile, "w") as outfile:
                 outfile.write(cmd)
