@@ -1612,7 +1612,8 @@ class hb_WriteRAD(object):
             initBatchFile.close()
             
             # annual glare only needs one headeing file and will run on a single cpu
-            if runAnnualGlare and onlyAnnualGlare:
+            # based on a recent discussion multiple cpus breaks Daysim for annual glare calculation
+            if runAnnualGlare: # and onlyAnnualGlare:
                 numOfCPUs = 1
                 
             # write the rest of the files
@@ -2505,6 +2506,7 @@ class hb_WriteRADAUX(object):
         viewDirection = sc.doc.Views.ActiveView.ActiveViewport.CameraDirection
         viewDirection.Unitize()
         viewUp = sc.doc.Views.ActiveView.ActiveViewport.CameraUp
+        viewUp.Unitize()
         viewHA = 180 - rs.VectorAngle(sc.doc.Views.ActiveView.ActiveViewport.GetFrustumRightPlane()[1][1], sc.doc.Views.ActiveView.ActiveViewport.GetFrustumLeftPlane()[1][1])
         if viewHA == 0: viewHA = 180
         viewVA = 180 - rs.VectorAngle(sc.doc.Views.ActiveView.ActiveViewport.GetFrustumBottomPlane()[1][1], sc.doc.Views.ActiveView.ActiveViewport.GetFrustumTopPlane()[1][1])
