@@ -27,7 +27,11 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Glazing based on ratio"
 ghenv.Component.NickName = 'glazingCreator'
+<<<<<<< HEAD
 ghenv.Component.Message = 'VER 0.0.56\nMAR_31_2015'
+=======
+ghenv.Component.Message = 'VER 0.0.56\nMAR_11_2015'
+>>>>>>> origin/master
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -513,6 +517,7 @@ def createGlazingThatContainsRectangle(topEdge, btmEdge, baseSrf, glazingRatio, 
     
     return glzSrf
 
+<<<<<<< HEAD
 def createSkylightGlazing(baseSrf, glazingRatio, planarBool, edgeLinear):
     if breakUpWindow_ == True or breakUpWindow_ == None:
         #Define the meshing paramters to break down the surface in a manner that produces only trinagles and quads.
@@ -584,6 +589,27 @@ def createSkylightGlazing(baseSrf, glazingRatio, planarBool, edgeLinear):
                 splSurface = projectBrep.Faces.ExtractFace(1)
                 curvedGlz.append(splSurface)
             glzSrf = curvedGlz
+=======
+def createSkylightGlazing(baseSrf, glazingRatio, planarBool):
+    #Define the meshing paramters to break down the surface in a manner that produces only trinagles and quads.
+    meshPar = rc.Geometry.MeshingParameters.Default
+    
+    #Define the grid size break down based on the model units.
+    units = sc.doc.ModelUnitSystem
+    
+    if breakUpDist_ != []:
+        distBreakup = breakUpDist_[0]
+    elif `units` == 'Rhino.UnitSystem.Meters':
+        distBreakup = 2
+    elif `units` == 'Rhino.UnitSystem.Centimeters':
+        distBreakup = 200
+    elif `units` == 'Rhino.UnitSystem.Millimeters':
+        distBreakup = 2000
+    elif `units` == 'Rhino.UnitSystem.Feet':
+        distBreakup = 7
+    elif `units` == 'Rhino.UnitSystem.Inches':
+        distBreakup = 84
+>>>>>>> origin/master
     else:
         #Check to see if it is a triangle for which we can use a simple mathematical relation.
         if planarBool == True and baseSrf.Edges.Count == 3:
@@ -772,7 +798,11 @@ def findGlzBasedOnRatio(baseSrf, glzRatio, windowHeight, sillHeight, surfaceType
     #Check if the wall surface has horizontal top and bottom curves and contains a rectangle that can be extracted such that we can apply the windowHeight and sillHeight inputs to it.
     elif surfaceType == 0 and planarBool == True and edgeLinear == True and getTopBottomCurves(baseSrf)[1] == True and getTopBottomCurves(baseSrf)[3] == True:
         glazing = createGlazingThatContainsRectangle(getTopBottomCurves(baseSrf)[2], getTopBottomCurves(baseSrf)[0], baseSrf, glzRatio, windowHeight, sillHeight, breakUpWindow, breakUpDist)
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> origin/master
     #Check if the wall surface has vertical sides and contains a rectangle that can be extracted such that we can apply the windowheight and sill height inputs to it.
     elif surfaceType == 0 and planarBool == True and edgeLinear == True and getTopBottomCurves(baseSrf)[5] == True:
         glazing = createGlazingThatContainsRectangle(getTopBottomCurves(baseSrf)[4][0], getTopBottomCurves(baseSrf)[4][1], baseSrf, glzRatio, windowHeight, sillHeight, breakUpWindow, breakUpDist)

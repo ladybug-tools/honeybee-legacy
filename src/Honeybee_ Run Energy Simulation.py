@@ -26,7 +26,7 @@ Provided by Honeybee 0.0.56
             8 - City terrian.
         +++++++++++++++: ...
         _HBZones: The HBZones that you wish to write into an IDF and/or run through EnergyPlus.  These can be from any of the components that output HBZones.
-        HBContext_: Optional HBContext geometry from the "Honeybee_EP Context Surfaces." component.
+        HBContext_: Optional HBContext geometry from the "Honeybee_EP Context Surfaces." component or Honeybee PV gen component.
         simulationOutputs_: A list of the outputs that you would like EnergyPlus to write into the result CSV file.  This can be any set of any outputs that you would like from EnergyPlus, writen as a list of text that will be written into the IDF.  It is recommended that, if you are not expereinced with writing EnergyPlus outputs, you should use the "Honeybee_Write EP Result Parameters" component to request certain types of common outputs.  If no value is input here, this component will automatically request outputs of heating, cooling, lighting, and equipment energy use.  
         +++++++++++++++: ...
         _writeIdf: Set to "True" to have the component take your HBZones and other inputs and write them into an IDF file.  The file path of the resulting file will appear in the idfFileAddress output of this component.  Note that only setting this to "True" and not setting the output below to "True" will not automatically run the IDF through EnergyPlus for you.
@@ -44,10 +44,10 @@ Provided by Honeybee 0.0.56
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.56\nMAR_16_2015'
+ghenv.Component.Message = 'VER 0.0.56\nAPR_04_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nMAR_16_2015
+#compatibleHBVersion = VER 0.0.56\nFEB_28_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
@@ -501,16 +501,10 @@ class WriteIDF(object):
                 '\t;                        !- Velocity Squared Term Coefficient\n'
     
     def EPZoneAirMixing(self, zone, zoneMixName, mixFlowRate, objCount):
-        if zone.mixAirFlowSched[objCount].upper() == 'ALWAYS ON': mixingSched = 'ALWAYS ON'
-        elif zone.mixAirFlowSched[objCount].upper().endswith('CSV'):
-            mixingSchedFileName = os.path.basename(zone.mixAirFlowSched[objCount])
-            mixingSched = "_".join(mixingSchedFileName.split(".")[:-1])
-        else: mixingSched = zone.mixAirFlowSched[objCount]
-        
         return '\nZoneMixing,\n' + \
                 '\t' + zone.name + zoneMixName + 'AirMix' + str(objCount) + ',  !- Name\n' + \
                 '\t' + zone.name + ',  !- Zone Name\n' + \
-                '\t' + mixingSched + ',  !- Schedule Name\n' + \
+                '\t' + 'ALWAYS ON' + ',  !- Schedule Name\n' + \
                 '\t' + 'Flow/Zone' + ',  !- Design Flow Rate Calculation Method\n' + \
                 '\t' + str(mixFlowRate) + ',   !- Design Flow Rate {m3/s}\n' + \
                 '\t' + ',  !- Flow per Zone Floor Area {m3/s-m2}\n' + \
@@ -884,6 +878,55 @@ class WriteIDF(object):
     def requestVarDict(self):
         return '\nOutput:VariableDictionary,\n' + \
         '\t' + 'regular;                 !- Key Field' + '\n'
+        
+    def EarthTube(self,zone):
+    
+        return '\nZoneEarthtube,\n' + \
+            '\t' + zone.name + ',\t!- Zone Name\n' + \
+            '\t' + str(zone.ETschedule) + ',\t!- Schedule Name\n'+\
+            '\t' + str(zone.design_flow_rate) + ',\t!- Design Flow Rate {m3/s}\n'+\
+            '\t' + str(zone.mincooltemp) + ',\t!- Minimum Zone Temperature when Cooling {C}\n'+\
+            '\t' + str(zone.maxheatingtemp) + ',\t!- Maximum Zone Temperature when Heating {C}\n'+\
+            '\t' + str(zone.delta_temp) + ',\t!- Delta Temperature {deltaC}\n'+\
+            '\t' + str(zone.et_type) + ',\t!- Earthtube Type\n'+\
+            '\t' + str(zone.fanprise) + ',\t!- Fan Pressure Rise {Pa}\n'+\
+            '\t' + str(zone.efficiency) + ',\t!- Fan Total Efficiency\n'+\
+            '\t' + str(zone.piperadius) + ',\t!- Pipe Radius {m}\n'+\
+            '\t' + str(zone.thick) + ',\t!- Pipe Thickness {m}\n'+\
+            '\t' + str(zone.length) + ',\t!- Pipe Length {m}\n'+\
+            '\t' + str(zone.thermal_k) + ',\t!- Pipe Thermal Conductivity {W/m-K}\n'+\
+            '\t' + str(zone.pipedepth) + ',\t!- Pipe Depth Under Ground Surface {m}\n'+\
+            '\t' + str(zone.soil_con) + ',\t!- Soil Condition\n'+\
+            '\t' + str(zone.soil_avannual) +',\t!- Average Soil Surface Temperature {C}\n'+\
+            '\t' + str(zone.soil_amplitude) + ',\t!- Amplitude of Soil Surface Temperature {C}\n'+\
+            '\t' + str(zone.soil_phaseconstant) + ',\t!- Phase Constant of Soil Surface Temperature {days}\n'+\
+            '\t' + zone.termflow + ',\t!- Constant Term Flow Coefficient\n'+\
+            '\t' + zone.tempflowco + ',\t!- Temperature Term Flow Coefficient\n'+\
+            '\t' + zone.veltermflow  + ',\t!- Velocity Term Flow Coefficient\n'+\
+            '\t' + zone.velsquflow  + ';\t!- Velocity Squared Term Flow Coefficient\n'
+            
+    def write_PVgen(self,PVgen):
+    
+        return '\nGenerator:Photovoltaic,\n' + \
+            '\t' + str(PVgen.name) + ',\t!- Name\n' + \
+            '\t' + str(PVgen.surfacename) + ',\t!- Surface Name\n'+\
+            '\t' + str(PVgen.performancetype) + ',\t!- Photovoltaic Performance Object Type\n'+\
+            '\t' + str(PVgen.performancename) + ',\t!- Module Performance Name\n'+\
+            '\t' + str(PVgen.integrationmode) + ',\t!- Heat Transfer Integration Mode\n'+\
+            '\t' + str(PVgen.NOparallel) + ',\t!- Number of Series Strings in Parallel {dimensionless}\n'+\
+            '\t' + str(PVgen.NOseries) + ';\t!- Number of Modules in Series {dimensionless}\n'
+    
+    
+    def write_PVgenperformanceobject(self,PVgen):
+        
+        return '\nPhotovoltaicPerformance:Simple,\n' + \
+            '\t' + str(PVgen.namePVperformobject) + ',\t!- Name\n' + \
+            '\t' + str(PVgen.surfaceareacells) + ',\t!- Fraction of Surface Area with Active Solar Cells {dimensionless}\n'+\
+            '\t' + str(PVgen.cellefficiencyinputmode) + ',\t!- Conversion Efficiency Input Mode\n'+\
+            '\t' + str(PVgen.efficiency) + ',\t!- Value for Cell Efficiency if Fixed\n'+\
+            '\t' + str(PVgen.schedule) + ';\t!- Efficiency Schedule Name\n'
+
+            
 
 class RunIDF(object):
     
@@ -901,15 +944,17 @@ class RunIDF(object):
         folderName = workingDir.replace( (workingDrive + '\\'), '')
         batchStr = workingDrive + '\ncd\\' +  folderName + '\n' + EPDirectory + \
                 '\Epl-run ' + fullPath + ' ' + fullPath + ' idf "' + epwFileAddress + '" EP N nolimit N N 0 Y'
-    
+        
+        #print "this is batch string" + batchStr
         batchFileAddress = fullPath +'.bat'
         batchfile = open(batchFileAddress, 'w')
         batchfile.write(batchStr)
         batchfile.close()
         
         #execute the batch file
-        os.system(batchFileAddress)
-        #os.system('C:\\honeybee\\runIt.bat')
+        os.system(batchFileAddress) # XXX
+
+        os.system('C:\\honeybee\\runIt.bat')
             
     def readResults(self):
         pass
@@ -1049,6 +1094,8 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     # Location
     idfFile.write(hb_writeIDF.EPSiteLocation(epwFileAddress))
     
+    
+    
     # SizingPeriod
     #Check if there are sizing periods in the EPW file.
     dbTemp = []
@@ -1094,7 +1141,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     
     # Geometry rules
     idfFile.write(hb_writeIDF.EPGeometryRules())
-    
+
     EPConstructionsCollection = []
     EPMaterialCollection = []
     EPScheduleCollection = []
@@ -1103,26 +1150,46 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     # Shading Surfaces
     if HBContext and HBContext[0]!=None:
         print "[2 of 6] Writing context surfaces..."
+       
         # call the objects from the lib
         shadingPyClasses = hb_hive.callFromHoneybeeHive(HBContext)
+       
         for shading in shadingPyClasses:
             
-            # take care of shcedule
-            schedule = shading.TransmittanceSCH
-            if schedule!="" and schedule.upper() not in EPScheduleCollection:
-                # add schedule
-                scheduleValues, comments = hb_EPScheduleAUX.getScheduleDataByName(schedule, ghenv.Component)
-                if comments == "csv":
-                    # create a new schedule object based on file
-                    # and write it to idf
-                    idfFile.write(hb_writeIDF.EPSCHStr(schedule))
-                else:
-                    # collect shchedule name
-                    EPScheduleCollection.append(schedule.upper())
+            try:
+                if shading.containsPVgen == True: 
+                # If shading contains containsPVgen attribute it is a hb_EPSurface or  hb_EPZoneSurface
+                # if shading.containsPVgen is True it also contains PV generators which must be written to IDF 
                     
-                hb_writeIDF.EPSCHStr(shading.TransmittanceSCH.upper())
+                    for PVgen in shading.PVgenlist:
+                        
+                        idfFile.write(hb_writeIDF.write_PVgen(PVgen))
+                        idfFile.write(hb_writeIDF.write_PVgenperformanceobject(PVgen))
+                        
+                else:
+                    pass # If shading.containsPVgen is not True then this surface does not contain a PV generator so do nothing
+                    
+            except AttributeError:
                 
-            idfFile.write(hb_writeIDF.EPShdSurface(shading))
+                # If Attribute error raised shading is not a hb_EPSurface or  hb_EPZoneSurface and therefore
+                # it is a normal HBcontext surface
+                
+                # take care of shcedule
+                schedule = shading.TransmittanceSCH
+                if schedule!="" and schedule.upper() not in EPScheduleCollection:
+                    # add schedule
+                    scheduleValues, comments = hb_EPScheduleAUX.getScheduleDataByName(schedule, ghenv.Component)
+                    if comments == "csv":
+                        # create a new schedule object based on file
+                        # and write it to idf
+                        idfFile.write(hb_writeIDF.EPSCHStr(schedule))
+                    else:
+                        # collect shchedule name
+                        EPScheduleCollection.append(schedule.upper())
+                        
+                    hb_writeIDF.EPSCHStr(shading.TransmittanceSCH.upper())
+                    
+                idfFile.write(hb_writeIDF.EPShdSurface(shading))                                                               
     else:
         print "[2 of 6] No context surfaces..."
         
@@ -1220,6 +1287,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     print "[5 of 7] Writing schedules..."
     
     #Check if schedules need to be written for air mixing or natural ventilation.
+    needToWriteMixSched = False
     for key, zones in ZoneCollectionBasedOnSchAndLoads.items():
         for zone in zones:
             if zone.natVent == True:
@@ -1227,11 +1295,11 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                     if schedule != None:
                         if schedule.upper() not in EPScheduleCollection: EPScheduleCollection.append(schedule)
                     else: needToWriteMixSched = True
-            if zone.mixAir == True:
-                for schedule in zone.mixAirFlowSched:
-                    if schedule != None:
-                        if schedule.upper() not in EPScheduleCollection: EPScheduleCollection.append(schedule)
-                    else: needToWriteMixSched = True
+
+            print zone.mixAir
+            if zone.mixAir == True: needToWriteMixSched = True
+    if needToWriteMixSched == True:
+        if 'ALWAYS ON' not in EPScheduleCollection: EPScheduleCollection.append('ALWAYS ON')
     
     # Write Schedules
     for schedule in EPScheduleCollection:
@@ -1321,6 +1389,12 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
             if zone.mixAir == True:
                 for mixZoneCount, zoneMixName in enumerate(zone.mixAirZoneList):
                     idfFile.write(hb_writeIDF.EPZoneAirMixing(zone, zoneMixName, zone.mixAirFlowList[mixZoneCount], mixZoneCount))
+            
+            # EARTH TUBE
+            
+            if zone.earthtube == True:
+                
+                idfFile.write(hb_writeIDF.EarthTube(zone))
             
             #   SIMPLE NATURAL VENTILATION
             if zone.natVent == True:

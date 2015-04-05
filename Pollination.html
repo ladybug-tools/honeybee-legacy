@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+
+<html>
+	
+	<head>
+		<!-- Here are the examples that I used:
+			http://www.columbia.edu/~cme2126/datavisuals/bigdata_parallelcoordinates.html
+			https://syntagmatic.github.io/parallel-coordinates/
+		-->
+
+		<title>Pollination</title>
+
+		<script src="./pc_source_files/d3/d3.v3.min.js" charset="utf-8"></script> <!-- D3 -->
+		<script src = "./pc_source_files/d3/d3.parcoords.js"></script> <!-- D3 Parallel Coordinates Library -->
+		<link rel="stylesheet" type="text/css" href="./pc_source_files/css/d3.parcoords.css"> <!-- D3 Parallel Coordinates CSS -->
+		<!-- <link rel="stylesheet" type="text/css" href="./pc_source_files/css/pollination.css"> -->
+		<script src="./pc_source_files/d3/d3.underscore.math.js"></script>
+    	<script src="./pc_source_files/d3/d3.divgrid.js"></script> <!-- D3 table grid -->
+    	<script src="./pc_source_files/js/pollination.js"></script>
+    	<script src="./pc_source_files/js/pace.min.js"></script>
+
+    	<style>
+    		.heading{
+    			font-family: sans-serif;
+    			font-size: 13px;
+    			font-weight: normal;
+    		}
+
+    		.instructions{
+    			font-family: sans-serif;
+    			font-size: 11px;
+    			font-weight: normal;
+    		}
+    		
+    		#header{
+    			font-family: sans-serif;
+    		}
+
+    		a:link {
+			    color: grey;
+			}
+
+			/* visited link */
+			a:visited {
+			    color: grey;
+			}
+
+			/* mouse over link */
+			a:hover {
+			    color: black;
+			}
+
+			#wrapper {
+			   position: relative;
+			   float: left;
+			   top: 20px;
+			   font-family: sans-serif;
+			   font-size: 10px;
+			}
+			
+			/* data table styles */
+			#grid {
+				font-family: sans-serif;
+				height: 198px;
+				color:black;
+				clear: both; 
+				position:relative;
+				top: 60px;
+				left: 50px;
+				right: 20px;
+				}
+			.row, .header { clear: left; font-size: 14px; line-height: 18px; height: 20px; margin: 5px; width:90% }
+			.row:hover { font-weight: bold;  color: orange;}
+			.row:nth-child(odd) { background: rgba(0,0,0,0.05); }
+			.header { font-weight: bold;}
+			.cell { float: left;
+					overflow: hidden;
+					white-space: nowrap;
+					width: 100px;
+					height: 22px;
+				}
+
+			#tooltip{
+				font-family: sans-serif;
+				font-size: 14px;
+				font-weight: bold;
+				color:black;
+
+			}
+
+			.pace {
+		      -webkit-pointer-events: none;
+		      pointer-events: none;
+
+		      -webkit-user-select: none;
+		      -moz-user-select: none;
+		      user-select: none;
+
+		      z-index: 2000;
+		      position: fixed;
+		      margin: auto;
+		      top: 0;
+		      left: 0;
+		      right: 0;
+		      bottom: 0;
+		      height: 5px;
+		      width: 200px;
+		      background: #fff;
+		      border: 1px solid #c0c0c0;
+
+		      overflow: hidden;
+		    }
+
+		    .pace .pace-progress {
+		      -webkit-box-sizing: border-box;
+		      -moz-box-sizing: border-box;
+		      -ms-box-sizing: border-box;
+		      -o-box-sizing: border-box;
+		      box-sizing: border-box;
+
+		      -webkit-transform: translate3d(0, 0, 0);
+		      -moz-transform: translate3d(0, 0, 0);
+		      -ms-transform: translate3d(0, 0, 0);
+		      -o-transform: translate3d(0, 0, 0);
+		      transform: translate3d(0, 0, 0);
+
+		      max-width: 200px;
+		      position: fixed;
+		      z-index: 2000;
+		      display: block;
+		      position: absolute;
+		      top: 0;
+		      right: 100%;
+		      height: 100%;
+		      width: 100%;
+		      background: #c0c0c0;
+		    }
+
+		    .pace.pace-inactive {
+		      display: none;
+		    }
+
+    	</style>
+	</head>
+	
+	<body>
+
+  		<div id="header">
+  			<a href= "https://www.facebook.com/LadyBugforGrasshopper" target="_blank"><img src="./pc_source_files/image/ladybug_honeybee_icon.png" style="height: 60px; vertical-align:middle; float:left; padding:2px;"></a>
+	  		
+	  		<h3><br><a href="https://github.com/mostaphaRoudsari/Honeybee/tree/gh-pages" target="_blank">Pollination</a>
+	  			<span class="heading">[Vis] is a web-based application for exploring multi-dimensional data. <a href= "http://honeypatch.github.io/pollination/index" target="_blank">Pollination</a> started at the <a href="http://core.thorntontomasetti.com/aec-technology-symposium-2014/aec-technology-symposium-2014-hackathon/" target="_blank">AEC-TECH Hackathon</a>. Many thanks to the <a href= "http://honeypatch.github.io/pollination/team" target="_blank">team members.</a> Also many thanks to <a href="https://github.com/syntagmatic" target="_blank">Kai Chang</a> for developing <a href="https://syntagmatic.github.io/parallel-coordinates/" target="_blank">parcoords</a> library for <a href="http://d3js.org/" target="_blank">D3JS</a>. Creating Pollination would be very hard without his development.
+				</span>
+	  		</h3>
+  			<input type="file" id="input-file" name="files"/>
+  			
+  			<span class="instructions">
+	  			>> Pollination visualizes structured .csv and .json files. You can use <a href="http://www.food4rhino.com/project/ladybug-honeybee" target="_blank">Honeybee</a> to generate the files or create them manually. <a href= "./pc_source_files/sampledata/sampleParametricRunsResults.csv">Here</a> is an example file.
+			</span>
+
+  		</div>
+		<div id="whitespace" style="width:100%; height:5px"></div>
+    	<div id="wrapper" class="parcoords" style="width:100%; height:400px"></div>
+    	
+    	<div id="grid" class="parcoords" style="width:100%;height:340px"></div>
+		
+		<script>
+			var rawData;
+			var totalWidth = .9 * window.innerWidth - 75;
+
+			var color_set = d3.scale.linear()
+				.range(["#3182bd", "#f33"]);
+		
+			window.onload = function() {
+			
+				var fileInput = document.getElementById('input-file');
+
+				fileInput.addEventListener('change', function(e) {
+				
+					var file = fileInput.files[0];
+					var extension = file.name.split(".").reverse()[0].toLowerCase();
+					var reader = new FileReader();
+					
+					var regex = /^([a-zA-Z0-9\s_\\.\-:])+(.csv|.txt|.json)$/;
+    				
+    				if (regex.test(file.name.toLowerCase())) {
+
+						reader.onload = function(e) {
+							
+							var rawData = reader.result;
+					
+							// parse data
+							switch(extension){				
+								case "csv":
+									var data = d3.csv.parse(rawData);
+									break;
+								case "json":
+									var data = JSON.parse(rawData);
+									break;
+								case "txt":
+									var data = d3.tsv.parse(rawData);
+									break;
+								default:
+									return;
+							}
+					
+							// remove old graph if any
+							d3.select('#wrapper svg').remove();
+
+							pollination(data);
+						};
+
+					}else{
+
+					alert("Please upload a valid CSV file!");
+					}
+					reader.readAsText(file);
+					})
+
+				// load default chart
+				d3.csv("./pc_source_files/sampledata/sampleParametricRunsResults.csv", function(d){
+					pollination(d);
+				});
+			};
+
+		</script>
+		
+		<script>
+			// google analytics
+		  	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		  	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		  	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		  	})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+		  	ga('create', 'UA-60014009-1', 'auto');
+		  	ga('send', 'pageview');
+
+		</script>
+	</body>
+
+</html>
+
+

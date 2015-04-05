@@ -40,7 +40,11 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Indoor Comfort Analysis"
 ghenv.Component.NickName = 'IndoorComfAnalysis'
+<<<<<<< HEAD
 ghenv.Component.Message = 'VER 0.0.56\nMAR_31_2015'
+=======
+ghenv.Component.Message = 'VER 0.0.56\nFEB_25_2015'
+>>>>>>> origin/master
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

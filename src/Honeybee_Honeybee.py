@@ -30,7 +30,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.56\nMAR_16_2015'
+ghenv.Component.Message = 'VER 0.0.56\nAPR_04_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -4488,6 +4488,14 @@ class EPZone(object):
         self.isConditioned = isConditioned
         self.isThisTheTopZone = False
         self.isThisTheFirstZone = False
+        
+        # Earthtube
+        self.earthtube = False
+        
+        # PV - A Honeybee zone can hold more than one photovoltaic generator for this reason we use a list 
+        # of all PV generators linked to this instance of the zone.
+        
+        # XXX self.PVgenlist = []
     
     def assignScheduleBasedOnProgram(self, component = None):
         # create an open office is the program is not assigned
@@ -4535,7 +4543,6 @@ class EPZone(object):
             print msg
             if component != None:
                 component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
-            return
         
         # numbers in OpenStudio standard library are in IP and I have to convert them to SI!
         self.equipmentLoadPerArea = schedulesAndLoads['elec_equip_per_area'] * 10.763961 #Per ft^2 to Per m^2
@@ -4890,7 +4897,34 @@ class EPZone(object):
             return 'Zone name: ' + self.name + \
                '\nZone program: Unknown' + \
                '\n# of surfaces: ' + `len(self.surfaces)` + \
-               '\n-------------------------------------'
+               '\n-----------------------------------'
+
+
+
+class PV_gen(object):
+    
+    def __init__(self,_name,surfacename_,_integrationmode,No_parallel,No_series,namePVperform,SA_solarcells,cell_n,performance_type = "PhotovoltaicPerformance:Simple"):
+        
+        self.name = _name
+        self.surfacename = surfacename_
+        self.performancetype = performance_type
+        self.performancename =  namePVperform # One Photovoltaic performance object is made for each PV object so names are the same
+        self.integrationmode = _integrationmode
+        self.NOparallel = No_parallel
+        self.NOseries = No_series
+    
+        self.PV_performance(namePVperform,SA_solarcells,cell_n)
+        
+    def PV_performance(self,namePVperformobject,SA_solarcells = 0.5 ,cell_n = 0.12,cell_efficiencyinputmode = "Fixed", schedule_ = "always on"):
+    
+        self.namePVperformobject = namePVperformobject
+        self.surfaceareacells = SA_solarcells
+        self.cellefficiencyinputmode = cell_efficiencyinputmode
+        self.efficiency = cell_n
+        self.schedule = schedule_
+
+
+
 
 class hb_reEvaluateHBZones(object):
     """
@@ -5346,7 +5380,15 @@ class hb_EPSurface(object):
         self.srfTypeByUser = False
         self.srfBCByUser = False
         
-                # 4 represents an Air Wall
+        # PV - A Honeybee surface can hold one PV generator
+        
+        self.PVgenlist = []
+        
+        # Does this Honeybee surface contain a PV generator?
+        
+        self.containsPVgen = False
+        
+        # 4 represents an Air Wall
         self.srfType = {0:'WALL',
            0.5: 'UndergroundWall',
            1:'ROOF',
@@ -5904,6 +5946,7 @@ class hb_EPSurface(object):
     def setWindExposure(self, exposure = 'NoWind'):
         self.windExposure = exposure
     
+    
     def __str__(self):
         try:
             return 'Surface name: ' + self.name + '\nSurface number: ' + str(self.num) + \
@@ -5911,6 +5954,7 @@ class hb_EPSurface(object):
         except:
             return 'Surface name: ' + self.name + '\n' + 'Surface number: ' + str(self.num) + \
                    '\nSurface type is not assigned. Honeybee thinks this is a ' + str(self.srfType[self.getTypeByNormalAngle()]) + "."
+                   
 
 class hb_EPZoneSurface(hb_EPSurface):
     """..."""
@@ -6268,9 +6312,9 @@ class hb_Hive(object):
                         HBObjects.append(copy.deepcopy(HBObject))
                         
                     except Exception, e:
-                        print `e`
-                        print "Failed to copy the object. Returning the original objects...\n" +\
-                              "This can cause strange behaviour!"
+                        #print `e`
+                        #print "Failed to copy the object. Returning the original objects...\n" +\
+                        #"This can cause strange behaviour!"
                         HBObjects.append(sc.sticky['HBHive'][key])
             except:
                 pass
@@ -6805,6 +6849,7 @@ if checkIn.letItFly:
         sc.sticky["honeybee_BuildingProgramsLib"] = BuildingProgramsLib
         sc.sticky["honeybee_EPTypes"] = EPTypes()
         sc.sticky["honeybee_EPZone"] = EPZone
+        sc.sticky["PVgen"] = PV_gen
         sc.sticky["honeybee_reEvaluateHBZones"] = hb_reEvaluateHBZones
         sc.sticky["honeybee_AirsideEconomizerParams"] = hb_airsideEconoParams
         sc.sticky["honeybee_constantVolumeFanParams"] = hb_constVolFanParams
