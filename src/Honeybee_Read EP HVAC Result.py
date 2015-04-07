@@ -96,9 +96,9 @@ if _resultFileAddress:
     except:
         try: eioResult.close()
         except: pass 
-        warning = 'Your simulation probably did not run correctly.' + \
-                  'Check the report out of the Run Simulation component to see what severe or fatal errors happened in the simulation.' + \
-                  'If there are no severe or fatal errors, the issue could just be that there is .eio file adjacent to the .csv _resultFileAddress.'+ \
+        warning = 'Your simulation probably did not run correctly. \n' + \
+                  'Check the report out of the Run Simulation component to see what severe or fatal errors happened in the simulation. \n' + \
+                  'If there are no severe or fatal errors, the issue could just be that there is .eio file adjacent to the .csv _resultFileAddress. \n'+ \
                   'Check the folder of the file address you are plugging into this component and make sure that there is both a .csv and .eio file in the folder.'
         print warning
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
@@ -250,10 +250,10 @@ if _resultFileAddress and gotData == True:
         try: result.close()
         except: pass
         parseSuccess = False
-        warn = 'Failed to parse the result file.  Check the folder of the file address you are plugging into this component and make sure that there is a .csv file in the folder.'+ \
-                  'If there is no csv file or there is a file with no data in it (it is 0 kB), your simulation probably did not run correctly.' + \
-                  'In this case, check the report out of the Run Simulation component to see what severe or fatal errors happened in the simulation.' + \
-                  'If the csv file is there and it seems like there is data in it (it is not 0 kB), you are probably requesting an output that this component does not yet handle well.' + \
+        warn = 'Failed to parse the result file.  Check the folder of the file address you are plugging into this component and make sure that there is a .csv file in the folder. \n'+ \
+                  'If there is no csv file or there is a file with no data in it (it is 0 kB), your simulation probably did not run correctly. \n' + \
+                  'In this case, check the report out of the Run Simulation component to see what severe or fatal errors happened in the simulation. \n' + \
+                  'If the csv file is there and it seems like there is data in it (it is not 0 kB), you are probably requesting an output that this component does not yet handle well. \n' + \
                   'If you report this bug of reading the output on the GH forums, we should be able to fix this component to accept the output soon.'
         print warn
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warn)
