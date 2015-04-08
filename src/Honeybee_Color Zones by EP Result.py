@@ -37,7 +37,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Color Zones by EP Result"
 ghenv.Component.NickName = 'ColorZones'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_01_2015'
+ghenv.Component.Message = 'VER 0.0.56\nAPR_06_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -269,7 +269,8 @@ def checkZones(zoneHeaders, pyZoneData, hb_zoneData):
         for count, name in enumerate(zoneNames):
             if zoneName == name.upper():
                 newZoneFloors.append(zoneFloors[count])
-                zoneFlrAreas.append(rc.Geometry.AreaMassProperties.Compute(zoneFloors[count]).Area)
+                try: zoneFlrAreas.append(rc.Geometry.AreaMassProperties.Compute(zoneFloors[count]).Area)
+                except: zoneFlrAreas.append(None)
                 newZoneBreps.append(zoneBreps[count])
                 newZoneHeaders.append(zoneHeaders[listCount])
                 newPyZoneData.append(pyZoneData[listCount])
@@ -585,16 +586,20 @@ def main(zoneValues, zones, zoneFloors, newZoneBreps, zoneHeaders, title, legend
     
     joinedFloors = []
     for list in zoneFloors:
-        joinedFloor = rc.Geometry.Brep.JoinBreps(list, sc.doc.ModelAbsoluteTolerance)[0]
+        try: joinedFloor = rc.Geometry.Brep.JoinBreps(list, sc.doc.ModelAbsoluteTolerance)[0]
+        except: joinedFloor = None
         joinedFloors.append(joinedFloor)
     
     for count, brep in enumerate(joinedFloors):
-        zoneMeshSrfs = rc.Geometry.Mesh.CreateFromBrep(brep, rc.Geometry.MeshingParameters.Default)
-        joinedFloorMesh = rc.Geometry.Mesh()
-        for mesh in zoneMeshSrfs:
-            mesh.VertexColors.CreateMonotoneMesh(colors[count])
-            joinedFloorMesh.Append(mesh)
-        zoneMeshes.append(joinedFloorMesh)
+        if brep != None:
+            zoneMeshSrfs = rc.Geometry.Mesh.CreateFromBrep(brep, rc.Geometry.MeshingParameters.Default)
+            joinedFloorMesh = rc.Geometry.Mesh()
+            for mesh in zoneMeshSrfs:
+                mesh.VertexColors.CreateMonotoneMesh(colors[count])
+                joinedFloorMesh.Append(mesh)
+            zoneMeshes.append(joinedFloorMesh)
+        else:
+            zoneMeshes.append(None)
     
     for brep in zones:
         wireFrame = brep.DuplicateEdgeCurves()
