@@ -880,10 +880,14 @@ class WriteIDF(object):
         '\t' + 'regular;                 !- Key Field' + '\n'
         
     def EarthTube(self,zone):
-    
+        scheduleName = zone.ETschedule
+        if scheduleName.lower().endswith(".csv"):
+            # find filebased schedule name
+            scheduleName = self.fileBasedSchedules[scheduleName.upper()]
+        
         return '\nZoneEarthtube,\n' + \
             '\t' + zone.name + ',\t!- Zone Name\n' + \
-            '\t' + str(zone.ETschedule) + ',\t!- Schedule Name\n'+\
+            '\t' + scheduleName + ',\t!- Schedule Name\n'+\
             '\t' + str(zone.design_flow_rate) + ',\t!- Design Flow Rate {m3/s}\n'+\
             '\t' + str(zone.mincooltemp) + ',\t!- Minimum Zone Temperature when Cooling {C}\n'+\
             '\t' + str(zone.maxheatingtemp) + ',\t!- Maximum Zone Temperature when Heating {C}\n'+\
@@ -1298,6 +1302,13 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
             if zone.mixAir == True: needToWriteMixSched = True
     if needToWriteMixSched == True:
         if 'ALWAYS ON' not in EPScheduleCollection: EPScheduleCollection.append('ALWAYS ON')
+    
+    #Check the shcedule for earth tube.
+    try:
+        for zone in zones:
+            if zone.ETschedule not in EPScheduleCollection: EPScheduleCollection.append(zone.ETschedule)
+    except:
+        pass
     
     # Write Schedules
     for schedule in EPScheduleCollection:
