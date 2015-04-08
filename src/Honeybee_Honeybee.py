@@ -1199,9 +1199,9 @@ class hb_MSHToRAD(object):
             #mapFile = objFile.replace(".obj", ".map")
             #with open(mapFile, "w") as mapf:
             #    mapf.write(self.matName + " (Object \"" + self.matName + "\");")
-            #cmd = "c:\\radiance\\bin\\obj2rad -f -m " + mapFile + " " + objFile + " > " +  radFile
+            #cmd = "c:\\radiance\\bin\\obj2rad -m " + mapFile + " " + objFile + " > " +  radFile
             
-            cmd = "c:\\radiance\\bin\\obj2rad -f " + objFile + " > " +  radFile
+            cmd = "c:\\radiance\\bin\\obj2rad " + objFile + " > " +  radFile
             
             with open(batFile, "w") as outfile:
                 outfile.write(cmd)
@@ -1502,21 +1502,10 @@ class hb_WriteRAD(object):
     
         if numOfCPUs > numOfPoints: numOfCPUs = numOfCPUs
     
-        if numOfCPUs > 1:
-            ptsEachCpu = int(numOfPoints/(numOfCPUs))
-            remainder = numOfPoints%numOfCPUs
-        else:
-            ptsEachCpu = numOfPoints
-            remainder = 0
-        
+        if numOfCPUs > 1: ptsEachCpu = int(numOfPoints/(numOfCPUs))
+        else: ptsEachCpu = numOfPoints
+    
         lenOfPts = []
-        
-        for cpuCount in range(numOfCPUs):
-            if cpuCount < remainder:
-                lenOfPts.append(ptsEachCpu+1)
-            else:
-                lenOfPts.append(ptsEachCpu)
-        
         testPtsEachCPU = []
         
         for cpuCount in range(numOfCPUs):
@@ -1525,15 +1514,22 @@ class hb_WriteRAD(object):
             ptsFileName = os.path.join(subWorkingDir, radFileName + '_' + `cpuCount` + '.pts')
             
             ptsFile = open(ptsFileName, "w")
-            
-            for ptCount in range(sum(lenOfPts[:cpuCount]), sum(lenOfPts[:cpuCount+1])):
-                ptsFile.write(self.hb_writeRADAUX.testPtsStr(flattenTestPoints[ptCount], flattenPtsNormals[ptCount]))
-                ptsForThisCPU.append(flattenTestPoints[ptCount])
+            if cpuCount + 1 != numOfCPUs:
+                for ptCount in range(cpuCount * ptsEachCpu, (cpuCount + 1) * ptsEachCpu):
+                    ptsFile.write(self.hb_writeRADAUX.testPtsStr(flattenTestPoints[ptCount], flattenPtsNormals[ptCount]))
+                    ptsForThisCPU.append(flattenTestPoints[ptCount])
+                lenOfPts.append(ptsEachCpu)
+                
+            else:
+                for ptCount in range(cpuCount * ptsEachCpu, numOfPoints):
+                    ptsFile.write(self.hb_writeRADAUX.testPtsStr(flattenTestPoints[ptCount], flattenPtsNormals[ptCount]))
+                    ptsForThisCPU.append(flattenTestPoints[ptCount])
+                lenOfPts.append(numOfPoints - (cpuCount * ptsEachCpu))
             
             ptsFile.close()
             
             testPtsEachCPU.append(ptsForThisCPU)        
-        
+            
         return testPtsEachCPU, lenOfPts
     
     def writeBatchFiles(self, subWorkingDir, radFileName, radSkyFileName, \
@@ -1612,8 +1608,7 @@ class hb_WriteRAD(object):
             initBatchFile.close()
             
             # annual glare only needs one headeing file and will run on a single cpu
-            # based on a recent discussion multiple cpus breaks Daysim for annual glare calculation
-            if runAnnualGlare: # and onlyAnnualGlare:
+            if runAnnualGlare and onlyAnnualGlare:
                 numOfCPUs = 1
                 
             # write the rest of the files
@@ -2506,7 +2501,6 @@ class hb_WriteRADAUX(object):
         viewDirection = sc.doc.Views.ActiveView.ActiveViewport.CameraDirection
         viewDirection.Unitize()
         viewUp = sc.doc.Views.ActiveView.ActiveViewport.CameraUp
-        viewUp.Unitize()
         viewHA = 180 - rs.VectorAngle(sc.doc.Views.ActiveView.ActiveViewport.GetFrustumRightPlane()[1][1], sc.doc.Views.ActiveView.ActiveViewport.GetFrustumLeftPlane()[1][1])
         if viewHA == 0: viewHA = 180
         viewVA = 180 - rs.VectorAngle(sc.doc.Views.ActiveView.ActiveViewport.GetFrustumBottomPlane()[1][1], sc.doc.Views.ActiveView.ActiveViewport.GetFrustumTopPlane()[1][1])
@@ -3106,8 +3100,6 @@ class hb_EnergySimulatioParameters(object):
             ddyFile = None
             
             terrain = 'City'
-            
-            grndTemps = []
         
         else:
             timestep = int(EPParameters[0])
@@ -3121,10 +3113,8 @@ class hb_EnergySimulatioParameters(object):
             ddyFile = EPParameters[10]
             
             terrain = EPParameters[11]
-            
-            grndTemps = EPParameters[12]
         
-        return timestep, shadowPar, solarDistribution, simulationControl, ddyFile, terrain, grndTemps
+        return timestep, shadowPar, solarDistribution, simulationControl, ddyFile, terrain
 
 class EPMaterialAux(object):
     
@@ -4498,6 +4488,14 @@ class EPZone(object):
         self.isConditioned = isConditioned
         self.isThisTheTopZone = False
         self.isThisTheFirstZone = False
+        
+        # Earthtube
+        self.earthtube = False
+        
+        # PV - A Honeybee zone can hold more than one photovoltaic generator for this reason we use a list 
+        # of all PV generators linked to this instance of the zone.
+        
+        # XXX self.PVgenlist = []
     
     def assignScheduleBasedOnProgram(self, component = None):
         # create an open office is the program is not assigned
@@ -4545,7 +4543,6 @@ class EPZone(object):
             print msg
             if component != None:
                 component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
-            return
         
         # numbers in OpenStudio standard library are in IP and I have to convert them to SI!
         self.equipmentLoadPerArea = schedulesAndLoads['elec_equip_per_area'] * 10.763961 #Per ft^2 to Per m^2
@@ -4900,7 +4897,34 @@ class EPZone(object):
             return 'Zone name: ' + self.name + \
                '\nZone program: Unknown' + \
                '\n# of surfaces: ' + `len(self.surfaces)` + \
-               '\n-------------------------------------'
+               '\n-----------------------------------'
+
+
+
+class PV_gen(object):
+    
+    def __init__(self,_name,surfacename_,_integrationmode,No_parallel,No_series,namePVperform,SA_solarcells,cell_n,performance_type = "PhotovoltaicPerformance:Simple"):
+        
+        self.name = _name
+        self.surfacename = surfacename_
+        self.performancetype = performance_type
+        self.performancename =  namePVperform # One Photovoltaic performance object is made for each PV object so names are the same
+        self.integrationmode = _integrationmode
+        self.NOparallel = No_parallel
+        self.NOseries = No_series
+    
+        self.PV_performance(namePVperform,SA_solarcells,cell_n)
+        
+    def PV_performance(self,namePVperformobject,SA_solarcells = 0.5 ,cell_n = 0.12,cell_efficiencyinputmode = "Fixed", schedule_ = "always on"):
+    
+        self.namePVperformobject = namePVperformobject
+        self.surfaceareacells = SA_solarcells
+        self.cellefficiencyinputmode = cell_efficiencyinputmode
+        self.efficiency = cell_n
+        self.schedule = schedule_
+
+
+
 
 class hb_reEvaluateHBZones(object):
     """
@@ -5356,7 +5380,15 @@ class hb_EPSurface(object):
         self.srfTypeByUser = False
         self.srfBCByUser = False
         
-                # 4 represents an Air Wall
+        # PV - A Honeybee surface can hold one PV generator
+        
+        self.PVgenlist = []
+        
+        # Does this Honeybee surface contain a PV generator?
+        
+        self.containsPVgen = False
+        
+        # 4 represents an Air Wall
         self.srfType = {0:'WALL',
            0.5: 'UndergroundWall',
            1:'ROOF',
@@ -5914,6 +5946,7 @@ class hb_EPSurface(object):
     def setWindExposure(self, exposure = 'NoWind'):
         self.windExposure = exposure
     
+    
     def __str__(self):
         try:
             return 'Surface name: ' + self.name + '\nSurface number: ' + str(self.num) + \
@@ -5921,6 +5954,7 @@ class hb_EPSurface(object):
         except:
             return 'Surface name: ' + self.name + '\n' + 'Surface number: ' + str(self.num) + \
                    '\nSurface type is not assigned. Honeybee thinks this is a ' + str(self.srfType[self.getTypeByNormalAngle()]) + "."
+                   
 
 class hb_EPZoneSurface(hb_EPSurface):
     """..."""
@@ -6137,6 +6171,11 @@ class hb_EPZoneSurface(hb_EPSurface):
 class hb_EPShdSurface(hb_EPSurface):
     def __init__(self, surface, srfNumber, srfName):
         hb_EPSurface.__init__(self, surface, srfNumber, srfName, self)
+        
+        self.PVgenlist = None
+        
+        self.containsPVgen = None
+        
         self.TransmittanceSCH = ''
         self.isChild = False
         self.hasChild = False
@@ -6145,7 +6184,13 @@ class hb_EPShdSurface(hb_EPSurface):
         self.childSrfs = [self] # so I can use the same function as glazing to extract the points
         self.type = 6
         pass
-    
+  
+    def __getattr__(self, PVgenlist,containsPVgen):
+
+        # Default behaviour
+        raise AttributeError
+  
+  
     def getSrfCenPtandNormal(self, surface):
         # I'm not sure if we need this method
         # I will remove this later
@@ -6278,9 +6323,9 @@ class hb_Hive(object):
                         HBObjects.append(copy.deepcopy(HBObject))
                         
                     except Exception, e:
-                        print `e`
-                        print "Failed to copy the object. Returning the original objects...\n" +\
-                              "This can cause strange behaviour!"
+                        #print `e`
+                        #print "Failed to copy the object. Returning the original objects...\n" +\
+                        #"This can cause strange behaviour!"
                         HBObjects.append(sc.sticky['HBHive'][key])
             except:
                 pass
@@ -6815,6 +6860,7 @@ if checkIn.letItFly:
         sc.sticky["honeybee_BuildingProgramsLib"] = BuildingProgramsLib
         sc.sticky["honeybee_EPTypes"] = EPTypes()
         sc.sticky["honeybee_EPZone"] = EPZone
+        sc.sticky["PVgen"] = PV_gen
         sc.sticky["honeybee_reEvaluateHBZones"] = hb_reEvaluateHBZones
         sc.sticky["honeybee_AirsideEconomizerParams"] = hb_airsideEconoParams
         sc.sticky["honeybee_constantVolumeFanParams"] = hb_constVolFanParams

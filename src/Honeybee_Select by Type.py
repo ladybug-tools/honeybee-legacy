@@ -19,7 +19,7 @@ Provided by Honeybee 0.0.56
         surfaces: Output surfaces as Grasshopper objects
 """
 ghenv.Component.Name = "Honeybee_Select by Type"
-ghenv.Component.NickName = 'selByType'
+ghenv.Component.NickName = 'selByType_'
 ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -31,8 +31,11 @@ except: pass
 
 import scriptcontext as sc
 import Grasshopper.Kernel as gh
+import uuid
 
 surfaces = []
+HBSurfacestypezero = []
+otherHBSurfaces = []
 showCases = []
 if _showWalls_: showCases.append(0)
 if _showAirWalls_: showCases.append(4)
@@ -61,25 +64,36 @@ def main(HBZones):
     
     # call the objects from the lib
     hb_hive = sc.sticky["honeybee_Hive"]()
-    HBZoneObjects = hb_hive.callFromHoneybeeHive(HBZones)
+    HBZoneObjects = hb_hive.callFromHoneybeeHive(_HBZones)
     
     for zone in HBZoneObjects:
+        
+        # Extract surfaces from HBZones?
         for srf in zone.surfaces:
             try:
                 if srf.type in showCases:
                     if srf.type == 0 and srf.hasChild:
                         surfaces.append(srf.punchedGeometry)
+                        
+                        HBSurfacestypezero.append(srf) # Added by Anton Szilasi for Honeybee PV generator component
+                        
                     else:
                         surfaces.append(srf.geometry)
-                        
+
+                        otherHBSurfaces.append(srf) # Added by Anton Szilasi for Honeybee PV generator component
+
                 if _showWindows_ and srf.hasChild:
                     for childSrf in srf.childSrfs: surfaces.append(childSrf.geometry)
             except:
                 pass
+                
+    HBSurfaces = hb_hive.addToHoneybeeHive(otherHBSurfaces, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
     
-    return surfaces
+    
+    return surfaces,HBSurfaces
     
 if _HBZones and _HBZones[0]!=None:
     results = main(_HBZones)
+
     if results!=-1:
-        surfaces = results
+        surfaces,HBSurfaces = results
