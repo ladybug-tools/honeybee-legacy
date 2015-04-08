@@ -40,7 +40,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Indoor Comfort Analysis"
 ghenv.Component.NickName = 'IndoorComfAnalysis'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_07_2015'
+ghenv.Component.Message = 'VER 0.0.56\nAPR_08_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -210,6 +210,7 @@ def calculatePointMRT(srfTempDict, testPtsViewFactor, hour, outdoorClac, outSrfT
     #Calculate the MRT for each point.
     pointMRTValues = []
     for zoneCount, pointList in enumerate(testPtsViewFactor):
+        
         if outdoorClac == False or zoneCount != len(testPtsViewFactor)-1:
             pointMRTValues.append([])
             for pointViewFactor in pointList:
@@ -601,6 +602,9 @@ def mainAdapt(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataN
     #Get the prevailing outdoor temperature for the whole analysis.
     prevailTemp = processPrevailOutdoorTemp(prevailingOutdoorTemp)
     
+    #Make sure that the EPW Data does not include headers.
+    prevailingOutdoorTemp = prevailingOutdoorTemp[7:]
+    
     #Make a dictionary that will relate the zoneSrfNames to the srfTempValues.
     srfTempDict = createSrfDict(zoneSrfNames, "srfName", "srfTemp", srfTempHeaders, srfTempNumbers)
     
@@ -730,6 +734,11 @@ def mainPMV(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNum
         SET_Mtx.append(0)
         PPD_Mtx.append(0)
         PMV_Mtx.append(0)
+    
+    #Make sure that the EPW Data does not include headers.
+    outDryBulbTemp = outDryBulbTemp[7:]
+    outRelHumid = outRelHumid[7:]
+    outWindSpeed = outWindSpeed[7:]
     
     #Make a dictionary that will relate the zoneSrfNames to the srfTempValues.
     srfTempDict = createSrfDict(zoneSrfNames, "srfName", "srfTemp", srfTempHeaders, srfTempNumbers)

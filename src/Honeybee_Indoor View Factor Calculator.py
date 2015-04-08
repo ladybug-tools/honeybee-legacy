@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_07_2015'
+ghenv.Component.Message = 'VER 0.0.56\nAPR_08_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -452,7 +452,7 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
         zoneSrfs = newZoneSrfs
         zoneSrfTypes = newZoneSrfTypes
     
-    #Make sure points are inside the zones.
+    #Make sure that the zone volumes are closed.
     for brepCount, brep in enumerate(zoneBreps):
         if zoneBrepsNonSolid[brepCount][0].IsSolid: pass
         else:
@@ -626,6 +626,8 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                 
                 MRTMeshBreps.append(outdoorFaceBreps)
                 testPts.append(outdoorTestPts)
+            else:
+                includeOutdoor = False
             
             #Make a list of all surfaces for the viewFactor calculation of the outdoor mesh.
             zoneSrfsMeshOutdoor = []
@@ -790,9 +792,9 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
             zoneHasWindows.append(1)
         
         
-        return geoCheck, testPts, MRTMeshBreps, MRTMeshInit, zoneWires, zoneSrfsMesh, surfaceNames, zoneOpaqueMesh, zoneNames, zoneWeights, heightWeights, zoneInletParams, zoneHasWindows, zoneBrepsNonSolid
+        return geoCheck, testPts, MRTMeshBreps, MRTMeshInit, zoneWires, zoneSrfsMesh, surfaceNames, zoneOpaqueMesh, zoneNames, zoneWeights, heightWeights, zoneInletParams, zoneHasWindows, zoneBrepsNonSolid, includeOutdoor
     else:
-        return geoCheck, testPts, MRTMeshBreps, MRTMeshInit, zoneWires, zoneSrfsMesh, surfaceNames, zoneOpaqueMesh, zoneNames, zoneWeights, [], zoneInletParams, zoneHasWindows, zoneBrepsNonSolid
+        return geoCheck, testPts, MRTMeshBreps, MRTMeshInit, zoneWires, zoneSrfsMesh, surfaceNames, zoneOpaqueMesh, zoneNames, zoneWeights, [], zoneInletParams, zoneHasWindows, zoneBrepsNonSolid, includeOutdoor
 
 def checkViewResolution(viewResolution, lb_preparation):
     newVecs = []
@@ -1039,7 +1041,7 @@ geoCheck = False
 if checkData == True:
     goodGeo = prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBreps, includeOutdoor, hb_zoneData)
     if goodGeo != -1:
-        geoCheck, testPtsInit, viewFactorBrep, viewFactorMeshActual, zoneWireFrame, zoneSrfsMesh, zoneSrfNames, zoneOpaqueMesh, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, zoneHasWindows, zoneBrepsNonSolid = goodGeo
+        geoCheck, testPtsInit, viewFactorBrep, viewFactorMeshActual, zoneWireFrame, zoneSrfsMesh, zoneSrfNames, zoneOpaqueMesh, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, zoneHasWindows, zoneBrepsNonSolid, includeOutdoor = goodGeo
     
     #Unpack the data trees of test pts and mesh breps so that the user can see them and get a sense of what to expect from the view factor calculation.
     testPts = DataTree[Object]()
