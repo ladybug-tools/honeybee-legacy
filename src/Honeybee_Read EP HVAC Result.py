@@ -26,7 +26,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Read EP HVAC Result"
 ghenv.Component.NickName = 'readEP_HVAC_Result'
-ghenv.Component.Message = 'VER 0.0.56\nMAR_02_2015'
+ghenv.Component.Message = 'VER 0.0.56\nAPR_06_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -96,8 +96,10 @@ if _resultFileAddress:
     except:
         try: eioResult.close()
         except: pass 
-        warning = 'No .eio file was found adjacent to the .csv _resultFileAddress.'+ \
-                  'results cannot be read back into grasshopper without this file.'
+        warning = 'Your simulation probably did not run correctly. \n' + \
+                  'Check the report out of the Run Simulation component to see what severe or fatal errors happened in the simulation. \n' + \
+                  'If there are no severe or fatal errors, the issue could just be that there is .eio file adjacent to the .csv _resultFileAddress. \n'+ \
+                  'Check the folder of the file address you are plugging into this component and make sure that there is both a .csv and .eio file in the folder.'
         print warning
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
 else: pass
@@ -153,7 +155,7 @@ def checkZone(csvName):
 
 # PARSE THE RESULT FILE.
 if _resultFileAddress and gotData == True:
-    #try:
+    try:
         result = open(_resultFileAddress, 'r')
         
         for lineCount, line in enumerate(result):
@@ -244,14 +246,17 @@ if _resultFileAddress and gotData == True:
                     
         result.close()
         parseSuccess = True
-    #except:
-    #    try: result.close()
-    #    except: pass
-    #    parseSuccess = False
-    #    warn = 'Failed to parse the result file.  The csv file might not have existed when connected or the simulation did not run correctly.'+ \
-    #              'Try reconnecting the _resultfileAddress to this component or re-running your simulation.'
-    #    print warn
-    #    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warn)
+    except:
+        try: result.close()
+        except: pass
+        parseSuccess = False
+        warn = 'Failed to parse the result file.  Check the folder of the file address you are plugging into this component and make sure that there is a .csv file in the folder. \n'+ \
+                  'If there is no csv file or there is a file with no data in it (it is 0 kB), your simulation probably did not run correctly. \n' + \
+                  'In this case, check the report out of the Run Simulation component to see what severe or fatal errors happened in the simulation. \n' + \
+                  'If the csv file is there and it seems like there is data in it (it is not 0 kB), you are probably requesting an output that this component does not yet handle well. \n' + \
+                  'If you report this bug of reading the output on the GH forums, we should be able to fix this component to accept the output soon.'
+        print warn
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warn)
 
 
 
