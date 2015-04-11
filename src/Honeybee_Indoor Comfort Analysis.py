@@ -40,7 +40,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Indoor Comfort Analysis"
 ghenv.Component.NickName = 'IndoorComfAnalysis'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_08_2015'
+ghenv.Component.Message = 'VER 0.0.56\nAPR_11_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -467,6 +467,14 @@ def createSrfDict(zoneSrfNames, nameKey, datakey, srfHeaders, srfNumbers):
                     srfDict[path][datakey] = srfNumbers[listCount]
                 elif srfName == srfDict[path][nameKey].upper() + "_1":
                     srfDict[path][datakey] = srfNumbers[listCount]
+            elif srfName.split('_')[0] in srfDict[path][nameKey].upper() and "GLZ" in srfDict[path][nameKey].upper():
+                try:
+                    print srfDict[path][nameKey].upper().split('_')[-2] + "_GLZ_0"
+                    if srfName == srfDict[path][nameKey].upper().split('_')[-2] + "_GLZ_0":
+                        srfDict[path][datakey] = srfNumbers[listCount]
+                    elif srfName == srfDict[path][nameKey].upper().split('_')[-2] + "_GLZ_1":
+                        srfDict[path][datakey] = srfNumbers[listCount]
+                except: pass
     
     return srfDict
 
