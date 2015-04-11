@@ -21,7 +21,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Set EnergyPlus Zone Thresholds"
 ghenv.Component.NickName = 'setEPZoneThresholds'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
+ghenv.Component.Message = 'VER 0.0.56\nAPR_11_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -245,6 +245,9 @@ def main(HBZones, daylightThreshold, coolingSetPt, heatingSetPt, coolingSetback,
     return HBZones
 
 if _HBZones:
+    
+    daylightThreshold_ = []
+    
     daylightThreshold, coolingSetPt, coolingSetback, heatingSetPt, \
     heatingSetback = checkTheInputs()
     
