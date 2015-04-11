@@ -31,10 +31,10 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Energy Simulation Par"
 ghenv.Component.NickName = 'EnergySimPar'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_03_2015'
+ghenv.Component.Message = 'VER 0.0.56\nAPR_11_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nAPR_03_2015
+#compatibleHBVersion = VER 0.0.56\nAPR_11_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
@@ -79,7 +79,7 @@ def main(timestep, shadowCalcPar, solarDistribution, simulationControls, ddyFile
         terrain = terrainDict[terrain]
     
     if monthlyGrndTemps == [] or len(monthlyGrndTemps) == 12:
-        return [timestep] + shadowCalcPar + [solarDistribution] + simulationControls + [ddyFile] + [terrain] + monthlyGrndTemps
+        return [timestep] + shadowCalcPar + [solarDistribution] + simulationControls + [ddyFile] + [terrain] + [monthlyGrndTemps]
     else:
         return None
         warning = 'monthlyGrndTemps_ must either be left blank or contain 12 values representing the average ground temperature for each month.'
