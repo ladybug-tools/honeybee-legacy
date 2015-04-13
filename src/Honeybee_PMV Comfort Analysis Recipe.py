@@ -37,7 +37,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_PMV Comfort Analysis Recipe"
 ghenv.Component.NickName = 'PMVComfRecipe'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_07_2015'
+ghenv.Component.Message = 'VER 0.0.56\nAPR_12_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -297,21 +297,29 @@ def checkTheInputs():
                     totalFaces = totalFaces +mesh.Faces.Count
                 if totalFaces == len(testPtViewFactor[zoneCount]): pass
                 else:
-                    checkData8 = False
-                    warning = "For one of the meshes in the _viewFactorMesh, the number of faces in the mesh and test points in the _testPtViewFactor do not match.\n" + \
-                    "This can sometimes happen when you have geometry created with one Rhino model tolerance and you generate a mesh off of it with a different tolerance.\n"+ \
-                    "Try changing your Rhino model tolerance and seeing if it works."
-                    print warning
-                    ghenv.Component.AddRuntimeMessage(w, warning)
+                    totalVertices = 0
+                    for meshCount, mesh in enumerate(zone):
+                        totalVertices = totalVertices +mesh.Vertices.Count
+                    
+                    if totalVertices == len(testPtViewFactor[zoneCount]): pass
+                    else:
+                        checkData8 = False
+                        warning = "For one of the meshes in the _viewFactorMesh, the number of faces in the mesh and test points in the _testPtViewFactor do not match.\n" + \
+                        "This can sometimes happen when you have geometry created with one Rhino model tolerance and you generate a mesh off of it with a different tolerance.\n"+ \
+                        "Try changing your Rhino model tolerance and seeing if it works."
+                        print warning
+                        ghenv.Component.AddRuntimeMessage(w, warning)
             else:
                 if zone[0].Faces.Count == len(testPtViewFactor[zoneCount]): pass
                 else:
-                    checkData8 = False
-                    warning = "For one of the meshes in the _viewFactorMesh, the number of faces in the mesh and test points in the _testPtViewFactor do not match.\n" + \
-                    "This can sometimes happen when you have geometry created with one Rhino model tolerance and you generate a mesh off of it with a different tolerance.\n"+ \
-                    "Try changing your Rhino model tolerance and seeing if it works."
-                    print warning
-                    ghenv.Component.AddRuntimeMessage(w, warning)
+                    if zone[0].Vertices.Count == len(testPtViewFactor[zoneCount]): pass
+                    else:
+                        checkData8 = False
+                        warning = "For one of the meshes in the _viewFactorMesh, the number of faces in the mesh and test points in the _testPtViewFactor do not match.\n" + \
+                        "This can sometimes happen when you have geometry created with one Rhino model tolerance and you generate a mesh off of it with a different tolerance.\n"+ \
+                        "Try changing your Rhino model tolerance and seeing if it works."
+                        print warning
+                        ghenv.Component.AddRuntimeMessage(w, warning)
     
     #If there are no outdoor surface temperatures and there are outdoor view factors, remove it from the mesh.
     if outdoorClac == False and outdoorIsThere == True:

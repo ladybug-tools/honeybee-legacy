@@ -31,7 +31,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Visualize Annual Comfort Results"
 ghenv.Component.NickName = 'VisualizeComfort'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_21_2015'
+ghenv.Component.Message = 'VER 0.0.56\APR_12_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -79,6 +79,7 @@ def checkTheInputs():
     #Check to be sure that the length of the test points and the mesh faces match.
     checkData2 = False
     dataType = None
+    vertOrFace = False
     if len(_comfResultsMtx) > 0 and len(viewFactorMesh) > 0:
         dataType = _comfResultsMtx[0].split(";")[0]
         ptLen1 = len(_comfResultsMtx[1])
@@ -88,9 +89,17 @@ def checkTheInputs():
         ptLen2 = sum(meshFaceCount)
         if ptLen1 == ptLen2: checkData2 = True
         else:
-            warning = "The length of data in the comfResultsMTX does not matech the number of faces in the viewFactorMesh."
-            print warning
-            ghenv.Component.AddRuntimeMessage(w, warning)
+            meshVertCount = []
+            for mesh in viewFactorMesh:
+                meshVertCount.append(mesh.Vertices.Count)
+            ptLen2 = sum(meshVertCount)
+            if ptLen1 == ptLen2:
+                checkData2 = True
+                vertOrFace = True
+            else:
+                warning = "The length of data in the comfResultsMTX does not matech the number of faces in the viewFactorMesh."
+                print warning
+                ghenv.Component.AddRuntimeMessage(w, warning)
     else: pass
     
     #Check the analysis period.
@@ -109,7 +118,7 @@ def checkTheInputs():
     if checkData1 == True and checkData2 == True: checkData = True
     else: checkData = False
     
-    return checkData, viewFactorMesh, dataType, annualData, simStepPossible, analysisPeriod
+    return checkData, viewFactorMesh, dataType, annualData, simStepPossible, analysisPeriod, vertOrFace
 
 
 def manageInputOutput(annualData, simStep):
@@ -171,7 +180,7 @@ def computeComfFactor(comfResultsMtx, analysisP, stepOfSimulation, annualData, s
 
 
 
-def main(pointValues, viewFactorMesh, dataType, lb_preparation, lb_visualization, legendPar, analysisPeriod, simStepPossible, annualData):
+def main(pointValues, viewFactorMesh, dataType, lb_preparation, lb_visualization, legendPar, analysisPeriod, simStepPossible, annualData, vertOrFace):
     #Read the legend parameters.
     lowB, highB, numSeg, customColors, legendBasePoint, legendScale, legendFont, legendFontSize, legendBold = lb_preparation.readLegendParameters(legendPar, False)
     defaultCustomColor1 = System.Drawing.Color.FromArgb(255, 75, 107, 169)
@@ -228,29 +237,45 @@ def main(pointValues, viewFactorMesh, dataType, lb_preparation, lb_visualization
     segmentedTanspColors = []
     segmentedValues = []
     
-    colorCounter = 0
-    for meshCount, mesh in enumerate(viewFactorMesh):
-        mesh.VertexColors.CreateMonotoneMesh(System.Drawing.Color.Gray)
-        resultMesh.append(mesh)
-        segmentedColors.append(colors[colorCounter:(colorCounter+mesh.Faces.Count)])
-        segmentedTanspColors.append(transparentColors[colorCounter:(colorCounter+mesh.Faces.Count)])
-        segmentedValues.append(pointValues[colorCounter:(colorCounter+mesh.Faces.Count)])
-        colorCounter+=mesh.Faces.Count
-    
-    for meshCount, mesh in enumerate(resultMesh):
-        counter = 0
-        for srfNum in range(mesh.Faces.Count):
-            if mesh.Faces[srfNum].IsQuad:
-                mesh.VertexColors[counter + 0] = segmentedColors[meshCount][srfNum]
-                mesh.VertexColors[counter + 1] = segmentedColors[meshCount][srfNum]
-                mesh.VertexColors[counter + 2] = segmentedColors[meshCount][srfNum]
-                mesh.VertexColors[counter + 3] = segmentedColors[meshCount][srfNum]
-                counter+=4
-            else:
-                mesh.VertexColors[counter + 0] = segmentedColors[meshCount][srfNum]
-                mesh.VertexColors[counter + 1] = segmentedColors[meshCount][srfNum]
-                mesh.VertexColors[counter + 2] = segmentedColors[meshCount][srfNum]
-                counter+=3
+    if vertOrFace == True:
+        colorCounter = 0
+        for meshCount, mesh in enumerate(viewFactorMesh):
+            mesh.VertexColors.CreateMonotoneMesh(System.Drawing.Color.Gray)
+            resultMesh.append(mesh)
+            segmentedColors.append(colors[colorCounter:(colorCounter+mesh.Vertices.Count)])
+            segmentedTanspColors.append(transparentColors[colorCounter:(colorCounter+mesh.Vertices.Count)])
+            segmentedValues.append(pointValues[colorCounter:(colorCounter+mesh.Vertices.Count)])
+            colorCounter+=mesh.Vertices.Count
+        
+        for meshCount, mesh in enumerate(resultMesh):
+            counter = 0
+            for vertNum in range(mesh.Vertices.Count):
+                mesh.VertexColors[counter] = segmentedColors[meshCount][vertNum]
+                counter+=1
+    else:
+        colorCounter = 0
+        for meshCount, mesh in enumerate(viewFactorMesh):
+            mesh.VertexColors.CreateMonotoneMesh(System.Drawing.Color.Gray)
+            resultMesh.append(mesh)
+            segmentedColors.append(colors[colorCounter:(colorCounter+mesh.Faces.Count)])
+            segmentedTanspColors.append(transparentColors[colorCounter:(colorCounter+mesh.Faces.Count)])
+            segmentedValues.append(pointValues[colorCounter:(colorCounter+mesh.Faces.Count)])
+            colorCounter+=mesh.Faces.Count
+        
+        for meshCount, mesh in enumerate(resultMesh):
+            counter = 0
+            for srfNum in range(mesh.Faces.Count):
+                if mesh.Faces[srfNum].IsQuad:
+                    mesh.VertexColors[counter + 0] = segmentedColors[meshCount][srfNum]
+                    mesh.VertexColors[counter + 1] = segmentedColors[meshCount][srfNum]
+                    mesh.VertexColors[counter + 2] = segmentedColors[meshCount][srfNum]
+                    mesh.VertexColors[counter + 3] = segmentedColors[meshCount][srfNum]
+                    counter+=4
+                else:
+                    mesh.VertexColors[counter + 0] = segmentedColors[meshCount][srfNum]
+                    mesh.VertexColors[counter + 1] = segmentedColors[meshCount][srfNum]
+                    mesh.VertexColors[counter + 2] = segmentedColors[meshCount][srfNum]
+                    counter+=3
     
     #Create the legend.
     lb_visualization.calculateBB(resultMesh, True)
@@ -331,7 +356,7 @@ annualData = True
 simStepPossible = True
 if len(_comfResultsMtx) > 0 and len(_viewFactorMesh) > 0:
     if _comfResultsMtx[0] != None and _viewFactorMesh[0] != None:
-        checkData, viewFactorMesh, dataType, annualData, simStepPossible, analysisPeriod = checkTheInputs()
+        checkData, viewFactorMesh, dataType, annualData, simStepPossible, analysisPeriod, vertOrFace = checkTheInputs()
 
 if annualData == False or simStepPossible == False:
     manageInputOutput(annualData, simStepPossible)
@@ -341,7 +366,7 @@ else:
 if checkData == True and _runIt == True:
     try: resultValues = computeComfFactor(_comfResultsMtx, analysisPeriod_, stepOfSimulation_, annualData, simStepPossible, lb_preparation)
     except: resultValues = computeComfFactor(_comfResultsMtx, [], None, annualData, simStepPossible, lb_preparation)
-    resultValuesInit, resultColorsInit, resultMesh, legendInit, legendBasePt = main(resultValues, viewFactorMesh, dataType, lb_preparation, lb_visualization, legendPar_, analysisPeriod, simStepPossible, annualData)
+    resultValuesInit, resultColorsInit, resultMesh, legendInit, legendBasePt = main(resultValues, viewFactorMesh, dataType, lb_preparation, lb_visualization, legendPar_, analysisPeriod, simStepPossible, annualData, vertOrFace)
     
     #Unpack the legend.
     legend = []

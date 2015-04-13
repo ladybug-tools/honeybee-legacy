@@ -19,6 +19,7 @@ Provided by Honeybee 0.0.55
         removeAirWalls_: Set to "True" to remove air walls from the view factor calculation.  The default is set to "True" sinc you usually want to remove air walls from your view factor calculations.
         additionalShading_: Add in additional shading breps here for geometry that is not a part of the zone but can still block direct sunlight to occupants.  Examples include outdoor context shading and indoor furniture.
         includeOutdoor_: Set to 'True' to have the visualization take the parts of the input Srf that is outdoors and attempt to color them with temperatures representative of outdoor conditions.  Note that these colors of conditions will only approximate those of the outdoors, showing the assumptions of the Energy model rather than being a perfectly accurate representation of outdoor comfort.
+        smoothMesh_: Set to 'True' to have the component generate a smooth mesh in which colors will be interpolated between points as opposed to using a pixel-by-pixel logic.  The defailt is set to 'False' as this is better for initially understanding the resolution of the calculation.  You may want to change to 'True' after understanding the initial resolution to produce a nicer final image.
         parallel_: Set to "True" to run the calculation with multiple cores and "False" to run it with a single core.  Multiple cores can increase the speed of the calculation substantially and is recommended if you are not running other big or important processes.  The default is set to "True."
         _runIt: Set boolean to "True" to run the component and calculate viewFactors from each test point to surrounding surfaces.
     Returns:
@@ -31,11 +32,12 @@ Provided by Honeybee 0.0.55
         zoneWireFrame: A list of curves representing the outlines of the zones.  This is particularly helpful if you want to see the outline of the building in relation to the temperature and comfort maps that you might produce off of these results.
         viewVectors: The vectors that were used to caclulate the view factor (note that these will increase as the viewResolution increases).
         shadingContext: A list of meshes representing the opaque surfaces of the zone.  These are what were used to determine the sky view factor and the direct sun falling on occupants.
+        closedAirVolumes: The closed Breps representing the zones of continuous air volume (when air walls are excluded).  Zones within the same breps will have the stratification calculation done together.
 """
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_08_2015'
+ghenv.Component.Message = 'VER 0.0.56\nAPR_12_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -556,7 +558,26 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
             else:
                 for srfCount, srf in enumerate(srfList):
                     zoneSrfsMesh[zoneCount].append(rc.Geometry.Mesh.CreateFromBrep(srf, srfMeshPar)[0])
-                finalBreps = [sectionBreps]
+                if smoothMesh_:
+                    finalBreps = []
+                    for brep in sectionBreps:
+                        trimBreps = brep.Trim(newZoneBreps[zoneCount], tol)
+                        if len(trimBreps) != 0:
+                            finalBrepsInit = []
+                            for insideBrep in trimBreps: finalBrepsInit.append(insideBrep)
+                            finalBreps.append(finalBrepsInit)
+                        else:
+                            #Test if the brep is completely inside the zone, in which case, the trim operation would have failed.
+                            testInclusionPts = []
+                            testInclusionList = []
+                            brepInclusionMesh = rc.Geometry.Mesh.CreateFromBrep(brep, rc.Geometry.MeshingParameters.Coarse)[0]
+                            for vertex in brepInclusionMesh.Vertices:
+                                testInclusionPts.append(rc.Geometry.Point3d(vertex))
+                            for point in testInclusionPts:
+                                if zoneBreps[zoneCount].IsPointInside(point, tol, False) == True: testInclusionList.append(1)
+                            if len(testInclusionPts) == len(testInclusionList): finalBreps.append([brep])
+                else:
+                    finalBreps = [sectionBreps]
             
             #Generate the meshes and test points of the final surface.
             for brep in finalBreps:
@@ -564,6 +585,7 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                 
                 for meshCount, mesh in enumerate(finalMesh):
                     finalTestPts = []
+                    smoothTestPts = []
                     finalFaceBreps = []
                     deleteIndices = []
                     deleteTestPts = []
@@ -575,7 +597,7 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                             faceBrep = rc.Geometry.Brep.CreateFromCornerPoints(rc.Geometry.Point3d(mesh.Vertices[face.A]), rc.Geometry.Point3d(mesh.Vertices[face.B]), rc.Geometry.Point3d(mesh.Vertices[face.C]), sc.doc.ModelAbsoluteTolerance)
                         centPt = rc.Geometry.AreaMassProperties.Compute(faceBrep).Centroid
                         #Do a final check to be sure that the test point does not lie outside the zone and, if so, delete the mesh face, and don't append the point.
-                        if zoneBreps[zoneCount].IsPointInside(centPt, tol, True) == False:
+                        if zoneBreps[zoneCount].IsPointInside(centPt, tol, False) == False:
                             deleteIndices.append(faceCount)
                             deleteFaceBreps.append(faceBrep)
                             deleteTestPts.append(centPt)
@@ -590,44 +612,101 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                         deletedTestPts[meshCount].append(deleteTestPts)
                     
                     #Construct a new mesh from the breps that are inside each zone.
-                    finalMesh = constructNewMesh(finalFaceBreps)
+                    if smoothMesh_: finalMesh = mesh
+                    else: finalMesh = constructNewMesh(finalFaceBreps)
                     
                     if len(finalTestPts) > 0:
-                        if len(MRTMeshInit[zoneCount]) > 0: MRTMeshInit[zoneCount][0].Append(finalMesh)
-                        else: MRTMeshInit[zoneCount].append(finalMesh)
+                        if smoothMesh_:
+                            if len(MRTMeshInit[zoneCount]) > 0: MRTMeshInit[zoneCount][0].Append(finalMesh)
+                            else: MRTMeshInit[zoneCount].append(finalMesh)
+                        else:
+                            if len(MRTMeshInit[zoneCount]) > 0: MRTMeshInit[zoneCount][0].Append(finalMesh)
+                            else: MRTMeshInit[zoneCount].append(finalMesh)
                         
                         MRTMeshBreps[zoneCount].extend(finalFaceBreps)
-                        testPts[zoneCount].extend(finalTestPts)
+                        if smoothMesh_:
+                            for vertex in mesh.Vertices:
+                                smoothTestPts.append(rc.Geometry.Point3d(vertex))
+                            testPts[zoneCount].extend(smoothTestPts)
+                        else: testPts[zoneCount].extend(finalTestPts)
         
         #If the user has selected to use the results for an outdoor calculation, pull out those parts of the mesh related to the outdoors using the deletedIndices list.
         if sectionMethod != 0 and includeOutdoor == True:
             outdoorTestPts = []
             outdoorFaceBreps = []
             
-            for testSrfCount, testSrf in enumerate(allDeletedFaces):
-                baseDelIndices = testSrf[0]
-                totalTests = len(testSrf)
-                indexCount = []
-                
-                for indCt, index in enumerate(baseDelIndices):
-                    indexCount.append([])
-                    for othDelIndices in testSrf:
-                        if index in othDelIndices: indexCount[indCt].append(1)
+            if not smoothMesh_:
+                for testSrfCount, testSrf in enumerate(allDeletedFaces):
+                    baseDelIndices = testSrf[0]
+                    totalTests = len(testSrf)
+                    indexCount = []
                     
-                    if sum(indexCount[indCt]) == totalTests:
-                        outdoorTestPts.append(deletedTestPts[testSrfCount][0][indCt])
+                    for indCt, index in enumerate(baseDelIndices):
+                        indexCount.append([])
+                        for othDelIndices in testSrf:
+                            if index in othDelIndices: indexCount[indCt].append(1)
+                        
+                        if sum(indexCount[indCt]) == totalTests:
+                            
+                            outdoorTestPts.append(deletedTestPts[testSrfCount][0][indCt])
                         outdoorFaceBreps.append(deletedFaceBreps[testSrfCount][0][indCt])
+            else:
+                #Split the sectionBreps with the zones and test if any lie outside all zones.
+                outdoorBreps = []
+                for brep in sectionBreps:
+                    choppedUpBrep = [brep]
+                    for zoneSplitter in zoneBreps:
+                        newChopList = []
+                        for cBrep in choppedUpBrep:
+                            newChopList.extend(cBrep.Split(zoneSplitter, tol))
+                        choppedUpBrep = newChopList
+                
+                #Test if any of the split pieces lie outside all zones.
+                for brep in choppedUpBrep:
+                    testInclusionPts = []
+                    brepInclusionMesh = rc.Geometry.Mesh.CreateFromBrep(brep, rc.Geometry.MeshingParameters.Coarse)[0]
+                    for vertex in brepInclusionMesh.Vertices:
+                        testInclusionPts.append(rc.Geometry.Point3d(vertex))
+                    
+                    brepInside = True
+                    for point in testInclusionPts:
+                        ptInside = False
+                        for zone in zoneBreps:
+                            if zone.IsPointInside(point, tol, False) == True:
+                                ptInside = True
+                        if ptInside == False: brepInside = False
+                    
+                    if brepInside == False:
+                        outdoorBreps.append(brep)
             
             #Construct a new mesh from the breps that are inside each zone.
-            outdoorMesh = constructNewMesh(outdoorFaceBreps)
+            if not smoothMesh_:
+                outdoorMesh = constructNewMesh(outdoorFaceBreps)
+            else:
+                outdoorMesh = createMesh(outdoorBreps, gridSize)
+                
+                MRTMeshInit.append(outdoorMesh)
+                
+                for mesh in outdoorMesh:
+                    for vertex in mesh.Vertices:
+                        outdoorTestPts.append(rc.Geometry.Point3d(vertex))
+                    for faceCount, face in enumerate(mesh.Faces):
+                        if face.IsQuad:
+                            faceBrep = rc.Geometry.Brep.CreateFromCornerPoints(rc.Geometry.Point3d(mesh.Vertices[face.A]), rc.Geometry.Point3d(mesh.Vertices[face.B]), rc.Geometry.Point3d(mesh.Vertices[face.C]), rc.Geometry.Point3d(mesh.Vertices[face.D]), sc.doc.ModelAbsoluteTolerance)
+                        if face.IsTriangle:
+                            faceBrep = rc.Geometry.Brep.CreateFromCornerPoints(rc.Geometry.Point3d(mesh.Vertices[face.A]), rc.Geometry.Point3d(mesh.Vertices[face.B]), rc.Geometry.Point3d(mesh.Vertices[face.C]), sc.doc.ModelAbsoluteTolerance)
+                        outdoorFaceBreps.append(faceBrep)
             
+            #Append outdoor meshes to the complete list.
             if len(outdoorTestPts) > 0:
-                MRTMeshInit.append([outdoorMesh])
+                if not smoothMesh_:
+                    MRTMeshInit.append([outdoorMesh])
                 
                 MRTMeshBreps.append(outdoorFaceBreps)
                 testPts.append(outdoorTestPts)
             else:
                 includeOutdoor = False
+            
             
             #Make a list of all surfaces for the viewFactor calculation of the outdoor mesh.
             zoneSrfsMeshOutdoor = []
@@ -703,12 +782,12 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                     if falseZoneCount != len(testPts)-1:
                         for pointCount, point in enumerate(falseZone):
                             for orignalZoneCount, oirignalZone in enumerate(oldZoneBreps):
-                                if oirignalZone.IsPointInside(point, tol, True) == True: zoneWeights[falseZoneCount][pointCount].append(1)
+                                if oirignalZone.IsPointInside(point, tol, False) == True: zoneWeights[falseZoneCount][pointCount].append(1)
                                 else: zoneWeights[falseZoneCount][pointCount].append(0)
                 else:
                     for pointCount, point in enumerate(falseZone):
                         for orignalZoneCount, oirignalZone in enumerate(oldZoneBreps):
-                            if oirignalZone.IsPointInside(point, tol, True) == True: zoneWeights[falseZoneCount][pointCount].append(1)
+                            if oirignalZone.IsPointInside(point, tol, False) == True: zoneWeights[falseZoneCount][pointCount].append(1)
                             else: zoneWeights[falseZoneCount][pointCount].append(0)
         
         #Calculate height weights for each of the points.
@@ -963,7 +1042,7 @@ def skyViewCalc(testPts, zoneOpaqueMesh, skyViewVecs, zoneHasWindows):
     return testPtSkyView, testPtSkyBlockedList
 
 
-def main(testPts, zoneSrfsMesh, viewVectors):
+def main(testPts, zoneSrfsMesh, viewVectors, includeOutdoor):
     testPtViewFactor = []
     
     for zoneCount, pointList in enumerate(testPts):
@@ -1005,6 +1084,46 @@ def main(testPts, zoneSrfsMesh, viewVectors):
                 #Sum up the lists and divide by the total rays to get the view factor.
                 for hitList in srfHits:
                     testPtViewFactor[zoneCount][pointCount].append(sum(hitList)/divisor)
+    
+    #Check to see if viewFactors are not adding up to 1 and correct it.
+    for ptListCount, ptList in enumerate(testPtViewFactor):
+        if outdoorIsThere:
+            if ptListCount != len(testPtViewFactor)-1:
+                for ptCount, pt in enumerate(ptList):
+                    if sum(pt) < 0.9:
+                        newViewFacList = []
+                        numOfSrfs = 0
+                        for viewFac in pt:
+                            if viewFac > 0.1: numOfSrfs += 1
+                        for viewFac in pt:
+                            if viewFac < 0.1: newViewFacList.append(0.0)
+                            else: newViewFacList.append(1.0/numOfSrfs)
+                        
+                        testPtViewFactor[ptListCount][ptCount] = newViewFacList
+            else:
+                for ptCount, pt in enumerate(ptList):
+                    if sum(pt) > 0.95:
+                        newViewFacList = []
+                        numOfSrfs = 0
+                        for viewFac in pt:
+                            if viewFac > 0.4: numOfSrfs += 1
+                        for viewFac in pt:
+                            if viewFac < 0.4: newViewFacList.append(0.0)
+                            else: newViewFacList.append(0.5/numOfSrfs)
+                        
+                        testPtViewFactor[ptListCount][ptCount] = newViewFacList
+        else:
+            for ptCount, pt in enumerate(ptList):
+                if sum(pt) < 0.9:
+                    newViewFacList = []
+                    numOfSrfs = 0
+                    for viewFac in pt:
+                        if viewFac > 0.1: numOfSrfs += 1
+                    for viewFac in pt:
+                        if viewFac < 0.1: newViewFacList.append(0.0)
+                        else: newViewFacList.append(1.0/numOfSrfs)
+                    
+                    testPtViewFactor[ptListCount][ptCount] = newViewFacList
     
     return testPtViewFactor
 
@@ -1060,7 +1179,7 @@ if checkData == True:
 #If all of the data is good and the user has set "_runIt" to "True", run the shade benefit calculation to generate all results.
 if checkData == True and _runIt == True and geoCheck == True:
     viewVectors, skyViewVecs = checkViewResolution(viewResolution, lb_preparation)
-    testPtViewFactor = main(testPtsInit, zoneSrfsMesh, viewVectors)
+    testPtViewFactor = main(testPtsInit, zoneSrfsMesh, viewVectors, includeOutdoor)
     testPtSkyView, testPtBlockedVec = skyViewCalc(testPtsInit, zoneOpaqueMesh, skyViewVecs, zoneHasWindows)
     
     outdoorNonSrfViewFac = []
