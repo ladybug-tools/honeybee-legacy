@@ -1087,7 +1087,7 @@ def main(testPts, zoneSrfsMesh, viewVectors, includeOutdoor):
     
     #Check to see if viewFactors are not adding up to 1 and correct it.
     for ptListCount, ptList in enumerate(testPtViewFactor):
-        if outdoorIsThere:
+        if includeOutdoor:
             if ptListCount != len(testPtViewFactor)-1:
                 for ptCount, pt in enumerate(ptList):
                     if sum(pt) < 0.9:
