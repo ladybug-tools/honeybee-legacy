@@ -37,7 +37,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_12_2015'
+ghenv.Component.Message = 'VER 0.0.56\nAPR_14_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -552,7 +552,7 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                         #If the surface is curved or has multiple elements, try to trim it with the closed zone brep.
                         try:
                             finalBrep = splitOffsetFloor(brep, zoneBreps[zoneCount])
-                            finalBreps.append(finalBrep)
+                            finalBreps.append([finalBrep])
                         except:
                             finalBreps.append([brep])
             else:
