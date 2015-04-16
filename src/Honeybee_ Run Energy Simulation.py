@@ -880,14 +880,10 @@ class WriteIDF(object):
         '\t' + 'regular;                 !- Key Field' + '\n'
         
     def EarthTube(self,zone):
-        scheduleName = zone.ETschedule
-        if scheduleName.lower().endswith(".csv"):
-            # find filebased schedule name
-            scheduleName = self.fileBasedSchedules[scheduleName.upper()]
-        
+    
         return '\nZoneEarthtube,\n' + \
             '\t' + zone.name + ',\t!- Zone Name\n' + \
-            '\t' + scheduleName + ',\t!- Schedule Name\n'+\
+            '\t' + str(zone.ETschedule) + ',\t!- Schedule Name\n'+\
             '\t' + str(zone.design_flow_rate) + ',\t!- Design Flow Rate {m3/s}\n'+\
             '\t' + str(zone.mincooltemp) + ',\t!- Minimum Zone Temperature when Cooling {C}\n'+\
             '\t' + str(zone.maxheatingtemp) + ',\t!- Maximum Zone Temperature when Heating {C}\n'+\
@@ -929,8 +925,141 @@ class WriteIDF(object):
             '\t' + str(PVgen.cellefficiencyinputmode) + ',\t!- Conversion Efficiency Input Mode\n'+\
             '\t' + str(PVgen.efficiency) + ',\t!- Value for Cell Efficiency if Fixed\n'+\
             '\t' + str(PVgen.schedule) + ';\t!- Efficiency Schedule Name\n'
-
             
+    def simple_inverter(self,inverter):
+        
+        return '\nElectricLoadCenter:Inverter:Simple,\n' + \
+            '\t' + str(inverter[0]) + ',\t!- Name\n' + \
+            '\t' + "ALWAYS ON" + ',\t!- Availability Schedule Name\n' + \
+            '\t' + str(inverter[3]) + ',\t!- Zone Name\n' + \
+            '\t' + "0.3" + ',\t!- Radiative Fraction\n' + \
+            '\t' + str(inverter[1]) + ';\t!- Inverter Efficiency\n'
+    
+    def battery_simple(self,battery):
+        
+        return '\nElectricLoadCenter:Storage:Simple,\n' + \
+            '\t' + str(battery.name ) + ',\t!- Name\n' + \
+            '\t' + "ALWAYS ON" + ',\t!- Availability Schedule Name\n' + \
+            '\t' + str(battery.zonename) + ',\t!- Zone Name\n' + \
+            '\t' + "0.3" + ',\t!- Radiative Fraction for Zone Heat Gains\n' + \
+            '\t' + str(battery.chargingefficiency) + ',\t!- Nominal Energetic Efficiency for Charging\n'+ \
+            '\t' + str(battery.dischargingeffciency) + ',\t!- Nominal Discharging Energetic Efficiency\n'+ \
+            '\t' + str(battery.batterycap ) + ',\t!- Maximum Storage Capacity {J}\n'+ \
+            '\t' + str(battery.maxdischarge) + ',\t!- Maximum Power for Discharging {W}\n'+ \
+            '\t' + str(battery.maxcharge) + ',\t!- Maximum Power for Charging {W}\n'+ \
+            '\t' + str(battery.initalcharge) + ';\t!- Initial State of Charge {J}\n'
+            
+    def wind_generator(self,windgenerator):
+        
+        def powercoefficients(windgenerator):
+            if windgenerator.powercoefficients == None:
+                    
+                return '\t' + ''+',\t!- Power Coefficient C1\n' + \
+                    '\t' + ''+',\t!- Power Coefficient C2\n' + \
+                    '\t' + ''+',\t!- Power Coefficient C3\n' + \
+                    '\t' + ''+',\t!- Power Coefficient C4\n' + \
+                    '\t' + ''+',\t!- Power Coefficient C5\n' + \
+                    '\t' + ''+';\t!- Power Coefficient C6\n'
+            else:
+                
+                powercoefficients = []
+                
+                for count,powercoefficient in enumerate(windgenerator.powercoefficients):
+                    
+                    if count == 5: # Last power coefficient
+                        powercoefficients.append('\t' + str(powercoefficient)+';\t!- Power Coefficient C'+str(count+1)+'\n')
+                    else:
+                        powercoefficients.append('\t' + str(powercoefficient)+',\t!- Power Coefficient C'+str(count+1)+'\n')
+                return ''.join(powercoefficients)
+    
+        
+        return '\nGenerator:WindTurbine,\n' + \
+            '\t' + str(windgenerator.name)+',\t!- Name\n' + \
+            '\t' + 'Always On'+',\t!- Availability Schedule Name\n' + \
+            '\t' + str(windgenerator.rotortype)+',\t!- Rotor Type\n' + \
+            '\t' + str(windgenerator.powercontrol)+',\t!- Power Control\n' + \
+            '\t' + str(windgenerator.rotorspeed)+',\t!- Rated Rotor Speed {rev/min}\n' + \
+            '\t' + str(windgenerator.rotor_diameter)+',\t!- Rotor Diameter {m}\n' + \
+            '\t' + str(windgenerator.overall_height)+',\t!- Overall Height {m}\n' + \
+            '\t' + str(windgenerator.numblades)+',\t!- Number of Blades\n' + \
+            '\t' + str(windgenerator.powerout)+',\t!- Rated Power {W}\n' + \
+            '\t' + str(windgenerator.rated_wind_speed)+',\t!- Rated Wind Speed {m/s}\n' + \
+            '\t' + str(windgenerator.cut_in_windspeed)+',\t!- Cut In Wind Speed {m/s}\n' + \
+            '\t' + str(windgenerator.cut_out_windspeed)+',\t!- Cut Out Wind Speed {m/s}\n' + \
+            '\t' + str(windgenerator.overall_turbine_n)+',\t!- Fraction system Efficiency\n' + \
+            '\t' + str(windgenerator.max_tip_speed_ratio)+',\t!- Maximum Tip Speed Ratio\n' + \
+            '\t' + str(windgenerator.max_power_coefficient)+',\t!- Maximum Power Coefficient\n' + \
+            '\t' + str(windgenerator.local_av_windspeed)+',\t!- Annual Local Average Wind Speed {m/s}\n' + \
+            '\t' + str(windgenerator.height_local_metrological_station)+',\t!- Height for Local Average Wind Speed {m}\n' + \
+            '\t' + ''+',\t!- Blade Chord Area {m2}\n' + \
+            '\t' + ''+',\t!- Blade Drag Coefficient\n' + \
+            '\t' + ''+',\t!- Blade Lift Coefficient\n'+\
+            powercoefficients(windgenerator)
+            
+
+    def writegeneratlorlist(self,genlistname,generators):
+        
+        def generatorinfo(generator,generatornumber):
+            
+            return '\t'+str(generator.name)+ ',\t!- Generator ' + str(generatornumber) + ' '+'Name\n'+ \
+                '\t'+str(generator.type)+ ',\t!- Generator ' + str(generatornumber) + ' '+'Object Type\n'+ \
+                '\t'+str(generator.powerout)+ ',\t!- Generator ' + str(generatornumber) + ' '+'Rated Electric Power Output {W}\n'+ \
+                '\t'+'Always On,               !- Generator 1 Availability Schedule Name\n'+ \
+                '\t'+',                        !- Generator 1 Rated Thermal to Electrical Power Ratio\n'
+        
+        def generatorinfofinal(generator,generatornumber):
+            
+            return '\t'+str(generator.name)+ ',\t!- Generator ' + str(generatornumber) + ' '+'Name\n'+ \
+                '\t'+str(generator.type)+ ',\t!- Generator ' + str(generatornumber) + ' '+'Object Type\n'+ \
+                '\t'+str(generator.powerout)+ ',\t!- Generator ' + str(generatornumber) + ' '+'Rated Electric Power Output {W}\n'+ \
+                '\t'+'Always On,               !- Generator 1 Availability Schedule Name\n'+ \
+                '\t'+';                        !- Generator 1 Rated Thermal to Electrical Power Ratio\n'
+        
+            # XXX change above in future so can handle schedules and thermal to electrical power ratio
+            
+        generatornumber = 0
+        
+        generatorlist = []
+        
+        for count,generator in enumerate(generators):
+               
+            generatornumber = generatornumber+1
+            
+            if count == (len(generators)-1): # If last generator in the generaor list need  
+            
+                generatorlist.append(generatorinfofinal(generator,generatornumber))
+            
+            else:
+                generatorlist.append(generatorinfo(generator,generatornumber))
+            
+        return '\nElectricLoadCenter:Generators,\n' + \
+            '\t' + str(genlistname) + ',\t!- Name\n' + \
+            ''.join(generatorlist)
+            
+    def writeloadcenterdistribution(self,distribution_name,HBsystemgenerator_name,operationscheme,demandlimit,trackschedule,trackmeterschedule,busstype,inverterobject,elecstorageobject):
+        
+        if demandlimit == None:
+            demandlimit = ''
+        if trackschedule == None:
+            demandlimit = 'Always On'
+        if trackmeterschedule == None:
+            trackmeterschedule = ''
+        if inverterobject == None:
+            inverterobject  = [''] # So that can perform inverterobject[0] not the best code improve on if have time
+        if elecstorageobject == None:
+            elecstorageobject = ''
+        
+        return '\nElectricLoadCenter:Distribution,\n' + \
+            '\t'+str(distribution_name)+ ',\t!- Name\n'+ \
+            '\t'+str(HBsystemgenerator_name)+ ',\t!- Generator List Name\n'+ \
+            '\t'+str(operationscheme)+ ',\t!- Generator Operation Scheme Type\n'+ \
+            '\t'+str(demandlimit)+ ',\t!- Demand Limit Scheme Purchased Electric Demand Limit {W}\n'+ \
+            '\t'+str(trackschedule)+ ',\t!- Track Schedule Name Scheme Schedule Name\n'+ \
+            '\t'+str(trackmeterschedule)+ ',\t!- Track Meter Scheme Meter Name\n'+ \
+            '\t'+str(busstype)+ ',\t!- Electrical Buss Type\n'+ \
+            '\t'+str(inverterobject[0])+ ',\t!- Inverter Object Name\n'+ \
+            '\t'+str(elecstorageobject)+ ',\t!- Electrical Storage Object Name\n'+\
+            '\t'+''+';\t!- Transformer Object Name\n'
 
 class RunIDF(object):
     
@@ -1067,7 +1196,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     idfFile = open(idfFileFullName, "w")
     
     ################## HEADER ###################
-    print "[1 of 7] Writing simulation parameters..."
+    print "[1 of 8] Writing simulation parameters..."
     
     # Version,8.1;
     idfFile.write(hb_writeIDF.EPVersion(sc.sticky["honeybee_folders"]["EPVersion"]))
@@ -1098,8 +1227,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     # Location
     idfFile.write(hb_writeIDF.EPSiteLocation(epwFileAddress))
     
-    
-    
+
     # SizingPeriod
     #Check if there are sizing periods in the EPW file.
     dbTemp = []
@@ -1153,52 +1281,41 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     
     # Shading Surfaces
     if HBContext and HBContext[0]!=None:
-        print "[2 of 6] Writing context surfaces..."
+        print "[2 of 8] Writing context surfaces..."
        
         # call the objects from the lib
         shadingPyClasses = hb_hive.callFromHoneybeeHive(HBContext)
        
+    # Shading Surfaces
+    if HBContext and HBContext[0]!=None:
+        print "[2 of 6] Writing context surfaces..."
+        # call the objects from the lib
+        shadingPyClasses = hb_hive.callFromHoneybeeHive(HBContext)
         for shading in shadingPyClasses:
             
-            if shading.containsPVgen == True:
-
-            # if shading.containsPVgen is True write PV generators to IDF 
-                
-                for PVgen in shading.PVgenlist:
+            # take care of shcedule
+            schedule = shading.TransmittanceSCH
+            if schedule!="" and schedule.upper() not in EPScheduleCollection:
+                # add schedule
+                scheduleValues, comments = hb_EPScheduleAUX.getScheduleDataByName(schedule, ghenv.Component)
+                if comments == "csv":
+                    # create a new schedule object based on file
+                    # and write it to idf
+                    idfFile.write(hb_writeIDF.EPSCHStr(schedule))
+                else:
+                    # collect shchedule name
+                    EPScheduleCollection.append(schedule.upper())
                     
-                    idfFile.write(hb_writeIDF.write_PVgen(PVgen))
-                    idfFile.write(hb_writeIDF.write_PVgenperformanceobject(PVgen))
-                    
-            else:
-                # If shading.containsPVgen is False then this surface does not contain a PV generator so do nothing
-                pass
+                hb_writeIDF.EPSCHStr(shading.TransmittanceSCH.upper())
                 
-            if isinstance(shading,sc.sticky["honeybee_EPShdSurface"]): # If shading is an instance of the hb_EPShdSurface class create Energy Plus shading objects
-                
-                # take care of shcedule
-                schedule = shading.TransmittanceSCH
-                if schedule!="" and schedule.upper() not in EPScheduleCollection:
-                    # add schedule
-                    scheduleValues, comments = hb_EPScheduleAUX.getScheduleDataByName(schedule, ghenv.Component)
-                    if comments == "csv":
-                        # create a new schedule object based on file
-                        # and write it to idf
-                        idfFile.write(hb_writeIDF.EPSCHStr(schedule))
-                    else:
-                        # collect shchedule name
-                        EPScheduleCollection.append(schedule.upper())
-                        
-                    hb_writeIDF.EPSCHStr(shading.TransmittanceSCH.upper())
-                    
-                idfFile.write(hb_writeIDF.EPShdSurface(shading))
-            else: # If shading is not an instance of the hb_EPShdSurface class do nothing
-                pass
+            idfFile.write(hb_writeIDF.EPShdSurface(shading))
     else:
         print "[2 of 6] No context surfaces..."
+        print "[2 of 8] No context surfaces..."
 
         
     #################  BODY #####################
-    print "[3 of 6] Writing geometry..."
+    print "[3 of 8] Writing geometry..."
     ZoneCollectionBasedOnSchAndLoads = {} # This will be used to create zoneLists
     
     
@@ -1269,8 +1386,116 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                 #Write the internal mass into the IDF
                 idfFile.write(hb_writeIDF.EPInternalMass(zone, massName, zone.internalMassSrfAreas[massCount], zone.internalMassConstructions[massCount]))
         
+    ########### Generators - Electric load center ###########
+    
+    print "[4 of 8] Writing Electric Load Center - Generator specifications ..."
+        
+    hb_hivegen = sc.sticky["honeybee_generationHive"]()
+
+    HBsystemgenerators = hb_hivegen.callFromHoneybeeHive(HB_generators)
+    
+    HBsystemgeneratorcount = 0
+
+    for HBsystemgenerator in HBsystemgenerators:
+    
+        # Define the name for the list of generators and to use in generator's list name in ElectricLoadCenter:Distribution
+        if HBsystemgenerator.name == None:
+            
+            HBsystemgenerator_name = "generatorsystem" + str(HBsystemgeneratorcount)
+            
+        else:
+
+            HBsystemgenerator_name = str(HBsystemgenerator.name)
+        
+        # Write one ElectricLoadCenter:Generators for each HBsystemgenerator
+        
+        ### XXX still needs work to make sure names dont overlap
+        idfFile.write(hb_writeIDF.writegeneratlorlist(HBsystemgenerator_name,HBsystemgenerator.PVgenerators+HBsystemgenerator.windgenerators+HBsystemgenerator.fuelgenerators)) # The writegeneratlorlist only takes 'generators' as an input so add all the different generator lists together 
+        
+        # Determine the type of system and write one ElectricLoadCenter:Distribution for each HBsystemgenerator
+        
+        distribution_name = str(HBsystemgenerator_name) + ':Distributionsystem' 
+        
+        if HBsystemgenerator.PVgenerators != []:
+        
+            if HBsystemgenerator.simulationinverter != None:
+                
+                if HBsystemgenerator.battery != None:
+                    # HBsystem contains a inverter and is a DC system AND has storage
+                    
+                    operationscheme = 'Baseload'
+                    busstype = 'DirectCurrentWithInverterDCStorage'
+                    demandlimit = ''
+                    trackschedule = 'Always On'
+                    trackmeterschedule = ''
+                    inverterobject = HBsystemgenerator.simulationinverter
+                    elecstorageobject = HBsystemgenerator.battery.name
+                    
+                    # Write HBsystemgenerator battery
+                    idfFile.write(hb_writeIDF.battery_simple(HBsystemgenerator.battery))
+                    
+                    # Write HBsystemgenerator photovoltaic generators
+                    for PVgen in HBsystemgenerator.PVgenerators:
+                        
+                        idfFile.write(hb_writeIDF.write_PVgen(PVgen))
+                        idfFile.write(hb_writeIDF.write_PVgenperformanceobject(PVgen))
+                    
+                    # Write HBsystemgenerator inverters
+                    idfFile.write(hb_writeIDF.simple_inverter(HBsystemgenerator.simulationinverter))
+                    
+                    # Write HBsystemgenerator ElectricLoadCenter:Distribution
+                    idfFile.write(hb_writeIDF.writeloadcenterdistribution(distribution_name,HBsystemgenerator_name,operationscheme,demandlimit,trackschedule,trackmeterschedule,busstype,inverterobject,elecstorageobject))
+                    
+    
+                else:
+                    # HBsystem contains a inverter and is a DC system there are NO batteries in the system
+                    
+                    operationscheme = 'Baseload'
+                    busstype = 'DirectCurrentWithInverter'
+                    demandlimit = ''
+                    trackschedule = 'Always On'
+                    trackmeterschedule = ''
+                    inverterobject = HBsystemgenerator.simulationinverter
+                    
+                    # Write HBsystemgenerator photovoltaic generators
+                    for PVgen in HBsystemgenerator.PVgenerators:
+                        
+                        idfFile.write(hb_writeIDF.write_PVgen(PVgen))
+                        idfFile.write(hb_writeIDF.write_PVgenperformanceobject(PVgen))
+                    
+                    # Write HBsystemgenerator inverters
+                    idfFile.write(hb_writeIDF.simple_inverter(HBsystemgenerator.simulationinverter))
+                    
+                    # Write HBsystemgenerator ElectricLoadCenter:Distribution
+                    idfFile.write(hb_writeIDF.writeloadcenterdistribution(distribution_name,HBsystemgenerator_name,operationscheme,demandlimit,trackschedule,trackmeterschedule,busstype,inverterobject,None)) 
+                    
+        elif HBsystemgenerator.windgenerators != []:
+            
+            operationscheme = 'Baseload'
+            busstype = 'AlternatingCurrent'
+            demandlimit = ''
+            trackschedule = 'Always On'
+            trackmeterschedule = ''
+            inverterobject = None
+            elecstorageobject = None
+            
+            # Write HBsystemgenerator wind generators
+            for windgenerator in HBsystemgenerator.windgenerators:
+                
+                idfFile.write(hb_writeIDF.wind_generator(windgenerator))
+                
+            # Write HBsystemgenerator ElectricLoadCenter:Distribution
+            idfFile.write(hb_writeIDF.writeloadcenterdistribution(distribution_name,HBsystemgenerator_name,operationscheme,demandlimit,trackschedule,trackmeterschedule,busstype,inverterobject,elecstorageobject))
+            
+           
+        elif HBsystemgenerator.fuelgenerators != []: # XXX 14/04/2015 not yet implemented so always equal to []
+            
+            busstype = 'AlternatingCurrent'
+        
+        HBsystemgeneratorcount = HBsystemgeneratorcount + 1
+        
     ################ Construction #####################
-    print "[4 of 6] Writing materials and constructions..."
+    print "[5 of 8] Writing materials and constructions..."
     
     # Write constructions
     for cnstr in EPConstructionsCollection:
@@ -1287,7 +1512,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         
     
     ################ BODYII #####################
-    print "[5 of 7] Writing schedules..."
+    print "[6 of 8] Writing schedules..."
     
     #Check if schedules need to be written for air mixing or natural ventilation.
     needToWriteMixSched = False
@@ -1302,13 +1527,6 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
             if zone.mixAir == True: needToWriteMixSched = True
     if needToWriteMixSched == True:
         if 'ALWAYS ON' not in EPScheduleCollection: EPScheduleCollection.append('ALWAYS ON')
-    
-    #Check the shcedule for earth tube.
-    try:
-        for zone in zones:
-            if zone.ETschedule not in EPScheduleCollection: EPScheduleCollection.append(zone.ETschedule)
-    except:
-        pass
     
     # Write Schedules
     for schedule in EPScheduleCollection:
@@ -1339,7 +1557,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                     if value not in EPScheduleCollection:
                         EPScheduleCollection.append(value)
     
-    print "[6 of 7] Writing loads and ideal air system..."
+    print "[7 of 8] Writing loads and ideal air system..."
     listCount = 0
     listName = None
     
@@ -1441,12 +1659,12 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     
     # write the outputs requested by the user.
     if simulationOutputs:
-        print "[7 of 7] Writing outputs..."
+        print "[8 of 8] Writing outputs..."
         idfFile.write('\n')
         for line in simulationOutputs:
             idfFile.write(line + '\n')
     else:
-        print "[7 of 7] No outputs! You usually want to get some outputs when you run an analysis. Just saying..."
+        print "[8 of 8] No outputs! You usually want to get some outputs when you run an analysis. Just saying..."
         print "We'll just request some energy-related outputs for you that are monthly."
         outPutsDefalut = 'OutputControl:Table:Style,Comma; \n' + \
             'Output:Variable,*,Zone Ideal Loads Zone Total Cooling Energy, monthly; \n' + \
