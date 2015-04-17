@@ -30,7 +30,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_04_2015'
+ghenv.Component.Message = 'VER 0.0.56\nAPR_17_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -4909,7 +4909,7 @@ class HB_generatorsystem(object):
         
             self.simulationinverter = None
         else:
-            self.simulationinverter = simulationinverter[0]
+            self.simulationinverter = simulationinverter
         
         self.battery = battery
         self.windgenerators = windgenerators # Category includes Generator:WindTurbine

@@ -44,7 +44,7 @@ Provided by Honeybee 0.0.56
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_05_2015'
+ghenv.Component.Message = 'VER 0.0.56\nAPR_17_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_28_2015
@@ -929,11 +929,11 @@ class WriteIDF(object):
     def simple_inverter(self,inverter):
         
         return '\nElectricLoadCenter:Inverter:Simple,\n' + \
-            '\t' + str(inverter[0]) + ',\t!- Name\n' + \
+            '\t' + str(inverter.name) + ',\t!- Name\n' + \
             '\t' + "ALWAYS ON" + ',\t!- Availability Schedule Name\n' + \
-            '\t' + str(inverter[3]) + ',\t!- Zone Name\n' + \
+            '\t' + str(inverter.zone) + ',\t!- Zone Name\n' + \
             '\t' + "0.3" + ',\t!- Radiative Fraction\n' + \
-            '\t' + str(inverter[1]) + ';\t!- Inverter Efficiency\n'
+            '\t' + str(inverter.efficiency) + ';\t!- Inverter Efficiency\n'
     
     def battery_simple(self,battery):
         
@@ -1057,7 +1057,7 @@ class WriteIDF(object):
             '\t'+str(trackschedule)+ ',\t!- Track Schedule Name Scheme Schedule Name\n'+ \
             '\t'+str(trackmeterschedule)+ ',\t!- Track Meter Scheme Meter Name\n'+ \
             '\t'+str(busstype)+ ',\t!- Electrical Buss Type\n'+ \
-            '\t'+str(inverterobject[0])+ ',\t!- Inverter Object Name\n'+ \
+            '\t'+str(inverterobject.name)+ ',\t!- Inverter Object Name\n'+ \
             '\t'+str(elecstorageobject)+ ',\t!- Electrical Storage Object Name\n'+\
             '\t'+''+';\t!- Transformer Object Name\n'
 
@@ -1428,7 +1428,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                     demandlimit = ''
                     trackschedule = 'Always On'
                     trackmeterschedule = ''
-                    inverterobject = HBsystemgenerator.simulationinverter
+                    inverterobject = HBsystemgenerator.simulationinverter[0][0] # All inverters are the same doesnt matter which one you pick
                     elecstorageobject = HBsystemgenerator.battery.name
                     
                     # Write HBsystemgenerator battery
@@ -1441,7 +1441,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                         idfFile.write(hb_writeIDF.write_PVgenperformanceobject(PVgen))
                     
                     # Write HBsystemgenerator inverters
-                    idfFile.write(hb_writeIDF.simple_inverter(HBsystemgenerator.simulationinverter))
+                    idfFile.write(hb_writeIDF.simple_inverter(inverterobject))
                     
                     # Write HBsystemgenerator ElectricLoadCenter:Distribution
                     idfFile.write(hb_writeIDF.writeloadcenterdistribution(distribution_name,HBsystemgenerator_name,operationscheme,demandlimit,trackschedule,trackmeterschedule,busstype,inverterobject,elecstorageobject))
@@ -1455,7 +1455,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                     demandlimit = ''
                     trackschedule = 'Always On'
                     trackmeterschedule = ''
-                    inverterobject = HBsystemgenerator.simulationinverter
+                    inverterobject = HBsystemgenerator.simulationinverter[0][0] # All inverters are the same doesnt matter which one you pick
                     
                     # Write HBsystemgenerator photovoltaic generators
                     for PVgen in HBsystemgenerator.PVgenerators:
@@ -1464,7 +1464,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                         idfFile.write(hb_writeIDF.write_PVgenperformanceobject(PVgen))
                     
                     # Write HBsystemgenerator inverters
-                    idfFile.write(hb_writeIDF.simple_inverter(HBsystemgenerator.simulationinverter))
+                    idfFile.write(hb_writeIDF.simple_inverter(inverterobject))
                     
                     # Write HBsystemgenerator ElectricLoadCenter:Distribution
                     idfFile.write(hb_writeIDF.writeloadcenterdistribution(distribution_name,HBsystemgenerator_name,operationscheme,demandlimit,trackschedule,trackmeterschedule,busstype,inverterobject,None)) 
