@@ -22,6 +22,7 @@ import itertools
 PV_generation = hb_hive.callFromHoneybeeHive(PV_HBSurfaces)
 HB_generation = hb_hivegen.callFromHoneybeeHive(HB_generationobjects)
 
+
 def checktheinputs(generatorsystem_name):
     
     if generatorsystem_name == None:
@@ -76,6 +77,8 @@ def main(PV_generation,HB_generation):
     windgenerators = []
     fuelgenerators = []
     
+    HBgencontextsurfaces = []
+    
     battery = None
     HB_generators = [] # Called HB_generators even though will only ever be one Honeybee_generator
     
@@ -83,15 +86,26 @@ def main(PV_generation,HB_generation):
     # XXX rework code so PV generators and other generators can share the same input.
     
     for HBgenobject in PV_generation:
-            
+        
         if HBgenobject.containsPVgen == True:
+            
+            try:
+                HBgenobject.type
+                
+                if HBgenobject.type == 6:
+                    
+                    HBgencontextsurfaces.append(HBgenobject)
+                    
+            except AttributeError:
+                pass
             
             for PVgen in HBgenobject.PVgenlist:
                 
                 PVgenerators.append(PVgen)
                 
                 # Append the inverter of each PV generator to the list
-                simulationinverters.append(PVgen.inverter) 
+                simulationinverters.append(PVgen.inverter)
+               
 
     def checkduplicatesPVgenerators(PVgenerators):
         
@@ -108,7 +122,6 @@ def main(PV_generation,HB_generation):
             ghenv.Component.AddRuntimeMessage(w, "Duplicate PVgenerators detected,Please make sure you are not connecting the same PV generators twice! ")
             return -1
             
-    
     def checkinverter(simulationinverters): 
         if all(inverter == simulationinverters[0] for inverter in simulationinverters) == False: 
             print "Each generator system can only have one inverter servicing all the PV generators, make sure all connected PV have the same inverter! "
@@ -171,8 +184,9 @@ def main(PV_generation,HB_generation):
         # If only one type of generator is present continue....
         else:
     
-            HB_generators.append(HB_generator(generatorsystem_name,simulationinverters,battery,windgenerators,PVgenerators,fuelgenerators,gridelect_cost))
+            HB_generators.append(HB_generator(generatorsystem_name,simulationinverters,battery,windgenerators,PVgenerators,fuelgenerators,gridelect_cost,HBgencontextsurfaces))
             
+            print HB_generators
             HB_generator1 = hb_hivegen.addToHoneybeeHive(HB_generators,ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
             
             return HB_generator1

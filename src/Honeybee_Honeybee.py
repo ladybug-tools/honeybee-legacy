@@ -4901,7 +4901,7 @@ class EPZone(object):
 
 class HB_generatorsystem(object):
     
-    def __init__(self,generatorsystem_name,simulationinverter,battery,windgenerators,PVgenerators,fuelgenerators,gridelect_cost):
+    def __init__(self,generatorsystem_name,simulationinverter,battery,windgenerators,PVgenerators,fuelgenerators,gridelect_cost,contextsurfaces):
         
         self.name = generatorsystem_name
         
@@ -4911,6 +4911,7 @@ class HB_generatorsystem(object):
         else:
             self.simulationinverter = simulationinverter
         
+        self.contextsurfaces = contextsurfaces
         self.battery = battery
         self.windgenerators = windgenerators # Category includes Generator:WindTurbine
         self.PVgenerators = PVgenerators # Category includes Generator:Photovoltaic
@@ -6280,7 +6281,6 @@ class hb_EPShdSurface(hb_EPSurface):
         self.PVgenlist = None
         
         self.containsPVgen = None
-        
         self.TransmittanceSCH = ''
         self.isChild = False
         self.hasChild = False

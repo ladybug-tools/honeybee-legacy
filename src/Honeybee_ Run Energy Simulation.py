@@ -199,19 +199,22 @@ class WriteIDF(object):
     def EPShdSurface (self, surface):
         coordinatesList = surface.extractPoints()
         if type(coordinatesList[0])is not list and type(coordinatesList[0]) is not tuple: coordinatesList = [coordinatesList]
-        
+
         scheduleName = surface.TransmittanceSCH
         if scheduleName.lower().endswith(".csv"):
             # find filebased schedule name
             scheduleName = self.fileBasedSchedules[scheduleName.upper()]
-        
+        #print coordinatesList
         fullString = ''
+        
         for count, coordinates in enumerate(coordinatesList):
+
+            #print surface.name + " ASS NAME HERE"
             str_1 = '\nShading:Building:Detailed,\n' + \
                     '\t' + surface.name + '_' + `count` + ',\t!- Name\n' + \
                     '\t' + scheduleName + ',\t!- Transmittance Schedule Name\n' + \
                     '\t' + `len(coordinates)` + ',\t!- Number of Vertices\n'    
-    
+
             str_2 = '\t';
             for ptCount, pt in enumerate(coordinates):
                 if ptCount < len (coordinates) - 1:
@@ -1286,11 +1289,9 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         # call the objects from the lib
         shadingPyClasses = hb_hive.callFromHoneybeeHive(HBContext)
        
-    # Shading Surfaces
-    if HBContext and HBContext[0]!=None:
-        print "[2 of 6] Writing context surfaces..."
-        # call the objects from the lib
-        shadingPyClasses = hb_hive.callFromHoneybeeHive(HBContext)
+       
+    def writeHBcontext(shadingPyClasses):
+        
         for shading in shadingPyClasses:
             
             # take care of shcedule
@@ -1309,6 +1310,15 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                 hb_writeIDF.EPSCHStr(shading.TransmittanceSCH.upper())
                 
             idfFile.write(hb_writeIDF.EPShdSurface(shading))
+       
+    # Shading Surfaces
+    if HBContext and HBContext[0]!=None:
+        print "[2 of 6] Writing context surfaces..."
+        # call the objects from the lib
+        shadingPyClasses = hb_hive.callFromHoneybeeHive(HBContext)
+
+        writeHBcontext(shadingPyClasses)
+
     else:
         print "[2 of 6] No context surfaces..."
         print "[2 of 8] No context surfaces..."
@@ -1417,7 +1427,9 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         distribution_name = str(HBsystemgenerator_name) + ':Distributionsystem' 
         
         if HBsystemgenerator.PVgenerators != []:
-        
+            
+            writeHBcontext(HBsystemgenerator.contextsurfaces)
+
             if HBsystemgenerator.simulationinverter != None:
                 
                 if HBsystemgenerator.battery != None:

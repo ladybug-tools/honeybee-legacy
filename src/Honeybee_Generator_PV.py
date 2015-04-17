@@ -204,7 +204,7 @@ def main(_name,_HBSurfaces,SA_solarcells,cells_n,_integrationmode,No_parallel,No
     """
     
     HBSurfacesfromhive = hb_hive.callFromHoneybeeHive(_HBSurfaces) # Call Honeybee surfaces from hive
-    
+
     PVgencount = 0
     
     for name,surface,SA_solarcell,celleff,mode,parallel,series,modelcost,powerout in itertools.izip_longest(_name,HBSurfacesfromhive,SA_solarcells,cells_n,_integrationmode,No_parallel,No_series,cost_module,power_output): 
@@ -265,8 +265,12 @@ def main(_name,_HBSurfaces,SA_solarcells,cells_n,_integrationmode,No_parallel,No
         except IndexError:
             powerout = power_output[0]
             print "No corresponding power output for " + str(name) + " " + str(cost_module[0]) + " used instead"
-                
-        surface.PVgenlist.append(PV_gen(name,surface.name,returnmodename(mode),parallel,series,cost_module,powerout,namePVperform,SA_solarcell,celleff)) # Last three inputs are for instance method PV_performance
+        
+        if surface.type == 6: ## A bit of a hack to get context surface name the same as being produced by EPShdSurface
+            for count in range(int(len(surface.extractPoints())/4)):
+                PVsurfacename = surface.name + '_' + `count`
+        
+        surface.PVgenlist.append(PV_gen(name,PVsurfacename,returnmodename(mode),parallel,series,cost_module,powerout,namePVperform,SA_solarcell,celleff)) # Last three inputs are for instance method PV_performance
         
         # Assign the inverter to each PVgenerator.
         
@@ -281,9 +285,9 @@ def main(_name,_HBSurfaces,SA_solarcells,cells_n,_integrationmode,No_parallel,No
     return ModifiedHBSurfaces
 
 # Call the PVinverter from the hive
+
 PVinverter = hb_hivegen.callFromHoneybeeHive(PV_inverter)
 
 if checktheinputs(name_,_HBSurfaces,SA_solarcells,cells_n,_integrationmode,No_parallel,No_series) != -1:
     
     PV_HBSurfaces = main(name_,_HBSurfaces,SA_solarcells,cells_n,_integrationmode,No_parallel,No_series,cost_module,power_output,PVinverter)
-    
