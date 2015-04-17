@@ -1,6 +1,6 @@
 ghenv.Component.Name = "Honeybee_Inverter"
 ghenv.Component.NickName = 'Inverter'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_04_2015'
+ghenv.Component.Message = 'VER 0.0.56\nAPR_17_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP" #"06 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -13,6 +13,7 @@ import uuid
 import Grasshopper.Kernel as gh
 
 hb_hivegen = sc.sticky["honeybee_generationHive"]()
+PVinverter = sc.sticky["PVinverter"] 
     
 def checktheinputs(_invertername,inverter_n,inverter_cost,inverter_zone):
     
@@ -29,18 +30,11 @@ def checktheinputs(_invertername,inverter_n,inverter_cost,inverter_zone):
         ghenv.Component.AddRuntimeMessage(w, "Please specify a name for the inverter and make sure it is not the same as another inverter!")
         return -1
     
-    if inverter_cost== None:
-        print "The cost of the inverter must be specified!"
-        w = gh.GH_RuntimeMessageLevel.Warning
-        ghenv.Component.AddRuntimeMessage(w, "The cost of the inverter must be specified!")
-        return -1
-        
     if inverter_n == None:
         print "No value given for inverter efficiency 0.9 used"
         
         
+        
 if checktheinputs(_invertername,inverter_n,inverter_cost,inverter_zone) != -1:
     
-    print (_invertername,inverter_n,inverter_cost,inverter_zone)
-    
-    HB_inverter = hb_hivegen.addToHoneybeeHive((_invertername,inverter_n,inverter_cost,inverter_zone), ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+    HB_inverter = hb_hivegen.addToHoneybeeHive([PVinverter(_invertername,inverter_n,inverter_cost,inverter_zone)], ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))

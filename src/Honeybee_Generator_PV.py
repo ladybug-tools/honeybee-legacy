@@ -38,7 +38,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Generator_PV"
 ghenv.Component.NickName = 'PVgen'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_04_2015'
+ghenv.Component.Message = 'VER 0.0.56\nAPR_17_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP" #"06 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -58,15 +58,7 @@ PV_gen = sc.sticky["PVgen"] # Linked to class PV_gen in honeybee honeybee Note t
 hb_hivegen = sc.sticky["honeybee_generationHive"]()
 
 
-PVinverter = hb_hivegen.callFromHoneybeeHive(PV_inverter)
-
-# Define the PV inverter 
-_invertername = PVinverter[0][0] # 1st element in tuple
-inverter_n = PVinverter[0][1] # 2nd element in tuple
-inverter_cost = PVinverter[0][2] # 3rd element in tuple
-inverter_zone = PVinverter[0][3] # 4th element in tuple
-
-def checktheinputs(_name,_HBSurfaces,SA_solarcells,cells_n,_integrationmode,No_parallel,No_series,_invertername):
+def checktheinputs(_name,_HBSurfaces,SA_solarcells,cells_n,_integrationmode,No_parallel,No_series):
 
     """This function checks all the inputs of the component to ensure that the component is stopped if there is anything wrong with the inputs ie the 
     inputs will produce serious errors in the execution of this component.
@@ -101,11 +93,12 @@ def checktheinputs(_name,_HBSurfaces,SA_solarcells,cells_n,_integrationmode,No_p
         """
         
     # Check that Honeybee Zones are connected
-    
-    if (PV_inverter == []) or (PV_inverter == None):
-        print "Every PV generator must have an inverter! Please connect an inverter to the PV_inverter input"
+        
+    if len(PV_inverter) != 1:
+        
+        print " There can only be one inverter for each PV generator please connect only one inverter!"
         w = gh.GH_RuntimeMessageLevel.Warning
-        ghenv.Component.AddRuntimeMessage(w, "Every PV generator must have an inverter! Please connect an inverter to the PV_inverter input")
+        ghenv.Component.AddRuntimeMessage(w, "There can only be one inverter for each PV generator please connect only one inverter!")
         return -1
         
     
@@ -176,7 +169,6 @@ def checktheinputs(_name,_HBSurfaces,SA_solarcells,cells_n,_integrationmode,No_p
             ghenv.Component.AddRuntimeMessage(w, warnMsg)
             return -1 
     
-        
     if (power_output == []) or (power_output[0]) == None:
         print "The power output of the module must be specified!"
         w = gh.GH_RuntimeMessageLevel.Warning
@@ -200,7 +192,7 @@ def returnmodename(mode):
         return "PhotovoltaicThermalSolarCollector"
 
 
-def main(_name,_HBSurfaces,SA_solarcells,cells_n,_integrationmode,No_parallel,No_series,_invertername,cost_module,power_output,inverter_n):
+def main(_name,_HBSurfaces,SA_solarcells,cells_n,_integrationmode,No_parallel,No_series,cost_module,power_output,PVinverter):
  
     """ This function is the heart of this component it takes all the component arguments and writes one PV generator onto each Honeybee surface connected to this component
  
@@ -276,10 +268,11 @@ def main(_name,_HBSurfaces,SA_solarcells,cells_n,_integrationmode,No_parallel,No
                 
         surface.PVgenlist.append(PV_gen(name,surface.name,returnmodename(mode),parallel,series,cost_module,powerout,namePVperform,SA_solarcell,celleff)) # Last three inputs are for instance method PV_performance
         
+        # Assign the inverter to each PVgenerator.
+        
         for PVgen in surface.PVgenlist:
             
-            # Assign an inverter to the PVgenerator within the surface....
-            PVgen.inverter = PVgen.PVinverter(_invertername,inverter_cost,inverter_zone,inverter_n)
+            PVgen.inverter = PVinverter
             
         PVgencount = PVgencount+1
         
@@ -287,9 +280,10 @@ def main(_name,_HBSurfaces,SA_solarcells,cells_n,_integrationmode,No_parallel,No
     
     return ModifiedHBSurfaces
 
-# Check the inputs, stop the component if there is something wrong
-if checktheinputs(name_,_HBSurfaces,SA_solarcells,cells_n,_integrationmode,No_parallel,No_series,_invertername) != -1:
-    # Only run component if checktheinputs is NOT equal to -1.
+# Call the PVinverter from the hive
+PVinverter = hb_hivegen.callFromHoneybeeHive(PV_inverter)
+
+if checktheinputs(name_,_HBSurfaces,SA_solarcells,cells_n,_integrationmode,No_parallel,No_series) != -1:
     
-    PV_HBSurfaces = main(name_,_HBSurfaces,SA_solarcells,cells_n,_integrationmode,No_parallel,No_series,_invertername,cost_module,power_output,inverter_n)
+    PV_HBSurfaces = main(name_,_HBSurfaces,SA_solarcells,cells_n,_integrationmode,No_parallel,No_series,cost_module,power_output,PVinverter)
     

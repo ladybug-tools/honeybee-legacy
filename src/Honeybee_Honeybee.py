@@ -4899,19 +4899,88 @@ class EPZone(object):
                '\n# of surfaces: ' + `len(self.surfaces)` + \
                '\n-----------------------------------'
 
-
-
+class HB_generatorsystem(object):
+    
+    def __init__(self,generatorsystem_name,simulationinverter,battery,windgenerators,PVgenerators,fuelgenerators,gridelect_cost):
+        
+        self.name = generatorsystem_name
+        
+        if simulationinverter == []:
+        
+            self.simulationinverter = None
+        else:
+            self.simulationinverter = simulationinverter[0]
+        
+        self.battery = battery
+        self.windgenerators = windgenerators # Category includes Generator:WindTurbine
+        self.PVgenerators = PVgenerators # Category includes Generator:Photovoltaic
+        self.fuelgenerators = fuelgenerators # Category includes Generators:Mircoturbine,Generator:Combustion Turbine,Generator:InternalCombustionEngine
+        self.gridelectcost = gridelect_cost
+        
+class Wind_gen(object):
+    
+    def __init__(self,name_,rotortype,powercontrol,rotor_speed,rotor_diameter,overall_height,number_of_blades,power_output,rated_wind_speed,cut_in_windspeed,cut_out_windspeed,overall_turbine_n,max_tip_speed_ratio,max_power_coefficient,local_av_windspeed,height_local_metrological_station,turbine_cost,powercoefficients = []):
+        
+        self.name = name_
+        self.type = 'Generator:WindTurbine'
+        self.rotortype = rotortype
+        self.powercontrol = powercontrol
+        self.numblades = number_of_blades
+        self.rotorspeed = rotor_speed
+        self.rotor_diameter = rotor_diameter
+        self.overall_height = overall_height
+        self.powerout = power_output
+        self.rated_wind_speed = rated_wind_speed
+        self.cut_in_windspeed = cut_in_windspeed
+        self.cut_out_windspeed = cut_out_windspeed
+        self.overall_turbine_n = overall_turbine_n
+        self.max_tip_speed_ratio = max_tip_speed_ratio
+        
+        self.local_av_windspeed = local_av_windspeed
+        self.height_local_metrological_station = height_local_metrological_station
+        self.turbine_cost = turbine_cost
+        
+        if powercoefficients != []:
+            # Wind turbine is analaytical wind turbine
+            self.powercoefficients = powercoefficients
+        else:
+            self.powercoefficients = None
+        
+        if max_power_coefficient == None:
+            # Only simple wind turbine 
+            self.max_power_coefficient = ''
+        else: 
+            self.max_power_coefficient = max_power_coefficient
+        
+        
+        
 class PV_gen(object):
     
-    def __init__(self,_name,surfacename_,_integrationmode,No_parallel,No_series,namePVperform,SA_solarcells,cell_n,performance_type = "PhotovoltaicPerformance:Simple"):
+    # XXX possible generator types
+    """
+    Generator:InternalCombustionEngine
+    Generator:CombustionTurbine
+    Generator:Photovoltaic
+    Generator:FuelCell
+    Generator:MicroCHP
+    Generator:MicroTurbine
+    Generator:WindTurbine
+    """
+    
+    def __init__(self,_name,surfacename_,_integrationmode,No_parallel,No_series,cost_module,powerout,namePVperform,SA_solarcells,cell_n,performance_type = "PhotovoltaicPerformance:Simple"):
         
         self.name = _name
         self.surfacename = surfacename_
+        self.type = 'Generator:Photovoltaic'
         self.performancetype = performance_type
         self.performancename =  namePVperform # One Photovoltaic performance object is made for each PV object so names are the same
         self.integrationmode = _integrationmode
         self.NOparallel = No_parallel
         self.NOseries = No_series
+        self.modulecost = cost_module
+        self.powerout = powerout
+        
+        self.inverter = None # Define the inverter for this PV generator all PVgenerations being used in the same - run energy simulation must have the same inverter
     
         self.PV_performance(namePVperform,SA_solarcells,cell_n)
         
@@ -4922,9 +4991,41 @@ class PV_gen(object):
         self.cellefficiencyinputmode = cell_efficiencyinputmode
         self.efficiency = cell_n
         self.schedule = schedule_
-
-
-
+    
+class PVinverter(object):
+    
+    def __init__(self,inverter_name,inverter_cost,inverter_zone,inverter_n):
+   
+        if inverter_zone == None:
+            inverter_zone = ""
+        if inverter_n == None:
+            inverter_n = 0.9
+            
+        self.name = inverter_name
+        self.cost = inverter_cost
+        self.efficiency = inverter_n
+        self.zone = inverter_zone
+    
+    
+class simple_battery(object):
+    
+    def __init__(self,_name,zone_name,n_charging,n_discharging,battery_capacity,max_discharging,max_charging,initial_charge,bat_cost):
+        
+        
+        if zone_name == None:
+            zone_name = ""
+            
+        self.name = _name
+        self.type = 'Battery:simple'
+        self.zonename = zone_name
+        self.chargingefficiency = n_charging
+        self.dischargingeffciency = n_discharging
+        self.batterycap = battery_capacity
+        self.maxcharge = max_charging
+        self.maxdischarge = max_discharging
+        self.initalcharge = initial_charge
+        self.batcost = bat_cost
+        
 
 class hb_reEvaluateHBZones(object):
     """
@@ -5348,10 +5449,14 @@ class hb_reEvaluateHBZones(object):
                 
                 if glzPSurfaces != None:
                     newSurfaces += glzPSurfaces
-                
+                f
             return newSurfaces
 
 class hb_EPSurface(object):
+    
+    # PVinverterdict is a class variable - Class variables are accessible from all instances of a class,
+    # as well as the class itself:
+    
     def __init__(self, surface, srfNumber, srfID, *arg):
         """EP surface Class
             surface: surface geometry as a Brep
@@ -5500,7 +5605,7 @@ class hb_EPSurface(object):
             # I can remove default constructions at some point
             self.construction = self.cnstrSet[int(self.type)]
             self.EPConstruction = self.construction
-        
+            
     def checkPlanarity(self):
         # planarity tolerance should change for different 
         return self.geometry.Faces[0].IsPlanar(1e-3)
@@ -5946,7 +6051,7 @@ class hb_EPSurface(object):
     def setWindExposure(self, exposure = 'NoWind'):
         self.windExposure = exposure
     
-    
+
     def __str__(self):
         try:
             return 'Surface name: ' + self.name + '\nSurface number: ' + str(self.num) + \
@@ -5954,7 +6059,7 @@ class hb_EPSurface(object):
         except:
             return 'Surface name: ' + self.name + '\n' + 'Surface number: ' + str(self.num) + \
                    '\nSurface type is not assigned. Honeybee thinks this is a ' + str(self.srfType[self.getTypeByNormalAngle()]) + "."
-                   
+
 
 class hb_EPZoneSurface(hb_EPSurface):
     """..."""
@@ -6185,12 +6290,6 @@ class hb_EPShdSurface(hb_EPSurface):
         self.type = 6
         pass
   
-    def __getattr__(self, PVgenlist,containsPVgen):
-
-        # Default behaviour
-        raise AttributeError
-  
-  
     def getSrfCenPtandNormal(self, surface):
         # I'm not sure if we need this method
         # I will remove this later
@@ -6236,6 +6335,50 @@ class hb_EPFenSurface(hb_EPSurface):
         self.groundViewFactor = 'autocalculate'
         self.isChild = True # is it really useful?
         
+        
+class generationhb_hive(object):
+    # A hive that only accepts Honeybee generation objects
+    
+    def addToHoneybeeHive(self, genObjects, GHComponentID):
+        
+        if not sc.sticky.has_key('HBHivegeneration'): sc.sticky['HBHivegeneration'] = {}
+        
+        generationobjectkeys = []
+        
+        if isinstance(genObjects, tuple):
+            
+            key = GHComponentID
+            
+            sc.sticky['HBHivegeneration'][key] = genObjects
+            
+            generationobjectkeys.append(key)
+            
+            return generationobjectkeys
+        
+        else:
+            
+            
+            for genObject in genObjects:
+    
+                key = GHComponentID
+                
+                sc.sticky['HBHivegeneration'][key] = genObject
+                
+                generationobjectkeys.append(key)
+     
+            return generationobjectkeys
+        
+    def callFromHoneybeeHive(self, HBObjectslist):
+        
+        generationobjects = []
+            
+        for HBObjectkey in HBObjectslist:
+            
+            genobject =  sc.sticky['HBHivegeneration'][HBObjectkey]
+            generationobjects.append(genobject)
+        
+        return generationobjects
+        
 class hb_Hive(object):
     
     class CopyClass(object):
@@ -6248,6 +6391,7 @@ class hb_Hive(object):
         if not sc.sticky.has_key('HBHive'): sc.sticky['HBHive'] = {}
         geometries = []
         childGeometries = []
+        
         for HBObject in HBObjects:
             key = GHComponentID + HBObject.name
             
@@ -6850,6 +6994,7 @@ if checkIn.letItFly:
             
             
         sc.sticky["honeybee_Hive"] = hb_Hive
+        sc.sticky["honeybee_generationHive"] = generationhb_hive
         sc.sticky["honeybee_GetEPLibs"] = HB_GetEPLibraries
         sc.sticky["honeybee_DefaultMaterialLib"] = materialLibrary
         sc.sticky["honeybee_DefaultScheduleLib"] = scheduleLibrary
@@ -6861,6 +7006,10 @@ if checkIn.letItFly:
         sc.sticky["honeybee_EPTypes"] = EPTypes()
         sc.sticky["honeybee_EPZone"] = EPZone
         sc.sticky["PVgen"] = PV_gen
+        sc.sticky["PVinverter"] = PVinverter
+        sc.sticky["HB_generatorsystem"] = HB_generatorsystem
+        sc.sticky["wind_generator"] = Wind_gen
+        sc.sticky["simple_battery"] = simple_battery
         sc.sticky["honeybee_reEvaluateHBZones"] = hb_reEvaluateHBZones
         sc.sticky["honeybee_AirsideEconomizerParams"] = hb_airsideEconoParams
         sc.sticky["honeybee_constantVolumeFanParams"] = hb_constVolFanParams
