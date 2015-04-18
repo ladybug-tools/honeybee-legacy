@@ -44,7 +44,7 @@ Provided by Honeybee 0.0.56
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_17_2015'
+ghenv.Component.Message = 'VER 0.0.56\nAPR_18_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_28_2015
@@ -65,6 +65,12 @@ rc.Runtime.HostUtils.DisplayOleAlerts(False)
 
 
 class WriteIDF(object):
+    
+    # Add all HBcontext surfaces from both HBContext_ and HB generator here so that if user connects the same
+    # HBcontext surfaces to both HB generator and HBcontext duplicate surfaces will be detected and an error thrown.
+    
+    checksurfaceduplicate = []
+    zonesurfaces = []
     
     def __init__(self, workingDir):
         self.fileBasedSchedules = {}
@@ -1041,28 +1047,46 @@ class WriteIDF(object):
             
     def writeloadcenterdistribution(self,distribution_name,HBsystemgenerator_name,operationscheme,demandlimit,trackschedule,trackmeterschedule,busstype,inverterobject,elecstorageobject):
         
+        #print inverterobject is None
         if demandlimit == None:
             demandlimit = ''
         if trackschedule == None:
             demandlimit = 'Always On'
         if trackmeterschedule == None:
             trackmeterschedule = ''
-        if inverterobject == None:
-            inverterobject  = [''] # So that can perform inverterobject[0] not the best code improve on if have time
         if elecstorageobject == None:
             elecstorageobject = ''
-        
-        return '\nElectricLoadCenter:Distribution,\n' + \
-            '\t'+str(distribution_name)+ ',\t!- Name\n'+ \
-            '\t'+str(HBsystemgenerator_name)+ ',\t!- Generator List Name\n'+ \
-            '\t'+str(operationscheme)+ ',\t!- Generator Operation Scheme Type\n'+ \
-            '\t'+str(demandlimit)+ ',\t!- Demand Limit Scheme Purchased Electric Demand Limit {W}\n'+ \
-            '\t'+str(trackschedule)+ ',\t!- Track Schedule Name Scheme Schedule Name\n'+ \
-            '\t'+str(trackmeterschedule)+ ',\t!- Track Meter Scheme Meter Name\n'+ \
-            '\t'+str(busstype)+ ',\t!- Electrical Buss Type\n'+ \
-            '\t'+str(inverterobject.name)+ ',\t!- Inverter Object Name\n'+ \
-            '\t'+str(elecstorageobject)+ ',\t!- Electrical Storage Object Name\n'+\
-            '\t'+''+';\t!- Transformer Object Name\n'
+            
+        if inverterobject is None:  # Is is pointing to whether inverterobject and None are the same object, is inverterobject is None they will be,# Need to use is as have overide the __eq__ operator for inverter object 
+
+            inverterobject  = ''
+            
+            return '\nElectricLoadCenter:Distribution,\n' + \
+                '\t'+str(distribution_name)+ ',\t!- Name\n'+ \
+                '\t'+str(HBsystemgenerator_name)+ ',\t!- Generator List Name\n'+ \
+                '\t'+str(operationscheme)+ ',\t!- Generator Operation Scheme Type\n'+ \
+                '\t'+str(demandlimit)+ ',\t!- Demand Limit Scheme Purchased Electric Demand Limit {W}\n'+ \
+                '\t'+str(trackschedule)+ ',\t!- Track Schedule Name Scheme Schedule Name\n'+ \
+                '\t'+str(trackmeterschedule)+ ',\t!- Track Meter Scheme Meter Name\n'+ \
+                '\t'+str(busstype)+ ',\t!- Electrical Buss Type\n'+ \
+                '\t'+str(inverterobject)+ ',\t!- Inverter Object Name\n'+ \
+                '\t'+str(elecstorageobject)+ ',\t!- Electrical Storage Object Name\n'+\
+                '\t'+''+';\t!- Transformer Object Name\n'
+        # Had an issue with inverterobject.name when inverterobject is None, should re-work to remove reference to .name 
+        # but instead at the moment use two return statements
+        else:
+            
+            return '\nElectricLoadCenter:Distribution,\n' + \
+                '\t'+str(distribution_name)+ ',\t!- Name\n'+ \
+                '\t'+str(HBsystemgenerator_name)+ ',\t!- Generator List Name\n'+ \
+                '\t'+str(operationscheme)+ ',\t!- Generator Operation Scheme Type\n'+ \
+                '\t'+str(demandlimit)+ ',\t!- Demand Limit Scheme Purchased Electric Demand Limit {W}\n'+ \
+                '\t'+str(trackschedule)+ ',\t!- Track Schedule Name Scheme Schedule Name\n'+ \
+                '\t'+str(trackmeterschedule)+ ',\t!- Track Meter Scheme Meter Name\n'+ \
+                '\t'+str(busstype)+ ',\t!- Electrical Buss Type\n'+ \
+                '\t'+str(inverterobject.name)+ ',\t!- Inverter Object Name\n'+ \
+                '\t'+str(elecstorageobject)+ ',\t!- Electrical Storage Object Name\n'+\
+                '\t'+''+';\t!- Transformer Object Name\n'
 
 class RunIDF(object):
     
@@ -1316,7 +1340,8 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         print "[2 of 6] Writing context surfaces..."
         # call the objects from the lib
         shadingPyClasses = hb_hive.callFromHoneybeeHive(HBContext)
-
+        
+        WriteIDF.checksurfaceduplicate.extend(shadingPyClasses) # Add to a list so can check for duplicates later
         writeHBcontext(shadingPyClasses)
 
     else:
@@ -1353,6 +1378,10 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                 
         for srf in zone.surfaces:
             # check if there is an energyPlus material
+            
+            # Add surface to a list so that zone surfaces can be checked against honeybee generator PV surfaces
+            WriteIDF.zonesurfaces.append(srf.ID)
+
             if srf.EPConstruction != None:
                 srf.construction = srf.EPConstruction
             # else try to find the material based on bldg type and climate zone
@@ -1405,7 +1434,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     HBsystemgenerators = hb_hivegen.callFromHoneybeeHive(HB_generators)
     
     HBsystemgeneratorcount = 0
-
+    
     for HBsystemgenerator in HBsystemgenerators:
     
         # Define the name for the list of generators and to use in generator's list name in ElectricLoadCenter:Distribution
@@ -1428,8 +1457,26 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         
         if HBsystemgenerator.PVgenerators != []:
             
+            WriteIDF.checksurfaceduplicate.extend(HBsystemgenerator.contextsurfaces) # Add to a list so can check for duplicates later
+            
             writeHBcontext(HBsystemgenerator.contextsurfaces)
+            
+            # If PV surfaces are part of a Zone make sure that, that zone is connected to _HBZones
+            # that is the PV surfaces are contained in HBsystemgenerator.HBzonesurfaces
+                
+            PVsurfaceinzones = []
+            
+            for surface in HBsystemgenerator.HBzonesurfaces:
 
+                PVsurfaceinzones.append(surface.ID in WriteIDF.zonesurfaces)
+                
+            if all(x== True for x in PVsurfaceinzones) != True:
+                
+                print "The HBzone which some PV_HBSurfaces belong to is not connected to _HBZones please connect it!  " 
+                ghenv.Component.AddRuntimeMessage(w, "The HBzone which some PV_HBSurfaces belong to is not connected to _HBZones please connect it!")
+                
+                return -1
+            
             if HBsystemgenerator.simulationinverter != None:
                 
                 if HBsystemgenerator.battery != None:
@@ -1440,7 +1487,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                     demandlimit = ''
                     trackschedule = 'Always On'
                     trackmeterschedule = ''
-                    inverterobject = HBsystemgenerator.simulationinverter[0][0] # All inverters are the same doesnt matter which one you pick
+                    inverterobject = HBsystemgenerator.simulationinverter[0] # All inverters are the same doesnt matter which one you pick
                     elecstorageobject = HBsystemgenerator.battery.name
                     
                     # Write HBsystemgenerator battery
@@ -1458,7 +1505,6 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                     # Write HBsystemgenerator ElectricLoadCenter:Distribution
                     idfFile.write(hb_writeIDF.writeloadcenterdistribution(distribution_name,HBsystemgenerator_name,operationscheme,demandlimit,trackschedule,trackmeterschedule,busstype,inverterobject,elecstorageobject))
                     
-    
                 else:
                     # HBsystem contains a inverter and is a DC system there are NO batteries in the system
                     
@@ -1467,7 +1513,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                     demandlimit = ''
                     trackschedule = 'Always On'
                     trackmeterschedule = ''
-                    inverterobject = HBsystemgenerator.simulationinverter[0][0] # All inverters are the same doesnt matter which one you pick
+                    inverterobject = HBsystemgenerator.simulationinverter[0] # All inverters are the same doesnt matter which one you pick
                     
                     # Write HBsystemgenerator photovoltaic generators
                     for PVgen in HBsystemgenerator.PVgenerators:
@@ -1480,7 +1526,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                     
                     # Write HBsystemgenerator ElectricLoadCenter:Distribution
                     idfFile.write(hb_writeIDF.writeloadcenterdistribution(distribution_name,HBsystemgenerator_name,operationscheme,demandlimit,trackschedule,trackmeterschedule,busstype,inverterobject,None)) 
-                    
+        
         elif HBsystemgenerator.windgenerators != []:
             
             operationscheme = 'Baseload'
@@ -1505,7 +1551,22 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
             busstype = 'AlternatingCurrent'
         
         HBsystemgeneratorcount = HBsystemgeneratorcount + 1
+    
+    # Check for duplicate HBcontext surfaces this could happen if the user connects context surfaces to both HBContext_ and a HB generator system
+    HBcontextsurfaces = set()
+    
+    for HBcontextsurface in WriteIDF.checksurfaceduplicate:
+        HBcontextsurfaces.add(HBcontextsurface.ID)
         
+    if len(HBcontextsurfaces) != len(WriteIDF.checksurfaceduplicate):
+        
+        print "Duplicate HBcontext surfaces detected! Don't connect HBcontext surfaces to both PVgen component and run E+ component HBContext_ input!"
+        ghenv.Component.AddRuntimeMessage(w, "Duplicate HBcontext surfaces detected! Don't connect HBcontext surfaces to both PVgen component and run E+ component HBContext_ input!")
+        
+        return -1
+        
+
+    
     ################ Construction #####################
     print "[5 of 8] Writing materials and constructions..."
     

@@ -6,7 +6,7 @@ wind_generator = sc.sticky["wind_generator"]
 
 ghenv.Component.Name = "Honeybee_generationsystem"
 ghenv.Component.NickName = 'generationsystem'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_17_2015'
+ghenv.Component.Message = 'VER 0.0.56\nAPR_18_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP" #"06 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -19,8 +19,27 @@ import uuid
 import Grasshopper.Kernel as gh
 import itertools
 
-PV_generation = hb_hive.callFromHoneybeeHive(PV_HBSurfaces)
-HB_generation = hb_hivegen.callFromHoneybeeHive(HB_generationobjects)
+
+def checHBgenobjects(PV_HBSurfaces,HB_generationobjects):
+    
+    try:
+        PV_generation = hb_hive.callFromHoneybeeHive(PV_HBSurfaces)
+        
+    except:
+        
+        print "Only PV_HBSurfaces from the Honeybee_Generator_PV component can be connected to PV_HBSurfaces!"
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, "Only PV_HBSurfaces from the Honeybee_Generator_PV component can be connected to PV_HBSurfaces!")
+        return -1
+        
+    try:
+        HB_generation = hb_hivegen.callFromHoneybeeHive(HB_generationobjects)
+        
+    except:
+        print "Only HB_batteries and HB_windturbines can be connected to HB_generationobjects!"
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, "Only HB_batteries and HB_windturbines can be connected to HB_generationobjects!")
+        return -1
 
 """
 print PV_generation[0].PVgenlist[0].inverter[0].ID
@@ -35,7 +54,7 @@ print PV_generation[7].PVgenlist[0].inverter[0].ID
 
 #print PV_generation[6].PVgenlist[0].inverter[0].ID == PV_generation[0].PVgenlist[0].inverter[0].ID
 
-def checktheinputs(generatorsystem_name):
+def checktheinputs(generatorsystem_name,PV_HBSurfaces,HB_generationobjects):
     
     if generatorsystem_name == None:
         
@@ -43,8 +62,11 @@ def checktheinputs(generatorsystem_name):
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, "Please specify a name for this generator system and make sure it is not the same as another generation system!")
         return -1
-
-
+        
+    if PV_HBSurfaces == [] and HB_generationobjects == []:
+        return -1
+        
+        
 def checkbattery(HB_generation):
     
     # Check that there is only one battery connected to this component
@@ -75,7 +97,7 @@ def checkbattery(HB_generation):
         ghenv.Component.AddRuntimeMessage(w, "The cost of grid electricty per Kwh must be specified!")
         return -1
 
-    ### Need a check only generators of certain types can be in the same list - AC,DC
+    # Need a check only generators of certain types can be in the same list - AC,DC
         
        
 # check only one inverter for this generation system
@@ -90,6 +112,7 @@ def main(PV_generation,HB_generation):
     fuelgenerators = []
     
     HBgencontextsurfaces = []
+    HBzonesurfaces = []
     
     battery = None
     HB_generators = [] # Called HB_generators even though will only ever be one Honeybee_generator
@@ -107,6 +130,10 @@ def main(PV_generation,HB_generation):
                 if HBgenobject.type == 6:
                     
                     HBgencontextsurfaces.append(HBgenobject)
+                    
+                else:
+                    
+                    HBzonesurfaces.append(HBgenobject)
                     
             except AttributeError:
                 pass
@@ -161,52 +188,81 @@ def main(PV_generation,HB_generation):
                     
                     windgenerators.append(HBgenobject)
                     
-                #if fuel generator append to fuelgenerator list
+                # XXX if fuel generator append to fuelgenerator list
     
-        # Make sure that PV generators, Wind generators and Fuel generatos CANNOT be in the same list as according to EnergyPlus documentation
+            # Make sure that PV generators, Wind generators and Fuel generatos CANNOT be in the same list as according to EnergyPlus documentation
         
-            if PVgenerators == [] and windgenerators == [] and battery != None:
-                
-                print "Only a battery has been detected please connect generators to this component! "
-                w = gh.GH_RuntimeMessageLevel.Warning
-                ghenv.Component.AddRuntimeMessage(w, "Only a battery has been detected please connect generators to this component! ")
-            
-            if PVgenerators != [] and windgenerators != []:
-                
-                print "Please ensure that only one type of generator (PV or Wind) is connected to this component "
-                w = gh.GH_RuntimeMessageLevel.Warning
-                ghenv.Component.AddRuntimeMessage(w, "Please ensure that only one type of generator (PV or Wind) is connected to this component ")
-            
-            elif windgenerators != [] and fuelgenerators != []:
-                
-                print "Please ensure that only one type of generator (PV or Wind) is connected to this component "
-                w = gh.GH_RuntimeMessageLevel.Warning
-                ghenv.Component.AddRuntimeMessage(w, "Please ensure that only one type of generator (PV or Wind) is connected to this component ")
-            
-            elif PVgenerators != [] and fuelgenerators != []:
+            def PVwindandbattery(PVgenerators,windgenerators,battery):
         
-                print "Please ensure that only one type of generator (PV or Wind) is connected to this component "
-                w = gh.GH_RuntimeMessageLevel.Warning
-                ghenv.Component.AddRuntimeMessage(w, "Please ensure that only one type of generator (PV or Wind) is connected to this component ")
+                if PVgenerators == [] and windgenerators == [] and battery != None:
+                    
+                    print "Only a battery has been detected please connect generators to this component! "
+                    w = gh.GH_RuntimeMessageLevel.Warning
+                    ghenv.Component.AddRuntimeMessage(w, "Only a battery has been detected please connect generators to this component! ")
+                    return -1 
+                
+            def PVandwind(PVgenerators,windgenerators):
+                
+                if PVgenerators != [] and windgenerators != []:
+                    
+                    print "Please ensure that only one type of generator (PV or Wind) is connected to this component "
+                    w = gh.GH_RuntimeMessageLevel.Warning
+                    ghenv.Component.AddRuntimeMessage(w, "Please ensure that only one type of generator (PV or Wind) is connected to this component ")
+                    return -1
             
-            if windgenerators != [] and battery != None:
+            def windandfuel(windgenerators,fuelgenerators):
                 
-                print "Batteries cannot be connected to an AC system please disconnect the battery from this component!"
-                w = gh.GH_RuntimeMessageLevel.Warning
-                ghenv.Component.AddRuntimeMessage(w, "Batteries cannot be connected to an AC system please disconnect the battery from this component!")
+                if windgenerators != [] and fuelgenerators != []:
+                    
+                    print "Please ensure that only one type of generator (PV or Wind) is connected to this component "
+                    w = gh.GH_RuntimeMessageLevel.Warning
+                    ghenv.Component.AddRuntimeMessage(w, "Please ensure that only one type of generator (PV or Wind) is connected to this component ")
+                    return -1
             
-            # If only one type of generator is present continue....
-            else:
-        
-                HB_generators.append(HB_generator(generatorsystem_name,simulationinverters,battery,windgenerators,PVgenerators,fuelgenerators,gridelect_cost,HBgencontextsurfaces))
+            def PVandfuel(PVgenerators,fuelgenerators):
                 
-                HB_generator1 = hb_hivegen.addToHoneybeeHive(HB_generators,ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+                if PVgenerators != [] and fuelgenerators != []:
+            
+                    print "Please ensure that only one type of generator (PV or Wind) is connected to this component "
+                    w = gh.GH_RuntimeMessageLevel.Warning
+                    ghenv.Component.AddRuntimeMessage(w, "Please ensure that only one type of generator (PV or Wind) is connected to this component ")
+                    return -1
                 
-                return HB_generator1
+            def windandbat(windgenerators,battery):
+                
+                if windgenerators != [] and battery != None:
+                    
+                    print "Batteries cannot be connected to an AC system please disconnect the battery from this component!"
+                    w = gh.GH_RuntimeMessageLevel.Warning
+                    ghenv.Component.AddRuntimeMessage(w, "Batteries cannot be connected to an AC system please disconnect the battery from this component!")
+                    return -1
+                    
+            if PVwindandbattery(PVgenerators,windgenerators,battery) != -1:
+                    
+                    if PVandwind(PVgenerators,windgenerators) != -1:
+                        
+                        if windandfuel(windgenerators,fuelgenerators) != -1:
+                            
+                            if PVandfuel(PVgenerators,fuelgenerators) != -1:
+                                
+                                if windandbat(windgenerators,battery) != -1:
+                                    
+                                    HB_generators.append(HB_generator(generatorsystem_name,simulationinverters,battery,windgenerators,PVgenerators,fuelgenerators,gridelect_cost,HBgencontextsurfaces,HBzonesurfaces))
+                                    
+                                    HB_generator1 = hb_hivegen.addToHoneybeeHive(HB_generators,ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+                                    
+                                    return HB_generator1
         
-if checktheinputs(generatorsystem_name) != -1:
-    
-    if checkbattery(HB_generation) != -1:
-    
-        HB_generator = main(PV_generation,HB_generation)
+        
+if checktheinputs(generatorsystem_name,PV_HBSurfaces,HB_generationobjects) != -1:   
+
+    if checHBgenobjects(PV_HBSurfaces,HB_generationobjects) != -1:
+   
+        PV_generation = hb_hive.callFromHoneybeeHive(PV_HBSurfaces)
+        
+        HB_generation = hb_hivegen.callFromHoneybeeHive(HB_generationobjects)
+
+        if checkbattery(HB_generation) != -1:
+        
+                HB_generatorsytem = main(PV_generation,HB_generation)
 

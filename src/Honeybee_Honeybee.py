@@ -58,6 +58,7 @@ import copy
 import urllib2 as urllib
 import cPickle as pickle
 import subprocess
+import uuid
 
 
 PI = math.pi
@@ -4901,7 +4902,7 @@ class EPZone(object):
 
 class HB_generatorsystem(object):
     
-    def __init__(self,generatorsystem_name,simulationinverter,battery,windgenerators,PVgenerators,fuelgenerators,gridelect_cost,contextsurfaces):
+    def __init__(self,generatorsystem_name,simulationinverter,battery,windgenerators,PVgenerators,fuelgenerators,gridelect_cost,contextsurfaces,HBzonesurfaces):
         
         self.name = generatorsystem_name
         
@@ -4912,6 +4913,7 @@ class HB_generatorsystem(object):
             self.simulationinverter = simulationinverter
         
         self.contextsurfaces = contextsurfaces
+        self.HBzonesurfaces = HBzonesurfaces
         self.battery = battery
         self.windgenerators = windgenerators # Category includes Generator:WindTurbine
         self.PVgenerators = PVgenerators # Category includes Generator:Photovoltaic
@@ -5006,7 +5008,20 @@ class PVinverter(object):
         self.cost = inverter_cost
         self.efficiency = inverter_n
         self.zone = inverter_zone
+        self.ID = str(uuid.uuid4())
+        
+    # Need to be able to compare inverters to make sure that only one inverter is servicing all the PV in the system
+    # For some reason the class ID of the inverters was changing when putting in the hive this is a more fool proof way of comparing them.
+    # Note the zone that the inverter is attached to is not considered.
     
+    def __hash__(self):
+        return hash(self.ID)
+       
+    def __eq__( self, other ):
+        return self.ID == self.ID
+        
+    def __ne__(self,other):
+        return self.ID != self.ID
     
 class simple_battery(object):
     
@@ -5455,9 +5470,6 @@ class hb_reEvaluateHBZones(object):
 
 class hb_EPSurface(object):
     
-    # PVinverterdict is a class variable - Class variables are accessible from all instances of a class,
-    # as well as the class itself:
-    
     def __init__(self, surface, srfNumber, srfID, *arg):
         """EP surface Class
             surface: surface geometry as a Brep
@@ -5471,6 +5483,8 @@ class hb_EPSurface(object):
         self.num = srfNumber
         
         self.name = srfID
+        
+        self.ID = str(uuid.uuid4())
         
         self.isPlanar = self.checkPlanarity()
         self.hasInternalEdge = self.checkForInternalEdge()
@@ -6288,6 +6302,7 @@ class hb_EPShdSurface(hb_EPSurface):
         self.EPConstruction = 'Exterior Wall' # just added here to get the minimum surface to work
         self.childSrfs = [self] # so I can use the same function as glazing to extract the points
         self.type = 6
+        
         pass
   
     def getSrfCenPtandNormal(self, surface):
