@@ -270,13 +270,18 @@ def main(_name,_HBSurfaces,SA_solarcells,cells_n,_integrationmode,No_parallel,No
             for count in range(int(len(surface.extractPoints())/4)):
                 PVsurfacename = surface.name + '_' + `count`
         
-        surface.PVgenlist.append(PV_gen(name,PVsurfacename,returnmodename(mode),parallel,series,cost_module,powerout,namePVperform,SA_solarcell,celleff)) # Last three inputs are for instance method PV_performance
+            surface.PVgenlist.append(PV_gen(name,PVsurfacename,returnmodename(mode),parallel,series,cost_module,powerout,namePVperform,SA_solarcell,celleff)) # Last three inputs are for instance method PV_performance
         
+        else:
+            surface.PVgenlist.append(PV_gen(name,surface.name,returnmodename(mode),parallel,series,cost_module,powerout,namePVperform,SA_solarcell,celleff))
+            
+            
         # Assign the inverter to each PVgenerator.
         
         for PVgen in surface.PVgenlist:
             
             PVgen.inverter = PVinverter
+            print PVinverter
             
         PVgencount = PVgencount+1
         

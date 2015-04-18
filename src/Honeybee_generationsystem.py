@@ -22,6 +22,18 @@ import itertools
 PV_generation = hb_hive.callFromHoneybeeHive(PV_HBSurfaces)
 HB_generation = hb_hivegen.callFromHoneybeeHive(HB_generationobjects)
 
+"""
+print PV_generation[0].PVgenlist[0].inverter[0].ID
+print PV_generation[1].PVgenlist[0].inverter[0].ID
+print PV_generation[2].PVgenlist[0].inverter[0].ID
+print PV_generation[3].PVgenlist[0].inverter[0].ID
+print PV_generation[4].PVgenlist[0].inverter[0].ID
+print PV_generation[5].PVgenlist[0].inverter[0].ID
+print PV_generation[6].PVgenlist[0].inverter[0].ID
+print PV_generation[7].PVgenlist[0].inverter[0].ID
+"""
+
+#print PV_generation[6].PVgenlist[0].inverter[0].ID == PV_generation[0].PVgenlist[0].inverter[0].ID
 
 def checktheinputs(generatorsystem_name):
     
@@ -103,10 +115,12 @@ def main(PV_generation,HB_generation):
                 
                 PVgenerators.append(PVgen)
                 
+                #print PVgen.inverter
                 # Append the inverter of each PV generator to the list
-                simulationinverters.append(PVgen.inverter)
-               
-
+                simulationinverters.extend(PVgen.inverter)
+    
+    #print simulationinverters
+    
     def checkduplicatesPVgenerators(PVgenerators):
         
         seen = set(PVgenerators)
@@ -120,19 +134,19 @@ def main(PV_generation,HB_generation):
             print "Duplicate PVgenerators detected,Please make sure you are not connecting the same PV generators twice!"
             w = gh.GH_RuntimeMessageLevel.Warning
             ghenv.Component.AddRuntimeMessage(w, "Duplicate PVgenerators detected,Please make sure you are not connecting the same PV generators twice! ")
-            return -1
+            return -1 
             
     def checkinverter(simulationinverters): 
-        if all(inverter == simulationinverters[0] for inverter in simulationinverters) == False: 
+        if all(inverter.ID == simulationinverters[0].ID for inverter in simulationinverters) == False: 
             print "Each generator system can only have one inverter servicing all the PV generators, make sure all connected PV have the same inverter! "
             w = gh.GH_RuntimeMessageLevel.Warning
             ghenv.Component.AddRuntimeMessage(w, "Each generator system can only have one inverter servicing all the PV generators, make sure all connected PV have the same inverter!")
             return -1
-    
+
     # Check for duplicate PVgenerators
     if checkduplicatesPVgenerators(PVgenerators) != -1:
 
-    # Checking that all PV generator inverters have the same inverter
+    # Checking that all PV generators have the same inverter if not component will stop
         if checkinverter(simulationinverters) != -1:
             
             for HBgenobject in HB_generation:
@@ -151,45 +165,44 @@ def main(PV_generation,HB_generation):
     
         # Make sure that PV generators, Wind generators and Fuel generatos CANNOT be in the same list as according to EnergyPlus documentation
         
-        if PVgenerators == [] and windgenerators == [] and battery != None:
+            if PVgenerators == [] and windgenerators == [] and battery != None:
+                
+                print "Only a battery has been detected please connect generators to this component! "
+                w = gh.GH_RuntimeMessageLevel.Warning
+                ghenv.Component.AddRuntimeMessage(w, "Only a battery has been detected please connect generators to this component! ")
             
-            print "Only a battery has been detected please connect generators to this component! "
-            w = gh.GH_RuntimeMessageLevel.Warning
-            ghenv.Component.AddRuntimeMessage(w, "Only a battery has been detected please connect generators to this component! ")
+            if PVgenerators != [] and windgenerators != []:
+                
+                print "Please ensure that only one type of generator (PV or Wind) is connected to this component "
+                w = gh.GH_RuntimeMessageLevel.Warning
+                ghenv.Component.AddRuntimeMessage(w, "Please ensure that only one type of generator (PV or Wind) is connected to this component ")
+            
+            elif windgenerators != [] and fuelgenerators != []:
+                
+                print "Please ensure that only one type of generator (PV or Wind) is connected to this component "
+                w = gh.GH_RuntimeMessageLevel.Warning
+                ghenv.Component.AddRuntimeMessage(w, "Please ensure that only one type of generator (PV or Wind) is connected to this component ")
+            
+            elif PVgenerators != [] and fuelgenerators != []:
         
-        if PVgenerators != [] and windgenerators != []:
+                print "Please ensure that only one type of generator (PV or Wind) is connected to this component "
+                w = gh.GH_RuntimeMessageLevel.Warning
+                ghenv.Component.AddRuntimeMessage(w, "Please ensure that only one type of generator (PV or Wind) is connected to this component ")
             
-            print "Please ensure that only one type of generator (PV or Wind) is connected to this component "
-            w = gh.GH_RuntimeMessageLevel.Warning
-            ghenv.Component.AddRuntimeMessage(w, "Please ensure that only one type of generator (PV or Wind) is connected to this component ")
+            if windgenerators != [] and battery != None:
+                
+                print "Batteries cannot be connected to an AC system please disconnect the battery from this component!"
+                w = gh.GH_RuntimeMessageLevel.Warning
+                ghenv.Component.AddRuntimeMessage(w, "Batteries cannot be connected to an AC system please disconnect the battery from this component!")
+            
+            # If only one type of generator is present continue....
+            else:
         
-        elif windgenerators != [] and fuelgenerators != []:
-            
-            print "Please ensure that only one type of generator (PV or Wind) is connected to this component "
-            w = gh.GH_RuntimeMessageLevel.Warning
-            ghenv.Component.AddRuntimeMessage(w, "Please ensure that only one type of generator (PV or Wind) is connected to this component ")
-        
-        elif PVgenerators != [] and fuelgenerators != []:
-    
-            print "Please ensure that only one type of generator (PV or Wind) is connected to this component "
-            w = gh.GH_RuntimeMessageLevel.Warning
-            ghenv.Component.AddRuntimeMessage(w, "Please ensure that only one type of generator (PV or Wind) is connected to this component ")
-        
-        if windgenerators != [] and battery != None:
-            
-            print "Batteries cannot be connected to an AC system please disconnect the battery from this component!"
-            w = gh.GH_RuntimeMessageLevel.Warning
-            ghenv.Component.AddRuntimeMessage(w, "Batteries cannot be connected to an AC system please disconnect the battery from this component!")
-        
-        # If only one type of generator is present continue....
-        else:
-    
-            HB_generators.append(HB_generator(generatorsystem_name,simulationinverters,battery,windgenerators,PVgenerators,fuelgenerators,gridelect_cost,HBgencontextsurfaces))
-            
-            print HB_generators
-            HB_generator1 = hb_hivegen.addToHoneybeeHive(HB_generators,ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
-            
-            return HB_generator1
+                HB_generators.append(HB_generator(generatorsystem_name,simulationinverters,battery,windgenerators,PVgenerators,fuelgenerators,gridelect_cost,HBgencontextsurfaces))
+                
+                HB_generator1 = hb_hivegen.addToHoneybeeHive(HB_generators,ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+                
+                return HB_generator1
         
 if checktheinputs(generatorsystem_name) != -1:
     

@@ -14,6 +14,7 @@ import Grasshopper.Kernel as gh
 
 hb_hivegen = sc.sticky["honeybee_generationHive"]()
 PVinverter = sc.sticky["PVinverter"] 
+inverter_zone = None
     
 def checktheinputs(_invertername,inverter_n,inverter_cost,inverter_zone):
     
