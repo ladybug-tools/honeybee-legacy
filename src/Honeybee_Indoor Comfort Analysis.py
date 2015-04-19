@@ -40,7 +40,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Indoor Comfort Analysis"
 ghenv.Component.NickName = 'IndoorComfAnalysis'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_12_2015'
+ghenv.Component.Message = 'VER 0.0.56\nAPR_19_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -416,26 +416,28 @@ def warpByHeight(pointAirTempValues, ptHeightWeights, flowVolValues, heatGainVal
     
     #Calculate the dimensionless temperature at the dimensionless height and convert to final temperature.
     for zoneCount, zone in enumerate(pointAirTempValues):
-        if outdoorClac == False or zoneCount != len(pointAirTempValues)-1:
-            if archimedesNumbers[zoneCount] < 59 and dimTempDeltas[zoneCount] != 0:
-                #Linear stratification profile.
-                cielTemp = cielTemps[zoneCount]
-                dimTempDelta = dimTempDeltas[zoneCount]
-                for ptCount, ptValue in enumerate(zone):
-                    ptTemp = ptValue + cielTemp - dimTempDelta*tempChanges[zoneCount]*(1-ptHeightWeights[zoneCount][ptCount])
-                    pointAirTempValues[zoneCount][ptCount] = round(ptTemp, 3)
-            elif dimTempDeltas[zoneCount] != 0:
-                #Two-Layer stratification profile.
-                cielTemp = cielTemps[zoneCount]
-                dimTempDelta = dimTempDeltas[zoneCount]
-                dimInterHeight = dimInterfHeights[zoneCount]
-                
-                for ptCount, ptValue in enumerate(zone):
-                    if ptHeightWeights[zoneCount][ptCount] < dimInterHeight:
-                        ptTemp = ptValue + cielTemp - dimTempDelta*tempChanges[zoneCount]*(dimInterHeight - ptHeightWeights[zoneCount][ptCount])
-                    else:
-                        ptTemp = ptValue + cielTemp
-                    pointAirTempValues[zoneCount][ptCount] = round(ptTemp, 3)
+        if len(zone) != 0:
+            if outdoorClac == False or zoneCount != len(pointAirTempValues)-1:
+                if archimedesNumbers[zoneCount] < 59 and dimTempDeltas[zoneCount] != 0:
+                    #Linear stratification profile.
+                    cielTemp = cielTemps[zoneCount]
+                    dimTempDelta = dimTempDeltas[zoneCount]
+                    for ptCount, ptValue in enumerate(zone):
+                        ptTemp = ptValue + cielTemp - dimTempDelta*tempChanges[zoneCount]*(1-ptHeightWeights[zoneCount][ptCount])
+                        pointAirTempValues[zoneCount][ptCount] = round(ptTemp, 3)
+                elif dimTempDeltas[zoneCount] != 0:
+                    #Two-Layer stratification profile.
+                    cielTemp = cielTemps[zoneCount]
+                    dimTempDelta = dimTempDeltas[zoneCount]
+                    dimInterHeight = dimInterfHeights[zoneCount]
+                    
+                    for ptCount, ptValue in enumerate(zone):
+                        if ptHeightWeights[zoneCount][ptCount] < dimInterHeight:
+                            ptTemp = ptValue + cielTemp - dimTempDelta*tempChanges[zoneCount]*(dimInterHeight - ptHeightWeights[zoneCount][ptCount])
+                        else:
+                            ptTemp = ptValue + cielTemp
+                        pointAirTempValues[zoneCount][ptCount] = round(ptTemp, 3)
+                else: pass
             else: pass
         else:
             pass
