@@ -1,12 +1,35 @@
-import scriptcontext as sc
-hb_hive = sc.sticky["honeybee_Hive"]()
-hb_hivegen = sc.sticky["honeybee_generationHive"]()
-HB_generator = sc.sticky["HB_generatorsystem"]
-wind_generator = sc.sticky["wind_generator"]
+# By Anton Szilasi
+# For technical support or user requests contact me at
+# ajszilas@gmail.com
+# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
+# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+
+"""
+
+Use this component to create a link between generators batteries and inverters - to create a Honeybee generator system.
+
+-
+Provided by Honeybee 0.0.56
+
+For more information about Photovolatic generators please see: http://bigladdersoftware.com/epx/docs/8-2/input-output-reference/group-electric-load-center.html#photovoltaic-generators
+
+-
+Provided by Honeybee 0.0.56
+
+    Args:
+        generatorsystem_name: The name of this Honeybee generation system
+        gridelect_cost: The cost of grid connected electricty per Kwh in what in whatever currency the user wishes - Just make it consistent with other components you are using
+        PV_HBSurfaces: The Honeybee/context surfaces that contain PV generators to be included in this generation system
+        HB_generationobjects: Honeybee batteries or wind turbines to be included in this generation system 
+            
+    Returns:
+        HB_generatorsytem: The Honeybee generation system - connect this to the input HB_generators on the Honeybee_Run Energy Simulation component to include this generation system in an EnergyPlus simulaton
+        
+"""
 
 ghenv.Component.Name = "Honeybee_generationsystem"
 ghenv.Component.NickName = 'generationsystem'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_18_2015'
+ghenv.Component.Message = 'VER 0.0.56\nAPR_19_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP" #"06 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -14,6 +37,11 @@ ghenv.Component.SubCategory = "12 | WIP" #"06 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3" #"0"
 except: pass
 
+import scriptcontext as sc
+hb_hive = sc.sticky["honeybee_Hive"]()
+hb_hivegen = sc.sticky["honeybee_generationHive"]()
+HB_generator = sc.sticky["HB_generatorsystem"]
+wind_generator = sc.sticky["wind_generator"]
 import scriptcontext as sc
 import uuid
 import Grasshopper.Kernel as gh
@@ -130,7 +158,7 @@ def main(PV_generation,HB_generation):
                 if HBgenobject.type == 6:
                     
                     HBgencontextsurfaces.append(HBgenobject)
-                    
+
                 else:
                     
                     HBzonesurfaces.append(HBgenobject)
@@ -246,7 +274,7 @@ def main(PV_generation,HB_generation):
                             if PVandfuel(PVgenerators,fuelgenerators) != -1:
                                 
                                 if windandbat(windgenerators,battery) != -1:
-                                    
+                                    print HBgencontextsurfaces
                                     HB_generators.append(HB_generator(generatorsystem_name,simulationinverters,battery,windgenerators,PVgenerators,fuelgenerators,gridelect_cost,HBgencontextsurfaces,HBzonesurfaces))
                                     
                                     HB_generator1 = hb_hivegen.addToHoneybeeHive(HB_generators,ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))

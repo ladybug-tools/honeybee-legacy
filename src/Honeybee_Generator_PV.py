@@ -13,8 +13,6 @@ For each Photovoltaic generator there must be a inverter for power to be produce
 
 For more information about Photovolatic generators please see: http://bigladdersoftware.com/epx/docs/8-2/input-output-reference/group-electric-load-center.html#photovoltaic-generators
 
-
-
 -
 Provided by Honeybee 0.0.56
 
@@ -26,13 +24,13 @@ Provided by Honeybee 0.0.56
         _integrationmode: EnergyPlus allows for different ways of integrating with other EnergyPlus heat transfer surfaces and models and calculating Photovoltaic cell temperature. This field is a integer or a list of integers sequentially to _HBSurfaces between 1 and 6 that defines the heat transfer integration mode used in the calculations as one of the following options. Decoupled a value of 1, DecoupledUllebergDynamic a value of 2, IntegratedSurfaceOutsideFace a value of 3, IntegratedTranspiredCollector a value of 4, IntegratedExteriorVentedCavity a value of 5, PhotovoltaicThermalSolarCollector a value of 6. The default is 1 the Decoupled mode. More information about each mode can be found on page 1767 and 1768 of the Energyplus Input Output reference.
         No_parallel: A integer or a list of integers sequentially to _HBSurfaces thats defines the series-wired strings of PV modules that are in parallel to form the PV generator on the surface. The product of this field and the next field will equal the total number of modules in the PV generator
         No_series: A integer or a list of integers sequentially to _HBSurfaces thats defines number of modules wired in series (on each string) to form the PV generator on the surface. The product of this field and the previous field will equal the total number of modules in the PV generator.
-        _invertername: An optional input 
-        inverter_n: The efficiency of the inverter as a fraction the default is 0.9  - Only one inverter can be definied per component the inverter here is common across all the PV generators from this component.
-        inverter_zone: To place the inverter in a zone - (The zone will gain additional heat from the inverter) connect one Honeybee zone here.
-        inverter_cost: The cost of the inverter
-    
+        cost_module: A float or a list of floats The cost per PV module in whatever currency the user wishes - Just make it consistent with other components you are using, the total cost will be this value multiplied by the number of PV modules in series and parallel
+        power_output: The rated power output of the PV module in watts
+        PV_inverter: The inverter servicing all the PV modules in this component - to assign an inverter connect the HB_inverter here from the Honeybee inverter component
+            
+            
     Returns:
-        PV_HBSurfaces: The Honeybee/context surfaces that have been modified by this component - these surfaces now contain PV generators to run in an Energy Plus simulation connect them to the HBContext_ input of the Honeybee_ Run Energy Simulation component to run in an EnergyPlus simulation.
+        PV_HBSurfaces: The Honeybee/context surfaces that have been modified by this component - these surfaces now contain PV generators to run in an EnergyPlus simulation to do so, you need to add them to a Honeybee generation system first - connect them to the PV_HBSurfaces input of a Honeybee_generationsystem component.
         
 """
 

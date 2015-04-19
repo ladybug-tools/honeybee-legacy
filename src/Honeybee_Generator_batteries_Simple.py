@@ -8,8 +8,9 @@
 """
 Provided by Honeybee 0.0.56
 
-Use this component to add Energy Plus batteries to a Energy Plus simulation.
-For more information about Energy Plus batteries plus find more information in the Energy Plus documentation here:
+Use this component to add EnergyPlus simple batteries to a Energy Plus simulation.
+
+Find out more information about Energy Plus batteries here:
 http://bigladdersoftware.com/epx/docs/8-2/input-output-reference/group-electric-load-center.html#electricloadcenterstorage-battery
 
 -
@@ -24,14 +25,16 @@ Provided by Honeybee 0.0.56
         max_charge: The maximum charge rate in Watts
         discharge_n: The discharging efficiency the default value is 0.7
         charge_n: The charging efficiency the default value is 0.7
-        battery_cost: The cost of the battery
+        battery_cost: The cost of each battery (The total battery cost will equal this value multipled by the number of batteries) in whatever currency the user wishes - Just make it consistent with other components you are using
         
-            
+    Returns:
+        HB_batteries: Honeybee batteries - to include these batteries in a generation system connect them to the input HB_generationobjects on the Honeybee_generationsystem component 
+        
 """
 
 ghenv.Component.Name = "Honeybee_Generator_batteries_Simple"
 ghenv.Component.NickName = 'Batteries:Simple'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_04_2015'
+ghenv.Component.Message = 'VER 0.0.56\nAPR_19_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP" #"06 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -49,6 +52,13 @@ EP_zone = sc.sticky["honeybee_EPZone"]
 simple_battery = sc.sticky["simple_battery"]
 
 def checktheinputs(No_battery,name_,battery_capacity,initial_charge,max_discharge,max_charge,discharge_n,charge_n,battery_cost,battery_zone):
+    
+    if name_ == None:
+    
+        print "Please specify a name for this battery and make sure it is not the same as another battery!"
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, "Please specify a name for this battery and make sure it is not the same as another battery!")
+        return -1
     
     if battery_capacity == None:
         print "The battery capacity in joules must be specified!"
