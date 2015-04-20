@@ -37,7 +37,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_06_2015'
+ghenv.Component.Message = 'VER 0.0.56\nAPR_19_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "4"
@@ -385,47 +385,66 @@ if _resultFileAddress and gotData == True:
                     else: flrArea = 1
                     
                     if key[columnCount] == 0:
-                        cooling.Add((float(column)/3600000)/flrArea, p)
+                        try: cooling.Add((float(column)/3600000)/flrArea, p)
+                        except: dataTypeList[2] = False
                     elif key[columnCount] == 1:
-                        heating.Add((float(column)/3600000)/flrArea, p)
+                        try: heating.Add((float(column)/3600000)/flrArea, p)
+                        except: dataTypeList[3] = False
                     elif key[columnCount] == 2:
-                        electricLight.Add((float(column)/3600000)/flrArea, p)
+                        try: electricLight.Add((float(column)/3600000)/flrArea, p)
+                        except: dataTypeList[4] = False
                     elif key[columnCount] == 3:
-                        electricEquip.Add((float(column)/3600000)/flrArea, p)
+                        try: electricEquip.Add((float(column)/3600000)/flrArea, p)
+                        except: dataTypeList[5] = False
                     elif key[columnCount] == 4:
-                        peopleGains.Add((float(column)/3600000)/flrArea, p)
+                        try: peopleGains.Add((float(column)/3600000)/flrArea, p)
+                        except: dataTypeList[6] = False
                     elif key[columnCount] == 5:
-                        totalSolarGain.Add((float(column)/3600000)/flrArea, p)
+                        try: totalSolarGain.Add((float(column)/3600000)/flrArea, p)
+                        except: dataTypeList[7] = False
                     elif key[columnCount] == 6:
-                        natVentEnergy.Add((((float(column))*(-1)/3600000) + ((float( line.split(',')[columnCount+1] ))/3600000))/flrArea, p)
+                        try: natVentEnergy.Add((((float(column))*(-1)/3600000) + ((float( line.split(',')[columnCount+1] ))/3600000))/flrArea, p)
+                        except: dataTypeList[10] = False
                     elif key[columnCount] == 7:
                         pass
                     elif key[columnCount] == 8:
-                        infiltrationEnergy.Add((((float(column))*(-1)/3600000) + ((float( line.split(',')[columnCount+1] ))/3600000))/flrArea, p)
+                        try: infiltrationEnergy.Add((((float(column))*(-1)/3600000) + ((float( line.split(',')[columnCount+1] ))/3600000))/flrArea, p)
+                        except: dataTypeList[9] = False
                     elif key[columnCount] == 9:
                         pass
                     elif key[columnCount] == 10:
-                        operativeTemperature.Add(float(column), p)
+                        try: operativeTemperature.Add(float(column), p)
+                        except: dataTypeList[11] = True
                     elif key[columnCount] == 11:
-                        airTemperature.Add(float(column), p)
+                        try: airTemperature.Add(float(column), p)
+                        except: dataTypeList[12] = True
                     elif key[columnCount] == 12:
-                        meanRadTemperature.Add(float(column), p)
+                        try: meanRadTemperature.Add(float(column), p)
+                        except: dataTypeList[13] = True
                     elif key[columnCount] == 13:
-                        relativeHumidity.Add(float(column), p)
+                        try: relativeHumidity.Add(float(column), p)
+                        except: dataTypeList[14] = True
                     elif key[columnCount] == 14:
-                        otherZoneData.Add(float(column), p)
+                        try: otherZoneData.Add(float(column), p)
+                        except: pass
                     elif key[columnCount] == 15:
-                        fanElectric.Add((float(column)/3600000)/flrArea, p)
+                        try: fanElectric.Add((float(column)/3600000)/flrArea, p)
+                        except: pass
                     elif key[columnCount] == 16:
-                        natVentFlow[int(path[columnCount])].append(float(column))
+                        try: natVentFlow[int(path[columnCount])].append(float(column))
+                        except: pass
                     elif key[columnCount] == 17:
-                        infiltrationFlow[int(path[columnCount])].append(float(column))
+                        try: infiltrationFlow[int(path[columnCount])].append(float(column))
+                        except: pass
                     elif key[columnCount] == 18:
-                        internalAirGain[int(path[columnCount])].append(float(column))
+                        try: internalAirGain[int(path[columnCount])].append(float(column))
+                        except: pass
                     elif key[columnCount] == 19:
-                        surfaceAirGain[int(path[columnCount])].append(float(column))
+                        try: surfaceAirGain[int(path[columnCount])].append(float(column))
+                        except: pass
                     elif key[columnCount] == 20:
-                        systemAirGain[int(path[columnCount])].append(float(column))
+                        try: systemAirGain[int(path[columnCount])].append(float(column))
+                        except: pass
                     
         result.close()
         parseSuccess = True
