@@ -30,7 +30,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_04_2015'
+ghenv.Component.Message = 'VER 0.0.56\nAPR_17_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -58,6 +58,7 @@ import copy
 import urllib2 as urllib
 import cPickle as pickle
 import subprocess
+import uuid
 
 
 PI = math.pi
@@ -1199,9 +1200,9 @@ class hb_MSHToRAD(object):
             #mapFile = objFile.replace(".obj", ".map")
             #with open(mapFile, "w") as mapf:
             #    mapf.write(self.matName + " (Object \"" + self.matName + "\");")
-            #cmd = "c:\\radiance\\bin\\obj2rad -f -m " + mapFile + " " + objFile + " > " +  radFile
+            #cmd = "c:\\radiance\\bin\\obj2rad -m " + mapFile + " " + objFile + " > " +  radFile
             
-            cmd = "c:\\radiance\\bin\\obj2rad -f " + objFile + " > " +  radFile
+            cmd = "c:\\radiance\\bin\\obj2rad " + objFile + " > " +  radFile
             
             with open(batFile, "w") as outfile:
                 outfile.write(cmd)
@@ -1502,21 +1503,10 @@ class hb_WriteRAD(object):
     
         if numOfCPUs > numOfPoints: numOfCPUs = numOfCPUs
     
-        if numOfCPUs > 1:
-            ptsEachCpu = int(numOfPoints/(numOfCPUs))
-            remainder = numOfPoints%numOfCPUs
-        else:
-            ptsEachCpu = numOfPoints
-            remainder = 0
-        
+        if numOfCPUs > 1: ptsEachCpu = int(numOfPoints/(numOfCPUs))
+        else: ptsEachCpu = numOfPoints
+    
         lenOfPts = []
-        
-        for cpuCount in range(numOfCPUs):
-            if cpuCount < remainder:
-                lenOfPts.append(ptsEachCpu+1)
-            else:
-                lenOfPts.append(ptsEachCpu)
-        
         testPtsEachCPU = []
         
         for cpuCount in range(numOfCPUs):
@@ -1525,15 +1515,22 @@ class hb_WriteRAD(object):
             ptsFileName = os.path.join(subWorkingDir, radFileName + '_' + `cpuCount` + '.pts')
             
             ptsFile = open(ptsFileName, "w")
-            
-            for ptCount in range(sum(lenOfPts[:cpuCount]), sum(lenOfPts[:cpuCount+1])):
-                ptsFile.write(self.hb_writeRADAUX.testPtsStr(flattenTestPoints[ptCount], flattenPtsNormals[ptCount]))
-                ptsForThisCPU.append(flattenTestPoints[ptCount])
+            if cpuCount + 1 != numOfCPUs:
+                for ptCount in range(cpuCount * ptsEachCpu, (cpuCount + 1) * ptsEachCpu):
+                    ptsFile.write(self.hb_writeRADAUX.testPtsStr(flattenTestPoints[ptCount], flattenPtsNormals[ptCount]))
+                    ptsForThisCPU.append(flattenTestPoints[ptCount])
+                lenOfPts.append(ptsEachCpu)
+                
+            else:
+                for ptCount in range(cpuCount * ptsEachCpu, numOfPoints):
+                    ptsFile.write(self.hb_writeRADAUX.testPtsStr(flattenTestPoints[ptCount], flattenPtsNormals[ptCount]))
+                    ptsForThisCPU.append(flattenTestPoints[ptCount])
+                lenOfPts.append(numOfPoints - (cpuCount * ptsEachCpu))
             
             ptsFile.close()
             
             testPtsEachCPU.append(ptsForThisCPU)        
-        
+            
         return testPtsEachCPU, lenOfPts
     
     def writeBatchFiles(self, subWorkingDir, radFileName, radSkyFileName, \
@@ -1612,8 +1609,7 @@ class hb_WriteRAD(object):
             initBatchFile.close()
             
             # annual glare only needs one headeing file and will run on a single cpu
-            # based on a recent discussion multiple cpus breaks Daysim for annual glare calculation
-            if runAnnualGlare: # and onlyAnnualGlare:
+            if runAnnualGlare and onlyAnnualGlare:
                 numOfCPUs = 1
                 
             # write the rest of the files
@@ -2506,7 +2502,6 @@ class hb_WriteRADAUX(object):
         viewDirection = sc.doc.Views.ActiveView.ActiveViewport.CameraDirection
         viewDirection.Unitize()
         viewUp = sc.doc.Views.ActiveView.ActiveViewport.CameraUp
-        viewUp.Unitize()
         viewHA = 180 - rs.VectorAngle(sc.doc.Views.ActiveView.ActiveViewport.GetFrustumRightPlane()[1][1], sc.doc.Views.ActiveView.ActiveViewport.GetFrustumLeftPlane()[1][1])
         if viewHA == 0: viewHA = 180
         viewVA = 180 - rs.VectorAngle(sc.doc.Views.ActiveView.ActiveViewport.GetFrustumBottomPlane()[1][1], sc.doc.Views.ActiveView.ActiveViewport.GetFrustumTopPlane()[1][1])
@@ -3106,8 +3101,6 @@ class hb_EnergySimulatioParameters(object):
             ddyFile = None
             
             terrain = 'City'
-            
-            grndTemps = []
         
         else:
             timestep = int(EPParameters[0])
@@ -3121,10 +3114,8 @@ class hb_EnergySimulatioParameters(object):
             ddyFile = EPParameters[10]
             
             terrain = EPParameters[11]
-            
-            grndTemps = EPParameters[12]
         
-        return timestep, shadowPar, solarDistribution, simulationControl, ddyFile, terrain, grndTemps
+        return timestep, shadowPar, solarDistribution, simulationControl, ddyFile, terrain
 
 class EPMaterialAux(object):
     
@@ -4498,6 +4489,14 @@ class EPZone(object):
         self.isConditioned = isConditioned
         self.isThisTheTopZone = False
         self.isThisTheFirstZone = False
+        
+        # Earthtube
+        self.earthtube = False
+        
+        # PV - A Honeybee zone can hold more than one photovoltaic generator for this reason we use a list 
+        # of all PV generators linked to this instance of the zone.
+        
+        # XXX self.PVgenlist = []
     
     def assignScheduleBasedOnProgram(self, component = None):
         # create an open office is the program is not assigned
@@ -4545,7 +4544,6 @@ class EPZone(object):
             print msg
             if component != None:
                 component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
-            return
         
         # numbers in OpenStudio standard library are in IP and I have to convert them to SI!
         self.equipmentLoadPerArea = schedulesAndLoads['elec_equip_per_area'] * 10.763961 #Per ft^2 to Per m^2
@@ -4900,7 +4898,151 @@ class EPZone(object):
             return 'Zone name: ' + self.name + \
                '\nZone program: Unknown' + \
                '\n# of surfaces: ' + `len(self.surfaces)` + \
-               '\n-------------------------------------'
+               '\n-----------------------------------'
+
+class HB_generatorsystem(object):
+    
+    def __init__(self,generatorsystem_name,simulationinverter,battery,windgenerators,PVgenerators,fuelgenerators,gridelect_cost,contextsurfaces,HBzonesurfaces):
+        
+        self.name = generatorsystem_name
+        
+        if simulationinverter == []:
+        
+            self.simulationinverter = None
+        else:
+            self.simulationinverter = simulationinverter
+        
+        self.contextsurfaces = contextsurfaces
+        self.HBzonesurfaces = HBzonesurfaces
+        self.battery = battery
+        self.windgenerators = windgenerators # Category includes Generator:WindTurbine
+        self.PVgenerators = PVgenerators # Category includes Generator:Photovoltaic
+        self.fuelgenerators = fuelgenerators # Category includes Generators:Mircoturbine,Generator:Combustion Turbine,Generator:InternalCombustionEngine
+        self.gridelectcost = gridelect_cost
+        
+class Wind_gen(object):
+    
+    def __init__(self,name_,rotortype,powercontrol,rotor_speed,rotor_diameter,overall_height,number_of_blades,power_output,rated_wind_speed,cut_in_windspeed,cut_out_windspeed,overall_turbine_n,max_tip_speed_ratio,max_power_coefficient,local_av_windspeed,height_local_metrological_station,turbine_cost,powercoefficients = []):
+        
+        self.name = name_
+        self.type = 'Generator:WindTurbine'
+        self.rotortype = rotortype
+        self.powercontrol = powercontrol
+        self.numblades = number_of_blades
+        self.rotorspeed = rotor_speed
+        self.rotor_diameter = rotor_diameter
+        self.overall_height = overall_height
+        self.powerout = power_output
+        self.rated_wind_speed = rated_wind_speed
+        self.cut_in_windspeed = cut_in_windspeed
+        self.cut_out_windspeed = cut_out_windspeed
+        self.overall_turbine_n = overall_turbine_n
+        self.max_tip_speed_ratio = max_tip_speed_ratio
+        
+        self.local_av_windspeed = local_av_windspeed
+        self.height_local_metrological_station = height_local_metrological_station
+        self.turbine_cost = turbine_cost
+        
+        if powercoefficients != []:
+            # Wind turbine is analaytical wind turbine
+            self.powercoefficients = powercoefficients
+        else:
+            self.powercoefficients = None
+        
+        if max_power_coefficient == None:
+            # Only simple wind turbine 
+            self.max_power_coefficient = ''
+        else: 
+            self.max_power_coefficient = max_power_coefficient
+        
+        
+        
+class PV_gen(object):
+    
+    # XXX possible generator types
+    """
+    Generator:InternalCombustionEngine
+    Generator:CombustionTurbine
+    Generator:Photovoltaic
+    Generator:FuelCell
+    Generator:MicroCHP
+    Generator:MicroTurbine
+    Generator:WindTurbine
+    """
+    
+    def __init__(self,_name,surfacename_,_integrationmode,No_parallel,No_series,cost_module,powerout,namePVperform,SA_solarcells,cell_n,performance_type = "PhotovoltaicPerformance:Simple"):
+        
+        self.name = _name
+        self.surfacename = surfacename_
+        self.type = 'Generator:Photovoltaic'
+        self.performancetype = performance_type
+        self.performancename =  namePVperform # One Photovoltaic performance object is made for each PV object so names are the same
+        self.integrationmode = _integrationmode
+        self.NOparallel = No_parallel
+        self.NOseries = No_series
+        self.modulecost = cost_module
+        self.powerout = powerout
+        
+        self.inverter = None # Define the inverter for this PV generator all PVgenerations being used in the same - run energy simulation must have the same inverter
+    
+        self.PV_performance(namePVperform,SA_solarcells,cell_n)
+        
+    def PV_performance(self,namePVperformobject,SA_solarcells = 0.5 ,cell_n = 0.12,cell_efficiencyinputmode = "Fixed", schedule_ = "always on"):
+    
+        self.namePVperformobject = namePVperformobject
+        self.surfaceareacells = SA_solarcells
+        self.cellefficiencyinputmode = cell_efficiencyinputmode
+        self.efficiency = cell_n
+        self.schedule = schedule_
+    
+class PVinverter(object):
+    
+    def __init__(self,inverter_name,inverter_cost,inverter_zone,inverter_n):
+   
+        if inverter_zone == None:
+            inverter_zone = ""
+        if inverter_n == None:
+            inverter_n = 0.9
+            
+        self.name = inverter_name
+        self.cost = inverter_cost
+        self.efficiency = inverter_n
+        self.zone = inverter_zone
+        self.ID = str(uuid.uuid4())
+        
+    # Need to be able to compare inverters to make sure that only one inverter is servicing all the PV in the system
+    # For some reason the class ID of the inverters was changing when putting in the hive this is a more fool proof way of comparing them.
+    # Note the zone that the inverter is attached to is not considered.
+    
+    def __hash__(self):
+        return hash(self.ID)
+       
+    def __eq__( self, other ):
+        return self.ID == self.ID
+        
+    def __ne__(self,other):
+        return self.ID != self.ID
+    
+class simple_battery(object):
+    
+    def __init__(self,_name,zone_name,n_charging,n_discharging,battery_capacity,max_discharging,max_charging,initial_charge,bat_cost):
+        
+        
+        if zone_name == None:
+            zone_name = ""
+            
+        self.name = _name
+        self.type = 'Battery:simple'
+        self.zonename = zone_name
+        self.chargingefficiency = n_charging
+        self.dischargingeffciency = n_discharging
+        self.batterycap = battery_capacity
+        self.maxcharge = max_charging
+        self.maxdischarge = max_discharging
+        self.initalcharge = initial_charge
+        self.batcost = bat_cost
+        self.ID = str(uuid.uuid4())
+        
 
 class hb_reEvaluateHBZones(object):
     """
@@ -5324,10 +5466,11 @@ class hb_reEvaluateHBZones(object):
                 
                 if glzPSurfaces != None:
                     newSurfaces += glzPSurfaces
-                
+                f
             return newSurfaces
 
 class hb_EPSurface(object):
+    
     def __init__(self, surface, srfNumber, srfID, *arg):
         """EP surface Class
             surface: surface geometry as a Brep
@@ -5341,6 +5484,8 @@ class hb_EPSurface(object):
         self.num = srfNumber
         
         self.name = srfID
+        
+        self.ID = str(uuid.uuid4())
         
         self.isPlanar = self.checkPlanarity()
         self.hasInternalEdge = self.checkForInternalEdge()
@@ -5356,7 +5501,15 @@ class hb_EPSurface(object):
         self.srfTypeByUser = False
         self.srfBCByUser = False
         
-                # 4 represents an Air Wall
+        # PV - A Honeybee surface can hold one PV generator
+        
+        self.PVgenlist = []
+        
+        # Does this Honeybee surface contain a PV generator?
+        
+        self.containsPVgen = False
+        
+        # 4 represents an Air Wall
         self.srfType = {0:'WALL',
            0.5: 'UndergroundWall',
            1:'ROOF',
@@ -5468,7 +5621,7 @@ class hb_EPSurface(object):
             # I can remove default constructions at some point
             self.construction = self.cnstrSet[int(self.type)]
             self.EPConstruction = self.construction
-        
+            
     def checkPlanarity(self):
         # planarity tolerance should change for different 
         return self.geometry.Faces[0].IsPlanar(1e-3)
@@ -5914,6 +6067,7 @@ class hb_EPSurface(object):
     def setWindExposure(self, exposure = 'NoWind'):
         self.windExposure = exposure
     
+
     def __str__(self):
         try:
             return 'Surface name: ' + self.name + '\nSurface number: ' + str(self.num) + \
@@ -5921,6 +6075,7 @@ class hb_EPSurface(object):
         except:
             return 'Surface name: ' + self.name + '\n' + 'Surface number: ' + str(self.num) + \
                    '\nSurface type is not assigned. Honeybee thinks this is a ' + str(self.srfType[self.getTypeByNormalAngle()]) + "."
+
 
 class hb_EPZoneSurface(hb_EPSurface):
     """..."""
@@ -6137,6 +6292,10 @@ class hb_EPZoneSurface(hb_EPSurface):
 class hb_EPShdSurface(hb_EPSurface):
     def __init__(self, surface, srfNumber, srfName):
         hb_EPSurface.__init__(self, surface, srfNumber, srfName, self)
+        
+        self.PVgenlist = None
+        
+        self.containsPVgen = None
         self.TransmittanceSCH = ''
         self.isChild = False
         self.hasChild = False
@@ -6144,8 +6303,9 @@ class hb_EPShdSurface(hb_EPSurface):
         self.EPConstruction = 'Exterior Wall' # just added here to get the minimum surface to work
         self.childSrfs = [self] # so I can use the same function as glazing to extract the points
         self.type = 6
+        
         pass
-    
+  
     def getSrfCenPtandNormal(self, surface):
         # I'm not sure if we need this method
         # I will remove this later
@@ -6191,6 +6351,50 @@ class hb_EPFenSurface(hb_EPSurface):
         self.groundViewFactor = 'autocalculate'
         self.isChild = True # is it really useful?
         
+        
+class generationhb_hive(object):
+    # A hive that only accepts Honeybee generation objects
+    
+    def addToHoneybeeHive(self, genObjects, GHComponentID):
+        
+        if not sc.sticky.has_key('HBHivegeneration'): sc.sticky['HBHivegeneration'] = {}
+        
+        generationobjectkeys = []
+        
+        if isinstance(genObjects, tuple):
+            
+            key = GHComponentID
+            
+            sc.sticky['HBHivegeneration'][key] = genObjects
+            
+            generationobjectkeys.append(key)
+            
+            return generationobjectkeys
+        
+        else:
+            
+            
+            for genObject in genObjects:
+    
+                key = GHComponentID
+                
+                sc.sticky['HBHivegeneration'][key] = genObject
+                
+                generationobjectkeys.append(key)
+     
+            return generationobjectkeys
+        
+    def callFromHoneybeeHive(self, HBObjectslist):
+        
+        generationobjects = []
+            
+        for HBObjectkey in HBObjectslist:
+            
+            genobject =  sc.sticky['HBHivegeneration'][HBObjectkey]
+            generationobjects.append(genobject)
+        
+        return generationobjects
+        
 class hb_Hive(object):
     
     class CopyClass(object):
@@ -6203,6 +6407,7 @@ class hb_Hive(object):
         if not sc.sticky.has_key('HBHive'): sc.sticky['HBHive'] = {}
         geometries = []
         childGeometries = []
+        
         for HBObject in HBObjects:
             key = GHComponentID + HBObject.name
             
@@ -6278,9 +6483,9 @@ class hb_Hive(object):
                         HBObjects.append(copy.deepcopy(HBObject))
                         
                     except Exception, e:
-                        print `e`
-                        print "Failed to copy the object. Returning the original objects...\n" +\
-                              "This can cause strange behaviour!"
+                        #print `e`
+                        #print "Failed to copy the object. Returning the original objects...\n" +\
+                        #"This can cause strange behaviour!"
                         HBObjects.append(sc.sticky['HBHive'][key])
             except:
                 pass
@@ -6805,6 +7010,7 @@ if checkIn.letItFly:
             
             
         sc.sticky["honeybee_Hive"] = hb_Hive
+        sc.sticky["honeybee_generationHive"] = generationhb_hive
         sc.sticky["honeybee_GetEPLibs"] = HB_GetEPLibraries
         sc.sticky["honeybee_DefaultMaterialLib"] = materialLibrary
         sc.sticky["honeybee_DefaultScheduleLib"] = scheduleLibrary
@@ -6815,6 +7021,11 @@ if checkIn.letItFly:
         sc.sticky["honeybee_BuildingProgramsLib"] = BuildingProgramsLib
         sc.sticky["honeybee_EPTypes"] = EPTypes()
         sc.sticky["honeybee_EPZone"] = EPZone
+        sc.sticky["PVgen"] = PV_gen
+        sc.sticky["PVinverter"] = PVinverter
+        sc.sticky["HB_generatorsystem"] = HB_generatorsystem
+        sc.sticky["wind_generator"] = Wind_gen
+        sc.sticky["simple_battery"] = simple_battery
         sc.sticky["honeybee_reEvaluateHBZones"] = hb_reEvaluateHBZones
         sc.sticky["honeybee_AirsideEconomizerParams"] = hb_airsideEconoParams
         sc.sticky["honeybee_constantVolumeFanParams"] = hb_constVolFanParams

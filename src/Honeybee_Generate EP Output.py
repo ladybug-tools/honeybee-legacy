@@ -36,8 +36,6 @@ ghenv.Component.AdditionalHelpFromDocStrings = "3"
 
 import Grasshopper.Kernel as gh
 
-
-
 def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, zoneHVACMetrics, surfaceTempAnalysis, surfaceEnergyAnalysis, glazingSolarAnalysis, timestep):
     simulationOutputs = []
     timePeriod = timestep + ";"
@@ -97,6 +95,18 @@ def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, zoneHVACMetrics,
         simulationOutputs.append("Output:Variable,*,Surface Window Transmitted Beam Solar Radiation Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Surface Window Transmitted Diffuse Solar Radiation Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Surface Window Transmitted Solar Radiation Energy, " + timePeriod)
+    
+    if HBgeneration_ == True:
+        simulationOutputs.append("Output:Variable,*,Facility Total Electric Demand Power, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Facility Net Purchased Electric Power, " + timePeriod)
+
+    if Earthtube_ == True:
+        
+        simulationOutputs.append("Output:Variable,*,Facility Total Electric Demand Power, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Facility Net Purchased Electric Power, " + timePeriod)
+
+        
+        
     
     return simulationOutputs
 
