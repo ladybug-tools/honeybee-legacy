@@ -27,7 +27,8 @@ Provided by Honeybee 0.0.56
         +++++++++++++++: ...
         _HBZones: The HBZones that you wish to write into an IDF and/or run through EnergyPlus.  These can be from any of the components that output HBZones.
         HBContext_: Optional HBContext geometry from the "Honeybee_EP Context Surfaces." component or Honeybee PV gen component.
-        simulationOutputs_: A list of the outputs that you would like EnergyPlus to write into the result CSV file.  This can be any set of any outputs that you would like from EnergyPlus, writen as a list of text that will be written into the IDF.  It is recommended that, if you are not expereinced with writing EnergyPlus outputs, you should use the "Honeybee_Write EP Result Parameters" component to request certain types of common outputs.  If no value is input here, this component will automatically request outputs of heating, cooling, lighting, and equipment energy use.  
+        HB_generators: Connect the output HB_generatorsytem from the Honeybee_generationsystem component here to model EnergyPlus Photovoltaic and Wind generator systems in this simulation.
+        simulationOutputs_: A list of the outputs that you would like EnergyPlus to write into the result CSV file.  This can be any set of any outputs that you would like from EnergyPlus, writen as a list of text that will be written into the IDF.  It is recommended that, if you are not expereinced with writing EnergyPlus outputs, you should use the "Honeybee_Write EP Result Parameters" component to request certain types of common outputs.  If no value is input here, this component will automatically request outputs of heating, cooling, lighting, and equipment energy use.
         +++++++++++++++: ...
         _writeIdf: Set to "True" to have the component take your HBZones and other inputs and write them into an IDF file.  The file path of the resulting file will appear in the idfFileAddress output of this component.  Note that only setting this to "True" and not setting the output below to "True" will not automatically run the IDF through EnergyPlus for you.
         runEnergyPlus_: Set to "True" to have the component run your IDF through EnergyPlus once it has finished writing it.  This will ensure that a CSV result file appears in the resultFileAddress output.
@@ -71,6 +72,10 @@ class WriteIDF(object):
     
     checksurfaceduplicate = []
     zonesurfaces = []
+    # Add the ID of all batteries from HB generator systems here to check for duplicate batteries.
+    checkbatteryduplicate = []
+    # Add the ID of all inverters from HB generator systems here to check for duplicate inverters.
+    checkinverterduplicate = []
     
     def __init__(self, workingDir):
         self.fileBasedSchedules = {}
@@ -1505,6 +1510,33 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                     # Write HBsystemgenerator ElectricLoadCenter:Distribution
                     idfFile.write(hb_writeIDF.writeloadcenterdistribution(distribution_name,HBsystemgenerator_name,operationscheme,demandlimit,trackschedule,trackmeterschedule,busstype,inverterobject,elecstorageobject))
                     
+                    # Check for duplicate batteries
+                    # Append battery ID to checkbatteryduplicate to check for duplicate batteries
+                    WriteIDF.checkbatteryduplicate.append(HBsystemgenerator.battery.ID)
+                    
+                    # If the battery ID occurs twice in the list WriteIDF.checkbatteryduplicate it is a duplicate
+                    if WriteIDF.checkbatteryduplicate.count(HBsystemgenerator.battery.ID) == 2:
+                        
+                        warning  = 'Duplicate battery detected! please make sure that each HB generators has its own battery \n'+ \
+                        'usually this happens because one battery is connected to many PVgenerators make sure each PVgenerator has its own\n'+ \
+                        'unique battery'
+                        ghenv.Component.AddRuntimeMessage(w, warning)
+                        print warning 
+                        return -1 
+                        
+                    # Check for duplicate inverters 
+                    #Append inverter ID to checkbatteryduplicate to check for duplicate inverter - These can cause EnergyPlus to crash
+                    WriteIDF.checkinverterduplicate.append(inverterobject.ID)
+            
+                    # If the inverter ID occurs twice in the list WriteIDF.checkinverterduplicate it is a duplicate
+                    if WriteIDF.checkinverterduplicate.count(inverterobject.ID) == 2:
+                        warning  = 'Duplicate inverter detected! please make sure that each Honeybee PV generator has its own inverter \n'+ \
+                        'usually this happens because one inverter is connected to many PVgenerators make sure each PVgenerator has its own\n'+ \
+                        'unique inverter'
+                        ghenv.Component.AddRuntimeMessage(w, warning)
+                        print warning 
+                        return -1 
+                    
                 else:
                     # HBsystem contains a inverter and is a DC system there are NO batteries in the system
                     
@@ -1526,7 +1558,21 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                     
                     # Write HBsystemgenerator ElectricLoadCenter:Distribution
                     idfFile.write(hb_writeIDF.writeloadcenterdistribution(distribution_name,HBsystemgenerator_name,operationscheme,demandlimit,trackschedule,trackmeterschedule,busstype,inverterobject,None)) 
-        
+                    
+                    # Check for duplicate inverters 
+                    #Append inverter ID to checkbatteryduplicate to check for duplicate inverter - These can cause EnergyPlus to crash
+                    WriteIDF.checkinverterduplicate.append(inverterobject.ID)
+            
+                    # If the inverter ID occurs twice in the list WriteIDF.checkinverterduplicate it is a duplicate
+                    if WriteIDF.checkinverterduplicate.count(inverterobject.ID) == 2:
+                        warning  = 'Duplicate inverter detected! please make sure that each Honeybee PV generator has its own inverter \n'+ \
+                        'usually this happens because one inverter is connected to many PVgenerators make sure each PVgenerator has its own\n'+ \
+                        'unique inverter'
+                        ghenv.Component.AddRuntimeMessage(w, warning)
+                        print warning 
+                        return -1 
+
+                
         elif HBsystemgenerator.windgenerators != []:
             
             operationscheme = 'Baseload'
@@ -1565,8 +1611,6 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         
         return -1
         
-
-    
     ################ Construction #####################
     print "[5 of 8] Writing materials and constructions..."
     
@@ -1736,6 +1780,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         idfFile.write('\n')
         for line in simulationOutputs:
             idfFile.write(line + '\n')
+            
     else:
         print "[8 of 8] No outputs! You usually want to get some outputs when you run an analysis. Just saying..."
         print "We'll just request some energy-related outputs for you that are monthly."
@@ -1746,6 +1791,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
             'Output:Variable,*,Zone Electric Equipment Electric Energy, monthly;'
         idfFile.write('\n')
         idfFile.write(outPutsDefalut + '\n')
+        # Writing outputs for Honeybee generators if there are any
         
     idfFile.close()
     

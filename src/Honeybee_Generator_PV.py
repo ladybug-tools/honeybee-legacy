@@ -91,6 +91,13 @@ def checktheinputs(_name,_HBSurfaces,SA_solarcells,cells_n,_integrationmode,No_p
         """
         
     # Check that Honeybee Zones are connected
+    
+    if (PV_inverter == []) or (PV_inverter == None):
+        
+        print " Please connect an inverter to PV_inverter"
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, "Please connect an inverter to PV_inverter")
+        return -1
         
     if len(PV_inverter) != 1:
         

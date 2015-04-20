@@ -5041,6 +5041,7 @@ class simple_battery(object):
         self.maxdischarge = max_discharging
         self.initalcharge = initial_charge
         self.batcost = bat_cost
+        self.ID = str(uuid.uuid4())
         
 
 class hb_reEvaluateHBZones(object):
