@@ -44,7 +44,7 @@ Provided by Honeybee 0.0.56
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_04_2015'
+ghenv.Component.Message = 'VER 0.0.56\nAPR_20_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nAPR_03_2015
@@ -1436,7 +1436,12 @@ if _writeIdf == True and _epwFile and _HBZones and _HBZones[0]!=None:
             try:
                 errorFileFullName = idfFileAddress.replace('.idf', '.err')
                 errFile = open(errorFileFullName, 'r')
-                for line in errFile: print line
+                for line in errFile:
+                    print line
+                    if "Severe" in line or "Fatal" in line:
+                        warning = "The simulation has failed because of this severe error: \n" + str(line)
+                        w = gh.GH_RuntimeMessageLevel.Warning
+                        ghenv.Component.AddRuntimeMessage(w, warning)
                 errFile.close()
             except:
                 pass
