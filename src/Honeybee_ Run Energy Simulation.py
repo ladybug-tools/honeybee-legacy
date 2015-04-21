@@ -1132,6 +1132,7 @@ sc.sticky["honeybee_RunIDF"] = RunIDF
 def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext,
          simulationOutputs, writeIdf, runEnergyPlus, workingDir, idfFileName,
          meshSettings):
+             
     # import the classes
     w = gh.GH_RuntimeMessageLevel.Warning
     
@@ -1434,182 +1435,201 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     
     print "[4 of 8] Writing Electric Load Center - Generator specifications ..."
         
-    hb_hivegen = sc.sticky["honeybee_generationHive"]()
+    if HB_generators != []:
 
-    HBsystemgenerators = hb_hivegen.callFromHoneybeeHive(HB_generators)
+        hb_hivegen = sc.sticky["honeybee_generationHive"]()
     
-    HBsystemgeneratorcount = 0
-    
-    for HBsystemgenerator in HBsystemgenerators:
-    
-        # Define the name for the list of generators and to use in generator's list name in ElectricLoadCenter:Distribution
-        if HBsystemgenerator.name == None:
+        HBsystemgenerators = hb_hivegen.callFromHoneybeeHive(HB_generators)
+        
+        def extracttimeperiod(simulationOutputs):
+            timeperiod = simulationOutputs[-1].split(',')[-1]
+            HBgeneratortimeperiod = timeperiod.replace(";","")
+            return HBgeneratortimeperiod 
             
-            HBsystemgenerator_name = "generatorsystem" + str(HBsystemgeneratorcount)
-            
-        else:
+        
+        HBgeneratortimeperiod = extracttimeperiod(simulationOutputs)
 
-            HBsystemgenerator_name = str(HBsystemgenerator.name)
+        # If the user doesnt set HBgeneration_ to True in Honeybee_Generate EP output component -  this if statement will execute
         
-        # Write one ElectricLoadCenter:Generators for each HBsystemgenerator
-        
-        ### XXX still needs work to make sure names dont overlap
-        idfFile.write(hb_writeIDF.writegeneratlorlist(HBsystemgenerator_name,HBsystemgenerator.PVgenerators+HBsystemgenerator.windgenerators+HBsystemgenerator.fuelgenerators)) # The writegeneratlorlist only takes 'generators' as an input so add all the different generator lists together 
-        
-        # Determine the type of system and write one ElectricLoadCenter:Distribution for each HBsystemgenerator
-        
-        distribution_name = str(HBsystemgenerator_name) + ':Distributionsystem' 
-        
-        if HBsystemgenerator.PVgenerators != []:
+        if (not any('Output:Variable,*,Facility Total Electric Demand Power' in s for s in simulationOutputs)) and (not any('Output:Variable,*,Facility Net Purchased Electric Power' in s for s in simulationOutputs)):
             
-            WriteIDF.checksurfaceduplicate.extend(HBsystemgenerator.contextsurfaces) # Add to a list so can check for duplicates later
+            simulationOutputs.append("Output:Variable,*,Facility Net Purchased Electric Energy, RunPeriod;")
             
-            writeHBcontext(HBsystemgenerator.contextsurfaces)
+            simulationOutputs.append("Output:Variable,*,Facility Total Electric Demand Power, RunPeriod;")
             
-            # If PV surfaces are part of a Zone make sure that, that zone is connected to _HBZones
-            # that is the PV surfaces are contained in HBsystemgenerator.HBzonesurfaces
+            HBgeneratortimeperiod = 'RunPeriod'
+            
+        for HBsystemcount,HBsystemgenerator in enumerate(HBsystemgenerators):
+            
+            # For this HBsystemgenerator write the output so that the produced electric energy is reported.
+            simulationOutputs.append("Output:Variable,"+str(HBsystemgenerator.name)+":DISTRIBUTIONSYSTEM,Electric Load Center Produced Electric Energy,"+ HBgeneratortimeperiod +";")
                 
-            PVsurfaceinzones = []
-            
-            for surface in HBsystemgenerator.HBzonesurfaces:
-
-                PVsurfaceinzones.append(surface.ID in WriteIDF.zonesurfaces)
+            # Define the name for the list of generators and to use in generator's list name in ElectricLoadCenter:Distribution
+            if HBsystemgenerator.name == None:
                 
-            if all(x== True for x in PVsurfaceinzones) != True:
+                HBsystemgenerator_name = "generatorsystem" + str(HBsystemcount)
                 
-                print "The HBzone which some PV_HBSurfaces belong to is not connected to _HBZones please connect it!  " 
-                ghenv.Component.AddRuntimeMessage(w, "The HBzone which some PV_HBSurfaces belong to is not connected to _HBZones please connect it!")
-                
-                return -1
-            
-            if HBsystemgenerator.simulationinverter != None:
-                
-                if HBsystemgenerator.battery != None:
-                    # HBsystem contains a inverter and is a DC system AND has storage
-                    
-                    operationscheme = 'Baseload'
-                    busstype = 'DirectCurrentWithInverterDCStorage'
-                    demandlimit = ''
-                    trackschedule = 'Always On'
-                    trackmeterschedule = ''
-                    inverterobject = HBsystemgenerator.simulationinverter[0] # All inverters are the same doesnt matter which one you pick
-                    elecstorageobject = HBsystemgenerator.battery.name
-                    
-                    # Write HBsystemgenerator battery
-                    idfFile.write(hb_writeIDF.battery_simple(HBsystemgenerator.battery))
-                    
-                    # Write HBsystemgenerator photovoltaic generators
-                    for PVgen in HBsystemgenerator.PVgenerators:
-                        
-                        idfFile.write(hb_writeIDF.write_PVgen(PVgen))
-                        idfFile.write(hb_writeIDF.write_PVgenperformanceobject(PVgen))
-                    
-                    # Write HBsystemgenerator inverters
-                    idfFile.write(hb_writeIDF.simple_inverter(inverterobject))
-                    
-                    # Write HBsystemgenerator ElectricLoadCenter:Distribution
-                    idfFile.write(hb_writeIDF.writeloadcenterdistribution(distribution_name,HBsystemgenerator_name,operationscheme,demandlimit,trackschedule,trackmeterschedule,busstype,inverterobject,elecstorageobject))
-                    
-                    # Check for duplicate batteries
-                    # Append battery ID to checkbatteryduplicate to check for duplicate batteries
-                    WriteIDF.checkbatteryduplicate.append(HBsystemgenerator.battery.ID)
-                    
-                    # If the battery ID occurs twice in the list WriteIDF.checkbatteryduplicate it is a duplicate
-                    if WriteIDF.checkbatteryduplicate.count(HBsystemgenerator.battery.ID) == 2:
-                        
-                        warning  = 'Duplicate battery detected! please make sure that each HB generators has its own battery \n'+ \
-                        'usually this happens because one battery is connected to many PVgenerators make sure each PVgenerator has its own\n'+ \
-                        'unique battery'
-                        ghenv.Component.AddRuntimeMessage(w, warning)
-                        print warning 
-                        return -1 
-                        
-                    # Check for duplicate inverters 
-                    #Append inverter ID to checkbatteryduplicate to check for duplicate inverter - These can cause EnergyPlus to crash
-                    WriteIDF.checkinverterduplicate.append(inverterobject.ID)
-            
-                    # If the inverter ID occurs twice in the list WriteIDF.checkinverterduplicate it is a duplicate
-                    if WriteIDF.checkinverterduplicate.count(inverterobject.ID) == 2:
-                        warning  = 'Duplicate inverter detected! please make sure that each Honeybee PV generator has its own inverter \n'+ \
-                        'usually this happens because one inverter is connected to many PVgenerators make sure each PVgenerator has its own\n'+ \
-                        'unique inverter'
-                        ghenv.Component.AddRuntimeMessage(w, warning)
-                        print warning 
-                        return -1 
-                    
-                else:
-                    # HBsystem contains a inverter and is a DC system there are NO batteries in the system
-                    
-                    operationscheme = 'Baseload'
-                    busstype = 'DirectCurrentWithInverter'
-                    demandlimit = ''
-                    trackschedule = 'Always On'
-                    trackmeterschedule = ''
-                    inverterobject = HBsystemgenerator.simulationinverter[0] # All inverters are the same doesnt matter which one you pick
-                    
-                    # Write HBsystemgenerator photovoltaic generators
-                    for PVgen in HBsystemgenerator.PVgenerators:
-                        
-                        idfFile.write(hb_writeIDF.write_PVgen(PVgen))
-                        idfFile.write(hb_writeIDF.write_PVgenperformanceobject(PVgen))
-                    
-                    # Write HBsystemgenerator inverters
-                    idfFile.write(hb_writeIDF.simple_inverter(inverterobject))
-                    
-                    # Write HBsystemgenerator ElectricLoadCenter:Distribution
-                    idfFile.write(hb_writeIDF.writeloadcenterdistribution(distribution_name,HBsystemgenerator_name,operationscheme,demandlimit,trackschedule,trackmeterschedule,busstype,inverterobject,None)) 
-                    
-                    # Check for duplicate inverters 
-                    #Append inverter ID to checkbatteryduplicate to check for duplicate inverter - These can cause EnergyPlus to crash
-                    WriteIDF.checkinverterduplicate.append(inverterobject.ID)
-            
-                    # If the inverter ID occurs twice in the list WriteIDF.checkinverterduplicate it is a duplicate
-                    if WriteIDF.checkinverterduplicate.count(inverterobject.ID) == 2:
-                        warning  = 'Duplicate inverter detected! please make sure that each Honeybee PV generator has its own inverter \n'+ \
-                        'usually this happens because one inverter is connected to many PVgenerators make sure each PVgenerator has its own\n'+ \
-                        'unique inverter'
-                        ghenv.Component.AddRuntimeMessage(w, warning)
-                        print warning 
-                        return -1 
-
-                
-        elif HBsystemgenerator.windgenerators != []:
-            
-            operationscheme = 'Baseload'
-            busstype = 'AlternatingCurrent'
-            demandlimit = ''
-            trackschedule = 'Always On'
-            trackmeterschedule = ''
-            inverterobject = None
-            elecstorageobject = None
-            
-            # Write HBsystemgenerator wind generators
-            for windgenerator in HBsystemgenerator.windgenerators:
-                
-                idfFile.write(hb_writeIDF.wind_generator(windgenerator))
-                
-            # Write HBsystemgenerator ElectricLoadCenter:Distribution
-            idfFile.write(hb_writeIDF.writeloadcenterdistribution(distribution_name,HBsystemgenerator_name,operationscheme,demandlimit,trackschedule,trackmeterschedule,busstype,inverterobject,elecstorageobject))
-            
-           
-        elif HBsystemgenerator.fuelgenerators != []: # XXX 14/04/2015 not yet implemented so always equal to []
-            
-            busstype = 'AlternatingCurrent'
-        
-        HBsystemgeneratorcount = HBsystemgeneratorcount + 1
+            else:
     
-    # Check for duplicate HBcontext surfaces this could happen if the user connects context surfaces to both HBContext_ and a HB generator system
-    HBcontextsurfaces = set()
+                HBsystemgenerator_name = str(HBsystemgenerator.name)
+            
+            # Write one ElectricLoadCenter:Generators for each HBsystemgenerator
+            
+            ### XXX still needs work to make sure names dont overlap
+            idfFile.write(hb_writeIDF.writegeneratlorlist(HBsystemgenerator_name,HBsystemgenerator.PVgenerators+HBsystemgenerator.windgenerators+HBsystemgenerator.fuelgenerators)) # The writegeneratlorlist only takes 'generators' as an input so add all the different generator lists together 
+            
+            # Determine the type of system and write one ElectricLoadCenter:Distribution for each HBsystemgenerator
+            
+            distribution_name = str(HBsystemgenerator_name) + ':Distributionsystem' 
+            
+            if HBsystemgenerator.PVgenerators != []:
+                
+                WriteIDF.checksurfaceduplicate.extend(HBsystemgenerator.contextsurfaces) # Add to a list so can check for duplicates later
+                
+                writeHBcontext(HBsystemgenerator.contextsurfaces)
+                
+                # If PV surfaces are part of a Zone make sure that, that zone is connected to _HBZones
+                # that is the PV surfaces are contained in HBsystemgenerator.HBzonesurfaces
+                    
+                PVsurfaceinzones = []
+                
+                for surface in HBsystemgenerator.HBzonesurfaces:
     
-    for HBcontextsurface in WriteIDF.checksurfaceduplicate:
-        HBcontextsurfaces.add(HBcontextsurface.ID)
+                    PVsurfaceinzones.append(surface.ID in WriteIDF.zonesurfaces)
+                    
+                if all(x== True for x in PVsurfaceinzones) != True:
+                    
+                    print "The HBzone which some PV_HBSurfaces belong to is not connected to _HBZones please connect it!  " 
+                    ghenv.Component.AddRuntimeMessage(w, "The HBzone which some PV_HBSurfaces belong to is not connected to _HBZones please connect it!")
+                    
+                    return -1
+                
+                if HBsystemgenerator.simulationinverter != None:
+                    
+                    if HBsystemgenerator.battery != None:
+                        # HBsystem contains a inverter and is a DC system AND has storage
+                        
+                        operationscheme = 'Baseload'
+                        busstype = 'DirectCurrentWithInverterDCStorage'
+                        demandlimit = ''
+                        trackschedule = 'Always On'
+                        trackmeterschedule = ''
+                        inverterobject = HBsystemgenerator.simulationinverter[0] # All inverters are the same doesnt matter which one you pick
+                        elecstorageobject = HBsystemgenerator.battery.name
+                        
+                        # Write HBsystemgenerator battery
+                        idfFile.write(hb_writeIDF.battery_simple(HBsystemgenerator.battery))
+                        
+                        # Write HBsystemgenerator photovoltaic generators
+                        for PVgen in HBsystemgenerator.PVgenerators:
+                            
+                            idfFile.write(hb_writeIDF.write_PVgen(PVgen))
+                            idfFile.write(hb_writeIDF.write_PVgenperformanceobject(PVgen))
+                        
+                        # Write HBsystemgenerator inverters
+                        idfFile.write(hb_writeIDF.simple_inverter(inverterobject))
+                        
+                        # Write HBsystemgenerator ElectricLoadCenter:Distribution
+                        idfFile.write(hb_writeIDF.writeloadcenterdistribution(distribution_name,HBsystemgenerator_name,operationscheme,demandlimit,trackschedule,trackmeterschedule,busstype,inverterobject,elecstorageobject))
+                        
+                        # Check for duplicate batteries
+                        # Append battery ID to checkbatteryduplicate to check for duplicate batteries
+                        WriteIDF.checkbatteryduplicate.append(HBsystemgenerator.battery.ID)
+                        
+                        # If the battery ID occurs twice in the list WriteIDF.checkbatteryduplicate it is a duplicate
+                        if WriteIDF.checkbatteryduplicate.count(HBsystemgenerator.battery.ID) == 2:
+                            
+                            warning  = 'Duplicate battery detected! please make sure that each HB generators has its own battery \n'+ \
+                            'usually this happens because one battery is connected to many PVgenerators make sure each PVgenerator has its own\n'+ \
+                            'unique battery'
+                            ghenv.Component.AddRuntimeMessage(w, warning)
+                            print warning 
+                            return -1 
+                            
+                        # Check for duplicate inverters 
+                        #Append inverter ID to checkbatteryduplicate to check for duplicate inverter - These can cause EnergyPlus to crash
+                        WriteIDF.checkinverterduplicate.append(inverterobject.ID)
+                
+                        # If the inverter ID occurs twice in the list WriteIDF.checkinverterduplicate it is a duplicate
+                        if WriteIDF.checkinverterduplicate.count(inverterobject.ID) == 2:
+                            warning  = 'Duplicate inverter detected! please make sure that each Honeybee PV generator has its own inverter \n'+ \
+                            'usually this happens because one inverter is connected to many PVgenerators make sure each PVgenerator has its own\n'+ \
+                            'unique inverter'
+                            ghenv.Component.AddRuntimeMessage(w, warning)
+                            print warning 
+                            return -1 
+                        
+                    else:
+                        # HBsystem contains a inverter and is a DC system there are NO batteries in the system
+                        
+                        operationscheme = 'Baseload'
+                        busstype = 'DirectCurrentWithInverter'
+                        demandlimit = ''
+                        trackschedule = 'Always On'
+                        trackmeterschedule = ''
+                        inverterobject = HBsystemgenerator.simulationinverter[0] # All inverters are the same doesnt matter which one you pick
+                        
+                        # Write HBsystemgenerator photovoltaic generators
+                        for PVgen in HBsystemgenerator.PVgenerators:
+                            
+                            idfFile.write(hb_writeIDF.write_PVgen(PVgen))
+                            idfFile.write(hb_writeIDF.write_PVgenperformanceobject(PVgen))
+                        
+                        # Write HBsystemgenerator inverters
+                        idfFile.write(hb_writeIDF.simple_inverter(inverterobject))
+                        
+                        # Write HBsystemgenerator ElectricLoadCenter:Distribution
+                        idfFile.write(hb_writeIDF.writeloadcenterdistribution(distribution_name,HBsystemgenerator_name,operationscheme,demandlimit,trackschedule,trackmeterschedule,busstype,inverterobject,None)) 
+                        
+                        # Check for duplicate inverters 
+                        #Append inverter ID to checkbatteryduplicate to check for duplicate inverter - These can cause EnergyPlus to crash
+                        WriteIDF.checkinverterduplicate.append(inverterobject.ID)
+                
+                        # If the inverter ID occurs twice in the list WriteIDF.checkinverterduplicate it is a duplicate
+                        if WriteIDF.checkinverterduplicate.count(inverterobject.ID) == 2:
+                            warning  = 'Duplicate inverter detected! please make sure that each Honeybee PV generator has its own inverter \n'+ \
+                            'usually this happens because one inverter is connected to many PVgenerators make sure each PVgenerator has its own\n'+ \
+                            'unique inverter'
+                            ghenv.Component.AddRuntimeMessage(w, warning)
+                            print warning 
+                            return -1 
+    
+                    
+            elif HBsystemgenerator.windgenerators != []:
+                
+                operationscheme = 'Baseload'
+                busstype = 'AlternatingCurrent'
+                demandlimit = ''
+                trackschedule = 'Always On'
+                trackmeterschedule = ''
+                inverterobject = None
+                elecstorageobject = None
+                
+                # Write HBsystemgenerator wind generators
+                for windgenerator in HBsystemgenerator.windgenerators:
+                    
+                    idfFile.write(hb_writeIDF.wind_generator(windgenerator))
+                    
+                # Write HBsystemgenerator ElectricLoadCenter:Distribution
+                idfFile.write(hb_writeIDF.writeloadcenterdistribution(distribution_name,HBsystemgenerator_name,operationscheme,demandlimit,trackschedule,trackmeterschedule,busstype,inverterobject,elecstorageobject))
+                
+               
+            elif HBsystemgenerator.fuelgenerators != []: # XXX 14/04/2015 not yet implemented so always equal to []
+                
+                busstype = 'AlternatingCurrent'
+            
+        # Check for duplicate HBcontext surfaces this could happen if the user connects context surfaces to both HBContext_ and a HB generator system
+        HBcontextsurfaces = set()
         
-    if len(HBcontextsurfaces) != len(WriteIDF.checksurfaceduplicate):
-        
-        print "Duplicate HBcontext surfaces detected! Don't connect HBcontext surfaces to both PVgen component and run E+ component HBContext_ input!"
-        ghenv.Component.AddRuntimeMessage(w, "Duplicate HBcontext surfaces detected! Don't connect HBcontext surfaces to both PVgen component and run E+ component HBContext_ input!")
-        
-        return -1
+        for HBcontextsurface in WriteIDF.checksurfaceduplicate:
+            HBcontextsurfaces.add(HBcontextsurface.ID)
+            
+        if len(HBcontextsurfaces) != len(WriteIDF.checksurfaceduplicate):
+            
+            print "Duplicate HBcontext surfaces detected! Don't connect HBcontext surfaces to both PVgen component and run E+ component HBContext_ input!"
+            ghenv.Component.AddRuntimeMessage(w, "Duplicate HBcontext surfaces detected! Don't connect HBcontext surfaces to both PVgen component and run E+ component HBContext_ input!")
+            
+            return -1
         
     ################ Construction #####################
     print "[5 of 8] Writing materials and constructions..."
