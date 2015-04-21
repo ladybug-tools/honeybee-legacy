@@ -1074,7 +1074,8 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
             elif temp < 24: grndTemps.append(temp)
             else: grndTemps.append(24)
     
-    idfFile.write(hb_writeIDF.EPGroundTemp(grndTemps))
+    if grndTemps != []:
+        idfFile.write(hb_writeIDF.EPGroundTemp(grndTemps))
     
     # SizingPeriod
     #Check if there are sizing periods in the EPW file.
