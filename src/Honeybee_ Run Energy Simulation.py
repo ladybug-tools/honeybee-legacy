@@ -1439,9 +1439,10 @@ if _writeIdf == True and _epwFile and _HBZones and _HBZones[0]!=None:
                 for line in errFile:
                     print line
                     if "Severe" in line or "Fatal" in line:
-                        warning = "The simulation has failed because of this severe error: \n" + str(line)
+                        warning = "The simulation has not run correctly because of this severe error: \n" + str(line)
                         w = gh.GH_RuntimeMessageLevel.Warning
                         ghenv.Component.AddRuntimeMessage(w, warning)
+                        resultFileAddress = None
                 errFile.close()
             except:
                 pass
