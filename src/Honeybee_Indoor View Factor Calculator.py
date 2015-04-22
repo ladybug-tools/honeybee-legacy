@@ -649,7 +649,7 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                         if sum(indexCount[indCt]) == totalTests:
                             
                             outdoorTestPts.append(deletedTestPts[testSrfCount][0][indCt])
-                        outdoorFaceBreps.append(deletedFaceBreps[testSrfCount][0][indCt])
+                            outdoorFaceBreps.append(deletedFaceBreps[testSrfCount][0][indCt])
             else:
                 #Split the sectionBreps with the zones and test if any lie outside all zones.
                 outdoorBreps = []
@@ -740,7 +740,7 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                 heightWeights.append([])
                 for point in falseZone:
                     zoneWeights[falseZoneCount].append([])
-        
+        print len(zoneWeights)
         if removeInt == True:
             #Get the centroids of each zone, which will represent the air node of the zone.
             zoneCentroids = []
@@ -1085,45 +1085,6 @@ def main(testPts, zoneSrfsMesh, viewVectors, includeOutdoor):
                 for hitList in srfHits:
                     testPtViewFactor[zoneCount][pointCount].append(sum(hitList)/divisor)
     
-    #Check to see if viewFactors are not adding up to 1 and correct it.
-    for ptListCount, ptList in enumerate(testPtViewFactor):
-        if includeOutdoor:
-            if ptListCount != len(testPtViewFactor)-1:
-                for ptCount, pt in enumerate(ptList):
-                    if sum(pt) < 0.9:
-                        newViewFacList = []
-                        numOfSrfs = 0
-                        for viewFac in pt:
-                            if viewFac > 0.1: numOfSrfs += 1
-                        for viewFac in pt:
-                            if viewFac < 0.1: newViewFacList.append(0.0)
-                            else: newViewFacList.append(1.0/numOfSrfs)
-                        
-                        testPtViewFactor[ptListCount][ptCount] = newViewFacList
-            else:
-                for ptCount, pt in enumerate(ptList):
-                    if sum(pt) > 0.95:
-                        newViewFacList = []
-                        numOfSrfs = 0
-                        for viewFac in pt:
-                            if viewFac > 0.4: numOfSrfs += 1
-                        for viewFac in pt:
-                            if viewFac < 0.4: newViewFacList.append(0.0)
-                            else: newViewFacList.append(0.5/numOfSrfs)
-                        
-                        testPtViewFactor[ptListCount][ptCount] = newViewFacList
-        else:
-            for ptCount, pt in enumerate(ptList):
-                if sum(pt) < 0.9:
-                    newViewFacList = []
-                    numOfSrfs = 0
-                    for viewFac in pt:
-                        if viewFac > 0.1: numOfSrfs += 1
-                    for viewFac in pt:
-                        if viewFac < 0.1: newViewFacList.append(0.0)
-                        else: newViewFacList.append(1.0/numOfSrfs)
-                    
-                    testPtViewFactor[ptListCount][ptCount] = newViewFacList
     
     return testPtViewFactor
 

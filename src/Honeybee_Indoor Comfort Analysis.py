@@ -40,7 +40,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Indoor Comfort Analysis"
 ghenv.Component.NickName = 'IndoorComfAnalysis'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_19_2015'
+ghenv.Component.Message = 'VER 0.0.56\nAPR_21_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -210,7 +210,6 @@ def calculatePointMRT(srfTempDict, testPtsViewFactor, hour, outdoorClac, outSrfT
     #Calculate the MRT for each point.
     pointMRTValues = []
     for zoneCount, pointList in enumerate(testPtsViewFactor):
-        
         if outdoorClac == False or zoneCount != len(testPtsViewFactor)-1:
             pointMRTValues.append([])
             for pointViewFactor in pointList:
@@ -511,6 +510,12 @@ def computeGroupedRoomProperties(testPtZoneWeights, testPtZoneNames, zoneInletIn
             if ptAdjList not in adjacentList: adjacentList.append(ptAdjList)
             if ptNameList not in adjacentNameList: adjacentNameList.append(ptNameList)
     
+    if len(adjacentList) != len(testPtZoneWeights):
+        for zonecount, zoneList in enumerate(testPtZoneWeights):
+            if zoneList == []:
+                adjacentList.insert(zonecount, [])
+                adjacentNameList.insert(zonecount, [])
+    
     #Compute the grouped window heights and zone heights for the stratification calculation
     groupedTotalVol = []
     groupedTotalVolList = []
@@ -549,56 +554,67 @@ def computeGroupedRoomProperties(testPtZoneWeights, testPtZoneNames, zoneInletIn
     groupedGlzHeights = []
     groupedWinCeilDiffs = []
     for zoneCount in range(len(adjacentList)):
-        if len(groupedMinHeightsInit[zoneCount]) != 1:
-            groupedMinHeightsInit[zoneCount].sort()
-            minHeight = groupedMinHeightsInit[zoneCount][0]
-            groupedMaxHeightsInit[zoneCount].sort()
-            maxHeight = groupedMaxHeightsInit[zoneCount][-1]
-            roomHeight = maxHeight - minHeight
-            groupedZoneHeights.append(roomHeight)
-            if inletHeightOverride == []:
-                areaWeights = []
-                for areaCount, area in enumerate(groupedInletAreaList[zoneCount]):
-                    try:
-                        areaWeights.append(area/sum(groupedInletAreaList[zoneCount]))
-                    except:
-                        areaWeights.append(groupedTotalVolList[zoneCount][areaCount]/groupedTotalVol[zoneCount])
-                weightedGlzHeights = []
-                for count, height in enumerate(groupedGlzHeightsInit[zoneCount]):
-                    try:
-                        weightedHeight = (height)*areaWeights[count]
-                        weightedGlzHeights.append(weightedHeight)
-                    except:
-                        weightedGlzHeights.append(0)
-                weightedAvgGlzHeight = sum(weightedGlzHeights)
-                groupedGlzHeights.append(weightedAvgGlzHeight)
-                groupedWinCeilDiffs.append(roomHeight - weightedAvgGlzHeight)
+        if len(groupedMinHeightsInit[zoneCount]) != 0:
+            if len(groupedMinHeightsInit[zoneCount]) != 1:
+                groupedMinHeightsInit[zoneCount].sort()
+                minHeight = groupedMinHeightsInit[zoneCount][0]
+                groupedMaxHeightsInit[zoneCount].sort()
+                maxHeight = groupedMaxHeightsInit[zoneCount][-1]
+                roomHeight = maxHeight - minHeight
+                groupedZoneHeights.append(roomHeight)
+                if inletHeightOverride == []:
+                    areaWeights = []
+                    for areaCount, area in enumerate(groupedInletAreaList[zoneCount]):
+                        try:
+                            areaWeights.append(area/sum(groupedInletAreaList[zoneCount]))
+                        except:
+                            areaWeights.append(groupedTotalVolList[zoneCount][areaCount]/groupedTotalVol[zoneCount])
+                    weightedGlzHeights = []
+                    for count, height in enumerate(groupedGlzHeightsInit[zoneCount]):
+                        try:
+                            weightedHeight = (height)*areaWeights[count]
+                            weightedGlzHeights.append(weightedHeight)
+                        except:
+                            weightedGlzHeights.append(0)
+                    weightedAvgGlzHeight = sum(weightedGlzHeights)
+                    groupedGlzHeights.append(weightedAvgGlzHeight)
+                    groupedWinCeilDiffs.append(roomHeight - weightedAvgGlzHeight)
+                else:
+                    groupedGlzHeights.append(inletHeightOverride[zoneCount])
+                    groupedWinCeilDiffs.append(roomHeight - inletHeightOverride[zoneCount])
             else:
-                groupedGlzHeights.append(inletHeightOverride[zoneCount])
-                groupedWinCeilDiffs.append(roomHeight - inletHeightOverride[zoneCount])
+                roomHeight = groupedMaxHeightsInit[zoneCount][0] - groupedMinHeightsInit[zoneCount][0]
+                groupedZoneHeights.append(roomHeight)
+                if inletHeightOverride == []:
+                    if groupedGlzHeightsInit[zoneCount][0] != None: glzHeight = groupedGlzHeightsInit[zoneCount][0]
+                    else: glzHeight = (groupedMaxHeightsInit[zoneCount][0] - groupedMinHeightsInit[zoneCount][0])/2
+                    groupedGlzHeights.append(glzHeight)
+                    groupedWinCeilDiffs.append(roomHeight - glzHeight)
+                else:
+                    groupedGlzHeights.append(inletHeightOverride[zoneCount])
+                    groupedWinCeilDiffs.append(roomHeight - inletHeightOverride[zoneCount])
         else:
-            roomHeight = groupedMaxHeightsInit[zoneCount][0] - groupedMinHeightsInit[zoneCount][0]
-            groupedZoneHeights.append(roomHeight)
-            if inletHeightOverride == []:
-                if groupedGlzHeightsInit[zoneCount][0] != None: glzHeight = groupedGlzHeightsInit[zoneCount][0]
-                else: glzHeight = (groupedMaxHeightsInit[zoneCount][0] - groupedMinHeightsInit[zoneCount][0])/2
-                groupedGlzHeights.append(glzHeight)
-                groupedWinCeilDiffs.append(roomHeight - glzHeight)
-            else:
-                groupedGlzHeights.append(inletHeightOverride[zoneCount])
-                groupedWinCeilDiffs.append(roomHeight - inletHeightOverride[zoneCount])
+            groupedZoneHeights.append(0)
+            groupedGlzHeights.append(0)
+            groupedWinCeilDiffs.append(0)
     
     
     return adjacentList, adjacentNameList, groupedInletArea, groupedZoneHeights, groupedGlzHeights, groupedWinCeilDiffs
 
 
-def mainAdapt(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, zoneSrfNames, testPtsViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, prevailingOutdoorTemp, eightyPercentComf, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, lb_preparation, lb_sunpath, lb_comfortModels):
+def mainAdapt(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, zoneSrfNames, testPtsViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, prevailingOutdoorTemp, eightyPercentComf, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, dataAnalysisPeriod, lb_preparation, lb_sunpath, lb_comfortModels):
     #Set up matrices to be filled.
     radTempMtx = ['Radiant Temperature;' + str(analysisPeriod[0]) + ";" + str(analysisPeriod[1])]
     airTempMtx = ['Air Temperature;' + str(analysisPeriod[0]) + ";" + str(analysisPeriod[1])]
     operativeTempMtx = ['Operative Temperature;' + str(analysisPeriod[0]) + ";" + str(analysisPeriod[1])]
     adaptComfMtx = ['Adaptive Comfort;' + str(analysisPeriod[0]) + ";" + str(analysisPeriod[1])]
     degFromTargetMtx = ['Degrees From Target;' + str(analysisPeriod[0]) + ";" + str(analysisPeriod[1])]
+    
+    #Check the data anlysis period and subtract the start day from each of the HOYs.
+    if dataAnalysisPeriod != [(1,1,1),(12,31,24)]:
+        FinalHOYs, mon, days = lb_preparation.getHOYsBasedOnPeriod(dataAnalysisPeriod, 1)
+        for hCount, hour in enumerate(HOYs):
+            HOYs[hCount] = hour - FinalHOYs[0]
     
     #Create placeholders for all of the hours.
     for hour in HOYs:
@@ -1089,8 +1105,8 @@ else:
 recipeRecognized = False
 comfortModel = None
 if len(_comfAnalysisRecipe) > 0:
-    if len(_comfAnalysisRecipe) == 36 and _comfAnalysisRecipe[0] == "Adaptive":
-        comfortModel, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, prevailingOutdoorTemp, eightyPercentComf, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac = _comfAnalysisRecipe
+    if len(_comfAnalysisRecipe) == 37 and _comfAnalysisRecipe[0] == "Adaptive":
+        comfortModel, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, prevailingOutdoorTemp, eightyPercentComf, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, dataAnalysisPeriod = _comfAnalysisRecipe
         recipeRecognized = True
     elif len(_comfAnalysisRecipe) == 44 and _comfAnalysisRecipe[0] == "PMV":
         comfortModel, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, clothingLevel, metabolicRate, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, eightyPercentComf, humidRatioUp, humidRatioLow, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed = _comfAnalysisRecipe
@@ -1110,7 +1126,7 @@ if recipeRecognized == True and checkLB == True:
 
 if checkData == True and _runIt == True:
     if comfortModel == "Adaptive":
-        result = mainAdapt(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, prevailingOutdoorTemp, eightyPercentComf, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, lb_preparation, lb_sunpath, lb_comfortModels)
+        result = mainAdapt(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, prevailingOutdoorTemp, eightyPercentComf, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, dataAnalysisPeriod, lb_preparation, lb_sunpath, lb_comfortModels)
         if result != -1:
             radTempMtx, airTempMtx, operativeTempMtx, adaptComfMtx, degFromTargetMtx = result
             if writeResultFile_ != 0:

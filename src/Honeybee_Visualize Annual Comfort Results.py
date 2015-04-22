@@ -87,6 +87,8 @@ def checkTheInputs():
         for mesh in viewFactorMesh:
             meshFaceCount.append(mesh.Faces.Count)
         ptLen2 = sum(meshFaceCount)
+        print ptLen1
+        print ptLen2
         if ptLen1 == ptLen2: checkData2 = True
         else:
             meshVertCount = []

@@ -34,7 +34,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Adaptive Comfort Analysis Recipe"
 ghenv.Component.NickName = 'AdaptComfRecipe'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_12_2015'
+ghenv.Component.Message = 'VER 0.0.56\nAPR_21_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -57,27 +57,41 @@ import os
 
 w = gh.GH_RuntimeMessageLevel.Warning
 tol = sc.doc.ModelAbsoluteTolerance
-
+#DataTree.Branch(
 
 def checkTheInputs():
     #Convert the data tree of _viewFactorMesh to py data.
     viewFactorMesh = []
     checkData13 = True
+    pathCheck = 0
     if _viewFactorMesh.BranchCount != 0:
         if _viewFactorMesh.Branch(0)[0] != None:
-            for i in range(_viewFactorMesh.BranchCount):
-                branchList = _viewFactorMesh.Branch(i)
-                dataVal = []
-                for item in branchList:
-                    dataVal.append(item)
-                viewFactorMesh.append(dataVal)
+            treePaths = _viewFactorMesh.Paths
+            for path in treePaths:
+                i = path.Indices[0]
+                if i == pathCheck:
+                    branchList = _viewFactorMesh.Branch(path)
+                    dataVal = []
+                    for item in branchList:
+                        dataVal.append(item)
+                    viewFactorMesh.append(dataVal)
+                    pathCheck += 1
+                else:
+                    viewFactorMesh.append([])
+                    pathCheck += 1
+                    if i == pathCheck:
+                        branchList = _viewFactorMesh.Branch(path)
+                        dataVal = []
+                        for item in branchList:
+                            dataVal.append(item)
+                        viewFactorMesh.append(dataVal)
+                        pathCheck += 1
         else:
             checkData13 = False
             print "Connect a data tree of view factor meshes from the 'Honeybee_Indoor View Factor Calculator' component."
     else:
         checkData13 = False
         print "Connect a data tree of view factor meshes from the 'Honeybee_Indoor View Factor Calculator' component."
-    
     
     #Unpack the viewFactorInfo.
     checkData25 = True
@@ -90,6 +104,36 @@ def checkTheInputs():
         print warning
         ghenv.Component.AddRuntimeMessage(w, warning)
     
+    #Check to be sure that there is no blank list in test pts view foacor.
+    #newtestPtViewFactor = []
+    #newzoneSrfNames = []
+    #newtestPtSkyView = []
+    #newtestPtBlockedVec = []
+    #newtestPtZoneWeights = []
+    #newtestPtZoneNames = []
+    #newptHeightWeights = []
+    #newzoneInletInfo = []
+    #newzoneHasWindows = []
+    #for viewCount, viewlist in enumerate(testPtViewFactor):
+    #    if viewlist != []:
+    #        newtestPtViewFactor.append(viewlist)
+    #        newzoneSrfNames.append(zoneSrfNames[viewCount])
+    #        newtestPtSkyView.append(testPtSkyView[viewCount])
+    #        newtestPtBlockedVec.append(testPtBlockedVec[viewCount])
+    #        newtestPtZoneWeights.append(testPtZoneWeights[viewCount])
+    #        newtestPtZoneNames.append(testPtZoneNames[viewCount])
+    #        newptHeightWeights.append(ptHeightWeights[viewCount])
+    #        newzoneInletInfo.append(zoneInletInfo[viewCount])
+    #        newzoneHasWindows.append(zoneHasWindows[viewCount])
+    #testPtViewFactor = newtestPtViewFactor
+    #zoneSrfNames = newzoneSrfNames
+    #testPtSkyView = newtestPtSkyView
+    #testPtBlockedVec = newtestPtBlockedVec
+    #testPtZoneWeights = newtestPtZoneWeights
+    #testPtZoneNames = newtestPtZoneNames
+    #ptHeightWeights = newptHeightWeights
+    #zoneInletInfo = newzoneInletInfo
+    #zoneHasWindows = newzoneHasWindows
     
     #Create a function to check and create a Python list from a datatree
     def checkCreateDataTree(dataTree, dataName, dataType):
@@ -171,18 +215,18 @@ def checkTheInputs():
                 ghenv.Component.AddRuntimeMessage(w, warning)
             
             #See if the data is for the whole year.
-            if header[5] == (1, 1, 1) and header[6] == (12, 31, 24):
-                if simStep == 'hourly' or simStep == 'Hourly': pass
-                else:
-                    dataCheck6 = False
-                    warning = "Simulation data must be hourly."
-                    print warning
-                    ghenv.Component.AddRuntimeMessage(w, warning)
-            else:
-                dataCheck6 = False
-                warning = "Simulation data must be for the whole year."
-                print warning
-                ghenv.Component.AddRuntimeMessage(w, warning)
+            #if header[5] == (1, 1, 1) and header[6] == (12, 31, 24):
+            #    if simStep == 'hourly' or simStep == 'Hourly': pass
+            #    else:
+            #        dataCheck6 = False
+            #        warning = "Simulation data must be hourly."
+            #        print warning
+            #        ghenv.Component.AddRuntimeMessage(w, warning)
+            #else:
+            #    dataCheck6 = False
+            #    warning = "Simulation data must be for the whole year."
+            #    print warning
+            #    ghenv.Component.AddRuntimeMessage(w, warning)
             
         else:
             dataCheck5 = False
@@ -193,19 +237,18 @@ def checkTheInputs():
             headerUnits = 'unknown units'
             dataHeaders = []
         
-        return dataCheck5, dataCheck6, headerUnits, dataHeaders, dataNumbers
+        return dataCheck5, dataCheck6, headerUnits, dataHeaders, dataNumbers, [header[5], header[6]]
     
     #Run all of the EnergyPlus data through the check function.
-    checkData1, checkData2, airTempUnits, airTempDataHeaders, airTempDataNumbers = checkCreateDataTree(_zoneAirTemp, "_zoneAirTemp", "Air Temperature")
-    checkData3, checkData4, srfTempUnits, srfTempHeaders, srfTempNumbers = checkCreateDataTree(_srfIndoorTemp, "_srfIndoorTemp", "Inner Surface Temperature")
-    checkData21, checkData22, flowVolUnits, flowVolDataHeaders, flowVolDataNumbers = checkCreateDataTree(_zoneAirFlowVol, "_zoneAirFlowVol", "Air Flow Volume")
-    checkData23, checkData24, heatGainUnits, heatGainDataHeaders, heatGainDataNumbers = checkCreateDataTree(_zoneAirHeatGain, "_zoneAirHeatGain", "Air Heat Gain Rate")
-    
+    checkData1, checkData2, airTempUnits, airTempDataHeaders, airTempDataNumbers, analysisPeriod = checkCreateDataTree(_zoneAirTemp, "_zoneAirTemp", "Air Temperature")
+    checkData3, checkData4, srfTempUnits, srfTempHeaders, srfTempNumbers, analysisPeriod = checkCreateDataTree(_srfIndoorTemp, "_srfIndoorTemp", "Inner Surface Temperature")
+    checkData21, checkData22, flowVolUnits, flowVolDataHeaders, flowVolDataNumbers, analysisPeriod = checkCreateDataTree(_zoneAirFlowVol, "_zoneAirFlowVol", "Air Flow Volume")
+    checkData23, checkData24, heatGainUnits, heatGainDataHeaders, heatGainDataNumbers, analysisPeriod = checkCreateDataTree(_zoneAirHeatGain, "_zoneAirHeatGain", "Air Heat Gain Rate")
     
     #Try to bring in the outdoor surface temperatures.
     outdoorClac = False
     try:
-        checkData26, checkData27, outSrfTempUnits, outSrfTempHeaders, outSrfTempNumbers = checkCreateDataTree(srfOutdoorTemp_, "_srfOutdoorTemp_", "Outer Surface Temperature")
+        checkData26, checkData27, outSrfTempUnits, outSrfTempHeaders, outSrfTempNumbers, analysisPeriod = checkCreateDataTree(srfOutdoorTemp_, "_srfOutdoorTemp_", "Outer Surface Temperature")
         if outdoorIsThere == True: outdoorClac = True
     except:
         outdoorClac = False
@@ -435,7 +478,7 @@ def checkTheInputs():
         checkData = True
     else: checkData = False
     
-    return checkData, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, prevailingOutdoorTemp, eightyPercentComf, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac
+    return checkData, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, prevailingOutdoorTemp, eightyPercentComf, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, analysisPeriod
 
 
 
@@ -453,7 +496,7 @@ else:
 checkData = False
 if _viewFactorMesh.BranchCount > 0 and len(_viewFactorInfo) > 0 and _epwFile != None and _srfIndoorTemp.BranchCount > 0 and _zoneAirTemp.BranchCount > 0  and _zoneAirFlowVol.BranchCount > 0 and _zoneAirHeatGain.BranchCount > 0 and initCheck == True:
     if _viewFactorInfo[0] != None:
-        checkData, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, prevailingOutdoorTemp, eightyPercentComf, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac = checkTheInputs()
+        checkData, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, prevailingOutdoorTemp, eightyPercentComf, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, analysisPeriod = checkTheInputs()
 
 if checkData == True:
-    comfRecipe = ["Adaptive", srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, prevailingOutdoorTemp, eightyPercentComf, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac]
+    comfRecipe = ["Adaptive", srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, prevailingOutdoorTemp, eightyPercentComf, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, analysisPeriod]
