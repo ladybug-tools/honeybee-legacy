@@ -1,4 +1,5 @@
 # By Anton Szilasi
+# For technical support or user requests contact me at
 # ajszilasi@gmail.com
 # Ladybug started by Mostapha Sadeghipour Roudsari is licensed
 # under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
@@ -48,7 +49,7 @@ location = "NoLocation"
 start = "NoDate"
 end = "NoDate"
 
-if _resultFileAddress:
+if _resultFileAddress != None:
     try:
         eioFileAddress = _resultFileAddress[0:-3] + "eio"
         if not os.path.isfile(eioFileAddress):
@@ -98,85 +99,81 @@ totalelectdemand = []
 
 # PARSE THE RESULT FILE.
 
-result = open(_resultFileAddress, 'r')
-
-netpurchasedelect = []
-totalelectdemand = []
-generatorproducedenergy = DataTree[Object]()
-
-
-dict = {}
-electricloadcentername = []
-electricloadcenterrunperiod = None
-
-for lineCount,line in enumerate(result):
+if _resultFileAddress != None:
+    try:
+        result = open(_resultFileAddress, 'r')
+        
+        netpurchasedelect = []
+        totalelectdemand = []
+        generatorproducedenergy = DataTree[Object]()
+        
+        dict = {}
+        electricloadcentername = []
+        electricloadcenterrunperiod = None
+        
+        for lineCount,line in enumerate(result):
+            
+            if lineCount == 0:
     
-    if lineCount == 0:
-        #print line
-        for columnCount, column in enumerate(line.split(',')):
-            
-            if 'Whole Building:Facility Net Purchased Electric Energy' in column:
-                
-                dict['Whole Building:Facility Net Purchased Electric Energy'] = columnCount
-
-            elif 'Whole Building:Facility Total Electric Demand Power' in column:
-                
-                dict['Whole Building:Facility Total Electric Demand Power'] = columnCount
-                
-            elif 'DISTRIBUTIONSYSTEM:Electric Load Center Produced Electric Energy' in column:
-            
-                data = column.split(':')
-                
-                electricloadcentername.append(data[0])
-                
-                electricloadcenterrunperiod = column.split('(')[-1].split(')')[0]
-                
-                dict[str(data[0])+'- DISTRIBUTIONSYSTEM:Electric Load Center Produced Electric Energy'] = columnCount
-                
-            else:
-                pass
-    else:
-
-        for rowCount, row in enumerate(line.split(',')):
-            
-            if rowCount == dict['Whole Building:Facility Total Electric Demand Power']:
-
-                totalelectdemand.append(round(float(row),2))
-                
-            if rowCount == dict['Whole Building:Facility Net Purchased Electric Energy']:
-                
-                netpurchasedelect.append(round(float(row),2))
-            
-            # for loop maybe not the best for performance 
-            for count,electricloadcenter in enumerate(electricloadcentername): 
-            
-                if rowCount == dict[str(electricloadcenter)+'- DISTRIBUTIONSYSTEM:Electric Load Center Produced Electric Energy']:
+                for columnCount, column in enumerate(line.split(',')):
                     
-                    print row
+                    if 'Whole Building:Facility Net Purchased Electric Energy' in column:
+                        
+                        dict['Whole Building:Facility Net Purchased Electric Energy'] = columnCount
+        
+                    elif 'Whole Building:Facility Total Electric Demand Power' in column:
+                        
+                        dict['Whole Building:Facility Total Electric Demand Power'] = columnCount
+                        
+                    elif 'DISTRIBUTIONSYSTEM:Electric Load Center Produced Electric Energy' in column:
                     
-                    if lineCount == 1:
-                        # Add the header to each output
-                        #print makeHeader(generatorproducedenergy, count, electricloadcenterrunperiod, 'Generator system '+str(electricloadcenter), 'J'),GH_Path(count))
-                        generatorproducedenergy.Add(makeHeader(generatorproducedenergy, count, electricloadcenterrunperiod, 'Generator system '+str(electricloadcenter), 'J'),GH_Path(count))
-
-                        generatorproducedenergy.Add(round(float(row),2),GH_Path(count))
+                        data = column.split(':')
+                        
+                        electricloadcentername.append(data[0])
+                        
+                        electricloadcenterrunperiod = column.split('(')[-1].split(')')[0]
+                        
+                        dict[str(data[0])+'- DISTRIBUTIONSYSTEM:Electric Load Center Produced Electric Energy'] = columnCount
                         
                     else:
-                        generatorproducedenergy.Add(round(float(row),2),GH_Path(count))
-
-result.close()
-
-"""
-except:
-    try: result.close()
-    except: pass
-    warn = 'Failed to parse the result file.  Check the folder of the file address you are plugging into this component and make sure that there is a .csv file in the folder. \n'+ \
-              'If there is no csv file or there is a file with no data in it (it is 0 kB), your simulation probably did not run correctly. \n' + \
-              'In this case, check the report out of the Run Simulation component to see what severe or fatal errors happened in the simulation. \n' + \
-              'If the csv file is there and it seems like there is data in it (it is not 0 kB), you are probably requesting an output that this component does not yet handle well. \n' + \
-              'If you report this bug of reading the output on the GH forums, we should be able to fix this component to accept the output soon.'
-    print warn
-    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warn)
-"""
-
-
+                        pass
+            else:
+        
+                for rowCount, row in enumerate(line.split(',')):
+                    
+                    if rowCount == dict['Whole Building:Facility Total Electric Demand Power']:
+        
+                        totalelectdemand.append(round(float(row),2))
+                        
+                    if rowCount == dict['Whole Building:Facility Net Purchased Electric Energy']:
+                        
+                        netpurchasedelect.append(round(float(row),2))
+                    
+                    # for loop maybe not the best for performance 
+                    for count,electricloadcenter in enumerate(electricloadcentername): 
+                    
+                        if rowCount == dict[str(electricloadcenter)+'- DISTRIBUTIONSYSTEM:Electric Load Center Produced Electric Energy']:
+                            
+                            if lineCount == 1:
+                                # Add the header to each output
+                                #print makeHeader(generatorproducedenergy, count, electricloadcenterrunperiod, 'Generator system '+str(electricloadcenter), 'J'),GH_Path(count))
+                                makeHeader(generatorproducedenergy, count, electricloadcenterrunperiod, 'Generator system '+str(electricloadcenter), 'J')
+        
+                                generatorproducedenergy.Add(round(float(row),2),GH_Path(count))
+                            
+                            else:
+                                generatorproducedenergy.Add(round(float(row),2),GH_Path(count))
+    
+        result.close()
+        
+    except:
+        try: result.close()
+        except: pass
+        parseSuccess = False
+        warn = 'Failed to parse the result file.  Check the folder of the file address you are plugging into this component and make sure that there is a .csv file in the folder. \n'+ \
+                  'If there is no csv file or there is a file with no data in it (it is 0 kB), your simulation probably did not run correctly. \n' + \
+                  'In this case, check the report out of the Run Simulation component to see what severe or fatal errors happened in the simulation. \n' + \
+                  'If the csv file is there and it seems like there is data in it (it is not 0 kB), you are probably requesting an output that this component does not yet handle well. \n' + \
+                  'If you report this bug of reading the output on the GH forums, we should be able to fix this component to accept the output soon.'
+        print warn
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warn)

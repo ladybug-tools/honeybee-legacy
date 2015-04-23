@@ -4941,7 +4941,7 @@ class Wind_gen(object):
         
         self.local_av_windspeed = local_av_windspeed
         self.height_local_metrological_station = height_local_metrological_station
-        self.turbine_cost = turbine_cost
+        self.cost_ = turbine_cost
         
         if powercoefficients != []:
             # Wind turbine is analaytical wind turbine
@@ -4980,7 +4980,7 @@ class PV_gen(object):
         self.integrationmode = _integrationmode
         self.NOparallel = No_parallel
         self.NOseries = No_series
-        self.modulecost = cost_module
+        self.cost_ = cost_module
         self.powerout = powerout
         
         self.inverter = None # Define the inverter for this PV generator all PVgenerations being used in the same - run energy simulation must have the same inverter
@@ -5005,7 +5005,7 @@ class PVinverter(object):
             inverter_n = 0.9
             
         self.name = inverter_name
-        self.cost = inverter_cost
+        self.cost_ = inverter_cost
         self.efficiency = inverter_n
         self.zone = inverter_zone
         self.ID = str(uuid.uuid4())
@@ -5040,7 +5040,7 @@ class simple_battery(object):
         self.maxcharge = max_charging
         self.maxdischarge = max_discharging
         self.initalcharge = initial_charge
-        self.batcost = bat_cost
+        self.cost_ = bat_cost
         self.ID = str(uuid.uuid4())
         
 
