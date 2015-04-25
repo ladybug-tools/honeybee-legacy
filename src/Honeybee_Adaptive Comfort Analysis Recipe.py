@@ -60,10 +60,24 @@ tol = sc.doc.ModelAbsoluteTolerance
 #DataTree.Branch(
 
 def checkTheInputs():
+    
+    
+    #Unpack the viewFactorInfo.
+    checkData25 = True
+    try:
+        testPtViewFactor, zoneSrfNames, testPtSkyView, testPtBlockedVec, testPtZoneWeights, testPtZoneNames, ptHeightWeights, zoneInletInfo, zoneHasWindows, outdoorIsThere, outdoorNonSrfViewFac = _viewFactorInfo
+    except:
+        testPtViewFactor, zoneSrfNames, testPtSkyView, testPtBlockedVec, testPtZoneWeights, testPtZoneNames, ptHeightWeights, zoneInletInfo, zoneHasWindows, outdoorIsThere, outdoorNonSrfViewFac = [], [], [], [], [], [], [], [], [], [], []
+        checkData25 = False
+        warning = "_viewFactorInfo is not valid."
+        print warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+    
     #Convert the data tree of _viewFactorMesh to py data.
     viewFactorMesh = []
     checkData13 = True
     pathCheck = 0
+    finalCheck = len(testPtViewFactor)
     if _viewFactorMesh.BranchCount != 0:
         if _viewFactorMesh.Branch(0)[0] != None:
             treePaths = _viewFactorMesh.Paths
@@ -77,8 +91,9 @@ def checkTheInputs():
                     viewFactorMesh.append(dataVal)
                     pathCheck += 1
                 else:
-                    viewFactorMesh.append([])
-                    pathCheck += 1
+                    while pathCheck < i:
+                        viewFactorMesh.append([])
+                        pathCheck += 1
                     if i == pathCheck:
                         branchList = _viewFactorMesh.Branch(path)
                         dataVal = []
@@ -86,54 +101,15 @@ def checkTheInputs():
                             dataVal.append(item)
                         viewFactorMesh.append(dataVal)
                         pathCheck += 1
+            if len(viewFactorMesh) < finalCheck:
+                while len(viewFactorMesh) < finalCheck:
+                    viewFactorMesh.append([])
         else:
             checkData13 = False
             print "Connect a data tree of view factor meshes from the 'Honeybee_Indoor View Factor Calculator' component."
     else:
         checkData13 = False
         print "Connect a data tree of view factor meshes from the 'Honeybee_Indoor View Factor Calculator' component."
-    
-    #Unpack the viewFactorInfo.
-    checkData25 = True
-    try:
-        testPtViewFactor, zoneSrfNames, testPtSkyView, testPtBlockedVec, testPtZoneWeights, testPtZoneNames, ptHeightWeights, zoneInletInfo, zoneHasWindows, outdoorIsThere, outdoorNonSrfViewFac = _viewFactorInfo
-    except:
-        testPtViewFactor, zoneSrfNames, testPtSkyView, testPtBlockedVec, testPtZoneWeights, testPtZoneNames, ptHeightWeights, zoneInletInfo, zoneHasWindows, outdoorIsThere, outdoorNonSrfViewFac = [], [], [], [], [], [], [], [], [], [], []
-        checkData25 = False
-        warning = "_viewFactorInfo is not valid."
-        print warning
-        ghenv.Component.AddRuntimeMessage(w, warning)
-    
-    #Check to be sure that there is no blank list in test pts view foacor.
-    #newtestPtViewFactor = []
-    #newzoneSrfNames = []
-    #newtestPtSkyView = []
-    #newtestPtBlockedVec = []
-    #newtestPtZoneWeights = []
-    #newtestPtZoneNames = []
-    #newptHeightWeights = []
-    #newzoneInletInfo = []
-    #newzoneHasWindows = []
-    #for viewCount, viewlist in enumerate(testPtViewFactor):
-    #    if viewlist != []:
-    #        newtestPtViewFactor.append(viewlist)
-    #        newzoneSrfNames.append(zoneSrfNames[viewCount])
-    #        newtestPtSkyView.append(testPtSkyView[viewCount])
-    #        newtestPtBlockedVec.append(testPtBlockedVec[viewCount])
-    #        newtestPtZoneWeights.append(testPtZoneWeights[viewCount])
-    #        newtestPtZoneNames.append(testPtZoneNames[viewCount])
-    #        newptHeightWeights.append(ptHeightWeights[viewCount])
-    #        newzoneInletInfo.append(zoneInletInfo[viewCount])
-    #        newzoneHasWindows.append(zoneHasWindows[viewCount])
-    #testPtViewFactor = newtestPtViewFactor
-    #zoneSrfNames = newzoneSrfNames
-    #testPtSkyView = newtestPtSkyView
-    #testPtBlockedVec = newtestPtBlockedVec
-    #testPtZoneWeights = newtestPtZoneWeights
-    #testPtZoneNames = newtestPtZoneNames
-    #ptHeightWeights = newptHeightWeights
-    #zoneInletInfo = newzoneInletInfo
-    #zoneHasWindows = newzoneHasWindows
     
     #Create a function to check and create a Python list from a datatree
     def checkCreateDataTree(dataTree, dataName, dataType):
@@ -328,6 +304,8 @@ def checkTheInputs():
                 totalFaces = 0
                 for meshCount, mesh in enumerate(zone):
                     totalFaces = totalFaces +mesh.Faces.Count
+                #print totalFaces
+                #print len(testPtViewFactor[zoneCount])
                 if totalFaces == len(testPtViewFactor[zoneCount]): pass
                 else:
                     totalVertices = 0
@@ -343,6 +321,8 @@ def checkTheInputs():
                         print warning
                         ghenv.Component.AddRuntimeMessage(w, warning)
             else:
+                #print zone[0].Faces.Count
+                #print len(testPtViewFactor[zoneCount])
                 if zone[0].Faces.Count == len(testPtViewFactor[zoneCount]): pass
                 else:
                     if zone[0].Vertices.Count == len(testPtViewFactor[zoneCount]): pass
