@@ -76,9 +76,7 @@ class WriteIDF(object):
     checkbatteryduplicate = []
     # Add the ID of all inverters from HB generator systems here to check for duplicate inverters.
     checkinverterduplicate = []
-    # Add the cost of grid electcity for all the different 
-    gridelectcost = []
-    
+
     # Create a list of tuples containing each item and its cost - to conduct financial analysis 
     
     financialdata = []
@@ -1102,22 +1100,30 @@ class WriteIDF(object):
     def writegeneration_system_financialdata(self,financialdata):
         
         newfinancialdata = []
-        # Add ! in front of all data so EnergyPlus views it as comments
-        # and add other comments so data can be easily identified and read
+        # Add !!! in front of all data so EnergyPlus views it as comments
+        # and it can be easily read
         
         newfinancialdata.append('\n')
-        newfinancialdata.append('\t'+'! Honeybee generation system financial data'+'\n')
+        newfinancialdata.append('!########## Facility generation system financial data ##########'+ '\n')
+        newfinancialdata.append('\n')
+        
+        # Create a header for the data in the IDF 
+        newfinancialdata.append('!!!!Y Honeybee generation system financial data'+'\n')
         
         for dataitem in financialdata:
             
             if isinstance(dataitem, basestring) == True:
                 
-                # All data is in tuples so if its a string its a header e.g Generation system name
+                # Create a header for the financial data of each Honeybee generator system
                 
-                newfinancialdata.append('\t'+'!!!X generation system name -' + str(dataitem)+'\n')
-        
-            newfinancialdata.append('\t'+'!!Z '+str(dataitem)+'\n')
+                newfinancialdata.append('!!!X generation system name -' + str(dataitem)+'\n')
             
+            if isinstance(dataitem, basestring) != True:
+                
+                # Add the financial data for each Honeybee generator system under the header
+                
+                newfinancialdata.append('!!!Z '+str(dataitem)+'\n')
+                
         newfinancialdata.append('\n')
 
         return newfinancialdata
@@ -1480,7 +1486,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         HBgeneratortimeperiod = extracttimeperiod(simulationOutputs)
 
         # If the user doesnt set HBgeneration_ to True in Honeybee_Generate EP output component -  
-        # Facility Total Electric Demand Power and Facility Net Purchased Electric Power will be assigned by default
+        # Facility Total Electric Demand Power and Facility Net Purchased Electric Power will be assigned as outputs by default
         # As the statement below will execute.
 
         if (not any('Output:Variable,*,Facility Total Electric Demand Power' in s for s in simulationOutputs)) and (not any('Output:Variable,*,Facility Net Purchased Electric Power' in s for s in simulationOutputs)):
@@ -1498,6 +1504,8 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                 
             # Define the name for the list of generators and to use in generator's list name in ElectricLoadCenter:Distribution
             if HBsystemgenerator.name == None:
+                # This shouldn't happen as Honeybee generation system has a check on it 
+                # which doesnt allow for no names to be specified.
                 
                 HBsystemgenerator_name = "generatorsystem" + str(HBsystemcount)
                 
@@ -1513,11 +1521,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
             # Determine the type of system and write one ElectricLoadCenter:Distribution for each HBsystemgenerator
             
             distribution_name = str(HBsystemgenerator_name) + ':Distributionsystem' 
-            
-            # Add cost of grid electricty to list to check that all grid electricity costs are the same for all generators later
-            
-            WriteIDF.gridelectcost.append(HBsystemgenerator.gridelectcost)
-            
+
             # Add a header to the financial data so that its clear financial data is from this system
             
             WriteIDF.financialdata.append(HBsystemgenerator.name)
@@ -1556,12 +1560,12 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                         
                         # HBsystem contains a inverter and is a DC system AND has storage
   
-                        WriteIDF.financialdata.append((HBsystemgenerator.battery.cost_,"battery"))
+                        WriteIDF.financialdata.append(HBsystemgenerator.battery.cost_)
                         
                         # Although multiple inverters may exist in HBsystemgenerator.simulationinverter 
                         # in the Honeybee generation system it has been checked that they are all the same
 
-                        WriteIDF.financialdata.append((HBsystemgenerator.simulationinverter[0].cost_,"inverter")) 
+                        WriteIDF.financialdata.append(HBsystemgenerator.simulationinverter[0].cost_) 
                         
                         operationscheme = 'Baseload'
                         busstype = 'DirectCurrentWithInverterDCStorage'
@@ -1579,7 +1583,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                             
                             idfFile.write(hb_writeIDF.write_PVgen(PVgen))
                             idfFile.write(hb_writeIDF.write_PVgenperformanceobject(PVgen))
-                            WriteIDF.financialdata.append((PVgen.cost_,"PV module")) # - Does the class PV_gen need an ID?
+                            WriteIDF.financialdata.append(PVgen.cost_) # - Does the class PV_gen need an ID?
                         
                         # Write HBsystemgenerator inverters
                         idfFile.write(hb_writeIDF.simple_inverter(inverterobject))
@@ -1617,7 +1621,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                     else:
                         # HBsystem contains a inverter and is a DC system there are NO batteries in the system
                         
-                        WriteIDF.financialdata.append((HBsystemgenerator.simulationinverter[0].cost_,"inverter"))
+                        WriteIDF.financialdata.append(HBsystemgenerator.simulationinverter[0].cost_)
                         
                         operationscheme = 'Baseload'
                         busstype = 'DirectCurrentWithInverter'
@@ -1631,7 +1635,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                             
                             idfFile.write(hb_writeIDF.write_PVgen(PVgen))
                             idfFile.write(hb_writeIDF.write_PVgenperformanceobject(PVgen))
-                            WriteIDF.financialdata.append((PVgen.cost_, "PV module")) # - Does the class PV_gen need an ID?
+                            WriteIDF.financialdata.append(PVgen.cost_) # - Does the class PV_gen need an ID?
                         
                         # Write HBsystemgenerator inverters
                         idfFile.write(hb_writeIDF.simple_inverter(inverterobject))
@@ -1667,7 +1671,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                 for windgenerator in HBsystemgenerator.windgenerators:
                     
                     idfFile.write(hb_writeIDF.wind_generator(windgenerator))
-                    WriteIDF.financialdata.append((windgenerator.cost_,"Wind turbine")) # - Does the class PV_gen need an ID?
+                    WriteIDF.financialdata.append(windgenerator.cost_) 
                     
                 # Write HBsystemgenerator ElectricLoadCenter:Distribution
                 idfFile.write(hb_writeIDF.writeloadcenterdistribution(distribution_name,HBsystemgenerator_name,operationscheme,demandlimit,trackschedule,trackmeterschedule,busstype,inverterobject,elecstorageobject))
@@ -1689,23 +1693,14 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
             ghenv.Component.AddRuntimeMessage(w, "Duplicate HBcontext surfaces detected! Don't connect HBcontext surfaces to both PVgen component and run E+ component HBContext_ input!")
             
             return -1
-        
-        # CHECK that the cost of grid electricity is the same for all connected Honeybee generators
-        
-        if all(gridelectcost== WriteIDF.gridelectcost[0] for gridelectcost in WriteIDF.gridelectcost) != True:
-     
-            warn = 'The cost of electricity from the grid is not the same across all connected HB generation systems! \n'+ \
-                    'Please make sure that the cost connected to each HB generation system is the same!'
-            print warn
-            ghenv.Component.AddRuntimeMessage(w, warn)
             
-            return -1
-        
+        # Write the financial data to the IDF file
         for data in hb_writeIDF.writegeneration_system_financialdata(WriteIDF.financialdata):
             
             idfFile.write(data)
-        
-        
+            
+        idfFile.write('\n')
+            
     ################ Construction #####################
     print "[5 of 8] Writing materials and constructions..."
     

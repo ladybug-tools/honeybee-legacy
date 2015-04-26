@@ -4902,7 +4902,7 @@ class EPZone(object):
 
 class HB_generatorsystem(object):
     
-    def __init__(self,generatorsystem_name,simulationinverter,battery,windgenerators,PVgenerators,fuelgenerators,gridelect_cost,contextsurfaces,HBzonesurfaces):
+    def __init__(self,generatorsystem_name,simulationinverter,battery,windgenerators,PVgenerators,fuelgenerators,contextsurfaces,HBzonesurfaces):
         
         self.name = generatorsystem_name
         
@@ -4918,7 +4918,7 @@ class HB_generatorsystem(object):
         self.windgenerators = windgenerators # Category includes Generator:WindTurbine
         self.PVgenerators = PVgenerators # Category includes Generator:Photovoltaic
         self.fuelgenerators = fuelgenerators # Category includes Generators:Mircoturbine,Generator:Combustion Turbine,Generator:InternalCombustionEngine
-        self.gridelectcost = gridelect_cost
+
         
 class Wind_gen(object):
     

@@ -1,6 +1,6 @@
 ghenv.Component.Name = "Honeybee_Inverter"
 ghenv.Component.NickName = 'Inverter'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_17_2015'
+ghenv.Component.Message = 'VER 0.0.56\nAPR_23_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP" #"06 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

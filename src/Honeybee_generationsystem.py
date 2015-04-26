@@ -18,7 +18,6 @@ Provided by Honeybee 0.0.56
 
     Args:
         generatorsystem_name: The name of this Honeybee generation system
-        gridelect_cost: The cost of grid connected electricty per Kwh in what in whatever currency the user wishes - Just make it consistent with other components you are using
         PV_HBSurfaces: The Honeybee/context surfaces that contain PV generators to be included in this generation system
         HB_generationobjects: Honeybee batteries or wind turbines to be included in this generation system 
             
@@ -69,19 +68,6 @@ def checHBgenobjects(PV_HBSurfaces,HB_generationobjects):
         ghenv.Component.AddRuntimeMessage(w, "Only HB_batteries and HB_windturbines can be connected to HB_generationobjects!")
         return -1
 
-"""
-print PV_generation[0].PVgenlist[0].inverter[0].ID
-print PV_generation[1].PVgenlist[0].inverter[0].ID
-print PV_generation[2].PVgenlist[0].inverter[0].ID
-print PV_generation[3].PVgenlist[0].inverter[0].ID
-print PV_generation[4].PVgenlist[0].inverter[0].ID
-print PV_generation[5].PVgenlist[0].inverter[0].ID
-print PV_generation[6].PVgenlist[0].inverter[0].ID
-print PV_generation[7].PVgenlist[0].inverter[0].ID
-"""
-
-#print PV_generation[6].PVgenlist[0].inverter[0].ID == PV_generation[0].PVgenlist[0].inverter[0].ID
-
 def checktheinputs(generatorsystem_name,PV_HBSurfaces,HB_generationobjects):
     
     if generatorsystem_name == None:
@@ -94,7 +80,8 @@ def checktheinputs(generatorsystem_name,PV_HBSurfaces,HB_generationobjects):
     if PV_HBSurfaces == [] and HB_generationobjects == []:
         return -1
         
-        
+
+            
 def checkbattery(HB_generation):
     
     # Check that there is only one battery connected to this component
@@ -118,13 +105,8 @@ def checkbattery(HB_generation):
         ghenv.Component.AddRuntimeMessage(w, "There can only be one battery for each generation system! Please make sure only one battery is connected to this component")
         return -1
         
-    if gridelect_cost == None:
-        
-        print "The cost of grid electricty per Kwh must be specified!"
-        w = gh.GH_RuntimeMessageLevel.Warning
-        ghenv.Component.AddRuntimeMessage(w, "The cost of grid electricty per Kwh must be specified!")
-        return -1
 
+    
     # Need a check only generators of certain types can be in the same list - AC,DC
         
        
@@ -170,11 +152,8 @@ def main(PV_generation,HB_generation):
                 
                 PVgenerators.append(PVgen)
                 
-                #print PVgen.inverter
                 # Append the inverter of each PV generator to the list
                 simulationinverters.extend(PVgen.inverter)
-    
-    #print simulationinverters
     
     def checkduplicatesPVgenerators(PVgenerators):
         
@@ -274,8 +253,8 @@ def main(PV_generation,HB_generation):
                             if PVandfuel(PVgenerators,fuelgenerators) != -1:
                                 
                                 if windandbat(windgenerators,battery) != -1:
-                                    print HBgencontextsurfaces
-                                    HB_generators.append(HB_generator(generatorsystem_name,simulationinverters,battery,windgenerators,PVgenerators,fuelgenerators,gridelect_cost,HBgencontextsurfaces,HBzonesurfaces))
+
+                                    HB_generators.append(HB_generator(generatorsystem_name,simulationinverters,battery,windgenerators,PVgenerators,fuelgenerators,HBgencontextsurfaces,HBzonesurfaces))
                                     
                                     HB_generator1 = hb_hivegen.addToHoneybeeHive(HB_generators,ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
                                     
