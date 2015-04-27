@@ -34,7 +34,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Adaptive Comfort Analysis Recipe"
 ghenv.Component.NickName = 'AdaptComfRecipe'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_21_2015'
+ghenv.Component.Message = 'VER 0.0.56\nAPR_26_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -346,15 +346,17 @@ def checkTheInputs():
     numSkyPatchDivs = 0
     checkData12 = True
     if checkData25 == True:
-        if len(testPtBlockedVec[0][0]) == 145: numSkyPatchDivs = 0
-        elif len(testPtBlockedVec[0][0]) == 580: numSkyPatchDivs = 1
-        elif len(testPtBlockedVec[0][0]) == 2320: numSkyPatchDivs = 2
-        elif len(testPtBlockedVec[0][0]) == 9280: numSkyPatchDivs = 3
-        else:
-            checkData12 = False
-            warning = "You have an absurdly high number of view vectors from the 'Indoor View Factor' component such that it is not supported by the current component."
-            print warning
-            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+        for blockList in testPtBlockedVec:
+            if blockList != []:
+                if len(blockList[0]) == 145: numSkyPatchDivs = 0
+                elif len(blockList[0]) == 580: numSkyPatchDivs = 1
+                elif len(blockList[0]) == 2320: numSkyPatchDivs = 2
+                elif len(blockList[0]) == 9280: numSkyPatchDivs = 3
+                else:
+                    checkData12 = False
+                    warning = "You have an absurdly high number of view vectors from the 'Indoor View Factor' component such that it is not supported by the current component."
+                    print warning
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
     
     
     #Check the floor reflectivity.
