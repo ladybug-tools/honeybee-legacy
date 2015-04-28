@@ -1468,6 +1468,10 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         
     ########### Generators - Electric load center ###########
     
+    # This section was created by Anton Szilasi 
+    # for technical support or user requests
+    # please contact me ajszilasi@gmail.com
+    
     print "[4 of 8] Writing Electric Load Center - Generator specifications ..."
         
     
@@ -1476,7 +1480,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         hb_hivegen = sc.sticky["honeybee_generationHive"]()
     
         HBsystemgenerators = hb_hivegen.callFromHoneybeeHive(HB_generators)
-        
+        """
         def extracttimeperiod(simulationOutputs):
             timeperiod = simulationOutputs[-1].split(',')[-1]
             HBgeneratortimeperiod = timeperiod.replace(";","")
@@ -1484,18 +1488,19 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
             
         # Extract the timestep from the incoming component simulationOutputs if its being used
         HBgeneratortimeperiod = extracttimeperiod(simulationOutputs)
-
+        """
         # If the user doesnt set HBgeneration_ to True in Honeybee_Generate EP output component -  
         # Facility Total Electric Demand Power and Facility Net Purchased Electric Power will be assigned as outputs by default
+        # With an Annual runperiod
         # As the statement below will execute.
 
         if (not any('Output:Variable,*,Facility Total Electric Demand Power' in s for s in simulationOutputs)) and (not any('Output:Variable,*,Facility Net Purchased Electric Power' in s for s in simulationOutputs)):
             
-            simulationOutputs.append("Output:Variable,*,Facility Net Purchased Electric Energy, RunPeriod;")
+            simulationOutputs.append("Output:Variable,*,Facility Net Purchased Electric Energy, hourly;")
             
-            simulationOutputs.append("Output:Variable,*,Facility Total Electric Demand Power, RunPeriod;")
+            simulationOutputs.append("Output:Variable,*,Facility Total Electric Demand Power, hourly;")
             
-            HBgeneratortimeperiod = 'RunPeriod'
+            HBgeneratortimeperiod = 'hourly'
             
         for HBsystemcount,HBsystemgenerator in enumerate(HBsystemgenerators):
             

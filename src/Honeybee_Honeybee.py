@@ -4997,7 +4997,7 @@ class PV_gen(object):
     
 class PVinverter(object):
     
-    def __init__(self,inverter_name,inverter_cost,inverter_zone,inverter_n):
+    def __init__(self,inverter_name,inverter_cost,inverter_zone,inverter_n,replacement_time):
    
         if inverter_zone == None:
             inverter_zone = ""
@@ -5008,6 +5008,7 @@ class PVinverter(object):
         self.cost_ = inverter_cost
         self.efficiency = inverter_n
         self.zone = inverter_zone
+        self.replacementtime = replacement_time
         self.ID = str(uuid.uuid4())
         
     # Need to be able to compare inverters to make sure that only one inverter is servicing all the PV in the system
@@ -5025,7 +5026,7 @@ class PVinverter(object):
     
 class simple_battery(object):
     
-    def __init__(self,_name,zone_name,n_charging,n_discharging,battery_capacity,max_discharging,max_charging,initial_charge,bat_cost):
+    def __init__(self,_name,zone_name,n_charging,n_discharging,battery_capacity,max_discharging,max_charging,initial_charge,bat_cost,replacement_time):
         
         
         if zone_name == None:
@@ -5041,6 +5042,8 @@ class simple_battery(object):
         self.maxdischarge = max_discharging
         self.initalcharge = initial_charge
         self.cost_ = bat_cost
+        
+        self.replacementtime = replacement_time
         self.ID = str(uuid.uuid4())
         
 

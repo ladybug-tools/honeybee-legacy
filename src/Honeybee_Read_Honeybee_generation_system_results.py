@@ -363,3 +363,5 @@ if idfFileAddress != None:
         financialdata.Add(data,GH_Path(2))
         
     financialdata.Add(';;;',GH_Path(0))
+    financialdata.Add('!!',GH_Path(1))
+    financialdata.Add('##',GH_Path(2))

@@ -1,3 +1,33 @@
+# By Anton Szilasi
+# For technical support or user requests contact me at
+# ajszilas@gmail.com
+# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
+# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+
+
+"""
+Provided by Honeybee 0.0.56
+
+Use this component to add EnergyPlus simple inverters to a Energy Plus simulation.
+
+Find out more information about Energy Plus simple inverters here:
+http://bigladdersoftware.com/epx/docs/8-2/input-output-reference/group-electric-load-center.html#electricloadcenterinvertersimple
+
+-
+Provided by Honeybee 0.0.56
+
+    Args:
+        
+        _invertername: The inverter name - Make it unique from other inverters
+        inverter_n: The efficiency of the inverter by default this is 90%
+        inverter_cost: The cost the inverter in whatever currency the user wishes - Just make it consistent with other components you are using
+        replacement_time: Specify how often in years the inverter will need to be replaced. The default is 5 years.
+        
+    Returns:
+        HB_inverter: Honeybee inverter- to include this inverter in a generation system connect it to the input HB_generationobjects on the Honeybee_generationsystem component 
+        
+"""
+
 ghenv.Component.Name = "Honeybee_Inverter"
 ghenv.Component.NickName = 'Inverter'
 ghenv.Component.Message = 'VER 0.0.56\nAPR_23_2015'
@@ -38,4 +68,9 @@ def checktheinputs(_invertername,inverter_n,inverter_cost,inverter_zone):
         
 if checktheinputs(_invertername,inverter_n,inverter_cost,inverter_zone) != -1:
     
-    HB_inverter = hb_hivegen.addToHoneybeeHive([PVinverter(_invertername,inverter_cost,inverter_zone,inverter_n)], ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+    if replacement_time == None:
+        
+        replacement_time = 5
+        print "No value given for replacement time so this inverter will be replaced every 5 years"
+    
+    HB_inverter = hb_hivegen.addToHoneybeeHive([PVinverter(_invertername,inverter_cost,inverter_zone,inverter_n,replacement_time)], ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
