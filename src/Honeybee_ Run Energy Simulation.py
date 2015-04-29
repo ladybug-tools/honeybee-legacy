@@ -1055,8 +1055,7 @@ class WriteIDF(object):
             ''.join(generatorlist)
             
     def writeloadcenterdistribution(self,distribution_name,HBsystemgenerator_name,operationscheme,demandlimit,trackschedule,trackmeterschedule,busstype,inverterobject,elecstorageobject):
-        
-        #print inverterobject is None
+
         if demandlimit == None:
             demandlimit = ''
         if trackschedule == None:
@@ -1066,8 +1065,10 @@ class WriteIDF(object):
         if elecstorageobject == None:
             elecstorageobject = ''
             
-        if inverterobject is None:  # Is is pointing to whether inverterobject and None are the same object, is inverterobject is None they will be,# Need to use is as have overide the __eq__ operator for inverter object 
-
+        if inverterobject is None:  # Note on is: is is pointing to whether inverterobject and None are the same object, is inverterobject is None they will be,# Need to use is as have overide the __eq__ operator for inverter object 
+            
+            # The Honeybee generation system is a wind or fuel generation system
+            # meaining that elecstorageobject is also None,
             inverterobject  = ''
             
             return '\nElectricLoadCenter:Distribution,\n' + \
@@ -1081,21 +1082,39 @@ class WriteIDF(object):
                 '\t'+str(inverterobject)+ ',\t!- Inverter Object Name\n'+ \
                 '\t'+str(elecstorageobject)+ ',\t!- Electrical Storage Object Name\n'+\
                 '\t'+''+';\t!- Transformer Object Name\n'
-        # Had an issue with inverterobject.name when inverterobject is None, should re-work to remove reference to .name 
-        # but instead at the moment use two return statements
+
         else:
             
-            return '\nElectricLoadCenter:Distribution,\n' + \
-                '\t'+str(distribution_name)+ ',\t!- Name\n'+ \
-                '\t'+str(HBsystemgenerator_name)+ ',\t!- Generator List Name\n'+ \
-                '\t'+str(operationscheme)+ ',\t!- Generator Operation Scheme Type\n'+ \
-                '\t'+str(demandlimit)+ ',\t!- Demand Limit Scheme Purchased Electric Demand Limit {W}\n'+ \
-                '\t'+str(trackschedule)+ ',\t!- Track Schedule Name Scheme Schedule Name\n'+ \
-                '\t'+str(trackmeterschedule)+ ',\t!- Track Meter Scheme Meter Name\n'+ \
-                '\t'+str(busstype)+ ',\t!- Electrical Buss Type\n'+ \
-                '\t'+str(inverterobject.name)+ ',\t!- Inverter Object Name\n'+ \
-                '\t'+str(elecstorageobject)+ ',\t!- Electrical Storage Object Name\n'+\
-                '\t'+''+';\t!- Transformer Object Name\n'
+            # The generator system contains an inverter and is a Honeybee PV system, this means that
+            # inverterobject is an object and contains the attribute inverterobject.name and inverterobject.replacementtime
+            try:
+                # If the generator system contains a battery, elecstorageobject will be a battery object and not a string,
+                # thus containing the attributes elecstorageobject.name and elecstorageobject.replacementtime
+                return '\nElectricLoadCenter:Distribution,\n' + \
+                    '\t'+str(distribution_name)+ ',\t!- Name\n'+ \
+                    '\t'+str(HBsystemgenerator_name)+ ',\t!- Generator List Name\n'+ \
+                    '\t'+str(operationscheme)+ ',\t!- Generator Operation Scheme Type\n'+ \
+                    '\t'+str(demandlimit)+ ',\t!- Demand Limit Scheme Purchased Electric Demand Limit {W}\n'+ \
+                    '\t'+str(trackschedule)+ ',\t!- Track Schedule Name Scheme Schedule Name\n'+ \
+                    '\t'+str(trackmeterschedule)+ ',\t!- Track Meter Scheme Meter Name\n'+ \
+                    '\t'+str(busstype)+ ',\t!- Electrical Buss Type\n'+ \
+                    '\t'+str(inverterobject.name)+ ',\t!- Inverter Object Name\n'+ \
+                    '\t'+str(elecstorageobject.name)+ ',\t!- Electrical Storage Object Name\n'+\
+                    '\t'+''+';\t!- Transformer Object Name\n'
+            except AttributeError:
+               # If the attributes .replacementtime and .name not in battery the Honeybee generation system does not contain
+               # a battery and elecstorageobject = ''
+                return '\nElectricLoadCenter:Distribution,\n' + \
+                    '\t'+str(distribution_name)+ ',\t!- Name\n'+ \
+                    '\t'+str(HBsystemgenerator_name)+ ',\t!- Generator List Name\n'+ \
+                    '\t'+str(operationscheme)+ ',\t!- Generator Operation Scheme Type\n'+ \
+                    '\t'+str(demandlimit)+ ',\t!- Demand Limit Scheme Purchased Electric Demand Limit {W}\n'+ \
+                    '\t'+str(trackschedule)+ ',\t!- Track Schedule Name Scheme Schedule Name\n'+ \
+                    '\t'+str(trackmeterschedule)+ ',\t!- Track Meter Scheme Meter Name\n'+ \
+                    '\t'+str(busstype)+ ',\t!- Electrical Buss Type\n'+ \
+                    '\t'+str(inverterobject.name)+ ',\t!- Inverter Object Name\n'+ \
+                    '\t'+str(elecstorageobject)+ ',\t!- Electrical Storage Object Name\n'+\
+                    '\t'+''+';\t!- Transformer Object Name\n'
 
     def writegeneration_system_financialdata(self,financialdata):
         
@@ -1111,14 +1130,14 @@ class WriteIDF(object):
         newfinancialdata.append('!!!!Y Honeybee generation system financial data'+'\n')
         
         for dataitem in financialdata:
-            
-            if isinstance(dataitem, basestring) == True:
+
+            if dataitem.find('Honeybee system generator ') != -1:
                 
                 # Create a header for the financial data of each Honeybee generator system
                 
-                newfinancialdata.append('!!!X generation system name -' + str(dataitem)+'\n')
+                newfinancialdata.append('!!!X Honeybee generation system name -' + str(dataitem.replace('Honeybee system generator ',''))+'\n')
             
-            if isinstance(dataitem, basestring) != True:
+            else:
                 
                 # Add the financial data for each Honeybee generator system under the header
                 
@@ -1480,7 +1499,12 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         hb_hivegen = sc.sticky["honeybee_generationHive"]()
     
         HBsystemgenerators = hb_hivegen.callFromHoneybeeHive(HB_generators)
+        
         """
+        # XXX This code here is used to extractingruntime periods if outputs are specified externally
+        # For now only allow Facility Net Purchased Electric Energy and Facility Total Electric Demand Power
+        # as outputs in EnergyPlus at an hourly time period
+        
         def extracttimeperiod(simulationOutputs):
             timeperiod = simulationOutputs[-1].split(',')[-1]
             HBgeneratortimeperiod = timeperiod.replace(";","")
@@ -1489,12 +1513,11 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         # Extract the timestep from the incoming component simulationOutputs if its being used
         HBgeneratortimeperiod = extracttimeperiod(simulationOutputs)
         """
-        # If the user doesnt set HBgeneration_ to True in Honeybee_Generate EP output component -  
-        # Facility Total Electric Demand Power and Facility Net Purchased Electric Power will be assigned as outputs by default
-        # With an Annual runperiod
-        # As the statement below will execute.
-
+        
         if (not any('Output:Variable,*,Facility Total Electric Demand Power' in s for s in simulationOutputs)) and (not any('Output:Variable,*,Facility Net Purchased Electric Power' in s for s in simulationOutputs)):
+            
+            # XXX for now this is the default so that generator systems can be modelled with the most accuratey
+            # consider adding the possibility for users to specify their own timesteps in the future
             
             simulationOutputs.append("Output:Variable,*,Facility Net Purchased Electric Energy, hourly;")
             
@@ -1529,9 +1552,9 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
 
             # Add a header to the financial data so that its clear financial data is from this system
             
-            WriteIDF.financialdata.append(HBsystemgenerator.name)
+            WriteIDF.financialdata.append('Honeybee system generator '+str(HBsystemgenerator.name))
             
-            # Decide whether it is a PV, Wind or fuel generator system
+            # Determine whether it is a PV, Wind or fuel generator system
             
             if HBsystemgenerator.PVgenerators != []:
                 
@@ -1565,12 +1588,12 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                         
                         # HBsystem contains a inverter and is a DC system AND has storage
   
-                        WriteIDF.financialdata.append(HBsystemgenerator.battery.cost_)
-                        
+                        WriteIDF.financialdata.append(' Battery cost - ' +str(HBsystemgenerator.battery.cost_) +' replacement time = '+ str(HBsystemgenerator.battery.replacementtime)+ ' years')
+
                         # Although multiple inverters may exist in HBsystemgenerator.simulationinverter 
                         # in the Honeybee generation system it has been checked that they are all the same
 
-                        WriteIDF.financialdata.append(HBsystemgenerator.simulationinverter[0].cost_) 
+                        WriteIDF.financialdata.append(' Inverter cost - '+ str(HBsystemgenerator.simulationinverter[0].cost_)+ ' replacement time = '+ str(HBsystemgenerator.simulationinverter[0].replacementtime)+ ' years') 
                         
                         operationscheme = 'Baseload'
                         busstype = 'DirectCurrentWithInverterDCStorage'
@@ -1578,7 +1601,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                         trackschedule = 'Always On'
                         trackmeterschedule = ''
                         inverterobject = HBsystemgenerator.simulationinverter[0] # All inverters are the same doesnt matter which one you pick
-                        elecstorageobject = HBsystemgenerator.battery.name
+                        elecstorageobject = HBsystemgenerator.battery
                         
                         # Write HBsystemgenerator battery
                         idfFile.write(hb_writeIDF.battery_simple(HBsystemgenerator.battery))
@@ -1588,15 +1611,15 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                             
                             idfFile.write(hb_writeIDF.write_PVgen(PVgen))
                             idfFile.write(hb_writeIDF.write_PVgenperformanceobject(PVgen))
-                            WriteIDF.financialdata.append(PVgen.cost_) # - Does the class PV_gen need an ID?
+                            WriteIDF.financialdata.append(' PVgenerator cost - '+str(PVgen.cost_)) # - Does the class PV_gen need an ID?
                         
                         # Write HBsystemgenerator inverters
                         idfFile.write(hb_writeIDF.simple_inverter(inverterobject))
-                        
+               
                         # Write HBsystemgenerator ElectricLoadCenter:Distribution
                         idfFile.write(hb_writeIDF.writeloadcenterdistribution(distribution_name,HBsystemgenerator_name,operationscheme,demandlimit,trackschedule,trackmeterschedule,busstype,inverterobject,elecstorageobject))
                         
-                        # Check for duplicate batteries - These can cause EnergyPlus to crash
+                        # CHECK for duplicate batteries - These can cause EnergyPlus to crash
                         # Append battery ID to checkbatteryduplicate to check for duplicate batteries
                         WriteIDF.checkbatteryduplicate.append(HBsystemgenerator.battery.ID)
                         
@@ -1626,7 +1649,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                     else:
                         # HBsystem contains a inverter and is a DC system there are NO batteries in the system
                         
-                        WriteIDF.financialdata.append(HBsystemgenerator.simulationinverter[0].cost_)
+                        WriteIDF.financialdata.append(' Inverter cost - '+ str(HBsystemgenerator.simulationinverter[0].cost_)+ ' replacement time = '+ str(HBsystemgenerator.simulationinverter[0].replacementtime)+ ' years') 
                         
                         operationscheme = 'Baseload'
                         busstype = 'DirectCurrentWithInverter'
@@ -1640,7 +1663,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                             
                             idfFile.write(hb_writeIDF.write_PVgen(PVgen))
                             idfFile.write(hb_writeIDF.write_PVgenperformanceobject(PVgen))
-                            WriteIDF.financialdata.append(PVgen.cost_) # - Does the class PV_gen need an ID?
+                            WriteIDF.financialdata.append(' PVgenerator cost - '+str(PVgen.cost_)) # - Does the class PV_gen need an ID?
                         
                         # Write HBsystemgenerator inverters
                         idfFile.write(hb_writeIDF.simple_inverter(inverterobject))
@@ -1660,8 +1683,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                             ghenv.Component.AddRuntimeMessage(w, warning)
                             print warning 
                             return -1 
-    
-                    
+                            
             elif HBsystemgenerator.windgenerators != []:
                 
                 operationscheme = 'Baseload'
@@ -1676,7 +1698,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                 for windgenerator in HBsystemgenerator.windgenerators:
                     
                     idfFile.write(hb_writeIDF.wind_generator(windgenerator))
-                    WriteIDF.financialdata.append(windgenerator.cost_) 
+                    WriteIDF.financialdata.append(' Wind turbine cost - '+str(windgenerator.cost_)) 
                     
                 # Write HBsystemgenerator ElectricLoadCenter:Distribution
                 idfFile.write(hb_writeIDF.writeloadcenterdistribution(distribution_name,HBsystemgenerator_name,operationscheme,demandlimit,trackschedule,trackmeterschedule,busstype,inverterobject,elecstorageobject))

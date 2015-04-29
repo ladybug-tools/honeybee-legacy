@@ -191,8 +191,10 @@ if checktheinputs(gridelect_cost_schedule,feedin_tariff_schedule,_resultFileAddr
             
             # Read the headers of the CSVs files and create a dictonary entry in dict based on these headers
             if lineCount == 0:
-    
+
+                # Splitting this one line into columns of data
                 for columnCount, column in enumerate(line.split(',')):
+                    
                     
                     # Extract the Whole Building:Facility Net Purchased Electric Energy output from the CSV,
                     # If there is a Honeybee generation system this will alway be written as a default output
@@ -214,7 +216,7 @@ if checktheinputs(gridelect_cost_schedule,feedin_tariff_schedule,_resultFileAddr
                     
                     # Extract the Electricty energy produced by each Honeybee generation system
                     elif 'DISTRIBUTIONSYSTEM:Electric Load Center Produced Electric Energy' in column:
-                    
+
                         data = column.split(':')
                         
                         electricloadcentername.append(data[0])
@@ -230,7 +232,7 @@ if checktheinputs(gridelect_cost_schedule,feedin_tariff_schedule,_resultFileAddr
             else:
                 
                 for rowCount, row in enumerate(line.split(',')):
-                    
+
                     # Whole Building:Facility Net Purchased Electric Energy
                     if rowCount == dict['Whole Building:Facility Total Electric Demand Power']:
                         
@@ -303,9 +305,9 @@ if idfFileAddress != None:
     for lineCount,line in enumerate(fiancialresult):
         
         # Add this financial data to the list data.
-        if (line.find('!!!!Y') != -1) or (line.find('!!!X') != -1) or (line.find('!!!Z') != -1):
+        if (line.find('!!!!Y') != -1) or (line.find('!!!X') != -1) or (line.find('!!!Z') != -1) or (line.find('!- Battery replacement time') != -1) or (line.find('!- Inverter replacement time') != -1):
             data.append(line)
-            
+
     def cleandata(data):
         """ This function cleans the financial data written to the IDF and makes it possible to create graphs from it"""
         
@@ -317,17 +319,20 @@ if idfFileAddress != None:
         for dataitem in data:
             
             cleandata.append(dataitem.replace('!!!','').replace('!','').replace('\n','').replace('Z','').replace('[','').replace(']','').replace('X',''))
-            
+        
+        # Create a list of which indexes in clean data the different Honeybee generator systems 
+        # start and stop at
         itemCountlist = []
         
         for itemCount,item in enumerate(cleandata):
-            
+
             if item.find('generation system name') != -1:
                 
                 itemCountlist.append(itemCount)
-        
+                
+        # Use the list above to create lists of each Honeybee generator systems' financial data
         for itemCount,item in enumerate(itemCountlist):
-        
+
             try:
                 financialdata.append(cleandata[itemCountlist[itemCount]:itemCountlist[itemCount+1]])
             except IndexError:
@@ -335,6 +340,7 @@ if idfFileAddress != None:
                 
         return financialdata
     
+
     # Add financial data - equipment costs and grid electricty costs and feed in tariffs to
     # financial data, datatree
     
@@ -345,8 +351,8 @@ if idfFileAddress != None:
     
     # Clean the financial data so that it can used to create graphs and add it to the datatree
     for generatorfinancialdata in cleandata(data):
+        print generatorfinancialdata
         for data in generatorfinancialdata:
-            print data
             financialdata.Add(data,GH_Path(0))
 
     # Add grid electricity costs and feed in tariffs to the financial data - datatree

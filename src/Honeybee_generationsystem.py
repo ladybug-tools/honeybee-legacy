@@ -79,7 +79,20 @@ def checktheinputs(generatorsystem_name,PV_HBSurfaces,HB_generationobjects):
         
     if PV_HBSurfaces == [] and HB_generationobjects == []:
         return -1
+    
+    # Must also check that the first item is not a none otherwise will output a HB generator
+    # when the first item is None and cause Energy Plus to crash!
+    try:
+        if PV_HBSurfaces[0] == None:
+            return -1
+    except:
+        pass
         
+    try:
+        if HB_generationobjects[0] == None:
+            return -1
+    except:
+        pass
 
             
 def checkbattery(HB_generation):
@@ -260,7 +273,7 @@ def main(PV_generation,HB_generation):
                                     
                                     return HB_generator1
         
-        
+
 if checktheinputs(generatorsystem_name,PV_HBSurfaces,HB_generationobjects) != -1:   
 
     if checHBgenobjects(PV_HBSurfaces,HB_generationobjects) != -1:
