@@ -30,7 +30,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_04_2015'
+ghenv.Component.Message = 'VER 0.0.56\nMAY_02_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -3094,14 +3094,14 @@ class hb_EnergySimulatioParameters(object):
     
     def readEPParams(self, EPParameters):
         
-        if EPParameters == [] or len(EPParameters)!=12:
+        if EPParameters == [] or len(EPParameters)!=15:
             timestep = 6
             
             shadowPar = ["AverageOverDaysInFrequency", 30, 3000]
             
             solarDistribution = "FullInteriorAndExteriorWithReflections"
             
-            simulationControl = [True, True, True, False, True]
+            simulationControl = [True, True, True, False, True, 25, 6]
             
             ddyFile = None
             
@@ -3116,13 +3116,13 @@ class hb_EnergySimulatioParameters(object):
             
             solarDistribution = EPParameters[4]
             
-            simulationControl = EPParameters[5:10]
+            simulationControl = EPParameters[5:12]
             
-            ddyFile = EPParameters[10]
+            ddyFile = EPParameters[12]
             
-            terrain = EPParameters[11]
+            terrain = EPParameters[13]
             
-            grndTemps = EPParameters[12]
+            grndTemps = EPParameters[14]
         
         return timestep, shadowPar, solarDistribution, simulationControl, ddyFile, terrain, grndTemps
 

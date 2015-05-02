@@ -44,7 +44,7 @@ Provided by Honeybee 0.0.56
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_21_2015'
+ghenv.Component.Message = 'VER 0.0.56\nMAY_02_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nAPR_03_2015
@@ -1041,6 +1041,12 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     
     # Read simulation parameters
     timestep, shadowPar, solarDistribution, simulationControl, ddyFile, terrain, grndTemps = hb_EPPar.readEPParams(EPParameters)
+    try:
+        maxWarmUpDays = simulationControl[5]
+        minWarmUpDays = simulationControl[6]
+    except:
+        maxWarmUpDays =25
+        minWarmUpDays = 6
     
     # Timestep,6;
     idfFile.write(hb_writeIDF.EPTimestep(timestep))
@@ -1052,7 +1058,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     idfFile.write(hb_writeIDF.EPProgramControl())
     
     # Building
-    EPBuilding = hb_writeIDF.EPBuilding(idfFileName, math.degrees(northAngle), terrain, 0.04, 0.4, solarDistribution, maxWarmUpDays =25, minWarmUpDays = 6)
+    EPBuilding = hb_writeIDF.EPBuilding(idfFileName, math.degrees(northAngle), terrain, 0.04, 0.4, solarDistribution, maxWarmUpDays, minWarmUpDays)
                     
     idfFile.write(EPBuilding)
     
@@ -1109,7 +1115,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
             idfFile.write(hb_writeIDF.EPSizingPeriodMonth(monthMin))
     
     # simulationControl
-    idfFile.write(hb_writeIDF.EPSimulationControl(*simulationControl))
+    idfFile.write(hb_writeIDF.EPSimulationControl(*simulationControl[0:5]))
     
     # runningPeriod
     idfFile.write(hb_writeIDF.EPRunPeriod('customRun', stDay, stMonth, endDay, endMonth))
