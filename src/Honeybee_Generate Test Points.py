@@ -12,6 +12,7 @@ Provided by Honeybee 0.0.56
         _testSurface: Test surface as a Brep
         _gridSize: Size of the test grid
         _distBaseSrf: Distance from base surface
+        moveTestMesh_: Set to False if you want test mesh not to move. Default is True.
     Returns:
         readMe!: ...
         testPoints: Test points
@@ -22,7 +23,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Generate Test Points"
 ghenv.Component.NickName = 'genTestPts'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
+ghenv.Component.Message = 'VER 0.0.56\nMAY_03_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -61,7 +62,7 @@ def createMesh(brep, gridSize):
 
 def flattenList(l):return list(chain.from_iterable(l))
 
-def getTestPts(inputMesh, movingDis, parallel = True):
+def getTestPts(inputMesh, movingDis, moveTestMesh= False, parallel = True):
         
         # preparing bulk lists
         testPoint = [[]] * len(inputMesh)
@@ -114,7 +115,13 @@ def getTestPts(inputMesh, movingDis, parallel = True):
             for i in range(len(inputMesh)):
                 srfPtCalculator(i)
         
-        return flattenList(testPoint), flattenList(srfNormals), flattenList(meshSrfArea)
+        if moveTestMesh:
+            # find surfaces based on first normal in srfNormals - It is a simplification we can write a better function for this later
+            for meshCount, mesh in enumerate(inputMesh):
+                vector = srfNormals[meshCount][0]
+                mesh.Translate(vector.X, vector.Y, vector.Z)
+                
+        return flattenList(testPoint), flattenList(srfNormals), flattenList(meshSrfArea), inputMesh
 
 
 if _testSurface!=None and _gridSize!=None and _distBaseSrf!=None:
@@ -128,6 +135,9 @@ if _testSurface!=None and _gridSize!=None and _distBaseSrf!=None:
     
         inputMesh = []
         for m in initMesh: inputMesh.append(m)
-    
-        testPoints, ptsVectors, facesArea = getTestPts(inputMesh, _distBaseSrf)
-        mesh = inputMesh
+        
+        try:
+            testPoints, ptsVectors, facesArea, mesh = getTestPts(inputMesh, _distBaseSrf, moveTestMesh_)
+        except:
+            # just for the first release
+            testPoints, ptsVectors, facesArea, mesh = getTestPts(inputMesh, _distBaseSrf, False)
