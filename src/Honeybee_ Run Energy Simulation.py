@@ -44,7 +44,7 @@ Provided by Honeybee 0.0.56
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.56\nMAY_02_2015'
+ghenv.Component.Message = 'VER 0.0.56\nMAY_04_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nAPR_03_2015
@@ -1199,7 +1199,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
             
             # Surfaces
             idfFile.write(hb_writeIDF.EPZoneSurface(srf))
-            
+            alreadyThereList = []
             if srf.hasChild:
                 # check the construction
                 # this should be moved inside the function later
@@ -1213,11 +1213,16 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                     if not childSrf.construction.upper() in EPConstructionsCollection:
                             EPConstructionsCollection.append(childSrf.construction.upper())
                     # Check if there is any shading for the window.
+                    
                     if childSrf.blindsMaterial != "" and childSrf.shadingControl != "":
-                        idfFile.write(childSrf.blindsMaterial)
-                        idfFile.write(childSrf.shadingControl)
-                        if childSrf.shadingSchName != 'ALWAYSON':
-                            EPScheduleCollection.append(childSrf.shadingSchName.upper())
+                        try:
+                            if childSrf.blindsMaterial.split('\n')[1].split(',')[0] not in alreadyThereList:
+                                idfFile.write(childSrf.blindsMaterial)
+                                idfFile.write(childSrf.shadingControl)
+                                if childSrf.shadingSchName != 'ALWAYSON':
+                                    EPScheduleCollection.append(childSrf.shadingSchName.upper())
+                                alreadyThereList.append(childSrf.blindsMaterial.split('\n')[1].split(',')[0])
+                        except: pass
                     
                 # write the glazing strings
                 idfFile.write(hb_writeIDF.EPFenSurface(srf))
