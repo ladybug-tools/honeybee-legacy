@@ -40,7 +40,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Indoor Comfort Analysis"
 ghenv.Component.NickName = 'IndoorComfAnalysis'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_21_2015'
+ghenv.Component.Message = 'VER 0.0.56\nMAY_05_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -400,7 +400,8 @@ def warpByHeight(pointAirTempValues, ptHeightWeights, flowVolValues, heatGainVal
             dimensionlessInterfHeight = 0.92 - (0.18 * math.log10(archimedesNumbers[zoneCount]))
             dimInterfHeights.append(dimensionlessInterfHeight)
             
-            dimensionlessTempDelta = 0.58 - (0.14 * math.log10(archiNumWinScale[zoneCount]))
+            try: dimensionlessTempDelta = 0.58 - (0.14 * math.log10(archiNumWinScale[zoneCount]))
+            except: dimensionlessTempDelta = 0
             if dimensionlessTempDelta > 0:
                 dimTempDeltas.append(dimensionlessTempDelta)
                 cielTemps.append(((dimensionlessTempDelta*dimensionlessInterfHeight)/2)*tempChanges[zoneCount])
