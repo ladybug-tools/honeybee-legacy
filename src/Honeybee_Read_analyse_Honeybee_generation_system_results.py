@@ -34,8 +34,8 @@ Provided by Honeybee 0.0.56
         financialdata: The financial data of the Honeybee generators in the facility.
 """
 
-ghenv.Component.Name = "Honeybee_Read_Honeybee_generation_system_results"
-ghenv.Component.NickName = 'readEP_generation_system_results'
+ghenv.Component.Name = "Honeybee_Read_analyse_Honeybee_generation_system_results"
+ghenv.Component.NickName = 'readEP_analyse_generation_system_results'
 ghenv.Component.Message = 'VER 0.0.56\nMay_06_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -164,149 +164,144 @@ if checktheinputs(_resultFileAddress,idfFileAddress) != -1:
         dict = {}
         electricloadcentername = []
         electricloadcenterrunperiod = None
-        try:
-            for lineCount,line in enumerate(result):
-                
-                # Read the headers of the CSVs files and create a dictonary entry in dict based on these headers
-                if lineCount == 0:
-    
-                    # Splitting this one line into columns of data
-                    for columnCount, column in enumerate(line.split(',')):
-                        
-                        
-                        # Extract the Whole Building:Facility Net Purchased Electric Energy output from the CSV,
-                        # If there is a Honeybee generation system this will alway be written as a default output
-                        if 'Whole Building:Facility Net Purchased Electric Energy' in column:
-    
-                            dict['Whole Building:Facility Net Purchased Electric Energy'] = columnCount
-                            
-                            # Get the runperiod for the net purchased electric energy
-                            facilitynet_purchasedelect_runperiod = column.split('(')[-1].split(')')[0]
-                            dataTypeList[0] = True
-                        # Extract the 'Whole Building:Facility Total Electric Demand Power' output from the CSV,
-                        # If there is a Honeybee generation system this will alway be written as a default output
-                        elif 'Whole Building:Facility Total Electric Demand Power' in column:
-    
-                            dict['Whole Building:Facility Total Electric Demand Power'] = columnCount
-                            
-                            # Get the runperiod for the facility electric demand power
-                            facilityelect_demandpower_runperiod = column.split('(')[-1].split(')')[0]
-                            
-                            dataTypeList[1] = True
-                        # Extract the Electricty energy produced by each Honeybee generation system
-                        elif 'DISTRIBUTIONSYSTEM:Electric Load Center Produced Electric Energy' in column:
-    
-                            data = column.split(':')
-                            
-                            electricloadcentername.append(data[0])
-                            
-                            # Get the runperiod for each Honeybee generation system
-                            electricloadcenterrunperiod = column.split('(')[-1].split(')')[0]
-                            
-                            dict[str(data[0])+'- DISTRIBUTIONSYSTEM:Electric Load Center Produced Electric Energy'] = columnCount
-                            dataTypeList[2] = True
-                        else:
-                            pass
-                # Read the data of each header in the CSV file
-                else:
-    
-                    for rowCount, row in enumerate(line.split(',')):
-    
-                        # Whole Building:Facility Net Purchased Electric Energy
-                        if rowCount == dict['Whole Building:Facility Total Electric Demand Power']:
-                            
-                            if lineCount == 1:
-                                
-                                # Add the header to each output
-                                makeHeader(totalelectdemand, facilityelect_demandpower_runperiod, 'Whole Building:Facility Total Electric Demand Power', 'Kwh')
-                                
-                                if facilityelect_demandpower_runperiod == "RunPeriod":
-                                    # For some reason EnergyPlus puts results here in watts,
-                                    # if runperiod need to multiple results by number of seconds in a year
-                                    # assume 31536000 then convert to Kwh
-                                    
-                                    totalelectdemand.append(round(float(row)*31536000/3600000,2))
-                                    
-                                if facilityelect_demandpower_runperiod == "Monthly":
-                                    
-                                    # multiple results by number of seconds in a month 31536000/12
-                                    
-                                    totalelectdemand.append(round(float(row)*2628000/3600000,2))
-                                
-                                if facilityelect_demandpower_runperiod == "Daily":
-                                    
-                                    # multiple results by number of seconds in day 
-                                    
-                                    totalelectdemand.append(round(float(row)*86400/3600000,2))
-                                    
-                                if facilityelect_demandpower_runperiod == "Hourly":
-                                    
-                                    # multiple results by number of seconds in an hour
-                                    
-                                    totalelectdemand.append(round(float(row)*3600/3600000,2))
-                            else:
-    
-                                if facilityelect_demandpower_runperiod == 'RunPeriod':
-                                    # For some reason EnergyPlus puts results here in watts,
-                                    # if runperiod need to multiple results by number of seconds in a year
-                                    # assume 31536000 then convert to Kwh
-                                    totalelectdemand.append(round(float(row)*31536000/3600000,2))
-    
-                                if facilityelect_demandpower_runperiod == 'Monthly':
-                                    
-                                    #multiple results by number of seconds in a month 31536000/12
-                                    
-                                    totalelectdemand.append(round(float(row)*2628000/3600000,2))
-    
-                                    
-                                if facilityelect_demandpower_runperiod == 'Daily':
-                                    
-                                    # multiple results by number of seconds in day 
-                                    
-                                    totalelectdemand.append(round(float(row)*86400/3600000,2))
-    
-                                if facilityelect_demandpower_runperiod == 'Hourly':
-                                    
-                                    # multiple results by number of seconds in an hour
-                                    
-                                    totalelectdemand.append(round(float(row)*3600/3600000,2))
-    
-                        # Whole Building:Facility Total Electric Demand Power
-                        if rowCount == dict['Whole Building:Facility Net Purchased Electric Energy']:
-                            
-                            if lineCount == 1:
-                                
-                                # Add the header to each output
-                                makeHeader(netpurchasedelect, facilitynet_purchasedelect_runperiod, 'Whole Building:Facility Net Purchased Electric Energy', 'Kwh')
-                                
-                                netpurchasedelect.append(round(float(row)/3600000,2))
-                                
-                            else:
-                                
-                                netpurchasedelect.append(round(float(row)/3600000,2))
-                        
-                        # For each Honeybee generation system
-                        for count,electricloadcenter in enumerate(electricloadcentername): 
-                        
-                            if rowCount == dict[str(electricloadcenter)+'- DISTRIBUTIONSYSTEM:Electric Load Center Produced Electric Energy']:
-                                
-                                if lineCount == 1:
-                                    # Add the header to each output
-                                    
-                                    makeHeaderdatatree(generatorproducedenergy, count, electricloadcenterrunperiod, 'Electric energy produced by the generator system named - '+str(electricloadcenter), 'Kwh')
-            
-                                    generatorproducedenergy.Add(round(float(row)/3600000,2),GH_Path(count))
-                                
-                                else:
-                                    generatorproducedenergy.Add(round(float(row)/3600000,2),GH_Path(count))
-            parseSuccess = True
-            result.close()
-        except KeyError:
-            warn = 'No outputs related to Honeybee generation systems were found in the csv! \n'+ \
-                    'Connect a Honeybee generator to the HB_generators input on the Honeybee_Run Energy Simulation component'
-            print warn
-            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warn)
         
+        for lineCount,line in enumerate(result):
+            
+            # Read the headers of the CSVs files and create a dictonary entry in dict based on these headers
+            if lineCount == 0:
+
+                # Splitting this one line into columns of data
+                for columnCount, column in enumerate(line.split(',')):
+                    
+                    
+                    # Extract the Whole Building:Facility Net Purchased Electric Energy output from the CSV,
+                    # If there is a Honeybee generation system this will alway be written as a default output
+                    if 'Whole Building:Facility Net Purchased Electric Energy' in column:
+
+                        dict['Whole Building:Facility Net Purchased Electric Energy'] = columnCount
+                        
+                        # Get the runperiod for the net purchased electric energy
+                        facilitynet_purchasedelect_runperiod = column.split('(')[-1].split(')')[0]
+                        dataTypeList[0] = True
+                    # Extract the 'Whole Building:Facility Total Electric Demand Power' output from the CSV,
+                    # If there is a Honeybee generation system this will alway be written as a default output
+                    elif 'Whole Building:Facility Total Electric Demand Power' in column:
+
+                        dict['Whole Building:Facility Total Electric Demand Power'] = columnCount
+                        
+                        # Get the runperiod for the facility electric demand power
+                        facilityelect_demandpower_runperiod = column.split('(')[-1].split(')')[0]
+                        
+                        dataTypeList[1] = True
+                    # Extract the Electricty energy produced by each Honeybee generation system
+                    elif 'DISTRIBUTIONSYSTEM:Electric Load Center Produced Electric Energy' in column:
+
+                        data = column.split(':')
+                        
+                        electricloadcentername.append(data[0])
+                        
+                        # Get the runperiod for each Honeybee generation system
+                        electricloadcenterrunperiod = column.split('(')[-1].split(')')[0]
+                        
+                        dict[str(data[0])+'- DISTRIBUTIONSYSTEM:Electric Load Center Produced Electric Energy'] = columnCount
+                        dataTypeList[2] = True
+                    else:
+                        pass
+            # Read the data of each header in the CSV file
+            else:
+
+                for rowCount, row in enumerate(line.split(',')):
+
+                    # Whole Building:Facility Net Purchased Electric Energy
+                    if rowCount == dict['Whole Building:Facility Total Electric Demand Power']:
+                        
+                        if lineCount == 1:
+                            
+                            # Add the header to each output
+                            makeHeader(totalelectdemand, facilityelect_demandpower_runperiod, 'Whole Building:Facility Total Electric Demand Power', 'Kwh')
+                            
+                            if facilityelect_demandpower_runperiod == "RunPeriod":
+                                # For some reason EnergyPlus puts results here in watts,
+                                # if runperiod need to multiple results by number of seconds in a year
+                                # assume 31536000 then convert to Kwh
+                                
+                                totalelectdemand.append(round(float(row)*31536000/3600000,2))
+                                
+                            if facilityelect_demandpower_runperiod == "Monthly":
+                                
+                                # multiple results by number of seconds in a month 31536000/12
+                                
+                                totalelectdemand.append(round(float(row)*2628000/3600000,2))
+                            
+                            if facilityelect_demandpower_runperiod == "Daily":
+                                
+                                # multiple results by number of seconds in day 
+                                
+                                totalelectdemand.append(round(float(row)*86400/3600000,2))
+                                
+                            if facilityelect_demandpower_runperiod == "Hourly":
+                                
+                                # multiple results by number of seconds in an hour
+                                
+                                totalelectdemand.append(round(float(row)*3600/3600000,2))
+                        else:
+
+                            if facilityelect_demandpower_runperiod == 'RunPeriod':
+                                # For some reason EnergyPlus puts results here in watts,
+                                # if runperiod need to multiple results by number of seconds in a year
+                                # assume 31536000 then convert to Kwh
+                                totalelectdemand.append(round(float(row)*31536000/3600000,2))
+
+                            if facilityelect_demandpower_runperiod == 'Monthly':
+                                
+                                #multiple results by number of seconds in a month 31536000/12
+                                
+                                totalelectdemand.append(round(float(row)*2628000/3600000,2))
+
+                                
+                            if facilityelect_demandpower_runperiod == 'Daily':
+                                
+                                # multiple results by number of seconds in day 
+                                
+                                totalelectdemand.append(round(float(row)*86400/3600000,2))
+
+                            if facilityelect_demandpower_runperiod == 'Hourly':
+                                
+                                # multiple results by number of seconds in an hour
+                                
+                                totalelectdemand.append(round(float(row)*3600/3600000,2))
+
+                    # Whole Building:Facility Total Electric Demand Power
+                    if rowCount == dict['Whole Building:Facility Net Purchased Electric Energy']:
+                        
+                        if lineCount == 1:
+                            
+                            # Add the header to each output
+                            makeHeader(netpurchasedelect, facilitynet_purchasedelect_runperiod, 'Whole Building:Facility Net Purchased Electric Energy', 'Kwh')
+                            
+                            netpurchasedelect.append(round(float(row)/3600000,2))
+                            
+                        else:
+                            
+                            netpurchasedelect.append(round(float(row)/3600000,2))
+                    
+                    # For each Honeybee generation system
+                    for count,electricloadcenter in enumerate(electricloadcentername): 
+                    
+                        if rowCount == dict[str(electricloadcenter)+'- DISTRIBUTIONSYSTEM:Electric Load Center Produced Electric Energy']:
+                            
+                            if lineCount == 1:
+                                # Add the header to each output
+                                
+                                makeHeaderdatatree(generatorproducedenergy, count, electricloadcenterrunperiod, 'Electric energy produced by the generator system named - '+str(electricloadcenter), 'Kwh')
+        
+                                generatorproducedenergy.Add(round(float(row)/3600000,2),GH_Path(count))
+                            
+                            else:
+                                generatorproducedenergy.Add(round(float(row)/3600000,2),GH_Path(count))
+        parseSuccess = True
+        result.close()
+    
     except IOError:
     
         try: result.close()
@@ -363,7 +358,7 @@ if idfFileAddress != None:
             
             for itemCount,item in enumerate(cleandata):
     
-                if item.find('generation system name ') != -1:
+                if item.find('generation system name') != -1:
                     
                     itemCountlist.append(itemCount)
                     

@@ -30,7 +30,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_17_2015'
+ghenv.Component.Message = 'VER 0.0.56\nMAY_06_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -4902,7 +4902,7 @@ class EPZone(object):
 
 class HB_generatorsystem(object):
     
-    def __init__(self,generatorsystem_name,simulationinverter,battery,windgenerators,PVgenerators,fuelgenerators,contextsurfaces,HBzonesurfaces):
+    def __init__(self,generatorsystem_name,simulationinverter,battery,windgenerators,PVgenerators,fuelgenerators,contextsurfaces,HBzonesurfaces,maintenance_cost):
         
         self.name = generatorsystem_name
         
@@ -4912,6 +4912,7 @@ class HB_generatorsystem(object):
         else:
             self.simulationinverter = simulationinverter
         
+        self.maintenance_cost = maintenance_cost
         self.contextsurfaces = contextsurfaces
         self.HBzonesurfaces = HBzonesurfaces
         self.battery = battery
@@ -4922,7 +4923,7 @@ class HB_generatorsystem(object):
         
 class Wind_gen(object):
     
-    def __init__(self,name_,rotortype,powercontrol,rotor_speed,rotor_diameter,overall_height,number_of_blades,power_output,rated_wind_speed,cut_in_windspeed,cut_out_windspeed,overall_turbine_n,max_tip_speed_ratio,max_power_coefficient,local_av_windspeed,height_local_metrological_station,turbine_cost,powercoefficients = []):
+    def __init__(self,name_,rotortype,powercontrol,rotor_speed,rotor_diameter,overall_height,number_of_blades,power_output,rated_wind_speed,cut_in_windspeed,cut_out_windspeed,overall_turbine_n,max_tip_speed_ratio,max_power_coefficient,local_av_windspeed,height_local_metrological_station,turbine_cost,powercoefficients):
         
         self.name = name_
         self.type = 'Generator:WindTurbine'
@@ -4943,7 +4944,7 @@ class Wind_gen(object):
         self.height_local_metrological_station = height_local_metrological_station
         self.cost_ = turbine_cost
         
-        if powercoefficients != []:
+        if (powercoefficients != None) or (powercoefficients != []) :
             # Wind turbine is analaytical wind turbine
             self.powercoefficients = powercoefficients
         else:

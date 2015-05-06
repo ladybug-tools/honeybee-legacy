@@ -6,18 +6,14 @@
 
 """
 
-Use this component to create a link between generators batteries and inverters - to create a Honeybee generator system.
-
--
-Provided by Honeybee 0.0.56
-
-For more information about Photovolatic generators please see: http://bigladdersoftware.com/epx/docs/8-2/input-output-reference/group-electric-load-center.html#photovoltaic-generators
+Use this component to create a Honeybee generator system.
 
 -
 Provided by Honeybee 0.0.56
 
     Args:
         generatorsystem_name: The name of this Honeybee generation system
+        maintenance_cost: The annual cost of maintaining this Honeybee generation system in whatever currency the user wishes (Just make it consisent with other components)
         PV_HBSurfaces: The Honeybee/context surfaces that contain PV generators to be included in this generation system
         HB_generationobjects: Honeybee batteries or wind turbines to be included in this generation system 
             
@@ -28,7 +24,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_generationsystem"
 ghenv.Component.NickName = 'generationsystem'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_19_2015'
+ghenv.Component.Message = 'VER 0.0.56\nMAY_06_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP" #"06 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -68,7 +64,7 @@ def checHBgenobjects(PV_HBSurfaces,HB_generationobjects):
         ghenv.Component.AddRuntimeMessage(w, "Only HB_batteries and HB_windturbines can be connected to HB_generationobjects!")
         return -1
 
-def checktheinputs(generatorsystem_name,PV_HBSurfaces,HB_generationobjects):
+def checktheinputs(generatorsystem_name,PV_HBSurfaces,HB_generationobjects,maintenance_cost):
     
     if generatorsystem_name == None:
         
@@ -93,6 +89,13 @@ def checktheinputs(generatorsystem_name,PV_HBSurfaces,HB_generationobjects):
             return -1
     except:
         pass
+        
+    if maintenance_cost == None:
+        
+        print "Please specify the annual maintenance cost of this Honeybee generation system!"
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, "Please specify the annual maintenance of this Honeybee generation system!")
+        return -1
 
             
 def checkbattery(HB_generation):
@@ -127,7 +130,7 @@ def checkbattery(HB_generation):
 # Make sure that all the inverters for all the PV generators connected to this simulation are the same.
 
 
-def main(PV_generation,HB_generation):
+def main(PV_generation,HB_generation,maintenance_cost):
     
     simulationinverters = []  # The inverter for this generator system - (only one)
     PVgenerators = [] 
@@ -267,14 +270,14 @@ def main(PV_generation,HB_generation):
                                 
                                 if windandbat(windgenerators,battery) != -1:
 
-                                    HB_generators.append(HB_generator(generatorsystem_name,simulationinverters,battery,windgenerators,PVgenerators,fuelgenerators,HBgencontextsurfaces,HBzonesurfaces))
+                                    HB_generators.append(HB_generator(generatorsystem_name,simulationinverters,battery,windgenerators,PVgenerators,fuelgenerators,HBgencontextsurfaces,HBzonesurfaces,maintenance_cost))
                                     
                                     HB_generator1 = hb_hivegen.addToHoneybeeHive(HB_generators,ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
                                     
                                     return HB_generator1
         
 
-if checktheinputs(generatorsystem_name,PV_HBSurfaces,HB_generationobjects) != -1:   
+if checktheinputs(generatorsystem_name,PV_HBSurfaces,HB_generationobjects,maintenance_cost) != -1:   
 
     if checHBgenobjects(PV_HBSurfaces,HB_generationobjects) != -1:
    
@@ -284,5 +287,5 @@ if checktheinputs(generatorsystem_name,PV_HBSurfaces,HB_generationobjects) != -1
 
         if checkbattery(HB_generation) != -1:
         
-                HB_generatorsytem = main(PV_generation,HB_generation)
+                HB_generatorsytem = main(PV_generation,HB_generation,maintenance_cost)
 

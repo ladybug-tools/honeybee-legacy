@@ -113,6 +113,12 @@ def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, zoneHVACMetrics,
         # Electric Load Center Produced Electric Energy [J]
         # These outputs are the sum of electrical energy and power produced by the generators attached to a particular load center. The keywords for these reports are the unique names of ElectricLoadCenter:Distribution objects.
         
+    if Earthtube_ == True:
+        simulationOutputs.append("Output:Variable,*,Earth Tube Zone Sensible Cooling Energy, "+ timePeriod)
+        simulationOutputs.append("Output:Variable,*,Earth Tube Zone Sensible Heating Energy, "+ timePeriod)
+        simulationOutputs.append("Output:Variable,*,Earth Tube Air Flow Volume, "+ timePeriod)
+        simulationOutputs.append("Output:Variable,*,Earth Tube Fan Electric Energy, "+ timePeriod)
+
     return simulationOutputs
 
 

@@ -45,7 +45,7 @@ Provided by Honeybee 0.0.56
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_18_2015'
+ghenv.Component.Message = 'VER 0.0.56\nAPR_30_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_28_2015
@@ -1174,8 +1174,6 @@ class RunIDF(object):
         #execute the batch file
         os.system(batchFileAddress) 
 
-        os.system('C:\\honeybee\\runIt.bat')
-            
     def readResults(self):
         pass
 
@@ -1493,43 +1491,72 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     
     print "[4 of 8] Writing Electric Load Center - Generator specifications ..."
         
+    HBgeneratoroutputs = []
     
     if HB_generators != []:
 
         hb_hivegen = sc.sticky["honeybee_generationHive"]()
-    
-        HBsystemgenerators = hb_hivegen.callFromHoneybeeHive(HB_generators)
         
-        """
-        # XXX This code here is used to extractingruntime periods if outputs are specified externally
-        # For now only allow Facility Net Purchased Electric Energy and Facility Total Electric Demand Power
-        # as outputs in EnergyPlus at an hourly time period
+        HBsystemgenerators = hb_hivegen.callFromHoneybeeHive(HB_generators)
+
+        
+        # This code here is used to extractingruntime periods if outputs are specified externally
+        # If the function returns and exception that means that external outputs are not specified.
+        # and teh default below will be used.
         
         def extracttimeperiod(simulationOutputs):
-            timeperiod = simulationOutputs[-1].split(',')[-1]
-            HBgeneratortimeperiod = timeperiod.replace(";","")
-            return HBgeneratortimeperiod 
-            
+            try:
+                timeperiod = simulationOutputs[-1].split(',')[-1]
+                HBgeneratortimeperiod = timeperiod.replace(";","")
+                return HBgeneratortimeperiod
+            except:
+                pass
+                
         # Extract the timestep from the incoming component simulationOutputs if its being used
         HBgeneratortimeperiod = extracttimeperiod(simulationOutputs)
-        """
+  
         
-        if (not any('Output:Variable,*,Facility Total Electric Demand Power' in s for s in simulationOutputs)) and (not any('Output:Variable,*,Facility Net Purchased Electric Power' in s for s in simulationOutputs)):
+        
+        if simulationOutputs_ == []:
             
-            # XXX for now this is the default so that generator systems can be modelled with the most accuratey
-            # consider adding the possibility for users to specify their own timesteps in the future
+            HBgeneratoroutputs.append("Output:Variable,*,Facility Net Purchased Electric Energy, hourly;")
             
-            simulationOutputs.append("Output:Variable,*,Facility Net Purchased Electric Energy, hourly;")
-            
-            simulationOutputs.append("Output:Variable,*,Facility Total Electric Demand Power, hourly;")
-            
+            HBgeneratoroutputs.append("Output:Variable,*,Facility Total Electric Demand Power, hourly;")
+            print "ass"
             HBgeneratortimeperiod = 'hourly'
-            
+                
+        if simulationOutputs_ != []:
+                
+            if (not any('Output:Variable,*,Facility Total Electric Demand Power' in s for s in simulationOutputs)) and (not any('Output:Variable,*,Facility Net Purchased Electric Power' in s for s in simulationOutputs)):
+                # These are the default inputs if the user does not specify their own using the component
+                # simulationOutputs, the default timestep is therefore hourly 
+                # the component Ladybug monthly bar chart needs hourly in order to run
+                
+                simulationOutputs.append("Output:Variable,*,Facility Net Purchased Electric Energy, hourly;")
+                
+                simulationOutputs.append("Output:Variable,*,Facility Total Electric Demand Power, hourly;")
+
+                HBgeneratortimeperiod = 'hourly'
+                
         for HBsystemcount,HBsystemgenerator in enumerate(HBsystemgenerators):
             
-            # For this HBsystemgenerator write the output so that the produced electric energy is reported.
-            simulationOutputs.append("Output:Variable,"+str(HBsystemgenerator.name)+":DISTRIBUTIONSYSTEM,Electric Load Center Produced Electric Energy,"+ HBgeneratortimeperiod +";")
+            # Append to HBgeneratoroutputs as if we append to simulationOutputs the original default outputs will never run
+            
+            if simulationOutputs_ == []:
                 
+                # For this HBsystemgenerator write the output so that the produced electric energy is reported.
+                HBgeneratoroutputs.append("Output:Variable,"+str(HBsystemgenerator.name)+":DISTRIBUTIONSYSTEM,Electric Load Center Produced Electric Energy,"+ HBgeneratortimeperiod +";")
+
+            
+            if simulationOutputs_ != []:
+
+                # If there are output variables in simulationOutputs original default outputs will not run anyhow
+                # so we can append to simulationOutputs without affecting default outputs
+                
+                # For this HBsystemgenerator write the output so that the produced electric energy is reported.
+                simulationOutputs.append("Output:Variable,"+str(HBsystemgenerator.name)+":DISTRIBUTIONSYSTEM,Electric Load Center Produced Electric Energy,"+ HBgeneratortimeperiod +";")
+                
+                        
             # Define the name for the list of generators and to use in generator's list name in ElectricLoadCenter:Distribution
             if HBsystemgenerator.name == None:
                 # This shouldn't happen as Honeybee generation system has a check on it 
@@ -1553,6 +1580,10 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
             # Add a header to the financial data so that its clear financial data is from this system
             
             WriteIDF.financialdata.append('Honeybee system generator '+str(HBsystemgenerator.name))
+            
+            # Add the Honeybee generation systems' annual operation and maintenance costs
+            
+            WriteIDF.financialdata.append('Honeybee system annual maintenance cost - '+str(HBsystemgenerator.maintenance_cost))
             
             # Determine whether it is a PV, Wind or fuel generator system
             
@@ -1908,6 +1939,9 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
             'Output:Variable,*,Zone Electric Equipment Electric Energy, monthly;'
         idfFile.write('\n')
         idfFile.write(outPutsDefalut + '\n')
+        # Write honeybee generator default outputs 
+        for line in HBgeneratoroutputs:
+            idfFile.write(line + '\n')
         # Writing outputs for Honeybee generators if there are any
         
     idfFile.close()
