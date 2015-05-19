@@ -1,4 +1,5 @@
 # By Anton Szilasi
+# Icon by Djordje Spasic
 # For technical support or user requests contact me at
 # ajszilas@gmail.com
 # Honeybee started by Mostapha Sadeghipour Roudsari is licensed
@@ -12,7 +13,7 @@ Use this component to create a Honeybee generator system.
 Provided by Honeybee 0.0.56
 
     Args:
-        generatorsystem_name: The name of this Honeybee generation system
+        generatorsystem_name: The name of this Honeybee generation system please make it unique!
         maintenance_cost: The annual cost of maintaining this Honeybee generation system in whatever currency the user wishes (Just make it consisent with other components)
         PV_HBSurfaces: The Honeybee/context surfaces that contain PV generators to be included in this generation system
         HB_generationobjects: Honeybee batteries or wind turbines to be included in this generation system 

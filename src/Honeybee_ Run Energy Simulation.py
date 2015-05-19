@@ -1607,9 +1607,11 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                     PVsurfaceinzones.append(surface.ID in WriteIDF.zonesurfaces)
                     
                 if all(x== True for x in PVsurfaceinzones) != True:
-                    
-                    print "The HBzone which some PV_HBSurfaces belong to is not connected to _HBZones please connect it!  " 
-                    ghenv.Component.AddRuntimeMessage(w, "The HBzone which some PV_HBSurfaces belong to is not connected to _HBZones please connect it!")
+                    warn  = "It has been detected that there are PV generators attached to sufaces of a Honeybee zone\n"+\
+                    " However this Honeybee zone has not been connected to the _HBZones input on this component\n"+\
+                    " Please connect it to run the Energy Plus simulation!"
+                    print warn 
+                    ghenv.Component.AddRuntimeMessage(w, warn )
                     
                     return -1
                 

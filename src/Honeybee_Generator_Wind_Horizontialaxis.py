@@ -9,6 +9,7 @@ Provided by Honeybee 0.0.56
 Use this component to create your own horizontial axis wind turbine to use in Energyplus simulations. This component simulates wind turbines by using either the simple Power Calculation method - which means that the Maximum Power coefficient must be calculated.
 Or by using the analytical method. The difference between the simple and analytical method is that for the simple method, the maximum power coefficient must be calculated while in the analytical method 6 power coefficients must be specified instead of the maximum power coefficient.
 
+Please see more information about wind turbines at: http://bigladdersoftware.com/epx/docs/8-3/input-output-reference/group-electric-load-center.html#generatorwindturbine
 -
 Provided by Honeybee 0.0.56
 

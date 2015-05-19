@@ -1,7 +1,19 @@
 # Need a check so that only data from Honeybee_Read_Honeybee_generation_system_results can be connected at one time!!
 
 """
-Use this component to the calculate and visualise the financial value of Honeybee generation systems.
+Use this component to the calculate and visualise the financial value of Honeybee generation systems. 
+At present you can only create grid connected renewable energy systems without storage. For this reason you 
+must specify both the grid electricity price and fed in tariff rate.
+
+The financial value of the Honeybee generator systems is calculated by calculating how much energy is consumed by the facility and produced 
+by the Honeybee generator systems for every hour of the year.
+    
+For every hour of the year if electricity is generated and the facility requires electricity, the facility will automatically
+consume the electricity generated. This will generate a revenue as the facility did not have to purchase electricity from the grid.
+
+Any surplus electricity generated in any hour throughout the year will be fed back into the grid at the tariff rate,
+and generate a revenue.
+
 -
 Provided by Ladybug 0.0.59
     
@@ -16,10 +28,12 @@ Provided by Ladybug 0.0.59
         If you want to specify a flat rate just specify one value this will be used across all the hours of the year.
         Otherwise specify the grid electricity cost for 288 hours of the year that is for each hour of the day for one day in every month of the year.
         Use a list with 288 values to do this.
-        currency: The currency of the financial data, enter either the symbol or a sentence describing the currency e.g - US dollars
+        currency_: The currency of the financial data, enter either the symbol or a sentence describing the currency e.g - US dollars
         graph_data: Set to True to visualise the the financial value of Honeybee generation systems.
-        _basePoint_: An optional point with which to locate the 3D chart in the Rhino Model.  The default is set to the Rhino origin at (0,0,0).
-
+        font_size: An optional input, use a float to change the size of the font on the graph.
+        _basePoint_: An optional input, use a 3D point to locate the 3D chart in the Rhino Model.  The default is set to the Rhino origin at (0,0,0).
+        _xScale_: The scale of the X axis of the graph. The default will plot the X axis with a length of 215 Rhino model units 
+        _zScale_: The scale of the Y axis of the graph. The default will plot the Z axis with a length of 85 Rhino model units 
     Returns:
         readMe!: ...
         gensystem_value: The net present cost of each Honeybee generation system. The net present cost is the present value of all the costs of installing and operating that Honeybee generation system over 25 years minus the present value of the all the revenues that the system earns over 25 years. 
@@ -32,7 +46,6 @@ Provided by Ladybug 0.0.59
         titleBasePts: Points for placement of the title and time labels of the chart.  Hook this up to a Ladybug "TextTag3D" component in order to get text that bakes into Rhino as text.
         conditionalHOY: The input data for the hours of the year that pass the conditional statement.
 """
-
 
 from System import Object
 import Grasshopper.Kernel as gh
@@ -49,7 +62,7 @@ ghenv.Component.Name = "Honeybee_Visualise_Honeybeegeneration_cashflow"
 ghenv.Component.NickName = 'Visualise_Honeybee_generation_cashflow'
 ghenv.Component.Message = 'VER 0.0.56\nMay_06_2015'
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "09 | Energy | Energy"
+ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "0"
@@ -401,7 +414,7 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                             maintenancecost.append(float(data.split('-')[1]))
                  
                  
-                            # Check what each item is
+                            # For checking what each item is
                             #print financialdata[0] # The name of the generation system
                             #print data.split('replacement time = ')[0].split(" - ")[0] # 
                             #print float(data.split('replacement time = ')[0].split(" - ")[1]) #
@@ -439,18 +452,22 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                 #Set defaults for xScale and yScale.
                 if _xScale_ != None: xS = _xScale_
                 else: xS = 1
-                if _yScale_ != None: yS = _yScale_
+                if _zScale_ != None: yS = _zScale_
                 else: yS = 1
+                if font_size == None: font_size = xS*1.8
+                
+                graph_data_by_cost = False
                 
                 #Make a chart boundary.
                 chartAxes = []
-                width = xS*135
-                height = yS*50 # - No bar will exceeed 0.80 % of this height or 40
+                width = xS*215
+                height = yS*85 
                 chartAxes.append(rc.Geometry.Rectangle3d(rc.Geometry.Plane.WorldXY, width, height).ToNurbsCurve())
                 
                 # Make graph start point
                
                 graphstartPt = rc.Geometry.Point3d(0, 0,0)
+                axisthick = 0.15
                 
                 # Make lists to add graph data to
                 dataMeshes = []
@@ -474,13 +491,17 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                 
                 replacementcosts = []
                 
-                for replacementitem in replacementitems:
-                    
-                    replacementcosts.append(replacementitem[2])
-                    
-                maxreplace_cost = max(replacementcosts)
+                # Use try statement in case there are no replacement costs
+                try:
                 
-                # Max operation cost XXX
+                    for replacementitem in replacementitems:
+                        
+                        replacementcosts.append(replacementitem[2])
+                        
+                    maxreplace_cost = max(replacementcosts)
+                
+                except:
+                    pass
                 
                 # Find maximum cost for negative axis (The system is costing money,
                 # buying equipment, repacing equipment etc), this will be used when drawing axis
@@ -490,8 +511,11 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                 # Use the above to calculate z axis scale
                 
                 zscale = (height*0.8)/capitalcosts_sum
-     
-                # 6. Draw capital costs for all the equipment across different generation systems at year zero
+                
+                # 6. Draw cashflow graph and create gensystem_value datatree of the financial
+                # value of each Honeybee generator system
+                
+                # Part A Draw meshes for capital costs at year zero
                 
                 def draw2Dgraphbars(startPt,Xposition,Zposition,zscale,color):
                         
@@ -500,8 +524,8 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                     # 1. Create the points of the mesh of the bars themselves
                     
                     facePt1 = rc.Geometry.Point3d(startPt.X , startPt.Z, startPt.Y ) 
-                    facePt2 = rc.Geometry.Point3d(startPt.X + Xposition*zscale, startPt.Z, startPt.Y)
-                    facePt3 = rc.Geometry.Point3d(startPt.X + Xposition*zscale, startPt.Z + Zposition*zscale, startPt.Y) 
+                    facePt2 = rc.Geometry.Point3d(startPt.X + Xposition, startPt.Z, startPt.Y)
+                    facePt3 = rc.Geometry.Point3d(startPt.X + Xposition, startPt.Z + Zposition*zscale, startPt.Y) 
                     facePt4 = rc.Geometry.Point3d(startPt.X, startPt.Z+ Zposition*zscale, startPt.Y )
                     
                     # Create the mesh of the bars themselves
@@ -527,61 +551,56 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                 
                 gensystem_value_sysnames = []
                 
-                # Draw the mesh of the cost for each Honeybee generator system, 
+                # Draw the mesh of the capital cost for each Honeybee generator system 
+                
                 global colors
                 colors = [System.Drawing.Color.MediumBlue,System.Drawing.Color.Red,System.Drawing.Color.Yellow,System.Drawing.Color.GhostWhite,System.Drawing.Color.Indigo,System.Drawing.Color.Gold,System.Drawing.Color.Crimson,System.Drawing.Color.Silver]
                 
-                Zposition = 0
+                Zpositionneg = startPt.Z
                 
                 systemCountcolor = 0
-
+                # For cost by item graph
+                if (graph_data == True) and (graph_data_by_cost == True):
+                    
+                    dataMeshes.extend(draw2Dgraphbars(rc.Geometry.Point3d(graphstartPt.X,graphstartPt.Z,graphstartPt.Y),width/50,systemcost,zscale,System.Drawing.Color.Indigo))
+                        
+                
                 for systemCount,systemcapcost in enumerate(capitalcosts):
 
                     gensystem_value_sysnames.append(systemcapcost[0])
+                    
                     if systemCountcolor == len(colors):
                         # Re-set system count
                         systemCountcolor == 0
                         
-                        systemcost = -sum(stringtoFloat(systemcapcost[2::2]))
+                        systemcost = -sum(stringtoFloat(systemcapcost[4::2]))
                         
                         gensystem_value.Add(systemcost, GH_Path(systemCount))
                         
-                        # draw2Dgraphbars(startPt,Xposition,Zposition,zscale,color)
-                        dataMeshes.extend(draw2Dgraphbars(rc.Geometry.Point3d(graphstartPt.X,graphstartPt.Z + Zposition,graphstartPt.Y),width*0.0375,systemcost,zscale,colors[systemCountcolor]))
-                        
-                        graphText.append(str(round(systemcost,2)))
-                        graphTextpoints.append(rc.Geometry.Point3d(0,(systemcost*zscale)/2, 0))
-                        
-                        Zposition = Zposition+-(sum(stringtoFloat(systemcapcost[2::2]))*zscale)
-                        
-                        systemCount = systemCount +1
+                        # For cost by system graph 
+                        if (graph_data == True) and (graph_data_by_cost == False):
+           
+                            dataMeshes.extend(draw2Dgraphbars(rc.Geometry.Point3d(graphstartPt.X, graphstartPt.Y,Zpositionneg),width/50,systemcost,zscale,colors[systemCountcolor]))
+                            
+                            Zpositionneg = Zpositionneg+-(sum(stringtoFloat(systemcapcost[4::2]))*zscale)
+                            
                         
                     else:
                         
-                        systemcost = -sum(stringtoFloat(systemcapcost[2::2]))
-                        
+                        systemcost = -sum(stringtoFloat(systemcapcost[4::2]))
+   
                         gensystem_value.Add(systemcost, GH_Path(systemCount))
                         
-                        dataMeshes.extend(draw2Dgraphbars(rc.Geometry.Point3d(graphstartPt.X,graphstartPt.Z + Zposition,graphstartPt.Y),width*0.0375,systemcost,zscale,colors[systemCountcolor]))
+                        # For cost by system graph 
+                        if (graph_data == True) and (graph_data_by_cost == False):
+                            
+                            dataMeshes.extend(draw2Dgraphbars(rc.Geometry.Point3d(graphstartPt.X, graphstartPt.Y,Zpositionneg),width/50,systemcost,zscale,colors[systemCountcolor]))
+                            
+                            Zpositionneg = Zpositionneg-(sum(stringtoFloat(systemcapcost[4::2]))*zscale)
+                            
+                    systemCountcolor = systemCountcolor+1
                         
-                        graphText.append(str(round(systemcost,2)))
-                        graphTextpoints.append(rc.Geometry.Point3d(0,(systemcost*zscale)/2, 0))
-                        
-                        Zposition = Zposition+-(sum(stringtoFloat(systemcapcost[2::2]))*zscale)
-                        
-                        systemCountcolor = systemCountcolor+1
-                        
-                    
-                    # Draw the name of each Honeybee generator system
-                    #graphLabels.append(write_3Dtxttag(10,0,10,financialdata[0].replace("' generation system name -",'').replace("'",''),5))
-                    
-                    # Draw the cost of each Honeybee generator system
-        
-                    #graphLabels.append(write_3Dtxttag(10,0,10,-sum(stringtoFloat(financialdata[1:])),5))
-                    
-    
-                
-                # 7. Graph the cashflow for all the generator systems over 25 years
+                # Part B calculate and draw the cashflow meshes for all the generator systems over 25 years
                 
                 # First convert grid electcity rates and tariff feed in rates to run period used in simulation,
                 # e.g annual,monthly or daily
@@ -785,8 +804,9 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                     
                     # Graph these monteary savings for years 1 to 25
                     for year in range(1,26):
-    
-                        Zposition1 = 0
+                        
+                        Zpositionpos = startPt.Z+axisthick 
+                        # The positive axis is above the black line the denotes where the postive and negitive axis are so + axisthick 
                         
                         # If a discount factor is used, calculate the discount factor for the year
                         
@@ -796,6 +816,13 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                         else:
                             fdiscount = 1
                             
+                            
+                        if (graph_data == True) and (graph_data_by_cost == True):
+                            
+                            # Sum all the electricity savings for the year, 
+                            
+                            dataMeshes.extend(draw2Dgraphbars(rc.Geometry.Point3d(year*width/26,0, Zpositionpos),width/50,sum(stringtoFloat(genmontearyvalue))*fdiscount,zscale,System.Drawing.Color.Red))
+                            
                         # Cant use enumerate for systemcountcolors as need to reset count everytime
                         # It exceeds the length of color list - use the same colors over again
                         # thus create custom count
@@ -803,6 +830,7 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                         
                         for systemCount,(saving,name) in enumerate(zip(genmontearyvalue[1::2],genmontearyvalue[::2])):
                             
+         
                             if systemcountcolors == len(colors):
                                 # Re-set systemcolorcount
                                 systemcountcolors == 0
@@ -810,79 +838,86 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                                 # Add saving to respective Honeybee generator 
                                 gensystem_value.Add(saving*fdiscount, GH_Path(systemCount))
                                 
-                                dataMeshes.extend(draw2Dgraphbars(rc.Geometry.Point3d(year*width/25,0, Zposition1),width*0.03,saving*fdiscount,zscale,colors[systemcountcolors]))
+                                # For cost by system graph 
+                                if (graph_data == True) and (graph_data_by_cost == False):
                                 
-                                ##graphText.append(str(saving))
-                                ##graphTextpoints.append(rc.Geometry.Point3d(0,(width*0.0375)/2, (systemcost*zscale)/2))
-                                
-                                Zposition1 = Zposition1+(saving*zscale*fdiscount)
-                                
-                                
-                                # Draw number on mesh
-                                #(xposition,yposition,zposition,text,size)
-                                #graphLabels.extend(write_3Dtxttag(year*10,0,float(saving),float(saving),5))
-             
-                                # Draw generator system name on mesh 
-                                #graphLabels.extend(write_3Dtxttag(year*10,0,float(saving),name,5))
-                                
-                                
+                                    # Draw graph mesh for electricity saving
+                                    dataMeshes.extend(draw2Dgraphbars(rc.Geometry.Point3d(year*width/26,0, Zpositionpos),width/50,saving*fdiscount,zscale,colors[systemcountcolors]))
+                                    
+                                    # Create graph text for above mesh
+              
+                                    Zpositionpos = Zpositionpos+(saving*zscale*fdiscount)
                             else:
                                 
                                 # Add saving to respective Honeybee generator 
                                 gensystem_value.Add(saving*fdiscount, GH_Path(systemCount))
                                 
-                                dataMeshes.extend(draw2Dgraphbars(rc.Geometry.Point3d(year*width/25,0, Zposition1),width*0.03,saving*fdiscount,zscale,colors[systemcountcolors]))
+                                # For cost by system graph 
+                                if (graph_data == True) and (graph_data_by_cost == False):
+                                    
+                                    # Draw graph mesh for electricity saving
+                          
+                                    dataMeshes.extend(draw2Dgraphbars(rc.Geometry.Point3d(year*width/26,0, Zpositionpos),width/50,saving*fdiscount,zscale,colors[systemcountcolors]))
+                                    
+                                    Zpositionpos = Zpositionpos+(saving*zscale*fdiscount)
+                                    
+                            # Graph costs for replacing items e.g batteries after 5 years
                                 
-                                Zposition1 = Zposition1+(saving*zscale*fdiscount)
-                                
-                                ##graphText.append(str(systemcost))
-                                ##graphTextpoints.append(rc.Geometry.Point3d(0,(width*0.03)/2, (systemcost*zscale)/2))
-                        
-                                
-                                # Draw number on mesh
-                                #(xposition,yposition,zposition,text,size)
-                                #graphLabels.extend(write_3Dtxttag(year*10,0,float(saving),float(saving),5))
-             
-                                # Draw generator system name on mesh 
-                                #graphLabels.extend(write_3Dtxttag(year*10,0,float(saving),name,5))
-                                
-                                # Graph costs for replacing items e.g batteries after 5 years
-                            
                             Zpositionreplace = 0
+                            
+                            if (graph_data == True) and (graph_data_by_cost == True):
+                                
+                                databycostreplacementcost = []
+                            
                             for replacementitem in replacementitems:
                                 
                                 # If year is divisible by replacement time include replacement cost 
         
                                 if year % float(replacementitem[3]) == 0:
                                     
-                                    dataMeshes.extend(draw2Dgraphbars(rc.Geometry.Point3d(year*width/25,0, Zpositionreplace),width*0.03,-replacementitem[2]*fdiscount,zscale,colors[systemcountcolors]))
-                                    
-                                    Zpositionreplace = Zpositionreplace - replacementitem[2]*zscale*fdiscount
-                                    
                                     # Add replacement cost to respective Honeybee generator 
                                     gensystem_value.Add(-replacementitem[2]*fdiscount, GH_Path(systemCount))
+                                    
+                                    # For cost by system graph 
+                                    if (graph_data == True) and (graph_data_by_cost == False):
+                                    
+                                        # Draw graph mesh for electricity saving
+                                        dataMeshes.extend(draw2Dgraphbars(rc.Geometry.Point3d(year*width/26,0, Zpositionreplace),width/50,-replacementitem[2]*fdiscount,zscale,colors[systemcountcolors]))
                                         
-                                    ##graphText.append(str(systemcost))
-                                    ##graphTextpoints.append(rc.Geometry.Point3d(0,(width*0.03)/2, (systemcost*zscale)/2))
-                        
+                                        Zpositionreplace = Zpositionreplace - replacementitem[2]*zscale*fdiscount
                                         
-                                    # Draw number on mesh
-                                    #graphLabels.extend(write_3Dtxttag(year*10,0,float(replacementitem[2]),float(replacementitem[2]),5))
-                 
-                                    # Draw generator system name on mesh 
-                                    #graphLabels.extend(write_3Dtxttag(year*10,0,float(replacementitem[2]),name,5))
-                            
-                            # Add annual maintenance costs and draw them
+                                    if (graph_data == True) and (graph_data_by_cost == True):
+                                        
+                                        # Append this cost to a list so that all the replacement costs
+                                        # for this year can be summed together for graph data by cost graph
+                                        databycostreplacementcost.append(-replacementitem[2])
+                                        
+
+                            # Add annual maintenance costs for each Honeybee generation system and draw them
                             
                             gensystem_value.Add(-maintenancecost[systemCount])
                             
-                            systemcountcolors = systemcountcolors+1
-                    
-                    
-                # Draw graph axis
-                    
+                            if graph_data == True and (graph_data_by_cost == False):
+                                
+                                dataMeshes.extend(draw2Dgraphbars(rc.Geometry.Point3d(year*width/26,0, Zpositionreplace),width/50,-maintenancecost[systemCount]*fdiscount,zscale,colors[systemcountcolors]))
+                                
+                                Zpositionreplace = Zpositionreplace - maintenancecost[systemCount]*zscale*fdiscount
+                                
+                                systemcountcolors = systemcountcolors+1
+                                
+                                
+                        if (graph_data == True) and (graph_data_by_cost == True):
                             
-                def verticaldrawAxis(startPt,Max,Min,zscale):
+                            # Sum all replacement costs across the different items for this year
+                                
+                            databycostreplacementcost.extend(draw2Dgraphbars(rc.Geometry.Point3d(year*width/26,0, Zpositionreplace),width/50,sum(databycostreplacementcost)*fdiscount,zscale,System.Drawing.Color.Green))
+                                
+                                
+                # Part C Draw graph horizontial,verticalaxis legend and graph text (Any text not on the axis)
+                    
+                def drawAxis(startPt,Max,Min,zscale,width):
+                    
+                    """Draws both the horizontial and vertical axis and there numbers"""
                     
                     dataMeshes = []
                     textSrfs = []
@@ -894,18 +929,36 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                     posDomain = Max+(Max*0.15)
                     negDomain = Min+(Min*0.15)
                     
-                    for marking in range(0,int(posDomain),5000):
+                    # Determine the best axis interval on Z axis for displaying system net present cost
+                    
+                    for possiblezaxisinterval in range(1000,int(posDomain+negDomain),1000):
                         
-                        facePt1 = rc.Geometry.Point3d(startPt.X - 1, startPt.Y + (marking*zscale) - 0.2, startPt.Z)
-                        facePt2 = rc.Geometry.Point3d(startPt.X, startPt.Y + (marking*zscale) - 0.2 , startPt.Z )
+                        if int(posDomain+negDomain)/possiblezaxisinterval < 10:
+                           
+                            zaxisinterval = possiblezaxisinterval
+                            break
+                    
+                    # For vertical axis positive domain
+
+                    for marking in range(0,int(posDomain+zaxisinterval),zaxisinterval):
+                        
+                        facePt1 = rc.Geometry.Point3d(startPt.X - 1, startPt.Y + (marking*zscale) - 0.3, startPt.Z)
+                        facePt2 = rc.Geometry.Point3d(startPt.X, startPt.Y + (marking*zscale) - 0.3 , startPt.Z )
                         facePt3 = rc.Geometry.Point3d(startPt.X - 1, startPt.Y + (marking*zscale), startPt.Z )   
                         facePt4 = rc.Geometry.Point3d(startPt.X, startPt.Y +(marking*zscale) , startPt.Z) 
                         
-                        # Create the text and text point
+                        # Create vertical axis  positive domain text and text points
+    
+                        if marking == 0:
                         
-                        textSrf = lb_visualization.text2srf([str(marking)], [rc.Geometry.Point3d(startPt.X-4,startPt.Y + (marking*zscale)-0.35,startPt.Z)],'Verdana' , 0.5, False)
-                        textSrfs.extend(textSrf[0])
+                            textSrf = lb_visualization.text2srf([str(marking)], [rc.Geometry.Point3d(startPt.X-5*font_size/2,startPt.Y + (-marking*zscale)-0.35,startPt.Z)],'Verdana' , font_size, False)
+                            textSrfs.extend(textSrf[0])
                         
+                        else:
+                            
+                            textSrf = lb_visualization.text2srf([str(marking)], [rc.Geometry.Point3d(startPt.X-13*font_size/2,startPt.Y + (marking*zscale)-0.35,startPt.Z)],'Verdana' , font_size, False)
+                            textSrfs.extend(textSrf[0])
+                            
                         # Create the mesh of the marking themselves
                         
                         barMesh = rc.Geometry.Mesh()
@@ -919,17 +972,26 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                         
                         dataMeshes.append(barMesh)
                         
-                    for marking in range(0,int(negDomain),5000):
-    
-                        facePt1 = rc.Geometry.Point3d(startPt.X - 1, startPt.Y + (-marking*zscale) - 0.2, startPt.Z)
-                        facePt2 = rc.Geometry.Point3d(startPt.X, startPt.Y + (-marking*zscale) - 0.2 , startPt.Z )
+                    # For vertical axis negative domain
+                        
+                    for marking in range(0,int(negDomain+zaxisinterval),zaxisinterval):
+                        
+                        facePt1 = rc.Geometry.Point3d(startPt.X - 1, startPt.Y + (-marking*zscale) - 0.3, startPt.Z)
+                        facePt2 = rc.Geometry.Point3d(startPt.X, startPt.Y + (-marking*zscale) - 0.3 , startPt.Z )
                         facePt3 = rc.Geometry.Point3d(startPt.X - 1, startPt.Y + (-marking*zscale), startPt.Z )   
                         facePt4 = rc.Geometry.Point3d(startPt.X, startPt.Y +(-marking*zscale) , startPt.Z) 
                         
-                        # Create the text and text point
+                        # Create vertical axis negative domain text and text points
                         
-                        textSrf = lb_visualization.text2srf([str(-marking)], [rc.Geometry.Point3d(startPt.X-4,startPt.Y + (-marking*zscale)-0.35,startPt.Z)],'Verdana' , 0.5, False)
-                        textSrfs.extend(textSrf[0])
+                        if marking == 0:
+                        
+                            textSrf = lb_visualization.text2srf([str(-marking)], [rc.Geometry.Point3d(startPt.X-5*font_size/2,startPt.Y + (-marking*zscale)-0.35,startPt.Z)],'Verdana' , font_size, False)
+                            textSrfs.extend(textSrf[0])
+                        
+                        else:
+                            
+                            textSrf = lb_visualization.text2srf([str(-marking)], [rc.Geometry.Point3d(startPt.X-16*font_size/2,startPt.Y + (-marking*zscale)-0.35,startPt.Z)],'Verdana' , font_size, False)
+                            textSrfs.extend(textSrf[0])
                         
                         # Create the mesh of the marking themselves
                         
@@ -944,11 +1006,12 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                         dataMeshes.append(barMesh)
                         
                     # 2. Create the vertical axis
-            
-                    facePt1 = rc.Geometry.Point3d(startPt.X + 0.15, startPt.Y + -negDomain*zscale, startPt.Z)
-                    facePt2 = rc.Geometry.Point3d(startPt.X, startPt.Y + -negDomain*zscale, startPt.Z )
-                    facePt3 = rc.Geometry.Point3d(startPt.X + 0.15, startPt.Y + posDomain*zscale, startPt.Z )   
-                    facePt4 = rc.Geometry.Point3d(startPt.X, startPt.Y + posDomain*zscale, startPt.Z) 
+    
+                
+                    facePt1 = rc.Geometry.Point3d(startPt.X + 0.3, startPt.Y + -(range(0,int(negDomain+zaxisinterval),zaxisinterval)[(len(range(0,int(negDomain+zaxisinterval),zaxisinterval)))-1])*zscale, startPt.Z)
+                    facePt2 = rc.Geometry.Point3d(startPt.X, startPt.Y + -(range(0,int(negDomain+zaxisinterval),zaxisinterval)[(len(range(0,int(negDomain+zaxisinterval),zaxisinterval)))-1])*zscale, startPt.Z )
+                    facePt3 = rc.Geometry.Point3d(startPt.X + 0.3, startPt.Y + (range(0,int(posDomain+zaxisinterval),zaxisinterval)[(len(range(0,int(posDomain+zaxisinterval),zaxisinterval)))-1])*zscale, startPt.Z )   
+                    facePt4 = rc.Geometry.Point3d(startPt.X, startPt.Y + (range(0,int(posDomain+zaxisinterval),zaxisinterval)[(len(range(0,int(posDomain+zaxisinterval),zaxisinterval)))-1])*zscale, startPt.Z) 
                     
                     # Create the mesh of the bars themselves
                     
@@ -962,96 +1025,119 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                     
                     dataMeshes.append(barMesh)
                     
-                    return dataMeshes,textSrfs
-                    
-                    
-                def horizontialdrawAxis(startPt,verticalMin,verticalMax,zscale,width):
-                    
-                    # 3. Draw markings along the horizontial axis
-    
-                    dataMeshes = []
-                    
-                    # The vertical axis in verticaldrawAxis is set up so that
-                    # that it is always 15% below the lowest graph point need to take this into account here
-                    
-                    markingdist = width/26
-    
-                    verticalMin = verticalMin+verticalMin*0.15
-                    graphZaxis = verticalMin + verticalMax*0.15
-    
-                    for year,marking in enumerate(range(0,width,int(width/26))):
+                    if currency_ == None:
                         
-                        facePt1 = rc.Geometry.Point3d(startPt.X + marking + 0.1, startPt.Y - (verticalMin*zscale) , startPt.Z)
-                        facePt2 = rc.Geometry.Point3d(startPt.X + marking , startPt.Y - (verticalMin*zscale), startPt.Z )
-                        facePt3 = rc.Geometry.Point3d(startPt.X + marking + 0.1, (startPt.Y - (verticalMin*zscale))+ graphZaxis*zscale , startPt.Z )   
-                        facePt4 = rc.Geometry.Point3d(startPt.X + marking , (startPt.Y -(verticalMin*zscale))+ graphZaxis*zscale, startPt.Z) 
+                        # Create vertical axis label
+                        vertical_label = "Honeybee\n" + \
+                        "generation\n" + \
+                        "system net\n" + \
+                        "present cost\n" + \
+                        "(currency not specified)"
+                    else:
                         
+                        # Create vertical axis label
+                        vertical_label = "Honeybee\n" + \
+                        "generation\n" + \
+                        "system net\n" + \
+                        "present cost\n" + \
+                        currency_
+              
+                    textSrf = lb_visualization.text2srf([vertical_label], [rc.Geometry.Point3d(startPt.X-(20*font_size),3,startPt.Z)],'Verdana' ,font_size, False)
+                    textSrfs.extend(textSrf[0])
+                    
+                    # Create horizontial axis 
+                    
+                    for year in range(0,26):
                         
-                        # Create the text and text point
-                       
-                        textSrf = lb_visualization.text2srf([str(year)], [rc.Geometry.Point3d(startPt.X+ marking+markingdist/2,startPt.Y - (verticalMin*zscale),startPt.Z)],'Verdana' , 0.5, False)
+                 
+                        # Create horizontial axis text and text points 
+                            
+                        textSrf = lb_visualization.text2srf([str(year)], [rc.Geometry.Point3d(year*width/26+(width/100),-int(negDomain+zaxisinterval)*zscale,0)],'Verdana' , font_size, False)
                         textSrfs.extend(textSrf[0])
                         
-                        # Create the mesh of the marking themselves
-                        
-                        barMesh = rc.Geometry.Mesh()
-                        
-                        for point in [facePt1, facePt2, facePt3, facePt4]:
-                            barMesh.Vertices.Add(point)
-                        barMesh.Faces.AddFace(0, 1, 3, 2)
-                        
-                        # Color the mesh faces of the markings themselves
-                        barMesh.VertexColors.CreateMonotoneMesh(System.Drawing.Color.Black)
-                        
-                        dataMeshes.append(barMesh)
-                        
-                    # 4.  Create the horizontial axis
+                    # Create line along horizontial axis at zero
                     
-                    facePt1 = rc.Geometry.Point3d(startPt.X + width*zscale, startPt.Y + 0.15, startPt.Z)
-                    facePt2 = rc.Geometry.Point3d(startPt.X, startPt.Y , startPt.Z )
-                    facePt3 = rc.Geometry.Point3d(startPt.X + width*zscale, startPt.Y, startPt.Z )   
-                    facePt4 = rc.Geometry.Point3d(startPt.X, startPt.Y+ 0.15, startPt.Z) 
+                    facePt1 = rc.Geometry.Point3d(startPt.X + width, startPt.Y + axisthick , startPt.Z)
+                    facePt2 = rc.Geometry.Point3d(startPt.X + width, startPt.Y, startPt.Z )
+                    facePt3 =rc.Geometry.Point3d(startPt.X , startPt.Y  + axisthick, startPt.Z) 
+                    facePt4 = rc.Geometry.Point3d(startPt.X , startPt.Y , startPt.Z )   
                     
                     # Create the mesh of the bars themselves
                     
-                    barMesh = rc.Geometry.Mesh()
+                    horiaxis = rc.Geometry.Mesh()
                     for point in [facePt1, facePt2, facePt3, facePt4]:
-                        barMesh.Vertices.Add(point)
-                    barMesh.Faces.AddFace(0, 1, 3, 2)
+                        horiaxis.Vertices.Add(point)
+                    horiaxis.Faces.AddFace(0, 1, 3, 2)
                     
                     # Color the mesh faces of the bars themselves
-                    barMesh.VertexColors.CreateMonotoneMesh(System.Drawing.Color.Black)
+                    horiaxis.VertexColors.CreateMonotoneMesh(System.Drawing.Color.Black)
                     
-                    dataMeshes.append(barMesh)
-    
-                    return dataMeshes,textSrfs
+                    
+                    dataMeshes.append(horiaxis)
+          
+                    # Create horizontial axis label
+                    
+                    textSrf = lb_visualization.text2srf(['System age in years'], [rc.Geometry.Point3d((width/2),-int(negDomain+zaxisinterval)*zscale+(0.05*-negDomain*zscale),0)],'Verdana' , font_size, False)
+                    textSrfs.extend(textSrf[0])
                         
-                
-                axisstartPt = rc.Geometry.Point3d(-2,0 ,0 )
-                
-                # Find the maximumum cost for positive axis (The system is earning money
-                # by saving electricity, feed into grid etc), this will be used when drawing axis
-                
-                # Find max electricity saving
-                
-                electsaving = sum(genmontearyvalue[1::2])
-                
-                maxcostpositive = electsaving
-                
-                axisMeshes.extend(verticaldrawAxis(axisstartPt,maxcostpositive,maxcostnegitive,zscale)[0]) # Draw graph axis XXX - Need to change genmontearyvalue[1::2][0] to max
-                axisMeshes.extend(verticaldrawAxis(axisstartPt,maxcostpositive,maxcostnegitive,zscale)[1])
-                
-                axisMeshes.extend(horizontialdrawAxis(graphstartPt,maxcostnegitive,maxcostpositive,zscale,width)[0])
-                textSrfs.extend(horizontialdrawAxis(graphstartPt,maxcostnegitive,maxcostpositive,zscale,width)[1])
-                
-                """
-                # Draw graph text 
-                for count, Text in enumerate(graphText):
-    
-                    textSrf = lb_visualization.text2srf([Text], [graphTextpoints[count]],'Verdana' , 0.5, False)
-                    dataMeshes.extend(textSrf[0])
-                """
                     
+                    # Draw legend 
+                    
+                    for generatorCount,generator in enumerate(facilityHBgenerators):
+                        
+                        
+                        textSrflegend = lb_visualization.text2srf([str(generator.name)], [rc.Geometry.Point3d(generatorCount*35*xS,-int(negDomain+zaxisinterval)*zscale-int(negDomain+zaxisinterval)*zscale*0.2,0)],'Verdana' , font_size, False)
+                        textSrfs.extend(textSrflegend[0])
+                        dataMeshes.extend(draw2Dgraphbars(rc.Geometry.Point3d(generatorCount*35*xS,0,-int(negDomain+zaxisinterval)*zscale-int(negDomain+zaxisinterval)*zscale*0.15),width/20,height/30,1,colors[generatorCount]))
+                       
+                       
+                    # Draw legend text 
+                       
+                    legendtextSrf = lb_visualization.text2srf(['Graph Legend - Honeybee generation system color'], [rc.Geometry.Point3d(0,-int(negDomain+zaxisinterval)*zscale-int(negDomain+zaxisinterval)*zscale*0.1,0)],'Verdana' , font_size*1.5, False)
+                    dataMeshes.extend(legendtextSrf[0])
+                    
+                    # Draw graph title
+                    
+                    
+                 
+                    graphtitletextSrf = lb_visualization.text2srf(['Net present cost by Honeybee generation system over 25 years'], [rc.Geometry.Point3d(width/5,int(posDomain+zaxisinterval)*zscale+int(posDomain+zaxisinterval)*zscale*0.15,0)],'Verdana' , font_size*2.1, False)
+                    dataMeshes.extend(graphtitletextSrf[0])
+                   
+                    return dataMeshes,textSrfs
+                    
+                    
+                # For cost by system graph 
+                if (graph_data == True) and (graph_data_by_cost == False):
+                
+                    axisstartPt = rc.Geometry.Point3d(-2,0 ,0 )
+                    
+                    # Find the maximumum cost for positive axis (The system is earning money
+                    # by saving electricity, feed into grid etc), this will be used when drawing axis
+                    
+                    # Find max electricity saving
+                    
+                    electsaving = sum(genmontearyvalue[1::2])
+                    
+                    maxcostpositive = electsaving
+                    
+                    # Using this and the maximum cost negative draw the axis 
+                    
+                    axismesh,axistext = drawAxis(axisstartPt,maxcostpositive,maxcostnegitive,zscale,width)
+                    
+                    axisMeshes.extend(axismesh) # Draw graph axis XXX - Need to change genmontearyvalue[1::2][0] to max
+                    axisMeshes.extend(axistext) # Text for axis
+                    
+
+                        
+                    # Draw graph text (All text for axis is drawn within the function drawAxis)
+                    for count, Text in enumerate(graphText):
+        
+                        textSrf = lb_visualization.text2srf([Text], [graphTextpoints[count]],'Verdana' , font_size, False)
+                        dataMeshes.extend(textSrf[0])
+                           
+
+                # 7. Create gensystem_value ouputs - datatree
+                
                 branchesNPC = gensystem_value.Branches
                 paths = gensystem_value.Paths
                 
@@ -1073,7 +1159,7 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                         gensystem_value.Add("Generation system Net present cost in "+str(currency_), paths[item])
                     else:
                         
-                        gensystem_value.Add("Generation system Net present cost", paths[item])
+                        gensystem_value.Add("Generation system Net present cost (currency not specified)", paths[item])
                         
                     gensystem_value.AddRange(sumBranchesNPC[item], paths[item])
                 
@@ -1081,7 +1167,7 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                 if currency_ == None:
                     print "You have not specified the currency of the financial data that you are using, so no currency will be displayed"
                 
-    
+                # Move graph if necessary
                 if _basePoint_ != None and _basePoint_ != rc.Geometry.Point3d.Origin:
                     moveTransform = rc.Geometry.Transform.Translation(_basePoint_.X, _basePoint_.Y, _basePoint_.Z)
                     for geo in dataMeshes: geo.Transform(moveTransform)

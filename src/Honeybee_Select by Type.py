@@ -17,6 +17,7 @@ Provided by Honeybee 0.0.56
         _showRoofs_: Set to true to output the roofs
     Returns:
         surfaces: Output surfaces as Grasshopper objects
+        HBSurfaces: The output surfaces as Honeybee surfaces
 """
 ghenv.Component.Name = "Honeybee_Select by Type"
 ghenv.Component.NickName = 'selByType_'

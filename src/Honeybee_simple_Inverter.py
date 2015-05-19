@@ -1,4 +1,5 @@
-# By Anton Szilasi
+# Created By Anton Szilasi
+# Icon by Djordje Spasic
 # For technical support or user requests contact me at
 # ajszilas@gmail.com
 # Honeybee started by Mostapha Sadeghipour Roudsari is licensed
