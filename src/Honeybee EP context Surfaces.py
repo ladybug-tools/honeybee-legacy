@@ -12,7 +12,7 @@ prepare shading/context geometries
 
 ghenv.Component.Name = 'Honeybee EP context Surfaces'
 ghenv.Component.NickName = 'HB_EPContextSrf'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
+ghenv.Component.Message = 'VER 0.0.56\nMAY_22_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -81,69 +81,69 @@ def main(shdSurfaces, EPTransSchedule, meshingSettings, justBoundingBox):
             return name
         
         for brepCount, brep in enumerate(shdBreps):
-            if len(brep.DuplicateEdgeCurves(False))>1:
-                
-                meshArray = rc.Geometry.Mesh.CreateFromBrep(brep, mp)
-                for mesh in meshArray:
-                    for meshFace in range(mesh.Faces.Count):
-                        vertices = list(mesh.Faces.GetFaceVertices(meshFace))[1:]
-                        vertices = vertices + [sc.doc.ModelAbsoluteTolerance]
-                        # create the brep from mesh
-                        shdBrep = rc.Geometry.Brep.CreateFromCornerPoints(*vertices)
-                        
-                        thisShading = hb_EPSHDSurface(shdBrep, 1000*brepCount + meshFace, 'shdSrf_' + `brepCount` + '_' + `meshFace` + "_" + str(uuid.uuid4()))
-                        
-                        # add transmittance schedule if any
-                        if EPTransSchedule!=None:
-                            schedule= EPTransSchedule.upper()
-                            if schedule!=None and not schedule.lower().endswith(".csv") and schedule not in HBScheduleList:
-                                msg = "Cannot find " + schedule + " in Honeybee schedule library."
+            #if len(brep.DuplicateEdgeCurves(False))>1:
+            
+            meshArray = rc.Geometry.Mesh.CreateFromBrep(brep, mp)
+            for mesh in meshArray:
+                for meshFace in range(mesh.Faces.Count):
+                    vertices = list(mesh.Faces.GetFaceVertices(meshFace))[1:]
+                    vertices = vertices + [sc.doc.ModelAbsoluteTolerance]
+                    # create the brep from mesh
+                    shdBrep = rc.Geometry.Brep.CreateFromCornerPoints(*vertices)
+                    
+                    thisShading = hb_EPSHDSurface(shdBrep, 1000*brepCount + meshFace, 'shdSrf_' + `brepCount` + '_' + `meshFace` + "_" + str(uuid.uuid4()))
+                    
+                    # add transmittance schedule if any
+                    if EPTransSchedule!=None:
+                        schedule= EPTransSchedule.upper()
+                        if schedule!=None and not schedule.lower().endswith(".csv") and schedule not in HBScheduleList:
+                            msg = "Cannot find " + schedule + " in Honeybee schedule library."
+                            print msg
+                            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                            return -1
+                        elif schedule!=None and schedule.lower().endswith(".csv"):
+                            # check if csv file is existed
+                            if not os.path.isfile(schedule):
+                                msg = "Cannot find the shchedule file: " + schedule
                                 print msg
                                 ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
                                 return -1
-                            elif schedule!=None and schedule.lower().endswith(".csv"):
-                                # check if csv file is existed
-                                if not os.path.isfile(schedule):
-                                    msg = "Cannot find the shchedule file: " + schedule
-                                    print msg
-                                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
-                                    return -1
-                            
-                            thisShading.TransmittanceSCH = schedule
                         
-                        # add the Rad Material if any
-                        if RADMaterial!=None:
-                            # if it is just the name of the material make sure it is already defined
-                            if len(RADMaterial.split(" ")) == 1:
-                                # if the material is not in the library add it to the library
-                                if RADMaterial not in sc.sticky ["honeybee_RADMaterialLib"].keys():
-                                    warningMsg = "Can't find " + RADMaterial + " in RAD Material Library.\n" + \
-                                                "Add the material to the library and try again."
-                                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
-                                    return
-                                
-                                try:
-                                    thisShading.setRADMaterial(RADMaterial)
-                                except Exception, e:
-                                    print e
-                                    warningMsg = "You are using an old version of Honeybee_Honeybee! Update your files and try again."
-                                    print warningMsg
-                                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
-                                    return
-                                
-                                addedToLib = True
-                            else:
-                                
-                                # try to add the material to the library
-                                addedToLib, thisShading.RadMaterial = hb_RADMaterialAUX.analyseRadMaterials(RADMaterial, True)
-                                
-                            if addedToLib==False:
-                                warningMsg = "Failed to add " + RADMaterial + " to the Library."
+                        thisShading.TransmittanceSCH = schedule
+                    
+                    # add the Rad Material if any
+                    if RADMaterial!=None:
+                        # if it is just the name of the material make sure it is already defined
+                        if len(RADMaterial.split(" ")) == 1:
+                            # if the material is not in the library add it to the library
+                            if RADMaterial not in sc.sticky ["honeybee_RADMaterialLib"].keys():
+                                warningMsg = "Can't find " + RADMaterial + " in RAD Material Library.\n" + \
+                                            "Add the material to the library and try again."
                                 ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
                                 return
-                        
-                        # add shading to the list
-                        shadingClasses.append(thisShading)
+                            
+                            try:
+                                thisShading.setRADMaterial(RADMaterial)
+                            except Exception, e:
+                                print e
+                                warningMsg = "You are using an old version of Honeybee_Honeybee! Update your files and try again."
+                                print warningMsg
+                                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
+                                return
+                            
+                            addedToLib = True
+                        else:
+                            
+                            # try to add the material to the library
+                            addedToLib, thisShading.RadMaterial = hb_RADMaterialAUX.analyseRadMaterials(RADMaterial, True)
+                            
+                        if addedToLib==False:
+                            warningMsg = "Failed to add " + RADMaterial + " to the Library."
+                            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
+                            return
+                    
+                    # add shading to the list
+                    shadingClasses.append(thisShading)
             
         # add to the hive
         hb_hive = sc.sticky["honeybee_Hive"]()
