@@ -1502,11 +1502,22 @@ class hb_WriteRAD(object):
         numOfPoints = len(flattenTestPoints)
     
         if numOfCPUs > numOfPoints: numOfCPUs = numOfCPUs
-    
-        if numOfCPUs > 1: ptsEachCpu = int(numOfPoints/(numOfCPUs))
-        else: ptsEachCpu = numOfPoints
+
+        if numOfCPUs > 1:
+            ptsEachCpu = int(numOfPoints/(numOfCPUs))
+            remainder = numOfPoints%numOfCPUs
+        else:		
+            ptsEachCpu = numOfPoints		
+            remainder = 0
     
         lenOfPts = []
+        
+        for cpuCount in range(numOfCPUs):		
+            if cpuCount < remainder:		
+                lenOfPts.append(ptsEachCpu+1)		
+            else:		
+                lenOfPts.append(ptsEachCpu)
+        
         testPtsEachCPU = []
         
         for cpuCount in range(numOfCPUs):
@@ -1515,18 +1526,11 @@ class hb_WriteRAD(object):
             ptsFileName = os.path.join(subWorkingDir, radFileName + '_' + `cpuCount` + '.pts')
             
             ptsFile = open(ptsFileName, "w")
-            if cpuCount + 1 != numOfCPUs:
-                for ptCount in range(cpuCount * ptsEachCpu, (cpuCount + 1) * ptsEachCpu):
-                    ptsFile.write(self.hb_writeRADAUX.testPtsStr(flattenTestPoints[ptCount], flattenPtsNormals[ptCount]))
-                    ptsForThisCPU.append(flattenTestPoints[ptCount])
-                lenOfPts.append(ptsEachCpu)
-                
-            else:
-                for ptCount in range(cpuCount * ptsEachCpu, numOfPoints):
-                    ptsFile.write(self.hb_writeRADAUX.testPtsStr(flattenTestPoints[ptCount], flattenPtsNormals[ptCount]))
-                    ptsForThisCPU.append(flattenTestPoints[ptCount])
-                lenOfPts.append(numOfPoints - (cpuCount * ptsEachCpu))
-            
+
+            for ptCount in range(sum(lenOfPts[:cpuCount]), sum(lenOfPts[:cpuCount+1])):
+                ptsFile.write(self.hb_writeRADAUX.testPtsStr(flattenTestPoints[ptCount], flattenPtsNormals[ptCount]))
+                ptsForThisCPU.append(flattenTestPoints[ptCount])
+
             ptsFile.close()
             
             testPtsEachCPU.append(ptsForThisCPU)        
@@ -1609,7 +1613,7 @@ class hb_WriteRAD(object):
             initBatchFile.close()
             
             # annual glare only needs one headeing file and will run on a single cpu
-            if runAnnualGlare and onlyAnnualGlare:
+            if runAnnualGlare: # and onlyAnnualGlare:
                 numOfCPUs = 1
                 
             # write the rest of the files
@@ -2502,6 +2506,7 @@ class hb_WriteRADAUX(object):
         viewDirection = sc.doc.Views.ActiveView.ActiveViewport.CameraDirection
         viewDirection.Unitize()
         viewUp = sc.doc.Views.ActiveView.ActiveViewport.CameraUp
+        viewUp.Unitize()
         viewHA = 180 - rs.VectorAngle(sc.doc.Views.ActiveView.ActiveViewport.GetFrustumRightPlane()[1][1], sc.doc.Views.ActiveView.ActiveViewport.GetFrustumLeftPlane()[1][1])
         if viewHA == 0: viewHA = 180
         viewVA = 180 - rs.VectorAngle(sc.doc.Views.ActiveView.ActiveViewport.GetFrustumBottomPlane()[1][1], sc.doc.Views.ActiveView.ActiveViewport.GetFrustumTopPlane()[1][1])
@@ -3101,6 +3106,8 @@ class hb_EnergySimulatioParameters(object):
             ddyFile = None
             
             terrain = 'City'
+            
+            grndTemps = []
         
         else:
             timestep = int(EPParameters[0])
@@ -3114,8 +3121,10 @@ class hb_EnergySimulatioParameters(object):
             ddyFile = EPParameters[10]
             
             terrain = EPParameters[11]
+            
+            grndTemps = EPParameters[12]
         
-        return timestep, shadowPar, solarDistribution, simulationControl, ddyFile, terrain
+        return timestep, shadowPar, solarDistribution, simulationControl, ddyFile, terrain, grndTemps
 
 class EPMaterialAux(object):
     
@@ -4544,7 +4553,8 @@ class EPZone(object):
             print msg
             if component != None:
                 component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
-        
+            return
+            
         # numbers in OpenStudio standard library are in IP and I have to convert them to SI!
         self.equipmentLoadPerArea = schedulesAndLoads['elec_equip_per_area'] * 10.763961 #Per ft^2 to Per m^2
         self.infiltrationRatePerArea = schedulesAndLoads['infiltration_per_area_ext'] * 0.00508001 #1 ft3/min.m2 = 5.08001016E-03 m3/s.m2
@@ -6487,9 +6497,9 @@ class hb_Hive(object):
                         HBObjects.append(copy.deepcopy(HBObject))
                         
                     except Exception, e:
-                        #print `e`
-                        #print "Failed to copy the object. Returning the original objects...\n" +\
-                        #"This can cause strange behaviour!"
+                        print `e`
+                        print "Failed to copy the object. Returning the original objects...\n" +\
+                        "This can cause strange behaviour!"
                         HBObjects.append(sc.sticky['HBHive'][key])
             except:
                 pass

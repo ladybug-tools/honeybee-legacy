@@ -12,6 +12,7 @@ Provided by Honeybee 0.0.56
 Use this component to add EnergyPlus simple inverters to a Energy Plus simulation.
 
 Find out more information about Energy Plus simple inverters here:
+-
 http://bigladdersoftware.com/epx/docs/8-2/input-output-reference/group-electric-load-center.html#electricloadcenterinvertersimple
 
 -
@@ -19,10 +20,10 @@ Provided by Honeybee 0.0.56
 
     Args:
         
-        _invertername: The inverter name - Make it unique from other inverters
-        inverter_n: The efficiency of the inverter by default this is 90%
-        inverter_cost: The cost the inverter in whatever currency the user wishes - Just make it consistent with other components you are using
-        replacement_time: Specify how often in years the inverter will need to be replaced. The default is 5 years.
+        _inverterName: The inverter name - Make it unique from other inverters
+        _inverterEfficiency_: The efficiency of the inverter by default this is 90%
+        _inverterCost: The cost the inverter in whatever currency the user wishes - Just make it consistent with other components you are using
+        _replacementTime_: Specify how often in years the inverter will need to be replaced. The default is 5 years.
         
     Returns:
         HB_inverter: Honeybee inverter- to include this inverter in a generation system connect it to the input HB_generationobjects on the Honeybee_generationsystem component 
@@ -47,31 +48,50 @@ hb_hivegen = sc.sticky["honeybee_generationHive"]()
 PVinverter = sc.sticky["PVinverter"] 
 inverter_zone = None
     
-def checktheinputs(_invertername,inverter_n,inverter_cost,inverter_zone):
+def checktheinputs(_inverterName,_inverterEfficiency_,_inverterCost,inverter_zone):
     
-    if inverter_cost == None:
+    if not sc.sticky.has_key("honeybee_release") or not sc.sticky.has_key("honeybee_ScheduleLib"):
+        print "You should first let the Honeybee fly..."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, "You should first let the Honeybee fly...")
+
+        return -1
+
+    try:
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+    except:
+        
+        warning = "You need a newer version of Honeybee to use this compoent." + \
+        "Use updateHoneybee component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+        "into canvas and try again."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+        return -1  
+    
+    if _inverterCost == None:
         warnMsg= "The cost of the inverter must be specified!"
         print warnMsg
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, warnMsg)
         return -1 
         
-    if _invertername== None:
+    if _inverterName== None:
         print "Please specify a name for the inverter and make sure it is not the same as another inverter!"
         w = gh.GH_RuntimeMessageLevel.Warning ## Need to create a check so that inverters cant have duplicate names!
         ghenv.Component.AddRuntimeMessage(w, "Please specify a name for the inverter and make sure it is not the same as another inverter!")
         return -1
     
-    if inverter_n == None:
+    if _inverterEfficiency_ == None:
         print "No value given for inverter efficiency 0.9 used"
         
         
         
-if checktheinputs(_invertername,inverter_n,inverter_cost,inverter_zone) != -1:
+if checktheinputs(_inverterName,_inverterEfficiency_,_inverterCost,inverter_zone) != -1:
     
-    if replacement_time == None:
+    if _replacementTime_ == None:
         
-        replacement_time = 5
+        _replacementTime_ = 5
         print "No value given for replacement time so this inverter will be replaced every 5 years"
     
-    HB_inverter = hb_hivegen.addToHoneybeeHive([PVinverter(_invertername,inverter_cost,inverter_zone,inverter_n,replacement_time)], ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+    HB_inverter = hb_hivegen.addToHoneybeeHive([PVinverter(_inverterName,_inverterCost,inverter_zone,_inverterEfficiency_,_replacementTime_)], ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))

@@ -27,7 +27,7 @@ Provided by Honeybee 0.0.56
         +++++++++++++++: ...
         _HBZones: The HBZones that you wish to write into an IDF and/or run through EnergyPlus.  These can be from any of the components that output HBZones.
         HBContext_: Optional HBContext geometry from the "Honeybee_EP Context Surfaces." component or Honeybee PV gen component.
-        HB_generators: Connect the output HB_generatorsytem from the Honeybee_generationsystem component here to model EnergyPlus Photovoltaic and Wind generator systems in this simulation.
+        HBGenerators_: Connect the output HBGeneratorSystem from the Honeybee_generationsystem component here to model EnergyPlus Photovoltaic and Wind generator systems in this simulation.
         simulationOutputs_: A list of the outputs that you would like EnergyPlus to write into the result CSV file.  This can be any set of any outputs that you would like from EnergyPlus, writen as a list of text that will be written into the IDF.  It is recommended that, if you are not expereinced with writing EnergyPlus outputs, you should use the "Honeybee_Write EP Result Parameters" component to request certain types of common outputs.  If no value is input here, this component will automatically request outputs of heating, cooling, lighting, and equipment energy use.
         +++++++++++++++: ...
         _writeIdf: Set to "True" to have the component take your HBZones and other inputs and write them into an IDF file.  The file path of the resulting file will appear in the idfFileAddress output of this component.  Note that only setting this to "True" and not setting the output below to "True" will not automatically run the IDF through EnergyPlus for you.
@@ -45,7 +45,7 @@ Provided by Honeybee 0.0.56
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_30_2015'
+ghenv.Component.Message = 'VER 0.0.56\nMay_22_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_28_2015
@@ -219,7 +219,7 @@ class WriteIDF(object):
         if scheduleName.lower().endswith(".csv"):
             # find filebased schedule name
             scheduleName = self.fileBasedSchedules[scheduleName.upper()]
-        #print coordinatesList
+
         fullString = ''
         
         for count, coordinates in enumerate(coordinatesList):
@@ -366,7 +366,24 @@ class WriteIDF(object):
             '\t' + elev + ';   !Elevation\n'
         epwfile.close()
         return locationString
-    
+        
+    def EPGroundTemp(self, grndTemps):		
+      
+        grndString = "\nSite:GroundTemperature:BuildingSurface,\n" + \
+        '\t' + str(grndTemps[0]) + ',    !Jan Ground Temperature (C)\n' + \
+        '\t' + str(grndTemps[1]) + ',    !Feb Ground Temperature (C)\n' + \
+        '\t' + str(grndTemps[2]) + ',    !Mar Ground Temperature (C)\n' + \
+        '\t' + str(grndTemps[3]) + ',    !Apr Ground Temperature (C)\n' + \
+        '\t' + str(grndTemps[4]) + ',    !May Ground Temperature (C)\n' + \
+        '\t' + str(grndTemps[5]) + ',    !Jun Ground Temperature (C)\n' + \
+        '\t' + str(grndTemps[6]) + ',    !Jul Ground Temperature (C)\n' + \
+        '\t' + str(grndTemps[7]) + ',    !Aug Ground Temperature (C)\n' + \
+        '\t' + str(grndTemps[8]) + ',    !Sep Ground Temperature (C)\n' + \
+        '\t' + str(grndTemps[9]) + ',    !Oct Ground Temperature (C)\n' + \
+        '\t' + str(grndTemps[10]) + ',    !Nov Ground Temperature (C)\n' + \
+        '\t' +  str(grndTemps[11]) + ';   !Dec Ground Temperature (C)\n'
+        return grndString
+
     def EPSizingPeriod(self, weatherFilePeriod):
         sizingString = "\nSizingPeriod:WeatherFileConditionType,\n" + \
             '\t' + 'ExtremeSizing'+ weatherFilePeriod + ',\n' + \
@@ -519,24 +536,32 @@ class WriteIDF(object):
                 '\t;                        !- Velocity Squared Term Coefficient\n'
     
     def EPZoneAirMixing(self, zone, zoneMixName, mixFlowRate, objCount):
-        return '\nZoneMixing,\n' + \
-                '\t' + zone.name + zoneMixName + 'AirMix' + str(objCount) + ',  !- Name\n' + \
-                '\t' + zone.name + ',  !- Zone Name\n' + \
-                '\t' + 'ALWAYS ON' + ',  !- Schedule Name\n' + \
-                '\t' + 'Flow/Zone' + ',  !- Design Flow Rate Calculation Method\n' + \
-                '\t' + str(mixFlowRate) + ',   !- Design Flow Rate {m3/s}\n' + \
-                '\t' + ',  !- Flow per Zone Floor Area {m3/s-m2}\n' + \
-                '\t' + ', !- Flow per Exterior Surface Area {m3/s-m2}\n' + \
-                '\t' + ',    !- Air Changes per Hour\n' + \
-                '\t' + zoneMixName  + ',     !- Source Zone Name\n' + \
-                '\t' + '0'  + ',     !- Delta Temperature\n' + \
-                '\t,                        !- Delta Temperature Schedule Name\n' + \
-                '\t,                        !- Minimum Zone Temperature Schedule Name\n' + \
-                '\t,                        !- Maximum Zone Temperature Schedule Name\n' + \
-                '\t,                        !- Minimum Source Zone Temperature Schedule Name\n' + \
-                '\t,                        !- Maximum Source Zone Temperature Schedule Name\n' + \
-                '\t,                        !- Minimum Outdoor Temperature Schedule Name\n' + \
-                '\t;                        !- Maximum Outdoor Temperature Schedule Name\n'
+        
+        if zone.mixAirFlowSched[objCount].upper() == 'ALWAYS ON':
+            mixingSched = 'ALWAYS ON'		
+        elif zone.mixAirFlowSched[objCount].upper().endswith('CSV'):		
+            mixingSchedFileName = os.path.basename(zone.mixAirFlowSched[objCount])		
+            mixingSched = "_".join(mixingSchedFileName.split(".")[:-1])		
+        else: mixingSched = zone.mixAirFlowSched[objCount]
+        
+        return '\nZoneMixing,\n'+\
+            '\t' + zone.name + zoneMixName + 'AirMix' + str(objCount) + ',  !- Name\n' + \
+            '\t' + zone.name + ',  !- Zone Name\n' + \
+            '\t' + mixingSched + ',  !- Schedule Name\n' + \
+            '\t' + 'Flow/Zone' + ',  !- Design Flow Rate Calculation Method\n' + \
+            '\t' + str(mixFlowRate) + ',   !- Design Flow Rate {m3/s}\n' + \
+            '\t' + ',  !- Flow per Zone Floor Area {m3/s-m2}\n' + \
+            '\t' + ', !- Flow per Exterior Surface Area {m3/s-m2}\n' + \
+            '\t' + ',    !- Air Changes per Hour\n' + \
+            '\t' + zoneMixName  + ',     !- Source Zone Name\n' + \
+            '\t' + '0'  + ',     !- Delta Temperature\n' + \
+            '\t,                        !- Delta Temperature Schedule Name\n' + \
+            '\t,                        !- Minimum Zone Temperature Schedule Name\n' + \
+            '\t,                        !- Maximum Zone Temperature Schedule Name\n' + \
+            '\t,                        !- Minimum Source Zone Temperature Schedule Name\n' + \
+            '\t,                        !- Maximum Source Zone Temperature Schedule Name\n' + \
+            '\t,                        !- Minimum Outdoor Temperature Schedule Name\n' + \
+            '\t;                        !- Maximum Outdoor Temperature Schedule Name\n'
     
     def EPNatVentSimple(self, zone, natVentCount):
         if zone.natVentSchedule[natVentCount] == None: natVentSched = 'ALWAYS ON'
@@ -1165,7 +1190,6 @@ class RunIDF(object):
         batchStr = workingDrive + '\ncd\\' +  folderName + '\n' + EPDirectory + \
                 '\Epl-run ' + fullPath + ' ' + fullPath + ' idf "' + epwFileAddress + '" EP N nolimit N N 0 Y'
         
-        #print "this is batch string" + batchStr
         batchFileAddress = fullPath +'.bat'
         batchfile = open(batchFileAddress, 'w')
         batchfile.write(batchStr)
@@ -1288,7 +1312,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     idfFile.write(hb_writeIDF.EPVersion(sc.sticky["honeybee_folders"]["EPVersion"]))
     
     # Read simulation parameters
-    timestep, shadowPar, solarDistribution, simulationControl, ddyFile, terrain = hb_EPPar.readEPParams(EPParameters)
+    timestep, shadowPar, solarDistribution, simulationControl, ddyFile, terrain,grndTemps = hb_EPPar.readEPParams(EPParameters)
     
     # Timestep,6;
     idfFile.write(hb_writeIDF.EPTimestep(timestep))
@@ -1312,6 +1336,17 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     
     # Location
     idfFile.write(hb_writeIDF.EPSiteLocation(epwFileAddress))
+    
+    #Ground Temperatures.		
+    if grndTemps == []:		
+        groundtemp = lb_preparation.groundTempData(_epwFile,[])		
+        groundtempNum = groundtemp[1][7:]		
+        for temp in groundtempNum:		
+            if temp < 18: grndTemps.append(18)		
+            elif temp < 24: grndTemps.append(temp)		
+            else: grndTemps.append(24)		
+    		
+    idfFile.write(hb_writeIDF.EPGroundTemp(grndTemps))
     
     # SizingPeriod
     #Check if there are sizing periods in the EPW file.
@@ -1493,11 +1528,11 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         
     HBgeneratoroutputs = []
     
-    if HB_generators != []:
+    if HBGenerators_ != []:
 
         hb_hivegen = sc.sticky["honeybee_generationHive"]()
         
-        HBsystemgenerators = hb_hivegen.callFromHoneybeeHive(HB_generators)
+        HBsystemgenerators = hb_hivegen.callFromHoneybeeHive(HBGenerators_)
 
         
         # This code here is used to extractingruntime periods if outputs are specified externally
@@ -1791,9 +1826,11 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                         if schedule.upper() not in EPScheduleCollection: EPScheduleCollection.append(schedule)
                     else: needToWriteMixSched = True
 
-            if zone.mixAir == True: needToWriteMixSched = True
-    if needToWriteMixSched == True:
-        if 'ALWAYS ON' not in EPScheduleCollection: EPScheduleCollection.append('ALWAYS ON')
+            if zone.mixAir == True:
+                for schedule in zone.mixAirFlowSched:
+                    if schedule != None:
+                        if schedule.upper() not in EPScheduleCollection: EPScheduleCollection.append(schedule)
+                    else: needToWriteMixSched = True
     
     # Write Schedules
     for schedule in EPScheduleCollection:

@@ -1,36 +1,31 @@
 # Need a check so that only data from Honeybee_Read_Honeybee_generation_system_results can be connected at one time!!
 
 """
-Use this component to the calculate and visualise the financial value of Honeybee generation systems. 
-At present you can only create grid connected renewable energy systems without storage. For this reason you 
-must specify both the grid electricity price and fed in tariff rate.
-
-The financial value of the Honeybee generator systems is calculated by calculating how much energy is consumed by the facility and produced 
-by the Honeybee generator systems for every hour of the year.
-    
-For every hour of the year if electricity is generated and the facility requires electricity, the facility will automatically
-consume the electricity generated. This will generate a revenue as the facility did not have to purchase electricity from the grid.
-
-Any surplus electricity generated in any hour throughout the year will be fed back into the grid at the tariff rate,
-and generate a revenue.
+Use this component to the calculate and visualise the financial value of Honeybee generation systems. At present you can only create grid connected renewable energy systems without storage. For this reason you must specify both the grid electricity price and fed in tariff rate.
+-
+The financial value of the Honeybee generator systems is calculated by calculating how much energy is consumed by the facility and produced by the Honeybee generator systems for every hour of the year.
+-
+For every hour of the year if electricity is generated and the facility requires electricity, the facility will automatically consume the electricity generated. This will generate a revenue as the facility did not have to purchase electricity from the grid.
+-
+Any surplus electricity generated in any hour throughout the year will be fed back into the grid at the tariff rate, and generate a revenue.
 
 -
 Provided by Ladybug 0.0.59
     
     Args:
         _inputData: To use this component please input all the outputs from the component readEP_generation_system_results here
-        discount_factor: An optional input - specify the interest rate as a percentage to calculate a discount factor for each Honeybee generation system. A discount factor is a ratio used to calculate the present value of a future revenue or cost that occurs in any year of the system lifetime (25 years) using the equation - fd = 1/(1+i)^N where: i = real interest rate ,N = number of years. If this field is left blank no discount factor will be applied
-        gridelect_cost_schedule: The cost of grid connected electricty per Kwh in whatever currency the user wishes - (Just make it consistent with other components you are using)
+        discountFactor_: An optional input - specify the interest rate as a percentage to calculate a discount factor for each Honeybee generation system. A discount factor is a ratio used to calculate the present value of a future revenue or cost that occurs in any year of the system lifetime (25 years) using the equation - fd = 1/(1+i)^N where: i = real interest rate ,N = number of years. If this field is left blank no discount factor will be applied
+        _gridElectCostSchedule: The cost of grid connected electricty per Kwh in whatever currency the user wishes - (Just make it consistent with other components you are using)
         If you want to specify a flat rate just specify one value this will be used across all the hours of the year.
         Otherwise specify the grid electricity cost for 288 hours of the year that is for each hour of the day for one day in every month of the year.
         Use a list with 288 values to do this.
-        feedin_tariff_schedule: The price that the utility will pay per Kwh in whatever currency the user wishes - (Just make it consistent with other components you are using) for power fed back into the grid. 
+        _feedInTariffSchedule: The price that the utility will pay per Kwh in whatever currency the user wishes - (Just make it consistent with other components you are using) for power fed back into the grid. 
         If you want to specify a flat rate just specify one value this will be used across all the hours of the year.
         Otherwise specify the grid electricity cost for 288 hours of the year that is for each hour of the day for one day in every month of the year.
         Use a list with 288 values to do this.
         currency_: The currency of the financial data, enter either the symbol or a sentence describing the currency e.g - US dollars
-        graph_data: Set to True to visualise the the financial value of Honeybee generation systems.
-        font_size: An optional input, use a float to change the size of the font on the graph.
+        graphData_: Set to True to visualise the the financial value of Honeybee generation systems.
+        _fontSize_: An optional input, use a float to change the size of the font on the graph.
         _basePoint_: An optional input, use a 3D point to locate the 3D chart in the Rhino Model.  The default is set to the Rhino origin at (0,0,0).
         _xScale_: The scale of the X axis of the graph. The default will plot the X axis with a length of 215 Rhino model units 
         _zScale_: The scale of the Y axis of the graph. The default will plot the Z axis with a length of 85 Rhino model units 
@@ -56,11 +51,9 @@ import Rhino as rc
 import itertools
 import System
 
-lb_visualization = sc.sticky["ladybug_ResultVisualization"]()
-
 ghenv.Component.Name = "Honeybee_Visualise_Honeybeegeneration_cashflow"
 ghenv.Component.NickName = 'Visualise_Honeybee_generation_cashflow'
-ghenv.Component.Message = 'VER 0.0.56\nMay_06_2015'
+ghenv.Component.Message = 'VER 0.0.56\nMay_22_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -211,9 +204,9 @@ def checkforhoneybeegeneration(_inputData):
             
     # Check discount factor inputs
     
-    if (discount_factor > 100) or (discount_factor < 0):
+    if (discountFactor_ > 100) or (discountFactor_ < 0):
         
-        warn = "discount_factor must be entered as a percentage - between 0 and 100!"
+        warn = "discountFactor_ must be entered as a percentage - between 0 and 100!"
         print warn
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warn)
         # If runtimes are not the same return -1
@@ -272,9 +265,38 @@ def checktimestep(Netpurchasedelect,Facilitytotalelectdemand,generatorsproducede
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warn)
         return -1
     
-def checktheinputs(gridelect_cost_schedule,feedin_tariff_schedule):
+def checktheinputs(_gridElectCostSchedule,_feedInTariffSchedule):
     
-    if (feedin_tariff_schedule == []) or (feedin_tariff_schedule[0] == None):
+    if not sc.sticky.has_key('honeybee_release'):
+        print "You should first let Honeybee to fly..."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee to fly...")
+        return -1
+
+    try:
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+    except:
+        warning = "You need a newer version of Honeybee to use this compoent." + \
+        " Use updateHoneybee component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+        "into canvas and try again."
+        print warning
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+        return -1
+
+    try:
+        lb_visualization = sc.sticky["ladybug_ResultVisualization"]()
+        
+    except:
+        warning = "For this component to work you must also let Ladybug fly!"
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+        print warning
+        print "ass"
+        return -1
+        
+    if (_feedInTariffSchedule == []) or (_feedInTariffSchedule[0] == None):
         
         warn = 'The price of the feed in tariff per Kwh must be specified! \n' + \
         'If a flat cost is used just specify one value, this will be used for all hours of the year otherwise specify 24 hours of data for each month of the year \n' + \
@@ -284,7 +306,7 @@ def checktheinputs(gridelect_cost_schedule,feedin_tariff_schedule):
         ghenv.Component.AddRuntimeMessage(w, warn)
         return -1
         
-    if (gridelect_cost_schedule == []) or (gridelect_cost_schedule[0] == None):
+    if (_gridElectCostSchedule == []) or (_gridElectCostSchedule[0] == None):
         
 
         warn = 'The cost of grid electricty per Kwh must be specified! \n' + \
@@ -296,7 +318,7 @@ def checktheinputs(gridelect_cost_schedule,feedin_tariff_schedule):
         return -1
         
         
-    if (len(gridelect_cost_schedule) > 1) and (len(gridelect_cost_schedule) != 288):
+    if (len(_gridElectCostSchedule) > 1) and (len(_gridElectCostSchedule) != 288):
 
         warn = 'The cost of grid electricty per Kwh must be specified! The cost of grid electricty for each hour of the day for one day in every month of the year was not found! \n' + \
         'if you want to use a flat rate just specify one value this will be used as the grid electricity cost across the year \n' + \
@@ -306,7 +328,7 @@ def checktheinputs(gridelect_cost_schedule,feedin_tariff_schedule):
         ghenv.Component.AddRuntimeMessage(w, warn)
         return -1
     
-    if (len(feedin_tariff_schedule) > 1) and (len(feedin_tariff_schedule) != 288):
+    if (len(_feedInTariffSchedule) > 1) and (len(_feedInTariffSchedule) != 288):
 
         warn = 'The price of the feed in tariff per Kwh must be specified! The cost of grid electricty for each hour of the day for one day in every month of the year was not found! \n' + \
         'if you want to use a flat rate just specify one value this will be used as the grid electricity cost across the year \n' + \
@@ -327,8 +349,10 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
     if checkforhoneybeegeneration(new_inputData) != -1:
         
         # Check the grid elect and tariff inputs
-        if checktheinputs(gridelect_cost_schedule,feedin_tariff_schedule) != -1:
-        
+        if checktheinputs(_gridElectCostSchedule,_feedInTariffSchedule) != -1:
+            
+            lb_visualization = sc.sticky["ladybug_ResultVisualization"]() # For drawing text
+            
             # 4. Build lists of data to create the graph
             
             # The net purchased electricity by the Facility in the EnergyPlus simulation in Joules
@@ -454,9 +478,9 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                 else: xS = 1
                 if _zScale_ != None: yS = _zScale_
                 else: yS = 1
-                if font_size == None: font_size = xS*1.8
+                if _fontSize_ == None: _fontSize_ = xS*1.8
                 
-                graph_data_by_cost = False
+                graphData_by_cost = False
                 
                 #Make a chart boundary.
                 chartAxes = []
@@ -560,7 +584,7 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                 
                 systemCountcolor = 0
                 # For cost by item graph
-                if (graph_data == True) and (graph_data_by_cost == True):
+                if (graphData_ == True) and (graphData_by_cost == True):
                     
                     dataMeshes.extend(draw2Dgraphbars(rc.Geometry.Point3d(graphstartPt.X,graphstartPt.Z,graphstartPt.Y),width/50,systemcost,zscale,System.Drawing.Color.Indigo))
                         
@@ -578,7 +602,7 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                         gensystem_value.Add(systemcost, GH_Path(systemCount))
                         
                         # For cost by system graph 
-                        if (graph_data == True) and (graph_data_by_cost == False):
+                        if (graphData_ == True) and (graphData_by_cost == False):
            
                             dataMeshes.extend(draw2Dgraphbars(rc.Geometry.Point3d(graphstartPt.X, graphstartPt.Y,Zpositionneg),width/50,systemcost,zscale,colors[systemCountcolor]))
                             
@@ -592,7 +616,7 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                         gensystem_value.Add(systemcost, GH_Path(systemCount))
                         
                         # For cost by system graph 
-                        if (graph_data == True) and (graph_data_by_cost == False):
+                        if (graphData_ == True) and (graphData_by_cost == False):
                             
                             dataMeshes.extend(draw2Dgraphbars(rc.Geometry.Point3d(graphstartPt.X, graphstartPt.Y,Zpositionneg),width/50,systemcost,zscale,colors[systemCountcolor]))
                             
@@ -774,10 +798,10 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                 # Convert tariff and grid electricity schedules into a list so that
                 # one index is available for every simulation timestep.
                 
-                if (tariff(feedin_tariff_schedule,simulationinterval) != -1) and (gridelectricty(gridelect_cost_schedule,simulationinterval) != -1):
+                if (tariff(_feedInTariffSchedule,simulationinterval) != -1) and (gridelectricty(_gridElectCostSchedule,simulationinterval) != -1):
     
-                    tariffrate_siminterval = tariff(feedin_tariff_schedule,simulationinterval)
-                    gridelect_siminterval = gridelectricty(gridelect_cost_schedule,simulationinterval)
+                    tariffrate_siminterval = tariff(_feedInTariffSchedule,simulationinterval)
+                    gridelect_siminterval = gridelectricty(_gridElectCostSchedule,simulationinterval)
                     
                     # Run the simulation_timestep class for each timestep
                     # - this will calculate the monteary savings for each generator at each timestep by the facility either not having to buy 
@@ -810,14 +834,14 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                         
                         # If a discount factor is used, calculate the discount factor for the year
                         
-                        if discount_factor is not None:
+                        if discountFactor_ is not None:
                             
-                            fdiscount = 1/((1+(discount_factor/100))**year)
+                            fdiscount = 1/((1+(discountFactor_/100))**year)
                         else:
                             fdiscount = 1
                             
                             
-                        if (graph_data == True) and (graph_data_by_cost == True):
+                        if (graphData_ == True) and (graphData_by_cost == True):
                             
                             # Sum all the electricity savings for the year, 
                             
@@ -839,7 +863,7 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                                 gensystem_value.Add(saving*fdiscount, GH_Path(systemCount))
                                 
                                 # For cost by system graph 
-                                if (graph_data == True) and (graph_data_by_cost == False):
+                                if (graphData_ == True) and (graphData_by_cost == False):
                                 
                                     # Draw graph mesh for electricity saving
                                     dataMeshes.extend(draw2Dgraphbars(rc.Geometry.Point3d(year*width/26,0, Zpositionpos),width/50,saving*fdiscount,zscale,colors[systemcountcolors]))
@@ -853,7 +877,7 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                                 gensystem_value.Add(saving*fdiscount, GH_Path(systemCount))
                                 
                                 # For cost by system graph 
-                                if (graph_data == True) and (graph_data_by_cost == False):
+                                if (graphData_ == True) and (graphData_by_cost == False):
                                     
                                     # Draw graph mesh for electricity saving
                           
@@ -865,7 +889,7 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                                 
                             Zpositionreplace = 0
                             
-                            if (graph_data == True) and (graph_data_by_cost == True):
+                            if (graphData_ == True) and (graphData_by_cost == True):
                                 
                                 databycostreplacementcost = []
                             
@@ -879,14 +903,14 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                                     gensystem_value.Add(-replacementitem[2]*fdiscount, GH_Path(systemCount))
                                     
                                     # For cost by system graph 
-                                    if (graph_data == True) and (graph_data_by_cost == False):
+                                    if (graphData_ == True) and (graphData_by_cost == False):
                                     
                                         # Draw graph mesh for electricity saving
                                         dataMeshes.extend(draw2Dgraphbars(rc.Geometry.Point3d(year*width/26,0, Zpositionreplace),width/50,-replacementitem[2]*fdiscount,zscale,colors[systemcountcolors]))
                                         
                                         Zpositionreplace = Zpositionreplace - replacementitem[2]*zscale*fdiscount
                                         
-                                    if (graph_data == True) and (graph_data_by_cost == True):
+                                    if (graphData_ == True) and (graphData_by_cost == True):
                                         
                                         # Append this cost to a list so that all the replacement costs
                                         # for this year can be summed together for graph data by cost graph
@@ -897,7 +921,7 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                             
                             gensystem_value.Add(-maintenancecost[systemCount])
                             
-                            if graph_data == True and (graph_data_by_cost == False):
+                            if graphData_ == True and (graphData_by_cost == False):
                                 
                                 dataMeshes.extend(draw2Dgraphbars(rc.Geometry.Point3d(year*width/26,0, Zpositionreplace),width/50,-maintenancecost[systemCount]*fdiscount,zscale,colors[systemcountcolors]))
                                 
@@ -906,7 +930,7 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                                 systemcountcolors = systemcountcolors+1
                                 
                                 
-                        if (graph_data == True) and (graph_data_by_cost == True):
+                        if (graphData_ == True) and (graphData_by_cost == True):
                             
                             # Sum all replacement costs across the different items for this year
                                 
@@ -951,12 +975,12 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
     
                         if marking == 0:
                         
-                            textSrf = lb_visualization.text2srf([str(marking)], [rc.Geometry.Point3d(startPt.X-5*font_size/2,startPt.Y + (-marking*zscale)-0.35,startPt.Z)],'Verdana' , font_size, False)
+                            textSrf = lb_visualization.text2srf([str(marking)], [rc.Geometry.Point3d(startPt.X-5*_fontSize_/2,startPt.Y + (-marking*zscale)-0.35,startPt.Z)],'Verdana' , _fontSize_, False)
                             textSrfs.extend(textSrf[0])
                         
                         else:
                             
-                            textSrf = lb_visualization.text2srf([str(marking)], [rc.Geometry.Point3d(startPt.X-13*font_size/2,startPt.Y + (marking*zscale)-0.35,startPt.Z)],'Verdana' , font_size, False)
+                            textSrf = lb_visualization.text2srf([str(marking)], [rc.Geometry.Point3d(startPt.X-13*_fontSize_/2,startPt.Y + (marking*zscale)-0.35,startPt.Z)],'Verdana' , _fontSize_, False)
                             textSrfs.extend(textSrf[0])
                             
                         # Create the mesh of the marking themselves
@@ -985,12 +1009,12 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                         
                         if marking == 0:
                         
-                            textSrf = lb_visualization.text2srf([str(-marking)], [rc.Geometry.Point3d(startPt.X-5*font_size/2,startPt.Y + (-marking*zscale)-0.35,startPt.Z)],'Verdana' , font_size, False)
+                            textSrf = lb_visualization.text2srf([str(-marking)], [rc.Geometry.Point3d(startPt.X-5*_fontSize_/2,startPt.Y + (-marking*zscale)-0.35,startPt.Z)],'Verdana' , _fontSize_, False)
                             textSrfs.extend(textSrf[0])
                         
                         else:
                             
-                            textSrf = lb_visualization.text2srf([str(-marking)], [rc.Geometry.Point3d(startPt.X-16*font_size/2,startPt.Y + (-marking*zscale)-0.35,startPt.Z)],'Verdana' , font_size, False)
+                            textSrf = lb_visualization.text2srf([str(-marking)], [rc.Geometry.Point3d(startPt.X-16*_fontSize_/2,startPt.Y + (-marking*zscale)-0.35,startPt.Z)],'Verdana' , _fontSize_, False)
                             textSrfs.extend(textSrf[0])
                         
                         # Create the mesh of the marking themselves
@@ -1042,7 +1066,7 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                         "present cost\n" + \
                         currency_
               
-                    textSrf = lb_visualization.text2srf([vertical_label], [rc.Geometry.Point3d(startPt.X-(20*font_size),3,startPt.Z)],'Verdana' ,font_size, False)
+                    textSrf = lb_visualization.text2srf([vertical_label], [rc.Geometry.Point3d(startPt.X-(20*_fontSize_),3,startPt.Z)],'Verdana' ,_fontSize_, False)
                     textSrfs.extend(textSrf[0])
                     
                     # Create horizontial axis 
@@ -1052,7 +1076,7 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                  
                         # Create horizontial axis text and text points 
                             
-                        textSrf = lb_visualization.text2srf([str(year)], [rc.Geometry.Point3d(year*width/26+(width/100),-int(negDomain+zaxisinterval)*zscale,0)],'Verdana' , font_size, False)
+                        textSrf = lb_visualization.text2srf([str(year)], [rc.Geometry.Point3d(year*width/26+(width/100),-int(negDomain+zaxisinterval)*zscale,0)],'Verdana' , _fontSize_, False)
                         textSrfs.extend(textSrf[0])
                         
                     # Create line along horizontial axis at zero
@@ -1077,7 +1101,7 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
           
                     # Create horizontial axis label
                     
-                    textSrf = lb_visualization.text2srf(['System age in years'], [rc.Geometry.Point3d((width/2),-int(negDomain+zaxisinterval)*zscale+(0.05*-negDomain*zscale),0)],'Verdana' , font_size, False)
+                    textSrf = lb_visualization.text2srf(['System age in years'], [rc.Geometry.Point3d((width/2),-int(negDomain+zaxisinterval)*zscale+(0.05*-negDomain*zscale),0)],'Verdana' , _fontSize_, False)
                     textSrfs.extend(textSrf[0])
                         
                     
@@ -1086,28 +1110,28 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                     for generatorCount,generator in enumerate(facilityHBgenerators):
                         
                         
-                        textSrflegend = lb_visualization.text2srf([str(generator.name)], [rc.Geometry.Point3d(generatorCount*35*xS,-int(negDomain+zaxisinterval)*zscale-int(negDomain+zaxisinterval)*zscale*0.2,0)],'Verdana' , font_size, False)
+                        textSrflegend = lb_visualization.text2srf([str(generator.name)], [rc.Geometry.Point3d(generatorCount*35*xS,-int(negDomain+zaxisinterval)*zscale-int(negDomain+zaxisinterval)*zscale*0.2,0)],'Verdana' , _fontSize_, False)
                         textSrfs.extend(textSrflegend[0])
                         dataMeshes.extend(draw2Dgraphbars(rc.Geometry.Point3d(generatorCount*35*xS,0,-int(negDomain+zaxisinterval)*zscale-int(negDomain+zaxisinterval)*zscale*0.15),width/20,height/30,1,colors[generatorCount]))
                        
                        
                     # Draw legend text 
                        
-                    legendtextSrf = lb_visualization.text2srf(['Graph Legend - Honeybee generation system color'], [rc.Geometry.Point3d(0,-int(negDomain+zaxisinterval)*zscale-int(negDomain+zaxisinterval)*zscale*0.1,0)],'Verdana' , font_size*1.5, False)
+                    legendtextSrf = lb_visualization.text2srf(['Graph Legend - Honeybee generation system color'], [rc.Geometry.Point3d(0,-int(negDomain+zaxisinterval)*zscale-int(negDomain+zaxisinterval)*zscale*0.1,0)],'Verdana' , _fontSize_*1.5, False)
                     dataMeshes.extend(legendtextSrf[0])
                     
                     # Draw graph title
                     
                     
                  
-                    graphtitletextSrf = lb_visualization.text2srf(['Net present cost by Honeybee generation system over 25 years'], [rc.Geometry.Point3d(width/5,int(posDomain+zaxisinterval)*zscale+int(posDomain+zaxisinterval)*zscale*0.15,0)],'Verdana' , font_size*2.1, False)
+                    graphtitletextSrf = lb_visualization.text2srf(['Net present cost by Honeybee generation system over 25 years'], [rc.Geometry.Point3d(width/5,int(posDomain+zaxisinterval)*zscale+int(posDomain+zaxisinterval)*zscale*0.15,0)],'Verdana' , _fontSize_*2.1, False)
                     dataMeshes.extend(graphtitletextSrf[0])
                    
                     return dataMeshes,textSrfs
                     
                     
                 # For cost by system graph 
-                if (graph_data == True) and (graph_data_by_cost == False):
+                if (graphData_ == True) and (graphData_by_cost == False):
                 
                     axisstartPt = rc.Geometry.Point3d(-2,0 ,0 )
                     
@@ -1132,7 +1156,7 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                     # Draw graph text (All text for axis is drawn within the function drawAxis)
                     for count, Text in enumerate(graphText):
         
-                        textSrf = lb_visualization.text2srf([Text], [graphTextpoints[count]],'Verdana' , font_size, False)
+                        textSrf = lb_visualization.text2srf([Text], [graphTextpoints[count]],'Verdana' , _fontSize_, False)
                         dataMeshes.extend(textSrf[0])
                            
 

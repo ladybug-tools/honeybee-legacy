@@ -14,7 +14,7 @@ Provided by Honeybee 0.0.56
     
     Args:
         _resultFileAddress: The result file address that comes out of the WriteIDF component.
-        idfFileAddress: The IDF file address that comes out of the WriteIDF component.
+        _idfFileAddress: The IDF file address that comes out of the WriteIDF component.
         gridelect_cost_schedule: The cost of grid connected electricty per Kwh in whatever currency the user wishes - Just make it consistent with other components you are using
         If you want to specify a flat rate just specify one value this will be used across all the hours of the year.
         Otherwise specify the grid electricity cost for 288 hours of the year that is for each hour of the day for one day in every month of the year.
@@ -57,7 +57,27 @@ location = "NoLocation"
 start = "NoDate"
 end = "NoDate"
 
-def checktheinputs(_resultFileAddress,idfFileAddress):
+def checktheinputs(_resultFileAddress,_idfFileAddress):
+    
+    if not sc.sticky.has_key("honeybee_release") or not sc.sticky.has_key("honeybee_ScheduleLib"):
+        print "You should first let the Honeybee fly..."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, "You should first let the Honeybee fly...")
+
+        return -1
+
+    try:
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+    except:
+        
+        warning = "You need a newer version of Honeybee to use this compoent." + \
+        "Use updateHoneybee component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+        "into canvas and try again."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+        return -1  
+    
     
     if _resultFileAddress == None:
         
@@ -67,9 +87,9 @@ def checktheinputs(_resultFileAddress,idfFileAddress):
         ghenv.Component.AddRuntimeMessage(w, warn)
         return -1
         
-    if idfFileAddress == None:
+    if _idfFileAddress == None:
         
-        warn = 'idfFileAddress must be specified!'
+        warn = '_idfFileAddress must be specified!'
     
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, warn)
@@ -149,7 +169,7 @@ outputsDict = {
 3: ["financialdata", "The financial data of the Honeybee generators in the facility in whatever units of currency the user chose."],
 }
 
-if checktheinputs(_resultFileAddress,idfFileAddress) != -1:
+if checktheinputs(_resultFileAddress,_idfFileAddress) != -1:
     
 # 1. Read electricity generation outputs and electricity demand from IDF file
 
@@ -318,12 +338,12 @@ if checktheinputs(_resultFileAddress,idfFileAddress) != -1:
 
 financialdataout = False
 
-if idfFileAddress != None:
+if _idfFileAddress != None:
     
     parseSuccessfinancial = False
     
     try:
-        fiancialresult = open(idfFileAddress, 'r')
+        fiancialresult = open(_idfFileAddress, 'r')
         
         data = []
         
