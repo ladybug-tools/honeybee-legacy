@@ -36,7 +36,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.56\nMAY_17_2015'
+ghenv.Component.Message = 'VER 0.0.56\nMAY_26_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -176,7 +176,7 @@ def checkTheInputs():
     
     if sectionMethod == 0:
         if distFromFloorOrSrf_:
-            distFromFloor = distFromFloorOrSrf_[0]
+            distFromFloor = floatTest
         else:
             if rhinoModelUnits == 'Meters':
                 distFromFloor = 0.9
@@ -668,7 +668,7 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                 heightWeights.append([])
                 for point in falseZone:
                     zoneWeights[falseZoneCount].append([])
-        print len(zoneWeights)
+        
         if removeInt == True:
             #Get the centroids of each zone, which will represent the air node of the zone.
             zoneCentroids = []
