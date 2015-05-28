@@ -28,6 +28,7 @@ Provided by Honeybee 0.0.55
         viewFactorInfo: A list of python data that carries essential numerical information for the Comfort Analysis Workflow, including the view factors from each test point to a zone's surfaces, the sky view factors of the test points, and information related to window plaement, used to estimate stratification in the zone.  This should be plugged into the "Annual Comfort Analysis Recipe" component.
         ==========: ...
         testPts: The test points, which lie in the center of the mesh faces at which comfort parameters are being evaluated.
+        viewFactorMesh: A data tree of breps representing the split mesh faces of the view factor mesh.
         zoneWireFrame: A list of curves representing the outlines of the zones.  This is particularly helpful if you want to see the outline of the building in relation to the temperature and comfort maps that you might produce off of these results.
         viewVectors: The vectors that were used to caclulate the view factor (note that these will increase as the viewResolution increases).
         shadingContext: A list of meshes representing the opaque surfaces of the zone.  These are what were used to determine the sky view factor and the direct sun falling on occupants.
@@ -672,6 +673,7 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                         testPts[zoneCount].extend(finalTestPts)
         
         
+        
         #If the user has selected to use the results for an outdoor calculation, pull out those parts of the mesh related to the outdoors using the deletedIndices list.
         if sectionMethod != 0 and includeOutdoor == True:
             outdoorTestPts = []
@@ -1091,20 +1093,28 @@ def main(testPts, zoneSrfsMesh, viewVectors, includeOutdoor):
 
 
 #If the HBzone data has not been copied to memory or if the data is old, get it.
+if recallHBHive_ == None: recallHBHive == True
+else: recallHBHive = recallHBHive_
+
+start = time.clock()
 initCheck = False
-if _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('ladybug_release') == True and len(_HBZones) > 0:
+if _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('ladybug_release') == True and len(_HBZones) > 0 and recallHBHive == True:
     if _HBZones[0] != None:
         copyHBZoneData()
         hb_zoneData = sc.sticky["Honeybee_ViewFacotrSrfData"]
         initCheck = True
+        total_ms = time.clock() - start
+        print str(total_ms) + " seconds were spent recalling HBZones from the hive."
 elif _HBZones != [] and sc.sticky.has_key('honeybee_release') == False:
     print "You should first let Honeybee fly..."
     ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee fly...")
 elif _HBZones != [] and sc.sticky.has_key('ladybug_release') == False:
     print "You should first let Ladybug fly..."
     ghenv.Component.AddRuntimeMessage(w, "You should first let Ladybug fly...")
-else:
-    pass
+elif _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('ladybug_release') == True and len(_HBZones) > 0:
+    if _HBZones[0] != None:
+        hb_zoneData = sc.sticky["Honeybee_ViewFacotrSrfData"]
+        initCheck = True
 
 
 
@@ -1118,19 +1128,25 @@ if initCheck == True:
 #Create a mesh of the area to calculate the view factor from.
 geoCheck = False
 if checkData == True:
+    start = time.clock()
     goodGeo = prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBreps, includeOutdoor, hb_zoneData)
     if goodGeo != -1:
         geoCheck, testPtsInit, viewFactorBrep, viewFactorMeshActual, zoneWireFrame, zoneSrfsMesh, zoneSrfNames, zoneOpaqueMesh, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, zoneHasWindows, zoneBrepsNonSolid, includeOutdoor = goodGeo
+    total_ms = time.clock() - start
+    print str(total_ms) + " seconds were spent creating the view factor mesh."
     
     #Unpack the data trees of test pts and mesh breps so that the user can see them and get a sense of what to expect from the view factor calculation.
     testPts = DataTree[Object]()
     viewFactorMesh = DataTree[Object]()
     shadingContext = DataTree[Object]()
     closedAirVolumes = DataTree[Object]()
+    viewMeshFaces = DataTree[Object]()
     for brCount, branch in enumerate(testPtsInit):
         for item in branch:testPts.Add(item, GH_Path(brCount))
-    for brCount, branch in enumerate(viewFactorBrep):
+    for brCount, branch in enumerate(viewFactorMeshActual):
         for item in branch: viewFactorMesh.Add(item, GH_Path(brCount))
+    for brCount, branch in enumerate(viewFactorBrep):
+        for item in branch: viewMeshFaces.Add(item, GH_Path(brCount))
     for brCount, branch in enumerate(zoneOpaqueMesh):
         for item in branch: shadingContext.Add(item, GH_Path(brCount))
     for brCount, branch in enumerate(zoneBrepsNonSolid):
@@ -1138,9 +1154,12 @@ if checkData == True:
 
 #If all of the data is good and the user has set "_runIt" to "True", run the shade benefit calculation to generate all results.
 if checkData == True and _runIt == True and geoCheck == True:
+    start = time.clock()
     viewVectors, skyViewVecs = checkViewResolution(viewResolution, lb_preparation)
     testPtViewFactor = main(testPtsInit, zoneSrfsMesh, viewVectors, includeOutdoor)
     testPtSkyView, testPtBlockedVec = skyViewCalc(testPtsInit, zoneOpaqueMesh, skyViewVecs, zoneHasWindows)
+    total_ms = time.clock() - start
+    print str(total_ms) + " seconds were spent calculating view factors."
     
     outdoorNonSrfViewFac = []
     if sectionMethod != 0 and includeOutdoor == True:
@@ -1150,12 +1169,14 @@ if checkData == True and _runIt == True and geoCheck == True:
     
     #Put all of the information into a list that will carry the data onto the next component easily.
     viewFactorInfo = [testPtViewFactor, zoneSrfNames, testPtSkyView, testPtBlockedVec, testPtZoneWeights, testPtZoneNames, ptHeightWeights, zoneInletInfo, zoneHasWindows, outdoorIsThere, outdoorNonSrfViewFac]
-    
-    #Unpack the data trees of meshes.
-    viewFactorMesh = DataTree[Object]()
-    for brCount, branch in enumerate(viewFactorMeshActual):
-        for item in branch: viewFactorMesh.Add(item, GH_Path(brCount))
+
 
 ghenv.Component.Params.Output[5].Hidden = True
-ghenv.Component.Params.Output[8].Hidden = True
 ghenv.Component.Params.Output[9].Hidden = True
+ghenv.Component.Params.Output[10].Hidden = True
+if _runIt == True:
+    ghenv.Component.Params.Output[6].Hidden = True
+    ghenv.Component.Params.Output[2].Hidden = False
+else:
+    ghenv.Component.Params.Output[6].Hidden = False
+    ghenv.Component.Params.Output[2].Hidden = True
