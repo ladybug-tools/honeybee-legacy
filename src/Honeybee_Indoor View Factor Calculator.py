@@ -18,7 +18,7 @@ Provided by Honeybee 0.0.55
         viewResolution_: An interger between 0 and 4 to set the number of times that the tergenza skyview patches are split.  A higher number will ensure a greater accuracy but will take longer.  The default is set to 0 for a quick calculation.
         removeAirWalls_: Set to "True" to remove air walls from the view factor calculation.  The default is set to "True" sinc you usually want to remove air walls from your view factor calculations.
         additionalShading_: Add in additional shading breps here for geometry that is not a part of the zone but can still block direct sunlight to occupants.  Examples include outdoor context shading and indoor furniture.
-        includeOutdoor_: Set to 'True' to have the visualization take the parts of the input Srf that is outdoors and attempt to color them with temperatures representative of outdoor conditions.  Note that these colors of conditions will only approximate those of the outdoors, showing the assumptions of the Energy model rather than being a perfectly accurate representation of outdoor comfort.
+        includeOutdoor_: Set to 'True' to have the final visualization take the parts of the input Srf that are outdoors and color them with temperatures representative of outdoor conditions.  Note that these colors of conditions will only approximate those of the outdoors, showing the assumptions of the Energy model rather than being a perfectly accurate representation of outdoor conditions.  The default is set to 'False' as the inclusion of outdoor conditions can often increase the calculation time.
         parallel_: Set to "True" to run the calculation with multiple cores and "False" to run it with a single core.  Multiple cores can increase the speed of the calculation substantially and is recommended if you are not running other big or important processes.  The default is set to "True."
         _runIt: Set boolean to "True" to run the component and calculate viewFactors from each test point to surrounding surfaces.
     Returns:
@@ -36,7 +36,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.56\nMAY_26_2015'
+ghenv.Component.Message = 'VER 0.0.56\nMAY_28_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -55,6 +55,7 @@ import rhinoscriptsyntax as rs
 import scriptcontext as sc
 import operator
 import System.Threading.Tasks as tasks
+import time
 
 w = gh.GH_RuntimeMessageLevel.Warning
 tol = sc.doc.ModelAbsoluteTolerance
@@ -229,7 +230,7 @@ def checkTheInputs():
     else: removeInt = removeAirWalls_
     
     #Check the includeOutdoor_ option.
-    if includeOutdoor_ == None: includeOutdoor = True
+    if includeOutdoor_ == None: includeOutdoor = False
     else: includeOutdoor = includeOutdoor_
     
     #Do a final check of everything.
@@ -411,17 +412,38 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                 #The zone is not adjacent to any other zones so we will put it in its own list.
                 adjacentList.append([zoneCount])
         
+        
         #Remove duplicates found in the process of looking for adjacencies.
         fullAdjacentList = []
         newAjdacenList = []
         for listCount, zoneList in enumerate(adjacentList):
             good2Go = True
+            listCheck = []
+            notAccountedForCheck = []
+            
+            #Check if the zones are already accounted for
             for zoneNum in zoneList:
-                if zoneNum in fullAdjacentList: good2Go = False
-            if good2Go == True:
+                if zoneNum in fullAdjacentList: listCheck.append(zoneNum)
+                else: notAccountedForCheck.append(zoneNum)
+            
+            if len(listCheck) == len(zoneList):
+                #All zones in the list are already accounted for.
+                good2Go = False
+            
+            if good2Go == True and len(listCheck) == 0:
+                #All of the zones in the list are not yet accounted for.
                 newAjdacenList.append(zoneList)
                 fullAdjacentList.extend(adjacentList[listCount])
+            elif good2Go == True:
+                #Find the existing zone list that contains the duplicates and append the non-duplicates to the list.
+                for val in listCheck:
+                    for existingListCount, existingList in enumerate(newAjdacenList):
+                        if val in existingList: thisIsTheList = existingListCount
+                newAjdacenList[thisIsTheList].extend(notAccountedForCheck)
+                fullAdjacentList.extend(notAccountedForCheck)
+        
         adjacentList = newAjdacenList
+        
         
         #Get all of the data of the new zone together.
         for listCount, list in enumerate(adjacentList):
@@ -460,29 +482,47 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
     for brepCount, brep in enumerate(zoneBreps):
         if zoneBrepsNonSolid[brepCount][0].IsSolid: pass
         else:
-            attemptToCap = brep.CapPlanarHoles(tol)
-            if attemptToCap != None: zoneBreps[brepCount] = attemptToCap
-            if zoneBreps[brepCount].IsSolid: pass
+            edgeCrv = rc.Geometry.Brep.DuplicateEdgeCurves(brep, True)
+            buggyEdge = False
+            for crv in edgeCrv:
+                if crv.SpanCount == 1:
+                    buggyEdge = True
+            
+            if buggyEdge == False:
+                geoCheck = False
+                warning = "Getting rid of interior walls has caused the connected zone geometry to not be closed.  Make sure that you do not have an airwall bounding the outdoors and, if not, make sure that all zones of your building are connected here."
+                print warning
+                ghenv.Component.AddRuntimeMessage(w, warning)
             else:
-                edgeCrv = rc.Geometry.Brep.DuplicateEdgeCurves(brep, True)
-                buggyEdge = False
-                for crv in edgeCrv:
-                    if crv.SpanCount == 1:
-                        buggyEdge = True
-                
-                if buggyEdge == False:
-                    geoCheck = False
-                    warning = "Getting rid of interior walls has caused the connected zone geometry to not be closed.  Make sure that you do not have an airwall bounding the outdoors and, if not, make sure that all zones of your building are connected here."
-                    print warning
-                    ghenv.Component.AddRuntimeMessage(w, warning)
-                else:
-                    geoCheck = False
-                    warning = "One of your continuous closed air volumes has an overlapping edge that is causing it to not read as a solid. \n Bake the closedAirVolumes output and do a DupBorder command on the polysurface to see the buggy edge. \n Rhino's solid operations are buggy. Hopefully McNeel fix this one soon."
-                    print warning
-                    ghenv.Component.AddRuntimeMessage(w, warning)
+                geoCheck = False
+                warning = "One of your continuous closed air volumes has an overlapping edge that is causing it to not read as a solid. \n Bake the closedAirVolumes output and do a DupBorder command on the polysurface to see the buggy edge. \n Rhino's solid operations are buggy. Hopefully McNeel fix this one soon."
+                print warning
+                ghenv.Component.AddRuntimeMessage(w, warning)
     
     
     if geoCheck == True:
+        
+        #Check the section method and use this to decide whether to mesh the test surfaces now.
+        if sectionMethod != 0:
+            allTestPts = []
+            allFaceBreps = []
+            finalBreps = [sectionBreps]
+            for brep in finalBreps:
+                finalMesh = createMesh(brep, gridSize)
+                
+                for meshCount, mesh in enumerate(finalMesh):
+                    allTestPts.append([])
+                    allFaceBreps.append([])
+                    for faceCount, face in enumerate(mesh.Faces):
+                        if face.IsQuad:
+                            faceBrep = rc.Geometry.Brep.CreateFromCornerPoints(rc.Geometry.Point3d(mesh.Vertices[face.A]), rc.Geometry.Point3d(mesh.Vertices[face.B]), rc.Geometry.Point3d(mesh.Vertices[face.C]), rc.Geometry.Point3d(mesh.Vertices[face.D]), sc.doc.ModelAbsoluteTolerance)
+                        if face.IsTriangle:
+                            faceBrep = rc.Geometry.Brep.CreateFromCornerPoints(rc.Geometry.Point3d(mesh.Vertices[face.A]), rc.Geometry.Point3d(mesh.Vertices[face.B]), rc.Geometry.Point3d(mesh.Vertices[face.C]), sc.doc.ModelAbsoluteTolerance)
+                        centPt = rc.Geometry.AreaMassProperties.Compute(faceBrep).Centroid
+                        allTestPts[meshCount].append(centPt)
+                        allFaceBreps[meshCount].append(faceBrep)
+        
+        
         for zoneCount, srfList in enumerate(zoneSrfs):
             #Extract the wireframe.
             wireFrame = zoneBreps[zoneCount].DuplicateEdgeCurves()
@@ -560,35 +600,63 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
             else:
                 for srfCount, srf in enumerate(srfList):
                     zoneSrfsMesh[zoneCount].append(rc.Geometry.Mesh.CreateFromBrep(srf, srfMeshPar)[0])
-                finalBreps = [sectionBreps]
+            
             
             #Generate the meshes and test points of the final surface.
-            for brep in finalBreps:
-                finalMesh = createMesh(brep, gridSize)
-                
-                for meshCount, mesh in enumerate(finalMesh):
+            if sectionMethod == 0:
+                for brep in finalBreps:
+                    finalMesh = createMesh(brep, gridSize)
+                    
+                    for meshCount, mesh in enumerate(finalMesh):
+                        finalTestPts = []
+                        finalFaceBreps = []
+                        deleteIndices = []
+                        deleteTestPts = []
+                        deleteFaceBreps = []
+                        for faceCount, face in enumerate(mesh.Faces):
+                            if face.IsQuad:
+                                faceBrep = rc.Geometry.Brep.CreateFromCornerPoints(rc.Geometry.Point3d(mesh.Vertices[face.A]), rc.Geometry.Point3d(mesh.Vertices[face.B]), rc.Geometry.Point3d(mesh.Vertices[face.C]), rc.Geometry.Point3d(mesh.Vertices[face.D]), sc.doc.ModelAbsoluteTolerance)
+                            if face.IsTriangle:
+                                faceBrep = rc.Geometry.Brep.CreateFromCornerPoints(rc.Geometry.Point3d(mesh.Vertices[face.A]), rc.Geometry.Point3d(mesh.Vertices[face.B]), rc.Geometry.Point3d(mesh.Vertices[face.C]), sc.doc.ModelAbsoluteTolerance)
+                            centPt = rc.Geometry.AreaMassProperties.Compute(faceBrep).Centroid
+                            #Do a final check to be sure that the test point does not lie outside the zone and, if so, delete the mesh face, and don't append the point.
+                            if zoneBreps[zoneCount].IsPointInside(centPt, tol, False) == False:
+                                deleteIndices.append(faceCount)
+                                deleteFaceBreps.append(faceBrep)
+                                deleteTestPts.append(centPt)
+                            else:
+                                finalFaceBreps.append(faceBrep)
+                                finalTestPts.append(centPt)
+                        
+                        #Construct a new mesh from the breps that are inside each zone.
+                        finalMesh = constructNewMesh(finalFaceBreps)
+                        
+                        if len(finalTestPts) > 0:
+                            if len(MRTMeshInit[zoneCount]) > 0: MRTMeshInit[zoneCount][0].Append(finalMesh)
+                            else: MRTMeshInit[zoneCount].append(finalMesh)
+                            
+                            MRTMeshBreps[zoneCount].extend(finalFaceBreps)
+                            testPts[zoneCount].extend(finalTestPts)
+            else:
+                for meshCount, allPtList in enumerate(allTestPts):
                     finalTestPts = []
                     finalFaceBreps = []
                     deleteIndices = []
                     deleteTestPts = []
                     deleteFaceBreps = []
-                    for faceCount, face in enumerate(mesh.Faces):
-                        if face.IsQuad:
-                            faceBrep = rc.Geometry.Brep.CreateFromCornerPoints(rc.Geometry.Point3d(mesh.Vertices[face.A]), rc.Geometry.Point3d(mesh.Vertices[face.B]), rc.Geometry.Point3d(mesh.Vertices[face.C]), rc.Geometry.Point3d(mesh.Vertices[face.D]), sc.doc.ModelAbsoluteTolerance)
-                        if face.IsTriangle:
-                            faceBrep = rc.Geometry.Brep.CreateFromCornerPoints(rc.Geometry.Point3d(mesh.Vertices[face.A]), rc.Geometry.Point3d(mesh.Vertices[face.B]), rc.Geometry.Point3d(mesh.Vertices[face.C]), sc.doc.ModelAbsoluteTolerance)
-                        centPt = rc.Geometry.AreaMassProperties.Compute(faceBrep).Centroid
+                    
+                    for ptCount, meshPoint in enumerate(allPtList):
                         #Do a final check to be sure that the test point does not lie outside the zone and, if so, delete the mesh face, and don't append the point.
-                        if zoneBreps[zoneCount].IsPointInside(centPt, tol, False) == False:
-                            deleteIndices.append(faceCount)
-                            deleteFaceBreps.append(faceBrep)
-                            deleteTestPts.append(centPt)
+                        if zoneBreps[zoneCount].IsPointInside(meshPoint, tol, False) == False:
+                            deleteIndices.append(ptCount)
+                            deleteFaceBreps.append(allFaceBreps[meshCount][ptCount])
+                            deleteTestPts.append(meshPoint)
                         else:
-                            finalFaceBreps.append(faceBrep)
-                            finalTestPts.append(centPt)
+                            finalFaceBreps.append(allFaceBreps[meshCount][ptCount])
+                            finalTestPts.append(meshPoint)
                     
                     #Append the deleted faces to the list.
-                    if sectionMethod != 0 and includeOutdoor == True:
+                    if includeOutdoor == True:
                         allDeletedFaces[meshCount].append(deleteIndices)
                         deletedFaceBreps[meshCount].append(deleteFaceBreps)
                         deletedTestPts[meshCount].append(deleteTestPts)
@@ -602,6 +670,7 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                         
                         MRTMeshBreps[zoneCount].extend(finalFaceBreps)
                         testPts[zoneCount].extend(finalTestPts)
+        
         
         #If the user has selected to use the results for an outdoor calculation, pull out those parts of the mesh related to the outdoors using the deletedIndices list.
         if sectionMethod != 0 and includeOutdoor == True:
@@ -738,6 +807,7 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                     heightWeight = (point.Z-min)/difference
                     heightWeights[falseZoneCount].append(heightWeight)
         
+        
         #Calculate the heights of the original zones and the average heights of the windows (to be used in the stratification calculation).
         for orignalZoneCount, oirignalZone in enumerate(oldZoneBreps):
             zoneInletParams.append([])
@@ -797,6 +867,7 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
             
             zoneOpaqueMesh.append(zoneOpaqueMeshOutdoor)
             zoneHasWindows.append(1)
+        
         
         
         return geoCheck, testPts, MRTMeshBreps, MRTMeshInit, zoneWires, zoneSrfsMesh, surfaceNames, zoneOpaqueMesh, zoneNames, zoneWeights, heightWeights, zoneInletParams, zoneHasWindows, zoneBrepsNonSolid, includeOutdoor
