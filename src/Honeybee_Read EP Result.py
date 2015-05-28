@@ -37,9 +37,11 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.56\nMAY_02_2015'
+ghenv.Component.Message = 'VER 0.0.56\nMAY_27_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
+#compatibleHBVersion = VER 0.0.56\nMAY_02_2015
+#compatibleLBVersion = VER 0.0.59\nAPR_04_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "4"
 
 
@@ -183,6 +185,18 @@ def makeHeader(list, path, zoneName, timestep, name, units, normable):
     list.Add(start, GH_Path(path))
     list.Add(end, GH_Path(path))
 
+def makeHeaderAlt(list, path, zoneName, timestep, name, units, normable):
+    thePath = GH_Path(int(path[0]), int(path[1]))
+    list.Add("key:location/dataType/units/frequency/startsAt/endsAt", thePath)
+    list.Add(location, thePath)
+    if normByFlr == False or normable == False: list.Add(name + " for" + zoneName, thePath)
+    else: list.Add("Floor Normalized " + name + " for" + zoneName, thePath)
+    if normByFlr == False or normable == False: list.Add(units, thePath)
+    else: list.Add(units+"/m2", thePath)
+    list.Add(timestep, thePath)
+    list.Add(start, thePath)
+    list.Add(end, thePath)
+
 #Make a function to check the zone name.
 def checkZone(csvName):
     zoneName = None
@@ -213,9 +227,13 @@ def checkZoneOther(dataIndex, csvName):
     for count, name in enumerate(zoneNameList):
         if name == csvName:
             zoneName = name
-            path.append(count+dataIndex)
+            path.append([count, dataIndex[count]])
+            dataIndex[count] += 1
     return zoneName
-dataIndex = 0
+
+dataIndex = []
+for name in zoneNameList:
+    dataIndex.append(0)
 
 
 # PARSE THE RESULT FILE.
@@ -366,11 +384,14 @@ if _resultFileAddress and gotData == True:
                         systemAirGain[int(path[-1])].append(column.split('(')[-1].split(')')[0])
                     
                     elif 'Zone' in column and not "System" in column and not "SYSTEM" in column and not "ZONEHVAC" in column:
-                        key.append(14)
                         zoneName = checkZoneOther(dataIndex, (" " + ":".join(column.split(":")[:-1])))
-                        makeHeader(otherZoneData, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], column.split(':')[-1].split(' [')[0], column.split('[')[-1].split(']')[0], False)
-                        dataTypeList[17] = True
-                        dataIndex += 1
+                        if zoneName != None:
+                            key.append(14)
+                            makeHeaderAlt(otherZoneData, path[columnCount], zoneName, column.split('(')[-1].split(')')[0], column.split(':')[-1].split(' [')[0], column.split('[')[-1].split(']')[0], False)
+                            dataTypeList[17] = True
+                        else:
+                            key.append(-1)
+                            path.append(-1)
                     
                     else:
                         key.append(-1)
@@ -380,7 +401,9 @@ if _resultFileAddress and gotData == True:
                 #print path
             else:
                 for columnCount, column in enumerate(line.split(',')):
-                    p = GH_Path(int(path[columnCount]))
+                    if key[columnCount] != 14: p = GH_Path(int(path[columnCount]))
+                    else:
+                        p = GH_Path(int(path[columnCount][0]), int(path[columnCount][1]))
                     if normByFlr == True: flrArea = floorAreaList[int(path[columnCount])]
                     else: flrArea = 1
                     
