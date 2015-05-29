@@ -30,7 +30,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.56\nMAY_06_2015'
+ghenv.Component.Message = 'VER 0.0.56\nMAY_22_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1202,7 +1202,7 @@ class hb_MSHToRAD(object):
             #    mapf.write(self.matName + " (Object \"" + self.matName + "\");")
             #cmd = "c:\\radiance\\bin\\obj2rad -m " + mapFile + " " + objFile + " > " +  radFile
             
-            cmd = "c:\\radiance\\bin\\obj2rad " + objFile + " > " +  radFile
+            cmd = "c:\\radiance\\bin\\obj2rad -f " + objFile + " > " +  radFile
             
             with open(batFile, "w") as outfile:
                 outfile.write(cmd)
@@ -5480,7 +5480,7 @@ class hb_reEvaluateHBZones(object):
                 
                 if glzPSurfaces != None:
                     newSurfaces += glzPSurfaces
-                f
+                    
             return newSurfaces
 
 class hb_EPSurface(object):

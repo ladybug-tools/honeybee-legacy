@@ -1312,7 +1312,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     idfFile.write(hb_writeIDF.EPVersion(sc.sticky["honeybee_folders"]["EPVersion"]))
     
     # Read simulation parameters
-    timestep, shadowPar, solarDistribution, simulationControl, ddyFile, terrain,grndTemps = hb_EPPar.readEPParams(EPParameters)
+    timestep, shadowPar, solarDistribution, simulationControl, ddyFile, terrain, grndTemps = hb_EPPar.readEPParams(EPParameters)
     
     # Timestep,6;
     idfFile.write(hb_writeIDF.EPTimestep(timestep))
