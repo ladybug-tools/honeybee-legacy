@@ -1092,31 +1092,54 @@ def main(testPts, zoneSrfsMesh, viewVectors, includeOutdoor):
 
 
 
-#If the HBzone data has not been copied to memory or if the data is old, get it.
+#Set the default to always recall HBzones from the hive.
 recallHBHive = True
 if recallHBHive_ == None: pass
 else: recallHBHive = recallHBHive_
 
+#Start clocks to give a total calculation time report at the end
 start = time.clock()
+total_rs = None
+total_ms = None
+total_fs = None
+
+#Check to see if there is already HBZonedata.
+HBDataCheck = False
+try:
+    test = len(hb_zoneData)
+    HBDataCheck = True
+except: pass
+
+#If the HBzone data has not been copied to memory or if the data is old, get it.
 initCheck = False
 if _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('ladybug_release') == True and len(_HBZones) > 0 and recallHBHive == True:
     if _HBZones[0] != None:
         copyHBZoneData()
         hb_zoneData = sc.sticky["Honeybee_ViewFacotrSrfData"]
         initCheck = True
-        total_ms = time.clock() - start
-        print str(total_ms) + " seconds were spent recalling HBZones from the hive."
+        total_rs = time.clock() - start
 elif _HBZones != [] and sc.sticky.has_key('honeybee_release') == False:
     print "You should first let Honeybee fly..."
     ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee fly...")
 elif _HBZones != [] and sc.sticky.has_key('ladybug_release') == False:
     print "You should first let Ladybug fly..."
     ghenv.Component.AddRuntimeMessage(w, "You should first let Ladybug fly...")
-elif _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('ladybug_release') == True and len(_HBZones) > 0:
+elif _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('ladybug_release') == True and len(_HBZones) > 0 and HBDataCheck == True:
     if _HBZones[0] != None:
         hb_zoneData = sc.sticky["Honeybee_ViewFacotrSrfData"]
         initCheck = True
+elif _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('ladybug_release') == True and len(_HBZones) > 0 and HBDataCheck == False:
+    if _HBZones[0] != None:
+        copyHBZoneData()
+        hb_zoneData = sc.sticky["Honeybee_ViewFacotrSrfData"]
+        initCheck = True
+        total_rs = time.clock() - start
 
+
+#Set the default to not generate the mesh.
+buildMesh = False
+if _buildMesh == None: pass
+else: buildMesh = _buildMesh
 
 
 #Check the data input.
@@ -1128,13 +1151,12 @@ if initCheck == True:
 
 #Create a mesh of the area to calculate the view factor from.
 geoCheck = False
-if checkData == True:
+if checkData == True and buildMesh == True:
     start = time.clock()
     goodGeo = prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBreps, includeOutdoor, hb_zoneData)
     if goodGeo != -1:
         geoCheck, testPtsInit, viewFactorBrep, viewFactorMeshActual, zoneWireFrame, zoneSrfsMesh, zoneSrfNames, zoneOpaqueMesh, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, zoneHasWindows, zoneBrepsNonSolid, includeOutdoor = goodGeo
     total_ms = time.clock() - start
-    print str(total_ms) + " seconds were spent creating the view factor mesh."
     
     #Unpack the data trees of test pts and mesh breps so that the user can see them and get a sense of what to expect from the view factor calculation.
     testPts = DataTree[Object]()
@@ -1154,13 +1176,11 @@ if checkData == True:
         for item in branch: closedAirVolumes.Add(item, GH_Path(brCount))
 
 #If all of the data is good and the user has set "_runIt" to "True", run the shade benefit calculation to generate all results.
-if checkData == True and _runIt == True and geoCheck == True:
+if checkData == True and _runIt == True and geoCheck == True and buildMesh == True:
     start = time.clock()
     viewVectors, skyViewVecs = checkViewResolution(viewResolution, lb_preparation)
     testPtViewFactor = main(testPtsInit, zoneSrfsMesh, viewVectors, includeOutdoor)
     testPtSkyView, testPtBlockedVec = skyViewCalc(testPtsInit, zoneOpaqueMesh, skyViewVecs, zoneHasWindows)
-    total_ms = time.clock() - start
-    print str(total_ms) + " seconds were spent calculating view factors."
     
     outdoorNonSrfViewFac = []
     if sectionMethod != 0 and includeOutdoor == True:
@@ -1168,10 +1188,18 @@ if checkData == True and _runIt == True and geoCheck == True:
         outdoorNonSrfViewFac = checkOutdoorViewFac(testPtViewFactor[-1])
     else: outdoorIsThere = False
     
+    total_fs = time.clock() - start
+    
     #Put all of the information into a list that will carry the data onto the next component easily.
     viewFactorInfo = [testPtViewFactor, zoneSrfNames, testPtSkyView, testPtBlockedVec, testPtZoneWeights, testPtZoneNames, ptHeightWeights, zoneInletInfo, zoneHasWindows, outdoorIsThere, outdoorNonSrfViewFac]
 
+#Print out a report of calculation time.
+print "_"
+if total_rs != None: print str(round(total_rs, 3)) + " seconds were spent recalling HBZones from the hive."
+if total_ms != None: print str(round(total_ms, 3)) + " seconds were spent creating the view factor mesh."
+if total_fs != None: print str(round(total_fs, 3)) + " seconds were spent calculating view factors."
 
+#Hide the outputs that are not highly important.
 ghenv.Component.Params.Output[5].Hidden = True
 ghenv.Component.Params.Output[9].Hidden = True
 ghenv.Component.Params.Output[10].Hidden = True
