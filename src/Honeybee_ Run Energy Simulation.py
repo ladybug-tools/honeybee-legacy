@@ -45,11 +45,7 @@ Provided by Honeybee 0.0.56
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-<<<<<<< HEAD
-ghenv.Component.Message = 'VER 0.0.56\nMAY_04_2015'
-=======
-ghenv.Component.Message = 'VER 0.0.56\nMay_22_2015'
->>>>>>> pr/348
+ghenv.Component.Message = 'VER 0.0.56\nMAY_31_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_28_2015
@@ -1347,7 +1343,6 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     # Location
     idfFile.write(hb_writeIDF.EPSiteLocation(epwFileAddress))
     
-<<<<<<< HEAD
     #Ground Temperatures.
     if grndTemps == []:
         groundtemp = lb_preparation.groundTempData(_epwFile,[])
@@ -1359,18 +1354,6 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     
     if grndTemps != []:
         idfFile.write(hb_writeIDF.EPGroundTemp(grndTemps))
-=======
-    #Ground Temperatures.		
-    if grndTemps == []:		
-        groundtemp = lb_preparation.groundTempData(_epwFile,[])		
-        groundtempNum = groundtemp[1][7:]		
-        for temp in groundtempNum:		
-            if temp < 18: grndTemps.append(18)		
-            elif temp < 24: grndTemps.append(temp)		
-            else: grndTemps.append(24)		
-    		
-    idfFile.write(hb_writeIDF.EPGroundTemp(grndTemps))
->>>>>>> pr/348
     
     # SizingPeriod
     #Check if there are sizing periods in the EPW file.
@@ -2064,5 +2047,3 @@ if _writeIdf == True and _epwFile and _HBZones and _HBZones[0]!=None:
                 pass
 else:
     print "At least one of the mandatory inputs in missing."
-    
-    

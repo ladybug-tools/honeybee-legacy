@@ -30,11 +30,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-<<<<<<< HEAD
-ghenv.Component.Message = 'VER 0.0.56\nMAY_02_2015'
-=======
-ghenv.Component.Message = 'VER 0.0.56\nMAY_22_2015'
->>>>>>> pr/348
+ghenv.Component.Message = 'VER 0.0.56\nMAY_31_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
