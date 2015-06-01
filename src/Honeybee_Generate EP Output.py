@@ -27,7 +27,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Generate EP Output"
 ghenv.Component.NickName = 'EPOutput'
-ghenv.Component.Message = 'VER 0.0.56\nMAR_26_2015'
+ghenv.Component.Message = 'VER 0.0.56\nAPR_21_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -35,6 +35,10 @@ ghenv.Component.SubCategory = "09 | Energy | Energy"
 ghenv.Component.AdditionalHelpFromDocStrings = "3"
 
 import Grasshopper.Kernel as gh
+
+
+# A list of the Energy Plus simulation outputs for HB generators.
+#HBgeneratorsimoutputs = ["Output:Variable,*,Facility Total Electric Demand Power, Hourly;","Output:Variable,*,Facility Net Purchased Electric Power, Hourly;"]
 
 
 
@@ -98,6 +102,23 @@ def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, zoneHVACMetrics,
         simulationOutputs.append("Output:Variable,*,Surface Window Transmitted Diffuse Solar Radiation Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Surface Window Transmitted Solar Radiation Energy, " + timePeriod)
     
+    if HBgeneration_ == True:
+        simulationOutputs.append("Output:Variable,*,Facility Total Electric Demand Power, "+ timePeriod)
+        simulationOutputs.append("Output:Variable,*,Facility Net Purchased Electric Energy, "+ timePeriod)
+        
+        # Facility Total Electric Demand Power - This is the total of the whole Building and HVAC electric demands.
+        
+        # Facility Net Purchased Electric Power - These outputs are the net electricity purchased in both Power and Energy units. This value can be either positive or negative. Positive values are defined as electricity purchased from the utility. Negative values are defined as surplus electricity fed back into the grid.
+        
+        # Electric Load Center Produced Electric Energy [J]
+        # These outputs are the sum of electrical energy and power produced by the generators attached to a particular load center. The keywords for these reports are the unique names of ElectricLoadCenter:Distribution objects.
+        
+    if Earthtube_ == True:
+        simulationOutputs.append("Output:Variable,*,Earth Tube Zone Sensible Cooling Energy, "+ timePeriod)
+        simulationOutputs.append("Output:Variable,*,Earth Tube Zone Sensible Heating Energy, "+ timePeriod)
+        simulationOutputs.append("Output:Variable,*,Earth Tube Air Flow Volume, "+ timePeriod)
+        simulationOutputs.append("Output:Variable,*,Earth Tube Fan Electric Energy, "+ timePeriod)
+
     return simulationOutputs
 
 

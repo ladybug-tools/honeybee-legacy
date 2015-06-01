@@ -45,11 +45,7 @@ Provided by Honeybee 0.0.56
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-<<<<<<< HEAD
-ghenv.Component.Message = 'VER 0.0.56\nMAY_04_2015'
-=======
 ghenv.Component.Message = 'VER 0.0.56\nMay_22_2015'
->>>>>>> pr/348
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_28_2015
@@ -1317,12 +1313,6 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     
     # Read simulation parameters
     timestep, shadowPar, solarDistribution, simulationControl, ddyFile, terrain, grndTemps = hb_EPPar.readEPParams(EPParameters)
-    try:
-        maxWarmUpDays = simulationControl[5]
-        minWarmUpDays = simulationControl[6]
-    except:
-        maxWarmUpDays =25
-        minWarmUpDays = 6
     
     # Timestep,6;
     idfFile.write(hb_writeIDF.EPTimestep(timestep))
@@ -1334,7 +1324,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     idfFile.write(hb_writeIDF.EPProgramControl())
     
     # Building
-    EPBuilding = hb_writeIDF.EPBuilding(idfFileName, math.degrees(northAngle), terrain, 0.04, 0.4, solarDistribution, maxWarmUpDays, minWarmUpDays)
+    EPBuilding = hb_writeIDF.EPBuilding(idfFileName, math.degrees(northAngle), terrain, 0.04, 0.4, solarDistribution, maxWarmUpDays =25, minWarmUpDays = 6)
                     
     idfFile.write(EPBuilding)
     
@@ -1347,19 +1337,6 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     # Location
     idfFile.write(hb_writeIDF.EPSiteLocation(epwFileAddress))
     
-<<<<<<< HEAD
-    #Ground Temperatures.
-    if grndTemps == []:
-        groundtemp = lb_preparation.groundTempData(_epwFile,[])
-        groundtempNum = groundtemp[1][7:]
-        for temp in groundtempNum:
-            if temp < 18: grndTemps.append(18)
-            elif temp < 24: grndTemps.append(temp)
-            else: grndTemps.append(24)
-    
-    if grndTemps != []:
-        idfFile.write(hb_writeIDF.EPGroundTemp(grndTemps))
-=======
     #Ground Temperatures.		
     if grndTemps == []:		
         groundtemp = lb_preparation.groundTempData(_epwFile,[])		
@@ -1370,7 +1347,6 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
             else: grndTemps.append(24)		
     		
     idfFile.write(hb_writeIDF.EPGroundTemp(grndTemps))
->>>>>>> pr/348
     
     # SizingPeriod
     #Check if there are sizing periods in the EPW file.
@@ -1404,7 +1380,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
             idfFile.write(hb_writeIDF.EPSizingPeriodMonth(monthMin))
     
     # simulationControl
-    idfFile.write(hb_writeIDF.EPSimulationControl(*simulationControl[0:5]))
+    idfFile.write(hb_writeIDF.EPSimulationControl(*simulationControl))
     
     # runningPeriod
     idfFile.write(hb_writeIDF.EPRunPeriod('customRun', stDay, stMonth, endDay, endMonth))
@@ -1508,7 +1484,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
             
             # Surfaces
             idfFile.write(hb_writeIDF.EPZoneSurface(srf))
-            alreadyThereList = []
+            
             if srf.hasChild:
                 # check the construction
                 # this should be moved inside the function later
@@ -1522,16 +1498,11 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                     if not childSrf.construction.upper() in EPConstructionsCollection:
                             EPConstructionsCollection.append(childSrf.construction.upper())
                     # Check if there is any shading for the window.
-                    
                     if childSrf.blindsMaterial != "" and childSrf.shadingControl != "":
-                        try:
-                            if childSrf.blindsMaterial.split('\n')[1].split(',')[0] not in alreadyThereList:
-                                idfFile.write(childSrf.blindsMaterial)
-                                idfFile.write(childSrf.shadingControl)
-                                if childSrf.shadingSchName != 'ALWAYSON':
-                                    EPScheduleCollection.append(childSrf.shadingSchName.upper())
-                                alreadyThereList.append(childSrf.blindsMaterial.split('\n')[1].split(',')[0])
-                        except: pass
+                        idfFile.write(childSrf.blindsMaterial)
+                        idfFile.write(childSrf.shadingControl)
+                        if childSrf.shadingSchName != 'ALWAYSON':
+                            EPScheduleCollection.append(childSrf.shadingSchName.upper())
                     
                 # write the glazing strings
                 idfFile.write(hb_writeIDF.EPFenSurface(srf))
@@ -2048,17 +2019,7 @@ if _writeIdf == True and _epwFile and _HBZones and _HBZones[0]!=None:
             try:
                 errorFileFullName = idfFileAddress.replace('.idf', '.err')
                 errFile = open(errorFileFullName, 'r')
-                for line in errFile:
-                    print line
-                    if "**  Fatal  **" in line:
-                        warning = "The simulation has failed because of this fatal error: \n" + str(line)
-                        w = gh.GH_RuntimeMessageLevel.Warning
-                        ghenv.Component.AddRuntimeMessage(w, warning)
-                        resultFileAddress = None
-                    elif "** Severe  **" in line:
-                        comment = "The simulation has not run correctly because of this severe error: \n" + str(line)
-                        c = gh.GH_RuntimeMessageLevel.Remark
-                        ghenv.Component.AddRuntimeMessage(c, comment)
+                for line in errFile: print line
                 errFile.close()
             except:
                 pass

@@ -26,9 +26,8 @@ Provided by Honeybee 0.0.56
             8 - City terrian.
         +++++++++++++++: ...
         _HBZones: The HBZones that you wish to write into an IDF and/or run through EnergyPlus.  These can be from any of the components that output HBZones.
-        HBContext_: Optional HBContext geometry from the "Honeybee_EP Context Surfaces." component or Honeybee PV gen component.
-        HBGenerators_: Connect the output HBGeneratorSystem from the Honeybee_generationsystem component here to model EnergyPlus Photovoltaic and Wind generator systems in this simulation.
-        simulationOutputs_: A list of the outputs that you would like EnergyPlus to write into the result CSV file.  This can be any set of any outputs that you would like from EnergyPlus, writen as a list of text that will be written into the IDF.  It is recommended that, if you are not expereinced with writing EnergyPlus outputs, you should use the "Honeybee_Write EP Result Parameters" component to request certain types of common outputs.  If no value is input here, this component will automatically request outputs of heating, cooling, lighting, and equipment energy use.
+        HBContext_: Optional HBContext geometry from the "Honeybee_EP Context Surfaces." component.
+        simulationOutputs_: A list of the outputs that you would like EnergyPlus to write into the result CSV file.  This can be any set of any outputs that you would like from EnergyPlus, writen as a list of text that will be written into the IDF.  It is recommended that, if you are not expereinced with writing EnergyPlus outputs, you should use the "Honeybee_Write EP Result Parameters" component to request certain types of common outputs.  If no value is input here, this component will automatically request outputs of heating, cooling, lighting, and equipment energy use.  
         +++++++++++++++: ...
         _writeIdf: Set to "True" to have the component take your HBZones and other inputs and write them into an IDF file.  The file path of the resulting file will appear in the idfFileAddress output of this component.  Note that only setting this to "True" and not setting the output below to "True" will not automatically run the IDF through EnergyPlus for you.
         runEnergyPlus_: Set to "True" to have the component run your IDF through EnergyPlus once it has finished writing it.  This will ensure that a CSV result file appears in the resultFileAddress output.
@@ -45,15 +44,11 @@ Provided by Honeybee 0.0.56
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-<<<<<<< HEAD
 ghenv.Component.Message = 'VER 0.0.56\nMAY_04_2015'
-=======
-ghenv.Component.Message = 'VER 0.0.56\nMay_22_2015'
->>>>>>> pr/348
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nFEB_28_2015
-#compatibleLBVersion = VER 0.0.59\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.56\nAPR_03_2015
+#compatibleLBVersion = VER 0.0.59\nAPR_04_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
 
@@ -70,20 +65,6 @@ rc.Runtime.HostUtils.DisplayOleAlerts(False)
 
 
 class WriteIDF(object):
-    
-    # Add all HBcontext surfaces from both HBContext_ and HB generator here so that if user connects the same
-    # HBcontext surfaces to both HB generator and HBcontext duplicate surfaces will be detected and an error thrown.
-    
-    checksurfaceduplicate = []
-    zonesurfaces = []
-    # Add the ID of all batteries from HB generator systems here to check for duplicate batteries.
-    checkbatteryduplicate = []
-    # Add the ID of all inverters from HB generator systems here to check for duplicate inverters.
-    checkinverterduplicate = []
-
-    # Create a list of tuples containing each item and its cost - to conduct financial analysis 
-    
-    financialdata = []
     
     def __init__(self, workingDir):
         self.fileBasedSchedules = {}
@@ -218,22 +199,19 @@ class WriteIDF(object):
     def EPShdSurface (self, surface):
         coordinatesList = surface.extractPoints()
         if type(coordinatesList[0])is not list and type(coordinatesList[0]) is not tuple: coordinatesList = [coordinatesList]
-
+        
         scheduleName = surface.TransmittanceSCH
         if scheduleName.lower().endswith(".csv"):
             # find filebased schedule name
             scheduleName = self.fileBasedSchedules[scheduleName.upper()]
-
-        fullString = ''
         
+        fullString = ''
         for count, coordinates in enumerate(coordinatesList):
-
-            #print surface.name + " ASS NAME HERE"
             str_1 = '\nShading:Building:Detailed,\n' + \
                     '\t' + surface.name + '_' + `count` + ',\t!- Name\n' + \
                     '\t' + scheduleName + ',\t!- Transmittance Schedule Name\n' + \
                     '\t' + `len(coordinates)` + ',\t!- Number of Vertices\n'    
-
+    
             str_2 = '\t';
             for ptCount, pt in enumerate(coordinates):
                 if ptCount < len (coordinates) - 1:
@@ -370,24 +348,23 @@ class WriteIDF(object):
             '\t' + elev + ';   !Elevation\n'
         epwfile.close()
         return locationString
-        
-    def EPGroundTemp(self, grndTemps):		
-      
+    
+    def EPGroundTemp(self, grndTemps):
         grndString = "\nSite:GroundTemperature:BuildingSurface,\n" + \
-        '\t' + str(grndTemps[0]) + ',    !Jan Ground Temperature (C)\n' + \
-        '\t' + str(grndTemps[1]) + ',    !Feb Ground Temperature (C)\n' + \
-        '\t' + str(grndTemps[2]) + ',    !Mar Ground Temperature (C)\n' + \
-        '\t' + str(grndTemps[3]) + ',    !Apr Ground Temperature (C)\n' + \
-        '\t' + str(grndTemps[4]) + ',    !May Ground Temperature (C)\n' + \
-        '\t' + str(grndTemps[5]) + ',    !Jun Ground Temperature (C)\n' + \
-        '\t' + str(grndTemps[6]) + ',    !Jul Ground Temperature (C)\n' + \
-        '\t' + str(grndTemps[7]) + ',    !Aug Ground Temperature (C)\n' + \
-        '\t' + str(grndTemps[8]) + ',    !Sep Ground Temperature (C)\n' + \
-        '\t' + str(grndTemps[9]) + ',    !Oct Ground Temperature (C)\n' + \
-        '\t' + str(grndTemps[10]) + ',    !Nov Ground Temperature (C)\n' + \
-        '\t' +  str(grndTemps[11]) + ';   !Dec Ground Temperature (C)\n'
+            '\t' + str(grndTemps[0]) + ',    !Jan Ground Temperature (C)\n' + \
+            '\t' + str(grndTemps[1]) + ',    !Feb Ground Temperature (C)\n' + \
+            '\t' + str(grndTemps[2]) + ',    !Mar Ground Temperature (C)\n' + \
+            '\t' + str(grndTemps[3]) + ',    !Apr Ground Temperature (C)\n' + \
+            '\t' + str(grndTemps[4]) + ',    !May Ground Temperature (C)\n' + \
+            '\t' + str(grndTemps[5]) + ',    !Jun Ground Temperature (C)\n' + \
+            '\t' + str(grndTemps[6]) + ',    !Jul Ground Temperature (C)\n' + \
+            '\t' + str(grndTemps[7]) + ',    !Aug Ground Temperature (C)\n' + \
+            '\t' + str(grndTemps[8]) + ',    !Sep Ground Temperature (C)\n' + \
+            '\t' + str(grndTemps[9]) + ',    !Oct Ground Temperature (C)\n' + \
+            '\t' + str(grndTemps[10]) + ',    !Nov Ground Temperature (C)\n' + \
+            '\t' +  str(grndTemps[11]) + ';   !Dec Ground Temperature (C)\n'
         return grndString
-
+    
     def EPSizingPeriod(self, weatherFilePeriod):
         sizingString = "\nSizingPeriod:WeatherFileConditionType,\n" + \
             '\t' + 'ExtremeSizing'+ weatherFilePeriod + ',\n' + \
@@ -540,32 +517,30 @@ class WriteIDF(object):
                 '\t;                        !- Velocity Squared Term Coefficient\n'
     
     def EPZoneAirMixing(self, zone, zoneMixName, mixFlowRate, objCount):
-        
-        if zone.mixAirFlowSched[objCount].upper() == 'ALWAYS ON':
-            mixingSched = 'ALWAYS ON'		
-        elif zone.mixAirFlowSched[objCount].upper().endswith('CSV'):		
-            mixingSchedFileName = os.path.basename(zone.mixAirFlowSched[objCount])		
-            mixingSched = "_".join(mixingSchedFileName.split(".")[:-1])		
+        if zone.mixAirFlowSched[objCount].upper() == 'ALWAYS ON': mixingSched = 'ALWAYS ON'
+        elif zone.mixAirFlowSched[objCount].upper().endswith('CSV'):
+            mixingSchedFileName = os.path.basename(zone.mixAirFlowSched[objCount])
+            mixingSched = "_".join(mixingSchedFileName.split(".")[:-1])
         else: mixingSched = zone.mixAirFlowSched[objCount]
         
-        return '\nZoneMixing,\n'+\
-            '\t' + zone.name + zoneMixName + 'AirMix' + str(objCount) + ',  !- Name\n' + \
-            '\t' + zone.name + ',  !- Zone Name\n' + \
-            '\t' + mixingSched + ',  !- Schedule Name\n' + \
-            '\t' + 'Flow/Zone' + ',  !- Design Flow Rate Calculation Method\n' + \
-            '\t' + str(mixFlowRate) + ',   !- Design Flow Rate {m3/s}\n' + \
-            '\t' + ',  !- Flow per Zone Floor Area {m3/s-m2}\n' + \
-            '\t' + ', !- Flow per Exterior Surface Area {m3/s-m2}\n' + \
-            '\t' + ',    !- Air Changes per Hour\n' + \
-            '\t' + zoneMixName  + ',     !- Source Zone Name\n' + \
-            '\t' + '0'  + ',     !- Delta Temperature\n' + \
-            '\t,                        !- Delta Temperature Schedule Name\n' + \
-            '\t,                        !- Minimum Zone Temperature Schedule Name\n' + \
-            '\t,                        !- Maximum Zone Temperature Schedule Name\n' + \
-            '\t,                        !- Minimum Source Zone Temperature Schedule Name\n' + \
-            '\t,                        !- Maximum Source Zone Temperature Schedule Name\n' + \
-            '\t,                        !- Minimum Outdoor Temperature Schedule Name\n' + \
-            '\t;                        !- Maximum Outdoor Temperature Schedule Name\n'
+        return '\nZoneMixing,\n' + \
+                '\t' + zone.name + zoneMixName + 'AirMix' + str(objCount) + ',  !- Name\n' + \
+                '\t' + zone.name + ',  !- Zone Name\n' + \
+                '\t' + mixingSched + ',  !- Schedule Name\n' + \
+                '\t' + 'Flow/Zone' + ',  !- Design Flow Rate Calculation Method\n' + \
+                '\t' + str(mixFlowRate) + ',   !- Design Flow Rate {m3/s}\n' + \
+                '\t' + ',  !- Flow per Zone Floor Area {m3/s-m2}\n' + \
+                '\t' + ', !- Flow per Exterior Surface Area {m3/s-m2}\n' + \
+                '\t' + ',    !- Air Changes per Hour\n' + \
+                '\t' + zoneMixName  + ',     !- Source Zone Name\n' + \
+                '\t' + '0'  + ',     !- Delta Temperature\n' + \
+                '\t,                        !- Delta Temperature Schedule Name\n' + \
+                '\t,                        !- Minimum Zone Temperature Schedule Name\n' + \
+                '\t,                        !- Maximum Zone Temperature Schedule Name\n' + \
+                '\t,                        !- Minimum Source Zone Temperature Schedule Name\n' + \
+                '\t,                        !- Maximum Source Zone Temperature Schedule Name\n' + \
+                '\t,                        !- Minimum Outdoor Temperature Schedule Name\n' + \
+                '\t;                        !- Maximum Outdoor Temperature Schedule Name\n'
     
     def EPNatVentSimple(self, zone, natVentCount):
         if zone.natVentSchedule[natVentCount] == None: natVentSched = 'ALWAYS ON'
@@ -925,257 +900,6 @@ class WriteIDF(object):
     def requestVarDict(self):
         return '\nOutput:VariableDictionary,\n' + \
         '\t' + 'regular;                 !- Key Field' + '\n'
-        
-    def EarthTube(self,zone):
-    
-        return '\nZoneEarthtube,\n' + \
-            '\t' + zone.name + ',\t!- Zone Name\n' + \
-            '\t' + str(zone.ETschedule) + ',\t!- Schedule Name\n'+\
-            '\t' + str(zone.design_flow_rate) + ',\t!- Design Flow Rate {m3/s}\n'+\
-            '\t' + str(zone.mincooltemp) + ',\t!- Minimum Zone Temperature when Cooling {C}\n'+\
-            '\t' + str(zone.maxheatingtemp) + ',\t!- Maximum Zone Temperature when Heating {C}\n'+\
-            '\t' + str(zone.delta_temp) + ',\t!- Delta Temperature {deltaC}\n'+\
-            '\t' + str(zone.et_type) + ',\t!- Earthtube Type\n'+\
-            '\t' + str(zone.fanprise) + ',\t!- Fan Pressure Rise {Pa}\n'+\
-            '\t' + str(zone.efficiency) + ',\t!- Fan Total Efficiency\n'+\
-            '\t' + str(zone.piperadius) + ',\t!- Pipe Radius {m}\n'+\
-            '\t' + str(zone.thick) + ',\t!- Pipe Thickness {m}\n'+\
-            '\t' + str(zone.length) + ',\t!- Pipe Length {m}\n'+\
-            '\t' + str(zone.thermal_k) + ',\t!- Pipe Thermal Conductivity {W/m-K}\n'+\
-            '\t' + str(zone.pipedepth) + ',\t!- Pipe Depth Under Ground Surface {m}\n'+\
-            '\t' + str(zone.soil_con) + ',\t!- Soil Condition\n'+\
-            '\t' + str(zone.soil_avannual) +',\t!- Average Soil Surface Temperature {C}\n'+\
-            '\t' + str(zone.soil_amplitude) + ',\t!- Amplitude of Soil Surface Temperature {C}\n'+\
-            '\t' + str(zone.soil_phaseconstant) + ',\t!- Phase Constant of Soil Surface Temperature {days}\n'+\
-            '\t' + zone.termflow + ',\t!- Constant Term Flow Coefficient\n'+\
-            '\t' + zone.tempflowco + ',\t!- Temperature Term Flow Coefficient\n'+\
-            '\t' + zone.veltermflow  + ',\t!- Velocity Term Flow Coefficient\n'+\
-            '\t' + zone.velsquflow  + ';\t!- Velocity Squared Term Flow Coefficient\n'
-            
-    def write_PVgen(self,PVgen):
-    
-        return '\nGenerator:Photovoltaic,\n' + \
-            '\t' + str(PVgen.name) + ',\t!- Name\n' + \
-            '\t' + str(PVgen.surfacename) + ',\t!- Surface Name\n'+\
-            '\t' + str(PVgen.performancetype) + ',\t!- Photovoltaic Performance Object Type\n'+\
-            '\t' + str(PVgen.performancename) + ',\t!- Module Performance Name\n'+\
-            '\t' + str(PVgen.integrationmode) + ',\t!- Heat Transfer Integration Mode\n'+\
-            '\t' + str(PVgen.NOparallel) + ',\t!- Number of Series Strings in Parallel {dimensionless}\n'+\
-            '\t' + str(PVgen.NOseries) + ';\t!- Number of Modules in Series {dimensionless}\n'
-    
-    
-    def write_PVgenperformanceobject(self,PVgen):
-        
-        return '\nPhotovoltaicPerformance:Simple,\n' + \
-            '\t' + str(PVgen.namePVperformobject) + ',\t!- Name\n' + \
-            '\t' + str(PVgen.surfaceareacells) + ',\t!- Fraction of Surface Area with Active Solar Cells {dimensionless}\n'+\
-            '\t' + str(PVgen.cellefficiencyinputmode) + ',\t!- Conversion Efficiency Input Mode\n'+\
-            '\t' + str(PVgen.efficiency) + ',\t!- Value for Cell Efficiency if Fixed\n'+\
-            '\t' + str(PVgen.schedule) + ';\t!- Efficiency Schedule Name\n'
-            
-    def simple_inverter(self,inverter):
-        
-        return '\nElectricLoadCenter:Inverter:Simple,\n' + \
-            '\t' + str(inverter.name) + ',\t!- Name\n' + \
-            '\t' + "ALWAYS ON" + ',\t!- Availability Schedule Name\n' + \
-            '\t' + str(inverter.zone) + ',\t!- Zone Name\n' + \
-            '\t' + "0.3" + ',\t!- Radiative Fraction\n' + \
-            '\t' + str(inverter.efficiency) + ';\t!- Inverter Efficiency\n'
-    
-    def battery_simple(self,battery):
-        
-        return '\nElectricLoadCenter:Storage:Simple,\n' + \
-            '\t' + str(battery.name ) + ',\t!- Name\n' + \
-            '\t' + "ALWAYS ON" + ',\t!- Availability Schedule Name\n' + \
-            '\t' + str(battery.zonename) + ',\t!- Zone Name\n' + \
-            '\t' + "0.3" + ',\t!- Radiative Fraction for Zone Heat Gains\n' + \
-            '\t' + str(battery.chargingefficiency) + ',\t!- Nominal Energetic Efficiency for Charging\n'+ \
-            '\t' + str(battery.dischargingeffciency) + ',\t!- Nominal Discharging Energetic Efficiency\n'+ \
-            '\t' + str(battery.batterycap ) + ',\t!- Maximum Storage Capacity {J}\n'+ \
-            '\t' + str(battery.maxdischarge) + ',\t!- Maximum Power for Discharging {W}\n'+ \
-            '\t' + str(battery.maxcharge) + ',\t!- Maximum Power for Charging {W}\n'+ \
-            '\t' + str(battery.initalcharge) + ';\t!- Initial State of Charge {J}\n'
-            
-    def wind_generator(self,windgenerator):
-        
-        def powercoefficients(windgenerator):
-            if windgenerator.powercoefficients == None:
-                    
-                return '\t' + ''+',\t!- Power Coefficient C1\n' + \
-                    '\t' + ''+',\t!- Power Coefficient C2\n' + \
-                    '\t' + ''+',\t!- Power Coefficient C3\n' + \
-                    '\t' + ''+',\t!- Power Coefficient C4\n' + \
-                    '\t' + ''+',\t!- Power Coefficient C5\n' + \
-                    '\t' + ''+';\t!- Power Coefficient C6\n'
-            else:
-                
-                powercoefficients = []
-                
-                for count,powercoefficient in enumerate(windgenerator.powercoefficients):
-                    
-                    if count == 5: # Last power coefficient
-                        powercoefficients.append('\t' + str(powercoefficient)+';\t!- Power Coefficient C'+str(count+1)+'\n')
-                    else:
-                        powercoefficients.append('\t' + str(powercoefficient)+',\t!- Power Coefficient C'+str(count+1)+'\n')
-                return ''.join(powercoefficients)
-    
-        
-        return '\nGenerator:WindTurbine,\n' + \
-            '\t' + str(windgenerator.name)+',\t!- Name\n' + \
-            '\t' + 'Always On'+',\t!- Availability Schedule Name\n' + \
-            '\t' + str(windgenerator.rotortype)+',\t!- Rotor Type\n' + \
-            '\t' + str(windgenerator.powercontrol)+',\t!- Power Control\n' + \
-            '\t' + str(windgenerator.rotorspeed)+',\t!- Rated Rotor Speed {rev/min}\n' + \
-            '\t' + str(windgenerator.rotor_diameter)+',\t!- Rotor Diameter {m}\n' + \
-            '\t' + str(windgenerator.overall_height)+',\t!- Overall Height {m}\n' + \
-            '\t' + str(windgenerator.numblades)+',\t!- Number of Blades\n' + \
-            '\t' + str(windgenerator.powerout)+',\t!- Rated Power {W}\n' + \
-            '\t' + str(windgenerator.rated_wind_speed)+',\t!- Rated Wind Speed {m/s}\n' + \
-            '\t' + str(windgenerator.cut_in_windspeed)+',\t!- Cut In Wind Speed {m/s}\n' + \
-            '\t' + str(windgenerator.cut_out_windspeed)+',\t!- Cut Out Wind Speed {m/s}\n' + \
-            '\t' + str(windgenerator.overall_turbine_n)+',\t!- Fraction system Efficiency\n' + \
-            '\t' + str(windgenerator.max_tip_speed_ratio)+',\t!- Maximum Tip Speed Ratio\n' + \
-            '\t' + str(windgenerator.max_power_coefficient)+',\t!- Maximum Power Coefficient\n' + \
-            '\t' + str(windgenerator.local_av_windspeed)+',\t!- Annual Local Average Wind Speed {m/s}\n' + \
-            '\t' + str(windgenerator.height_local_metrological_station)+',\t!- Height for Local Average Wind Speed {m}\n' + \
-            '\t' + ''+',\t!- Blade Chord Area {m2}\n' + \
-            '\t' + ''+',\t!- Blade Drag Coefficient\n' + \
-            '\t' + ''+',\t!- Blade Lift Coefficient\n'+\
-            powercoefficients(windgenerator)
-            
-
-    def writegeneratlorlist(self,genlistname,generators):
-        
-        def generatorinfo(generator,generatornumber):
-            
-            return '\t'+str(generator.name)+ ',\t!- Generator ' + str(generatornumber) + ' '+'Name\n'+ \
-                '\t'+str(generator.type)+ ',\t!- Generator ' + str(generatornumber) + ' '+'Object Type\n'+ \
-                '\t'+str(generator.powerout)+ ',\t!- Generator ' + str(generatornumber) + ' '+'Rated Electric Power Output {W}\n'+ \
-                '\t'+'Always On,               !- Generator 1 Availability Schedule Name\n'+ \
-                '\t'+',                        !- Generator 1 Rated Thermal to Electrical Power Ratio\n'
-        
-        def generatorinfofinal(generator,generatornumber):
-            
-            return '\t'+str(generator.name)+ ',\t!- Generator ' + str(generatornumber) + ' '+'Name\n'+ \
-                '\t'+str(generator.type)+ ',\t!- Generator ' + str(generatornumber) + ' '+'Object Type\n'+ \
-                '\t'+str(generator.powerout)+ ',\t!- Generator ' + str(generatornumber) + ' '+'Rated Electric Power Output {W}\n'+ \
-                '\t'+'Always On,               !- Generator 1 Availability Schedule Name\n'+ \
-                '\t'+';                        !- Generator 1 Rated Thermal to Electrical Power Ratio\n'
-        
-            # XXX change above in future so can handle schedules and thermal to electrical power ratio
-            
-        generatornumber = 0
-        
-        generatorlist = []
-        
-        for count,generator in enumerate(generators):
-               
-            generatornumber = generatornumber+1
-            
-            if count == (len(generators)-1): # If last generator in the generaor list need  
-            
-                generatorlist.append(generatorinfofinal(generator,generatornumber))
-            
-            else:
-                generatorlist.append(generatorinfo(generator,generatornumber))
-            
-        return '\nElectricLoadCenter:Generators,\n' + \
-            '\t' + str(genlistname) + ',\t!- Name\n' + \
-            ''.join(generatorlist)
-            
-    def writeloadcenterdistribution(self,distribution_name,HBsystemgenerator_name,operationscheme,demandlimit,trackschedule,trackmeterschedule,busstype,inverterobject,elecstorageobject):
-
-        if demandlimit == None:
-            demandlimit = ''
-        if trackschedule == None:
-            demandlimit = 'Always On'
-        if trackmeterschedule == None:
-            trackmeterschedule = ''
-        if elecstorageobject == None:
-            elecstorageobject = ''
-            
-        if inverterobject is None:  # Note on is: is is pointing to whether inverterobject and None are the same object, is inverterobject is None they will be,# Need to use is as have overide the __eq__ operator for inverter object 
-            
-            # The Honeybee generation system is a wind or fuel generation system
-            # meaining that elecstorageobject is also None,
-            inverterobject  = ''
-            
-            return '\nElectricLoadCenter:Distribution,\n' + \
-                '\t'+str(distribution_name)+ ',\t!- Name\n'+ \
-                '\t'+str(HBsystemgenerator_name)+ ',\t!- Generator List Name\n'+ \
-                '\t'+str(operationscheme)+ ',\t!- Generator Operation Scheme Type\n'+ \
-                '\t'+str(demandlimit)+ ',\t!- Demand Limit Scheme Purchased Electric Demand Limit {W}\n'+ \
-                '\t'+str(trackschedule)+ ',\t!- Track Schedule Name Scheme Schedule Name\n'+ \
-                '\t'+str(trackmeterschedule)+ ',\t!- Track Meter Scheme Meter Name\n'+ \
-                '\t'+str(busstype)+ ',\t!- Electrical Buss Type\n'+ \
-                '\t'+str(inverterobject)+ ',\t!- Inverter Object Name\n'+ \
-                '\t'+str(elecstorageobject)+ ',\t!- Electrical Storage Object Name\n'+\
-                '\t'+''+';\t!- Transformer Object Name\n'
-
-        else:
-            
-            # The generator system contains an inverter and is a Honeybee PV system, this means that
-            # inverterobject is an object and contains the attribute inverterobject.name and inverterobject.replacementtime
-            try:
-                # If the generator system contains a battery, elecstorageobject will be a battery object and not a string,
-                # thus containing the attributes elecstorageobject.name and elecstorageobject.replacementtime
-                return '\nElectricLoadCenter:Distribution,\n' + \
-                    '\t'+str(distribution_name)+ ',\t!- Name\n'+ \
-                    '\t'+str(HBsystemgenerator_name)+ ',\t!- Generator List Name\n'+ \
-                    '\t'+str(operationscheme)+ ',\t!- Generator Operation Scheme Type\n'+ \
-                    '\t'+str(demandlimit)+ ',\t!- Demand Limit Scheme Purchased Electric Demand Limit {W}\n'+ \
-                    '\t'+str(trackschedule)+ ',\t!- Track Schedule Name Scheme Schedule Name\n'+ \
-                    '\t'+str(trackmeterschedule)+ ',\t!- Track Meter Scheme Meter Name\n'+ \
-                    '\t'+str(busstype)+ ',\t!- Electrical Buss Type\n'+ \
-                    '\t'+str(inverterobject.name)+ ',\t!- Inverter Object Name\n'+ \
-                    '\t'+str(elecstorageobject.name)+ ',\t!- Electrical Storage Object Name\n'+\
-                    '\t'+''+';\t!- Transformer Object Name\n'
-            except AttributeError:
-               # If the attributes .replacementtime and .name not in battery the Honeybee generation system does not contain
-               # a battery and elecstorageobject = ''
-                return '\nElectricLoadCenter:Distribution,\n' + \
-                    '\t'+str(distribution_name)+ ',\t!- Name\n'+ \
-                    '\t'+str(HBsystemgenerator_name)+ ',\t!- Generator List Name\n'+ \
-                    '\t'+str(operationscheme)+ ',\t!- Generator Operation Scheme Type\n'+ \
-                    '\t'+str(demandlimit)+ ',\t!- Demand Limit Scheme Purchased Electric Demand Limit {W}\n'+ \
-                    '\t'+str(trackschedule)+ ',\t!- Track Schedule Name Scheme Schedule Name\n'+ \
-                    '\t'+str(trackmeterschedule)+ ',\t!- Track Meter Scheme Meter Name\n'+ \
-                    '\t'+str(busstype)+ ',\t!- Electrical Buss Type\n'+ \
-                    '\t'+str(inverterobject.name)+ ',\t!- Inverter Object Name\n'+ \
-                    '\t'+str(elecstorageobject)+ ',\t!- Electrical Storage Object Name\n'+\
-                    '\t'+''+';\t!- Transformer Object Name\n'
-
-    def writegeneration_system_financialdata(self,financialdata):
-        
-        newfinancialdata = []
-        # Add !!! in front of all data so EnergyPlus views it as comments
-        # and it can be easily read
-        
-        newfinancialdata.append('\n')
-        newfinancialdata.append('!########## Facility generation system financial data ##########'+ '\n')
-        newfinancialdata.append('\n')
-        
-        # Create a header for the data in the IDF 
-        newfinancialdata.append('!!!!Y Honeybee generation system financial data'+'\n')
-        
-        for dataitem in financialdata:
-
-            if dataitem.find('Honeybee system generator ') != -1:
-                
-                # Create a header for the financial data of each Honeybee generator system
-                
-                newfinancialdata.append('!!!X Honeybee generation system name -' + str(dataitem.replace('Honeybee system generator ',''))+'\n')
-            
-            else:
-                
-                # Add the financial data for each Honeybee generator system under the header
-                
-                newfinancialdata.append('!!!Z '+str(dataitem)+'\n')
-                
-        newfinancialdata.append('\n')
-
-        return newfinancialdata
-        
 
 class RunIDF(object):
     
@@ -1193,15 +917,16 @@ class RunIDF(object):
         folderName = workingDir.replace( (workingDrive + '\\'), '')
         batchStr = workingDrive + '\ncd\\' +  folderName + '\n' + EPDirectory + \
                 '\Epl-run ' + fullPath + ' ' + fullPath + ' idf "' + epwFileAddress + '" EP N nolimit N N 0 Y'
-        
+    
         batchFileAddress = fullPath +'.bat'
         batchfile = open(batchFileAddress, 'w')
         batchfile.write(batchStr)
         batchfile.close()
         
         #execute the batch file
-        os.system(batchFileAddress) 
-
+        os.system(batchFileAddress)
+        #os.system('C:\\honeybee\\runIt.bat')
+            
     def readResults(self):
         pass
 
@@ -1213,7 +938,6 @@ sc.sticky["honeybee_RunIDF"] = RunIDF
 def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext,
          simulationOutputs, writeIdf, runEnergyPlus, workingDir, idfFileName,
          meshSettings):
-             
     # import the classes
     w = gh.GH_RuntimeMessageLevel.Warning
     
@@ -1310,7 +1034,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     idfFile = open(idfFileFullName, "w")
     
     ################## HEADER ###################
-    print "[1 of 8] Writing simulation parameters..."
+    print "[1 of 7] Writing simulation parameters..."
     
     # Version,8.1;
     idfFile.write(hb_writeIDF.EPVersion(sc.sticky["honeybee_folders"]["EPVersion"]))
@@ -1347,7 +1071,6 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     # Location
     idfFile.write(hb_writeIDF.EPSiteLocation(epwFileAddress))
     
-<<<<<<< HEAD
     #Ground Temperatures.
     if grndTemps == []:
         groundtemp = lb_preparation.groundTempData(_epwFile,[])
@@ -1359,18 +1082,6 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     
     if grndTemps != []:
         idfFile.write(hb_writeIDF.EPGroundTemp(grndTemps))
-=======
-    #Ground Temperatures.		
-    if grndTemps == []:		
-        groundtemp = lb_preparation.groundTempData(_epwFile,[])		
-        groundtempNum = groundtemp[1][7:]		
-        for temp in groundtempNum:		
-            if temp < 18: grndTemps.append(18)		
-            elif temp < 24: grndTemps.append(temp)		
-            else: grndTemps.append(24)		
-    		
-    idfFile.write(hb_writeIDF.EPGroundTemp(grndTemps))
->>>>>>> pr/348
     
     # SizingPeriod
     #Check if there are sizing periods in the EPW file.
@@ -1417,7 +1128,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     
     # Geometry rules
     idfFile.write(hb_writeIDF.EPGeometryRules())
-
+    
     EPConstructionsCollection = []
     EPMaterialCollection = []
     EPScheduleCollection = []
@@ -1425,14 +1136,9 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     
     # Shading Surfaces
     if HBContext and HBContext[0]!=None:
-        print "[2 of 8] Writing context surfaces..."
-       
+        print "[2 of 6] Writing context surfaces..."
         # call the objects from the lib
         shadingPyClasses = hb_hive.callFromHoneybeeHive(HBContext)
-       
-       
-    def writeHBcontext(shadingPyClasses):
-        
         for shading in shadingPyClasses:
             
             # take care of shcedule
@@ -1451,23 +1157,12 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                 hb_writeIDF.EPSCHStr(shading.TransmittanceSCH.upper())
                 
             idfFile.write(hb_writeIDF.EPShdSurface(shading))
-       
-    # Shading Surfaces
-    if HBContext and HBContext[0]!=None:
-        print "[2 of 6] Writing context surfaces..."
-        # call the objects from the lib
-        shadingPyClasses = hb_hive.callFromHoneybeeHive(HBContext)
-        
-        WriteIDF.checksurfaceduplicate.extend(shadingPyClasses) # Add to a list so can check for duplicates later
-        writeHBcontext(shadingPyClasses)
-
     else:
         print "[2 of 6] No context surfaces..."
-        print "[2 of 8] No context surfaces..."
-
+        
         
     #################  BODY #####################
-    print "[3 of 8] Writing geometry..."
+    print "[3 of 6] Writing geometry..."
     ZoneCollectionBasedOnSchAndLoads = {} # This will be used to create zoneLists
     
     
@@ -1495,10 +1190,6 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                 
         for srf in zone.surfaces:
             # check if there is an energyPlus material
-            
-            # Add surface to a list so that zone surfaces can be checked against honeybee generator PV surfaces
-            WriteIDF.zonesurfaces.append(srf.ID)
-
             if srf.EPConstruction != None:
                 srf.construction = srf.EPConstruction
             # else try to find the material based on bldg type and climate zone
@@ -1547,286 +1238,8 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                 #Write the internal mass into the IDF
                 idfFile.write(hb_writeIDF.EPInternalMass(zone, massName, zone.internalMassSrfAreas[massCount], zone.internalMassConstructions[massCount]))
         
-    ########### Generators - Electric load center ###########
-    
-    # This section was created by Anton Szilasi 
-    # for technical support or user requests
-    # please contact me ajszilasi@gmail.com
-    
-    print "[4 of 8] Writing Electric Load Center - Generator specifications ..."
-        
-    HBgeneratoroutputs = []
-    
-    if HBGenerators_ != []:
-
-        hb_hivegen = sc.sticky["honeybee_generationHive"]()
-        
-        HBsystemgenerators = hb_hivegen.callFromHoneybeeHive(HBGenerators_)
-
-        
-        # This code here is used to extractingruntime periods if outputs are specified externally
-        # If the function returns and exception that means that external outputs are not specified.
-        # and teh default below will be used.
-        
-        def extracttimeperiod(simulationOutputs):
-            try:
-                timeperiod = simulationOutputs[-1].split(',')[-1]
-                HBgeneratortimeperiod = timeperiod.replace(";","")
-                return HBgeneratortimeperiod
-            except:
-                pass
-                
-        # Extract the timestep from the incoming component simulationOutputs if its being used
-        HBgeneratortimeperiod = extracttimeperiod(simulationOutputs)
-  
-        
-        
-        if simulationOutputs_ == []:
-            
-            HBgeneratoroutputs.append("Output:Variable,*,Facility Net Purchased Electric Energy, hourly;")
-            
-            HBgeneratoroutputs.append("Output:Variable,*,Facility Total Electric Demand Power, hourly;")
-            print "ass"
-            HBgeneratortimeperiod = 'hourly'
-                
-        if simulationOutputs_ != []:
-                
-            if (not any('Output:Variable,*,Facility Total Electric Demand Power' in s for s in simulationOutputs)) and (not any('Output:Variable,*,Facility Net Purchased Electric Power' in s for s in simulationOutputs)):
-                # These are the default inputs if the user does not specify their own using the component
-                # simulationOutputs, the default timestep is therefore hourly 
-                # the component Ladybug monthly bar chart needs hourly in order to run
-                
-                simulationOutputs.append("Output:Variable,*,Facility Net Purchased Electric Energy, hourly;")
-                
-                simulationOutputs.append("Output:Variable,*,Facility Total Electric Demand Power, hourly;")
-
-                HBgeneratortimeperiod = 'hourly'
-                
-        for HBsystemcount,HBsystemgenerator in enumerate(HBsystemgenerators):
-            
-            # Append to HBgeneratoroutputs as if we append to simulationOutputs the original default outputs will never run
-            
-            if simulationOutputs_ == []:
-                
-                # For this HBsystemgenerator write the output so that the produced electric energy is reported.
-                HBgeneratoroutputs.append("Output:Variable,"+str(HBsystemgenerator.name)+":DISTRIBUTIONSYSTEM,Electric Load Center Produced Electric Energy,"+ HBgeneratortimeperiod +";")
-
-            
-            if simulationOutputs_ != []:
-
-                # If there are output variables in simulationOutputs original default outputs will not run anyhow
-                # so we can append to simulationOutputs without affecting default outputs
-                
-                # For this HBsystemgenerator write the output so that the produced electric energy is reported.
-                simulationOutputs.append("Output:Variable,"+str(HBsystemgenerator.name)+":DISTRIBUTIONSYSTEM,Electric Load Center Produced Electric Energy,"+ HBgeneratortimeperiod +";")
-                
-                        
-            # Define the name for the list of generators and to use in generator's list name in ElectricLoadCenter:Distribution
-            if HBsystemgenerator.name == None:
-                # This shouldn't happen as Honeybee generation system has a check on it 
-                # which doesnt allow for no names to be specified.
-                
-                HBsystemgenerator_name = "generatorsystem" + str(HBsystemcount)
-                
-            else:
-    
-                HBsystemgenerator_name = str(HBsystemgenerator.name)
-            
-            # Write one ElectricLoadCenter:Generators for each HBsystemgenerator
-            
-            ### XXX still needs work to make sure names dont overlap
-            idfFile.write(hb_writeIDF.writegeneratlorlist(HBsystemgenerator_name,HBsystemgenerator.PVgenerators+HBsystemgenerator.windgenerators+HBsystemgenerator.fuelgenerators)) # The writegeneratlorlist only takes 'generators' as an input so add all the different generator lists together 
-            
-            # Determine the type of system and write one ElectricLoadCenter:Distribution for each HBsystemgenerator
-            
-            distribution_name = str(HBsystemgenerator_name) + ':Distributionsystem' 
-
-            # Add a header to the financial data so that its clear financial data is from this system
-            
-            WriteIDF.financialdata.append('Honeybee system generator '+str(HBsystemgenerator.name))
-            
-            # Add the Honeybee generation systems' annual operation and maintenance costs
-            
-            WriteIDF.financialdata.append('Honeybee system annual maintenance cost - '+str(HBsystemgenerator.maintenance_cost))
-            
-            # Determine whether it is a PV, Wind or fuel generator system
-            
-            if HBsystemgenerator.PVgenerators != []:
-                
-                # Add to a list to conduct checks on consistency of context surfaces later
-                
-                WriteIDF.checksurfaceduplicate.extend(HBsystemgenerator.contextsurfaces) 
-                
-                # Write the Honeybee context sufaces
-                writeHBcontext(HBsystemgenerator.contextsurfaces)
-                
-                # CHECK
-                # If PV surfaces are part of a zone make sure that, that zone is connected to _HBZones
-                # that is the PV surfaces are contained in HBsystemgenerator.HBzonesurfaces
-                    
-                PVsurfaceinzones = []
-                
-                for surface in HBsystemgenerator.HBzonesurfaces:
-    
-                    PVsurfaceinzones.append(surface.ID in WriteIDF.zonesurfaces)
-                    
-                if all(x== True for x in PVsurfaceinzones) != True:
-                    warn  = "It has been detected that there are PV generators attached to sufaces of a Honeybee zone\n"+\
-                    " However this Honeybee zone has not been connected to the _HBZones input on this component\n"+\
-                    " Please connect it to run the Energy Plus simulation!"
-                    print warn 
-                    ghenv.Component.AddRuntimeMessage(w, warn )
-                    
-                    return -1
-                
-                if HBsystemgenerator.simulationinverter != None:
-                    
-                    if HBsystemgenerator.battery != None:
-                        
-                        # HBsystem contains a inverter and is a DC system AND has storage
-  
-                        WriteIDF.financialdata.append(' Battery cost - ' +str(HBsystemgenerator.battery.cost_) +' replacement time = '+ str(HBsystemgenerator.battery.replacementtime)+ ' years')
-
-                        # Although multiple inverters may exist in HBsystemgenerator.simulationinverter 
-                        # in the Honeybee generation system it has been checked that they are all the same
-
-                        WriteIDF.financialdata.append(' Inverter cost - '+ str(HBsystemgenerator.simulationinverter[0].cost_)+ ' replacement time = '+ str(HBsystemgenerator.simulationinverter[0].replacementtime)+ ' years') 
-                        
-                        operationscheme = 'Baseload'
-                        busstype = 'DirectCurrentWithInverterDCStorage'
-                        demandlimit = ''
-                        trackschedule = 'Always On'
-                        trackmeterschedule = ''
-                        inverterobject = HBsystemgenerator.simulationinverter[0] # All inverters are the same doesnt matter which one you pick
-                        elecstorageobject = HBsystemgenerator.battery
-                        
-                        # Write HBsystemgenerator battery
-                        idfFile.write(hb_writeIDF.battery_simple(HBsystemgenerator.battery))
-                        
-                        # Write HBsystemgenerator photovoltaic generators
-                        for PVgen in HBsystemgenerator.PVgenerators:
-                            
-                            idfFile.write(hb_writeIDF.write_PVgen(PVgen))
-                            idfFile.write(hb_writeIDF.write_PVgenperformanceobject(PVgen))
-                            WriteIDF.financialdata.append(' PVgenerator cost - '+str(PVgen.cost_)) # - Does the class PV_gen need an ID?
-                        
-                        # Write HBsystemgenerator inverters
-                        idfFile.write(hb_writeIDF.simple_inverter(inverterobject))
-               
-                        # Write HBsystemgenerator ElectricLoadCenter:Distribution
-                        idfFile.write(hb_writeIDF.writeloadcenterdistribution(distribution_name,HBsystemgenerator_name,operationscheme,demandlimit,trackschedule,trackmeterschedule,busstype,inverterobject,elecstorageobject))
-                        
-                        # CHECK for duplicate batteries - These can cause EnergyPlus to crash
-                        # Append battery ID to checkbatteryduplicate to check for duplicate batteries
-                        WriteIDF.checkbatteryduplicate.append(HBsystemgenerator.battery.ID)
-                        
-                        # If the battery ID occurs twice in the list WriteIDF.checkbatteryduplicate it is a duplicate
-                        if WriteIDF.checkbatteryduplicate.count(HBsystemgenerator.battery.ID) == 2:
-                            
-                            warning  = 'Duplicate battery detected! please make sure that each HB generators has its own battery \n'+ \
-                            'usually this happens because one battery is connected to many PVgenerators make sure each PVgenerator has its own\n'+ \
-                            'unique battery'
-                            ghenv.Component.AddRuntimeMessage(w, warning)
-                            print warning 
-                            return -1 
-                            
-                        # CHECK for duplicate inverters - These can cause EnergyPlus to crash
-                        # Append inverter ID to checkbatteryduplicate to check for duplicate inverter 
-                        WriteIDF.checkinverterduplicate.append(inverterobject.ID)
-                
-                        # If the inverter ID occurs twice in the list WriteIDF.checkinverterduplicate it is a duplicate
-                        if WriteIDF.checkinverterduplicate.count(inverterobject.ID) == 2:
-                            warning  = 'Duplicate inverter detected! please make sure that each Honeybee PV generator has its own inverter \n'+ \
-                            'usually this happens because one inverter is connected to many PVgenerators make sure each PVgenerator has its own\n'+ \
-                            'unique inverter'
-                            ghenv.Component.AddRuntimeMessage(w, warning)
-                            print warning 
-                            return -1 
-                        
-                    else:
-                        # HBsystem contains a inverter and is a DC system there are NO batteries in the system
-                        
-                        WriteIDF.financialdata.append(' Inverter cost - '+ str(HBsystemgenerator.simulationinverter[0].cost_)+ ' replacement time = '+ str(HBsystemgenerator.simulationinverter[0].replacementtime)+ ' years') 
-                        
-                        operationscheme = 'Baseload'
-                        busstype = 'DirectCurrentWithInverter'
-                        demandlimit = ''
-                        trackschedule = 'Always On'
-                        trackmeterschedule = ''
-                        inverterobject = HBsystemgenerator.simulationinverter[0] # All inverters are the same doesnt matter which one you pick
-                        
-                        # Write HBsystemgenerator photovoltaic generators
-                        for PVgen in HBsystemgenerator.PVgenerators:
-                            
-                            idfFile.write(hb_writeIDF.write_PVgen(PVgen))
-                            idfFile.write(hb_writeIDF.write_PVgenperformanceobject(PVgen))
-                            WriteIDF.financialdata.append(' PVgenerator cost - '+str(PVgen.cost_)) # - Does the class PV_gen need an ID?
-                        
-                        # Write HBsystemgenerator inverters
-                        idfFile.write(hb_writeIDF.simple_inverter(inverterobject))
-                        
-                        # Write HBsystemgenerator ElectricLoadCenter:Distribution
-                        idfFile.write(hb_writeIDF.writeloadcenterdistribution(distribution_name,HBsystemgenerator_name,operationscheme,demandlimit,trackschedule,trackmeterschedule,busstype,inverterobject,None)) 
-                        
-                        # CHECK for duplicate inverters - These can cause EnergyPlus to crash
-                        # Append inverter ID to checkbatteryduplicate to check for duplicate inverter 
-                        WriteIDF.checkinverterduplicate.append(inverterobject.ID)
-                
-                        # If the inverter ID occurs twice in the list WriteIDF.checkinverterduplicate it is a duplicate
-                        if WriteIDF.checkinverterduplicate.count(inverterobject.ID) == 2:
-                            warning  = 'Duplicate inverter detected! please make sure that each Honeybee PV generator has its own inverter \n'+ \
-                            'usually this happens because one inverter is connected to many PVgenerators make sure each PVgenerator has its own\n'+ \
-                            'unique inverter'
-                            ghenv.Component.AddRuntimeMessage(w, warning)
-                            print warning 
-                            return -1 
-                            
-            elif HBsystemgenerator.windgenerators != []:
-                
-                operationscheme = 'Baseload'
-                busstype = 'AlternatingCurrent'
-                demandlimit = ''
-                trackschedule = 'Always On'
-                trackmeterschedule = ''
-                inverterobject = None
-                elecstorageobject = None
-                
-                # Write HBsystemgenerator wind generators
-                for windgenerator in HBsystemgenerator.windgenerators:
-                    
-                    idfFile.write(hb_writeIDF.wind_generator(windgenerator))
-                    WriteIDF.financialdata.append(' Wind turbine cost - '+str(windgenerator.cost_)) 
-                    
-                # Write HBsystemgenerator ElectricLoadCenter:Distribution
-                idfFile.write(hb_writeIDF.writeloadcenterdistribution(distribution_name,HBsystemgenerator_name,operationscheme,demandlimit,trackschedule,trackmeterschedule,busstype,inverterobject,elecstorageobject))
-                
-               
-            elif HBsystemgenerator.fuelgenerators != []: # XXX 14/04/2015 not yet implemented so always equal to []
-                
-                busstype = 'AlternatingCurrent'
-            
-        # CHECK for duplicate HBcontext surfaces this could happen if the user connects context surfaces to both HBContext_ and a HB generator system
-        HBcontextsurfaces = set()
-        
-        for HBcontextsurface in WriteIDF.checksurfaceduplicate:
-            HBcontextsurfaces.add(HBcontextsurface.ID)
-            
-        if len(HBcontextsurfaces) != len(WriteIDF.checksurfaceduplicate):
-            
-            print "Duplicate HBcontext surfaces detected! Don't connect HBcontext surfaces to both PVgen component and run E+ component HBContext_ input!"
-            ghenv.Component.AddRuntimeMessage(w, "Duplicate HBcontext surfaces detected! Don't connect HBcontext surfaces to both PVgen component and run E+ component HBContext_ input!")
-            
-            return -1
-            
-        # Write the financial data to the IDF file
-        for data in hb_writeIDF.writegeneration_system_financialdata(WriteIDF.financialdata):
-            
-            idfFile.write(data)
-            
-        idfFile.write('\n')
-            
     ################ Construction #####################
-    print "[5 of 8] Writing materials and constructions..."
+    print "[4 of 6] Writing materials and constructions..."
     
     # Write constructions
     for cnstr in EPConstructionsCollection:
@@ -1843,10 +1256,9 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         
     
     ################ BODYII #####################
-    print "[6 of 8] Writing schedules..."
+    print "[5 of 7] Writing schedules..."
     
     #Check if schedules need to be written for air mixing or natural ventilation.
-    needToWriteMixSched = False
     for key, zones in ZoneCollectionBasedOnSchAndLoads.items():
         for zone in zones:
             if zone.natVent == True:
@@ -1854,7 +1266,6 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                     if schedule != None:
                         if schedule.upper() not in EPScheduleCollection: EPScheduleCollection.append(schedule)
                     else: needToWriteMixSched = True
-
             if zone.mixAir == True:
                 for schedule in zone.mixAirFlowSched:
                     if schedule != None:
@@ -1890,7 +1301,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                     if value not in EPScheduleCollection:
                         EPScheduleCollection.append(value)
     
-    print "[7 of 8] Writing loads and ideal air system..."
+    print "[6 of 7] Writing loads and ideal air system..."
     listCount = 0
     listName = None
     
@@ -1950,12 +1361,6 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                 for mixZoneCount, zoneMixName in enumerate(zone.mixAirZoneList):
                     idfFile.write(hb_writeIDF.EPZoneAirMixing(zone, zoneMixName, zone.mixAirFlowList[mixZoneCount], mixZoneCount))
             
-            # EARTH TUBE
-            
-            if zone.earthtube == True:
-                
-                idfFile.write(hb_writeIDF.EarthTube(zone))
-            
             #   SIMPLE NATURAL VENTILATION
             if zone.natVent == True:
                 for natVentCount, natVentObj in enumerate(zone.natVentType):
@@ -1992,13 +1397,12 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     
     # write the outputs requested by the user.
     if simulationOutputs:
-        print "[8 of 8] Writing outputs..."
+        print "[7 of 7] Writing outputs..."
         idfFile.write('\n')
         for line in simulationOutputs:
             idfFile.write(line + '\n')
-            
     else:
-        print "[8 of 8] No outputs! You usually want to get some outputs when you run an analysis. Just saying..."
+        print "[7 of 7] No outputs! You usually want to get some outputs when you run an analysis. Just saying..."
         print "We'll just request some energy-related outputs for you that are monthly."
         outPutsDefalut = 'OutputControl:Table:Style,Comma; \n' + \
             'Output:Variable,*,Zone Ideal Loads Zone Total Cooling Energy, monthly; \n' + \
@@ -2007,10 +1411,6 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
             'Output:Variable,*,Zone Electric Equipment Electric Energy, monthly;'
         idfFile.write('\n')
         idfFile.write(outPutsDefalut + '\n')
-        # Write honeybee generator default outputs 
-        for line in HBgeneratoroutputs:
-            idfFile.write(line + '\n')
-        # Writing outputs for Honeybee generators if there are any
         
     idfFile.close()
     
@@ -2064,5 +1464,3 @@ if _writeIdf == True and _epwFile and _HBZones and _HBZones[0]!=None:
                 pass
 else:
     print "At least one of the mandatory inputs in missing."
-    
-    
