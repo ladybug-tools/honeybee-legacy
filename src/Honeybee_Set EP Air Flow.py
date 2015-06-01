@@ -25,7 +25,8 @@ Provided by Honeybee 0.0.56
         interZoneAirFlowRate_: An optional number that represents airflow in m3/s per square meter of air wall contatct surface area between zones.  By default, this value is set to 0.0963 m3/s for each square meter of air wall contact surface area, which is a decent assumption for conditions of relatively low indoor air velocity.  In cases of higher indoor air velocity, such as those that might occur with consistent wind-driven ventilation or ventilation with fans, you will likely want to increase this number. This can be either a single number to be applied to all connected zones or a list of numbers for each different zone.
         interZoneAirFlowSched_: An optional schedule of fractional values to set when the air flows in between zones.
         _naturalVentilationType: Choose from the following options.
-            0 - NO NATURAL VENTILATION - Choose this option if you do not want your zones to be naturally ventilated.
+            -1 - REMOVE NATURAL VENTILATION - Choose this option if want to remove previously-set natural ventilation objects with this component.
+            0 - NO NATURAL VENTILATION - Choose this option if you do not want to add any natrual ventilation objects to your zones with this component.
             1 - WINDOW NATURAL VENTILATION - Choose this to have the component automatically calculate natural ventilation potential based on ALL of your zone's windows and a specified fraction of operable glazing.  Note that your zone must have windows for this ventilation to occur.  It will be assumed that each window is divided into two equally-sized openings (one placed at the top and another at the bottom).
             2 - CUSTOM STACK / WIND VENTILATION - Choose this option either if you have window ventilation and it does not fit the description above or if you are trying to model a custom ventilation object like a chimney.  You will have to specify an effective window area for the object and the height between inlet and outlet.  You will also have to specify the angle2North for wind-driven calculations.  Note that you can eliminate either the wind or the stack part of the equation by setting the respective discharge coefficent to 0.
             3 - FAN-DRIVEN VENTILATION - Choose this option to have your zones ventilated at a constant rate, representing fan-driven ventilation.  You will have to specify the design flow rate that the fan gives to the zone in m3/s.  You can also change the default fan efficiency, which will affect the electic consumption of the fan in the output.
@@ -47,7 +48,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Set EP Air Flow"
 ghenv.Component.NickName = 'setEPNatVent'
-ghenv.Component.Message = 'VER 0.0.56\nMAR_22_2015'
+ghenv.Component.Message = 'VER 0.0.56\nJUN_01_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
 #compatibleHBVersion = VER 0.0.56\nMAR_16_2015
@@ -69,7 +70,7 @@ inputsDict = {
 0: ["_HBZones", "The HBZones out of any of the HB components that generate or alter zones."],
 1: ["interZoneAirFlowRate_", "An optional number that represents airflow in m3/s per square meter of air wall contatct surface area between zones.  By default, this value is set to 0.0963 m3/s for each square meter of air wall contact surface area, which is a decent assumption for conditions of relatively low indoor air velocity.  In cases of higher indoor air velocity, such as those that might occur with consistent wind-driven ventilation or ventilation with fans, you will likely want to increase this number. This can be either a single number to be applied to all connected zones or a list of numbers for each different zone."],
 2: ["interZoneAirFlowSched_", "An optional schedule of fractional values to set when the air flows in between zones."],
-3: ["_naturalVentilationType", "Choose from the following options. \n     0 - NO NATURAL VENTILATION - Choose this option if you do not want your zones to be naturally ventilated. \n     1 - WINDOW NATURAL VENTILATION - Choose this to have the component automatically calculate natural ventilation potential based on ALL of your zone's windows and a specified fraction of operable glazing.  Note that your zone must have windows for this ventilation to occur.  It will be assumed that each window is divided into two equally-sized openings (one placed at the top and another at the bottom). \n     2 - CUSTOM STACK / WIND VENTILATION - Choose this option either if you have window ventilation and it does not fit the description above or if you are trying to model a custom ventilation object like a chimney.  You will have to specify an effective window area for the object and the height between inlet and outlet.  You will also have to specify the angle2North for wind-driven calculations.  Note that you can eliminate either the wind or the stack part of the equation by setting the respective discharge coefficent to 0. \n     3 - FAN-DRIVEN VENTILATION - Choose this option to have your zones ventilated at a constant rate, representing fan-driven ventilation.  You will have to specify the design flow rate that the fan gives to the zone in m3/s.  You can also change the default fan efficiency, which will affect the electic consumption of the fan in the output."],
+3: ["_naturalVentilationType", "Choose from the following options. \n     -1 - REMOVE NATURAL VENTILATION - Choose this option if want to remove previously-set natural ventilation objects with this component. \n     0 - NO NATURAL VENTILATION - Choose this option if you do not want to add any natrual ventilation objects to your zones with this component. \n     1 - WINDOW NATURAL VENTILATION - Choose this to have the component automatically calculate natural ventilation potential based on ALL of your zone's windows and a specified fraction of operable glazing.  Note that your zone must have windows for this ventilation to occur.  It will be assumed that each window is divided into two equally-sized openings (one placed at the top and another at the bottom). \n     2 - CUSTOM STACK / WIND VENTILATION - Choose this option either if you have window ventilation and it does not fit the description above or if you are trying to model a custom ventilation object like a chimney.  You will have to specify an effective window area for the object and the height between inlet and outlet.  You will also have to specify the angle2North for wind-driven calculations.  Note that you can eliminate either the wind or the stack part of the equation by setting the respective discharge coefficent to 0. \n     3 - FAN-DRIVEN VENTILATION - Choose this option to have your zones ventilated at a constant rate, representing fan-driven ventilation.  You will have to specify the design flow rate that the fan gives to the zone in m3/s.  You can also change the default fan efficiency, which will affect the electic consumption of the fan in the output."],
 4: ["--------------------", "..."],
 5: ["minIndoorTempForNatVent_", "A number or list of numbers between -100 and 100 that represents the minimum indoor temperature at which to naturally ventilate.  This can be either a single number to be applied to all connected zones or a list of numbers for each different zone."],
 6: ["maxIndoorTempForNatVent_", "A number or list of numbers between -100 and 100 that represents the maximum indoor temperature at which to naturally ventilate.  Use this to design mixed-mode buildings where you would like occupants to shut the windows and turn on a cooling system if it gets too hot inside.  This can be either a single number to be applied to all connected zones or a list of numbers for each different zone."],
@@ -86,7 +87,7 @@ inputsDict = {
 
 def checkNatVentMethod():
     #Check to make sure that the nat vent method is valid.
-    if _naturalVentilationType >= 0 and _naturalVentilationType <= 3: natVentMethod = _naturalVentilationType
+    if _naturalVentilationType >= -1 and _naturalVentilationType <= 3: natVentMethod = _naturalVentilationType
     else:
         natVentMethod = None
         warning = "_naturalVentilationType is not valid."
@@ -380,26 +381,27 @@ def main(HBZones, natVentMethod, interZoneFlow, interZoneFlowSched, minIndoorTem
                     except:
                         pass
     
-    if natVentMethod == 1 or natVentMethod == 2 or natVentMethod == 3:
+    if natVentMethod == 1 or natVentMethod == 2 or natVentMethod == 3 or natVentMethod == 0:
         # make sure area schedules are in HB schedule library.
         HBScheduleList = sc.sticky["honeybee_ScheduleLib"].keys()
         
-        for schedule in areaSched: 
-            if schedule!=None:
-                schedule= schedule.upper()
-            
-            if schedule!=None and not schedule.lower().endswith(".csv") and schedule not in HBScheduleList:
-                msg = "Cannot find " + schedule + " in Honeybee schedule library."
-                print msg
-                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
-                return -1
-            elif schedule!=None and schedule.lower().endswith(".csv"):
-                # check if csv file is existed
-                if not os.path.isfile(schedule):
-                    msg = "Cannot find the shchedule file: " + schedule
+        if natVentMethod == 1 or natVentMethod == 2 or natVentMethod == 3:
+            for schedule in areaSched: 
+                if schedule!=None:
+                    schedule= schedule.upper()
+                
+                if schedule!=None and not schedule.lower().endswith(".csv") and schedule not in HBScheduleList:
+                    msg = "Cannot find " + schedule + " in Honeybee schedule library."
                     print msg
                     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
                     return -1
+                elif schedule!=None and schedule.lower().endswith(".csv"):
+                    # check if csv file is existed
+                    if not os.path.isfile(schedule):
+                        msg = "Cannot find the shchedule file: " + schedule
+                        print msg
+                        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                        return -1
         
         if natVentMethod == 1:
             for zoneCount, HBZone in enumerate(HBObjectsFromHive):
