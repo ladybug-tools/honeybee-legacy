@@ -37,7 +37,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.56\nMAY_28_2015'
+ghenv.Component.Message = 'VER 0.0.56\nMAY_31_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -1093,7 +1093,8 @@ def main(testPts, zoneSrfsMesh, viewVectors, includeOutdoor):
 
 
 #If the HBzone data has not been copied to memory or if the data is old, get it.
-if recallHBHive_ == None: recallHBHive == True
+recallHBHive = True
+if recallHBHive_ == None: pass
 else: recallHBHive = recallHBHive_
 
 start = time.clock()

@@ -91,12 +91,12 @@ Provided by Honeybee 0.0.56
 """
 
 ghenv.Component.Name = "Honeybee_AddEarthtube"
-ghenv.Component.Message = 'VER 0.0.56\nMAY_22_2015'
+ghenv.Component.Message = 'VER 0.0.56\nMAY_31_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
-try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
 
 import scriptcontext as sc
