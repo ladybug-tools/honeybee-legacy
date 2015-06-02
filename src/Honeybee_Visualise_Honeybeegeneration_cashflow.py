@@ -349,8 +349,21 @@ def checktheinputs(_gridElectCostSchedule,_feedInTariffSchedule):
         ghenv.Component.AddRuntimeMessage(w, warn)
         return -1
 
+def _inputDataContainsElectricGenerator(_inputData):
+    
+    """Used to return False if there is no Electric generators in _inputData while return True if there is are - without
+    this function an exception will be raised if there is no Electric generators in _inputData so this function is needed"""
+
+    
+    try:
+        
+        return any('Electric energy produced by the generator system named - ' in data for data in _inputData)
+        
+    except TypeError:
+        return False
+
 # 1. Check if data is being connected from ReadEP_generation_system_results. If so graph these results, if not generate warning
-if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and ('Whole Building:Facility Total Electric Demand Power' in _inputData) and any('Electric energy produced by the generator system named - ' in data for data in _inputData) and ('Generator system financial data' in _inputData):
+if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and ('Whole Building:Facility Total Electric Demand Power' in _inputData) and _inputDataContainsElectricGenerator(_inputData) and ('Generator system financial data' in _inputData):
     
     # 2. First extract and then remove financial data from _inputData
     
