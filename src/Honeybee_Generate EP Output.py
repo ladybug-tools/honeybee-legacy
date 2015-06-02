@@ -15,9 +15,9 @@ Provided by Honeybee 0.0.56
         zoneGainsAndLosses_: Set to "True" to have EnergyPlus solve for building gains and losses such as people gains, solar gains and infiltration losses/gains.
         zoneComfortMetrics_: Set to "True" to have EnergyPlus solve for the mean air temperature, mean radiant temperature, operative temperature, and relative humidity of each zone.
         zoneHVACParams_: Set to "True" to have EnergyPlus solve for the fractions of heating/cooling loads that are latent vs. sensible as well as the the flow rate and temperature of supply air into each zone.
-        surfaceAnalysis_: Set to "True" to have EnergyPlus solve for the interior and exterior surface temperatures of the individual surfaces of each zone.
-        surfaceAnalysis_: Set to "True" to have EnergyPlus solve for the gains and losses through the individual surfaces of each zone.
-        surfaceAnalysis_: Set to "True" to have EnergyPlus solve for the transmitted beam, diffuse, and total solar gain through the individual window surfaces of each zone.
+        surfaceTempAnalysis_: Set to "True" to have EnergyPlus solve for the interior and exterior surface temperatures of the individual surfaces of each zone.
+        surfaceEnergyAnalysis_: Set to "True" to have EnergyPlus solve for the gains and losses through the individual surfaces of each zone.
+        glazingSolarAnalysis_: Set to "True" to have EnergyPlus solve for the transmitted beam, diffuse, and total solar gain through the individual window surfaces of each zone.  These outputs are needed for Energy Shade Benefit Analysis.
         ____________________: ...
         timestep_: Specify a timestep by inputing the words 'hourly', 'daily', 'monthly' or 'annual'.  The default is set to hourly.
     Returns:
@@ -27,7 +27,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Generate EP Output"
 ghenv.Component.NickName = 'EPOutput'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_21_2015'
+ghenv.Component.Message = 'VER 0.0.56\nJUN_02_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -59,6 +59,7 @@ def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, zoneHVACMetrics,
         simulationOutputs.append("Output:Variable,*,Zone Ventilation Fan Electric Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Lights Electric Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Electric Equipment Electric Energy, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Earth Tube Fan Electric Energy, "+ timePeriod)
     
     if zoneGainsAndLosses == True:
         simulationOutputs.append("Output:Variable,*,Zone Windows Total Transmitted Solar Radiation Energy, " + timePeriod)
@@ -75,6 +76,7 @@ def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, zoneHVACMetrics,
         simulationOutputs.append("Output:Variable,*,Zone Air Relative Humidity, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Ventilation Standard Density Volume Flow Rate, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Infiltration Standard Density Volume Flow Rate, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Earth Tube Air Flow Volume, "+ timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Air Heat Balance Internal Convective Heat Gain Rate, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Air Heat Balance Surface Convection Rate, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Air Heat Balance System Air Transfer Rate, " + timePeriod)
@@ -87,6 +89,8 @@ def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, zoneHVACMetrics,
         simulationOutputs.append("Output:Variable,*,System Node Mass Flow Rate, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,System Node Temperature, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,System Node Relative Humidity, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Earth Tube Zone Sensible Cooling Energy, "+ timePeriod)
+        simulationOutputs.append("Output:Variable,*,Earth Tube Zone Sensible Heating Energy, "+ timePeriod)
     
     if surfaceTempAnalysis == True:
         simulationOutputs.append("Output:Variable,*,Surface Outside Face Temperature, " + timePeriod)
@@ -112,13 +116,7 @@ def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, zoneHVACMetrics,
         
         # Electric Load Center Produced Electric Energy [J]
         # These outputs are the sum of electrical energy and power produced by the generators attached to a particular load center. The keywords for these reports are the unique names of ElectricLoadCenter:Distribution objects.
-        
-    if Earthtube_ == True:
-        simulationOutputs.append("Output:Variable,*,Earth Tube Zone Sensible Cooling Energy, "+ timePeriod)
-        simulationOutputs.append("Output:Variable,*,Earth Tube Zone Sensible Heating Energy, "+ timePeriod)
-        simulationOutputs.append("Output:Variable,*,Earth Tube Air Flow Volume, "+ timePeriod)
-        simulationOutputs.append("Output:Variable,*,Earth Tube Fan Electric Energy, "+ timePeriod)
-
+    
     return simulationOutputs
 
 
