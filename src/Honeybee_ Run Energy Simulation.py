@@ -224,7 +224,6 @@ class WriteIDF(object):
         
         for count, coordinates in enumerate(coordinatesList):
 
-            #print surface.name + " ASS NAME HERE"
             str_1 = '\nShading:Building:Detailed,\n' + \
                     '\t' + surface.name + '_' + `count` + ',\t!- Name\n' + \
                     '\t' + scheduleName + ',\t!- Transmittance Schedule Name\n' + \
@@ -1437,7 +1436,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
        
     # Shading Surfaces
     if HBContext and HBContext[0]!=None:
-        print "[2 of 6] Writing context surfaces..."
+        print "[2 of 8] Writing context surfaces..."
         # call the objects from the lib
         shadingPyClasses = hb_hive.callFromHoneybeeHive(HBContext)
         
@@ -1445,7 +1444,6 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         writeHBcontext(shadingPyClasses)
 
     else:
-        print "[2 of 6] No context surfaces..."
         print "[2 of 8] No context surfaces..."
 
         
@@ -1569,7 +1567,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
             HBgeneratoroutputs.append("Output:Variable,*,Facility Net Purchased Electric Energy, hourly;")
             
             HBgeneratoroutputs.append("Output:Variable,*,Facility Total Electric Demand Power, hourly;")
-            print "ass"
+
             HBgeneratortimeperiod = 'hourly'
                 
         if simulationOutputs_ != []:
