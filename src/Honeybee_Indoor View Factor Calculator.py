@@ -15,11 +15,15 @@ Provided by Honeybee 0.0.55
         _HBZones: The HBZones out of any of the HB components that generate or alter zones.  Note that these should ideally be the zones that are fed into the Run Energy Simulation component as surfaces may not align otherwise.  Zones read back into Grasshopper from the Import idf component will not align correctly with the EP Result data.
         gridSize_: A number in Rhino model units to make each cell of the view factor mesh.
         distFromFloorOrSrf_: A number in Rhino model units to set the distance of the view factor mesh from the ground.
+        additionalShading_: Add in additional shading breps here for geometry that is not a part of the zone but can still block direct sunlight to occupants.  Examples include outdoor context shading and indoor furniture.
+        ============: ...
         viewResolution_: An interger between 0 and 4 to set the number of times that the tergenza skyview patches are split.  A higher number will ensure a greater accuracy but will take longer.  The default is set to 0 for a quick calculation.
         removeAirWalls_: Set to "True" to remove air walls from the view factor calculation.  The default is set to "True" sinc you usually want to remove air walls from your view factor calculations.
-        additionalShading_: Add in additional shading breps here for geometry that is not a part of the zone but can still block direct sunlight to occupants.  Examples include outdoor context shading and indoor furniture.
         includeOutdoor_: Set to 'True' to have the final visualization take the parts of the input Srf that are outdoors and color them with temperatures representative of outdoor conditions.  Note that these colors of conditions will only approximate those of the outdoors, showing the assumptions of the Energy model rather than being a perfectly accurate representation of outdoor conditions.  The default is set to 'False' as the inclusion of outdoor conditions can often increase the calculation time.
+        recallHBHive_: Set to "True" to recall the zones from the hive each time the input changes and "False" to simply copy the zones to memory.  Calling the zones from the hive can take some more time but this is necessary if you are making changes to the zones and you want to check them.  Otherwise, if you are performing a parametric run that does not change the geometry, it is nice to set this to "False" for speed.  The default is set to "True" as it's often better to be safe and just recalle the zones.
+        ============: ...
         parallel_: Set to "True" to run the calculation with multiple cores and "False" to run it with a single core.  Multiple cores can increase the speed of the calculation substantially and is recommended if you are not running other big or important processes.  The default is set to "True."
+        _buildMesh: Set boolean to "True" to generate a mesh based on your zones and the input distFromFloorOrSrf_ and gridSize_.  This is a necessary step before calculating view factors from each test point to the surrounding zone surfaces.
         _runIt: Set boolean to "True" to run the component and calculate viewFactors from each test point to surrounding surfaces.
     Returns:
         readMe!: ...
@@ -37,7 +41,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.56\nMAY_31_2015'
+ghenv.Component.Message = 'VER 0.0.56\nJUN_02_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -139,6 +143,17 @@ def copyHBZoneData():
 
 
 def checkTheInputs():
+    #Check to make sure that all connected zones are closed breps.
+    checkData4 = True
+    if _HBZones != []:
+        for closedZone in _HBZones:
+            if closedZone.IsSolid: pass
+            else: checkData4 = False
+    if checkData4 == False:
+        warning = "One or more of your connected HBZones is not a closed brep. Zones must be closed in order to run this component correctly."
+        print warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+    
     #Check the grid size and set a default based on the size of each zone if nothing is connected.
     rhinoModelUnits = str(sc.doc.ModelUnitSystem)
     checkData1 = False
@@ -235,7 +250,7 @@ def checkTheInputs():
     else: includeOutdoor = includeOutdoor_
     
     #Do a final check of everything.
-    if checkData1 == True and checkData2 == True and checkData3 == True:
+    if checkData1 == True and checkData2 == True and checkData3 == True and checkData4 == True:
         checkData = True
     else: checkData = False
     
