@@ -37,7 +37,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.56\nJUN_02_2015'
+ghenv.Component.Message = 'VER 0.0.56\nJUN_03_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nMAY_02_2015
@@ -399,6 +399,16 @@ if _resultFileAddress and gotData == True:
                     
                     elif 'Zone' in column and not "System" in column and not "SYSTEM" in column and not "ZONEHVAC" in column and not "Earth Tube" in column:
                         zoneName = checkZoneOther(dataIndex, (" " + ":".join(column.split(":")[:-1])))
+                        if zoneName != None:
+                            key.append(14)
+                            makeHeaderAlt(otherZoneData, path[columnCount], zoneName, column.split('(')[-1].split(')')[0], column.split(':')[-1].split(' [')[0], column.split('[')[-1].split(']')[0], False)
+                            dataTypeList[17] = True
+                        else:
+                            key.append(-1)
+                            path.append(-1)
+                    
+                    elif 'Zone' in column and "SYSTEM" in column.upper() and not "ZONEHVAC" in column and not "Earth Tube" in column:
+                        zoneName = checkZoneOther(dataIndex, (" " + column.split(" IDEAL")[0]))
                         if zoneName != None:
                             key.append(14)
                             makeHeaderAlt(otherZoneData, path[columnCount], zoneName, column.split('(')[-1].split(')')[0], column.split(':')[-1].split(' [')[0], column.split('[')[-1].split(']')[0], False)
