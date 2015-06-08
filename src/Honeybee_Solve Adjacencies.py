@@ -21,7 +21,7 @@ Provided by Honeybee 0.0.56
 """
 ghenv.Component.Name = "Honeybee_Solve Adjacencies"
 ghenv.Component.NickName = 'solveAdjc'
-ghenv.Component.Message = 'VER 0.0.56\nMAR_22_2015'
+ghenv.Component.Message = 'VER 0.0.56\nJUN_07_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -94,7 +94,7 @@ def updateAdj(surface1, surface2, altConstruction, altBC, tol):
     else:
         surface1.setEPConstruction(altConstruction)
         surface2.setEPConstruction(altConstruction)
-        
+    
     # change bc
     if altBC != None:
         surface2.setBC(altBC.upper())
@@ -133,6 +133,20 @@ def updateAdj(surface1, surface2, altConstruction, altBC, tol):
                     if childSurface1.cenPt.DistanceTo(childSurface2.cenPt) <= tol:
                         childSurface1.BCObject.name = childSurface2.name
                         childSurface2.BCObject.name = childSurface1.name
+                        # change construction
+                        childSurface1.setEPConstruction(surface1.intCnstrSet[5])
+                        childSurface2.setEPConstruction(surface1.intCnstrSet[5])
+                        # change the boundary condition
+                        childSurface1.setBC('SURFACE', True)
+                        childSurface2.setBC('SURFACE', True)
+                        childSurface1.setBCObject(childSurface2)
+                        childSurface2.setBCObject(childSurface1)
+                        # set sun and wind exposure to no exposure
+                        childSurface2.setSunExposure('NoSun')
+                        childSurface1.setSunExposure('NoSun')
+                        childSurface2.setWindExposure('NoWind')
+                        childSurface1.setWindExposure('NoWind')
+                        
                         print 'Interior window ' + childSurface1.BCObject.name + \
                               '\t-> is adjacent to <-\t' + childSurface2.BCObject.name + '.'
         

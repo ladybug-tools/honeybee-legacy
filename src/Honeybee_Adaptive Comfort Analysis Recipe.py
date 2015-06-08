@@ -23,7 +23,7 @@ Provided by Honeybee 0.0.56
         eightyPercentComf_: Set to "True" to have the comfort standard be 80 percent of occupants comfortable and set to "False" to have the comfort standard be 90 percent of all occupants comfortable.  The default is set to "False" for 90 percent, which is what most members of the building industry aim for.  However some projects will occasionally use 90%.
         wellMixedAirOverride_: Set to "True" if you know that your building will have a forced air system with diffusers meant to mix the air as well as possilbe.  This will prevent the calculation from running the air stratification function and instead assume well mixed conditions.  This input can also be a list of 8760 boolean values that represent the hours of the year when a forced air system or ceiling fans are run to mix the air.  The default is set to 'False' to run the stratification calculation for every hour of the year, assuming either no a convection-based heating/cooling system
         inletHeightOverride_: An optional list of float values that match the data tree of view factor meshes and represent the height, in meters, from the bottom of the view factor mesh to the window inlet height.  This will override the default value used in the air stratification calculation, which sets the inlet height in the bottom half of the average glazing height.
-        windowTransmissivity_: An optional decimal value between 0 and 1 that represents the transmissivity of windows around the person.  This can also be a list of 8760 values between 0 and 1 that represents a list of hourly window transmissivties, in order to represent the effect of occupants pulling blinds over the windows, etc. Note that you should only set a value here if you are using this component for indoor analysis where the only means by which sunlight will hit an occupant is if it comes through a window.  The default is set to 0.7, which is the trasmissivity of the default Honeybee glazing construction. 
+        windowShadeFactor_: An optional decimal value between 0 and 1 that represents an additional transmissivity factor to multiply by the transmissivity of the window's glass (1 is no shade and 0 is fully shaded).  This should be used to account for objects such as interior shades when you do not want to connect up a lot of detailed geometry to the "additional shading" input of the view factor component.  This input can also be a list of 8760 values between 0 and 1 that represents a list of hourly window transmissivity factors, in order to represent the effect of occupants pulling blinds over the windows, etc. The default is set to 1, which assumes no additional shading to windows. 
         floorReflectivity_: An optional decimal value between 0 and 1 that represents the fraction of solar radiation reflected off of the ground.  By default, this is set to 0.25, which is characteristic of most indoor floors.  You may want to increase this value for concrete or decrease it for dark carpets.
         clothingAbsorptivity_: An optional decimal value between 0 and 1 that represents the fraction of solar radiation absorbed by the human body. The default is set to 0.7 for (average/brown) skin and average clothing.  You may want to increase this value for darker skin or darker clothing.
     Returns:
@@ -34,7 +34,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Adaptive Comfort Analysis Recipe"
 ghenv.Component.NickName = 'AdaptComfRecipe'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_26_2015'
+ghenv.Component.Message = 'VER 0.0.56\nJUN_07_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -189,21 +189,6 @@ def checkTheInputs():
                 warning = "Not all of the connected " + dataName + " data is for indoor surface temperture."
                 print warning
                 ghenv.Component.AddRuntimeMessage(w, warning)
-            
-            #See if the data is for the whole year.
-            #if header[5] == (1, 1, 1) and header[6] == (12, 31, 24):
-            #    if simStep == 'hourly' or simStep == 'Hourly': pass
-            #    else:
-            #        dataCheck6 = False
-            #        warning = "Simulation data must be hourly."
-            #        print warning
-            #        ghenv.Component.AddRuntimeMessage(w, warning)
-            #else:
-            #    dataCheck6 = False
-            #    warning = "Simulation data must be for the whole year."
-            #    print warning
-            #    ghenv.Component.AddRuntimeMessage(w, warning)
-            
         else:
             dataCheck5 = False
             dataCheck6 == False
@@ -349,9 +334,9 @@ def checkTheInputs():
         for blockList in testPtBlockedVec:
             if blockList != []:
                 if len(blockList[0]) == 145: numSkyPatchDivs = 0
-                elif len(blockList[0]) == 580: numSkyPatchDivs = 1
-                elif len(blockList[0]) == 2320: numSkyPatchDivs = 2
-                elif len(blockList[0]) == 9280: numSkyPatchDivs = 3
+                elif len(blockList[0]) == 577: numSkyPatchDivs = 1
+                elif len(blockList[0]) == 1297: numSkyPatchDivs = 2
+                elif len(blockList[0]) == 2305: numSkyPatchDivs = 3
                 else:
                     checkData12 = False
                     warning = "You have an absurdly high number of view vectors from the 'Indoor View Factor' component such that it is not supported by the current component."
@@ -385,39 +370,39 @@ def checkTheInputs():
     else:
         print 'No value found for cloAbsorptivity_.  The absorptivity will be set to 0.7 for average brown skin and typical clothing.'
     
-    #Check the windowTransmissivity_.
+    #Check the windowShadeFactor_.
     checkData14 = True
     winTrans = []
-    if windowTransmissivity_ != []:
-        if len(windowTransmissivity_) == 8760:
+    if windowShadeFactor_ != []:
+        if len(windowShadeFactor_) == 8760:
             allGood = True
-            for transVal in windowTransmissivity_:
+            for transVal in windowShadeFactor_:
                 transFloat = float(transVal)
                 if transFloat <= 1.0 and transFloat >= 0.0: winTrans.append(transFloat)
                 else: allGood = False
             if allGood == False:
                 checkData14 = False
-                warning = 'windowTransmissivity_ must be a value between 0 and 1.'
+                warning = 'windowShadeFactor_ must be a value between 0 and 1.'
                 print warning
                 ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
-        elif len(windowTransmissivity_) == 1:
-            if windowTransmissivity_[0] <= 1.0 and windowTransmissivity_[0] >= 0.0:
+        elif len(windowShadeFactor_) == 1:
+            if windowShadeFactor_[0] <= 1.0 and windowShadeFactor_[0] >= 0.0:
                 for count in range(8760):
-                    winTrans.append(windowTransmissivity_[0])
+                    winTrans.append(windowShadeFactor_[0])
             else:
                 checkData14 = False
-                warning = 'windowTransmissivity_ must be a value between 0 and 1.'
+                warning = 'windowShadeFactor_ must be a value between 0 and 1.'
                 print warning
                 ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
         else:
             checkData14 = False
-            warning = 'windowTransmissivity_ must be either a list of 8760 values that correspond to hourly changing transmissivity over the year or a single constant value for the whole year.'
+            warning = 'windowShadeFactor_ must be either a list of 8760 values that correspond to hourly changing transmissivity over the year or a single constant value for the whole year.'
             print warning
             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
     else:
         for count in range(8760):
-            winTrans.append(0.7)
-        print 'No value found for windowTransmissivity_.  The window transmissivity will be set to 0.7 for a typical double-glazed window without a low-E coating.'
+            winTrans.append(1)
+        print 'No value found for windowShadeFactor_.  The window transmissivity will be set to 1 assuming no additional shading beyond the window glass transmissivity.'
     
     #Check the inletHeightOverride_.
     inletHeightOverride = []

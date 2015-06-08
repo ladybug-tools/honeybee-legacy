@@ -31,7 +31,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Visualize Annual Comfort Results"
 ghenv.Component.NickName = 'VisualizeComfort'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_12_2015'
+ghenv.Component.Message = 'VER 0.0.56\nJUN_07_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -87,8 +87,6 @@ def checkTheInputs():
         for mesh in viewFactorMesh:
             meshFaceCount.append(mesh.Faces.Count)
         ptLen2 = sum(meshFaceCount)
-        print ptLen1
-        print ptLen2
         if ptLen1 == ptLen2: checkData2 = True
         else:
             meshVertCount = []
@@ -290,7 +288,7 @@ def main(pointValues, viewFactorMesh, dataType, lb_preparation, lb_visualization
     monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
     timeNames = ["1:00", "2:00", "3:00", "4:00", "5:00", "6:00", "7:00", "8:00", "9:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00", "23:00", "24:00"]
     
-    
+    print analysisPeriod
     #If there is an analysis period, format the text for it in the legend title.
     try:
         if len(analysisPeriod_) == 0 or annualData == False:
@@ -302,7 +300,7 @@ def main(pointValues, viewFactorMesh, dataType, lb_preparation, lb_visualization
             endHour = analysisPeriod[1][2]
             if analysisPeriod[0] != analysisPeriod[1]:
                 titleDate = str(monthNames[startMonth-1]) + " " + str(startDay) + " " + str(timeNames[startHour-1]) + " - " + str(monthNames[endMonth-1]) + " " + str(endDay) + " " + str(timeNames[endHour-1])
-            else: titleDate = str(monthNames[startMonth]) + " " + str(startDay) + " " + str(timeNames[startHour-1])
+            else: titleDate = str(monthNames[startMonth-1]) + " " + str(startDay) + " " + str(timeNames[startHour-1])
         else:
             startMonth = analysisPeriod_[0][0]
             endMonth = analysisPeriod_[1][0]

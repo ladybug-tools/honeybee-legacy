@@ -5,9 +5,9 @@
 # under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
 
 """
-Use this component to generate test points within a zone an calculate view factor from each of these points to the other zurfaces in a zone.
+Use this component to generate test points within a zone and calculate the view factor from each of these points to the other zurfaces in a zone as well as the sky.
 _
-This component is a necessary step before creating an MRT map of a zone.
+This component is a necessary step before creating an thermal map of an energy model.
 -
 Provided by Honeybee 0.0.55
     
@@ -41,7 +41,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.56\nJUN_02_2015'
+ghenv.Component.Message = 'VER 0.0.56\nJUN_07_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -66,8 +66,14 @@ w = gh.GH_RuntimeMessageLevel.Warning
 tol = sc.doc.ModelAbsoluteTolerance
 
 def copyHBZoneData():
+    #Make a check for the zones.
     checkZones = True
+    
+    #Calls the zones and the libraries from the hive.
     hb_hive = sc.sticky["honeybee_Hive"]()
+    hb_EPMaterialAUX = sc.sticky["honeybee_EPMaterialAUX"]()
+    
+    #Make lists to be filles
     surfaceNames = []
     srfBreps = []
     zoneBreps = []
@@ -78,68 +84,104 @@ def copyHBZoneData():
     zoneNatVentArea = []
     zoneVolumes = []
     srfAirWallAdjList = []
+    windowSrfTransmiss = []
+    srfInteriorWindowList = []
+    srfIntWindowAdjList = []
+    modelHasIntWindows = False
     
     for zoneCount, HZone in enumerate(_HBZones):
+        #Append lists to be filled.
         surfaceNames.append([])
         srfBreps.append([])
         srfTypes.append([])
         srfInteriorList.append([])
         srfAirWallAdjList.append([])
+        srfInteriorWindowList.append([])
+        srfIntWindowAdjList.append([])
+        windowSrfTransmiss.append([])
         zoneBreps.append(HZone)
         zoneCentPts.append(HZone.GetBoundingBox(False).Center)
+        
+        #Copy some of the basic zone properties.
         zone = hb_hive.callFromHoneybeeHive([HZone])[0]
         zoneNames.append(zone.name)
         zoneNatVentArea.append(zone.windowOpeningArea)
         zoneVolumes.append(zone.getZoneVolume())
         
+        #Copy surface properties, including the adjacencies.
         for srf in zone.surfaces:
             surfaceNames[zoneCount].append(srf.name)
             srfTypes[zoneCount].append(srf.type)
             if srf.BC.lower() == "surface":
                 if srf.type == 4:
-                    try:
-                        srfInteriorList[zoneCount].append(str(srf.BCObject).split('\n')[0].split(': ')[-1])
-                        srfAirWallAdjList[zoneCount].append(str(srf.BCObject.parent).split('\n')[0].split(': ')[-1])
-                    except:
-                        checkZones = False
-                        warning = "Connected zones contain an outdoor airwall, which is currently not supported by this workflow."
-                        print warning
-                        ghenv.Component.AddRuntimeMessage(w, warning)
+                    srfInteriorList[zoneCount].append(str(srf.BCObject).split('\n')[0].split(': ')[-1])
+                    srfAirWallAdjList[zoneCount].append(str(srf.BCObject.parent).split('\n')[0].split(': ')[-1])
+                    srfInteriorWindowList[zoneCount].append(str(srf.BCObject).split('\n')[0].split(': ')[-1])
+                    srfIntWindowAdjList[zoneCount].append(str(srf.BCObject.parent).split('\n')[0].split(': ')[-1])
                 else:
                     srfInteriorList[zoneCount].append(None)
                     srfAirWallAdjList[zoneCount].append(str(srf.BCObject.parent).split('\n')[0].split(': ')[-1])
+                    srfInteriorWindowList[zoneCount].append(None)
+                    srfIntWindowAdjList[zoneCount].append(str(srf.BCObject.parent).split('\n')[0].split(': ')[-1])
             else:
                 srfInteriorList[zoneCount].append(None)
                 srfAirWallAdjList[zoneCount].append(None)
+                srfInteriorWindowList[zoneCount].append(None)
+                srfIntWindowAdjList[zoneCount].append(None)
             if srf.hasChild:
                 srfBreps[zoneCount].append(srf.punchedGeometry)
+                windowSrfTransmiss[zoneCount].append(0)
                 for srfCount, childSrf in enumerate(srf.childSrfs):
                     srfTypes[zoneCount].append(childSrf.type)
                     surfaceNames[zoneCount].append(childSrf.name)
                     srfBreps[zoneCount].append(childSrf.geometry)
-                    if srf.type == 0 and srf.BC.lower() == "surface":
-                        srfInteriorList[zoneCount].append(str(srf.BCObject).split('\n')[0].split(': ')[-1] + '_glz_' + str(srfCount))
+                    
+                    #Calculate the transmissivity of the window from the construction material properties.
+                    windowCnstr = childSrf.EPConstruction
+                    windowLayers = hb_EPMaterialAUX.decomposeEPCnstr(windowCnstr.upper())[0]
+                    winTrans = 1
+                    for layer in windowLayers:
+                        propNumbers = hb_EPMaterialAUX.decomposeMaterial(layer.upper(), ghenv.Component)[0]
+                        if 'WindowMaterial:Glazing' in propNumbers[0]:
+                            winTrans = winTrans*float(propNumbers[4])
+                        elif 'WindowMaterial:SimpleGlazingSystem' in propNumbers[0]:
+                            winTrans = winTrans*float(propNumbers[2])
+                    windowSrfTransmiss[zoneCount].append(winTrans)
+                    
+                    if srf.BC.lower() == "surface":
+                        modelHasIntWindows = True
+                        srfInteriorList[zoneCount].append(None)
                         srfAirWallAdjList[zoneCount].append(None)
+                        srfInteriorWindowList[zoneCount].append(str(srf.BCObject).split('\n')[0].split(': ')[-1])
+                        srfIntWindowAdjList[zoneCount].append(str(srf.BCObject.parent).split('\n')[0].split(': ')[-1])
                     else:
                         srfInteriorList[zoneCount].append(None)
                         srfAirWallAdjList[zoneCount].append(None)
+                        srfInteriorWindowList[zoneCount].append(None)
+                        srfIntWindowAdjList[zoneCount].append(None)
             else:
                 srfBreps[zoneCount].append(srf.geometry)
+                windowSrfTransmiss[zoneCount].append(0)
     
-    #Change the list of adjacent zones to be based on the list item of the zone
-    srfAirWallAdjNumList = []
-    for srfListCount, zoneSrfList in enumerate(srfAirWallAdjList):
-        srfAirWallAdjNumList.append([])
-        for surface in zoneSrfList:
-            foundZone = False
-            for zoneCount, zoneName in enumerate(zoneNames):
-                if surface == zoneName:
-                    srfAirWallAdjNumList[srfListCount].append(zoneCount)
-                    foundZone = True
-            if foundZone == False:
-                srfAirWallAdjNumList[srfListCount].append(None)
+    #Change the list of adjacent zones to be based on the list item of the zone instead of the name of the zone.
+    def changeName2Num(theAdjNameList):
+        adjNumList = []
+        for srfListCount, zoneSrfList in enumerate(theAdjNameList):
+            adjNumList.append([])
+            for surface in zoneSrfList:
+                foundZone = False
+                for zoneCount, zoneName in enumerate(zoneNames):
+                    if surface == zoneName:
+                        adjNumList[srfListCount].append(zoneCount)
+                        foundZone = True
+                if foundZone == False:
+                    adjNumList[srfListCount].append(None)
+        return adjNumList
     
-    sc.sticky["Honeybee_ViewFacotrSrfData"] = [zoneBreps, surfaceNames, srfBreps, zoneCentPts, srfTypes, srfInteriorList, zoneNames, zoneNatVentArea, zoneVolumes, srfAirWallAdjNumList, checkZones]
+    srfAirWallAdjNumList = changeName2Num(srfAirWallAdjList)
+    srfIntWindowAdjNumList = changeName2Num(srfIntWindowAdjList)
+    
+    sc.sticky["Honeybee_ViewFacotrSrfData"] = [zoneBreps, surfaceNames, srfBreps, zoneCentPts, srfTypes, srfInteriorList, zoneNames, zoneNatVentArea, zoneVolumes, srfAirWallAdjNumList, checkZones, windowSrfTransmiss, modelHasIntWindows, srfInteriorWindowList, srfIntWindowAdjNumList]
 
 
 def checkTheInputs():
@@ -321,7 +363,10 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
     zoneNatVentArea = hb_zoneData[7]
     zoneVolumes = hb_zoneData[8]
     srfAirWallAdjList = hb_zoneData[9]
-    
+    windowSrfTransmiss = hb_zoneData[11]
+    modelHasIntWindows = hb_zoneData[12]
+    srfInteriorWindowList = hb_zoneData[13]
+    srfIntWindowAdjNumList = hb_zoneData[14]
     
     #Make copies of the original zones in the event that some are combined as air walls are removed.
     oldZoneBreps = zoneBreps[:]
@@ -339,12 +384,15 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
     zoneSrfsMesh = []
     zoneWires = []
     zoneOpaqueMesh = []
+    zoneWindowMesh = []
+    zoneWindowTransmiss = []
     zoneHasWindows = []
     zoneWeights = []
     zoneInletParams = []
     zoneBrepsNonSolid = []
+    continuousDaylitVols = []
     
-    #Make lists to keep track of all deleted faces to use if there are some parts of the connected surface that lite completely outside of the zone.
+    #Make lists to keep track of all deleted faces to use if there are some parts of the connected surface that lie completely outside of the zone.
     allDeletedFaces = []
     deletedFaceBreps = []
     deletedTestPts = []
@@ -386,82 +434,100 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
         newZoneSrfs = []
         newZoneSrfTypes = []
         newZoneSolidSrfs = []
+        newWindowSrfTransmiss = []
+        newSrfIntWindowAdjNumList = []
         
-        adjacentList = []
-        totalAdjList = []
-        
-        for zoneCount, srfList in enumerate(zoneSrfs):
-            if allSame(srfInteriorList[zoneCount]) == False:
-                for srfCount, srf in enumerate(srfList):
-                    if srfInteriorList[zoneCount][srfCount] != None:
-                        if len(adjacentList) == 0:
-                            adjacentList.append([zoneCount])
-                        else:
-                            #Find the adjacent zone.
-                            adjSrf = srfInteriorList[zoneCount][srfCount]
-                            for zoneCount2, srfList in enumerate(surfaceNames):
-                                for srfName in srfList:
-                                    if adjSrf == srfName: adjZone = zoneCount2
-                            
-                            #Have a value to keep trak of whether a match has been found for a zone.
-                            matchFound = False
-                            
-                            #Check the current adjacencies list to find out where to place the zone.
-                            for zoneAdjListCount, zoneAdjList in enumerate(adjacentList):
-                                #Maybe we already have both of the zones as adjacent.
-                                if zoneCount in zoneAdjList and adjZone in zoneAdjList:
-                                    matchFound = True
-                                #If we have the zone but not the adjacent zone, append it to the list.
-                                elif zoneCount in zoneAdjList and adjZone not in zoneAdjList:
-                                    adjacentList[zoneAdjListCount].append(adjZone)
-                                    matchFound = True
-                                #If we have the adjacent zone but not the zone itself, append it to the list.
-                                elif zoneCount not in zoneAdjList and adjZone in zoneAdjList:
-                                    adjacentList[zoneAdjListCount].append(zoneCount)
-                                    matchFound = True
-                                else: pass
-                            
-                            #If no match was found, start a new list.
-                            if matchFound == False:
+        #Write a function that solves for the connections in a network of zones (needed to identify air wall and interior window networks).
+        def FindAdjNetwork(adjDataTree):
+            adjacentList = []
+            totalAdjList = []
+            
+            for zoneCount, srfList in enumerate(zoneSrfs):
+                if allSame(adjDataTree[zoneCount]) == False:
+                    for srfCount, srf in enumerate(srfList):
+                        if adjDataTree[zoneCount][srfCount] != None:
+                            if len(adjacentList) == 0:
                                 adjacentList.append([zoneCount])
-            else:
-                #The zone is not adjacent to any other zones so we will put it in its own list.
-                adjacentList.append([zoneCount])
-        
-        
-        #Remove duplicates found in the process of looking for adjacencies.
-        fullAdjacentList = []
-        newAjdacenList = []
-        for listCount, zoneList in enumerate(adjacentList):
-            good2Go = True
-            listCheck = []
-            notAccountedForCheck = []
+                            else:
+                                #Find the adjacent zone.
+                                adjSrf = adjDataTree[zoneCount][srfCount]
+                                for zoneCount2, srfList in enumerate(surfaceNames):
+                                    for srfName in srfList:
+                                        if adjSrf == srfName: adjZone = zoneCount2
+                                
+                                #Have a value to keep track of whether a match has been found for a zone.
+                                matchFound = False
+                                
+                                #Check the current adjacencies list to find out where to place the zone.
+                                for zoneAdjListCount, zoneAdjList in enumerate(adjacentList):
+                                    #Maybe we already have both of the zones as adjacent.
+                                    if zoneCount in zoneAdjList and adjZone in zoneAdjList:
+                                        matchFound = True
+                                    #If we have the zone but not the adjacent zone, append it to the list.
+                                    elif zoneCount in zoneAdjList and adjZone not in zoneAdjList:
+                                        adjacentList[zoneAdjListCount].append(adjZone)
+                                        matchFound = True
+                                    #If we have the adjacent zone but not the zone itself, append it to the list.
+                                    elif zoneCount not in zoneAdjList and adjZone in zoneAdjList:
+                                        adjacentList[zoneAdjListCount].append(zoneCount)
+                                        matchFound = True
+                                    else: pass
+                                
+                                #If no match was found, start a new list.
+                                if matchFound == False:
+                                    adjacentList.append([zoneCount])
+                else:
+                    #The zone is not adjacent to any other zones so we will put it in its own list.
+                    adjacentList.append([zoneCount])
             
-            #Check if the zones are already accounted for
-            for zoneNum in zoneList:
-                if zoneNum in fullAdjacentList: listCheck.append(zoneNum)
-                else: notAccountedForCheck.append(zoneNum)
             
-            if len(listCheck) == len(zoneList):
-                #All zones in the list are already accounted for.
-                good2Go = False
+            #Remove duplicates found in the process of looking for adjacencies.
+            fullAdjacentList = []
+            newAjdacenList = []
+            for listCount, zoneList in enumerate(adjacentList):
+                good2Go = True
+                listCheck = []
+                notAccountedForCheck = []
+                
+                #Check if the zones are already accounted for
+                for zoneNum in zoneList:
+                    if zoneNum in fullAdjacentList: listCheck.append(zoneNum)
+                    else: notAccountedForCheck.append(zoneNum)
+                
+                if len(listCheck) == len(zoneList):
+                    #All zones in the list are already accounted for.
+                    good2Go = False
+                
+                if good2Go == True and len(listCheck) == 0:
+                    #All of the zones in the list are not yet accounted for.
+                    newAjdacenList.append(zoneList)
+                    fullAdjacentList.extend(adjacentList[listCount])
+                elif good2Go == True:
+                    #Find the existing zone list that contains the duplicates and append the non-duplicates to the list.
+                    for val in listCheck:
+                        for existingListCount, existingList in enumerate(newAjdacenList):
+                            if val in existingList: thisIsTheList = existingListCount
+                    newAjdacenList[thisIsTheList].extend(notAccountedForCheck)
+                    fullAdjacentList.extend(notAccountedForCheck)
             
-            if good2Go == True and len(listCheck) == 0:
-                #All of the zones in the list are not yet accounted for.
-                newAjdacenList.append(zoneList)
-                fullAdjacentList.extend(adjacentList[listCount])
-            elif good2Go == True:
-                #Find the existing zone list that contains the duplicates and append the non-duplicates to the list.
-                for val in listCheck:
-                    for existingListCount, existingList in enumerate(newAjdacenList):
-                        if val in existingList: thisIsTheList = existingListCount
-                newAjdacenList[thisIsTheList].extend(notAccountedForCheck)
-                fullAdjacentList.extend(notAccountedForCheck)
-        
-        adjacentList = newAjdacenList
+            return newAjdacenList
         
         
-        #Get all of the data of the new zone together.
+        #Calculate the air wall adjacencies.
+        adjacentList = FindAdjNetwork(srfInteriorList)
+        
+        #If there are interior windows, use the AdjNetwork function to find the continuously daylit spaces.
+        finaldaylitAdjList = []
+        if modelHasIntWindows ==  True:
+            daylitAdjList = FindAdjNetwork(srfInteriorWindowList)
+            for airCount, airAdjList in enumerate(adjacentList):
+                finaldaylitAdjList.append([])
+                for windowList in daylitAdjList:
+                    for airCount2, airAdjList2 in enumerate(adjacentList):
+                        if airAdjList2[0] in windowList: finaldaylitAdjList[airCount].append(airCount2)
+        
+        
+        #Create a new "super zone" from the zones that are continuously connected by air walls.
         for listCount, list in enumerate(adjacentList):
             listMarker = len(newSurfaceNames)
             newSurfaceNames.append([])
@@ -469,19 +535,24 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
             newZoneSolidSrfs.append([])
             newZoneSrfTypes.append([])
             zoneBrepsNonSolid.append([])
+            newWindowSrfTransmiss.append([])
+            newSrfIntWindowAdjNumList.append([])
             
             for zoneCount in list:
                 for srfCount, surface in enumerate(zoneSrfs[zoneCount]):
-                    
                     if srfInteriorList[zoneCount][srfCount] == None and srfAirWallAdjList[zoneCount][srfCount] not in list:
                         newZoneSolidSrfs[listMarker].append(surface)
                         newZoneSrfs[listMarker].append(surface)
                         newSurfaceNames[listMarker].append(surfaceNames[zoneCount][srfCount])
                         newZoneSrfTypes[listMarker].append(zoneSrfTypes[zoneCount][srfCount])
+                        newWindowSrfTransmiss[listMarker].append(windowSrfTransmiss[zoneCount][srfCount])
+                        newSrfIntWindowAdjNumList[listMarker].append(srfIntWindowAdjNumList[zoneCount][srfCount])
                     elif srfInteriorList[zoneCount][srfCount] == None and srfAirWallAdjList[zoneCount][srfCount] in list:
                         newZoneSrfs[listMarker].append(surface)
                         newSurfaceNames[listMarker].append(surfaceNames[zoneCount][srfCount])
                         newZoneSrfTypes[listMarker].append(zoneSrfTypes[zoneCount][srfCount])
+                        newWindowSrfTransmiss[listMarker].append(windowSrfTransmiss[zoneCount][srfCount])
+                        newSrfIntWindowAdjNumList[listMarker].append(srfIntWindowAdjNumList[zoneCount][srfCount])
             
             joinedBrep = rc.Geometry.Brep.JoinBreps(newZoneSolidSrfs[listMarker], tol)
             
@@ -493,6 +564,8 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
         surfaceNames = newSurfaceNames
         zoneSrfs = newZoneSrfs
         zoneSrfTypes = newZoneSrfTypes
+        windowSrfTransmiss = newWindowSrfTransmiss
+        srfIntWindowAdjNumList = newSrfIntWindowAdjNumList
     
     #Make sure that the zone volumes are closed.
     for brepCount, brep in enumerate(zoneBreps):
@@ -790,7 +863,7 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                         for weight in initPointWeights:
                             zoneWeights[falseZoneCount][pointCount].append(weight/sum(initPointWeights))
         else:
-            #For each of the test points, give them a weight of 1 based on which zone they belong to.
+            #For each of the test points, give them a weight totalling to 1 based on which zone they belong to.
             for falseZoneCount, falseZone in enumerate(testPts):
                 if sectionMethod != 0 and includeOutdoor == True:
                     if falseZoneCount != len(testPts)-1:
@@ -838,7 +911,7 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
             zoneGlzMesh = rc.Geometry.Mesh()
             glzTracker = 0
             for srfCt, srf in enumerate(oldZoneSrfs[orignalZoneCount]):
-                if oldZoneSrfTypes[orignalZoneCount][srfCt] == 5:
+                if oldZoneSrfTypes[orignalZoneCount][srfCt] == 5 and oldZoneSrfTypes[orignalZoneCount][srfCt-1] == 0:
                     zoneGlzMesh.Append(rc.Geometry.Mesh.CreateFromBrep(srf, srfMeshPar)[0])
                     glzTracker += 1
             if glzTracker != 0:
@@ -858,14 +931,20 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                 if val != None: opGlzArea += float(val)
             zoneInletParams[orignalZoneCount].append(opGlzArea)
         
-        # Pull out the geometry that can block sun vectors.
+        
+        # Pull out the geometry that can block sun vectors for the solar adjusted MRT calculation.
         for zCount, zoneSrfTList in enumerate(zoneSrfTypes):
             zoneOpaqueMesh.append([])
+            zoneWindowMesh.append([])
+            zoneWindowTransmiss.append([])
+            
+            #First add in any additional shading to the list.
             if additionalShading_ != []:
                 for item in additionalShading_:
                     opaqueMesh = rc.Geometry.Mesh.CreateFromBrep(item, rc.Geometry.MeshingParameters.Coarse)[0]
                     zoneOpaqueMesh[zCount].append(opaqueMesh)
             
+            #Now, pull out all of the zones opaque and transparent geometry.
             hasWindows = 0
             for sCount, srfT in enumerate(zoneSrfTList):
                 if srfT != 5:
@@ -873,7 +952,24 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                     zoneOpaqueMesh[zCount].append(opaqueMesh)
                 else:
                     hasWindows = 1
+                    windowMesh = rc.Geometry.Mesh.CreateFromBrep(zoneSrfs[zCount][sCount], rc.Geometry.MeshingParameters.Coarse)[0]
+                    zoneWindowMesh[zCount].append(windowMesh)
+                    zoneWindowTransmiss[zCount].append(windowSrfTransmiss[zCount][sCount])
             zoneHasWindows.append(hasWindows)
+            
+            #If there are interior windows, be sure to add the geometry of the other contiuously lit zones to the opaque and window geometry lists.
+            if modelHasIntWindows ==  True:
+                for contLightCount, contLightZone in enumerate(finaldaylitAdjList[zCount]):
+                    if contLightZone != zCount:
+                        for sCount2, srfT2 in enumerate(zoneSrfTypes[contLightZone]):
+                            if srfT2 != 5:
+                                opaqueMesh = rc.Geometry.Mesh.CreateFromBrep(zoneSrfs[contLightZone][sCount2], rc.Geometry.MeshingParameters.Coarse)[0]
+                                zoneOpaqueMesh[zCount].append(opaqueMesh)
+                            elif srfIntWindowAdjNumList[contLightZone][sCount2] != None: pass
+                            else:
+                                windowMesh = rc.Geometry.Mesh.CreateFromBrep(zoneSrfs[contLightZone][sCount2], rc.Geometry.MeshingParameters.Coarse)[0]
+                                zoneWindowMesh[zCount].append(windowMesh)
+                                zoneWindowTransmiss[zCount].append(windowSrfTransmiss[contLightZone][sCount2])
         
         #If there are outdoor points included in the calculation, add them to the zoneOpaqueMesh.
         if sectionMethod != 0 and includeOutdoor == True:
@@ -883,13 +979,14 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                     zoneOpaqueMeshOutdoor.append(opaqueMesh)
             
             zoneOpaqueMesh.append(zoneOpaqueMeshOutdoor)
-            zoneHasWindows.append(1)
+            zoneHasWindows.append(2)
+            zoneWindowMesh.append([])
+            zoneWindowTransmiss.append([])
         
         
-        
-        return geoCheck, testPts, MRTMeshBreps, MRTMeshInit, zoneWires, zoneSrfsMesh, surfaceNames, zoneOpaqueMesh, zoneNames, zoneWeights, heightWeights, zoneInletParams, zoneHasWindows, zoneBrepsNonSolid, includeOutdoor
+        return geoCheck, testPts, MRTMeshBreps, MRTMeshInit, zoneWires, zoneSrfsMesh, surfaceNames, zoneOpaqueMesh, zoneNames, zoneWeights, heightWeights, zoneInletParams, zoneHasWindows, zoneBrepsNonSolid, includeOutdoor, zoneWindowMesh, zoneWindowTransmiss
     else:
-        return geoCheck, testPts, MRTMeshBreps, MRTMeshInit, zoneWires, zoneSrfsMesh, surfaceNames, zoneOpaqueMesh, zoneNames, zoneWeights, [], zoneInletParams, zoneHasWindows, zoneBrepsNonSolid, includeOutdoor
+        return geoCheck, testPts, MRTMeshBreps, MRTMeshInit, zoneWires, zoneSrfsMesh, surfaceNames, zoneOpaqueMesh, zoneNames, zoneWeights, [], zoneInletParams, zoneHasWindows, zoneBrepsNonSolid, includeOutdoor, zoneWindowMesh, zoneWindowTransmiss
 
 def checkViewResolution(viewResolution, lb_preparation):
     newVecs = []
@@ -950,7 +1047,7 @@ def parallel_projection(zoneSrfsMesh, viewVectors, pointList):
     return pointIntList
 
 
-def parallel_skyProjection(zoneOpaqueMesh, skyViewVecs, pointList):
+def parallel_skyProjection(zoneOpaqueMesh, skyViewVecs, pointList, zoneWindowMesh, zoneWindowTransmiss, zoneHasWindows):
     #Placeholder for the outcome of the parallel projection.
     pointIntList = []
     skyBlockedList = []
@@ -985,8 +1082,17 @@ def parallel_skyProjection(zoneOpaqueMesh, skyViewVecs, pointList):
                 finalIntersectList[listCt].append(intersect)
         
         finalViewCount = []
-        for rayList in finalIntersectList:
-            if sum(rayList) == 0: finalViewCount.append(1)
+        for rayListCount, rayList in enumerate(finalIntersectList):
+            if sum(rayList) == 0:
+                if zoneHasWindows == 2: finalViewCount.append(1)
+                else:
+                    transmiss = 1
+                    for winCount, winMesh in enumerate(zoneWindowMesh):
+                        intersect = rc.Geometry.Intersect.Intersection.MeshRay(winMesh, pointRays[rayListCount])
+                        if intersect == -1: pass
+                        else:
+                            transmiss = transmiss * zoneWindowTransmiss[winCount]
+                    finalViewCount.append(transmiss)
             else: finalViewCount.append(0)
         
         #Sum up the lists and divide by the total rays to get the view factor.
@@ -1004,14 +1110,14 @@ def checkOutdoorViewFac(outdoorTestPtViewFactor):
     return outdoorNonSrfViewFac
 
 
-def skyViewCalc(testPts, zoneOpaqueMesh, skyViewVecs, zoneHasWindows):
+def skyViewCalc(testPts, zoneOpaqueMesh, skyViewVecs, zoneHasWindows, zoneWindowMesh, zoneWindowTransmiss):
     testPtSkyView = []
     testPtSkyBlockedList = []
     
     for zoneCount, pointList in enumerate(testPts):
-        if zoneHasWindows[zoneCount] == True:
+        if zoneHasWindows[zoneCount] > 0:
             if parallel_ == True or parallel_ == None:
-                skyViewFactors, skyBlockedList = parallel_skyProjection(zoneOpaqueMesh[zoneCount], skyViewVecs, testPts[zoneCount])
+                skyViewFactors, skyBlockedList = parallel_skyProjection(zoneOpaqueMesh[zoneCount], skyViewVecs, testPts[zoneCount], zoneWindowMesh[zoneCount], zoneWindowTransmiss[zoneCount], zoneHasWindows[zoneCount])
                 testPtSkyView.append(skyViewFactors)
                 testPtSkyBlockedList.append(skyBlockedList)
             else:
@@ -1031,8 +1137,7 @@ def skyViewCalc(testPts, zoneOpaqueMesh, skyViewVecs, zoneHasWindows):
                         pointIntersectList.append([])
                         for srf in zoneOpaqueMesh[zoneCount]:
                             intersect = rc.Geometry.Intersect.Intersection.MeshRay(srf, ray)
-                            if intersect == -1:
-                                pointIntersectList[rayCount].append(0)
+                            if intersect == -1: pointIntersectList[rayCount].append(0)
                             else: pointIntersectList[rayCount].append(1)
                     
                     #See if the ray passed all of the context meshes.
@@ -1044,9 +1149,21 @@ def skyViewCalc(testPts, zoneOpaqueMesh, skyViewVecs, zoneHasWindows):
                             finalIntersectList[listCt].append(intersect)
                     
                     finalViewCount = []
-                    for rayList in finalIntersectList:
-                        if sum(rayList) == 0: finalViewCount.append(1)
-                        else: finalViewCount.append(0)
+                    for rayListCount, rayList in enumerate(finalIntersectList):
+                        if sum(rayList) == 0:
+                            if zoneHasWindows[zoneCount] == 2: finalViewCount.append(1) #This is the code to indicate that the point is outside and there is no need to calculate a window transmissivity.
+                            else:
+                                #The ray is not blocked but it is hitting a window and so we need to factor in the window transmissivity.
+                                transmiss = 1
+                                for winCount, winMesh in enumerate(zoneWindowMesh[zoneCount]):
+                                    intersect = rc.Geometry.Intersect.Intersection.MeshRay(winMesh, pointRays[rayListCount])
+                                    if intersect == -1: pass
+                                    else:
+                                        transmiss = transmiss * zoneWindowTransmiss[zoneCount][winCount]
+                                finalViewCount.append(transmiss)
+                        else:
+                            #The ray has been blocked by an opaque surface.
+                            finalViewCount.append(0)
                     
                     #Sum up the lists and divide by the total rays to get the view factor.
                     testPtSkyBlockedList[zoneCount].append(finalViewCount)
@@ -1170,7 +1287,7 @@ if checkData == True and buildMesh == True:
     start = time.clock()
     goodGeo = prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBreps, includeOutdoor, hb_zoneData)
     if goodGeo != -1:
-        geoCheck, testPtsInit, viewFactorBrep, viewFactorMeshActual, zoneWireFrame, zoneSrfsMesh, zoneSrfNames, zoneOpaqueMesh, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, zoneHasWindows, zoneBrepsNonSolid, includeOutdoor = goodGeo
+        geoCheck, testPtsInit, viewFactorBrep, viewFactorMeshActual, zoneWireFrame, zoneSrfsMesh, zoneSrfNames, zoneOpaqueMesh, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, zoneHasWindows, zoneBrepsNonSolid, includeOutdoor, zoneWindowMesh, zoneWindowTransmiss = goodGeo
     total_ms = time.clock() - start
     
     #Unpack the data trees of test pts and mesh breps so that the user can see them and get a sense of what to expect from the view factor calculation.
@@ -1195,7 +1312,7 @@ if checkData == True and _runIt == True and geoCheck == True and buildMesh == Tr
     start = time.clock()
     viewVectors, skyViewVecs = checkViewResolution(viewResolution, lb_preparation)
     testPtViewFactor = main(testPtsInit, zoneSrfsMesh, viewVectors, includeOutdoor)
-    testPtSkyView, testPtBlockedVec = skyViewCalc(testPtsInit, zoneOpaqueMesh, skyViewVecs, zoneHasWindows)
+    testPtSkyView, testPtBlockedVec = skyViewCalc(testPtsInit, zoneOpaqueMesh, skyViewVecs, zoneHasWindows, zoneWindowMesh, zoneWindowTransmiss)
     
     outdoorNonSrfViewFac = []
     if sectionMethod != 0 and includeOutdoor == True:
