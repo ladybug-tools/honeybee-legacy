@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Generate EP Output"
 ghenv.Component.NickName = 'EPOutput'
-ghenv.Component.Message = 'VER 0.0.56\nJUN_07_2015'
+ghenv.Component.Message = 'VER 0.0.56\nJUN_08_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -80,6 +80,7 @@ def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, zoneHVACMetrics,
     if comfortMapVariables_ == True:
         simulationOutputs.append("Output:Variable,*,Zone Ventilation Standard Density Volume Flow Rate, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Infiltration Standard Density Volume Flow Rate, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Zone Mechanical Ventilation Standard Density Volume Flow Rate, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Earth Tube Air Flow Volume, "+ timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Air Heat Balance Internal Convective Heat Gain Rate, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Air Heat Balance Surface Convection Rate, " + timePeriod)

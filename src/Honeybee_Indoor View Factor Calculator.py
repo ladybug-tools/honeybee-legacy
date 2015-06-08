@@ -41,7 +41,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.56\nJUN_07_2015'
+ghenv.Component.Message = 'VER 0.0.56\nJUN_08_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -372,6 +372,7 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
     oldZoneBreps = zoneBreps[:]
     oldZoneSrfs = zoneSrfs[:]
     oldZoneSrfTypes = zoneSrfTypes[:]
+    oldSrfInteriorWindowList = srfInteriorWindowList[:]
     
     #Set meshing parameters to be used throughout the function.
     srfMeshPar = rc.Geometry.MeshingParameters.Coarse
@@ -386,11 +387,13 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
     zoneOpaqueMesh = []
     zoneWindowMesh = []
     zoneWindowTransmiss = []
+    zoneWindowNames = []
     zoneHasWindows = []
     zoneWeights = []
     zoneInletParams = []
     zoneBrepsNonSolid = []
     continuousDaylitVols = []
+    outdoorPtHeightWeights = []
     
     #Make lists to keep track of all deleted faces to use if there are some parts of the connected surface that lie completely outside of the zone.
     allDeletedFaces = []
@@ -812,7 +815,7 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
             surfaceNames.append(surfaceNamesOutdoor)
         
         
-        #Make a list for the weighting of each zone value.
+        #Make a list for the weighting of each zone value for the air temperature calculation.
         zoneWeights = []
         heightWeights = []
         for falseZoneCount, falseZone in enumerate(testPts):
@@ -835,7 +838,7 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                 centPt = rc.Geometry.VolumeMassProperties.Compute(oirignalZone).Centroid
                 zoneCentroids.append(centPt)
             
-            #For each of the test points, weight them based on which zone they belong to.
+            #For each of the test points, weight them based on the zone they belong to.
             for falseZoneCount, falseZone in enumerate(testPts):
                 if sectionMethod != 0 and includeOutdoor == True:
                     if falseZoneCount != len(testPts)-1:
@@ -907,11 +910,11 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
             zoneInletParams[orignalZoneCount].append(zoneBB.Min.Z)
             zoneInletParams[orignalZoneCount].append(zoneBB.Max.Z)
             
-            #Calculate the height from the floor to the window mid-plane
+            #Calculate the heights from the floor to the window mid-plane (do this only for the windows along the walls and for exterior windows).
             zoneGlzMesh = rc.Geometry.Mesh()
             glzTracker = 0
             for srfCt, srf in enumerate(oldZoneSrfs[orignalZoneCount]):
-                if oldZoneSrfTypes[orignalZoneCount][srfCt] == 5 and oldZoneSrfTypes[orignalZoneCount][srfCt-1] == 0:
+                if oldZoneSrfTypes[orignalZoneCount][srfCt] == 5 and oldZoneSrfTypes[orignalZoneCount][srfCt-1] == 0 and oldSrfInteriorWindowList[orignalZoneCount][srfCt] == None:
                     zoneGlzMesh.Append(rc.Geometry.Mesh.CreateFromBrep(srf, srfMeshPar)[0])
                     glzTracker += 1
             if glzTracker != 0:
@@ -919,7 +922,7 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                 glzMinHeight = glzBB.Min.Z
                 glzCentPt = rc.Geometry.AreaMassProperties.Compute(zoneGlzMesh).Centroid
                 glzMidHeight = glzCentPt.Z
-                zoneInletParams[orignalZoneCount].append(glzMidHeight - glzMinHeight)
+                zoneInletParams[orignalZoneCount].append((glzMidHeight + glzMinHeight)/2) #Take the average height of the lower half of the glazing.
             else: zoneInletParams[orignalZoneCount].append(None)
             
             #Get the volume of each zone.
@@ -937,6 +940,7 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
             zoneOpaqueMesh.append([])
             zoneWindowMesh.append([])
             zoneWindowTransmiss.append([])
+            zoneWindowNames.append([])
             
             #First add in any additional shading to the list.
             if additionalShading_ != []:
@@ -955,21 +959,39 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                     windowMesh = rc.Geometry.Mesh.CreateFromBrep(zoneSrfs[zCount][sCount], rc.Geometry.MeshingParameters.Coarse)[0]
                     zoneWindowMesh[zCount].append(windowMesh)
                     zoneWindowTransmiss[zCount].append(windowSrfTransmiss[zCount][sCount])
+                    zoneWindowNames[zCount].append(surfaceNames[zCount][sCount])
             zoneHasWindows.append(hasWindows)
             
             #If there are interior windows, be sure to add the geometry of the other contiuously lit zones to the opaque and window geometry lists.
             if modelHasIntWindows ==  True:
                 for contLightCount, contLightZone in enumerate(finaldaylitAdjList[zCount]):
+                    intWindowCentroids = []
                     if contLightZone != zCount:
                         for sCount2, srfT2 in enumerate(zoneSrfTypes[contLightZone]):
                             if srfT2 != 5:
                                 opaqueMesh = rc.Geometry.Mesh.CreateFromBrep(zoneSrfs[contLightZone][sCount2], rc.Geometry.MeshingParameters.Coarse)[0]
                                 zoneOpaqueMesh[zCount].append(opaqueMesh)
-                            elif srfIntWindowAdjNumList[contLightZone][sCount2] != None: pass
+                            elif srfIntWindowAdjNumList[contLightZone][sCount2] != None:
+                                #Check to see if the interior window is already in the list before deciding whether to add it.
+                                alreadyThere = False
+                                srfCentroid = rc.Geometry.AreaMassProperties.Compute(zoneSrfs[contLightZone][sCount2]).Centroid
+                                for centroid in intWindowCentroids:
+                                    if centroid.X < srfCentroid.X+tol and centroid.X > srfCentroid.X-tol and centroid.Y < srfCentroid.Y+tol and centroid.Y > srfCentroid.Y-tol and centroid.Z < srfCentroid.Z+tol and centroid.Z > srfCentroid.Z-tol: pass
+                                    else:
+                                        windowMesh = rc.Geometry.Mesh.CreateFromBrep(zoneSrfs[contLightZone][sCount2], rc.Geometry.MeshingParameters.Coarse)[0]
+                                        zoneWindowMesh[zCount].append(windowMesh)
+                                        zoneWindowTransmiss[zCount].append(windowSrfTransmiss[contLightZone][sCount2])
+                                        intWindowCentroids.append(srfCentroid)
+                                        zoneWindowNames[zCount].append(surfaceNames[contLightZone][sCount2])
                             else:
                                 windowMesh = rc.Geometry.Mesh.CreateFromBrep(zoneSrfs[contLightZone][sCount2], rc.Geometry.MeshingParameters.Coarse)[0]
                                 zoneWindowMesh[zCount].append(windowMesh)
                                 zoneWindowTransmiss[zCount].append(windowSrfTransmiss[contLightZone][sCount2])
+                                intWindowCentroids.append(rc.Geometry.AreaMassProperties.Compute(zoneSrfs[contLightZone][sCount2]).Centroid)
+                                zoneWindowNames[zCount].append(surfaceNames[contLightZone][sCount2])
+                    else:
+                        for sCount2, srfT2 in enumerate(zoneSrfTypes[contLightZone]):
+                            if srfT2 == 5 and srfIntWindowAdjNumList[contLightZone][sCount2] != None: intWindowCentroids.append(rc.Geometry.AreaMassProperties.Compute(zoneSrfs[contLightZone][sCount2]).Centroid)
         
         #If there are outdoor points included in the calculation, add them to the zoneOpaqueMesh.
         if sectionMethod != 0 and includeOutdoor == True:
@@ -982,11 +1004,17 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
             zoneHasWindows.append(2)
             zoneWindowMesh.append([])
             zoneWindowTransmiss.append([])
+            zoneWindowNames.append([])
+            
+            #Get the absolute heights of the outdoor points in order to factor them in correctly in the wind speed calculation.
+            for point in testPts[-1]:
+                if point.Z >= 0: outdoorPtHeightWeights.append(point.Z)
+                else: outdoorPtHeightWeights.append(0)
         
         
-        return geoCheck, testPts, MRTMeshBreps, MRTMeshInit, zoneWires, zoneSrfsMesh, surfaceNames, zoneOpaqueMesh, zoneNames, zoneWeights, heightWeights, zoneInletParams, zoneHasWindows, zoneBrepsNonSolid, includeOutdoor, zoneWindowMesh, zoneWindowTransmiss
+        return geoCheck, testPts, MRTMeshBreps, MRTMeshInit, zoneWires, zoneSrfsMesh, surfaceNames, zoneOpaqueMesh, zoneNames, zoneWeights, heightWeights, zoneInletParams, zoneHasWindows, zoneBrepsNonSolid, includeOutdoor, zoneWindowMesh, zoneWindowTransmiss, outdoorPtHeightWeights, zoneWindowNames
     else:
-        return geoCheck, testPts, MRTMeshBreps, MRTMeshInit, zoneWires, zoneSrfsMesh, surfaceNames, zoneOpaqueMesh, zoneNames, zoneWeights, [], zoneInletParams, zoneHasWindows, zoneBrepsNonSolid, includeOutdoor, zoneWindowMesh, zoneWindowTransmiss
+        return geoCheck, testPts, MRTMeshBreps, MRTMeshInit, zoneWires, zoneSrfsMesh, surfaceNames, zoneOpaqueMesh, zoneNames, zoneWeights, [], zoneInletParams, zoneHasWindows, zoneBrepsNonSolid, includeOutdoor, zoneWindowMesh, zoneWindowTransmiss, outdoorPtHeightWeights, zoneWindowNames
 
 def checkViewResolution(viewResolution, lb_preparation):
     newVecs = []
@@ -1047,13 +1075,15 @@ def parallel_projection(zoneSrfsMesh, viewVectors, pointList):
     return pointIntList
 
 
-def parallel_skyProjection(zoneOpaqueMesh, skyViewVecs, pointList, zoneWindowMesh, zoneWindowTransmiss, zoneHasWindows):
+def parallel_skyProjection(zoneOpaqueMesh, skyViewVecs, pointList, zoneWindowMesh, zoneWindowTransmiss, zoneHasWindows, zoneWindowNames):
     #Placeholder for the outcome of the parallel projection.
     pointIntList = []
     skyBlockedList = []
+    skyBlockWindowNameCount = []
     for num in range(len(pointList)):
         pointIntList.append(0.0)
         skyBlockedList.append([])
+        skyBlockWindowNameCount.append([])
     
     #Keep track of the divisor.
     divisor = len(skyViewVecs)
@@ -1082,26 +1112,35 @@ def parallel_skyProjection(zoneOpaqueMesh, skyViewVecs, pointList, zoneWindowMes
                 finalIntersectList[listCt].append(intersect)
         
         finalViewCount = []
+        finalWindowNameCount = []
         for rayListCount, rayList in enumerate(finalIntersectList):
             if sum(rayList) == 0:
-                if zoneHasWindows == 2: finalViewCount.append(1)
+                if zoneHasWindows == 2:
+                    finalViewCount.append(1)
+                    finalWindowNameCount.append(0)
                 else:
                     transmiss = 1
+                    winNameList = []
                     for winCount, winMesh in enumerate(zoneWindowMesh):
                         intersect = rc.Geometry.Intersect.Intersection.MeshRay(winMesh, pointRays[rayListCount])
                         if intersect == -1: pass
                         else:
                             transmiss = transmiss * zoneWindowTransmiss[winCount]
+                            winNameList.append(zoneWindowNames[winCount].upper())
                     finalViewCount.append(transmiss)
-            else: finalViewCount.append(0)
+                    finalWindowNameCount.append(winNameList)
+            else:
+                finalViewCount.append(0)
+                finalWindowNameCount.append(0)
         
         #Sum up the lists and divide by the total rays to get the view factor.
         skyBlockedList[i] = finalViewCount
+        skyBlockWindowNameCount[i] = finalWindowNameCount
         pointIntList[i] = sum(finalViewCount)/divisor
     
     tasks.Parallel.ForEach(range(len(pointList)), intersect)
     
-    return pointIntList, skyBlockedList
+    return pointIntList, skyBlockedList, skyBlockWindowNameCount
 
 def checkOutdoorViewFac(outdoorTestPtViewFactor):
     outdoorNonSrfViewFac = []
@@ -1110,19 +1149,22 @@ def checkOutdoorViewFac(outdoorTestPtViewFactor):
     return outdoorNonSrfViewFac
 
 
-def skyViewCalc(testPts, zoneOpaqueMesh, skyViewVecs, zoneHasWindows, zoneWindowMesh, zoneWindowTransmiss):
+def skyViewCalc(testPts, zoneOpaqueMesh, skyViewVecs, zoneHasWindows, zoneWindowMesh, zoneWindowTransmiss, zoneWindowNames):
     testPtSkyView = []
     testPtSkyBlockedList = []
+    testPtBlockName = []
     
     for zoneCount, pointList in enumerate(testPts):
         if zoneHasWindows[zoneCount] > 0:
             if parallel_ == True or parallel_ == None:
-                skyViewFactors, skyBlockedList = parallel_skyProjection(zoneOpaqueMesh[zoneCount], skyViewVecs, testPts[zoneCount], zoneWindowMesh[zoneCount], zoneWindowTransmiss[zoneCount], zoneHasWindows[zoneCount])
+                skyViewFactors, skyBlockedList, finalWindowNameCount = parallel_skyProjection(zoneOpaqueMesh[zoneCount], skyViewVecs, testPts[zoneCount], zoneWindowMesh[zoneCount], zoneWindowTransmiss[zoneCount], zoneHasWindows[zoneCount], zoneWindowNames[zoneCount])
                 testPtSkyView.append(skyViewFactors)
                 testPtSkyBlockedList.append(skyBlockedList)
+                testPtBlockName.append(finalWindowNameCount)
             else:
                 testPtSkyView.append([])
                 testPtSkyBlockedList.append([])
+                testPtBlockName.append([])
                 for pointCount, point in enumerate(pointList):
                     #Make the list that will eventually hold the view factors of each surface.
                     divisor = len(skyViewVecs)
@@ -1149,30 +1191,39 @@ def skyViewCalc(testPts, zoneOpaqueMesh, skyViewVecs, zoneHasWindows, zoneWindow
                             finalIntersectList[listCt].append(intersect)
                     
                     finalViewCount = []
+                    finalWindowNameCount = []
                     for rayListCount, rayList in enumerate(finalIntersectList):
                         if sum(rayList) == 0:
-                            if zoneHasWindows[zoneCount] == 2: finalViewCount.append(1) #This is the code to indicate that the point is outside and there is no need to calculate a window transmissivity.
+                            if zoneHasWindows[zoneCount] == 2:
+                                finalViewCount.append(1) #This is the code to indicate that the point is outside and there is no need to calculate a window transmissivity.
+                                finalWindowNameCount.append(0)
                             else:
                                 #The ray is not blocked but it is hitting a window and so we need to factor in the window transmissivity.
                                 transmiss = 1
+                                winNameList = []
                                 for winCount, winMesh in enumerate(zoneWindowMesh[zoneCount]):
                                     intersect = rc.Geometry.Intersect.Intersection.MeshRay(winMesh, pointRays[rayListCount])
                                     if intersect == -1: pass
                                     else:
                                         transmiss = transmiss * zoneWindowTransmiss[zoneCount][winCount]
+                                        winNameList.append(zoneWindowNames[zoneCount][winCount].upper())
                                 finalViewCount.append(transmiss)
+                                finalWindowNameCount.append(winNameList)
                         else:
                             #The ray has been blocked by an opaque surface.
                             finalViewCount.append(0)
+                            finalWindowNameCount.append(0)
                     
                     #Sum up the lists and divide by the total rays to get the view factor.
                     testPtSkyBlockedList[zoneCount].append(finalViewCount)
                     testPtSkyView[zoneCount].append(sum(finalViewCount)/divisor)
+                    testPtBlockName[zoneCount].append(finalWindowNameCount)
         else:
             testPtSkyView.append(0)
             testPtSkyBlockedList.append([range(len(skyViewVecs))])
+            testPtBlockName.append([range(len(skyViewVecs))])
     
-    return testPtSkyView, testPtSkyBlockedList
+    return testPtSkyView, testPtSkyBlockedList, testPtBlockName
 
 
 def main(testPts, zoneSrfsMesh, viewVectors, includeOutdoor):
@@ -1287,7 +1338,7 @@ if checkData == True and buildMesh == True:
     start = time.clock()
     goodGeo = prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBreps, includeOutdoor, hb_zoneData)
     if goodGeo != -1:
-        geoCheck, testPtsInit, viewFactorBrep, viewFactorMeshActual, zoneWireFrame, zoneSrfsMesh, zoneSrfNames, zoneOpaqueMesh, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, zoneHasWindows, zoneBrepsNonSolid, includeOutdoor, zoneWindowMesh, zoneWindowTransmiss = goodGeo
+        geoCheck, testPtsInit, viewFactorBrep, viewFactorMeshActual, zoneWireFrame, zoneSrfsMesh, zoneSrfNames, zoneOpaqueMesh, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, zoneHasWindows, zoneBrepsNonSolid, includeOutdoor, zoneWindowMesh, zoneWindowTransmiss, outdoorPtHeightWeights, zoneWindowNames = goodGeo
     total_ms = time.clock() - start
     
     #Unpack the data trees of test pts and mesh breps so that the user can see them and get a sense of what to expect from the view factor calculation.
@@ -1312,7 +1363,7 @@ if checkData == True and _runIt == True and geoCheck == True and buildMesh == Tr
     start = time.clock()
     viewVectors, skyViewVecs = checkViewResolution(viewResolution, lb_preparation)
     testPtViewFactor = main(testPtsInit, zoneSrfsMesh, viewVectors, includeOutdoor)
-    testPtSkyView, testPtBlockedVec = skyViewCalc(testPtsInit, zoneOpaqueMesh, skyViewVecs, zoneHasWindows, zoneWindowMesh, zoneWindowTransmiss)
+    testPtSkyView, testPtBlockedVec, testPtBlockName = skyViewCalc(testPtsInit, zoneOpaqueMesh, skyViewVecs, zoneHasWindows, zoneWindowMesh, zoneWindowTransmiss, zoneWindowNames)
     
     outdoorNonSrfViewFac = []
     if sectionMethod != 0 and includeOutdoor == True:
@@ -1323,7 +1374,7 @@ if checkData == True and _runIt == True and geoCheck == True and buildMesh == Tr
     total_fs = time.clock() - start
     
     #Put all of the information into a list that will carry the data onto the next component easily.
-    viewFactorInfo = [testPtViewFactor, zoneSrfNames, testPtSkyView, testPtBlockedVec, testPtZoneWeights, testPtZoneNames, ptHeightWeights, zoneInletInfo, zoneHasWindows, outdoorIsThere, outdoorNonSrfViewFac]
+    viewFactorInfo = [testPtViewFactor, zoneSrfNames, testPtSkyView, testPtBlockedVec, testPtZoneWeights, testPtZoneNames, ptHeightWeights, zoneInletInfo, zoneHasWindows, outdoorIsThere, outdoorNonSrfViewFac, outdoorPtHeightWeights, testPtBlockName]
 
 #Print out a report of calculation time.
 print "_"

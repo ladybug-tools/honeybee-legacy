@@ -31,7 +31,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Visualize Annual Comfort Results"
 ghenv.Component.NickName = 'VisualizeComfort'
-ghenv.Component.Message = 'VER 0.0.56\nJUN_07_2015'
+ghenv.Component.Message = 'VER 0.0.56\nJUN_08_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -97,7 +97,7 @@ def checkTheInputs():
                 checkData2 = True
                 vertOrFace = True
             else:
-                warning = "The length of data in the comfResultsMTX does not matech the number of faces in the viewFactorMesh."
+                warning = "The length of data in the comfResultsMTX does not match the number of faces in the viewFactorMesh."
                 print warning
                 ghenv.Component.AddRuntimeMessage(w, warning)
     else: pass
@@ -124,7 +124,7 @@ def checkTheInputs():
 def manageInputOutput(annualData, simStep):
     #If some of the component inputs and outputs are not right, blot them out or change them.
     for input in range(7):
-        if input == 3 and annualData == False:
+        if input == 3 and simStep == False:
             ghenv.Component.Params.Input[input].NickName = "__________"
             ghenv.Component.Params.Input[input].Name = "."
             ghenv.Component.Params.Input[input].Description = " "
@@ -144,7 +144,7 @@ def restoreInputOutput():
         ghenv.Component.Params.Input[input].Description = inputsDict[input][1]
 
 
-def computeComfFactor(comfResultsMtx, analysisP, stepOfSimulation, annualData, simStepPossible, lb_preparation):
+def computeComfValues(comfResultsMtx, analysisP, comfMtxAnalysisP, stepOfSimulation, annualData, simStepPossible, lb_preparation):
     #Create a list to be filled with values of comfort.
     comfortFactorVals = []
     
@@ -167,6 +167,38 @@ def computeComfFactor(comfResultsMtx, analysisP, stepOfSimulation, annualData, s
         #Compute the total percentage of comfortable hours.
         for lineCount, line in enumerate(comfResultsMtx):
             comfortFactorVals.append(sum(line)/len(line))
+    elif len(analysisP) > 0 and annualData == False and simStepPossible == True:
+        #Check the data anlysis period and subtract the start day from each of the HOYs.
+        HOYS, months, days = lb_preparation.getHOYsBasedOnPeriod(analysisP, 1)
+        FinalHOYs, mon, days = lb_preparation.getHOYsBasedOnPeriod(comfMtxAnalysisP, 1)
+        for hCount, hour in enumerate(HOYS):
+            HOYS[hCount] = hour - FinalHOYs[0]
+        
+        #Check to see if the hours of the requested analysis period are in the comfResultsMtx.
+        periodsAlign = True
+        for hour in HOYS:
+            if hour < 0: periodsAlign = False
+            try: comfResultsMtx[hour]
+            except: periodsAlign = False
+        
+        if periodsAlign == False:
+            warning = 'The analysis period of the confResultsMtx and that which is plugged into this component do not align.'
+            print warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+        else:
+            #Pick out just the hours that are in the analysis period.
+            newcomfResultsMtx = []
+            for lineCount, line in enumerate(comfResultsMtx):
+                if lineCount in HOYS: newcomfResultsMtx.append(line)
+            comfResultsMtx = newcomfResultsMtx
+            
+            #Transpose the matrix
+            comfResultsMtx = comfResultsMtx[1:]
+            comfResultsMtx = zip(*comfResultsMtx)
+            
+            #Compute the total percentage of comfortable hours.
+            for lineCount, line in enumerate(comfResultsMtx):
+                comfortFactorVals.append(sum(line)/len(line))
     else:
         #Transpose the matrix
         comfResultsMtx = comfResultsMtx[1:]
@@ -204,19 +236,19 @@ def main(pointValues, viewFactorMesh, dataType, lb_preparation, lb_visualization
                 highB = 2
         elif customColors[0] == defaultCustomColor1 and customColors[-1] == defaultCustomColor2:
             customColors = [System.Drawing.Color.FromArgb(0,136,255), System.Drawing.Color.FromArgb(200,225,255), System.Drawing.Color.FromArgb(255,255,255), System.Drawing.Color.FromArgb(255,230,230), System.Drawing.Color.FromArgb(255,0,0)]
-    elif dataType == 'Adaptive Comfort' or dataType == 'Percentage of People Dissatisfied':
+    elif dataType == 'Adaptive Thermal Comfort Percent' or dataType == 'Percentage of People Dissatisfied':
         legendTitle = '%'
-        if dataType == 'Adaptive Comfort':
+        if dataType == 'Adaptive Thermal Comfort Percent':
             for valCount, value in enumerate(pointValues):
                 pointValues[valCount] = value*100
         if len(legendPar_) == 0:
             lowB = 0
             highB = 100
             numSeg = 11
-            if dataType == 'Adaptive Comfort': customColors = [System.Drawing.Color.FromArgb(0,0,0), System.Drawing.Color.FromArgb(127,127,127), System.Drawing.Color.FromArgb(255,255,255)]
+            if dataType == 'Adaptive Thermal Comfort Percent': customColors = [System.Drawing.Color.FromArgb(0,0,0), System.Drawing.Color.FromArgb(127,127,127), System.Drawing.Color.FromArgb(255,255,255)]
             else: customColors = [System.Drawing.Color.FromArgb(255,255,255), System.Drawing.Color.FromArgb(127,127,127), System.Drawing.Color.FromArgb(0,0,0)]
         elif customColors[0] == defaultCustomColor1 and customColors[-1] == defaultCustomColor2:
-            if dataType == 'Adaptive Comfort': customColors = [System.Drawing.Color.FromArgb(0,0,0), System.Drawing.Color.FromArgb(127,127,127), System.Drawing.Color.FromArgb(255,255,255)]
+            if dataType == 'Adaptive Thermal Comfort Percent': customColors = [System.Drawing.Color.FromArgb(0,0,0), System.Drawing.Color.FromArgb(127,127,127), System.Drawing.Color.FromArgb(255,255,255)]
             else: customColors = [System.Drawing.Color.FromArgb(255,255,255), System.Drawing.Color.FromArgb(127,127,127), System.Drawing.Color.FromArgb(0,0,0)]
     else:
         legendTitle = 'C'
@@ -288,7 +320,6 @@ def main(pointValues, viewFactorMesh, dataType, lb_preparation, lb_visualization
     monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
     timeNames = ["1:00", "2:00", "3:00", "4:00", "5:00", "6:00", "7:00", "8:00", "9:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00", "23:00", "24:00"]
     
-    print analysisPeriod
     #If there is an analysis period, format the text for it in the legend title.
     try:
         if len(analysisPeriod_) == 0 or annualData == False:
@@ -364,26 +395,31 @@ else:
     restoreInputOutput()
 
 if checkData == True and _runIt == True:
-    try: resultValues = computeComfFactor(_comfResultsMtx, analysisPeriod_, stepOfSimulation_, annualData, simStepPossible, lb_preparation)
-    except: resultValues = computeComfFactor(_comfResultsMtx, [], None, annualData, simStepPossible, lb_preparation)
-    resultValuesInit, resultColorsInit, resultMesh, legendInit, legendBasePt = main(resultValues, viewFactorMesh, dataType, lb_preparation, lb_visualization, legendPar_, analysisPeriod, simStepPossible, annualData, vertOrFace)
-    
-    #Unpack the legend.
-    legend = []
-    for count, item in enumerate(legendInit):
-        if count == 0:
-            legend.append(item)
-        if count == 1:
-            for srf in item:
-                legend.append(srf)
-    
-    #Unpack the other data trees.
-    resultValues = DataTree[Object]()
-    resultColors = DataTree[Object]()
-    
-    for brCount, branch in enumerate(resultValuesInit):
-        for item in branch:resultValues.Add(item, GH_Path(brCount))
-    for brCount, branch in enumerate(resultColorsInit):
-        for item in branch:resultColors.Add(item, GH_Path(brCount))
-    
-    ghenv.Component.Params.Output[4].Hidden = True
+    resultValues = computeComfValues(_comfResultsMtx, analysisPeriod_, analysisPeriod, stepOfSimulation_, annualData, simStepPossible, lb_preparation)
+    #except:
+    #    resultValues = []
+    #    print "Computing comfort values failed..."
+    #    w = gh.GH_RuntimeMessageLevel.Warning
+    #    ghenv.Component.AddRuntimeMessage(w, "Computing comfort values failed...")
+    if resultValues != []:
+        resultValuesInit, resultColorsInit, resultMesh, legendInit, legendBasePt = main(resultValues, viewFactorMesh, dataType, lb_preparation, lb_visualization, legendPar_, analysisPeriod, simStepPossible, annualData, vertOrFace)
+        
+        #Unpack the legend.
+        legend = []
+        for count, item in enumerate(legendInit):
+            if count == 0:
+                legend.append(item)
+            if count == 1:
+                for srf in item:
+                    legend.append(srf)
+        
+        #Unpack the other data trees.
+        resultValues = DataTree[Object]()
+        resultColors = DataTree[Object]()
+        
+        for brCount, branch in enumerate(resultValuesInit):
+            for item in branch:resultValues.Add(item, GH_Path(brCount))
+        for brCount, branch in enumerate(resultColorsInit):
+            for item in branch:resultColors.Add(item, GH_Path(brCount))
+        
+        ghenv.Component.Params.Output[4].Hidden = True

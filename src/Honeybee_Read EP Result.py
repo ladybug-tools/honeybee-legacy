@@ -37,7 +37,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.56\nJUN_03_2015'
+ghenv.Component.Message = 'VER 0.0.56\nJUN_08_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nMAY_02_2015
@@ -151,6 +151,7 @@ otherZoneData = DataTree[Object]()
 #Create py lists to hold the sirflow data.
 infiltrationFlow = []
 natVentFlow = []
+mechSysAirFlow = []
 earthTubeFlow = []
 internalAirGain = []
 surfaceAirGain = []
@@ -160,6 +161,7 @@ try:
     for zone in zoneNameList:
         infiltrationFlow.append([])
         natVentFlow.append([])
+        mechSysAirFlow.append([])
         earthTubeFlow.append([])
         internalAirGain.append([])
         surfaceAirGain.append([])
@@ -373,6 +375,12 @@ if _resultFileAddress and gotData == True:
                         infiltrationFlow[int(path[-1])].append(zoneName)
                         infiltrationFlow[int(path[-1])].append(column.split('(')[-1].split(')')[0])
                     
+                    elif 'Zone Mechanical Ventilation Standard Density Volume Flow Rate' in column:
+                        key.append(22)
+                        zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
+                        mechSysAirFlow[int(path[-1])].append(zoneName)
+                        mechSysAirFlow[int(path[-1])].append(column.split('(')[-1].split(')')[0])
+                    
                     elif 'Earth Tube Air Flow Volume' in column:
                         key.append(21)
                         zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
@@ -399,16 +407,6 @@ if _resultFileAddress and gotData == True:
                     
                     elif 'Zone' in column and not "System" in column and not "SYSTEM" in column and not "ZONEHVAC" in column and not "Earth Tube" in column:
                         zoneName = checkZoneOther(dataIndex, (" " + ":".join(column.split(":")[:-1])))
-                        if zoneName != None:
-                            key.append(14)
-                            makeHeaderAlt(otherZoneData, path[columnCount], zoneName, column.split('(')[-1].split(')')[0], column.split(':')[-1].split(' [')[0], column.split('[')[-1].split(']')[0], False)
-                            dataTypeList[17] = True
-                        else:
-                            key.append(-1)
-                            path.append(-1)
-                    
-                    elif 'Zone' in column and "SYSTEM" in column.upper() and not "ZONEHVAC" in column and not "Earth Tube" in column:
-                        zoneName = checkZoneOther(dataIndex, (" " + column.split(" IDEAL")[0]))
                         if zoneName != None:
                             key.append(14)
                             makeHeaderAlt(otherZoneData, path[columnCount], zoneName, column.split('(')[-1].split(')')[0], column.split(':')[-1].split(' [')[0], column.split('[')[-1].split(']')[0], False)
@@ -485,6 +483,9 @@ if _resultFileAddress and gotData == True:
                     elif key[columnCount] == 17:
                         try: infiltrationFlow[int(path[columnCount])].append(float(column))
                         except: pass
+                    elif key[columnCount] == 22:
+                        try: mechSysAirFlow[int(path[columnCount])].append(float(column))
+                        except: pass
                     elif key[columnCount] == 21:
                         try: earthTubeFlow[int(path[columnCount])].append(float(column))
                         except: pass
@@ -558,6 +559,18 @@ if internalAirGain != testTracker and surfaceAirGain != testTracker:
 
 #If we have information on volumetric flow for infiltration, natural ventilation, and/or eartht tube flow, add them together.
 if infiltrationFlow != testTracker:
+    #Check if there is natural ventilation.
+    natVentThere = []
+    for natVentList in natVentFlow:
+        if len(natVentList) != 0: natVentThere.append(1)
+        else: natVentThere.append(0)
+    
+    #Check if there is mechanical veniltation.
+    mechSysThere = []
+    for mechList in mechSysAirFlow:
+        if len(mechList) != 0: mechSysThere.append(1)
+        else: mechSysThere.append(0)
+    
     #Check if there are earth tubes.
     earthTubeThere = []
     for earthList in earthTubeFlow:
@@ -568,12 +581,14 @@ if infiltrationFlow != testTracker:
     for listCount, list in enumerate(infiltrationFlow):
         makeHeader(airFlowVolume, listCount, list[0], list[1], "Air Flow Volume", "m3/s", False)
         for numCount, num in enumerate(list[2:]):
-            try:
-                if earthTubeThere[listCount] == 1: airFlowVolume.Add((num + natVentFlow[listCount][2:][numCount]+ earthTubeFlow[listCount][2:][numCount]), GH_Path(listCount))
-                else: airFlowVolume.Add((num + natVentFlow[listCount][2:][numCount]), GH_Path(listCount))
-            except:
-                if earthTubeThere[listCount] == 1: airFlowVolume.Add((num + earthTubeFlow[listCount][2:][numCount]), GH_Path(listCount))
-                else: airFlowVolume.Add(num, GH_Path(listCount))
+            if earthTubeThere[listCount] == 1 and mechSysThere[listCount] == 1 and natVentThere[listCount] == 1: airFlowVolume.Add((num + natVentFlow[listCount][2:][numCount] + mechSysAirFlow[listCount][2:][numCount] + earthTubeFlow[listCount][2:][numCount]), GH_Path(listCount))
+            elif earthTubeThere[listCount] == 1 and mechSysThere[listCount] == 0 and natVentThere[listCount] == 1: airFlowVolume.Add((num + natVentFlow[listCount][2:][numCount]+ earthTubeFlow[listCount][2:][numCount]), GH_Path(listCount))
+            elif earthTubeThere[listCount] == 0 and mechSysThere[listCount] == 1 and natVentThere[listCount] == 1: airFlowVolume.Add((num + natVentFlow[listCount][2:][numCount]+ mechSysAirFlow[listCount][2:][numCount]), GH_Path(listCount))
+            elif earthTubeThere[listCount] == 1 and mechSysThere[listCount] == 1 and natVentThere[listCount] == 0: airFlowVolume.Add((num + mechSysAirFlow[listCount][2:][numCount] + earthTubeFlow[listCount][2:][numCount]), GH_Path(listCount))
+            elif earthTubeThere[listCount] == 0 and mechSysThere[listCount] == 1 and natVentThere[listCount] == 0: airFlowVolume.Add((num + mechSysAirFlow[listCount][2:][numCount]), GH_Path(listCount))
+            elif earthTubeThere[listCount] == 1 and mechSysThere[listCount] == 0 and natVentThere[listCount] == 0: airFlowVolume.Add((num + earthTubeFlow[listCount][2:][numCount]), GH_Path(listCount))
+            elif earthTubeThere[listCount] == 0 and mechSysThere[listCount] == 0 and natVentThere[listCount] == 1: airFlowVolume.Add((num + natVentFlow[listCount][2:][numCount]), GH_Path(listCount))
+            else: airFlowVolume.Add(num, GH_Path(listCount))
         dataTypeList[15] = True
 
 
