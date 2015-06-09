@@ -394,7 +394,6 @@ def warpByHeight(pointAirTempValues, ptHeightWeights, flowVolValues, heatGainVal
             try:
                 tempChange = (groupedHeatGains[zoneCount])/(1.2*1012*groupedFlowVol[zoneCount])
                 tempChanges.append(tempChange)
-                
                 archiNumberNum = (9.806*0.0034*groupedHeatGains[zoneCount])*(groupedWinCeilDiffs[zoneCount]*groupedWinCeilDiffs[zoneCount]*groupedWinCeilDiffs[zoneCount])
                 archiNumberDenom = (1.2*1012*groupedFlowVol[zoneCount]*groupedFlowVol[zoneCount]*(groupedFlowVol[zoneCount]/groupedInletArea[zoneCount]))
                 archiNumber = archiNumberNum/archiNumberDenom
@@ -622,13 +621,14 @@ def computeGroupedRoomProperties(testPtZoneWeights, testPtZoneNames, zoneInletIn
                 roomHeight = groupedMaxHeightsInit[zoneCount][0] - groupedMinHeightsInit[zoneCount][0]
                 groupedZoneHeights.append(roomHeight)
                 if inletHeightOverride == []:
-                    if groupedGlzHeightsInit[zoneCount][0] != None: glzHeight = groupedGlzHeightsInit[zoneCount][0]
+                    if groupedGlzHeightsInit[zoneCount][0] != None:
+                        glzHeight = groupedGlzHeightsInit[zoneCount][0]
                     else: glzHeight = (groupedMaxHeightsInit[zoneCount][0] - groupedMinHeightsInit[zoneCount][0])/2
-                    groupedGlzHeights.append(glzHeight)
-                    groupedWinCeilDiffs.append(roomHeight - glzHeight)
+                    groupedGlzHeights.append(glzHeight - groupedMinHeightsInit[zoneCount][0])
+                    groupedWinCeilDiffs.append(groupedMaxHeightsInit[zoneCount][0] - glzHeight)
                 else:
-                    groupedGlzHeights.append(inletHeightOverride[zoneCount])
-                    groupedWinCeilDiffs.append(roomHeight - inletHeightOverride[zoneCount])
+                    groupedGlzHeights.append(inletHeightOverride[zoneCount] - groupedMinHeightsInit[zoneCount][0])
+                    groupedWinCeilDiffs.append(groupedMaxHeightsInit[zoneCount][0] - inletHeightOverride[zoneCount])
         else:
             groupedZoneHeights.append(0)
             groupedGlzHeights.append(0)
