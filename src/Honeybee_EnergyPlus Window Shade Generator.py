@@ -45,7 +45,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Window Shade Generator"
 ghenv.Component.NickName = 'EPWindowShades'
-ghenv.Component.Message = 'VER 0.0.56\nMAR_16_2015'
+ghenv.Component.Message = 'VER 0.0.56\nJUN_09_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -735,3 +735,5 @@ if checkData == True:
         elif treeCount == 2:
             for bCount, branch in enumerate(finalTree):
                 for twig in branch: zoneData3Tree.Add(twig, GH_Path(bCount))
+
+ghenv.Component.Params.Output[2].Hidden = True

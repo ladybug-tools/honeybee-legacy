@@ -23,12 +23,13 @@ Provided by Honeybee 0.0.56
         windowTotalSolarEnergy: The total solar energy transmitted through each of the glazing surfaces to the zone (kWh).
         windowBeamEnergy: The total direct solar beam energy transmitted through each of the glazing surfaces to the zone (kWh).
         windowDiffEnergy: The total diffuse solar energy transmitted through each of the glazing surfaces to the zone (kWh).
+        windowTransmissivity: The hourly transmissivity of the exterior windows of the model.  This data is needed to align a comfort map with an energy model possessing shades.
         otherSurfaceData: Other surface data that is in the result file (in no particular order).  Note that this data cannot be normalized by floor area as the component does not know if it can be normalized.
 """
 
 ghenv.Component.Name = "Honeybee_Read EP Surface Result"
 ghenv.Component.NickName = 'readEPSrfResult'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_06_2015'
+ghenv.Component.Message = 'VER 0.0.56\nJUN_09_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -195,10 +196,11 @@ glazEnergyFlow = DataTree[Object]()
 windowBeamEnergy = DataTree[Object]()
 windowDiffEnergy = DataTree[Object]()
 windowTotalSolarEnergy = DataTree[Object]()
+windowTransmissivity = DataTree[Object]()
 otherSurfaceData = DataTree[Object]()
 
 #Make a list to keep track of what outputs are in the result file.
-dataTypeList = [False, False, False, False, False, False, False, False, False]
+dataTypeList = [False, False, False, False, False, False, False, False, False, False]
 parseSuccess = False
 
 # If zone names are not included, make numbers to keep track of the number of surfaces that have been imported so far.
@@ -210,6 +212,7 @@ glzLoss = 0
 glzBeamGain = 0
 glzDiffGain = 0
 glzTotalGain = 0
+glzTransmiss = 0
 
 # If there are curved surfaces, make numbers to keep track of the number of surface pieces.
 srfPiecesList = []
@@ -237,6 +240,7 @@ def makeHeader(list, path, srfName, timestep, name, units):
     list.Add(end, GH_Path(path))
 
 def makeHeaderGrafted(list, path1, path2, srfName, timestep, name, units, normable, typeName):
+    if units == '': units = 'Fraction'
     list.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(path1, path2))
     list.Add(location, GH_Path(path1, path2))
     if normBySrf == False or normable == False: list.Add(name + " for " + srfName + ": " + typeName, GH_Path(path1, path2))
@@ -296,7 +300,7 @@ for zone in range(len(zoneSrfNameList)): dataIndex.append(0)
 
 # PARSE THE RESULT FILE.
 if _resultFileAddress and gotZoneData == True and gotSrfData == True:
-    try:
+    #try:
         result = open(_resultFileAddress, 'r')
         
         for lineCount, line in enumerate(result):
@@ -423,6 +427,21 @@ if _resultFileAddress and gotZoneData == True and gotSrfData == True:
                         key.append(8)
                         dataTypeList[5] = True
                     
+                    elif 'Surface Window System Solar Transmittance' in column:
+                        if gotSrfData == True:
+                            srfName, typeName, pieceNum, duplicate = checkSrfName(srfName, 8)
+                            duplicateList.append(duplicate)
+                            pieceNumList.append(pieceNum)
+                            if pieceNum < 2 and path[columnCount] != -1: makeHeaderGrafted(windowTransmissivity, int(path[columnCount][0]), int(path[columnCount][1]), srfName, column.split('(')[-1].split(')')[0], "Surface Window System Solar Transmittance", "Fraction", True, typeName)
+                        else:
+                            path.append([glzTransmiss])
+                            duplicateList.append(False)
+                            pieceNumList.append(1)
+                            makeHeader(windowTransmissivity, int(path[columnCount]), srfName, column.split('(')[-1].split(')')[0], "Surface Window System Solar Transmittance", "Fraction")
+                            glzTransmiss += 1
+                        key.append(10)
+                        dataTypeList[8] = True
+                    
                     elif 'Surface' in column and not "Heat Balance Surface Convection Rate"  in column:
                         if gotSrfData == True:
                             srfName, typeName = checkSrfNameOther(dataIndex, srfName)
@@ -434,7 +453,7 @@ if _resultFileAddress and gotZoneData == True and gotSrfData == True:
                             makeHeader(otherSurfaceData, int(path[columnCount]), srfName, column.split('(')[-1].split(')')[0], column.split(':')[-1].split(' [')[0], column.split('[')[-1].split(']')[0],)
                             otherIndex += 1
                         key.append(9)
-                        dataTypeList[8] = True
+                        dataTypeList[9] = True
                     
                     else:
                         key.append(-1)
@@ -497,20 +516,25 @@ if _resultFileAddress and gotZoneData == True and gotSrfData == True:
                             else:
                                 if pieceCount == 1: srfPieceDataList[7][path[columnCount][0]][path[columnCount][1]].append((float(column)/3600000)/srfArea)
                                 else: srfPieceDataList[7][path[columnCount][0]][path[columnCount][1]][lineCount-1] == srfPieceDataList[7][path[columnCount][0]][path[columnCount][1]][lineCount-1] + (float(column)/3600000)/srfArea
+                        elif key[columnCount] == 10:
+                            if duplicate == False: windowTransmissivity.Add(float(column), p)
+                            else:
+                                if pieceCount == 1: srfPieceDataList[1][path[columnCount][0]][path[columnCount][1]].append(float(column))
+                                else: srfPieceDataList[1][path[columnCount][0]][path[columnCount][1]][lineCount-1] == (srfPieceDataList[1][path[columnCount][0]][path[columnCount][1]][lineCount-1] + float(column))/2
                         elif key[columnCount] == 9:
                             otherSurfaceData.Add(float(column), p)
                     
         result.close()
         parseSuccess = True
-    except:
-        parseSuccess = False
-        warn = 'Failed to parse the result file.  Check the folder of the file address you are plugging into this component and make sure that there is a .csv file in the folder. \n'+ \
-                  'If there is no csv file or there is a file with no data in it (it is 0 kB), your simulation probably did not run correctly. \n' + \
-                  'In this case, check the report out of the Run Simulation component to see what severe or fatal errors happened in the simulation. \n' + \
-                  'If the csv file is there and it seems like there is data in it (it is not 0 kB), you are probably requesting an output that this component does not yet handle well. \n' + \
-                  'If you report this bug of reading the output on the GH forums, we should be able to fix this component to accept the output soon.'
-        print warn
-        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warn)
+    #except:
+    #    parseSuccess = False
+    #    warn = 'Failed to parse the result file.  Check the folder of the file address you are plugging into this component and make sure that there is a .csv file in the folder. \n'+ \
+    #              'If there is no csv file or there is a file with no data in it (it is 0 kB), your simulation probably did not run correctly. \n' + \
+    #              'In this case, check the report out of the Run Simulation component to see what severe or fatal errors happened in the simulation. \n' + \
+    #              'If the csv file is there and it seems like there is data in it (it is not 0 kB), you are probably requesting an output that this component does not yet handle well. \n' + \
+    #              'If you report this bug of reading the output on the GH forums, we should be able to fix this component to accept the output soon.'
+    #    print warn
+    #    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warn)
 
 
 #If there was curved geometry, go through the data and see if there were any lists of curved pieces that should be added to the data trees.
@@ -558,12 +582,13 @@ outputsDict = {
 5: ["windowTotalSolarEnergy", "The total solar energy transmitted through each of the glazing surfaces to the zone (kWh)."],
 6: ["windowBeamEnergy", "The total direct solar beam energy transmitted through each of the glazing surfaces to the zone (kWh)."],
 7: ["windowDiffEnergy", "The total diffuse solar energy transmitted through each of the glazing surfaces to the zone (kWh)."],
-8: ["otherSurfaceData", "Other surface data that is in the result file (in no particular order).  Note that this data cannot be normalized by floor area as the component does not know if it can be normalized."]
+8: ["windowTransmissivity", "The hourly transmissivity of the exterior windows of the model.  This data is needed to align a comfort map with an energy model possessing shades."],
+9: ["otherSurfaceData", "Other surface data that is in the result file (in no particular order).  Note that this data cannot be normalized by floor area as the component does not know if it can be normalized."]
 }
 
 
 if _resultFileAddress and parseSuccess == True:
-    for output in range(9):
+    for output in range(10):
         if dataTypeList[output] == False:
             ghenv.Component.Params.Output[output].NickName = "."
             ghenv.Component.Params.Output[output].Name = "."
@@ -573,7 +598,7 @@ if _resultFileAddress and parseSuccess == True:
             ghenv.Component.Params.Output[output].Name = outputsDict[output][0]
             ghenv.Component.Params.Output[output].Description = outputsDict[output][1]
 else:
-    for output in range(9):
+    for output in range(10):
         ghenv.Component.Params.Output[output].NickName = outputsDict[output][0]
         ghenv.Component.Params.Output[output].Name = outputsDict[output][0]
         ghenv.Component.Params.Output[output].Description = outputsDict[output][1]
