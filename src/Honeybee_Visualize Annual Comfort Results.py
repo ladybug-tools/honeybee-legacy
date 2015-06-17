@@ -402,13 +402,8 @@ except: stepOfSimulation_ = None
 
 if checkData == True and _runIt == True:
     resultValues = computeComfValues(_comfResultsMtx, analysisPeriod_, analysisPeriod, stepOfSimulation_, annualData, simStepPossible, lb_preparation)
-    #except:
-    #    resultValues = []
-    #    print "Computing comfort values failed..."
-    #    w = gh.GH_RuntimeMessageLevel.Warning
-    #    ghenv.Component.AddRuntimeMessage(w, "Computing comfort values failed...")
     if resultValues != []:
-        resultValuesInit, resultColorsInit, resultMesh, legendInit, legendBasePt = main(resultValues, viewFactorMesh, dataType, lb_preparation, lb_visualization, legendPar_, analysisPeriod, simStepPossible, annualData, vertOrFace)
+        resultValuesInit, resultColorsInit, resultMeshInit, legendInit, legendBasePt = main(resultValues, viewFactorMesh, dataType, lb_preparation, lb_visualization, legendPar_, analysisPeriod, simStepPossible, annualData, vertOrFace)
         
         #Unpack the legend.
         legend = []
@@ -422,10 +417,13 @@ if checkData == True and _runIt == True:
         #Unpack the other data trees.
         resultValues = DataTree[Object]()
         resultColors = DataTree[Object]()
+        resultMesh = DataTree[Object]()
         
         for brCount, branch in enumerate(resultValuesInit):
             for item in branch:resultValues.Add(item, GH_Path(brCount))
         for brCount, branch in enumerate(resultColorsInit):
             for item in branch:resultColors.Add(item, GH_Path(brCount))
+        for meshCt, mesh in enumerate(resultMeshInit):
+            resultMesh.Add(mesh, GH_Path(meshCt))
         
         ghenv.Component.Params.Output[4].Hidden = True

@@ -249,8 +249,10 @@ def computeHourShadeDrawing(hour, testPtSkyView, testPtBlockedVec, winShdDict, t
                     else:
                         newTransmissWinList = testPtBlockName[zoneCount][ptCount][vecCount]
                         transFactor = 1
-                        for window in newTransmissWinList:
-                            transFactor = transFactor * winShdDict[window][hour-1]
+                        try:
+                            for window in newTransmissWinList:
+                                transFactor = transFactor * winShdDict[window][hour-1]
+                        except: pass
                         newVecList.append(transFactor)
                 newTestPtBlockedVec[zoneCount].append(newVecList)
                 newTestPtSkyView[zoneCount].append(sum(newVecList)/len(newVecList))
@@ -623,6 +625,9 @@ def computeGroupedRoomProperties(testPtZoneWeights, testPtZoneNames, zoneInletIn
                         except:
                             weightedGlzHeights.append(0)
                     weightedAvgGlzHeight = sum(weightedGlzHeights)
+                    if weightedAvgGlzHeight == 0:
+                        #If the glazing height is 0, this means that the grouped zones have no windows so take the average height of the zone.
+                        weightedAvgGlzHeight = roomHeight*0.5
                     groupedGlzHeights.append(weightedAvgGlzHeight - minHeight)
                     groupedWinCeilDiffs.append(maxHeight - weightedAvgGlzHeight)
                 else:
