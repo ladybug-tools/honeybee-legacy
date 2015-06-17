@@ -41,7 +41,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.56\nJUN_14_2015'
+ghenv.Component.Message = 'VER 0.0.56\nJUN_15_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -144,6 +144,9 @@ def copyHBZoneData():
                     
                     #Calculate the transmissivity of the window from the construction material properties.
                     windowCnstr = childSrf.EPConstruction
+                    if windowCnstr == None:
+                        if srf.BC.lower() == "surface": floorCnstr = 'INTERIOR WINDOW'
+                        else: floorCnstr = 'EXTERIOR WINDOW'
                     windowLayers = hb_EPMaterialAUX.decomposeEPCnstr(windowCnstr.upper())[0]
                     winTrans = 1
                     for layer in windowLayers:
@@ -171,6 +174,9 @@ def copyHBZoneData():
             
             if srf.type == 2 or srf.type == 2.25 or srf.type == 2.5 or srf.type == 2.75 or srf.type == 1 or srf.type == 1.5:
                 floorCnstr = srf.EPConstruction
+                if floorCnstr == None:
+                    if srf.type == 2 or srf.type == 2.25 or srf.type == 2.5 or srf.type == 2.75: floorCnstr = 'INTERIOR FLOOR'
+                    else: floorCnstr = 'EXTERIOR ROOF'
                 floorInnerMat = hb_EPMaterialAUX.decomposeEPCnstr(floorCnstr.upper())[0][-1]
                 propNumbers = hb_EPMaterialAUX.decomposeMaterial(floorInnerMat.upper(), ghenv.Component)[0]
                 if 'Material:NoMass' in propNumbers[0]:
@@ -273,23 +279,25 @@ def checkTheInputs():
                 distFromFloor = 72
             else:
                 distFromFloor = 0.1
-            print "No value connected for distFromFloor_.  The distance from the floor has been set to " + str(distFromFloor) + " " + rhinoModelUnits + "."
+            print "No value connected for distFromFloorOrSrf_.  The distance from the floor has been set to " + str(distFromFloor) + " " + rhinoModelUnits + "."
     else:
-        distFromFloor = 0.9
+        distFromFloor = None
         sectionMesh, sectionBreps = lb_preparation.cleanAndCoerceList(distFromFloorOrSrf_)
     
     #Check to be sure that none of the zones are having the temperature map generated above them.
     checkData2 = True
     if _HBZones != []:
-        for zone in _HBZones:
-            zoneBBox = rc.Geometry.Box(zone.GetBoundingBox(rc.Geometry.Plane.WorldXY))
-            zDist = zoneBBox.Z[1] - zoneBBox.Z[0]
-            if zDist > distFromFloor: pass
-            else: checkData2 = False
-        if checkData2 == False:
-            warning = "The distFromFloor_ is greater than the height of one or more of the zones."
-            print warning
-            ghenv.Component.AddRuntimeMessage(w, warning)
+        if sectionMethod == 0: pass
+        else:
+            for zone in _HBZones:
+                zoneBBox = rc.Geometry.Box(zone.GetBoundingBox(rc.Geometry.Plane.WorldXY))
+                zDist = zoneBBox.Z[1] - zoneBBox.Z[0]
+                if zDist > distFromFloor: pass
+                else: checkData2 = False
+            if checkData2 == False:
+                warning = "The distFromFloorOrSrf_ is greater than the height of one or more of the zones.  Try decreaseing the value or connecting a custom surface."
+                print warning
+                ghenv.Component.AddRuntimeMessage(w, warning)
     else: checkData2 = False
     
     #Check the viewResolution.
