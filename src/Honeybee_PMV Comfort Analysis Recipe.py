@@ -24,7 +24,7 @@ Provided by Honeybee 0.0.56
         clothingLevel_: A number representing the clothing level of the human subject in clo.  If no value is input here, the component will assume a clothing level of 1 clo, which is roughly the insulation provided by a 3-piece suit. A person dressed in shorts and a T-shirt has a clothing level of roughly 0.5 clo and a person in a thick winter jacket can have a clothing level as high as 2 to 4 clo.  This input can also accept a list of 8760 clothing levels to represent how an occuant's clothing might change from hour to hour.
         ===============: ...
         comfortPar_: Optional comfort parameters from the "Ladybug_PMV Comfort Parameters" component.  Use this to adjust maximum and minimum acceptable humidity ratios.  These comfortPar can also change whether comfort is defined by eighty or ninety percent of people comfortable.  By default, comfort is defined as 90% of the occupants comfortable and there are no limits on humidity when there is no thermal stress.
-        wellMixedAirOverride_: Set to "True" if you know that your building will have a forced air system with diffusers meant to mix the air as well as possilbe.  This will prevent the calculation from running the air stratification function and instead assume well mixed conditions.  This input can also be a list of 8760 boolean values that represent the hours of the year when a forced air system or ceiling fans are run to mix the air.  The default is set to 'False' to run the stratification calculation for every hour of the year, assuming either no a convection-based heating/cooling system
+        wellMixedAirOverride_: Set to "True" if you know that your building will have a forced air system with diffusers meant to mix the air as well as possilbe.  This will prevent the calculation from running the air stratification function and instead assume well mixed conditions.  This input can also be a list of 8760 boolean values that represent the hours of the year when a forced air system or ceiling fans are run to mix the air.  The default is set to 'False' to run the stratification calculation for every hour of the year, assuming no forced air heating/cooling system.
         inletHeightOverride_: An optional list of float values that match the data tree of view factor meshes and represent the height, in meters, from the bottom of the view factor mesh to the window inlet height.  This will override the default value used in the air stratification calculation, which sets the inlet height in the bottom half of the average glazing height.
         windowShadeTransmiss_: A decimal value between 0 and 1 that represents the transmissivity of the shades on the windows of a zone (1 is no shade and 0 is fully shaded).  This input can also be a list of 8760 values between 0 and 1 that represents a list of hourly window shade transmissivities to be applied to all windows of the model. Finally and most importantly, this can be the 'windowTransmissivity' output of the 'Read EP Surface Result' component for an energy model that has been run with window shades.  This final option ensures that the energy model and the confort map results are always aligned although it is the most computationally expensive of the options.  The default is set to 0, which assumes no additional shading to windows. 
         floorReflectivity_: An optional decimal value between 0 and 1 that represents the fraction of solar radiation reflected off of the ground.  By default, this is set to 0.25, which is characteristic of most indoor floors.  You may want to increase this value for concrete or decrease it for dark carpets.
@@ -42,7 +42,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_PMV Comfort Analysis Recipe"
 ghenv.Component.NickName = 'PMVComfRecipe'
-ghenv.Component.Message = 'VER 0.0.56\nJUN_09_2015'
+ghenv.Component.Message = 'VER 0.0.56\nJUN_14_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -90,9 +90,9 @@ def checkTheInputs():
     #Unpack the viewFactorInfo.
     checkData25 = True
     try:
-        testPtViewFactor, zoneSrfNames, testPtSkyView, testPtBlockedVec, testPtZoneWeights, testPtZoneNames, ptHeightWeights, zoneInletInfo, zoneHasWindows, outdoorIsThere, outdoorNonSrfViewFac, outdoorPtHeightWeights, testPtBlockName, zoneWindowTransmiss, zoneWindowNames = _viewFactorInfo
+        testPtViewFactor, zoneSrfNames, testPtSkyView, testPtBlockedVec, testPtZoneWeights, testPtZoneNames, ptHeightWeights, zoneInletInfo, zoneHasWindows, outdoorIsThere, outdoorNonSrfViewFac, outdoorPtHeightWeights, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, zoneFloorReflectivity = _viewFactorInfo
     except:
-        testPtViewFactor, zoneSrfNames, testPtSkyView, testPtBlockedVec, testPtZoneWeights, testPtZoneNames, ptHeightWeights, zoneInletInfo, zoneHasWindows, outdoorIsThere, outdoorNonSrfViewFac, outdoorPtHeightWeights, testPtBlockName, zoneWindowTransmiss, zoneWindowNames = [], [], [], [], [], [], [], [], [], [], [], [], [], [], []
+        testPtViewFactor, zoneSrfNames, testPtSkyView, testPtBlockedVec, testPtZoneWeights, testPtZoneNames, ptHeightWeights, zoneInletInfo, zoneHasWindows, outdoorIsThere, outdoorNonSrfViewFac, outdoorPtHeightWeights, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, zoneFloorReflectivity = [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []
         checkData25 = False
         warning = "_viewFactorInfo is not valid."
         print warning
@@ -432,19 +432,6 @@ def checkTheInputs():
             clothingLevel.append(1.0)
         print 'No value found for clothingLevel_.  The clothing level will be set to 1 clo or a 3-piece suit.'
     
-    #Check the floor reflectivity.
-    checkData6 = True
-    floorR = 0.25
-    if floorReflectivity_ != None:
-        if floorReflectivity_ <= 1.0 and floorReflectivity_ >= 0.0: floorR = floorReflectivity_
-        else:
-            checkData6 = False
-            warning = 'floorReflectivity_ must be a value between 0 and 1.'
-            print warning
-            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
-    else:
-        print 'No value found for floorReflectivity_.  The reflectivity will be set to 0.25 for a typical indoor floor.'
-    
     #Check the clothing absorptivity.
     checkData7 = True
     cloA = 0.7
@@ -518,11 +505,11 @@ def checkTheInputs():
         humidRatioLow = 0.0
     
     #Do a final check of everything.
-    if checkData1 == True and checkData2 == True and checkData3 == True and checkData4 == True and checkData5 == True and checkData6 == True and checkData7 == True and checkData8 == True and checkData9 == True and checkData10 == True and checkData11 == True and checkData12 == True and checkData13 == True and checkData14 == True and checkData15 == True and checkData16 == True and checkData17 == True and checkData18 == True and checkData19 == True and checkData20 == True and checkData21 == True and checkData22 == True and checkData23 == True and checkData24 == True and checkData25 == True  and checkData26 == True and checkData27 == True and checkData28 == True  and checkData29 == True and checkData30 == True and checkData31 == True and checkData32 == True:
+    if checkData1 == True and checkData2 == True and checkData3 == True and checkData4 == True and checkData5 == True and checkData7 == True and checkData8 == True and checkData9 == True and checkData10 == True and checkData11 == True and checkData12 == True and checkData13 == True and checkData14 == True and checkData15 == True and checkData16 == True and checkData17 == True and checkData18 == True and checkData19 == True and checkData20 == True and checkData21 == True and checkData22 == True and checkData23 == True and checkData24 == True and checkData25 == True  and checkData26 == True and checkData27 == True and checkData28 == True  and checkData29 == True and checkData30 == True and checkData31 == True and checkData32 == True:
         checkData = True
     else: checkData = False
     
-    return checkData, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, clothingLevel, metabolicRate, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winStatusNumbers, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, eightyPercentComf, humidRatioUp, humidRatioLow, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames
+    return checkData, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, clothingLevel, metabolicRate, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winStatusNumbers, cloA, zoneFloorReflectivity, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, eightyPercentComf, humidRatioUp, humidRatioLow, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames
 
 
 

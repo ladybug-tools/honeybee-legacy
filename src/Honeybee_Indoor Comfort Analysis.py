@@ -40,7 +40,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Indoor Comfort Analysis"
 ghenv.Component.NickName = 'IndoorComfAnalysis'
-ghenv.Component.Message = 'VER 0.0.56\nJUN_09_2015'
+ghenv.Component.Message = 'VER 0.0.56\nJUN_14_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -331,9 +331,9 @@ def calculateSolarAdjustedMRT(pointMRTValues, stepOfSimulation, diffSolarRad, di
                         globHorizRadFinal = globHorizRad
                     
                     if outdoorClac == False or zoneCount != len(pointMRTValues)-1:
-                        hourERF = ((0.5*fracEff*testPtSkyView[zoneCount][pointCount]*(diffRad + (globHorizRadFinal*floorR))+ (fracEff*ProjAreaFac*dirRadFinal))*winTrans[stepOfSimulation-1])*(cloA/0.95)
+                        hourERF = ((0.5*fracEff*testPtSkyView[zoneCount][pointCount]*(diffRad + (globHorizRadFinal*floorR[zoneCount][pointCount]))+ (fracEff*ProjAreaFac*dirRadFinal))*winTrans[stepOfSimulation-1])*(cloA/0.95)
                     else:
-                        hourERF = ((0.5*fracEff*testPtSkyView[zoneCount][pointCount]*(diffRad + (globHorizRadFinal*floorR))+ (fracEff*ProjAreaFac*dirRadFinal)))*(cloA/0.95)
+                        hourERF = ((0.5*fracEff*testPtSkyView[zoneCount][pointCount]*(diffRad + (globHorizRadFinal*floorR[zoneCount][pointCount]))+ (fracEff*ProjAreaFac*dirRadFinal)))*(cloA/0.95)
                     #Calculate the MRT delta, the solar adjusted MRT, and the solar adjusted operative temperature.
                     mrtDelt = (hourERF/(fracEff*radTransCoeff))
                     hourMRT = mrtDelt + pointMRT

@@ -31,7 +31,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Visualize Annual Comfort Results"
 ghenv.Component.NickName = 'VisualizeComfort'
-ghenv.Component.Message = 'VER 0.0.56\nJUN_08_2015'
+ghenv.Component.Message = 'VER 0.0.56\nJUN_16_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -393,6 +393,12 @@ if annualData == False or simStepPossible == False:
     manageInputOutput(annualData, simStepPossible)
 else:
     restoreInputOutput()
+
+#In case the input/output has wiped out these terms, replace them with null values.
+try: analysisPeriod_[0]
+except: analysisPeriod_ = []
+try: stepOfSimulation_
+except: stepOfSimulation_ = None
 
 if checkData == True and _runIt == True:
     resultValues = computeComfValues(_comfResultsMtx, analysisPeriod_, analysisPeriod, stepOfSimulation_, annualData, simStepPossible, lb_preparation)
