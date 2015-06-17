@@ -68,24 +68,7 @@ tol = sc.doc.ModelAbsoluteTolerance
 
 
 def checkTheInputs():
-    #Convert the data tree of _viewFactorMesh to py data.
-    viewFactorMesh = []
-    checkData13 = True
-    if _viewFactorMesh.BranchCount != 0:
-        if _viewFactorMesh.Branch(0)[0] != None:
-            for i in range(_viewFactorMesh.BranchCount):
-                branchList = _viewFactorMesh.Branch(i)
-                dataVal = []
-                for item in branchList:
-                    dataVal.append(item)
-                viewFactorMesh.append(dataVal)
-        else:
-            checkData13 = False
-            print "Connect a data tree of view factor meshes from the 'Honeybee_Indoor View Factor Calculator' component."
-    else:
-        checkData13 = False
-        print "Connect a data tree of view factor meshes from the 'Honeybee_Indoor View Factor Calculator' component."
-    
+    w = gh.GH_RuntimeMessageLevel.Warning
     
     #Unpack the viewFactorInfo.
     checkData25 = True
@@ -98,6 +81,44 @@ def checkTheInputs():
         print warning
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, warning)
+    
+    #Convert the data tree of _viewFactorMesh to py data.
+    viewFactorMesh = []
+    checkData13 = True
+    pathCheck = 0
+    finalCheck = len(testPtViewFactor)
+    if _viewFactorMesh.BranchCount != 0:
+        if _viewFactorMesh.Branch(0)[0] != None:
+            treePaths = _viewFactorMesh.Paths
+            for path in treePaths:
+                i = path.Indices[0]
+                if i == pathCheck:
+                    branchList = _viewFactorMesh.Branch(path)
+                    dataVal = []
+                    for item in branchList:
+                        dataVal.append(item)
+                    viewFactorMesh.append(dataVal)
+                    pathCheck += 1
+                else:
+                    while pathCheck < i:
+                        viewFactorMesh.append([])
+                        pathCheck += 1
+                    if i == pathCheck:
+                        branchList = _viewFactorMesh.Branch(path)
+                        dataVal = []
+                        for item in branchList:
+                            dataVal.append(item)
+                        viewFactorMesh.append(dataVal)
+                        pathCheck += 1
+            if len(viewFactorMesh) < finalCheck:
+                while len(viewFactorMesh) < finalCheck:
+                    viewFactorMesh.append([])
+        else:
+            checkData13 = False
+            print "Connect a data tree of view factor meshes from the 'Honeybee_Indoor View Factor Calculator' component."
+    else:
+        checkData13 = False
+        print "Connect a data tree of view factor meshes from the 'Honeybee_Indoor View Factor Calculator' component."
     
     #Create a function to check and create a Python list from a datatree
     def checkCreateDataTree(dataTree, dataName, dataType):
@@ -334,7 +355,6 @@ def checkTheInputs():
             if "Latitude" in line: latitude = float(line.split(',')[0])
             elif "Longitude" in line: longitude = float(line.split(',')[0])
             elif "Time Zone" in line: timeZone = float(line.split(',')[0])
-    
     
     #Check to be sure that the number of mesh faces and test points match.
     checkData8 = True

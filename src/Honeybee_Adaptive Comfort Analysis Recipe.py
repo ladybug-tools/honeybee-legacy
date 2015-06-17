@@ -64,6 +64,8 @@ w = gh.GH_RuntimeMessageLevel.Warning
 tol = sc.doc.ModelAbsoluteTolerance
 
 def checkTheInputs():
+    w = gh.GH_RuntimeMessageLevel.Warning
+    
     #Unpack the viewFactorInfo.
     checkData25 = True
     try:
@@ -344,8 +346,6 @@ def checkTheInputs():
                 totalFaces = 0
                 for meshCount, mesh in enumerate(zone):
                     totalFaces = totalFaces +mesh.Faces.Count
-                #print totalFaces
-                #print len(testPtViewFactor[zoneCount])
                 if totalFaces == len(testPtViewFactor[zoneCount]): pass
                 else:
                     totalVertices = 0
@@ -361,8 +361,6 @@ def checkTheInputs():
                         print warning
                         ghenv.Component.AddRuntimeMessage(w, warning)
             else:
-                #print zone[0].Faces.Count
-                #print len(testPtViewFactor[zoneCount])
                 if zone[0].Faces.Count == len(testPtViewFactor[zoneCount]): pass
                 else:
                     if zone[0].Vertices.Count == len(testPtViewFactor[zoneCount]): pass
