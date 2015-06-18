@@ -41,7 +41,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.56\nJUN_15_2015'
+ghenv.Component.Message = 'VER 0.0.56\nJUN_17_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -89,9 +89,7 @@ def copyHBZoneData():
     srfIntWindowAdjList = []
     modelHasIntWindows = False
     zoneFloorReflect = []
-    zoneFloorSrfs = []
     zoneRoofReflect = []
-    zoneRoofSrfs = []
     
     for zoneCount, HZone in enumerate(_HBZones):
         #Append lists to be filled.
@@ -104,7 +102,6 @@ def copyHBZoneData():
         srfIntWindowAdjList.append([])
         windowSrfTransmiss.append([])
         zoneFloorReflect.append([])
-        zoneFloorSrfs.append([])
         zoneBreps.append(HZone)
         zoneCentPts.append(HZone.GetBoundingBox(False).Center)
         
@@ -168,6 +165,8 @@ def copyHBZoneData():
                         srfAirWallAdjList[zoneCount].append(None)
                         srfInteriorWindowList[zoneCount].append(None)
                         srfIntWindowAdjList[zoneCount].append(None)
+                    zoneFloorReflect[zoneCount].append(None)
+                    zoneRoofReflect.append(None)
             else:
                 srfBreps[zoneCount].append(srf.geometry)
                 windowSrfTransmiss[zoneCount].append(0)
@@ -185,13 +184,15 @@ def copyHBZoneData():
                     solRef = 1 - float(propNumbers[7])
                 if srf.type == 1 or srf.type == 1.5:
                     zoneRoofReflect.append(solRef)
-                    zoneRoofSrfs.append(rc.Geometry.Mesh.CreateFromBrep(srf.geometry, rc.Geometry.MeshingParameters.Coarse)[0])
+                    zoneFloorReflect[zoneCount].append(None)
                 else:
                     zoneFloorReflect[zoneCount].append(solRef)
-                    zoneFloorSrfs[zoneCount].append(rc.Geometry.Mesh.CreateFromBrep(srf.geometry, rc.Geometry.MeshingParameters.Coarse)[0])
+                    zoneRoofReflect.append(None)
+            else:
+                zoneFloorReflect[zoneCount].append(None)
+                zoneRoofReflect.append(None)
     
     zoneFloorReflect.append(zoneRoofReflect)
-    zoneFloorSrfs.append(zoneRoofSrfs)
     
     #Change the list of adjacent zones to be based on the list item of the zone instead of the name of the zone.
     def changeName2Num(theAdjNameList):
@@ -211,7 +212,7 @@ def copyHBZoneData():
     srfAirWallAdjNumList = changeName2Num(srfAirWallAdjList)
     srfIntWindowAdjNumList = changeName2Num(srfIntWindowAdjList)
     
-    sc.sticky["Honeybee_ViewFacotrSrfData"] = [zoneBreps, surfaceNames, srfBreps, zoneCentPts, srfTypes, srfInteriorList, zoneNames, zoneNatVentArea, zoneVolumes, srfAirWallAdjNumList, checkZones, windowSrfTransmiss, modelHasIntWindows, srfInteriorWindowList, srfIntWindowAdjNumList, zoneFloorReflect, zoneFloorSrfs]
+    sc.sticky["Honeybee_ViewFacotrSrfData"] = [zoneBreps, surfaceNames, srfBreps, zoneCentPts, srfTypes, srfInteriorList, zoneNames, zoneNatVentArea, zoneVolumes, srfAirWallAdjNumList, checkZones, windowSrfTransmiss, modelHasIntWindows, srfInteriorWindowList, srfIntWindowAdjNumList, zoneFloorReflect]
 
 
 def checkTheInputs():
@@ -400,7 +401,6 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
     srfInteriorWindowList = hb_zoneData[13]
     srfIntWindowAdjNumList = hb_zoneData[14]
     zoneFloorReflect = hb_zoneData[15]
-    zoneFloorSrfs = hb_zoneData[16]
     
     #Make copies of the original zones in the event that some are combined as air walls are removed.
     oldZoneBreps = zoneBreps[:]
@@ -428,7 +428,6 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
     zoneBrepsNonSolid = []
     continuousDaylitVols = []
     outdoorPtHeightWeights = []
-    zoneFlrReflects = []
     
     #Make lists to keep track of all deleted faces to use if there are some parts of the connected surface that lie completely outside of the zone.
     allDeletedFaces = []
@@ -568,7 +567,6 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                     for airCount2, airAdjList2 in enumerate(adjacentList):
                         if airAdjList2[0] in windowList: finaldaylitAdjList[airCount].append(airCount2)
         
-        
         #Create a new "super zone" from the zones that are continuously connected by air walls.
         for listCount, list in enumerate(adjacentList):
             listMarker = len(newSurfaceNames)
@@ -581,7 +579,6 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
             newSrfIntWindowAdjNumList.append([])
             newFlrRefList.append([])
             newZoneFloorReflect.append([])
-            newZoneFloorSrfs.append([])
             
             for zoneCount in list:
                 for srfCount, surface in enumerate(zoneSrfs[zoneCount]):
@@ -592,16 +589,14 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                         newZoneSrfTypes[listMarker].append(zoneSrfTypes[zoneCount][srfCount])
                         newWindowSrfTransmiss[listMarker].append(windowSrfTransmiss[zoneCount][srfCount])
                         newSrfIntWindowAdjNumList[listMarker].append(srfIntWindowAdjNumList[zoneCount][srfCount])
-                        newZoneFloorReflect[listMarker].extend(zoneFloorReflect[zoneCount])
-                        newZoneFloorSrfs[listMarker].extend(zoneFloorSrfs[zoneCount])
+                        newZoneFloorReflect[listMarker].append(zoneFloorReflect[zoneCount][srfCount])
                     elif srfInteriorList[zoneCount][srfCount] == None and srfAirWallAdjList[zoneCount][srfCount] in list:
                         newZoneSrfs[listMarker].append(surface)
                         newSurfaceNames[listMarker].append(surfaceNames[zoneCount][srfCount])
                         newZoneSrfTypes[listMarker].append(zoneSrfTypes[zoneCount][srfCount])
                         newWindowSrfTransmiss[listMarker].append(windowSrfTransmiss[zoneCount][srfCount])
                         newSrfIntWindowAdjNumList[listMarker].append(srfIntWindowAdjNumList[zoneCount][srfCount])
-                        newZoneFloorReflect[listMarker].extend(zoneFloorReflect[zoneCount])
-                        newZoneFloorSrfs[listMarker].extend(zoneFloorSrfs[zoneCount])
+                        newZoneFloorReflect[listMarker].append(zoneFloorReflect[zoneCount][srfCount])
             
             joinedBrep = rc.Geometry.Brep.JoinBreps(newZoneSolidSrfs[listMarker], tol)
             
@@ -611,7 +606,6 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
         
         #Remember to take the roofs and their reflectivity for possible outdoor solar radiation calculations.
         newZoneFloorReflect.append(zoneFloorReflect[-1])
-        newZoneFloorSrfs.append(zoneFloorSrfs[-1])
         
         zoneBreps = newZoneBreps
         surfaceNames = newSurfaceNames
@@ -620,7 +614,6 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
         windowSrfTransmiss = newWindowSrfTransmiss
         srfIntWindowAdjNumList = newSrfIntWindowAdjNumList
         zoneFloorReflect = newZoneFloorReflect
-        zoneFloorSrfs = newZoneFloorSrfs
     
     #Make sure that the zone volumes are closed.
     for brepCount, brep in enumerate(zoneBreps):
@@ -643,6 +636,7 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                 print warning
                 ghenv.Component.AddRuntimeMessage(w, warning)
     
+    finalSrfTypes = zoneSrfTypes[:]
     
     if geoCheck == True:
         
@@ -853,18 +847,22 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
             #Make a list of all surfaces for the viewFactor calculation of the outdoor mesh.
             zoneSrfsMeshOutdoor = []
             surfaceNamesOutdoor = []
+            surfaceTypesOutdoor = []
             zoneOpaqueMeshOutdoor = []
             for zoneSrfListCount, zoneSrfList in enumerate(zoneSrfs):
                 for srfName in surfaceNames[zoneSrfListCount]:
                     surfaceNamesOutdoor.append(srfName)
+                for srfType in finalSrfTypes[zoneSrfListCount]:
+                    surfaceTypesOutdoor.append(srfType)
                 for srfCount, srf in enumerate(zoneSrfList):
                     srfMesh = rc.Geometry.Mesh.CreateFromBrep(srf, srfMeshPar)[0]
                     zoneSrfsMeshOutdoor.append(srfMesh)
-                    if zoneSrfTypes[zoneSrfListCount][srfCount] != 5:
+                    if finalSrfTypes[zoneSrfListCount][srfCount] != 5:
                         zoneOpaqueMeshOutdoor.append(srfMesh)
             
             zoneSrfsMesh.append(zoneSrfsMeshOutdoor)
             surfaceNames.append(surfaceNamesOutdoor)
+            finalSrfTypes.append(surfaceTypesOutdoor)
         
         
         #Make a list for the weighting of each zone value for the air temperature calculation.
@@ -1063,23 +1061,11 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                 if point.Z >= 0: outdoorPtHeightWeights.append(point.Z)
                 else: outdoorPtHeightWeights.append(0)
         
-        # Compute the ground reflectivity.
-        defaultRef = 0.25
-        groundDirVector = rc.Geometry.Vector3d(0,0,-1)
-        for zoneCount, zonePts in enumerate(testPts):
-            zoneFlrReflects.append([])
-            for pt in zonePts:
-                floorRef = defaultRef
-                groundRay = rc.Geometry.Ray3d(pt, groundDirVector)
-                for gSrfCount, groundSrf in enumerate(zoneFloorSrfs[zoneCount]):
-                    groundIntersect = rc.Geometry.Intersect.Intersection.MeshRay(groundSrf, groundRay)
-                    if groundIntersect == -1: pass
-                    else: floorRef = zoneFloorReflect[zoneCount][gSrfCount]
-                zoneFlrReflects[zoneCount].append(floorRef)
         
-        return geoCheck, testPts, MRTMeshBreps, MRTMeshInit, zoneWires, zoneSrfsMesh, surfaceNames, zoneOpaqueMesh, zoneNames, zoneWeights, heightWeights, zoneInletParams, zoneHasWindows, zoneBrepsNonSolid, includeOutdoor, zoneWindowMesh, zoneWindowTransmiss, outdoorPtHeightWeights, zoneWindowNames, zoneFlrReflects
+        
+        return geoCheck, testPts, MRTMeshBreps, MRTMeshInit, zoneWires, zoneSrfsMesh, surfaceNames, zoneOpaqueMesh, zoneNames, zoneWeights, heightWeights, zoneInletParams, zoneHasWindows, zoneBrepsNonSolid, includeOutdoor, zoneWindowMesh, zoneWindowTransmiss, outdoorPtHeightWeights, zoneWindowNames, zoneFloorReflect, finalSrfTypes
     else:
-        return geoCheck, testPts, MRTMeshBreps, MRTMeshInit, zoneWires, zoneSrfsMesh, surfaceNames, zoneOpaqueMesh, zoneNames, zoneWeights, [], zoneInletParams, zoneHasWindows, zoneBrepsNonSolid, includeOutdoor, zoneWindowMesh, zoneWindowTransmiss, outdoorPtHeightWeights, zoneWindowNames, zoneFlrReflects
+        return geoCheck, testPts, MRTMeshBreps, MRTMeshInit, zoneWires, zoneSrfsMesh, surfaceNames, zoneOpaqueMesh, zoneNames, zoneWeights, [], zoneInletParams, zoneHasWindows, zoneBrepsNonSolid, includeOutdoor, zoneWindowMesh, zoneWindowTransmiss, outdoorPtHeightWeights, zoneWindowNames, zoneFloorReflect, zoneSrfTypes
 
 def checkViewResolution(viewResolution, lb_preparation):
     newVecs = []
@@ -1338,6 +1324,46 @@ def main(testPts, zoneSrfsMesh, viewVectors, includeOutdoor):
     return testPtViewFactor
 
 
+def computeFloorReflect(testPts, testPtViewFactor, zoneSrfTypes, flrRefList):
+    # Set defaults and a list to be filled.
+    defaultRef = 0.2
+    zoneFlrReflects = []
+    includeOutdoor = False
+    if len(testPts) == len(flrRefList): includeOutdoor = True
+    
+    #Compute the ground reflectivity from view factor calculations of ground surfaces.
+    for zoneCount, zonePts in enumerate(testPts):
+        zoneFlrReflects.append([])
+        for ptCount, pt in enumerate(zonePts):
+            ptViewFacs = []
+            ptRefs = []
+            
+            if includeOutdoor == True:
+                if zoneCount != len(testPts) - 1:
+                    for srfCount, srf in enumerate(zoneSrfTypes[zoneCount]):
+                        if srf == 2 or srf == 2.25 or srf == 2.5 or srf == 2.75:
+                            ptRefs.append(flrRefList[zoneCount][srfCount])
+                            ptViewFacs.append(testPtViewFactor[zoneCount][ptCount][srfCount])
+                else:
+                    for srfCount, srf in enumerate(zoneSrfTypes[zoneCount]):
+                        if srf == 1 or srf == 1.5:
+                            ptRefs.append(flrRefList[zoneCount][srfCount])
+                            ptViewFacs.append(testPtViewFactor[zoneCount][ptCount][srfCount])
+            else:
+                for srfCount, srf in enumerate(zoneSrfTypes[zoneCount]):
+                    if srf == 2 or srf == 2.25 or srf == 2.5 or srf == 2.75:
+                        ptRefs.append(flrRefList[zoneCount][srfCount])
+                        ptViewFacs.append(testPtViewFactor[zoneCount][ptCount][srfCount])
+            
+            missingViewFac = 0.5 - sum(ptViewFacs)
+            ptViewFacs.append(missingViewFac)
+            ptRefs.append(defaultRef)
+            weightedFloorRef = 0
+            for refCount, ref in enumerate(ptRefs): weightedFloorRef = weightedFloorRef + ref*ptViewFacs[refCount]
+            weightedFloorRef = weightedFloorRef * 2
+            zoneFlrReflects[zoneCount].append(weightedFloorRef)
+    
+    return zoneFlrReflects
 
 
 #Set the default to always recall HBzones from the hive.
@@ -1403,7 +1429,7 @@ if checkData == True and buildMesh == True:
     start = time.clock()
     goodGeo = prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBreps, includeOutdoor, hb_zoneData)
     if goodGeo != -1:
-        geoCheck, testPtsInit, viewFactorBrep, viewFactorMeshActual, zoneWireFrame, zoneSrfsMesh, zoneSrfNames, zoneOpaqueMesh, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, zoneHasWindows, zoneBrepsNonSolid, includeOutdoor, zoneWindowMesh, zoneWindowTransmiss, outdoorPtHeightWeights, zoneWindowNames, flrRefList = goodGeo
+        geoCheck, testPtsInit, viewFactorBrep, viewFactorMeshActual, zoneWireFrame, zoneSrfsMesh, zoneSrfNames, zoneOpaqueMesh, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, zoneHasWindows, zoneBrepsNonSolid, includeOutdoor, zoneWindowMesh, zoneWindowTransmiss, outdoorPtHeightWeights, zoneWindowNames, flrRefList, zoneSrfTypes = goodGeo
     total_ms = time.clock() - start
     
     #Unpack the data trees of test pts and mesh breps so that the user can see them and get a sense of what to expect from the view factor calculation.
@@ -1436,10 +1462,12 @@ if checkData == True and _runIt == True and geoCheck == True and buildMesh == Tr
         outdoorNonSrfViewFac = checkOutdoorViewFac(testPtViewFactor[-1])
     else: outdoorIsThere = False
     
+    finalFloorRefList = computeFloorReflect(testPtsInit, testPtViewFactor, zoneSrfTypes, flrRefList)
+    
     total_fs = time.clock() - start
     
     #Put all of the information into a list that will carry the data onto the next component easily.
-    viewFactorInfo = [testPtViewFactor, zoneSrfNames, testPtSkyView, testPtBlockedVec, testPtZoneWeights, testPtZoneNames, ptHeightWeights, zoneInletInfo, zoneHasWindows, outdoorIsThere, outdoorNonSrfViewFac, outdoorPtHeightWeights, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, flrRefList]
+    viewFactorInfo = [testPtViewFactor, zoneSrfNames, testPtSkyView, testPtBlockedVec, testPtZoneWeights, testPtZoneNames, ptHeightWeights, zoneInletInfo, zoneHasWindows, outdoorIsThere, outdoorNonSrfViewFac, outdoorPtHeightWeights, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, finalFloorRefList]
 
 #Print out a report of calculation time.
 print "_"
