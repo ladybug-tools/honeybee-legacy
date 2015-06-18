@@ -236,20 +236,17 @@ def main(pointValues, viewFactorMesh, dataType, lb_preparation, lb_visualization
                 highB = 2
         elif customColors[0] == defaultCustomColor1 and customColors[-1] == defaultCustomColor2:
             customColors = [System.Drawing.Color.FromArgb(0,136,255), System.Drawing.Color.FromArgb(200,225,255), System.Drawing.Color.FromArgb(255,255,255), System.Drawing.Color.FromArgb(255,230,230), System.Drawing.Color.FromArgb(255,0,0)]
-    elif dataType == 'Adaptive Thermal Comfort Percent' or dataType == 'Percentage of People Dissatisfied':
+    elif dataType == 'Adaptive Thermal Comfort Percent' or dataType == 'PMV Thermal Comfort Percent':
         legendTitle = '%'
-        if dataType == 'Adaptive Thermal Comfort Percent':
-            for valCount, value in enumerate(pointValues):
-                pointValues[valCount] = value*100
+        for valCount, value in enumerate(pointValues):
+            pointValues[valCount] = value*100
         if len(legendPar_) == 0:
             lowB = 0
             highB = 100
             numSeg = 11
-            if dataType == 'Adaptive Thermal Comfort Percent': customColors = [System.Drawing.Color.FromArgb(0,0,0), System.Drawing.Color.FromArgb(127,127,127), System.Drawing.Color.FromArgb(255,255,255)]
-            else: customColors = [System.Drawing.Color.FromArgb(255,255,255), System.Drawing.Color.FromArgb(127,127,127), System.Drawing.Color.FromArgb(0,0,0)]
+            customColors = [System.Drawing.Color.FromArgb(0,0,0), System.Drawing.Color.FromArgb(127,127,127), System.Drawing.Color.FromArgb(255,255,255)]
         elif customColors[0] == defaultCustomColor1 and customColors[-1] == defaultCustomColor2:
-            if dataType == 'Adaptive Thermal Comfort Percent': customColors = [System.Drawing.Color.FromArgb(0,0,0), System.Drawing.Color.FromArgb(127,127,127), System.Drawing.Color.FromArgb(255,255,255)]
-            else: customColors = [System.Drawing.Color.FromArgb(255,255,255), System.Drawing.Color.FromArgb(127,127,127), System.Drawing.Color.FromArgb(0,0,0)]
+            customColors = [System.Drawing.Color.FromArgb(0,0,0), System.Drawing.Color.FromArgb(127,127,127), System.Drawing.Color.FromArgb(255,255,255)]
     else:
         legendTitle = 'C'
     

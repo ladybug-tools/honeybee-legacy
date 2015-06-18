@@ -90,13 +90,13 @@ outputsDictPMV = {
 2: ["radTempMtx", "A python matrix containing MRT data for every hour of the analysis to be plugged into the 'Honeybee_Visualize Annual Comfort Results' component."],
 3: ["airTempMtx", "A python matrix containing air temperature data for every hour of the analysis to be plugged into the 'Honeybee_Visualize Annual Comfort Results' component."],
 4: ["SET_Mtx", "A python matrix containing standard effective temperature (SET) data for every hour of the analysis to be plugged into the 'Honeybee_Visualize Annual Comfort Results' component."],
-5: ["PPD_Mtx", "A python matrix containing percentage of people dissatisfied (PPD) data for every hour of the analysis to be plugged into the 'Honeybee_Visualize Annual Comfort Results' component."],
+5: ["PMVComfMtx", "A python matrix containing PMV comfort data for every hour of the analysis to be plugged into the 'Honeybee_Visualize Annual Comfort Results' component."],
 6: ["PMV_Mtx", "A python matrix containing predicted mean vote (PMV) data for every hour of the analysis to be plugged into the 'Honeybee_Visualize Annual Comfort Results' component."],
 7: ["===============", "..."],
 8: ["radTempResult", "A csv file address containing the radiant temperature resultsfor each point for every hour of the analysis."],
 9: ["airTempResult", "A csv file address containing the air temperature results for each point for every hour of the analysis."],
 10: ["SET_Result", "A csv file address containing the standard effective temperature (SET) results for each point for every hour of the analysis."],
-11: ["PPD_Result", "A csv file address containing the percentage of people dissatisfied (PPD) results indicating whether a certain point is comfortable for every hour of the analysis."],
+11: ["PMVComfResult", "A csv file address containing the a series of 0's and 1's indicating whether a certain point is comfortable for every hour of the analysis."],
 12: ["PMV_Result", "A csv file address containing predicted mean vote (PMV) results indicating the distance that a certain point is from the neutral temperature for every hour of the analysis."]
 }
 
@@ -855,7 +855,7 @@ def mainPMV(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNum
     radTempMtx = ['Radiant Temperature;' + str(analysisPeriod[0]) + ";" + str(analysisPeriod[1])]
     airTempMtx = ['Air Temperature;' + str(analysisPeriod[0]) + ";" + str(analysisPeriod[1])]
     SET_Mtx = ['Standard Effective Temperature;' + str(analysisPeriod[0]) + ";" + str(analysisPeriod[1])]
-    PPD_Mtx = ['Percentage of People Dissatisfied;' + str(analysisPeriod[0]) + ";" + str(analysisPeriod[1])]
+    PMVComfMtx = ['PMV Thermal Comfort Percent;' + str(analysisPeriod[0]) + ";" + str(analysisPeriod[1])]
     PMV_Mtx = ['Predicted Mean Vote;' + str(analysisPeriod[0]) + ";" + str(analysisPeriod[1])]
     
     #Check the data anlysis period and subtract the start day from each of the HOYs.
@@ -884,7 +884,7 @@ def mainPMV(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNum
             radTempMtx.append(0)
             airTempMtx.append(0)
             SET_Mtx.append(0)
-            PPD_Mtx.append(0)
+            PMVComfMtx.append(0)
             PMV_Mtx.append(0)
         
         #Make sure that the EPW Data does not include headers.
@@ -1014,18 +1014,23 @@ def mainPMV(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNum
                 
                 #Compute the SET and PMV comfort.
                 setPointValues = []
-                ppdPointValues = []
+                pmvComfPointValues = []
                 pmvPointValues = []
                 
                 for ptCount, airTemp in enumerate(pointAirTempValues):
                     pmv, ppd, set, taAdj, coolingEffect = lb_comfortModels.comfPMVElevatedAirspeed(airTemp, pointMRTValues[ptCount], pointWindSpeedValues[ptCount], pointRelHumidValues[ptCount], metabolicRate[originalHour-1], clothingLevel[originalHour-1], 0.0)
                     
                     setPointValues.append(set)
-                    ppdPointValues.append(ppd)
+                    if eightyPercentComf == True:
+                        if ppd  < 20: pmvComfPointValues.append(1)
+                        else: pmvComfPointValues.append(0)
+                    else:
+                        if ppd  < 10: pmvComfPointValues.append(1)
+                        else: pmvComfPointValues.append(0)
                     pmvPointValues.append(pmv)
                 
                 SET_Mtx[count+1] = setPointValues
-                PPD_Mtx[count+1] = ppdPointValues
+                PMVComfMtx[count+1] = pmvComfPointValues
                 PMV_Mtx[count+1] = pmvPointValues
         except:
             print "The calculation has been terminated by the user!"
@@ -1044,7 +1049,7 @@ def mainPMV(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNum
                 climateMapPMV(hour)
         
         if calcCancelled == False:
-            return radTempMtx, airTempMtx, SET_Mtx, PPD_Mtx, PMV_Mtx
+            return radTempMtx, airTempMtx, SET_Mtx, PMVComfMtx, PMV_Mtx
         else:
             return -1
 
@@ -1144,7 +1149,7 @@ def writeCSVAdapt(lb_preparation, directory, fileName, radTempMtx, airTempMtx, o
     return radTempResult, airTempResult, operativeTempResult, adaptComfResult, degFromTargetResult
 
 
-def writeCSVPMV(lb_preparation, directory, fileName, radTempMtx, airTempMtx, SET_Mtx, PPD_Mtx, PMV_Mtx):
+def writeCSVPMV(lb_preparation, directory, fileName, radTempMtx, airTempMtx, SET_Mtx, PMVComfMtx, PMV_Mtx):
     #Find out the number of values in each hour.
     valLen = len(radTempMtx[-1])-1
     
@@ -1210,7 +1215,7 @@ def writeCSVPMV(lb_preparation, directory, fileName, radTempMtx, airTempMtx, SET
     if writeResultFile_ != 2:
         PPD_Result = os.path.join(workingDir, PPDFile)
         comfCSVfile = open(PPD_Result, 'wb')
-        for lineCount, line in enumerate(PPD_Mtx):
+        for lineCount, line in enumerate(PMVComfMtx):
             lineStr = ''
             if lineCount != 0:
                 for valCt, val in enumerate(line):
@@ -1289,6 +1294,6 @@ if checkData == True and _runIt == True:
     elif comfortModel == "PMV":
         result = mainPMV(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, clothingLevel, metabolicRate, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, eightyPercentComf, humidRatioUp, humidRatioLow, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, lb_preparation, lb_sunpath, lb_comfortModels, lb_wind)
         if result != -1:
-            radTempMtx, airTempMtx, SET_Mtx, PPD_Mtx, PMV_Mtx = result
+            radTempMtx, airTempMtx, SET_Mtx, PMVComfMtx, PMV_Mtx = result
             if writeResultFile_ != 0:
-                radTempResult, airTempResult, SET_Result, PPD_Result, PMV_Result = writeCSVPMV(lb_preparation, directory, fileName, radTempMtx, airTempMtx, SET_Mtx, PPD_Mtx, PMV_Mtx)
+                radTempResult, airTempResult, SET_Result, PMVComfResult, PMV_Result = writeCSVPMV(lb_preparation, directory, fileName, radTempMtx, airTempMtx, SET_Mtx, PMVComfMtx, PMV_Mtx)
