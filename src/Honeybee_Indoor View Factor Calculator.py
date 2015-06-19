@@ -42,7 +42,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.56\nJUN_18_2015'
+ghenv.Component.Message = 'VER 0.0.56\nJUN_19_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -1135,7 +1135,8 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                 for itemCount, item in enumerate(additionalShading):
                     transpMesh = rc.Geometry.Mesh.CreateFromBrep(item, rc.Geometry.MeshingParameters.Coarse)[0]
                     zoneTranspMeshOutdoor.append(transpMesh)
-                    zoneTranspMeshTransmiss.append(addShdTransmiss[itemCount])
+                    if constantTransmis == True: zoneTranspMeshTransmiss.append(addShdTransmiss[itemCount])
+                    else: zoneTranspMeshTransmiss.append(1)
                     zoneTranspMeshSrfName.append('AddShd' + str(itemCount))
             
             zoneOpaqueMesh.append(zoneOpaqueMeshOutdoor)
@@ -1156,9 +1157,9 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                 for crv in wireFrame:
                     zoneWires.append(crv)
         
-        return geoCheck, testPts, MRTMeshBreps, MRTMeshInit, zoneWires, zoneSrfsMesh, surfaceNames, zoneOpaqueMesh, zoneNames, zoneWeights, heightWeights, zoneInletParams, zoneHasWindows, zoneBrepsNonSolid, includeOutdoor, zoneWindowMesh, zoneWindowTransmiss, outdoorPtHeightWeights, zoneWindowNames, zoneFloorReflect, finalSrfTypes
+        return geoCheck, testPts, MRTMeshBreps, MRTMeshInit, zoneWires, zoneSrfsMesh, surfaceNames, zoneOpaqueMesh, zoneNames, zoneWeights, heightWeights, zoneInletParams, zoneHasWindows, zoneBrepsNonSolid, includeOutdoor, zoneWindowMesh, zoneWindowTransmiss, outdoorPtHeightWeights, zoneWindowNames, zoneFloorReflect, finalSrfTypes, addShdTransmiss
     else:
-        return geoCheck, testPts, MRTMeshBreps, MRTMeshInit, zoneWires, zoneSrfsMesh, surfaceNames, zoneOpaqueMesh, zoneNames, zoneWeights, [], zoneInletParams, zoneHasWindows, zoneBrepsNonSolid, includeOutdoor, zoneWindowMesh, zoneWindowTransmiss, outdoorPtHeightWeights, zoneWindowNames, zoneFloorReflect, zoneSrfTypes
+        return geoCheck, testPts, MRTMeshBreps, MRTMeshInit, zoneWires, zoneSrfsMesh, surfaceNames, zoneOpaqueMesh, zoneNames, zoneWeights, [], zoneInletParams, zoneHasWindows, zoneBrepsNonSolid, includeOutdoor, zoneWindowMesh, zoneWindowTransmiss, outdoorPtHeightWeights, zoneWindowNames, zoneFloorReflect, zoneSrfTypes, addShdTransmiss
 
 def checkViewResolution(viewResolution, lb_preparation):
     newVecs = []
@@ -1522,7 +1523,7 @@ if checkData == True and buildMesh == True:
     start = time.clock()
     goodGeo = prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBreps, includeOutdoor, constantTransmis, addShdTransmiss, hb_zoneData)
     if goodGeo != -1:
-        geoCheck, testPtsInit, viewFactorBrep, viewFactorMeshActual, zoneWireFrame, zoneSrfsMesh, zoneSrfNames, zoneOpaqueMesh, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, zoneHasWindows, zoneBrepsNonSolid, includeOutdoor, zoneWindowMesh, zoneWindowTransmiss, outdoorPtHeightWeights, zoneWindowNames, flrRefList, zoneSrfTypes = goodGeo
+        geoCheck, testPtsInit, viewFactorBrep, viewFactorMeshActual, zoneWireFrame, zoneSrfsMesh, zoneSrfNames, zoneOpaqueMesh, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, zoneHasWindows, zoneBrepsNonSolid, includeOutdoor, zoneWindowMesh, zoneWindowTransmiss, outdoorPtHeightWeights, zoneWindowNames, flrRefList, zoneSrfTypes, finalAddShdTransmiss = goodGeo
     total_ms = time.clock() - start
     
     #Unpack the data trees of test pts and mesh breps so that the user can see them and get a sense of what to expect from the view factor calculation.
@@ -1560,7 +1561,7 @@ if checkData == True and _runIt == True and geoCheck == True and buildMesh == Tr
     total_fs = time.clock() - start
     
     #Put all of the information into a list that will carry the data onto the next component easily.
-    viewFactorInfo = [testPtViewFactor, zoneSrfNames, testPtSkyView, testPtBlockedVec, testPtZoneWeights, testPtZoneNames, ptHeightWeights, zoneInletInfo, zoneHasWindows, outdoorIsThere, outdoorNonSrfViewFac, outdoorPtHeightWeights, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, finalFloorRefList]
+    viewFactorInfo = [testPtViewFactor, zoneSrfNames, testPtSkyView, testPtBlockedVec, testPtZoneWeights, testPtZoneNames, ptHeightWeights, zoneInletInfo, zoneHasWindows, outdoorIsThere, outdoorNonSrfViewFac, outdoorPtHeightWeights, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, finalFloorRefList, constantTransmis, finalAddShdTransmiss]
 
 #Print out a report of calculation time.
 print "_"

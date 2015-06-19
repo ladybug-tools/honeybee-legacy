@@ -39,7 +39,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Adaptive Comfort Analysis Recipe"
 ghenv.Component.NickName = 'AdaptComfRecipe'
-ghenv.Component.Message = 'VER 0.0.56\nJUN_18_2015'
+ghenv.Component.Message = 'VER 0.0.56\nJUN_19_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -69,9 +69,9 @@ def checkTheInputs():
     #Unpack the viewFactorInfo.
     checkData25 = True
     try:
-        testPtViewFactor, zoneSrfNames, testPtSkyView, testPtBlockedVec, testPtZoneWeights, testPtZoneNames, ptHeightWeights, zoneInletInfo, zoneHasWindows, outdoorIsThere, outdoorNonSrfViewFac, outdoorPtHeightWeights, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, zoneFloorReflectivity = _viewFactorInfo
+        testPtViewFactor, zoneSrfNames, testPtSkyView, testPtBlockedVec, testPtZoneWeights, testPtZoneNames, ptHeightWeights, zoneInletInfo, zoneHasWindows, outdoorIsThere, outdoorNonSrfViewFac, outdoorPtHeightWeights, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, zoneFloorReflectivity, constantTransmis, finalAddShdTransmiss = _viewFactorInfo
     except:
-        testPtViewFactor, zoneSrfNames, testPtSkyView, testPtBlockedVec, testPtZoneWeights, testPtZoneNames, ptHeightWeights, zoneInletInfo, zoneHasWindows, outdoorIsThere, outdoorNonSrfViewFac, outdoorPtHeightWeights, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, zoneFloorReflectivity = [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []
+        testPtViewFactor, zoneSrfNames, testPtSkyView, testPtBlockedVec, testPtZoneWeights, testPtZoneNames, ptHeightWeights, zoneInletInfo, zoneHasWindows, outdoorIsThere, outdoorNonSrfViewFac, outdoorPtHeightWeights, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, zoneFloorReflectivity, constantTransmis, finalAddShdTransmiss = [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], True, []
         checkData25 = False
         warning = "_viewFactorInfo is not valid."
         print warning
@@ -264,10 +264,19 @@ def checkTheInputs():
         for winBCount, windowBranchList in enumerate(winStatusNumbers):
             for shadHrCt, shadVal in enumerate(windowBranchList):
                 winStatusNumbers[winBCount][shadHrCt] = float(shadVal)
-    else:
+    elif constantTransmis == True:
         for count in range(8760):
             winStatusNumbers.append(1)
         print 'No value found for windowShadeTransmiss_.  The window shade status will be set to 1 assuming no additional shading beyond the window glass transmissivity.'
+    
+    #Check to see if there are hourly transmissivities for the additional shading.
+    if constantTransmis == False:
+        allWindowShadesSame = False
+        for transmisslistCount, transmissList in enumerate(finalAddShdTransmiss):
+            winStatusNumbers.append(transmissList)
+            srfName = 'AddShd' + str(transmisslistCount)
+            shdHeader = ['key:location/dataType/units/frequency/startsAt/endsAt', 'Location', 'Surface Window System Solar Transmittance for ' + srfName + ': Window', 'Fraction', 'Hourly', analysisPeriod[0], analysisPeriod[1]]
+            winStatusHeaders.append(shdHeader)
     
     #Check the additionalWindSpeed_.
     checkData31 = True

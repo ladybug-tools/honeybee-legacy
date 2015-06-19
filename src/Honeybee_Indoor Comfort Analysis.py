@@ -40,7 +40,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Indoor Comfort Analysis"
 ghenv.Component.NickName = 'IndoorComfAnalysis'
-ghenv.Component.Message = 'VER 0.0.56\nJUN_18_2015'
+ghenv.Component.Message = 'VER 0.0.56\nJUN_19_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -239,26 +239,22 @@ def computeHourShadeDrawing(hour, testPtSkyView, testPtBlockedVec, winShdDict, t
     newTestPtBlockedVec = []
     newTestPtSkyView = []
     for zoneCount, zone in enumerate(testPtBlockedVec):
-        if outdoorClac == False or zoneCount != len(testPtBlockedVec)-1:
-            newTestPtBlockedVec.append([])
-            newTestPtSkyView.append([])
-            for ptCount, vecList in enumerate(zone):
-                newVecList = []
-                for vecCount, transmiss in enumerate(vecList):
-                    if transmiss == 0: newVecList.append(transmiss)
-                    else:
-                        newTransmissWinList = testPtBlockName[zoneCount][ptCount][vecCount]
-                        transFactor = 1
-                        try:
-                            for window in newTransmissWinList:
-                                transFactor = transFactor * winShdDict[window][hour-1]
-                        except: pass
-                        newVecList.append(transFactor)
-                newTestPtBlockedVec[zoneCount].append(newVecList)
-                newTestPtSkyView[zoneCount].append(sum(newVecList)/len(newVecList))
-        else:
-            newTestPtBlockedVec.append(zone)
-            newTestPtSkyView.append(testPtSkyView[zoneCount])
+        newTestPtBlockedVec.append([])
+        newTestPtSkyView.append([])
+        for ptCount, vecList in enumerate(zone):
+            newVecList = []
+            for vecCount, transmiss in enumerate(vecList):
+                if transmiss == 0: newVecList.append(transmiss)
+                else:
+                    newTransmissWinList = testPtBlockName[zoneCount][ptCount][vecCount]
+                    transFactor = 1
+                    try:
+                        for window in newTransmissWinList:
+                            transFactor = transFactor * winShdDict[window][hour-1]
+                    except: pass
+                    newVecList.append(transFactor)
+            newTestPtBlockedVec[zoneCount].append(newVecList)
+            newTestPtSkyView[zoneCount].append(sum(newVecList)/len(newVecList))
     
     return newTestPtSkyView, newTestPtBlockedVec
 
