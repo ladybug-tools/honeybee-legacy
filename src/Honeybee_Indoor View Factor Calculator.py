@@ -16,6 +16,7 @@ Provided by Honeybee 0.0.55
         gridSize_: A number in Rhino model units to make each cell of the view factor mesh.
         distFromFloorOrSrf_: A number in Rhino model units to set the distance of the view factor mesh from the ground.
         additionalShading_: Add in additional shading breps here for geometry that is not a part of the zone but can still block direct sunlight to occupants.  Examples include outdoor context shading and indoor furniture.
+        addShdTransmiss_: An optional transmissivity that will be used for all of the objects connected to the additionalShading_ input.  This can also be a list of transmissivities whose length matches the number of breps connected to additionalShading_ input, which will assign a different transmissivity to each object.  Lastly, this input can also accept a data tree with a number of branches equal to the number of objects connected to the additionalShading_ input with a number of values in each branch that march the number of hours in the simulated analysisPeriod (so, for an annual simulation, each branch would have 8760 values).  The default is set to assume that all additionalShading_ objects are completely opaque.  As one adds in transmissivities with this input, the calculation time will increase accordingly.
         ============: ...
         viewResolution_: An interger between 0 and 4 to set the number of times that the tergenza skyview patches are split.  A higher number will ensure a greater accuracy but will take longer.  The default is set to 0 for a quick calculation.
         removeAirWalls_: Set to "True" to remove air walls from the view factor calculation.  The default is set to "True" sinc you usually want to remove air walls from your view factor calculations.
@@ -41,7 +42,7 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.56\nJUN_17_2015'
+ghenv.Component.Message = 'VER 0.0.56\nJUN_18_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -316,6 +317,57 @@ def checkTheInputs():
             print warning
             ghenv.Component.AddRuntimeMessage(w, warning)
     
+    #Check the additionalShading_ and addShdTransmiss_.
+    checkData5 = True
+    addShdTransmiss = []
+    constantTransmis = True
+    if addShdTransmiss_.BranchCount > 0:
+        if addShdTransmiss_.BranchCount == 1:
+            addShdTransmissInit = []
+            for transmiss in addShdTransmiss_.Branch(0):
+                addShdTransmissInit.append(transmiss)
+            if len(addShdTransmissInit) == len(additionalShading_):
+                allGood = True
+                for transVal in addShdTransmissInit:
+                    transFloat = transVal
+                    if transFloat <= 1.0 and transFloat >= 0.0: addShdTransmiss.append(transFloat)
+                    else: allGood = False
+                if allGood == False:
+                    checkData5 = False
+                    warning = 'addShdTransmiss_ must be a value between 0 and 1.'
+                    print warning
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+            elif len(addShdTransmissInit) == 1:
+                if addShdTransmissInit[0] <= 1.0 and addShdTransmissInit[0] >= 0.0:
+                    for count in range(len(additionalShading_)):
+                        addShdTransmiss.append(addShdTransmissInit[0])
+                else:
+                    checkData5 = False
+                    warning = 'addShdTransmiss_ must be a value between 0 and 1.'
+                    print warning
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+            else:
+                checkData5 = False
+                warning = 'addShdTransmiss_ must be either a list of values that correspond to the number of breps in the additionalShading_ input or a single constant value for all additionalShading_ objects.'
+                print warning
+                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+        elif addShdTransmiss_.BranchCount > 1:
+            if addShdTransmiss_.BranchCount == len(additionalShading_):
+                constantTransmis = False
+                for i in range(addShdTransmiss_.BranchCount):
+                    branchList = addShdTransmiss_.Branch(i)
+                    dataVal = []
+                    for item in branchList:
+                        dataVal.append(item)
+                    addShdTransmiss.append(dataVal)
+            else:
+                    checkData5 = False
+                    warning = 'addShdTransmiss_ data trees must have a number of branches that equals the number of objects in additionaShading_.'
+                    print warning
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+        else:
+            print "no value connected for addShdTransmiss_.  All breps connected to additionalShading_ will be assumed to be completely opaque,"
+    
     #Check the removeAirWalls_ option.
     if removeAirWalls_ == None: removeInt = True
     else: removeInt = removeAirWalls_
@@ -325,11 +377,11 @@ def checkTheInputs():
     else: includeOutdoor = includeOutdoor_
     
     #Do a final check of everything.
-    if checkData1 == True and checkData2 == True and checkData3 == True and checkData4 == True:
+    if checkData1 == True and checkData2 == True and checkData3 == True and checkData4 == True and checkData5 == True:
         checkData = True
     else: checkData = False
     
-    return checkData, gridSize, distFromFloor, viewResolution, removeInt, sectionMethod, sectionBreps, includeOutdoor
+    return checkData, gridSize, distFromFloor, viewResolution, removeInt, sectionMethod, sectionBreps, includeOutdoor, constantTransmis, addShdTransmiss
 
 def createMesh(brep, gridSize):
     ## mesh breps
@@ -385,7 +437,7 @@ def constructNewMesh(finalFaceBreps):
     
     return finalMesh
 
-def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBreps, includeOutdoor, hb_zoneData):
+def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBreps, includeOutdoor, constantTransmis, addShdTransmiss, hb_zoneData):
     #Separate the HBZoneData.
     zoneBreps = hb_zoneData[0]
     surfaceNames = hb_zoneData[1]
@@ -438,6 +490,20 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
             allDeletedFaces.append([])
             deletedFaceBreps.append([])
             deletedTestPts.append([])
+    
+    #If there is additional shading, check to be sure that the number of faces in each brep is 1.
+    additionalShading = []
+    newAddShdTransmiss = []
+    if additionalShading_ != []:
+        for shdCount, shdBrep in enumerate(additionalShading_):
+            if shdBrep.Faces.Count == 1:
+                additionalShading.append(shdBrep)
+                if addShdTransmiss != []: newAddShdTransmiss.append(addShdTransmiss[shdCount])
+            else:
+                for face in shdBrep.Faces:
+                    additionalShading.append(rc.Geometry.BrepFace.ToBrep(face))
+                    if addShdTransmiss != []: newAddShdTransmiss.append(addShdTransmiss[shdCount])
+        addShdTransmiss = newAddShdTransmiss
     
     #Write a function to split breps with the zone and pull out the correctly split surface.
     def splitOffsetFloor(brep, zone):
@@ -849,6 +915,9 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
             surfaceNamesOutdoor = []
             surfaceTypesOutdoor = []
             zoneOpaqueMeshOutdoor = []
+            zoneTranspMeshOutdoor = []
+            zoneTranspMeshTransmiss = []
+            zoneTranspMeshSrfName = []
             for zoneSrfListCount, zoneSrfList in enumerate(zoneSrfs):
                 for srfName in surfaceNames[zoneSrfListCount]:
                     surfaceNamesOutdoor.append(srfName)
@@ -859,6 +928,10 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                     zoneSrfsMeshOutdoor.append(srfMesh)
                     if finalSrfTypes[zoneSrfListCount][srfCount] != 5:
                         zoneOpaqueMeshOutdoor.append(srfMesh)
+                    else:
+                        zoneTranspMeshOutdoor.append(srfMesh)
+                        zoneTranspMeshTransmiss.append(windowSrfTransmiss[zoneSrfListCount][srfCount])
+                        zoneTranspMeshSrfName.append(surfaceNames[zoneSrfListCount][srfCount])
             
             zoneSrfsMesh.append(zoneSrfsMeshOutdoor)
             surfaceNames.append(surfaceNamesOutdoor)
@@ -993,13 +1066,20 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
             zoneWindowNames.append([])
             
             #First add in any additional shading to the list.
-            if additionalShading_ != []:
-                for item in additionalShading_:
+            hasWindows = 0
+            if additionalShading != [] and addShdTransmiss == []:
+                for item in additionalShading:
                     opaqueMesh = rc.Geometry.Mesh.CreateFromBrep(item, rc.Geometry.MeshingParameters.Coarse)[0]
                     zoneOpaqueMesh[zCount].append(opaqueMesh)
+            elif additionalShading != []:
+                hasWindows = 1
+                for itemCount, item in enumerate(additionalShading):
+                    transpMesh = rc.Geometry.Mesh.CreateFromBrep(item, rc.Geometry.MeshingParameters.Coarse)[0]
+                    zoneWindowMesh[zCount].append(transpMesh)
+                    zoneWindowTransmiss[zCount].append(addShdTransmiss[itemCount])
+                    zoneWindowNames[zCount].append('AddShd' + str(itemCount))
             
             #Now, pull out all of the zones opaque and transparent geometry.
-            hasWindows = 0
             for sCount, srfT in enumerate(zoneSrfTList):
                 if srfT != 5:
                     opaqueMesh = rc.Geometry.Mesh.CreateFromBrep(zoneSrfs[zCount][sCount], rc.Geometry.MeshingParameters.Coarse)[0]
@@ -1045,23 +1125,36 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
         
         #If there are outdoor points included in the calculation, add them to the zoneOpaqueMesh.
         if sectionMethod != 0 and includeOutdoor == True:
-            if additionalShading_ != []:
-                for item in additionalShading_:
+            outdoorHasWindows = 2
+            if additionalShading != [] and addShdTransmiss == []:
+                for item in additionalShading:
                     opaqueMesh = rc.Geometry.Mesh.CreateFromBrep(item, rc.Geometry.MeshingParameters.Coarse)[0]
                     zoneOpaqueMeshOutdoor.append(opaqueMesh)
+            elif additionalShading != []:
+                outdoorHasWindows = 1
+                for itemCount, item in enumerate(additionalShading):
+                    transpMesh = rc.Geometry.Mesh.CreateFromBrep(item, rc.Geometry.MeshingParameters.Coarse)[0]
+                    zoneTranspMeshOutdoor.append(transpMesh)
+                    zoneTranspMeshTransmiss.append(addShdTransmiss[itemCount])
+                    zoneTranspMeshSrfName.append('AddShd' + str(itemCount))
             
             zoneOpaqueMesh.append(zoneOpaqueMeshOutdoor)
-            zoneHasWindows.append(2)
-            zoneWindowMesh.append([])
-            zoneWindowTransmiss.append([])
-            zoneWindowNames.append([])
+            zoneHasWindows.append(outdoorHasWindows)
+            zoneWindowMesh.append(zoneTranspMeshOutdoor)
+            zoneWindowTransmiss.append(zoneTranspMeshTransmiss)
+            zoneWindowNames.append(zoneTranspMeshSrfName)
             
             #Get the absolute heights of the outdoor points in order to factor them in correctly in the wind speed calculation.
             for point in testPts[-1]:
                 if point.Z >= 0: outdoorPtHeightWeights.append(point.Z)
                 else: outdoorPtHeightWeights.append(0)
         
-        
+        #Add the additional shading to the wireframe.
+        if additionalShading != []:
+            for item in additionalShading:
+                wireFrame = item.DuplicateEdgeCurves()
+                for crv in wireFrame:
+                    zoneWires.append(crv)
         
         return geoCheck, testPts, MRTMeshBreps, MRTMeshInit, zoneWires, zoneSrfsMesh, surfaceNames, zoneOpaqueMesh, zoneNames, zoneWeights, heightWeights, zoneInletParams, zoneHasWindows, zoneBrepsNonSolid, includeOutdoor, zoneWindowMesh, zoneWindowTransmiss, outdoorPtHeightWeights, zoneWindowNames, zoneFloorReflect, finalSrfTypes
     else:
@@ -1421,13 +1514,13 @@ checkData = False
 if initCheck == True:
     if hb_zoneData[10] == True:
         lb_preparation = sc.sticky["ladybug_Preparation"]()
-        checkData, gridSize, distFromFloor, viewResolution, removeInt, sectionMethod, sectionBreps, includeOutdoor = checkTheInputs()
+        checkData, gridSize, distFromFloor, viewResolution, removeInt, sectionMethod, sectionBreps, includeOutdoor, constantTransmis, addShdTransmiss = checkTheInputs()
 
 #Create a mesh of the area to calculate the view factor from.
 geoCheck = False
 if checkData == True and buildMesh == True:
     start = time.clock()
-    goodGeo = prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBreps, includeOutdoor, hb_zoneData)
+    goodGeo = prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBreps, includeOutdoor, constantTransmis, addShdTransmiss, hb_zoneData)
     if goodGeo != -1:
         geoCheck, testPtsInit, viewFactorBrep, viewFactorMeshActual, zoneWireFrame, zoneSrfsMesh, zoneSrfNames, zoneOpaqueMesh, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, zoneHasWindows, zoneBrepsNonSolid, includeOutdoor, zoneWindowMesh, zoneWindowTransmiss, outdoorPtHeightWeights, zoneWindowNames, flrRefList, zoneSrfTypes = goodGeo
     total_ms = time.clock() - start

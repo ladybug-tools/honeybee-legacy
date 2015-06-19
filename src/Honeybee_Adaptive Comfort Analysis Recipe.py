@@ -39,7 +39,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Adaptive Comfort Analysis Recipe"
 ghenv.Component.NickName = 'AdaptComfRecipe'
-ghenv.Component.Message = 'VER 0.0.56\nJUN_17_2015'
+ghenv.Component.Message = 'VER 0.0.56\nJUN_18_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -244,7 +244,7 @@ def checkTheInputs():
                 print warning
                 ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
         elif len(windowShadeTransmiss) == 1:
-            if float(windowShadeTransmiss[0]) <= 1.0 and float(windowShadeTransmiss[0] >= 0.0):
+            if float(windowShadeTransmiss[0]) <= 1.0 and float(windowShadeTransmiss[0]) >= 0.0:
                 for count in range(8760):
                     winStatusNumbers.append(float(windowShadeTransmiss[0]))
             else:
