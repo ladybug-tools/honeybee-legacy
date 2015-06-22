@@ -31,7 +31,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Visualize Annual Comfort Results"
 ghenv.Component.NickName = 'VisualizeComfort'
-ghenv.Component.Message = 'VER 0.0.56\nJUN_18_2015'
+ghenv.Component.Message = 'VER 0.0.56\nJUN_21_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -158,14 +158,13 @@ def computeComfValues(comfResultsMtx, analysisP, comfMtxAnalysisP, stepOfSimulat
         newcomfResultsMtx = []
         for lineCount, line in enumerate(comfResultsMtx):
             if lineCount in HOYS: newcomfResultsMtx.append(line)
-        comfResultsMtx = newcomfResultsMtx
         
         #Transpose the matrix
-        comfResultsMtx = comfResultsMtx[1:]
-        comfResultsMtx = zip(*comfResultsMtx)
+        newcomfResultsMtx1 = newcomfResultsMtx[1:]
+        newcomfResultsMtx2 = zip(*newcomfResultsMtx1)
         
         #Compute the total percentage of comfortable hours.
-        for lineCount, line in enumerate(comfResultsMtx):
+        for lineCount, line in enumerate(newcomfResultsMtx2):
             comfortFactorVals.append(sum(line)/len(line))
     elif len(analysisP) > 0 and annualData == False and simStepPossible == True:
         #Check the data anlysis period and subtract the start day from each of the HOYs.
@@ -190,22 +189,21 @@ def computeComfValues(comfResultsMtx, analysisP, comfMtxAnalysisP, stepOfSimulat
             newcomfResultsMtx = []
             for lineCount, line in enumerate(comfResultsMtx):
                 if lineCount in HOYS: newcomfResultsMtx.append(line)
-            comfResultsMtx = newcomfResultsMtx
             
             #Transpose the matrix
-            comfResultsMtx = comfResultsMtx[1:]
-            comfResultsMtx = zip(*comfResultsMtx)
+            newcomfResultsMtx1 = newcomfResultsMtx[1:]
+            newcomfResultsMtx2 = zip(*newcomfResultsMtx1)
             
             #Compute the total percentage of comfortable hours.
-            for lineCount, line in enumerate(comfResultsMtx):
+            for lineCount, line in enumerate(newcomfResultsMtx2):
                 comfortFactorVals.append(sum(line)/len(line))
     else:
         #Transpose the matrix
-        comfResultsMtx = comfResultsMtx[1:]
-        comfResultsMtx = zip(*comfResultsMtx)
+        newcomfResultsMtx1 = comfResultsMtx[1:]
+        newcomfResultsMtx2 = zip(*newcomfResultsMtx1)
         
         #Compute the total percentage of comfortable hours.
-        for lineCount, line in enumerate(comfResultsMtx):
+        for lineCount, line in enumerate(newcomfResultsMtx2):
             comfortFactorVals.append(sum(line)/len(line))
     
     return comfortFactorVals
@@ -219,41 +217,46 @@ def main(pointValues, viewFactorMesh, dataType, lb_preparation, lb_visualization
     defaultCustomColor2 = System.Drawing.Color.FromArgb(255, 234, 38, 0)
     
     #Read the data type and assign default values for mesh types.
-    if dataType == 'Degrees From Target' or dataType == 'Predicted Mean Vote':
-        if dataType == 'Degrees From Target': legendTitle = 'C'
+    if dataType == 'Degrees From Target' or dataType == 'Predicted Mean Vote' or dataType == 'Degrees From Neutral UTCI':
+        pointValuesFinal = pointValues
+        if dataType == 'Degrees From Target' or dataType == 'Degrees From Neutral UTCI': legendTitle = 'C'
         else: legendTitle = 'PMV'
         if dataType == 'Degrees From Target': dataType = dataType + ' Temperature'
         if len(legendPar_) == 0:
-            customColors = [System.Drawing.Color.FromArgb(0,136,255), System.Drawing.Color.FromArgb(200,225,255), System.Drawing.Color.FromArgb(255,255,255), System.Drawing.Color.FromArgb(255,230,230), System.Drawing.Color.FromArgb(255,0,0)]
-            print dataType
+            if dataType == 'Degrees From Neutral UTCI': customColors = [System.Drawing.Color.FromArgb(0,136,255), System.Drawing.Color.FromArgb(67,176,255), System.Drawing.Color.FromArgb(134,215,255), System.Drawing.Color.FromArgb(174,228,255), System.Drawing.Color.FromArgb(215,242,255), System.Drawing.Color.FromArgb(255,255,255), System.Drawing.Color.FromArgb(255,243,243), System.Drawing.Color.FromArgb(255,0,0)]
+            else: customColors = [System.Drawing.Color.FromArgb(0,136,255), System.Drawing.Color.FromArgb(200,225,255), System.Drawing.Color.FromArgb(255,255,255), System.Drawing.Color.FromArgb(255,230,230), System.Drawing.Color.FromArgb(255,0,0)]
             if dataType == 'Degrees From Target Temperature':
                 numSeg = 11
                 lowB = -5
                 highB = 5
+            elif dataType == 'Degrees From Neutral UTCI':
+                numSeg = 12
+                lowB = -32
+                highB = 12
             else:
                 numSeg = 11
-                lowB = -2
-                highB = 2
+                lowB = -1
+                highB = 1
         elif customColors[0] == defaultCustomColor1 and customColors[-1] == defaultCustomColor2:
-            customColors = [System.Drawing.Color.FromArgb(0,136,255), System.Drawing.Color.FromArgb(200,225,255), System.Drawing.Color.FromArgb(255,255,255), System.Drawing.Color.FromArgb(255,230,230), System.Drawing.Color.FromArgb(255,0,0)]
-    elif dataType == 'Adaptive Thermal Comfort Percent' or dataType == 'PMV Thermal Comfort Percent':
+            customColors = [System.Drawing.Color.FromArgb(0,136,255), System.Drawing.Color.FromArgb(100,196,255), System.Drawing.Color.FromArgb(200,225,255), System.Drawing.Color.FromArgb(228,225,255), System.Drawing.Color.FromArgb(255,255,255), System.Drawing.Color.FromArgb(255,230,230), System.Drawing.Color.FromArgb(255,0,0)]
+    elif dataType == 'Adaptive Thermal Comfort Percent' or dataType == 'PMV Thermal Comfort Percent' or dataType == 'Outdoor Thermal Comfort Percent':
         legendTitle = '%'
+        all100Comf = True
+        pointValuesFinal = []
         for valCount, value in enumerate(pointValues):
-            pointValues[valCount] = value*100
+            if value < 1.0: all100Comf = False
+            pointValuesFinal.append(value*100)
         if len(legendPar_) == 0:
-            lowB = 0
-            highB = 100
-            numSeg = 11
-            customColors = [System.Drawing.Color.FromArgb(0,0,0), System.Drawing.Color.FromArgb(127,127,127), System.Drawing.Color.FromArgb(255,255,255)]
-        elif customColors[0] == defaultCustomColor1 and customColors[-1] == defaultCustomColor2:
-            customColors = [System.Drawing.Color.FromArgb(0,0,0), System.Drawing.Color.FromArgb(127,127,127), System.Drawing.Color.FromArgb(255,255,255)]
+            if all100Comf == False: customColors = [System.Drawing.Color.FromArgb(0,0,0), System.Drawing.Color.FromArgb(110,0,153), System.Drawing.Color.FromArgb(255,0,0), System.Drawing.Color.FromArgb(255,255,102), System.Drawing.Color.FromArgb(255,255,255)]
+            else: customColors = [System.Drawing.Color.FromArgb(255,255,255), System.Drawing.Color.FromArgb(255,255,255)]
     else:
+        pointValuesFinal = pointValues
         legendTitle = 'C'
     
     #Get the colors for each zone.
     allColors = []
     transparentColors = []
-    colors = lb_visualization.gradientColor(pointValues, lowB, highB, customColors)
+    colors = lb_visualization.gradientColor(pointValuesFinal, lowB, highB, customColors)
     allColors.append(colors)
     
     #Get a list of colors with alpha values as transparent
@@ -273,7 +276,7 @@ def main(pointValues, viewFactorMesh, dataType, lb_preparation, lb_visualization
             resultMesh.append(mesh)
             segmentedColors.append(colors[colorCounter:(colorCounter+mesh.Vertices.Count)])
             segmentedTanspColors.append(transparentColors[colorCounter:(colorCounter+mesh.Vertices.Count)])
-            segmentedValues.append(pointValues[colorCounter:(colorCounter+mesh.Vertices.Count)])
+            segmentedValues.append(pointValuesFinal[colorCounter:(colorCounter+mesh.Vertices.Count)])
             colorCounter+=mesh.Vertices.Count
         
         for meshCount, mesh in enumerate(resultMesh):
@@ -288,7 +291,7 @@ def main(pointValues, viewFactorMesh, dataType, lb_preparation, lb_visualization
             resultMesh.append(mesh)
             segmentedColors.append(colors[colorCounter:(colorCounter+mesh.Faces.Count)])
             segmentedTanspColors.append(transparentColors[colorCounter:(colorCounter+mesh.Faces.Count)])
-            segmentedValues.append(pointValues[colorCounter:(colorCounter+mesh.Faces.Count)])
+            segmentedValues.append(pointValuesFinal[colorCounter:(colorCounter+mesh.Faces.Count)])
             colorCounter+=mesh.Faces.Count
         
         for meshCount, mesh in enumerate(resultMesh):
@@ -309,7 +312,7 @@ def main(pointValues, viewFactorMesh, dataType, lb_preparation, lb_visualization
     #Create the legend.
     lb_visualization.calculateBB(resultMesh, True)
     if legendBasePoint == None: legendBasePoint = lb_visualization.BoundingBoxPar[0]
-    legendSrfs, legendText, legendTextCrv, textPt, textSize = lb_visualization.createLegend(pointValues, lowB, highB, numSeg, legendTitle, lb_visualization.BoundingBoxPar, legendBasePoint, legendScale, legendFont, legendFontSize, legendBold)
+    legendSrfs, legendText, legendTextCrv, textPt, textSize = lb_visualization.createLegend(pointValuesFinal, lowB, highB, numSeg, legendTitle, lb_visualization.BoundingBoxPar, legendBasePoint, legendScale, legendFont, legendFontSize, legendBold)
     legendColors = lb_visualization.gradientColor(legendText[:-1], lowB, highB, customColors)
     legendSrfs = lb_visualization.colorMesh(legendColors, legendSrfs)
     
@@ -396,6 +399,7 @@ try: analysisPeriod_[0]
 except: analysisPeriod_ = []
 try: stepOfSimulation_
 except: stepOfSimulation_ = None
+
 
 if checkData == True and _runIt == True:
     resultValues = computeComfValues(_comfResultsMtx, analysisPeriod_, analysisPeriod, stepOfSimulation_, annualData, simStepPossible, lb_preparation)

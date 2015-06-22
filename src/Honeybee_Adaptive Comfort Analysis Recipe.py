@@ -39,7 +39,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Adaptive Comfort Analysis Recipe"
 ghenv.Component.NickName = 'AdaptComfRecipe'
-ghenv.Component.Message = 'VER 0.0.56\nJUN_19_2015'
+ghenv.Component.Message = 'VER 0.0.56\nJUN_21_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

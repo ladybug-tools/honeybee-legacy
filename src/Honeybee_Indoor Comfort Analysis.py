@@ -18,7 +18,7 @@ Provided by Honeybee 0.0.56
         =============: ...
         analysisPeriodOrHOY_: An analysis period from the 'Ladybug Analysis Period' component or an hour of the analysis between 1 and 8760 for which you want to conduct the analysis. If no value is connected here, the component will run for only noon on the winter solstice.  A single HOY is used by default as longer analysis periods can take a very long time.
         =============: ...
-        writeResultFile_: Set to 1 or 'True' to have the component write all results into CSV result files and set to 0 or 'False' to not have the component write these files.  The default is set to 'True' as these simulations can be long and you usually want a copy of your results.  You may want to set it to 'False' if you are just scrolling through key hours and want the fastest run possible.  Set to 2 if you want the component to only write the results of the last matrix (the degFromTarget or PMV).
+        writeResultFile_: Set to 1 or 'True' to have the component write all results into CSV result files and set to 0 or 'False' to not have the component write these files.  The default is set to 'True' as these simulations can be long and you usually want a copy of your results.  You may want to set it to 'False' if you are just scrolling through key hours and want the fastest run possible.  Set to 2 if you want the component to only write the results of the last two matrices (comfort results and degFromTarget).
         parallel_: Set to "True" to run the component using multiple CPUs.  This can dramatically decrease calculation time but can interfere with other intense computational processes that might be running on your machine.  For this reason, the default is set to 'False.'
         _runIt: Set boolean to "True" to run the component and generate files for an annual indoor comfort assessment.
     Returns:
@@ -40,7 +40,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Indoor Comfort Analysis"
 ghenv.Component.NickName = 'IndoorComfAnalysis'
-ghenv.Component.Message = 'VER 0.0.56\nJUN_19_2015'
+ghenv.Component.Message = 'VER 0.0.56\nJUN_21_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -98,6 +98,23 @@ outputsDictPMV = {
 10: ["SET_Result", "A csv file address containing the standard effective temperature (SET) results for each point for every hour of the analysis."],
 11: ["PMVComfResult", "A csv file address containing the a series of 0's and 1's indicating whether a certain point is comfortable for every hour of the analysis."],
 12: ["PMV_Result", "A csv file address containing predicted mean vote (PMV) results indicating the distance that a certain point is from the neutral temperature for every hour of the analysis."]
+}
+
+outputsDictUTCI = {
+    
+0: ["readMe!", "..."],
+1: ["===============", "..."],
+2: ["radTempMtx", "A python matrix containing MRT data for every hour of the analysis to be plugged into the 'Honeybee_Visualize Annual Comfort Results' component."],
+3: ["airTempMtx", "A python matrix containing air temperature data for every hour of the analysis to be plugged into the 'Honeybee_Visualize Annual Comfort Results' component."],
+4: ["UTCI_Mtx", "A python matrix containing universal thermal climate index (UTCI) data for every hour of the analysis to be plugged into the 'Honeybee_Visualize Annual Comfort Results' component."],
+5: ["OutdoorComfMtx", "A python matrix containing outdoor (UTCI) comfort data for every hour of the analysis to be plugged into the 'Honeybee_Visualize Annual Comfort Results' component."],
+6: ["DegFromNeutralMtx", "A python matrix containing the degrees from the neutral UTCI value of 20 C for every hour of the analysis to be plugged into the 'Honeybee_Visualize Annual Comfort Results' component."],
+7: ["===============", "..."],
+8: ["radTempResult", "A csv file address containing the radiant temperature resultsfor each point for every hour of the analysis."],
+9: ["airTempResult", "A csv file address containing the air temperature results for each point for every hour of the analysis."],
+10: ["UTCI_Result", "A csv file address containing universal thermal climate index (UTCI) results for each point for every hour of the analysis."],
+11: ["OutdoorComfResult", "A csv file address containing the a series of 0's and 1's indicating whether a certain point is comfortable for every hour of the analysis."],
+12: ["DegFromNeutralResult", "A csv file address containing the degrees from the neutral UTCI value of 20 C indicating the distance that a certain point is from the neutral temperature for every hour of the analysis."]
 }
 
 
@@ -160,7 +177,7 @@ def manageOutput(comfortModel):
             ghenv.Component.Params.Output[input].NickName = "__________"
             ghenv.Component.Params.Output[input].Name = "."
             ghenv.Component.Params.Output[input].Description = " "
-        elif input > 7 and input < 12 and writeResultFile_ == 2:
+        elif input > 7 and input < 11 and writeResultFile_ == 2:
             ghenv.Component.Params.Output[input].NickName = "__________"
             ghenv.Component.Params.Output[input].Name = "."
             ghenv.Component.Params.Output[input].Description = " "
@@ -172,6 +189,10 @@ def manageOutput(comfortModel):
             ghenv.Component.Params.Output[input].NickName = outputsDictPMV[input][0]
             ghenv.Component.Params.Output[input].Name = outputsDictPMV[input][0]
             ghenv.Component.Params.Output[input].Description = outputsDictPMV[input][1]
+        elif comfortModel == "UTCI":
+            ghenv.Component.Params.Output[input].NickName = outputsDictUTCI[input][0]
+            ghenv.Component.Params.Output[input].Name = outputsDictUTCI[input][0]
+            ghenv.Component.Params.Output[input].Description = outputsDictUTCI[input][1]
         else:
             ghenv.Component.Params.Output[input].NickName = outputsDictAdapt[input][0]
             ghenv.Component.Params.Output[input].Name = outputsDictAdapt[input][0]
@@ -846,7 +867,7 @@ def mainAdapt(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataN
         else:
             return -1
 
-def mainPMV(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, clothingLevel, metabolicRate, zoneSrfNames, testPtsViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, eightyPercentComf, humidRatioUp, humidRatioLow, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, lb_preparation, lb_sunpath, lb_comfortModels, lb_wind):
+def mainPMV(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, clothingLevel, metabolicRate, zoneSrfNames, testPtsViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, eightyPercentComf, humidRatioUp, humidRatioLow, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, dataAnalysisPeriod, lb_preparation, lb_sunpath, lb_comfortModels, lb_wind):
     #Set up matrices to be filled.
     radTempMtx = ['Radiant Temperature;' + str(analysisPeriod[0]) + ";" + str(analysisPeriod[1])]
     airTempMtx = ['Air Temperature;' + str(analysisPeriod[0]) + ";" + str(analysisPeriod[1])]
@@ -1034,7 +1055,6 @@ def mainPMV(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNum
             ghenv.Component.AddRuntimeMessage(e, "The calculation has been terminated by the user!")
             calcCancelled = True
         
-        
         #Run through every hour of the analysis to fill up the matrices.
         if parallel_ == True and len(HOYs) != 1:
             tasks.Parallel.ForEach(range(len(HOYs)), climateMapPMV)
@@ -1046,6 +1066,209 @@ def mainPMV(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNum
         
         if calcCancelled == False:
             return radTempMtx, airTempMtx, SET_Mtx, PMVComfMtx, PMV_Mtx
+        else:
+            return -1
+
+def mainUTCI(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, zoneSrfNames, testPtsViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, dataAnalysisPeriod, lb_preparation, lb_sunpath, lb_comfortModels, lb_wind):
+    #Set up matrices to be filled.
+    radTempMtx = ['Radiant Temperature;' + str(analysisPeriod[0]) + ";" + str(analysisPeriod[1])]
+    airTempMtx = ['Air Temperature;' + str(analysisPeriod[0]) + ";" + str(analysisPeriod[1])]
+    UTCI_Mtx = ['Universal Thermal Climate Index;' + str(analysisPeriod[0]) + ";" + str(analysisPeriod[1])]
+    OutdoorComfMtx = ['Outdoor Thermal Comfort Percent;' + str(analysisPeriod[0]) + ";" + str(analysisPeriod[1])]
+    DegFromNeutralMtx = ['Degrees From Neutral UTCI;' + str(analysisPeriod[0]) + ";" + str(analysisPeriod[1])]
+    
+    #Check the data anlysis period and subtract the start day from each of the HOYs.
+    originalHOYs = []
+    if dataAnalysisPeriod != [(1,1,1),(12,31,24)]:
+        FinalHOYs, mon, days = lb_preparation.getHOYsBasedOnPeriod(dataAnalysisPeriod, 1)
+        for hCount, hour in enumerate(HOYs):
+            originalHOYs.append(hour)
+            HOYs[hCount] = hour - FinalHOYs[0]
+    else: originalHOYs = HOYs
+    
+    #Check to be sure that the requested analysis period and the analysis period of the connected data align.
+    periodsAlign = True
+    for hour in HOYs:
+        if hour < 0: periodsAlign = False
+        try: srfTempNumbers[0][hour-1]
+        except: periodsAlign = False
+    if periodsAlign == False:
+        warning = 'The analysis period of the energy simulation data and the analysisPeriodOrHOY_ plugged into this component do not align.'
+        print warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+        return -1
+    else:
+        #Create placeholders for all of the hours.
+        for hour in HOYs:
+            radTempMtx.append(0)
+            airTempMtx.append(0)
+            UTCI_Mtx.append(0)
+            OutdoorComfMtx.append(0)
+            DegFromNeutralMtx.append(0)
+        
+        #Make sure that the EPW Data does not include headers.
+        outDryBulbTemp = outDryBulbTemp[7:]
+        outRelHumid = outRelHumid[7:]
+        outWindSpeed = outWindSpeed[7:]
+        
+        #Change the outdoor point heights to be for 10 meters above in order to correctly account for wind speeds.
+        newOutdoorPtHeightWeights = []
+        for height in outdoorPtHeightWeights:
+            newOutdoorPtHeightWeights.append(height+10)
+        
+        #Make a dictionary that will relate the zoneSrfNames to the srfTempValues.
+        srfTempDict = createSrfDict(zoneSrfNames, "srfName", "srfTemp", srfTempHeaders, srfTempNumbers)
+        
+        #Make a dictionary for outdoor srfNames and temperatures.
+        if outdoorClac == True:
+            outSrfTempDict = createSrfDict(zoneSrfNames, "srfName", "srfTemp", outSrfTempHeaders, outSrfTempNumbers)
+        else: outSrfTempDict = {}
+        
+        #If there are different shade statuses for the different windows, make a neutral winTrans list for this case.
+        neutralWinTransList = []
+        winShdDict = {}
+        if allWindowShadesSame == False:
+            for hr in range(8760): neutralWinTransList.append(1)
+            winShdDict = createShdDict(winStatusHeaders, winTrans, zoneWindowTransmiss, zoneWindowNames)
+        
+        #Make sure that there are windows in the model and a good reason to generate solar outputs.
+        if sum(zoneHasWindows) != 0:
+            #Create a meshed sky dome to assist with direct sunlight falling on occupants.
+            skyPatches = lb_preparation.generateSkyGeo(rc.Geometry.Point3d.Origin, numSkyPatchDivs, .5)
+            skyPatchMeshes = []
+            for patch in skyPatches:
+                skyPatchMeshes.append(rc.Geometry.Mesh.CreateFromBrep(patch, rc.Geometry.MeshingParameters.Coarse)[0])
+            
+            #Initiate the sun vector calculator.
+            lb_sunpath.initTheClass(float(latitude), 0.0, rc.Geometry.Point3d.Origin, 100, float(longitude), float(timeZone))
+            
+            #Calculate the altitude and azimuth of the different hours.
+            sunVecs = []
+            altitudes = []
+            azimuths = []
+            for hour in originalHOYs:
+                d, m, t = lb_preparation.hour2Date(hour, True)
+                lb_sunpath.solInitOutput(m+1, d, t)
+                altitude = math.degrees(lb_sunpath.solAlt)
+                azimuth = math.degrees(lb_sunpath.solAz)
+                if altitude > 0:
+                    sunVec = lb_sunpath.sunReverseVectorCalc()
+                else: sunVec = None
+                sunVecs.append(sunVec)
+                altitudes.append(altitude)
+                azimuths.append(azimuth)
+            sunVecInfo = [sunVecs, altitudes, azimuths]
+        
+        #Make a dictionary that will relate the testPtZoneNames to the air temperatures.
+        airTempDict = createZoneDict(testPtZoneNames, "zoneName", "airTemp", airTempDataHeaders, airTempDataNumbers)
+        relHumidDict = createZoneDict(testPtZoneNames, "zoneName", "airTemp", relHumidDataHeaders, relHumidDataNumbers)
+        
+        #Compute grouped zone properties for air stratification purposes.
+        adjacentList, adjacentNameList, groupedInletArea, groupedZoneHeights, groupedGlzHeights, groupedWinCeilDiffs, groupedZoneVols = computeGroupedRoomProperties(testPtZoneWeights, testPtZoneNames, zoneInletInfo, inletHeightOverride)
+        
+        #Compute a generalizable "projected area" to estimate the zone's starting wind speed.
+        #Note that this projection should ideally be done perpendicularly to the direction of air flow but, since we don't really know the direction of air flow in the zone, we will compute it generally over the whole volume.
+        projectedAreas = []
+        for zoneVol in groupedZoneVols:
+            projLen = math.pow(zoneVol, 1/3)
+            projArea = projLen*projLen
+            projectedAreas.append(projArea)
+        
+        #Run through every hour of the analysis to fill up the matrices.
+        calcCancelled = False
+        
+        try:
+            def climateMapUTCI(count):
+                #Ability to cancel with Esc
+                if gh.GH_Document.IsEscapeKeyDown(): assert False
+                
+                # Get the hour.
+                hour = HOYs[count]
+                originalHour = originalHOYs[count]
+                
+                #Select out the relevant air and surface temperatures.
+                flowVolValues = []
+                heatGainValues = []
+                for zoneVal in flowVolDataNumbers: flowVolValues.append(zoneVal[hour-1])
+                for zoneVal in heatGainDataNumbers: heatGainValues.append(zoneVal[hour-1])
+                
+                #Compute the radiant temperature.
+                pointMRTValues = calculatePointMRT(srfTempDict, testPtsViewFactor, hour-1, originalHour-1, outdoorClac, outSrfTempDict, outdoorNonSrfViewFac, outDryBulbTemp)
+                if sum(zoneHasWindows) != 0:
+                    if allWindowShadesSame == True: pointMRTValues = calculateSolarAdjustedMRT(pointMRTValues, hour, originalHour, diffSolarRad, directSolarRad, globHorizRad, count, sunVecInfo, testPtSkyView, testPtBlockedVec, winTrans, cloA, floorR, skyPatchMeshes, zoneHasWindows, outdoorClac, lb_comfortModels)
+                    else:
+                        #To factor in the effect of blocked sunlight, I have to re-make the testPtSkyView and the testPtBlockedVec to reflect the conditions for the given hour.
+                        hourTestPtSkyView, hourTestPtBlockedVec = computeHourShadeDrawing(hour, testPtSkyView, testPtBlockedVec, winShdDict, testPtBlockName, outdoorClac)
+                        pointMRTValues = calculateSolarAdjustedMRT(pointMRTValues, hour, originalHour, diffSolarRad, directSolarRad, globHorizRad, count, sunVecInfo, hourTestPtSkyView, hourTestPtBlockedVec, neutralWinTransList, cloA, floorR, skyPatchMeshes, zoneHasWindows, outdoorClac, lb_comfortModels)
+                pointMRTValues = lb_preparation.flattenList(pointMRTValues)
+                radTempMtx[count+1] = pointMRTValues
+                
+                #Compute the air temperature.
+                pointAirTempValues = getAirPointValue(airTempDict, testPtZoneWeights, testPtsViewFactor, hour-1, originalHour-1, outdoorClac, outDryBulbTemp)
+                if mixedAirOverride[hour-1] == 0: pointAirTempValues = warpByHeight(pointAirTempValues, ptHeightWeights, flowVolValues, heatGainValues, adjacentList, adjacentNameList, groupedInletArea, groupedZoneHeights, groupedGlzHeights, groupedWinCeilDiffs, outdoorClac, outDryBulbTemp)
+                pointAirTempValues = lb_preparation.flattenList(pointAirTempValues)
+                airTempMtx[count+1] = pointAirTempValues
+                
+                #Compute the relative humidity.
+                pointRelHumidValues = getAirPointValue(relHumidDict, testPtZoneWeights, testPtsViewFactor, hour-1, originalHour-1, outdoorClac, outRelHumid)
+                pointRelHumidValues = lb_preparation.flattenList(pointRelHumidValues)
+                
+                #Compute the wind speed.
+                pointWindSpeedValues = []
+                if outdoorClac == True:
+                    for pointListCount, pointList in enumerate(testPtsViewFactor):
+                        if pointListCount != len(testPtsViewFactor)-1:
+                            for val in pointList:
+                                windFlowVal = flowVolValues[pointListCount]/projectedAreas[pointListCount]
+                                if allWindSpeedsSame == True: windFlowVal = windFlowVal + winSpeedNumbers[originalHour-1]
+                                else:
+                                    windFlowVal = windFlowVal + winSpeedNumbers[pointListCount][originalHour-1]
+                                pointWindSpeedValues.append(windFlowVal)
+                        else:
+                            for valCount, val in enumerate(pointList):
+                                ptWindSpeed = lb_wind.calcWindSpeedBasedOnHeight(outWindSpeed[originalHour-1], newOutdoorPtHeightWeights[valCount], d, a, 270, 0.14)
+                                pointWindSpeedValues.append(ptWindSpeed)
+                else:
+                    for pointListCount, pointList in enumerate(testPtsViewFactor):
+                        for val in pointList:
+                            windFlowVal = flowVolValues[pointListCount]/projectedAreas[pointListCount]
+                            if allWindSpeedsSame == True: windFlowVal = windFlowVal + winSpeedNumbers[originalHour-1]
+                            else: windFlowVal = windFlowVal + winSpeedNumbers[pointListCount][originalHour-1]
+                            pointWindSpeedValues.append(windFlowVal)
+                
+                #Compute the SET and PMV comfort.
+                utciPointValues = []
+                outdoorComfPointValues = []
+                degNeutralPointValues = []
+                
+                for ptCount, airTemp in enumerate(pointAirTempValues):
+                    utci, comf, condition, stressVal = lb_comfortModels.comfUTCI(airTemp, pointMRTValues[ptCount], pointWindSpeedValues[ptCount], pointRelHumidValues[ptCount])
+                    
+                    utciPointValues.append(utci)
+                    outdoorComfPointValues.append(comf)
+                    degNeutralPointValues.append(utci-20)
+                
+                UTCI_Mtx[count+1] = utciPointValues
+                OutdoorComfMtx[count+1] = outdoorComfPointValues
+                DegFromNeutralMtx[count+1] = degNeutralPointValues
+        except:
+            print "The calculation has been terminated by the user!"
+            e = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(e, "The calculation has been terminated by the user!")
+            calcCancelled = True
+        
+        
+        #Run through every hour of the analysis to fill up the matrices.
+        if parallel_ == True and len(HOYs) != 1:
+            tasks.Parallel.ForEach(range(len(HOYs)), climateMapUTCI)
+        else:
+            for hour in range(len(HOYs)):
+                #Ability to cancel with Esc
+                if gh.GH_Document.IsEscapeKeyDown(): assert False
+                climateMapUTCI(hour)
+        
+        if calcCancelled == False:
+            return radTempMtx, airTempMtx, UTCI_Mtx, OutdoorComfMtx, DegFromNeutralMtx
         else:
             return -1
 
@@ -1113,20 +1336,17 @@ def writeCSVAdapt(lb_preparation, directory, fileName, radTempMtx, airTempMtx, o
         operativeTempResult = None
     
     #Write the adaptive comfort result file.
-    if writeResultFile_ != 2:
-        adaptComfResult = os.path.join(workingDir, adaptComfFile)
-        comfCSVfile = open(adaptComfResult, 'wb')
-        for lineCount, line in enumerate(adaptComfMtx):
-            lineStr = ''
-            if lineCount != 0:
-                for valCt, val in enumerate(line):
-                    if valCt != valLen: lineStr = lineStr + str(val) + ','
-                    else: lineStr = lineStr + str(val) + "\n"
-                comfCSVfile.write(lineStr)
-            else: comfCSVfile.write(line + "\n")
-        comfCSVfile.close()
-    else:
-        adaptComfResult = None
+    adaptComfResult = os.path.join(workingDir, adaptComfFile)
+    comfCSVfile = open(adaptComfResult, 'wb')
+    for lineCount, line in enumerate(adaptComfMtx):
+        lineStr = ''
+        if lineCount != 0:
+            for valCt, val in enumerate(line):
+                if valCt != valLen: lineStr = lineStr + str(val) + ','
+                else: lineStr = lineStr + str(val) + "\n"
+            comfCSVfile.write(lineStr)
+        else: comfCSVfile.write(line + "\n")
+    comfCSVfile.close()
     
     #Write the deg from target result file.
     degFromTargetResult = os.path.join(workingDir, degFromTargetFile)
@@ -1208,20 +1428,17 @@ def writeCSVPMV(lb_preparation, directory, fileName, radTempMtx, airTempMtx, SET
         SET_Result = None
     
     #Write the adaptive comfort result file.
-    if writeResultFile_ != 2:
-        PPD_Result = os.path.join(workingDir, PPDFile)
-        comfCSVfile = open(PPD_Result, 'wb')
-        for lineCount, line in enumerate(PMVComfMtx):
-            lineStr = ''
-            if lineCount != 0:
-                for valCt, val in enumerate(line):
-                    if valCt != valLen: lineStr = lineStr + str(val) + ','
-                    else: lineStr = lineStr + str(val) + "\n"
-                comfCSVfile.write(lineStr)
-            else: comfCSVfile.write(line + "\n")
-        comfCSVfile.close()
-    else:
-        PPD_Result = None
+    PPD_Result = os.path.join(workingDir, PPDFile)
+    comfCSVfile = open(PPD_Result, 'wb')
+    for lineCount, line in enumerate(PMVComfMtx):
+        lineStr = ''
+        if lineCount != 0:
+            for valCt, val in enumerate(line):
+                if valCt != valLen: lineStr = lineStr + str(val) + ','
+                else: lineStr = lineStr + str(val) + "\n"
+            comfCSVfile.write(lineStr)
+        else: comfCSVfile.write(line + "\n")
+    comfCSVfile.close()
     
     #Write the deg from target result file.
     PMV_Result = os.path.join(workingDir, PMVFile)
@@ -1239,6 +1456,96 @@ def writeCSVPMV(lb_preparation, directory, fileName, radTempMtx, airTempMtx, SET
     
     return radTempResult, airTempResult, SET_Result, PPD_Result, PMV_Result
 
+def writeCSVUTCI(lb_preparation, directory, fileName, radTempMtx, airTempMtx, UTCI_Mtx, OutdoorComfMtx, DegFromNeutralMtx):
+    #Find out the number of values in each hour.
+    valLen = len(radTempMtx[-1])-1
+    
+    #Set up a working directory.
+    workingDir = lb_preparation.makeWorkingDir(os.path.join(directory)) 
+    
+    #Create a csv Files.
+    radTempFile = fileName + "RadiantTemp.csv"
+    airTempFile = fileName + "AirTemp.csv"
+    UTCIFile = fileName + "UTCI.csv"
+    OutdoorComfFile = fileName + "PPD.csv"
+    DegFromNeutralFile = fileName + "PMV.csv"
+    
+    #Write the radiant temperature result file.
+    if writeResultFile_ != 2:
+        radTempResult = os.path.join(workingDir, radTempFile)
+        radCSVfile = open(radTempResult, 'wb')
+        for lineCount, line in enumerate(radTempMtx):
+            lineStr = ''
+            if lineCount != 0:
+                for valCt, val in enumerate(line):
+                    if valCt != valLen: lineStr = lineStr + str(val) + ','
+                    else: lineStr = lineStr + str(val) + "\n"
+                radCSVfile.write(lineStr)
+            else: radCSVfile.write(line + "\n")
+        radCSVfile.close()
+    else:
+        radTempResult = None
+    
+    #Write the air temperature result file.
+    if writeResultFile_ != 2:
+        airTempResult = os.path.join(workingDir, airTempFile)
+        airCSVfile = open(airTempResult, 'wb')
+        for lineCount, line in enumerate(airTempMtx):
+            lineStr = ''
+            if lineCount != 0:
+                for valCt, val in enumerate(line):
+                    if valCt != valLen: lineStr = lineStr + str(val) + ','
+                    else: lineStr = lineStr + str(val) + "\n"
+                airCSVfile.write(lineStr)
+            else: airCSVfile.write(line + "\n")
+        airCSVfile.close()
+    else:
+        airTempResult = None
+    
+    #Write the operative temperature result file.
+    if writeResultFile_ != 2:
+        UTCI_Result = os.path.join(workingDir, UTCIFile)
+        opCSVfile = open(UTCI_Result, 'wb')
+        for lineCount, line in enumerate(UTCI_Mtx):
+            lineStr = ''
+            if lineCount != 0:
+                for valCt, val in enumerate(line):
+                    if valCt != valLen: lineStr = lineStr + str(val) + ','
+                    else: lineStr = lineStr + str(val) + "\n"
+                opCSVfile.write(lineStr)
+            else: opCSVfile.write(line + "\n")
+        opCSVfile.close()
+    else:
+        UTCI_Result = None
+    
+    #Write the adaptive comfort result file.
+    OutdoorComfResult = os.path.join(workingDir, OutdoorComfFile)
+    comfCSVfile = open(OutdoorComfResult, 'wb')
+    for lineCount, line in enumerate(OutdoorComfMtx):
+        lineStr = ''
+        if lineCount != 0:
+            for valCt, val in enumerate(line):
+                if valCt != valLen: lineStr = lineStr + str(val) + ','
+                else: lineStr = lineStr + str(val) + "\n"
+            comfCSVfile.write(lineStr)
+        else: comfCSVfile.write(line + "\n")
+    comfCSVfile.close()
+    
+    #Write the deg from target result file.
+    DegFromNeutralResult = os.path.join(workingDir, DegFromNeutralFile)
+    degCSVfile = open(DegFromNeutralResult, 'wb')
+    for lineCount, line in enumerate(DegFromNeutralMtx):
+        lineStr = ''
+        if lineCount != 0:
+            for valCt, val in enumerate(line):
+                if valCt != valLen: lineStr = lineStr + str(val) + ','
+                else: lineStr = lineStr + str(val) + "\n"
+            degCSVfile.write(lineStr)
+        else: degCSVfile.write(line + "\n")
+    degCSVfile.close()
+    
+    
+    return radTempResult, airTempResult, UTCI_Result, OutdoorComfResult, DegFromNeutralResult
 
 
 #Import the classes, check the inputs, and generate default values for grid size if the user has given none.
@@ -1264,8 +1571,11 @@ if len(_comfAnalysisRecipe) > 0:
     if len(_comfAnalysisRecipe) == 49 and _comfAnalysisRecipe[0] == "Adaptive":
         comfortModel, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, prevailingOutdoorTemp, eightyPercentComf, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, dataAnalysisPeriod, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers = _comfAnalysisRecipe
         recipeRecognized = True
-    elif len(_comfAnalysisRecipe) == 55 and _comfAnalysisRecipe[0] == "PMV":
-        comfortModel, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, clothingLevel, metabolicRate, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, eightyPercentComf, humidRatioUp, humidRatioLow, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers = _comfAnalysisRecipe
+    elif len(_comfAnalysisRecipe) == 56 and _comfAnalysisRecipe[0] == "PMV":
+        comfortModel, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, clothingLevel, metabolicRate, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, eightyPercentComf, humidRatioUp, humidRatioLow, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, dataAnalysisPeriod = _comfAnalysisRecipe
+        recipeRecognized = True
+    elif len(_comfAnalysisRecipe) == 51 and _comfAnalysisRecipe[0] == "UTCI":
+        comfortModel, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, dataAnalysisPeriod = _comfAnalysisRecipe
         recipeRecognized = True
     else:
         warning = 'Comfort recipe not recognized.'
@@ -1288,8 +1598,14 @@ if checkData == True and _runIt == True:
             if writeResultFile_ != 0:
                 radTempResult, airTempResult, operativeTempResult, adaptComfResult, degFromTargetResult = writeCSVAdapt(lb_preparation, directory, fileName, radTempMtx, airTempMtx, operativeTempMtx, adaptComfMtx, degFromTargetMtx)
     elif comfortModel == "PMV":
-        result = mainPMV(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, clothingLevel, metabolicRate, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, eightyPercentComf, humidRatioUp, humidRatioLow, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, lb_preparation, lb_sunpath, lb_comfortModels, lb_wind)
+        result = mainPMV(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, clothingLevel, metabolicRate, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, eightyPercentComf, humidRatioUp, humidRatioLow, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, dataAnalysisPeriod, lb_preparation, lb_sunpath, lb_comfortModels, lb_wind)
         if result != -1:
             radTempMtx, airTempMtx, SET_Mtx, PMVComfMtx, PMV_Mtx = result
             if writeResultFile_ != 0:
                 radTempResult, airTempResult, SET_Result, PMVComfResult, PMV_Result = writeCSVPMV(lb_preparation, directory, fileName, radTempMtx, airTempMtx, SET_Mtx, PMVComfMtx, PMV_Mtx)
+    elif comfortModel == "UTCI":
+        result = mainUTCI(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, dataAnalysisPeriod, lb_preparation, lb_sunpath, lb_comfortModels, lb_wind)
+        if result != -1:
+            radTempMtx, airTempMtx, UTCI_Mtx, OutdoorComfMtx, DegFromNeutralMtx = result
+            if writeResultFile_ != 0:
+                radTempResult, airTempResult, UTCI_Result, OutdoorComfResult, DegFromNeutralResult = writeCSVUTCI(lb_preparation, directory, fileName, radTempMtx, airTempMtx, UTCI_Mtx, OutdoorComfMtx, DegFromNeutralMtx)
