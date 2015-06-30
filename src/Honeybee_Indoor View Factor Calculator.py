@@ -30,7 +30,7 @@ Provided by Honeybee 0.0.55
         readMe!: ...
         ==========: ...
         viewFactorMesh: A data tree of meshes to be plugged into the "Annual Comfort Analysis Recipe" component.
-        viewFactorInfo: A list of python data that carries essential numerical information for the Comfort Analysis Workflow, including the view factors from each test point to a zone's surfaces, the sky view factors of the test points, and information related to window plaement, used to estimate stratification in the zone.  This should be plugged into the "Annual Comfort Analysis Recipe" component.
+        viewFactorInfo: A list of python data that carries essential numerical information for the Comfort Analysis Workflow, including the view factors from each test point to a zone's surfaces, the sky view factors of the test points, and information related to window plaement, used to estimate stratification in the zone.  This should be plugged into a "Comfort Analysis Recipe" component.
         ==========: ...
         testPts: The test points, which lie in the center of the mesh faces at which comfort parameters are being evaluated.
         viewFactorMesh: A data tree of breps representing the split mesh faces of the view factor mesh.
@@ -42,11 +42,11 @@ Provided by Honeybee 0.0.55
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.56\nJUN_21_2015'
+ghenv.Component.Message = 'VER 0.0.56\nJUN_30_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
-#compatibleLBVersion = VER 0.0.59\nFEB_01_2015
+#compatibleLBVersion = VER 0.0.59\nJUN_25_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "6"
 except: pass
 

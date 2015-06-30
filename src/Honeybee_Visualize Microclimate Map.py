@@ -10,11 +10,11 @@ Use this component to produce a colored mesh from a comfResultsMtx.
 Provided by Honeybee 0.0.56
     
     Args:
-        _comfResultsMtx: Any matrix output from the 'Honeybee_Annual Comfort Analysis' component or the 'Honeybee_Read Indoor Comfort Result' component.
+        _comfResultsMtx: Any matrix output from the 'Honeybee_Microclimate Map Analysis' component, the 'Honeybee_Thermal Comfort Autonomy Analysis' component, or the 'Honeybee_Read Microclimate Matrix' component.
         _viewFactorMesh: The list of view factor meshes that comes out of the  "Honeybee_Indoor View Factor Calculator".  These will be colored with result data.
         ===========: ...
-        analysisPeriod_: Optional analysisPeriod_ to take a slice out of an annual data stream.  Note that this will only work if the connected data is for a full year.  Otherwise, this input will be ignored. Also note that connecting a value to 'stepOfSimulation_' will override this input.
-        stepOfSimulation_: Optional interger to select out a step of the simulation to color the mesh with.  Connecting a value here will override the analysisPeriod_ input.
+        analysisPeriod_: Note that that connecting a value to 'stepOfSimulation_' will override this input.
+        stepOfSimulation_: Optional analysisPeriod_ to take a slice out of the data stream.  Optional interger to select out a step of the simulation to color the mesh with.  Connecting a value here will override the analysisPeriod_ input.
         legendPar_: Optional legend parameters from the Ladybug "Legend Parameters" component.
         _runIt: Set boolean to "True" to run the component and produce a colored mesh from a comfResultsMtx.
     Returns:
@@ -29,13 +29,13 @@ Provided by Honeybee 0.0.56
 
 """
 
-ghenv.Component.Name = "Honeybee_Visualize Annual Comfort Results"
-ghenv.Component.NickName = 'VisualizeComfort'
-ghenv.Component.Message = 'VER 0.0.56\nJUN_21_2015'
+ghenv.Component.Name = "Honeybee_Visualize Microclimate Map"
+ghenv.Component.NickName = 'VisualizeMicroclimate'
+ghenv.Component.Message = 'VER 0.0.56\nJUN_30_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
-#compatibleLBVersion = VER 0.0.59\nFEB_01_2015
+#compatibleLBVersion = VER 0.0.59\nJUN_25_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "6"
 except: pass
 
@@ -56,10 +56,10 @@ w = gh.GH_RuntimeMessageLevel.Warning
 
 inputsDict = {
     
-0: ["_comfResultsMtx", "Any matrix output from the 'Honeybee_Annual Comfort Analysis' component or the 'Honeybee_Read Indoor Comfort Result' component."],
+0: ["_comfResultsMtx", "Any matrix output from the 'Honeybee_Microclimate Map Analysis' component, the 'Honeybee_Thermal Comfort Autonomy Analysis' component, or the 'Honeybee_Read Microclimate Matrix' component."],
 1: ["_viewFactorMesh", "The list of view factor meshes that comes out of the  'Honeybee_Indoor View Factor Calculator'.  These will be colored with result data."],
 2: ["===========", "..."],
-3: ["analysisPeriod_", "Optional analysisPeriod_ to take a slice out of an annual data stream.  Note that this will only work if the connected data is for a full year.  Otherwise, this input will be ignored. Also note that connecting a value to 'stepOfSimulation_' will override this input."],
+3: ["analysisPeriod_", "Optional analysisPeriod_ to take a slice out of the data stream.  Note that that connecting a value to 'stepOfSimulation_' will override this input."],
 4: ["stepOfSimulation_", "Optional interger to select out a step of the simulation to color the mesh with.  Connecting a value here will override the analysisPeriod_ input."],
 5: ["legendPar_", "Optional legend parameters from the Ladybug Legend Parameters component."],
 6: ["_runIt", "Set boolean to 'True' to run the component and visualize indoor comfort."]

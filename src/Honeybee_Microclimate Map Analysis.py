@@ -38,13 +38,13 @@ Provided by Honeybee 0.0.56
 
 """
 
-ghenv.Component.Name = "Honeybee_Indoor Comfort Analysis"
-ghenv.Component.NickName = 'IndoorComfAnalysis'
-ghenv.Component.Message = 'VER 0.0.56\nJUN_21_2015'
+ghenv.Component.Name = "Honeybee_Microclimate Map Analysis"
+ghenv.Component.NickName = 'MicroclimateMap'
+ghenv.Component.Message = 'VER 0.0.56\nJUN_30_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
-#compatibleLBVersion = VER 0.0.59\nFEB_01_2015
+#compatibleLBVersion = VER 0.0.59\nJUN_25_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "6"
 except: pass
 
@@ -867,7 +867,7 @@ def mainAdapt(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataN
         else:
             return -1
 
-def mainPMV(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, clothingLevel, metabolicRate, zoneSrfNames, testPtsViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, eightyPercentComf, humidRatioUp, humidRatioLow, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, dataAnalysisPeriod, lb_preparation, lb_sunpath, lb_comfortModels, lb_wind):
+def mainPMV(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, clothingLevel, metabolicRate, zoneSrfNames, testPtsViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, PPDComfortThresh, humidRatioUp, humidRatioLow, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, dataAnalysisPeriod, lb_preparation, lb_sunpath, lb_comfortModels, lb_wind):
     #Set up matrices to be filled.
     radTempMtx = ['Radiant Temperature;' + str(analysisPeriod[0]) + ";" + str(analysisPeriod[1])]
     airTempMtx = ['Air Temperature;' + str(analysisPeriod[0]) + ";" + str(analysisPeriod[1])]
@@ -1035,14 +1035,19 @@ def mainPMV(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNum
                 pmvPointValues = []
                 
                 for ptCount, airTemp in enumerate(pointAirTempValues):
-                    pmv, ppd, set, taAdj, coolingEffect = lb_comfortModels.comfPMVElevatedAirspeed(airTemp, pointMRTValues[ptCount], pointWindSpeedValues[ptCount], pointRelHumidValues[ptCount], metabolicRate[originalHour-1], clothingLevel[originalHour-1], 0.0)
+                    try:
+                        pmv, ppd, set, taAdj, coolingEffect = lb_comfortModels.comfPMVElevatedAirspeed(airTemp, pointMRTValues[ptCount], pointWindSpeedValues[ptCount], pointRelHumidValues[ptCount], metabolicRate[originalHour-1], clothingLevel[originalHour-1], 0.0)
+                    except:
+                        print 'These conditions caused a failure of the PMV model convergence: Ta = ' + str(airTemp) + "; Tr = " + str(pointMRTValues[ptCount]) + "; Vel = " + str(pointWindSpeedValues[ptCount]) + "; RH = " + str(pointRelHumidValues[ptCount]) + "; met = " + str(metabolicRate[originalHour-1]) + "; clo= " + str(clothingLevel[originalHour-1])
+                        pmv, ppd, set, taAdj, coolingEffect = 0.0, 5.0, 21.0, 0.0, 0.0
                     
                     setPointValues.append(set)
-                    if eightyPercentComf == True:
-                        if ppd  < 20: pmvComfPointValues.append(1)
-                        else: pmvComfPointValues.append(0)
+                    if humidRatioUp != 0.03 or humidRatioLow != 0.0:
+                        HR, EN, vapPress, satPress = lb_comfortModels.calcHumidRatio(airTemp, pointRelHumidValues[ptCount], 101325)
+                        if ppd < PPDComfortThresh and HR < humidRatioUp and HR > humidRatioLow: comfortableOrNot.append(1)
+                        else: comfortableOrNot.append(0)
                     else:
-                        if ppd  < 10: pmvComfPointValues.append(1)
+                        if ppd < PPDComfortThresh: pmvComfPointValues.append(1)
                         else: pmvComfPointValues.append(0)
                     pmvPointValues.append(pmv)
                 
@@ -1572,7 +1577,7 @@ if len(_comfAnalysisRecipe) > 0:
         comfortModel, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, prevailingOutdoorTemp, eightyPercentComf, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, dataAnalysisPeriod, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers = _comfAnalysisRecipe
         recipeRecognized = True
     elif len(_comfAnalysisRecipe) == 56 and _comfAnalysisRecipe[0] == "PMV":
-        comfortModel, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, clothingLevel, metabolicRate, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, eightyPercentComf, humidRatioUp, humidRatioLow, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, dataAnalysisPeriod = _comfAnalysisRecipe
+        comfortModel, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, clothingLevel, metabolicRate, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, PPDComfortThresh, humidRatioUp, humidRatioLow, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, dataAnalysisPeriod = _comfAnalysisRecipe
         recipeRecognized = True
     elif len(_comfAnalysisRecipe) == 51 and _comfAnalysisRecipe[0] == "UTCI":
         comfortModel, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, dataAnalysisPeriod = _comfAnalysisRecipe
@@ -1598,7 +1603,7 @@ if checkData == True and _runIt == True:
             if writeResultFile_ != 0:
                 radTempResult, airTempResult, operativeTempResult, adaptComfResult, degFromTargetResult = writeCSVAdapt(lb_preparation, directory, fileName, radTempMtx, airTempMtx, operativeTempMtx, adaptComfMtx, degFromTargetMtx)
     elif comfortModel == "PMV":
-        result = mainPMV(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, clothingLevel, metabolicRate, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, eightyPercentComf, humidRatioUp, humidRatioLow, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, dataAnalysisPeriod, lb_preparation, lb_sunpath, lb_comfortModels, lb_wind)
+        result = mainPMV(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, clothingLevel, metabolicRate, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, PPDComfortThresh, humidRatioUp, humidRatioLow, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, dataAnalysisPeriod, lb_preparation, lb_sunpath, lb_comfortModels, lb_wind)
         if result != -1:
             radTempMtx, airTempMtx, SET_Mtx, PMVComfMtx, PMV_Mtx = result
             if writeResultFile_ != 0:
