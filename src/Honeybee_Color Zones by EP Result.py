@@ -37,7 +37,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Color Zones by EP Result"
 ghenv.Component.NickName = 'ColorZones'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_06_2015'
+ghenv.Component.Message = 'VER 0.0.56\nJUN_30_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -243,6 +243,7 @@ def checkTheInputs():
         warning = "Component cannot tell what data type is being connected.  Data will be averaged for each zone by default."
         print warning
     
+    
     if checkData4 == True and checkData5 == True:
         checkData = True
     else: checkData = False
@@ -277,15 +278,11 @@ def checkZones(zoneHeaders, pyZoneData, hb_zoneData):
     
     return finalZoneNames, zoneFlrAreas, newZoneFloors, newPyZoneData, newZoneHeaders, newZoneBreps
 
-def manageInputOutput(annualData, simStep, zoneNormalizable):
+def manageInputOutput(annualData, simStep, zoneNormalizable, zoneHeaders, pyZoneData):
     #If some of the component inputs and outputs are not right, blot them out or change them.
     for input in range(9):
         if input == 3 and zoneNormalizable == False:
             ghenv.Component.Params.Input[input].NickName = "__________"
-            ghenv.Component.Params.Input[input].Name = "."
-            ghenv.Component.Params.Input[input].Description = " "
-        elif input == 4 and annualData == False:
-            ghenv.Component.Params.Input[input].NickName = "___________"
             ghenv.Component.Params.Input[input].Name = "."
             ghenv.Component.Params.Input[input].Description = " "
         elif input == 4 and simStep == "TimeStep":
@@ -313,12 +310,36 @@ def manageInputOutput(annualData, simStep, zoneNormalizable):
     
     if zoneNormalizable == False: normByFlr = False
     else: normByFlr = normalizeByFloorArea_
-    if annualData == False: analysisPeriod = [0, 0]
-    else: analysisPeriod = analysisPeriod_
     if simStep == "Annually" or simStep == "unknown timestep": stepOfSimulation = None
     else: stepOfSimulation = stepOfSimulation_
     
-    return normByFlr, analysisPeriod, stepOfSimulation
+    #If there is not annual data and the analysis period is connected, check to be sure that the two align.
+    periodsAlign = True
+    if len(analysisPeriod_) > 0 and annualData == False and stepOfSimulation == None:
+        annualData = True
+        analysisPeriod = analysisPeriod_
+        #Check the data anlysis period and subtract the start day from each of the HOYs.
+        HOYS, months, days = lb_preparation.getHOYsBasedOnPeriod(analysisPeriod_, 1)
+        FinalHOYs, mon, days = lb_preparation.getHOYsBasedOnPeriod([zoneHeaders[0][5], zoneHeaders[0][6]], 1)
+        for hCount, hour in enumerate(HOYS):
+            HOYS[hCount] = hour - FinalHOYs[0]
+        
+        #Check to see if the hours of the requested analysis period are in the comfResultsMtx.
+        for hour in HOYS:
+            if hour < 0: periodsAlign = False
+            try: pyZoneData[0][hour]
+            except: periodsAlign = False
+    elif annualData == False: analysisPeriod = [0, 0]
+    else: analysisPeriod = analysisPeriod_
+    
+    
+    if periodsAlign == True:
+        return normByFlr, analysisPeriod, stepOfSimulation, annualData
+    else:
+        warning = 'The analysis period of the zoneData_ and that which is plugged into the analysisPeriod_ of this component do not align.'
+        print warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+        return -1
 
 def restoreInputOutput():
     for input in range(9):
@@ -669,7 +690,9 @@ if _zoneData.BranchCount > 0 and str(_zoneData) != "tree {0}" and initCheck == T
 
 #Manage the inputs and outputs of the component based on the data that is hooked up.
 if checkData == True:
-    normByFlr, analysisPeriod, stepOfSimulation = manageInputOutput(annualData, simStep, zoneNormalizable)
+     dataInfo = manageInputOutput(annualData, simStep, zoneNormalizable, zoneHeaders, pyZoneData)
+     if dataInfo != -1: normByFlr, analysisPeriod, stepOfSimulation, annualData = dataInfo
+     else: checkData = False
 else: restoreInputOutput()
 
 #If the data is meant to be normalized by floor area, check the zones.

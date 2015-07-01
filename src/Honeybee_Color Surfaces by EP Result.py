@@ -37,7 +37,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Color Surfaces by EP Result"
 ghenv.Component.NickName = 'ColorSurfaces'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_12_2015'
+ghenv.Component.Message = 'VER 0.0.56\nJUN_30_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -278,15 +278,11 @@ def getZoneSrfs(srfHeaders, pyZoneData, hb_zoneData):
     
     return dataCheck, finalSurfaceNames, finalSrfAreas, finalSrfBreps, newPyZoneData, newSrfHeaders, zoneBreps
 
-def manageInputOutput(annualData, simStep, srfNormalizable):
+def manageInputOutput(annualData, simStep, srfNormalizable, srfHeaders, pyZoneData):
     #If some of the component inputs and outputs are not right, blot them out or change them.
     for input in range(9):
         if input == 3 and srfNormalizable == False:
             ghenv.Component.Params.Input[input].NickName = "__________"
-            ghenv.Component.Params.Input[input].Name = "."
-            ghenv.Component.Params.Input[input].Description = " "
-        elif input == 4 and annualData == False:
-            ghenv.Component.Params.Input[input].NickName = "___________"
             ghenv.Component.Params.Input[input].Name = "."
             ghenv.Component.Params.Input[input].Description = " "
         elif input == 4 and simStep == "TimeStep":
@@ -314,12 +310,35 @@ def manageInputOutput(annualData, simStep, srfNormalizable):
     
     if srfNormalizable == False: normByFlr = False
     else: normByFlr = normalizeBySrfArea_
-    if annualData == False: analysisPeriod = [0, 0]
-    else: analysisPeriod = analysisPeriod_
     if simStep == "Annually" or simStep == "unknown timestep": stepOfSimulation = None
     else: stepOfSimulation = stepOfSimulation_
     
-    return normByFlr, analysisPeriod, stepOfSimulation
+    #If there is not annual data and the analysis period is connected, check to be sure that the two align.
+    periodsAlign = True
+    if len(analysisPeriod_) > 0 and annualData == False and stepOfSimulation == None:
+        annualData = True
+        analysisPeriod = analysisPeriod_
+        #Check the data anlysis period and subtract the start day from each of the HOYs.
+        HOYS, months, days = lb_preparation.getHOYsBasedOnPeriod(analysisPeriod_, 1)
+        FinalHOYs, mon, days = lb_preparation.getHOYsBasedOnPeriod([srfHeaders[0][5], srfHeaders[0][6]], 1)
+        for hCount, hour in enumerate(HOYS):
+            HOYS[hCount] = hour - FinalHOYs[0]
+        
+        #Check to see if the hours of the requested analysis period are in the comfResultsMtx.
+        for hour in HOYS:
+            if hour < 0: periodsAlign = False
+            try: pyZoneData[0][hour]
+            except: periodsAlign = False
+    elif annualData == False: analysisPeriod = [0, 0]
+    else: analysisPeriod = analysisPeriod_
+    
+    if periodsAlign == True:
+        return normByFlr, analysisPeriod, stepOfSimulation, annualData
+    else:
+        warning = 'The analysis period of the srfData_ and that which is plugged into the analysisPeriod_ of this component do not align.'
+        print warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+        return -1
 
 def restoreInputOutput():
     for input in range(9):
@@ -650,7 +669,9 @@ if _srfData.BranchCount > 0 and str(_srfData) != "tree {0}" and initCheck == Tru
 
 #Manage the inputs and outputs of the component based on the data that is hooked up.
 if checkData == True:
-    normByFlr, analysisPeriod, stepOfSimulation = manageInputOutput(annualData, simStep, srfNormalizable)
+    dataInfo = manageInputOutput(annualData, simStep, srfNormalizable, srfHeaders, pyZoneData)
+    if dataInfo != -1: normByFlr, analysisPeriod, stepOfSimulation, annualData = dataInfo
+    else: checkData = False
 else: restoreInputOutput()
 
 #If the data is meant to be normalized by surface area, check the HBZones for surface names.
