@@ -27,7 +27,7 @@ Provided by Honeybee 0.0.56
 """
 ghenv.Component.Name = "Honeybee_Surface Data Based On Type Detailed"
 ghenv.Component.NickName = 'srfDataByTypeDetailed'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_03_2015'
+ghenv.Component.Message = 'VER 0.0.56\nJUN_30_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -126,7 +126,7 @@ def getSrfNames(HBZones):
             # Roof
             elif srf.type == 1:
                 if srf.hasChild:
-                    roof.append(srf.punchedGeometry)
+                    roof.append(srf.name)
                     for childSrf in srf.childSrfs:
                         skylight.append(childSrf.name)
                 else:
@@ -172,9 +172,9 @@ def main(HBZones, srfData):
     wall, interiorWall, airWall, window, interiorWindow, skylight, roof, ceiling, floor, exposedFloor, groundFloor, undergroundWall, undergroundCeiling = getSrfNames(HBZones)
     
     #Write a function to check if a name is in the list.
-    def checkList(list, dataTree, name, branchList, branchPath):
+    def checkList(theList, dataTree, name, branchList, branchPath):
         itemFound = False
-        for srf in list:
+        for srf in theList:
             if srf.upper() == name:
                 for item in branchList: dataTree.Add(item, branchPath)
                 itemFound = True
