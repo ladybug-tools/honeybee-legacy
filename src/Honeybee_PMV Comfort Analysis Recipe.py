@@ -42,7 +42,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_PMV Comfort Analysis Recipe"
 ghenv.Component.NickName = 'PMVComfRecipe'
-ghenv.Component.Message = 'VER 0.0.56\nJUN_30_2015'
+ghenv.Component.Message = 'VER 0.0.56\nJUL_02_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -195,7 +195,7 @@ def checkTheInputs():
                 dataCheck6 = True
             else:
                 dataCheck6 = False
-                warning = "Not all of the connected " + dataName + " data is for indoor surface temperture."
+                warning = "Not all of the connected " + dataName + " data is for the correct data type."
                 print warning
                 ghenv.Component.AddRuntimeMessage(w, warning)
             
