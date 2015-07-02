@@ -24,7 +24,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Create CSV Schedule"
 ghenv.Component.NickName = 'csvSchedule'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_12_2015'
+ghenv.Component.Message = 'VER 0.0.56\nJUL_01_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "07 | Energy | Schedule"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -122,7 +122,7 @@ def checkTheInputs():
         
         #Set a default schedule name.
         if scheduleName_ == None: scheduleName = "SCHunnamedSchedule.csv"
-        else: scheduleName = "SCH" + scheduleName_
+        else: scheduleName = "SCH" + scheduleName_.strip()
         
         #If everything is good, return one value to represent this.
         if checkData1 == True and checkData2 == True: checkData = True
