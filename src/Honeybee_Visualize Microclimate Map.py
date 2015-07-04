@@ -32,7 +32,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Visualize Microclimate Map"
 ghenv.Component.NickName = 'VisualizeMicroclimate'
-ghenv.Component.Message = 'VER 0.0.56\nJUN_30_2015'
+ghenv.Component.Message = 'VER 0.0.56\nJUL_04_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -429,6 +429,7 @@ else:
 checkData = False
 annualData = True
 simStepPossible = True
+totalAble = True
 if len(_comfResultsMtx) > 0 and len(_viewFactorMesh) > 0:
     if _comfResultsMtx[0] != None and _viewFactorMesh[0] != None:
         checkData, viewFactorMesh, dataType, annualData, simStepPossible, analysisPeriod, occDataType, totalAble = checkTheInputs()
