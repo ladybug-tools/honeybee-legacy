@@ -1,15 +1,32 @@
 # Decompose EnergyPlus Construction
-# By Chris Mackey and Abraham Yezioro
-# Chris@MackeyArchitecture.com, ayez@ar.technion.ac.il
-# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
-# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+#
+# Honeybee: A Plugin for Environmental Analysis (GPL) started by Mostapha Sadeghipour Roudsari
+# 
+# This file is part of Honeybee.
+# 
+# Copyright (c) 2013-2015, Chris Mackey and Abraham Yezioro <Chris@MackeyArchitecture.com, ayez@ar.technion.ac.il> 
+# Honeybee is free software; you can redistribute it and/or modify 
+# it under the terms of the GNU General Public License as published 
+# by the Free Software Foundation; either version 3 of the License, 
+# or (at your option) any later version. 
+# 
+# Honeybee is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of 
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with Honeybee; If not, see <http://www.gnu.org/licenses/>.
+# 
+# @license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
+
 
 """
 Use this component to account for air films in the U-Value and R-Value of any decomposed Honeybee construction or material.
 Note that EnergyPlus has its own means of calculating the effects of air films on either side of a construction but, here, we provide an apporximate method based on an input surfaceType_.
 
 -
-Provided by Honeybee 0.0.56
+Provided by Honeybee 0.0.57
     
     Args:
         _uValue_SI: The U-Value_SI out of either the "Honeybee_Decompose EP Construction" or the "Honeybee_Decompose EP Material."
@@ -27,7 +44,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_R-Value With Air Films"
 ghenv.Component.NickName = 'RValueAirFilms'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

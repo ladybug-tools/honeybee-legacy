@@ -12,7 +12,7 @@ prepare shading/context geometries
 
 ghenv.Component.Name = 'Honeybee EP context Surfaces'
 ghenv.Component.NickName = 'HB_EPContextSrf'
-ghenv.Component.Message = 'VER 0.0.56\nJUN_24_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

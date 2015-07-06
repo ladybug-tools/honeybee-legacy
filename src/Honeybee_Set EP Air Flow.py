@@ -1,7 +1,24 @@
-# By Chris Mackey
-# Chris@MackeyArchitecture.com
-# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
-# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+#
+# Honeybee: A Plugin for Environmental Analysis (GPL) started by Mostapha Sadeghipour Roudsari
+# 
+# This file is part of Honeybee.
+# 
+# Copyright (c) 2013-2015, Chris Mackey <Chris@MackeyArchitecture.com> 
+# Honeybee is free software; you can redistribute it and/or modify 
+# it under the terms of the GNU General Public License as published 
+# by the Free Software Foundation; either version 3 of the License, 
+# or (at your option) any later version. 
+# 
+# Honeybee is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of 
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with Honeybee; If not, see <http://www.gnu.org/licenses/>.
+# 
+# @license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
+
 
 """
 Use this component to edit the airlfow between your zones and set up natural ventilation, if desired.  The natural ventilation that this component performs can address three main types of natural ventilation strategies:
@@ -18,7 +35,7 @@ Ventilation Wind = Cw * Opening Area * Schedule * WindSpd
 Ventilation Stack = Cd * Opening Area * Schedule * SQRT(2*g*DH*(|(Tzone-Todb)|/Tzone)) 
 Total Ventilation = SQRT((Ventilation Wind)^2 + (Ventilation Stack)^2)
 -
-Provided by Honeybee 0.0.56
+Provided by Honeybee 0.0.57
 
     Args:
         _HBZones: The HBZones out of any of the HB components that generate or alter zones.
@@ -48,7 +65,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Set EP Air Flow"
 ghenv.Component.NickName = 'setEPNatVent'
-ghenv.Component.Message = 'VER 0.0.56\nJUN_01_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
 #compatibleHBVersion = VER 0.0.56\nMAR_16_2015

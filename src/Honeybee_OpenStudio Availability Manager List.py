@@ -1,7 +1,24 @@
-# By Chien Si Harriman
-# charriman@terabuild.com
-# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
-# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+#
+# Honeybee: A Plugin for Environmental Analysis (GPL) started by Mostapha Sadeghipour Roudsari
+# 
+# This file is part of Honeybee.
+# 
+# Copyright (c) 2013-2015, Chien Si Harriman <charriman@terabuild.com> 
+# Honeybee is free software; you can redistribute it and/or modify 
+# it under the terms of the GNU General Public License as published 
+# by the Free Software Foundation; either version 3 of the License, 
+# or (at your option) any later version. 
+# 
+# Honeybee is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of 
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with Honeybee; If not, see <http://www.gnu.org/licenses/>.
+# 
+# @license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
+
 # this component can be used to create an availability manager list
 # the availability manager list allows you to create more complex controls
 # of your HVAC system
@@ -12,7 +29,7 @@
 """
 AvailabilityManagerList
 -
-Provided by Honeybee 0.0.56
+Provided by Honeybee 0.0.57
 
     Args:
         _name: ... provide a unique name for this manager list (required)
@@ -33,7 +50,7 @@ import Grasshopper.Kernel as gh
 
 ghenv.Component.Name = "Honeybee_OpenStudio Availability Manager List"
 ghenv.Component.NickName = 'EPlusAvailabilityManagerList'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_18_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | AirsideSystems"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

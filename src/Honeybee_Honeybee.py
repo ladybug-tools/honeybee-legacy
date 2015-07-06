@@ -1,25 +1,42 @@
 # This is the heart of the Honeybee
-# By Mostapha Sadeghipour Roudsari
-# Sadeghipour@gmail.com
-# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
-# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+#
+# Honeybee: A Plugin for Environmental Analysis (GPL) started by Mostapha Sadeghipour Roudsari
+# 
+# This file is part of Honeybee.
+# 
+# Copyright (c) 2013-2015, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
+# Honeybee is free software; you can redistribute it and/or modify 
+# it under the terms of the GNU General Public License as published 
+# by the Free Software Foundation; either version 3 of the License, 
+# or (at your option) any later version. 
+# 
+# Honeybee is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of 
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with Honeybee; If not, see <http://www.gnu.org/licenses/>.
+# 
+# @license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
+
 
 """
 This component carries all of Honeybee's main classes. Other components refer to these
 classes to run the studies. Therefore, you need to let her fly before running the studies so the
 classes will be copied to Rhinos shared space. So let her fly!
+
 -
-Honeybee started by Mostapha Sadeghipour Roudsari is licensed
-under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
-Based on a work at https://github.com/mostaphaRoudsari/Honeybee.
+Honeybee: A Plugin for Environmental Analysis (GPL) started by Mostapha Sadeghipour Roudsari
+You should have received a copy of the GNU General Public License
+along with Honeybee; If not, see <http://www.gnu.org/licenses/>.
+
+@license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
+
+Source code is available at: https://github.com/mostaphaRoudsari/Honeybee
+
 -
-Check this link for more information about the license:
-http://creativecommons.org/licenses/by-sa/3.0/deed.en_US
--
-Source code is available at:
-https://github.com/mostaphaRoudsari/Honeybee
--
-Provided by Honeybee 0.0.56
+Provided by Honeybee 0.0.57
     
     Args:
         defaultFolder_: Optional input for Honeybee default folder.
@@ -30,7 +47,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.56\nJUL_01_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"

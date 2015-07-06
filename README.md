@@ -4,35 +4,47 @@ Honeybee for Grasshopper
 ========================================
 Honeybee connects Grasshopper3D to EnergyPlus, Radiance, Daysim and OpenStudio for building energy and daylighting simulation.The Honeybee project intends to make many of the features of these simulation tools available in a parametric way.
 
+You need to have [Ladybug](https://github.com/mostaphaRoudsari/Ladybug) installed in order to run Honeybee.
+
 ![Screenshot](http://api.ning.com/files/n6JmThHrsca01EgtclZq-1juc3rkqHwBRDnTZKSn2xbRbec6mv3mUXqgsEXLZoshKBGDh0V31b0HriMS0IwvAe1DSfuBLFL7/IBPSANYCPresentationLadybugHoneybee2.png?width=1200)
 
 Licence
 ========================================
-Honeybee started by Mostapha Sadeghipour Roudsari is licensed under a Creative Commons Attribution-ShareAlike 3.0 Unported License. Based on a work at https://github.com/mostaphaRoudsari/Honeybee.
-	
-It means you can copy, distribute and transmit the work or remix it to adapt the work. You can also use it to make commercial use of the work, BUT you must attribute that the work is based on Honeybee, and if you alter, transform, or build upon Ladybug, you may distribute the resulting work only under the same or similar license. This process will ensure that Honeybee and its future versions will stay free and accessible for everyone.
+Honeybee: A Plugin for Environmental Analysis (GPL) started by Mostapha Sadeghipour Roudsari
+ 
+Copyright (c) 2013-2015, Mostapha Sadeghipour Roudsari Honeybee is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version. 
+ 
+Honeybee is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ 
+You should have received a copy of the GNU General Public License along with Honeybee; If not, see <http://www.gnu.org/licenses/>.
+ 
+@license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
+
 
 Useful links
 ========================================
-Group page: http://www.grasshopper3d.com/group/ladybug
+[Honeybee group page on Grasshopper](http://www.grasshopper3d.com/group/ladybug)
 
-Facebook page: https://www.facebook.com/LadyBugforGrasshopper
+[Facebook page](https://www.facebook.com/LadyBugforGrasshopper)
 
-Ladybug on Twitter: @ladybug_tool
+[Honeybee on Twitter](https://www.twitter.com/ladybug_tool)
+
 
 Contributors(a-z):
 ========================================
-Abraham Yezioro @ayezioro
+[Abraham Yezioro](https://github.com/ayezioro)
 
-Chien Si Harriman @chiensiTB
+[Anton Szilasi](https://github.com/antonszilasi)
 
-Chris Mackey @chriswmackey
+[Chien Si Harriman](https://github.com/chiensiTB)
 
-Mostapha Roudsari @mostapharoudsari
+[Chris Mackey](https://github.com/chriswmackey)
 
-Patrick Chopson @pchopson
+[Mostapha Roudsari](https://github.com/mostapharoudsari)
 
-Sandeep Ahuja @sahuja9
+[Patrick Chopson](https://github.com/pchopson)
+
+[Sandeep Ahuja](https://github.com/sahuja9)
 
 
 So many thanks to Radiance, Daysim, EnergyPlus and OpenStudio!
