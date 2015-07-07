@@ -57,11 +57,11 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Microclimate Map Analysis"
 ghenv.Component.NickName = 'MicroclimateMap'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_07_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
-#compatibleLBVersion = VER 0.0.59\nJUN_25_2015
+#compatibleLBVersion = VER 0.0.59\nJUL_06_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "6"
 except: pass
 
@@ -223,25 +223,41 @@ def duplicateData(data, calcLength):
     return dupData
 
 
-def processPrevailOutdoorTemp(prevailingOutdoorTemp):
-    #Check the _prevailingOutdoorTemp list and evaluate the contents.
+def processPrevailOutdoorTemp(prevailingOutdoorTemp, avgMonthOrRunMean):
+    #Check the prevailingOutdoorTemp list and evaluate the contents.
     prevailTemp = []
-    if prevailingOutdoorTemp[2] == 'Dry Bulb Temperature':
-        prevailTemp.extend(duplicateData([float(sum(prevailingOutdoorTemp[7:751])/744)], 744))
-        prevailTemp.extend(duplicateData([float(sum(prevailingOutdoorTemp[751:1423])/672)], 672))
-        prevailTemp.extend(duplicateData([float(sum(prevailingOutdoorTemp[1423:2167])/744)], 744))
-        prevailTemp.extend(duplicateData([float(sum(prevailingOutdoorTemp[2167:2887])/720)], 720))
-        prevailTemp.extend(duplicateData([float(sum(prevailingOutdoorTemp[2887:3631])/744)], 744))
-        prevailTemp.extend(duplicateData([float(sum(prevailingOutdoorTemp[3631:4351])/720)], 720))
-        prevailTemp.extend(duplicateData([float(sum(prevailingOutdoorTemp[4351:5095])/744)], 744))
-        prevailTemp.extend(duplicateData([float(sum(prevailingOutdoorTemp[5095:5839])/744)], 744))
-        prevailTemp.extend(duplicateData([float(sum(prevailingOutdoorTemp[5839:6559])/720)], 720))
-        prevailTemp.extend(duplicateData([float(sum(prevailingOutdoorTemp[6559:7303])/744)], 744))
-        prevailTemp.extend(duplicateData([float(sum(prevailingOutdoorTemp[7303:8023])/720)], 720))
-        prevailTemp.extend(duplicateData([float(sum(prevailingOutdoorTemp[8023:])/744)], 744))
+    coldTimes = []
+    if avgMonthOrRunMean == True:
+        #Calculate the monthly average temperatures.
+        monthPrevailList = [float(sum(prevailingOutdoorTemp[7:751])/744), float(sum(prevailingOutdoorTemp[751:1423])/672), float(sum(prevailingOutdoorTemp[1423:2167])/744), float(sum(prevailingOutdoorTemp[2167:2887])/720), float(sum(prevailingOutdoorTemp[2887:3631])/744), float(sum(prevailingOutdoorTemp[3631:4351])/720), float(sum(prevailingOutdoorTemp[4351:5095])/744), float(sum(prevailingOutdoorTemp[5095:5839])/744), float(sum(prevailingOutdoorTemp[5839:6559])/720), float(sum(prevailingOutdoorTemp[6559:7303])/744), float(sum(prevailingOutdoorTemp[7303:8023])/720), float(sum(prevailingOutdoorTemp[8023:])/744)]
+        hoursInMonth = [744, 672, 744, 720, 744, 720, 744, 744, 720, 744, 720, 744]
+        for monthCount, monthPrevailTemp in enumerate(monthPrevailList):
+            prevailTemp.extend(duplicateData([monthPrevailTemp], hoursInMonth[monthCount]))
+            if monthPrevailTemp < 10: coldTimes.append(monthCount)
+    else:
+        #Calculate a running mean temperature.
+        alpha = 0.8
+        divisor = 1 + alpha + math.pow(alpha,2) + math.pow(alpha,3) + math.pow(alpha,4) + math.pow(alpha,5)
+        dividend = (sum(prevailingOutdoorTemp[-24:-1] + [prevailingOutdoorTemp[-1]])/24) + (alpha*(sum(prevailingOutdoorTemp[-48:-24])/24)) + (math.pow(alpha,2)*(sum(prevailingOutdoorTemp[-72:-48])/24)) + (math.pow(alpha,3)*(sum(prevailingOutdoorTemp[-96:-72])/24)) + (math.pow(alpha,4)*(sum(prevailingOutdoorTemp[-120:-96])/24)) + (math.pow(alpha,5)*(sum(prevailingOutdoorTemp[-144:-120])/24))
+        startingTemp = divisor/dividend
+        if startingTemp < 10: coldTimes.append(0)
+        outdoorTemp = prevailingOutdoorTemp[7:]
+        startingMean = sum(outdoorTemp[:24])/24
+        dailyRunMeans = [startingTemp]
+        dailyMeans = [startingMean]
+        prevailTemp.extend(duplicateData([startingTemp], 24))
+        startHour = 24
+        for count in range(364):
+            dailyMean = sum(outdoorTemp[startHour:startHour+24])/24
+            dailyRunMeanTemp = ((1-alpha)*dailyMeans[-1]) + alpha*dailyRunMeans[-1]
+            if dailyRunMeanTemp < 10: coldTimes.append(count+1)
+            prevailTemp.extend(duplicateData([dailyRunMeanTemp], 24))
+            dailyRunMeans.append(dailyRunMeanTemp)
+            dailyMeans.append(dailyMean)
+            startHour +=24
     
     
-    return prevailTemp
+    return prevailTemp, coldTimes
 
 
 def calculatePointMRT(srfTempDict, testPtsViewFactor, hour, originalHour, outdoorClac, outSrfTempDict, outdoorNonSrfViewFac, prevailingOutdoorTemp):
@@ -688,7 +704,7 @@ def computeGroupedRoomProperties(testPtZoneWeights, testPtZoneNames, zoneInletIn
     return adjacentList, adjacentNameList, groupedInletArea, groupedZoneHeights, groupedGlzHeights, groupedWinCeilDiffs, groupedTotalVol
 
 
-def mainAdapt(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, zoneSrfNames, testPtsViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, prevailingOutdoorTemp, eightyPercentComf, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, dataAnalysisPeriod, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, lb_preparation, lb_sunpath, lb_comfortModels, lb_wind):
+def mainAdapt(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, zoneSrfNames, testPtsViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, prevailingOutdoorTemp, ASHRAEorEN, comfClass, avgMonthOrRunMean, levelOfConditioning, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, dataAnalysisPeriod, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, lb_preparation, lb_sunpath, lb_comfortModels, lb_wind):
     #Set up matrices to be filled.
     radTempMtx = ['Radiant Temperature;' + str(analysisPeriod[0]) + ";" + str(analysisPeriod[1])]
     airTempMtx = ['Air Temperature;' + str(analysisPeriod[0]) + ";" + str(analysisPeriod[1])]
@@ -717,15 +733,45 @@ def mainAdapt(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataN
         return -1
     else:
         #Create placeholders for all of the hours.
+        months = []
+        dayNums = []
         for hour in HOYs:
             radTempMtx.append(0)
             airTempMtx.append(0)
             operativeTempMtx.append(0)
             adaptComfMtx.append(0)
             degFromTargetMtx.append(0)
+            d, m, t = lb_preparation.hour2Date(hour, True)
+            if m not in months: months.append(m)
+            if avgMonthOrRunMean == False:
+                day = int(lb_preparation.getJD(m, d))
+                if day not in dayNums: dayNums.append(day)
         
         #Get the prevailing outdoor temperature for the whole analysis.
-        prevailTemp = processPrevailOutdoorTemp(prevailingOutdoorTemp)
+        prevailTemp, coldTimes = processPrevailOutdoorTemp(prevailingOutdoorTemp, avgMonthOrRunMean)
+        
+        #Check to see if there are any times when the prevailing temperature is too cold and give a comment that we are using a non-standard model.
+        monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+        if ASHRAEorEN == True: modelName = "ASHRAE 55"
+        else: modelName = "EN-15251"
+        if coldTimes != []:
+            if avgMonthOrRunMean == True:
+                coldMsg = "The following months were too cold for the official " + modelName + " standard and have used a correlation from recent research:"
+                for month in months:
+                    if month in coldTimes:
+                        coldMsg += '\n'
+                        coldMsg += monthNames[month]
+                print coldMsg
+                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Remark, coldMsg)
+            else:
+                totalColdInPeriod = []
+                for day in dayNums:
+                    if day in coldTimes: totalColdInPeriod.append(day)
+                if totalColdInPeriod != []:
+                    coldMsg = "There were " + str(len(totalColdInPeriod)) + " days of the analysis period when the outdoor temperatures were too cold for the official " + modelName + "standard. \n A correlation from recent research has been used in these cases."
+                    print coldMsg
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Remark, coldMsg)
+        
         
         #Make sure that the EPW Data does not include headers.
         prevailingOutdoorTemp = prevailingOutdoorTemp[7:]
@@ -857,7 +903,8 @@ def mainAdapt(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataN
                 degFromTargetPointValues = []
                 
                 for ptCount, airTemp in enumerate(pointAirTempValues):
-                    comfTemp, distFromTarget, lowTemp, upTemp, comf, condition = lb_comfortModels.comfAdaptiveComfortASH55(airTemp, pointMRTValues[ptCount], prevailTemp[originalHour-1], pointWindSpeedValues[ptCount], eightyPercentComf)
+                    if ASHRAEorEN == True: comfTemp, distFromTarget, lowTemp, upTemp, comf, condition = lb_comfortModels.comfAdaptiveComfortASH55(airTemp, pointMRTValues[ptCount], prevailTemp[originalHour-1], pointWindSpeedValues[ptCount], comfClass, levelOfConditioning)
+                    else: comfTemp, distFromTarget, lowTemp, upTemp, comf, condition = lb_comfortModels.comfAdaptiveComfortEN15251(airTemp, pointMRTValues[ptCount], prevailTemp[originalHour-1], pointWindSpeedValues[ptCount], comfClass, levelOfConditioning)
                     adaptComfPointValues.append(int(comf))
                     degFromTargetPointValues.append(distFromTarget)
                 
@@ -1590,8 +1637,8 @@ else:
 recipeRecognized = False
 comfortModel = None
 if len(_comfAnalysisRecipe) > 0:
-    if len(_comfAnalysisRecipe) == 49 and _comfAnalysisRecipe[0] == "Adaptive":
-        comfortModel, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, prevailingOutdoorTemp, eightyPercentComf, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, dataAnalysisPeriod, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers = _comfAnalysisRecipe
+    if len(_comfAnalysisRecipe) == 52 and _comfAnalysisRecipe[0] == "Adaptive":
+        comfortModel, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, prevailingOutdoorTemp, ASHRAEorEN, comfClass, avgMonthOrRunMean, levelOfConditioning, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, dataAnalysisPeriod, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers = _comfAnalysisRecipe
         recipeRecognized = True
     elif len(_comfAnalysisRecipe) == 56 and _comfAnalysisRecipe[0] == "PMV":
         comfortModel, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, clothingLevel, metabolicRate, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, PPDComfortThresh, humidRatioUp, humidRatioLow, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, dataAnalysisPeriod = _comfAnalysisRecipe
@@ -1614,7 +1661,7 @@ if recipeRecognized == True and checkLB == True:
 
 if checkData == True and _runIt == True:
     if comfortModel == "Adaptive":
-        result = mainAdapt(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, prevailingOutdoorTemp, eightyPercentComf, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, dataAnalysisPeriod, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, lb_preparation, lb_sunpath, lb_comfortModels, lb_wind)
+        result = mainAdapt(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, prevailingOutdoorTemp, ASHRAEorEN, comfClass, avgMonthOrRunMean, levelOfConditioning, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, dataAnalysisPeriod, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, lb_preparation, lb_sunpath, lb_comfortModels, lb_wind)
         if result != -1:
             radTempMtx, airTempMtx, operativeTempMtx, adaptComfMtx, degFromTargetMtx = result
             if writeResultFile_ != 0:
