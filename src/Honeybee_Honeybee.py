@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_07_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -7177,10 +7177,21 @@ if checkIn.letItFly:
         sc.sticky["honeybee_folders"]["DSCorePath"] = hb_DSCore
         sc.sticky["honeybee_folders"]["DSLibPath"] = hb_DSLibPath
     
+        # supported versions for EnergyPlus
+        EPVersions = ["V8-2-10", "V8-2-9", "V8-2-8", "V8-2-7", "V8-2-6", \
+                      "V8-2-5", "V8-2-4", "V8-2-3", "V8-2-2", "V8-2-1", \
+                      "V8-1-5", "V8-1-4", "V8-1-3", "V8-1-2", "V8-1-1"]
+                      
+        
+        if folders.EPPath != None:
+            # Honeybee has already found EnergyPlus make sure it's an acceptable version
+            EPVersion = os.path.split(folders.EPPath)[-1].split("EnergyPlus")[-1]
+            
+            if EPVersion not in EPVersions:
+                #Not an acceptable version so remove it from the path
+                folders.EPPath = None
+            
         if folders.EPPath == None:
-		
-            EPVersions = ["V8-2-7", "V8-2-6", "V8-2-5", "V8-2-4", "V8-2-3", \
-                          "V8-2-2", "V8-2-1", "V8-2-0", "V8-1-0"]
             for EPVersion in EPVersions:
                 if os.path.isdir("C:\EnergyPlus" + EPVersion + "\\"):
                     folders.EPPath = "C:\EnergyPlus" + EPVersion + "\\"
@@ -7188,15 +7199,21 @@ if checkIn.letItFly:
                     break
 
             if folders.EPPath == None:
-                msg= "Honeybee cannot find EnergyPlus" + EPVersion + " folder on your system.\n" + \
-                     "Make sure you have EnergyPlus" + EPVersion + " installed on your system.\n" + \
-                     "You won't be able to run energy simulations without EnergyPlus.\n" + \
-                     "A good place to install EnergyPlus is c:\\EnergyPlus" + EPVersion
-                # I remove the warning for now until EP plugins are available
-                # It confuses the users
+                # give a warning to the user
+                
+                msg= "Honeybee cannot find a compatible EnergyPlus folder on your system.\n" + \
+                     "Make sure you have EnergyPlus installed on your system.\n" + \
+                     "You won't be able to run energy simulations without EnergyPlus.\n" +\
+                     "Honeybee supports following versions:\n"
+                
+                versions = ", ".join(EPVersions)
+                
+                msg += versions
+                
                 ghenv.Component.AddRuntimeMessage(w, msg)
-                folders.EPPath = "C:\EnergyPlus" + EPVersion + "\\"
-        
+                folders.EPPath = None
+            
+            
         sc.sticky["honeybee_folders"]["EPPath"] = folders.EPPath  
 
         sc.sticky["honeybee_folders"]["EPVersion"] = EPVersion.replace("-", ".")[1:]
