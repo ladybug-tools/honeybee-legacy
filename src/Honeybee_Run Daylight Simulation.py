@@ -174,7 +174,9 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
     # test points should be generated if the study is grid based
     # except image-based simulation
     testPtsEachCPU, lenOfPts = hb_writeRAD.writeTestPtFile(subWorkingDir, radFileName, numOfCPUs, analysisRecipe)
-            
+    
+    numOfCPUs = len(testPtsEachCPU) #in case number of CPUs are more than number of test points
+    
     ######################## WRITE BATCH FILES #######################
     # if analysis type is annual this function will write hea files too
     initBatchFileName, batchFilesName, fileNames, pcompBatchFile, expectedResultFiles = \
