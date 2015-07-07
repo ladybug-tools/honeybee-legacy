@@ -54,7 +54,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Run Daylight Simulation"
 ghenv.Component.NickName = 'runDaylightAnalysis'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_07_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 #compatibleHBVersion = VER 0.0.56\nMAR_11_2015
@@ -175,7 +175,8 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
     # except image-based simulation
     testPtsEachCPU, lenOfPts = hb_writeRAD.writeTestPtFile(subWorkingDir, radFileName, numOfCPUs, analysisRecipe)
     
-    numOfCPUs = len(testPtsEachCPU) #in case number of CPUs are more than number of test points
+    if len(testPtsEachCPU)!=0: # make sure it is a grid based analysis
+        numOfCPUs = len(testPtsEachCPU) #in case number of CPUs are more than number of test points
     
     ######################## WRITE BATCH FILES #######################
     # if analysis type is annual this function will write hea files too
