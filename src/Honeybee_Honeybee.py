@@ -7204,7 +7204,7 @@ if checkIn.letItFly:
                     folders.EPPath = "C:\EnergyPlus" + EPVersion + "\\"
 
                     break
-
+            
             if folders.EPPath == None:
                 # give a warning to the user
                 
@@ -7218,8 +7218,7 @@ if checkIn.letItFly:
                 msg += versions
                 
                 ghenv.Component.AddRuntimeMessage(w, msg)
-                folders.EPPath = None
-            
+                
             
         sc.sticky["honeybee_folders"]["EPPath"] = folders.EPPath  
 
