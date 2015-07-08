@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_07_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_08_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -7186,8 +7186,8 @@ if checkIn.letItFly:
     
         # supported versions for EnergyPlus
         EPVersions = ["V8-2-10", "V8-2-9", "V8-2-8", "V8-2-7", "V8-2-6", \
-                      "V8-2-5", "V8-2-4", "V8-2-3", "V8-2-2", "V8-2-1", \
-                      "V8-1-5", "V8-1-4", "V8-1-3", "V8-1-2", "V8-1-1", "V8-2-0"]
+                      "V8-2-5", "V8-2-4", "V8-2-3", "V8-2-2", "V8-2-1", "V8-2-0", \
+                      "V8-1-5", "V8-1-4", "V8-1-3", "V8-1-2", "V8-1-1"]
                       
         
         if folders.EPPath != None:
