@@ -1290,7 +1290,7 @@ class hb_WriteRAD(object):
                     
                     for srf in HBObj.surfaces:
                         # check if an interior wall
-                        if not exportInteriorWalls and self.hb_writeRADAUX.isSrfInterior(srf):
+                        if not exportInteriorWalls and self.hb_writeRADAUX.isSrfAirWall(srf):
                             continue
                         
                         # if it is an interior wall and the other wall is already written
@@ -2721,10 +2721,17 @@ class hb_WriteRADAUX(object):
             R, G, B = line.split('	')[0:3]
             result.append( 179 * (.265 * float(R) + .67 * float(G) + .065 * float(B)))
         return result
-
+    
+    def isSrfAirWall(self, HBSrf):
+        # This can be tricky since some of interior walls may or may not be air walls
+        if HBSrf.type == 4:
+            return True
+        else:
+            return False
+    
     def isSrfInterior(self, HBSrf):
         # This can be tricky since some of interior walls may or may not be air walls
-        if HBSrf.type == 4 and HBSrf.BC.lower() == "surface":
+        if HBSrf.type == 0 and HBSrf.BC.lower() == "surface":
             return True
         else:
             return False
