@@ -7187,7 +7187,7 @@ if checkIn.letItFly:
         # supported versions for EnergyPlus
         EPVersions = ["V8-2-10", "V8-2-9", "V8-2-8", "V8-2-7", "V8-2-6", \
                       "V8-2-5", "V8-2-4", "V8-2-3", "V8-2-2", "V8-2-1", \
-                      "V8-1-5", "V8-1-4", "V8-1-3", "V8-1-2", "V8-1-1"]
+                      "V8-1-5", "V8-1-4", "V8-1-3", "V8-1-2", "V8-1-1", "V8-2-0"]
                       
         
         if folders.EPPath != None:
