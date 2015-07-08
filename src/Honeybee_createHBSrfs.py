@@ -60,7 +60,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_createHBSrfs'
 ghenv.Component.NickName = 'createHBSrfs'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_07_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -182,7 +182,7 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
                                      "The surface is more likely a " + HBSurface.srfType[int(HBSurface.type)] + ".\n" + \
                                      "Honeybee won't overwrite the type so you may need to manually flip the surface."
                         print warningMsg
-                        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
+                        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Remark, warningMsg)
                         
                     HBSurface.setType(surfaceType, isUserInput= True)
                 except:
