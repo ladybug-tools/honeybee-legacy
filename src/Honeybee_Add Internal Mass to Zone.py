@@ -46,7 +46,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Add Internal Mass to Zone"
 ghenv.Component.NickName = 'addInternalMass'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_11_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -88,7 +88,7 @@ def checkTheInputs():
         
         #Number is a single value to applied to all connected zones.
         if len(_srfsOrSrfArea) == 1:
-            srfAreas = duplicateData(float(_srfsOrSrfArea[0]), len(_HBZones))
+            srfAreas = duplicateData([float(_srfsOrSrfArea[0])], len(_HBZones))
             checkData1 = True
         #Number is list of numbers that match the connected zones.
         elif len(_srfsOrSrfArea) == len(_HBZones):

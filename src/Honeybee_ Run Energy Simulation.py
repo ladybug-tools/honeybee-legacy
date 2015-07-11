@@ -62,7 +62,7 @@ Provided by Honeybee 0.0.57
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_08_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_11_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_28_2015
@@ -422,7 +422,7 @@ class WriteIDF(object):
         return sizingString
     
     def EPVersion(self, version = 8.1):
-        return '\nVersion, ' + `version` + ';\n'
+        return '\nVersion, ' + version + ';\n'
     
     def EPTimestep(self, timestep = 6):
         return '\nTimestep, ' + `timestep` + ';\n'
