@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_11_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_13_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1573,7 +1573,7 @@ class hb_WriteRAD(object):
                 #print key + " is set to " + str(hb_radParDict[key][quality])
                 analysisRecipe.radParameters[key] = self.hb_radParDict[key][quality]
         
-        if analysisRecipe.type == 2:
+        if analysisRecipe.type == 2: # annual daylight analysis - Daysim
             # read parameters
             runAnnualGlare = analysisRecipe.DSParameters.runAnnualGlare
             onlyAnnualGlare = analysisRecipe.DSParameters.onlyAnnualGlare
@@ -1661,7 +1661,8 @@ class hb_WriteRAD(object):
                 
                 # building string
                 heaFile.write(self.hb_writeDS.DSBldgStr(projectName, materialFileName, radFileFullName, \
-                                                        adaptiveZone, dgp_imageSize, dgp_imageSize, cpuCount, northAngleRotation))
+                                                        adaptiveZone, dgp_imageSize, dgp_imageSize, cpuCount, \
+                                                        northAngleRotation, additionalRadFiles))
                 
                 # radiance parameters string
                 heaFile.write(self.hb_writeDS.DSRADStr(analysisRecipe.radParameters))
@@ -2795,13 +2796,19 @@ class hb_WriteDS(object):
             return outputStr +"\n"
             
     # building information
-    def DSBldgStr(self, projectName, materialFileName, radFileFullName, adaptiveZone, dgp_image_x = 500, dgp_image_y = 500, cpuCount = 0, northAngle = 0):
+    def DSBldgStr(self, projectName, materialFileName, radFileFullName, adaptiveZone, \
+                  dgp_image_x = 500, dgp_image_y = 500, cpuCount = 0, northAngle = 0, additionalFileNames = []):
+        
+        # add additional rad files to scene
+        radFilesLength = str(2 + len(additionalFileNames))
+        radFileNames = ", ".join([radFilesLength, materialFileName, radFileFullName] + additionalFileNames)
+        
         return'\n\n#################################\n' + \
                   '#      BUILDING INFORMATION      \n' + \
                   '#################################\n' + \
                   'material_file          Daysim_material_' + projectName + '.rad\n' + \
                   'geometry_file          Daysim_'+ projectName + '.rad\n' + \
-                  'radiance_source_files  2, ' + materialFileName + ', ' + radFileFullName + '\n' + \
+                  'radiance_source_files  ' + radFileNames + '\n' + \
                   'sensor_file            ' + projectName + '_' + `cpuCount` + '.pts\n' + \
                   'viewpoint_file         ' + projectName + '_' + 'annualGlareView.vf\n' + \
                   'AdaptiveZoneApplies    ' + `adaptiveZone` + '\n' + \
