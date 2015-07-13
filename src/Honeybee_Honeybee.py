@@ -7156,6 +7156,7 @@ if checkIn.letItFly:
             msg =  "There is a white space in RADIANCE filepath: " + folders.RADPath + "\n" + \
                    "Please install RADIANCE in a valid address (e.g. c:\\radiance)"
             ghenv.Component.AddRuntimeMessage(w, msg)
+            folders.RADPath = ""
             
         # I should replace this with python methods in os library
         # looks stupid!
@@ -7181,7 +7182,8 @@ if checkIn.letItFly:
             msg =  "There is a white space in DAYSIM filepath: " + folders.DSPath + "\n" + \
                    "Please install Daysism in a valid address (e.g. c:\\daysim)"
             ghenv.Component.AddRuntimeMessage(w, msg)
-        
+            folders.DSPath = ""
+            
         if folders.DSPath.endswith("\\"): segmentNumber = -2
         else: segmentNumber = -1
         hb_DSCore = "\\".join(folders.DSPath.split("\\")[:segmentNumber])

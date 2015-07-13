@@ -54,10 +54,10 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Run Daylight Simulation"
 ghenv.Component.NickName = 'runDaylightAnalysis'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_07_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_13_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
-#compatibleHBVersion = VER 0.0.56\nMAR_11_2015
+#compatibleHBVersion = VER 0.0.56\nJUL_13_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
@@ -126,13 +126,41 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
     hb_materilaLib = sc.sticky["honeybee_materialLib"]
     hb_scheduleLib = sc.sticky["honeybee_ScheduleLib"]
     hb_writeDS = sc.sticky["honeybee_WriteDS"]()
+    hb_folders = sc.sticky["honeybee_folders"]
     
     northAngle, northVector = lb_preparation.angle2north(north)
-    
     if analysisRecipe:
         # read parameters
         hb_writeRADAUX.readAnalysisRecipe(analysisRecipe)
         
+        # make sure Radiance and Daysim are installed correctly
+        if analysisRecipe.type==2:
+            # It's an annual analysis so Daysim needs to be installed
+            DSPath = hb_folders["DSPath"]
+            if DSPath=="":
+                msg= "Honeybee cannot find a Daysim folder on your system.\n" + \
+                    "Make sure you have Daysim installed on your system.\n" + \
+                    "You won't be able to run annual daylight simulations without Daysim.\n" +\
+                    "Check Honeybee_Honeybee component for more information."
+                
+                w = gh.GH_RuntimeMessageLevel.Warning
+                print msg
+                ghenv.Component.AddRuntimeMessage(w, msg)
+                return -1
+        else:
+            # Radiance needs to be installed correctly
+            RADPath = hb_folders["RADPath"]
+            if RADPath=="":
+                msg= "Honeybee cannot find a RADIANCE folder on your system.\n" + \
+                    "Make sure you have RADIANCE installed on your system.\n" + \
+                    "You won't be able to run annual daylight simulations without RADIANCE.\n" +\
+                    "Check Honeybee_Honeybee component for more information."
+                
+                w = gh.GH_RuntimeMessageLevel.Warning
+                print msg
+                ghenv.Component.AddRuntimeMessage(w, msg)
+                return -1                
+            
         # double check and make sure that the parameters are set good enough
         # for grid based simulation
         hb_writeRADAUX.checkInputParametersForGridBasedAnalysis()
