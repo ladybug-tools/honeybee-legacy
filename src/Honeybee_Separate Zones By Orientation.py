@@ -37,7 +37,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = 'Honeybee_Separate Zones By Orientation'
 ghenv.Component.NickName = 'separateZonesByOrientation'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_13_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -67,8 +67,8 @@ def getOrientation(HBZone, onlyWGlz):
                         orientationVectors.append(glzSrf.normalVector)
             else:
                 if not HBSrf.normalVector in orientationVectors:
-                        orientationVectors.append(HBSrf.normalVector)
-        
+                    orientationVectors.append(HBSrf.normalVector)
+      
     # sort based on angle to north
     orientationVectors = sorted(orientationVectors, key = lambda \
                          a: rc.Geometry.Vector3d.VectorAngle(a, rc.Geometry.Vector3d.YAxis, rc.Geometry.Plane.WorldXY))
@@ -107,8 +107,7 @@ def main(HBZones, onlyWGlz):
         # conver vector list to list of string so it could be used as key
         angles = []
         for vector in orientationVectors:
-            angles.append(math.degrees(rc.Geometry.Vector3d.VectorAngle(vector, rc.Geometry.Vector3d.YAxis)))
-            
+            angles.append(math.degrees(rc.Geometry.Vector3d.VectorAngle(vector, rc.Geometry.Vector3d.YAxis, rc.Geometry.Plane.WorldXY)))
         key = "".join(map(str, angles))
         
         if key not in HBZones.keys():
