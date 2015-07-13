@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.57
     Args:
         _name_: The name of the zone as a string
         zoneProgram_: Optional input for the program of this zone
-        isConditioned_: Set to true if the zone is conditioned
+        isConditioned_: True/False value. This value will be applied to the ouput zone to either condition them with an Ideal Air Loads System (True) or not condition them at all (False). If no value is connected here, all zones will be conditioned with an Ideal Air Loads System by default.
         _HBSurfaces: A list of Honeybee Surfaces
     Returns:
         readMe!:...
@@ -97,6 +97,9 @@ def main(zoneName,  HBZoneProgram, HBSurfaces, isConditioned):
     
     # initiate the zone
     zoneID = str(uuid.uuid4())
+    
+    # default for isConditioned is True
+    if isConditioned== None: isConditioned = True
     
     HBZone = hb_EPZone(None, zoneID, zoneName.strip(), (bldgProgram, zoneProgram), isConditioned)
     
