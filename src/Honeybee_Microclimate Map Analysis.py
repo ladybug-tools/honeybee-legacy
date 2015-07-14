@@ -57,7 +57,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Microclimate Map Analysis"
 ghenv.Component.NickName = 'MicroclimateMap'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_07_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_13_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -836,11 +836,10 @@ def mainAdapt(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataN
         
         #Run through every hour of the analysis to fill up the matrices.
         calcCancelled = False
-        
         try:
             def climateMap(count):
                 #Ability to cancel with Esc
-                #if gh.GH_Document.IsEscapeKeyDown(): assert False
+                if gh.GH_Document.IsEscapeKeyDown(): assert False
                 
                 # Get the hour.
                 hour = HOYs[count]
@@ -910,21 +909,21 @@ def mainAdapt(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataN
                 
                 adaptComfMtx[count+1] = adaptComfPointValues
                 degFromTargetMtx[count+1] = degFromTargetPointValues
+            
+            #Run through every hour of the analysis to fill up the matrices.
+            if parallel_ == True and len(HOYs) != 1:
+                tasks.Parallel.ForEach(range(len(HOYs)), climateMap)
+            else:
+                for hour in range(len(HOYs)):
+                    #Ability to cancel with Esc
+                    #if gh.GH_Document.IsEscapeKeyDown(): assert False
+                    climateMap(hour)
         except:
             print "The calculation has been terminated by the user!"
             e = gh.GH_RuntimeMessageLevel.Warning
             ghenv.Component.AddRuntimeMessage(e, "The calculation has been terminated by the user!")
             calcCancelled = True
         
-        
-        #Run through every hour of the analysis to fill up the matrices.
-        if parallel_ == True and len(HOYs) != 1:
-            tasks.Parallel.ForEach(range(len(HOYs)), climateMap)
-        else:
-            for hour in range(len(HOYs)):
-                #Ability to cancel with Esc
-                #if gh.GH_Document.IsEscapeKeyDown(): assert False
-                climateMap(hour)
         
         if calcCancelled == False:
             return radTempMtx, airTempMtx, operativeTempMtx, adaptComfMtx, degFromTargetMtx
@@ -1033,7 +1032,6 @@ def mainPMV(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNum
         
         #Run through every hour of the analysis to fill up the matrices.
         calcCancelled = False
-        
         try:
             def climateMapPMV(count):
                 #Ability to cancel with Esc
@@ -1118,20 +1116,21 @@ def mainPMV(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNum
                 SET_Mtx[count+1] = setPointValues
                 PMVComfMtx[count+1] = pmvComfPointValues
                 PMV_Mtx[count+1] = pmvPointValues
+            
+            #Run through every hour of the analysis to fill up the matrices.
+            if parallel_ == True and len(HOYs) != 1:
+                tasks.Parallel.ForEach(range(len(HOYs)), climateMapPMV)
+            else:
+                for hour in range(len(HOYs)):
+                    #Ability to cancel with Esc
+                    if gh.GH_Document.IsEscapeKeyDown(): assert False
+                    climateMapPMV(hour)
         except:
             print "The calculation has been terminated by the user!"
             e = gh.GH_RuntimeMessageLevel.Warning
             ghenv.Component.AddRuntimeMessage(e, "The calculation has been terminated by the user!")
             calcCancelled = True
         
-        #Run through every hour of the analysis to fill up the matrices.
-        if parallel_ == True and len(HOYs) != 1:
-            tasks.Parallel.ForEach(range(len(HOYs)), climateMapPMV)
-        else:
-            for hour in range(len(HOYs)):
-                #Ability to cancel with Esc
-                if gh.GH_Document.IsEscapeKeyDown(): assert False
-                climateMapPMV(hour)
         
         if calcCancelled == False:
             return radTempMtx, airTempMtx, SET_Mtx, PMVComfMtx, PMV_Mtx
@@ -1245,7 +1244,6 @@ def mainUTCI(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNu
         
         #Run through every hour of the analysis to fill up the matrices.
         calcCancelled = False
-        
         try:
             def climateMapUTCI(count):
                 #Ability to cancel with Esc
@@ -1320,21 +1318,21 @@ def mainUTCI(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNu
                 UTCI_Mtx[count+1] = utciPointValues
                 OutdoorComfMtx[count+1] = outdoorComfPointValues
                 DegFromNeutralMtx[count+1] = degNeutralPointValues
+            
+            #Run through every hour of the analysis to fill up the matrices.
+            if parallel_ == True and len(HOYs) != 1:
+                tasks.Parallel.ForEach(range(len(HOYs)), climateMapUTCI)
+            else:
+                for hour in range(len(HOYs)):
+                    #Ability to cancel with Esc
+                    if gh.GH_Document.IsEscapeKeyDown(): assert False
+                    climateMapUTCI(hour)
         except:
             print "The calculation has been terminated by the user!"
             e = gh.GH_RuntimeMessageLevel.Warning
             ghenv.Component.AddRuntimeMessage(e, "The calculation has been terminated by the user!")
             calcCancelled = True
         
-        
-        #Run through every hour of the analysis to fill up the matrices.
-        if parallel_ == True and len(HOYs) != 1:
-            tasks.Parallel.ForEach(range(len(HOYs)), climateMapUTCI)
-        else:
-            for hour in range(len(HOYs)):
-                #Ability to cancel with Esc
-                if gh.GH_Document.IsEscapeKeyDown(): assert False
-                climateMapUTCI(hour)
         
         if calcCancelled == False:
             return radTempMtx, airTempMtx, UTCI_Mtx, OutdoorComfMtx, DegFromNeutralMtx
