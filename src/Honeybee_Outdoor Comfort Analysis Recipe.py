@@ -31,12 +31,12 @@ Provided by Honeybee 0.0.57
         _viewFactorInfo: The python list that comes out of the  "Honeybee_Indoor View Factor Calculator".
         _epwFile: The epw file that was used to run the EnergyPlus model.  This will be used to generate sun vectors and get radiation data for estimating the temperature delta for sun falling on occupants.
         ===============: ...
-        _srfIndoorTemp: A list surfaceIndoorTemp data out of the "Honeybee_Read EP Surface Result" component.
-        srfOutdoorTemp_: A list surfaceOutdoorTemp data out of the "Honeybee_Read EP Surface Result" component.
-        _zoneAirTemp: The airTemperature output of the "Honeybee_Read EP Result" component.
-        _zoneRelHumid: The relativeHumidity output of the "Honeybee_Read EP Result" component.
-        _zoneAirFlowVol: The airFlowVolume output of the "Honeybee_Read EP Result" component.
-        _zoneAirHeatGain: The airHeatGainRate output of the "Honeybee_Read EP Result" component.
+        srfIndoorTemp_: A list surfaceIndoorTemp data out of the "Honeybee_Read EP Surface Result" component.
+        _srfOutdoorTemp: A list surfaceOutdoorTemp data out of the "Honeybee_Read EP Surface Result" component.
+        zoneAirTemp_: The airTemperature output of the "Honeybee_Read EP Result" component.
+        zoneRelHumid_: The relativeHumidity output of the "Honeybee_Read EP Result" component.
+        zoneAirFlowVol_: The airFlowVolume output of the "Honeybee_Read EP Result" component.
+        zoneAirHeatGain_: The airHeatGainRate output of the "Honeybee_Read EP Result" component.
         ===============: ...
         wellMixedAirOverride_: Set to "True" if you know that your building will have a forced air system with diffusers meant to mix the air as well as possilbe.  This will prevent the calculation from running the air stratification function and instead assume well mixed conditions.  This input can also be a list of 8760 boolean values that represent the hours of the year when a forced air system or ceiling fans are run to mix the air.  The default is set to 'False' to run the stratification calculation for every hour of the year, assuming no forced air heating/cooling system.
         inletHeightOverride_: An optional list of float values that match the data tree of view factor meshes and represent the height, in meters, from the bottom of the view factor mesh to the window inlet height.  This will override the default value used in the air stratification calculation, which sets the inlet height in the bottom half of the average glazing height.
@@ -56,7 +56,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Outdoor Comfort Analysis Recipe"
 ghenv.Component.NickName = 'OutdoorComfRecipe'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_14_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -233,128 +233,154 @@ def checkTheInputs():
         return dataCheck5, dataCheck6, headerUnits, dataHeaders, dataNumbers, [header[5], header[6]]
     
     #Run all of the EnergyPlus data through the check function.
-    checkData1, checkData2, airTempUnits, airTempDataHeaders, airTempDataNumbers, analysisPeriod = checkCreateDataTree(_zoneAirTemp, "_zoneAirTemp", "Air Temperature")
-    checkData3, checkData4, srfTempUnits, srfTempHeaders, srfTempNumbers, analysisPeriod = checkCreateDataTree(_srfIndoorTemp, "_srfIndoorTemp", "Inner Surface Temperature")
-    checkData21, checkData22, flowVolUnits, flowVolDataHeaders, flowVolDataNumbers, analysisPeriod = checkCreateDataTree(_zoneAirFlowVol, "_zoneAirFlowVol", "Air Flow Volume")
-    checkData23, checkData24, heatGainUnits, heatGainDataHeaders, heatGainDataNumbers, analysisPeriod = checkCreateDataTree(_zoneAirHeatGain, "_zoneAirHeatGain", "Air Heat Gain Rate")
-    checkData17, checkData18, relHumidUnits, relHumidDataHeaders, relHumidDataNumbers, analysisPeriod = checkCreateDataTree(_zoneRelHumid, "_zoneRelHumid", "Relative Humidity")
-    
-    #Try to bring in the outdoor surface temperatures.
-    outdoorClac = False
-    try:
-        checkData29, checkData30, outSrfTempUnits, outSrfTempHeaders, outSrfTempNumbers, analysisPeriod = checkCreateDataTree(srfOutdoorTemp_, "_srfOutdoorTemp_", "Outer Surface Temperature")
-        if outdoorIsThere == True: outdoorClac = True
-    except:
+    if outdoorIsThere == False and srfIndoorTemp_.BranchCount > 0 and zoneAirTemp_.BranchCount > 0  and zoneAirFlowVol_.BranchCount > 0 and zoneAirHeatGain_.BranchCount > 0:
+        #Indoor only calculation and everything is good.
+        checkData1, checkData2, airTempUnits, airTempDataHeaders, airTempDataNumbers, analysisPeriod = checkCreateDataTree(zoneAirTemp_, "zoneAirTemp_", "Air Temperature")
+        checkData3, checkData4, srfTempUnits, srfTempHeaders, srfTempNumbers, analysisPeriod = checkCreateDataTree(srfIndoorTemp_, "srfIndoorTemp_", "Inner Surface Temperature")
+        checkData21, checkData22, flowVolUnits, flowVolDataHeaders, flowVolDataNumbers, analysisPeriod = checkCreateDataTree(zoneAirFlowVol_, "zoneAirFlowVol_", "Air Flow Volume")
+        checkData23, checkData24, heatGainUnits, heatGainDataHeaders, heatGainDataNumbers, analysisPeriod = checkCreateDataTree(zoneAirHeatGain_, "zoneAirHeatGain_", "Air Heat Gain Rate")
+        checkData17, checkData18, relHumidUnits, relHumidDataHeaders, relHumidDataNumbers, analysisPeriod = checkCreateDataTree(zoneRelHumid_, "zoneRelHumid_", "Relative Humidity")
         outdoorClac = False
         checkData29, checkData30, outSrfTempUnits, outSrfTempHeaders, outSrfTempNumbers = True, True, 'C', [], []
-    
-    #Check the windowShadeTransmiss_.
-    checkData14 = True
-    checkData32 = True
-    winStatusNumbers = []
-    winStatusHeaders = []
-    allWindowShadesSame = True
-    if windowShadeTransmiss_.BranchCount == 1:
-        if windowShadeTransmiss_ != []:
-            windowShadeTransmiss = []
-            for shadeValue in windowShadeTransmiss_.Branch(0):
-                windowShadeTransmiss.append(shadeValue)
-            if len(windowShadeTransmiss) == 8760:
-                allGood = True
-                for transVal in windowShadeTransmiss:
-                    transFloat = float(transVal)
-                    if transFloat <= 1.0 and transFloat >= 0.0: winStatusNumbers.append(transFloat)
-                    else: allGood = False
-                if allGood == False:
-                    checkData14 = False
-                    warning = 'windowShadeTransmiss_ must be a value between 0 and 1.'
-                    print warning
-                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
-            elif len(windowShadeTransmiss) == 1:
-                if float(windowShadeTransmiss[0]) <= 1.0 and float(windowShadeTransmiss[0]) >= 0.0:
-                    for count in range(8760):
-                        winStatusNumbers.append(float(windowShadeTransmiss[0]))
-                else:
-                    checkData14 = False
-                    warning = 'windowShadeTransmiss_ must be a value between 0 and 1.'
-                    print warning
-                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
-            else:
-                checkData14 = False
-                warning = 'windowShadeTransmiss_ must be either a list of 8760 values that correspond to hourly changing transmissivity over the year or a single constant value for the whole year.'
-                print warning
-                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
-    elif windowShadeTransmiss_.BranchCount > 1:
-        allWindowShadesSame = False
-        checkData14, checkData32, winStatusUnits, winStatusHeaders, winStatusNumbers, analysisPeriod = checkCreateDataTree(windowShadeTransmiss_, "windowShadeTransmiss_", "Surface Window System Solar Transmittance")
-        #Convert all of the numbers in shade status data tree to window transmissivities.
-        for winBCount, windowBranchList in enumerate(winStatusNumbers):
-            for shadHrCt, shadVal in enumerate(windowBranchList):
-                winStatusNumbers[winBCount][shadHrCt] = float(shadVal)
-    elif constantTransmis == True:
-        for count in range(8760):
-            winStatusNumbers.append(1)
-        print 'No value found for windowShadeTransmiss_.  The window shade status will be set to 1 assuming no additional shading beyond the window glass transmissivity.'
-    
-    #Check to see if there are hourly transmissivities for the additional shading.
-    if constantTransmis == False:
-        allWindowShadesSame = False
-        for transmisslistCount, transmissList in enumerate(finalAddShdTransmiss):
-            winStatusNumbers.append(transmissList)
-            srfName = 'AddShd' + str(transmisslistCount)
-            shdHeader = ['key:location/dataType/units/frequency/startsAt/endsAt', 'Location', 'Surface Window System Solar Transmittance for ' + srfName + ': Window', 'Fraction', 'Hourly', analysisPeriod[0], analysisPeriod[1]]
-            winStatusHeaders.append(shdHeader)
-    
-    #Check the additionalWindSpeed_.
-    checkData33 = True
-    winSpeedNumbers = []
-    pathCheck = 0
-    allWindSpeedsSame = True
-    if additionalWindSpeed_.BranchCount == 1:
-        additionalWindSpeed = []
-        for windValue in additionalWindSpeed_.Branch(0):
-            additionalWindSpeed.append(windValue)
-        if len(additionalWindSpeed) == 8760:
-            allGood = True
-            for winSp in additionalWindSpeed:
-                windFloat = float(winSp)
-                if windFloat >= 0.0: winSpeedNumbers.append(windFloat)
-                else: allGood = False
-            if allGood == False:
-                checkData33 = False
-                warning = 'additionalWindSpeed_ must be a value greater than 0.'
-                print warning
-                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
-        elif len(additionalWindSpeed) == 1:
-            if float(additionalWindSpeed[0]) >= 0.0:
-                for count in range(8760):
-                    winSpeedNumbers.append(float(additionalWindSpeed[0]))
-            else:
-                checkData33 = False
-                warning = 'additionalWindSpeed_ must be a value greater than 0.'
-                print warning
-                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+    elif srfIndoorTemp_.BranchCount > 0 and zoneAirTemp_.BranchCount > 0  and zoneAirFlowVol_.BranchCount > 0 and zoneAirHeatGain_.BranchCount > 0:
+        #All inputs are provided and it doesn't matter whether the indoor/outdoor is there.
+        checkData1, checkData2, airTempUnits, airTempDataHeaders, airTempDataNumbers, analysisPeriod = checkCreateDataTree(zoneAirTemp_, "zoneAirTemp_", "Air Temperature")
+        checkData3, checkData4, srfTempUnits, srfTempHeaders, srfTempNumbers, analysisPeriod = checkCreateDataTree(srfIndoorTemp_, "srfIndoorTemp_", "Inner Surface Temperature")
+        checkData21, checkData22, flowVolUnits, flowVolDataHeaders, flowVolDataNumbers, analysisPeriod = checkCreateDataTree(zoneAirFlowVol_, "zoneAirFlowVol_", "Air Flow Volume")
+        checkData23, checkData24, heatGainUnits, heatGainDataHeaders, heatGainDataNumbers, analysisPeriod = checkCreateDataTree(zoneAirHeatGain_, "zoneAirHeatGain_", "Air Heat Gain Rate")
+        checkData17, checkData18, relHumidUnits, relHumidDataHeaders, relHumidDataNumbers, analysisPeriod = checkCreateDataTree(zoneRelHumid_, "zoneRelHumid_", "Relative Humidity")
+        checkData29, checkData30, outSrfTempUnits, outSrfTempHeaders, outSrfTempNumbers, analysisPeriod = checkCreateDataTree(_srfOutdoorTemp, "__srfOutdoorTemp", "Outer Surface Temperature")
+        outdoorClac = True
+    elif outdoorIsThere == True:
+        #Do a check to see if all of the zone lists are empty (except for the last one, which contains outdoor info.
+        allListsEmpty = True
+        for zoneList in testPtViewFactor[:-1]:
+            if zoneList == []: pass
+            else:allListsEmpty = False
+        if allListsEmpty == True:
+            #The user has input only outdoor srf temperature and only an outdoor mesh.  We can run the calculation just for the outdoors.
+            checkData29, checkData30, outSrfTempUnits, outSrfTempHeaders, outSrfTempNumbers, analysisPeriod = checkCreateDataTree(_srfOutdoorTemp, "__srfOutdoorTemp", "Outer Surface Temperature")
+            outdoorClac = True
+            checkData1, checkData2, checkData3, checkData4, checkData21, checkData22, checkData23, checkData24, checkData17, checkData18 = True, True, True, True, True, True, True, True, True, True
+            emptyLists = testPtViewFactor[:-1] + [[]]
+            airTempDataHeaders, airTempDataNumbers, srfTempHeaders, srfTempNumbers, flowVolDataHeaders, heatGainDataHeaders, relHumidDataHeaders, relHumidDataNumbers = emptyLists, emptyLists, emptyLists, emptyLists, emptyLists, emptyLists, emptyLists, emptyLists
+            numberLists = []
+            for zoneCount, zoneList in enumerate(emptyLists):
+                numberLists.append(range(len(outSrfTempNumbers[0])))
+            flowVolDataNumbers, heatGainDataNumbers = numberLists, numberLists
+            flowVolUnits = "m3/s"
+            heatGainUnits = "W"
+            airTempUnits = srfTempUnits = "C"
+            relHumidUnits = "%"
         else:
-            checkData33 = False
-            warning = 'additionalWindSpeed_ must be either a list of 8760 values that correspond to hourly changing wind speeds over the year or a single constant value for the whole year.'
+            checkData1, checkData2, checkData3, checkData4, checkData21, checkData22, checkData23, checkData24, checkData17, checkData18 = False, False, False, False, False, False, False, False, False, False
+            warning = 'If you have connected a viewFactorMesh that includes regions on the indoors, you must connect up energy simulation data for zoneAirTemp, srfIndoorTemp, zoneAirFlowVol, zoneAirHeatGain, and zoneRelHumid.'
             print warning
             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
-    elif additionalWindSpeed_.BranchCount > 1:
-        allWindSpeedsSame = False
-        treePaths = additionalWindSpeed_.Paths
-        for path in treePaths:
-            i = path.Indices[0]
-            if i == pathCheck:
-                branchList = additionalWindSpeed_.Branch(path)
-                dataVal = []
-                for item in branchList:
-                    dataVal.append(item)
-                winSpeedNumbers.append(dataVal)
-                pathCheck += 1
+    else:
+        checkData1, checkData2, checkData3, checkData4, checkData21, checkData22, checkData23, checkData24, checkData17, checkData18 = False, False, False, False, False, False, False, False, False, False
+        warning = 'If you have connected a viewFactorMesh that includes regions on the indoors, you must connect up energy simulation data for zoneAirTemp, srfIndoorTemp, zoneAirFlowVol, zoneAirHeatGain, and zoneRelHumid.'
+        print warning
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+    
+    
+    if checkData1 == True and checkData2 == True and checkData3 == True and checkData4 == True and checkData21 == True and checkData22 == True and checkData23 == True and checkData24 == True and checkData17 == True and checkData18 == True:
+        #Check the windowShadeTransmiss_.
+        checkData14 = True
+        checkData32 = True
+        winStatusNumbers = []
+        winStatusHeaders = []
+        allWindowShadesSame = True
+        if windowShadeTransmiss_.BranchCount == 1:
+            if windowShadeTransmiss_ != []:
+                windowShadeTransmiss = []
+                for shadeValue in windowShadeTransmiss_.Branch(0):
+                    windowShadeTransmiss.append(shadeValue)
+                if len(windowShadeTransmiss) == 8760:
+                    allGood = True
+                    for transVal in windowShadeTransmiss:
+                        transFloat = float(transVal)
+                        if transFloat <= 1.0 and transFloat >= 0.0: winStatusNumbers.append(transFloat)
+                        else: allGood = False
+                    if allGood == False:
+                        checkData14 = False
+                        warning = 'windowShadeTransmiss_ must be a value between 0 and 1.'
+                        print warning
+                        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+                elif len(windowShadeTransmiss) == 1:
+                    if float(windowShadeTransmiss[0]) <= 1.0 and float(windowShadeTransmiss[0]) >= 0.0:
+                        for count in range(8760):
+                            winStatusNumbers.append(float(windowShadeTransmiss[0]))
+                    else:
+                        checkData14 = False
+                        warning = 'windowShadeTransmiss_ must be a value between 0 and 1.'
+                        print warning
+                        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+                else:
+                    checkData14 = False
+                    warning = 'windowShadeTransmiss_ must be either a list of 8760 values that correspond to hourly changing transmissivity over the year or a single constant value for the whole year.'
+                    print warning
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+        elif windowShadeTransmiss_.BranchCount > 1:
+            allWindowShadesSame = False
+            checkData14, checkData32, winStatusUnits, winStatusHeaders, winStatusNumbers, analysisPeriod = checkCreateDataTree(windowShadeTransmiss_, "windowShadeTransmiss_", "Surface Window System Solar Transmittance")
+            #Convert all of the numbers in shade status data tree to window transmissivities.
+            for winBCount, windowBranchList in enumerate(winStatusNumbers):
+                for shadHrCt, shadVal in enumerate(windowBranchList):
+                    winStatusNumbers[winBCount][shadHrCt] = float(shadVal)
+        elif constantTransmis == True:
+            for count in range(8760):
+                winStatusNumbers.append(1)
+            print 'No value found for windowShadeTransmiss_.  The window shade status will be set to 1 assuming no additional shading beyond the window glass transmissivity.'
+        
+        #Check to see if there are hourly transmissivities for the additional shading.
+        if constantTransmis == False:
+            allWindowShadesSame = False
+            for transmisslistCount, transmissList in enumerate(finalAddShdTransmiss):
+                winStatusNumbers.append(transmissList)
+                srfName = 'AddShd' + str(transmisslistCount)
+                shdHeader = ['key:location/dataType/units/frequency/startsAt/endsAt', 'Location', 'Surface Window System Solar Transmittance for ' + srfName + ': Window', 'Fraction', 'Hourly', analysisPeriod[0], analysisPeriod[1]]
+                winStatusHeaders.append(shdHeader)
+        
+        #Check the additionalWindSpeed_.
+        checkData33 = True
+        winSpeedNumbers = []
+        pathCheck = 0
+        allWindSpeedsSame = True
+        if additionalWindSpeed_.BranchCount == 1:
+            additionalWindSpeed = []
+            for windValue in additionalWindSpeed_.Branch(0):
+                additionalWindSpeed.append(windValue)
+            if len(additionalWindSpeed) == 8760:
+                allGood = True
+                for winSp in additionalWindSpeed:
+                    windFloat = float(winSp)
+                    if windFloat >= 0.0: winSpeedNumbers.append(windFloat)
+                    else: allGood = False
+                if allGood == False:
+                    checkData33 = False
+                    warning = 'additionalWindSpeed_ must be a value greater than 0.'
+                    print warning
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+            elif len(additionalWindSpeed) == 1:
+                if float(additionalWindSpeed[0]) >= 0.0:
+                    for count in range(8760):
+                        winSpeedNumbers.append(float(additionalWindSpeed[0]))
+                else:
+                    checkData33 = False
+                    warning = 'additionalWindSpeed_ must be a value greater than 0.'
+                    print warning
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
             else:
-                while pathCheck < i:
-                    winSpeedNumbers.append([])
-                    pathCheck += 1
+                checkData33 = False
+                warning = 'additionalWindSpeed_ must be either a list of 8760 values that correspond to hourly changing wind speeds over the year or a single constant value for the whole year.'
+                print warning
+                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+        elif additionalWindSpeed_.BranchCount > 1:
+            allWindSpeedsSame = False
+            treePaths = additionalWindSpeed_.Paths
+            for path in treePaths:
+                i = path.Indices[0]
                 if i == pathCheck:
                     branchList = additionalWindSpeed_.Branch(path)
                     dataVal = []
@@ -362,216 +388,228 @@ def checkTheInputs():
                         dataVal.append(item)
                     winSpeedNumbers.append(dataVal)
                     pathCheck += 1
-        if len(winSpeedNumbers) < finalCheck:
-            while len(winSpeedNumbers) < finalCheck:
-                winSpeedNumbers.append([])
-        for winCount, winList in enumerate(winSpeedNumbers):
-            if len(winList) != 0 and winCount != len(winSpeedNumbers) - 1: pass
-            elif winCount == len(winSpeedNumbers) - 1: pass
-            else:
-                checkData33 = False
-                warning = 'additionalWindSpeed_ data tree is not formatted correctly.  Try simplifying the tree paths before connecting it.'
-                print warning
-                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
-    else:
-        for count in range(8760):
-            winSpeedNumbers.append(0)
-        print 'No value found for additionalWindSpeed_.  No additional value for wind speed will be added.'
-    
-    
-    #Check to be sure that the units of flowVol and heat gain are correct.
-    checkData9 = True
-    if flowVolUnits == "m3/s": pass
-    else:
-        checkData9 = False
-        warning = "_zoneFlowVol must be in m3/s."
-        print warning
-        ghenv.Component.AddRuntimeMessage(w, warning)
-    
-    checkData10 = True
-    if heatGainUnits == "W": pass
-    else:
-        checkData10 = False
-        warning = "_zoneHeatGain must be in W."
-        print warning
-        ghenv.Component.AddRuntimeMessage(w, warning)
-    
-    checkData11 = True
-    if airTempUnits == srfTempUnits == "C": pass
-    else:
-        checkData11 = False
-        warning = "_zoneAirTemp and _srfIndoorTemp must be in degrees C."
-        print warning
-        ghenv.Component.AddRuntimeMessage(w, warning)
-    
-    checkData19 = True
-    if relHumidUnits == "%": pass
-    else:
-        checkData11 = False
-        warning = "_zoneRelHumid must be in %."
-        print warning
-        ghenv.Component.AddRuntimeMessage(w, warning)
-    
-    checkData28 = True
-    if outSrfTempUnits == "C": pass
-    else:
-        checkData28 = False
-        warning = "_srfOutdoorTemp must be in degrees C."
-        print warning
-        ghenv.Component.AddRuntimeMessage(w, warning)
-    
-    #Try to parse the weather file in order to get direct rad, diffuse rad, and location data.
-    checkData5 = True
-    if not os.path.isfile(_epwFile):
-        checkData5 = False
-        warningM = "Failed to find the file: " + str(_epwFile)
-        print warningM
-        ghenv.Component.AddRuntimeMessage(w, warningM)
-    else:
-        locationData = lb_preparation.epwLocation(_epwFile)
-        location = locationData[-1]
-        weatherData = lb_preparation.epwDataReader(_epwFile, locationData[0])
-        directNormalRadiation = weatherData[5]
-        diffuseHorizontalRadiation = weatherData[6]
-        globalHorizontalRadiation = weatherData[7]
-        outDryBulbTemp = weatherData[0]
-        outRelHumid = weatherData[2]
-        outWindSpeed = weatherData[3]
-    
-    #Separate out the _dirNormRad, the diffuse Horizontal rad, and the location  data.
-    directSolarRad = []
-    diffSolarRad = []
-    latitude = None
-    longitude = None
-    timeZone = None
-    if checkData5 == True:
-        directSolarRad = directNormalRadiation[7:]
-        diffSolarRad = diffuseHorizontalRadiation[7:]
-        globHorizRad = globalHorizontalRadiation[7:]
-        locList = location.split('\n')
-        for line in locList:
-            if "Latitude" in line: latitude = float(line.split(',')[0])
-            elif "Longitude" in line: longitude = float(line.split(',')[0])
-            elif "Time Zone" in line: timeZone = float(line.split(',')[0])
-    
-    #Check to be sure that the number of mesh faces and test points match.
-    checkData8 = True
-    if checkData25 == True:
-        for zoneCount, zone in enumerate(viewFactorMesh):
-            if len(zone) != 1:
-                totalFaces = 0
-                for meshCount, mesh in enumerate(zone):
-                    totalFaces = totalFaces +mesh.Faces.Count
-                if totalFaces == len(testPtViewFactor[zoneCount]): pass
                 else:
-                    totalVertices = 0
-                    for meshCount, mesh in enumerate(zone):
-                        totalVertices = totalVertices +mesh.Vertices.Count
-                    
-                    if totalVertices == len(testPtViewFactor[zoneCount]): pass
-                    else:
-                        checkData8 = False
-                        warning = "For one of the meshes in the _viewFactorMesh, the number of faces in the mesh and test points in the _testPtViewFactor do not match.\n" + \
-                        "This can sometimes happen when you have geometry created with one Rhino model tolerance and you generate a mesh off of it with a different tolerance.\n"+ \
-                        "Try changing your Rhino model tolerance and seeing if it works."
-                        print warning
-                        ghenv.Component.AddRuntimeMessage(w, warning)
-            else:
-                if zone[0].Faces.Count == len(testPtViewFactor[zoneCount]): pass
+                    while pathCheck < i:
+                        winSpeedNumbers.append([])
+                        pathCheck += 1
+                    if i == pathCheck:
+                        branchList = additionalWindSpeed_.Branch(path)
+                        dataVal = []
+                        for item in branchList:
+                            dataVal.append(item)
+                        winSpeedNumbers.append(dataVal)
+                        pathCheck += 1
+            if len(winSpeedNumbers) < finalCheck:
+                while len(winSpeedNumbers) < finalCheck:
+                    winSpeedNumbers.append([])
+            for winCount, winList in enumerate(winSpeedNumbers):
+                if len(winList) != 0 and winCount != len(winSpeedNumbers) - 1: pass
+                elif winCount == len(winSpeedNumbers) - 1: pass
                 else:
-                    if zone[0].Vertices.Count == len(testPtViewFactor[zoneCount]): pass
-                    else:
-                        checkData8 = False
-                        warning = "For one of the meshes in the _viewFactorMesh, the number of faces in the mesh and test points in the _testPtViewFactor do not match.\n" + \
-                        "This can sometimes happen when you have geometry created with one Rhino model tolerance and you generate a mesh off of it with a different tolerance.\n"+ \
-                        "Try changing your Rhino model tolerance and seeing if it works."
-                        print warning
-                        ghenv.Component.AddRuntimeMessage(w, warning)
-    
-    #If there are no outdoor surface temperatures and there are outdoor view factors, remove it from the mesh.
-    if outdoorClac == False and outdoorIsThere == True:
-        zoneSrfNames = zoneSrfNames[:-1]
-        testPtViewFactor = testPtViewFactor[:-1]
-        viewFactorMesh = viewFactorMesh[:-1]
-        testPtSkyView = testPtSkyView[:-1]
-        testPtBlockedVec = testPtBlockedVec[:-1]
-    
-    #Figure out the number of times to divide the sky based on the length of the blockedVec list.
-    numSkyPatchDivs = 0
-    checkData12 = True
-    if checkData25 == True:
-        for blockList in testPtBlockedVec:
-            if blockList != []:
-                if len(blockList[0]) == 145: numSkyPatchDivs = 0
-                elif len(blockList[0]) == 577: numSkyPatchDivs = 1
-                elif len(blockList[0]) == 1297: numSkyPatchDivs = 2
-                elif len(blockList[0]) == 2305: numSkyPatchDivs = 3
-                else:
-                    checkData12 = False
-                    warning = "You have an absurdly high number of view vectors from the 'Indoor View Factor' component such that it is not supported by the current component."
+                    checkData33 = False
+                    warning = 'additionalWindSpeed_ data tree is not formatted correctly.  Try simplifying the tree paths before connecting it.'
                     print warning
                     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
-    
-    #Check the clothing absorptivity.
-    checkData7 = True
-    cloA = 0.7
-    if cloAbsorptivity_ != None:
-        if cloAbsorptivity_ <= 1.0 and cloAbsorptivity_ >= 0.0: floorR = cloAbsorptivity_
         else:
-            checkData7 = False
-            warning = 'cloAbsorptivity_ must be a value between 0 and 1.'
-            print warning
-            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
-    else:
-        print 'No value found for cloAbsorptivity_.  The absorptivity will be set to 0.7 for average brown skin and typical clothing.'
-    
-    #Check the outdoor terrain.
-    # Evaluate the terrain type to get the right roughness length.
-    checkData31, terrainType, gradientHeightDiv, d, a, yValues, yAxisMaxRhinoHeight, nArrows, printMsg = lb_wind.terrain(outdoorTerrain_)
-    print printMsg
-    if checkData31 == False:
-        w = gh.GH_RuntimeMessageLevel.Warning
-        ghenv.Component.AddRuntimeMessage(w, printMsg)
-    
-    #Check the inletHeightOverride_.
-    inletHeightOverride = []
-    checkData15 = True
-    if checkData25 == True and len(inletHeightOverride_) > 0:
-        if len(inletHeightOverride_) == len(viewFactorMesh): inletHeightOverride = inletHeightOverride_
-        else:
-            checkData15 = False
-            warning = 'The length of data in the inletHeightOverride_ does not match the number of branches in the data tree of the _viewFactorMesh.'
-            print warning
-            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
-    
-    #Check the wellMixedAirOverride_.
-    checkData16 = True
-    mixedAirOverride = []
-    if wellMixedAirOverride_ != []:
-        if len(wellMixedAirOverride_) == 8760:
-            for val in wellMixedAirOverride_:
-                mixedAirOverride.append(int(val))
-        elif len(wellMixedAirOverride_) == 1:
             for count in range(8760):
-                mixedAirOverride.append(int(wellMixedAirOverride_[0]))
+                winSpeedNumbers.append(0)
+            print 'No value found for additionalWindSpeed_.  No additional value for wind speed will be added.'
+        
+        
+        #Check to be sure that the units of flowVol and heat gain are correct.
+        checkData9 = True
+        if flowVolUnits == "m3/s": pass
         else:
-            checkData16 = False
-            warning = 'wellMixedAirOverride_ must be either a list of 8760 values that correspond to hourly air mixing over the year or a single constant value for the whole year.'
+            checkData9 = False
+            warning = "_zoneFlowVol must be in m3/s."
             print warning
-            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+            ghenv.Component.AddRuntimeMessage(w, warning)
+        
+        checkData10 = True
+        if heatGainUnits == "W": pass
+        else:
+            checkData10 = False
+            warning = "_zoneHeatGain must be in W."
+            print warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+        
+        checkData11 = True
+        if airTempUnits == srfTempUnits == "C": pass
+        else:
+            checkData11 = False
+            warning = "zoneAirTemp_ and srfIndoorTemp_ must be in degrees C."
+            print warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+        
+        checkData19 = True
+        if relHumidUnits == "%": pass
+        else:
+            checkData11 = False
+            warning = "zoneRelHumid_ must be in %."
+            print warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+        
+        checkData28 = True
+        if outSrfTempUnits == "C": pass
+        else:
+            checkData28 = False
+            warning = "_srfOutdoorTemp must be in degrees C."
+            print warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+        
+        #Try to parse the weather file in order to get direct rad, diffuse rad, and location data.
+        checkData5 = True
+        if not os.path.isfile(_epwFile):
+            checkData5 = False
+            warningM = "Failed to find the file: " + str(_epwFile)
+            print warningM
+            ghenv.Component.AddRuntimeMessage(w, warningM)
+        else:
+            locationData = lb_preparation.epwLocation(_epwFile)
+            location = locationData[-1]
+            weatherData = lb_preparation.epwDataReader(_epwFile, locationData[0])
+            directNormalRadiation = weatherData[5]
+            diffuseHorizontalRadiation = weatherData[6]
+            globalHorizontalRadiation = weatherData[7]
+            outDryBulbTemp = weatherData[0]
+            outRelHumid = weatherData[2]
+            outWindSpeed = weatherData[3]
+        
+        #Separate out the _dirNormRad, the diffuse Horizontal rad, and the location  data.
+        directSolarRad = []
+        diffSolarRad = []
+        latitude = None
+        longitude = None
+        timeZone = None
+        if checkData5 == True:
+            directSolarRad = directNormalRadiation[7:]
+            diffSolarRad = diffuseHorizontalRadiation[7:]
+            globHorizRad = globalHorizontalRadiation[7:]
+            locList = location.split('\n')
+            for line in locList:
+                if "Latitude" in line: latitude = float(line.split(',')[0])
+                elif "Longitude" in line: longitude = float(line.split(',')[0])
+                elif "Time Zone" in line: timeZone = float(line.split(',')[0])
+        
+        #Check to be sure that the number of mesh faces and test points match.
+        checkData8 = True
+        if checkData25 == True:
+            for zoneCount, zone in enumerate(viewFactorMesh):
+                if len(zone) != 1:
+                    totalFaces = 0
+                    for meshCount, mesh in enumerate(zone):
+                        totalFaces = totalFaces +mesh.Faces.Count
+                    if totalFaces == len(testPtViewFactor[zoneCount]): pass
+                    else:
+                        totalVertices = 0
+                        for meshCount, mesh in enumerate(zone):
+                            totalVertices = totalVertices +mesh.Vertices.Count
+                        
+                        if totalVertices == len(testPtViewFactor[zoneCount]): pass
+                        else:
+                            checkData8 = False
+                            warning = "For one of the meshes in the _viewFactorMesh, the number of faces in the mesh and test points in the _testPtViewFactor do not match.\n" + \
+                            "This can sometimes happen when you have geometry created with one Rhino model tolerance and you generate a mesh off of it with a different tolerance.\n"+ \
+                            "Try changing your Rhino model tolerance and seeing if it works."
+                            print warning
+                            ghenv.Component.AddRuntimeMessage(w, warning)
+                else:
+                    if zone[0].Faces.Count == len(testPtViewFactor[zoneCount]): pass
+                    else:
+                        if zone[0].Vertices.Count == len(testPtViewFactor[zoneCount]): pass
+                        else:
+                            checkData8 = False
+                            warning = "For one of the meshes in the _viewFactorMesh, the number of faces in the mesh and test points in the _testPtViewFactor do not match.\n" + \
+                            "This can sometimes happen when you have geometry created with one Rhino model tolerance and you generate a mesh off of it with a different tolerance.\n"+ \
+                            "Try changing your Rhino model tolerance and seeing if it works."
+                            print warning
+                            ghenv.Component.AddRuntimeMessage(w, warning)
+        
+        #If there are no outdoor surface temperatures and there are outdoor view factors, remove it from the mesh.
+        if outdoorClac == False and outdoorIsThere == True:
+            zoneSrfNames = zoneSrfNames[:-1]
+            testPtViewFactor = testPtViewFactor[:-1]
+            viewFactorMesh = viewFactorMesh[:-1]
+            testPtSkyView = testPtSkyView[:-1]
+            testPtBlockedVec = testPtBlockedVec[:-1]
+        
+        #Figure out the number of times to divide the sky based on the length of the blockedVec list.
+        numSkyPatchDivs = 0
+        checkData12 = True
+        if checkData25 == True:
+            for blockList in testPtBlockedVec:
+                if blockList != []:
+                    if len(blockList[0]) == 145: numSkyPatchDivs = 0
+                    elif len(blockList[0]) == 577: numSkyPatchDivs = 1
+                    elif len(blockList[0]) == 1297: numSkyPatchDivs = 2
+                    elif len(blockList[0]) == 2305: numSkyPatchDivs = 3
+                    else:
+                        checkData12 = False
+                        warning = "You have an absurdly high number of view vectors from the 'Indoor View Factor' component such that it is not supported by the current component."
+                        print warning
+                        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+        
+        #Check the clothing absorptivity.
+        checkData7 = True
+        cloA = 0.7
+        if cloAbsorptivity_ != None:
+            if cloAbsorptivity_ <= 1.0 and cloAbsorptivity_ >= 0.0: floorR = cloAbsorptivity_
+            else:
+                checkData7 = False
+                warning = 'cloAbsorptivity_ must be a value between 0 and 1.'
+                print warning
+                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+        else:
+            print 'No value found for cloAbsorptivity_.  The absorptivity will be set to 0.7 for average brown skin and typical clothing.'
+        
+        #Check the outdoor terrain.
+        # Evaluate the terrain type to get the right roughness length.
+        checkData31, terrainType, gradientHeightDiv, d, a, yValues, yAxisMaxRhinoHeight, nArrows, printMsg = lb_wind.terrain(outdoorTerrain_)
+        print printMsg
+        if checkData31 == False:
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, printMsg)
+        
+        #Check the inletHeightOverride_.
+        inletHeightOverride = []
+        checkData15 = True
+        if checkData25 == True and len(inletHeightOverride_) > 0:
+            if len(inletHeightOverride_) == len(viewFactorMesh): inletHeightOverride = inletHeightOverride_
+            else:
+                checkData15 = False
+                warning = 'The length of data in the inletHeightOverride_ does not match the number of branches in the data tree of the _viewFactorMesh.'
+                print warning
+                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+        
+        #Check the wellMixedAirOverride_.
+        checkData16 = True
+        mixedAirOverride = []
+        if wellMixedAirOverride_ != []:
+            if len(wellMixedAirOverride_) == 8760:
+                for val in wellMixedAirOverride_:
+                    mixedAirOverride.append(int(val))
+            elif len(wellMixedAirOverride_) == 1:
+                for count in range(8760):
+                    mixedAirOverride.append(int(wellMixedAirOverride_[0]))
+            else:
+                checkData16 = False
+                warning = 'wellMixedAirOverride_ must be either a list of 8760 values that correspond to hourly air mixing over the year or a single constant value for the whole year.'
+                print warning
+                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+        else:
+            for count in range(8760):
+                mixedAirOverride.append(0)
+            print 'No value found for wellMixedAirOverride_.  The stratification calculation will be run for every hour of the year.'
+        
+        
+        #Do a final check of everything.
+        if checkData1 == True and checkData2 == True and checkData3 == True and checkData4 == True and checkData5 == True and checkData7 == True and checkData8 == True and checkData9 == True and checkData10 == True and checkData11 == True and checkData12 == True and checkData13 == True and checkData14 == True and checkData15 == True and checkData16 == True and checkData17 == True and checkData18 == True and checkData19 == True and checkData21 == True and checkData22 == True and checkData23 == True and checkData24 == True and checkData25 == True and checkData28 == True  and checkData29 == True and checkData30 == True and checkData31 == True and checkData32 == True  and checkData33 == True:
+            checkData = True
+        else: checkData = False
+        
+        return checkData, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winStatusNumbers, cloA, zoneFloorReflectivity, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, analysisPeriod
     else:
-        for count in range(8760):
-            mixedAirOverride.append(0)
-        print 'No value found for wellMixedAirOverride_.  The stratification calculation will be run for every hour of the year.'
-    
-    
-    #Do a final check of everything.
-    if checkData1 == True and checkData2 == True and checkData3 == True and checkData4 == True and checkData5 == True and checkData7 == True and checkData8 == True and checkData9 == True and checkData10 == True and checkData11 == True and checkData12 == True and checkData13 == True and checkData14 == True and checkData15 == True and checkData16 == True and checkData17 == True and checkData18 == True and checkData19 == True and checkData21 == True and checkData22 == True and checkData23 == True and checkData24 == True and checkData25 == True and checkData28 == True  and checkData29 == True and checkData30 == True and checkData31 == True and checkData32 == True  and checkData33 == True:
-        checkData = True
-    else: checkData = False
-    
-    return checkData, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winStatusNumbers, cloA, zoneFloorReflectivity, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, analysisPeriod
-
+        return -1
 
 
 #Check to be sure that LB+HB are flying.
@@ -587,9 +625,11 @@ else:
 
 #Check the data input.
 checkData = False
-if _viewFactorMesh.BranchCount > 0 and len(_viewFactorInfo) > 0 and _epwFile != None and _srfIndoorTemp.BranchCount > 0 and _zoneAirTemp.BranchCount > 0  and _zoneAirFlowVol.BranchCount > 0 and _zoneAirHeatGain.BranchCount > 0 and _zoneRelHumid.BranchCount > 0 and initCheck == True:
+if _viewFactorMesh.BranchCount > 0 and len(_viewFactorInfo) > 0 and _epwFile != None and _srfOutdoorTemp.BranchCount > 0 and initCheck == True:
     if _viewFactorInfo[0] != None:
-        checkData, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, analysisPeriod = checkTheInputs()
+        checkResult = checkTheInputs()
+        if checkResult != -1:
+            checkData, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, analysisPeriod = checkResult
 
 if checkData == True:
     comfRecipe = ["UTCI", srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, analysisPeriod]
