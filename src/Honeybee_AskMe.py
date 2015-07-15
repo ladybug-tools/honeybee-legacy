@@ -21,19 +21,19 @@
 
 
 """
-Ask Me!
+Use this component to get basic information on Honeybee Objects, whether they are HBSrfs or HBZones.
 
 -
 Provided by Honeybee 0.0.57
 
     Args:
-        _HBObjects: Any valid Honeybee object
+        _HBObjects: Any valid Honeybee object.
     Returns:
-        readMe!: Information about the Honeybee object
+        readMe!: Information about the Honeybee object.  Connect to a panel to visualize.
 """
 ghenv.Component.Name = "Honeybee_AskMe"
 ghenv.Component.NickName = 'askMe'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_15_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

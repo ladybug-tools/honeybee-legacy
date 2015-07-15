@@ -21,19 +21,19 @@
 
 
 """
-Add Glazing
+Use this component to add a custom glazing surface to a HBSurface or HBZone.
 
 -
 Provided by Honeybee 0.0.57
 
     Args:
-        _HBObj: HBZone or HBSurface
-        _childSurfaces: List of child surfaces 
-        EPConstruction_: Optional EnergyPlus construction
-        RADMaterial_: Optional RADMaterial
+        _HBObj: A HBZone or HBSurface to which you would like to add a customized glazing surface.
+        _childSurfaces: A surface or list of surfaces that represent the custom window(s) that you would like to add.  Note that these surfaces should be co-planar to the connected HBSurface or one of the surfaces of the connected HBZones.
+        EPConstruction_: An optional EnergyPlus construction to set the material construction of the window added to the HBSurface or HBZone.  This can be either the name of a window construction from the OpenStudio library (coming out of the 'Honeybee_Call from EP Construction Library' component) or a custom window construction you created from the 'Honeybee_EnergyPlus Construction' component.
+        RADMaterial_: An optional Radiance material to set the material of the window added to the HBSurface or HBZone.  This can be either the name of a window material from the default Radaince library (coming out of the 'Honeybee_Call from Radiance Library' component) or a custom window material you created from any of the Radiance material components (like the 'Honeybee_Radiance Glass Material' component).
     Returns:
         readMe!:...
-        HBObjWGLZ: Honeybee objects with assigned glazings in case of success
+        HBObjWGLZ: The Honeybee surface or zone with assigned glazing (in case of success).
 """
 
 import rhinoscriptsyntax as rs
@@ -47,7 +47,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_addHBGlz'
 ghenv.Component.NickName = 'addHBGlz'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_15_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

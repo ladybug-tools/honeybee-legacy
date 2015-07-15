@@ -21,8 +21,13 @@
 
 
 """
-Divide up a building mass into smaller smaller volumes that correspond to EnergyPlus zones.  This component should divide up any building mass into floors provided that the mass is a single continuous volume from bottom to top.  If you have a single mass representing two towers off of a podium, the two towers are not a continuous mass and you should therefore send each tower and the podium in as a separate Brep.  The component will work for courtyard buildings.
-The division of each floor into core and perimeter zones should work for almost all masses where all walls are planar and all walls are curved.  It works in a limited number of cases that have both curved and planar walls.  Also, it is important to note that, if your offset depth is so large in comparison to your building depth as to create perimeter zones that intersect one another, the whole floor will be returned as a single zone.
+Use this component to divide up a brep (polysurface) representative of a complete building massing into smaller volumes that roughly correspond to how a generic EnergyPlus model should be zoned.
+This generic zoning will divide the input mass into seprate floors based on an input floor height.
+This zoning can also divide up each floor into a core and perimeter zones, which helps account for the different microclimates you would get on each of the different orientations of a building.
+_
+If you have a single mass representing two towers off of a podium, the two towers are not a continuous mass and you should therefore send each tower and the podium in as a separate Brep into this component.  The component will work for courtyard buildings.
+Core and perimeter zoneing should work for almost all masses where all walls are planar.  It works in a limited number of cases that have both curved and planar walls.  Also, it is important to note that, if your offset depth is so large in comparison to your building depth as to create perimeter zones that intersect one another, the whole floor will be returned as a single zone.
+While this component can usually get you the most of the way there, it is still recommended that you bake the output and check the geometry in Rhino before turning the breps into HBZones.
 _
 The assumption about an E+ zone is that the air is well mixed and all at the same temperature.
 Therefore, it is usually customary to break up a building depending on the areas where you would expect different building microclimates to exist.
@@ -44,7 +49,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = 'Honeybee_SplitBuildingMass'
 ghenv.Component.NickName = 'SplitMass'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_15_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
