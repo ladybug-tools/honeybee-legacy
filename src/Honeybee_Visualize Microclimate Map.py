@@ -49,7 +49,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Visualize Microclimate Map"
 ghenv.Component.NickName = 'VisualizeMicroclimate'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_15_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -210,7 +210,7 @@ def computeComfValues(comfResultsMtx, analysisP, comfMtxAnalysisP, stepOfSimulat
         HOYS, months, days = lb_preparation.getHOYsBasedOnPeriod(analysisP, 1)
         FinalHOYs, mon, days = lb_preparation.getHOYsBasedOnPeriod(comfMtxAnalysisP, 1)
         for hCount, hour in enumerate(HOYS):
-            HOYS[hCount] = hour - FinalHOYs[0]
+            HOYS[hCount] = hour - FinalHOYs[0] + 1
         
         #Check to see if the hours of the requested analysis period are in the comfResultsMtx.
         periodsAlign = True
@@ -224,10 +224,12 @@ def computeComfValues(comfResultsMtx, analysisP, comfMtxAnalysisP, stepOfSimulat
             print warning
             ghenv.Component.AddRuntimeMessage(w, warning)
         else:
+            
             #Pick out just the hours that are in the analysis period.
             newcomfResultsMtx = []
             for lineCount, line in enumerate(comfResultsMtx):
-                if lineCount in HOYS: newcomfResultsMtx.append(line)
+                if lineCount in HOYS:
+                    newcomfResultsMtx.append(line)
             
             #Transpose the matrix
             newcomfResultsMtx2 = zip(*newcomfResultsMtx)
