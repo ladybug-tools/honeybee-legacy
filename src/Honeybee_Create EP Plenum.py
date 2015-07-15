@@ -21,20 +21,20 @@
 
 
 """
-Create EP Plenum Zone
+Use this component to turn a HBZone into a 'Plenum Zone' with no internal loads.  This is useful to appropriately assign conditions for closets, underfloor spaces, and drop ceilings.
 -
 Provided by Honeybee 0.0.57
 
     Args:
-        _HBZones:...
+        _HBZones: HBZones that you want to turn into plenum zones.
         
     Returns:
-        HBZPlenumones:...
+        HBZPlenumZones: HBZones that have had their loads dropped to 0 to be reflective of plenum zones.
 """
 
 ghenv.Component.Name = "Honeybee_Create EP Plenum"
 ghenv.Component.NickName = 'createEPPlenum'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_14_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
