@@ -49,7 +49,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = 'Honeybee_SplitBuildingMass'
 ghenv.Component.NickName = 'SplitMass'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_15_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_17_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -164,7 +164,7 @@ def getFloorCrvs(buildingMass, floorHeights, maxHeights):
         elif len(crvList) == 1 and count == 0:
             cntrCrvs.append([crvList[0]])
         elif len(crvList) == 1 and count != 0:
-            cntrCrvs.append(crvList)
+            cntrCrvs[0].append(crvList[0])
         else: pass
         
         if crvList != []:
