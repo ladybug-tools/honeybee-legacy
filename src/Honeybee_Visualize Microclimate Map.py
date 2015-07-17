@@ -49,11 +49,11 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Visualize Microclimate Map"
 ghenv.Component.NickName = 'VisualizeMicroclimate'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_15_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_17_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
-#compatibleLBVersion = VER 0.0.59\nJUN_25_2015
+#compatibleLBVersion = VER 0.0.59\nJUL_17_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "6"
 except: pass
 
@@ -293,8 +293,8 @@ def main(pointValues, viewFactorMesh, dataType, lb_preparation, lb_visualization
         else: legendTitle = 'PMV'
         if dataType == 'Degrees From Target': dataType = dataType + ' Temperature'
         if len(legendPar_) == 0:
-            if dataType == 'Degrees From Neutral UTCI': customColors = [System.Drawing.Color.FromArgb(0,136,255), System.Drawing.Color.FromArgb(67,176,255), System.Drawing.Color.FromArgb(134,215,255), System.Drawing.Color.FromArgb(174,228,255), System.Drawing.Color.FromArgb(215,242,255), System.Drawing.Color.FromArgb(255,255,255), System.Drawing.Color.FromArgb(255,243,243), System.Drawing.Color.FromArgb(255,0,0)]
-            else: customColors = [System.Drawing.Color.FromArgb(0,136,255), System.Drawing.Color.FromArgb(200,225,255), System.Drawing.Color.FromArgb(255,255,255), System.Drawing.Color.FromArgb(255,230,230), System.Drawing.Color.FromArgb(255,0,0)]
+            if dataType == 'Degrees From Neutral UTCI': customColors = lb_visualization.gradientLibrary[9]
+            else: customColors = lb_visualization.gradientLibrary[8]
             if dataType == 'Degrees From Target Temperature':
                 numSeg = 11
                 lowB = -5
@@ -308,7 +308,8 @@ def main(pointValues, viewFactorMesh, dataType, lb_preparation, lb_visualization
                 lowB = -1
                 highB = 1
         elif customColors[0] == defaultCustomColor1 and customColors[-1] == defaultCustomColor2:
-            customColors = [System.Drawing.Color.FromArgb(0,136,255), System.Drawing.Color.FromArgb(100,196,255), System.Drawing.Color.FromArgb(200,225,255), System.Drawing.Color.FromArgb(228,225,255), System.Drawing.Color.FromArgb(255,255,255), System.Drawing.Color.FromArgb(255,230,230), System.Drawing.Color.FromArgb(255,0,0)]
+            if dataType == 'Degrees From Neutral UTCI': customColors = lb_visualization.gradientLibrary[9]
+            else: customColors = lb_visualization.gradientLibrary[8]
     elif 'Thermal Comfort Percent' in dataType or 'Thermal Autonomy' in dataType or 'Over-Heated Percent' in dataType or 'Under-Heated Percent' in dataType:
         if percentOrTotal == False:
             if 'Percent' in dataType: dataType = dataType.split('Percent')[0] + 'Hours'
@@ -324,9 +325,9 @@ def main(pointValues, viewFactorMesh, dataType, lb_preparation, lb_visualization
             else: pointValuesFinal.append(value*100)
         if len(legendPar_) == 0:
             if all100Comf == False:
-                if 'Thermal Comfort' in dataType or 'Thermal Autonomy' in dataType: customColors = [System.Drawing.Color.FromArgb(0,0,0), System.Drawing.Color.FromArgb(110,0,153), System.Drawing.Color.FromArgb(255,0,0), System.Drawing.Color.FromArgb(255,255,102), System.Drawing.Color.FromArgb(255,255,255)]
-                elif 'Over-Heated' in dataType: customColors = [System.Drawing.Color.FromArgb(255,255,255), System.Drawing.Color.FromArgb(255,0,0)]
-                else: customColors = [System.Drawing.Color.FromArgb(255,255,255), System.Drawing.Color.FromArgb(0,136,255)]
+                if 'Thermal Comfort' in dataType or 'Thermal Autonomy' in dataType: customColors = lb_visualization.gradientLibrary[7]
+                elif 'Over-Heated' in dataType: customColors = lb_visualization.gradientLibrary[10]
+                else: customColors = lb_visualization.gradientLibrary[11]
             else: customColors = [System.Drawing.Color.FromArgb(255,255,255), System.Drawing.Color.FromArgb(255,255,255)]
     else:
         pointValuesFinal = pointValues
