@@ -23,19 +23,26 @@
 
 
 """
-Generate window based on a desired percentage of glazing and possibly other inputs such as window height and sill height.
+Use this component to generate windows for a HBSurface or HBZone based on a desired window-to-wall ratio. In addition to generating window geometry that corresponds with the input ratio, this component also allows you a fairly high level of control over the window geometry.
+_
+The first way in which you gain additional control over geometry is the option of whether you want to generate a single window for each surface, which is good for making energy simulations run fast, or you want to use the glazig ratio to create several windows distributed across the surfaces, which is often necessary to have accurate daylight simulations or high-resolution thermal maps.
+If you break up the window into several ones, you also have the ability to set the distance between each of the windows along the surface.
+_
+If you input wall surfaces that have perfectly horizontal tops and/or bottoms, you also have access to a number of other other inputs such as window height, the sill height, and whether you want to split the glazing vertically into two windows.
 -
 Provided by Honeybee 0.0.57
     
     Args:
         _HBObjects: Honeybee thermal zones or surfaces for which glazing should be generated.
-        _glzRatio: The fraction of the wall surface that should be glazed.  This input only accepts values between 0 and 0.95.  This input can also accept lists of values in this range and will assign different glazing ratios based on cardinal direction, starting with north and moving counter-clockwise.  Note that glazing ratio always takes priority over the windowHeight and sillHeight inputs below.
-        breakUpWindow_: Set to "True" to break up windows on walls that contain rectangles.  Set to "False" to generate one window per quadrilateral wall.  The default is set to "True."
-        windowHeight_: This input it optional and will only have relevance to HBObjects that contain a rectangle, which can be used to generate orthagonal windows.  Use this input to set the height of your windows in model units.  This input can also accept lists of values and will assign different window heights based on cardinal direction, starting with north and moving counter-clockwise.  Note that this input will be over-ridden at high glazing ratios.
-        sillHeight_: This input it optional and will only have relevance to HBObjects that contain a rectangle, which can be used to generate orthagonal windows.  Use this input to set the distance from the floor to the bottom of your windows in model units.  This input can also accept lists of values and will assign different sill heights based on cardinal direction, starting with north and moving counter-clockwise.  Note that this input will be over-ridden at high glazing ratios or window heights.
-        breakUpDist_: This input it optional and will only have relevance to HBObjects that contain a rectangle, which can be used to generate orthagonal windows.  Use this input to set the distance between individual windows.  This input can also accept lists of values and will assign different sill heights based on cardinal direction, starting with north and moving counter-clockwise.  Note that this input will be over-ridden at high glazing ratios or window heights.  Note that this value is ignored when breakUpWindow_ is set to "False."
-        skyLightRatio_: If you have input a full zone or list of zones as your HBObjects, use this input to generate skylights on the roof surfaces.
-        skyLightBreakUpDist_: Use this input to change the distance between sky lights.
+        _glzRatio: The fraction of the wall surface that should be glazed.  This input only accepts values between 0 and 0.95 (we don't go all of the way up to 1 because EnergyPlus does not like this).  This input can also accept lists of values and will assign different glazing ratios based on cardinal direction, starting with north and moving counter-clockwise.  Note that glazing ratio always takes priority over the windowHeight and sillHeight inputs below.
+        breakUpWindow_: Set to "True" to generate a distributed set of multiple windows on walls and set to "False" to generate just a single window per rectangular wall surface.  This input can also accept lists of boolean values and will assign different 'BreakUpWindow' values based on cardinal direction, starting with north and moving counter-clockwise.  A single window for each surface is good for making energy simulations run fast while several distributed windows is often necessary to have accurate daylight simulations or high-resolution thermal maps. The default is set to "True" to generate multiple distributed windows.
+        breakUpDist_: An optional number in Rhino model units that sets the distance between individual windows on rectangular surfaces when the breakUpWindow_ input above is set to 'True'.  This input can also accept lists of values and will assign different sill heights based on cardinal direction, starting with north and moving counter-clockwise.  Note that this input will be over-ridden at high glazing ratios or window heights.  The default is set to 2 meters.
+        windowHeight_: An optional number in Rhino model units that sets the height of your windows on rectangular surfaces when the breakUpWindow_ input above is set to 'True'.  This input can also accept lists of values and will assign different window heights based on cardinal direction, starting with north and moving counter-clockwise.  Note that this input will be over-ridden at high glazing ratios. The default is set to 2 meters.
+        sillHeight_: An optional number in Rhino model units that sets the distance from the floor to the bottom of your windows on rectangular surfaces when the breakUpWindow_ input above is set to 'True'.  This input can also accept lists of values and will assign different sill heights based on cardinal direction, starting with north and moving counter-clockwise.  Note that this input will be over-ridden at high glazing ratios or window heights.  The default is set to 0.8 meters (or 80 centimeters).
+        splitGlzVertDist_: An optional number in Rhino model units that splits the windows on rectangular surfaces into two with a vertical distance between them equal to this input when the breakUpWindow_ input above is set to 'True'.  This input can also accept lists of values and will assign different vertical distances based on cardinal direction, starting with north and moving counter-clockwise.  Note that this input will be over-ridden at high glazing ratios, high window heights, or high sill heights.
+        skyLightRatio_: If you have input a full zone or list of zones as your HBObjects, use this input to generate skylights on the roof surfaces. A single window for each surface is good for making energy simulations run fast while several distributed windows is often necessary to have accurate daylight simulations or high-resolution thermal maps. The default is set to "True" to generate multiple distributed windows.
+        breakUpSkylight_: Set to "True" to generate a distributed set of multiple windows for skylights and set to "False" to generate just a single window per roof surface.
+        skyLightBreakUpDist_: An optional number in Rhino model units that sets the distance between individual skylights when the breakUpSkylight_ input above is set to 'True'.  The default is set to 3 meters.
         _runIt: set runIt to True to generate the glazing
     Returns:
         readMe!: ...
@@ -44,7 +51,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Glazing based on ratio"
 ghenv.Component.NickName = 'glazingCreator'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_17_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -84,11 +91,6 @@ def getTopBottomCurves(brep):
     
     # duplicate the edges of the wall
     edges = brep.DuplicateEdgeCurves(True)
-    
-    #joinedEdges = rc.Geometry.Curve.JoinCurves(edges)[0]
-    #simplificationOpt = rc.Geometry.CurveSimplifyOptions.All
-    #joinedEdgesSimplified = joinedEdges.Simplify(simplificationOpt, sc.doc.ModelAbsoluteTolerance, sc.doc.ModelAngleToleranceRadians)
-    #edges = joinedEdgesSimplified.DuplicateSegments()
     
     # sort the edges based on the z of mid point of the edge and get the top and bottom edges.
     sortedEdges = sorted(edges, key=lambda edge: edge.PointAtNormalizedLength(0.5).Z)
@@ -241,55 +243,21 @@ def createGlazingOddPlanarGeo(baseSrf, glazingRatio):
     return glzSrf
 
 
-def createGlazingForRect(rectBrep, glazingRatio, windowHeight, sillHeight, breakUpDist):
-    #Start by importing the model units so that default values for the sill and window height can be set based on them if the user has not input any themsleves.
-    units = sc.doc.ModelUnitSystem
+def createGlazingForRect(rectBrep, glazingRatio, windowHeight, sillHeight, breakUpDist, splitGlzVertDist, conversionFactor):
+    #Define a default window height, sill height, breakup distance and vertical glazing dist of windows.
+    if windowHeight != None: winHeight = windowHeight
+    else: winHeight = 2
+    winHeight = winHeight/conversionFactor
+    if sillHeight != None: silHeight = sillHeight
+    else: silHeight = 0.8
+    silHeight = silHeight/conversionFactor
+    if breakUpDist != None: distBreakup = breakUpDist
+    else: distBreakup = 2
+    distBreakup = distBreakup/conversionFactor
+    if splitGlzVertDist != None: splitVertDist = splitGlzVertDist
+    else: splitVertDist = 0
+    splitVertDist = splitVertDist/conversionFactor
     
-    #Define a default window height, sill height and breakup distance of windows that is based on the model units and typical building dimensions if the user has not input values.
-    if windowHeight:
-        winHeight = windowHeight
-    elif `units` == 'Rhino.UnitSystem.Meters':
-        winHeight = 2
-    elif `units` == 'Rhino.UnitSystem.Centimeters':
-        winHeight = 200
-    elif `units` == 'Rhino.UnitSystem.Millimeters':
-        winHeight = 2000
-    elif `units` == 'Rhino.UnitSystem.Feet':
-        winHeight = 6
-    elif `units` == 'Rhino.UnitSystem.Inches':
-        winHeight = 72
-    else:
-        winHeight = 2
-    
-    if sillHeight:
-        silHeight = sillHeight
-    elif `units` == 'Rhino.UnitSystem.Meters':
-        silHeight = 0.8
-    elif `units` == 'Rhino.UnitSystem.Centimeters':
-        silHeight = 80
-    elif `units` == 'Rhino.UnitSystem.Millimeters':
-        silHeight = 800
-    elif `units` == 'Rhino.UnitSystem.Feet':
-        silHeight = 3
-    elif `units` == 'Rhino.UnitSystem.Inches':
-        silHeight = 36
-    else:
-        silHeight = 0.8
-    
-    if breakUpDist:
-        distBreakup = breakUpDist
-    elif `units` == 'Rhino.UnitSystem.Meters':
-        distBreakup = 2
-    elif `units` == 'Rhino.UnitSystem.Centimeters':
-        distBreakup = 200
-    elif `units` == 'Rhino.UnitSystem.Millimeters':
-        distBreakup = 2000
-    elif `units` == 'Rhino.UnitSystem.Feet':
-        distBreakup = 7
-    elif `units` == 'Rhino.UnitSystem.Inches':
-        distBreakup = 84
-    else:
-        distBreakup = 2
     
     if rectBrep:
         #Calculate the target area to make the glazing.
@@ -306,19 +274,13 @@ def createGlazingForRect(rectBrep, glazingRatio, windowHeight, sillHeight, break
         rectHeightVec = rc.Geometry.Vector3d(heightClosestPt.X - rectBtmCurve.PointAtEnd.X, heightClosestPt.Y - rectBtmCurve.PointAtEnd.Y, heightClosestPt.Z - rectBtmCurve.PointAtEnd.Z)
         maxWinHeightSill = rectHeight - silHeight
         
-        maxAreaSill = (rectBtmCurve.GetLength() * 0.98) * maxWinHeightSill
-        
         #If the window height given from the formulas above is greater than the height of the wall, set the window height to be just under that of the wall.
-        if winHeight > (0.98 * rectHeight):
-            winHeightFinal = (0.98 * rectHeight)
-        else:
-            winHeightFinal = winHeight
+        if winHeight > (0.98 * rectHeight): winHeightFinal = (0.98 * rectHeight)
+        else: winHeightFinal = winHeight
         
         #If the sill height given from the formulas above is less than 1% of the wall height, set the sill height to be 1% of the wall height.
-        if silHeight < (0.01 * rectHeight):
-            silHeightFinal = (0.01 * rectHeight)
-        else:
-            silHeightFinal = silHeight
+        if silHeight < (0.01 * rectHeight): silHeightFinal = (0.01 * rectHeight)
+        else: silHeightFinal = silHeight
         
         #Find the window geometry in the case that the target area is below that of the maximum acceptable area for breaking up the window into smaller, taller windows.
         if targetArea < maxAreaBreakUp:
@@ -349,10 +311,8 @@ def createGlazingForRect(rectBrep, glazingRatio, windowHeight, sillHeight, break
             sillUnitVec.Unitize()
             
             maxSillHeight = (rectHeight*0.99) - winHeightFinal
-            if silHeightFinal < maxSillHeight:
-                sillVec = rc.Geometry.Vector3d.Multiply(silHeightFinal, sillUnitVec)
-            else:
-                sillVec = rc.Geometry.Vector3d.Multiply(maxSillHeight, sillUnitVec)
+            if silHeightFinal < maxSillHeight: sillVec = rc.Geometry.Vector3d.Multiply(silHeightFinal, sillUnitVec)
+            else: sillVec = rc.Geometry.Vector3d.Multiply(maxSillHeight, sillUnitVec)
             
             transformMatrix = rc.Geometry.Transform.Translation(sillVec)
             
@@ -374,14 +334,33 @@ def createGlazingForRect(rectBrep, glazingRatio, windowHeight, sillHeight, break
                 line.Transform(transformMatrixScale)
                 centPtIndex += 1
             
-            #Extrude the lines to create the windows
-            extruUnitVec = rectHeightVec
-            extruUnitVec.Unitize()
-            extruVec = rc.Geometry.Vector3d.Multiply(extruUnitVec, winHeightFinal)
+            #Find the maximum acceptable area for splitting the glazing vertically.
+            maxSplitVert = rectHeight - silHeightFinal - winHeightFinal - (0.02*rectHeight)
+            #If the splitVertDist is beyond the maximum acceptable, set it to this maximum.
+            if splitVertDist < 0 or maxSplitVert < 0: splitVertDist = 0
+            elif splitVertDist != 0 and splitVertDist > maxSplitVert: splitVertDist = maxSplitVert
             
-            finalWinSrfs = []
-            for line in winLinesStart:
-                finalWinSrfs.append(rc.Geometry.Surface.CreateExtrusion(line.ToNurbsCurve(), extruVec))
+            #If there is a non-zero vertical breakup dist and the value is less than the maximum accpetable, break up the window surface verticaly.
+            if splitVertDist != 0:
+                #Extrude the lines to create the windows
+                extruUnitVec = rectHeightVec
+                extruUnitVec.Unitize()
+                extruVec = rc.Geometry.Vector3d.Multiply(extruUnitVec, (winHeightFinal/2))
+                vertMovingVec = rc.Geometry.Vector3d.Multiply(extruUnitVec, (winHeightFinal/2)+splitVertDist)
+                vertMovingTransform = rc.Geometry.Transform.Translation(vertMovingVec)
+                finalWinSrfs = []
+                for line in winLinesStart:
+                    finalWinSrfs.append(rc.Geometry.Surface.CreateExtrusion(line.ToNurbsCurve(), extruVec))
+                    line.Transform(vertMovingTransform)
+                    finalWinSrfs.append(rc.Geometry.Surface.CreateExtrusion(line.ToNurbsCurve(), extruVec))
+            else:
+                #Extrude the lines to create the windows
+                extruUnitVec = rectHeightVec
+                extruUnitVec.Unitize()
+                extruVec = rc.Geometry.Vector3d.Multiply(extruUnitVec, winHeightFinal)
+                finalWinSrfs = []
+                for line in winLinesStart:
+                    finalWinSrfs.append(rc.Geometry.Surface.CreateExtrusion(line.ToNurbsCurve(), extruVec))
             
             rectWinBreps=[]
             for srf in finalWinSrfs:
@@ -402,8 +381,8 @@ def createGlazingForRect(rectBrep, glazingRatio, windowHeight, sillHeight, break
             else:
                 sillVec = rc.Geometry.Vector3d.Multiply(maxSillHeight, sillUnitVec)
             
+            #Move the window to the sill height.
             transformMatrix = rc.Geometry.Transform.Translation(sillVec)
-            
             winStartLine = rectBtmCurve
             rc.Geometry.NurbsCurve.Transform(winStartLine, transformMatrix)
             
@@ -413,20 +392,37 @@ def createGlazingForRect(rectBrep, glazingRatio, windowHeight, sillHeight, break
             transformMatrixScale = rc.Geometry.Transform.Scale(lineCentPt, 0.98)
             winStartLine.Transform(transformMatrixScale)
             
-            #Extrude the curve to create the window.
-            extruUnitVec = rectHeightVec
-            extruUnitVec.Unitize()
-            extruVec = rc.Geometry.Vector3d.Multiply(extruUnitVec, (targetArea / (rectBtmCurveLength * 0.98)))
+            #Find the maximum acceptable area for splitting the glazing vertically.
+            maxSplitVert = rectHeight - silHeightFinal - (targetArea / (rectBtmCurveLength * 0.98)) - (0.02*rectHeight)
+            #If the splitVertDist is beyond the maximum acceptable, set it to this maximum.
+            if splitVertDist < 0 or maxSplitVert < 0: splitVertDist = 0
+            elif splitVertDist != 0 and splitVertDist > maxSplitVert: splitVertDist = maxSplitVert
             
-            finalWinSrf = rc.Geometry.Surface.CreateExtrusion(winStartLine, extruVec)
-            rectWinBreps = [rc.Geometry.Surface.ToBrep(finalWinSrf)]
+            if splitVertDist != 0:
+                #Extrude the line to create the window
+                extruUnitVec = rectHeightVec
+                extruUnitVec.Unitize()
+                extruVec = rc.Geometry.Vector3d.Multiply(extruUnitVec, (targetArea / (rectBtmCurveLength * 0.98))/2)
+                vertMovingVec = rc.Geometry.Vector3d.Multiply(extruUnitVec, ((targetArea / (rectBtmCurveLength * 0.98))/2)+splitVertDist)
+                vertMovingTransform = rc.Geometry.Transform.Translation(vertMovingVec)
+                finalWinSrf1 = rc.Geometry.Surface.CreateExtrusion(winStartLine.ToNurbsCurve(), extruVec)
+                winStartLine.Transform(vertMovingTransform)
+                finalWinSrf2 = rc.Geometry.Surface.CreateExtrusion(winStartLine.ToNurbsCurve(), extruVec)
+                rectWinBreps = [rc.Geometry.Surface.ToBrep(finalWinSrf1), rc.Geometry.Surface.ToBrep(finalWinSrf2)]
+            else:
+                #Extrude the line to create the window
+                extruUnitVec = rectHeightVec
+                extruUnitVec.Unitize()
+                extruVec = rc.Geometry.Vector3d.Multiply(extruUnitVec, (targetArea / (rectBtmCurveLength * 0.98)))
+                finalWinSrf = rc.Geometry.Surface.CreateExtrusion(winStartLine, extruVec)
+                rectWinBreps = [rc.Geometry.Surface.ToBrep(finalWinSrf)]
     
     else:
         rectWinBreps = []
     return rectWinBreps
 
 
-def createGlazingThatContainsRectangle(topEdge, btmEdge, baseSrf, glazingRatio, windowHeight, sillHeight, breakUpWindow, breakUpDist):
+def createGlazingThatContainsRectangle(topEdge, btmEdge, baseSrf, glazingRatio, windowHeight, sillHeight, breakUpWindow, breakUpDist, splitVertDist, conversionFactor):
     #Get the rectangle vertices points from the arrangement of closest points of the top and bottom curves.
     rectPt1 = rc.Geometry.Curve.PointAt(topEdge, rc.Geometry.LineCurve.ClosestPoint(topEdge, btmEdge.PointAtEnd)[1])
     rectPt2 = rc.Geometry.Curve.PointAt(btmEdge, rc.Geometry.LineCurve.ClosestPoint(btmEdge, topEdge.PointAtEnd)[1])
@@ -507,7 +503,7 @@ def createGlazingThatContainsRectangle(topEdge, btmEdge, baseSrf, glazingRatio, 
     rectWinBreps = []
     if breakUpWindow == True:
         for rect in middle:
-            rectWinBreps.append(createGlazingForRect(rect, glazingRatio, windowHeight, sillHeight, breakUpDist))
+            rectWinBreps.append(createGlazingForRect(rect, glazingRatio, windowHeight, sillHeight, breakUpDist, splitVertDist, conversionFactor))
     else:
         for rect in middle:
             rectWinBreps.append(createGlazingQuad(rect, glazingRatio, None))
@@ -530,28 +526,15 @@ def createGlazingThatContainsRectangle(topEdge, btmEdge, baseSrf, glazingRatio, 
     
     return glzSrf
 
-def createSkylightGlazing(baseSrf, glazingRatio, planarBool, edgeLinear):
-    if breakUpWindow_ == True or breakUpWindow_ == None:
+def createSkylightGlazing(baseSrf, glazingRatio, planarBool, edgeLinear, breakUpWindow, breakUpDist, conversionFactor):
+    if breakUpWindow == True or breakUpWindow == None:
         #Define the meshing paramters to break down the surface in a manner that produces only trinagles and quads.
         meshPar = rc.Geometry.MeshingParameters.Default
         
         #Define the grid size break down based on the model units.
-        units = sc.doc.ModelUnitSystem
-        
-        if skyLightBreakUpDist_ != None:
-            distBreakup = skyLightBreakUpDist_
-        elif `units` == 'Rhino.UnitSystem.Meters':
-            distBreakup = 2
-        elif `units` == 'Rhino.UnitSystem.Centimeters':
-            distBreakup = 200
-        elif `units` == 'Rhino.UnitSystem.Millimeters':
-            distBreakup = 2000
-        elif `units` == 'Rhino.UnitSystem.Feet':
-            distBreakup = 7
-        elif `units` == 'Rhino.UnitSystem.Inches':
-            distBreakup = 84
-        else:
-            distBreakup = 2
+        if breakUpDist != None: distBreakup = breakUpDist
+        else: distBreakup = 3
+        distBreakup = distBreakup/conversionFactor
         
         meshPar.MinimumEdgeLength = (distBreakup)
         meshPar.MaximumEdgeLength = (distBreakup*2)
@@ -613,7 +596,7 @@ def createSkylightGlazing(baseSrf, glazingRatio, planarBool, edgeLinear):
             lastSuccessfulRestOfSrf = []
         
         #Since the surface does not have a rectangle, is not a triangle, and is not a quadrilateral but still may be planar, we will break it into triangles and quads by meshing it such that we can use the previous formulas.
-        elif planarBool == True and edgeLinear == True:
+        elif planarBool == True and edgeLinear == True and breakUpWindow == True:
             glzSrf = createGlazingOddPlanarGeo(baseSrf, glazingRatio)
             lastSuccessfulRestOfSrf = []
         
@@ -650,16 +633,10 @@ def createGlazingCurved(baseSrf, glzRatio, planar):
         direction = 1
         splittedSrfs = []
         
-        # try RhinoCommon
+        # Offset the curves on the surface with RhinoCommon
         surface = glazingBrep.Faces[0]
-        if planar == True:
-            glzCurve = border.Offset(rc.Geometry.Plane.WorldXY, offsetDist, sc.doc.ModelAbsoluteTolerance, 0)
-        else:
-            glzCurve = border.OffsetOnSurface(surface, offsetDist, sc.doc.ModelAbsoluteTolerance)
-        
-        if planar == True and len(glzCurve) > 1:
-            glzCurve = border.Offset(rc.Geometry.Plane.WorldXY, -offsetDist, sc.doc.ModelAbsoluteTolerance, 0)
-        if planar==False and glzCurve==None:
+        glzCurve = border.OffsetOnSurface(surface, offsetDist, sc.doc.ModelAbsoluteTolerance)
+        if glzCurve==None:
             glzCurve = border.OffsetOnSurface(surface, -offsetDist, sc.doc.ModelAbsoluteTolerance)
             direction = -1
         
@@ -734,7 +711,7 @@ def createGlazingCurved(baseSrf, glzRatio, planar):
     return lastSuccessfulGlzSrf, lastSuccessfulRestOfSrf
 
 
-def findGlzBasedOnRatio(baseSrf, glzRatio, windowHeight, sillHeight, surfaceType, breakUpWindow, breakUpDist):
+def findGlzBasedOnRatio(baseSrf, glzRatio, windowHeight, sillHeight, surfaceType, breakUpWindow, breakUpDist, splitVertDist, conversionFactor):
     lastSuccessfulRestOfSrf = []
     
     #Check if the surface is a planar surface
@@ -779,20 +756,17 @@ def findGlzBasedOnRatio(baseSrf, glzRatio, windowHeight, sillHeight, surfaceType
                     edgeLinear = False
         else: pass
     
-    #If the breakupWindow is not set, automatically break up the windows.
-    if breakUpWindow == None: breakUpWindow = True
-    
     #Check if the surface is a planar skylight that can be broken up into quads and, if so, send it through the skylight generator
     if surfaceType == 1:
-        glazing, lastSuccessfulRestOfSrf = createSkylightGlazing(baseSrf, glzRatio, planarBool, edgeLinear)
+        glazing, lastSuccessfulRestOfSrf = createSkylightGlazing(baseSrf, glzRatio, planarBool, edgeLinear, breakUpWindow, breakUpDist, conversionFactor)
     
     #Check if the wall surface has horizontal top and bottom curves and contains a rectangle that can be extracted such that we can apply the windowHeight and sillHeight inputs to it.
     elif surfaceType == 0 and planarBool == True and edgeLinear == True and getTopBottomCurves(baseSrf)[1] == True and getTopBottomCurves(baseSrf)[3] == True:
-        glazing = createGlazingThatContainsRectangle(getTopBottomCurves(baseSrf)[2], getTopBottomCurves(baseSrf)[0], baseSrf, glzRatio, windowHeight, sillHeight, breakUpWindow, breakUpDist)
+        glazing = createGlazingThatContainsRectangle(getTopBottomCurves(baseSrf)[2], getTopBottomCurves(baseSrf)[0], baseSrf, glzRatio, windowHeight, sillHeight, breakUpWindow, breakUpDist, splitVertDist, conversionFactor)
     
     #Check if the wall surface has vertical sides and contains a rectangle that can be extracted such that we can apply the windowheight and sill height inputs to it.
     elif surfaceType == 0 and planarBool == True and edgeLinear == True and getTopBottomCurves(baseSrf)[5] == True:
-        glazing = createGlazingThatContainsRectangle(getTopBottomCurves(baseSrf)[4][0], getTopBottomCurves(baseSrf)[4][1], baseSrf, glzRatio, windowHeight, sillHeight, breakUpWindow, breakUpDist)
+        glazing = createGlazingThatContainsRectangle(getTopBottomCurves(baseSrf)[4][0], getTopBottomCurves(baseSrf)[4][1], baseSrf, glzRatio, windowHeight, sillHeight, breakUpWindow, breakUpDist, splitVertDist, conversionFactor)
     
     #Since the surface does not seem to have a rectangle that can be extracted, check to see if it is a triangle for which we can use a simple mathematical relation.
     elif surfaceType == 0 and planarBool == True and baseSrf.Edges.Count == 3:
@@ -803,8 +777,12 @@ def findGlzBasedOnRatio(baseSrf, glzRatio, windowHeight, sillHeight, surfaceType
         glazing = createGlazingQuad(baseSrf, glzRatio, None)
     
     #Since the surface does not have a rectangle, is not a triangle, and is not a quadrilateral but still may be planar, we will break it into triangles and quads by meshing it such that we can use the previous formulas.
-    elif surfaceType == 0 and planarBool == True and edgeLinear == True:
+    elif surfaceType == 0 and planarBool == True and edgeLinear == True and breakUpWindow == True:
         glazing = createGlazingOddPlanarGeo(baseSrf, glzRatio)
+    
+    #If the surface fits the criteria above but the user does not want to break up the window, we will offset the curve on the surface so that we hopefully end up with just one window.
+    elif surfaceType == 0 and planarBool == True and edgeLinear == True:
+        glazing, lastSuccessfulRestOfSrf = createGlazingCurved(baseSrf, glzRatio, planarBool)
     
     #If everything has failed up until this point, this means that the wall geometry is likely curved.  The best way forward is just to try to offset the curve on the surface to get the window.
     else:
@@ -873,7 +851,7 @@ def giveWarning(message):
     w = gh.GH_RuntimeMessageLevel.Warning
     ghenv.Component.AddRuntimeMessage(w, message)
 
-def main(windowHeight, sillHeight, glzRatio, skyLightRatio, breakUpWindow, breakUpDist):
+def main(windowHeight, sillHeight, glzRatio, skyLightRatio, breakUpWindow, breakUpDist, splitGlzVertDist):
     # check if honeybee is flying
     # import the classes
     if sc.sticky.has_key('ladybug_release')and sc.sticky.has_key('honeybee_release'):
@@ -903,6 +881,7 @@ def main(windowHeight, sillHeight, glzRatio, skyLightRatio, breakUpWindow, break
         hb_EPZone = sc.sticky["honeybee_EPZone"]
         hb_EPSrf = sc.sticky["honeybee_EPSurface"]
         hb_EPFenSurface = sc.sticky["honeybee_EPFenSurface"]
+        lb_preparation = sc.sticky["ladybug_Preparation"]()
     else:
         print "You should first let both Ladybug and Honeybee to fly..."
         w = gh.GH_RuntimeMessageLevel.Warning
@@ -913,13 +892,52 @@ def main(windowHeight, sillHeight, glzRatio, skyLightRatio, breakUpWindow, break
     hb_hive = sc.sticky["honeybee_Hive"]()
     HBZoneObjects = hb_hive.callFromHoneybeeHive(_HBObjects)
     
+    #Get the conversion factor (for the future when HB is availble in other model units).
+    conversionFactor = lb_preparation.checkUnits()
+    
+    #Set the final lists to be filled.
     joinedSrf = []
     zonesWithOpeningsGeometry =[]
     ModifiedHBZones = []
     
+    #Check if the length of the glzRatio, windowHeight, and sillHeight lists are the same.
+    numOfDivisions = []
+    warningList = []
+    listLenCheck = True
+    
+    if len(glzRatio) == 1:
+        if len(windowHeight) != 1 and len(windowHeight) != 0: numOfDivisions.append(len(windowHeight))
+        if len(sillHeight) != 1 and len(sillHeight) != 0: numOfDivisions.append(len(sillHeight))
+        if len(breakUpDist) != 1 and len(breakUpDist) != 0: numOfDivisions.append(len(breakUpDist))
+        if len(breakUpWindow) != 1 and len(breakUpWindow) != 0: numOfDivisions.append(len(breakUpWindow))
+        if len(splitGlzVertDist) != 1 and len(splitGlzVertDist) != 0: numOfDivisions.append(len(splitGlzVertDist))
+        if numOfDivisions != []:
+            allValuesSame = True
+            for val in numOfDivisions:
+                if val == numOfDivisions[0]: pass
+                else: allValuesSame = False
+            if allValuesSame == True:
+                glzRatioNew = []
+                #duplicate the glazing ratio list.
+                for val in range(numOfDivisions[-1]): glzRatioNew.append(glzRatio[0])
+                glzRatio = glzRatioNew
+            else:
+                listLenCheck = False
+                warning = "The lengths of the lists across your inputs do not match.  Please ensure that you put in only one value for each paremter or your values are lists with lengths that match across your inputs."
+                giveWarning(warning)
+    else:
+        if len(windowHeight) != len(glzRatio) and len(windowHeight) != 1 and len(windowHeight) != 0: warningList.append("The number of items in the windowHeight list does not match the number in the glzRatio list. Please ensure that either your lists match or you put in a single windowHeight value for all windows.")
+        if len(sillHeight) != len(glzRatio) and len(sillHeight) != 1 and len(sillHeight) != 0: warningList.append("The number of items in the sillHeight list does not match the number in the glzRatio list. Please ensure that either your lists match or you put in a single sillHeight value for all windows.")
+        if len(breakUpDist) != len(glzRatio) and len(breakUpDist) != 1 and len(breakUpDist) != 0: warningList.append("The number of items in the breakUpDist list does not match the number in the glzRatio list. Please ensure that either your lists match or you put in a single breakUpDist value for all windows.")
+        if len(breakUpWindow) != len(glzRatio) and len(breakUpWindow) != 1 and len(breakUpWindow) != 0: warningList.append("The number of items in the breakUpWindow list does not match the number in the glzRatio list. Please ensure that either your lists match or you put in a single breakUpWindow value for all windows.")
+        if len(splitGlzVertDist) != len(glzRatio) and len(splitGlzVertDist) != 1 and len(splitGlzVertDist) != 0: warningList.append("The number of items in the splitGlzVertDist list does not match the number in the glzRatio list. Please ensure that either your lists match or you put in a single splitGlzVertDist value for all windows.")
+        if warningList != []:
+            for warning in warningList:
+                giveWarning(warning)
+                listLenCheck = False
+    
     # find the percentage of glazing for each direction based on the input list
     angles = []
-    
     if len(glzRatio)!=0:
         for ratio in glzRatio:
             if ratio > 0.95:
@@ -927,29 +945,11 @@ def main(windowHeight, sillHeight, glzRatio, skyLightRatio, breakUpWindow, break
                 return None, None
         initAngles = rs.frange(0, 360, 360/len(glzRatio))
     else: initAngles = []
-    
+    #Set up angles if the glazing ratio is greater than 1.
     if len(glzRatio) > 1:
         for an in initAngles: angles.append(an-(360/(2*len(glzRatio))))
         angles.append(360)
     else: angles = initAngles
-    
-    #Check if the length of the glzRatio, windowHeight, and sillHeight lists are the same.
-    listLenCheck = True
-    
-    if len(windowHeight) != len(glzRatio) and len(windowHeight) != 1 and len(windowHeight) != 0:
-        warning = "The number of items in the windowHeight list does not match the number in the glzRatio list. Please ensure that either your lists match, you put in a single windowHeight value for all windows, or you leave the windowHeight blank and accept a default value."
-        giveWarning(warning)
-        listLenCheck = False
-    
-    if len(sillHeight) != len(glzRatio) and len(sillHeight) != 1 and len(sillHeight) != 0:
-        warning = "The number of items in the sillHeight list does not match the number in the glzRatio list. Please ensure that either your lists match, you put in a single sillHeight value for all windows, or you leave the sillHeight blank and accept a default value."
-        giveWarning(warning)
-        listLenCheck = False
-    
-    if len(breakUpDist) != len(glzRatio) and len(breakUpDist) != 1 and len(breakUpDist) != 0:
-        warning = "The number of items in the breakUpDist list does not match the number in the glzRatio list. Please ensure that either your lists match, you put in a single breakUpDist value for all windows, or you leave the breakUpDist blank and accept a default value."
-        giveWarning(warning)
-        listLenCheck = False
     
     if HBZoneObjects and HBZoneObjects[0] != None and listLenCheck == True:
         # collect the surfaces
@@ -972,7 +972,7 @@ def main(windowHeight, sillHeight, glzRatio, skyLightRatio, breakUpWindow, break
                     
                 HBSurfaces.append(HBObj)
                 
-        # print zone
+        
         for surface in HBSurfaces:
             # print surface
             if surface.hasChild:
@@ -981,45 +981,42 @@ def main(windowHeight, sillHeight, glzRatio, skyLightRatio, breakUpWindow, break
             winHeight = None
             sill = None
             breakD = None
+            breakWind = True #Best variable name ever!
+            splitVertDist = None
             if surface.type == 0:
                 srfType = 0
-                if len(glzRatio) == 1:
-                    targetPercentage = glzRatio[0]
-                if len(windowHeight) == 1:
-                    winHeight = windowHeight[0]
-                if len(sillHeight) == 1:
-                    sill = sillHeight[0]
-                if len(breakUpDist) == 1:
-                    breakD = breakUpDist[0]
+                if len(glzRatio) == 1: targetPercentage = glzRatio[0]
+                if len(windowHeight) == 1: winHeight = windowHeight[0]
+                if len(sillHeight) == 1: sill = sillHeight[0]
+                if len(breakUpDist) == 1: breakD = breakUpDist[0]
+                if len(breakUpWindow) == 1: breakWind = breakUpWindow[0]
+                if len(splitGlzVertDist) == 1: splitVertDist = splitGlzVertDist[0]
                 for angleCount in range(len(angles)-1):
                     if angles[angleCount]+(0.5*sc.doc.ModelAngleToleranceDegrees) <= surface.angle2North%360 <= angles[angleCount +1]+(0.5*sc.doc.ModelAngleToleranceDegrees):
                         #print surface.angle2North%360
                         targetPercentage = glzRatio[angleCount%len(glzRatio)]
-                        if len(windowHeight) == 1:
-                            winHeight = windowHeight[0]
-                        elif len(windowHeight) == len(glzRatio):
+                        if len(windowHeight) == len(glzRatio):
                             winHeight = windowHeight[angleCount%len(windowHeight)]
-                        else: winHeight = None
-                        if len(sillHeight) == 1:
-                            sill = sillHeight[0]
-                        elif len(sillHeight) == len(glzRatio):
+                        if len(sillHeight) == len(glzRatio):
                             sill = sillHeight[angleCount%len(sillHeight)]
-                        else: sill = None
-                        if len(breakUpDist) == 1:
-                            breakD = breakUpDist[0]
-                        elif len(breakUpDist) == len(glzRatio):
+                        if len(breakUpDist) == len(glzRatio):
                             breakD = breakUpDist[angleCount%len(breakUpDist)]
-                        else: breakD = None
+                        if len(breakUpWindow) == len(glzRatio):
+                            breakWind = breakUpWindow[angleCount%len(breakUpWindow)]
+                        if len(splitGlzVertDist) == len(glzRatio):
+                            splitVertDist = splitGlzVertDist[angleCount%len(splitGlzVertDist)]
                         break
             elif surface.type == 1 and skyLightRatio:
                 targetPercentage = skyLightRatio
+                if breakUpSkylight_ != None: breakWind = breakUpSkylight_
+                if skyLightBreakUpDist_ != None: breakD = skyLightBreakUpDist_
                 srfType = 1
             
             if targetPercentage!=0 and surface.BC.upper() == 'OUTDOORS':
                 face = surface.geometry # call surface geometry
                 
                 # This part of the code sends the parameters and surfaces to their respective methods of of galzing generation.  It is developed by Chris Mackey.
-                lastSuccessfulGlzSrf, lastSuccessfulRestOfSrf = findGlzBasedOnRatio(face, targetPercentage, winHeight, sill, srfType, breakUpWindow, breakD)
+                lastSuccessfulGlzSrf, lastSuccessfulRestOfSrf = findGlzBasedOnRatio(face, targetPercentage, winHeight, sill, srfType, breakWind, breakD, splitVertDist, conversionFactor)
                 
                 if lastSuccessfulGlzSrf!= None:
                     if isinstance(lastSuccessfulGlzSrf, list):
@@ -1043,6 +1040,6 @@ def main(windowHeight, sillHeight, glzRatio, skyLightRatio, breakUpWindow, break
     return zonesWithOpeningsGeometry, ModifiedHBZones
 
 if _runIt:
-    results = main(windowHeight_, sillHeight_, _glzRatio, skyLightRatio_, breakUpWindow_, breakUpDist_)
+    results = main(windowHeight_, sillHeight_, _glzRatio, skyLightRatio_, breakUpWindow_, breakUpDist_, splitGlzVertDist_)
     if results!= -1:
         glazingSrf, HBObjWGLZ = results
