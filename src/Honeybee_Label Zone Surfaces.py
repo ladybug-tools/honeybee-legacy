@@ -22,12 +22,12 @@
 
 
 """
-Use this component to lablel zones with their names in the Rhino scene.  This can help ensure that the correct names are assigned to each zone and can help keep track of zones and zone data throughout analysis.
+Use this component to lablel HBSurfaces or HBZones with their names or energy/daylight properties in the Rhino scene.  This is useful for checking whether certain properties have been assigned correctly.
 -
 Provided by Honeybee 0.0.57
     
     Args:
-        _HBZones: The HBZones out of any of the HB components that generate or alter zones.  Note that these should ideally be the zones that are fed into the Run Energy Simulation component.  Zones read back into Grasshopper from the Import idf component will not align correctly with the EP Result data.
+        _HBObjects: The HBZones out of any of the HB components that generate or alter zones.  Note that these should ideally be the zones that are fed into the Run Energy Simulation component.  Zones read back into Grasshopper from the Import idf component will not align correctly with the EP Result data.
         attribute_: A text string for the surface attribute that you are interested in lableing the surfaces with.  Possible inputs include "name", "construction" or any other Honeybee attribute.  Use the "Honeybee_Surface Attribute List" to see all possibilities.
         windows_: Set to "True" to have the component label the window surfaces in the model instead of the opaque surfaces.  By default, this is set to "False" to label just the opaque surfaces.
         textHeight_: An optional number for text height in Rhino model units that can be used to change the size of the label text in the Rhino scene.  The default is set based on the dimensions of the zones.
@@ -42,7 +42,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Label Zone Surfaces"
 ghenv.Component.NickName = 'LabelSurfaces'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_18_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -68,7 +68,7 @@ def copyHBZoneData():
     zoneBreps = []
     zoneCentPts = []
     
-    for HZone in _HBZones:
+    for HZone in _HBObjects:
         zoneBreps.append(HZone)
         zoneCentPts.append(HZone.GetBoundingBox(False).Center)
         zone = hb_hive.callFromHoneybeeHive([HZone])[0]
@@ -94,8 +94,9 @@ def setDefaults():
     return textSize, font, windows, attribute
 
 
-def main(hb_zones, textSize, font, windows, attribute):
+def main(HBZoneObjects, textSize, font, windows, attribute):
     lb_visualization = sc.sticky["ladybug_ResultVisualization"]()
+    hb_EPTypes = sc.sticky["honeybee_EPTypes"]
     
     #Make lists to be filled.
     srfBreps = []
@@ -106,60 +107,68 @@ def main(hb_zones, textSize, font, windows, attribute):
     wireFrames =[]
     surfaceNameLength = []
     
+    #Extract HBSrfs.
+    HBSurfaces = []
+    for HBObj in HBZoneObjects:
+        if HBObj.objectType == "HBZone":
+            for surface in HBObj.surfaces: HBSurfaces.append(surface)
+        elif HBObj.objectType == "HBSurface": HBSurfaces.append(HBObj)
+    
     #Get the surface names and geometry.
-    for zone in hb_zones:
-        for srf in zone.surfaces:
-            if windows == False:
-                try: theProp = getattr(srf, attribute)
-                except: theProp = "N/A"
-                if theProp == "":
-                    theProp = "Not Assigned"
-                surfaceAttributes.append(str(theProp))
-                surfaceNameLength.append(len(list(str(theProp))))
-                srfBreps.append(srf.geometry)
-                wireFrames.append(srf.geometry.DuplicateEdgeCurves())
-                bBox = rc.Geometry.Box(srf.geometry.GetBoundingBox(False))
-                shortestDimensions.extend([bBox.X[1]-bBox.X[0], bBox.Y[1]-bBox.Y[0], bBox.Z[1]-bBox.Z[0]])
-                srfCentPts.append(bBox.Center)
-                if srf.geometry.IsSurface and srf.geometry.Surfaces[0].IsPlanar():
-                    planarBool, plane = srf.geometry.Surfaces[0].TryGetPlane(tol)
-                    plane.Origin = bBox.Center
-                    if rc.Geometry.Vector3d.VectorAngle(plane.ZAxis, rc.Geometry.Plane.WorldXY.ZAxis) > sc.doc.ModelAngleToleranceRadians and rc.Geometry.Vector3d.VectorAngle(plane.ZAxis, rc.Geometry.Vector3d(0,0,-1)) > sc.doc.ModelAngleToleranceRadians:
-                        angle2Z = rc.Geometry.Vector3d.VectorAngle(rc.Geometry.Plane.WorldXY.ZAxis, plane.YAxis, plane)
-                        planeRotate = rc.Geometry.Transform.Rotation(-angle2Z, plane.ZAxis, plane.Origin)
-                        plane.Transform(planeRotate)
-                    srfPlanes.append(plane)
-                else:
-                    plane = rc.Geometry.Plane.WorldXY
-                    plane.Origin = bBox.Center
-                    srfPlanes.append(plane)
-            
-            if srf.hasChild:
-                if windows == True:
-                    for childSrf in srf.childSrfs:
-                        try: theProp = getattr(childSrf, attribute)
-                        except: theProp = "N/A"
-                        if theProp == "":
-                            theProp = "Not Assigned"
-                        surfaceAttributes.append(str(theProp))
-                        surfaceNameLength.append(len(list(str(theProp))))
-                        srfBreps.append(childSrf.geometry)
-                        wireFrames.append(childSrf.geometry.DuplicateEdgeCurves())
-                        bBox = rc.Geometry.Box(childSrf.geometry.GetBoundingBox(False))
-                        shortestDimensions.extend([bBox.X[1]-bBox.X[0], bBox.Y[1]-bBox.Y[0], bBox.Z[1]-bBox.Z[0]])
-                        srfCentPts.append(bBox.Center)
-                        if childSrf.geometry.IsSurface and childSrf.geometry.Surfaces[0].IsPlanar():
-                            planarBool, plane = childSrf.geometry.Surfaces[0].TryGetPlane(tol)
-                            plane.Origin = bBox.Center
-                            if rc.Geometry.Vector3d.VectorAngle(plane.ZAxis, rc.Geometry.Plane.WorldXY.ZAxis) > sc.doc.ModelAngleToleranceRadians and rc.Geometry.Vector3d.VectorAngle(plane.ZAxis, rc.Geometry.Vector3d(0,0,-1)) > sc.doc.ModelAngleToleranceRadians:
-                                angle2Z = rc.Geometry.Vector3d.VectorAngle(rc.Geometry.Plane.WorldXY.ZAxis, plane.YAxis, plane)
-                                planeRotate = rc.Geometry.Transform.Rotation(-angle2Z, plane.ZAxis, plane.Origin)
-                                plane.Transform(planeRotate)
-                            srfPlanes.append(plane)
-                        else:
-                            plane = rc.Geometry.Plane.WorldXY
-                            plane.Origin = bBox.Center
-                            srfPlanes.append(plane)
+    for srf in HBSurfaces:
+        if windows == False:
+            try: theProp = getattr(srf, attribute)
+            except: theProp = "N/A"
+            if theProp == "":
+                theProp = "Not Assigned"
+            elif attribute == 'type':
+                theProp = hb_EPTypes.srfType[theProp]
+            surfaceAttributes.append(str(theProp))
+            surfaceNameLength.append(len(list(str(theProp))))
+            srfBreps.append(srf.geometry)
+            wireFrames.append(srf.geometry.DuplicateEdgeCurves())
+            bBox = rc.Geometry.Box(srf.geometry.GetBoundingBox(False))
+            shortestDimensions.extend([bBox.X[1]-bBox.X[0], bBox.Y[1]-bBox.Y[0], bBox.Z[1]-bBox.Z[0]])
+            srfCentPts.append(bBox.Center)
+            if srf.geometry.IsSurface and srf.geometry.Surfaces[0].IsPlanar():
+                planarBool, plane = srf.geometry.Surfaces[0].TryGetPlane(tol)
+                plane.Origin = bBox.Center
+                if rc.Geometry.Vector3d.VectorAngle(plane.ZAxis, rc.Geometry.Plane.WorldXY.ZAxis) > sc.doc.ModelAngleToleranceRadians and rc.Geometry.Vector3d.VectorAngle(plane.ZAxis, rc.Geometry.Vector3d(0,0,-1)) > sc.doc.ModelAngleToleranceRadians:
+                    angle2Z = rc.Geometry.Vector3d.VectorAngle(rc.Geometry.Plane.WorldXY.ZAxis, plane.YAxis, plane)
+                    planeRotate = rc.Geometry.Transform.Rotation(-angle2Z, plane.ZAxis, plane.Origin)
+                    plane.Transform(planeRotate)
+                srfPlanes.append(plane)
+            else:
+                plane = rc.Geometry.Plane.WorldXY
+                plane.Origin = bBox.Center
+                srfPlanes.append(plane)
+        
+        if srf.hasChild:
+            if windows == True:
+                for childSrf in srf.childSrfs:
+                    try: theProp = getattr(childSrf, attribute)
+                    except: theProp = "N/A"
+                    if theProp == "":
+                        theProp = "Not Assigned"
+                    surfaceAttributes.append(str(theProp))
+                    surfaceNameLength.append(len(list(str(theProp))))
+                    srfBreps.append(childSrf.geometry)
+                    wireFrames.append(childSrf.geometry.DuplicateEdgeCurves())
+                    bBox = rc.Geometry.Box(childSrf.geometry.GetBoundingBox(False))
+                    shortestDimensions.extend([bBox.X[1]-bBox.X[0], bBox.Y[1]-bBox.Y[0], bBox.Z[1]-bBox.Z[0]])
+                    srfCentPts.append(bBox.Center)
+                    if childSrf.geometry.IsSurface and childSrf.geometry.Surfaces[0].IsPlanar():
+                        planarBool, plane = childSrf.geometry.Surfaces[0].TryGetPlane(tol)
+                        plane.Origin = bBox.Center
+                        if rc.Geometry.Vector3d.VectorAngle(plane.ZAxis, rc.Geometry.Plane.WorldXY.ZAxis) > sc.doc.ModelAngleToleranceRadians and rc.Geometry.Vector3d.VectorAngle(plane.ZAxis, rc.Geometry.Vector3d(0,0,-1)) > sc.doc.ModelAngleToleranceRadians:
+                            angle2Z = rc.Geometry.Vector3d.VectorAngle(rc.Geometry.Plane.WorldXY.ZAxis, plane.YAxis, plane)
+                            planeRotate = rc.Geometry.Transform.Rotation(-angle2Z, plane.ZAxis, plane.Origin)
+                            plane.Transform(planeRotate)
+                        srfPlanes.append(plane)
+                    else:
+                        plane = rc.Geometry.Plane.WorldXY
+                        plane.Origin = bBox.Center
+                        srfPlanes.append(plane)
     
     #Get the shortest dimension of the bounding boxes (used to size the text).
     if textSize == None:
@@ -216,15 +225,15 @@ if recallHBHive == True:
     copyHBZoneData()
     hb_zoneData = sc.sticky["Honeybee_LabelSrfData"]
     initCheck = True
-elif _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('ladybug_release') == True and sc.sticky.has_key('Honeybee_LabelSrfData') == False:
+elif _HBObjects != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('ladybug_release') == True and sc.sticky.has_key('Honeybee_LabelSrfData') == False:
     copyHBZoneData()
     hb_zoneData = sc.sticky["Honeybee_LabelSrfData"]
     initCheck = True
-elif _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('Honeybee_LabelSrfData') == True:
+elif _HBObjects != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('Honeybee_LabelSrfData') == True:
     hb_zoneData = sc.sticky["Honeybee_LabelSrfData"]
     checkZones = True
-    if len(_HBZones) == len(hb_zoneData[0]):
-        for count, brep in enumerate(_HBZones):
+    if len(_HBObjects) == len(hb_zoneData[0]):
+        for count, brep in enumerate(_HBObjects):
             boundBoxVert = brep.GetBoundingBox(False).Center
             if boundBoxVert.X <= hb_zoneData[2][count].X+tol and boundBoxVert.X >= hb_zoneData[2][count].X-tol and boundBoxVert.Y <= hb_zoneData[2][count].Y+tol and boundBoxVert.Y >= hb_zoneData[2][count].Y-tol and boundBoxVert.Z <= hb_zoneData[2][count].Z+tol and boundBoxVert.Z >= hb_zoneData[2][count].Z-tol: pass
             else:
@@ -244,7 +253,7 @@ else:
 
 
 
-if _HBZones != [] and initCheck == True:
+if _HBObjects != [] and initCheck == True:
     textSize, font, windows, attribute = setDefaults()
     surfaceTxtLabels, srfTextLabels, wireFrames, labelBasePts = main(hb_zoneData[1], textSize, font, windows, attribute)
     

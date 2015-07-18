@@ -41,7 +41,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Label Zones"
 ghenv.Component.NickName = 'LabelZones'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_18_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -182,18 +182,19 @@ else:
 
 
 if _HBZones != [] and initCheck == True:
-    labelCentPts, textSize, font, attribute = setDefaults()
-    zoneTxtLabels, zoneTextLabels, wireFrames, labelBasePts = main(hb_zoneData[1], labelCentPts, textSize, font, attribute)
-    
-    #Unpack the data trees of curves and label text.
-    brepTxtLabels = DataTree[Object]()
-    zoneWireFrames = DataTree[Object]()
-    for listCount, lists in enumerate(zoneTextLabels):
-        for item in lists:
-            brepTxtLabels.Add(item, GH_Path(listCount))
-    for listCount, lists in enumerate(wireFrames):
-        for item in lists:
-            zoneWireFrames.Add(item, GH_Path(listCount))
+    if _HBZones[0] != None:
+        labelCentPts, textSize, font, attribute = setDefaults()
+        zoneTxtLabels, zoneTextLabels, wireFrames, labelBasePts = main(hb_zoneData[1], labelCentPts, textSize, font, attribute)
+        
+        #Unpack the data trees of curves and label text.
+        brepTxtLabels = DataTree[Object]()
+        zoneWireFrames = DataTree[Object]()
+        for listCount, lists in enumerate(zoneTextLabels):
+            for item in lists:
+                brepTxtLabels.Add(item, GH_Path(listCount))
+        for listCount, lists in enumerate(wireFrames):
+            for item in lists:
+                zoneWireFrames.Add(item, GH_Path(listCount))
 
 
 #Hide unwanted outputs
