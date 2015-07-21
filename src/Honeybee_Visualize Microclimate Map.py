@@ -49,7 +49,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Visualize Microclimate Map"
 ghenv.Component.NickName = 'VisualizeMicroclimate'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_17_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_20_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -283,8 +283,6 @@ def computeComfValues(comfResultsMtx, analysisP, comfMtxAnalysisP, stepOfSimulat
 def main(pointValues, viewFactorMesh, dataType, lb_preparation, lb_visualization, legendPar, analysisPeriod, simStepPossible, annualData, percentOrTotal):
     #Read the legend parameters.
     lowB, highB, numSeg, customColors, legendBasePoint, legendScale, legendFont, legendFontSize, legendBold = lb_preparation.readLegendParameters(legendPar, False)
-    defaultCustomColor1 = System.Drawing.Color.FromArgb(255, 75, 107, 169)
-    defaultCustomColor2 = System.Drawing.Color.FromArgb(255, 234, 38, 0)
     
     #Read the data type and assign default values for mesh types.
     if dataType == 'Degrees From Target' or dataType == 'Predicted Mean Vote' or dataType == 'Degrees From Neutral UTCI':
@@ -307,7 +305,7 @@ def main(pointValues, viewFactorMesh, dataType, lb_preparation, lb_visualization
                 numSeg = 11
                 lowB = -1
                 highB = 1
-        elif customColors[0] == defaultCustomColor1 and customColors[-1] == defaultCustomColor2:
+        elif legendPar_[3] == []:
             if dataType == 'Degrees From Neutral UTCI': customColors = lb_visualization.gradientLibrary[9]
             else: customColors = lb_visualization.gradientLibrary[8]
     elif 'Thermal Comfort Percent' in dataType or 'Thermal Autonomy' in dataType or 'Over-Heated Percent' in dataType or 'Under-Heated Percent' in dataType:
@@ -324,6 +322,12 @@ def main(pointValues, viewFactorMesh, dataType, lb_preparation, lb_visualization
                 pointValuesFinal.append(value)
             else: pointValuesFinal.append(value*100)
         if len(legendPar_) == 0:
+            if all100Comf == False:
+                if 'Thermal Comfort' in dataType or 'Thermal Autonomy' in dataType: customColors = lb_visualization.gradientLibrary[7]
+                elif 'Over-Heated' in dataType: customColors = lb_visualization.gradientLibrary[10]
+                else: customColors = lb_visualization.gradientLibrary[11]
+            else: customColors = [System.Drawing.Color.FromArgb(255,255,255), System.Drawing.Color.FromArgb(255,255,255)]
+        elif legendPar_[3] == []:
             if all100Comf == False:
                 if 'Thermal Comfort' in dataType or 'Thermal Autonomy' in dataType: customColors = lb_visualization.gradientLibrary[7]
                 elif 'Over-Heated' in dataType: customColors = lb_visualization.gradientLibrary[10]
