@@ -54,7 +54,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_22_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nMAY_02_2015
@@ -445,7 +445,9 @@ if _resultFileAddress and gotData == True:
                         except: p = GH_Path(int(path[columnCount][0]), int(path[columnCount][1]))
                     else:
                         p = GH_Path(int(path[columnCount][0]), int(path[columnCount][1]))
-                    if normByFlr == True: flrArea = floorAreaList[int(path[columnCount])]
+                    if normByFlr == True:
+                        try: flrArea = floorAreaList[int(path[columnCount])]
+                        except: flrArea = floorAreaList[int(path[columnCount][0])]
                     else: flrArea = 1
                     
                     if key[columnCount] == 0:

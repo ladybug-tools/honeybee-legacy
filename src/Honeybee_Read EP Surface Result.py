@@ -46,7 +46,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Read EP Surface Result"
 ghenv.Component.NickName = 'readEPSrfResult'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_22_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -219,6 +219,7 @@ otherSurfaceData = DataTree[Object]()
 #Make a list to keep track of what outputs are in the result file.
 dataTypeList = [False, False, False, False, False, False, False, False, False, False]
 parseSuccess = False
+normAreaWorked = True
 
 # If zone names are not included, make numbers to keep track of the number of surfaces that have been imported so far.
 InTemp = 0
@@ -317,7 +318,7 @@ for zone in range(len(zoneSrfNameList)): dataIndex.append(0)
 
 # PARSE THE RESULT FILE.
 if _resultFileAddress and gotZoneData == True and gotSrfData == True:
-    #try:
+    try:
         result = open(_resultFileAddress, 'r')
         
         for lineCount, line in enumerate(result):
@@ -487,7 +488,11 @@ if _resultFileAddress and gotZoneData == True and gotSrfData == True:
                             duplicate = duplicateList[columnCount]
                             pieceCount = pieceNumList[columnCount]
                             p = GH_Path(int(path[columnCount][0]), int(path[columnCount][1]))
-                            if normBySrf == True: srfArea = zoneSrfAreaList[int(path[columnCount][0])][int(path[columnCount][1])]
+                            if normBySrf == True:
+                                try: srfArea = zoneSrfAreaList[int(path[columnCount][0])][int(path[columnCount][1])]
+                                except:
+                                    srfArea = 1
+                                    normAreaWorked = False
                             else: srfArea = 1
                         elif gotSrfData == True and key[columnCount] == 9:
                             p = GH_Path(int(path[columnCount][0]), int(path[columnCount][1]))
@@ -543,16 +548,21 @@ if _resultFileAddress and gotZoneData == True and gotSrfData == True:
                     
         result.close()
         parseSuccess = True
-    #except:
-    #    parseSuccess = False
-    #    warn = 'Failed to parse the result file.  Check the folder of the file address you are plugging into this component and make sure that there is a .csv file in the folder. \n'+ \
-    #              'If there is no csv file or there is a file with no data in it (it is 0 kB), your simulation probably did not run correctly. \n' + \
-    #              'In this case, check the report out of the Run Simulation component to see what severe or fatal errors happened in the simulation. \n' + \
-    #              'If the csv file is there and it seems like there is data in it (it is not 0 kB), you are probably requesting an output that this component does not yet handle well. \n' + \
-    #              'If you report this bug of reading the output on the GH forums, we should be able to fix this component to accept the output soon.'
-    #    print warn
-    #    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warn)
+    except:
+        parseSuccess = False
+        warn = 'Failed to parse the result file.  Check the folder of the file address you are plugging into this component and make sure that there is a .csv file in the folder. \n'+ \
+                  'If there is no csv file or there is a file with no data in it (it is 0 kB), your simulation probably did not run correctly. \n' + \
+                  'In this case, check the report out of the Run Simulation component to see what severe or fatal errors happened in the simulation. \n' + \
+                  'If the csv file is there and it seems like there is data in it (it is not 0 kB), you are probably requesting an output that this component does not yet handle well. \n' + \
+                  'If you report this bug of reading the output on the GH forums, we should be able to fix this component to accept the output soon.'
+        print warn
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warn)
 
+#Check to make sure that the normalization by surface worked.
+if normAreaWorked == False:
+    warn = 'Normalizing by surface area does not work if you have more than one type of otherSurfaceData.  All types after the first are not normailzed.'
+    print warn
+    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warn)
 
 #If there was curved geometry, go through the data and see if there were any lists of curved pieces that should be added to the data trees.
 def addCurvedDataToTree(zoneList, dataTree):
