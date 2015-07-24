@@ -54,7 +54,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Color Surfaces by EP Result"
 ghenv.Component.NickName = 'ColorSurfaces'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_22_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -208,12 +208,10 @@ def checkTheInputs():
         if "Normalized" in dataType:
             normable = False
             total = True
-        elif "Surface Energy Loss/Gain for" in dataType: normable = True
-        elif "Window Total Transmitted Solar Energy for" in dataType: normable = True
-        elif "Window Transmitted Beam Energy for" in dataType: normable = True
-        elif "Window Transmitted Diffuse Energy for" in dataType: normable = True
-        elif "Outer Surface Temperature for" in dataType: normable = False
-        elif "Inner Surface Temperature for" in dataType: normable = False
+        elif "Energy" in dataType: normable = True
+        elif "Gain" in dataType: normable = True
+        elif "Loss" in dataType: normable = True
+        elif "Temperature" in dataType: normable = False
         else:
             normable = False
             warning = "Component cannot tell what data type is being connected.  Data will be averaged for each surface by default."
