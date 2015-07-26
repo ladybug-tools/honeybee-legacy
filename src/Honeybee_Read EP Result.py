@@ -54,7 +54,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_22_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_25_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nMAY_02_2015
@@ -144,6 +144,8 @@ if normByFlr == True and floorAreaList != []:
 elif normByFlr == True:
     normByFlr == False
 else: pass
+otherZDatFlrNormList = []
+otherZDatFlrCount = 0
 
 # Make data tree objects for all of the outputs.
 totalThermalEnergy = DataTree[Object]()
@@ -426,7 +428,11 @@ if _resultFileAddress and gotData == True:
                         zoneName = checkZoneOther(dataIndex, (" " + ":".join(column.split(":")[:-1])))
                         if zoneName != None:
                             key.append(14)
-                            makeHeaderAlt(otherZoneData, path[columnCount], zoneName, column.split('(')[-1].split(')')[0], column.split(':')[-1].split(' [')[0], column.split('[')[-1].split(']')[0], False)
+                            otherDataName = column.split(':')[-1].split(' [')[0].upper()
+                            if "ENERGY" in otherDataName or "GAIN" in otherDataName or "MASS" in otherDataName or "VOLUME" in otherDataName or "Loss" in otherDataName: normalizble = True
+                            else: normalizble = False
+                            otherZDatFlrNormList.append(normalizble)
+                            makeHeaderAlt(otherZoneData, path[columnCount], zoneName, column.split('(')[-1].split(')')[0], column.split(':')[-1].split(' [')[0], column.split('[')[-1].split(']')[0], normalizble)
                             dataTypeList[17] = True
                         else:
                             key.append(-1)
@@ -445,6 +451,7 @@ if _resultFileAddress and gotData == True:
                         except: p = GH_Path(int(path[columnCount][0]), int(path[columnCount][1]))
                     else:
                         p = GH_Path(int(path[columnCount][0]), int(path[columnCount][1]))
+                    
                     if normByFlr == True:
                         try: flrArea = floorAreaList[int(path[columnCount])]
                         except: flrArea = floorAreaList[int(path[columnCount][0])]
@@ -491,7 +498,13 @@ if _resultFileAddress and gotData == True:
                         try: relativeHumidity.Add(float(column), p)
                         except: dataTypeList[14] = True
                     elif key[columnCount] == 14:
-                        try: otherZoneData.Add(float(column), p)
+                        try:
+                            if otherZDatFlrNormList[otherZDatFlrCount] == False:
+                                otherZoneData.Add(float(column), p)
+                            else:
+                                otherZoneData.Add(float(column)/flrArea, p)
+                            if otherZDatFlrCount != len(otherZDatFlrNormList)-1: otherZDatFlrCount += 1
+                            else: otherZDatFlrCount
                         except: pass
                     elif key[columnCount] == 15:
                         try: fanElectric.Add((float(column)/3600000)/flrArea, p)
