@@ -54,7 +54,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_25_2015'
+ghenv.Component.Message = 'VER 0.0.57\nAUG_01_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nMAY_02_2015
