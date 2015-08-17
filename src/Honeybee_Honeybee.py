@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_13_2015'
+ghenv.Component.Message = 'VER 0.0.57\nAUG_16_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -4848,7 +4848,7 @@ class EPZone(object):
             
             # project center point of the geometry to surface plane
             projectedPt = srfPlane.ClosestPoint(self.cenPt)
-        
+            
             # make a vector from the center point of the zone to center point of the surface
             testVector = rc.Geometry.Vector3d(projectedPt - self.cenPt)
             # check the direction of the vectors and flip zone surfaces if needed
@@ -4860,10 +4860,8 @@ class EPZone(object):
             if vecAngleDiff > 10:
                 HBSrf.geometry.Flip()
                 HBSrf.normalVector.Reverse()
-                
-            if not HBSrf.isChild and HBSrf.hasChild:
-                    for childSrf in HBSrf.childSrfs:
-                        checkSrfNormal(childSrf)
+                try: HBSrf.punchedGeometry.Flip()
+                except: pass
         
         # isPointInside for Breps is buggy, that's why I mesh the geometry here
         mesh = rc.Geometry.Mesh.CreateFromBrep(self.geometry)
@@ -4882,7 +4880,9 @@ class EPZone(object):
         
         for HBSrf in self.surfaces:
             checkSrfNormal(HBSrf)
-                
+            if not HBSrf.isChild and HBSrf.hasChild:
+                for childSrf in HBSrf.childSrfs:
+                    checkSrfNormal(childSrf)
 
     def decomposeZone(self, maximumRoofAngle = 30):
         # this method is useufl when the zone is going to be constructed from a closed brep
