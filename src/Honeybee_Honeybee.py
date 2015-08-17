@@ -4855,13 +4855,13 @@ class EPZone(object):
             vecAngleDiff = math.degrees(rc.Geometry.Vector3d.VectorAngle(testVector, HBSrf.normalVector))
             
             # vecAngleDiff should be 0 otherwise the normal is reversed
-            if printAngle:
-                print vecAngleDiff
-            if vecAngleDiff > 10:
-                HBSrf.geometry.Flip()
-                HBSrf.normalVector.Reverse()
-                try: HBSrf.punchedGeometry.Flip()
-                except: pass
+            #if printAngle:
+            #    print vecAngleDiff
+            #if vecAngleDiff > 10:
+            #    HBSrf.geometry.Flip()
+            #    HBSrf.normalVector.Reverse()
+            #    try: HBSrf.punchedGeometry.Flip()
+            #    except: pass
         
         # isPointInside for Breps is buggy, that's why I mesh the geometry here
         mesh = rc.Geometry.Mesh.CreateFromBrep(self.geometry)
