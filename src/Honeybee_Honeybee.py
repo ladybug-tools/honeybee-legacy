@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.57\nAUG_16_2015'
+ghenv.Component.Message = 'VER 0.0.57\nAUG_19_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -4855,13 +4855,15 @@ class EPZone(object):
             vecAngleDiff = math.degrees(rc.Geometry.Vector3d.VectorAngle(testVector, HBSrf.normalVector))
             
             # vecAngleDiff should be 0 otherwise the normal is reversed
-            #if printAngle:
-            #    print vecAngleDiff
-            #if vecAngleDiff > 10:
-            #    HBSrf.geometry.Flip()
-            #    HBSrf.normalVector.Reverse()
-            #    try: HBSrf.punchedGeometry.Flip()
-            #    except: pass
+            if printAngle: print vecAngleDiff
+            
+            if vecAngleDiff > 10:
+                print "Normal direction for " + HBSrf.name + " is fixed by Honeybee!"
+                HBSrf.geometry.Flip()
+                HBSrf.normalVector.Reverse()
+                HBSrf.basePlane.Flip()
+                try: HBSrf.punchedGeometry.Flip()
+                except: pass
         
         # isPointInside for Breps is buggy, that's why I mesh the geometry here
         mesh = rc.Geometry.Mesh.CreateFromBrep(self.geometry)
