@@ -1,12 +1,29 @@
-# By Chien Si Harriman
-# charriman@terabuild.com
-# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
-# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+#
+# Honeybee: A Plugin for Environmental Analysis (GPL) started by Mostapha Sadeghipour Roudsari
+# 
+# This file is part of Honeybee.
+# 
+# Copyright (c) 2013-2015, Chien Si Harriman <charriman@terabuild.com> 
+# Honeybee is free software; you can redistribute it and/or modify 
+# it under the terms of the GNU General Public License as published 
+# by the Free Software Foundation; either version 3 of the License, 
+# or (at your option) any later version. 
+# 
+# Honeybee is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of 
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with Honeybee; If not, see <http://www.gnu.org/licenses/>.
+# 
+# @license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
+
 
 """
 Airside Economizer
 -
-Provided by Honeybee 0.0.56
+Provided by Honeybee 0.0.57
 
     Args:
         _uniqueName : a required field to uniquely name the economizer
@@ -30,7 +47,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_OpenStudio Airside Economizer Detail"
 ghenv.Component.NickName = 'AirSideEconomizer'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | AirsideSystems"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"

@@ -1,25 +1,42 @@
 # This is the heart of the Honeybee
-# By Mostapha Sadeghipour Roudsari
-# Sadeghipour@gmail.com
-# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
-# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+#
+# Honeybee: A Plugin for Environmental Analysis (GPL) started by Mostapha Sadeghipour Roudsari
+# 
+# This file is part of Honeybee.
+# 
+# Copyright (c) 2013-2015, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
+# Honeybee is free software; you can redistribute it and/or modify 
+# it under the terms of the GNU General Public License as published 
+# by the Free Software Foundation; either version 3 of the License, 
+# or (at your option) any later version. 
+# 
+# Honeybee is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of 
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with Honeybee; If not, see <http://www.gnu.org/licenses/>.
+# 
+# @license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
+
 
 """
 This component carries all of Honeybee's main classes. Other components refer to these
 classes to run the studies. Therefore, you need to let her fly before running the studies so the
 classes will be copied to Rhinos shared space. So let her fly!
+
 -
-Honeybee started by Mostapha Sadeghipour Roudsari is licensed
-under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
-Based on a work at https://github.com/mostaphaRoudsari/Honeybee.
+Honeybee: A Plugin for Environmental Analysis (GPL) started by Mostapha Sadeghipour Roudsari
+You should have received a copy of the GNU General Public License
+along with Honeybee; If not, see <http://www.gnu.org/licenses/>.
+
+@license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
+
+Source code is available at: https://github.com/mostaphaRoudsari/Honeybee
+
 -
-Check this link for more information about the license:
-http://creativecommons.org/licenses/by-sa/3.0/deed.en_US
--
-Source code is available at:
-https://github.com/mostaphaRoudsari/Honeybee
--
-Provided by Honeybee 0.0.56
+Provided by Honeybee 0.0.57
     
     Args:
         defaultFolder_: Optional input for Honeybee default folder.
@@ -30,7 +47,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.56\nMAY_31_2015'
+ghenv.Component.Message = 'VER 0.0.57\nAUG_19_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1273,7 +1290,7 @@ class hb_WriteRAD(object):
                     
                     for srf in HBObj.surfaces:
                         # check if an interior wall
-                        if not exportInteriorWalls and self.hb_writeRADAUX.isSrfInterior(srf):
+                        if not exportInteriorWalls and self.hb_writeRADAUX.isSrfAirWall(srf):
                             continue
                         
                         # if it is an interior wall and the other wall is already written
@@ -1501,7 +1518,7 @@ class hb_WriteRAD(object):
         flattenPtsNormals = self.lb_preparation.flattenList(ptsNormals)
         numOfPoints = len(flattenTestPoints)
     
-        if numOfCPUs > numOfPoints: numOfCPUs = numOfCPUs
+        if numOfCPUs > numOfPoints: numOfCPUs = numOfPoints
 
         if numOfCPUs > 1:
             ptsEachCpu = int(numOfPoints/(numOfCPUs))
@@ -1556,7 +1573,7 @@ class hb_WriteRAD(object):
                 #print key + " is set to " + str(hb_radParDict[key][quality])
                 analysisRecipe.radParameters[key] = self.hb_radParDict[key][quality]
         
-        if analysisRecipe.type == 2:
+        if analysisRecipe.type == 2: # annual daylight analysis - Daysim
             # read parameters
             runAnnualGlare = analysisRecipe.DSParameters.runAnnualGlare
             onlyAnnualGlare = analysisRecipe.DSParameters.onlyAnnualGlare
@@ -1644,7 +1661,8 @@ class hb_WriteRAD(object):
                 
                 # building string
                 heaFile.write(self.hb_writeDS.DSBldgStr(projectName, materialFileName, radFileFullName, \
-                                                        adaptiveZone, dgp_imageSize, dgp_imageSize, cpuCount, northAngleRotation))
+                                                        adaptiveZone, dgp_imageSize, dgp_imageSize, cpuCount, \
+                                                        northAngleRotation, additionalRadFiles))
                 
                 # radiance parameters string
                 heaFile.write(self.hb_writeDS.DSRADStr(analysisRecipe.radParameters))
@@ -2704,10 +2722,17 @@ class hb_WriteRADAUX(object):
             R, G, B = line.split('	')[0:3]
             result.append( 179 * (.265 * float(R) + .67 * float(G) + .065 * float(B)))
         return result
-
+    
+    def isSrfAirWall(self, HBSrf):
+        # This can be tricky since some of interior walls may or may not be air walls
+        if HBSrf.type == 4:
+            return True
+        else:
+            return False
+    
     def isSrfInterior(self, HBSrf):
         # This can be tricky since some of interior walls may or may not be air walls
-        if HBSrf.type == 4 and HBSrf.BC.lower() == "surface":
+        if HBSrf.type == 0 and HBSrf.BC.lower() == "surface":
             return True
         else:
             return False
@@ -2771,13 +2796,19 @@ class hb_WriteDS(object):
             return outputStr +"\n"
             
     # building information
-    def DSBldgStr(self, projectName, materialFileName, radFileFullName, adaptiveZone, dgp_image_x = 500, dgp_image_y = 500, cpuCount = 0, northAngle = 0):
+    def DSBldgStr(self, projectName, materialFileName, radFileFullName, adaptiveZone, \
+                  dgp_image_x = 500, dgp_image_y = 500, cpuCount = 0, northAngle = 0, additionalFileNames = []):
+        
+        # add additional rad files to scene
+        radFilesLength = str(2 + len(additionalFileNames))
+        radFileNames = ", ".join([radFilesLength, materialFileName, radFileFullName] + additionalFileNames)
+        
         return'\n\n#################################\n' + \
                   '#      BUILDING INFORMATION      \n' + \
                   '#################################\n' + \
                   'material_file          Daysim_material_' + projectName + '.rad\n' + \
                   'geometry_file          Daysim_'+ projectName + '.rad\n' + \
-                  'radiance_source_files  2, ' + materialFileName + ', ' + radFileFullName + '\n' + \
+                  'radiance_source_files  ' + radFileNames + '\n' + \
                   'sensor_file            ' + projectName + '_' + `cpuCount` + '.pts\n' + \
                   'viewpoint_file         ' + projectName + '_' + 'annualGlareView.vf\n' + \
                   'AdaptiveZoneApplies    ' + `adaptiveZone` + '\n' + \
@@ -3763,6 +3794,187 @@ class EPObjectsAux(object):
             return
     
 
+class ReadEPSchedules(object):
+    
+    def __init__(self, schName, startDayOfTheWeek):
+        self.hb_EPScheduleAUX = sc.sticky["honeybee_EPScheduleAUX"]()
+        self.hb_EPObjectsAUX = sc.sticky["honeybee_EPObjectsAUX"]()
+        self.lb_preparation = sc.sticky["ladybug_Preparation"]()
+        self.schName = schName
+        self.startDayOfTheWeek = startDayOfTheWeek
+        self.count = 0
+        self.startHOY = 1
+        self.endHOY = 24
+        self.unit = "unknown"
+    
+    def getScheduleTypeLimitsData(self, schName):
+        
+        if schName == None: schName = self.schName
+            
+        schedule, comments = self.hb_EPScheduleAUX.getScheduleTypeLimitsDataByName(schName.upper(), ghenv.Component)
+        try:
+            lowerLimit, upperLimit, numericType, unitType = schedule[1:]
+        except:
+            lowerLimit, upperLimit, numericType = schedule[1:]
+            unitType = "unknown"
+        
+        self.unit = unitType
+        if self.unit == "unknown":
+            self.unit = numericType
+        
+        return lowerLimit, upperLimit, numericType, unitType
+    
+    
+    def getDayEPScheduleValues(self, schName = None):
+        
+        if schName == None:
+            schName = self.schName
+            
+        values, comments = self.hb_EPScheduleAUX.getScheduleDataByName(schName.upper(), ghenv.Component)
+        typeLimitName = values[1]
+        lowerLimit, upperLimit, numericType, unitType = \
+                self.getScheduleTypeLimitsData(typeLimitName)
+                
+        numberOfDaySch = int((len(values) - 3) /2)
+        
+        hourlyValues = range(24)
+        startHour = 0
+        for i in range(numberOfDaySch):
+            value = float(values[2 * i + 4])
+            untilTime = map(int, values[2 * i + 3].split(":"))
+            endHour = int(untilTime[0] +  untilTime[1]/60)
+            for hour in range(startHour, endHour):
+                hourlyValues[hour] = value
+            
+            startHour = endHour
+        
+        if numericType.strip().lower() == "district":
+            hourlyValues = map(int, hourlyValues)
+            
+        return hourlyValues
+    
+    
+    def getWeeklyEPScheduleValues(self, schName = None):
+        """
+        Schedule:Week:Daily
+        ['Schedule Type', 'Sunday Schedule:Day Name', 'Monday Schedule:Day Name',
+        'Tuesday Schedule:Day Name', 'Wednesday Schedule:Day Name', 'Thursday Schedule:Day Name',
+        'Friday Schedule:Day Name', 'Saturday Schedule:Day Name', 'Holiday Schedule:Day Name',
+        'SummerDesignDay Schedule:Day Name', 'WinterDesignDay Schedule:Day Name',
+        'CustomDay1 Schedule:Day Name', 'CustomDay2 Schedule:Day Name']
+        """
+        
+        if schName == None:
+            schName = self.schName
+            
+        values, comments = self.hb_EPScheduleAUX.getScheduleDataByName(schName.upper(), ghenv.Component)
+        
+        if self.count == 1:
+            # set the last date of the schedule to one week
+            self.endHOY = 24 * 7
+        
+        sundaySchedule = self.getScheduleValues(values[1])
+        mondaySchedule = self.getScheduleValues(values[2])
+        tuesdaySchedule = self.getScheduleValues(values[3])
+        wednesdaySchedule = self.getScheduleValues(values[4])
+        thursdaySchedule = self.getScheduleValues(values[5])
+        fridaySchedule = self.getScheduleValues(values[6])
+        saturdaySchedule = self.getScheduleValues(values[7])
+        
+        holidaySchedule = self.getScheduleValues(values[8])
+        summerDesignDaySchedule = self.getScheduleValues(values[9])
+        winterDesignDaySchedule = self.getScheduleValues(values[10])
+        customDay1Schedule = self.getScheduleValues(values[11])
+        customDay2Schedule = self.getScheduleValues(values[12])
+        
+        hourlyValues = [sundaySchedule, mondaySchedule, tuesdaySchedule, \
+                       wednesdaySchedule, thursdaySchedule, fridaySchedule, \
+                       saturdaySchedule]
+        
+        hourlyValues = hourlyValues[self.startDayOfTheWeek:] + \
+                       hourlyValues[:self.startDayOfTheWeek]
+        
+        return hourlyValues
+    
+    
+    def getConstantEPScheduleValues(self, schName):
+        """
+        'Schedule:Constant'
+        ['Schedule Type', 'Schedule Type Limits Name', 'Hourly Value']
+        """
+        
+        if schName == None:
+            schName = self.schName
+            
+        values, comments = self.hb_EPScheduleAUX.getScheduleDataByName(schName.upper(), ghenv.Component)
+        typeLimitName = values[1]
+        lowerLimit, upperLimit, numericType, unitType = \
+                self.getScheduleTypeLimitsData(typeLimitName)
+        
+        hourlyValues = [float(values[2])]
+        
+        if numericType.strip().lower() == "district":
+            hourlyValues = map(int, hourlyValues)
+        return scheduleConstant
+    
+    
+    def getYearlyEPScheduleValues(self, schName = None):
+        # place holder for 365 days
+        hourlyValues = range(365)
+        
+        # update last day of schedule
+        self.endHOY = 8760
+        
+        if schName == None:
+            schName = self.schName
+        
+        values, comments = self.hb_EPScheduleAUX.getScheduleDataByName(schName.upper(), ghenv.Component)
+        
+        # generate weekly schedules
+        numOfWeeklySchedules = int((len(values)-2)/5)
+        
+        for i in range(numOfWeeklySchedules):
+            weekDayScheduleName = values[5 * i + 2]
+            
+            startDay = int(self.lb_preparation.getJD(int(values[5 * i + 3]), int(values[5 * i + 4])))
+            endDay = int(self.lb_preparation.getJD(int(values[5 * i + 5]), int(values[5 * i + 6])))
+            
+            # 7 list for 7 days of the week
+            hourlyValuesForTheWeek = self.getScheduleValues(weekDayScheduleName)
+            
+            for day in range(startDay-1, endDay):
+                hourlyValues[day] = hourlyValuesForTheWeek[day%7]
+            
+        return hourlyValues
+    
+    def getScheduleValues(self, schName = None):
+        if schName == None:
+            schName = self.schName
+        if self.hb_EPObjectsAUX.isSchedule(schName):
+            scheduleValues, comments = self.hb_EPScheduleAUX.getScheduleDataByName(schName.upper(), ghenv.Component)
+            
+            scheduleType = scheduleValues[0].lower()
+            if self.count == 0:
+                self.schType = scheduleType
+
+            self.count += 1
+
+            if scheduleType == "schedule:year":
+                hourlyValues = self.getYearlyEPScheduleValues(schName)
+            elif scheduleType == "schedule:day:interval":
+                hourlyValues = self.getDayEPScheduleValues(schName)
+            elif scheduleType == "schedule:week:daily":
+                hourlyValues = self.getWeeklyEPScheduleValues(schName)
+            elif scheduleType == "schedule:constant":
+                hourlyValues = self.getConstantEPScheduleValues(schName)
+            else:
+                print "Honeybee doesn't support " + scheduleType + " currently." + \
+                      "Email us the type and we will try to add it to Honeybee."
+                      
+                hourlyValues = []
+            
+            return hourlyValues
+
 class EPTypes(object):
     def __init__(self):
         self.srfType = {0:'WALL',
@@ -4636,22 +4848,22 @@ class EPZone(object):
             
             # project center point of the geometry to surface plane
             projectedPt = srfPlane.ClosestPoint(self.cenPt)
-        
+            
             # make a vector from the center point of the zone to center point of the surface
             testVector = rc.Geometry.Vector3d(projectedPt - self.cenPt)
             # check the direction of the vectors and flip zone surfaces if needed
             vecAngleDiff = math.degrees(rc.Geometry.Vector3d.VectorAngle(testVector, HBSrf.normalVector))
             
             # vecAngleDiff should be 0 otherwise the normal is reversed
-            if printAngle:
-                print vecAngleDiff
+            if printAngle: print vecAngleDiff
+            
             if vecAngleDiff > 10:
+                print "Normal direction for " + HBSrf.name + " is fixed by Honeybee!"
                 HBSrf.geometry.Flip()
                 HBSrf.normalVector.Reverse()
-                
-            if not HBSrf.isChild and HBSrf.hasChild:
-                    for childSrf in HBSrf.childSrfs:
-                        checkSrfNormal(childSrf)
+                HBSrf.basePlane.Flip()
+                try: HBSrf.punchedGeometry.Flip()
+                except: pass
         
         # isPointInside for Breps is buggy, that's why I mesh the geometry here
         mesh = rc.Geometry.Mesh.CreateFromBrep(self.geometry)
@@ -4670,7 +4882,9 @@ class EPZone(object):
         
         for HBSrf in self.surfaces:
             checkSrfNormal(HBSrf)
-                
+            if not HBSrf.isChild and HBSrf.hasChild:
+                for childSrf in HBSrf.childSrfs:
+                    checkSrfNormal(childSrf)
 
     def decomposeZone(self, maximumRoofAngle = 30):
         # this method is useufl when the zone is going to be constructed from a closed brep
@@ -6944,6 +7158,7 @@ if checkIn.letItFly:
             msg =  "There is a white space in RADIANCE filepath: " + folders.RADPath + "\n" + \
                    "Please install RADIANCE in a valid address (e.g. c:\\radiance)"
             ghenv.Component.AddRuntimeMessage(w, msg)
+            folders.RADPath = ""
             
         # I should replace this with python methods in os library
         # looks stupid!
@@ -6969,7 +7184,8 @@ if checkIn.letItFly:
             msg =  "There is a white space in DAYSIM filepath: " + folders.DSPath + "\n" + \
                    "Please install Daysism in a valid address (e.g. c:\\daysim)"
             ghenv.Component.AddRuntimeMessage(w, msg)
-        
+            folders.DSPath = ""
+            
         if folders.DSPath.endswith("\\"): segmentNumber = -2
         else: segmentNumber = -1
         hb_DSCore = "\\".join(folders.DSPath.split("\\")[:segmentNumber])
@@ -6979,26 +7195,42 @@ if checkIn.letItFly:
         sc.sticky["honeybee_folders"]["DSCorePath"] = hb_DSCore
         sc.sticky["honeybee_folders"]["DSLibPath"] = hb_DSLibPath
     
+        # supported versions for EnergyPlus
+        EPVersions = ["V8-3-0", "V8-2-10", "V8-2-9", "V8-2-8", "V8-2-7", "V8-2-6", \
+                      "V8-2-5", "V8-2-4", "V8-2-3", "V8-2-2", "V8-2-1", "V8-2-0", \
+                      "V8-1-5", "V8-1-4", "V8-1-3", "V8-1-2", "V8-1-1", "V8-1-0"]
+                      
+        
+        if folders.EPPath != None:
+            # Honeybee has already found EnergyPlus make sure it's an acceptable version
+            EPVersion = os.path.split(folders.EPPath)[-1].split("EnergyPlus")[-1]
+            
+            if EPVersion not in EPVersions:
+                #Not an acceptable version so remove it from the path
+                folders.EPPath = None
+            
         if folders.EPPath == None:
-		
-            EPVersions = ["V8-2-7", "V8-2-6", "V8-2-5", "V8-2-4", "V8-2-3", \
-                          "V8-2-2", "V8-2-1", "V8-2-0", "V8-1-0"]
             for EPVersion in EPVersions:
                 if os.path.isdir("C:\EnergyPlus" + EPVersion + "\\"):
                     folders.EPPath = "C:\EnergyPlus" + EPVersion + "\\"
 
                     break
-
+            
             if folders.EPPath == None:
-                msg= "Honeybee cannot find EnergyPlus" + EPVersion + " folder on your system.\n" + \
-                     "Make sure you have EnergyPlus" + EPVersion + " installed on your system.\n" + \
-                     "You won't be able to run energy simulations without EnergyPlus.\n" + \
-                     "A good place to install EnergyPlus is c:\\EnergyPlus" + EPVersion
-                # I remove the warning for now until EP plugins are available
-                # It confuses the users
+                # give a warning to the user
+                
+                msg= "Honeybee cannot find a compatible EnergyPlus folder on your system.\n" + \
+                     "Make sure you have EnergyPlus installed on your system.\n" + \
+                     "You won't be able to run energy simulations without EnergyPlus.\n" +\
+                     "Honeybee supports following versions:\n"
+                
+                versions = ", ".join(EPVersions)
+                
+                msg += versions
+                
                 ghenv.Component.AddRuntimeMessage(w, msg)
-                folders.EPPath = "C:\EnergyPlus" + EPVersion + "\\"
-        
+                
+            
         sc.sticky["honeybee_folders"]["EPPath"] = folders.EPPath  
 
         sc.sticky["honeybee_folders"]["EPVersion"] = EPVersion.replace("-", ".")[1:]
@@ -7032,6 +7264,7 @@ if checkIn.letItFly:
         sc.sticky["honeybee_EPMaterialAUX"] = EPMaterialAux
         sc.sticky["honeybee_EPScheduleAUX"] = EPScheduleAux
         sc.sticky["honeybee_EPObjectsAUX"] = EPObjectsAux
+        sc.sticky["honeybee_ReadSchedules"] = ReadEPSchedules
         sc.sticky["honeybee_BuildingProgramsLib"] = BuildingProgramsLib
         sc.sticky["honeybee_EPTypes"] = EPTypes()
         sc.sticky["honeybee_EPZone"] = EPZone

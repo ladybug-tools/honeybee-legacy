@@ -1,13 +1,30 @@
-# By Mostapha Sadeghipour Roudsari
-# Sadeghipour@gmail.com
-# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
-# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+#
+# Honeybee: A Plugin for Environmental Analysis (GPL) started by Mostapha Sadeghipour Roudsari
+# 
+# This file is part of Honeybee.
+# 
+# Copyright (c) 2013-2015, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
+# Honeybee is free software; you can redistribute it and/or modify 
+# it under the terms of the GNU General Public License as published 
+# by the Free Software Foundation; either version 3 of the License, 
+# or (at your option) any later version. 
+# 
+# Honeybee is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of 
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with Honeybee; If not, see <http://www.gnu.org/licenses/>.
+# 
+# @license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
+
 
 """
 export geometries to rad file, and run daylighting/energy simulation
 
 -
-Provided by Honeybee 0.0.56
+Provided by Honeybee 0.0.57
 
     Args:
         north_: ...
@@ -37,10 +54,10 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Run Daylight Simulation"
 ghenv.Component.NickName = 'runDaylightAnalysis'
-ghenv.Component.Message = 'VER 0.0.56\nMAR_16_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_13_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
-#compatibleHBVersion = VER 0.0.56\nMAR_11_2015
+#compatibleHBVersion = VER 0.0.56\nJUL_13_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
@@ -109,13 +126,41 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
     hb_materilaLib = sc.sticky["honeybee_materialLib"]
     hb_scheduleLib = sc.sticky["honeybee_ScheduleLib"]
     hb_writeDS = sc.sticky["honeybee_WriteDS"]()
+    hb_folders = sc.sticky["honeybee_folders"]
     
     northAngle, northVector = lb_preparation.angle2north(north)
-    
     if analysisRecipe:
         # read parameters
         hb_writeRADAUX.readAnalysisRecipe(analysisRecipe)
         
+        # make sure Radiance and Daysim are installed correctly
+        if analysisRecipe.type==2:
+            # It's an annual analysis so Daysim needs to be installed
+            DSPath = hb_folders["DSPath"]
+            if DSPath=="":
+                msg= "Honeybee cannot find a Daysim folder on your system.\n" + \
+                    "Make sure you have Daysim installed on your system.\n" + \
+                    "You won't be able to run annual daylight simulations without Daysim.\n" +\
+                    "Check Honeybee_Honeybee component for more information."
+                
+                w = gh.GH_RuntimeMessageLevel.Warning
+                print msg
+                ghenv.Component.AddRuntimeMessage(w, msg)
+                return -1
+        else:
+            # Radiance needs to be installed correctly
+            RADPath = hb_folders["RADPath"]
+            if RADPath=="":
+                msg= "Honeybee cannot find a RADIANCE folder on your system.\n" + \
+                    "Make sure you have RADIANCE installed on your system.\n" + \
+                    "You won't be able to run annual daylight simulations without RADIANCE.\n" +\
+                    "Check Honeybee_Honeybee component for more information."
+                
+                w = gh.GH_RuntimeMessageLevel.Warning
+                print msg
+                ghenv.Component.AddRuntimeMessage(w, msg)
+                return -1                
+            
         # double check and make sure that the parameters are set good enough
         # for grid based simulation
         hb_writeRADAUX.checkInputParametersForGridBasedAnalysis()
@@ -157,7 +202,10 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
     # test points should be generated if the study is grid based
     # except image-based simulation
     testPtsEachCPU, lenOfPts = hb_writeRAD.writeTestPtFile(subWorkingDir, radFileName, numOfCPUs, analysisRecipe)
-            
+    
+    if len(testPtsEachCPU)!=0: # make sure it is a grid based analysis
+        numOfCPUs = len(testPtsEachCPU) #in case number of CPUs are more than number of test points
+    
     ######################## WRITE BATCH FILES #######################
     # if analysis type is annual this function will write hea files too
     initBatchFileName, batchFilesName, fileNames, pcompBatchFile, expectedResultFiles = \

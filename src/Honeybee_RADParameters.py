@@ -1,7 +1,24 @@
-# By Mostapha Sadeghipour Roudsari
-# Sadeghipour@gmail.com
-# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
-# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+#
+# Honeybee: A Plugin for Environmental Analysis (GPL) started by Mostapha Sadeghipour Roudsari
+# 
+# This file is part of Honeybee.
+# 
+# Copyright (c) 2013-2015, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
+# Honeybee is free software; you can redistribute it and/or modify 
+# it under the terms of the GNU General Public License as published 
+# by the Free Software Foundation; either version 3 of the License, 
+# or (at your option) any later version. 
+# 
+# Honeybee is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of 
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with Honeybee; If not, see <http://www.gnu.org/licenses/>.
+# 
+# @license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
+
 
 """
 Radiance Parameters - Standard
@@ -10,7 +27,7 @@ Read more about the parameters at: http://daysim.ning.com/
 Here is my favorite presentation by John Mardaljevic: http://radiance-online.org/community/workshops/2011-berkeley-ca/presentations/day1/JM_AmbientCalculation.pdf
 
 -
-Provided by Honeybee 0.0.56
+Provided by Honeybee 0.0.57
     
     Args:
         _quality: 0 > low, 1 > Medium, 2 > High
@@ -19,12 +36,12 @@ Provided by Honeybee 0.0.56
         _as_: Number of ambient super-samples. "Super-samples are applied only to the ambient divisions which show a significant change."
         _ar_: Ambient resolution. "This number will determine the maximum density of ambient values used in interpolation. Error will start to increase on surfaces spaced closer than the scene size divided by the ambient resolution. The maximum ambient value density is the scene size times the ambient accuracy."
         _aa_: Ambient accuracy. "This value will approximately equal the error from indirect illuminance interpolation. A value of zero implies no interpolation"
-
+        additionalP_: Use this input to set other Radiance parameters as needed. You need to follow Radiance's standard syntax (e.g. -ps 1 -lw 0.01)
 """
 
 ghenv.Component.Name = "Honeybee_RADParameters"
 ghenv.Component.NickName = 'RADParameters'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -67,9 +84,43 @@ class dictToClass(object):
     def __init__(self, pyDict):
         self.d = pyDict
         
+
+def parseRadParameters(radParString):
+    """
+    This function parse radiance parameters and returns a dictionary of parameters and values
+    """
+    
+    # I'm pretty sure there is a regX method to do this in one line
+    # but for now this should also do it
+    
+    radPar = {}
+    
+    if radParString == None: return radPar
+    
+    #split input string: each part will look like key value (eg ad 1)
+    parList = radParString.split("-")
+    
+    for p in parList:
+        key, sep, value = p.partition(" ")
+        
+        # convert the value to number
+        try:
+            value = int(value)
+        except:
+            try:
+                value = float(value)
+            except:
+                continue # cases such as empty string
+        
+        radPar["_" + key.strip()+ "_"] = value 
+    
+    return radPar
+
+
 if sc.sticky.has_key('honeybee_release'):
 
     hb_radParDict = sc.sticky["honeybee_RADParameters"]().radParDict
+    
     
     # there should be a smarter way to read the input values
     componentValues = {
@@ -79,13 +130,25 @@ if sc.sticky.has_key('honeybee_release'):
                 "_ar_" : _ar_,
                 "_aa_" : _aa_}
     
+    
+    radParFromString = parseRadParameters(additionalP_)
+    
+    # replace/add new parameters to componentValues
+    
+    for key, value in radParFromString.items():
+        componentValues[key] = value
+    
     radPar = {}
+    
     for key in hb_radParDict.keys():
+        
+        par = key.replace("_", "") # remove _ doe a cleaner print
+        
         if componentValues.has_key(key) and componentValues[key]!= None:
-            print key + " is set to " + str(componentValues[key])
+            print par + " = " + str(componentValues[key])
             radPar[key] = componentValues[key]
         else:
-            print key + " is set to " + str(hb_radParDict[key][_quality])
+            print par + " = " + str(hb_radParDict[key][_quality])
             radPar[key] = hb_radParDict[key][_quality]
     
     radParameters = dictToClass(radPar)

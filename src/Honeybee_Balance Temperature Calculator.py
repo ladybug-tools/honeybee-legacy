@@ -1,8 +1,25 @@
 #This is a component for calculating a rough building balance temperature from an energy simulation.
-# By Chris Mackey
-# Chris@MackeyArchitecture.com
-# HoneyBee started by Mostapha Sadeghipour Roudsari is licensed
-# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+#
+# Honeybee: A Plugin for Environmental Analysis (GPL) started by Mostapha Sadeghipour Roudsari
+# 
+# This file is part of Honeybee.
+# 
+# Copyright (c) 2013-2015, Chris Mackey <Chris@MackeyArchitecture.com> 
+# Honeybee is free software; you can redistribute it and/or modify 
+# it under the terms of the GNU General Public License as published 
+# by the Free Software Foundation; either version 3 of the License, 
+# or (at your option) any later version. 
+# 
+# Honeybee is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of 
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with Honeybee; If not, see <http://www.gnu.org/licenses/>.
+# 
+# @license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
+
 
 """
 Use this component to calculate a rough building (or zone) balance temperatrue from a Honeybee energy simulation.  The balance point is the outdoor temperature at which your building is usually neither heating or cooling itself.  If the outdoor temperture drops below the balance temperature, your building will usually be heating itself and, if the outdoor temperture is above the balance temperature, the building will usually be cooling itself.
@@ -10,7 +27,7 @@ Use this component to calculate a rough building (or zone) balance temperatrue f
 The balance temperture concept is useful for setting things such as automated blinds and airflow shcedules since having these things controlled by hourly cooling or heating can often introduce odd behavior resulting from idiosyncrasies in the building's schedule.
 This component works by taking the average combined heating/cooling values for each day and the average outdoor air temperature for each day.  The days with the smallest combined heating + cooling will have their daily mean outdoor air tempertures averaged to produce the balance temperture.
 -
-Provided by Honeybee 0.0.56
+Provided by Honeybee 0.0.57
     
     Args:
         _zoneThermalEnergyBal: The output "thermalEnergyBalance" from the "Honeybee_Read EP Result" component.  This can be for a single zone if you select out one branch of this thermalEnergyBalance output or it can be for the whole simulated building if you connect the whole output.  Note that, in order to use this component correclty, you must run either a simulation with either an hourly or daily timestep.
@@ -23,7 +40,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Balance Temperature Calculator"
 ghenv.Component.NickName = 'calcBalTemperature'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_03_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"

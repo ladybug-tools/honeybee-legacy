@@ -1,12 +1,29 @@
-# By Mostapha Sadeghipour Roudsari
-# sadeghipour@gmail.com
-# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
-# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+#
+# Honeybee: A Plugin for Environmental Analysis (GPL) started by Mostapha Sadeghipour Roudsari
+# 
+# This file is part of Honeybee.
+# 
+# Copyright (c) 2013-2015, Mostapha Sadeghipour Roudsari <sadeghipour@gmail.com> 
+# Honeybee is free software; you can redistribute it and/or modify 
+# it under the terms of the GNU General Public License as published 
+# by the Free Software Foundation; either version 3 of the License, 
+# or (at your option) any later version. 
+# 
+# Honeybee is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of 
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with Honeybee; If not, see <http://www.gnu.org/licenses/>.
+# 
+# @license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
+
 
 """
 Separate zones based on orientation
 -
-Provided by Honeybee 0.0.56
+Provided by Honeybee 0.0.57
 
     Args:
         _HBZones: List of HBZones
@@ -20,7 +37,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = 'Honeybee_Separate Zones By Orientation'
 ghenv.Component.NickName = 'separateZonesByOrientation'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_13_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -50,8 +67,8 @@ def getOrientation(HBZone, onlyWGlz):
                         orientationVectors.append(glzSrf.normalVector)
             else:
                 if not HBSrf.normalVector in orientationVectors:
-                        orientationVectors.append(HBSrf.normalVector)
-        
+                    orientationVectors.append(HBSrf.normalVector)
+      
     # sort based on angle to north
     orientationVectors = sorted(orientationVectors, key = lambda \
                          a: rc.Geometry.Vector3d.VectorAngle(a, rc.Geometry.Vector3d.YAxis, rc.Geometry.Plane.WorldXY))
@@ -90,8 +107,7 @@ def main(HBZones, onlyWGlz):
         # conver vector list to list of string so it could be used as key
         angles = []
         for vector in orientationVectors:
-            angles.append(math.degrees(rc.Geometry.Vector3d.VectorAngle(vector, rc.Geometry.Vector3d.YAxis)))
-            
+            angles.append(math.degrees(rc.Geometry.Vector3d.VectorAngle(vector, rc.Geometry.Vector3d.YAxis, rc.Geometry.Plane.WorldXY)))
         key = "".join(map(str, angles))
         
         if key not in HBZones.keys():

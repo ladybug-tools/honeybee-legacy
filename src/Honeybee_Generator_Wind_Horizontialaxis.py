@@ -1,10 +1,26 @@
-# By Anton Szilasi
-# For technical support or user requests contact me at
-# ajszilas@gmail.com
-# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
-# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+#
+# Honeybee: A Plugin for Environmental Analysis (GPL) started by Mostapha Sadeghipour Roudsari
+# 
+# This file is part of Honeybee.
+# 
+# Copyright (c) 2013-2015, Anton Szilasi <ajszilas@gmail.com> 
+# Honeybee is free software; you can redistribute it and/or modify 
+# it under the terms of the GNU General Public License as published 
+# by the Free Software Foundation; either version 3 of the License, 
+# or (at your option) any later version. 
+# 
+# Honeybee is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of 
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with Honeybee; If not, see <http://www.gnu.org/licenses/>.
+# 
+# @license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
+
 """
-Provided by Honeybee 0.0.56
+Provided by Honeybee 0.0.57
 
 Use this component to create your own horizontial axis wind turbine to use in Energyplus simulations. This component simulates wind turbines by using either the simple Power Calculation method which means that the Maximum Power coefficient must be calculated.
 -
@@ -12,7 +28,7 @@ Or by using the analytical method. The difference between the simple and analyti
 -
 Please see more information about wind turbines at: http://bigladdersoftware.com/epx/docs/8-3/input-output-reference/group-electric-load-center.html#generatorwindturbine
 -
-Provided by Honeybee 0.0.56
+Provided by Honeybee 0.0.57
 
     Args:
         TemplateMediumTurbine_: If set to True a medium sized turbine will be created with pre-set values, the turbines values can be viewed from the ReadMe! output. Template values can be changed for each input below by entering a value for each input. Otherwise if no input is given template values will be used for each input.
@@ -57,7 +73,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Generator_Wind_Horizontialaxis"
 ghenv.Component.NickName = 'Generator:Wind:Horizontialaxis'
-ghenv.Component.Message = 'VER 0.0.56\nMAY_22_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP" #"06 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

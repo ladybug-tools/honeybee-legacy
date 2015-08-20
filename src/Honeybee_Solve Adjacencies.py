@@ -1,12 +1,29 @@
-# By Mostapha Sadeghipour Roudsari
-# Sadeghipour@gmail.com
-# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
-# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+#
+# Honeybee: A Plugin for Environmental Analysis (GPL) started by Mostapha Sadeghipour Roudsari
+# 
+# This file is part of Honeybee.
+# 
+# Copyright (c) 2013-2015, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
+# Honeybee is free software; you can redistribute it and/or modify 
+# it under the terms of the GNU General Public License as published 
+# by the Free Software Foundation; either version 3 of the License, 
+# or (at your option) any later version. 
+# 
+# Honeybee is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of 
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with Honeybee; If not, see <http://www.gnu.org/licenses/>.
+# 
+# @license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
+
 
 """
 Solve adjacencies
 -
-Provided by Honeybee 0.0.56
+Provided by Honeybee 0.0.57
 
     Args:
         _HBZones: A list of Honeybee zones for which you want to calculate whether they are next to each other.
@@ -21,7 +38,7 @@ Provided by Honeybee 0.0.56
 """
 ghenv.Component.Name = "Honeybee_Solve Adjacencies"
 ghenv.Component.NickName = 'solveAdjc'
-ghenv.Component.Message = 'VER 0.0.56\nMAR_22_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -94,7 +111,7 @@ def updateAdj(surface1, surface2, altConstruction, altBC, tol):
     else:
         surface1.setEPConstruction(altConstruction)
         surface2.setEPConstruction(altConstruction)
-        
+    
     # change bc
     if altBC != None:
         surface2.setBC(altBC.upper())
@@ -133,6 +150,20 @@ def updateAdj(surface1, surface2, altConstruction, altBC, tol):
                     if childSurface1.cenPt.DistanceTo(childSurface2.cenPt) <= tol:
                         childSurface1.BCObject.name = childSurface2.name
                         childSurface2.BCObject.name = childSurface1.name
+                        # change construction
+                        childSurface1.setEPConstruction(surface1.intCnstrSet[5])
+                        childSurface2.setEPConstruction(surface1.intCnstrSet[5])
+                        # change the boundary condition
+                        childSurface1.setBC('SURFACE', True)
+                        childSurface2.setBC('SURFACE', True)
+                        childSurface1.setBCObject(childSurface2)
+                        childSurface2.setBCObject(childSurface1)
+                        # set sun and wind exposure to no exposure
+                        childSurface2.setSunExposure('NoSun')
+                        childSurface1.setSunExposure('NoSun')
+                        childSurface2.setWindExposure('NoWind')
+                        childSurface1.setWindExposure('NoWind')
+                        
                         print 'Interior window ' + childSurface1.BCObject.name + \
                               '\t-> is adjacent to <-\t' + childSurface2.BCObject.name + '.'
         

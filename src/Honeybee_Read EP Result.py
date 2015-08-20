@@ -1,7 +1,24 @@
-# By Chris Mackey
-# Chris@MackeyArchitecture.com
-# Ladybug started by Mostapha Sadeghipour Roudsari is licensed
-# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+#
+# Honeybee: A Plugin for Environmental Analysis (GPL) started by Mostapha Sadeghipour Roudsari
+# 
+# This file is part of Honeybee.
+# 
+# Copyright (c) 2013-2015, Chris Mackey <Chris@MackeyArchitecture.com> 
+# Honeybee is free software; you can redistribute it and/or modify 
+# it under the terms of the GNU General Public License as published 
+# by the Free Software Foundation; either version 3 of the License, 
+# or (at your option) any later version. 
+# 
+# Honeybee is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of 
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with Honeybee; If not, see <http://www.gnu.org/licenses/>.
+# 
+# @license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
+
 
 """
 This component reads the results of an EnergyPlus simulation from the WriteIDF Component or any EnergyPlus result .csv file address.  Note that, if you use this component without the WriteIDF component, you should make sure that a corresponding .eio file is next to your .csv file at the input address that you specify.
@@ -9,7 +26,7 @@ _
 This component reads only the results related to zones.  For results related to surfaces, you should use the "Honeybee_Read EP Surface Result" component.
 
 -
-Provided by Honeybee 0.0.56
+Provided by Honeybee 0.0.57
     
     Args:
         _resultFileAddress: The result file address that comes out of the WriteIDF component.
@@ -37,7 +54,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.56\nMAY_27_2015'
+ghenv.Component.Message = 'VER 0.0.57\nAUG_01_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nMAY_02_2015
@@ -127,6 +144,8 @@ if normByFlr == True and floorAreaList != []:
 elif normByFlr == True:
     normByFlr == False
 else: pass
+otherZDatFlrNormList = []
+otherZDatFlrCount = 0
 
 # Make data tree objects for all of the outputs.
 totalThermalEnergy = DataTree[Object]()
@@ -151,6 +170,8 @@ otherZoneData = DataTree[Object]()
 #Create py lists to hold the sirflow data.
 infiltrationFlow = []
 natVentFlow = []
+mechSysAirFlow = []
+earthTubeFlow = []
 internalAirGain = []
 surfaceAirGain = []
 systemAirGain = []
@@ -159,6 +180,8 @@ try:
     for zone in zoneNameList:
         infiltrationFlow.append([])
         natVentFlow.append([])
+        mechSysAirFlow.append([])
+        earthTubeFlow.append([])
         internalAirGain.append([])
         surfaceAirGain.append([])
         systemAirGain.append([])
@@ -286,15 +309,21 @@ if _resultFileAddress and gotData == True:
                         makeHeader(electricEquip, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Electric Equipment Energy", energyUnit, True)
                         dataTypeList[5] = True
                     
-                    elif 'Fan Electric Energy' in column and not 'Earth Tube Fan Electric Energy' in column:
+                    elif 'Fan Electric Energy' in column:
                         key.append(15)
-                        if 'FAN CONSTANT VOLUME' in column: zoneName = checkZoneSys(" " + ":".join(column.split(":")[:-1]).split('FAN CONSTANT VOLUME ')[-1])
+                        if 'FAN CONSTANT VOLUME' in column:
+                            zoneName = checkZoneSys(" " + ":".join(column.split(":")[:-1]).split('FAN CONSTANT VOLUME ')[-1])
+                            makeHeader(fanElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Fan Electric Energy", energyUnit, True)
                         elif 'FAN VARIABLE VOLUME' in column:
                             centralSys = True
                             zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('FAN VARIABLE VOLUME ')[-1], 2)
+                            makeHeader(fanElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Fan Electric Energy", energyUnit, True)
                         elif 'Zone Ventilation Fan Electric Energy' in column:
                             zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
-                        makeHeader(fanElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Fan Electric Energy", energyUnit, True)
+                            makeHeader(fanElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Fan Electric Energy", energyUnit, True)
+                        elif 'Earth Tube Fan Electric Energy' in column:
+                            zoneName = checkZoneOther(dataIndex, " " + ":".join(column.split(":")[:-1]))
+                            makeHeaderAlt(fanElectric, path[columnCount], zoneName, column.split('(')[-1].split(')')[0], "Earth Tube Fan Electric Energy", energyUnit, True)
                         dataTypeList[6] = True
                     
                     elif 'Zone People Total Heating Energy' in column:
@@ -365,6 +394,18 @@ if _resultFileAddress and gotData == True:
                         infiltrationFlow[int(path[-1])].append(zoneName)
                         infiltrationFlow[int(path[-1])].append(column.split('(')[-1].split(')')[0])
                     
+                    elif 'Zone Mechanical Ventilation Standard Density Volume Flow Rate' in column:
+                        key.append(22)
+                        zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
+                        mechSysAirFlow[int(path[-1])].append(zoneName)
+                        mechSysAirFlow[int(path[-1])].append(column.split('(')[-1].split(')')[0])
+                    
+                    elif 'Earth Tube Air Flow Volume' in column:
+                        key.append(21)
+                        zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
+                        earthTubeFlow[int(path[-1])].append(zoneName)
+                        earthTubeFlow[int(path[-1])].append(column.split('(')[-1].split(')')[0])
+                    
                     elif 'Zone Air Heat Balance Internal Convective Heat Gain Rate' in column:
                         key.append(18)
                         zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
@@ -383,11 +424,15 @@ if _resultFileAddress and gotData == True:
                         systemAirGain[int(path[-1])].append(zoneName)
                         systemAirGain[int(path[-1])].append(column.split('(')[-1].split(')')[0])
                     
-                    elif 'Zone' in column and not "System" in column and not "SYSTEM" in column and not "ZONEHVAC" in column:
+                    elif 'Zone' in column and not "System" in column and not "SYSTEM" in column and not "ZONEHVAC" in column and not "Earth Tube" in column:
                         zoneName = checkZoneOther(dataIndex, (" " + ":".join(column.split(":")[:-1])))
                         if zoneName != None:
                             key.append(14)
-                            makeHeaderAlt(otherZoneData, path[columnCount], zoneName, column.split('(')[-1].split(')')[0], column.split(':')[-1].split(' [')[0], column.split('[')[-1].split(']')[0], False)
+                            otherDataName = column.split(':')[-1].split(' [')[0].upper()
+                            if "ENERGY" in otherDataName or "GAIN" in otherDataName or "MASS" in otherDataName or "VOLUME" in otherDataName or "Loss" in otherDataName: normalizble = True
+                            else: normalizble = False
+                            otherZDatFlrNormList.append(normalizble)
+                            makeHeaderAlt(otherZoneData, path[columnCount], zoneName, column.split('(')[-1].split(')')[0], column.split(':')[-1].split(' [')[0], column.split('[')[-1].split(']')[0], normalizble)
                             dataTypeList[17] = True
                         else:
                             key.append(-1)
@@ -401,10 +446,15 @@ if _resultFileAddress and gotData == True:
                 #print path
             else:
                 for columnCount, column in enumerate(line.split(',')):
-                    if key[columnCount] != 14: p = GH_Path(int(path[columnCount]))
+                    if key[columnCount] != 14:
+                        try: p = GH_Path(int(path[columnCount]))
+                        except: p = GH_Path(int(path[columnCount][0]), int(path[columnCount][1]))
                     else:
                         p = GH_Path(int(path[columnCount][0]), int(path[columnCount][1]))
-                    if normByFlr == True: flrArea = floorAreaList[int(path[columnCount])]
+                    
+                    if normByFlr == True:
+                        try: flrArea = floorAreaList[int(path[columnCount])]
+                        except: flrArea = floorAreaList[int(path[columnCount][0])]
                     else: flrArea = 1
                     
                     if key[columnCount] == 0:
@@ -448,7 +498,13 @@ if _resultFileAddress and gotData == True:
                         try: relativeHumidity.Add(float(column), p)
                         except: dataTypeList[14] = True
                     elif key[columnCount] == 14:
-                        try: otherZoneData.Add(float(column), p)
+                        try:
+                            if otherZDatFlrNormList[otherZDatFlrCount] == False:
+                                otherZoneData.Add(float(column), p)
+                            else:
+                                otherZoneData.Add(float(column)/flrArea, p)
+                            if otherZDatFlrCount != len(otherZDatFlrNormList)-1: otherZDatFlrCount += 1
+                            else: otherZDatFlrCount
                         except: pass
                     elif key[columnCount] == 15:
                         try: fanElectric.Add((float(column)/3600000)/flrArea, p)
@@ -458,6 +514,12 @@ if _resultFileAddress and gotData == True:
                         except: pass
                     elif key[columnCount] == 17:
                         try: infiltrationFlow[int(path[columnCount])].append(float(column))
+                        except: pass
+                    elif key[columnCount] == 22:
+                        try: mechSysAirFlow[int(path[columnCount])].append(float(column))
+                        except: pass
+                    elif key[columnCount] == 21:
+                        try: earthTubeFlow[int(path[columnCount])].append(float(column))
                         except: pass
                     elif key[columnCount] == 18:
                         try: internalAirGain[int(path[columnCount])].append(float(column))
@@ -527,15 +589,38 @@ if internalAirGain != testTracker and surfaceAirGain != testTracker:
         
         dataTypeList[16] = True
 
-#If we have information on volumetric flow for infiltration and natural ventilation, add them together.
+#If we have information on volumetric flow for infiltration, natural ventilation, and/or eartht tube flow, add them together.
 if infiltrationFlow != testTracker:
+    #Check if there is natural ventilation.
+    natVentThere = []
+    for natVentList in natVentFlow:
+        if len(natVentList) != 0: natVentThere.append(1)
+        else: natVentThere.append(0)
+    
+    #Check if there is mechanical veniltation.
+    mechSysThere = []
+    for mechList in mechSysAirFlow:
+        if len(mechList) != 0: mechSysThere.append(1)
+        else: mechSysThere.append(0)
+    
+    #Check if there are earth tubes.
+    earthTubeThere = []
+    for earthList in earthTubeFlow:
+        if len(earthList) != 0: earthTubeThere.append(1)
+        else: earthTubeThere.append(0)
+    
+    #Add everything together.
     for listCount, list in enumerate(infiltrationFlow):
         makeHeader(airFlowVolume, listCount, list[0], list[1], "Air Flow Volume", "m3/s", False)
         for numCount, num in enumerate(list[2:]):
-            try:
-                airFlowVolume.Add((num + natVentFlow[listCount][2:][numCount]), GH_Path(listCount))
-            except:
-                airFlowVolume.Add(num, GH_Path(listCount))
+            if earthTubeThere[listCount] == 1 and mechSysThere[listCount] == 1 and natVentThere[listCount] == 1: airFlowVolume.Add((num + natVentFlow[listCount][2:][numCount] + mechSysAirFlow[listCount][2:][numCount] + earthTubeFlow[listCount][2:][numCount]), GH_Path(listCount))
+            elif earthTubeThere[listCount] == 1 and mechSysThere[listCount] == 0 and natVentThere[listCount] == 1: airFlowVolume.Add((num + natVentFlow[listCount][2:][numCount]+ earthTubeFlow[listCount][2:][numCount]), GH_Path(listCount))
+            elif earthTubeThere[listCount] == 0 and mechSysThere[listCount] == 1 and natVentThere[listCount] == 1: airFlowVolume.Add((num + natVentFlow[listCount][2:][numCount]+ mechSysAirFlow[listCount][2:][numCount]), GH_Path(listCount))
+            elif earthTubeThere[listCount] == 1 and mechSysThere[listCount] == 1 and natVentThere[listCount] == 0: airFlowVolume.Add((num + mechSysAirFlow[listCount][2:][numCount] + earthTubeFlow[listCount][2:][numCount]), GH_Path(listCount))
+            elif earthTubeThere[listCount] == 0 and mechSysThere[listCount] == 1 and natVentThere[listCount] == 0: airFlowVolume.Add((num + mechSysAirFlow[listCount][2:][numCount]), GH_Path(listCount))
+            elif earthTubeThere[listCount] == 1 and mechSysThere[listCount] == 0 and natVentThere[listCount] == 0: airFlowVolume.Add((num + earthTubeFlow[listCount][2:][numCount]), GH_Path(listCount))
+            elif earthTubeThere[listCount] == 0 and mechSysThere[listCount] == 0 and natVentThere[listCount] == 1: airFlowVolume.Add((num + natVentFlow[listCount][2:][numCount]), GH_Path(listCount))
+            else: airFlowVolume.Add(num, GH_Path(listCount))
         dataTypeList[15] = True
 
 

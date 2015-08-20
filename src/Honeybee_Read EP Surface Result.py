@@ -1,7 +1,24 @@
-# By Chris Mackey
-# Chris@MackeyArchitecture.com
-# Ladybug started by Mostapha Sadeghipour Roudsari is licensed
-# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+#
+# Honeybee: A Plugin for Environmental Analysis (GPL) started by Mostapha Sadeghipour Roudsari
+# 
+# This file is part of Honeybee.
+# 
+# Copyright (c) 2013-2015, Chris Mackey <Chris@MackeyArchitecture.com> 
+# Honeybee is free software; you can redistribute it and/or modify 
+# it under the terms of the GNU General Public License as published 
+# by the Free Software Foundation; either version 3 of the License, 
+# or (at your option) any later version. 
+# 
+# Honeybee is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of 
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with Honeybee; If not, see <http://www.gnu.org/licenses/>.
+# 
+# @license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
+
 
 """
 This component reads the results of an EnergyPlus simulation from the WriteIDF Component or any EnergyPlus result .csv file address.  Note that, if you use this component without the WriteIDF component, you should make sure that a corresponding .eio file is next to your .csv file at the input address that you specify.
@@ -9,7 +26,7 @@ _
 This component reads only the results related to surfaces.  For results related to zones, you should use the "Honeybee_Read EP Result" component.
 
 -
-Provided by Honeybee 0.0.56
+Provided by Honeybee 0.0.57
     
     Args:
         _resultFileAddress: The result file address that comes out of the WriteIDF component.
@@ -23,12 +40,13 @@ Provided by Honeybee 0.0.56
         windowTotalSolarEnergy: The total solar energy transmitted through each of the glazing surfaces to the zone (kWh).
         windowBeamEnergy: The total direct solar beam energy transmitted through each of the glazing surfaces to the zone (kWh).
         windowDiffEnergy: The total diffuse solar energy transmitted through each of the glazing surfaces to the zone (kWh).
+        windowTransmissivity: The hourly transmissivity of the exterior windows of the model.  This data is needed to align a comfort map with an energy model possessing shades.
         otherSurfaceData: Other surface data that is in the result file (in no particular order).  Note that this data cannot be normalized by floor area as the component does not know if it can be normalized.
 """
 
 ghenv.Component.Name = "Honeybee_Read EP Surface Result"
 ghenv.Component.NickName = 'readEPSrfResult'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_22_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -195,11 +213,13 @@ glazEnergyFlow = DataTree[Object]()
 windowBeamEnergy = DataTree[Object]()
 windowDiffEnergy = DataTree[Object]()
 windowTotalSolarEnergy = DataTree[Object]()
+windowTransmissivity = DataTree[Object]()
 otherSurfaceData = DataTree[Object]()
 
 #Make a list to keep track of what outputs are in the result file.
-dataTypeList = [False, False, False, False, False, False, False, False, False]
+dataTypeList = [False, False, False, False, False, False, False, False, False, False]
 parseSuccess = False
+normAreaWorked = True
 
 # If zone names are not included, make numbers to keep track of the number of surfaces that have been imported so far.
 InTemp = 0
@@ -210,6 +230,7 @@ glzLoss = 0
 glzBeamGain = 0
 glzDiffGain = 0
 glzTotalGain = 0
+glzTransmiss = 0
 
 # If there are curved surfaces, make numbers to keep track of the number of surface pieces.
 srfPiecesList = []
@@ -237,6 +258,7 @@ def makeHeader(list, path, srfName, timestep, name, units):
     list.Add(end, GH_Path(path))
 
 def makeHeaderGrafted(list, path1, path2, srfName, timestep, name, units, normable, typeName):
+    if units == '': units = 'Fraction'
     list.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(path1, path2))
     list.Add(location, GH_Path(path1, path2))
     if normBySrf == False or normable == False: list.Add(name + " for " + srfName + ": " + typeName, GH_Path(path1, path2))
@@ -423,6 +445,21 @@ if _resultFileAddress and gotZoneData == True and gotSrfData == True:
                         key.append(8)
                         dataTypeList[5] = True
                     
+                    elif 'Surface Window System Solar Transmittance' in column:
+                        if gotSrfData == True:
+                            srfName, typeName, pieceNum, duplicate = checkSrfName(srfName, 8)
+                            duplicateList.append(duplicate)
+                            pieceNumList.append(pieceNum)
+                            if pieceNum < 2 and path[columnCount] != -1: makeHeaderGrafted(windowTransmissivity, int(path[columnCount][0]), int(path[columnCount][1]), srfName, column.split('(')[-1].split(')')[0], "Surface Window System Solar Transmittance", "Fraction", True, typeName)
+                        else:
+                            path.append([glzTransmiss])
+                            duplicateList.append(False)
+                            pieceNumList.append(1)
+                            makeHeader(windowTransmissivity, int(path[columnCount]), srfName, column.split('(')[-1].split(')')[0], "Surface Window System Solar Transmittance", "Fraction")
+                            glzTransmiss += 1
+                        key.append(10)
+                        dataTypeList[8] = True
+                    
                     elif 'Surface' in column and not "Heat Balance Surface Convection Rate"  in column:
                         if gotSrfData == True:
                             srfName, typeName = checkSrfNameOther(dataIndex, srfName)
@@ -434,7 +471,7 @@ if _resultFileAddress and gotZoneData == True and gotSrfData == True:
                             makeHeader(otherSurfaceData, int(path[columnCount]), srfName, column.split('(')[-1].split(')')[0], column.split(':')[-1].split(' [')[0], column.split('[')[-1].split(']')[0],)
                             otherIndex += 1
                         key.append(9)
-                        dataTypeList[8] = True
+                        dataTypeList[9] = True
                     
                     else:
                         key.append(-1)
@@ -451,7 +488,11 @@ if _resultFileAddress and gotZoneData == True and gotSrfData == True:
                             duplicate = duplicateList[columnCount]
                             pieceCount = pieceNumList[columnCount]
                             p = GH_Path(int(path[columnCount][0]), int(path[columnCount][1]))
-                            if normBySrf == True: srfArea = zoneSrfAreaList[int(path[columnCount][0])][int(path[columnCount][1])]
+                            if normBySrf == True:
+                                try: srfArea = zoneSrfAreaList[int(path[columnCount][0])][int(path[columnCount][1])]
+                                except:
+                                    srfArea = 1
+                                    normAreaWorked = False
                             else: srfArea = 1
                         elif gotSrfData == True and key[columnCount] == 9:
                             p = GH_Path(int(path[columnCount][0]), int(path[columnCount][1]))
@@ -497,6 +538,11 @@ if _resultFileAddress and gotZoneData == True and gotSrfData == True:
                             else:
                                 if pieceCount == 1: srfPieceDataList[7][path[columnCount][0]][path[columnCount][1]].append((float(column)/3600000)/srfArea)
                                 else: srfPieceDataList[7][path[columnCount][0]][path[columnCount][1]][lineCount-1] == srfPieceDataList[7][path[columnCount][0]][path[columnCount][1]][lineCount-1] + (float(column)/3600000)/srfArea
+                        elif key[columnCount] == 10:
+                            if duplicate == False: windowTransmissivity.Add(float(column), p)
+                            else:
+                                if pieceCount == 1: srfPieceDataList[1][path[columnCount][0]][path[columnCount][1]].append(float(column))
+                                else: srfPieceDataList[1][path[columnCount][0]][path[columnCount][1]][lineCount-1] == (srfPieceDataList[1][path[columnCount][0]][path[columnCount][1]][lineCount-1] + float(column))/2
                         elif key[columnCount] == 9:
                             otherSurfaceData.Add(float(column), p)
                     
@@ -512,6 +558,11 @@ if _resultFileAddress and gotZoneData == True and gotSrfData == True:
         print warn
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warn)
 
+#Check to make sure that the normalization by surface worked.
+if normAreaWorked == False:
+    warn = 'Normalizing by surface area does not work if you have more than one type of otherSurfaceData.  All types after the first are not normailzed.'
+    print warn
+    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warn)
 
 #If there was curved geometry, go through the data and see if there were any lists of curved pieces that should be added to the data trees.
 def addCurvedDataToTree(zoneList, dataTree):
@@ -558,12 +609,13 @@ outputsDict = {
 5: ["windowTotalSolarEnergy", "The total solar energy transmitted through each of the glazing surfaces to the zone (kWh)."],
 6: ["windowBeamEnergy", "The total direct solar beam energy transmitted through each of the glazing surfaces to the zone (kWh)."],
 7: ["windowDiffEnergy", "The total diffuse solar energy transmitted through each of the glazing surfaces to the zone (kWh)."],
-8: ["otherSurfaceData", "Other surface data that is in the result file (in no particular order).  Note that this data cannot be normalized by floor area as the component does not know if it can be normalized."]
+8: ["windowTransmissivity", "The hourly transmissivity of the exterior windows of the model.  This data is needed to align a comfort map with an energy model possessing shades."],
+9: ["otherSurfaceData", "Other surface data that is in the result file (in no particular order).  Note that this data cannot be normalized by floor area as the component does not know if it can be normalized."]
 }
 
 
 if _resultFileAddress and parseSuccess == True:
-    for output in range(9):
+    for output in range(10):
         if dataTypeList[output] == False:
             ghenv.Component.Params.Output[output].NickName = "."
             ghenv.Component.Params.Output[output].Name = "."
@@ -573,7 +625,7 @@ if _resultFileAddress and parseSuccess == True:
             ghenv.Component.Params.Output[output].Name = outputsDict[output][0]
             ghenv.Component.Params.Output[output].Description = outputsDict[output][1]
 else:
-    for output in range(9):
+    for output in range(10):
         ghenv.Component.Params.Output[output].NickName = outputsDict[output][0]
         ghenv.Component.Params.Output[output].Name = outputsDict[output][0]
         ghenv.Component.Params.Output[output].Description = outputsDict[output][1]

@@ -1,12 +1,29 @@
-# By Mostapha Sadeghipour Roudsari
-# Sadeghipour@gmail.com
-# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
-# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+#
+# Honeybee: A Plugin for Environmental Analysis (GPL) started by Mostapha Sadeghipour Roudsari
+# 
+# This file is part of Honeybee.
+# 
+# Copyright (c) 2013-2015, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
+# Honeybee is free software; you can redistribute it and/or modify 
+# it under the terms of the GNU General Public License as published 
+# by the Free Software Foundation; either version 3 of the License, 
+# or (at your option) any later version. 
+# 
+# Honeybee is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of 
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with Honeybee; If not, see <http://www.gnu.org/licenses/>.
+# 
+# @license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
+
 
 """
 Create a Honeybee surface, which can be plugged into the "Run Daylight Sumilation" component or combined with other surfaces to make HBZones with the "createHBZones" component.
 -
-Provided by Honeybee 0.0.56
+Provided by Honeybee 0.0.57
 
     Args:
         _geometry: List of Breps
@@ -43,7 +60,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_createHBSrfs'
 ghenv.Component.NickName = 'createHBSrfs'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_04_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_12_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -103,7 +120,7 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
         number = guid.split("-")[-1]
 
         if srfName != None:
-            srfName = srfName.strip()
+            srfName = srfName.strip().replace(" ","_")
             if geometry.Faces.Count != 1:
                 srfName = srfName + "_" + `faceCount`
         else:
@@ -165,7 +182,7 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
                                      "The surface is more likely a " + HBSurface.srfType[int(HBSurface.type)] + ".\n" + \
                                      "Honeybee won't overwrite the type so you may need to manually flip the surface."
                         print warningMsg
-                        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
+                        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Remark, warningMsg)
                         
                     HBSurface.setType(surfaceType, isUserInput= True)
                 except:

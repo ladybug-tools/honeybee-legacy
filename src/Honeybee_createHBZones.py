@@ -1,18 +1,35 @@
-# By Mostapha Sadeghipour Roudsari
-# Sadeghipour@gmail.com
-# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
-# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+#
+# Honeybee: A Plugin for Environmental Analysis (GPL) started by Mostapha Sadeghipour Roudsari
+# 
+# This file is part of Honeybee.
+# 
+# Copyright (c) 2013-2015, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
+# Honeybee is free software; you can redistribute it and/or modify 
+# it under the terms of the GNU General Public License as published 
+# by the Free Software Foundation; either version 3 of the License, 
+# or (at your option) any later version. 
+# 
+# Honeybee is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of 
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with Honeybee; If not, see <http://www.gnu.org/licenses/>.
+# 
+# @license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
+
 
 """
     Create an HBZone from HB Surfaces
     
 -
-Provided by Honeybee 0.0.56
+Provided by Honeybee 0.0.57
 
     Args:
         _name_: The name of the zone as a string
         zoneProgram_: Optional input for the program of this zone
-        isConditioned_: Set to true if the zone is conditioned
+        isConditioned_: True/False value. This value will be applied to the ouput zone to either condition them with an Ideal Air Loads System (True) or not condition them at all (False). If no value is connected here, all zones will be conditioned with an Ideal Air Loads System by default.
         _HBSurfaces: A list of Honeybee Surfaces
     Returns:
         readMe!:...
@@ -31,7 +48,7 @@ import math
 
 ghenv.Component.Name = 'Honeybee_createHBZones'
 ghenv.Component.NickName = 'createHBZones'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_20_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_18_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -81,7 +98,10 @@ def main(zoneName,  HBZoneProgram, HBSurfaces, isConditioned):
     # initiate the zone
     zoneID = str(uuid.uuid4())
     
-    HBZone = hb_EPZone(None, zoneID, zoneName.strip(), (bldgProgram, zoneProgram), isConditioned)
+    # default for isConditioned is True
+    if isConditioned== None: isConditioned = True
+    
+    HBZone = hb_EPZone(None, zoneID, zoneName.strip().replace(" ","_"), (bldgProgram, zoneProgram), isConditioned)
     
     for hbSrf in HBSurfaces:
         HBZone.addSrf(hbSrf)

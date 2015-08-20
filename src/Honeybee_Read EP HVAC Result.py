@@ -1,32 +1,51 @@
-# By Chris Mackey
-# Chris@MackeyArchitecture.com
-# Ladybug started by Mostapha Sadeghipour Roudsari is licensed
-# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+#
+# Honeybee: A Plugin for Environmental Analysis (GPL) started by Mostapha Sadeghipour Roudsari
+# 
+# This file is part of Honeybee.
+# 
+# Copyright (c) 2013-2015, Chris Mackey <Chris@MackeyArchitecture.com> 
+# Honeybee is free software; you can redistribute it and/or modify 
+# it under the terms of the GNU General Public License as published 
+# by the Free Software Foundation; either version 3 of the License, 
+# or (at your option) any later version. 
+# 
+# Honeybee is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of 
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with Honeybee; If not, see <http://www.gnu.org/licenses/>.
+# 
+# @license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
+
 
 """
 This component reads the results of an EnergyPlus simulation from the WriteIDF Component or any EnergyPlus result .csv file address.  Note that, if you use this component without the WriteIDF component, you should make sure that a corresponding .eio file is next to your .csv file at the input address that you specify.
 _
-This component reads only the results related to zone ideal air HVAC systems.  For other results related to zones, you should use the "Honeybee_Read EP Result" component and, for results related to surfaces, you should use the "Honeybee_Read EP Surface Result" component.
+This component reads only the results related to zone ideal air and earth tube HVAC systems.  For other results related to zones, you should use the "Honeybee_Read EP Result" component and, for results related to surfaces, you should use the "Honeybee_Read EP Surface Result" component.
 
 -
-Provided by Honeybee 0.0.56
+Provided by Honeybee 0.0.57
     
     Args:
         _resultFileAddress: The result file address that comes out of the WriteIDF component.
         normByFloorArea_: Set to 'True' to normalize all zone energy data by floor area (note that the resulting units will be kWh/m2 as EnergyPlus runs in the metric system). The default is set to "False."
     Returns:
-        sensibleCooling: The sensible energy removed by the ideal air cooling load for each zone in kWh.
-        latentCooling: The latent energy removed by the ideal air cooling load for each zone in kWh.
-        sensibleHeating: The sensible energy added by the ideal air heating load for each zone in kWh.
-        latentHeating: The latent energy added by the ideal air heating load for each zone in kWh.
+        sensibleCooling: The sensible energy removed by the ideal air cooling system for each zone in kWh.
+        latentCooling: The latent energy removed by the ideal air cooling system for each zone in kWh.
+        sensibleHeating: The sensible energy added by the ideal air heating system for each zone in kWh.
+        latentHeating: The latent energy added by the ideal air heating system for each zone in kWh.
         supplyMassFlow: The mass of supply air flowing into each zone in kg/s.
         supplyAirTemp: The mean air temperature of the supply air for each zone (degrees Celcius).
         supplyAirHumidity: The relative humidity of the supply air for each zone (%).
+        earthTubeCooling: The sensible energy removed by an earth tube system for each zone in kWh.
+        earthTubeHeating: The sensible energy added by an earth tube system for each zone in kWh.
 """
 
 ghenv.Component.Name = "Honeybee_Read EP HVAC Result"
 ghenv.Component.NickName = 'readEP_HVAC_Result'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -125,10 +144,12 @@ latentHeating = DataTree[Object]()
 supplyMassFlow = DataTree[Object]()
 supplyAirTemp = DataTree[Object]()
 supplyAirHumidity = DataTree[Object]()
+earthTubeCooling = DataTree[Object]()
+earthTubeHeating = DataTree[Object]()
 
 
 #Make a list to keep track of what outputs are in the result file.
-dataTypeList = [False, False, False, False, False, False, False]
+dataTypeList = [False, False, False, False, False, False, False, False, False]
 parseSuccess = False
 
 #Make a function to add headers.
@@ -217,6 +238,18 @@ if _resultFileAddress and gotData == True:
                             makeHeader(supplyAirHumidity, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Supply Air Relative Humidity", "%", False)
                             dataTypeList[6] = True
                     
+                    elif 'Earth Tube Zone Sensible Cooling Energy' in column:
+                        key.append(7)
+                        zoneName = checkZone(" " + column.split(':')[0])
+                        makeHeader(earthTubeCooling, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Earth Tube Cooling Energy", "kWh", True)
+                        dataTypeList[7] = True
+                    
+                    elif 'Earth Tube Zone Sensible Heating Energy' in column:
+                        key.append(8)
+                        zoneName = checkZone(" " + column.split(':')[0])
+                        makeHeader(earthTubeHeating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Earth Tube Heating Energy", "kWh", True)
+                        dataTypeList[8] = True
+                    
                     else:
                         key.append(-1)
                         path.append(-1)
@@ -243,6 +276,10 @@ if _resultFileAddress and gotData == True:
                         supplyAirTemp.Add(float(column), p)
                     elif key[columnCount] == 6:
                         supplyAirHumidity.Add(float(column), p)
+                    elif key[columnCount] == 7:
+                        earthTubeCooling.Add((float(column)/3600000)/flrArea, p)
+                    elif key[columnCount] == 8:
+                        earthTubeHeating.Add((float(column)/3600000)/flrArea, p)
                     
         result.close()
         parseSuccess = True
@@ -271,12 +308,14 @@ outputsDict = {
 3: ["latentHeating", "The latent energy added by the ideal air heating load for each zone in kWh."],
 4: ["supplyMassFlow", "The mass of supply air flowing into each zone in kg/s."],
 5: ["supplyAirTemp", "The mean air temperature of the supply air for each zone (degrees Celcius)."],
-6: ["supplyAirHumidity", "The relative humidity of the supply air for each zone (%)."]
+6: ["supplyAirHumidity", "The relative humidity of the supply air for each zone (%)."],
+7: ["earthTubeCooling", "The sensible energy removed by an earth tube system for each zone in kWh."],
+8: ["earthTubeHeating", "The sensible energy added by an earth tube system for each zone in kWh."]
 }
 
 
 if _resultFileAddress and parseSuccess == True:
-    for output in range(7):
+    for output in range(9):
         if dataTypeList[output] == False:
             ghenv.Component.Params.Output[output].NickName = "."
             ghenv.Component.Params.Output[output].Name = "."
@@ -286,7 +325,7 @@ if _resultFileAddress and parseSuccess == True:
             ghenv.Component.Params.Output[output].Name = outputsDict[output][0]
             ghenv.Component.Params.Output[output].Description = outputsDict[output][1]
 else:
-    for output in range(7):
+    for output in range(9):
         ghenv.Component.Params.Output[output].NickName = outputsDict[output][0]
         ghenv.Component.Params.Output[output].Name = outputsDict[output][0]
         ghenv.Component.Params.Output[output].Description = outputsDict[output][1]

@@ -1,8 +1,25 @@
 # This component colors zones based on an energy simulation output.
-# By Chris Mackey
-# Chris@MackeyArchitecture.com
-# Ladybug started by Mostapha Sadeghipour Roudsari is licensed
-# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+#
+# Honeybee: A Plugin for Environmental Analysis (GPL) started by Mostapha Sadeghipour Roudsari
+# 
+# This file is part of Honeybee.
+# 
+# Copyright (c) 2013-2015, Chris Mackey <Chris@MackeyArchitecture.com> 
+# Honeybee is free software; you can redistribute it and/or modify 
+# it under the terms of the GNU General Public License as published 
+# by the Free Software Foundation; either version 3 of the License, 
+# or (at your option) any later version. 
+# 
+# Honeybee is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of 
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with Honeybee; If not, see <http://www.gnu.org/licenses/>.
+# 
+# @license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
+
 
 """
 Use this component to color zones based on EnergyPlus data out of the "Honeybee_Read EP Result" component or zone comfort analyses out of the comfort calculator components.
@@ -11,7 +28,7 @@ By default, zones will be colored based on total energy per unit floor area of t
 If total annual simulation data has been connected, the analysisPeriod_ input can be used to select out a specific period fo the year for coloration.
 In order to color zones by individual hours/months, connecting interger values to the "stepOfSimulation_" will allow you to scroll though each step of the input data.
 -
-Provided by Honeybee 0.0.56
+Provided by Honeybee 0.0.57
     
     Args:
         _zoneData: A list zone data out of the Read EP Result component or the comfort calculator components that have zone data hooked up to them.
@@ -37,7 +54,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Color Zones by EP Result"
 ghenv.Component.NickName = 'ColorZones'
-ghenv.Component.Message = 'VER 0.0.56\nAPR_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_22_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -194,40 +211,18 @@ def checkTheInputs():
         if "Floor Normalized" in dataType:
             normable = False
             total = True
-        elif "Total Thermal Energy for" in dataType: normable = True
-        elif "Thermal Energy Balance for" in dataType: normable = True
-        elif "Cooling Energy for" in dataType: normable = True
-        elif "Heating Energy for" in dataType: normable = True
-        elif "Electric Lighting Energy for" in dataType: normable = True
-        elif "Electric Equipment Energy for" in dataType: normable = True
-        elif "People Energy for" in dataType: normable = True
-        elif "Total Solar Gain for" in dataType: normable = True
-        elif "Solar Beam Energy for" in dataType: normable = True
-        elif "Solar Diffuse Energy for" in dataType: normable = True
-        elif "Infiltration Energy for" in dataType: normable = True
-        elif "Natural Ventilation Energy for" in dataType: normable = True
-        elif "Operative Temperature for" in dataType: normable = False
-        elif "Air Temperature for" in dataType: normable = False
-        elif "Radiant Temperature for" in dataType: normable = False
-        elif "Zone Air Relative Humidity" in dataType: normable = False
+        elif "Energy" in dataType: normable = True
+        elif "Gain" in dataType: normable = True
+        elif "Loss" in dataType: normable = True
+        elif "Temperature" in dataType: normable = False
+        elif "Humidity" in dataType: normable = False
         elif "Predicted Mean Vote" in dataType: normable = False
         elif "Percentage of People Dissatisfied" in dataType: normable = False
-        elif "Standard Effective Temperature" in dataType: normable = False
         elif "Comfortable Or Not" in dataType: normable = False
-        elif "Adaptive Comfort" in dataType: normable = False
-        elif "Degrees from Target Temperature" in dataType: normable = False
-        elif "Adaptive Target Temperature" in dataType: normable = False
+        elif "Comfort" in dataType: normable = False
         elif "Universal Thermal Climate Index" in dataType: normable = False
-        elif "Outdoor Comfort" in dataType: normable = False
-        elif "Sensible Cooling Energy" in dataType: normable = True
-        elif "Latent Cooling Energy" in dataType: normable = True
-        elif "Sensible Heating Energy" in dataType: normable = True
-        elif "Latent Heating Energy" in dataType: normable = True
-        elif "Supply Air Mass Flow Rate" in dataType: normable = True
-        elif "Supply Air Temperature" in dataType: normable = False
-        elif "Supply Air Relative Humidity" in dataType: normable = False
-        elif "Air Flow Volume" in dataType: normable = True
-        elif "Air Heat Gain Rate" in dataType: normable = False
+        elif "Mass" in dataType: normable = True
+        elif "Volume" in dataType: normable = True
         else:
             normable = False
             warning = "Component cannot tell what data type is being connected.  Data will be averaged for each zone by default."
@@ -242,6 +237,7 @@ def checkTheInputs():
         dataHeaders = []
         warning = "Component cannot tell what data type is being connected.  Data will be averaged for each zone by default."
         print warning
+    
     
     if checkData4 == True and checkData5 == True:
         checkData = True
@@ -277,15 +273,11 @@ def checkZones(zoneHeaders, pyZoneData, hb_zoneData):
     
     return finalZoneNames, zoneFlrAreas, newZoneFloors, newPyZoneData, newZoneHeaders, newZoneBreps
 
-def manageInputOutput(annualData, simStep, zoneNormalizable):
+def manageInputOutput(annualData, simStep, zoneNormalizable, zoneHeaders, pyZoneData):
     #If some of the component inputs and outputs are not right, blot them out or change them.
     for input in range(9):
         if input == 3 and zoneNormalizable == False:
             ghenv.Component.Params.Input[input].NickName = "__________"
-            ghenv.Component.Params.Input[input].Name = "."
-            ghenv.Component.Params.Input[input].Description = " "
-        elif input == 4 and annualData == False:
-            ghenv.Component.Params.Input[input].NickName = "___________"
             ghenv.Component.Params.Input[input].Name = "."
             ghenv.Component.Params.Input[input].Description = " "
         elif input == 4 and simStep == "TimeStep":
@@ -313,12 +305,36 @@ def manageInputOutput(annualData, simStep, zoneNormalizable):
     
     if zoneNormalizable == False: normByFlr = False
     else: normByFlr = normalizeByFloorArea_
-    if annualData == False: analysisPeriod = [0, 0]
-    else: analysisPeriod = analysisPeriod_
     if simStep == "Annually" or simStep == "unknown timestep": stepOfSimulation = None
     else: stepOfSimulation = stepOfSimulation_
     
-    return normByFlr, analysisPeriod, stepOfSimulation
+    #If there is not annual data and the analysis period is connected, check to be sure that the two align.
+    periodsAlign = True
+    if len(analysisPeriod_) > 0 and annualData == False and stepOfSimulation == None:
+        annualData = True
+        analysisPeriod = analysisPeriod_
+        #Check the data anlysis period and subtract the start day from each of the HOYs.
+        HOYS, months, days = lb_preparation.getHOYsBasedOnPeriod(analysisPeriod_, 1)
+        FinalHOYs, mon, days = lb_preparation.getHOYsBasedOnPeriod([zoneHeaders[0][5], zoneHeaders[0][6]], 1)
+        for hCount, hour in enumerate(HOYS):
+            HOYS[hCount] = hour - FinalHOYs[0]
+        
+        #Check to see if the hours of the requested analysis period are in the comfResultsMtx.
+        for hour in HOYS:
+            if hour < 0: periodsAlign = False
+            try: pyZoneData[0][hour]
+            except: periodsAlign = False
+    elif annualData == False: analysisPeriod = [0, 0]
+    else: analysisPeriod = analysisPeriod_
+    
+    
+    if periodsAlign == True:
+        return normByFlr, analysisPeriod, stepOfSimulation, annualData
+    else:
+        warning = 'The analysis period of the zoneData_ and that which is plugged into the analysisPeriod_ of this component do not align.'
+        print warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+        return -1
 
 def restoreInputOutput():
     for input in range(9):
@@ -669,7 +685,9 @@ if _zoneData.BranchCount > 0 and str(_zoneData) != "tree {0}" and initCheck == T
 
 #Manage the inputs and outputs of the component based on the data that is hooked up.
 if checkData == True:
-    normByFlr, analysisPeriod, stepOfSimulation = manageInputOutput(annualData, simStep, zoneNormalizable)
+     dataInfo = manageInputOutput(annualData, simStep, zoneNormalizable, zoneHeaders, pyZoneData)
+     if dataInfo != -1: normByFlr, analysisPeriod, stepOfSimulation, annualData = dataInfo
+     else: checkData = False
 else: restoreInputOutput()
 
 #If the data is meant to be normalized by floor area, check the zones.

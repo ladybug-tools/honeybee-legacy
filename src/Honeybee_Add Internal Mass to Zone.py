@@ -1,8 +1,25 @@
 # This component assigns internal masses to zones
-# By Chris Mackey
-# Chris@MackeyArchitecture.com
-# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
-# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+#
+# Honeybee: A Plugin for Environmental Analysis (GPL) started by Mostapha Sadeghipour Roudsari
+# 
+# This file is part of Honeybee.
+# 
+# Copyright (c) 2013-2015, Chris Mackey <Chris@MackeyArchitecture.com> 
+# Honeybee is free software; you can redistribute it and/or modify 
+# it under the terms of the GNU General Public License as published 
+# by the Free Software Foundation; either version 3 of the License, 
+# or (at your option) any later version. 
+# 
+# Honeybee is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of 
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with Honeybee; If not, see <http://www.gnu.org/licenses/>.
+# 
+# @license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
+
 
 """
 Use this component to assign internal thermal masses to zones, which can be used to account for the effects of furniture inside zones or massive building components like hearths and chimneys.
@@ -12,7 +29,7 @@ _
 Note that internal masses assigned this way cannot "see" solar radiation that may potentially hit them and, as such, caution should be taken when using this component with internal mass objects that are not always in shade.
 Masses are only factored into the the thermal calculations of the zone by undergoing heat transfer with the indoor air.
 -
-Provided by Honeybee 0.0.56
+Provided by Honeybee 0.0.57
 
     Args:
         _HBZones: HBZones for which internal masses are to be assigned.
@@ -29,7 +46,7 @@ Provided by Honeybee 0.0.56
 
 ghenv.Component.Name = "Honeybee_Add Internal Mass to Zone"
 ghenv.Component.NickName = 'addInternalMass'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_01_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_11_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -71,7 +88,7 @@ def checkTheInputs():
         
         #Number is a single value to applied to all connected zones.
         if len(_srfsOrSrfArea) == 1:
-            srfAreas = duplicateData(float(_srfsOrSrfArea[0]), len(_HBZones))
+            srfAreas = duplicateData([float(_srfsOrSrfArea[0])], len(_HBZones))
             checkData1 = True
         #Number is list of numbers that match the connected zones.
         elif len(_srfsOrSrfArea) == len(_HBZones):

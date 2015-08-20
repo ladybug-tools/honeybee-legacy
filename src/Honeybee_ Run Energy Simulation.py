@@ -1,15 +1,32 @@
 # This component exports HBZones into an IDF file
-# By Mostapha Sadeghipour Roudsari and Chris Mackey
-# Sadeghipour@gmail.com and Chris@MackeyArchitecture.com
-# Ladybug started by Mostapha Sadeghipour Roudsari is licensed
-# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+#
+# Honeybee: A Plugin for Environmental Analysis (GPL) started by Mostapha Sadeghipour Roudsari
+# 
+# This file is part of Honeybee.
+# 
+# Copyright (c) 2013-2015, Mostapha Sadeghipour Roudsari and Chris Mackey <Sadeghipour@gmail.com and Chris@MackeyArchitecture.com> 
+# Honeybee is free software; you can redistribute it and/or modify 
+# it under the terms of the GNU General Public License as published 
+# by the Free Software Foundation; either version 3 of the License, 
+# or (at your option) any later version. 
+# 
+# Honeybee is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of 
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with Honeybee; If not, see <http://www.gnu.org/licenses/>.
+# 
+# @license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
+
 
 """
 Use this component to export HBZones into an IDF file, and run them through EnergyPlus.
 _
 The component outputs the report from the simulation, the file path of the IDF file, and the CSV result file from the EnergyPlus run.
 -
-Provided by Honeybee 0.0.56
+Provided by Honeybee 0.0.57
     Args:
         north_: Input a vector to be used as a true North direction for the energy simulation or a number between 0 and 360 that represents the degrees off from the y-axis to make North.  The default North direction is set to the Y-axis (0 degrees).
         _epwFile: An .epw file path on your system as a text string.
@@ -45,7 +62,7 @@ Provided by Honeybee 0.0.56
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.56\nMAY_31_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_11_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_28_2015
@@ -405,7 +422,7 @@ class WriteIDF(object):
         return sizingString
     
     def EPVersion(self, version = 8.1):
-        return '\nVersion, ' + `version` + ';\n'
+        return '\nVersion, ' + version + ';\n'
     
     def EPTimestep(self, timestep = 6):
         return '\nTimestep, ' + `timestep` + ';\n'
@@ -1230,7 +1247,6 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         " Use updateHoneybee component to update userObjects.\n" + \
         "If you have already updated userObjects drag Honeybee_Honeybee component " + \
         "into canvas and try again."
-        w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, warning)
         return -1
 
@@ -1241,11 +1257,24 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         " Use updateLadybug component to update userObjects.\n" + \
         "If you have already updated userObjects drag Ladybug_Ladybug component " + \
         "into canvas and try again."
-        w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, warning)
         return -1
     
+    # make sure EnergyPlus folder is found
+    EPPath = sc.sticky["honeybee_folders"]["EPPath"]
     
+    if EPPath == None:
+        # give a warning to the user
+        
+        msg= "Honeybee cannot find a compatible EnergyPlus folder on your system.\n" + \
+             "Make sure you have EnergyPlus installed on your system.\n" + \
+             "You won't be able to run energy simulations without EnergyPlus.\n" +\
+             "Check Honeybee_Honeybee component for more information."
+        
+        print msg
+        ghenv.Component.AddRuntimeMessage(w, msg)
+        return -1
+        
     # make sure epw file address is correct
     if not epwFileAddress.endswith(epwFileAddress) or not os.path.isfile(epwFileAddress):
         msg = "Wrong weather file!"

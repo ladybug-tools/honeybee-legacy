@@ -1,12 +1,29 @@
-# By Mostapha Sadeghipour Roudsari
-# Sadeghipour@gmail.com
-# Honeybee started by Mostapha Sadeghipour Roudsari is licensed
-# under a Creative Commons Attribution-ShareAlike 3.0 Unported License.
+#
+# Honeybee: A Plugin for Environmental Analysis (GPL) started by Mostapha Sadeghipour Roudsari
+# 
+# This file is part of Honeybee.
+# 
+# Copyright (c) 2013-2015, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
+# Honeybee is free software; you can redistribute it and/or modify 
+# it under the terms of the GNU General Public License as published 
+# by the Free Software Foundation; either version 3 of the License, 
+# or (at your option) any later version. 
+# 
+# Honeybee is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of 
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with Honeybee; If not, see <http://www.gnu.org/licenses/>.
+# 
+# @license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
+
 
 """
 Use this component to separate grafed lists of surface data that come out of the "Honeybee_Read EP Surface Result" component based on rough surface type.  This component separates all surface types but takes sevaral seconds to load and requires HBZones.  For a quicker splitting of data, use the "Honeybee_Surface Data Based On Type" component.
 -
-Provided by Honeybee 0.0.56
+Provided by Honeybee 0.0.57
 
     Args:
         _HBZone: Honeybee Zones for which you are interested in surface data.
@@ -27,7 +44,7 @@ Provided by Honeybee 0.0.56
 """
 ghenv.Component.Name = "Honeybee_Surface Data Based On Type Detailed"
 ghenv.Component.NickName = 'srfDataByTypeDetailed'
-ghenv.Component.Message = 'VER 0.0.56\nFEB_03_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -126,7 +143,7 @@ def getSrfNames(HBZones):
             # Roof
             elif srf.type == 1:
                 if srf.hasChild:
-                    roof.append(srf.punchedGeometry)
+                    roof.append(srf.name)
                     for childSrf in srf.childSrfs:
                         skylight.append(childSrf.name)
                 else:
@@ -172,9 +189,9 @@ def main(HBZones, srfData):
     wall, interiorWall, airWall, window, interiorWindow, skylight, roof, ceiling, floor, exposedFloor, groundFloor, undergroundWall, undergroundCeiling = getSrfNames(HBZones)
     
     #Write a function to check if a name is in the list.
-    def checkList(list, dataTree, name, branchList, branchPath):
+    def checkList(theList, dataTree, name, branchList, branchPath):
         itemFound = False
-        for srf in list:
+        for srf in theList:
             if srf.upper() == name:
                 for item in branchList: dataTree.Add(item, branchPath)
                 itemFound = True
