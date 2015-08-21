@@ -855,7 +855,6 @@ class WriteIDF(object):
         if scheduleName.lower().endswith(".csv"):
             # check if the schedule is already created
             if scheduleName.upper() in self.fileBasedSchedules.keys(): return "\n"
-            
             # set up default values
             schTypeLimitStr = "\n"
             schTypeLimitName = "Fraction"
@@ -898,7 +897,8 @@ class WriteIDF(object):
                         try: numOfHours *= int(line.split(",")[0])
                         except: pass
             
-            
+            # scheduleStr writes the section Schedule:File in the EnergyPlus file
+            # for custom schedules.
             scheduleStr = schTypeLimitStr + \
                           "Schedule:File,\n" + \
                           scheduleObjectName + ",\t!- Name\n" + \
@@ -908,7 +908,7 @@ class WriteIDF(object):
                           "4,\t!- Rows To Skip\n" + \
                           str(int(numOfHours)) + ",\t!- Hours of Data\n" + \
                           "Comma;\t!- Column Separator\n"
-            
+
             return scheduleStr
             
         if scheduleName in sc.sticky ["honeybee_ScheduleLib"].keys():
@@ -939,10 +939,22 @@ class WriteIDF(object):
         '\t' + 'regular;                 !- Key Field' + '\n'
         
     def EarthTube(self,zone):
+        
+        if zone.ETschedule.upper().endswith('CSV'):
+            
+            # For custom schedule
+            
+            scheduleFileName = os.path.basename(zone.ETschedule)
+
+            scheduleObjectName = "_".join(scheduleFileName.split(".")[:-1]).upper()
+            
+            earthTubeSched = scheduleObjectName
+           
+        else: earthTubeSched = zone.ETschedule
     
         return '\nZoneEarthtube,\n' + \
             '\t' + zone.name + ',\t!- Zone Name\n' + \
-            '\t' + str(zone.ETschedule) + ',\t!- Schedule Name\n'+\
+            '\t' + str(earthTubeSched) + ',\t!- Schedule Name\n'+\
             '\t' + str(zone.design_flow_rate) + ',\t!- Design Flow Rate {m3/s}\n'+\
             '\t' + str(zone.mincooltemp) + ',\t!- Minimum Zone Temperature when Cooling {C}\n'+\
             '\t' + str(zone.maxheatingtemp) + ',\t!- Maximum Zone Temperature when Heating {C}\n'+\
@@ -1373,7 +1385,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     
     #Ground Temperatures.
     if grndTemps == []:
-        groundtemp = lb_preparation.groundTempData(_epwFile,[])
+        groundtemp = lb_preparation.groundTempData(_epwFile,[]) # XXX Print unwanted average temperatures at 3 different depths
         groundtempNum = groundtemp[1][7:]
         for temp in groundtempNum:
             if temp < 18: grndTemps.append(18)
@@ -1870,6 +1882,13 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                     if schedule != None:
                         if schedule.upper() not in EPScheduleCollection: EPScheduleCollection.append(schedule)
                     else: needToWriteMixSched = True
+                    
+            if zone.earthtube == True:
+                
+                if zone.ETschedule.upper() not in EPScheduleCollection:
+                    
+                    EPScheduleCollection.append(zone.ETschedule)
+                
     
     # Write Schedules
     for schedule in EPScheduleCollection:
@@ -1884,6 +1903,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
             pass
             
         elif scheduleValues!=None:
+
             idfFile.write(hb_writeIDF.EPSCHStr(schedule))
             
             if scheduleValues[0].lower() == "schedule:year":
@@ -1999,6 +2019,8 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     
     # request an output variable dictionary.
     idfFile.write(hb_writeIDF.requestVarDict())
+    
+    print 
     
     # write the outputs requested by the user.
     if simulationOutputs:
