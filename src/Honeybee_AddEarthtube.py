@@ -49,6 +49,7 @@ Provided by Honeybee 0.0.57
         -
         F is the name of the schedule that modifies the maximum design volume flow rate parameter . This fraction between 0.0 and 1.0 is noted as Fschedule in the EarthTubeFlowRate equation the  .
         _designFlowrates: This field can be a float or a list of floats which correspond sequentially to the _HBZones. Each float (noted as Edesign in the EarthTubeFlowRate equation) is the maximum amount of air mass flow rate of the earth tube expected at design conditions the default is 0 m3/s.
+        If no flow rate is given for a zone the default will be used.
         -
         The flow rate is expressed in units of m3/s. The design value is modified by the schedule fraction and user specified coefficients (Open this component to see the equation).
         _mincoolingTemps_: This field can be a float or a list of floats which correspond sequentially to the _HBZones.
@@ -56,43 +57,46 @@ Provided by Honeybee 0.0.57
         Each float is the indoor temperature (in Celsius) below which the earth tube is shut off the default is -100 degrees C. This lower temperature limit is intended to avoid overcooling a space and thus result in a heating load.
         -
         For example, if the user specifies a minimum temperature of 20 C, earth tube is assumed to be available if the zone air temperature is above 20 C. If the zone air temperature drops below 20C, then earth tube is automatically turned off.
+        If no temperature is given for a zone the default will be used.
         _maxheatingTemps_: 
         This field can be a float or a list of floats which correspond sequentially to the _HBZones. Each float is the indoor temperature (in Celsius) above which the earth tube is shut off the default is 100 degrees C.
         -
         This higher temperature limit is intended to avoid overheating a space and thus result in a cooling load.For example, if the user specifies a maximum temperature of 20 C, earth tube is assumed to be available if the zone air temperature is below 20 C. 
         -
-        If the zone air temperature rises above 20C, then earth tube is automatically turned off.
+        If the zone air temperature rises above 20C, then earth tube is automatically turned off. If no temperature is given for a zone the default will be used.
         
-        _deltaTemps_: This field can be a float or a list of floats which correspond sequentially to the _HBZones. Each float is the temperature difference (in Celsius) between the indoor and outdoor air dry-bulb temperatures below which the earth tube is shut off the default is 2 degrees C. 
+        _deltaTemps_: This field can be a float or a list of floats which correspond sequentially to the _HBZones. Each float is the temperature difference (in Celsius) between the indoor and outdoor air dry-bulb temperatures below which the earth tube is shut off the default is 2 degrees C.
+        
         -
-        This is to allow the earth tube to be stopped either if the temperature outside is too warm and could potentially heat the space or if the temperature outside is too cold and could potentially cool the space. For example, if the user specifies a delta temperature of 2C, earth tube is assumed to be available if the temperature difference between indoor and outdoor temperature is at least 2 C. 
+        This is to allow the earth tube to be stopped either if the temperature outside is too warm and could potentially heat the space or if the temperature outside is too cold and could potentially cool the space. For example, if the user specifies a delta temperature of 2C, earth tube is assumed to be available if the temperature difference between indoor and outdoor temperature is at least 2 C
         -
         If the outside air dry-bulb temperature is less than 2C cooler or warmer than the indoor dry-bulb temperature, then the earth tube is automatically turned off.
+        If no temperature is given for a zone the default will be used.
         _earthTubeTypes_: This field can be integer or a list of integers between 1 and 3 which correspond sequentially to the _HBZones. Each integer from 1 to 3 defines the type of earth tube as one of the following options: Natural a value of 1, Exhaust a value of 2, or Intake a value of 3. 
         -
         A natural earth tube is assumed to be air movement/exchange that will not consume any fan energy or is the result of natural air flow through the tube and into the building. Values for fan pressure and efficiency for a natural flow earth tube are ignored. For either Exhaust or Intake, values for fan pressure and efficiency define the fan electric consumption. 
         -
         For Natural and Exhaust earth tubes, the conditions of the air entering the space are assumed to be equivalent to the air which is cooled or heated by passing along the pipe.
         -
-        For Intake earth tubes, an appropriate amount of fan heat is added to the air stream. The default is a Natural Earthtube
-        _fanPrises_: This field can be a float or a list of floats which correspond sequentially to the _HBZones. Each float is the pressure rise experienced across the fan in Pascals (N/m2) the default is 150 Pascals. 
+        For Intake earth tubes, an appropriate amount of fan heat is added to the air stream. The default is a Natural Earthtube and this will be used if no earth tube type is given for the zone.
+        _fanPrises_: This field can be a float or a list of floats which correspond sequentially to the _HBZones. Each float is the pressure rise experienced across the fan in Pascals (N/m2) the default is 150 Pascals which will be used if no value is given for a zone.
         -
         This is a function of the fan and plays a role in determining the amount of energy consumed by the fan.
-        _fanEfficiencies_: This field can be a float or a list of floats between 0 and 1 which correspond sequentially to the _HBZones. Each float is the earth tube fan efficiency which is a decimal number between 0.0 and 1.0 the default is 1. 
+        _fanEfficiencies_: This field can be a float or a list of floats between 0 and 1 which correspond sequentially to the _HBZones. Each float is the earth tube fan efficiency which is a decimal number between 0.0 and 1.0 the default is 1 which will be used if no value is given for a zone.
         -
-        This is a function of the fan and plays a role in determining the amount of energy consumed by the fan.        _pipeRadii_: This field can be a float or a list of floats which correspond sequentially to the _HBZones. Each float is the radius of the earth tube(in meters) the default is 0.5 meter. This plays a role in determining the amount of heat transferred from the surrounding soil to the air passing along the pipe. 
+        This is a function of the fan and plays a role in determining the amount of energy consumed by the fan.        _pipeRadii_: This field can be a float or a list of floats which correspond sequentially to the _HBZones. Each float is the radius of the earth tube(in meters) the default is 0.5 meter which will be used if no value is given for a zone. This plays a role in determining the amount of heat transferred from the surrounding soil to the air passing along the pipe. 
         -
-        If the pipe has non-circular cross section, user can use the concept of hydraulic diameter where Radius = 2*Area/Perimeter.        _pipeThicknesses_: This field can be a float or a list of floats which correspond sequentially to the _HBZones. Each float is the thickness of the earth tube wall (in meters) the default is 0.2 meters. 
+        If the pipe has non-circular cross section, user can use the concept of hydraulic diameter where Radius = 2*Area/Perimeter.        _pipeThicknesses_: This field can be a float or a list of floats which correspond sequentially to the _HBZones. Each float is the thickness of the earth tube wall (in meters) the default is 0.2 meters which will be used if no value is given for a zone. 
         -
         This plays a role in determining the amountof heat transferred from the surrounding soil to the air passing along the earth tube.
-        _pipeLengths_: This field can be a float or a list of floats which correspond sequentially to the _HBZones. Each float is the total length of the pipe (in meters) the default is 15 meters. 
+        _pipeLengths_: This field can be a float or a list of floats which correspond sequentially to the _HBZones. Each float is the total length of the pipe (in meters) the default is 15 meters which will be used if no value is given for a zone. 
         -
-        This plays a role in determining the amount of heat transferred from the surrounding soil to the air passing along the pipe. As the length of the pipe becomes longer, the amount of the heat transfer becomes larger        _pipeDepths_: This field can be a float or a list of floats which correspond sequentially to the _HBZones. Each float is the depth of the pipe under the ground surface (in meters) the default is 3 meters. 
+        This plays a role in determining the amount of heat transferred from the surrounding soil to the air passing along the pipe. As the length of the pipe becomes longer, the amount of the heat transfer becomes larger        _pipeDepths_: This field can be a float or a list of floats which correspond sequentially to the _HBZones. Each float is the depth of the pipe under the ground surface (in meters) the default is 3 meters which will be used if no value is given for a zone. 
         -
         This plays a role in determining the temperature of the soil surrounding the pipe.
         _soilCondition_: An integer between 1 to 4 that defines the actual condition of the soil surrounding ALL the earth tubes: HeavyAndSaturated a value of 1, HeavyAndDamp a value of 2, HeavyAndDry a value of 3 or LightAndDry a value of 4. 
         -
-        This determines the thermal diffusivity and thermal conductivity of the surrounding soil, which play a role in determining the amount of heat transferred from the surrounding soil to the air passing along the pipe.
+        This determines the thermal diffusivity and thermal conductivity of the surrounding soil, which play a role in determining the amount of heat transferred from the surrounding soil to the air passing along ALL the pipes.
         -
         The default is 1 - HeavyAndSaturated.
         _conditionGroundSurface_: An integer between 1 to 8 and defines the condition of the ground surface above ALL the earth tubes.
@@ -102,9 +106,10 @@ Provided by Honeybee 0.0.57
         Covered and moist is a value of 6, Covered and arid is a value of 7, Covered and dry is a value of 8 the default is 1 - Bare and wet.
         _pipeThermalConductivity_: This field can be a float or a list of floats which correspond sequentially to the _HBZones. Each float is the thermal conductivity of the pipe (in W/m-K) the default is 200 W/m-K. 
         -
-        This plays a role in determining the amount of heat transferred from the surrounding soil to the air passing along the pipe.
+        This plays a role in determining the amount of heat transferred from the surrounding soil to the air passing along ALL the earth tubes.
         
     Returns:
+        Readme: Details of the earth tubes created.
         earthTubeHBZones: The Honeybee zones that have been modified by this component - these zones now contain an earth tube
 """
 
@@ -120,9 +125,13 @@ except: pass
 import scriptcontext as sc
 import uuid
 import Grasshopper.Kernel as gh
+import Grasshopper
 import os
 import rhinoscriptsyntax as rs
 import itertools
+
+
+readmedatatree = Grasshopper.DataTree[object]()
 
 def checktheinputs(schedules_,_designFlowrates,_mincoolingTemps_,_maxheatingTemps_,_deltaTemps_,_earthTubeTypes_,_fanPrises_,_fanEfficiencies_,_pipeRadii_,_pipeDepths_,_soilCondition_,_conditionGroundSurface_,_pipeThermalConductivity_):
     
@@ -552,15 +561,27 @@ def main(_HBZones,schedules_,_designFlowrates,_mincoolingTemps_,_maxheatingTemps
         zone.veltermflow = '5.9800001E-04'
         zone.velsquflow = '0.0000000E+00'
         
+    
+        message = "Honeybee zone "+ str(zone.name) + " now has an earthtube with the following specifications: \n" + "A operation schedule named " + str(zone.ETschedule) +"\n" + "A design flowrate of " + str(zone.design_flow_rate) +" m3/s "+" \n" + "The minimum zone temperature when cooling is " + str(zone.mincooltemp) + " C " + \
+        " \n" + "The maximum zone temperature when heating is " + str(zone.maxheatingtemp)+ " C " + " \n" + "The temperature difference between the indoor and outdoor air dry-bulb temperatures below which the earth tube is shut off is " + str(zone.delta_temp) + " C " +" \n" + "The earthtube type is " + str(zone.et_type) + \
+        " \n" + "The fan pressure rise across a fan in the earth tube " + str(zone.fanprise) + " Pa " + " \n" + "The efficiency of the fan is (decimal) " + str(zone.efficiency) +" \n" + "The radius of the earth tube is " +str(zone.piperadius) + " m "+ " \n" + "The length of the earth tube is " + str(zone.length) + " m" +" \n" \
+        "The thermal conductivity of the earthtube is " + str(zone.thermal_k) + " W/mC " + " \n" + "The pipe depth under the ground surface is " + str(zone.pipedepth) + " m "
+            
+        readmedatatree.Add(message,gh.Data.GH_Path(zoneCount))
+        
     # Add modified zones to dictionary
-    
-    
+
     ModifiedHBZones = hb_hive.addToHoneybeeHive(HBObjectsFromHive, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
     
     return ModifiedHBZones
     
 
+
+
 if checktheinputs(schedules_,_designFlowrates,_mincoolingTemps_,_maxheatingTemps_,_deltaTemps_,_earthTubeTypes_,_fanPrises_,_fanEfficiencies_,_pipeRadii_,_pipeDepths_,_soilCondition_,_conditionGroundSurface_,_pipeThermalConductivity_) != -1:
 
     if _HBZones and _HBZones[0]!= None:
         earthTubeHBZones = main(_HBZones,schedules_,_designFlowrates,_mincoolingTemps_,_maxheatingTemps_,_deltaTemps_,_earthTubeTypes_,_fanPrises_,_fanEfficiencies_,_pipeRadii_,_pipeThicknesses_,_pipeLengths_,_pipeDepths_,_soilCondition_,_conditionGroundSurface_,_pipeThermalConductivity_)
+        
+        # Create the output Datatree
+        Readme = readmedatatree
