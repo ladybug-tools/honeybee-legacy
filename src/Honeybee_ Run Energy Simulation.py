@@ -2020,8 +2020,6 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     # request an output variable dictionary.
     idfFile.write(hb_writeIDF.requestVarDict())
     
-    print 
-    
     # write the outputs requested by the user.
     if simulationOutputs:
         print "[8 of 8] Writing outputs..."
