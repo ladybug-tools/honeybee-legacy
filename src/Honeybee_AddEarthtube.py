@@ -275,6 +275,8 @@ def checktheinputs(schedules_,_designFlowrates,_mincoolingTemps_,_maxheatingTemp
     schedules = [schedules_]
     HBScheduleList = sc.sticky["honeybee_ScheduleLib"].keys()
     
+    print HBScheduleList
+    
     for scheduleList in schedules:
         for schedule in scheduleList: 
             
