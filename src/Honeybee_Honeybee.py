@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.57\nAUG_19_2015'
+ghenv.Component.Message = 'VER 0.0.57\nAUG_24_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -371,6 +371,7 @@ class PrepareTemplateEPLibFiles(object):
             except:
                 print 'Download failed!!! You need OpenStudioMasterTemplate.idf to use honeybee.' + \
                 '\nPlease check your internet connection, and try again!'
+                return -1
         else:
             pass
         
@@ -391,6 +392,7 @@ class PrepareTemplateEPLibFiles(object):
             except:
                 print 'Download failed!!! You need OpenStudio_Standards.json to use honeybee.' + \
                 '\nPlease check your internet connection, and try again!'
+                return -1
         else:
             pass
         
@@ -402,12 +404,17 @@ class PrepareTemplateEPLibFiles(object):
         else:
             # load the json file
             filepath = os.path.join(workingDir, 'OpenStudio_Standards.json')
-            with open(filepath) as jsondata:
-                openStudioStandardLib = json.load(jsondata)
-            
-            sc.sticky ["honeybee_OpenStudioStandardsFile"] = openStudioStandardLib
-            print "Standard template file is loaded!\n"
-        
+            try:
+                with open(filepath) as jsondata:
+                    openStudioStandardLib = json.load(jsondata)
+                
+                sc.sticky ["honeybee_OpenStudioStandardsFile"] = openStudioStandardLib
+                print "Standard template file is loaded!\n"
+            except:
+                print 'Download failed!!! You need OpenStudio_Standards.json to use honeybee.' + \
+                '\nPlease check your internet connection, and try again!'
+                return -1
+                
         # add cutom library
         customEPLib = os.path.join(workingDir,"userCustomEPLibrary.idf")
         
@@ -7250,7 +7257,7 @@ if checkIn.letItFly:
         else:
             msg = "Failed to load EP constructions! You won't be able to run analysis with Honeybee!\n" + \
                       "Download the files from address below and copy them to: " + sc.sticky["Honeybee_DefaultFolder"] + \
-                      "\nhttps://app.box.com/s/bh9sbpgajdtmmystv3n4"
+                      "\nhttps://github.com/mostaphaRoudsari/Honeybee/tree/master/resources"
             print msg
             ghenv.Component.AddRuntimeMessage(w, msg)
             
