@@ -5195,7 +5195,7 @@ class PV_gen(object):
     Generator:WindTurbine
     """
     
-    def __init__(self,_name,surfacename_,_integrationmode,No_parallel,No_series,cost_module,powerout,namePVperform,SA_solarcells,cell_n,performance_type = "PhotovoltaicPerformance:Simple"):
+    def __init__(self,_name,surfacename_,_integrationmode,No_parallel,No_series,costper_module,powerout,namePVperform,SA_solarcells,cell_n,performance_type = "PhotovoltaicPerformance:Simple"):
         
         self.name = _name
         self.surfacename = surfacename_
@@ -5205,8 +5205,11 @@ class PV_gen(object):
         self.integrationmode = _integrationmode
         self.NOparallel = No_parallel
         self.NOseries = No_series
-        self.cost_ = cost_module
-        self.powerout = powerout
+        # Cost and power out of the Generator is the cost and power of each module by the number of modules in each generator
+        # number in series by number in parallel.
+        
+        self.cost_ = costper_module*No_series*No_parallel
+        self.powerout = powerout*No_series*No_parallel
         
         self.inverter = None # Define the inverter for this PV generator all PVgenerations being used in the same - run energy simulation must have the same inverter
     
