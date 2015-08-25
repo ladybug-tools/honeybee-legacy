@@ -60,7 +60,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_createHBSrfs'
 ghenv.Component.NickName = 'createHBSrfs'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_12_2015'
+ghenv.Component.Message = 'VER 0.0.57\nAUG_25_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -165,7 +165,7 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
                     warningMsg = "If you want to use this model for energy simulation, use addGlazing to add window to surfaces.\n" + \
                                  "It will be fine for Daylighting simulation though."
                     print warningMsg
-                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Remark, warningMsg)
             except:
                 # user uses text as an input (e.g.: wall)
                 # convert it to a number if a valid input
