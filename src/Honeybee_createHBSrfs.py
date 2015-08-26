@@ -60,7 +60,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_createHBSrfs'
 ghenv.Component.NickName = 'createHBSrfs'
-ghenv.Component.Message = 'VER 0.0.57\nAUG_25_2015'
+ghenv.Component.Message = 'VER 0.0.57\nAUG_26_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -118,8 +118,9 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
         # 0. check if user input a name for this surface
         guid = str(uuid.uuid4())
         number = guid.split("-")[-1]
-
+        
         if srfName != None:
+            srfName = srfName.split('_')[0]
             srfName = srfName.strip().replace(" ","_")
             if geometry.Faces.Count != 1:
                 srfName = srfName + "_" + `faceCount`
@@ -127,7 +128,7 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
             # generate a random name
             # the name will be overwritten for energy simulation
             srfName = "".join(guid.split("-")[:-1])
-            
+        
         # 1. create initial surface
         HBSurface = hb_EPZoneSurface(geometry.Faces[faceCount].DuplicateFace(False), number, srfName)
         
