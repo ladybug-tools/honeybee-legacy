@@ -28,6 +28,8 @@ Or by using the analytical method. The difference between the simple and analyti
 -
 Please see more information about wind turbines at: http://bigladdersoftware.com/epx/docs/8-3/input-output-reference/group-electric-load-center.html#generatorwindturbine
 -
+Wind turbines are assumed to have a life time of 25 years.
+-
 Provided by Honeybee 0.0.57
 
     Args:
@@ -273,7 +275,7 @@ def main(_name,_simpleOrAnalytical,_powerControl,_rotorSpeed,_rotorDiameter,over
     
     print " The Height for Local Average Wind Speed for the turbine is " + str(_heightLocalMetrologicalStation) + " meters"
     
-    print " The cost for the turbine is " + str(_turbinecost) + " British Pounds"
+    print " The cost for the turbine is " + str(_turbinecost) + " US dollars"
         
         
     if _simpleOrAnalytical == 1:
@@ -417,7 +419,7 @@ if checktheinputs_template(TemplateMediumTurbine_,TemplateLargeTurbine_,_simpleO
                 
                 
             if _turbinecost == None:
-                _turbinecost = 50000
+                _turbinecost = 77000
             
     if TemplateLargeTurbine_ == True:
         
@@ -442,7 +444,7 @@ if checktheinputs_template(TemplateMediumTurbine_,TemplateLargeTurbine_,_simpleO
                 _numberOfBlades = 3
                 
             if _powerOutput == None:
-                _powerOutput = 250000
+                _powerOutput = 40000
     
             if _ratedWindSpeed == None:
                 _ratedWindSpeed = 12
@@ -469,7 +471,7 @@ if checktheinputs_template(TemplateMediumTurbine_,TemplateLargeTurbine_,_simpleO
                 _heightLocalMetrologicalStation = 50
                 
             if _turbinecost == None:
-                _turbinecost = 200000
+                _turbinecost = 39000
 
 if checktheinputs(_name,_simpleOrAnalytical,_powerCoefficients,_powerControl,_rotorSpeed,_rotorDiameter,overallHeight,_powerOutput,_ratedWindSpeed,_cutInWindSpeed,_cutOutWindspeed,_overallTurbineEfficiency,_maxTipSpeedRatio,_maxPowerCoefficient,_localAvWindspeed,_heightLocalMetrologicalStation,_turbinecost) != -1:
     

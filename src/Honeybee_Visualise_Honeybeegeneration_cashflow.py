@@ -23,7 +23,7 @@
 
 
 """
-Use this component to the calculate and visualise the financial value of Honeybee generation systems. At present you can only create grid connected renewable energy systems without storage. For this reason you must specify both the grid electricity price and fed in tariff rate.
+Use this component to the calculate and visualise the financial value of Honeybee generation systems over 25 years. At present you can only create grid connected renewable energy systems without storage. For this reason you must specify both the grid electricity price and fed in tariff rate.
 -
 The financial value of the Honeybee generator systems is calculated by calculating how much energy is consumed by the facility and produced by the Honeybee generator systems for every hour of the year.
 -
@@ -37,15 +37,14 @@ Provided by Ladybug 0.0.59
     Args:
         _inputData: To use this component please input all the outputs from the component readEP_generation_system_results here
         discountFactor_: An optional input - specify the interest rate as a percentage to calculate a discount factor for each Honeybee generation system. A discount factor is a ratio used to calculate the present value of a future revenue or cost that occurs in any year of the system lifetime (25 years) using the equation - fd = 1/(1+i)^N where: i = real interest rate ,N = number of years. If this field is left blank no discount factor will be applied
-        _gridElectCostSchedule: The cost of grid connected electricty per Kwh in whatever currency the user wishes - (Just make it consistent with other components you are using)
+        _gridElectCostSchedule: The cost of grid connected electricty per Kwh in US dollars
         If you want to specify a flat rate just specify one value this will be used across all the hours of the year.
         Otherwise specify the grid electricity cost for 288 hours of the year that is for each hour of the day for one day in every month of the year.
         Use a list with 288 values to do this.
-        _feedInTariffSchedule: The price that the utility will pay per Kwh in whatever currency the user wishes - (Just make it consistent with other components you are using) for power fed back into the grid. 
+        _feedInTariffSchedule: The price that the utility will pay per Kwh in US dollars for power fed back into the grid. 
         If you want to specify a flat rate just specify one value this will be used across all the hours of the year.
         Otherwise specify the grid electricity cost for 288 hours of the year that is for each hour of the day for one day in every month of the year.
         Use a list with 288 values to do this.
-        currency_: The currency of the financial data, enter either the symbol or a sentence describing the currency e.g - US dollars
         graphDataByHBSystem_: Set to True to visualise the the financial value of each Honeybee generation system.
         graphDataByCost_: Set to True to sum each Honeybee generation system's costs and revenues together and then to visualise these figures by type e.g replacement costs, capital costs etc
         _fontSize_: An optional input, use a float to change the size of the font on the graph.
@@ -1111,41 +1110,23 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                         # Create vertical axis label
                         
                         if (graphDataByHBSystem_ == True) and (graphDataByCost_ == False):
-                            
-                            if currency_ == None:
-                                
-                                # Create vertical axis label
-                                vertical_label = "Honeybee\n" + \
-                                "generation\n" + \
-                                "system net\n" + \
-                                "present cost\n" + \
-                                "(currency not specified)"
-                            else:
-                                
-                                # Create vertical axis label
-                                vertical_label = "Honeybee\n" + \
-                                "generation\n" + \
-                                "system net\n" + \
-                                "present cost\n" + \
-                                currency_
+  
+                            # Create vertical axis label
+                            vertical_label = "Honeybee\n" + \
+                            "generation\n" + \
+                            "system net\n" + \
+                            "present cost\n" + \
+                            " US dollars "
                               
                         if (graphDataByHBSystem_ == False) and (graphDataByCost_ == True):
                             
-                            if currency_ == None:
-                                
-                                # Create vertical axis label
-                                vertical_label = "Net present cost\n" + \
-                                "of all systems\n" + \
-                                "by cost type\n" + \
-                                "(currency not specified)"
-                            else:
-                                
-                                # Create vertical axis label
-                                vertical_label = "Net present cost\n" + \
-                                "of all systems\n" + \
-                                "by cost type\n" + \
-                                currency_
-                            
+
+                            # Create vertical axis label
+                            vertical_label = "Net present cost\n" + \
+                            "of all systems\n" + \
+                            "by cost type\n" + \
+                            " US dollars "
+
                   
                         textSrf = lb_visualization.text2srf([vertical_label], [rc.Geometry.Point3d(startPt.X-(25*_fontSize_),3,startPt.Z)],'Verdana' ,_fontSize_, False)
                         textSrfs.extend(textSrf[0])
@@ -1200,9 +1181,9 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                         
                         if (graphDataByHBSystem_ == False) and (graphDataByCost_ == True):
                         
-                            for costTypeCount,costType in enumerate(["Capital costs","Maintenance costs","Replacement costs","Generation system revenues"]):
+                            for costTypeCount,costType in enumerate(["Capital costs","Generation system revenues","Replacement costs","Maintenance costs"]):
                                 
-                                textSrflegend = lb_visualization.text2srf([str(costType)], [rc.Geometry.Point3d(costTypeCount*35*xS,-int(negDomain+zaxisinterval)*zscale-int(negDomain+zaxisinterval)*zscale*0.2,0)],'Verdana' , _fontSize_, False)
+                                textSrflegend = lb_visualization.text2srf([str(costType)], [rc.Geometry.Point3d(costTypeCount*35.9*xS,-int(negDomain+zaxisinterval)*zscale-int(negDomain+zaxisinterval)*zscale*0.2,0)],'Verdana' , _fontSize_, False)
                                 textSrfs.extend(textSrflegend[0])
                                 dataMeshes.extend(draw2Dgraphbars(rc.Geometry.Point3d(costTypeCount*35*xS,0,-int(negDomain+zaxisinterval)*zscale-int(negDomain+zaxisinterval)*zscale*0.15),width/20,height/30,1,colors[costTypeCount]))
                                    
@@ -1274,17 +1255,9 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                     
                     gensystem_value.Add(str(gensystem_value_sysnames[item]), paths[item])
                     
-                    if currency_ != None:
-                        gensystem_value.Add("Generation system Net present cost in "+str(currency_), paths[item])
-                    else:
-                        
-                        gensystem_value.Add("Generation system Net present cost (currency not specified)", paths[item])
-                        
+                    gensystem_value.Add("Generation system Net present cost in US dollars", paths[item])
+
                     gensystem_value.AddRange(sumBranchesNPC[item], paths[item])
-                
-                # Print a warning about currency
-                if currency_ == None:
-                    print "You have not specified the currency of the financial data that you are using, so no currency will be displayed"
                 
                 # Move graph if necessary
                 if _basePoint_ != None and _basePoint_ != rc.Geometry.Point3d.Origin:

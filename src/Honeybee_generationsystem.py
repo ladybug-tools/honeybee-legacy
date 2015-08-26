@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.57
 
     Args:
         _GeneratorSystemName: The name of this Honeybee generation system please make it unique!
-        _MaintenanceCost: The annual cost of maintaining this Honeybee generation system in whatever currency the user wishes (Just make it consisent with other components)
+        _MaintenanceCost: The annual cost of maintaining this Honeybee generation system in US dollars (Other currencies will be available in the future)
         PVHBSurfaces_: The Honeybee/context surfaces that contain PV generators to be included in this generation system
         HBGenerationObjects_: Honeybee batteries or wind turbines to be included in this generation system 
             

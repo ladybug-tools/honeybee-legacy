@@ -371,7 +371,6 @@ class PrepareTemplateEPLibFiles(object):
             except:
                 print 'Download failed!!! You need OpenStudioMasterTemplate.idf to use honeybee.' + \
                 '\nPlease check your internet connection, and try again!'
-                return -1
         else:
             pass
         
@@ -392,7 +391,6 @@ class PrepareTemplateEPLibFiles(object):
             except:
                 print 'Download failed!!! You need OpenStudio_Standards.json to use honeybee.' + \
                 '\nPlease check your internet connection, and try again!'
-                return -1
         else:
             pass
         
@@ -404,16 +402,11 @@ class PrepareTemplateEPLibFiles(object):
         else:
             # load the json file
             filepath = os.path.join(workingDir, 'OpenStudio_Standards.json')
-            try:
-                with open(filepath) as jsondata:
-                    openStudioStandardLib = json.load(jsondata)
-                
-                sc.sticky ["honeybee_OpenStudioStandardsFile"] = openStudioStandardLib
-                print "Standard template file is loaded!\n"
-            except:
-                print 'Download failed!!! You need OpenStudio_Standards.json to use honeybee.' + \
-                '\nPlease check your internet connection, and try again!'
-                return -1
+            with open(filepath) as jsondata:
+                openStudioStandardLib = json.load(jsondata)
+            
+            sc.sticky ["honeybee_OpenStudioStandardsFile"] = openStudioStandardLib
+            print "Standard template file is loaded!\n"
         
         # add cutom library
         customEPLib = os.path.join(workingDir,"userCustomEPLibrary.idf")
@@ -4699,7 +4692,7 @@ class EPZone(object):
             self.isClosed = False
         if self.isClosed:
             try:
-                planarTrigger = self.checkZoneNormalsDir()
+                self.checkZoneNormalsDir()
             except Exception, e:
                 print 'Checking normal directions failed:\n' + `e`
         
@@ -4849,70 +4842,78 @@ class EPZone(object):
     
     def checkZoneNormalsDir(self):
         
-        def checkSrfNormal(HBSrf, anchorPts, nVecs, planarTrigger):
-            #Find the corresponding surface in the closed zone geometry.
-            for count, cenpt in enumerate(anchorPts):
-                #If the center points are the same, then these two represent the same surface.
-                if cenpt == HBSrf.cenPt:
-                    if nVecs[count] != HBSrf.normalVector:
-                        print "Normal direction for " + HBSrf.name + " is fixed by Honeybee!"
-                        HBSrf.geometry.Flip()
-                        HBSrf.normalVector.Reverse()
-                        HBSrf.basePlane.Flip()
-                        try: HBSrf.punchedGeometry.Flip()
-                        except: pass
-                        if HBSrf.hasChild and HBSrf.isPlanar:
-                            for childSrf in HBSrf.childSrfs:
-                                if childSrf.normalVector != nVecs[count]:
-                                    print "Normal direction for " + childSrf.name + " is fixed by Honeybee!"
-                                    childSrf.geometry.Flip()
-                                    childSrf.normalVector.Reverse()
-                                    childSrf.basePlane.Flip()
-                        elif HBSrf.hasChild:
-                            for childSrf in HBSrf.childSrfs:
-                                print childSrf.normalVector
-                                childSrf.cenPt = rc.Geometry.AreaMassProperties.Compute(childSrf.geometry).Centroid
-                                uv = childSrf.geometry.Faces[0].ClosestPoint(childSrf.cenPt)
-                                childSrf.normalVector = childSrf.geometry.Faces[0].NormalAt(uv[1], uv[2])
-                                #If the childSrfs are differing by more than 45 degrees, there's something wrong and we should flip them.
-                                vecAngleDiff = math.degrees(rc.Geometry.Vector3d.VectorAngle(nVecs[count], childSrf.normalVector))
-                                if vecAngleDiff > 45:
-                                    print "Normal direction for " + childSrf.name + " is fixed by Honeybee!"
-                                    childSrf.geometry.Flip()
-                                    childSrf.normalVector.Reverse()
+        def checkSrfNormal(HBSrf, printAngle = False):
+            #create a plane from the surface
+            srfPlane = rc.Geometry.Plane(HBSrf.cenPt, HBSrf.normalVector)
+            
+            # project center point of the geometry to surface plane
+            projectedPt = srfPlane.ClosestPoint(self.cenPt)
+            
+            # make a vector from the center point of the zone to center point of the surface
+            testVector = rc.Geometry.Vector3d(projectedPt - self.cenPt)
+            # check the direction of the vectors and flip zone surfaces if needed
+            vecAngleDiff = math.degrees(rc.Geometry.Vector3d.VectorAngle(testVector, HBSrf.normalVector))
+            
+            # vecAngleDiff should be 0 otherwise the normal is reversed
+            if printAngle: print vecAngleDiff
+            
+            if vecAngleDiff > 10:
+                print "Normal direction for " + HBSrf.name + " is fixed by Honeybee!"
+                HBSrf.geometry.Flip()
+                HBSrf.normalVector.Reverse()
+                HBSrf.basePlane.Flip()
+                try: HBSrf.punchedGeometry.Flip()
+                except: pass
         
-        #Extract the center points and normal vectors from the closed brep geometry.
-        planarTrigger = False
-        anchorPts = []
-        nVecs = []
-        closedBrepGeo = self.geometry
-        for surface in closedBrepGeo.Faces:
-            if surface.IsPlanar and surface.IsSurface:
-                u_domain = surface.Domain(0)
-                v_domain = surface.Domain(1)
-                centerU = (u_domain.Min + u_domain.Max)/2
-                centerV = (v_domain.Min + v_domain.Max)/2
-                anchorPts.append(surface.PointAt(centerU, centerV))
-                nVecs.append(surface.NormalAt(centerU, centerV))
-            else:
-                planarTrigger = True
-                centroid = rc.Geometry.AreaMassProperties.Compute(surface).Centroid
-                uv = surface.ClosestPoint(centroid)
-                anchorPts.append(surface.PointAt(uv[1], uv[2]))
-                nVecs.append(surface.NormalAt(uv[1], uv[2]))
+        # isPointInside for Breps is buggy, that's why I mesh the geometry here
+        mesh = rc.Geometry.Mesh.CreateFromBrep(self.geometry)
+        joinedMesh = self.joinMesh(mesh)
+        
+        """check normal direction of the surfaces"""
+        MP3D = rc.Geometry.AreaMassProperties.Compute(self.geometry)
+        self.cenPt = MP3D.Centroid
+        MP3D.Dispose()
+        
+        #Check if the centroid is inside the volume.
+        if joinedMesh.IsPointInside(self.cenPt, sc.doc.ModelAbsoluteTolerance, True) != True:
+            # point is not inside so this method can't be used
+            print "Honeybee cannot check normal directions for " + self.name
+            return
         
         for HBSrf in self.surfaces:
-            checkSrfNormal(HBSrf, anchorPts, nVecs, planarTrigger)
-        
-        return planarTrigger
-    
+            checkSrfNormal(HBSrf)
+            if not HBSrf.isChild and HBSrf.hasChild:
+                for childSrf in HBSrf.childSrfs:
+                    checkSrfNormal(childSrf)
+
     def decomposeZone(self, maximumRoofAngle = 30):
         # this method is useufl when the zone is going to be constructed from a closed brep
         # materials will be applied based on the zones construction set
         
         #This check fails for any L-shaped zone so it has been disabled.  We check the normals well elsewhere.
-        def getGHSrfNormal(GHSrf):
+        def checkGHSrfNormal(GHSrf, printAngle = False):
+            
             cenPt, normalVector = self.getSrfCenPtandNormal(surface)
+            
+            #create a plane from the surface
+            #srfPlane = rc.Geometry.Plane(cenPt, normalVector)
+            
+            # project center point of the geometry to surface plane
+            #projectedPt = srfPlane.ClosestPoint(self.cenPt)
+        
+            # make a vector from the center point of the zone to center point of the surface
+            #testVector = rc.Geometry.Vector3d(projectedPt - self.cenPt)
+            # check the direction of the vectors and flip zone surfaces if needed
+            #vecAngleDiff = math.degrees(rc.Geometry.Vector3d.VectorAngle(testVector, normalVector))
+            
+            # vecAngleDiff should be 0 otherwise the normal is reversed
+            #if printAngle:
+            #    print vecAngleDiff
+            #if vecAngleDiff > 10:
+            #    print vecAngleDiff
+            #    GHSrf.Flip()
+            #    normalVector.Reverse()
+        
             return normalVector, GHSrf
             
         # explode zone
@@ -4921,7 +4922,7 @@ class EPZone(object):
             surface = self.geometry.Faces[i].DuplicateFace(False)
             
             # check surface Normal
-            normal, surface = getGHSrfNormal(surface)
+            normal, surface = checkGHSrfNormal(surface)
             
             angle2Z = math.degrees(rc.Geometry.Vector3d.VectorAngle(normal, rc.Geometry.Vector3d.ZAxis))
             
@@ -4981,15 +4982,10 @@ class EPZone(object):
             self.geometry = rc.Geometry.Brep.JoinBreps(srfs, sc.doc.ModelAbsoluteTolerance)[0]
             self.isClosed = self.geometry.IsSolid
             if self.isClosed:
-                planarTrigger = False
                 try:
-                    planarTrigger = self.checkZoneNormalsDir()
+                    self.checkZoneNormalsDir()
                 except Exception, e:
                     print '0_Check Zone Normals Direction Failed:\n' + `e`
-                if planarTrigger == True:
-                    MP3D = rc.Geometry.AreaMassProperties.Compute(self.geometry)
-                    self.cenPt = MP3D.Centroid
-                    MP3D.Dispose()
             else:
                 MP3D = rc.Geometry.AreaMassProperties.Compute(self.geometry)
                 self.cenPt = MP3D.Centroid
@@ -4998,21 +4994,17 @@ class EPZone(object):
             print " Failed to create the geometry from the surface:\n" + `e`
         
     def getSrfCenPtandNormal(self, surface):
-        brepFace = surface.Faces[0]
-        if brepFace.IsPlanar and brepFace.IsSurface:
-            u_domain = brepFace.Domain(0)
-            v_domain = brepFace.Domain(1)
-            centerU = (u_domain.Min + u_domain.Max)/2
-            centerV = (v_domain.Min + v_domain.Max)/2
-            
-            centerPt = brepFace.PointAt(centerU, centerV)
-            normalVector = brepFace.NormalAt(centerU, centerV)
-        else:
-            centroid = rc.Geometry.AreaMassProperties.Compute(brepFace).Centroid
-            uv = brepFace.ClosestPoint(centroid)
-            centerPt = brepFace.PointAt(uv[1], uv[2])
-            normalVector = brepFace.NormalAt(uv[1], uv[2])
         
+        surface = surface.Faces[0]
+        u_domain = surface.Domain(0)
+        v_domain = surface.Domain(1)
+        centerU = (u_domain.Min + u_domain.Max)/2
+        centerV = (v_domain.Min + v_domain.Max)/2
+        
+        centerPt = surface.PointAt(centerU, centerV)
+        normalVector = surface.NormalAt(centerU, centerV)
+        
+        normalVector.Unitize()
         return centerPt, normalVector
 
     def addSrf(self, srf):
@@ -5203,7 +5195,7 @@ class PV_gen(object):
     Generator:WindTurbine
     """
     
-    def __init__(self,_name,surfacename_,_integrationmode,No_parallel,No_series,cost_module,powerout,namePVperform,SA_solarcells,cell_n,performance_type = "PhotovoltaicPerformance:Simple"):
+    def __init__(self,_name,surfacename_,_integrationmode,No_parallel,No_series,costper_module,powerout,namePVperform,SA_solarcells,cell_n,performance_type = "PhotovoltaicPerformance:Simple"):
         
         self.name = _name
         self.surfacename = surfacename_
@@ -5213,8 +5205,11 @@ class PV_gen(object):
         self.integrationmode = _integrationmode
         self.NOparallel = No_parallel
         self.NOseries = No_series
-        self.cost_ = cost_module
-        self.powerout = powerout
+        # Cost and power out of the Generator is the cost and power of each module by the number of modules in each generator
+        # number in series by number in parallel.
+        
+        self.cost_ = costper_module*No_series*No_parallel
+        self.powerout = powerout*No_series*No_parallel
         
         self.inverter = None # Define the inverter for this PV generator all PVgenerations being used in the same - run energy simulation must have the same inverter
     
@@ -6152,20 +6147,16 @@ class hb_EPSurface(object):
                     fenSrf.meshedFace = rc.Geometry.Mesh()
     
     def getSrfCenPtandNormalAlternate(self):
-        brepFace = self.geometry.Faces[0]
-        if brepFace.IsPlanar and brepFace.IsSurface:
-            u_domain = brepFace.Domain(0)
-            v_domain = brepFace.Domain(1)
-            centerU = (u_domain.Min + u_domain.Max)/2
-            centerV = (v_domain.Min + v_domain.Max)/2
-            
-            centerPt = brepFace.PointAt(centerU, centerV)
-            normalVector = brepFace.NormalAt(centerU, centerV)
-        else:
-            centroid = rc.Geometry.AreaMassProperties.Compute(brepFace).Centroid
-            uv = brepFace.ClosestPoint(centroid)
-            centerPt = brepFace.PointAt(uv[1], uv[2])
-            normalVector = brepFace.NormalAt(uv[1], uv[2])
+        surface = self.geometry.Faces[0]
+        u_domain = surface.Domain(0)
+        v_domain = surface.Domain(1)
+        centerU = (u_domain.Min + u_domain.Max)/2
+        centerV = (v_domain.Min + v_domain.Max)/2
+        
+        centerPt = surface.PointAt(centerU, centerV)
+        normalVector = surface.NormalAt(centerU, centerV)
+        
+        normalVector.Unitize()
         
         return centerPt, normalVector
     
@@ -6547,21 +6538,18 @@ class hb_EPShdSurface(hb_EPSurface):
         pass
   
     def getSrfCenPtandNormal(self, surface):
-        brepFace = surface.Faces[0]
-        if brepFace.IsPlanar and brepFace.IsSurface:
-            u_domain = brepFace.Domain(0)
-            v_domain = brepFace.Domain(1)
-            centerU = (u_domain.Min + u_domain.Max)/2
-            centerV = (v_domain.Min + v_domain.Max)/2
-            
-            centerPt = brepFace.PointAt(centerU, centerV)
-            normalVector = brepFace.NormalAt(centerU, centerV)
-        else:
-            centroid = rc.Geometry.AreaMassProperties.Compute(brepFace).Centroid
-            uv = brepFace.ClosestPoint(centroid)
-            centerPt = brepFace.PointAt(uv[1], uv[2])
-            normalVector = brepFace.NormalAt(uv[1], uv[2])
+        # I'm not sure if we need this method
+        # I will remove this later
+        surface = surface.Faces[0]
+        u_domain = surface.Domain(0)
+        v_domain = surface.Domain(1)
+        centerU = (u_domain.Min + u_domain.Max)/2
+        centerV = (v_domain.Min + v_domain.Max)/2
         
+        centerPt = surface.PointAt(centerU, centerV)
+        normalVector = surface.NormalAt(centerU, centerV)
+        
+        normalVector.Unitize()
         return centerPt, normalVector
 
 class hb_EPFenSurface(hb_EPSurface):
@@ -7265,7 +7253,7 @@ if checkIn.letItFly:
         else:
             msg = "Failed to load EP constructions! You won't be able to run analysis with Honeybee!\n" + \
                       "Download the files from address below and copy them to: " + sc.sticky["Honeybee_DefaultFolder"] + \
-                      "\nhttps://github.com/mostaphaRoudsari/Honeybee/tree/master/resources"
+                      "\nhttps://app.box.com/s/bh9sbpgajdtmmystv3n4"
             print msg
             ghenv.Component.AddRuntimeMessage(w, msg)
             

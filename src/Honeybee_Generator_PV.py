@@ -42,11 +42,11 @@ Provided by Honeybee 0.0.57
         _name_: An optional input, a name or a list of names of PV generators which correspond sequentially to the Honeybee surfaces in _HBSurfaces. Without this input PV generators will be assigned default names.
         _SASolarCells: A float or a list of floats that sequentially correspond to what percentage of each Honeybee surface in  _HBSurfaces are covered with Photovoltaics.  e.g the first float corresponds to the first Honeybee surface. If only one float is given this value will be used for all other PV generators.
         _cellsEfficiency: A float or a list of floats that sequentially detail the efficiency of the Photovoltaic generator cells on each Honeybee surface in _HBSurfaces as a fraction. e.g the first float corresponds to the first Honeybee surface. If only one float is given this value will be used for all other PV generators.
-        _integrationMode: EnergyPlus allows for different ways of integrating with other EnergyPlus heat transfer surfaces and models and calculating Photovoltaic cell temperature. This field is a integer or a list of integers sequentially to _HBSurfaces between 1 and 6 that defines the heat transfer integration mode used in the calculations as one of the following options. Decoupled a value of 1, DecoupledUllebergDynamic a value of 2, IntegratedSurfaceOutsideFace a value of 3, IntegratedTranspiredCollector a value of 4, IntegratedExteriorVentedCavity a value of 5, PhotovoltaicThermalSolarCollector a value of 6. The default is 1 the Decoupled mode. More information about each mode can be found on page 1767 and 1768 of the Energyplus Input Output reference.
-        _NoParallel: A integer or a list of integers that sequentially correspond to each Honeybee surface in _HBSurfaces. These integers define the series-wired strings of PV modules that are in parallel to form the PV generator on each Honeybee surface. The product of this field and the next field will equal the total number of modules in the PV generator on each Honeybee surface.
-        _Noseries: A integer or a list of integers that sequentially correspond to each Honeybee surface in _HBSurfaces.  These integers define the number of modules wired in series (on each string) to form the PV generator on each Honeybee surface in _HBSurfaces. The product of this field and the previous field will equal the total number of modules in the PV generator on each Honeybee surface.
-        _costPVgen: A float or a list of floats which give the cost of each PV generator on each Honeybee surface in _HBSurfaces in whatever currency the user wishes - (This is the sum of the cost of each PV module on the surface in question, as a PV generator is made up of one or several PV modules). If only one float is given this value will be used for all other PV generators.
-        _powerOutput: A float or a list of floats which give the rated power output of each PV generator on each Honeybee surface in _HBSurfaces in watts. (This is the sum of the rated power output of each PV module on the surface in question, as a PV generator is made up of one or several PV modules). If only one float is given this value will be used for all other PV generators.
+        _integrationMode: EnergyPlus allows for different ways of integrating with other EnergyPlus heat transfer surfaces and models and calculating Photovoltaic cell temperature. This field is a integer or a list of integers sequentially to _HBSurfaces between 1 and 6 that defines the heat transfer integration mode used in the calculations as one of the following options. Decoupled a value of 1, DecoupledUllebergDynamic a value of 2, IntegratedSurfaceOutsideFace a value of 3, IntegratedTranspiredCollector a value of 4, IntegratedExteriorVentedCavity a value of 5, PhotovoltaicThermalSolarCollector a value of 6. If only one integer is given this value will be used for all other PV generators. More information about each mode can be found on page 1767 and 1768 of the Energyplus Input Output reference.
+        _NoParallel: A integer or a list of integers that sequentially correspond to each Honeybee surface in _HBSurfaces. These integers define the series-wired strings of PV modules that are in parallel to form the PV generator on each Honeybee surface. The product of this field and the next field will equal the total number of modules in the PV generator on each Honeybee surface. If only one integer is given this value will be used for all other PV generators.
+        _Noseries: A integer or a list of integers that sequentially correspond to each Honeybee surface in _HBSurfaces.  These integers define the number of modules wired in series (on each string) to form the PV generator on each Honeybee surface in _HBSurfaces. The product of this field and the previous field will equal the total number of modules in the PV generator on each Honeybee surface. If only one integer is given this value will be used for all other PV generators.
+        _costPVgen: A float or a list of floats that sequentially correspond to each Honeybee surface in _HBSurfaces. The float is the cost of each PV module in whatever currency the user wishes. The cost of the PV generator will be the cost of the module multiplied by the number of modules in parallel and series (number of modules as a generator is made up of modules). If only one float is given this value will be used for all other PV generators.
+        _powerOutput: A float or a list of floats that sequentially correspond to each Honeybee surface in _HBSurfaces. The float is the power output of each PV module in watts. The power output of the PV generator will be the power output of the module multiplied by the number of modules in parallel and series (number of modules as a generator is made up of modules). If only one float is given this value will be used for all other PV generators.
         _PVInverter: The inverter servicing all the PV generators in this component - to assign an inverter connect the HB_inverter here from the Honeybee inverter component
             
             
@@ -57,7 +57,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Generator_PV"
 ghenv.Component.NickName = 'PVgen'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nAUG_25_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP" #"06 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -69,13 +69,14 @@ import scriptcontext as sc
 import uuid
 import Grasshopper.Kernel as gh
 import itertools
+import Grasshopper
+
+hb_hive = sc.sticky["honeybee_Hive"]() # Creating an instance of hb_hive here
+PV_gen = sc.sticky["PVgen"] # Linked to class PV_gen in honeybee honeybee 
+hb_hivegen = sc.sticky["honeybee_generationHive"]() # Creating an instance of the hb_hivegen here 
 
 
-hb_hive = sc.sticky["honeybee_Hive"]()
-EP_zone = sc.sticky["honeybee_EPZone"] 
-PV_gen = sc.sticky["PVgen"] # Linked to class PV_gen in honeybee honeybee Note to self: ask chris how to make ["PVgen"] a class within EP_zone
-hb_hivegen = sc.sticky["honeybee_generationHive"]()
-
+readmedatatree = Grasshopper.DataTree[object]()
 
 def checktheinputs(_name_,_HBSurfaces,_SASolarCells,_cellsEfficiency,_integrationMode,_NoParallel,_Noseries):
 
@@ -151,7 +152,7 @@ def checktheinputs(_name_,_HBSurfaces,_SASolarCells,_cellsEfficiency,_integratio
         ghenv.Component.AddRuntimeMessage(w, "_integrationMode must contain one or a number of integers between 1 and 6!")
         return -1
         
-    if (_costPVgen == []) or (_costPVgen[0]) == None:
+    if (_costPVPerModule == []) or (_costPVPerModule[0]) == None:
         print "Cost of module must be specified!"
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, "Cost of module must be specified!")
@@ -193,7 +194,7 @@ def checktheinputs(_name_,_HBSurfaces,_SASolarCells,_cellsEfficiency,_integratio
             ghenv.Component.AddRuntimeMessage(w, warnMsg)
             return -1 
     
-    if (_powerOutput == []) or (_powerOutput[0]) == None:
+    if (_powerOutputPerModule == []) or (_powerOutputPerModule[0]) == None:
         print "The power output of the module/s must be specified!"
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, "The power output of the module must be specified!")
@@ -201,7 +202,9 @@ def checktheinputs(_name_,_HBSurfaces,_SASolarCells,_cellsEfficiency,_integratio
         
         
 def returnmodename(mode):
-    """ This function converts _integrationMode from an int on the panel to a string for the Generator:Photovoltaic Heat Transfer integration mode"""
+    """ This function converts _integrationMode from an int on the panel to a string for the Generator:Photovoltaic Heat Transfer integration mode
+    so it is an enum function.
+    """
     if mode == 1:
         return "Decoupled"
     if mode ==2:
@@ -228,11 +231,11 @@ def main(_name_,_HBSurfaces,_SASolarCells,_cellsEfficiency,_integrationMode,_NoP
     """
     
     HBSurfacesfromhive = hb_hive.callFromHoneybeeHive(_HBSurfaces) # Call Honeybee surfaces from hive
-
+    
     PVgencount = 0
     
     try:
-        for name,surface,SA_solarcell,celleff,mode,parallel,series,modelcost,powerout in itertools.izip_longest(_name_,HBSurfacesfromhive,_SASolarCells,_cellsEfficiency,_integrationMode,_NoParallel,_Noseries,_costPVgen,_powerOutput): 
+        for name,surface,SA_solarcell,celleff,mode,parallel,series,modelcost,powerout in itertools.izip_longest(_name_,HBSurfacesfromhive,_SASolarCells,_cellsEfficiency,_integrationMode,_NoParallel,_Noseries,_costPVPerModule,_powerOutputPerModule): 
             
             surface.containsPVgen = True # Set this it true so the surface can be identified in run and write IDF component
             
@@ -242,73 +245,104 @@ def main(_name_,_HBSurfaces,_SASolarCells,_cellsEfficiency,_integrationMode,_NoP
             
             try:
                 name = _name_[PVgencount]
+                message0 = _name_[PVgencount] + " is mounted on Honeybee surface "+ str(surface.name)
             except IndexError:
-                name = "PVgenerator" + str(PVgencount) + " " + str(surface.name) # If no name given for a PV generator assign one.
+                name = "PVgenerator" + str(PVgencount)
+                message0 = "For this generator no name has been given so a default name of PVgenerator" + str(PVgencount) + " has been assigned. This generator is mounted on Honeybee surface " + str(surface.name) # If no name given for a PV generator assign one.
                 
             try:
                 _SASolarCells[PVgencount]
+                
+                message1 = "The solar cells of "+ name + " cover "+ str(SA_solarcell*100) + " percent of the surface area of the Honeybee surface " + str(surface.name)
             except IndexError:
                 
-                SA_solarcell = 0.5
-                print "No corresponding surface area fraction for " + str(name) +" "+ str(0.5) + " used"
-                
+                SA_solarcell = _SASolarCells[0]
+                message1 = "The solar cells of "+ name + " cover "+ str(SA_solarcell*100) + " percent of the surface area of the Honeybee surface" + str(surface.name)
+            
             try:
                 _cellsEfficiency[PVgencount]
+                
+                message2 = "The solar cell efficiency is "+ str(celleff*100) + " %"
+                
             except IndexError:
                 
-                celleff = 0.12
-                print "No corresponding solar cell efficiency for " + str(name) +" "+ str(0.12) + " used"
+                celleff = _cellsEfficiency[0]
+                message2 = "The solar cell efficiency is "+ str(celleff*100) + " %"
     
             try:
                 _integrationMode[PVgencount]
+                
+                message3 = "The integration mode is " + returnmodename(mode)
+                
             except IndexError:
-                mode = 1
-                print "No corresponding integrationmode for "+ str(name) +" "+ str("Decoupled") + " used"
+                mode = _integrationMode[0]
+                message3 = "The integration mode is "+ returnmodename(mode)
          
             try:
                 _NoParallel[PVgencount]
+                
+                message4 = "The number of PV modules in parallel is "+ str(parallel)
             except IndexError:
                 
-                parallel = 1
+                parallel = _NoParallel[0]
                 
-                print "No corresponding number of PV panels in parallel for "+ str(name) +" "+ str(parallel) + " panel/s in parallel used"
+                message4 = "The number of PV modules in parallel is "+ str(parallel) 
     
             try:
                 _Noseries[PVgencount]
+                message5 = "The number of PV modules in series is " + str(series)
             except IndexError:
-                series = 1
-                print "No corresponding number of PV panels in series for "+ str(name) + " " + str(series) + " panel/s in series used"
+                series = _Noseries[0]
+                message5 = "The number of PV modules in series is " + str(series)
+            
+            message6 = "So " + name + " is made up of "+ str(series*parallel) + " PV modules" 
             
             try:
-                _costPVgen[PVgencount]
+                _costPVPerModule[PVgencount]
+                message7 = "The cost per PV module is " + str(modelcost) + " \n " +\
+                "Therefore the total cost of "+ name +" is " + str(modelcost*float(parallel*series)) + " - the currency needs to be specified by the user"
+                
             except IndexError:
-                 modelcost = _costPVgen[0]
-                 print "No corresponding module cost for" + str(name) + " " + str(_costPVgen[0]) + " used instead"
-            
+                 modelcost = _costPVPerModule[0]
+                 message7 = "The cost per PV module is " + str(_costPVPerModule[0]) + " \n " +\
+                 "Therefore the total cost of "+ name + " is " + str(modelcost*float(parallel*series)) + " - the currency needs to be specified by the user "
             try:
-                _powerOutput[PVgencount]
+                _powerOutputPerModule[PVgencount]
+    
+                message8 = "The power output per PV module is " + str(powerout) + " W \n " +\
+                "Therefore the total power output of "+ name+" is " + str(powerout*float(parallel*series)) + " W "
+    
+                
             except IndexError:
-                powerout = _powerOutput[0]
-                print "No corresponding power output for " + str(name) + " " + str(_costPVgen[0]) + " used instead"
-            
+    
+                powerout = _powerOutputPerModule[0]
+                message8 = "The power output per PV module is " + str(powerout) + " W \n " +\
+                "Therefore the total power output of "+ name+ " is " + str(powerout*float(parallel*series)) + " W "
+
+                
             if surface.type == 6: ## A bit of a hack to get context surface name the same as being produced by EPShdSurface
                 for count in range(int(len(surface.extractPoints())/4)):
                     PVsurfacename = surface.name + '_' + `count`
             
-                surface.PVgenlist.append(PV_gen(name,PVsurfacename,returnmodename(mode),parallel,series,_costPVgen,powerout,namePVperform,SA_solarcell,celleff)) # Last three inputs are for instance method PV_performance
+                surface.PVgenlist.append(PV_gen(name,PVsurfacename,returnmodename(mode),parallel,series,modelcost,powerout,namePVperform,SA_solarcell,celleff)) # Last three inputs are for instance method PV_performance
             
             else:
-                surface.PVgenlist.append(PV_gen(name,surface.name,returnmodename(mode),parallel,series,_costPVgen,powerout,namePVperform,SA_solarcell,celleff))
+                surface.PVgenlist.append(PV_gen(name,surface.name,returnmodename(mode),parallel,series,modelcost,powerout,namePVperform,SA_solarcell,celleff))
                 
             # Assign the inverter to each PVgenerator.
             
             for PVgen in surface.PVgenlist:
                 
                 PVgen.inverter = PVinverter
+            
+            message = message0 +" \n "+ name + " has the following properties: "+"\n " + message1+"\n "+message2+"\n "+message3+"\n "+message4+"\n "+message5+"\n "+ message6 +"\n "+message7+"\n "+message8
+            
+            readmedatatree.Add(message,gh.Data.GH_Path(PVgencount))
                 
             PVgencount = PVgencount+1
+
+    except IndexError:
         
-    except:
         # This catches an error when there is a missing member exception ie length of one of inputs is longer than 
         # number of Honeybee surfaces not sure how to just catch missing member exception!
         warn = "The length of a list of inputs into either _name_,_SASolarCells,_cellsEfficiency \n" + \
@@ -322,6 +356,7 @@ def main(_name_,_HBSurfaces,_SASolarCells,_cellsEfficiency,_integrationMode,_NoP
         ghenv.Component.AddRuntimeMessage(w, warn)
         
         return -1 
+    
         
     ModifiedHBSurfaces = hb_hive.addToHoneybeeHive(HBSurfacesfromhive, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
     
@@ -333,6 +368,8 @@ PVinverter = hb_hivegen.callFromHoneybeeHive(_PVInverter)
 
 if checktheinputs(_name_,_HBSurfaces,_SASolarCells,_cellsEfficiency,_integrationMode,_NoParallel,_Noseries) != -1:
     
-    if main(_name_,_HBSurfaces,_SASolarCells,_cellsEfficiency,_integrationMode,_NoParallel,_Noseries,_costPVgen,_powerOutput,PVinverter) != -1:
     
-        PV_HBSurfaces = main(_name_,_HBSurfaces,_SASolarCells,_cellsEfficiency,_integrationMode,_NoParallel,_Noseries,_costPVgen,_powerOutput,PVinverter)
+        PV_HBSurfaces = main(_name_,_HBSurfaces,_SASolarCells,_cellsEfficiency,_integrationMode,_NoParallel,_Noseries,_costPVPerModule,_powerOutputPerModule,PVinverter)
+        
+
+        readMe = readmedatatree

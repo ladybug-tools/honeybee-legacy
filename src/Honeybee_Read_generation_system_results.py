@@ -415,7 +415,7 @@ if _idfFileAddress != None:
         financialdata = DataTree[Object]()
         
         # Add a header to the equipment cost financial data
-        financialdata.Add('Generator system financial data',GH_Path(0))
+        financialdata.Add('Generator system financial data in US dollars ',GH_Path(0))
         
         # Clean the financial data so that it can used to create graphs and add it to the datatree
         for generatorfinancialdata in cleandata(data):

@@ -37,7 +37,7 @@ Provided by Honeybee 0.0.57
         
         _inverterName: The inverter name - Make it unique from other inverters
         _inverterEfficiency_: The efficiency of the inverter by default this is 90%
-        _inverterCost: The cost the inverter in whatever currency the user wishes - Just make it consistent with other components you are using
+        _inverterCost: The cost of the inverter in US dollars (Other currencies will be available in the future)
         _replacementTime_: Specify how often in years the inverter will need to be replaced. The default is 5 years.
         
     Returns:
