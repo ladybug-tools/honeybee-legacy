@@ -112,6 +112,7 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
         pass
     
     HBSurfaces = []
+    originalSrfName = srfName
     
     for faceCount in range(geometry.Faces.Count):
         
@@ -120,10 +121,11 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
         number = guid.split("-")[-1]
         
         if srfName != None:
-            srfName = srfName.split('_')[0]
-            srfName = srfName.strip().replace(" ","_")
+            if originalSrfName == None: originalSrfName = srfName
+            originalSrfName = originalSrfName.strip().replace(" ","_")
             if geometry.Faces.Count != 1:
-                srfName = srfName + "_" + `faceCount`
+                srfName = originalSrfName + "_" + `faceCount`
+            else: srfName = originalSrfName
         else:
             # generate a random name
             # the name will be overwritten for energy simulation
