@@ -75,7 +75,7 @@ import System
 
 ghenv.Component.Name = "Honeybee_Visualise_Honeybeegeneration_cashflow"
 ghenv.Component.NickName = 'Visualise_Honeybee_generation_cashflow'
-ghenv.Component.Message = 'VER 0.0.57\nAUG_26_2015'
+ghenv.Component.Message = 'VER 0.0.57\nAUG_27_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -384,7 +384,7 @@ def _inputDataContainsElectricGenerator(_inputData):
         return False
 
 # 1. Check if data is being connected from ReadEP_generation_system_results. If so graph these results, if not generate warning
-if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and ('Whole Building:Facility Total Electric Demand Power' in _inputData) and _inputDataContainsElectricGenerator(_inputData) and ('Generator system financial data' in _inputData):
+if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and ('Whole Building:Facility Total Electric Demand Power' in _inputData) and _inputDataContainsElectricGenerator(_inputData) and ('Generator system financial data in US dollars ' in _inputData):
     
     # 2. First extract and then remove financial data from _inputData
     
@@ -1267,7 +1267,7 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                     for geo in textSrfs: geo.Transform(moveTransform)
                         
                     
-elif ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) or ('Whole Building:Facility Total Electric Demand Power' in _inputData) or any('Electric energy produced by the generator system named - ' in data for data in _inputData) or ('Generator system financial data' in _inputData) :
+elif ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) or ('Whole Building:Facility Total Electric Demand Power' in _inputData) or any('Electric energy produced by the generator system named - ' in data for data in _inputData) or ('Generator system financial data in US dollars ' in _inputData) :
     
     warn = 'If you are trying to draw the Honeybee generation system cashflow graph you must connect totalelectdemand,netpurchasedelect, \n'+\
            'generatorproducedenergy and financialdata outputs from the readEP generation system results component, as this component needs all that data to draw the graph'
