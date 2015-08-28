@@ -48,7 +48,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Glare Analysis"
 ghenv.Component.NickName = 'glareAnalysis'
-ghenv.Component.Message = 'VER 0.0.57\nAUG_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nAUG_28_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -143,9 +143,8 @@ def main(HDRImagePath, taskPosition, taskPositionAngle):
     notes = ""
     
     # try to find evalglare and check the version
-    print hb_RADPath
     
-    out, err = runCmdAndGetTheResults("/c " + hb_RADPath + "evalglare -v")
+    out, err = runCmdAndGetTheResults("/c " + hb_RADPath + "\evalglare -v")
     msg = "Failed to find evalglare.exe.\n" + \
               "Make sure you have evalglare 1.x.x installed at " + hb_RADPath +\
               "You can download evalglare from: \n" + \
@@ -188,7 +187,7 @@ def main(HDRImagePath, taskPosition, taskPositionAngle):
     notes += msg + "\n"
     
     # check size and proportion of the image
-    command = '/c ' + hb_RADPath + 'getinfo -d ' + HDRImagePath
+    command = '/c ' + hb_RADPath + '\getinfo -d ' + HDRImagePath
     out, err = runCmdAndGetTheResults(command)
 
     try:
@@ -221,7 +220,7 @@ def main(HDRImagePath, taskPosition, taskPositionAngle):
         proportion = max(x,y)/800
         resizedImage = ".".join(HDRImagePath.split(".")[:-1]) + "_resized." + HDRImagePath.split(".")[-1]
         
-        pflitLine = "/c " + hb_RADPath + "pfilt -x/" + str(proportion) + " -y/" + str(proportion) + \
+        pflitLine = "/c " + hb_RADPath + "\pfilt -x/" + str(proportion) + " -y/" + str(proportion) + \
                   " " + HDRImagePath +" > " + resizedImage
                   
         out, err = runCmdAndGetTheResults(pflitLine)
@@ -233,13 +232,13 @@ def main(HDRImagePath, taskPosition, taskPositionAngle):
     glareCheckImage = ".".join(HDRImagePath.split(".")[:-1]) + "_chkFile." + HDRImagePath.split(".")[-1]
     glareNoTextImage = ".".join(HDRImagePath.split(".")[:-1]) + "_noText." + HDRImagePath.split(".")[-1]
     # run the analysis
-    evalGlareLine = "/c " + hb_RADPath + "evalglare -c " +  glareNoTextImage + " " + HDRImagePath
+    evalGlareLine = "/c " + hb_RADPath + "\evalglare -c " +  glareNoTextImage + " " + HDRImagePath
     glareRes, err = runCmdAndGetTheResults(evalGlareLine)
     
     if err.strip() == "error: no valid view specified":
         # since I use pcomp to merge images HDR image doesn't have HDR view information
         # adding default Honeybee view information for fish-eye camera
-        evalGlareLine = "/c " + hb_RADPath + "evalglare -vth -vv 180 -vh 180 -c " +  glareNoTextImage + " " + HDRImagePath
+        evalGlareLine = "/c " + hb_RADPath + "\evalglare -vth -vv 180 -vh 180 -c " +  glareNoTextImage + " " + HDRImagePath
         glareRes, err = runCmdAndGetTheResults(evalGlareLine)
         
     
@@ -274,7 +273,7 @@ def main(HDRImagePath, taskPosition, taskPositionAngle):
         
         TArguments = " ".join([str(xPixle), str(yPixle), "%.3f"%taskPA])
         
-        evalGlareTaskPLine = "/c " + hb_RADPath + "evalglare -c " +  glareTaskPNoText + " -T " + \
+        evalGlareTaskPLine = "/c " + hb_RADPath + "\evalglare -c " +  glareTaskPNoText + " -T " + \
         TArguments + " " + HDRImagePath
         
         glareTaskRes, err = runCmdAndGetTheResults(evalGlareTaskPLine)
@@ -283,7 +282,7 @@ def main(HDRImagePath, taskPosition, taskPositionAngle):
         if err.strip() == "error: no valid view specified":
             # since I use pcomp to merge images HDR image doesn't have HDR view information
             # adding default Honeybee view information for fish-eye camera
-            evalGlareTaskPLine = "/c " + hb_RADPath + "evalglare -vth -vv 180 -vh 180 -c " +  glareTaskPNoText + " -T " + \
+            evalGlareTaskPLine = "/c " + hb_RADPath + "\evalglare -vth -vv 180 -vh 180 -c " +  glareTaskPNoText + " -T " + \
             TArguments + " " + HDRImagePath
             glareTaskRes, err = runCmdAndGetTheResults(evalGlareTaskPLine)        
         
