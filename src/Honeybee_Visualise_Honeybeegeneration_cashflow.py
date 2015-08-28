@@ -1117,7 +1117,7 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                             "generation\n" + \
                             "system net\n" + \
                             "present cost\n" + \
-                            " US dollars "
+                            " US dollars (over 25 years)"
                               
                         if (graphDataByHBSystem_ == False) and (graphDataByCost_ == True):
                             
@@ -1126,7 +1126,7 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                             vertical_label = "Net present cost\n" + \
                             "of all systems\n" + \
                             "by cost type\n" + \
-                            " US dollars "
+                            " US dollars (over 25 years)"
 
                   
                         textSrf = lb_visualization.text2srf([vertical_label], [rc.Geometry.Point3d(startPt.X-(25*_fontSize_),3,startPt.Z)],'Verdana' ,_fontSize_, False)
@@ -1220,9 +1220,17 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                         
                     if (graphDataByHBSystem_ == False) and (graphDataByCost_ == True):
                         
-                        graphTitle = 'Net present cost by cost type over 25 years\n'+"All honeybee generator systems combined"
-                                        
-                        legendTitle = 'Graph Legend - cost type by color'
+                        if len(facilityHBgenerators) == 1:
+                            
+                            graphTitle = 'Net present cost by cost type over 25 years\n'+ 'Honeybee generation system - ' +str(facilityHBgenerators[0].name)
+                                            
+                            legendTitle = 'Graph Legend - cost type by color'
+                            
+                        else:
+                            
+                            graphTitle = 'Net present cost by cost type over 25 years\n'+"All honeybee generator systems combined"
+                                            
+                            legendTitle = 'Graph Legend - cost type by color'
                     
                     axismesh,axistext = drawAxis(axisstartPt,maxcostpositive,maxcostnegitive,zscale,width,graphTitle,legendTitle)
                     
@@ -1257,7 +1265,7 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                     
                     gensystem_value.Add(str(gensystem_value_sysnames[item]), paths[item])
                     
-                    gensystem_value.Add("Generation system Net present cost in US dollars", paths[item])
+                    gensystem_value.Add("Generation system Net present cost in US dollars (over 25 years)", paths[item])
 
                     gensystem_value.AddRange(sumBranchesNPC[item], paths[item])
                 
