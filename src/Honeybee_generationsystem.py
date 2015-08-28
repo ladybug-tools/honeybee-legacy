@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.57
 
     Args:
         _GeneratorSystemName: The name of this Honeybee generation system please make it unique!
-        _MaintenanceCost: The annual cost of maintaining this Honeybee generation system in whatever currency the user wishes (Just make it consisent with other components)
+        _MaintenanceCost: The annual cost of maintaining this Honeybee generation system in US dollars (Other currencies will be available in the future)
         PVHBSurfaces_: The Honeybee/context surfaces that contain PV generators to be included in this generation system
         HBGenerationObjects_: Honeybee batteries or wind turbines to be included in this generation system 
             
@@ -40,7 +40,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_generationsystem"
 ghenv.Component.NickName = 'generationsystem'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nAUG_26_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP" #"06 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

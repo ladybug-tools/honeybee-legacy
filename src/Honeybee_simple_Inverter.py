@@ -37,7 +37,7 @@ Provided by Honeybee 0.0.57
         
         _inverterName: The inverter name - Make it unique from other inverters
         _inverterEfficiency_: The efficiency of the inverter by default this is 90%
-        _inverterCost: The cost the inverter in whatever currency the user wishes - Just make it consistent with other components you are using
+        _inverterCost: The cost of the inverter in US dollars (Other currencies will be available in the future)
         _replacementTime_: Specify how often in years the inverter will need to be replaced. The default is 5 years.
         
     Returns:
@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_simple_Inverter"
 ghenv.Component.NickName = 'simple_Inverter'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nAUG_26_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP" #"06 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
