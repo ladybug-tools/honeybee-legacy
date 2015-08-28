@@ -46,7 +46,8 @@ Provided by Ladybug 0.0.59
         Otherwise specify the grid electricity cost for 288 hours of the year that is for each hour of the day for one day in every month of the year.
         Use a list with 288 values to do this.
         graphDataByHBSystem_: Set to True to visualise the the financial value of each Honeybee generation system.
-        graphDataByCost_: Set to True to sum each Honeybee generation system's costs and revenues together and then to visualise these figures by type e.g replacement costs, capital costs etc
+        graphDataByCost_: Set to True to sum each Honeybee generation system's costs and revenues together and then to visualise these figures by type e.g replacement costs, capital costs etc.
+        to visualise each generator system by cost run mutliple Energy Plus simulations and visualise results seperately.
         _fontSize_: An optional input, use a float to change the size of the font on the graph.
         _basePoint_: An optional input, use a 3D point to locate the 3D chart in the Rhino Model.  The default is set to the Rhino origin at (0,0,0).
         _xScale_: The scale of the X axis of the graph. The default will plot the X axis with a length of 215 Rhino model units 
@@ -984,7 +985,7 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                         # For cost by type graph
 
                         if (graphDataByHBSystem_ == False) and (graphDataByCost_ == True):
-                    
+                            
                             # - replacement costs for this year
                                 
                             dataMeshes.extend(draw2Dgraphbars(rc.Geometry.Point3d(year*width/26,0, Zpositionreplace),width/50,annualtotalreplacementcost*fdiscount,zscale,colors[2]))
@@ -1181,9 +1182,9 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                         
                         if (graphDataByHBSystem_ == False) and (graphDataByCost_ == True):
                         
-                            for costTypeCount,costType in enumerate(["Capital costs","Generation system revenues","Replacement costs","Maintenance costs"]):
+                            for costTypeCount,costType in enumerate(["Capital costs","Generation system"+"\n"+"revenues","Replacement costs","Maintenance costs"]):
                                 
-                                textSrflegend = lb_visualization.text2srf([str(costType)], [rc.Geometry.Point3d(costTypeCount*35.9*xS,-int(negDomain+zaxisinterval)*zscale-int(negDomain+zaxisinterval)*zscale*0.2,0)],'Verdana' , _fontSize_, False)
+                                textSrflegend = lb_visualization.text2srf([str(costType)], [rc.Geometry.Point3d(costTypeCount*35*xS,-int(negDomain+zaxisinterval)*zscale-int(negDomain+zaxisinterval)*zscale*0.2,0)],'Verdana' , _fontSize_, False)
                                 textSrfs.extend(textSrflegend[0])
                                 dataMeshes.extend(draw2Dgraphbars(rc.Geometry.Point3d(costTypeCount*35*xS,0,-int(negDomain+zaxisinterval)*zscale-int(negDomain+zaxisinterval)*zscale*0.15),width/20,height/30,1,colors[costTypeCount]))
                                    
@@ -1217,9 +1218,10 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                         graphTitle = 'Net present cost by Honeybee generation system over 25 years'
                         legendTitle = 'Graph Legend - Honeybee generation system color'
                         
-                    if (graphDataByHBSystem_ == False) and (graphDataByCost_ == True): 
-                    
-                        graphTitle = 'Net present cost by cost type over 25 years'
+                    if (graphDataByHBSystem_ == False) and (graphDataByCost_ == True):
+                        
+                        graphTitle = 'Net present cost by cost type over 25 years\n'+"All honeybee generator systems combined"
+                                        
                         legendTitle = 'Graph Legend - cost type by color'
                     
                     axismesh,axistext = drawAxis(axisstartPt,maxcostpositive,maxcostnegitive,zscale,width,graphTitle,legendTitle)
