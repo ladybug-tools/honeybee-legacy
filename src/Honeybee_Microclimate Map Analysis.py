@@ -57,7 +57,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Microclimate Map Analysis"
 ghenv.Component.NickName = 'MicroclimateMap'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_14_2015'
+ghenv.Component.Message = 'VER 0.0.57\nAUG_30_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -558,21 +558,21 @@ def createSrfDict(zoneSrfNames, nameKey, datakey, srfHeaders, srfNumbers):
         srfName = list[2].split(" for ")[-1]
         try: srfName = srfName.split(":")[0]
         except: pass
+        foundIt = False
         for path in srfDict:
             if srfDict[path][nameKey].upper() == srfName:
                 srfDict[path][datakey] = srfNumbers[listCount]
+                foundIt = True
             elif srfDict[path][nameKey].upper() in srfName and "GLZ" in srfDict[path][nameKey].upper():
-                if srfName == srfDict[path][nameKey].upper() + "_0":
-                    srfDict[path][datakey] = srfNumbers[listCount]
-                elif srfName == srfDict[path][nameKey].upper() + "_1":
-                    srfDict[path][datakey] = srfNumbers[listCount]
+                srfDict[path][datakey] = srfNumbers[listCount]
+                foundIt = True
             elif srfName.split('_')[0] in srfDict[path][nameKey].upper() and "GLZ" in srfDict[path][nameKey].upper():
                 try:
-                    if srfName == srfDict[path][nameKey].upper().split('_')[-2] + "_GLZ_0":
-                        srfDict[path][datakey] = srfNumbers[listCount]
-                    elif srfName == srfDict[path][nameKey].upper().split('_')[-2] + "_GLZ_1":
-                        srfDict[path][datakey] = srfNumbers[listCount]
+                    srfDict[path][datakey] = srfNumbers[listCount]
+                    foundIt = True
                 except: pass
+        if foundIt == False:
+            print "Surface temperature for Surface: " + srfName + " not found in the EP results."
     
     return srfDict
 
