@@ -60,7 +60,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_createHBSrfs'
 ghenv.Component.NickName = 'createHBSrfs'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_12_2015'
+ghenv.Component.Message = 'VER 0.0.57\nAUG_26_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -112,22 +112,25 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
         pass
     
     HBSurfaces = []
+    originalSrfName = srfName
     
     for faceCount in range(geometry.Faces.Count):
         
         # 0. check if user input a name for this surface
         guid = str(uuid.uuid4())
         number = guid.split("-")[-1]
-
+        
         if srfName != None:
-            srfName = srfName.strip().replace(" ","_")
+            if originalSrfName == None: originalSrfName = srfName
+            originalSrfName = originalSrfName.strip().replace(" ","_")
             if geometry.Faces.Count != 1:
-                srfName = srfName + "_" + `faceCount`
+                srfName = originalSrfName + "_" + `faceCount`
+            else: srfName = originalSrfName
         else:
             # generate a random name
             # the name will be overwritten for energy simulation
             srfName = "".join(guid.split("-")[:-1])
-            
+        
         # 1. create initial surface
         HBSurface = hb_EPZoneSurface(geometry.Faces[faceCount].DuplicateFace(False), number, srfName)
         
@@ -165,7 +168,7 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
                     warningMsg = "If you want to use this model for energy simulation, use addGlazing to add window to surfaces.\n" + \
                                  "It will be fine for Daylighting simulation though."
                     print warningMsg
-                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Remark, warningMsg)
             except:
                 # user uses text as an input (e.g.: wall)
                 # convert it to a number if a valid input

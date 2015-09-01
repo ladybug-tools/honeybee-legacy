@@ -42,7 +42,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Radiance Metal Material"
 ghenv.Component.NickName = 'radMetalMaterial'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nAUG_31_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "01 | Daylight | Material"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -98,10 +98,7 @@ def main():
                 if _roughness_ > 0.2:
                      msg = "Roughness values above 0.2 are uncommon"
                      ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
-                if _specularity_ > 0.1:
-                    msg = "Specularity values above 0.1 are uncommon"
-                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
-                
+                     
                 return avrgRef, RADMaterial
             else:
                 msg =  "Reflectance values should be between 0 and 1"
