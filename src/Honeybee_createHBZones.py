@@ -48,7 +48,7 @@ import math
 
 ghenv.Component.Name = 'Honeybee_createHBZones'
 ghenv.Component.NickName = 'createHBZones'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_18_2015'
+ghenv.Component.Message = 'VER 0.0.57\nSEP_02_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -108,6 +108,13 @@ def main(zoneName,  HBZoneProgram, HBSurfaces, isConditioned):
     
     # create the zone from the surfaces
     HBZone.createZoneFromSurfaces()
+    
+    if HBZone.isClosed: pass
+    else:
+        message = "All of your HBSrfs must make a closed volume."
+        print message
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, message)
     
     HBZone  = hb_hive.addToHoneybeeHive([HBZone], ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
     
