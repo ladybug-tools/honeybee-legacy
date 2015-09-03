@@ -170,7 +170,9 @@ class HBIESBase(object):
                 msg = self.type + " hasn't been implemented\n" + \
                       "Let us know and we will implement it."
                 print msg
-                    
+                w = gh.GH_RuntimeMessageLevel.Warning
+                ghenv.Component.AddRuntimeMessage(w, msg)
+                
     def createSrf(self):
         for ptListKey in self.pts.keys():
             pts = self.pts[ptListKey]
