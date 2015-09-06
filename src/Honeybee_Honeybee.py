@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.57\nSEP_05_2015'
+ghenv.Component.Message = 'VER 0.0.57\nSEP_06_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -4855,7 +4855,7 @@ class EPZone(object):
                                     childSrf.basePlane.Flip()
                         elif HBSrf.hasChild:
                             for childSrf in HBSrf.childSrfs:
-                                print childSrf.normalVector
+                                # print childSrf.normalVector
                                 childSrf.cenPt = rc.Geometry.AreaMassProperties.Compute(childSrf.geometry).Centroid
                                 uv = childSrf.geometry.Faces[0].ClosestPoint(childSrf.cenPt)
                                 childSrf.normalVector = childSrf.geometry.Faces[0].NormalAt(uv[1], uv[2])
@@ -4865,6 +4865,12 @@ class EPZone(object):
                                     print "Normal direction for " + childSrf.name + " is fixed by Honeybee!"
                                     childSrf.geometry.Flip()
                                     childSrf.normalVector.Reverse()
+        
+        
+        # find center point, it won't be used in this function!
+        MP3D = rc.Geometry.AreaMassProperties.Compute(self.geometry)
+        self.cenPt = MP3D.Centroid
+        MP3D.Dispose()
         
         #Extract the center points and normal vectors from the closed brep geometry.
         planarTrigger = False
