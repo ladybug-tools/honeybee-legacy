@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.57\nSEP_03_2015'
+ghenv.Component.Message = 'VER 0.0.57\nSEP_05_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1384,7 +1384,8 @@ class hb_WriteRAD(object):
                     
                     # if it is all fine then write the geometry
                     if IESObjcIsFine:
-                        geoRadFile.write(self.getIESSurfaceStr(originalHBObjects[objCount], HBObj.name, IESCount, HBObj))
+                        IESName = HBObj.name + "_" + str(IESCount)
+                        geoRadFile.write( HBObj.getRADGeometryStr(IESName, originalHBObjects[objCount]))
                         # downlight_light polygon downlight.d
                         # add to IES Objects list so I can add the materials to the list later
                         if HBObj.name not in IESObjects.keys():
@@ -2075,33 +2076,6 @@ class hb_WriteRAD(object):
             # glazingStr
             fullStr = fullStr + self.getsurfaceStr(surface.childSrfs[0], glzCount, glzCoorList)
         return fullStr
-    
-    def getIESSurfaceStr(self, surface, constructionName, count, IESObject):
-        if IESObject.type == "polygon":
-            coordinates = surface.DuplicateVertices()
-                
-            srfStr =  constructionName + "_light polygon " + constructionName + '_' + `count` + ".d\n" + \
-                "0\n" + \
-                "0\n" + \
-                `(len(coordinates)*3)` + "\n"
-                
-            ptStr = ''
-            for  pt in coordinates:
-                ptStr = ptStr + '%.4f'%pt.X + '  ' + '%.4f'%pt.Y + '  ' + '%.4f'%pt.Z + '\n'
-            ptStr = ptStr + '\n'
-            
-            return srfStr + ptStr
-        
-        elif IESObject.type == "sphere":
-            center = surface.GetBoundingBox(True).Center
-            radius = IESObject.radius
-            
-            srfStr =  constructionName + "_light sphere " + constructionName + '_' + `count` + ".d\n" + \
-                "0\n" + \
-                "0\n" + \
-                "4 " + `center.X` + " " + `center.Y` + " " + `center.Z` + " " + `radius` + "\n"
-            
-            return srfStr
             
 class hb_WriteRADAUX(object):
     
@@ -2534,12 +2508,20 @@ class hb_WriteRADAUX(object):
         viewDirection = sc.doc.Views.ActiveView.ActiveViewport.CameraDirection
         viewDirection.Unitize()
         viewUp = sc.doc.Views.ActiveView.ActiveViewport.CameraUp
-        viewUp.Unitize()
-        viewHA = 180 - rs.VectorAngle(sc.doc.Views.ActiveView.ActiveViewport.GetFrustumRightPlane()[1][1], sc.doc.Views.ActiveView.ActiveViewport.GetFrustumLeftPlane()[1][1])
-        if viewHA == 0: viewHA = 180
-        viewVA = 180 - rs.VectorAngle(sc.doc.Views.ActiveView.ActiveViewport.GetFrustumBottomPlane()[1][1], sc.doc.Views.ActiveView.ActiveViewport.GetFrustumTopPlane()[1][1])
-        if viewVA == 0: viewVA = 180
         
+        viewUp.Unitize()
+        try:
+            viewHA = 180 - rs.VectorAngle(sc.doc.Views.ActiveView.ActiveViewport.GetFrustumRightPlane()[1][1], sc.doc.Views.ActiveView.ActiveViewport.GetFrustumLeftPlane()[1][1])
+        except:
+            viewHA = 180 - rs.VectorAngle(sc.doc.Views.ActiveView.ActiveViewport.GetFrustumRightPlane()[1].Normal, sc.doc.Views.ActiveView.ActiveViewport.GetFrustumLeftPlane()[1].Normal)
+        
+        if viewHA == 0: viewHA = 180
+        try:
+            viewVA = 180 - rs.VectorAngle(sc.doc.Views.ActiveView.ActiveViewport.GetFrustumBottomPlane()[1][1], sc.doc.Views.ActiveView.ActiveViewport.GetFrustumTopPlane()[1][1])
+        except:
+            viewVA = 180 - rs.VectorAngle(sc.doc.Views.ActiveView.ActiveViewport.GetFrustumBottomPlane()[1].Normal, sc.doc.Views.ActiveView.ActiveViewport.GetFrustumTopPlane()[1].Normal)
+        
+        if viewVA == 0: viewVA = 180
         PI = math.pi
         
         if cameraType == 2:
