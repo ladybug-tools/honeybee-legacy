@@ -62,7 +62,7 @@ Provided by Honeybee 0.0.57
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.57\nAUG_24_2015'
+ghenv.Component.Message = 'VER 0.0.57\nSEP_07_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_28_2015
@@ -1876,7 +1876,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                     if schedule != None:
                         if schedule.upper() not in EPScheduleCollection: EPScheduleCollection.append(schedule)
                     else: needToWriteMixSched = True
-
+            
             if zone.mixAir == True:
                 for schedule in zone.mixAirFlowSched:
                     if schedule != None:
@@ -1888,7 +1888,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                 if zone.ETschedule.upper() not in EPScheduleCollection:
                     
                     EPScheduleCollection.append(zone.ETschedule)
-                
+        if needToWriteMixSched == True and 'ALWAYS ON' not in EPScheduleCollection: EPScheduleCollection.append('ALWAYS ON')
     
     # Write Schedules
     for schedule in EPScheduleCollection:
