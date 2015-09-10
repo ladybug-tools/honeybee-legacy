@@ -46,7 +46,7 @@ Provided by Honeybee 0.0.57
 """
 ghenv.Component.Name = "Honeybee_Read Annual Result I"
 ghenv.Component.NickName = 'readAnnualResultsI'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nSEP_10_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -133,7 +133,7 @@ def convertIllFileDaraTreeIntoSortedDictionary(illFilesAddress):
     
     return illFileSets
 
-def main(illFilesAddress, testPts, testVecs, occFiles, lightingControlGroups, SHDGroupI_Sensors, SHDGroupII_Sensors, DLAIllumThresholds):
+def main(illFilesAddress, testPts, testVecs, occFiles, lightingControlGroups, SHDGroupI_Sensors, SHDGroupII_Sensors, DLAIllumThresholds, runInBackground = False):
     
     if sc.sticky.has_key('honeybee_release'):
 
@@ -712,13 +712,19 @@ def main(illFilesAddress, testPts, testVecs, occFiles, lightingControlGroups, SH
         for fileName in batchFileNames:
             batchFileName = os.path.join(filePath, fileName)
             fileNames.append(batchFileName)
-            p = subprocess.Popen(r'start cmd /c ' + batchFileName , shell=True)
-        
+            if runInBackground:
+                p = subprocess.Popen(batchFileName , shell=True)
+            else:
+                p = subprocess.Popen(r'start cmd /c ' + batchFileName , shell=True)
+                
         isTheStudyOver(batchFileNames)
     else:
         for fileName in batchFileNames:
             batchFileName = os.path.join(filePath, fileName)
-            os.system(batchFileName)
+            if runInBackground:
+                p = subprocess.Popen(batchFileName , shell=True)
+            else:
+                p = subprocess.Popen(r'start cmd /c ' + batchFileName , shell=True)
     
     # calculate sDA    
     
@@ -815,7 +821,7 @@ if _runIt and not isAllNone(_illFilesAddress) and not isAllNone(_testPoints):
     lightingControlGroups_.SimplifyPaths()
     _illFilesAddress.SimplifyPaths()
     
-    res = main(_illFilesAddress, _testPoints, ptsVectors_, occupancyFiles_, lightingControlGroups_, SHDGroupI_Sensors_, SHDGroupII_Sensors_, _DLAIllumThresholds_)
+    res = main(_illFilesAddress, _testPoints, ptsVectors_, occupancyFiles_, lightingControlGroups_, SHDGroupI_Sensors_, SHDGroupII_Sensors_, _DLAIllumThresholds_, _runIt > 1)
     
     if res!= -1:
         msg, results = res

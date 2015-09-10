@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.57\nSEP_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nSEP_10_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1873,7 +1873,7 @@ class hb_WriteRAD(object):
         
     
     def runBatchFiles(self, initBatchFileName, batchFileNames, fileNames, \
-                      pcompBatchFile, waitingTime):
+                      pcompBatchFile, waitingTime, runInBackground = False):
         
         def isTheStudyOver(fileNames):
             while True:
@@ -1881,8 +1881,9 @@ class hb_WriteRAD(object):
                 proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
                 cmdCount = 0
                 for line in proc.stdout:
-                    if line.strip().startswith("cmd") and line.strip().endswith(".bat"):
-                        fileName = line.strip().split(" ")[-1].split("\\")[-1]
+                    if (line.strip().startswith("C:\\Windows\\system32\\cmd") or line.strip().startswith("cmd")) \
+                        and line.strip().endswith(".bat"):
+                        fileName = line.strip().split(" ")[-1].split("/")[-1]
                         # I should check the file names and make sure they are the right files
                         if fileName in fileNames:
                             cmdCount += 1
@@ -1890,14 +1891,22 @@ class hb_WriteRAD(object):
                 if cmdCount == 0:
                     return
         
-        def executeBatchFiles(batchFileNames, waitingTime):
+        def executeBatchFiles(batchFileNames, waitingTime, runInBackground):
+            cmd = ''
+            if not runInBackground: cmd = 'start cmd /c '
+            
             for batchFileName in batchFileNames:
-                p = subprocess.Popen(r'start cmd /c ' + batchFileName , shell=True)
+                batchFileName = batchFileName.replace("\\", "/")
+                p = subprocess.Popen(cmd + batchFileName , shell=True)
                 time.sleep(waitingTime)
 
-        os.system(initBatchFileName)
+        if runInBackground:
+            subprocess.Popen(initBatchFileName, shell=True)
+        else:
+            os.system(initBatchFileName)
+            
         time.sleep(waitingTime)
-        executeBatchFiles(batchFileNames, waitingTime)
+        executeBatchFiles(batchFileNames, waitingTime, runInBackground)
         isTheStudyOver(fileNames)
         if pcompBatchFile!="":
             os.system(pcompBatchFile) # put all the files together

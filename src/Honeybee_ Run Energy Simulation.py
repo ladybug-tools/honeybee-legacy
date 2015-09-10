@@ -48,7 +48,7 @@ Provided by Honeybee 0.0.57
         simulationOutputs_: A list of the outputs that you would like EnergyPlus to write into the result CSV file.  This can be any set of any outputs that you would like from EnergyPlus, writen as a list of text that will be written into the IDF.  It is recommended that, if you are not expereinced with writing EnergyPlus outputs, you should use the "Honeybee_Write EP Result Parameters" component to request certain types of common outputs.  If no value is input here, this component will automatically request outputs of heating, cooling, lighting, and equipment energy use.
         +++++++++++++++: ...
         _writeIdf: Set to "True" to have the component take your HBZones and other inputs and write them into an IDF file.  The file path of the resulting file will appear in the idfFileAddress output of this component.  Note that only setting this to "True" and not setting the output below to "True" will not automatically run the IDF through EnergyPlus for you.
-        runEnergyPlus_: Set to "True" to have the component run your IDF through EnergyPlus once it has finished writing it.  This will ensure that a CSV result file appears in the resultFileAddress output.
+        runEnergyPlus_: Set to "True" to have the component run your IDF through EnergyPlus once it has finished writing it.  This will ensure that a CSV result file appears in the resultFileAddress output. Set to 2 if you want the analysis to run in background. This option is useful for parametric runs when you don't want to see command shells.
         +++++++++++++++: ...
         _workingDir_: An optional working directory to a folder on your system, into which your IDF and result files will be written.  NOTE THAT DIRECTORIES INPUT HERE SHOULD NOT HAVE ANY SPACES OR UNDERSCORES IN THE FILE PATH.
         _idfFileName_: Optional text which will be used to name your IDF and result files.  Change this to aviod over-writing results of previous energy simulations.
@@ -62,7 +62,7 @@ Provided by Honeybee 0.0.57
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.57\nSEP_07_2015'
+ghenv.Component.Message = 'VER 0.0.57\nSEP_10_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_28_2015
@@ -78,6 +78,7 @@ import System
 import Grasshopper.Kernel as gh
 import math
 import shutil
+import subprocess
 
 rc.Runtime.HostUtils.DisplayOleAlerts(False)
 
@@ -1203,7 +1204,7 @@ class WriteIDF(object):
 
 class RunIDF(object):
     
-    def writeBatchFile(self, workingDir, idfFileName, epwFileAddress, EPDirectory = 'C:\\EnergyPlusV8-1-0'):
+    def writeBatchFile(self, workingDir, idfFileName, epwFileAddress, EPDirectory = 'C:\\EnergyPlusV8-1-0', runInBackground = False):
         
         workingDrive = workingDir[:2]
         
@@ -1222,10 +1223,20 @@ class RunIDF(object):
         batchfile = open(batchFileAddress, 'w')
         batchfile.write(batchStr)
         batchfile.close()
-        
+    
         #execute the batch file
-        os.system(batchFileAddress) 
-
+        if runInBackground:
+            self.runCmd(batchFileAddress)
+        else:
+            os.system(batchFileAddress)
+    
+    def runCmd(self, batchFileAddress, shellKey = True):
+        batchFileAddress.replace("\\", "/")
+        p = subprocess.Popen(["cmd /c ", batchFileAddress], shell=shellKey, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err = p.communicate()
+        # p.kill()
+        #return out, err
+        
     def readResults(self):
         pass
 
@@ -2051,7 +2062,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     if runEnergyPlus:
         print "Analysis is running!..."
         # write the batch file
-        hb_runIDF.writeBatchFile(workingDir, idfFileName, epwFileAddress, sc.sticky["honeybee_folders"]["EPPath"])
+        hb_runIDF.writeBatchFile(workingDir, idfFileName, epwFileAddress, sc.sticky["honeybee_folders"]["EPPath"], runEnergyPlus > 1)
         resultFileFullName = idfFileFullName.replace('.idf', '.csv')
         try:
             print workingDir + '\eplusout.csv'
