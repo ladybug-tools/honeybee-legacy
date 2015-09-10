@@ -1265,10 +1265,6 @@ class hb_WriteRAD(object):
     def writeRADAndMaterialFiles(self, originalHBObjects, subWorkingDir, radFileName, \
                                  analysisRecipe, meshParameters, exportInteriorWalls):
         
-        # collect information from analysis recipe
-        radParameters = analysisRecipe.radParameters
-        simulationType = analysisRecipe.type
-        
         # initiate RAD Parameters
         if analysisRecipe.radParameters==None:
             quality = 0
@@ -1277,6 +1273,10 @@ class hb_WriteRAD(object):
             for key in self.hb_radParDict.keys():
                 #print key + " is set to " + str(hb_radParDict[key][quality])
                 analysisRecipe.radParameters[key] = self.hb_radParDict[key][quality]
+        
+        # collect information from analysis recipe
+        radParameters = analysisRecipe.radParameters
+        simulationType = analysisRecipe.type
         
         radFileFullName = os.path.join(subWorkingDir, radFileName + '.rad')
         
@@ -1415,13 +1415,14 @@ class hb_WriteRAD(object):
             matFile.write(matStr)
             matFile.write("\n# start of material(s) specific to this study (if any)\n")
             for radMatName in customRADMat.keys():
+
                 matFile.write(self.hb_RADMaterialAUX.getRADMaterialString(radMatName) + "\n")
-                
+
                 # check if the material is is trans
                 if self.hb_RADMaterialAUX.getRADMaterialType(radMatName) == "trans":
-                    
                     # get the st value
                     st = self.hb_RADMaterialAUX.getSTForTransMaterials(radMatName)
+
                     if st < radParameters["_st_"]:
                         print "Found a trans material... " + \
                               "Resetting st parameter from " + str(radParameters["_st_"]) + " to " + str(st)
