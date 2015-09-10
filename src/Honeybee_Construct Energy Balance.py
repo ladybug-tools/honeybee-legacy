@@ -1,0 +1,328 @@
+#
+# Honeybee: A Plugin for Environmental Analysis (GPL) started by Mostapha Sadeghipour Roudsari
+# 
+# This file is part of Honeybee.
+# 
+# Copyright (c) 2013-2015, Chris Mackey <Chris@MackeyArchitecture.com> 
+# Honeybee is free software; you can redistribute it and/or modify 
+# it under the terms of the GNU General Public License as published 
+# by the Free Software Foundation; either version 3 of the License, 
+# or (at your option) any later version. 
+# 
+# Honeybee is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of 
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with Honeybee; If not, see <http://www.gnu.org/licenses/>.
+# 
+# @license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
+
+
+"""
+This component accepst the outputs of the "Read EP Result" and the "Read EP Surface Result" components and outputs a data tree with all of the building-wide energy balance terms.  This can then be plugged into the "Ladybug_3D Chart" or "Ladybug_Monthly Bar Chart" to give a visualization of the energy balance of the whole model.
+
+-
+Provided by Honeybee 0.0.57
+    
+    Args:
+        _HBZones: The HBZones out of any of the HB components that generate or alter zones.  Note that these should ideally be the zones that are fed into the Run Energy Simulation component.  Zones read back into Grasshopper from the Import idf component will not align correctly with the EP Result data.
+        heatingLoad_: The heating energy 
+        solarLoad_: The total solar gain in each zone(kWh).
+        lightingLoad_: The electric lighting energy needed for each zone in kWh.
+        equipLoad_: The electric equipment energy needed for each zone in kWh.
+        peopleLoad_: The internal heat gains in each zone resulting from people (kWh).
+        surfaceEnergyFlow_: ...
+        infiltrationEnergy_: The heat loss (negative) or heat gain (positive) in each zone resulting from infiltration (kWh).
+        outdoorAirEnergy_: ...
+        natVentEnergy_: ...
+        coolingLoad_: The cooling energy
+    Returns:
+        readMe!: ...
+        modelEnergyBalance:  A data tree with all of the important building-wide energy balance terms.  This can then be plugged into the "Ladybug_3D Chart" or "Ladybug_Monthly Bar Chart" to give a visualization of the energy balance of the whole model.
+"""
+
+ghenv.Component.Name = "Honeybee_Construct Energy Balance"
+ghenv.Component.NickName = 'energyBalance'
+ghenv.Component.Message = 'VER 0.0.57\nSEP_10_2015'
+ghenv.Component.Category = "Honeybee"
+ghenv.Component.SubCategory = "09 | Energy | Energy"
+#compatibleHBVersion = VER 0.0.56\nMAY_02_2015
+#compatibleLBVersion = VER 0.0.59\nAPR_04_2015
+ghenv.Component.AdditionalHelpFromDocStrings = "-1"
+
+
+from System import Object
+from clr import AddReference
+AddReference('Grasshopper')
+import Grasshopper.Kernel as gh
+from Grasshopper import DataTree
+from Grasshopper.Kernel.Data import GH_Path
+import scriptcontext as sc
+
+
+
+def checkCreateDataTree(dataTree, dataName, dataType):
+    dataPyList = []
+    for i in range(dataTree.BranchCount):
+        branchList = dataTree.Branch(i)
+        dataVal = []
+        for item in branchList:
+            try: dataVal.append(float(item))
+            except: dataVal.append(item)
+        dataPyList.append(dataVal)
+    
+    #Test to see if the data has a header on it, which is necessary to know if it is the right data type.  If there's no header, the data should not be vizualized with this component.
+    checkHeader = []
+    dataHeaders = []
+    dataNumbers = []
+    for list in dataPyList:
+        if str(list[0]) == "key:location/dataType/units/frequency/startsAt/endsAt":
+            checkHeader.append(1)
+            dataHeaders.append(list[:7])
+            dataNumbers.append(list[7:])
+        else:
+            dataNumbers.append(list)
+    
+    if sum(checkHeader) == len(dataPyList):
+        dataCheck1 = True
+    else:
+        dataCheck1 = False
+        warning = "Not all of the connected " + dataName + " has a Ladybug/Honeybee header on it.  This header is necessary to generate an indoor temperture map with this component."
+        print warning
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+    
+    try:
+        #Check to be sure that the lengths of data in in the dataTree branches are all the same.
+        dataLength = len(dataNumbers[0])
+        dataLenCheck = []
+        for list in dataNumbers:
+            if len(list) == dataLength:
+                dataLenCheck.append(1)
+            else: pass
+        if sum(dataLenCheck) == len(dataNumbers) and dataLength <8761:
+            dataCheck2 = True
+        else:
+            dataCheck2 = False
+            warning = "Not all of the connected " + dataName + " branches are of the same length or there are more than 8760 values in the list."
+            print warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+        
+        if dataCheck1 == True:
+            #Check to be sure that all of the data headers say that they are of the same type.
+            header = dataHeaders[0]
+            
+            headerUnits =  header[3]
+            headerStart = header[5]
+            headerEnd = header[6]
+            simStep = str(header[4])
+            headUnitCheck = []
+            headPeriodCheck = []
+            for head in dataHeaders:
+                if dataType in head[2]:
+                    headUnitCheck.append(1)
+                if head[3] == headerUnits and str(head[4]) == simStep and head[5] == headerStart and head[6] == headerEnd:
+                    headPeriodCheck.append(1)
+                else: pass
+            
+            if sum(headPeriodCheck) == len(dataHeaders):
+                dataCheck3 = True
+            else:
+                dataCheck3 = False
+                warning = "Not all of the connected " + dataName + " branches are of the same timestep or same analysis period."
+                print warning
+                ghenv.Component.AddRuntimeMessage(w, warning)
+            
+            if sum(headUnitCheck) == len(dataHeaders):
+                dataCheck4 = True
+            else:
+                dataCheck4 = False
+                warning = "Not all of the connected " + dataName + " data is for the correct data type."
+                print warning
+                ghenv.Component.AddRuntimeMessage(w, warning)
+            if dataCheck1 == True and dataCheck2 == True and dataCheck3 == True and dataCheck4 == True: dataCheck = True
+            else: dataCheck = False
+        else:
+            dataCheck = False
+            headerUnits = 'unknown units'
+            dataHeaders = []
+            header = [None, None, None, None, None, None, None]
+    except:
+        dataCheck = True
+        headerUnits = None
+        dataHeaders = []
+        dataNumbers = []
+        header = [None, None, None, None, None, None, None]
+    
+    return dataCheck, headerUnits, dataHeaders, dataNumbers, [header[5], header[6]]
+
+
+def getSrfNames(HBZones):
+    wall = []
+    window = []
+    skylight =[]
+    roof = []
+    exposedFloor = []
+    groundFloor = []
+    undergroundWall = []
+    
+    for zone in HBZones:
+        # call the objects from the lib
+        hb_hive = sc.sticky["honeybee_Hive"]()
+        
+        zone = hb_hive.callFromHoneybeeHive([zone])[0]
+        
+        for srf in zone.surfaces:
+            # Wall
+            if srf.type == 0:
+                if srf.BC.upper() == "SURFACE": pass
+                else:
+                    if srf.hasChild:
+                        wall.append(srf.name)
+                        for childSrf in srf.childSrfs:
+                            window.append(childSrf.name)
+                    else:
+                        wall.append(srf.name)
+            # underground wall
+            elif srf.type == 0.5:
+                undergroundWall.append(srf.name)
+            # Roof
+            elif srf.type == 1:
+                if srf.hasChild:
+                    roof.append(srf.name)
+                    for childSrf in srf.childSrfs:
+                        skylight.append(childSrf.name)
+                else:
+                    roof.append(srf.name)
+            
+            elif srf.type == 2.5: groundFloor.append(srf.name)
+            elif srf.type == 2.75: exposedFloor.append(srf.name)
+        
+        
+    return wall, window, skylight, roof, \
+           exposedFloor, groundFloor, undergroundWall
+
+def checkList(theList, dataTree, name, branchList):
+    itemFound = False
+    for srf in theList:
+        if srf.upper() == name:
+            dataTree.append(branchList)
+            itemFound = True
+        else: pass
+    return itemFound
+
+def sumAllLists(tree):
+    if len(tree) == 1: summedList = tree[0]
+    else:
+        summedList = tree[0]
+        for dataCount, dataList in enumerate(tree):
+            if dataCount == 0: pass
+            else:
+                for count, item in enumerate(dataList):
+                    summedList[count] = summedList[count] + item
+    
+    return summedList
+
+
+def main(HBZones, heatingLoad, solarLoad, lightingLoad, equipLoad, peopleLoad, surfaceEnergyFlow, infiltrationEnergy, outdoorAirEnergy, natVentEnergy, coolingLoad):
+    #Check and convert the data for each of the zone data lists.
+    checkData1, heatingUnits, heatingHeaders, heatingNumbers, heatingAnalysisPeriod = checkCreateDataTree(heatingLoad, "heatingLoad_", "Heating")
+    checkData2, solarUnits, solarHeaders, solarNumbers, solarAnalysisPeriod = checkCreateDataTree(solarLoad, "solarLoad_", "Solar")
+    checkData3, lightingUnits, lightingHeaders, lightingNumbers, lightingAnalysisPeriod = checkCreateDataTree(lightingLoad, "lightingLoad_", "Lighting")
+    checkData4, equipUnits, equipHeaders, equipNumbers, equipAnalysisPeriod = checkCreateDataTree(equipLoad, "equipLoad_", "Equipment")
+    checkData5, peopleUnits, peopleHeaders, peopleNumbers, peopleAnalysisPeriod = checkCreateDataTree(peopleLoad, "peopleLoad_", "People")
+    checkData6, infiltrationUnits, infiltrationHeaders, infiltrationNumbers, infiltrationAnalysisPeriod = checkCreateDataTree(infiltrationEnergy, "infiltrationEnergy_", "Infiltration")
+    checkData7, outdoorAirUnits, outdoorAirHeaders, outdoorAirNumbers, outdoorAirAnalysisPeriod = checkCreateDataTree(outdoorAirEnergy, "outdoorAirEnergy_", "Outdoor Air")
+    checkData8, natVentUnits, natVentHeaders, natVentNumbers, natVentAnalysisPeriod = checkCreateDataTree(natVentEnergy, "natVentEnergy_", "Natural Ventilation")
+    checkData9, coolingUnits, coolingHeaders, coolingNumbers, coolingAnalysisPeriod = checkCreateDataTree(coolingLoad, "coolingLoad_", "Cooling")
+    checkData10, surfaceUnits, surfaceHeaders, surfaceNumbers, surfaceAnalysisPeriod = checkCreateDataTree(surfaceEnergyFlow, "surfaceEnergyFlow_", "Surface Energy")
+    
+    if checkData1 == True and checkData2 == True and checkData3 == True and checkData4 == True and checkData5 == True and checkData6 == True and checkData7 == True and checkData8 == True and checkData9 == True  and checkData10 == True:
+        #Get the names of the surfaces from the HBZones.
+        wall, window, skylight, roof, exposedFloor, groundFloor, undergroundWall = getSrfNames(HBZones)
+        
+        #Organize all of the surface data by type of surface.
+        opaqueEnergyFlow = []
+        glazingEnergyFlow = []
+        
+        if len(surfaceNumbers) > 0:
+            for srfCount, srfHeader in enumerate(surfaceHeaders):
+                try:srfName = srfHeader[2].split(" for ")[-1].split(": ")[0]
+                except:srfName = srfHeader[2].split(" for ")[-1]
+                
+                itemFound = checkList(wall, opaqueEnergyFlow, srfName, surfaceNumbers[srfCount])
+                if itemFound == False: itemFound = checkList(window, glazingEnergyFlow, srfName, surfaceNumbers[srfCount])
+                if itemFound == False: itemFound = checkList(skylight, glazingEnergyFlow, srfName, surfaceNumbers[srfCount])
+                if itemFound == False: itemFound = checkList(roof, opaqueEnergyFlow, srfName, surfaceNumbers[srfCount])
+                if itemFound == False: itemFound = checkList(exposedFloor, opaqueEnergyFlow, srfName, surfaceNumbers[srfCount])
+                if itemFound == False: itemFound = checkList(groundFloor, opaqueEnergyFlow, srfName, surfaceNumbers[srfCount])
+                if itemFound == False: itemFound = checkList(undergroundWall, opaqueEnergyFlow, srfName, surfaceNumbers[srfCount])
+        
+        #Sum all of the zones and sufaces into one list for each energy balance term.
+        if len(heatingNumbers) > 0: heatingNumbers = sumAllLists(heatingNumbers)
+        if len(solarNumbers) > 0: solarNumbers = sumAllLists(solarNumbers)
+        if len(lightingNumbers) > 0: lightingNumbers = sumAllLists(lightingNumbers)
+        if len(equipNumbers) > 0: equipNumbers = sumAllLists(equipNumbers)
+        if len(peopleNumbers) > 0: peopleNumbers = sumAllLists(peopleNumbers)
+        if len(infiltrationNumbers) > 0: infiltrationNumbers = sumAllLists(infiltrationNumbers)
+        if len(outdoorAirNumbers) > 0: outdoorAirNumbers = sumAllLists(outdoorAirNumbers)
+        if len(natVentNumbers) > 0: natVentNumbers = sumAllLists(natVentNumbers)
+        if len(coolingNumbers) > 0: coolingNumbers = sumAllLists(coolingNumbers)
+        if len(opaqueEnergyFlow) > 0: opaqueEnergyFlow = sumAllLists(opaqueEnergyFlow)
+        if len(glazingEnergyFlow) > 0: glazingEnergyFlow = sumAllLists(glazingEnergyFlow)
+        
+        #Subtract the solar load from the glazing energy flow to get just the heat conduction through the glazing.
+        for count, val in enumerate(glazingEnergyFlow):
+            glazingEnergyFlow[count] = val - solarNumbers[count]
+        
+        #Add headers to the data number lists
+        if len(heatingNumbers) > 0: heatingHeader = heatingHeaders[0][:2] + ['Heating'] + [heatingUnits] + [heatingHeaders[0][4]] + heatingAnalysisPeriod
+        if len(solarNumbers) > 0: solarHeader = solarHeaders[0][:2] + ['Solar'] + [solarUnits] + [solarHeaders[0][4]] + solarAnalysisPeriod
+        if len(lightingNumbers) > 0: lightingHeader = lightingHeaders[0][:2] + ['Lighting'] + [lightingUnits] + [lightingHeaders[0][4]] + lightingAnalysisPeriod
+        if len(equipNumbers) > 0: equipHeader = equipHeaders[0][:2] + ['Equipment'] + [equipUnits] + [equipHeaders[0][4]] + equipAnalysisPeriod
+        if len(peopleNumbers) > 0: peopleHeader = peopleHeaders[0][:2] + ['People'] + [peopleUnits] + [peopleHeaders[0][4]] + peopleAnalysisPeriod
+        if len(infiltrationNumbers) > 0: infiltrationHeader = infiltrationHeaders[0][:2] + ['Infiltration'] + [infiltrationUnits] + [infiltrationHeaders[0][4]] + infiltrationAnalysisPeriod
+        if len(outdoorAirNumbers) > 0: outdoorAirHeader = outdoorAirHeaders[0][:2] + ['Outdoor Air'] + [outdoorAirUnits] + [outdoorAirHeaders[0][4]] + outdoorAirAnalysisPeriod
+        if len(natVentNumbers) > 0: natVentHeader = natVentHeaders[0][:2] + ['Natural Ventilation'] + [natVentUnits] + [natVentHeaders[0][4]] + natVentAnalysisPeriod
+        if len(coolingNumbers) > 0: coolingHeader = coolingHeaders[0][:2] + ['Cooling'] + [coolingUnits] + [coolingHeaders[0][4]] + coolingAnalysisPeriod
+        if len(opaqueEnergyFlow) > 0: opaqueHeader = surfaceHeaders[0][:2] + ['Opaque Conduction'] + [surfaceUnits] + [surfaceHeaders[0][4]] + surfaceAnalysisPeriod
+        if len(glazingEnergyFlow) > 0: glazingHeader = surfaceHeaders[0][:2] + ['Glazing Conduction'] + [surfaceUnits] + [surfaceHeaders[0][4]] + surfaceAnalysisPeriod
+        
+        #Put each of the terms into one master list.    
+        modelEnergyBalance = []
+        if len(heatingNumbers) > 0: modelEnergyBalance.append(heatingHeader + heatingNumbers)
+        if len(solarNumbers) > 0: modelEnergyBalance.append(solarHeader + solarNumbers)
+        if len(lightingNumbers) > 0: modelEnergyBalance.append(lightingHeader + lightingNumbers)
+        if len(equipNumbers) > 0: modelEnergyBalance.append(equipHeader + equipNumbers)
+        if len(peopleNumbers) > 0: modelEnergyBalance.append(peopleHeader + peopleNumbers)
+        if len(infiltrationNumbers) > 0: modelEnergyBalance.append(infiltrationHeader + infiltrationNumbers)
+        if len(outdoorAirNumbers) > 0: modelEnergyBalance.append(outdoorAirHeader + outdoorAirNumbers)
+        if len(natVentNumbers) > 0: modelEnergyBalance.append(natVentHeader + natVentNumbers)
+        if len(opaqueEnergyFlow) > 0: modelEnergyBalance.append(opaqueHeader + opaqueEnergyFlow)
+        if len(glazingEnergyFlow) > 0: modelEnergyBalance.append(glazingHeader + glazingEnergyFlow)
+        if len(coolingNumbers) > 0: modelEnergyBalance.append(coolingHeader + coolingNumbers)
+        
+        
+        return modelEnergyBalance
+    else: return -1
+
+
+hbCheck = True
+if sc.sticky.has_key('honeybee_release') == False:
+    hbCheck = False
+    print "You should first let Honeybee  fly..."
+    ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee fly...")
+
+
+
+if hbCheck == True and _HBZones != []:
+    modelEnergyBalanceInit = main(_HBZones, heatingLoad_, solarLoad_, lightingLoad_, equipLoad_, peopleLoad_, surfaceEnergyFlow_, infiltrationEnergy_, outdoorAirEnergy_, natVentEnergy_, coolingLoad_)
+    
+    if modelEnergyBalanceInit != -1:
+        modelEnergyBalance = DataTree[Object]()
+        
+        for dataCount, dataList in enumerate(modelEnergyBalanceInit):
+            for item in dataList:
+                modelEnergyBalance.Add(item, GH_Path(dataCount))
