@@ -62,7 +62,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Window Shade Generator"
 ghenv.Component.NickName = 'EPWindowShades'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nSEP_10_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -541,13 +541,13 @@ def createEPBlindMat(blindsMaterial, EPSlatOrient, depth, shadingHeight, EPshdAn
         '\t' + str(blindsMaterial[2]) + ',                        !- Slat Beam Solar Transmittance\n' + \
         '\t' + str(blindsMaterial[1]) + ',                    !- Front Side Slat Beam Solar Reflectance\n' + \
         '\t' + str(blindsMaterial[1]) + ',                    !- Back Side Slat Beam Solar Reflectance\n' + \
-        '\t' + ',                        !- Slat Diffuse Solar Transmittance\n' + \
+        '\t' + str(blindsMaterial[2]) + ',                        !- Slat Diffuse Solar Transmittance\n' + \
         '\t' + str(blindsMaterial[1]) + ',                    !- Front Side Slat Diffuse Solar Reflectance\n' + \
         '\t' + str(blindsMaterial[1]) + ',                    !- Back Side Slat Diffuse Solar Reflectance\n' + \
         '\t' + str(blindsMaterial[2]) + ',                       !- Slat Beam Visible Transmittance\n' + \
         '\t' + ',                        !- Front Side Slat Beam Visible Reflectance\n' + \
         '\t' + ',                        !- Back Side Slat Beam Visible Reflectance\n' + \
-        '\t' + ',                        !- Slat Diffuse Visible Transmittance\n' + \
+        '\t' + str(blindsMaterial[2]) + ',                        !- Slat Diffuse Visible Transmittance\n' + \
         '\t' + ',                        !- Front Side Slat Diffuse Visible Reflectance\n' + \
         '\t' + ',                        !- Back Side Slat Diffuse Visible Reflectance\n' + \
         '\t' + ',                        !- Slat Infrared Hemispherical Transmittance\n' + \
