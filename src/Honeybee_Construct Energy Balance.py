@@ -45,12 +45,12 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Construct Energy Balance"
 ghenv.Component.NickName = 'energyBalance'
-ghenv.Component.Message = 'VER 0.0.57\nSEP_10_2015'
+ghenv.Component.Message = 'VER 0.0.57\nSEP_11_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nMAY_02_2015
 #compatibleLBVersion = VER 0.0.59\nAPR_04_2015
-ghenv.Component.AdditionalHelpFromDocStrings = "-1"
+ghenv.Component.AdditionalHelpFromDocStrings = "0"
 
 
 from System import Object
@@ -276,6 +276,11 @@ def main(HBZones, heatingLoad, solarLoad, lightingLoad, equipLoad, peopleLoad, s
         #Subtract the solar load from the glazing energy flow to get just the heat conduction through the glazing.
         for count, val in enumerate(glazingEnergyFlow):
             glazingEnergyFlow[count] = val - solarNumbers[count]
+        
+        #Make sure that the cooling energy is negative.
+        if len(coolingNumbers) > 0:
+            for count, val in enumerate(coolingNumbers):
+                coolingNumbers[count] = -val
         
         #Add headers to the data number lists
         if len(heatingNumbers) > 0: heatingHeader = heatingHeaders[0][:2] + ['Heating'] + [heatingUnits] + [heatingHeaders[0][4]] + heatingAnalysisPeriod
