@@ -55,7 +55,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.57\nSEP_10_2015'
+ghenv.Component.Message = 'VER 0.0.57\nSEP_11_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nMAY_02_2015
@@ -494,7 +494,7 @@ if _resultFileAddress and gotData == True:
                     elif key[columnCount] == 7:
                         pass
                     elif key[columnCount] == 23:
-                        try: outdoorAirEnergy.Add((((float(column))*(-1)/3600000) + ((float( line.split(',')[columnCount+1] ))/3600000))/flrArea, p)
+                        try: outdoorAirEnergy.Add((((float(column))/3600000) + ((float( line.split(',')[columnCount+1] )*(-1))/3600000))/flrArea, p)
                         except: dataTypeList[10] = False
                     elif key[columnCount] == 24:
                         pass
@@ -505,16 +505,16 @@ if _resultFileAddress and gotData == True:
                         pass
                     elif key[columnCount] == 10:
                         try: operativeTemperature.Add(float(column), p)
-                        except: dataTypeList[12] = True
+                        except: dataTypeList[12] = False
                     elif key[columnCount] == 11:
                         try: airTemperature.Add(float(column), p)
-                        except: dataTypeList[13] = True
+                        except: dataTypeList[13] = False
                     elif key[columnCount] == 12:
                         try: meanRadTemperature.Add(float(column), p)
-                        except: dataTypeList[14] = True
+                        except: dataTypeList[14] = False
                     elif key[columnCount] == 13:
                         try: relativeHumidity.Add(float(column), p)
-                        except: dataTypeList[15] = True
+                        except: dataTypeList[15] = False
                     elif key[columnCount] == 14:
                         try:
                             if otherZDatFlrNormList[otherZDatFlrCount] == False:
