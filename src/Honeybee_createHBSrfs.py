@@ -60,7 +60,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_createHBSrfs'
 ghenv.Component.NickName = 'createHBSrfs'
-ghenv.Component.Message = 'VER 0.0.57\nAUG_26_2015'
+ghenv.Component.Message = 'VER 0.0.57\nSEP_12_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -234,10 +234,21 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
                     return
             else:
                 # it is a full string
-                added, EPConstruction = hb_EPObjectsAux.addEPObjectToLib(EPConstruction, overwrite = True)
-
-                if not added:
-                    msg = name + " is not added to the project library!"
+                if "CONSTRUCTION" in EPConstruction.upper():
+                    added, EPConstruction = hb_EPObjectsAux.addEPObjectToLib(EPConstruction, overwrite = True)
+                    
+                    if not added:
+                        msg = name + " is not added to the project library!"
+                        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                        print msg
+                        return
+                elif "MATERIAL" in EPConstruction.upper():
+                    msg = "Your connected EPConstruction_ is just a material and not a full construction. \n You have to pass it through an 'EnergyPlus Construction' component before connecting it here."
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                    print msg
+                    return
+                else:
+                    msg = "Your connected EPConstruction_ is not a valid construction."
                     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
                     print msg
                     return
