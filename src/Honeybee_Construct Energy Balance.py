@@ -28,24 +28,25 @@ Provided by Honeybee 0.0.57
     
     Args:
         _HBZones: The HBZones out of any of the HB components that generate or alter zones.  Note that these should ideally be the zones that are fed into the Run Energy Simulation component.  Zones read back into Grasshopper from the Import idf component will not align correctly with the EP Result data.
-        heatingLoad_: The heating energy 
-        solarLoad_: The total solar gain in each zone(kWh).
-        lightingLoad_: The electric lighting energy needed for each zone in kWh.
-        equipLoad_: The electric equipment energy needed for each zone in kWh.
-        peopleLoad_: The internal heat gains in each zone resulting from people (kWh).
-        surfaceEnergyFlow_: ...
-        infiltrationEnergy_: The heat loss (negative) or heat gain (positive) in each zone resulting from infiltration (kWh).
-        outdoorAirEnergy_: ...
-        natVentEnergy_: ...
-        coolingLoad_: The cooling energy
+        cooling_: The cooling load from the "Honeybee_Read EP Result" component.
+        heating_: The heating load from the "Honeybee_Read EP Result" component.
+        electricLight_: The electric lighting load from the "Honeybee_Read EP Result" component.
+        electricEquip_: The electric equipment load from the "Honeybee_Read EP Result" component.
+        peopleGains_: The people gains from the "Honeybee_Read EP Result" component.
+        totalSolarGain_: The total solar gain from the "Honeybee_Read EP Result" component.
+        infiltrationEnergy_: The infiltration heat loss (negative) or heat gain (positive) from the "Honeybee_Read EP Result" component.
+        outdoorAirEnergy_: The outdoor air heat loss (negative) or heat gain (positive) from the "Honeybee_Read EP Result" component.
+        natVentEnergy_: The natural ventilation heat loss (negative) or heat gain (positive) from the "Honeybee_Read EP Result" component.
+        surfaceEnergyFlow_: The surface heat loss (negative) or heat gain (positive) from the "Honeybee_Read EP Surface Result" component.
     Returns:
         readMe!: ...
-        modelEnergyBalance:  A data tree with all of the important building-wide energy balance terms.  This can then be plugged into the "Ladybug_3D Chart" or "Ladybug_Monthly Bar Chart" to give a visualization of the energy balance of the whole model.
+        modelEnergyBalance:  A data tree with the important building-wide energy balance terms.  This can then be plugged into the "Ladybug_3D Chart" or "Ladybug_Monthly Bar Chart" to give a visualization of the energy balance of the whole model.
+        energyBalWithSotrage:  A data tree with the important building-wide energy balance terms plus an additional term to represent the energy being stored in the building's mass and air mass.  This can then be plugged into the "Ladybug_3D Chart" or "Ladybug_Monthly Bar Chart" to give a visualization of the energy balance of the whole model.
 """
 
 ghenv.Component.Name = "Honeybee_Construct Energy Balance"
 ghenv.Component.NickName = 'energyBalance'
-ghenv.Component.Message = 'VER 0.0.57\nSEP_11_2015'
+ghenv.Component.Message = 'VER 0.0.57\nSEP_13_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nMAY_02_2015
@@ -64,6 +65,10 @@ import scriptcontext as sc
 
 
 def checkCreateDataTree(dataTree, dataName, dataType):
+    #Define a variable for warnings.
+    w = gh.GH_RuntimeMessageLevel.Warning
+    
+    #Convert the data tree to a python list.
     dataPyList = []
     for i in range(dataTree.BranchCount):
         branchList = dataTree.Branch(i)
@@ -88,11 +93,12 @@ def checkCreateDataTree(dataTree, dataName, dataType):
     if sum(checkHeader) == len(dataPyList):
         dataCheck1 = True
     else:
-        dataCheck1 = False
-        warning = "Not all of the connected " + dataName + " has a Ladybug/Honeybee header on it.  This header is necessary to generate an indoor temperture map with this component."
-        print warning
-        w = gh.GH_RuntimeMessageLevel.Warning
-        ghenv.Component.AddRuntimeMessage(w, warning)
+        if len(dataPyList) > 0 and dataPyList[0][0] == None: pass
+        else:
+            dataCheck1 = False
+            warning = "Not all of the connected " + dataName + " has a Ladybug/Honeybee header on it.  This header is necessary to generate an indoor temperture map with this component."
+            print warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
     
     try:
         #Check to be sure that the lengths of data in in the dataTree branches are all the same.
@@ -142,7 +148,16 @@ def checkCreateDataTree(dataTree, dataName, dataType):
                 warning = "Not all of the connected " + dataName + " data is for the correct data type."
                 print warning
                 ghenv.Component.AddRuntimeMessage(w, warning)
-            if dataCheck1 == True and dataCheck2 == True and dataCheck3 == True and dataCheck4 == True: dataCheck = True
+            
+            if 'm2' in headerUnits or 'ft2' in headerUnits:
+                dataCheck5 = False
+                warning = "The data from the " + dataName + " input has been normalized by an area. \n Values need to be non-normalized for the energy balance to work."
+                print warning
+                ghenv.Component.AddRuntimeMessage(w, warning)
+            else:
+                dataCheck5 = True
+            
+            if dataCheck1 == True and dataCheck2 == True and dataCheck3 == True and dataCheck4 == True and dataCheck5 == True: dataCheck = True
             else: dataCheck = False
         else:
             dataCheck = False
@@ -177,8 +192,7 @@ def getSrfNames(HBZones):
         for srf in zone.surfaces:
             # Wall
             if srf.type == 0:
-                if srf.BC.upper() == "SURFACE": pass
-                else:
+                if srf.BC.upper() == "OUTDOORS":
                     if srf.hasChild:
                         wall.append(srf.name)
                         for childSrf in srf.childSrfs:
@@ -187,18 +201,24 @@ def getSrfNames(HBZones):
                         wall.append(srf.name)
             # underground wall
             elif srf.type == 0.5:
-                undergroundWall.append(srf.name)
+                if srf.BC.upper() == "GROUND":
+                    undergroundWall.append(srf.name)
             # Roof
             elif srf.type == 1:
-                if srf.hasChild:
-                    roof.append(srf.name)
-                    for childSrf in srf.childSrfs:
-                        skylight.append(childSrf.name)
-                else:
-                    roof.append(srf.name)
+                if srf.BC.upper() == "OUTDOORS":
+                    if srf.hasChild:
+                        roof.append(srf.name)
+                        for childSrf in srf.childSrfs:
+                            skylight.append(childSrf.name)
+                    else:
+                        roof.append(srf.name)
             
-            elif srf.type == 2.5: groundFloor.append(srf.name)
-            elif srf.type == 2.75: exposedFloor.append(srf.name)
+            elif srf.type == 2.5:
+                if srf.BC.upper() == "GROUND":
+                    groundFloor.append(srf.name)
+            elif srf.type == 2.75:
+                if srf.BC.upper() == "OUTDOORS":
+                    exposedFloor.append(srf.name)
         
         
     return wall, window, skylight, roof, \
@@ -228,15 +248,15 @@ def sumAllLists(tree):
 
 def main(HBZones, heatingLoad, solarLoad, lightingLoad, equipLoad, peopleLoad, surfaceEnergyFlow, infiltrationEnergy, outdoorAirEnergy, natVentEnergy, coolingLoad):
     #Check and convert the data for each of the zone data lists.
-    checkData1, heatingUnits, heatingHeaders, heatingNumbers, heatingAnalysisPeriod = checkCreateDataTree(heatingLoad, "heatingLoad_", "Heating")
-    checkData2, solarUnits, solarHeaders, solarNumbers, solarAnalysisPeriod = checkCreateDataTree(solarLoad, "solarLoad_", "Solar")
-    checkData3, lightingUnits, lightingHeaders, lightingNumbers, lightingAnalysisPeriod = checkCreateDataTree(lightingLoad, "lightingLoad_", "Lighting")
-    checkData4, equipUnits, equipHeaders, equipNumbers, equipAnalysisPeriod = checkCreateDataTree(equipLoad, "equipLoad_", "Equipment")
-    checkData5, peopleUnits, peopleHeaders, peopleNumbers, peopleAnalysisPeriod = checkCreateDataTree(peopleLoad, "peopleLoad_", "People")
+    checkData1, heatingUnits, heatingHeaders, heatingNumbers, heatingAnalysisPeriod = checkCreateDataTree(heatingLoad, "heating", "Heating")
+    checkData2, solarUnits, solarHeaders, solarNumbers, solarAnalysisPeriod = checkCreateDataTree(solarLoad, "totalSolarGain_", "Solar")
+    checkData3, lightingUnits, lightingHeaders, lightingNumbers, lightingAnalysisPeriod = checkCreateDataTree(lightingLoad, "electricLight_", "Lighting")
+    checkData4, equipUnits, equipHeaders, equipNumbers, equipAnalysisPeriod = checkCreateDataTree(equipLoad, "electricEquip_", "Equipment")
+    checkData5, peopleUnits, peopleHeaders, peopleNumbers, peopleAnalysisPeriod = checkCreateDataTree(peopleLoad, "peopleGains_", "People")
     checkData6, infiltrationUnits, infiltrationHeaders, infiltrationNumbers, infiltrationAnalysisPeriod = checkCreateDataTree(infiltrationEnergy, "infiltrationEnergy_", "Infiltration")
     checkData7, outdoorAirUnits, outdoorAirHeaders, outdoorAirNumbers, outdoorAirAnalysisPeriod = checkCreateDataTree(outdoorAirEnergy, "outdoorAirEnergy_", "Outdoor Air")
     checkData8, natVentUnits, natVentHeaders, natVentNumbers, natVentAnalysisPeriod = checkCreateDataTree(natVentEnergy, "natVentEnergy_", "Natural Ventilation")
-    checkData9, coolingUnits, coolingHeaders, coolingNumbers, coolingAnalysisPeriod = checkCreateDataTree(coolingLoad, "coolingLoad_", "Cooling")
+    checkData9, coolingUnits, coolingHeaders, coolingNumbers, coolingAnalysisPeriod = checkCreateDataTree(coolingLoad, "cooling", "Cooling")
     checkData10, surfaceUnits, surfaceHeaders, surfaceNumbers, surfaceAnalysisPeriod = checkCreateDataTree(surfaceEnergyFlow, "surfaceEnergyFlow_", "Surface Energy")
     
     if checkData1 == True and checkData2 == True and checkData3 == True and checkData4 == True and checkData5 == True and checkData6 == True and checkData7 == True and checkData8 == True and checkData9 == True  and checkData10 == True:
@@ -297,20 +317,52 @@ def main(HBZones, heatingLoad, solarLoad, lightingLoad, equipLoad, peopleLoad, s
         
         #Put each of the terms into one master list.    
         modelEnergyBalance = []
-        if len(heatingNumbers) > 0: modelEnergyBalance.append(heatingHeader + heatingNumbers)
-        if len(solarNumbers) > 0: modelEnergyBalance.append(solarHeader + solarNumbers)
-        if len(lightingNumbers) > 0: modelEnergyBalance.append(lightingHeader + lightingNumbers)
-        if len(equipNumbers) > 0: modelEnergyBalance.append(equipHeader + equipNumbers)
-        if len(peopleNumbers) > 0: modelEnergyBalance.append(peopleHeader + peopleNumbers)
-        if len(infiltrationNumbers) > 0: modelEnergyBalance.append(infiltrationHeader + infiltrationNumbers)
-        if len(outdoorAirNumbers) > 0: modelEnergyBalance.append(outdoorAirHeader + outdoorAirNumbers)
-        if len(natVentNumbers) > 0: modelEnergyBalance.append(natVentHeader + natVentNumbers)
-        if len(opaqueEnergyFlow) > 0: modelEnergyBalance.append(opaqueHeader + opaqueEnergyFlow)
-        if len(glazingEnergyFlow) > 0: modelEnergyBalance.append(glazingHeader + glazingEnergyFlow)
-        if len(coolingNumbers) > 0: modelEnergyBalance.append(coolingHeader + coolingNumbers)
+        modelEnergyBalanceNum = []
+        if len(heatingNumbers) > 0:
+            modelEnergyBalance.append(heatingHeader + heatingNumbers)
+            modelEnergyBalanceNum.append(heatingNumbers)
+        if len(solarNumbers) > 0:
+            modelEnergyBalance.append(solarHeader + solarNumbers)
+            modelEnergyBalanceNum.append(solarNumbers)
+        if len(lightingNumbers) > 0:
+            modelEnergyBalance.append(lightingHeader + lightingNumbers)
+            modelEnergyBalanceNum.append(lightingNumbers)
+        if len(equipNumbers) > 0:
+            modelEnergyBalance.append(equipHeader + equipNumbers)
+            modelEnergyBalanceNum.append(equipNumbers)
+        if len(peopleNumbers) > 0:
+            modelEnergyBalance.append(peopleHeader + peopleNumbers)
+            modelEnergyBalanceNum.append(peopleNumbers)
+        if len(infiltrationNumbers) > 0:
+            modelEnergyBalance.append(infiltrationHeader + infiltrationNumbers)
+            modelEnergyBalanceNum.append(infiltrationNumbers)
+        if len(outdoorAirNumbers) > 0:
+            modelEnergyBalance.append(outdoorAirHeader + outdoorAirNumbers)
+            modelEnergyBalanceNum.append(outdoorAirNumbers)
+        if len(natVentNumbers) > 0:
+            modelEnergyBalance.append(natVentHeader + natVentNumbers)
+            modelEnergyBalanceNum.append(natVentNumbers)
+        if len(opaqueEnergyFlow) > 0:
+            modelEnergyBalance.append(opaqueHeader + opaqueEnergyFlow)
+            modelEnergyBalanceNum.append(opaqueEnergyFlow)
+        if len(glazingEnergyFlow) > 0:
+            modelEnergyBalance.append(glazingHeader + glazingEnergyFlow)
+            modelEnergyBalanceNum.append(glazingEnergyFlow)
+        if len(coolingNumbers) > 0:
+            modelEnergyBalance.append(coolingHeader + coolingNumbers)
+            modelEnergyBalanceNum.append(coolingNumbers)
+        
+        #Create an energy balance list with a storage term.
+        energyBalWithStorage = modelEnergyBalance[:]
+        storageHeaderInit = modelEnergyBalance[0][:7]
+        storageHeader = storageHeaderInit[:2] + ['Storage'] + storageHeaderInit[3:7]
+        storageNumbers = sumAllLists(modelEnergyBalanceNum)
+        for count, val in enumerate(storageNumbers):
+            storageNumbers[count] = -val
+        energyBalWithStorage.append(storageHeader + storageNumbers)
         
         
-        return modelEnergyBalance
+        return modelEnergyBalance, energyBalWithStorage
     else: return -1
 
 
@@ -323,11 +375,14 @@ if sc.sticky.has_key('honeybee_release') == False:
 
 
 if hbCheck == True and _HBZones != []:
-    modelEnergyBalanceInit = main(_HBZones, heatingLoad_, solarLoad_, lightingLoad_, equipLoad_, peopleLoad_, surfaceEnergyFlow_, infiltrationEnergy_, outdoorAirEnergy_, natVentEnergy_, coolingLoad_)
-    
-    if modelEnergyBalanceInit != -1:
-        modelEnergyBalance = DataTree[Object]()
+    if heating_.BranchCount > 0 or totalSolarGain_.BranchCount > 0 or  electricLight_.BranchCount > 0 or  electricEquip_.BranchCount > 0 or  peopleGains_.BranchCount > 0 or  surfaceEnergyFlow_.BranchCount > 0 or infiltrationEnergy_.BranchCount > 0 or outdoorAirEnergy_.BranchCount > 0 or natVentEnergy_.BranchCount > 0 or cooling_.BranchCount > 0:
+        modelEnergyBalanceInit, energyBalWithStorageInit = main(_HBZones, heating_, totalSolarGain_, electricLight_, electricEquip_, peopleGains_, surfaceEnergyFlow_, infiltrationEnergy_, outdoorAirEnergy_, natVentEnergy_, cooling_)
         
-        for dataCount, dataList in enumerate(modelEnergyBalanceInit):
-            for item in dataList:
-                modelEnergyBalance.Add(item, GH_Path(dataCount))
+        if modelEnergyBalanceInit != -1:
+            modelEnergyBalance = DataTree[Object]()
+            energyBalWithStorage = DataTree[Object]()
+            
+            for dataCount, dataList in enumerate(modelEnergyBalanceInit):
+                for item in dataList: modelEnergyBalance.Add(item, GH_Path(dataCount))
+            for dataCount, dataList in enumerate(energyBalWithStorageInit):
+                for item in dataList: energyBalWithStorage.Add(item, GH_Path(dataCount))
