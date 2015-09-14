@@ -41,12 +41,12 @@ Provided by Honeybee 0.0.57
     Returns:
         readMe!: ...
         modelEnergyBalance:  A data tree with the important building-wide energy balance terms.  This can then be plugged into the "Ladybug_3D Chart" or "Ladybug_Monthly Bar Chart" to give a visualization of the energy balance of the whole model.
-        energyBalWithSotrage:  A data tree with the important building-wide energy balance terms plus an additional term to represent the energy being stored in the building's mass and air mass.  This can then be plugged into the "Ladybug_3D Chart" or "Ladybug_Monthly Bar Chart" to give a visualization of the energy balance of the whole model.
+        energyBalWithStorage:  A data tree with the important building-wide energy balance terms plus an additional term to represent the energy being stored in the building's mass.  If you have input all of the terms of your energy balance to this component, you storage term should be very small in relation to the other energy balance terms.  Thus, this storage term can be a good way to check whether all of your energy balance terms are accounted for.  This output can then be plugged into the "Ladybug_3D Chart" or "Ladybug_Monthly Bar Chart" to give a visualization of the energy balance of the whole model.
 """
 
 ghenv.Component.Name = "Honeybee_Construct Energy Balance"
 ghenv.Component.NickName = 'energyBalance'
-ghenv.Component.Message = 'VER 0.0.57\nSEP_13_2015'
+ghenv.Component.Message = 'VER 0.0.57\nSEP_14_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nMAY_02_2015
@@ -204,7 +204,7 @@ def getSrfNames(HBZones):
                 if srf.BC.upper() == "GROUND":
                     undergroundWall.append(srf.name)
             # Roof
-            elif srf.type == 1:
+            elif srf.type == 1 or srf.type == 3:
                 if srf.BC.upper() == "OUTDOORS":
                     if srf.hasChild:
                         roof.append(srf.name)
@@ -216,11 +216,11 @@ def getSrfNames(HBZones):
             elif srf.type == 2.5:
                 if srf.BC.upper() == "GROUND":
                     groundFloor.append(srf.name)
-            elif srf.type == 2.75:
+            elif srf.type == 2.75 or srf.type == 2:
                 if srf.BC.upper() == "OUTDOORS":
                     exposedFloor.append(srf.name)
-        
-        
+    
+    
     return wall, window, skylight, roof, \
            exposedFloor, groundFloor, undergroundWall
 

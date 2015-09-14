@@ -55,7 +55,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.57\nSEP_11_2015'
+ghenv.Component.Message = 'VER 0.0.57\nSEP_14_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nMAY_02_2015
@@ -174,6 +174,8 @@ infiltrationFlow = []
 natVentFlow = []
 mechSysAirFlow = []
 earthTubeFlow = []
+zoneHeatingEnergy = []
+zoneCoolingEnergy = []
 internalAirGain = []
 surfaceAirGain = []
 systemAirGain = []
@@ -184,6 +186,8 @@ try:
         natVentFlow.append([])
         mechSysAirFlow.append([])
         earthTubeFlow.append([])
+        zoneHeatingEnergy.append([])
+        zoneCoolingEnergy.append([])
         internalAirGain.append([])
         surfaceAirGain.append([])
         systemAirGain.append([])
@@ -350,15 +354,17 @@ if _resultFileAddress and gotData == True:
                         key.append(7)
                         zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
                     
-                    elif 'Zone Ideal Loads Outdoor Air Total Heating Energy' in column:
+                    elif 'Zone Ideal Loads Zone Total Heating Energy' in column:
                         key.append(23)
                         zoneName = checkZone(" " + ":".join(column.split(":")[:-1]).split(' IDEAL LOADS')[0])
-                        makeHeader(outdoorAirEnergy, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Outdoor Air Energy", energyUnit, True)
-                        dataTypeList[10] = True
+                        zoneHeatingEnergy[int(path[-1])].append(zoneName)
+                        zoneHeatingEnergy[int(path[-1])].append(column.split('(')[-1].split(')')[0])
                     
-                    elif 'Zone Ideal Loads Outdoor Air Total Cooling Energy' in column:
+                    elif 'Zone Ideal Loads Zone Total Cooling Energy' in column:
                         key.append(24)
                         zoneName = checkZone(" " + ":".join(column.split(":")[:-1]).split(' IDEAL LOADS')[0])
+                        zoneCoolingEnergy[int(path[-1])].append(zoneName)
+                        zoneCoolingEnergy[int(path[-1])].append(column.split('(')[-1].split(')')[0])
                     
                     elif 'Zone Infiltration Total Heat Loss Energy' in column:
                         key.append(8)
@@ -436,8 +442,12 @@ if _resultFileAddress and gotData == True:
                         systemAirGain[int(path[-1])].append(zoneName)
                         systemAirGain[int(path[-1])].append(column.split('(')[-1].split(')')[0])
                     
-                    elif 'Zone' in column and not "System" in column and not "SYSTEM" in column and not "ZONEHVAC" in column and not "Earth Tube" in column:
-                        zoneName = checkZoneOther(dataIndex, (" " + ":".join(column.split(":")[:-1])))
+                    elif 'Zone' in column and not "Earth Tube" in column:
+                        if not "System" in column and not "SYSTEM" in column and not "ZONEHVAC" in column:
+                            zoneName = checkZoneOther(dataIndex, (" " + ":".join(column.split(":")[:-1])))
+                        elif 'IDEAL LOADS' in column:
+                            zoneName = checkZoneOther(dataIndex, (" " + column.split(" IDEAL LOADS")[0]))
+                        else: zoneName = None
                         
                         if zoneName != None:
                             key.append(14)
@@ -494,10 +504,11 @@ if _resultFileAddress and gotData == True:
                     elif key[columnCount] == 7:
                         pass
                     elif key[columnCount] == 23:
-                        try: outdoorAirEnergy.Add((((float(column))/3600000) + ((float( line.split(',')[columnCount+1] )*(-1))/3600000))/flrArea, p)
-                        except: dataTypeList[10] = False
+                        try: zoneHeatingEnergy[int(path[columnCount])].append(float(column))
+                        except: pass
                     elif key[columnCount] == 24:
-                        pass
+                        try: zoneCoolingEnergy[int(path[columnCount])].append(float(column))
+                        except: pass
                     elif key[columnCount] == 8:
                         try: infiltrationEnergy.Add((((float(column))*(-1)/3600000) + ((float( line.split(',')[columnCount+1] ))/3600000))/flrArea, p)
                         except: dataTypeList[9] = False
@@ -593,6 +604,14 @@ if dataTypeList[2] == True and dataTypeList[3] == True:
             for numCount, num in enumerate(list[7:]):
                 thermalEnergyBalance.Add((heatingPyList[listCount][7:][numCount] - num), GH_Path(listCount))
             dataTypeList[1] = True
+        
+        #If we have the cooling/heating coil energy and the heat energy added/removed from the zone, compute the portion of the energy balance that the outdoor air is responsible for.
+        if zoneHeatingEnergy != testTracker and zoneCoolingEnergy != testTracker:
+            for listCount, list in enumerate(zoneHeatingEnergy):
+                makeHeader(outdoorAirEnergy, listCount, list[0], list[1], "Outdoor Air Energy", energyUnit, True)
+                for numCount, num in enumerate(list[2:]):
+                    outdoorAirEnergy.Add((num/3600000) - (zoneCoolingEnergy[listCount][2:][numCount]/3600000) - heatingPyList[listCount][7:][numCount] + coolingPyList[listCount][7:][numCount], GH_Path(listCount))
+            dataTypeList[10] = True
 
 # If we have information on gains through the air, group them all into a total air gains list.
 if internalAirGain != testTracker and surfaceAirGain != testTracker:
