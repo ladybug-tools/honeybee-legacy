@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.57\nAUG_28_2015'
+ghenv.Component.Message = 'VER 0.0.57\nSEP_10_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -328,6 +328,7 @@ class PrepareTemplateEPLibFiles(object):
         if not sc.sticky.has_key("honeybee_windowMaterialLib"): sc.sticky ["honeybee_windowMaterialLib"] = {}
         if not sc.sticky.has_key("honeybee_ScheduleLib"): sc.sticky["honeybee_ScheduleLib"] = {}
         if not sc.sticky.has_key("honeybee_ScheduleTypeLimitsLib"): sc.sticky["honeybee_ScheduleTypeLimitsLib"] = {}
+        if not sc.sticky.has_key("honeybee_thermMaterialLib"): sc.sticky["honeybee_thermMaterialLib"] = {}
         
         self.downloadTemplate = downloadTemplate
         self.workingDir = workingDir
@@ -343,6 +344,7 @@ class PrepareTemplateEPLibFiles(object):
         sc.sticky ["honeybee_windowMaterialLib"] = {}
         sc.sticky["honeybee_ScheduleLib"] = {}
         sc.sticky["honeybee_ScheduleTypeLimitsLib"] = {}
+        sc.sticky["honeybee_thermMaterialLib"] = {}
     
     def downloadTemplates(self):
         
@@ -439,6 +441,7 @@ class HB_GetEPLibraries(object):
             sc.sticky ["honeybee_constructionLib"] = {}
             sc.sticky ["honeybee_materialLib"] = {}
             sc.sticky ["honeybee_windowMaterialLib"] = {}
+            sc.sticky["honeybee_thermMaterialLib"] = {}
         if schedule:
             sc.sticky["honeybee_ScheduleLib"] = {}
             sc.sticky["honeybee_ScheduleTypeLimitsLib"] = {}
@@ -505,8 +508,8 @@ class HB_GetEPLibraries(object):
         sc.sticky ["honeybee_materialLib"] = resultDict["Material"]
         sc.sticky ["honeybee_windowMaterialLib"] = resultDict["WindowMaterial"]
         
-        print str(len(sc.sticky["honeybee_constructionLib"].keys())) + " EPConstruction are loaded available in Honeybee library"
-        print str(len(sc.sticky["honeybee_materialLib"].keys())) + " EPMaterial are now loaded in Honeybee library"
+        print str(len(sc.sticky["honeybee_constructionLib"].keys())) + " EPConstructions are loaded available in Honeybee library"
+        print str(len(sc.sticky["honeybee_materialLib"].keys())) + " EPMaterials are now loaded in Honeybee library"
         print str(len(sc.sticky["honeybee_windowMaterialLib"].keys())) + " EPWindowMaterial are loaded in Honeybee library"
     
     
@@ -1262,10 +1265,6 @@ class hb_WriteRAD(object):
     def writeRADAndMaterialFiles(self, originalHBObjects, subWorkingDir, radFileName, \
                                  analysisRecipe, meshParameters, exportInteriorWalls):
         
-        # collect information from analysis recipe
-        radParameters = analysisRecipe.radParameters
-        simulationType = analysisRecipe.type
-        
         # initiate RAD Parameters
         if analysisRecipe.radParameters==None:
             quality = 0
@@ -1274,6 +1273,10 @@ class hb_WriteRAD(object):
             for key in self.hb_radParDict.keys():
                 #print key + " is set to " + str(hb_radParDict[key][quality])
                 analysisRecipe.radParameters[key] = self.hb_radParDict[key][quality]
+        
+        # collect information from analysis recipe
+        radParameters = analysisRecipe.radParameters
+        simulationType = analysisRecipe.type
         
         radFileFullName = os.path.join(subWorkingDir, radFileName + '.rad')
         
@@ -1381,7 +1384,8 @@ class hb_WriteRAD(object):
                     
                     # if it is all fine then write the geometry
                     if IESObjcIsFine:
-                        geoRadFile.write(self.getIESSurfaceStr(originalHBObjects[objCount], HBObj.name, IESCount, HBObj))
+                        IESName = HBObj.name + "_" + str(IESCount)
+                        geoRadFile.write( HBObj.getRADGeometryStr(IESName, originalHBObjects[objCount]))
                         # downlight_light polygon downlight.d
                         # add to IES Objects list so I can add the materials to the list later
                         if HBObj.name not in IESObjects.keys():
@@ -1411,13 +1415,14 @@ class hb_WriteRAD(object):
             matFile.write(matStr)
             matFile.write("\n# start of material(s) specific to this study (if any)\n")
             for radMatName in customRADMat.keys():
+
                 matFile.write(self.hb_RADMaterialAUX.getRADMaterialString(radMatName) + "\n")
-                
+
                 # check if the material is is trans
                 if self.hb_RADMaterialAUX.getRADMaterialType(radMatName) == "trans":
-                    
                     # get the st value
                     st = self.hb_RADMaterialAUX.getSTForTransMaterials(radMatName)
+
                     if st < radParameters["_st_"]:
                         print "Found a trans material... " + \
                               "Resetting st parameter from " + str(radParameters["_st_"]) + " to " + str(st)
@@ -1869,7 +1874,7 @@ class hb_WriteRAD(object):
         
     
     def runBatchFiles(self, initBatchFileName, batchFileNames, fileNames, \
-                      pcompBatchFile, waitingTime):
+                      pcompBatchFile, waitingTime, runInBackground = False):
         
         def isTheStudyOver(fileNames):
             while True:
@@ -1877,8 +1882,9 @@ class hb_WriteRAD(object):
                 proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
                 cmdCount = 0
                 for line in proc.stdout:
-                    if line.strip().startswith("cmd") and line.strip().endswith(".bat"):
-                        fileName = line.strip().split(" ")[-1].split("\\")[-1]
+                    if (line.strip().startswith("C:\\Windows\\system32\\cmd") or line.strip().startswith("cmd")) \
+                        and line.strip().endswith(".bat"):
+                        fileName = line.strip().split(" ")[-1].split("/")[-1]
                         # I should check the file names and make sure they are the right files
                         if fileName in fileNames:
                             cmdCount += 1
@@ -1886,14 +1892,22 @@ class hb_WriteRAD(object):
                 if cmdCount == 0:
                     return
         
-        def executeBatchFiles(batchFileNames, waitingTime):
+        def executeBatchFiles(batchFileNames, waitingTime, runInBackground):
+            cmd = ''
+            if not runInBackground: cmd = 'start cmd /c '
+            
             for batchFileName in batchFileNames:
-                p = subprocess.Popen(r'start cmd /c ' + batchFileName , shell=True)
+                batchFileName = batchFileName.replace("\\", "/")
+                p = subprocess.Popen(cmd + batchFileName , shell=True)
                 time.sleep(waitingTime)
 
-        os.system(initBatchFileName)
+        if runInBackground:
+            subprocess.Popen(initBatchFileName, shell=True)
+        else:
+            os.system(initBatchFileName)
+            
         time.sleep(waitingTime)
-        executeBatchFiles(batchFileNames, waitingTime)
+        executeBatchFiles(batchFileNames, waitingTime, runInBackground)
         isTheStudyOver(fileNames)
         if pcompBatchFile!="":
             os.system(pcompBatchFile) # put all the files together
@@ -2072,33 +2086,6 @@ class hb_WriteRAD(object):
             # glazingStr
             fullStr = fullStr + self.getsurfaceStr(surface.childSrfs[0], glzCount, glzCoorList)
         return fullStr
-    
-    def getIESSurfaceStr(self, surface, constructionName, count, IESObject):
-        if IESObject.type == "polygon":
-            coordinates = surface.DuplicateVertices()
-                
-            srfStr =  constructionName + "_light polygon " + constructionName + '_' + `count` + ".d\n" + \
-                "0\n" + \
-                "0\n" + \
-                `(len(coordinates)*3)` + "\n"
-                
-            ptStr = ''
-            for  pt in coordinates:
-                ptStr = ptStr + '%.4f'%pt.X + '  ' + '%.4f'%pt.Y + '  ' + '%.4f'%pt.Z + '\n'
-            ptStr = ptStr + '\n'
-            
-            return srfStr + ptStr
-        
-        elif IESObject.type == "sphere":
-            center = surface.GetBoundingBox(True).Center
-            radius = IESObject.radius
-            
-            srfStr =  constructionName + "_light sphere " + constructionName + '_' + `count` + ".d\n" + \
-                "0\n" + \
-                "0\n" + \
-                "4 " + `center.X` + " " + `center.Y` + " " + `center.Z` + " " + `radius` + "\n"
-            
-            return srfStr
             
 class hb_WriteRADAUX(object):
     
@@ -2531,12 +2518,20 @@ class hb_WriteRADAUX(object):
         viewDirection = sc.doc.Views.ActiveView.ActiveViewport.CameraDirection
         viewDirection.Unitize()
         viewUp = sc.doc.Views.ActiveView.ActiveViewport.CameraUp
-        viewUp.Unitize()
-        viewHA = 180 - rs.VectorAngle(sc.doc.Views.ActiveView.ActiveViewport.GetFrustumRightPlane()[1][1], sc.doc.Views.ActiveView.ActiveViewport.GetFrustumLeftPlane()[1][1])
-        if viewHA == 0: viewHA = 180
-        viewVA = 180 - rs.VectorAngle(sc.doc.Views.ActiveView.ActiveViewport.GetFrustumBottomPlane()[1][1], sc.doc.Views.ActiveView.ActiveViewport.GetFrustumTopPlane()[1][1])
-        if viewVA == 0: viewVA = 180
         
+        viewUp.Unitize()
+        try:
+            viewHA = 180 - rs.VectorAngle(sc.doc.Views.ActiveView.ActiveViewport.GetFrustumRightPlane()[1][1], sc.doc.Views.ActiveView.ActiveViewport.GetFrustumLeftPlane()[1][1])
+        except:
+            viewHA = 180 - rs.VectorAngle(sc.doc.Views.ActiveView.ActiveViewport.GetFrustumRightPlane()[1].Normal, sc.doc.Views.ActiveView.ActiveViewport.GetFrustumLeftPlane()[1].Normal)
+        
+        if viewHA == 0: viewHA = 180
+        try:
+            viewVA = 180 - rs.VectorAngle(sc.doc.Views.ActiveView.ActiveViewport.GetFrustumBottomPlane()[1][1], sc.doc.Views.ActiveView.ActiveViewport.GetFrustumTopPlane()[1][1])
+        except:
+            viewVA = 180 - rs.VectorAngle(sc.doc.Views.ActiveView.ActiveViewport.GetFrustumBottomPlane()[1].Normal, sc.doc.Views.ActiveView.ActiveViewport.GetFrustumTopPlane()[1].Normal)
+        
+        if viewVA == 0: viewVA = 180
         PI = math.pi
         
         if cameraType == 2:
@@ -4870,7 +4865,7 @@ class EPZone(object):
                                     childSrf.basePlane.Flip()
                         elif HBSrf.hasChild:
                             for childSrf in HBSrf.childSrfs:
-                                print childSrf.normalVector
+                                # print childSrf.normalVector
                                 childSrf.cenPt = rc.Geometry.AreaMassProperties.Compute(childSrf.geometry).Centroid
                                 uv = childSrf.geometry.Faces[0].ClosestPoint(childSrf.cenPt)
                                 childSrf.normalVector = childSrf.geometry.Faces[0].NormalAt(uv[1], uv[2])
@@ -4880,6 +4875,12 @@ class EPZone(object):
                                     print "Normal direction for " + childSrf.name + " is fixed by Honeybee!"
                                     childSrf.geometry.Flip()
                                     childSrf.normalVector.Reverse()
+        
+        
+        # find center point, it won't be used in this function!
+        MP3D = rc.Geometry.AreaMassProperties.Compute(self.geometry)
+        self.cenPt = MP3D.Centroid
+        MP3D.Dispose()
         
         #Extract the center points and normal vectors from the closed brep geometry.
         planarTrigger = False
@@ -6597,8 +6598,8 @@ class hb_EPFenSurface(hb_EPSurface):
         self.BCObject = self.outdoorBCObject()
         self.groundViewFactor = 'autocalculate'
         self.isChild = True # is it really useful?
-        
-        
+
+
 class generationhb_hive(object):
     # A hive that only accepts Honeybee generation objects
     
@@ -6641,7 +6642,83 @@ class generationhb_hive(object):
             generationobjects.append(genobject)
         
         return generationobjects
+
+class thermPolygon(object):
+    def __init__(self, surfaceGeo, material, srfName, RGBColor):
+        #Set the name and material.
+        self.objectType = "ThermPolygon"
+        self.hasChild = False
+        self.name = srfName
         
+        #Check if the material exists in the THERM Library and, if not, add it.
+        if material in sc.sticky["honeybee_thermMaterialLib"].keys():
+            if sc.sticky["honeybee_thermMaterialLib"][material]["RGBColor"] == RGBColor: pass
+            else: material = self.makeThermMatFromEPMat(material+str(RGBColor), RGBColor)
+        else:
+            material = self.makeThermMatFromEPMat(material, RGBColor)
+        self.material = material
+        
+        #Extract the segments of the polyline and make sure none of them are curved.
+        segm = surfaceGeo.DuplicateEdgeCurves()
+        self.segments = []
+        for seg in segm:
+            if seg.IsLinear: self.segments.append(seg)
+            else:
+                rc.Geometry.Curve.ToPolyline(0,0,0.1,0,0,sc.doc.ModelAbsoluteTolerance,0,0,True)
+                self.segments.append(seg)
+        #Build a new Polygon from the segments.
+        self.polylineGeo = rc.Geometry.Curve.JoinCurves(self.segments, sc.doc.ModelAbsoluteTolerance)[0]
+        
+        #Build surface geometry and extract the vertices.
+        self.geometry = rc.Geometry.Brep.CreatePlanarBreps(self.polylineGeo)[0]
+        self.vertices = []
+        for vertex in self.geometry.DuplicateVertices():
+            self.vertices.append(vertex)
+        
+        #Make note of the plane in which the surface lies.
+        self.plane = self.geometry.Faces[0].TryGetPlane(sc.doc.ModelAbsoluteTolerance)
+        
+        return self.geometry
+    
+    def makeThermMatFromEPMat(self, material, RGBColor):
+        #Make a sub-dictionary for the material.
+        sc.sticky["honeybee_thermMaterialLib"][material] = {}
+        
+        #Create the material with just default values.
+        sc.sticky["honeybee_thermMaterialLib"][material]["Material Name"] = 0
+        sc.sticky["honeybee_thermMaterialLib"][material]["Type"] = 0
+        sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] = None
+        sc.sticky["honeybee_thermMaterialLib"][material]["Absorptivity"] = 0.5
+        sc.sticky["honeybee_thermMaterialLib"][material]["Emissivity"] = 0.9
+        sc.sticky["honeybee_thermMaterialLib"][material]["RGBColor"] = RGBColor
+        
+        #Unpack values from the decomposed material to replace the defaults.
+        hb_EPMaterialAUX = EPMaterialAux()
+        values, comments, UValueSI, UValueIP = hb_EPMaterialAUX.decomposeMaterial(material)
+        
+        for count, comment in enumerate(comments):
+            if "CONDUCTIVITY" in comment.upper(): sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] = float(values[count])
+            if "EMISSIVITY" in comment.upper(): sc.sticky["honeybee_thermMaterialLib"][material]["Emissivity"] = float(values[count])
+        
+        #If there is no conductivity found, it might be an air material, in which case we set the value.
+        if values[0] == "WindowMaterial:Gas":
+            sc.sticky["honeybee_thermMaterialLib"][material]["Type"] = 1
+            sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] = 0.435449
+            sc.sticky["honeybee_thermMaterialLib"][material]["CavityModel"] = 5
+        elif sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] == None:
+            #This is a no-mass material and we are not going to be able to figure out a conductivity. The best we can do is give a warning.
+            if values[0] == "WindowMaterial:SimpleGlazingSystem": sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] = values[2]*0.01
+            elif values[0] == "WindowMaterial:NoMass": sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] = values[3]/0.01
+            warning = "You have connected a No-Mass material and, as a result, Honeybee can not figure out what conductivity the material has. \n " +\
+            "Honeybee is going to assume that the No-mass material is vert thin with a thickness of 1 cm but we might be completely off.  n\ " +\
+            "Try connecting a material with mass or make you own THERM material."
+            print warning
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+        
+        return material
+
+
 class hb_Hive(object):
     
     class CopyClass(object):
@@ -7287,6 +7364,7 @@ if checkIn.letItFly:
         sc.sticky["honeybee_BuildingProgramsLib"] = BuildingProgramsLib
         sc.sticky["honeybee_EPTypes"] = EPTypes()
         sc.sticky["honeybee_EPZone"] = EPZone
+        sc.sticky["honeybee_ThermPolygon"] = thermPolygon
         sc.sticky["PVgen"] = PV_gen
         sc.sticky["PVinverter"] = PVinverter
         sc.sticky["HB_generatorsystem"] = HB_generatorsystem

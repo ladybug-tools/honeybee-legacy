@@ -38,7 +38,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Import IES"
 ghenv.Component.NickName = 'importIES'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nSEP_05_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -55,47 +55,153 @@ import uuid
 from pprint import pprint
 
 
-class HBIESSrf(object):
-    def __init__(self, HBIES, count):
+class HBIESRing(object):
+    
+    def __init__(self, HBIES):
+        
         self.objectType = "HBIES"
         self.type = HBIES.type
         self.hasChild = False
-        self.name = HBIES.name
-        if self.type == "polygon":
-            self.pts = HBIES.pts[count]
-        elif self.type == "sphere":
-            self.cenPt = HBIES.cenPt
-            self.radius = HBIES.radius
-        self.geometry = HBIES.geometry[count]
+        self.name = HBIES.name        
+        
         self.datFile = HBIES.datFile
         self.helpStr = HBIES.helpStr
         self.materialStr = HBIES.materialStr
+        self.geometryStr = ""
         
+        self.cenPt = rc.Geometry.Point3d.Origin
+        self.inRadius = 0
+        self.outRadius = 0
+        self.normal = rc.Geometry.Vector3d.ZAxis
+        
+    def createGeometry(self):
+        # create base plane
+        plane = rc.Geometry.Plane(self.cenPt, self.normal)
+        
+        # create surface
+        inCircle = rc.Geometry.Circle(plane, self.inRadius).ToNurbsCurve()
+        outCircle = rc.Geometry.Circle(plane, self.outRadius).ToNurbsCurve()
+        
+        # add surface to geometry
+        self.geometry= rc.Geometry.Brep.CreatePlanarBreps([inCircle, outCircle])[0]
+    
     def checkIfScaledOrRotated(self, testBrep):
-        if self.type == "polygon":
-            #find the points
-            points = testBrep.DuplicateVertices()
-            # create the vectors
-            vectors = []
-            for ptCount in range(len(points)):
-                vector = rc.Geometry.Vector3d(points[ptCount] - self.pts[ptCount])
-                vectors.append(vector)
-            
-            # if they are all parallel
-            for vectorCount in range(len(vectors)-1):
-                vectorAngle = rc.Geometry.Vector3d.VectorAngle(vectors[vectorCount], vectors[vectorCount + 1])
-                
-                if vectors[vectorCount].Length != vectors[vectorCount + 1].Length or vectorAngle > sc.doc.ModelAngleToleranceRadians:
-                    return True
-            
-            return False
-        elif self.type == "sphere":
-            bbox = testBrep.GetBoundingBox(True)
-            if (bbox.Max - bbox.Min).X/2 - self.radius > sc.doc.ModelAbsoluteTolerance:
-                return True
-            
-            return False
+        bbox = testBrep.GetBoundingBox(True)
+        if (bbox.Max - bbox.Min).X/2 - self.outRadius > sc.doc.ModelAbsoluteTolerance:
+            return True
         
+        return False
+    
+    def getRADGeometryStr(self, IESName, IESBrep):
+        
+        self.geometryStr = self.geometryStr.replace("#name", self.name, 1)
+        
+        center = IESBrep.GetBoundingBox(True).Center
+        
+        
+        return self.geometryStr.replace("#name", IESName) + \
+               "8\n" + \
+               str(center.X) + " " + str(center.Y) + " " + str(center.Z) + "\n" + \
+               str(self.normal.X) + " " + str(self.normal.Y) + " " + str(self.normal.Z) + "\n" + \
+               str(self.inRadius) + " " + str(self.outRadius) + "\n"
+        
+    def __str__(self):
+        return self.helpStr
+
+class HBIESPlane(object):
+    
+    def __init__(self, HBIES):
+        
+        self.objectType = "HBIES"
+        self.type = HBIES.type
+        self.hasChild = False
+        self.name = HBIES.name        
+        
+        self.datFile = HBIES.datFile
+        self.helpStr = HBIES.helpStr
+        self.materialStr = HBIES.materialStr
+        self.geometryStr = ""
+        
+        self.pts = []
+        
+    def createGeometry(self):
+        pts = self.pts
+        
+        if len(pts) == 4:
+            self.geometry = rc.Geometry.Brep.CreateFromCornerPoints(pts[0], pts[1], pts[2], pts[3], sc.doc.ModelAbsoluteTolerance)
+        elif len(pts) == 3:
+            self.geometry = rc.Geometry.Brep.CreateFromCornerPoints(pts[0], pts[1], pts[2], sc.doc.ModelAbsoluteTolerance)
+    
+    def checkIfScaledOrRotated(self, testBrep):
+        #find the points
+        points = testBrep.DuplicateVertices()
+        # create the vectors
+        vectors = []
+        for ptCount in range(len(points)):
+            vector = rc.Geometry.Vector3d(points[ptCount] - self.pts[ptCount])
+            vectors.append(vector)
+        
+        # if they are all parallel
+        for vectorCount in range(len(vectors)-1):
+            vectorAngle = rc.Geometry.Vector3d.VectorAngle(vectors[vectorCount], vectors[vectorCount + 1])
+            
+            if vectors[vectorCount].Length != vectors[vectorCount + 1].Length or vectorAngle > sc.doc.ModelAngleToleranceRadians:
+                return True
+        
+        return False
+    
+    def getRADGeometryStr(self, IESName, IESBrep):
+        
+        self.geometryStr = self.geometryStr.replace("#name", self.name, 1)
+
+        coordinates = IESBrep.DuplicateVertices()
+        
+        srfStr =  self.geometryStr.replace("#name", IESName) + \
+                `(len(coordinates)*3)` + "\n"
+            
+        for  pt in coordinates:
+            srfStr += '%.4f'%pt.X + '  ' + '%.4f'%pt.Y + '  ' + '%.4f'%pt.Z + '\n'
+        
+        return srfStr + '\n'
+            
+    def __str__(self):
+        return self.helpStr
+
+class HBIESSphere(object):
+    
+    def __init__(self, HBIES):
+        
+        self.objectType = "HBIES"
+        self.type = HBIES.type
+        self.hasChild = False
+        self.name = HBIES.name        
+        
+        self.datFile = HBIES.datFile
+        self.helpStr = HBIES.helpStr
+        self.materialStr = HBIES.materialStr
+        self.geometryStr = ""
+        
+        self.cenPt = rc.Geometry.Point3d.Origin
+        self.radius = 0
+        
+    def createGeometry(self):
+        self.geometry = rc.Geometry.Sphere(self.cenPt, self.radius).ToBrep()
+    
+    def checkIfScaledOrRotated(self, testBrep):
+        bbox = testBrep.GetBoundingBox(True)
+        if (bbox.Max - bbox.Min).X/2 - self.radius > sc.doc.ModelAbsoluteTolerance:
+            return True
+        
+        return False
+    
+    def getRADGeometryStr(self, IESName, IESBrep):
+        
+        self.geometryStr = self.geometryStr.replace("#name", self.name, 1)
+        
+        center = IESBrep.GetBoundingBox(True).Center
+        
+        return self.geometryStr.replace("#name", IESName) + \
+                "4 " + `center.X` + " " + `center.Y` + " " + `center.Z` + " " + str(self.radius) + "\n\n"
         
     def __str__(self):
         return self.helpStr
@@ -104,22 +210,15 @@ class HBIESSrf(object):
 class HBIESBase(object):
     
     def __init__(self, IESName, radFile, datFile):
+        
         self.name = IESName #useful to check the name
-        self.geometry = []
+        self.IESObjects = [] #collection of objects
+        
         self.readIESDATFile(datFile)
+        
         # point, material string and help str
         self.readIESRADFile(radFile)
-        # create geometry out of points
-        # it won't work for complext IES. I need some examples for that
-        if self.type == "polygon":
-            self.createSrf()
-        elif self.type == "sphere":
-            self.createSphere()
-        # make separate objects for each surface
-        self.IESObjects = []
-        for srfCount in range(len(self.geometry)):
-            self.IESObjects.append(HBIESSrf(self, srfCount))
-            
+        
     def readIESDATFile(self, datFile):
         with open(datFile, "r") as inDatFile:
             self.datFile = "".join(inDatFile.readlines())
@@ -143,47 +242,91 @@ class HBIESBase(object):
                 elif not endWithMaterials:
                     self.materialStr += line
             
-            # this just works for simple surfaces
-            # I will write a more sophisticated function later
-            if self.type == "polygon":
-                for lineNum, lineCount in enumerate(startLines):
-                    self.pts[lineNum] = []
-                    for line in lines[lineCount + 1:]:
-                        if line.startswith(self.name + "_light"):
-                            break
-                        if len(line.strip().split("\t")) == 3:
-                            x, y, z = line.strip().split("\t")
-                            point = rc.Geometry.Point3d(float(x), float(y), float(z))
-                            self.pts[lineNum].append(point)
-            
-            elif self.type == "sphere":
-                for lineNum, lineCount in enumerate(startLines):
-                    for line in lines[lineCount + 1:]:
-                        if line.startswith(self.name + "_light"):
-                            break
-                        if line.strip().startswith("4"):
-                            n, x, y, z, r = line.strip().split(" ")
-                            point = rc.Geometry.Point3d(float(x), float(y), float(z))
-                            self.cenPt = point
-                            self.radius = float(r)
-            else:
-                msg = self.type + " hasn't been implemented\n" + \
-                      "Let us know and we will implement it."
-                print msg
+        # this just works for simple surfaces
+        # I will write a more sophisticated function later
+        if self.type == "polygon":
+            for lineNum, lineCount in enumerate(startLines):
+                # create new plane
+                IESObject = HBIESPlane(self)
+                for lCount, line in enumerate(lines[lineCount + 1:]):
+                    IESObject.geometryStr += lines[lineCount + lCount].replace(self.name, "#name")
                     
-    def createSrf(self):
-        for ptListKey in self.pts.keys():
-            pts = self.pts[ptListKey]
-            if len(pts) == 4:
-                self.geometry.append(rc.Geometry.Brep.CreateFromCornerPoints(pts[0], pts[1], pts[2], pts[3], sc.doc.ModelAbsoluteTolerance))
-            elif len(pts) == 3:
-                self.geometry.append(rc.Geometry.Brep.CreateFromCornerPoints(pts[0], pts[1], pts[2], sc.doc.ModelAbsoluteTolerance))
-    
-    def createSphere(self):
-        self.geometry.append(rc.Geometry.Sphere(self.cenPt, self.radius).ToBrep())
-        
-    
-    
+                    if line.startswith(self.name + "_light"):
+                        break
+                    try:
+                        if int(line.strip())!=0:
+                            numOfPts = int(int(line.strip())/3)
+                            for ptCount in range(numOfPts):
+                                x, y, z = lines[lineCount + lCount + ptCount + 2].strip().split("\t")
+                                point = rc.Geometry.Point3d(float(x), float(y), float(z))
+                                IESObject.pts.append(point)
+                    
+                            # create geometry
+                            IESObject.createGeometry()
+                
+                            # add to IES Objects
+                            self.IESObjects.append(IESObject)
+                            break
+                    except Exception, e:
+                        print e
+                        pass
+        elif self.type == "sphere":
+            for lineNum, lineCount in enumerate(startLines):
+                
+                # create new sphere IES
+                IESObject = HBIESSphere(self)
+                
+                for lCount, line in enumerate(lines[lineCount + 1:]):
+                    IESObject.geometryStr += lines[lineCount + lCount].replace(self.name, "#name") + "\n"
+                    
+                    if line.startswith(self.name + "_light"):
+                        break
+                    if line.strip().startswith("4"):
+                        n, x, y, z, r = line.strip().split(" ")
+                        IESObject.cenPt = rc.Geometry.Point3d(float(x), float(y), float(z))
+                        IESObject.radius = float(r)
+                
+                        # create geometry
+                        IESObject.createGeometry()
+                        # add to IES Objects
+                        self.IESObjects.append(IESObject)
+                        break
+                
+        elif self.type == "ring":
+            for lineNum, lineCount in enumerate(startLines):
+                # create a ring
+                IESObject = HBIESRing(self)
+                
+                for lCount, line in enumerate(lines[lineCount + 1:]):
+                    IESObject.geometryStr += lines[lineCount + lCount].replace(self.name, "#name") + "\n"
+                    
+                    if line.startswith(self.name + "_light"):
+                        break
+                    if line.strip().startswith("8"):
+                        cenX, cenY, cenZ = lines[lineCount + lCount + 2].strip().split(" ")
+                        normX, normY, normZ = lines[lineCount + lCount + 2].strip().split(" ")
+                        inRadius, outRadius = lines[lineCount + lCount + 4].strip().split(" ")
+                        
+                        IESObject.inRadius = float(inRadius)
+                        IESObject.outRadius = float(outRadius)
+                        IESObject.cenPt = rc.Geometry.Point3d(float(cenX), float(cenY), float(cenZ))
+                        IESObject.normal = rc.Geometry.Vector3d(float(normX), float(normY), float(normZ))
+                        
+                        # create geometry
+                        IESObject.createGeometry()
+                        
+                        # add to IES Objects
+                        self.IESObjects.append(IESObject)
+                        break
+            
+        else:
+            msg = self.type + " hasn't been implemented\n" + \
+                  "Let us know and we will implement it."
+            print msg
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, msg)
+
+
 def runCmdAndGetTheResults(command, shellKey = True):
     p = subprocess.Popen(["cmd", command], shell=shellKey, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = p.communicate()

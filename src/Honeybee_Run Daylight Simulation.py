@@ -31,7 +31,7 @@ Provided by Honeybee 0.0.57
         _HBObjects: List of Honeybee objects
         _analysisRecipe: An analysis recipe
         _writeRad: Write simulation files
-        runRad_: Run the analysis. _writeRad should be also set to true
+        runRad_: Run the analysis. _writeRad should be also set to true. Set to 2 if you want the analysis to run in background. This option is useful for parametric runs when you don't want to see command shells.
         _numOfCPUs_: Number of CPUs to be used for the studies. This option doesn't work for image-based analysis
         _workingDir_: Working directory on your system. Default is set to C:\Ladybug
         _radFileName_: Input the project name as a string
@@ -54,10 +54,10 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Run Daylight Simulation"
 ghenv.Component.NickName = 'runDaylightAnalysis'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_13_2015'
+ghenv.Component.Message = 'VER 0.0.57\nSEP_10_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
-#compatibleHBVersion = VER 0.0.56\nJUL_13_2015
+#compatibleHBVersion = VER 0.0.56\nSEP_10_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
@@ -216,7 +216,7 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
     
     if runRad:
         hb_writeRAD.runBatchFiles(initBatchFileName, batchFilesName, \
-                                  fileNames, pcompBatchFile, waitingTime)
+                                  fileNames, pcompBatchFile, waitingTime, runRad > 1)
         
         results = hb_writeRAD.collectResults(subWorkingDir, radFileName, \
                                 numOfCPUs, analysisRecipe, expectedResultFiles)
