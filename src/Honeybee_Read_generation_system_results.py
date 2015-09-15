@@ -52,7 +52,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Read_generation_system_results"
 ghenv.Component.NickName = 'readEP_analyse_generation_system_results'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nSEP_14_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -377,12 +377,20 @@ if _idfFileAddress != None:
 
     
         def cleandata(data):
-            """ This function cleans the financial data written to the IDF and makes it possible to create graphs from it"""
+            
+            
+            """ This function cleans the financial data written to the IDF and makes it possible to create graphs from it
+            
+            Args: The raw written financial data in the IDF
+            
+            Returns: A list of lists where each list inside the list is the financial data of one Honeybee generator system"
+            
+            """
             
             cleandata = []
             financialdata = []
         
-            # Remove all un-necessary characters
+            # Remove all un-necessary characters from the IDF file
         
             for dataitem in data:
                 
@@ -390,22 +398,22 @@ if _idfFileAddress != None:
             
             # Create a list of which indexes in clean data the different Honeybee generator systems 
             # start and stop at
-            itemCountlist = []
+            HBgeneratoritemCountlist = []
             
             for itemCount,item in enumerate(cleandata):
     
                 if item.find('generation system name') != -1:
                     
-                    itemCountlist.append(itemCount)
-                    
-            # Use the list above to create lists of each Honeybee generator systems' financial data
-            for itemCount,item in enumerate(itemCountlist):
+                    HBgeneratoritemCountlist.append(itemCount)
+
+            # Use the list above to create lists of each Honeybee generator system's financial data
+            for itemCount,item in enumerate(HBgeneratoritemCountlist):
     
                 try:
-                    financialdata.append(cleandata[itemCountlist[itemCount]:itemCountlist[itemCount+1]])
+                    financialdata.append(cleandata[HBgeneratoritemCountlist[itemCount]:HBgeneratoritemCountlist[itemCount+1]])
                 except IndexError:
-                    financialdata.append(cleandata[itemCountlist[itemCount]:len(cleandata)])
-                    
+                    financialdata.append(cleandata[HBgeneratoritemCountlist[itemCount]:len(cleandata)])
+            
             return financialdata
         
     
@@ -414,19 +422,22 @@ if _idfFileAddress != None:
         
         financialdata = DataTree[Object]()
         
-        # Add a header to the equipment cost financial data
-        financialdata.Add('Generator system financial data in US dollars ',GH_Path(0))
-        
         # Clean the financial data so that it can used to create graphs and add it to the datatree
-        for generatorfinancialdata in cleandata(data):
-    
-            for data in generatorfinancialdata:
-                financialdata.Add(data,GH_Path(0))
-
+        
+        for HBgennum,HBgeneratorfinancialdata in enumerate(cleandata(data)):
+            
+            # Add a header to the equipment cost financial data
+            financialdata.Add('Generator system financial data in US dollars ',GH_Path(HBgennum))
+            
+            for itemfinancialdata in HBgeneratorfinancialdata:
+                
+                financialdata.Add(itemfinancialdata,GH_Path(HBgennum))
+            
         if financialdataout == True:
             # Add markers to identify data only if there is financial data! Otherwise looks messy!
-            financialdata.Add(';;;',GH_Path(0))
-
+            #financialdata.Add(';;;',GH_Path(0))
+            pass
+            
         fiancialresult.close()
         
         parseSuccessfinancial = True 
