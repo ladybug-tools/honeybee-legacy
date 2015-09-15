@@ -55,8 +55,13 @@ Provided by Honeybee 0.0.57
         openingAreaFractionalSched_: An optional schedule to set the fraction of the window that is open at each hour.
         fractionOfGlzAreaOperable_: A number or list of numbers between 0.0 and 1.0 that represents the fraction of the window area that is operable.  By default, it will be assumed that this is 0.5 for double-hung windows.
         fractionOfGlzHeightOperable_: A number or list of numbers between 0.0 and 1.0 that represents the fraction of the distance from the bottom of the zones windows to the top that are operable.  By default, it will be assumed that this is 1.0 assuming windows with openings at both the very top and very bottom.
-        windDischargeCoeff_: A number between 0.0 and 1.0 that will be multipled by the area of the window to account for the angle of the wind from the direction that the window faces.  This is the Cw in the equation given in this component's description.  If no value is unput here, it isautocalculated based on the angle of the window from North and the hourly wind direction.  Set to 0 to completely discount wind from the natural ventilation calculation.
-        stackDischargeCoeff_: A number between 0.0 and 1.0 that will be multipled by the area of the window to account for additional friction from insect screens, etc.  This is the Cd in the equation given in this component's description.  The default is autocalculated and assumes a fully-open window area.  Set to 0 to completely discount stack ventilation from the natural ventilation calculation.
+        windDischargeCoeff_: A number between 0.0 and 1.0 that will be multipled by the area of the window to account for the angle of the wind from the direction that the window faces.  This is the 'Cw' variable in the equation given in this component's description.  If no value is input here, it is autocalculated based on the angle of the cardinal direction from North and the hourly wind direction.  More often than not, you want to use this autocalculate feature.  Set to 0 to completely discount wind from the natural ventilation calculation.
+        stackDischargeCoeff_: A number between 0.0 and 1.0 that will be multipled by the area of the window to account for additional friction from window geometry, insect screens, etc.  This is the 'Cd' variable in the equation of this component's description.  If left blank, this variable will be autocalculated by the following equation - Cd = 0.4 + 0.0045*|(Tzone-Toutdoor).  Some common values for this coefficient include the following:
+            0.65 - For bouyancy with TWO windows of different heights, each of wehich have NO insect screens.
+            0.45 - For bouyancy with TWO windows of different heights, each of wehich HAVE insect screens.
+            0.25 - For bouyancy with ONE window with NO insect screen.
+            0.17 - For bouyancy with ONE window WITH an insect screen.
+            0.0 - Completely discounts stack ventilation from the natural ventilation calculation and only accounts for wind.
         _windowAngle2North: A number between 0 and 360 that sets the angle in degrees counting from the North clockwise to the opening direction.  The Effective Angle is 0 if the opening outward normal faces North, 90 if faces East, 180 if faces South, and 270 if faces West.
     Returns:
         readMe:...
@@ -65,7 +70,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Set EP Air Flow"
 ghenv.Component.NickName = 'setEPNatVent'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nSEP_14_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
 #compatibleHBVersion = VER 0.0.56\nMAR_16_2015
@@ -96,8 +101,8 @@ inputsDict = {
 9: ["openingAreaFractionalSched_", "An optional schedule to set the fraction of the window that is open at each hour."],
 10: ["fractionOfGlzAreaOperable_", "A number or list of numbers between 0.0 and 1.0 that represents the fraction of the window area that is operable.  By default, it will be assumed that this is 0.5 for double-hung windows."],
 11: ["fractionOfGlzHeightOperable_", "A number or list of numbers between 0.0 and 1.0 that represents the fraction of the distance from the bottom of the zones windows to the top that are operable.  By default, it will be assumed that this is 1.0 assuming windows with openings at both the very top and very bottom."],
-12: ["windDischargeCoeff_", "A number between 0.0 and 1.0 that will be multipled by the area of the window to account for the angle of the wind from the direction that the window faces.  This is the Cw in the equation given in this component's description.  If no value is unput here, it isautocalculated based on the angle of the window from North and the hourly wind direction.  Set to 0 to completely discount wind from the natural ventilation calculation."],
-13: ["stackDischargeCoeff_", "A number between 0.0 and 1.0 that will be multipled by the area of the window to account for additional friction from insect screens, etc.  This is the Cd in the equation given in this component's description.  The default is autocalculated and assumes a fully-open window area.  Set to 0 to completely discount stack ventilation from the natural ventilation calculation."],
+12: ["windDischargeCoeff_", "A number between 0.0 and 1.0 that will be multipled by the area of the window to account for the angle at which the wind hits the window.  This is the 'Cw' variable in the equation given in this component's description.  If no value is input here, it is autocalculated based on the angle of the cardinal direction from North and the hourly wind direction.  More often than not, you want to use this autocalculate feature.  Set to 0 to completely discount wind from the natural ventilation calculation."],
+13: ["stackDischargeCoeff_", "A number between 0.0 and 1.0 that will be multipled by the area of the window to account for additional friction from window geometry, insect screens, etc.  This is the 'Cd' variable in the equation of this component's description.  If left blank, this variable will be autocalculated by the following equation - Cd = 0.4 + 0.0045*|(Tzone-Toutdoor).  Some common values for this coefficient include the following: \n 0.65 - For bouyancy with TWO windows of different heights, each of wehich have NO insect screens. \n 0.45 - For bouyancy with TWO windows of different heights, each of wehich HAVE insect screens. \n 0.25 - For bouyancy with ONE window with NO insect screen. \n 0.17 - For bouyancy with ONE window WITH an insect screen. \n 0.0 - Completely discounts stack ventilation from the natural ventilation calculation and only accounts for wind."],
 14: ["_windowAngle2North", "A number between 0 and 360 that sets the angle in degrees from North counting clockwise to the direction the window faces.  An angle of 0 denotes that the opening faces North, 90 denotes East, 180 denotes South, and 270 denotes West."]
 }
 
