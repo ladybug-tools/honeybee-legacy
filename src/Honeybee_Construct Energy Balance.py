@@ -190,36 +190,51 @@ def getSrfNames(HBZones):
         zone = hb_hive.callFromHoneybeeHive([zone])[0]
         
         for srf in zone.surfaces:
-            # Wall
-            if srf.type == 0:
+            if srf.BC.upper() == "OUTDOORS" or srf.BC.upper() == "GROUND":
                 if srf.BC.upper() == "OUTDOORS":
-                    if srf.hasChild:
-                        wall.append(srf.name)
-                        for childSrf in srf.childSrfs:
-                            window.append(childSrf.name)
-                    else:
-                        wall.append(srf.name)
-            # underground wall
-            elif srf.type == 0.5:
-                if srf.BC.upper() == "GROUND":
-                    undergroundWall.append(srf.name)
-            # Roof
-            elif srf.type == 1 or srf.type == 3:
-                if srf.BC.upper() == "OUTDOORS":
-                    if srf.hasChild:
-                        roof.append(srf.name)
-                        for childSrf in srf.childSrfs:
-                            skylight.append(childSrf.name)
-                    else:
-                        roof.append(srf.name)
-            
-            elif srf.type == 2.5:
-                if srf.BC.upper() == "GROUND":
-                    groundFloor.append(srf.name)
-            elif srf.type == 2.75 or srf.type == 2:
-                if srf.BC.upper() == "OUTDOORS":
-                    exposedFloor.append(srf.name)
-    
+                    # Wall
+                    if srf.type == 0 or srf.type == 0.5:
+                        if srf.hasChild:
+                            wall.append(srf.name)
+                            for childSrf in srf.childSrfs:
+                                window.append(childSrf.name)
+                        else: wall.append(srf.name)
+                    #Roof
+                    elif srf.type == 1 or srf.type == 3 or srf.type == 1.5:
+                        if srf.hasChild:
+                            roof.append(srf.name)
+                            for childSrf in srf.childSrfs:
+                                skylight.append(childSrf.name)
+                        else: roof.append(srf.name)
+                    #Floor
+                    elif srf.type == 2.75 or srf.type == 2.5 or srf.type == 2:
+                        if srf.hasChild:
+                            exposedFloor.append(srf.name)
+                            for childSrf in srf.childSrfs:
+                                skylight.append(childSrf.name)
+                        else: exposedFloor.append(srf.name)
+                elif srf.BC.upper() == "GROUND":
+                    # Wall
+                    if srf.type == 0 or srf.type == 0.5:
+                        if srf.hasChild:
+                            undergroundWall.append(srf.name)
+                            for childSrf in srf.childSrfs:
+                                window.append(childSrf.name)
+                        else: undergroundWall.append(srf.name)
+                    #Roof
+                    elif srf.type == 1 or srf.type == 3 or srf.type == 1.5 or srf.type == 2.75 or srf.type == 2.5 or srf.type == 2:
+                        if srf.hasChild:
+                            groundFloor.append(srf.name)
+                            for childSrf in srf.childSrfs:
+                                skylight.append(childSrf.name)
+                        else: groundFloor.append(srf.name)
+                    #Floor
+                    elif srf.type == 2.75 or srf.type == 2.5 or srf.type == 2:
+                        if srf.hasChild:
+                            exposedFloor.append(srf.name)
+                            for childSrf in srf.childSrfs:
+                                skylight.append(childSrf.name)
+                        else: exposedFloor.append(srf.name)
     
     return wall, window, skylight, roof, \
            exposedFloor, groundFloor, undergroundWall
