@@ -48,7 +48,7 @@ Provided by Honeybee 0.0.57
         simulationOutputs_: A list of the outputs that you would like EnergyPlus to write into the result CSV file.  This can be any set of any outputs that you would like from EnergyPlus, writen as a list of text that will be written into the IDF.  It is recommended that, if you are not expereinced with writing EnergyPlus outputs, you should use the "Honeybee_Write EP Result Parameters" component to request certain types of common outputs.  If no value is input here, this component will automatically request outputs of heating, cooling, lighting, and equipment energy use.
         +++++++++++++++: ...
         _writeIdf: Set to "True" to have the component take your HBZones and other inputs and write them into an IDF file.  The file path of the resulting file will appear in the idfFileAddress output of this component.  Note that only setting this to "True" and not setting the output below to "True" will not automatically run the IDF through EnergyPlus for you.
-        runEnergyPlus_: Set to "True" to have the component run your IDF through EnergyPlus once it has finished writing it.  This will ensure that a CSV result file appears in the resultFileAddress output. Set to 2 if you want the analysis to run in background. This option is useful for parametric runs when you don't want to see command shells.
+        runEnergyPlus_: Set to "True" to have the component run your IDF through EnergyPlus once it has finished writing it.  This will ensure that a CSV result file appears in the resultFileAddress output.
         +++++++++++++++: ...
         _workingDir_: An optional working directory to a folder on your system, into which your IDF and result files will be written.  NOTE THAT DIRECTORIES INPUT HERE SHOULD NOT HAVE ANY SPACES OR UNDERSCORES IN THE FILE PATH.
         _idfFileName_: Optional text which will be used to name your IDF and result files.  Change this to aviod over-writing results of previous energy simulations.
@@ -62,7 +62,7 @@ Provided by Honeybee 0.0.57
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.57\nSEP_10_2015'
+ghenv.Component.Message = 'VER 0.0.57\nSEP_14_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_28_2015
@@ -78,7 +78,7 @@ import System
 import Grasshopper.Kernel as gh
 import math
 import shutil
-import subprocess
+import collections
 
 rc.Runtime.HostUtils.DisplayOleAlerts(False)
 
@@ -1171,6 +1171,9 @@ class WriteIDF(object):
                     '\t'+''+';\t!- Transformer Object Name\n'
 
     def writegeneration_system_financialdata(self,financialdata):
+        """This function takes the financial data and writes it to the IDF in such a way so that the
+        Honeybee_Read_generation_system_results can read it this is why the list is called newfinancialdata"""
+        
         
         newfinancialdata = []
         # Add !!! in front of all data so EnergyPlus views it as comments
@@ -1189,7 +1192,7 @@ class WriteIDF(object):
                 
                 # Create a header for the financial data of each Honeybee generator system
                 
-                newfinancialdata.append('!!!X Honeybee generation system name -' + str(dataitem.replace('Honeybee system generator ',''))+'\n')
+                newfinancialdata.append('!!!X Honeybee generation system name - ' + str(dataitem.replace('Honeybee system generator ',''))+'\n')
             
             else:
                 
@@ -1204,7 +1207,7 @@ class WriteIDF(object):
 
 class RunIDF(object):
     
-    def writeBatchFile(self, workingDir, idfFileName, epwFileAddress, EPDirectory = 'C:\\EnergyPlusV8-1-0', runInBackground = False):
+    def writeBatchFile(self, workingDir, idfFileName, epwFileAddress, EPDirectory = 'C:\\EnergyPlusV8-1-0'):
         
         workingDrive = workingDir[:2]
         
@@ -1223,20 +1226,10 @@ class RunIDF(object):
         batchfile = open(batchFileAddress, 'w')
         batchfile.write(batchStr)
         batchfile.close()
-    
-        #execute the batch file
-        if runInBackground:
-            self.runCmd(batchFileAddress)
-        else:
-            os.system(batchFileAddress)
-    
-    def runCmd(self, batchFileAddress, shellKey = True):
-        batchFileAddress.replace("\\", "/")
-        p = subprocess.Popen(["cmd /c ", batchFileAddress], shell=shellKey, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out, err = p.communicate()
-        # p.kill()
-        #return out, err
         
+        #execute the batch file
+        os.system(batchFileAddress) 
+
     def readResults(self):
         pass
 
@@ -1612,8 +1605,6 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         # Extract the timestep from the incoming component simulationOutputs if its being used
         HBgeneratortimeperiod = extracttimeperiod(simulationOutputs)
   
-        
-        
         if simulationOutputs_ == []:
             
             HBgeneratoroutputs.append("Output:Variable,*,Facility Net Purchased Electric Energy, hourly;")
@@ -1634,6 +1625,49 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                 simulationOutputs.append("Output:Variable,*,Facility Total Electric Demand Power, hourly;")
 
                 HBgeneratortimeperiod = 'hourly'
+                
+                
+        # CHECK that HBgenerator names are unique for each HB generator
+        
+        HBgenerators = []
+        
+        for HBgenerator in HBsystemgenerators:
+            
+            HBgenerators.extend([generator.name for generator in HBgenerator.windgenerators])
+            
+            HBgenerators.extend([generator.name for generator in HBgenerator.PVgenerators])
+            
+        if len(HBgenerators) != len(set(HBgenerators)):
+            
+            duplicateHBgenerators =  [item for item, count in collections.Counter([item for item in HBgenerators]).items() if count > 1]
+            
+            for HBgenerator in duplicateHBgenerators:
+                
+                warn = " Duplicate Honeybee generator (A PV or wind generator) name, named : " + HBgenerator +" detected!"+ "\n"+\
+                "Please ensure that all PV and wind generators have unique names for EnergyPlus to run!"+ "\n"+\
+                "This error usually occurs when several PVgen components are connected to one EnergyPlus simulation, and default names " + "\n"+\
+                "have been assigned in each component. Fix this issue by inputing unique names to the input _name_ on the PVgen component."
+                
+                ghenv.Component.AddRuntimeMessage(w, warn )
+                
+            return -1
+        
+        # CHECK that the HBsystemgenerator_name is unique for this simulation - Otherwise E+ will crash
+            
+        if len(set([HBsystemgenerator.name for HBsystemgenerator in HBsystemgenerators])) != len(HBsystemgenerators):
+            
+            duplicateHBsystemgenerators = [HBsystemgenerator for HBsystemgenerator, count in collections.Counter([HBsystemgenerator.name for HBsystemgenerator in HBsystemgenerators]).items() if count > 1]
+            
+            for HBsystemgenerator in duplicateHBsystemgenerators:
+                
+                warn = " Duplicate Honeybee generation system name, named: " + HBsystemgenerator +" detected!"+ "\n"+\
+                "Please ensure that all Honeybee generation systems have unique names for EnergyPlus to run!"
+                
+                ghenv.Component.AddRuntimeMessage(w, warn )
+                
+            return -1
+            
+        # CHECK that HBgenerator names are unique for this simulation - Otherwise E+ will crash
                 
         for HBsystemcount,HBsystemgenerator in enumerate(HBsystemgenerators):
             
@@ -1665,9 +1699,9 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     
                 HBsystemgenerator_name = str(HBsystemgenerator.name)
             
+            
             # Write one ElectricLoadCenter:Generators for each HBsystemgenerator
             
-            ### XXX still needs work to make sure names dont overlap
             idfFile.write(hb_writeIDF.writegeneratlorlist(HBsystemgenerator_name,HBsystemgenerator.PVgenerators+HBsystemgenerator.windgenerators+HBsystemgenerator.fuelgenerators)) # The writegeneratlorlist only takes 'generators' as an input so add all the different generator lists together 
             
             # Determine the type of system and write one ElectricLoadCenter:Distribution for each HBsystemgenerator
@@ -1706,7 +1740,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                 if all(x== True for x in PVsurfaceinzones) != True:
                     warn  = "It has been detected that there are PV generators attached to sufaces of a Honeybee zone\n"+\
                     " However this Honeybee zone has not been connected to the _HBZones input on this component\n"+\
-                    " Please connect it to run the Energy Plus simulation!"
+                    " Please connect it to run the EnergyPlus simulation!"
                     print warn 
                     ghenv.Component.AddRuntimeMessage(w, warn )
                     
@@ -1718,12 +1752,12 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                         
                         # HBsystem contains a inverter and is a DC system AND has storage
   
-                        WriteIDF.financialdata.append(' Battery cost - ' +str(HBsystemgenerator.battery.cost_) +' replacement time = '+ str(HBsystemgenerator.battery.replacementtime)+ ' years')
+                        WriteIDF.financialdata.append('Battery cost - ' +str(HBsystemgenerator.battery.cost_) +' replacement time = '+ str(HBsystemgenerator.battery.replacementtime)+ ' years')
 
                         # Although multiple inverters may exist in HBsystemgenerator.simulationinverter 
                         # in the Honeybee generation system it has been checked that they are all the same
 
-                        WriteIDF.financialdata.append(' Inverter cost - '+ str(HBsystemgenerator.simulationinverter[0].cost_)+ ' replacement time = '+ str(HBsystemgenerator.simulationinverter[0].replacementtime)+ ' years') 
+                        WriteIDF.financialdata.append('Inverter cost - '+ str(HBsystemgenerator.simulationinverter[0].cost_)+ ' replacement time = '+ str(HBsystemgenerator.simulationinverter[0].replacementtime)+ ' years') 
                         
                         operationscheme = 'Baseload'
                         busstype = 'DirectCurrentWithInverterDCStorage'
@@ -1741,7 +1775,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                             
                             idfFile.write(hb_writeIDF.write_PVgen(PVgen))
                             idfFile.write(hb_writeIDF.write_PVgenperformanceobject(PVgen))
-                            WriteIDF.financialdata.append(' PVgenerator cost - '+str(PVgen.cost_)) # - Does the class PV_gen need an ID?
+                            WriteIDF.financialdata.append('PVgenerator cost - '+str(PVgen.cost_)) # - Does the class PV_gen need an ID?
                         
                         # Write HBsystemgenerator inverters
                         idfFile.write(hb_writeIDF.simple_inverter(inverterobject))
@@ -1779,7 +1813,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                     else:
                         # HBsystem contains a inverter and is a DC system there are NO batteries in the system
                         
-                        WriteIDF.financialdata.append(' Inverter cost - '+ str(HBsystemgenerator.simulationinverter[0].cost_)+ ' replacement time = '+ str(HBsystemgenerator.simulationinverter[0].replacementtime)+ ' years') 
+                        WriteIDF.financialdata.append('Inverter cost - '+ str(HBsystemgenerator.simulationinverter[0].cost_)+ ' replacement time = '+ str(HBsystemgenerator.simulationinverter[0].replacementtime)+ ' years') 
                         
                         operationscheme = 'Baseload'
                         busstype = 'DirectCurrentWithInverter'
@@ -1793,7 +1827,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                             
                             idfFile.write(hb_writeIDF.write_PVgen(PVgen))
                             idfFile.write(hb_writeIDF.write_PVgenperformanceobject(PVgen))
-                            WriteIDF.financialdata.append(' PVgenerator cost - '+str(PVgen.cost_)) # - Does the class PV_gen need an ID?
+                            WriteIDF.financialdata.append('PVgenerator cost - '+str(PVgen.cost_)) # - Does the class PV_gen need an ID?
                         
                         # Write HBsystemgenerator inverters
                         idfFile.write(hb_writeIDF.simple_inverter(inverterobject))
@@ -1828,7 +1862,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                 for windgenerator in HBsystemgenerator.windgenerators:
                     
                     idfFile.write(hb_writeIDF.wind_generator(windgenerator))
-                    WriteIDF.financialdata.append(' Wind turbine cost - '+str(windgenerator.cost_)) 
+                    WriteIDF.financialdata.append('Wind turbine cost - '+str(windgenerator.cost_)) 
                     
                 # Write HBsystemgenerator ElectricLoadCenter:Distribution
                 idfFile.write(hb_writeIDF.writeloadcenterdistribution(distribution_name,HBsystemgenerator_name,operationscheme,demandlimit,trackschedule,trackmeterschedule,busstype,inverterobject,elecstorageobject))
@@ -1887,7 +1921,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                     if schedule != None:
                         if schedule.upper() not in EPScheduleCollection: EPScheduleCollection.append(schedule)
                     else: needToWriteMixSched = True
-            
+
             if zone.mixAir == True:
                 for schedule in zone.mixAirFlowSched:
                     if schedule != None:
@@ -1899,7 +1933,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                 if zone.ETschedule.upper() not in EPScheduleCollection:
                     
                     EPScheduleCollection.append(zone.ETschedule)
-        if needToWriteMixSched == True and 'ALWAYS ON' not in EPScheduleCollection: EPScheduleCollection.append('ALWAYS ON')
+                
     
     # Write Schedules
     for schedule in EPScheduleCollection:
@@ -2062,7 +2096,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     if runEnergyPlus:
         print "Analysis is running!..."
         # write the batch file
-        hb_runIDF.writeBatchFile(workingDir, idfFileName, epwFileAddress, sc.sticky["honeybee_folders"]["EPPath"], runEnergyPlus > 1)
+        hb_runIDF.writeBatchFile(workingDir, idfFileName, epwFileAddress, sc.sticky["honeybee_folders"]["EPPath"])
         resultFileFullName = idfFileFullName.replace('.idf', '.csv')
         try:
             print workingDir + '\eplusout.csv'
