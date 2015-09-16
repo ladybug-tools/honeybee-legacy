@@ -68,14 +68,14 @@ Provided by Honeybee 0.0.57
         
         
     Returns:
-        HBWindTurbine: A Honeybee wind turbine to run this in an EnergyPlus system you must first add it to a Honeybee generation system - to do so connect this output to the HB_generationobjects input of the Honeybee_generationsystem component
+        HBWindTurbine: A Honeybee wind turbine. To run this in an EnergyPlus system you must first add it to a Honeybee generation system - to do so connect this output to the HB_generationobjects input of the Honeybee_generationsystem component
         
 
 """
 
 ghenv.Component.Name = "Honeybee_Generator_Wind_Horizontialaxis"
 ghenv.Component.NickName = 'Generator:Wind:Horizontialaxis'
-ghenv.Component.Message = 'VER 0.0.57\nAUG_26_2015'
+ghenv.Component.Message = 'VER 0.0.57\nSEP_16_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP" #"06 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
