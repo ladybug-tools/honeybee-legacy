@@ -76,7 +76,7 @@ import System
 
 ghenv.Component.Name = "Honeybee_Visualise_Honeybeegeneration_cashflow"
 ghenv.Component.NickName = 'Visualise_Honeybee_generation_cashflow'
-ghenv.Component.Message = 'VER 0.0.57\nSEP_14_2015'
+ghenv.Component.Message = 'VER 0.0.57\nSEP_16_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -1123,16 +1123,16 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                             "generation\n" + \
                             "system net\n" + \
                             "present cost\n" + \
-                            " US dollars "
+                            "US dollars "
                               
                         if (graphDataByHBSystem_ == False) and (graphDataByCost_ == True):
                             
 
                             # Create vertical axis label
                             vertical_label = "Net present cost\n" + \
-                            "of all systems\n" + \
+                            "all systems combined\n" + \
                             "by cost type\n" + \
-                            " US dollars "
+                            "US dollars "
 
                   
                         textSrf = lb_visualization.text2srf([vertical_label], [rc.Geometry.Point3d(startPt.X-(25*_fontSize_),3,startPt.Z)],'Verdana' ,_fontSize_, False)
@@ -1222,7 +1222,7 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                     if (graphDataByHBSystem_ == True) and (graphDataByCost_ == False): 
                     
                         graphTitle = 'Net present cost by Honeybee generation system over 25 years'
-                        legendTitle = 'Graph Legend - Honeybee generation system color'
+                        legendTitle = 'Graph Legend - Honeybee generation system name and corresponding color'
                         
                     if (graphDataByHBSystem_ == False) and (graphDataByCost_ == True):
                         
