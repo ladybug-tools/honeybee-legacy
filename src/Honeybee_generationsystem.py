@@ -40,7 +40,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_generationsystem"
 ghenv.Component.NickName = 'generationsystem'
-ghenv.Component.Message = 'VER 0.0.57\nAUG_26_2015'
+ghenv.Component.Message = 'VER 0.0.57\nSEP_16_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP" #"06 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -114,6 +114,14 @@ def checktheinputs(_GeneratorSystemName,PVHBSurfaces_,HBGenerationObjects_,_Main
     # If no inputs do not let the component run and output something other than Null
     # will cause problems in Run Energy Simulation 
     if PVHBSurfaces_ == [] and HBGenerationObjects_ == []:
+        
+        warn =  "A Honeybee generation system cannot be created without Honeybee generators! \n"+ \
+        "Please connect Wind turbines to HBGenerationObjects_ or PV generators to PVHBSurfaces_ to create a Honeybee generation system."
+        
+        print warn
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warn)
+        
         return -1
     
     # Must also check that the first item is not a none otherwise will output a HB generator

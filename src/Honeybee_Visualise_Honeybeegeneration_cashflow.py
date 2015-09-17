@@ -76,12 +76,13 @@ import System
 
 ghenv.Component.Name = "Honeybee_Visualise_Honeybeegeneration_cashflow"
 ghenv.Component.NickName = 'Visualise_Honeybee_generation_cashflow'
-ghenv.Component.Message = 'VER 0.0.57\nAUG_27_2015'
+ghenv.Component.Message = 'VER 0.0.57\nSEP_16_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "0"
+
 
 def stringtoFloat(sequence):
     # stringtoFloat converts items in list from strings to floats, if not possible it removes the item from the list
@@ -124,7 +125,7 @@ def checkforhoneybeegeneration(_inputData):
     runtimeandname = []
     
     for columncount,column in enumerate(_inputData):
-        
+
         if isinstance(column, basestring) == True:
             
             if "Whole Building:Facility Net Purchased Electric Energy" in column:
@@ -148,9 +149,9 @@ def checkforhoneybeegeneration(_inputData):
                     print warn
                     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warn)
                     return -1
-                    
+                
                 runtimeandname.append((columncount,'Whole Building:Facility Net Purchased Electric Energy'))
-                    
+                
             if 'Whole Building:Facility Total Electric Demand Power' in column:
                 
                 runperiodstart = _inputData[columncount+3]
@@ -172,7 +173,7 @@ def checkforhoneybeegeneration(_inputData):
                     print warn
                     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warn)
                     return -1
-                    
+                
                 runtimeandname.append((columncount,'Whole Building:Facility Total Electric Demand Power'))
                 
             if column.find('Electric energy produced by the generator system named - ') != -1:
@@ -196,13 +197,12 @@ def checkforhoneybeegeneration(_inputData):
                     print warn
                     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warn)
                     return -1
-                    
+                
                 runtimeandname.append((columncount,column))
                     
     def checkruntime(runtime):
         # This function checks that the runtimes for all the inputs are the same by using the runtime list
         # However it doesn't check that the runperiod is annual
-        #print runtime
 
         differenceruntimes = []
         
@@ -239,7 +239,7 @@ def checkforhoneybeegeneration(_inputData):
         return -1
     
     else:
-
+        
         # Return the difference in columns between each set of data e.g daily data is 372
         return (runtimeandname[1][0]-runtimeandname[0][0])
         
@@ -247,33 +247,60 @@ def extractfinancialdata(_inputData):
     
     """ This function extracts the finacial data of facilitys' energy generation systems from the _inputData"""
     
+    # 1. Extract financial data from _inputData
+    
+    financialdata = []
+    
+    # Find the indices of _inputData which contain financial data,
+    # these can then be used to slice financial data from _inputData
+    
     financialdataindexs = []
     
-    for columncount, column in enumerate(_inputData):
+    for num,i in enumerate(_inputData):
         
-        if isinstance(column, basestring) == True:
+        if isinstance(i, basestring) == True:
             
-            if "Generator system financial data" in column:
+            if "Generator system financial data" in i:
                 
-                financialdataindexs.append(columncount)
+                # Need plus one as slicing happens from index in front of index
+                # that needs to be sliced.
                 
-            if ';;;' in column: # Marker for end of Generator system fiancial data
-                
-                financialdataindexs.append(columncount)
+                financialdataindexs.append(num+1)
+            
+            if "cost - " in i:
+    
+                if num+1 <= (len(_inputData)-1):
 
-    financialdata = _inputData[financialdataindexs[0]:(int(financialdataindexs[1]))]
+                    if "cost - " not in _inputData[num+1]:
+                        
+                        # Need plus one as slicing happens from index in front of index
+                        # that needs to be sliced.
+                        
+                        financialdataindexs.append(num+1)
+                else:
+                    financialdataindexs.append(num+1)
     
-    # Remove the financial data from _inputData so that energy generation data can be read
-    
-    new_inputData = []
-    
-    for index in range(len(_inputData)):
+    # Slice _inputData by the indices of the financial data and then place the financial data in a list.
+    for index in range(int((len(financialdataindexs))/2)):
         
-        if ((index < financialdataindexs[0]) or (index > (financialdataindexs[1]))):
+        financialdata.append(_inputData[financialdataindexs[index*2:(index*2+2)][0]:financialdataindexs[index*2:(index*2+2)][1]])
     
-            new_inputData.append(_inputData[index])
+    # 2. Remove the financial data from _inputData so that energy generation data can be read....
+    
+    def removefinancialdata(data):
+        
+        if isinstance(data, basestring) == False:
+            return True
+        
+        if isinstance(data, basestring) == True:
             
-    return financialdata,new_inputData
+            if ('cost - ' not in data) and ('Generator system financial data in' not in data) and ('Honeybee generation system name - ' not in data) and ('replacement time = 5 years' not in data):
+                return True
+    
+    # Remove financial data through a filter
+    energyData = filter(removefinancialdata,_inputData)
+    
+    return financialdata,energyData
     
 def checktimestep(Netpurchasedelect,Facilitytotalelectdemand,generatorsproducedelec):
     
@@ -389,10 +416,10 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
     
     # 2. First extract and then remove financial data from _inputData
     
-    allfinancialdata,new_inputData = extractfinancialdata(_inputData)
-    
+    financialdatabysystem,energyData = extractfinancialdata(_inputData)
+
     # 3. Check that all the data is annual data (The EnergyPlus runtime is over the entire year) and that all the runtimes are consistent (the same)
-    if checkforhoneybeegeneration(new_inputData) != -1:
+    if checkforhoneybeegeneration(energyData) != -1:
         
         # Check the grid elect and tariff inputs
         if checktheinputs(_gridElectCostSchedule,_feedInTariffSchedule) != -1:
@@ -414,47 +441,26 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
             # Now use the length of each dataset which was found in the function checkforhoneybeegeneration (If no errors were found at step 3. )
             # to extract each dataset from the component input - _inputData and add it to the lists above.
     
-            for datanum,data in enumerate(new_inputData):
+            for datanum,data in enumerate(energyData):
     
                 if isinstance(data, basestring) == True:
                     
                     if data == 'Whole Building:Facility Net Purchased Electric Energy':
     
-                        Netpurchasedelect.extend(new_inputData[datanum:(checkforhoneybeegeneration(new_inputData)+datanum)])
+                        Netpurchasedelect.extend(energyData[datanum:(checkforhoneybeegeneration(energyData)+datanum)])
                         
                     if data == 'Whole Building:Facility Total Electric Demand Power':
                         
-                        Facilitytotalelectdemand.extend(new_inputData[datanum:(checkforhoneybeegeneration(new_inputData)+datanum)])
+                        Facilitytotalelectdemand.extend(energyData[datanum:(checkforhoneybeegeneration(energyData)+datanum)])
                        
                     if data.find('Electric energy produced by the generator system named') != -1:
                         
-                        generatorsproducedelec.append(new_inputData[datanum:(checkforhoneybeegeneration(new_inputData)+datanum)])
+                        generatorsproducedelec.append(energyData[datanum:(checkforhoneybeegeneration(energyData)+datanum)])
             
             # Once data for Netpurchasedelect,Facilitytotalelectdemand and generatorsproducedelec is extracted,
             # Make sure that in each case the EnergyPlus timestep is hourly otherwise there is not enough data to draw the graph.
             
             if checktimestep(Netpurchasedelect,Facilitytotalelectdemand,generatorsproducedelec) != -1:
-                
-                
-                # 5. Create the lists of data that will draw the cashflow graph
-    
-                # Create the numbers to slice fiancial data so that each generator systems costs 
-                # can be seperated from the whole
-                generatorfinancialdatalength = []
-                
-                for dataCount,data in enumerate(allfinancialdata):
-                    if 'generation system name' in data:
-                        generatorfinancialdatalength.append(data.replace('generation system name -',''))
-                        generatorfinancialdatalength.append(dataCount)
-                        
-                # Create a different list for each generator system with the name of the generator system 
-                # and the total cost of the system - The sum of the cost of all the items in the system.
-                
-                financialdatabysystem = []
-                
-                for countstart,Generatorname,countstop in itertools.izip_longest(generatorfinancialdatalength[1::2],generatorfinancialdatalength[::2],generatorfinancialdatalength[3::2]):
-                    
-                    financialdatabysystem.append(allfinancialdata[countstart:countstop])
                 
                 # A - Create a list of recurring replacement costs 
                 
@@ -468,12 +474,12 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                 # of (name), the item name, their cost and replacement time in that order.
                 
                 # Find all annual system maintenance costs list it along with the Honeybee generator system name
-          
+
                 for financialdata in financialdatabysystem:
+
                     for data in financialdata:
                         
                         if data.find(" replacement time = ") != -1:
-                            
                             
                             replacementitems.append(list((financialdata[0],data.split('replacement time = ')[0].split(" - ")[0],float(data.split('replacement time = ')[0].split(" - ")[1]),float(data.split('replacement time = ')[1].replace(" years","")))))
                             
@@ -494,7 +500,7 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                 # C - Create a list of inital capital costs for year zero 
                 # Find all the items that will be a capital cost, list them along with the Honeybee generation system they are part
                 # of (name), the item name, and item cost
-                
+
                 for financialdata in financialdatabysystem:
                     capitalcost = []
                     capitalcost.append(financialdata[0]) # The system name
@@ -554,7 +560,7 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                 for systemcapcost in capitalcosts:
                     
                     capitalcosts_sum = capitalcosts_sum+sum(stringtoFloat(systemcapcost[2::2]))
-                    
+
                 # Find max replacement cost
                 
                 replacementcosts = []
@@ -1117,16 +1123,16 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                             "generation\n" + \
                             "system net\n" + \
                             "present cost\n" + \
-                            " US dollars (over 25 years)"
+                            "US dollars "
                               
                         if (graphDataByHBSystem_ == False) and (graphDataByCost_ == True):
                             
 
                             # Create vertical axis label
                             vertical_label = "Net present cost\n" + \
-                            "of all systems\n" + \
+                            "all systems combined\n" + \
                             "by cost type\n" + \
-                            " US dollars (over 25 years)"
+                            "US dollars "
 
                   
                         textSrf = lb_visualization.text2srf([vertical_label], [rc.Geometry.Point3d(startPt.X-(25*_fontSize_),3,startPt.Z)],'Verdana' ,_fontSize_, False)
@@ -1216,7 +1222,7 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                     if (graphDataByHBSystem_ == True) and (graphDataByCost_ == False): 
                     
                         graphTitle = 'Net present cost by Honeybee generation system over 25 years'
-                        legendTitle = 'Graph Legend - Honeybee generation system color'
+                        legendTitle = 'Graph Legend - Honeybee generation system name and corresponding color'
                         
                     if (graphDataByHBSystem_ == False) and (graphDataByCost_ == True):
                         
@@ -1265,7 +1271,7 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                     
                     gensystem_value.Add(str(gensystem_value_sysnames[item]), paths[item])
                     
-                    gensystem_value.Add("Generation system Net present cost in US dollars (over 25 years)", paths[item])
+                    gensystem_value.Add("Generation system Net present cost in US dollars", paths[item])
 
                     gensystem_value.AddRange(sumBranchesNPC[item], paths[item])
                 
@@ -1276,12 +1282,19 @@ if ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) and (
                     for geo in axisMeshes: geo.Transform(moveTransform)
                     for geo in textSrfs: geo.Transform(moveTransform)
                         
-                    
-elif ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) or ('Whole Building:Facility Total Electric Demand Power' in _inputData) or any('Electric energy produced by the generator system named - ' in data for data in _inputData) or ('Generator system financial data in US dollars ' in _inputData) :
-    
-    warn = 'If you are trying to draw the Honeybee generation system cashflow graph you must connect totalelectdemand,netpurchasedelect, \n'+\
-           'generatorproducedenergy and financialdata outputs from the readEP generation system results component, as this component needs all that data to draw the graph'
+
+elif ('Whole Building:Facility Net Purchased Electric Energy' in _inputData) or ('Whole Building:Facility Total Electric Demand Power' in _inputData) or any('Electric energy produced by the generator system named - ' in data for data in _inputData) or ('Generator system financial data in US dollars ' in _inputData):
+
+    warn = 'To visualise the financial value of a Honeybee generator system. You must connect the outputs totalelectdemand,netpurchasedelect, \n'+\
+           'generatorproducedenergy and financialdata from the readEP generation system results component to _inputData.'
 
     w = gh.GH_RuntimeMessageLevel.Warning
     ghenv.Component.AddRuntimeMessage(w, warn)
     
+else:
+
+    warn = 'No inputs from readEP generation system results detected!'
+
+    w = gh.GH_RuntimeMessageLevel.Warning
+    ghenv.Component.AddRuntimeMessage(w, warn)
+
