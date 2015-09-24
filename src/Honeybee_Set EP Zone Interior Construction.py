@@ -69,6 +69,10 @@ def updateZoneMixing(surface1, zone1, zone2):
     zone1.mixAirFlowList.append(flowRate)
     zone2.mixAirFlowList.append(flowRate)
     
+    #Append the flow shcedule to the mixing list.
+    zone1.mixAirFlowSched.append('ALWAYS ON')
+    zone2.mixAirFlowSched.append('ALWAYS ON')
+    
     return flowRate
 
 def checkAirWalls(construction, srf):
