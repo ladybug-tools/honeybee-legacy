@@ -57,7 +57,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Generator_PV"
 ghenv.Component.NickName = 'PVgen'
-ghenv.Component.Message = 'VER 0.0.57\nSEP_15_2015'
+ghenv.Component.Message = 'VER 0.0.57\nSEP_27_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP" #"06 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -236,7 +236,7 @@ def main(_name_,_HBSurfaces,_SASolarCells,_cellsEfficiency,_integrationMode,_NoP
     
     try:
         for name,surface,SA_solarcell,celleff,mode,parallel,series,modelcost,powerout in itertools.izip_longest(_name_,HBSurfacesfromhive,_SASolarCells,_cellsEfficiency,_integrationMode,_NoParallel,_Noseries,_costPVPerModule,_powerOutputPerModule): 
-            
+
             surface.containsPVgen = True # Set this it true so the surface can be identified in run and write IDF component
             
             surface.PVgenlist = [] # Set the PVgenlist of each surface back to empty otherwise PVgen objects will accumulate on each run
@@ -244,68 +244,88 @@ def main(_name_,_HBSurfaces,_SASolarCells,_cellsEfficiency,_integrationMode,_NoP
             namePVperform = "DefaultSimplePVperformance" + str(PVgencount)+ " " + str(surface.name) # Create a name for the PVperformance object for each PV generator - this is always created by automatically here not by the user
             
             try:
+
                 name = _name_[PVgencount]
                 message0 = _name_[PVgencount] + " is mounted on Honeybee surface "+ str(surface.name)
+
             except IndexError:
+                
+
                 name = "PVgenerator" + str(PVgencount)
                 message0 = "For this generator no name has been given so a default name of PVgenerator" + str(PVgencount) + " has been assigned. This generator is mounted on Honeybee surface " + str(surface.name) # If no name given for a PV generator assign one.
                 
+
+                
             try:
                 _SASolarCells[PVgencount]
-                
                 message1 = "The solar cells of "+ name + " cover "+ str(SA_solarcell*100) + " percent of the surface area of the Honeybee surface " + str(surface.name)
+
             except IndexError:
-                
+
                 SA_solarcell = _SASolarCells[0]
                 message1 = "The solar cells of "+ name + " cover "+ str(SA_solarcell*100) + " percent of the surface area of the Honeybee surface" + str(surface.name)
-            
+
             try:
+
                 _cellsEfficiency[PVgencount]
-                
                 message2 = "The solar cell efficiency is "+ str(celleff*100) + " %"
-                
+
             except IndexError:
                 
                 celleff = _cellsEfficiency[0]
                 message2 = "The solar cell efficiency is "+ str(celleff*100) + " %"
     
             try:
+
                 _integrationMode[PVgencount]
                 
                 message3 = "The integration mode is " + returnmodename(mode)
-                
+            
             except IndexError:
+                
                 mode = _integrationMode[0]
                 message3 = "The integration mode is "+ returnmodename(mode)
-         
+                
             try:
+
                 _NoParallel[PVgencount]
                 
                 message4 = "The number of PV modules in parallel is "+ str(parallel)
+            
+
             except IndexError:
                 
                 parallel = _NoParallel[0]
                 
                 message4 = "The number of PV modules in parallel is "+ str(parallel) 
-    
+            
+
             try:
+
                 _Noseries[PVgencount]
                 message5 = "The number of PV modules in series is " + str(series)
+
+                
             except IndexError:
+                
                 series = _Noseries[0]
                 message5 = "The number of PV modules in series is " + str(series)
-            
-            message6 = "So " + name + " is made up of "+ str(series*parallel) + " PV modules" 
-            
+                
+                
+            message6 = "So " + name + " is made up of "+ str(series*parallel) + " PV modules"
+                
             try:
                 _costPVPerModule[PVgencount]
                 message7 = "The cost per PV module is " + str(modelcost) + " \n " +\
                 "Therefore the total cost of "+ name +" is " + str(modelcost*float(parallel*series)) + " - the currency needs to be specified by the user"
                 
+                
             except IndexError:
+                
                  modelcost = _costPVPerModule[0]
                  message7 = "The cost per PV module is " + str(_costPVPerModule[0]) + " \n " +\
                  "Therefore the total cost of "+ name + " is " + str(modelcost*float(parallel*series)) + " - the currency needs to be specified by the user "
+        
             try:
                 _powerOutputPerModule[PVgencount]
     
@@ -314,18 +334,26 @@ def main(_name_,_HBSurfaces,_SASolarCells,_cellsEfficiency,_integrationMode,_NoP
     
                 
             except IndexError:
-    
+                
                 powerout = _powerOutputPerModule[0]
                 message8 = "The power output per PV module is " + str(powerout) + " W \n " +\
                 "Therefore the total power output of "+ name+ " is " + str(powerout*float(parallel*series)) + " W "
 
                 
+            # A hb_EPShdSurface
             if surface.type == 6: ## A bit of a hack to get context surface name the same as being produced by EPShdSurface
-                for count in range(int(len(surface.extractPoints())/4)):
+                
+                coordinatesList = surface.extractPoints()
+
+                if type(coordinatesList[0])is not list and type(coordinatesList[0]) is not tuple: coordinatesList = [coordinatesList]
+                
+                for count in range(len(coordinatesList)):
+                    
                     PVsurfacename = surface.name + '_' + `count`
-            
+                    surface.name = surface.name + '_' + `count`
+
                 surface.PVgenlist.append(PV_gen(name,PVsurfacename,returnmodename(mode),parallel,series,modelcost,powerout,namePVperform,SA_solarcell,celleff)) # Last three inputs are for instance method PV_performance
-            
+            # Not a hb_EPShdSurface
             else:
                 surface.PVgenlist.append(PV_gen(name,surface.name,returnmodename(mode),parallel,series,modelcost,powerout,namePVperform,SA_solarcell,celleff))
                 
@@ -341,7 +369,7 @@ def main(_name_,_HBSurfaces,_SASolarCells,_cellsEfficiency,_integrationMode,_NoP
                 
             PVgencount = PVgencount+1
 
-    except IndexError:
+    except:
         
         # This catches an error when there is a missing member exception ie length of one of inputs is longer than 
         # number of Honeybee surfaces not sure how to just catch missing member exception!

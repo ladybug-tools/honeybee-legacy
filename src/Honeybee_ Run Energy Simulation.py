@@ -62,7 +62,7 @@ Provided by Honeybee 0.0.57
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.57\nSEP_14_2015'
+ghenv.Component.Message = 'VER 0.0.57\nSEP_27_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_28_2015
@@ -240,11 +240,15 @@ class WriteIDF(object):
             scheduleName = self.fileBasedSchedules[scheduleName.upper()]
 
         fullString = ''
-        
+
         for count, coordinates in enumerate(coordinatesList):
+            
+            if surface.containsPVgen == None:
+                # Assign surface name here if containsPVgen surface name was assigned in PVgen component
+                surface.name = surface.name + '_' + `count`
 
             str_1 = '\nShading:Building:Detailed,\n' + \
-                    '\t' + surface.name + '_' + `count` + ',\t!- Name\n' + \
+                    '\t' + surface.name + ',\t!- Name\n' + \
                     '\t' + scheduleName + ',\t!- Transmittance Schedule Name\n' + \
                     '\t' + `len(coordinates)` + ',\t!- Number of Vertices\n'    
 
@@ -256,7 +260,7 @@ class WriteIDF(object):
                     str_2 = str_2 + `pt.X` + ',\n\t' + `pt.Y` + ',\n\t' + `pt.Z` + ';\n\n'
             
             fullString = fullString + str_1 + str_2
-        
+
         return fullString
     
     def EPInternalMass(self, zone, massName, srfArea, constructionName):
