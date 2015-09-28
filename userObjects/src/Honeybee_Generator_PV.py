@@ -45,7 +45,7 @@ Provided by Honeybee 0.0.57
         _integrationMode: EnergyPlus allows for different ways of integrating with other EnergyPlus heat transfer surfaces and models and calculating Photovoltaic cell temperature. This field is a integer or a list of integers sequentially to _HBSurfaces between 1 and 6 that defines the heat transfer integration mode used in the calculations as one of the following options. Decoupled a value of 1, DecoupledUllebergDynamic a value of 2, IntegratedSurfaceOutsideFace a value of 3, IntegratedTranspiredCollector a value of 4, IntegratedExteriorVentedCavity a value of 5, PhotovoltaicThermalSolarCollector a value of 6. If only one integer is given this value will be used for all other PV generators. More information about each mode can be found on page 1767 and 1768 of the Energyplus Input Output reference.
         _NoParallel: A integer or a list of integers that sequentially correspond to each Honeybee surface in _HBSurfaces. These integers define the series-wired strings of PV modules that are in parallel to form the PV generator on each Honeybee surface. The product of this field and the next field will equal the total number of modules in the PV generator on each Honeybee surface. If only one integer is given this value will be used for all other PV generators.
         _Noseries: A integer or a list of integers that sequentially correspond to each Honeybee surface in _HBSurfaces.  These integers define the number of modules wired in series (on each string) to form the PV generator on each Honeybee surface in _HBSurfaces. The product of this field and the previous field will equal the total number of modules in the PV generator on each Honeybee surface. If only one integer is given this value will be used for all other PV generators.
-        _costPVgen: A float or a list of floats that sequentially correspond to each Honeybee surface in _HBSurfaces. The float is the cost of each PV module in US dollars (Other currencies will be available in the future). The cost of the PV generator will be the cost of the module multiplied by the number of modules in parallel and series (number of modules as a generator is made up of modules). If only one float is given this value will be used for all other PV generators.
+        _costPVgen: A float or a list of floats that sequentially correspond to each Honeybee surface in _HBSurfaces. The float is the cost of each PV module in whatever currency the user wishes. The cost of the PV generator will be the cost of the module multiplied by the number of modules in parallel and series (number of modules as a generator is made up of modules). If only one float is given this value will be used for all other PV generators.
         _powerOutput: A float or a list of floats that sequentially correspond to each Honeybee surface in _HBSurfaces. The float is the power output of each PV module in watts. The power output of the PV generator will be the power output of the module multiplied by the number of modules in parallel and series (number of modules as a generator is made up of modules). If only one float is given this value will be used for all other PV generators.
         _PVInverter: The inverter servicing all the PV generators in this component - to assign an inverter connect the HB_inverter here from the Honeybee inverter component
             
@@ -316,15 +316,15 @@ def main(_name_,_HBSurfaces,_SASolarCells,_cellsEfficiency,_integrationMode,_NoP
                 
             try:
                 _costPVPerModule[PVgencount]
-                message7 = "The cost per PV module is " + str(modelcost) + " US dollars" + " \n " +\
-                "Therefore the total cost of "+ name +" is " + str(modelcost*float(parallel*series)) + " US dollars"
+                message7 = "The cost per PV module is " + str(modelcost) + " \n " +\
+                "Therefore the total cost of "+ name +" is " + str(modelcost*float(parallel*series)) + " - the currency needs to be specified by the user"
                 
                 
             except IndexError:
                 
                  modelcost = _costPVPerModule[0]
                  message7 = "The cost per PV module is " + str(_costPVPerModule[0]) + " \n " +\
-                 "Therefore the total cost of "+ name + " is " + str(modelcost*float(parallel*series)) + " in US dollars "
+                 "Therefore the total cost of "+ name + " is " + str(modelcost*float(parallel*series)) + " - the currency needs to be specified by the user "
         
             try:
                 _powerOutputPerModule[PVgencount]
@@ -353,7 +353,6 @@ def main(_name_,_HBSurfaces,_SASolarCells,_cellsEfficiency,_integrationMode,_NoP
                     surface.name = surface.name + '_' + `count`
 
                 surface.PVgenlist.append(PV_gen(name,PVsurfacename,returnmodename(mode),parallel,series,modelcost,powerout,namePVperform,SA_solarcell,celleff)) # Last three inputs are for instance method PV_performance
-            
             # Not a hb_EPShdSurface
             else:
                 surface.PVgenlist.append(PV_gen(name,surface.name,returnmodename(mode),parallel,series,modelcost,powerout,namePVperform,SA_solarcell,celleff))
