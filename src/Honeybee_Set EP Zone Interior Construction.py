@@ -39,7 +39,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Set EP Zone Interior Construction"
 ghenv.Component.NickName = 'setEPZoneIntCnstr'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nSEP_23_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -68,6 +68,10 @@ def updateZoneMixing(surface1, zone1, zone2):
     #Append the flow rate of mixing to the mixAirFlowList
     zone1.mixAirFlowList.append(flowRate)
     zone2.mixAirFlowList.append(flowRate)
+    
+    #Append the flow shcedule to the mixing list.
+    zone1.mixAirFlowSched.append('ALWAYS ON')
+    zone2.mixAirFlowSched.append('ALWAYS ON')
     
     return flowRate
 
