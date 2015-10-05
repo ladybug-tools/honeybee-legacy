@@ -55,7 +55,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.57\nSEP_14_2015'
+ghenv.Component.Message = 'VER 0.0.57\nOCT_05_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nMAY_02_2015
@@ -606,11 +606,15 @@ if dataTypeList[2] == True and dataTypeList[3] == True:
             dataTypeList[1] = True
         
         #If we have the cooling/heating coil energy and the heat energy added/removed from the zone, compute the portion of the energy balance that the outdoor air is responsible for.
+        heatCoolTracker = 0
         if zoneHeatingEnergy != testTracker and zoneCoolingEnergy != testTracker:
             for listCount, list in enumerate(zoneHeatingEnergy):
-                makeHeader(outdoorAirEnergy, listCount, list[0], list[1], "Outdoor Air Energy", energyUnit, True)
-                for numCount, num in enumerate(list[2:]):
-                    outdoorAirEnergy.Add((num/3600000) - (zoneCoolingEnergy[listCount][2:][numCount]/3600000) - heatingPyList[listCount][7:][numCount] + coolingPyList[listCount][7:][numCount], GH_Path(listCount))
+                try:
+                    makeHeader(outdoorAirEnergy, listCount, list[0], list[1], "Outdoor Air Energy", energyUnit, True)
+                    for numCount, num in enumerate(list[2:]):
+                        outdoorAirEnergy.Add((num/3600000) - (zoneCoolingEnergy[listCount][2:][numCount]/3600000) - heatingPyList[heatCoolTracker][7:][numCount] + coolingPyList[heatCoolTracker][7:][numCount], GH_Path(listCount))
+                    heatCoolTracker += 1
+                except: pass
             dataTypeList[10] = True
 
 # If we have information on gains through the air, group them all into a total air gains list.
