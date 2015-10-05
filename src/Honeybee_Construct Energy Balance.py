@@ -40,13 +40,17 @@ Provided by Honeybee 0.0.57
         surfaceEnergyFlow_: The surface heat loss (negative) or heat gain (positive) from the "Honeybee_Read EP Surface Result" component.
     Returns:
         readMe!: ...
+        --------------------: ...
+        flrNormEnergyBal: A data tree with the important building-wide energy balance terms normalized by floor area.  This can then be plugged into the "Ladybug_3D Chart" or "Ladybug_Monthly Bar Chart" to give a visualization of the energy balance of the whole model.
+        flrNormBalWStorage:  A data tree with the important building-wide energy balance terms normalized by floor area plus an additional term to represent the energy being stored in the building's mass.  If you have input all of the terms of your energy balance to this component, you storage term should be very small in relation to the other energy balance terms.  Thus, this storage term can be a good way to check whether all of your energy balance terms are accounted for.  This output can then be plugged into the "Ladybug_3D Chart" or "Ladybug_Monthly Bar Chart" to give a visualization of the energy balance of the whole model.
+        --------------------: ...
         modelEnergyBalance:  A data tree with the important building-wide energy balance terms.  This can then be plugged into the "Ladybug_3D Chart" or "Ladybug_Monthly Bar Chart" to give a visualization of the energy balance of the whole model.
         energyBalWithStorage:  A data tree with the important building-wide energy balance terms plus an additional term to represent the energy being stored in the building's mass.  If you have input all of the terms of your energy balance to this component, you storage term should be very small in relation to the other energy balance terms.  Thus, this storage term can be a good way to check whether all of your energy balance terms are accounted for.  This output can then be plugged into the "Ladybug_3D Chart" or "Ladybug_Monthly Bar Chart" to give a visualization of the energy balance of the whole model.
 """
 
 ghenv.Component.Name = "Honeybee_Construct Energy Balance"
 ghenv.Component.NickName = 'energyBalance'
-ghenv.Component.Message = 'VER 0.0.57\nSEP_14_2015'
+ghenv.Component.Message = 'VER 0.0.57\nOCT_05_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nMAY_02_2015
@@ -262,6 +266,14 @@ def sumAllLists(tree):
 
 
 def main(HBZones, heatingLoad, solarLoad, lightingLoad, equipLoad, peopleLoad, surfaceEnergyFlow, infiltrationEnergy, outdoorAirEnergy, natVentEnergy, coolingLoad):
+    #Get the zone floor area.
+    hb_hive = sc.sticky["honeybee_Hive"]()
+    flrAreas = []
+    for Hzone in HBZones:
+        zone = hb_hive.callFromHoneybeeHive([Hzone])[0]
+        flrAreas.append(zone.getFloorArea())
+    totalFlrArea = sum(flrAreas)
+    
     #Check and convert the data for each of the zone data lists.
     checkData1, heatingUnits, heatingHeaders, heatingNumbers, heatingAnalysisPeriod = checkCreateDataTree(heatingLoad, "heating", "Heating")
     checkData2, solarUnits, solarHeaders, solarNumbers, solarAnalysisPeriod = checkCreateDataTree(solarLoad, "totalSolarGain_", "Solar")
@@ -376,8 +388,25 @@ def main(HBZones, heatingLoad, solarLoad, lightingLoad, equipLoad, peopleLoad, s
             storageNumbers[count] = -val
         energyBalWithStorage.append(storageHeader + storageNumbers)
         
+        #Create an energy balance normalized by floor area.
+        flrNormEBal = []
+        for dataList in modelEnergyBalance: flrNormEBal.append(dataList[:])
+        for listcount, eBalList in enumerate(flrNormEBal):
+            for valCount, val in enumerate(eBalList):
+                try: flrNormEBal[listcount][valCount] = val/totalFlrArea
+                except:
+                    if 'kWh' in val: flrNormEBal[listcount][valCount] = 'kWh/m2'
         
-        return modelEnergyBalance, energyBalWithStorage
+        flrNormEBalWStorage = flrNormEBal[:]
+        flrNormStorage = energyBalWithStorage[-1][:]
+        for valCount, val in enumerate(flrNormStorage):
+            try: flrNormStorage[valCount] = val/totalFlrArea
+            except:
+                if 'kWh' in val: flrNormStorage[valCount] = 'kWh/m2'
+        flrNormEBalWStorage.append(flrNormStorage)
+        
+        
+        return modelEnergyBalance, energyBalWithStorage, flrNormEBal, flrNormEBalWStorage
     else: return -1
 
 
@@ -391,13 +420,21 @@ if sc.sticky.has_key('honeybee_release') == False:
 
 if hbCheck == True and _HBZones != []:
     if heating_.BranchCount > 0 or totalSolarGain_.BranchCount > 0 or  electricLight_.BranchCount > 0 or  electricEquip_.BranchCount > 0 or  peopleGains_.BranchCount > 0 or  surfaceEnergyFlow_.BranchCount > 0 or infiltrationEnergy_.BranchCount > 0 or outdoorAirEnergy_.BranchCount > 0 or natVentEnergy_.BranchCount > 0 or cooling_.BranchCount > 0:
-        modelEnergyBalanceInit, energyBalWithStorageInit = main(_HBZones, heating_, totalSolarGain_, electricLight_, electricEquip_, peopleGains_, surfaceEnergyFlow_, infiltrationEnergy_, outdoorAirEnergy_, natVentEnergy_, cooling_)
+        result = main(_HBZones, heating_, totalSolarGain_, electricLight_, electricEquip_, peopleGains_, surfaceEnergyFlow_, infiltrationEnergy_, outdoorAirEnergy_, natVentEnergy_, cooling_)
         
-        if modelEnergyBalanceInit != -1:
+        if result != -1:
+            modelEnergyBalanceInit, energyBalWithStorageInit, flrNormEBalInit, flrNormEBalWStorageInit = result
+            
             modelEnergyBalance = DataTree[Object]()
             energyBalWithStorage = DataTree[Object]()
+            flrNormEnergyBal = DataTree[Object]()
+            flrNormBalWStorage = DataTree[Object]()
             
             for dataCount, dataList in enumerate(modelEnergyBalanceInit):
                 for item in dataList: modelEnergyBalance.Add(item, GH_Path(dataCount))
             for dataCount, dataList in enumerate(energyBalWithStorageInit):
                 for item in dataList: energyBalWithStorage.Add(item, GH_Path(dataCount))
+            for dataCount, dataList in enumerate(flrNormEBalInit):
+                for item in dataList: flrNormEnergyBal.Add(item, GH_Path(dataCount))
+            for dataCount, dataList in enumerate(flrNormEBalWStorageInit):
+                for item in dataList: flrNormBalWStorage.Add(item, GH_Path(dataCount))
