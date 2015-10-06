@@ -27,16 +27,20 @@ Remove Glazing
 Provided by Honeybee 0.0.57
 
     Args:
-        _HBZones: List of Honeybee Zones
-        srfIndex_: Index of the surface to remove glazing
-        pattern_: Pattern to remove glazings from surfaces. E.g a list of True,False will remove every second glazing assuming every surface in each Honeybee zone has a glazing.
-        windowName_: The names of windows to remove, you can get the names of windows from the surfaceTxtLabels output of the component Honeybee_Label Zone Surfaces
+        _HBZones: A list of Honeybee Zones, this component can only use Honeybee Zones
+        srfIndex_: Currently not functional do not connect anything here...
+        pattern_: Currently not functional do not connect anything here...
+        windowName_: The names of windows to remove, you can get the names of windows from the surfaceTxtLabels output of the component Honeybee_Label Zone Surfaces.
+
     Returns:
         readMe!: Information about the Honeybee object
+
+    # Pattern to remove glazings from surfaces. E.g a list of True,False will remove every second glazing assuming every surface in each Honeybee zone has a glazing.
+        
 """
 ghenv.Component.Name = "Honeybee_Remove Glazing"
 ghenv.Component.NickName = 'remGlz'
-ghenv.Component.Message = 'VER 0.0.57\nOCT_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nOCT_07_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -92,7 +96,8 @@ def main(HBObjects, srfIndex, pattern):
                     # Recalculate/Redraw surface geometry after windows have been removed
                     
                     surface.calculatePunchedSurface()
-
+                
+            """
                 elif srfCount in srfIndex and surface.hasChild:
                     
                     #remove the glzing
@@ -100,7 +105,7 @@ def main(HBObjects, srfIndex, pattern):
             
             def removeByPattern(surfaces):
                 
-                """Removes surfaces by pattern"""
+                #Removes surfaces by pattern
                 
                 repeatPatternCount = 0
                 # For removing windows by pattern
@@ -134,21 +139,33 @@ def main(HBObjects, srfIndex, pattern):
                                 surface.removeAllChildSrfs()
                             
             removeByPattern(HBO.surfaces)
-                            
+
+            """
+        else:
+            
+            w = gh.GH_RuntimeMessageLevel.Warning
+            warning = "The "+str(HBO.objectType) + "named " + str(HBO.name) + " is not a Honeybee zone so no windows can be removed from it!"
+
+            ghenv.Component.AddRuntimeMessage(w, warning)
+        
+        
         # Reassign HBO objects after they have had their surfaces removed.
         HBObjs[count] = HBO
     
     return hb_hive.addToHoneybeeHive(HBObjs, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
 
-if (_HBZones and srfIndex_!=[]) or (_HBZones and pattern_!=[]) or (_HBZones and windowName_!=[]):
+HBZones = main(_HBZones, srfIndex_, pattern_)
+
+
+if _HBZones !=[]:
     
     # Run the component
     HBZones = main(_HBZones, srfIndex_, pattern_)
 
-if (_HBZones and srfIndex_==[]) and (_HBZones and pattern_==[]) and (_HBZones and windowName_==[]):
+if windowName_==[]:
     
     w = gh.GH_RuntimeMessageLevel.Warning
-    warning = "This component has not run! Enter inputs into either srfIndex_,pattern_,windowName_ to run this component."
+    warning = "No windows were removed as there are no inputs in windowName_ "+"\n"+\
+    "the Honeybee zones have not been modified."
 
     ghenv.Component.AddRuntimeMessage(w, warning)
-    
