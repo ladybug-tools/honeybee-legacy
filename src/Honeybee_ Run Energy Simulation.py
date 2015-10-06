@@ -62,7 +62,7 @@ Provided by Honeybee 0.0.57
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.57\nSEP_27_2015'
+ghenv.Component.Message = 'VER 0.0.57\nOCT_05_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_28_2015
@@ -363,7 +363,7 @@ class WriteIDF(object):
                 '\t' + flowPerZoneArea + ',  !- Outdoor Air Flow Rate Per Floor Zone Area\n' + \
                 '\t' + ',  !- Outdoor Air Flow Rate Per Zone\n' + \
                 '\t' + '' + ',  !- Design Specification Outdoor Air Object Name\n' + \
-                '\t' + '' + ',  !- Demand Controlled Ventilation Type\n' + \
+                '\t' + 'OccupancySchedule' + ',  !- Demand Controlled Ventilation Type\n' + \
                 '\t' + zone.airSideEconomizer + ',  !- Outdoor Air Economizer Type\n' + \
                 '\t' + zone.heatRecovery + ',  !- Heat Recovery Type\n' + \
                 '\t' + zone.heatRecoveryEffectiveness + ',  !- Sensible Heat Recovery Effectiveness\n' + \
