@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2015, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
+# Copyright (c) 2013-2015, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> and Anton Szilasi <ajszilasi@gmail.com>
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -21,21 +21,26 @@
 
 
 """
-Remove Glazing
+Remove Glazing 
 
 -
 Provided by Honeybee 0.0.57
 
     Args:
-        _HBZones: List of Honeybee Zones
-        srfIndex_: Index of the surface to removeglazing
-        pattern_: Pattern to remove glazings
+        _HBZones: A list of Honeybee Zones, this component can only use Honeybee Zones
+        srfIndex_: Currently not functional do not connect anything here...
+        pattern_: Currently not functional do not connect anything here...
+        windowName_: The names of windows to remove, you can get the names of windows from the surfaceTxtLabels output of the component Honeybee_Label Zone Surfaces.
+
     Returns:
         readMe!: Information about the Honeybee object
+
+    # Pattern to remove glazings from surfaces. E.g a list of True,False will remove every second glazing assuming every surface in each Honeybee zone has a glazing.
+        
 """
 ghenv.Component.Name = "Honeybee_Remove Glazing"
 ghenv.Component.NickName = 'remGlz'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nOCT_07_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -47,6 +52,7 @@ except: pass
 import scriptcontext as sc
 import Grasshopper.Kernel as gh
 import uuid
+import itertools
 
 def main(HBObjects, srfIndex, pattern):
     # check for Honeybee
@@ -74,18 +80,92 @@ def main(HBObjects, srfIndex, pattern):
     
     for count, HBO in enumerate(HBObjectsFromHive):
         if HBO.objectType == "HBZone":
+            
+            # For removing windows by Surface Index or Window Name
             for srfCount, surface in enumerate(HBO.surfaces):
-                if srfCount in srfIndex and surface.hasChild:
-                    #remove the glzing
-                    surface.removeAllChildSrfs()
-                elif pattern[srfCount] == True and surface.hasChild:
-                    print srfCount
-                    #remove the glzing
-                    surface.removeAllChildSrfs()
+                
+                if windowName_ != []:
                     
+                    # Remove childSrfs (Windows) which names are equal to windowName_
+                
+                    # Filter - Construct a list from those elements of iterable for which function returns True
+                    # so we need the not!
+                    
+                    surface.childSrfs = list(filter(lambda window: window.name not in windowName_,surface.childSrfs))
+                    
+                    # Recalculate/Redraw surface geometry after windows have been removed
+                    
+                    surface.calculatePunchedSurface()
+                
+            """
+                elif srfCount in srfIndex and surface.hasChild:
+                    
+                    #remove the glzing
+                    surface.removeAllChildSrfs()
+            
+            def removeByPattern(surfaces):
+                
+                #Removes surfaces by pattern
+                
+                repeatPatternCount = 0
+                # For removing windows by pattern
+                for srfCount,surface in enumerate(HBO.surfaces):
+                    
+                    try:
+                        
+                        pattern[srfCount]
+                        
+                    except IndexError:
+                        # SurfaceCount (The number of surfaces is greater than True or False pattern) has exceeded the number of items in the True or False pattern
+                        # So repeat the True and False until all surfaces have been exhausted
+                        # Do this by starting a new count. 
+                        
+                        if repeatPatternCount > len(pattern):
+                            
+                            #Reset repeatPatternCount so start the pattern again.
+                            
+                            repeatPatternCount = 0
+                            
+                            if pattern[repeatPatternCount] == True and surface.hasChild:
+                                
+                                surface.removeAllChildSrfs()
+                            
+                            repeatPatternCount = repeatPatternCount+1
+                            
+                        else:
+                            
+                            if pattern[repeatPatternCount] == True and surface.hasChild:
+                                
+                                surface.removeAllChildSrfs()
+                            
+            removeByPattern(HBO.surfaces)
+
+            """
+        else:
+            
+            w = gh.GH_RuntimeMessageLevel.Warning
+            warning = "The "+str(HBO.objectType) + "named " + str(HBO.name) + " is not a Honeybee zone so no windows can be removed from it!"
+
+            ghenv.Component.AddRuntimeMessage(w, warning)
+        
+        
+        # Reassign HBO objects after they have had their surfaces removed.
         HBObjs[count] = HBO
     
     return hb_hive.addToHoneybeeHive(HBObjs, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
 
-if (_HBZones and srfIndex_!=[]) or (_HBZones and pattern_!=[]):
+HBZones = main(_HBZones, srfIndex_, pattern_)
+
+
+if _HBZones !=[]:
+    
+    # Run the component
     HBZones = main(_HBZones, srfIndex_, pattern_)
+
+if windowName_==[]:
+    
+    w = gh.GH_RuntimeMessageLevel.Warning
+    warning = "No windows were removed as there are no inputs in windowName_ "+"\n"+\
+    "the Honeybee zones have not been modified."
+
+    ghenv.Component.AddRuntimeMessage(w, warning)
