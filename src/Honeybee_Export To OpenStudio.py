@@ -117,7 +117,7 @@ else:
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nOCT_13_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -132,6 +132,7 @@ class WriteOPS(object):
         self.lb_preparation = sc.sticky["ladybug_Preparation"]()
         self.hb_EPMaterialAUX = sc.sticky["honeybee_EPMaterialAUX"]()
         self.hb_EPScheduleAUX = sc.sticky["honeybee_EPScheduleAUX"]()
+        print self.hb_EPScheduleAUX
         self.hb_EPPar = sc.sticky["honeybee_EPParameters"]()
         self.simParameters = self.hb_EPPar.readEPParams(EPParameters)
         
@@ -310,6 +311,7 @@ class WriteOPS(object):
         'CustomDay1 Schedule:Day Name', 'CustomDay2 Schedule:Day Name']
         """
         
+        
         weeklySchd = ops.ScheduleWeek(model)
         weeklySchd.setName(schName)
         
@@ -387,12 +389,13 @@ class WriteOPS(object):
         values, comments = self.hb_EPScheduleAUX.getScheduleDataByName(schName, ghenv.Component)
         
         if values[0].lower() != "schedule:week:daily":
+            
             scheduleTypeLimitsName = values[1]
             if not self.isScheduleInLib(scheduleTypeLimitsName):
                 #print 'here ' + scheduleTypeLimitsName
                 OSScheduleTypeLimits = self.createOSScheduleTypeLimits(values[1], model)
                 self.addScheduleToLib(scheduleTypeLimitsName, OSScheduleTypeLimits)
-                
+
         if not self.isScheduleInLib(schName):
             if values[0].lower() == "schedule:year":
                 OSSchedule = self.createYearlyOSSchedule(schName, values, model)
@@ -425,27 +428,31 @@ class WriteOPS(object):
         
         
     def recallAvailManager(self,HVACDetails):
-        #print HVACDetails['availabilityManagerList']
+
+        print HVACDetails['availabilityManagerList']
         return HVACDetails['availabilityManagerList']
     
     def updateAvailManager(self,availManager,OSComponent):
         #avail manager is the user's definition
         #OS component is the OpenStudio object being updated
-        print availManager
-        print type(OSComponent)
+        #print availManager
+        #print type(OSComponent) - AirLoopHVAC
         #get the availability List Manager
         #set the avail manager list name
         #set the schedule of the availability manager
         #set the night cycle controls, when applicable
         if availManager != None:
+            pass
+            """
+            # availManager should be a dict.
             if availManager['type'] == 'NightCycle':
                 try:
-                    print type(availManager['controlType'])
+                    #print type(availManager['controlType'])
                     OSComponent.setNightCycleControlType(availManager['controlType'])
                     print 'set night cycle availability manager to: '+availManager['controlType'] 
                 except:
                     print 'Error: OSComponent '+str(typ(OSComponent))+' cannot set night cycle availability manager!!'
-
+            """
         return OSComponent
         
     def recallOASys(self,HVACDetails):
@@ -476,8 +483,10 @@ class WriteOPS(object):
         1:'FixedMinimum'
         }
         
+        # XXX I think this is superfluous code
         if HVACDetails == None: return
         
+        print HVACDetails['airsideEconomizer']
         print 'getting oasys from the hive'
         print HVACDetails['airsideEconomizer']['DXLockoutMethod']
         'airsideEconomizer'
@@ -991,6 +1000,7 @@ class WriteOPS(object):
             
             # HAVC system index for this group and thermal zones
             systemIndex, thermalZones, HVACDetails,plantDetails = self.HVACSystemDict[HAVCGroupID]
+
             # put thermal zones into a vector
             thermalZoneVector = ops.ThermalZoneVector(thermalZones)
             # add systems. There are 10 standard ASHRAE systems + Ideal Air Loads
@@ -1045,20 +1055,22 @@ class WriteOPS(object):
                             print cc
                             coolcoil = self.updateCoolingCoil(HVACDetails['coolingCoil'],cc)
                             
-                    if plantDetails['boiler'] != None:
-                        x = ptac.heatingCoil().name()
-                        print x
-                        hc = model.getCoilHeatingWaterByName(str(x)).get()
-                        hwl = hc.plantLoop().get()
-                        print type(hwl)
-                        boilervec = hwl.supplyComponents(ops.IddObjectType("OS:Boiler:HotWater"))
-                        for bc,boiler in enumerate(boilervec):
-                            #sequencing, is this possible?
-                            #below's example has no sequencing capabilities
-                            if len(plantDetails['boiler']) > 0:
-                                osboiler = model.getBoilerHotWater(boiler.handle()).get()
-                                uboil = self.recallBoiler(plantDetails)
-                                osboiler = self.updateBoiler(uboil,osboiler)
+                    if plantDetails != None:
+                        if plantDetails['boiler'] != None:
+                            x = ptac.heatingCoil().name()
+                            print x
+                            hc = model.getCoilHeatingWaterByName(str(x)).get()
+                            hwl = hc.plantLoop().get()
+                            print type(hwl)
+                            boilervec = hwl.supplyComponents(ops.IddObjectType("OS:Boiler:HotWater"))
+                            for bc,boiler in enumerate(boilervec):
+                                #sequencing, is this possible?
+                                #below's example has no sequencing capabilities
+                                if len(plantDetails['boiler']) > 0:
+                                    osboiler = model.getBoilerHotWater(boiler.handle()).get()
+                                    uboil = self.recallBoiler(plantDetails)
+                                    osboiler = self.updateBoiler(uboil,osboiler)
+                
             elif systemIndex == 2:
                 # 2: PTHP, Residential - thermalZoneVector because ZoneHVAC
                 ops.OpenStudioModelHVAC.addSystemType2(model, thermalZoneVector)
@@ -1127,11 +1139,19 @@ class WriteOPS(object):
                         airloop.addBranchForZone(zone)
                         print 'zone added to PSZ air loop'
                         oasys = airloop.airLoopHVACOutdoorAirSystem()
-                        if oasys.is_initialized():
+                        
+                        # HVACDetails['airsideEconomizer'] != None, component AirHandlerDetails
+                        # will set HVACDetails['airsideEconomizer'] to none if no Air Economizer is connected to it
+                        
+                        
+                        
+                        if (oasys.is_initialized()== True) and (HVACDetails['airsideEconomizer'] != None):
                             print 'overriding the OpenStudio airside economizer settings'
                             oactrl = oasys.get().getControllerOutdoorAir()
                             #set control type
                             #can sensed min still be dry bulb for any of these?  Future release question
+                            
+                            
                             econo = self.recallOASys(HVACDetails)
                             oactrl = self.updateOASys(econo,oactrl,model)
                             print 'economizer settings updated to economizer name: ' + HVACDetails['airsideEconomizer']['name']
@@ -1162,6 +1182,7 @@ class WriteOPS(object):
             elif systemIndex == 4:
                 for zone in thermalZoneVector:
                     handle = ops.OpenStudioModelHVAC.addSystemType4(model).handle()
+
                     if HVACDetails != None:
                         #print handle
                         #print HVACDetails
@@ -1169,7 +1190,10 @@ class WriteOPS(object):
                         airloop.addBranchForZone(zone)
                         print 'zone added to PSZ-HP air loop'
                         oasys = airloop.airLoopHVACOutdoorAirSystem()
-                        if oasys.is_initialized():
+                        
+                        print HVACDetails['airsideEconomizer']
+                        
+                        if oasys.is_initialized() and HVACDetails['airsideEconomizer'] != None:
                             print 'overriding the OpenStudio airside economizer settings'
                             oactrl = oasys.get().getControllerOutdoorAir()
                             #set control type
@@ -1215,24 +1239,24 @@ class WriteOPS(object):
                             print modelhc
                     
             elif systemIndex == 5:
-                #print HVACDetails
-
-
 
                 hvacHandle = ops.OpenStudioModelHVAC.addSystemType5(model).handle()
                 # get the airloop
                 airloop = model.getAirLoopHVAC(hvacHandle).get()
                 #modify the airLoopAvailabilityManager and the underlying availabilitySchedule
-                availManager=self.recallAvailManager(HVACDetails)
-                airloop = self.updateAvailManager(HVACDetails['availabilityManagerList'],airloop)
-                print sorted(HVACDetails)
-                if HVACDetails['availSch'] != None:
-                    availSch = self.getOSSchedule(HVACDetails['availSch'], model)
-                    airloop.setAvailabilitySchedule(availSch)
+                
                 # add branches
                 for zone in thermalZoneVector:
                     airloop.addBranchForZone(zone)
                 if(HVACDetails != None):
+                    if HVACDetails['availSch'] != None:
+
+                        availSch = self.getOSSchedule(HVACDetails['availSch'], model)
+                        airloop.setAvailabilitySchedule(availSch)
+ 
+                    airloop = self.updateAvailManager(HVACDetails['availabilityManagerList'],airloop)
+                    
+                    availManager=self.recallAvailManager(HVACDetails)
                     #update the airloopHVAC component with autosize information
                     designAirflowRate = 0
                     if HVACDetails['coolingAirflow'] != 'Autosize':
@@ -1249,7 +1273,10 @@ class WriteOPS(object):
                         print 'updated design airflow rate'
                     
                     oasys = airloop.airLoopHVACOutdoorAirSystem()
-                    if oasys.is_initialized():
+                    
+
+                    if (oasys.is_initialized()== True) and (HVACDetails['airsideEconomizer'] != None):
+
                         print 'overriding the OpenStudio airside economizer settings'
                         oactrl = oasys.get().getControllerOutdoorAir()
                         #set control type
@@ -1297,6 +1324,39 @@ class WriteOPS(object):
                                 osboiler = model.getBoilerHotWater(boiler.handle()).get()
                                 uboil = self.recallBoiler(plantDetails)
                                 osboiler = self.updateBoiler(uboil,osboiler)
+                                
+            elif systemIndex == 6:
+                
+
+                print HVACDetails['availSch']
+
+                hvacHandle = ops.OpenStudioModelHVAC.addSystemType6(model).handle()
+                
+                # get the airloop
+                airloop = model.getAirLoopHVAC(hvacHandle).get()
+
+                # add branches 
+                for zone in thermalZoneVector:
+                    airloop.addBranchForZone(zone)
+                    
+                if HVACDetails!=None:
+      
+                    
+                    print HVACDetails['availabilityManagerList']
+                    
+                    if HVACDetails['availSch'] != None:
+                        availSch = self.getOSSchedule(HVACDetails['availSch'], model)
+                        airloop.setAvailabilitySchedule(availSch)
+                    
+                    airloop = self.updateAvailManager(HVACDetails['availabilityManagerList'],airloop)
+                    
+                    
+                    
+                if plantDetails!=None:
+                    
+                    print HVACDetails['availabilityManagerList']
+
+                
             elif systemIndex == 7:
                 hvacHandle = ops.OpenStudioModelHVAC.addSystemType7(model).handle()
                 # get the airloop
@@ -1307,7 +1367,7 @@ class WriteOPS(object):
                 
                 if HVACDetails!=None:
                     oasys = airloop.airLoopHVACOutdoorAirSystem() 
-                    if oasys.is_initialized():
+                    if (oasys.is_initialized()== True) and (HVACDetails['airsideEconomizer'] != None):
                         print 'overriding the OpenStudio airside economizer settings'
                         oactrl = oasys.get().getControllerOutdoorAir()
                         #set control type
