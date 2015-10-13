@@ -51,7 +51,7 @@ import Grasshopper.Kernel as gh
 
 ghenv.Component.Name = "Honeybee_OpenStudio Air Handler Detail"
 ghenv.Component.NickName = 'AirHandlerDetails'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nOCT_12_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | AirsideSystems"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -89,13 +89,13 @@ def main(fanDetail,coolingCoil,heatingCoil,airsideEconomizer,availabilityManager
         hb_airHandler = sc.sticky["honeybee_AirHandlerParams"]().airHandlerDict
         print 'We have located the Honeybee default Air Handler Definition: '
         
-        pp.pprint(hb_airHandler)
+        #pp.pprint(hb_airHandler)
         print 'constant volume fan definition'
-        pp.pprint(hb_airHandler['constVolSupplyFanDef']().cvFanDict)
+        #pp.pprint(hb_airHandler['constVolSupplyFanDef']().cvFanDict)
         print 'variable volume fan definition'
-        pp.pprint(hb_airHandler['varVolSupplyFanDef']().vvFanDict)
+        #pp.pprint(hb_airHandler['varVolSupplyFanDef']().vvFanDict)
         print 'airside economizer definition'
-        pp.pprint(hb_airHandler['airsideEconomizer']().airEconoDict)
+        #pp.pprint(hb_airHandler['airsideEconomizer']().airEconoDict)
     
     else:
         print "You should first let Honeybee to fly..."
@@ -151,11 +151,11 @@ def main(fanDetail,coolingCoil,heatingCoil,airsideEconomizer,availabilityManager
                 if coolingCoil.d['condenserType']==1:
                     print 'We have kept the evaporative condenser definition that you have created.'
                     evapcond = coolingCoil.d['evaporativeCondenserDesc']
-                pp.pprint(coolingCoil.d)
+                #pp.pprint(coolingCoil.d)
                 coolingCoil = sc.sticky['honeybee_2xDXCoilParams']().twoSpeedDXDict
                 coolingCoil['evaporativeCondenserDesc'] = evapcond
                 coolingCoil['type']=1
-                pp.pprint(coolingCoil)
+                #pp.pprint(coolingCoil)
                 coolingCoil = dictToClass(coolingCoil)
         #this is under the current configuration of system types
         if fanDetail != None:
@@ -165,8 +165,8 @@ def main(fanDetail,coolingCoil,heatingCoil,airsideEconomizer,availabilityManager
                 print "Either change your fan definition or system type to prevent this from happening in the future."
                 w = gh.GH_RuntimeMessageLevel.Remark
                 ghenv.Component.AddRuntimeMessage(w, "Constant Volume Fan changed to Variable Volume to Match the System Type: " +sysDict[_HVACSystemID])
-                print fanDetail.d
-                pp.pprint(fanDetail.d)
+                #print fanDetail.d
+                #pp.pprint(fanDetail.d)
                 fanDetail.d['type'] = 1
                 fanDetail.d['minFlowFrac']=hb_airHandler['varVolSupplyFanDef']().vvFanDict['minFlowFrac']
                 fanDetail.d['fanPowerCoefficient1'] = hb_airHandler['varVolSupplyFanDef']().vvFanDict['fanPowerCoefficient1']
@@ -175,93 +175,122 @@ def main(fanDetail,coolingCoil,heatingCoil,airsideEconomizer,availabilityManager
                 fanDetail.d['fanPowerCoefficient4'] = hb_airHandler['varVolSupplyFanDef']().vvFanDict['fanPowerCoefficient4']
                 fanDetail.d['fanPowerCoefficient5'] = hb_airHandler['varVolSupplyFanDef']().vvFanDict['fanPowerCoefficient5']
                 print "changed to"
-                pp.pprint(fanDetail.d)
+                #pp.pprint(fanDetail.d)
             
     #dx coil assignment errors (single speed where dual speed, etc. , using DX heating where hot water)
     
+    if(_HVACSystemID !=None):
 
-            
-        
-    if jsonstream_ == None and jsonfileloc_ == None:
-        if(_HVACSystemID !=None):
-            print 'You have assigned a valid HVAC system ID.'
-            print str(_HVACSystemID) + ": " + sysDict[_HVACSystemID]
-            sysdict = {}
-            sysdict['availSch'] = _availabilitySch_
-            sysdict['fanPlacement'] = _fanPlacement_
-            sysdict['coolingAirflow'] = _coolingAirflowRate_
-            sysdict['coolingOAflow'] = _coolingOAFlowRate_
-            sysdict['heatingAirflow'] = _coolingAirflowRate_
-            sysdict['heatingOAflow'] = _coolingOAFlowRate_
-            sysdict['floatingAirflow'] = _coolingAirflowRate_
-            sysdict['floatingOAflow'] = _coolingOAFlowRate_
-            if fanDetail != None:
-                try:
-                    if fanDetail.d['type'] == 0:
-                        print 'Upgrading Constant Volume Fan based on your requirements.'
-                        sysdict['constVolSupplyFanDef'] = fanDetail.d
-                        sysdict['varVolSupplyFanDef'] = {}
-                    elif fanDetail.d['type'] == 1:
-                        print 'Upgrading Variable Volume Fan based on your requirements.'
-                        sysdict['varVolSupplyFanDef'] = fanDetail.d
-                        print sysdict['varVolSupplyFanDef']
-                        sysdict['constVolSupplyFanDef'] = {}
-                except:
-                    print 'could not recall fan details from the fan component.'
-            else:
-                if _HVACSystemID <= 4:
-                    print 'Constant volume fan parameters set to Honeybee default.'
-                    sysdict['constVolSupplyFanDef'] = sc.sticky['honeybee_constantVolumeFanParams']().cvFanDict
+        print 'You have assigned a valid HVAC system ID.'
+        print str(_HVACSystemID) + ": " + sysDict[_HVACSystemID]
+        sysdict = {}
+        sysdict['availSch'] = _availabilitySch_
+        sysdict['fanPlacement'] = _fanPlacement_
+        sysdict['coolingAirflow'] = _coolingAirflowRate_
+        sysdict['coolingOAflow'] = _coolingOAFlowRate_
+        sysdict['heatingAirflow'] = _coolingAirflowRate_
+        sysdict['heatingOAflow'] = _coolingOAFlowRate_
+        sysdict['floatingAirflow'] = _coolingAirflowRate_
+        sysdict['floatingOAflow'] = _coolingOAFlowRate_
+        if fanDetail != None:
+            try:
+                if fanDetail.d['type'] == 0:
+                    print 'Upgrading Constant Volume Fan based on your requirements.'
+                    sysdict['constVolSupplyFanDef'] = fanDetail.d
                     sysdict['varVolSupplyFanDef'] = {}
-                else:
-                    print 'Variable volume fan parameters set to Honeybee default.'
-                    sysdict['varVolSupplyFanDef'] = sc.sticky['honeybee_variableVolumeFanParams']().vvFanDict
+                elif fanDetail.d['type'] == 1:
+                    print 'Upgrading Variable Volume Fan based on your requirements.'
+                    sysdict['varVolSupplyFanDef'] = fanDetail.d
+                    print sysdict['varVolSupplyFanDef']
                     sysdict['constVolSupplyFanDef'] = {}
-                    
-            if airsideEconomizer != None: 
-                sysdict['airsideEconomizer'] = airsideEconomizer.d
-            else:
-                pass
-            if not isinstance(coolingCoil, str): 
-                print 'upgrading cooling coil detail'
-                sysdict['coolingCoil'] = coolingCoil.d
-                print sysdict['coolingCoil']
-            else:
-                pass
-            if heatingCoil != None:
-                print heatingCoil.d
-                sysdict['heatingCoil'] = heatingCoil.d
-            else:
-                pass
-            if availabilityManagerList != None:
-                print 'found availMan!!!!!!!!!1'
-                sysdict['availabilityManagerList'] = availabilityManagerList.d 
-            actions = []
-            storedAHUParams = {}
-            for key in sorted(hb_airHandler.keys()):
-                if sysdict.has_key(key) and sysdict[key] != None:
-                    if key == 'varVolSupplyFanDef' or key == 'constVolSupplyFanDef':
-                        storedAHUParams[key] = sysdict[key]
-                    elif key == 'airsideEconomizer':
-                        storedAHUParams[key] = sysdict[key]
-                    else:
-                        storedAHUParams[key] = sysdict[key]
-                        
-                else:
-                    if key == 'supplyFanDef':
-                        storedAHUParams[key] = hb_airHandler[key]().cvFanDict
-                    elif key == 'airsideEconomizer':
-                        storedAHUParams[key] = hb_airHandler[key]().airEconoDict
-                    else:
-                        storedAHUParams[key] = hb_airHandler[key]
-            #in the worst-case scenario, this will just send back honeybee defaults.
-            a = dictToClass(storedAHUParams)
-            print 'your air handler definition:'
-            pp.pprint(a.d)
+            except:
+                print 'could not recall fan details from the fan component.'
         else:
-            print 'you are required to input an HVAC System ID'
-            w = gh.GH_RuntimeMessageLevel.Warning
-            ghenv.Component.AddRuntimeMessage(w, "You need to provide an HVAC System ID.")
+            if _HVACSystemID <= 4:
+                print 'Constant volume fan parameters set to Honeybee default.'
+                sysdict['constVolSupplyFanDef'] = sc.sticky['honeybee_constantVolumeFanParams']().cvFanDict
+                sysdict['varVolSupplyFanDef'] = {}
+            else:
+                print 'Variable volume fan parameters set to Honeybee default.'
+                sysdict['varVolSupplyFanDef'] = sc.sticky['honeybee_variableVolumeFanParams']().vvFanDict
+                sysdict['constVolSupplyFanDef'] = {}
+        
+
+        if airsideEconomizer != None: 
+            # There is an economizer so add it to sysdict
+            
+            sysdict['airsideEconomizer'] = airsideEconomizer.d
+
+        if not isinstance(coolingCoil, str): 
+            print 'upgrading cooling coil detail'
+
+            sysdict['coolingCoil'] = coolingCoil.d
+            print sysdict['coolingCoil']
+        else:
+            pass
+        if heatingCoil != None:
+            #print heatingCoil.d
+            
+            sysdict['heatingCoil'] = heatingCoil.d
+        else:
+            pass
+        if availabilityManagerList != None:
+            
+            print 'found availMan!!!!!!!!!'
+            sysdict['availabilityManagerList'] = availabilityManagerList
+            print sysdict['availabilityManagerList']
+            
+        else:
+            # Set to always On
+            
+            sysdict['availabilityManagerList'] = 'ALWAYS ON'
+        
+        actions = []
+        storedAHUParams = {}
+        
+        for key in sorted(hb_airHandler.keys()):
+            print key
+            if sysdict.has_key(key):
+                
+                if key == 'varVolSupplyFanDef' or key == 'constVolSupplyFanDef':
+
+                    storedAHUParams[key] = sysdict[key]
+                elif key == 'airsideEconomizer':
+
+                    storedAHUParams[key] = sysdict[key]
+                else:
+                    
+                    storedAHUParams[key] = sysdict[key]
+                    
+            else:
+                if key == 'supplyFanDef':
+                    storedAHUParams[key] = hb_airHandler[key]().cvFanDict
+                
+                elif key == 'airsideEconomizer':
+                    # IF airsideEconomizer is not in sysdict there is no economizer
+                    storedAHUParams[key] = None
+                    # Below are defaults that Chen Si was using, they assign default values but why
+                    # would you need them when there is no economizer?
+                    #storedAHUParams[key] = hb_airHandler[key]().airEconoDict
+
+                else:
+                    storedAHUParams[key] = hb_airHandler[key]
+        
+        
+        # Add availabilityManagerList to storedAHUParams
+        
+        
+        #in the worst-case scenario, this will just send back honeybee defaults.
+
+        a = dictToClass(storedAHUParams)
+        print 'your air handler definition:'
+        #pp.pprint(a.d)
+    else:
+        print 'you are required to input an HVAC System ID'
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, "You need to provide an HVAC System ID.")
+            
+    """
     elif jsonstream_ != None and jsonfileloc_ == None:
         #placeholder tbd
         print "Assigning Streamed Values to the template."
@@ -274,13 +303,12 @@ def main(fanDetail,coolingCoil,heatingCoil,airsideEconomizer,availabilityManager
         print "Error: can't find your designated filepath."
     else:
         print "Only input a json file location or a streampath, not both!!!"
+    """
         
-
-        
-    print sc.sticky["honeybee_AirHandlerParams"]().airHandlerDict
+    #print sc.sticky["honeybee_AirHandlerParams"]().airHandlerDict
     return a
 
 #likely deprecated
 airHandlerDetail = main(_fanDetail_,_coolingCoil_,_heatingCoil_,_airsideEconomizer_,_availabilityManagerList_)
 
-
+#print airHandlerDetail
