@@ -38,7 +38,7 @@ Provided by Honeybee 0.0.57
 """
 ghenv.Component.Name = "Honeybee_Solve Adjacencies"
 ghenv.Component.NickName = 'solveAdjc'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nOCT_16_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -201,6 +201,18 @@ def main(HBZones, altConstruction, altBC, tol, remCurrent):
     # call the objects from the lib
     hb_hive = sc.sticky["honeybee_Hive"]()
     HBZoneObjects = hb_hive.callFromHoneybeeHive(HBZones)
+    
+    # make sure there is no duplicate names
+    zoneNames = []
+    for HBZone in HBZoneObjects:
+        if HBZone.name in zoneNames:
+            #there is duplicate name
+            warning = "There are duplicate names in input zones." + \
+                      " Zone names cannot be duplicate.\nRename the zones and try again!"
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+            return -1
+        zoneNames.append(HBZone.name)
     
     # clean current boundary condition
     if remCurrent:
