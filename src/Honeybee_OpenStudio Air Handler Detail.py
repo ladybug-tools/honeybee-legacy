@@ -261,7 +261,7 @@ def main(fanDetail,coolingCoil,heatingCoil,airsideEconomizer,availabilityManager
                 else:
                     
                     storedAHUParams[key] = sysdict[key]
-                    
+
             else:
                 if key == 'supplyFanDef':
                     storedAHUParams[key] = hb_airHandler[key]().cvFanDict
