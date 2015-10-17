@@ -35,6 +35,8 @@ Provided by Honeybee 0.0.57
                     5 > annualSimulation
         refresh_: Refresh
     Returns:
+        analysisType: Type of the analysis (e.g. illuminance, luminance,...)
+        resultsUnit: Unit of the results (e.g. lux, candela, wh/m2)
         resFiles: List of result files from grid based analysis
         illFiles: List of ill files from annual analysis
         ptsFiles: List of point files
@@ -46,7 +48,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Lookup Daylighting Folder"
 ghenv.Component.NickName = 'LookupFolder_Daylighting'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nOCT_16_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -192,8 +194,8 @@ def main(studyFolder):
            dgpFiles, octFiles, annualProfiles, htmReport]
     
 
-ghenv.Component.Params.Output[1].NickName = "resultFiles"
-ghenv.Component.Params.Output[1].Name = "resultFiles"
+ghenv.Component.Params.Output[2].NickName = "resultFiles"
+ghenv.Component.Params.Output[2].Name = "resultFiles"
 resultFiles = []
 
 studyTypes = {
@@ -224,12 +226,20 @@ if _studyFolder!=None:
             illFiles, resFiles, ptsFiles, hdrFiles, imageFiles, epwFile, analysisType, \
             analysisMesh, radianceFiles, materialFiles, skyFiles, dgpFiles, octFiles, \
             annualProfiles, htmReport = results
-        
+            
+            # seperate outputs for type and units
+            # https://github.com/mostaphaRoudsari/ladybug/issues/184
+            try:
+                resultsUnit = analysisType[1]
+                analysisType = analysisType[0]
+            except:
+                pass
+                
             if resFiles != []:
                 resultFiles = resFiles
             else:
                 resultFiles = illFiles
                 filesOutputName = "illFiles"
-                ghenv.Component.Params.Output[1].NickName = filesOutputName
-                ghenv.Component.Params.Output[1].Name = filesOutputName
+                ghenv.Component.Params.Output[2].NickName = filesOutputName
+                ghenv.Component.Params.Output[2].Name = filesOutputName
                 exec(filesOutputName + "= resultFiles")

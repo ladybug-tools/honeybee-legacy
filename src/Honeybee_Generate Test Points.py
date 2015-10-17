@@ -26,10 +26,10 @@ Genrate Test Points
 Provided by Honeybee 0.0.57
     
     Args:
-        _testSurface: Test surface as a Brep
-        _gridSize: Size of the test grid
-        _distBaseSrf: Distance from base surface
-        moveTestMesh_: Set to False if you want test mesh not to move. Default is True.
+        _testSurface: Test surface as a Brep.
+        _gridSize: Size of the test grid.
+        _distBaseSrf: Distance from base surface.
+        moveTestMesh_: Set to 'False' if you want test mesh not to move. Default is 'True'.
     Returns:
         readMe!: ...
         testPoints: Test points
@@ -40,7 +40,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Generate Test Points"
 ghenv.Component.NickName = 'genTestPts'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nOCT_03_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -136,6 +136,8 @@ def getTestPts(inputMesh, movingDis, moveTestMesh= False, parallel = True):
             # find surfaces based on first normal in srfNormals - It is a simplification we can write a better function for this later
             for meshCount, mesh in enumerate(inputMesh):
                 vector = srfNormals[meshCount][0]
+                vector.Unitize()
+                vector = rc.Geometry.Vector3d.Multiply(movingDis, vector)
                 mesh.Translate(vector.X, vector.Y, vector.Z)
                 
         return flattenList(testPoint), flattenList(srfNormals), flattenList(meshSrfArea), inputMesh

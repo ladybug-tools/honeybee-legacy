@@ -62,7 +62,7 @@ Provided by Honeybee 0.0.57
 """
 ghenv.Component.Name = "Honeybee_Glazing Parameters List"
 ghenv.Component.NickName = 'glzParamList'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_16_2015'
+ghenv.Component.Message = 'VER 0.0.57\nOCT_07_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
