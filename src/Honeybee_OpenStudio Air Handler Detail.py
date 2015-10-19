@@ -51,7 +51,7 @@ import Grasshopper.Kernel as gh
 
 ghenv.Component.Name = "Honeybee_OpenStudio Air Handler Detail"
 ghenv.Component.NickName = 'AirHandlerDetails'
-ghenv.Component.Message = 'VER 0.0.57\nOCT_12_2015'
+ghenv.Component.Message = 'VER 0.0.57\nOCT_18_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | AirsideSystems"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -184,6 +184,8 @@ def main(fanDetail,coolingCoil,heatingCoil,airsideEconomizer,availabilityManager
         print 'You have assigned a valid HVAC system ID.'
         print str(_HVACSystemID) + ": " + sysDict[_HVACSystemID]
         sysdict = {}
+        # Used to pass to OSHVAC systems component
+        sysdict['HVACID'] = _HVACSystemID
         sysdict['availSch'] = _availabilitySch_
         sysdict['fanPlacement'] = _fanPlacement_
         sysdict['coolingAirflow'] = _coolingAirflowRate_
@@ -285,11 +287,7 @@ def main(fanDetail,coolingCoil,heatingCoil,airsideEconomizer,availabilityManager
         a = dictToClass(storedAHUParams)
         print 'your air handler definition:'
         #pp.pprint(a.d)
-    else:
-        print 'you are required to input an HVAC System ID'
-        w = gh.GH_RuntimeMessageLevel.Warning
-        ghenv.Component.AddRuntimeMessage(w, "You need to provide an HVAC System ID.")
-            
+
     """
     elif jsonstream_ != None and jsonfileloc_ == None:
         #placeholder tbd
@@ -308,7 +306,21 @@ def main(fanDetail,coolingCoil,heatingCoil,airsideEconomizer,availabilityManager
     #print sc.sticky["honeybee_AirHandlerParams"]().airHandlerDict
     return a
 
+
+def checkTheInputs(_HVACSystemID):
+    
+    if _HVACSystemID == None:
+    
+        print 'you are required to input an HVAC System ID'
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, "You need to provide an HVAC System ID.")
+        return -1
+    
+    
 #likely deprecated
-airHandlerDetail = main(_fanDetail_,_coolingCoil_,_heatingCoil_,_airsideEconomizer_,_availabilityManagerList_)
+
+if checkTheInputs(_HVACSystemID) != -1:
+    
+    airHandlerDetail = main(_fanDetail_,_coolingCoil_,_heatingCoil_,_airsideEconomizer_,_availabilityManagerList_)
 
 #print airHandlerDetail
