@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.57\nOCT_01_2015'
+ghenv.Component.Message = 'VER 0.0.57\nOCT_23_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1030,8 +1030,6 @@ class hb_MSHToRAD(object):
         
         self.mesh = mesh
         
-        self.RadianceFolder = sc.sticky["honeybee_folders"]["RADPath"]
-        
         self.pattern = bitmap
         if self.pattern != None:
             # create material name based on bitmap
@@ -1193,7 +1191,7 @@ class hb_MSHToRAD(object):
         # create rad file
         
         if self.pattern != None:
-            cmd = self.RadianceFolder + "\\obj2mesh -a " + matFile + " " + objFile + " > " +  mshFile
+            cmd = "c:\\radiance\\bin\\obj2mesh -a " + matFile + " " + objFile + " > " +  mshFile
             
             with open(batFile, "w") as outfile:
                 outfile.write(cmd)
@@ -1231,7 +1229,7 @@ class hb_MSHToRAD(object):
             #    mapf.write(self.matName + " (Object \"" + self.matName + "\");")
             #cmd = "c:\\radiance\\bin\\obj2rad -m " + mapFile + " " + objFile + " > " +  radFile
             
-            cmd = self.RadianceFolder + "\\obj2rad -f " + objFile + " > " +  radFile
+            cmd = "c:\\radiance\\bin\\obj2rad -f " + objFile + " > " +  radFile
             
             with open(batFile, "w") as outfile:
                 outfile.write(cmd)
@@ -6314,6 +6312,9 @@ class hb_EPSurface(object):
     def setWindExposure(self, exposure = 'NoWind'):
         self.windExposure = exposure
     
+    def getArea(self):
+        
+        return rc.Geometry.AreaMassProperties.Compute(self.geometry).Area
 
     def __str__(self):
         try:
