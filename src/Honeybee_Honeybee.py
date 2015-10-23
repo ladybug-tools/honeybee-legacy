@@ -1030,6 +1030,8 @@ class hb_MSHToRAD(object):
         
         self.mesh = mesh
         
+        self.RadianceFolder = sc.sticky["honeybee_folders"]["RADPath"]
+         
         self.pattern = bitmap
         if self.pattern != None:
             # create material name based on bitmap
@@ -1191,7 +1193,7 @@ class hb_MSHToRAD(object):
         # create rad file
         
         if self.pattern != None:
-            cmd = "c:\\radiance\\bin\\obj2mesh -a " + matFile + " " + objFile + " > " +  mshFile
+            cmd = self.RadianceFolder + "\\obj2mesh -a " + matFile + " " + objFile + " > " +  mshFile
             
             with open(batFile, "w") as outfile:
                 outfile.write(cmd)
@@ -1229,7 +1231,7 @@ class hb_MSHToRAD(object):
             #    mapf.write(self.matName + " (Object \"" + self.matName + "\");")
             #cmd = "c:\\radiance\\bin\\obj2rad -m " + mapFile + " " + objFile + " > " +  radFile
             
-            cmd = "c:\\radiance\\bin\\obj2rad -f " + objFile + " > " +  radFile
+            cmd = self.RadianceFolder + "\\obj2rad -f " + objFile + " > " +  radFile
             
             with open(batFile, "w") as outfile:
                 outfile.write(cmd)
