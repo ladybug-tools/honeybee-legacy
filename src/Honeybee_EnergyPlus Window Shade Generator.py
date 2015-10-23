@@ -62,7 +62,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Window Shade Generator"
 ghenv.Component.NickName = 'EPWindowShades'
-ghenv.Component.Message = 'VER 0.0.57\nSEP_10_2015'
+ghenv.Component.Message = 'VER 0.0.57\nOCT_17_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -125,6 +125,8 @@ def checkTheInputs(zoneNames, windowNames, windowSrfs, isZone):
         print "No blinds schedule has been connected.  It will be assumed that the blinds are always drawn"
     else:
         schedule= blindsSchedule_.upper()
+        HBScheduleList = sc.sticky["honeybee_ScheduleLib"].keys()
+
         if schedule!=None and not schedule.lower().endswith(".csv") and schedule not in HBScheduleList:
             msg = "Cannot find " + schedule + " in Honeybee schedule library."
             print msg

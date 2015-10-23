@@ -378,7 +378,7 @@ class WriteOPS(object):
         return schedule
         
     def getOSSchedule(self, schName, model):
-        #print schName
+
         if schName.lower().endswith(".csv"):
             msg = "Currently OpenStudio component cannot use .csv file as an schedule.\n" + \
                       "Use EnergyPlus component or replace " + schName + " with an EP schedule and try again."
@@ -387,6 +387,7 @@ class WriteOPS(object):
             return None
 
         values, comments = self.hb_EPScheduleAUX.getScheduleDataByName(schName, ghenv.Component)
+
         
         if values[0].lower() != "schedule:week:daily":
             
@@ -429,7 +430,6 @@ class WriteOPS(object):
         
     def recallAvailManager(self,HVACDetails):
 
-        print HVACDetails['availabilityManagerList']
         return HVACDetails['availabilityManagerList']
     
     def updateAvailManager(self,availManager,OSComponent):
@@ -1016,8 +1016,8 @@ class WriteOPS(object):
                 for ptac in allptacs:
                     hvacHandle = ptac.handle()
                     if HVACDetails != None:
-                        #print HVACDetails
-                        #if HVACDetails['availSch'] != None: ptac.setAvailabilitySchedule(HVACDetails['availSch'])
+                        
+                        if HVACDetails['availSch'] != None: ptac.setAvailabilitySchedule(self.getOSSchedule(HVACDetails['availSch'], model))
                         if HVACDetails['fanPlacement'] != None: ptac.setFanPlacement(HVACDetails['fanPlacement'])
                         if HVACDetails['coolingAirflow'] != None:
                             if HVACDetails['coolingAirflow'] != 'Autosize':
@@ -1082,7 +1082,7 @@ class WriteOPS(object):
                     #print hvacHandle
                     if HVACDetails != None:
                         print HVACDetails['heatingCoil']
-                        #if HVACDetails['availSch'] != None: pthp.setAvailabilitySchedule(HVACDetails['availSch'])
+                        if HVACDetails['availSch'] != None: pthp.setAvailabilitySchedule(self.getOSSchedule(HVACDetails['availSch'], model))
                         if HVACDetails['fanPlacement'] != None: pthp.setFanPlacement(HVACDetails['fanPlacement'])
                         if HVACDetails['coolingAirflow'] != None:
                             if HVACDetails['coolingAirflow'] != 'Autosize':
@@ -1142,9 +1142,7 @@ class WriteOPS(object):
                         
                         # HVACDetails['airsideEconomizer'] != None, component AirHandlerDetails
                         # will set HVACDetails['airsideEconomizer'] to none if no Air Economizer is connected to it
-                        
-                        
-                        
+
                         if (oasys.is_initialized()== True) and (HVACDetails['airsideEconomizer'] != None):
                             print 'overriding the OpenStudio airside economizer settings'
                             oactrl = oasys.get().getControllerOutdoorAir()
@@ -1327,9 +1325,6 @@ class WriteOPS(object):
                                 
             elif systemIndex == 6:
                 
-
-                print HVACDetails['availSch']
-
                 hvacHandle = ops.OpenStudioModelHVAC.addSystemType6(model).handle()
                 
                 # get the airloop
@@ -1341,9 +1336,6 @@ class WriteOPS(object):
                     
                 if HVACDetails!=None:
       
-                    
-                    print HVACDetails['availabilityManagerList']
-                    
                     if HVACDetails['availSch'] != None:
                         availSch = self.getOSSchedule(HVACDetails['availSch'], model)
                         airloop.setAvailabilitySchedule(availSch)
@@ -2628,7 +2620,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         if not sc.sticky['ladybug_release'].isCompatible(ghenv.Component): return -1
     except:
         warning = "You need a newer version of Ladybug to use this compoent." + \
-        " Use updateLadybug component to update userObjects.\n" + \
+        " Use updateLadybug component to update userObjects.war" + \
         "If you have already updated userObjects drag Ladybug_Ladybug component " + \
         "into canvas and try again."
         w = gh.GH_RuntimeMessageLevel.Warning
