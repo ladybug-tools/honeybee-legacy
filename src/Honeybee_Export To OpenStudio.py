@@ -378,7 +378,7 @@ class WriteOPS(object):
         return schedule
         
     def getOSSchedule(self, schName, model):
-        #print schName
+
         if schName.lower().endswith(".csv"):
             msg = "Currently OpenStudio component cannot use .csv file as an schedule.\n" + \
                       "Use EnergyPlus component or replace " + schName + " with an EP schedule and try again."
@@ -1016,8 +1016,8 @@ class WriteOPS(object):
                 for ptac in allptacs:
                     hvacHandle = ptac.handle()
                     if HVACDetails != None:
-                        #print HVACDetails
-                        #if HVACDetails['availSch'] != None: ptac.setAvailabilitySchedule(HVACDetails['availSch'])
+                        
+                        if HVACDetails['availSch'] != None: ptac.setAvailabilitySchedule(self.getOSSchedule(HVACDetails['availSch'], model))
                         if HVACDetails['fanPlacement'] != None: ptac.setFanPlacement(HVACDetails['fanPlacement'])
                         if HVACDetails['coolingAirflow'] != None:
                             if HVACDetails['coolingAirflow'] != 'Autosize':
@@ -1082,7 +1082,7 @@ class WriteOPS(object):
                     #print hvacHandle
                     if HVACDetails != None:
                         print HVACDetails['heatingCoil']
-                        #if HVACDetails['availSch'] != None: pthp.setAvailabilitySchedule(HVACDetails['availSch'])
+                        if HVACDetails['availSch'] != None: pthp.setAvailabilitySchedule(self.getOSSchedule(HVACDetails['availSch'], model))
                         if HVACDetails['fanPlacement'] != None: pthp.setFanPlacement(HVACDetails['fanPlacement'])
                         if HVACDetails['coolingAirflow'] != None:
                             if HVACDetails['coolingAirflow'] != 'Autosize':
