@@ -250,7 +250,7 @@ def checkCentralSys(sysInt, sysType):
     elif sysType == 2: zoneName = " Fan" + str(sysInt)
     elif sysType == 3: zoneName = " Pump" + str(sysInt)
     else: zoneName = 'Unknown'
-    path.append(int(sysInt)-1)
+    path.append(len(zoneNameList)+int(sysInt))
     
     return zoneName
 

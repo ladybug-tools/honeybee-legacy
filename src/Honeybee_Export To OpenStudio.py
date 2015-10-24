@@ -423,12 +423,10 @@ class WriteOPS(object):
         # Will change it to what it used to be later
         thermalZone.setName(zone.name)
         return space, thermalZone
-
+    
         
         
     def recallAvailManager(self,HVACDetails):
-
-        print HVACDetails['availabilityManagerList']
         return HVACDetails['availabilityManagerList']
     
     def updateAvailManager(self,availManager,OSComponent):
@@ -485,9 +483,6 @@ class WriteOPS(object):
         # XXX I think this is superfluous code
         if HVACDetails == None: return
         
-        print HVACDetails['airsideEconomizer']
-        print 'getting oasys from the hive'
-        print HVACDetails['airsideEconomizer']['DXLockoutMethod']
         'airsideEconomizer'
         oaDesc = {
         'name' : HVACDetails['airsideEconomizer']['name'],
@@ -548,7 +543,7 @@ class WriteOPS(object):
                 oactrl.setEconomizerMaximumLimitEnthalpy(maxenth)
         else:
             oactrl.setEconomizerControlType("NoEconomizer")
-        print 'economizer control type set'
+        #economizer control type set
         
         #set min and max flows
         if econo['minAirFlowRate']=='Autosize' or econo['minAirFlowRate']==None:
@@ -561,25 +556,24 @@ class WriteOPS(object):
         else:
             maxFlow = econo['maxAirFlowRate']
             oactrl.setMaximumOutdoorAirFlowRate(maxFlow)
-        print 'set min and max flow rates'
+        # set min and max flow rates'
         #set control action
         if econo['controlAction']!=None:
             oactrl.setEconomizerControlActionType(econo['controlAction'])
-            print econo['controlAction']
-        print 'set control action'
+        #set control action
         #set minLimit type
         if econo['minLimitType']!=None:
             oactrl.setMinimumLimitType(econo['minLimitType'])
-        print 'set min limit type'
+        # set min limit type
         #set lockout type (applies to DX systems only)
         if econo['DXLockoutMethod'] != None:
             oactrl.setLockoutType(econo['DXLockoutMethod'])
-        print 'set dx lockout method'
+        # set dx lockout method
         if econo['timeOfDaySch'] != None:
-            print 'updating economizer time of day schedule'
+            # updating economizer time of day schedule
             ossch = self.getOSSchedule(econo['timeOfDaySch'],model)
             oactrl.setTimeofDayEconomizerControlSchedule(ossch)
-        print econo
+        
         if econo['mvCtrl'] != None:
             print 'updating mechanical ventilation controller'
             mv = oactrl.controllerMechanicalVentilation()
@@ -766,8 +760,7 @@ class WriteOPS(object):
         return oschiller
         
     def updateBoiler(self,uboil,osboiler):
-        #print osboiler
-        print uboil
+        
         osboiler.setFuelType(uboil['fueltype'])
         osboiler.setMinimumPartLoadRatio(uboil['minPartLoad'])
         osboiler.setMaximumPartLoadRatio(uboil['maxPartLoadRatio'])
@@ -790,7 +783,7 @@ class WriteOPS(object):
     #using a recall function is optional.  It is only designed to make reading the code easier
     def recallVVFan(self,HVACDetails):
         print 'getting supply fan from the hive'
-        print HVACDetails['varVolSupplyFanDef']
+        
         sfdesc = {
         'name':HVACDetails['varVolSupplyFanDef']['name'],
         'motorEfficiency':HVACDetails['varVolSupplyFanDef']['motorEfficiency'],
@@ -813,7 +806,7 @@ class WriteOPS(object):
         #sort of a dummy worker
         if HVACDetails['coolingCoil']['type'] == 0:
             print 'getting 1-speed DX cooling coil details from the hive'
-            print HVACDetails['coolingCoil']
+            
             ccdesc = {
             'type': HVACDetails['coolingCoil']['type'],
             'name': HVACDetails['coolingCoil']['name'],
@@ -850,40 +843,40 @@ class WriteOPS(object):
     def updateVVFan(self,sf,vvfan):
         if sf['motorEfficiency'] != None: 
             vvfan.setMotorEfficiency(sf['motorEfficiency'])
-            print 'motor efficiency updated'
+            # motor efficiency updated
         if sf['fanEfficiency'] != None: 
             vvfan.setFanEfficiency(sf['fanEfficiency'])
-            print 'fan efficiency updated'
+            #fan efficiency updated
         if sf['pressureRise'] != None: 
             vvfan.setPressureRise(sf['pressureRise'])
-            print 'pressure rise updated'
+            # pressure rise updated
         if sf['airStreamHeatPct'] != None: 
             vvfan.setMotorInAirstreamFraction(sf['airStreamHeatPct'])
-            print 'motor air stream heat updated'
+            #motor air stream heat updated
         if sf['maxFlowRate'] != None:
             if sf['maxFlowRate'] != 'Autosize':
                 vvfan.setMaximumFlowRate(float(sf['maxFlowRate']))
-                print 'max flow rate updated'
-            else:
-                print 'fan size remains autosized'
+                #max flow rate updated
+            else: pass
+            #fan size remains autosized
         if sf['minFlowFrac'] != None:
             vvfan.setFanPowerMinimumFlowFraction(sf['minFlowFrac'])
-            print 'min flow frac updated'
+            # min flow frac updated
         if sf['fanPowerCoefficient1'] != None:
             vvfan.setFanPowerCoefficient1(sf['fanPowerCoefficient1'])
-            print 'Power Coefficient 1 updated'
+            # Power Coefficient 1 updated
         if sf['fanPowerCoefficient2'] != None:
             vvfan.setFanPowerCoefficient2(sf['fanPowerCoefficient2'])
-            print 'Power Coefficient 2 updated'
+            # Power Coefficient 2 updated
         if sf['fanPowerCoefficient3'] != None:
             vvfan.setFanPowerCoefficient3(sf['fanPowerCoefficient3'])
-            print 'Power Coefficient 3 updated'
+            # Power Coefficient 3 updated
         if sf['fanPowerCoefficient4'] != None:
             vvfan.setFanPowerCoefficient4(sf['fanPowerCoefficient4'])
-            print 'Power Coefficient 4 updated'
+            # Power Coefficient 4 updated
         if sf['fanPowerCoefficient5'] != None:
             vvfan.setFanPowerCoefficient5(sf['fanPowerCoefficient5'])
-            print 'Power Coefficient 5 updated'
+            #Power Coefficient 5 updated
         print 'success updating fan!'
         return vvfan
         
@@ -1935,8 +1928,8 @@ class WriteOPS(object):
                 shdSurface.setShadingSurfaceGroup(shadingGroup)
                 if shadingSch!="": shdSurface.setTransmittanceSchedule(shadingSch)
                 
-
-                
+    
+    
     def setAdjacentSurfaces(self):
         for surfaceName in self.adjacentSurfacesDict.keys():
             adjacentSurfaceName, OSSurface = self.adjacentSurfacesDict[surfaceName]
@@ -1989,17 +1982,110 @@ class WriteOPS(object):
                 except Exception, e:
                     print  e
                     pass
-                
-                
+
+class naturalVentilation(object):
+    
+    def EPZoneAirMixing(self, zone, zoneMixName, mixFlowRate, objCount):
+        
+        if zone.mixAirFlowSched[objCount].upper() == 'ALWAYS ON':
+            mixingSched = 'ALWAYS ON'		
+        elif zone.mixAirFlowSched[objCount].upper().endswith('CSV'):		
+            mixingSchedFileName = os.path.basename(zone.mixAirFlowSched[objCount])		
+            mixingSched = "_".join(mixingSchedFileName.split(".")[:-1])		
+        else: mixingSched = zone.mixAirFlowSched[objCount]
+        
+        return '\nZoneMixing,\n'+\
+            '\t' + zone.name + zoneMixName + 'AirMix' + str(objCount) + ',  !- Name\n' + \
+            '\t' + zone.name + ',  !- Zone Name\n' + \
+            '\t' + mixingSched + ',  !- Schedule Name\n' + \
+            '\t' + 'Flow/Zone' + ',  !- Design Flow Rate Calculation Method\n' + \
+            '\t' + str(mixFlowRate) + ',   !- Design Flow Rate {m3/s}\n' + \
+            '\t' + ',  !- Flow per Zone Floor Area {m3/s-m2}\n' + \
+            '\t' + ', !- Flow per Exterior Surface Area {m3/s-m2}\n' + \
+            '\t' + ',    !- Air Changes per Hour\n' + \
+            '\t' + zoneMixName  + ',     !- Source Zone Name\n' + \
+            '\t' + '0'  + ',     !- Delta Temperature\n' + \
+            '\t,                        !- Delta Temperature Schedule Name\n' + \
+            '\t,                        !- Minimum Zone Temperature Schedule Name\n' + \
+            '\t,                        !- Maximum Zone Temperature Schedule Name\n' + \
+            '\t,                        !- Minimum Source Zone Temperature Schedule Name\n' + \
+            '\t,                        !- Maximum Source Zone Temperature Schedule Name\n' + \
+            '\t,                        !- Minimum Outdoor Temperature Schedule Name\n' + \
+            '\t;                        !- Maximum Outdoor Temperature Schedule Name\n'
+    
+    def EPNatVentSimple(self, zone, natVentCount):
+        if zone.natVentSchedule[natVentCount] == None: natVentSched = 'ALWAYS ON'
+        elif zone.natVentSchedule[natVentCount].upper().endswith('CSV'):
+            natVentSchedFileName = os.path.basename(zone.natVentSchedule[natVentCount])
+            natVentSched = "_".join(natVentSchedFileName.split(".")[:-1])
+        else: natVentSched = zone.natVentSchedule[natVentCount]
+        
+        return '\nZoneVentilation:WindandStackOpenArea,\n' + \
+                '\t' + zone.name + 'NatVent' + str(natVentCount) + ',  !- Name\n' + \
+                '\t' + zone.name + ',  !- Zone Name\n' + \
+                '\t' + str(zone.windowOpeningArea[natVentCount]) + ',  !- Opening Area\n' + \
+                '\t' + natVentSched + ',  !- Nat Vent Schedule\n' + \
+                '\t' + str(zone.natVentWindDischarge[natVentCount]) + ',   !- Opening Effectiveness\n' + \
+                '\t' + str(zone.windowAngle[natVentCount]) + ',  !- Effective Angle\n' + \
+                '\t' + str(zone.windowHeightDiff[natVentCount]) + ', !- Height Difference\n' + \
+                '\t' + str(zone.natVentStackDischarge[natVentCount]) + ',    !- Discharge Coefficient for Opening\n' + \
+                '\t' + str(zone.natVentMinIndoorTemp[natVentCount])  + ',     !- Minimum Indoor Temperature\n' + \
+                '\t' + ',     !- Minimum Indoor Temperature Shcedule Name\n' + \
+                '\t' + str(zone.natVentMaxIndoorTemp[natVentCount])  + ',     !- Maximum Indoor Temperature\n' + \
+                '\t' + ',     !- Maximum Indoor Temperature Shcedule Name\n' + \
+                '\t' + '-100'  + ',     !- Delta Temperature\n' + \
+                '\t' + ',     !- Delta Temperature Shcedule Name\n' + \
+                '\t' + str(zone.natVentMinOutdoorTemp[natVentCount])  + ',     !- Minimum Outdoor Temperature\n' + \
+                '\t' + ',     !- Minimum Outdoor Temperature Shcedule Name\n' + \
+                '\t' + str(zone.natVentMaxOutdoorTemp[natVentCount])  + ',     !- Maximum Outdoor Temperature\n' + \
+                '\t' + ',     !- Maximum Outdoor Temperature Shcedule Name\n' + \
+                '\t' + '40' + ';                        !- Maximum Wind Speed\n'
+    
+    def EPNatVentFan(self, zone, natVentCount):
+        if zone.natVentSchedule[natVentCount] == None: natVentSched = 'ALWAYS ON'
+        else:
+            natVentSchedFileName = os.path.basename(zone.natVentSchedule[natVentCount])
+            natVentSched = "_".join(natVentSchedFileName.split(".")[:-1])
+        
+        return '\nZoneVentilation:DesignFlowRate,\n' + \
+                '\t' + zone.name + 'NatVent' + str(natVentCount) + ',  !- Name\n' + \
+                '\t' + zone.name + ',  !- Zone Name\n' + \
+                '\t' + natVentSched + ',  !- Nat Vent Schedule\n' + \
+                '\t' + 'Flow/Zone' + ',  !- Design Flow Rate Calculation Method\n' + \
+                '\t' + str(zone.fanFlow[natVentCount]) + ',   !- Design flow rate m3/s\n' + \
+                '\t' + ',  !- Design flow rate per floor area\n' + \
+                '\t' + ', !- Flow Rate per person\n' + \
+                '\t' + ',    !- Air chancges per hour\n' + \
+                '\t' + 'Intake' + ',  !- Ventilation Type\n' + \
+                '\t' + str(zone.FanPressure[natVentCount]) + ',   !- Fan Pressure Rise (Pa)\n' + \
+                '\t' + str(zone.FanEfficiency[natVentCount]) + ',   !- Fan Efficiency (Pa)\n' + \
+                '\t' + '1' + ',  !- Constant Term Coefficient\n' + \
+                '\t' + '0' + ',  !- Temperature Term Coefficient\n' + \
+                '\t' + '0' + ',  !- Velocity Term Coefficient\n' + \
+                '\t' + '0' + ',  !- Velocity Squared Term Coefficient\n' + \
+                '\t' + str(zone.natVentMinIndoorTemp[natVentCount])  + ',     !- Minimum Indoor Temperature\n' + \
+                '\t' + ',     !- Minimum Indoor Temperature Shcedule Name\n' + \
+                '\t' + str(zone.natVentMaxIndoorTemp[natVentCount])  + ',     !- Maximum Indoor Temperature\n' + \
+                '\t' + ',     !- Maximum Indoor Temperature Shcedule Name\n' + \
+                '\t' + '-100'  + ',     !- Delta Temperature\n' + \
+                '\t' + ',     !- Delta Temperature Shcedule Name\n' + \
+                '\t' + str(zone.natVentMinOutdoorTemp[natVentCount])  + ',     !- Minimum Outdoor Temperature\n' + \
+                '\t' + ',     !- Minimum Outdoor Temperature Shcedule Name\n' + \
+                '\t' + str(zone.natVentMaxOutdoorTemp[natVentCount])  + ',     !- Maximum Outdoor Temperature\n' + \
+                '\t' + ',     !- Maximum Outdoor Temperature Shcedule Name\n' + \
+                '\t' + '40' + ';                        !- Maximum Wind Speed\n'
+
+
 
 class RunOPS(object):
-    def __init__(self, model, weatherFilePath):
+    def __init__(self, model, weatherFilePath, HBZones):
         self.weatherFile = weatherFilePath # just for batch file as an alternate solution
         self.EPPath = ops.Path(sc.sticky["honeybee_folders"]["EPPath"] + "\EnergyPlus.exe")
         self.epwFile = ops.Path(weatherFilePath)
         self.iddFile = ops.Path(sc.sticky["honeybee_folders"]["EPPath"] + "\Energy+.idd")
         self.model = model
-        
+        self.HBZones = HBZones
+    
     def osmToidf(self, workingDir, projectName, osmPath):
         # create a new folder to run the analysis
         projectFolder =os.path.join(workingDir, projectName)
@@ -2016,12 +2102,15 @@ class RunOPS(object):
         # remove the current object
         tableStyleObjects = workspace.getObjectsByType(ops.IddObjectType("OutputControl_Table_Style"))
         for obj in tableStyleObjects: obj.remove()
-
+        
         tableStyle = ops.IdfObject(ops.IddObjectType("OutputControl_Table_Style"))
         tableStyle.setString(0, "CommaAndHTML")
         workspace.addObject(tableStyle)
         
         workspace.save(idfFilePath, overwrite = True)
+        
+        ####Code added by chriswmackey to add natural ventilation parameters into the OpenStudio Model 
+        self.writeNatVent(idfFilePath, self.HBZones)
         
         
         """
@@ -2034,26 +2123,60 @@ class RunOPS(object):
         if makeMonthly:
             self.writeIDFWithMonthly(idfFilePath)
         
-        #DBPath = ops.Path(os.path.join(projectFolder, projectName + "_osmToidf.db"))
         
-        # start run manager
-        #rm = ops.RunManager(DBPath, True, True)        
+        ####Code added by chriswmackey to request surface info in EIO file.
+        self.requestSrfInEIOFile(idfFilePath)
         
-        # create workflow
-        #wf = ops.Workflow("EnergyPlus")
-        
-        # put in queue and let it go
-        #rm.enqueue(wf.create(ops.Path(projectFolder), osmPath, self.epwFile), True)
-        #rm.setPaused(False)
-        
-        #while rm.workPending():
-        #    time.sleep(.5)
-        #    print "Converting osm to idf ..."
-        
-        #rm.Dispose() # don't remove this as Rhino will crash if you don't dispose run manager
         
         return idfFolder, idfFilePath
+    
+    
+    def writeNatVent(self, idfFilePath, HBZones):
+        natVentStrings = []
+        naturalVentClass = naturalVentilation()
+        for zone in HBZones:
+            if zone.natVent == True:
+                for natVentCount, natVentObj in enumerate(zone.natVentType):
+                    if natVentObj == 1 or natVentObj == 2:
+                        natVentStrings.append(naturalVentClass.EPNatVentSimple(zone, natVentCount))
+                    elif natVentObj == 3:
+                        natVentStrings.append(naturalVentClass.EPNatVentFan(zone, natVentCount))
         
+        if len(natVentStrings) > 0:
+            fi = open(str(idfFilePath),'r')
+            fi.seek(0)
+            lines=[]
+            for line in fi:
+                lines.append(line)
+            fi.close()
+            
+            for line in natVentStrings:
+                lines.append(line)
+            
+            fiw = open(str(idfFilePath),'w')
+            for line in lines:
+                fiw.write(line)
+            fiw.close()
+    
+    
+    def requestSrfInEIOFile(self, idfFilePath):
+        #Request that surface information be written into the eio file.
+        fi = open(str(idfFilePath),'r')
+        fi.seek(0)
+        lines=[]
+        for line in fi:
+            lines.append(line)
+        fi.close()
+        
+        lines.append('\nOutput:Surfaces:List,\n')
+        lines.append('\t' + 'Details;                 !- Report Type' + '\n')
+        
+        fiw = open(str(idfFilePath),'w')
+        for line in lines:
+            fiw.write(line)
+        fiw.close()
+    
+    
     def writeIDFWithMonthly(self, idfFilePath):
         fi = open(str(idfFilePath),'r')
         fi.seek(0)
@@ -2294,15 +2417,14 @@ class RunOPS(object):
             else:
                 prepare=True;
                 lines.append(line)
-        #Request that surface information be written into the eio file.
-        lines.append('\nOutput:Surfaces:List,\n')
-        lines.append('\t' + 'Details;                 !- Report Type' + '\n')
         
         fi.close()
         fiw = open(str(idfFilePath),'w')
         for line in lines:
             fiw.write(line)
         fiw.close()
+    
+    
     def runAnalysis(self, osmFile, useRunManager = False):
         
         # Preparation
@@ -2736,7 +2858,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     
     
     if runIt:
-        hb_runOPS = RunOPS(model, epwWeatherFile)
+        hb_runOPS = RunOPS(model, epwWeatherFile, HBZones)
         #hb_runOPSRm = RunOPSRManage(model, hb_writeOPS.HVACSystemDict, epwWeatherFile)
         #hb_runOPSRm.runAnalysis(fname, False)
         idfFile, resultFile = hb_runOPS.runAnalysis(fname, useRunManager = False)
