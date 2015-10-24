@@ -59,8 +59,15 @@ Provided by Honeybee 0.0.57
         meterFileAddress: The file path of the building's meter result file that has been generated on your machine. This only happens when you set "runSimulation_" to "True."
 """
 
-# check for libraries
-# default is C:\\Ladybug\\OpenStudio
+ghenv.Component.Name = "Honeybee_Export To OpenStudio"
+ghenv.Component.NickName = 'exportToOpenStudio'
+ghenv.Component.Message = 'VER 0.0.57\nOCT_23_2015'
+ghenv.Component.Category = "Honeybee"
+ghenv.Component.SubCategory = "09 | Energy | Energy"
+#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleLBVersion = VER 0.0.59\nFEB_01_2015
+ghenv.Component.AdditionalHelpFromDocStrings = "1"
+
 
 import os
 import sys
@@ -96,7 +103,7 @@ if sc.sticky.has_key('honeybee_release'):
               
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
         
-        link = "https://app.box.com/s/y2sx16k98g1lfd3r47zi"
+        link = "https://github.com/mostaphaRoudsari/Honeybee/blob/master/resources/OpenStudio.zip?raw=true"
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, link)
         
         #buttons = System.Windows.Forms.MessageBoxButtons.OK
@@ -106,33 +113,25 @@ if sc.sticky.has_key('honeybee_release'):
     if openStudioIsReady and sc.sticky.has_key('honeybee_release') and \
         sc.sticky.has_key("isNewerOSAvailable") and sc.sticky["isNewerOSAvailable"]:
         # check if there is an update available
-        msg = "There is a newer version of OpenStudio libraries available to download! " + \
+        msg1 = "There is a newer version of OpenStudio libraries available to download! " + \
                       "We strongly recommend you to download the newer version from this link and replace it with current files at " + \
-                      openStudioLibFolder +".\n" + \
-                      "https://app.box.com/s/y2sx16k98g1lfd3r47zi"
-        print msg
-        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                      openStudioLibFolder +"."
+        msg2 = "https://github.com/mostaphaRoudsari/Honeybee/blob/master/resources/OpenStudio.zip?raw=true"
+        print msg1
+        print msg2
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg1)
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg2)
 else:
     openStudioIsReady = False
-
-ghenv.Component.Name = "Honeybee_Export To OpenStudio"
-ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.57\nOCT_13_2015'
-ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
-#compatibleLBVersion = VER 0.0.59\nFEB_01_2015
-ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
 
 class WriteOPS(object):
 
-    def __init__(self, EPParameters, weatherFilePath = r"C:\EnergyPlusV8-1-0\WeatherData\USA_CA_San.Francisco.Intl.AP.724940_TMY3.epw"):
+    def __init__(self, EPParameters, weatherFilePath):
         self.weatherFile = weatherFilePath # just for batch file as an alternate solution
         self.lb_preparation = sc.sticky["ladybug_Preparation"]()
         self.hb_EPMaterialAUX = sc.sticky["honeybee_EPMaterialAUX"]()
         self.hb_EPScheduleAUX = sc.sticky["honeybee_EPScheduleAUX"]()
-        print self.hb_EPScheduleAUX
         self.hb_EPPar = sc.sticky["honeybee_EPParameters"]()
         self.simParameters = self.hb_EPPar.readEPParams(EPParameters)
         
@@ -378,7 +377,7 @@ class WriteOPS(object):
         return schedule
         
     def getOSSchedule(self, schName, model):
-
+        #print schName
         if schName.lower().endswith(".csv"):
             msg = "Currently OpenStudio component cannot use .csv file as an schedule.\n" + \
                       "Use EnergyPlus component or replace " + schName + " with an EP schedule and try again."
@@ -387,7 +386,6 @@ class WriteOPS(object):
             return None
 
         values, comments = self.hb_EPScheduleAUX.getScheduleDataByName(schName, ghenv.Component)
-
         
         if values[0].lower() != "schedule:week:daily":
             
@@ -430,6 +428,7 @@ class WriteOPS(object):
         
     def recallAvailManager(self,HVACDetails):
 
+        print HVACDetails['availabilityManagerList']
         return HVACDetails['availabilityManagerList']
     
     def updateAvailManager(self,availManager,OSComponent):
@@ -1016,8 +1015,8 @@ class WriteOPS(object):
                 for ptac in allptacs:
                     hvacHandle = ptac.handle()
                     if HVACDetails != None:
-                        
-                        if HVACDetails['availSch'] != None: ptac.setAvailabilitySchedule(self.getOSSchedule(HVACDetails['availSch'], model))
+                        #print HVACDetails
+                        #if HVACDetails['availSch'] != None: ptac.setAvailabilitySchedule(HVACDetails['availSch'])
                         if HVACDetails['fanPlacement'] != None: ptac.setFanPlacement(HVACDetails['fanPlacement'])
                         if HVACDetails['coolingAirflow'] != None:
                             if HVACDetails['coolingAirflow'] != 'Autosize':
@@ -1082,7 +1081,7 @@ class WriteOPS(object):
                     #print hvacHandle
                     if HVACDetails != None:
                         print HVACDetails['heatingCoil']
-                        if HVACDetails['availSch'] != None: pthp.setAvailabilitySchedule(self.getOSSchedule(HVACDetails['availSch'], model))
+                        #if HVACDetails['availSch'] != None: pthp.setAvailabilitySchedule(HVACDetails['availSch'])
                         if HVACDetails['fanPlacement'] != None: pthp.setFanPlacement(HVACDetails['fanPlacement'])
                         if HVACDetails['coolingAirflow'] != None:
                             if HVACDetails['coolingAirflow'] != 'Autosize':
@@ -1142,7 +1141,9 @@ class WriteOPS(object):
                         
                         # HVACDetails['airsideEconomizer'] != None, component AirHandlerDetails
                         # will set HVACDetails['airsideEconomizer'] to none if no Air Economizer is connected to it
-
+                        
+                        
+                        
                         if (oasys.is_initialized()== True) and (HVACDetails['airsideEconomizer'] != None):
                             print 'overriding the OpenStudio airside economizer settings'
                             oactrl = oasys.get().getControllerOutdoorAir()
@@ -1325,6 +1326,9 @@ class WriteOPS(object):
                                 
             elif systemIndex == 6:
                 
+
+                print HVACDetails['availSch']
+
                 hvacHandle = ops.OpenStudioModelHVAC.addSystemType6(model).handle()
                 
                 # get the airloop
@@ -1336,6 +1340,9 @@ class WriteOPS(object):
                     
                 if HVACDetails!=None:
       
+                    
+                    print HVACDetails['availabilityManagerList']
+                    
                     if HVACDetails['availSch'] != None:
                         availSch = self.getOSSchedule(HVACDetails['availSch'], model)
                         airloop.setAvailabilitySchedule(availSch)
@@ -1969,7 +1976,6 @@ class WriteOPS(object):
                     finalout = outstr.replace(";", "", 1)
                     # split into fields
                     fields = finalout.split(",")
-                    print fields
                     if fields[0].strip().lower() == "output:variable":
                         self.setOutputVariable(fields, model)
                     elif fields[0].strip().lower() == "output:meter":
@@ -1987,11 +1993,11 @@ class WriteOPS(object):
                 
 
 class RunOPS(object):
-    def __init__(self, model, weatherFilePath = r"C:\EnergyPlusV8-1-0\WeatherData\USA_CA_San.Francisco.Intl.AP.724940_TMY3.epw"):
+    def __init__(self, model, weatherFilePath):
         self.weatherFile = weatherFilePath # just for batch file as an alternate solution
-        self.EPPath = ops.Path(r"C:\EnergyPlusV8-1-0\EnergyPlus.exe")
+        self.EPPath = ops.Path(sc.sticky["honeybee_folders"]["EPPath"] + "\EnergyPlus.exe")
         self.epwFile = ops.Path(weatherFilePath)
-        self.iddFile = ops.Path(r"C:\EnergyPlusV8-1-0\Energy+.idd")
+        self.iddFile = ops.Path(sc.sticky["honeybee_folders"]["EPPath"] + "\Energy+.idd")
         self.model = model
         
     def osmToidf(self, workingDir, projectName, osmPath):
@@ -2049,8 +2055,6 @@ class RunOPS(object):
         return idfFolder, idfFilePath
         
     def writeIDFWithMonthly(self, idfFilePath):
-        print "Making Monthly SQL reading possible."
-        print idfFilePath
         fi = open(str(idfFilePath),'r')
         fi.seek(0)
         prepare=False
@@ -2343,11 +2347,11 @@ class RunOPS(object):
         # create idf - I separated this job as putting them together
         # was making EnergyPlus to crash
         idfFolder, idfPath = self.osmToidf(workingDir, projectName, osmPath)
-        print 'made idf: ' + idfFolder,idfPath
+        print 'IDF had been created from the OSM: ' + str(idfPath)
         
         if not useRunManager:
             
-            resultFile = self.writeBatchFile(idfFolder, "ModelToIdf\\in.idf", self.weatherFile, EPDirectory = 'C:\\EnergyPlusV8-1-0')
+            resultFile = self.writeBatchFile(idfFolder, "ModelToIdf\\in.idf", self.weatherFile, EPDirectory = sc.sticky["honeybee_folders"]["EPPath"])
             return os.path.join(idfFolder, "ModelToIdf", "in.idf"), resultFile
         
         outputPath = ops.Path(idfFolder)
@@ -2398,7 +2402,7 @@ class RunOPS(object):
              rm.Dispose() # in case anything goes wrong it closes the rm
              print `e`
     
-    def writeBatchFile(self, workingDir, idfFileName, epwFileAddress, EPDirectory = 'C:\\EnergyPlusV8-1-0'):
+    def writeBatchFile(self, workingDir, idfFileName, epwFileAddress, EPDirectory = sc.sticky["honeybee_folders"]["EPPath"]):
         """
         This is here as an alternate until I can get RunManager to work
         """
@@ -2421,15 +2425,14 @@ class RunOPS(object):
         
         #execute the batch file
         os.system(batchFileAddress)
-        print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"+fullPath
         return fullPath + "Zsz.csv",fullPath+".sql",fullPath+".csv"
 
 class RunOPSRManage(object):
-    def __init__(self, model, measuredict, weatherFilePath = r"C:\EnergyPlusV8-1-0\WeatherData\USA_CA_San.Francisco.Intl.AP.724940_TMY3.epw"):
+    def __init__(self, model, measuredict, weatherFilePath):
         self.weatherFile = weatherFilePath # just for batch file as an alternate solution
-        self.EPPath = ops.Path(r"C:\EnergyPlusV8-1-0\EnergyPlus.exe")
+        self.EPPath = ops.Path(sc.sticky["honeybee_folders"]["EPPath"] + "\EnergyPlus.exe")
         self.epwFile = ops.Path(weatherFilePath)
-        self.iddFile = ops.Path(r"C:\EnergyPlusV8-1-0\Energy+.idd")
+        self.iddFile = ops.Path(sc.sticky["honeybee_folders"]["EPPath"] + "\Energy+.idd")
         self.model = model
         self.measuredict = measuredict
         
@@ -2561,7 +2564,7 @@ class RunOPSRManage(object):
                 pass
              print `e`
     
-    def writeBatchFile(self, workingDir, idfFileName, epwFileAddress, EPDirectory = 'C:\\EnergyPlusV8-1-0'):
+    def writeBatchFile(self, workingDir, idfFileName, epwFileAddress, EPDirectory = sc.sticky["honeybee_folders"]["EPPath"]):
         """
         This is here as an alternate until I can get RunManager to work
         """
@@ -2598,7 +2601,6 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     
     
     units = sc.doc.ModelUnitSystem
-    print units
     if `units` != 'Rhino.UnitSystem.Meters':
         msg = "Currently the OpenStudio component only works in meters. Change the units to Meters and try again!"
         ghenv.Component.AddRuntimeMessage(w, msg)
@@ -2620,7 +2622,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         if not sc.sticky['ladybug_release'].isCompatible(ghenv.Component): return -1
     except:
         warning = "You need a newer version of Ladybug to use this compoent." + \
-        " Use updateLadybug component to update userObjects.war" + \
+        " Use updateLadybug component to update userObjects.\n" + \
         "If you have already updated userObjects drag Ladybug_Ladybug component " + \
         "into canvas and try again."
         w = gh.GH_RuntimeMessageLevel.Warning
@@ -2765,17 +2767,32 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     print "Model saved to: " + fname
     workingDir, fileName = os.path.split(fname)
     projectName = (".").join(fileName.split(".")[:-1])
-    print projectName
-
+    
+    
     if runIt:
         hb_runOPS = RunOPS(model, epwWeatherFile)
         #hb_runOPSRm = RunOPSRManage(model, hb_writeOPS.HVACSystemDict, epwWeatherFile)
         #hb_runOPSRm.runAnalysis(fname, False)
         idfFile, resultFile = hb_runOPS.runAnalysis(fname, useRunManager = False)
-        #this is the zone group id
-                # add HVAC system
-
-            
+        
+        try:
+            errorFileFullName = idfFile.replace('.idf', '.err')
+            errFile = open(errorFileFullName, 'r')
+            for line in errFile:
+                print line
+                if "**  Fatal  **" in line:
+                    warning = "The simulation has failed because of this fatal error: \n" + str(line)
+                    w = gh.GH_RuntimeMessageLevel.Warning
+                    ghenv.Component.AddRuntimeMessage(w, warning)
+                    resultFileAddress = None
+                elif "** Severe  **" in line:
+                    comment = "The simulation has not run correctly because of this severe error: \n" + str(line)
+                    c = gh.GH_RuntimeMessageLevel.Remark
+                    ghenv.Component.AddRuntimeMessage(c, comment)
+            errFile.close()
+        except:
+            pass
+        
         return fname, idfFile, resultFile
         
     return fname, None, None

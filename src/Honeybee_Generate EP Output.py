@@ -79,6 +79,7 @@ def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, zoneHVACMetrics,
         simulationOutputs.append("Output:Variable,*,Zone Lights Electric Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Electric Equipment Electric Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Earth Tube Fan Electric Energy, "+ timePeriod)
+        simulationOutputs.append("Output:Variable,*,Pump Electric Energy, "+ timePeriod)
     
     if zoneGainsAndLosses == True:
         simulationOutputs.append("Output:Variable,*,Zone Windows Total Transmitted Solar Radiation Energy, " + timePeriod)
