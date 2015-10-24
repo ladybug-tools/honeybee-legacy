@@ -61,7 +61,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.57\nOCT_23_2015'
+ghenv.Component.Message = 'VER 0.0.57\nOCT_24_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -2097,40 +2097,6 @@ class RunOPS(object):
                         lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 13"+ "\n")
                         lines.append("    Refrigeration:Electricity,!- Variable or Meter 14 Name"+ "\n")
                         lines.append("    SumOrAverage;            !- Aggregation Type for Variable or Meter 14"+ "\n")
-                        """
-                        lines.append("\n")
-                        lines.append("Output:Table:Monthly," + "\n")
-                        lines.append("    Building Energy Performance - Water,  !- Name"+ "\n")
-                        lines.append("    2,                       !- Digits After Decimal"+ "\n")
-                        lines.append("    InteriorLights:Water,  !- Variable or Meter 1 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 1"+ "\n")
-                        lines.append("    ExteriorLights:Water,  !- Variable or Meter 2 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 2"+ "\n")
-                        lines.append("    InteriorEquipment:Water,  !- Variable or Meter 3 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 3"+ "\n")
-                        lines.append("    ExteriorEquipment:Water,  !- Variable or Meter 4 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 4"+ "\n")
-                        lines.append("    Fans:Water,        !- Variable or Meter 5 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 5"+ "\n")
-                        lines.append("    Pumps:Water,       !- Variable or Meter 6 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 6"+ "\n")
-                        lines.append("    Heating:Water,     !- Variable or Meter 7 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 7"+ "\n")
-                        lines.append("    Cooling:Water,     !- Variable or Meter 8 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 8"+ "\n")
-                        lines.append("    HeatRejection:Water,  !- Variable or Meter 9 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 9"+ "\n")
-                        lines.append("    Humidifier:Water,  !- Variable or Meter 10 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 10"+ "\n")
-                        lines.append("    HeatRecovery:Water,!- Variable or Meter 11 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 11"+ "\n")
-                        lines.append("    WaterSystems:Water,!- Variable or Meter 12 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 12"+ "\n")
-                        lines.append("    Cogeneration:Water,!- Variable or Meter 13 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 13"+ "\n")
-                        lines.append("    Refrigeration:Water,!- Variable or Meter 14 Name"+ "\n")
-                        lines.append("    SumOrAverage;            !- Aggregation Type for Variable or Meter 14"+ "\n")
-                        """
                         lines.append("\n")
                         lines.append("Output:Table:Monthly,"+ "\n")
                         lines.append("  Building Energy Performance - Natural Gas,  !- Name"+ "\n")
