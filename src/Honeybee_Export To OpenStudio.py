@@ -61,7 +61,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.57\nOCT_24_2015'
+ghenv.Component.Message = 'VER 0.0.57\nOCT_25_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -138,7 +138,7 @@ class WriteOPS(object):
         if self.simParameters[4] != None: self.ddyFile = self.simParameters[4]
         else: self.ddyFile = weatherFilePath.replace(".epw", ".ddy", 1)
         
-        self.constructionList = {}
+        self.constructionList = sc.sticky ["honeybee_constructionLib"]
         self.materialList = {}
         self.scheduleList = {}
         self.bldgTypes = {}
@@ -229,8 +229,8 @@ class WriteOPS(object):
     def addConstructionToLib(self, constructionName, construction):
         self.constructionList[constructionName] = construction
     
-    def getConstructionFromLib(self, constructionName):
-        return self.constructionList[constructionName]
+    def getConstructionFromLib(self, constructionName, model):
+        return self.getOSConstruction(constructionName.upper(), model)
     
     def isMaterialInLib(self, materialName):
         return materialName in self.materialList.keys()
@@ -1266,9 +1266,8 @@ class WriteOPS(object):
                     
                     oasys = airloop.airLoopHVACOutdoorAirSystem()
                     
-
+                    
                     if (oasys.is_initialized()== True) and (HVACDetails['airsideEconomizer'] != None):
-
                         print 'overriding the OpenStudio airside economizer settings'
                         oactrl = oasys.get().getControllerOutdoorAir()
                         #set control type
@@ -1318,22 +1317,16 @@ class WriteOPS(object):
                                 osboiler = self.updateBoiler(uboil,osboiler)
                                 
             elif systemIndex == 6:
-                
-
                 print HVACDetails['availSch']
-
                 hvacHandle = ops.OpenStudioModelHVAC.addSystemType6(model).handle()
                 
                 # get the airloop
                 airloop = model.getAirLoopHVAC(hvacHandle).get()
-
                 # add branches 
                 for zone in thermalZoneVector:
                     airloop.addBranchForZone(zone)
                     
                 if HVACDetails!=None:
-      
-                    
                     print HVACDetails['availabilityManagerList']
                     
                     if HVACDetails['availSch'] != None:
@@ -1342,12 +1335,9 @@ class WriteOPS(object):
                     
                     airloop = self.updateAvailManager(HVACDetails['availabilityManagerList'],airloop)
                     
-                    
-                    
                 if plantDetails!=None:
                     
                     print HVACDetails['availabilityManagerList']
-
                 
             elif systemIndex == 7:
                 hvacHandle = ops.OpenStudioModelHVAC.addSystemType7(model).handle()
@@ -1458,13 +1448,12 @@ class WriteOPS(object):
                                     print 'Condenser loop unneeded.'
                                     cwl.remove()
                                     print 'Condenser loop removed.'
-
             else:
                 msg = "HVAC system index " + str(systemIndex) +  " is not implemented yet!"
                 ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
             
-
-
+    
+    
     def addThermostat(self, HBZone, OSThermalZone, space, model):
         # create a dual set point
         thermostat = ops.ThermostatSetpointDualSetpoint(model)
@@ -1742,7 +1731,6 @@ class WriteOPS(object):
         
         # call the layers form HB library
         materialNames, comments, UVSI, UVIP = self.hb_EPMaterialAUX.decomposeEPCnstr(HBConstructionlName)
-
         
         # create an empty vector to collect the materials
         materials = ops.MaterialVector()
@@ -1807,19 +1795,17 @@ class WriteOPS(object):
                 srfType = "RoofCeiling" # This is an OpenStudio type that will be converted as a roof or ceiling in idf file
                 
             thisSurface.setSurfaceType(srfType);
-
-
-
             
             # create construction
-            if not self.isConstructionInLib(surface.EPConstruction):
+            if surface.EPConstruction == None:
+                construction = self.getConstructionFromLib(surface.construction, model)
+            elif not self.isConstructionInLib(surface.EPConstruction):
                 construction = self.getOSConstruction(surface.construction, model)
-                
                 # keep track of constructions
                 self.addConstructionToLib(surface.EPConstruction, construction)
             else:
-                construction = self.getConstructionFromLib(surface.EPConstruction)
-
+                construction = self.getConstructionFromLib(surface.EPConstruction, model)
+            
             thisSurface.setConstruction(construction)
             thisSurface.setOutsideBoundaryCondition(surface.BC)
             thisSurface.setSunExposure(surface.sunExposure)
@@ -1891,7 +1877,7 @@ class WriteOPS(object):
                 # keep track of constructions
                 self.addConstructionToLib(childSrf.EPConstruction, construction)
             else:
-                construction = self.getConstructionFromLib(childSrf.EPConstruction)
+                construction = self.getConstructionFromLib(childSrf.EPConstruction, model)
             
             
             glazing = ops.SubSurface(windowPointVectors, model)
