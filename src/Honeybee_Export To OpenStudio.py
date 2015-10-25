@@ -1969,7 +1969,8 @@ class WriteOPS(object):
                     print  e
                     pass
 
-class naturalVentilation(object):
+class EPFeaturesNotInOS(object):
+    
     
     def EPZoneAirMixing(self, zone, zoneMixName, mixFlowRate, objCount):
         
@@ -2096,7 +2097,7 @@ class RunOPS(object):
         workspace.save(idfFilePath, overwrite = True)
         
         ####Code added by chriswmackey to add natural ventilation parameters into the OpenStudio Model 
-        self.writeNatVent(idfFilePath, self.HBZones)
+        self.writeNonOSFeatures(idfFilePath, self.HBZones)
         
         
         """
@@ -2110,49 +2111,30 @@ class RunOPS(object):
             self.writeIDFWithMonthly(idfFilePath)
         
         
-        ####Code added by chriswmackey to request surface info in EIO file.
-        self.requestSrfInEIOFile(idfFilePath)
-        
-        
         return idfFolder, idfFilePath
     
     
-    def writeNatVent(self, idfFilePath, HBZones):
-        natVentStrings = []
-        naturalVentClass = naturalVentilation()
-        for zone in HBZones:
-            if zone.natVent == True:
-                for natVentCount, natVentObj in enumerate(zone.natVentType):
-                    if natVentObj == 1 or natVentObj == 2:
-                        natVentStrings.append(naturalVentClass.EPNatVentSimple(zone, natVentCount))
-                    elif natVentObj == 3:
-                        natVentStrings.append(naturalVentClass.EPNatVentFan(zone, natVentCount))
-        
-        if len(natVentStrings) > 0:
-            fi = open(str(idfFilePath),'r')
-            fi.seek(0)
-            lines=[]
-            for line in fi:
-                lines.append(line)
-            fi.close()
-            
-            for line in natVentStrings:
-                lines.append(line)
-            
-            fiw = open(str(idfFilePath),'w')
-            for line in lines:
-                fiw.write(line)
-            fiw.close()
-    
-    
-    def requestSrfInEIOFile(self, idfFilePath):
-        #Request that surface information be written into the eio file.
+    def writeNonOSFeatures(self, idfFilePath, HBZones):
         fi = open(str(idfFilePath),'r')
         fi.seek(0)
         lines=[]
         for line in fi:
             lines.append(line)
         fi.close()
+        
+        natVentStrings = []
+        otherFeatuClass = EPFeaturesNotInOS()
+        for zone in HBZones:
+            if zone.natVent == True:
+                for natVentCount, natVentObj in enumerate(zone.natVentType):
+                    if natVentObj == 1 or natVentObj == 2:
+                        natVentStrings.append(otherFeatuClass.EPNatVentSimple(zone, natVentCount))
+                    elif natVentObj == 3:
+                        natVentStrings.append(otherFeatuClass.EPNatVentFan(zone, natVentCount))
+        
+        if len(natVentStrings) > 0:
+            for line in natVentStrings:
+                lines.append(line)
         
         lines.append('\nOutput:Surfaces:List,\n')
         lines.append('\t' + 'Details;                 !- Report Type' + '\n')
@@ -2753,6 +2735,9 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     # generate stories
     hb_writeOPS.generateStories(HBZones, model)
     
+    #Make a list of schedules to keep track of what needs to be written into the model.
+    additionalSchedList = []
+    
     for zoneCount, zone in enumerate(HBZones):
         
         # prepare non-planar zones
@@ -2819,6 +2804,17 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
                     hb_writeOPS.OPSFenSurface(HBSrf, OPSSrf, model)
                 else:
                     hb_writeOPS.OPSNonePlanarFenSurface(HBSrf, OPSSrf, model, space)
+        
+        #Check other schedules.
+        if zone.natVent == True:
+            for ventObj in zone.natVentSchedule:
+                if ventObj != None:
+                    if ventObj in additionalSchedList: additionalSchedList.append(ventObj)
+                elif 'ALWAYS ON' not in additionalSchedList: additionalSchedList.append('ALWAYS ON')
+    
+    #Add and extra schedules pulled off of the zones.
+    for schedName in additionalSchedList:
+        ossch = hb_writeOPS.getOSSchedule(schedName, model)
         
     
     # this should be done once for the whole model
