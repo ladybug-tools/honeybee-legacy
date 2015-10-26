@@ -51,7 +51,7 @@ import Grasshopper.Kernel as gh
 
 ghenv.Component.Name = "Honeybee_OpenStudio Air Handler Detail"
 ghenv.Component.NickName = 'AirHandlerDetails'
-ghenv.Component.Message = 'VER 0.0.57\nOCT_24_2015'
+ghenv.Component.Message = 'VER 0.0.57\nOCT_26_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | AirsideSystems"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -180,10 +180,11 @@ def main(fanDetail,coolingCoil,heatingCoil,airsideEconomizer,availabilityManager
     #dx coil assignment errors (single speed where dual speed, etc. , using DX heating where hot water)
     
     if(_HVACSystemID !=None):
-
+        
         print 'You have assigned a valid HVAC system ID.'
         print str(_HVACSystemID) + ": " + sysDict[_HVACSystemID]
         sysdict = {}
+        sysdict['HVACID'] = _HVACSystemID
         sysdict['availSch'] = _availabilitySch_
         sysdict['fanPlacement'] = _fanPlacement_
         sysdict['coolingAirflow'] = _coolingAirflowRate_
@@ -275,16 +276,16 @@ def main(fanDetail,coolingCoil,heatingCoil,airsideEconomizer,availabilityManager
 
                 else:
                     storedAHUParams[key] = hb_airHandler[key]
-        
+        storedAHUParams['HVACID'] = _HVACSystemID
         
         # Add availabilityManagerList to storedAHUParams
         
         
         #in the worst-case scenario, this will just send back honeybee defaults.
-
+        
         a = dictToClass(storedAHUParams)
         print 'your air handler definition:'
-        #pp.pprint(a.d)
+        pp.pprint(a.d)
     else:
         print 'you are required to input an HVAC System ID'
         w = gh.GH_RuntimeMessageLevel.Warning
