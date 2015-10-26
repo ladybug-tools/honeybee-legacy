@@ -103,7 +103,7 @@ if sc.sticky.has_key('honeybee_release'):
               
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
         
-        link = "https://github.com/mostaphaRoudsari/Honeybee/blob/master/resources/OpenStudio.zip?raw=true"
+        link = "https://dl.dropboxusercontent.com/u/16228160/Honeybee/OpenStudio.zip"
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, link)
         
         #buttons = System.Windows.Forms.MessageBoxButtons.OK
@@ -116,7 +116,7 @@ if sc.sticky.has_key('honeybee_release'):
         msg1 = "There is a newer version of OpenStudio libraries available to download! " + \
                       "We strongly recommend you to download the newer version from this link and replace it with current files at " + \
                       openStudioLibFolder +"."
-        msg2 = "https://github.com/mostaphaRoudsari/Honeybee/blob/master/resources/OpenStudio.zip?raw=true"
+        msg2 = "https://dl.dropboxusercontent.com/u/16228160/Honeybee/OpenStudio.zip"
         print msg1
         print msg2
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg1)
@@ -1790,7 +1790,7 @@ class WriteOPS(object):
             thisSurface.setName(surfaceName);
             thisSurface.setSpace(space);
             thisSurface.setSurfaceType(surface.srfType[surface.type]);
-            srfType = surface.srfType[int(surface.type)]
+            srfType = surface.srfType[int(surface.type)].lower().capitalize()
             if srfType.upper().Contains("ROOF") or srfType.upper().Contains("CEILING"):
                 srfType = "RoofCeiling" # This is an OpenStudio type that will be converted as a roof or ceiling in idf file
                 
@@ -1807,7 +1807,7 @@ class WriteOPS(object):
                 construction = self.getConstructionFromLib(surface.EPConstruction, model)
             
             thisSurface.setConstruction(construction)
-            thisSurface.setOutsideBoundaryCondition(surface.BC)
+            thisSurface.setOutsideBoundaryCondition(surface.BC.capitalize())
             thisSurface.setSunExposure(surface.sunExposure)
             thisSurface.setWindExposure(surface.windExposure)
             
