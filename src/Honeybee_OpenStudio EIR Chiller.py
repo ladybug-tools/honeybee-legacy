@@ -60,7 +60,7 @@ import Grasshopper.Kernel as gh
 
 ghenv.Component.Name = "Honeybee_OpenStudio EIR Chiller"
 ghenv.Component.NickName = 'EPlusEIRChiller'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nOCT_26_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -98,6 +98,7 @@ def main(name,rCapacity,rCOP,rLeavingChWt,rEnteringCWT,rChWFlowRate,rCWFlowRate,
             chillerFlowMode = 0
             print 'sizingFactor reset to 1.15'
     if chillerFlowMode != None:
+        
         if chillerFlowMode < 0 or chillerFlowMode > 2:
             warning = "You have declared a chillerFlowMode that is out of range." + \
             "  We have reset the chillerFlowMode to the honeybee default. " + \
