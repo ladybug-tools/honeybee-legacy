@@ -42,7 +42,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Label Zone Surfaces"
 ghenv.Component.NickName = 'LabelSurfaces'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_18_2015'
+ghenv.Component.Message = 'VER 0.0.57\nOCT_25_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -119,10 +119,19 @@ def main(HBZoneObjects, textSize, font, windows, attribute):
         if windows == False:
             try: theProp = getattr(srf, attribute)
             except: theProp = "N/A"
-            if theProp == "":
-                theProp = "Not Assigned"
-            elif attribute == 'type':
+            
+            if attribute == 'type':
                 theProp = hb_EPTypes.srfType[theProp]
+            elif attribute == 'EPConstruction' and theProp == None:
+                try:
+                    theProp = getattr(srf, 'construction')
+                except: theProp = "Not Assigned"
+            elif attribute == 'RadMaterial' and theProp == None:
+                try:
+                    theProp = getattr(srf, 'construction')
+                except: theProp = "Not Assigned"
+            elif theProp == "" or theProp == None:
+                theProp = "Not Assigned"
             surfaceAttributes.append(str(theProp))
             surfaceNameLength.append(len(list(str(theProp))))
             srfBreps.append(srf.geometry)
@@ -148,7 +157,7 @@ def main(HBZoneObjects, textSize, font, windows, attribute):
                 for childSrf in srf.childSrfs:
                     try: theProp = getattr(childSrf, attribute)
                     except: theProp = "N/A"
-                    if theProp == "":
+                    if theProp == "" or theProp == None:
                         theProp = "Not Assigned"
                     surfaceAttributes.append(str(theProp))
                     surfaceNameLength.append(len(list(str(theProp))))
