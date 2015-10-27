@@ -221,7 +221,7 @@ def main(fanDetail,coolingCoil,heatingCoil,airsideEconomizer,availabilityManager
             # There is an economizer so add it to sysdict
             
             sysdict['airsideEconomizer'] = airsideEconomizer.d
-
+            
         if not isinstance(coolingCoil, str): 
             print 'upgrading cooling coil detail'
 

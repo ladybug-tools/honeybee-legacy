@@ -34,6 +34,7 @@ Provided by Honeybee 0.0.57
         _minimumLimitType_: ... do nothing and it defaults to Proportional Minimum (min depends on the supply air flow rate as opposed to an absolute number)
         _minimumOutdoorAirSchedule_: ... This is a schedule with values between 0 and 1, and it is multiplied by the minimumAirFlowRate.  It is usually left blank, but can be used to fine tune the economizer during warm-up time or after hours.
         _minimumOutdoorAirFracSchedule_: ... this overrides minOutdoorAirSchedule and minAirflowRate.  It is a schedule between 0 and 1.  It is often used to create a 100% outside air system.
+        _maximumOutdoorAirFracSchedule_: ... this is a schedule between 0 and 1.  It is often used to create a recirculating outside air system such as that in patient rooms.
         _maximumLimitDewpoint_: ... needed for when the ControlType is Fixed Dewpoint and Dry Bulb.  Otherwise leave blank
         _sensedMinimum_: ... is the minimum of whatever the control type, at this point the system goes to minimum flow
         _sensedMaximum_: ... is the maximum of whatever the control type, at this point the system goes to minimum flow
@@ -71,6 +72,7 @@ def clearInputs(econocomponent):
     econocomponent['minLimitType'] = None
     econocomponent['minOutdoorAirSchedule'] = None
     econocomponent['minOutdoorAirFracSchedule'] = None
+    econocomponent['maxOutdoorAirFracSchedule'] = None
     econocomponent['maxLimitDewpoint'] = None
     econocomponent['sensedMin'] = None
     econocomponent['sensedMax'] = None
@@ -83,11 +85,6 @@ def clearInputs(econocomponent):
 class dictToClass(object):
     def __init__(self,pyDict):
         self.d = pyDict
-
-        
-        
-        
-
 
 ecdict = {
 0:'FixedDryBulb',
@@ -135,6 +132,7 @@ def main():
     econocomponent['minLimitType'] = minLimitdict[_minimumLimitType_]
     econocomponent['minOutdoorAirSchedule'] = _minimumOutdoorAirSchedule_
     econocomponent['minOutdoorAirFracSchedule'] = _minimumOutdoorAirFracSchedule_
+    econocomponent['maxOutdoorAirFracSchedule'] = _maximumOutdoorAirFracSchedule_
     econocomponent['maxLimitDewpoint'] = _maximumLimitDewpoint_
     econocomponent['sensedMin'] = _sensedMinimum_
     econocomponent['sensedMax'] = _sensedMaximum_

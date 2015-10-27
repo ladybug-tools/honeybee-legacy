@@ -77,6 +77,7 @@ import Rhino as rc
 import Grasshopper.Kernel as gh
 import time
 from pprint import pprint
+import shutil
 
 #openStudioLibFolder = "C:\\Users\\" + os.getenv("USERNAME") + "\\Dropbox\\ladybug\\honeybee\\openStudio\\CSharp64bits"
 if sc.sticky.has_key('honeybee_release'):
@@ -145,6 +146,9 @@ class WriteOPS(object):
         self.levels = {}
         self.HVACSystemDict = {}
         self.adjacentSurfacesDict = {}
+        
+        self.csvSchedules = []
+        self.csvScheduleCount = 0
     
     def setSimulationControls(self, model):
         solarDist = self.simParameters[2]
@@ -377,15 +381,19 @@ class WriteOPS(object):
         return schedule
         
     def getOSSchedule(self, schName, model):
-        #print schName
+        csvSched = False
         if schName.lower().endswith(".csv"):
-            msg = "Currently OpenStudio component cannot use .csv file as an schedule.\n" + \
-                      "Use EnergyPlus component or replace " + schName + " with an EP schedule and try again."
+            msg = "Currently OpenStudio component cannot use .csv file as a schedule.\n" + \
+                      "The schedule: " + schName + " - will be written into the EnergyPlus IDF File after it has been written by decompressing the OS file."
             print msg
-            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
-            return None
-
-        values, comments = self.hb_EPScheduleAUX.getScheduleDataByName(schName, ghenv.Component)
+            self.csvSchedules.append(schName)
+            self.csvScheduleCount += 1
+            csvSched = True
+        
+        if csvSched == True:
+            values, comments = self.hb_EPScheduleAUX.getScheduleDataByName('DEFAULTCSVPLACEHOLDER', ghenv.Component)
+        else:
+            values, comments = self.hb_EPScheduleAUX.getScheduleDataByName(schName, ghenv.Component)
         
         if values[0].lower() != "schedule:week:daily":
             
@@ -394,7 +402,7 @@ class WriteOPS(object):
                 #print 'here ' + scheduleTypeLimitsName
                 OSScheduleTypeLimits = self.createOSScheduleTypeLimits(values[1], model)
                 self.addScheduleToLib(scheduleTypeLimitsName, OSScheduleTypeLimits)
-
+        
         if not self.isScheduleInLib(schName):
             if values[0].lower() == "schedule:year":
                 OSSchedule = self.createYearlyOSSchedule(schName, values, model)
@@ -496,6 +504,7 @@ class WriteOPS(object):
         'controlAction' : HVACDetails['airsideEconomizer']['controlAction'],
         'minOASchedule' : HVACDetails['airsideEconomizer']['minOutdoorAirSchedule'],
         'minOAFracSchedule' : HVACDetails['airsideEconomizer']['minOutdoorAirFracSchedule'],
+        'maxOAFracSchedule' : HVACDetails['airsideEconomizer']['maxOutdoorAirFracSchedule'],
         'DXLockoutMethod' : HVACDetails['airsideEconomizer']['DXLockoutMethod'],
         'timeOfDaySch':HVACDetails['airsideEconomizer']['timeOfDaySch'],
         'mvCtrl':HVACDetails['airsideEconomizer']['mvCtrl']
@@ -585,7 +594,15 @@ class WriteOPS(object):
             print 'updating minOA schedule'
             minOASch = self.getOSSchedule(econo['minOASchedule'],model)
             oactrl.setMinimumOutdoorAirSchedule(minOASch)
-            
+        if econo['minOAFracSchedule'] != None:
+            print 'updating minOAFrac schedule'
+            maxOASch = self.getOSSchedule(econo['minOAFracSchedule'],model)
+            oactrl.setMinimumFractionofOutdoorAirSchedule(maxOASch)
+        if econo['maxOAFracSchedule'] != None:
+            print 'updating maxOAFrac schedule'
+            maxOASch = self.getOSSchedule(econo['maxOAFracSchedule'],model)
+            oactrl.setMinimumFractionofOutdoorAirSchedule(maxOASch)
+        
         print "success for economizer!"
         return oactrl
         
@@ -992,7 +1009,6 @@ class WriteOPS(object):
             
             # HAVC system index for this group and thermal zones
             systemIndex, thermalZones, HVACDetails,plantDetails = self.HVACSystemDict[HAVCGroupID]
-
             # put thermal zones into a vector
             thermalZoneVector = ops.ThermalZoneVector(thermalZones)
             # add systems. There are 10 standard ASHRAE systems + Ideal Air Loads
@@ -1000,7 +1016,7 @@ class WriteOPS(object):
                 for zone in thermalZoneVector: zone.setUseIdealAirLoads(True)
             
             elif systemIndex == 1:
-
+                
                 # 1: PTAC, Residential - thermalZoneVector because ZoneHVAC
                 ops.OpenStudioModelHVAC.addSystemType1(model, thermalZoneVector)
                 allptacs = model.getZoneHVACPackagedTerminalAirConditioners()
@@ -1358,8 +1374,8 @@ class WriteOPS(object):
                         oactrl = self.updateOASys(econo,oactrl,model)
                         print 'economizer settings updated to economizer name: ' + HVACDetails['airsideEconomizer']['name']
                         print ''
-                        
-                    if HVACDetails['varVolSupplyFanDef'] != None:
+                    
+                    if HVACDetails['varVolSupplyFanDef'] != {}:
                         print 'overriding the OpenStudio supply fan settings'
                         x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:VariableVolume"))
                         vvfan = model.getFanVariableVolume(x[0].handle()).get()
@@ -1968,12 +1984,73 @@ class WriteOPS(object):
                 except Exception, e:
                     print  e
                     pass
+        return self.csvSchedules, self.csvScheduleCount
 
 class EPFeaturesNotInOS(object):
+    def __init__(self, workingDir):
+        self.fileBasedSchedules = {}
+        self.workingDir = workingDir
     
+    def createCSVSchedString(self, scheduleName):
+        # check if the schedule is already created
+        if scheduleName.upper() in self.fileBasedSchedules.keys(): return "\n"
+        # set up default values
+        schTypeLimitStr = "\n"
+        schTypeLimitName = "Fraction"
+        numOfHours = 8760
+        
+        # create schedule object based on file
+        # find file name and use it as schedule name
+        scheduleFileName = os.path.basename(scheduleName)
+        scheduleObjectName = "_".join(scheduleFileName.split(".")[:-1])
+        
+        # copy schedule file into working dir
+        scheduleNewAddress = os.path.join(self.workingDir, scheduleFileName)
+        shutil.copyfile(scheduleName, scheduleNewAddress)
+        
+        # put them as key, value so I can find the new name when write schedule
+        self.fileBasedSchedules[scheduleName.upper()] = scheduleObjectName
+        
+        # get the inputs if the schedule is generated by Honeybee
+        with open(scheduleName, "r") as schFile:
+            for lineCount, line in enumerate(schFile):
+                if lineCount == 3: break
+                elif lineCount == 0:
+                    # try to collect information related to type limit
+                    lineSeg = line.split(",")
+                    if not lineSeg[0].startswith("Honeybee"): break
+                    lowerLimit, upperLimit, numericType, unitType = lineSeg[1:5]
+                    
+                    # prepare the schedulTypeLimitObject
+                    schTypeLimitName = os.path.basename(scheduleName).lower(). \
+                                       replace(".", "").split("csv")[0] + "TypeLimit"
+                    
+                    schTypeLimitStr = "ScheduleTypeLimits,\t!Schedule Type\n" + \
+                                      schTypeLimitName + ",\t! Name\n" + \
+                                      lowerLimit.strip() + ",\t!- Lower Limit Value\n" + \
+                                      upperLimit.strip() + ",\t!- Upper Limit Value\n" + \
+                                      numericType.strip() + ",\t!- Numeric Type\n" + \
+                                      unitType.strip() + ";\t!- Unit Type\n\n"
+                elif lineCount == 2:
+                    # check timestep
+                    try: numOfHours *= int(line.split(",")[0])
+                    except: pass
+        
+        # scheduleStr writes the section Schedule:File in the EnergyPlus file
+        # for custom schedules.
+        scheduleStr = schTypeLimitStr + \
+                      "Schedule:File,\n" + \
+                      scheduleObjectName + ",\t!- Name\n" + \
+                      schTypeLimitName + ",\t!- Schedule Type Limits Name\n" + \
+                      scheduleNewAddress + ",\t!- File Name\n" + \
+                      "5,\t!- Column Number\n" + \
+                      "4,\t!- Rows To Skip\n" + \
+                      str(int(numOfHours)) + ",\t!- Hours of Data\n" + \
+                      "Comma;\t!- Column Separator\n"
+        
+        return scheduleStr
     
     def EPZoneAirMixing(self, zone, zoneMixName, mixFlowRate, objCount):
-        
         if zone.mixAirFlowSched[objCount].upper() == 'ALWAYS ON':
             mixingSched = 'ALWAYS ON'		
         elif zone.mixAirFlowSched[objCount].upper().endswith('CSV'):		
@@ -2065,13 +2142,15 @@ class EPFeaturesNotInOS(object):
 
 
 class RunOPS(object):
-    def __init__(self, model, weatherFilePath, HBZones):
+    def __init__(self, model, weatherFilePath, HBZones, csvSchedules, csvScheduleCount):
         self.weatherFile = weatherFilePath # just for batch file as an alternate solution
         self.EPPath = ops.Path(sc.sticky["honeybee_folders"]["EPPath"] + "\EnergyPlus.exe")
         self.epwFile = ops.Path(weatherFilePath)
         self.iddFile = ops.Path(sc.sticky["honeybee_folders"]["EPPath"] + "\Energy+.idd")
         self.model = model
         self.HBZones = HBZones
+        self.csvSchedules = csvSchedules
+        self.csvScheduleCount = csvScheduleCount
     
     def osmToidf(self, workingDir, projectName, osmPath):
         # create a new folder to run the analysis
@@ -2097,7 +2176,7 @@ class RunOPS(object):
         workspace.save(idfFilePath, overwrite = True)
         
         ####Code added by chriswmackey to add natural ventilation parameters into the OpenStudio Model 
-        self.writeNonOSFeatures(idfFilePath, self.HBZones)
+        self.writeNonOSFeatures(idfFilePath, self.HBZones, workingDir)
         
         
         """
@@ -2114,23 +2193,41 @@ class RunOPS(object):
         return idfFolder, idfFilePath
     
     
-    def writeNonOSFeatures(self, idfFilePath, HBZones):
+    def writeNonOSFeatures(self, idfFilePath, HBZones, workingDir):
+        #Grab the lines of the exiting IDF.
         fi = open(str(idfFilePath),'r')
         fi.seek(0)
         lines=[]
+        foundCSVSchedules = []
         for line in fi:
-            lines.append(line)
+            if 'CSV' in line:
+                for columnCount, column in enumerate(line.split('.')):
+                    if columnCount == 0:
+                        origName = column + '.csv'
+                        newName = column
+                #newName = origName.split('.csv')[-1].split('\\')[-1]
+                newName = '  ' + newName.split('\\')[-1]
+                if origName not in foundCSVSchedules:
+                    foundCSVSchedules.append(origName)
+                    lines.append(line)
+                else: lines.append(line.replace(origName, newName))
+            else:
+                lines.append(line)
         fi.close()
         
+        #Write in any CSV schedules.
+        otherFeatureClass = EPFeaturesNotInOS(workingDir)
+        for schedule in self.csvSchedules:
+            lines.append(otherFeatureClass.createCSVSchedString(schedule))
+        
         natVentStrings = []
-        otherFeatuClass = EPFeaturesNotInOS()
         for zone in HBZones:
             if zone.natVent == True:
                 for natVentCount, natVentObj in enumerate(zone.natVentType):
                     if natVentObj == 1 or natVentObj == 2:
-                        natVentStrings.append(otherFeatuClass.EPNatVentSimple(zone, natVentCount))
+                        natVentStrings.append(otherFeatureClass.EPNatVentSimple(zone, natVentCount))
                     elif natVentObj == 3:
-                        natVentStrings.append(otherFeatuClass.EPNatVentFan(zone, natVentCount))
+                        natVentStrings.append(otherFeatureClass.EPNatVentFan(zone, natVentCount))
         
         if len(natVentStrings) > 0:
             for line in natVentStrings:
@@ -2815,7 +2912,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     #Add and extra schedules pulled off of the zones.
     for schedName in additionalSchedList:
         ossch = hb_writeOPS.getOSSchedule(schedName, model)
-        
+    
     
     # this should be done once for the whole model
     hb_writeOPS.setAdjacentSurfaces()
@@ -2829,7 +2926,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         hb_writeOPS.OPSShdSurface(shdingSurfcaes, model)
     
     # outputs
-    hb_writeOPS.setOutputs(simulationOutputs, model)
+    csvSchedules, csvScheduleCount = hb_writeOPS.setOutputs(simulationOutputs, model)
     
     #save the model
     model.save(ops.Path(fname), True)
@@ -2840,7 +2937,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     
     
     if runIt:
-        hb_runOPS = RunOPS(model, epwWeatherFile, HBZones)
+        hb_runOPS = RunOPS(model, epwWeatherFile, HBZones, csvSchedules, csvScheduleCount)
         #hb_runOPSRm = RunOPSRManage(model, hb_writeOPS.HVACSystemDict, epwWeatherFile)
         #hb_runOPSRm.runAnalysis(fname, False)
         idfFile, resultFile = hb_runOPS.runAnalysis(fname, useRunManager = False)

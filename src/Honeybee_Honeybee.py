@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.57\nOCT_23_2015'
+ghenv.Component.Message = 'VER 0.0.57\nOCT_26_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -531,7 +531,7 @@ class HB_GetEPLibraries(object):
                            or line.lower().strip().startswith(key.lower() + ":"):
                             schedulesDict = self.createEPObject(inf, schedulesDict, key, line.strip()[:-1])
                             break
-                        
+        
         sc.sticky["honeybee_ScheduleLib"] = schedulesDict["Schedule"]
         sc.sticky["honeybee_ScheduleTypeLimitsLib"] = schedulesDict["ScheduleTypeLimits"]
 
@@ -4681,6 +4681,7 @@ class EPZone(object):
         
         #Ideal Air System Properties
         self.outdoorAirReq = "Sum"
+        self.useVAVTemplate = False
         self.coolSupplyAirTemp= ""
         self.heatSupplyAirTemp= ""
         self.coolingCapacity= ""
@@ -7047,9 +7048,9 @@ class hb_airsideEconoParams(object):
         'maxAirFlowRate':'Autosize',
         'minAirFlowRate':'Autosize',
         'minLimitType':'Proportional Minimum',
-
         'minOutdoorAirSchedule':None,
         'minOutdoorAirFracSchedule':None,
+        'maxOutdoorAirFracSchedule':None,
         'maxLimitDewpoint':None,
         'sensedMin':12,
         'sensedMax':22,
