@@ -212,11 +212,11 @@ def main(fanDetail,coolingCoil,heatingCoil,airsideEconomizer,availabilityManager
                 sysdict['constVolSupplyFanDef'] = sc.sticky['honeybee_constantVolumeFanParams']().cvFanDict
                 sysdict['varVolSupplyFanDef'] = {}
             else:
-                print 'Variable volume fan parameters set to Honeybee default.'
-                sysdict['varVolSupplyFanDef'] = sc.sticky['honeybee_variableVolumeFanParams']().vvFanDict
+                print 'Variable volume fan parameters set to OpenStudio default.'
+                sysdict['varVolSupplyFanDef'] = {}
                 sysdict['constVolSupplyFanDef'] = {}
         
-
+        
         if airsideEconomizer != None: 
             # There is an economizer so add it to sysdict
             
@@ -250,17 +250,12 @@ def main(fanDetail,coolingCoil,heatingCoil,airsideEconomizer,availabilityManager
         storedAHUParams = {}
         
         for key in sorted(hb_airHandler.keys()):
-            print key
             if sysdict.has_key(key):
-                
                 if key == 'varVolSupplyFanDef' or key == 'constVolSupplyFanDef':
-
                     storedAHUParams[key] = sysdict[key]
                 elif key == 'airsideEconomizer':
-
                     storedAHUParams[key] = sysdict[key]
                 else:
-                    
                     storedAHUParams[key] = sysdict[key]
                     
             else:
