@@ -31,12 +31,12 @@ Provided by Honeybee 0.0.57
         _HVACSystemID:... use of the integers representing a system, as found in openStudioHVACSystemsList
         _availabilitySch_: ... a Honeybee or OpenStudio schedule reference.
         _fanPlacement_: ... BlowThrough or DrawThrough
-        _coolingAirflowRate_: You may enter a maximum airflow rate in cooling (m3/s).  Typically this is left blank, so EnergyPlus can autosize.
-        _coolingOAFlowRate_: ...You may enter a maximum outdoor airflow rate in cooling (m3/s).  Typically this is left blank, so EnergyPlus can autosize.
-        _heatingAirflowRate_: ...You may enter a maximum airflow rate in heating (m3/s).  Typically this is left blank, so EnergyPlus can autosize.
-        _heatingOAFlowRate_: ... You may enter a maximum outdoor airflow rate in cooling (m3/s).  Typically this is left blank, so EnergyPlus can autosize.
-        _floatingAirflowRate_: ...You may enter a maximum airflow rate when floating (m3/s).  Typically this is left blank, so EnergyPlus can autosize.
-        _floatingOAFlowRate_: ...You may enter a maximum outdoor airflow rate in when floating (m3/s).  Typically this is left blank, so EnergyPlus can autosize.
+        _coolingAirflowRate_: You may enter a maximum airflow rate in cooling (m3/s).  Typically this is left blank, so EnergyPlus can autosize.  Note that this input only affects packaged AC units and Heat Pump Units (systems 1 and 2).  All other systems are not affected by this input.
+        _coolingOAFlowRate_: ...You may enter a maximum outdoor airflow rate in cooling (m3/s).  Typically this is left blank, so EnergyPlus can autosize.  Note that this input only affects packaged AC units and Heat Pump Units (systems 1 and 2).  All other systems are not affected by this input.
+        _heatingAirflowRate_: ...You may enter a maximum airflow rate in heating (m3/s).  Typically this is left blank, so EnergyPlus can autosize.  Note that this input only affects packaged AC units and Heat Pump Units (systems 1 and 2).  All other systems are not affected by this input.
+        _heatingOAFlowRate_: ... You may enter a maximum outdoor airflow rate in cooling (m3/s).  Typically this is left blank, so EnergyPlus can autosize.  Note that this input only affects packaged AC units and Heat Pump Units (systems 1 and 2).  All other systems are not affected by this input.
+        _floatingAirflowRate_: ...You may enter a maximum airflow rate when floating (m3/s).  Typically this is left blank, so EnergyPlus can autosize.  Note that this input only affects packaged AC units and Heat Pump Units (systems 1 and 2).  All other systems are not affected by this input.
+        _floatingOAFlowRate_: ...You may enter a maximum outdoor airflow rate in when floating (m3/s).  Typically this is left blank, so EnergyPlus can autosize.  Note that this input only affects packaged AC units and Heat Pump Units (systems 1 and 2).  All other systems are not affected by this input.
         _coolingCoil_: ... Provide a definition fo a cooling coil (from the Honeybee component for cooling coils).  This component currently accepts one and two speed DX coil
         _heatingCoil_: ... Provide a definition fo a heating coil (from the Honeybee component for heating coils).  This component currently does not accept heating coils
         _fanDetail_: ... Provide a definition for a fan serving your air handler(s) .  This component current accepts constant volume fans that ride the fan curve, or a VFD fan
@@ -51,7 +51,7 @@ import Grasshopper.Kernel as gh
 
 ghenv.Component.Name = "Honeybee_OpenStudio Air Handler Detail"
 ghenv.Component.NickName = 'AirHandlerDetails'
-ghenv.Component.Message = 'VER 0.0.57\nOCT_26_2015'
+ghenv.Component.Message = 'VER 0.0.57\nOCT_27_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | AirsideSystems"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -213,7 +213,7 @@ def main(fanDetail,coolingCoil,heatingCoil,airsideEconomizer,availabilityManager
                 sysdict['varVolSupplyFanDef'] = {}
             else:
                 print 'Variable volume fan parameters set to OpenStudio default.'
-                sysdict['varVolSupplyFanDef'] = {}
+                sysdict['varVolSupplyFanDef'] = sc.sticky['honeybee_variableVolumeFanParams']().vvFanDict
                 sysdict['constVolSupplyFanDef'] = {}
         
         

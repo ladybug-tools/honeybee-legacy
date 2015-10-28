@@ -61,7 +61,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.57\nOCT_26_2015'
+ghenv.Component.Message = 'VER 0.0.57\nOCT_27_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nOCT_26_2015
@@ -877,6 +877,7 @@ class WriteOPS(object):
             else: pass
             #fan size remains autosized
         if sf['minFlowFrac'] != None:
+            vvfan.setFanPowerMinimumFlowRateInputMethod('Fraction')
             vvfan.setFanPowerMinimumFlowFraction(sf['minFlowFrac'])
             # min flow frac updated
         if sf['fanPowerCoefficient1'] != None:
@@ -1362,8 +1363,18 @@ class WriteOPS(object):
                 # add branches
                 for zone in thermalZoneVector:
                     airloop.addBranchForZone(zone)
-                
-                if HVACDetails!=None:
+                    
+                    #Edit the zone branch.
+                    if HVACDetails['coolingAirflow'] != None and HVACDetails['coolingAirflow'] != 'Autosize' and HVACDetails['heatingAirflow'] != None and HVACDetails['heatingAirflow'] != 'Autosize' and HVACDetails['floatingAirflow']  != None and HVACDetails['floatingAirflow'] != 'Autosize':
+                        if HVACDetails['coolingAirflow'] == HVACDetails['heatingAirflow'] and HVACDetails['heatingAirflow'] == HVACDetails['floatingAirflow']:
+                            maxAirflow = 3*float(HVACDetails['floatingAirflow'])
+                            x = airloop.demandComponents(ops.IddObjectType("OS:AirTerminal:SingleDuct:VAV:Reheat"))
+                            vavBox = model.getAirTerminalSingleDuctVAVReheat(x[0].handle()).get()
+                            vavBox.setMaximumAirFlowRate(maxAirflow)
+                            vavBox.setConstantMinimumAirFlowFraction(0.33)
+                    
+                    
+                    #Edit the outdoor air sys.
                     oasys = airloop.airLoopHVACOutdoorAirSystem() 
                     if (oasys.is_initialized()== True) and (HVACDetails['airsideEconomizer'] != None):
                         print 'overriding the OpenStudio airside economizer settings'
@@ -1600,7 +1611,7 @@ class WriteOPS(object):
         ventilation.setOutdoorAirMethod("Sum")
         ventilation.setOutdoorAirFlowperPerson(zone.ventilationPerPerson)
         ventilation.setOutdoorAirFlowperFloorArea(zone.ventilationPerArea)
-        ventilation.setOutdoorAirFlowRate(0)
+        #ventilation.setOutdoorAirFlowRate(0)
         space.setDesignSpecificationOutdoorAir(ventilation)
         return space
     

@@ -48,7 +48,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_OpenStudio Airside Economizer Detail"
 ghenv.Component.NickName = 'AirSideEconomizer'
-ghenv.Component.Message = 'VER 0.0.57\nOCT_24_2015'
+ghenv.Component.Message = 'VER 0.0.57\nOCT_27_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | AirsideSystems"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"

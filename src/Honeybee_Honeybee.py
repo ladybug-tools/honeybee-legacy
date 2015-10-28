@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.57\nOCT_26_2015'
+ghenv.Component.Message = 'VER 0.0.57\nOCT_27_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -7077,12 +7077,12 @@ class hb_varVolFanParams(object):
         self.vvFanDict = {
         'name':'honeybeeConstVolFan',
         'type':1,
-        'fanEfficiency':0.6,
-        'pressureRise':892.9,
+        'fanEfficiency':0.6045,
+        'pressureRise':500,
         'maxFlowRate':'Autosize',
-        'motorEfficiency':0.825,
+        'motorEfficiency':0.93,
         'airStreamHeatPct':100.0,
-        'minFlowFrac':0.2,
+        'minFlowFrac':0,
         'fanPowerCoefficient1':0.04076,
         'fanPowerCoefficient2':0.08804,
         'fanPowerCoefficient3':-0.07292,
