@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.57\nOCT_27_2015'
+ghenv.Component.Message = 'VER 0.0.57\nOCT_28_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -7055,7 +7055,7 @@ class hb_airsideEconoParams(object):
         'sensedMin':12,
         'sensedMax':22,
         'DXLockoutMethod':None,
-        'timeOfDaySch':'ALWAYS ON',
+        'timeOfDaySch':None,
         'mvCtrl':None,
         'availManagerList':None
         }
