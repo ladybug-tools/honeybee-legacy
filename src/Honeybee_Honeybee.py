@@ -429,8 +429,7 @@ class PrepareTemplateEPLibFiles(object):
             libFilePaths.append(customEPLib)
         
         return libFilePaths
-        
-        
+
 class HB_GetEPLibraries(object):
     
     def __init__(self):
@@ -537,7 +536,6 @@ class HB_GetEPLibraries(object):
 
         print str(len(sc.sticky["honeybee_ScheduleLib"].keys())) + " schedules are loaded available in Honeybee library"
         print str(len(sc.sticky["honeybee_ScheduleTypeLimitsLib"].keys())) + " schedule type limits are now loaded in Honeybee library"        
-        
 
 
 class RADMaterialAux(object):
@@ -2088,7 +2086,7 @@ class hb_WriteRAD(object):
             # glazingStr
             fullStr = fullStr + self.getsurfaceStr(surface.childSrfs[0], glzCount, glzCoorList)
         return fullStr
-            
+
 class hb_WriteRADAUX(object):
     
     def __init__(self):
@@ -2740,7 +2738,7 @@ class hb_WriteRADAUX(object):
             return True
         else:
             return False
-        
+
 class hb_WriteDS(object):
     
     def isSensor(self, testPt, sensors):
@@ -3124,7 +3122,7 @@ class hb_ReadAnnualResultsAux(object):
                     illFiles.AddRange(fileList, p)
         
         return illFiles
-    
+
 class hb_EnergySimulatioParameters(object):
     
     def readEPParams(self, EPParameters):
@@ -3796,7 +3794,7 @@ class EPObjectsAux(object):
             print warningMsg
             component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
             return
-    
+
 
 class ReadEPSchedules(object):
     
@@ -5156,7 +5154,7 @@ class HB_generatorsystem(object):
         self.PVgenerators = PVgenerators # Category includes Generator:Photovoltaic
         self.fuelgenerators = fuelgenerators # Category includes Generators:Mircoturbine,Generator:Combustion Turbine,Generator:InternalCombustionEngine
 
-        
+
 class Wind_gen(object):
     
     def __init__(self,name_,rotortype,powercontrol,rotor_speed,rotor_diameter,overall_height,number_of_blades,power_output,rated_wind_speed,cut_in_windspeed,cut_out_windspeed,overall_turbine_n,max_tip_speed_ratio,max_power_coefficient,local_av_windspeed,height_local_metrological_station,turbine_cost,powercoefficients):
@@ -5191,9 +5189,8 @@ class Wind_gen(object):
             self.max_power_coefficient = ''
         else: 
             self.max_power_coefficient = max_power_coefficient
-        
-        
-        
+
+
 class PV_gen(object):
     
     # XXX possible generator types
@@ -5235,7 +5232,8 @@ class PV_gen(object):
         self.cellefficiencyinputmode = cell_efficiencyinputmode
         self.efficiency = cell_n
         self.schedule = schedule_
-    
+
+
 class PVinverter(object):
     
     def __init__(self,inverter_name,inverter_cost,inverter_zone,inverter_n,replacement_time):
@@ -5264,7 +5262,8 @@ class PVinverter(object):
         
     def __ne__(self,other):
         return self.ID != self.ID
-    
+
+
 class simple_battery(object):
     
     def __init__(self,_name,zone_name,n_charging,n_discharging,battery_capacity,max_discharging,max_charging,initial_charge,bat_cost,replacement_time):
@@ -5286,7 +5285,7 @@ class simple_battery(object):
         
         self.replacementtime = replacement_time
         self.ID = str(uuid.uuid4())
-        
+
 
 class hb_reEvaluateHBZones(object):
     """
@@ -6725,6 +6724,120 @@ class thermPolygon(object):
         return material
 
 
+class zoneNetworkSolving(object):
+    
+    
+    def notTheSameBldg(targetZone, testZone):
+        return targetZone.Faces != testZone.Faces
+    
+    
+    def shootIt(rayList, geometry, tol = 0.01, bounce =1):
+       # shoot a list of rays from surface to geometry
+       # to find if geometry is adjacent to surface
+       for ray in rayList:
+            intPt = rc.Geometry.Intersect.Intersection.RayShoot(ray, geometry, bounce)
+            if intPt:
+                if ray.Position.DistanceTo(intPt[0]) <= tol:
+                    return True #'Bang!'
+    
+    def getAdjacencyNetwork(buildingBreps, srfNormalVecs):
+        tol = sc.doc.ModelAbsoluteTolerance
+        meshPar = rc.Geometry.MeshingParameters.Default
+        adjacentBldgNumList = []
+        
+        for testBldgCount, testBldg in enumerate(buildingBreps):
+            allMatchFound = False
+            # mesh each surface and test if it will be adjacent to any surface
+            # from other zones
+            for testSrfCount, srf in enumerate(testBldg.Faces):
+                srfFace = rc.Geometry.BrepFace.ToBrep(srf)
+                #Create a mesh of surface to use center points as test points
+                BrepMesh = rc.Geometry.Mesh.CreateFromBrep(srfFace, meshPar)[0]
+                
+                # calculate face normals
+                BrepMesh.FaceNormals.ComputeFaceNormals()
+                BrepMesh.FaceNormals.UnitizeFaceNormals()
+                
+                # dictionary to collect center points and rays
+                raysDict = {}
+                for faceIndex in range(BrepMesh.Faces.Count):
+                    srfNormal = (BrepMesh.FaceNormals)[faceIndex]
+                    meshSrfCen = BrepMesh.Faces.GetFaceCenter(faceIndex)
+                    # move testPt backward for half of tolerance
+                    meshSrfCen = rc.Geometry.Point3d.Add(meshSrfCen, -rc.Geometry.Vector3d(srfNormal)* tol /2)
+                    
+                    raysDict[meshSrfCen] = rc.Geometry.Ray3d(meshSrfCen, srfNormal)
+                
+                for tarBldgCount, targetBldg in enumerate(buildingBreps):
+                    if notTheSameBldg(targetBldg, testBldg):
+                        # check ray intersection to see if this zone is next to the surface
+                        if shootIt(raysDict.values(), [targetBldg], tol + sc.doc.ModelAbsoluteTolerance):
+                            for tarSrfCount, surface in enumerate(targetBldg.Faces):
+                                surfaceBrep = rc.Geometry.BrepFace.ToBrep(surface)
+                                # check distance with the nearest point on each surface
+                                for pt in raysDict.keys():
+                                    if surfaceBrep.ClosestPoint(pt).DistanceTo(pt) <= tol:
+                                        # extra check for normal direction
+                                        normalAngle = abs(rc.Geometry.Vector3d.VectorAngle(srfNormalVecs[tarBldgCount][tarSrfCount], srfNormalVecs[testBldgCount][testSrfCount]))
+                                        revNormalAngle = abs(rc.Geometry.Vector3d.VectorAngle(srfNormalVecs[tarBldgCount][tarSrfCount], -srfNormalVecs[testBldgCount][testSrfCount]))
+                                        if normalAngle==0  or revNormalAngle <= sc.doc.ModelAngleToleranceRadians:
+                                            #Have a value to keep track of whether a match has been found for a zone.
+                                            matchFound = False
+                                            
+                                            #Check the current adjacencies list to find out where to place the zone.
+                                            for zoneAdjListCount, zoneAdjList in enumerate(adjacentBldgNumList):
+                                                #Maybe we already have both of the zones as adjacent.
+                                                if testBldgCount in zoneAdjList and tarBldgCount in zoneAdjList:
+                                                    matchFound = True
+                                                #If we have the zone but not the adjacent zone, append it to the list.
+                                                elif testBldgCount in zoneAdjList and tarBldgCount not in zoneAdjList:
+                                                    adjacentBldgNumList[zoneAdjListCount].append(tarBldgCount)
+                                                    matchFound = True
+                                                #If we have the adjacent zone but not the zone itself, append it to the list.
+                                                elif testBldgCount not in zoneAdjList and tarBldgCount in zoneAdjList:
+                                                    adjacentBldgNumList[zoneAdjListCount].append(testBldgCount)
+                                                    matchFound = True
+                                                else: pass
+                                            
+                                            #If no match was found, start a new list.
+                                            if matchFound == False:
+                                                adjacentBldgNumList.append([testBldgCount])
+            if allMatchFound == False:
+                #The building is not adjacent to any other buildings so we will put it in its own list.
+                adjacentBldgNumList.append([testBldgCount])
+        
+        #Remove duplicates found in the process of looking for adjacencies.
+        fullAdjacentList = []
+        newAjdacenList = []
+        for listCount, zoneList in enumerate(adjacentBldgNumList):
+            good2Go = True
+            listCheck = []
+            notAccountedForCheck = []
+            
+            #Check if the zones are already accounted for
+            for zoneNum in zoneList:
+                if zoneNum in fullAdjacentList: listCheck.append(zoneNum)
+                else: notAccountedForCheck.append(zoneNum)
+            
+            if len(listCheck) == len(zoneList):
+                #All zones in the list are already accounted for.
+                good2Go = False
+            
+            if good2Go == True and len(listCheck) == 0:
+                #All of the zones in the list are not yet accounted for.
+                newAjdacenList.append(zoneList)
+                fullAdjacentList.extend(adjacentBldgNumList[listCount])
+            elif good2Go == True:
+                #Find the existing zone list that contains the duplicates and append the non-duplicates to the list.
+                for val in listCheck:
+                    for existingListCount, existingList in enumerate(newAjdacenList):
+                        if val in existingList: thisIsTheList = existingListCount
+                newAjdacenList[thisIsTheList].extend(notAccountedForCheck)
+                fullAdjacentList.extend(notAccountedForCheck)
+        
+        return newAjdacenList
+
+
 class hb_Hive(object):
     
     class CopyClass(object):
@@ -6821,6 +6934,7 @@ class hb_Hive(object):
                 pass
                 
         return HBObjects
+
 
 class hb_RADParameters(object):
     def __init__(self):
@@ -6958,6 +7072,7 @@ class SerializeObjects(object):
         with open(self.filePath, 'rb') as inf:
             self.data = pickle.load(inf)
 
+
 class hb_hwBoilerParams(object):
     def __init__(self):
         self.hwBoilerDict = {
@@ -7008,7 +7123,7 @@ class hb_chillerEIRParams(object):
             'sizingFactor':1.15,
             'Curves':None
             }
-            
+
 class hb_coolingTowerParams(object):
     def __init__(self):
         self.coolTowerDict= {
@@ -7089,7 +7204,7 @@ class hb_varVolFanParams(object):
         'fanPowerCoefficient4':0.94373,
         'fanPowerCoefficient5':0.00000
         }
-        
+
 class hb_AirHandlerParams(object):
     def __init__(self):
         self.airHandlerDict = {
@@ -7127,7 +7242,7 @@ class hb_2xDXCoilParams(object):
         'evaporativeCondenserDesc':None,
         'Curves':None
         }
-        
+
 class hb_2xDXHeatingCoilParams(object):
     def __init__(self):
         self.twoSpeedDXDict = {
@@ -7180,7 +7295,7 @@ class hb_1xDXHeatingCoilParams(object):
         'resistiveDefrostCap':0,
         'Curves': None
         }
-        
+
 class hb_lspeedEvapCondParams(object):
     def __init__(self):
             self.lspeedevapCond = {
