@@ -437,7 +437,7 @@ class WriteOPS(object):
     def recallAvailManager(self,HVACDetails):
         return HVACDetails['availabilityManagerList']
     
-    def updateAvailManager(self,availManager,OSComponent):
+    def updateAvailManager(self,availManager,OSComponent, model):
         #avail manager is the user's definition
         #OS component is the OpenStudio object being updated
         #print availManager
@@ -447,17 +447,21 @@ class WriteOPS(object):
         #set the schedule of the availability manager
         #set the night cycle controls, when applicable
         if availManager != None:
-            pass
-            """
             # availManager should be a dict.
             if availManager['type'] == 'NightCycle':
                 try:
-                    #print type(availManager['controlType'])
                     OSComponent.setNightCycleControlType(availManager['controlType'])
-                    print 'set night cycle availability manager to: '+availManager['controlType'] 
+                    print 'set night cycle availability manager to: '+ availManager['type'] 
                 except:
-                    print 'Error: OSComponent '+str(typ(OSComponent))+' cannot set night cycle availability manager!!'
-            """
+                    print 'Error: OSComponent '+str(OSComponent)+' cannot set night cycle availability manager!!'
+            elif availManager['type'] == 'Scheduled':
+                try:
+                    availSch = self.getOSSchedule(availManager['scheduleName'], model)
+                    OSComponent.setAvailabilitySchedule(availSch)
+                    print 'set availability manager to: '+availManager['type'] 
+                except:
+                    print 'Error: OSComponent '+str(OSComponent)+' cannot set night cycle availability manager!!'
+        
         return OSComponent
         
     def recallOASys(self,HVACDetails):
@@ -1259,11 +1263,11 @@ class WriteOPS(object):
                     airloop.addBranchForZone(zone)
                 if(HVACDetails != None):
                     if HVACDetails['availSch'] != None:
-
+                    
                         availSch = self.getOSSchedule(HVACDetails['availSch'], model)
                         airloop.setAvailabilitySchedule(availSch)
- 
-                    airloop = self.updateAvailManager(HVACDetails['availabilityManagerList'],airloop)
+                    
+                    airloop = self.updateAvailManager(HVACDetails['availabilityManagerList'],airloop, model)
                     
                     availManager=self.recallAvailManager(HVACDetails)
                     #update the airloopHVAC component with autosize information
@@ -1350,7 +1354,7 @@ class WriteOPS(object):
                         availSch = self.getOSSchedule(HVACDetails['availSch'], model)
                         airloop.setAvailabilitySchedule(availSch)
                     
-                    airloop = self.updateAvailManager(HVACDetails['availabilityManagerList'],airloop)
+                    airloop = self.updateAvailManager(HVACDetails['availabilityManagerList'],airloop, model)
                     
                 if plantDetails!=None:
                     
@@ -1364,8 +1368,12 @@ class WriteOPS(object):
                 for zone in thermalZoneVector:
                     airloop.addBranchForZone(zone)
                     
-                    #Edit the zone branch.
                     if HVACDetails != None:
+                        #Update the availability manager.
+                        if HVACDetails['availabilityManagerList'] != 'ALWAYS ON':
+                            airloop = self.updateAvailManager(HVACDetails['availabilityManagerList'],airloop, model)
+                        
+                        #Edit the zone branch.
                         if HVACDetails['coolingAirflow'] != None and HVACDetails['coolingAirflow'] != 'Autosize' and HVACDetails['heatingAirflow'] != None and HVACDetails['heatingAirflow'] != 'Autosize' and HVACDetails['floatingAirflow']  != None and HVACDetails['floatingAirflow'] != 'Autosize':
                             if HVACDetails['coolingAirflow'] == HVACDetails['heatingAirflow'] and HVACDetails['heatingAirflow'] == HVACDetails['floatingAirflow']:
                                 x = airloop.demandComponents(ops.IddObjectType("OS:AirTerminal:SingleDuct:VAV:Reheat"))
