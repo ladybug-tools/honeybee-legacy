@@ -61,7 +61,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.57\nOCT_28_2015'
+ghenv.Component.Message = 'VER 0.0.57\nOCT_29_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nOCT_26_2015
@@ -2940,7 +2940,11 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         hb_writeOPS.OPSShdSurface(shdingSurfcaes, model)
     
     # outputs
-    csvSchedules, csvScheduleCount = hb_writeOPS.setOutputs(simulationOutputs, model)
+    if simulationOutputs:
+        csvSchedules, csvScheduleCount = hb_writeOPS.setOutputs(simulationOutputs, model)
+    else:
+        csvSchedules = []
+        csvScheduleCount = 0
     
     #save the model
     model.save(ops.Path(fname), True)
