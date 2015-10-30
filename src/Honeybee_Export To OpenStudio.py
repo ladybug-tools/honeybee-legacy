@@ -2165,7 +2165,7 @@ class EPFeaturesNotInOS(object):
 
 
 class RunOPS(object):
-    def __init__(self, model, weatherFilePath, HBZones, csvSchedules, csvScheduleCount):
+    def __init__(self, model, weatherFilePath, HBZones, csvSchedules, csvScheduleCount, additionalcsvSchedules):
         self.weatherFile = weatherFilePath # just for batch file as an alternate solution
         self.EPPath = ops.Path(sc.sticky["honeybee_folders"]["EPPath"] + "\EnergyPlus.exe")
         self.epwFile = ops.Path(weatherFilePath)
@@ -2174,6 +2174,7 @@ class RunOPS(object):
         self.HBZones = HBZones
         self.csvSchedules = csvSchedules
         self.csvScheduleCount = csvScheduleCount
+        self.additionalcsvSchedules = additionalcsvSchedules
     
     def osmToidf(self, workingDir, projectName, osmPath):
         # create a new folder to run the analysis
@@ -2228,7 +2229,6 @@ class RunOPS(object):
                     if columnCount == 0:
                         origName = column + '.csv'
                         newName = column
-                #newName = origName.split('.csv')[-1].split('\\')[-1]
                 newName = '  ' + newName.split('\\')[-1]
                 if origName not in foundCSVSchedules:
                     foundCSVSchedules.append(origName)
@@ -2241,6 +2241,9 @@ class RunOPS(object):
         #Write in any CSV schedules.
         otherFeatureClass = EPFeaturesNotInOS(workingDir)
         for schedule in self.csvSchedules:
+            lines.append(otherFeatureClass.createCSVSchedString(schedule))
+        for schedule in self.additionalcsvSchedules:
+            print schedule
             lines.append(otherFeatureClass.createCSVSchedString(schedule))
         
         natVentStrings = []
@@ -2857,6 +2860,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     
     #Make a list of schedules to keep track of what needs to be written into the model.
     additionalSchedList = []
+    additionalcsvSchedules = []
     
     for zoneCount, zone in enumerate(HBZones):
         
@@ -2925,11 +2929,13 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
                 else:
                     hb_writeOPS.OPSNonePlanarFenSurface(HBSrf, OPSSrf, model, space)
         
+        
         #Check other schedules.
         if zone.natVent == True:
             for ventObj in zone.natVentSchedule:
                 if ventObj != None:
-                    if ventObj in additionalSchedList: additionalSchedList.append(ventObj)
+                    if ventObj.upper().endswith('.CSV'): additionalcsvSchedules.append(ventObj)
+                    else: additionalSchedList.append(ventObj)
                 elif 'ALWAYS ON' not in additionalSchedList: additionalSchedList.append('ALWAYS ON')
     
     #Add and extra schedules pulled off of the zones.
@@ -2964,7 +2970,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     
     
     if runIt:
-        hb_runOPS = RunOPS(model, epwWeatherFile, HBZones, csvSchedules, csvScheduleCount)
+        hb_runOPS = RunOPS(model, epwWeatherFile, HBZones, csvSchedules, csvScheduleCount, additionalcsvSchedules)
         #hb_runOPSRm = RunOPSRManage(model, hb_writeOPS.HVACSystemDict, epwWeatherFile)
         #hb_runOPSRm.runAnalysis(fname, False)
         idfFile, resultFile = hb_runOPS.runAnalysis(fname, useRunManager = False)
