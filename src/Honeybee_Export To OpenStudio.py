@@ -61,7 +61,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.57\nOCT_29_2015'
+ghenv.Component.Message = 'VER 0.0.57\nOCT_30_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nOCT_26_2015
@@ -1365,38 +1365,39 @@ class WriteOPS(object):
                     airloop.addBranchForZone(zone)
                     
                     #Edit the zone branch.
-                    if HVACDetails['coolingAirflow'] != None and HVACDetails['coolingAirflow'] != 'Autosize' and HVACDetails['heatingAirflow'] != None and HVACDetails['heatingAirflow'] != 'Autosize' and HVACDetails['floatingAirflow']  != None and HVACDetails['floatingAirflow'] != 'Autosize':
-                        if HVACDetails['coolingAirflow'] == HVACDetails['heatingAirflow'] and HVACDetails['heatingAirflow'] == HVACDetails['floatingAirflow']:
-                            x = airloop.demandComponents(ops.IddObjectType("OS:AirTerminal:SingleDuct:VAV:Reheat"))
-                            vavBox = model.getAirTerminalSingleDuctVAVReheat(x[0].handle()).get()
-                            minAirflow = float(HVACDetails['floatingAirflow'])
-                            vavBox.setZoneMinimumAirFlowMethod('FixedFlowRate')
-                            vavBox.setFixedMinimumAirFlowRate(minAirflow)
-                            #maxAirflow = 5*float(HVACDetails['floatingAirflow'])
-                            #vavBox.setMaximumAirFlowRate(maxAirflow)
-                            #vavBox.setConstantMinimumAirFlowFraction(0.2)
-                    
-                    
-                    #Edit the outdoor air sys.
-                    oasys = airloop.airLoopHVACOutdoorAirSystem() 
-                    if (oasys.is_initialized()== True) and (HVACDetails['airsideEconomizer'] != None):
-                        print 'overriding the OpenStudio airside economizer settings'
-                        oactrl = oasys.get().getControllerOutdoorAir()
-                        #set control type
-                        #can sensed min still be dry bulb for any of these?  Future release question
-                        econo = self.recallOASys(HVACDetails)
-                        oactrl = self.updateOASys(econo,oactrl,model)
-                        print 'economizer settings updated to economizer name: ' + HVACDetails['airsideEconomizer']['name']
-                        print ''
-                    
-                    if HVACDetails['varVolSupplyFanDef'] != {}:
-                        print 'overriding the OpenStudio supply fan settings'
-                        x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:VariableVolume"))
-                        vvfan = model.getFanVariableVolume(x[0].handle()).get()
-                        sf = self.recallVVFan(HVACDetails)
-                        vvfan = self.updateVVFan(sf,vvfan)
-                        print 'supply fan settings updated to supply fan name: ' + HVACDetails['varVolSupplyFanDef']['name']
-                        print ''
+                    if HVACDetails != None:
+                        if HVACDetails['coolingAirflow'] != None and HVACDetails['coolingAirflow'] != 'Autosize' and HVACDetails['heatingAirflow'] != None and HVACDetails['heatingAirflow'] != 'Autosize' and HVACDetails['floatingAirflow']  != None and HVACDetails['floatingAirflow'] != 'Autosize':
+                            if HVACDetails['coolingAirflow'] == HVACDetails['heatingAirflow'] and HVACDetails['heatingAirflow'] == HVACDetails['floatingAirflow']:
+                                x = airloop.demandComponents(ops.IddObjectType("OS:AirTerminal:SingleDuct:VAV:Reheat"))
+                                vavBox = model.getAirTerminalSingleDuctVAVReheat(x[0].handle()).get()
+                                minAirflow = float(HVACDetails['floatingAirflow'])
+                                vavBox.setZoneMinimumAirFlowMethod('FixedFlowRate')
+                                vavBox.setFixedMinimumAirFlowRate(minAirflow)
+                                #maxAirflow = 5*float(HVACDetails['floatingAirflow'])
+                                #vavBox.setMaximumAirFlowRate(maxAirflow)
+                                #vavBox.setConstantMinimumAirFlowFraction(0.2)
+                        
+                        
+                        #Edit the outdoor air sys.
+                        oasys = airloop.airLoopHVACOutdoorAirSystem() 
+                        if (oasys.is_initialized()== True) and (HVACDetails['airsideEconomizer'] != None):
+                            print 'overriding the OpenStudio airside economizer settings'
+                            oactrl = oasys.get().getControllerOutdoorAir()
+                            #set control type
+                            #can sensed min still be dry bulb for any of these?  Future release question
+                            econo = self.recallOASys(HVACDetails)
+                            oactrl = self.updateOASys(econo,oactrl,model)
+                            print 'economizer settings updated to economizer name: ' + HVACDetails['airsideEconomizer']['name']
+                            print ''
+                        
+                        if HVACDetails['varVolSupplyFanDef'] != {}:
+                            print 'overriding the OpenStudio supply fan settings'
+                            x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:VariableVolume"))
+                            vvfan = model.getFanVariableVolume(x[0].handle()).get()
+                            sf = self.recallVVFan(HVACDetails)
+                            vvfan = self.updateVVFan(sf,vvfan)
+                            print 'supply fan settings updated to supply fan name: ' + HVACDetails['varVolSupplyFanDef']['name']
+                            print ''
                 
                 if plantDetails!=None:
                     #I think the idea here is to see if there is a hot water plant update(not sure how)
