@@ -46,6 +46,7 @@ except: pass
 import os
 import Grasshopper.Kernel as gh
 import scriptcontext as sc
+from pprint import pprint
 
 class OPSChoice:
     
@@ -236,6 +237,7 @@ else:
         ghenv.Component.Name = OSMeasure.name
         ghenv.Component.NickName =  OSMeasure.nickName
         ghenv.Component.Description = OSMeasure.description
+        pprint(OSMeasure.args)
     except Exception , e:
-        print e
+        print "Couldn't load the measure!"
         pass
