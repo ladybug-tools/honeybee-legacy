@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.57
     
     Args:
         north_: Input a vector to be used as a true North direction for the energy simulation or a number between 0 and 360 that represents the degrees off from the y-axis to make North.  The default North direction is set to the Y-axis (0 degrees).
-        _epwFile: An .epw file path on your system as a text string.
+        _epwWeatherFile: An .epw file path on your system as a text string.
         _analysisPeriod_: An optional analysis period from the Ladybug_Analysis Period component.  If no Analysis period is given, the energy simulation will be run for the enitre year.
         +++++++++++++++: ...
         _energySimPar_: Optional Energy Simulation Parameters from the "Honeybee_Energy Simulation Par" component.  If no value is connected here, the simulation will run with the following parameters:
@@ -61,7 +61,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.57\nOCT_30_2015'
+ghenv.Component.Message = 'VER 0.0.57\nOCT_31_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nOCT_26_2015
@@ -79,10 +79,11 @@ import time
 from pprint import pprint
 import shutil
 
-#openStudioLibFolder = "C:\\Users\\" + os.getenv("USERNAME") + "\\Dropbox\\ladybug\\honeybee\\openStudio\\CSharp64bits"
+rc.Runtime.HostUtils.DisplayOleAlerts(False)
+
 if sc.sticky.has_key('honeybee_release'):
-    
-    openStudioLibFolder = os.path.join(sc.sticky["Honeybee_DefaultFolder"], "OpenStudio")
+
+    openStudioLibFolder = "C:/Program Files/OpenStudio 1.9.0/CSharp/openstudio/"
     
     if os.path.isdir(openStudioLibFolder) and os.path.isfile(os.path.join(openStudioLibFolder, "openStudio.dll")):
         # openstudio is there
@@ -99,29 +100,22 @@ if sc.sticky.has_key('honeybee_release'):
     else:
         openStudioIsReady = False
         # let the user know that they need to download OpenStudio libraries
-        msg = "Cannot find OpenStudio libraries. You can download the libraries from the link below. " + \
-              "Unzip the file and copy it to " + openStudioLibFolder + " and try again. Click on the link to copy the address."
+        msg = "Cannot find OpenStudio libraries at " + openStudioLibFolder + \
+              "\nYou need to download and install OpenStudio to be able to use this component."
               
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
-        
-        link = "https://dl.dropboxusercontent.com/u/16228160/Honeybee/OpenStudio.zip"
-        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, link)
-        
-        #buttons = System.Windows.Forms.MessageBoxButtons.OK
-        #icon = System.Windows.Forms.MessageBoxIcon.Warning
-        #up = rc.UI.Dialogs.ShowMessageBox(msg + "\n" + link, "Duplicate Material Name", buttons, icon)
     
-    if openStudioIsReady and sc.sticky.has_key('honeybee_release') and \
-        sc.sticky.has_key("isNewerOSAvailable") and sc.sticky["isNewerOSAvailable"]:
-        # check if there is an update available
-        msg1 = "There is a newer version of OpenStudio libraries available to download! " + \
-                      "We strongly recommend you to download the newer version from this link and replace it with current files at " + \
-                      openStudioLibFolder +"."
-        msg2 = "https://dl.dropboxusercontent.com/u/16228160/Honeybee/OpenStudio.zip"
-        print msg1
-        print msg2
-        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg1)
-        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg2)
+#    if openStudioIsReady and sc.sticky.has_key('honeybee_release') and \
+#        sc.sticky.has_key("isNewerOSAvailable") and sc.sticky["isNewerOSAvailable"]:
+#        # check if there is an update available
+#        msg1 = "There is a newer version of OpenStudio libraries available to download! " + \
+#                      "We strongly recommend you to download the newer version from this link and replace it with current files at " + \
+#                      openStudioLibFolder +"."
+#        msg2 = "https://dl.dropboxusercontent.com/u/16228160/Honeybee/OpenStudio.zip"
+#        print msg1
+#        print msg2
+#        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg1)
+#        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg2)
 else:
     openStudioIsReady = False
 
@@ -2537,7 +2531,7 @@ class RunOPS(object):
         
         rmDBPath = ops.Path(os.path.join(idfFolder, projectName + ".db"))
         try:
-            rm = ops.RunManager(rmDBPath, True, True)
+            rm = ops.RunManager(rmDBPath, True, True, False, False)
             
             # set up tool info to pass to run manager
             energyPlusTool = ops.ToolInfo(self.EPPath)
