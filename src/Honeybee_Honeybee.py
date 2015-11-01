@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.57\nOCT_28_2015'
+ghenv.Component.Message = 'VER 0.0.57\nOCT_31_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -429,7 +429,8 @@ class PrepareTemplateEPLibFiles(object):
             libFilePaths.append(customEPLib)
         
         return libFilePaths
-
+        
+        
 class HB_GetEPLibraries(object):
     
     def __init__(self):
@@ -536,6 +537,7 @@ class HB_GetEPLibraries(object):
 
         print str(len(sc.sticky["honeybee_ScheduleLib"].keys())) + " schedules are loaded available in Honeybee library"
         print str(len(sc.sticky["honeybee_ScheduleTypeLimitsLib"].keys())) + " schedule type limits are now loaded in Honeybee library"        
+        
 
 
 class RADMaterialAux(object):
@@ -2086,7 +2088,7 @@ class hb_WriteRAD(object):
             # glazingStr
             fullStr = fullStr + self.getsurfaceStr(surface.childSrfs[0], glzCount, glzCoorList)
         return fullStr
-
+            
 class hb_WriteRADAUX(object):
     
     def __init__(self):
@@ -2738,7 +2740,7 @@ class hb_WriteRADAUX(object):
             return True
         else:
             return False
-
+        
 class hb_WriteDS(object):
     
     def isSensor(self, testPt, sensors):
@@ -3122,7 +3124,7 @@ class hb_ReadAnnualResultsAux(object):
                     illFiles.AddRange(fileList, p)
         
         return illFiles
-
+    
 class hb_EnergySimulatioParameters(object):
     
     def readEPParams(self, EPParameters):
@@ -3794,7 +3796,7 @@ class EPObjectsAux(object):
             print warningMsg
             component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
             return
-
+    
 
 class ReadEPSchedules(object):
     
@@ -4677,7 +4679,8 @@ class EPZone(object):
         self.coolingSetback= ""
         self.heatingSetback= ""
         
-        #Ideal Air System Properties
+        #Air System Properties.
+        self.recirculatedAirPerArea = 0
         self.outdoorAirReq = "Sum"
         self.useVAVTemplate = False
         self.coolSupplyAirTemp= ""
@@ -4823,7 +4826,8 @@ class EPZone(object):
             "lightingDensityPerArea: " + "%.4f"%self.lightingDensityPerArea + "\n" + \
             "numOfPeoplePerArea: " + "%.4f"%self.numOfPeoplePerArea + "\n" + \
             "ventilationPerPerson: " + "%.4f"%self.ventilationPerPerson + "\n" + \
-            "ventilationPerArea: " + "%.4f"%self.ventilationPerArea + "."
+            "ventilationPerArea: " + "%.4f"%self.ventilationPerArea + "\n" + \
+            "recircAirPerArea: " + "%.4f"%self.recirculatedAirPerArea + "."
             
             return report        
             
@@ -5154,7 +5158,7 @@ class HB_generatorsystem(object):
         self.PVgenerators = PVgenerators # Category includes Generator:Photovoltaic
         self.fuelgenerators = fuelgenerators # Category includes Generators:Mircoturbine,Generator:Combustion Turbine,Generator:InternalCombustionEngine
 
-
+        
 class Wind_gen(object):
     
     def __init__(self,name_,rotortype,powercontrol,rotor_speed,rotor_diameter,overall_height,number_of_blades,power_output,rated_wind_speed,cut_in_windspeed,cut_out_windspeed,overall_turbine_n,max_tip_speed_ratio,max_power_coefficient,local_av_windspeed,height_local_metrological_station,turbine_cost,powercoefficients):
@@ -5189,8 +5193,9 @@ class Wind_gen(object):
             self.max_power_coefficient = ''
         else: 
             self.max_power_coefficient = max_power_coefficient
-
-
+        
+        
+        
 class PV_gen(object):
     
     # XXX possible generator types
@@ -5232,8 +5237,7 @@ class PV_gen(object):
         self.cellefficiencyinputmode = cell_efficiencyinputmode
         self.efficiency = cell_n
         self.schedule = schedule_
-
-
+    
 class PVinverter(object):
     
     def __init__(self,inverter_name,inverter_cost,inverter_zone,inverter_n,replacement_time):
@@ -5262,8 +5266,7 @@ class PVinverter(object):
         
     def __ne__(self,other):
         return self.ID != self.ID
-
-
+    
 class simple_battery(object):
     
     def __init__(self,_name,zone_name,n_charging,n_discharging,battery_capacity,max_discharging,max_charging,initial_charge,bat_cost,replacement_time):
@@ -5285,7 +5288,7 @@ class simple_battery(object):
         
         self.replacementtime = replacement_time
         self.ID = str(uuid.uuid4())
-
+        
 
 class hb_reEvaluateHBZones(object):
     """
@@ -6935,7 +6938,6 @@ class hb_Hive(object):
                 
         return HBObjects
 
-
 class hb_RADParameters(object):
     def __init__(self):
         self.radParDict = {
@@ -7072,7 +7074,6 @@ class SerializeObjects(object):
         with open(self.filePath, 'rb') as inf:
             self.data = pickle.load(inf)
 
-
 class hb_hwBoilerParams(object):
     def __init__(self):
         self.hwBoilerDict = {
@@ -7123,7 +7124,7 @@ class hb_chillerEIRParams(object):
             'sizingFactor':1.15,
             'Curves':None
             }
-
+            
 class hb_coolingTowerParams(object):
     def __init__(self):
         self.coolTowerDict= {
@@ -7190,7 +7191,7 @@ class hb_constVolFanParams(object):
 class hb_varVolFanParams(object):
     def __init__(self):
         self.vvFanDict = {
-        'name':'honeybeeConstVolFan',
+        'name':'honeybeeVarVolFan',
         'type':1,
         'fanEfficiency':0.6045,
         'pressureRise':500,
@@ -7204,18 +7205,12 @@ class hb_varVolFanParams(object):
         'fanPowerCoefficient4':0.94373,
         'fanPowerCoefficient5':0.00000
         }
-
+        
 class hb_AirHandlerParams(object):
     def __init__(self):
         self.airHandlerDict = {
         'availSch':None,
         'fanPlacement':'DrawThrough',
-        'coolingAirflow':'Autosize',
-        'coolingOAflow':'Autosize',
-        'heatingAirflow': 'Autosize',
-        'heatingOAflow': 'Autosize',
-        'floatingAirflow':'Autosize',
-        'floatingOAflow':'Autosize',
         'constVolSupplyFanDef':hb_constVolFanParams,
         'varVolSupplyFanDef':hb_varVolFanParams,
         'airsideEconomizer':hb_airsideEconoParams,
@@ -7242,7 +7237,7 @@ class hb_2xDXCoilParams(object):
         'evaporativeCondenserDesc':None,
         'Curves':None
         }
-
+        
 class hb_2xDXHeatingCoilParams(object):
     def __init__(self):
         self.twoSpeedDXDict = {
@@ -7295,7 +7290,7 @@ class hb_1xDXHeatingCoilParams(object):
         'resistiveDefrostCap':0,
         'Curves': None
         }
-
+        
 class hb_lspeedEvapCondParams(object):
     def __init__(self):
             self.lspeedevapCond = {
