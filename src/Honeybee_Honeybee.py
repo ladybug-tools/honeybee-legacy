@@ -719,54 +719,57 @@ class RADMaterialAux(object):
             Always return the a boolean and Radiance name
         """
         
-        # get radince material as a single line
-        cleanedRadMaterialString = self.cleanRadMaterial(radMaterialString)
-        
-        lineSegments = cleanedRadMaterialString.split(" ")
-        
-        if len(lineSegments) == 1:
-            # this is just the name
-            # to be used for applying material to surfaces
-            return False, lineSegments[0].rstrip()
-        else:
-            materialModifier = lineSegments[0]
-            materialType = lineSegments[1]
-            materialName = lineSegments[2].rstrip()
+        try:
+            # get radince material as a single line
+            cleanedRadMaterialString = self.cleanRadMaterial(radMaterialString)
             
-            # initiate Rad material
-            radMaterial = self.RadianceMaterial(materialName, materialType, modifier = materialModifier)
+            lineSegments = cleanedRadMaterialString.split(" ")
             
-            if addToDocLib:
-                if self.isMatrialExistInLibrary(materialName) and not overwrite:
-                    # ask for user input before overwriting the material
-                    upload = self.duplicateMaterialWarning(materialName, radMaterialString)
-                    if not upload:
-                        return False, materialName
-                
-            
-                counters = []
-                materialProp = lineSegments[3:]
-                
-                #first counter is the first member of the list
-                counter = 0
-                counters.append(0)
-                while counter < len(materialProp):
-                    counter += int(materialProp[counter]) + 1
-                    try:
-                        counters.append(counter)
-                    except:
-                        pass
-                        
-                for counter, count in enumerate(counters[1:]):
-                    values = materialProp[counters[counter] + 1: count]
-                    # add values to material
-                    radMaterial.addValues(counter, values)
-                
-                # add material to library
-                self.addMaterialToDocumentLibrary(radMaterial)
-                return True, materialName
+            if len(lineSegments) == 1:
+                # this is just the name
+                # to be used for applying material to surfaces
+                return False, lineSegments[0].rstrip()
             else:
-                return False, materialName
+                materialModifier = lineSegments[0]
+                materialType = lineSegments[1]
+                materialName = lineSegments[2].rstrip()
+                
+                # initiate Rad material
+                radMaterial = self.RadianceMaterial(materialName, materialType, modifier = materialModifier)
+                
+                if addToDocLib:
+                    if self.isMatrialExistInLibrary(materialName) and not overwrite:
+                        # ask for user input before overwriting the material
+                        upload = self.duplicateMaterialWarning(materialName, radMaterialString)
+                        if not upload:
+                            return False, materialName
+                    
+                
+                    counters = []
+                    materialProp = lineSegments[3:]
+                    
+                    #first counter is the first member of the list
+                    counter = 0
+                    counters.append(0)
+                    while counter < len(materialProp):
+                        counter += int(materialProp[counter]) + 1
+                        try:
+                            counters.append(counter)
+                        except:
+                            pass
+                            
+                    for counter, count in enumerate(counters[1:]):
+                        values = materialProp[counters[counter] + 1: count]
+                        # add values to material
+                        radMaterial.addValues(counter, values)
+                    
+                    # add material to library
+                    self.addMaterialToDocumentLibrary(radMaterial)
+                    return True, materialName
+                else:
+                    return False, materialName
+        except:
+            raise Exception("Faild to import %s"%radMaterialString)
     
     def addMaterialToDocumentLibrary(self, radMaterial, overwrite = True):
         """Add Radiance material to current Grasshopper document library
@@ -930,8 +933,11 @@ class RADMaterialAux(object):
         radianceObjects = self.getRadianceObjectsFromFile(radFilePath)
         
         for materialString in radianceObjects:
-            # try to import the string
-            self.analyseRadMaterials(materialString, True, overwrite)
+            try:
+                # try to import the string
+                self.analyseRadMaterials(materialString, True, overwrite)
+            except:
+                raise Exception("Faild to import %s"%materialString)
     
     def createDictionaryFromRADObjects(self, radObjects):
         """Return Rad objects in a dictionary where each key is the name"""
