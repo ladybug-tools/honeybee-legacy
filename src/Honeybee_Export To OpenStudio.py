@@ -64,7 +64,7 @@ ghenv.Component.NickName = 'exportToOpenStudio'
 ghenv.Component.Message = 'VER 0.0.57\nOCT_31_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nOCT_26_2015
+#compatibleHBVersion = VER 0.0.56\nOCT_31_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
