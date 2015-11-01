@@ -38,10 +38,10 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Add to Radiance Library"
 ghenv.Component.NickName = 'addToLibrary'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nNOV_01_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "01 | Daylight | Material"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.57\nNOV_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
 except: pass
@@ -71,7 +71,7 @@ def main():
             ghenv.Component.AddRuntimeMessage(w, warning)
             return -1
     
-        hb_RADMaterialAUX = sc.sticky["honeybee_RADMaterialAUX"]()
+        hb_RADMaterialAUX = sc.sticky["honeybee_RADMaterialAUX"]
         
         if _RADMaterial!=None:
             
@@ -82,8 +82,8 @@ def main():
             if _addToProjectLib:
                 added, name = hb_RADMaterialAUX.analyseRadMaterials(_RADMaterial, True, overwrite_)
                 if not added:
-                    msg = name + " is not added to the project library!"
-                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                    msg = "The current version of %s is kept in the library."%name
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Remark, msg)
                     print msg
                 else:
                     print name + " is added to this project library!"

@@ -47,10 +47,10 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_addHBGlz'
 ghenv.Component.NickName = 'addHBGlz'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_15_2015'
+ghenv.Component.Message = 'VER 0.0.57\nNOV_01_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.57\nNOV_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
 except: pass
@@ -104,13 +104,22 @@ def main(HBObject, childSurfaces, EPConstruction, RADMaterial, tolerance):
                         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
                         return -1
                     
-                    
+                
+                
                 if RADMaterial!=None:
-                    addedToLib, HBFenSrf.RadMaterial = hb_RADMaterialAUX.analyseRadMaterials(RADMaterial, True)
+                    if len(RADMaterial.strip().split(" ")) == 1:
+                        if not hb_RADMaterialAUX.isMatrialExistInLibrary(RADMaterial):
+                            warningMsg = "Can't find " + RADMaterial + " in RAD Material Library.\n" + \
+                                "Add the material to the library and try again."
+                            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
+                            return
                     
-                    # if the material is not in the library add it to the library
-                    if HBFenSrf.RadMaterial not in sc.sticky ["honeybee_RADMaterialLib"].keys():
-                        addedToLib, HBFenSrf.RadMaterial = hb_RADMaterialAUX.analyseRadMaterials(RADMaterial, True)
+                    addedToLib, HBFenSrf.RadMaterial = hb_RADMaterialAUX.analyseRadMaterials(RADMaterial, True)
+                    materialType = hb_RADMaterialAUX.getRADMaterialType(RADMaterial)
+                    if materialType == 'plastic':
+                        warningMsg = RADMaterial + " is not a typical glass material. Are you sure you selected the right material?"
+                        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
+                        return
     
                 # add it to the base surface
                 HBSurface.addChildSrf(HBFenSrf)
@@ -136,7 +145,7 @@ def main(HBObject, childSurfaces, EPConstruction, RADMaterial, tolerance):
         hb_EPZoneSurface = sc.sticky["honeybee_EPZoneSurface"]
         hb_EPFenSurface = sc.sticky["honeybee_EPFenSurface"]
         hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
-        hb_RADMaterialAUX = sc.sticky["honeybee_RADMaterialAUX"]()
+        hb_RADMaterialAUX = sc.sticky["honeybee_RADMaterialAUX"]
         
         
         # if any of child surfaces is mesh, convert them to a surface
@@ -155,8 +164,11 @@ def main(HBObject, childSurfaces, EPConstruction, RADMaterial, tolerance):
             
         # call the surface from the hive
         hb_hive = sc.sticky["honeybee_Hive"]()
-        HBObject = hb_hive.callFromHoneybeeHive([HBObject])[0]
-        
+        try:
+            HBObject = hb_hive.callFromHoneybeeHive([HBObject])[0]
+        except:
+            raise Exception("Connect a Honeybee Surface or a HoneybeeZone to HBObject input")
+            
         # check if the object is a zone or a surface
         if HBObject.objectType == "HBZone":
             # add window for each surface
@@ -177,7 +189,7 @@ def main(HBObject, childSurfaces, EPConstruction, RADMaterial, tolerance):
         ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee fly...")
         return -1
 
-if _HBObj!=None and len(_childSurfaces)!=0:
+if _HBObj!=None and len(_childSurfaces) and _childSurfaces[0]!=None:
     
     # if tolerance_==None:
     tolerance_ = sc.doc.ModelAbsoluteTolerance

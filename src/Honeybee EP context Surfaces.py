@@ -12,10 +12,10 @@ prepare shading/context geometries
 
 ghenv.Component.Name = 'Honeybee EP context Surfaces'
 ghenv.Component.NickName = 'HB_EPContextSrf'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nNOV_01_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.57\nNOV_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
 
@@ -50,7 +50,7 @@ def main(shdSurfaces, EPTransSchedule, meshingSettings, justBoundingBox):
         # don't customize this part
         hb_EPSrf = sc.sticky["honeybee_EPSurface"]
         hb_EPSHDSurface = sc.sticky["honeybee_EPShdSurface"]
-        hb_RADMaterialAUX = sc.sticky["honeybee_RADMaterialAUX"]()
+        hb_RADMaterialAUX = sc.sticky["honeybee_RADMaterialAUX"]
         hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
         HBScheduleList = sc.sticky["honeybee_ScheduleLib"].keys()
 
@@ -117,7 +117,7 @@ def main(shdSurfaces, EPTransSchedule, meshingSettings, justBoundingBox):
                             # if it is just the name of the material make sure it is already defined
                             if len(RADMaterial.split(" ")) == 1:
                                 # if the material is not in the library add it to the library
-                                if RADMaterial not in sc.sticky ["honeybee_RADMaterialLib"].keys():
+                                if not hb_RADMaterialAUX.isMatrialExistInLibrary(RADMaterial):
                                     warningMsg = "Can't find " + RADMaterial + " in RAD Material Library.\n" + \
                                                 "Add the material to the library and try again."
                                     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)

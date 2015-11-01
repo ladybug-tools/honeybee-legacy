@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.57\nOCT_31_2015'
+ghenv.Component.Message = 'VER 0.0.57\nNOV_01_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -76,7 +76,7 @@ import urllib2 as urllib
 import cPickle as pickle
 import subprocess
 import uuid
-
+import re
 
 PI = math.pi
 
@@ -226,9 +226,6 @@ class CheckIn():
             return self.isNewerVersionAvailable(currentTemplateVersion, templateVersion)
         
 
-checkIn = CheckIn(defaultFolder_)
-
-
 class versionCheck(object):
     
     def __init__(self):
@@ -321,8 +318,9 @@ class PrepareTemplateEPLibFiles(object):
     """
     Download Template files and check for available libraries for EnergyPlus
     """
-    def __init__(self, downloadTemplate = False, workingDir = sc.sticky["Honeybee_DefaultFolder"]):
+    def __init__(self, downloadTemplate = False, workingDir = None):
         
+        if not workingDir: workingDir = sc.sticky["Honeybee_DefaultFolder"]
         if not sc.sticky.has_key("honeybee_constructionLib"): sc.sticky ["honeybee_constructionLib"] = {}
         if not sc.sticky.has_key("honeybee_materialLib"): sc.sticky ["honeybee_materialLib"] = {}
         if not sc.sticky.has_key("honeybee_windowMaterialLib"): sc.sticky ["honeybee_windowMaterialLib"] = {}
@@ -430,7 +428,6 @@ class PrepareTemplateEPLibFiles(object):
         
         return libFilePaths
         
-        
 class HB_GetEPLibraries(object):
     
     def __init__(self):
@@ -537,50 +534,110 @@ class HB_GetEPLibraries(object):
 
         print str(len(sc.sticky["honeybee_ScheduleLib"].keys())) + " schedules are loaded available in Honeybee library"
         print str(len(sc.sticky["honeybee_ScheduleTypeLimitsLib"].keys())) + " schedule type limits are now loaded in Honeybee library"        
-        
 
 
 class RADMaterialAux(object):
-    
-    def __init__(self, reloadRADMaterial = False):
+
+    class RadianceMaterial:
+        """
+        Radiance Material
+        
+        Attributes:
+            name: Material name as a string
+            type: Material type (e.g. glass, plastic, etc)
+            modifier: Material modifier. Default is void
+            values: A dictionary of material data. key is line number and item is the list of values
+                  {0: [], 1: [], 2: ['0.500', '0.500', '0.500', '0.000', '0.050']} 
+        """
+        
+        def __init__(self, name, type, values = None, modifier = "void"):
+            self.name = name.rstrip()
+            self.type = type.rstrip()
+            self.modifier = modifier.rstrip()
             
-        self.radMatTypes = ["plastic", "glass", "trans", "metal", "mirror", "mixedfunc", "dielectric", "transdata", "light", "glow"]
+            if not values: values = dict()
+            self.values = values
+        
+        def toRadString(self):
+            firstLine = "%s %s %s"%(self.modifier, self.type, self.name)
+            
+            material = [firstLine]
+            # order is important and that's why I'm using range
+            # and not the keys itself
+            for lineCount in range(len(self.values.keys())):
+                values = self.values[lineCount]
+                count = [str(len(values))]
+                line = " ".join(count + values).rstrip()
+                material.append(line)
+            material.append("\n")
+            return "\n".join(material)
+        
+        def addValues(self, lineCount, values):
+            """Add values to current material
+               
+               Args:
+                   lineCount: An integer that represnt the line number
+                   values: Values as a list of string
+            """
+            self.values[lineCount] = values
+        
+        def __repr__(self):
+            return self.toRadString()
+    
+    def __init__(self, reloadRADMaterial = False, materialLibrary = {}, HoneybeeFolder = "c:/ladybug"):
+        
+        self.HoneybeeFolder = HoneybeeFolder
+        self.radMaterialLibrary = materialLibrary
+        self.radMatTypes = ["plastic", "glass", "trans", "metal", "mirror", "texfunc", "mixedfunc", "dielectric", "transdata", "light", "glow"]
         
         if reloadRADMaterial:
+                        
+            defaultMaterial = {
+                'Context_Material'  : {'type' : 'plastic', 'value': 0.35},
+                'Interior_Ceiling'  : {'type' : 'plastic', 'value': 0.80},
+                'Interior_Floor'    : {'type' : 'plastic', 'value': 0.20},
+                'Exterior_Floor'    : {'type' : 'plastic', 'value': 0.20},
+                'Exterior_Roof'     : {'type' : 'plastic', 'value': 0.80},
+                'Exterior_Wall'     : {'type' : 'plastic', 'value': 0.50},
+                'Interior_Wall'     : {'type' : 'plastic', 'value': 0.50},
+                'Interior_Window'     : {'type' : 'glass'  , 'value': 0.60},
+                'Exterior_Window'     : {'type' : 'glass'  , 'value': 0.60}
+                }
             
-            # initiate the library
-            if not sc.sticky.has_key("honeybee_RADMaterialLib"): sc.sticky ["honeybee_RADMaterialLib"] = {}
+            for materialName, materialData in defaultMaterial.items():
+                radMaterial = self.RadianceMaterial(materialName, materialData['type'])
+                value = materialData['value']
+                
+                # add values to material
+                # first two lines are empty
+                radMaterial.addValues(0, [])
+                radMaterial.addValues(1, [])
+                if radMaterial.type == 'glass':
+                    value = self.getTransmissivity(value)
+                    radMaterial.addValues(2, 3 * ['%.3f'%value]) # leave roughness specularity to 0
+                else:
+                    radMaterial.addValues(2, 3 * ['%.3f'%value] + ['0', '0']) # leave roughness specularity to 0
             
-            # add default materials to the library
-            self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', 'Context_Material', .35, .35, .35, 0, 0.05), True, True)
-            self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', 'Interior_Ceiling', .80, .80, .80, 0, 0.05), True, True)
-            self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', 'Interior_Floor', .2, .2, .2, 0, 0.05), True, True)
-            self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', 'Exterior_Floor', .2, .2, .2, 0, 0.05), True, True)
-            self.analyseRadMaterials(self.createRadMaterialFromParameters('glass', 'Exterior_Window', .60, .60, .60), True, True)
-            self.analyseRadMaterials(self.createRadMaterialFromParameters('glass', 'Interior_Window', .60, .60, .60), True, True)
-            self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', 'Exterior_Roof', .80, .80, .80, 0, 0.05), True, True) # it is actually a ceiling in most of cases
-            self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', 'Exterior_Wall', .50, .50, .50, 0, 0.05), True, True)
-            self.analyseRadMaterials(self.createRadMaterialFromParameters('plastic', 'Interior_Wall', .50, .50, .50, 0, 0.05), True, True)
+                # add default materials to the library
+                self.addMaterialToDocumentLibrary(radMaterial)
             
             # import user defined RAD library
-            RADLibraryFile = os.path.join(sc.sticky["Honeybee_DefaultFolder"], "HoneybeeRadMaterials.mat")
+            RADLibraryFile = self.getUserDefinedRadianceLibraryPath()
+            
             if os.path.isfile(RADLibraryFile):
                 self.importRADMaterialsFromFile(RADLibraryFile)
             else:
-                if not os.path.isdir(sc.sticky["Honeybee_DefaultFolder"]):
-                    os.mkdir(sc.sticky["Honeybee_DefaultFolder"])
+                # This is only happening the first time
+                # that user lets the Honeybee fly on their system
+                # or changes the default folder
+                if not os.path.isdir(self.HoneybeeFolder):
+                    os.mkdir(self.HoneybeeFolder)
                 with open(RADLibraryFile, "w") as outf:
                     outf.write("#Honeybee Radiance Material Library\n")
             
-            # let the user do it for now
-            # update the list of the materials in the call from library components
-            #for component in ghenv.Component.OnPingDocument().Objects:
-            #    if  type(component)== type(ghenv.Component) and component.Name == "Honeybee_Call from Radiance Library":
-            #        pass
-            #        #component.ExpireSolution(True)
             
             print "Loading RAD default materials..." + \
-                  `len(sc.sticky ["honeybee_RADMaterialLib"].keys())` + " RAD materials are loaded\n"
+                  `len(self.radMaterialLibrary)` + " RAD materials are loaded\n"
             
     def duplicateMaterialWarning(self, materialName, newMaterialString):
         returnYN = {'YES': True, 'NO': False}
@@ -597,18 +654,21 @@ class RADMaterialAux(object):
             "Do you want to overwrite the current material with this new definition?\n\n" + \
             newMaterialString + "\n\n" + \
             "Tip: If you are not sure what to do select No and change the material name."
-        up = rc.UI.Dialogs.ShowMessageBox(msg, "Duplicate Material Name", buttons, icon)
+        up = System.Windows.Forms.MessageBox.Show(msg, "Duplicate Material Name", buttons, icon)
         return returnYN[up.ToString().ToUpper()]
     
+    # TODO: Rewite! This method is poorly written and is very hard to understand
+    # TODO: Should be probably moved to writeRAD. Here is not the right place
     def addRADMatToDocumentDict(self, HBSrf, currentMatDict, currentMixedFunctionsDict):
-        """
-        this function collects the materials for a single run and 
-        """
+        """Collect Radiance materials for a single run"""
+        
         # check if the material is already added
         materialName = HBSrf.RadMaterial
         if not materialName in currentMatDict.keys():
+            
             # find material type
-            materialType = sc.sticky ["honeybee_RADMaterialLib"][materialName].keys()[0]
+            materialType = self.getRADMaterialType(materialName)
+            materialModifier = self.getRADMaterialModifier(materialName)
             
             # check if this is a mixed function
             if materialType == "mixfunc":
@@ -616,60 +676,73 @@ class RADMaterialAux(object):
                 currentMixedFunctionsDict[materialName] =  materialName
                 
                 # find the base materials for the mixed function
-                material1 = sc.sticky ["honeybee_RADMaterialLib"][materialName][materialType][0][0]
-                material2 = sc.sticky ["honeybee_RADMaterialLib"][materialName][materialType][0][1]
+                mixfunMaterial = getMaterialFromHBLibrary(materialName)
+                
+                material1 = mixfunMaterial.values[0][0]
+                material2 = mixfunMaterial.values[0][1]
                 
                 for matName in [material1, material2]:
                     if not matName in currentMatDict.keys():
                         currentMatDict[matName] = matName
+            
+            elif materialModifier != "void":
+                # add material itself
+                currentMixedFunctionsDict[materialName] =  materialName
+                
+                # check if modifier is in library and add it to dictionary
+                if not self.isMatrialExistInLibrary(materialModifier):
+                    raise Exception("You're using %s as a modifier which is not added to the library!")%materialModifier
+                
+                if not materialModifier in currentMatDict.keys():
+                        currentMatDict[materialModifier] = materialModifier
+                
             else:
-                # add to the dictionary
+                # add to dictionary
                 currentMatDict[materialName] = materialName
         
         return currentMatDict, currentMixedFunctionsDict
     
-    def createRadMaterialFromParameters(self, modifier, name, *args):
-        
-        def getTransmissivity(transmittance):
+    def getUserDefinedRadianceLibraryPath(self):
+        return os.path.join(self.HoneybeeFolder, "HoneybeeRadMaterials.mat")
+    
+    @staticmethod
+    def getTransmissivity(transmittance):
             return (math.sqrt(0.8402528435 + 0.0072522239 * (transmittance ** 2)) - 0.9166530661 ) / 0.0036261119 / transmittance
-        
-        # I should check the inputs here
-        radMaterial = "void " + modifier + " " + name + "\n" + \
-                      "0\n" + \
-                      "0\n" + \
-                      `int(len(args))`
-                      
-        for arg in args:
-            if modifier == "glass":
-                radMaterial = radMaterial + (" " + "%.3f"%getTransmissivity(arg))
-            else:
-                radMaterial = radMaterial + (" " + "%.3f"%arg)
-        
-        return radMaterial + "\n"
     
     def analyseRadMaterials(self, radMaterialString, addToDocLib = False, overwrite = True):
+        
+        """Analyse Radiance Material string
+        
+            Import a RAD material string, create a Honeybee RadianceMaterial
+            and add it to Honeybee library if needed.
+            
+            Always return the a boolean and Radiance name
         """
-        import a RAD material string and convert it into Honeybee rad library and return the name
-        """
-        cleanedRadMaterialString = self.cleanRadMaterials(radMaterialString)
+        
+        # get radince material as a single line
+        cleanedRadMaterialString = self.cleanRadMaterial(radMaterialString)
         
         lineSegments = cleanedRadMaterialString.split(" ")
         
         if len(lineSegments) == 1:
             # this is just the name
             # to be used for applying material to surfaces
-            return 0, lineSegments[0]
+            return False, lineSegments[0].rstrip()
         else:
-            #print lineSegments
+            materialModifier = lineSegments[0]
             materialType = lineSegments[1]
-            materialName = lineSegments[2]
+            materialName = lineSegments[2].rstrip()
+            
+            # initiate Rad material
+            radMaterial = self.RadianceMaterial(materialName, materialType, modifier = materialModifier)
             
             if addToDocLib:
-                if not overwrite and materialName in sc.sticky ["honeybee_RADMaterialLib"]:
+                if self.isMatrialExistInLibrary(materialName) and not overwrite:
+                    # ask for user input before overwriting the material
                     upload = self.duplicateMaterialWarning(materialName, radMaterialString)
                     if not upload:
-                        return 0, materialName
-                sc.sticky ["honeybee_RADMaterialLib"][materialName] = {materialType: {}}
+                        return False, materialName
+                
             
                 counters = []
                 materialProp = lineSegments[3:]
@@ -677,35 +750,54 @@ class RADMaterialAux(object):
                 #first counter is the first member of the list
                 counter = 0
                 counters.append(0)
-                
                 while counter < len(materialProp):
                     counter += int(materialProp[counter]) + 1
                     try:
                         counters.append(counter)
                     except:
                         pass
-                        # print cleanedRadMaterialString
-                        # print counter
-                # print counters
-                
+                        
                 for counter, count in enumerate(counters[1:]):
-                    matStr = materialProp[counters[counter] + 1: count]
-                    sc.sticky ["honeybee_RADMaterialLib"][materialName][materialType][counter] = matStr
-            else:
-                return 0, materialName
+                    values = materialProp[counters[counter] + 1: count]
+                    # add values to material
+                    radMaterial.addValues(counter, values)
                 
-            return 1, materialName
+                # add material to library
+                self.addMaterialToDocumentLibrary(radMaterial)
+                return True, materialName
+            else:
+                return False, materialName
     
-    def cleanRadMaterials(self, radMaterialString):
+    def addMaterialToDocumentLibrary(self, radMaterial, overwrite = True):
+        """Add Radiance material to current Grasshopper document library
+        
+            Args:
+                radMaterial: A RadianceMaterial object
+        """
+        
+        # check if material already exists
+        if self.isMatrialExistInLibrary(radMaterial.name) and not overwrite:
+            # ask for user input before overwriting the material
+            upload = self.duplicateMaterialWarning(radMaterial.name, radMaterialString)
+            if not upload: return
+        
+        # add to library
+        self.radMaterialLibrary[radMaterial.name] = radMaterial
+    
+    def isMatrialExistInLibrary(self, materialName):
+        return materialName in self.radMaterialLibrary
+    
+    def cleanRadMaterial(self, radMaterialString):
         """
         inputs rad material string, remove comments, spaces, etc and returns
         a single line string everything separated by a single space
         """
         
         matStr = ""
-        lines = radMaterialString.split("\n")
+        lines = radMaterialString.strip().split("\n")
         for line in lines:
             if not line.strip().startswith("#"):
+                if not len(line.rstrip()): continue
                 line = line.replace("\t", " ")
                 lineSeg = line.split(" ")
                 for seg in lineSeg:
@@ -713,74 +805,152 @@ class RADMaterialAux(object):
                         matStr += seg + " "
         return matStr[:-1] # remove the last space
     
+    def createRadMaterialFromString(self, radMaterialString):
+        """Clean string and return a Radiance Material"""
+        cleanedRadMaterialString = self.cleanRadMaterial(radMaterialString)
+        
+        lineSegments = cleanedRadMaterialString.split(" ")
+        
+        materialModifier = lineSegments[0]
+        materialType = lineSegments[1]
+        materialName = lineSegments[2].rstrip()
+            
+        # initiate Rad material
+        radMaterial = self.RadianceMaterial(materialName, materialType, modifier = materialModifier)
+        
+        counters = []
+        materialProp = lineSegments[3:]
+        
+        #first counter is the first member of the list
+        counter = 0
+        counters.append(0)
+        while counter < len(materialProp):
+            counter += int(materialProp[counter]) + 1
+            try:
+                counters.append(counter)
+            except:
+                pass
+                
+        for counter, count in enumerate(counters[1:]):
+            values = materialProp[counters[counter] + 1: count]
+            # add values to material
+            radMaterial.addValues(counter, values)        
+        
+        return radMaterial
+    
     def getRADMaterialString(self, materialName):
-        """
-        create rad material string from the HB material dictionary based
-        """
-        materialType = sc.sticky ["honeybee_RADMaterialLib"][materialName].keys()[0]
-        matStr = "void " + materialType + " " + materialName + "\n"
-        
-        for lineCount in sc.sticky ["honeybee_RADMaterialLib"][materialName][materialType].keys():
-            properties = sc.sticky ["honeybee_RADMaterialLib"][materialName][materialType][lineCount]
-            matStr += str(len(properties)) + " " + " ".join(properties) + "\n"
-        
-        return matStr
+        """Return radiance material string"""
+        material = self.getMaterialFromHBLibrary(materialName)
+        if material: return material.toRadString()
+    
+    def getMaterialFromHBLibrary(self, materialName):
+          try:
+            return self.radMaterialLibrary[materialName]
+          except:
+            raise ValueError("%s can't be find in library"%str(materialName))
     
     def getRADMaterialType(self, materialName):
-        materialType = sc.sticky ["honeybee_RADMaterialLib"][materialName].keys()[0]
-        return materialType
+        """Return material type"""
+        material = self.getMaterialFromHBLibrary(materialName)
+        if material: return material.type
     
+    def getRADMaterialModifier(self, materialName):
+        """Return material type"""
+        material = self.getMaterialFromHBLibrary(materialName)
+        if material: return material.modifier
+        
     def getRADMaterialParameters(self, materialName):
-        materialType = self.getRADMaterialType(materialName)
-        
-        lastLine = len(sc.sticky ["honeybee_RADMaterialLib"][materialName][materialType].keys()) - 1
-        
-        properties = sc.sticky ["honeybee_RADMaterialLib"][materialName][materialType][lastLine]
-        
-        return properties
+        """Return radiance material string"""
+        material = self.getMaterialFromHBLibrary(materialName)
+        if material:
+            lastLine = sorted(material.values)[-1]
+            return material.values[lastLine]    
     
     def getSTForTransMaterials(self, materialName):
+        """Retuen st value for Trans materials"""
         properties = self.getRADMaterialParameters(materialName)
+        
         properties = map(float, properties)
+        
         # check got translucant materials
         PHAverage = 0.265 * properties[0] + 0.670 * properties[1] + 0.065 * properties[2]
         
         st = properties[5] * properties[6] * (1 - PHAverage * properties[3])
         return st
     
-    def importRadMatStr(self, firstline, inRadf):
-        matStr = firstline
-        for line in inRadf:
-            if not line.strip().startswith("void"):
-                if not line.strip().startswith("#") and line.strip()!= "":
-                    matStr += line
-            else:
-                isAdded, materialName = self.analyseRadMaterials(matStr, True, True)
-                
-                # import the rest of the file to the honeybee library
-                self.importRadMatStr(line, inRadf)
+    @staticmethod
+    def getRadianceObjectsFromString(radFileString):
+        """
+        Parse rad file string and return a list of radiance objects as separate strings
         
-        # import the last file
-        isAdded, materialName = self.analyseRadMaterials(matStr, True, True)
+        TODO: Create a class for each Radiance object and return Python objects
+        instead of strings
         
-    def importRADMaterialsFromFile(self, radFilePath):
-        with open(radFilePath, "r") as inRadf:
-            for line in inRadf:
-                if line.strip().startswith("void"):
-                    if line.split(" ")[1].strip() in self.radMatTypes:
-                        matStr = self.importRadMatStr(line, inRadf)
+        Args:
+            radFileString: Radiance data as a single string. The string can be multiline
+        
+        Returns:
+            A list of strings. Each string represents a differnt Rdiance Object
+        """
+        rawRadObjects = re.findall(r'(\n|^)(\w*(\h*\w.*\n){1,})', radFileString + "\n",re.MULTILINE)
+        
+        return [("").join(radObject[:-1]) for radObject in rawRadObjects]
     
+    def getRadianceObjectsFromFile(self, radFilePath):
+        """
+        Parse Radinace file and return a list of radiance objects as separate strings
+        
+        TODO: Create a class for each Radiance object and return Python objects
+        instead of strings
+        
+        Args:
+            radFilePath: Path to Radiance file
+        
+        Returns:
+            A list of strings. Each string represents a differnt Rdiance Object
+        
+        Usage:
+            getRadianceObjectsFromFile(r"C:\ladybug\21MAR900\imageBasedSimulation\21MAR900.rad")
+        """
+        if not os.path.isfile(radFilePath):
+            raise ValueError("Can't find %s."%radFilePath)
+        
+        with open(radFilePath, "r") as radFile:
+            return self.getRadianceObjectsFromString("".join(radFile.readlines()))
+    
+    def importRADMaterialsFromFile(self, radFilePath, overwrite = True):
+        
+        """
+        Parse Radinace file and add them to Radiance Libraryreturn a list of radiance objects as separate strings
+                
+        Args:
+            radFilePath: Path to a radiance file
+        """
+        
+        radianceObjects = self.getRadianceObjectsFromFile(radFilePath)
+        
+        for materialString in radianceObjects:
+            # try to import the string
+            self.analyseRadMaterials(materialString, True, overwrite)
+    
+    def createDictionaryFromRADObjects(self, radObjects):
+        """Return Rad objects in a dictionary where each key is the name"""
+        result = dict()
+        for obj in radObjects:
+            name = self.cleanRadMaterial(obj).split(" ")[2]
+            result[name] = obj
+        return result
+        
     def searchRadMaterials(self, keywords, materialTypes):
         keywords = [kw.strip().upper() for kw in keywords]
         materialTypes = [mt.strip().upper() for mt in materialTypes]
         
         materials = []
-        
-        for radMaterial in sc.sticky["honeybee_RADMaterialLib"].keys():
-            materialName = radMaterial.ToUpper()
-            materialType = sc.sticky["honeybee_RADMaterialLib"][radMaterial].keys()[0].ToUpper()
+        for radMaterial in self.radMaterialLibrary:
+            materialName = radMaterial.upper()
+            materialType = self.getMaterialFromHBLibrary(radMaterial).type.upper()
             
-            if len(materialTypes)==0 or materialType.ToUpper()in materialTypes:
+            if len(materialTypes)==0 or materialType in materialTypes:
                 
                 if len(keywords)!= 0 and not "*" in keywords:
                     for keyword in keywords:
@@ -792,77 +962,53 @@ class RADMaterialAux(object):
         
         return materials
     
-    def addToGlobalLibrary(self, RADMaterial, RADLibraryFile = os.path.join(sc.sticky["Honeybee_DefaultFolder"], "HoneybeeRadMaterials.mat")):
+    def addToGlobalLibrary(self, RADMaterialString):
+        """Add a Radiance materil string to global library
+            Honeybee global library is a text file which is located under
+            Honeybee's default folder.
+        """
         
-        added, materialName = self.analyseRadMaterials(RADMaterial, False)
+        RADLibraryFile = self.getUserDefinedRadianceLibraryPath()
         
-        # read the global library file
-        if not os.path.isfile(RADLibraryFile):
-            # create a single line for the library
-            with open(RADLibraryFile, "w") as inf:
-                inf.write("#Honeybee Radiance Global Material Library\n\n")
+        # analyze string, add to local library and get the material name
+        added, materialName = self.analyseRadMaterials(RADMaterialString, False)
         
-        def addToExistingMaterials(firstline, inRadf, targetMaterialName):
-            matStr = firstline
-            thisLine = ""
-            # collect material string
-            for thisLine in inRadf:
-                if not thisLine.strip().startswith("void"):
-                    # avoid comment lines and empty lines
-                    if not thisLine.strip().startswith("#") and thisLine.strip()!= "":
-                        matStr += thisLine
-                else:
-                    break
-            
-            # get the material name
-            isAdded, materialName = self.analyseRadMaterials(matStr, False)
-            
-            # print materialName
-            
-            if materialName == targetMaterialName:
-                self.found = True
-                # ask the user if he wants to overwrite it with the new one
-                writeTheNewMaterial= self.duplicateMaterialWarning(matStr, RADMaterial)
-                
-                if writeTheNewMaterial:
-                    # update the file
-                    self.outFileStr += RADMaterial + "\n"
-                else:
-                    # keep the current material
-                    self.outFileStr += matStr + "\n"
-            else:
-                # keep this material
-                self.outFileStr += matStr + "\n"
-            
-            # import the rest of the file to the honeybee library
-            if thisLine.strip().startswith("void"):
-                addToExistingMaterials(thisLine, inRadf, targetMaterialName)
-            
-        # open the file and read the materials
-        self.outFileStr = ""
-        self.found = False
+        # read all the existing materials from the file
+        radObjects = self.getRadianceObjectsFromFile(RADLibraryFile)
+        objectsDict = self.createDictionaryFromRADObjects(radObjects)
         
-        with open(RADLibraryFile, "r") as inRadf:
-            for line in inRadf:
-                if line.strip().startswith("void"):
-                    if line.split(" ")[1].strip() in self.radMatTypes:
-                        # check if the name is already existed and add it to the
-                        # file if the user wants to overwrite the file.
-                        addToExistingMaterials(line, inRadf, materialName)
-                else:
-                    self.outFileStr += line
+        # Check if material is not there append to the file
+        if not materialName in objectsDict:
+            # add to local library
+            added, materialName = self.analyseRadMaterials(RADMaterialString, True)
+            
+            # get the material object
+            radMaterial = self.getMaterialFromHBLibrary(materialName)
+            
+            with open(RADLibraryFile, 'a') as outf:
+                outf.writelines("\n" + radMaterial.toRadString() + "\n")
+            print "%s is added to global library."%materialName
+            return True
+        else:
+            # Material is already existed
+            # give a warning to user and ask for overwrite
+            # add to local library
+            added, materialName = self.analyseRadMaterials(RADMaterialString, True, False)
+            if added:
+                # replace the old material with the new one
+                objectsDict[materialName] = RADMaterialString
+                # write the file
+                with open(RADLibraryFile, 'w') as outf:
+                    outf.write("#Honeybee Radiance Material Library\n")
+                    for rawRADMaterialString in objectsDict.values():
+                        radianceMaterial = self.createRadMaterialFromString(rawRADMaterialString)
+                        outf.writelines(radianceMaterial.toRadString())
+                    outf.write("\n")
+                print "%s is added to global library."%materialName
+                return True
         
-        if self.found == False:
-                # the material is just new so let's just add it to the end of the file
-                print materialName + " is added to global library"
-                self.outFileStr += RADMaterial + "\n"
-        # write the new file
-        # this is not the most efficient way of read and write a file in Python
-        # but as far as the file is not huge it is fine! Someone may want to fix this
-        # print self.outFileStr
-        with open(RADLibraryFile, "w") as inRadf:
-            inRadf.write(self.outFileStr)
-    
+        return False
+        
     def assignRADMaterial(self, HBSurface, RADMaterial, component):
         # 1.4 assign RAD Material
         if RADMaterial!=None:
@@ -896,7 +1042,7 @@ class RADMaterialAux(object):
                 ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
                 return
 
-class DLAnalysisRecipe(object):
+class DLAnalysisRecipe:
     
     def __init__(self, type, *arg):
         """
@@ -1010,6 +1156,9 @@ class DLAnalysisRecipe(object):
                               "Change the skyFile and try again"
                         self.component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
                         return
+    
+    def __repr__(self):
+        return "Honybee.Recipe.%s"%self.studyFolder.replace("\\", "")
 
 
 class hb_MSHToRAD(object):
@@ -1250,7 +1399,7 @@ class hb_WriteRAD(object):
         self.component = component
         
         self.hb_writeRADAUX = sc.sticky["honeybee_WriteRADAUX"]()
-        self.hb_RADMaterialAUX = sc.sticky["honeybee_RADMaterialAUX"]()
+        self.hb_RADMaterialAUX = sc.sticky["honeybee_RADMaterialAUX"]
         self.lb_preparation = sc.sticky["ladybug_Preparation"]()
         self.hb_writeDS = sc.sticky["honeybee_WriteDS"]()
         
@@ -7318,6 +7467,10 @@ class hb_hspeedEvapCondParams(object):
         'curves':None
         }
 
+
+
+checkIn = CheckIn(defaultFolder_)
+
 letItFly = True
 
 def checkGHPythonVersion(target = "0.6.0.3"):
@@ -7446,10 +7599,17 @@ if checkIn.letItFly:
         sc.sticky["honeybee_folders"]["EPPath"] = folders.EPPath  
 
         sc.sticky["honeybee_folders"]["EPVersion"] = EPVersion.replace("-", ".")[1:]
-        sc.sticky["honeybee_RADMaterialAUX"] = RADMaterialAux
+        
+        # initiate an empty library in case this is the first time honeybee is flying in this document
+        # otherwise it has been already created/
+        if "honeybee_Hive" not in sc.sticky:
+            sc.sticky["honeybee_RADMaterialLib"] = dict()
         
         # set up radiance materials
-        sc.sticky["honeybee_RADMaterialAUX"](True)
+        RADMaterialAux = RADMaterialAux(True, sc.sticky["honeybee_RADMaterialLib"], sc.sticky["Honeybee_DefaultFolder"])
+        
+        sc.sticky["honeybee_RADMaterialAUX"] = RADMaterialAux
+        
         
         # Download EP libraries
         templateFilesPrep = PrepareTemplateEPLibFiles(downloadTemplate)
