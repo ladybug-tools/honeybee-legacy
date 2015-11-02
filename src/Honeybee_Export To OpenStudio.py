@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.57
     
     Args:
         north_: Input a vector to be used as a true North direction for the energy simulation or a number between 0 and 360 that represents the degrees off from the y-axis to make North.  The default North direction is set to the Y-axis (0 degrees).
-        _epwFile: An .epw file path on your system as a text string.
+        _epwWeatherFile: An .epw file path on your system as a text string.
         _analysisPeriod_: An optional analysis period from the Ladybug_Analysis Period component.  If no Analysis period is given, the energy simulation will be run for the enitre year.
         +++++++++++++++: ...
         _energySimPar_: Optional Energy Simulation Parameters from the "Honeybee_Energy Simulation Par" component.  If no value is connected here, the simulation will run with the following parameters:
@@ -59,8 +59,15 @@ Provided by Honeybee 0.0.57
         meterFileAddress: The file path of the building's meter result file that has been generated on your machine. This only happens when you set "runSimulation_" to "True."
 """
 
-# check for libraries
-# default is C:\\Ladybug\\OpenStudio
+ghenv.Component.Name = "Honeybee_Export To OpenStudio"
+ghenv.Component.NickName = 'exportToOpenStudio'
+ghenv.Component.Message = 'VER 0.0.57\nOCT_31_2015'
+ghenv.Component.Category = "Honeybee"
+ghenv.Component.SubCategory = "09 | Energy | Energy"
+#compatibleHBVersion = VER 0.0.56\nOCT_31_2015
+#compatibleLBVersion = VER 0.0.59\nFEB_01_2015
+ghenv.Component.AdditionalHelpFromDocStrings = "1"
+
 
 import os
 import sys
@@ -70,11 +77,13 @@ import Rhino as rc
 import Grasshopper.Kernel as gh
 import time
 from pprint import pprint
+import shutil
 
-#openStudioLibFolder = "C:\\Users\\" + os.getenv("USERNAME") + "\\Dropbox\\ladybug\\honeybee\\openStudio\\CSharp64bits"
+rc.Runtime.HostUtils.DisplayOleAlerts(False)
+
 if sc.sticky.has_key('honeybee_release'):
-    
-    openStudioLibFolder = os.path.join(sc.sticky["Honeybee_DefaultFolder"], "OpenStudio")
+
+    openStudioLibFolder = "C:/Program Files/OpenStudio 1.9.0/CSharp/openstudio/"
     
     if os.path.isdir(openStudioLibFolder) and os.path.isfile(os.path.join(openStudioLibFolder, "openStudio.dll")):
         # openstudio is there
@@ -91,61 +100,49 @@ if sc.sticky.has_key('honeybee_release'):
     else:
         openStudioIsReady = False
         # let the user know that they need to download OpenStudio libraries
-        msg = "Cannot find OpenStudio libraries. You can download the libraries from the link below. " + \
-              "Unzip the file and copy it to " + openStudioLibFolder + " and try again. Click on the link to copy the address."
+        msg = "Cannot find OpenStudio libraries at " + openStudioLibFolder + \
+              "\nYou need to download and install OpenStudio to be able to use this component."
               
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
-        
-        link = "https://app.box.com/s/y2sx16k98g1lfd3r47zi"
-        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, link)
-        
-        #buttons = System.Windows.Forms.MessageBoxButtons.OK
-        #icon = System.Windows.Forms.MessageBoxIcon.Warning
-        #up = rc.UI.Dialogs.ShowMessageBox(msg + "\n" + link, "Duplicate Material Name", buttons, icon)
     
-    if openStudioIsReady and sc.sticky.has_key('honeybee_release') and \
-        sc.sticky.has_key("isNewerOSAvailable") and sc.sticky["isNewerOSAvailable"]:
-        # check if there is an update available
-        msg = "There is a newer version of OpenStudio libraries available to download! " + \
-                      "We strongly recommend you to download the newer version from this link and replace it with current files at " + \
-                      openStudioLibFolder +".\n" + \
-                      "https://app.box.com/s/y2sx16k98g1lfd3r47zi"
-        print msg
-        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+#    if openStudioIsReady and sc.sticky.has_key('honeybee_release') and \
+#        sc.sticky.has_key("isNewerOSAvailable") and sc.sticky["isNewerOSAvailable"]:
+#        # check if there is an update available
+#        msg1 = "There is a newer version of OpenStudio libraries available to download! " + \
+#                      "We strongly recommend you to download the newer version from this link and replace it with current files at " + \
+#                      openStudioLibFolder +"."
+#        msg2 = "https://dl.dropboxusercontent.com/u/16228160/Honeybee/OpenStudio.zip"
+#        print msg1
+#        print msg2
+#        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg1)
+#        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg2)
 else:
     openStudioIsReady = False
-
-ghenv.Component.Name = "Honeybee_Export To OpenStudio"
-ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.57\nOCT_13_2015'
-ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
-#compatibleLBVersion = VER 0.0.59\nFEB_01_2015
-ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
 
 class WriteOPS(object):
 
-    def __init__(self, EPParameters, weatherFilePath = r"C:\EnergyPlusV8-1-0\WeatherData\USA_CA_San.Francisco.Intl.AP.724940_TMY3.epw"):
+    def __init__(self, EPParameters, weatherFilePath):
         self.weatherFile = weatherFilePath # just for batch file as an alternate solution
         self.lb_preparation = sc.sticky["ladybug_Preparation"]()
         self.hb_EPMaterialAUX = sc.sticky["honeybee_EPMaterialAUX"]()
         self.hb_EPScheduleAUX = sc.sticky["honeybee_EPScheduleAUX"]()
-        print self.hb_EPScheduleAUX
         self.hb_EPPar = sc.sticky["honeybee_EPParameters"]()
         self.simParameters = self.hb_EPPar.readEPParams(EPParameters)
         
         if self.simParameters[4] != None: self.ddyFile = self.simParameters[4]
         else: self.ddyFile = weatherFilePath.replace(".epw", ".ddy", 1)
         
-        self.constructionList = {}
+        self.constructionList = sc.sticky ["honeybee_constructionLib"]
         self.materialList = {}
         self.scheduleList = {}
         self.bldgTypes = {}
         self.levels = {}
         self.HVACSystemDict = {}
         self.adjacentSurfacesDict = {}
+        
+        self.csvSchedules = []
+        self.csvScheduleCount = 0
     
     def setSimulationControls(self, model):
         solarDist = self.simParameters[2]
@@ -230,8 +227,8 @@ class WriteOPS(object):
     def addConstructionToLib(self, constructionName, construction):
         self.constructionList[constructionName] = construction
     
-    def getConstructionFromLib(self, constructionName):
-        return self.constructionList[constructionName]
+    def getConstructionFromLib(self, constructionName, model):
+        return self.getOSConstruction(constructionName.upper(), model)
     
     def isMaterialInLib(self, materialName):
         return materialName in self.materialList.keys()
@@ -378,16 +375,19 @@ class WriteOPS(object):
         return schedule
         
     def getOSSchedule(self, schName, model):
-
+        csvSched = False
         if schName.lower().endswith(".csv"):
-            msg = "Currently OpenStudio component cannot use .csv file as an schedule.\n" + \
-                      "Use EnergyPlus component or replace " + schName + " with an EP schedule and try again."
+            msg = "Currently OpenStudio component cannot use .csv file as a schedule.\n" + \
+                      "The schedule: " + schName + " - will be written into the EnergyPlus IDF File after it has been written by decompressing the OS file."
             print msg
-            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
-            return None
-
-        values, comments = self.hb_EPScheduleAUX.getScheduleDataByName(schName, ghenv.Component)
-
+            self.csvSchedules.append(schName)
+            self.csvScheduleCount += 1
+            csvSched = True
+        
+        if csvSched == True:
+            values, comments = self.hb_EPScheduleAUX.getScheduleDataByName('DEFAULTCSVPLACEHOLDER', ghenv.Component)
+        else:
+            values, comments = self.hb_EPScheduleAUX.getScheduleDataByName(schName, ghenv.Component)
         
         if values[0].lower() != "schedule:week:daily":
             
@@ -396,7 +396,7 @@ class WriteOPS(object):
                 #print 'here ' + scheduleTypeLimitsName
                 OSScheduleTypeLimits = self.createOSScheduleTypeLimits(values[1], model)
                 self.addScheduleToLib(scheduleTypeLimitsName, OSScheduleTypeLimits)
-
+        
         if not self.isScheduleInLib(schName):
             if values[0].lower() == "schedule:year":
                 OSSchedule = self.createYearlyOSSchedule(schName, values, model)
@@ -425,14 +425,13 @@ class WriteOPS(object):
         # Will change it to what it used to be later
         thermalZone.setName(zone.name)
         return space, thermalZone
-
+    
         
         
     def recallAvailManager(self,HVACDetails):
-
         return HVACDetails['availabilityManagerList']
     
-    def updateAvailManager(self,availManager,OSComponent):
+    def updateAvailManager(self,availManager,OSComponent, model):
         #avail manager is the user's definition
         #OS component is the OpenStudio object being updated
         #print availManager
@@ -442,17 +441,21 @@ class WriteOPS(object):
         #set the schedule of the availability manager
         #set the night cycle controls, when applicable
         if availManager != None:
-            pass
-            """
             # availManager should be a dict.
             if availManager['type'] == 'NightCycle':
                 try:
-                    #print type(availManager['controlType'])
                     OSComponent.setNightCycleControlType(availManager['controlType'])
-                    print 'set night cycle availability manager to: '+availManager['controlType'] 
+                    print 'set night cycle availability manager to: '+ availManager['type'] 
                 except:
-                    print 'Error: OSComponent '+str(typ(OSComponent))+' cannot set night cycle availability manager!!'
-            """
+                    print 'Error: OSComponent '+str(OSComponent)+' cannot set night cycle availability manager!!'
+            elif availManager['type'] == 'Scheduled':
+                try:
+                    availSch = self.getOSSchedule(availManager['scheduleName'], model)
+                    OSComponent.setAvailabilitySchedule(availSch)
+                    print 'set availability manager to: '+availManager['type'] 
+                except:
+                    print 'Error: OSComponent '+str(OSComponent)+' cannot set night cycle availability manager!!'
+        
         return OSComponent
         
     def recallOASys(self,HVACDetails):
@@ -486,9 +489,6 @@ class WriteOPS(object):
         # XXX I think this is superfluous code
         if HVACDetails == None: return
         
-        print HVACDetails['airsideEconomizer']
-        print 'getting oasys from the hive'
-        print HVACDetails['airsideEconomizer']['DXLockoutMethod']
         'airsideEconomizer'
         oaDesc = {
         'name' : HVACDetails['airsideEconomizer']['name'],
@@ -502,6 +502,7 @@ class WriteOPS(object):
         'controlAction' : HVACDetails['airsideEconomizer']['controlAction'],
         'minOASchedule' : HVACDetails['airsideEconomizer']['minOutdoorAirSchedule'],
         'minOAFracSchedule' : HVACDetails['airsideEconomizer']['minOutdoorAirFracSchedule'],
+        'maxOAFracSchedule' : HVACDetails['airsideEconomizer']['maxOutdoorAirFracSchedule'],
         'DXLockoutMethod' : HVACDetails['airsideEconomizer']['DXLockoutMethod'],
         'timeOfDaySch':HVACDetails['airsideEconomizer']['timeOfDaySch'],
         'mvCtrl':HVACDetails['airsideEconomizer']['mvCtrl']
@@ -549,7 +550,7 @@ class WriteOPS(object):
                 oactrl.setEconomizerMaximumLimitEnthalpy(maxenth)
         else:
             oactrl.setEconomizerControlType("NoEconomizer")
-        print 'economizer control type set'
+        #economizer control type set
         
         #set min and max flows
         if econo['minAirFlowRate']=='Autosize' or econo['minAirFlowRate']==None:
@@ -562,25 +563,24 @@ class WriteOPS(object):
         else:
             maxFlow = econo['maxAirFlowRate']
             oactrl.setMaximumOutdoorAirFlowRate(maxFlow)
-        print 'set min and max flow rates'
+        # set min and max flow rates'
         #set control action
         if econo['controlAction']!=None:
             oactrl.setEconomizerControlActionType(econo['controlAction'])
-            print econo['controlAction']
-        print 'set control action'
+        #set control action
         #set minLimit type
         if econo['minLimitType']!=None:
             oactrl.setMinimumLimitType(econo['minLimitType'])
-        print 'set min limit type'
+        # set min limit type
         #set lockout type (applies to DX systems only)
         if econo['DXLockoutMethod'] != None:
             oactrl.setLockoutType(econo['DXLockoutMethod'])
-        print 'set dx lockout method'
+        # set dx lockout method
         if econo['timeOfDaySch'] != None:
-            print 'updating economizer time of day schedule'
+            # updating economizer time of day schedule
             ossch = self.getOSSchedule(econo['timeOfDaySch'],model)
             oactrl.setTimeofDayEconomizerControlSchedule(ossch)
-        print econo
+        
         if econo['mvCtrl'] != None:
             print 'updating mechanical ventilation controller'
             mv = oactrl.controllerMechanicalVentilation()
@@ -592,7 +592,15 @@ class WriteOPS(object):
             print 'updating minOA schedule'
             minOASch = self.getOSSchedule(econo['minOASchedule'],model)
             oactrl.setMinimumOutdoorAirSchedule(minOASch)
-            
+        if econo['minOAFracSchedule'] != None:
+            print 'updating minOAFrac schedule'
+            maxOASch = self.getOSSchedule(econo['minOAFracSchedule'],model)
+            oactrl.setMinimumFractionofOutdoorAirSchedule(maxOASch)
+        if econo['maxOAFracSchedule'] != None:
+            print 'updating maxOAFrac schedule'
+            maxOASch = self.getOSSchedule(econo['maxOAFracSchedule'],model)
+            oactrl.setMinimumFractionofOutdoorAirSchedule(maxOASch)
+        
         print "success for economizer!"
         return oactrl
         
@@ -767,8 +775,7 @@ class WriteOPS(object):
         return oschiller
         
     def updateBoiler(self,uboil,osboiler):
-        #print osboiler
-        print uboil
+        
         osboiler.setFuelType(uboil['fueltype'])
         osboiler.setMinimumPartLoadRatio(uboil['minPartLoad'])
         osboiler.setMaximumPartLoadRatio(uboil['maxPartLoadRatio'])
@@ -791,7 +798,7 @@ class WriteOPS(object):
     #using a recall function is optional.  It is only designed to make reading the code easier
     def recallVVFan(self,HVACDetails):
         print 'getting supply fan from the hive'
-        print HVACDetails['varVolSupplyFanDef']
+        
         sfdesc = {
         'name':HVACDetails['varVolSupplyFanDef']['name'],
         'motorEfficiency':HVACDetails['varVolSupplyFanDef']['motorEfficiency'],
@@ -814,7 +821,7 @@ class WriteOPS(object):
         #sort of a dummy worker
         if HVACDetails['coolingCoil']['type'] == 0:
             print 'getting 1-speed DX cooling coil details from the hive'
-            print HVACDetails['coolingCoil']
+            
             ccdesc = {
             'type': HVACDetails['coolingCoil']['type'],
             'name': HVACDetails['coolingCoil']['name'],
@@ -846,49 +853,50 @@ class WriteOPS(object):
             'Curves': HVACDetails['coolingCoil']['Curves']
             }
         return ccdesc
-
-
+    
+    
     def updateVVFan(self,sf,vvfan):
         if sf['motorEfficiency'] != None: 
             vvfan.setMotorEfficiency(sf['motorEfficiency'])
-            print 'motor efficiency updated'
+            # motor efficiency updated
         if sf['fanEfficiency'] != None: 
             vvfan.setFanEfficiency(sf['fanEfficiency'])
-            print 'fan efficiency updated'
+            #fan efficiency updated
         if sf['pressureRise'] != None: 
             vvfan.setPressureRise(sf['pressureRise'])
-            print 'pressure rise updated'
+            # pressure rise updated
         if sf['airStreamHeatPct'] != None: 
             vvfan.setMotorInAirstreamFraction(sf['airStreamHeatPct'])
-            print 'motor air stream heat updated'
+            #motor air stream heat updated
         if sf['maxFlowRate'] != None:
             if sf['maxFlowRate'] != 'Autosize':
                 vvfan.setMaximumFlowRate(float(sf['maxFlowRate']))
-                print 'max flow rate updated'
-            else:
-                print 'fan size remains autosized'
+                #max flow rate updated
+            else: pass
+            #fan size remains autosized
         if sf['minFlowFrac'] != None:
+            vvfan.setFanPowerMinimumFlowRateInputMethod('Fraction')
             vvfan.setFanPowerMinimumFlowFraction(sf['minFlowFrac'])
-            print 'min flow frac updated'
+            # min flow frac updated
         if sf['fanPowerCoefficient1'] != None:
             vvfan.setFanPowerCoefficient1(sf['fanPowerCoefficient1'])
-            print 'Power Coefficient 1 updated'
+            # Power Coefficient 1 updated
         if sf['fanPowerCoefficient2'] != None:
             vvfan.setFanPowerCoefficient2(sf['fanPowerCoefficient2'])
-            print 'Power Coefficient 2 updated'
+            # Power Coefficient 2 updated
         if sf['fanPowerCoefficient3'] != None:
             vvfan.setFanPowerCoefficient3(sf['fanPowerCoefficient3'])
-            print 'Power Coefficient 3 updated'
+            # Power Coefficient 3 updated
         if sf['fanPowerCoefficient4'] != None:
             vvfan.setFanPowerCoefficient4(sf['fanPowerCoefficient4'])
-            print 'Power Coefficient 4 updated'
+            # Power Coefficient 4 updated
         if sf['fanPowerCoefficient5'] != None:
             vvfan.setFanPowerCoefficient5(sf['fanPowerCoefficient5'])
-            print 'Power Coefficient 5 updated'
+            #Power Coefficient 5 updated
         print 'success updating fan!'
         return vvfan
-        
-        
+    
+    
     def updateCoolingCoil(self,cc,coolcoil):
         #works equally well for 1speed and 2speed DX coils.  
         #it is a dumb worker, if it sees None, it doesn't do anything
@@ -962,12 +970,12 @@ class WriteOPS(object):
                 coolcoil.setRatedSensibleHeatRatio(ops.OptionalDouble(cc['ratedSHR']))
                 print 'updated rated sensible heat ratio'
             if cc['ratedAirflowRate'] != None:
-
+                
                 if cc['ratedAirflowRate'] != 'Autosize':
                     coolcoil.setRatedAirFlowRate(ops.OptionalDouble(cc['ratedAirflowRate']))
                     print 'updated design flow rate'
             if cc['ratedTotalCooling'] != None:
-
+                
                 if cc['ratedTotalCooling'] != 'Autosize':
                     coocoil.setRatedTotalCooling(ops.OptionalDouble(cc['ratedTotalCooling']))
                     print 'updated total cooling'
@@ -999,8 +1007,7 @@ class WriteOPS(object):
         for HAVCGroupID in self.HVACSystemDict.keys():
             
             # HAVC system index for this group and thermal zones
-            systemIndex, thermalZones, HVACDetails,plantDetails = self.HVACSystemDict[HAVCGroupID]
-
+            systemIndex, thermalZones, HVACDetails,plantDetails,zoneRecircAir,zoneTotalAir = self.HVACSystemDict[HAVCGroupID]
             # put thermal zones into a vector
             thermalZoneVector = ops.ThermalZoneVector(thermalZones)
             # add systems. There are 10 standard ASHRAE systems + Ideal Air Loads
@@ -1008,35 +1015,19 @@ class WriteOPS(object):
                 for zone in thermalZoneVector: zone.setUseIdealAirLoads(True)
             
             elif systemIndex == 1:
-
+                
                 # 1: PTAC, Residential - thermalZoneVector because ZoneHVAC
                 ops.OpenStudioModelHVAC.addSystemType1(model, thermalZoneVector)
                 allptacs = model.getZoneHVACPackagedTerminalAirConditioners()
-                #print allptacs
-                for ptac in allptacs:
+                
+                for zoneCount, ptac in enumerate(allptacs):
                     hvacHandle = ptac.handle()
+                    
+                    #Set general air system parameters.
                     if HVACDetails != None:
-                        
-                        if HVACDetails['availSch'] != None: ptac.setAvailabilitySchedule(self.getOSSchedule(HVACDetails['availSch'], model))
+                        #if HVACDetails['availSch'] != None: ptac.setAvailabilitySchedule(HVACDetails['availSch'])
                         if HVACDetails['fanPlacement'] != None: ptac.setFanPlacement(HVACDetails['fanPlacement'])
-                        if HVACDetails['coolingAirflow'] != None:
-                            if HVACDetails['coolingAirflow'] != 'Autosize':
-                                ptac.setSupplyAirFlowRateDuringCoolingOperation(HVACDetails['coolingAirflow'])
-                        if HVACDetails['coolingOAflow'] != None:
-                            if HVACDetails['coolingOAflow'] != 'Autosize':
-                                ptac.setOutdoorAirFlowRateDuringCoolingOperation(HVACDetails['coolingOAflow'])
-                        if HVACDetails['heatingAirflow'] != None:
-                            if HVACDetails['heatingAirflow'] != 'Autosize':
-                                ptac.setSupplyAirFlowRateDuringHeatingOperation(HVACDetails['heatingAirflow'] )
-                        if HVACDetails['heatingOAflow']  != None:
-                            if HVACDetails['heatingOAflow'] != 'Autosize':
-                                ptac.setOutdoorAirFlowRateDuringHeatingOperation(HVACDetails['heatingOAflow'] )
-                        if HVACDetails['floatingAirflow']  != None:
-                            if HVACDetails['floatingAirflow'] != 'Autosize': 
-                                ptac.setSupplyAirFlowRateWhenNoCoolingorHeatingisNeeded(HVACDetails['floatingAirflow'] )
-                        if HVACDetails['floatingOAflow'] != None:
-                            if HVACDetails['floatingOAflow'] != 'Autosize':    
-                                ptac.setOutdoorAirFlowRateWhenNoCoolingorHeatingisNeeded(HVACDetails['floatingOAflow'])
+                        
                         sch = ptac.availabilitySchedule()
                         if len(HVACDetails['constVolSupplyFanDef']) > 0:
                             print 'overriding the OpenStudio supply fan settings'
@@ -1054,14 +1045,20 @@ class WriteOPS(object):
                             cc = model.getCoilCoolingDXSingleSpeedByName(str(ccname)).get()
                             print cc
                             coolcoil = self.updateCoolingCoil(HVACDetails['coolingCoil'],cc)
-                            
+                    
+                    #Set zone-specific parameters like a specified portion of recirculated air.
+                    if zoneRecircAir[zoneCount] != 0:
+                        ptac.setSupplyAirFlowRateDuringCoolingOperation(zoneTotalAir[zoneCount])
+                        ptac.setSupplyAirFlowRateDuringHeatingOperation(zoneTotalAir[zoneCount])
+                        ptac.setSupplyAirFlowRateWhenNoCoolingorHeatingisNeeded(zoneTotalAir[zoneCount])
+                        print "Secified recirculation air for " +  str(thermalZoneVector[zoneCount].name()) + " to a value of " + str(zoneRecircAir[zoneCount]) + " m3/s per m2 of floor."
+                    
+                    #Set plant details.
                     if plantDetails != None:
                         if plantDetails['boiler'] != None:
                             x = ptac.heatingCoil().name()
-                            print x
                             hc = model.getCoilHeatingWaterByName(str(x)).get()
                             hwl = hc.plantLoop().get()
-                            print type(hwl)
                             boilervec = hwl.supplyComponents(ops.IddObjectType("OS:Boiler:HotWater"))
                             for bc,boiler in enumerate(boilervec):
                                 #sequencing, is this possible?
@@ -1075,33 +1072,14 @@ class WriteOPS(object):
                 # 2: PTHP, Residential - thermalZoneVector because ZoneHVAC
                 ops.OpenStudioModelHVAC.addSystemType2(model, thermalZoneVector)
                 allpthps = model.getZoneHVACPackagedTerminalHeatPumps()
-                #print allpthps
-                for pthp in allpthps:
-                    #print type(pthp)
+                
+                for zoneCount, pthp in enumerate(allpthps):
                     hvacHandle = pthp.handle()
-                    #print hvacHandle
+                    
+                    #Set general air system parameters.
                     if HVACDetails != None:
-                        print HVACDetails['heatingCoil']
-                        if HVACDetails['availSch'] != None: pthp.setAvailabilitySchedule(self.getOSSchedule(HVACDetails['availSch'], model))
+                        #if HVACDetails['availSch'] != None: pthp.setAvailabilitySchedule(HVACDetails['availSch'])
                         if HVACDetails['fanPlacement'] != None: pthp.setFanPlacement(HVACDetails['fanPlacement'])
-                        if HVACDetails['coolingAirflow'] != None:
-                            if HVACDetails['coolingAirflow'] != 'Autosize':
-                                pthp.setSupplyAirFlowRateDuringCoolingOperation(HVACDetails['coolingAirflow'])
-                        if HVACDetails['coolingOAflow'] != None:
-                            if HVACDetails['coolingOAflow'] != 'Autosize':
-                                pthp.setOutdoorAirFlowRateDuringCoolingOperation(HVACDetails['coolingOAflow'])
-                        if HVACDetails['heatingAirflow'] != None:
-                            if HVACDetails['heatingAirflow'] != 'Autosize':
-                                pthp.setSupplyAirFlowRateDuringHeatingOperation(HVACDetails['heatingAirflow'] )
-                        if HVACDetails['heatingOAflow']  != None:
-                            if HVACDetails['heatingOAflow'] != 'Autosize':
-                                pthp.setOutdoorAirFlowRateDuringHeatingOperation(HVACDetails['heatingOAflow'] )
-                        if HVACDetails['floatingAirflow']  != None:
-                            if HVACDetails['floatingAirflow'] != 'Autosize': 
-                                pthp.setSupplyAirFlowRateWhenNoCoolingorHeatingisNeeded(HVACDetails['floatingAirflow'] )
-                        if HVACDetails['floatingOAflow'] != None:
-                            if HVACDetails['floatingOAflow'] != 'Autosize': 
-                                pthp.setOutdoorAirFlowRateWhenNoCoolingorHeatingisNeeded(HVACDetails['floatingOAflow'])
                         sch = pthp.availabilitySchedule()
                         if HVACDetails['constVolSupplyFanDef'] != None:
                             print 'overriding the OpenStudio supply fan settings'
@@ -1110,7 +1088,7 @@ class WriteOPS(object):
                             sf = self.recallCVFan(HVACDetails)
                             cvfan = self.updateCVFan(sf,cvfan)
                             print 'supply fan settings updated to supply fan name: ' + HVACDetails['constVolSupplyFanDef']['name']
-
+                        
                         if HVACDetails['heatingCoil'] != None:
                             print 'overriding the OpenStudio DX heating coil settings'
                             modelhandle = pthp.heatingCoil().handle()
@@ -1118,13 +1096,20 @@ class WriteOPS(object):
                             hbhc = HVACDetails['heatingCoil']
                             modelhc = self.updateDXHeatingCoil(hbhc,modelhc)
                             print modelhc
-                            
+                        
                         if HVACDetails['coolingCoil'] != None:
                             print 'overriding the OpenStudio cooling coil settings.'
                             ccname = pthp.coolingCoil().name()
                             cc = model.getCoilCoolingDXSingleSpeedByName(str(ccname)).get()
                             print cc
                             coolcoil = self.updateCoolingCoil(HVACDetails['coolingCoil'],cc)
+                    
+                    #Set zone-specific parameters like a specified portion of recirculated air.
+                    if zoneRecircAir[zoneCount] != 0:
+                        pthp.setSupplyAirFlowRateDuringCoolingOperation(zoneTotalAir[zoneCount])
+                        pthp.setSupplyAirFlowRateDuringHeatingOperation(zoneTotalAir[zoneCount])
+                        pthp.setSupplyAirFlowRateWhenNoCoolingorHeatingisNeeded(zoneTotalAir[zoneCount])
+                        print "Secified recirculation air for " +  str(thermalZoneVector[zoneCount].name()) + " to a value of " + str(zoneRecircAir[zoneCount]) + " m3/s per m2 of floor."
                 
             elif systemIndex == 3:
                 print 'Making ASHRAE System Type 3'
@@ -1140,9 +1125,7 @@ class WriteOPS(object):
                         print 'zone added to PSZ air loop'
                         oasys = airloop.airLoopHVACOutdoorAirSystem()
                         
-                        # HVACDetails['airsideEconomizer'] != None, component AirHandlerDetails
-                        # will set HVACDetails['airsideEconomizer'] to none if no Air Economizer is connected to it
-
+                        
                         if (oasys.is_initialized()== True) and (HVACDetails['airsideEconomizer'] != None):
                             print 'overriding the OpenStudio airside economizer settings'
                             oactrl = oasys.get().getControllerOutdoorAir()
@@ -1154,12 +1137,12 @@ class WriteOPS(object):
                             oactrl = self.updateOASys(econo,oactrl,model)
                             print 'economizer settings updated to economizer name: ' + HVACDetails['airsideEconomizer']['name']
                             print ''
-
+                        
                         #apply fan changes
                         print HVACDetails['constVolSupplyFanDef']
                         if HVACDetails['constVolSupplyFanDef'] != None:
                             print 'overriding the OpenStudio supply fan settings'
-
+                            
                             x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:ConstantVolume"))
                             cvfan = model.getFanConstantVolume(x[0].handle()).get()
                             sf = self.recallCVFan(HVACDetails)
@@ -1248,11 +1231,11 @@ class WriteOPS(object):
                     airloop.addBranchForZone(zone)
                 if(HVACDetails != None):
                     if HVACDetails['availSch'] != None:
-
+                    
                         availSch = self.getOSSchedule(HVACDetails['availSch'], model)
                         airloop.setAvailabilitySchedule(availSch)
- 
-                    airloop = self.updateAvailManager(HVACDetails['availabilityManagerList'],airloop)
+                    
+                    airloop = self.updateAvailManager(HVACDetails['availabilityManagerList'],airloop, model)
                     
                     availManager=self.recallAvailManager(HVACDetails)
                     #update the airloopHVAC component with autosize information
@@ -1272,9 +1255,8 @@ class WriteOPS(object):
                     
                     oasys = airloop.airLoopHVACOutdoorAirSystem()
                     
-
+                    
                     if (oasys.is_initialized()== True) and (HVACDetails['airsideEconomizer'] != None):
-
                         print 'overriding the OpenStudio airside economizer settings'
                         oactrl = oasys.get().getControllerOutdoorAir()
                         #set control type
@@ -1324,59 +1306,71 @@ class WriteOPS(object):
                                 osboiler = self.updateBoiler(uboil,osboiler)
                                 
             elif systemIndex == 6:
-                
+                print HVACDetails['availSch']
                 hvacHandle = ops.OpenStudioModelHVAC.addSystemType6(model).handle()
                 
                 # get the airloop
                 airloop = model.getAirLoopHVAC(hvacHandle).get()
-
                 # add branches 
                 for zone in thermalZoneVector:
                     airloop.addBranchForZone(zone)
                     
                 if HVACDetails!=None:
-      
+                    print HVACDetails['availabilityManagerList']
+                    
                     if HVACDetails['availSch'] != None:
                         availSch = self.getOSSchedule(HVACDetails['availSch'], model)
                         airloop.setAvailabilitySchedule(availSch)
                     
-                    airloop = self.updateAvailManager(HVACDetails['availabilityManagerList'],airloop)
-                    
-                    
+                    airloop = self.updateAvailManager(HVACDetails['availabilityManagerList'],airloop, model)
                     
                 if plantDetails!=None:
                     
                     print HVACDetails['availabilityManagerList']
-
                 
             elif systemIndex == 7:
                 hvacHandle = ops.OpenStudioModelHVAC.addSystemType7(model).handle()
                 # get the airloop
                 airloop = model.getAirLoopHVAC(hvacHandle).get()
                 # add branches
-                for zone in thermalZoneVector:
+                for zoneCount, zone in enumerate(thermalZoneVector):
+                    #Add a branch for the zone
                     airloop.addBranchForZone(zone)
-                
-                if HVACDetails!=None:
-                    oasys = airloop.airLoopHVACOutdoorAirSystem() 
-                    if (oasys.is_initialized()== True) and (HVACDetails['airsideEconomizer'] != None):
-                        print 'overriding the OpenStudio airside economizer settings'
-                        oactrl = oasys.get().getControllerOutdoorAir()
-                        #set control type
-                        #can sensed min still be dry bulb for any of these?  Future release question
-                        econo = self.recallOASys(HVACDetails)
-                        oactrl = self.updateOASys(econo,oactrl,model)
-                        print 'economizer settings updated to economizer name: ' + HVACDetails['airsideEconomizer']['name']
-                        print ''
+                    
+                    #If there is recirculated air specificed, then specify it.
+                    if zoneRecircAir[zoneCount] != 0:
+                        x = airloop.demandComponents(ops.IddObjectType("OS:AirTerminal:SingleDuct:VAV:Reheat"))
+                        vavBox = model.getAirTerminalSingleDuctVAVReheat(x[zoneCount].handle()).get()
+                        vavBox.setZoneMinimumAirFlowMethod('FixedFlowRate')
+                        vavBox.setFixedMinimumAirFlowRate(zoneTotalAir[zoneCount])
+                        vavBox.setMaximumAirFlowRate(zoneTotalAir[zoneCount])
+                        print "Secified recirculation air for " +  str(zone.name()) + " to a value of " + str(zoneRecircAir[zoneCount]) + " m3/s per m2 of floor."
+                    
+                    if HVACDetails != None:
+                        #Update the availability manager.
+                        if HVACDetails['availabilityManagerList'] != 'ALWAYS ON':
+                            airloop = self.updateAvailManager(HVACDetails['availabilityManagerList'],airloop, model)
                         
-                    if HVACDetails['varVolSupplyFanDef'] != None:
-                        print 'overriding the OpenStudio supply fan settings'
-                        x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:VariableVolume"))
-                        vvfan = model.getFanVariableVolume(x[0].handle()).get()
-                        sf = self.recallVVFan(HVACDetails)
-                        vvfan = self.updateVVFan(sf,vvfan)
-                        print 'supply fan settings updated to supply fan name: ' + HVACDetails['varVolSupplyFanDef']['name']
-                        print ''
+                        #Edit the outdoor air sys.
+                        oasys = airloop.airLoopHVACOutdoorAirSystem() 
+                        if (oasys.is_initialized()== True) and (HVACDetails['airsideEconomizer'] != None):
+                            print 'overriding the OpenStudio airside economizer settings'
+                            oactrl = oasys.get().getControllerOutdoorAir()
+                            #set control type
+                            #can sensed min still be dry bulb for any of these?  Future release question
+                            econo = self.recallOASys(HVACDetails)
+                            oactrl = self.updateOASys(econo,oactrl,model)
+                            print 'economizer settings updated to economizer name: ' + HVACDetails['airsideEconomizer']['name']
+                            print ''
+                        
+                        if HVACDetails['varVolSupplyFanDef'] != {}:
+                            print 'overriding the OpenStudio supply fan settings'
+                            x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:VariableVolume"))
+                            vvfan = model.getFanVariableVolume(x[0].handle()).get()
+                            sf = self.recallVVFan(HVACDetails)
+                            vvfan = self.updateVVFan(sf,vvfan)
+                            print 'supply fan settings updated to supply fan name: ' + HVACDetails['varVolSupplyFanDef']['name']
+                            print ''
                 
                 if plantDetails!=None:
                     #I think the idea here is to see if there is a hot water plant update(not sure how)
@@ -1458,13 +1452,12 @@ class WriteOPS(object):
                                     print 'Condenser loop unneeded.'
                                     cwl.remove()
                                     print 'Condenser loop removed.'
-
             else:
                 msg = "HVAC system index " + str(systemIndex) +  " is not implemented yet!"
                 ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
             
-
-
+    
+    
     def addThermostat(self, HBZone, OSThermalZone, space, model):
         # create a dual set point
         thermostat = ops.ThermostatSetpointDualSetpoint(model)
@@ -1595,7 +1588,7 @@ class WriteOPS(object):
         ventilation.setOutdoorAirMethod("Sum")
         ventilation.setOutdoorAirFlowperPerson(zone.ventilationPerPerson)
         ventilation.setOutdoorAirFlowperFloorArea(zone.ventilationPerArea)
-        ventilation.setOutdoorAirFlowRate(0)
+        #ventilation.setOutdoorAirFlowRate(0)
         space.setDesignSpecificationOutdoorAir(ventilation)
         return space
     
@@ -1742,7 +1735,6 @@ class WriteOPS(object):
         
         # call the layers form HB library
         materialNames, comments, UVSI, UVIP = self.hb_EPMaterialAUX.decomposeEPCnstr(HBConstructionlName)
-
         
         # create an empty vector to collect the materials
         materials = ops.MaterialVector()
@@ -1802,26 +1794,24 @@ class WriteOPS(object):
             thisSurface.setName(surfaceName);
             thisSurface.setSpace(space);
             thisSurface.setSurfaceType(surface.srfType[surface.type]);
-            srfType = surface.srfType[int(surface.type)]
+            srfType = surface.srfType[int(surface.type)].lower().capitalize()
             if srfType.upper().Contains("ROOF") or srfType.upper().Contains("CEILING"):
                 srfType = "RoofCeiling" # This is an OpenStudio type that will be converted as a roof or ceiling in idf file
                 
             thisSurface.setSurfaceType(srfType);
-
-
-
             
             # create construction
-            if not self.isConstructionInLib(surface.EPConstruction):
+            if surface.EPConstruction == None:
+                construction = self.getConstructionFromLib(surface.construction, model)
+            elif not self.isConstructionInLib(surface.EPConstruction):
                 construction = self.getOSConstruction(surface.construction, model)
-                
                 # keep track of constructions
                 self.addConstructionToLib(surface.EPConstruction, construction)
             else:
-                construction = self.getConstructionFromLib(surface.EPConstruction)
-
+                construction = self.getConstructionFromLib(surface.EPConstruction, model)
+            
             thisSurface.setConstruction(construction)
-            thisSurface.setOutsideBoundaryCondition(surface.BC)
+            thisSurface.setOutsideBoundaryCondition(surface.BC.capitalize())
             thisSurface.setSunExposure(surface.sunExposure)
             thisSurface.setWindExposure(surface.windExposure)
             
@@ -1891,7 +1881,7 @@ class WriteOPS(object):
                 # keep track of constructions
                 self.addConstructionToLib(childSrf.EPConstruction, construction)
             else:
-                construction = self.getConstructionFromLib(childSrf.EPConstruction)
+                construction = self.getConstructionFromLib(childSrf.EPConstruction, model)
             
             
             glazing = ops.SubSurface(windowPointVectors, model)
@@ -1928,8 +1918,8 @@ class WriteOPS(object):
                 shdSurface.setShadingSurfaceGroup(shadingGroup)
                 if shadingSch!="": shdSurface.setTransmittanceSchedule(shadingSch)
                 
-
-                
+    
+    
     def setAdjacentSurfaces(self):
         for surfaceName in self.adjacentSurfacesDict.keys():
             adjacentSurfaceName, OSSurface = self.adjacentSurfacesDict[surfaceName]
@@ -1969,7 +1959,6 @@ class WriteOPS(object):
                     finalout = outstr.replace(";", "", 1)
                     # split into fields
                     fields = finalout.split(",")
-                    print fields
                     if fields[0].strip().lower() == "output:variable":
                         self.setOutputVariable(fields, model)
                     elif fields[0].strip().lower() == "output:meter":
@@ -1983,17 +1972,175 @@ class WriteOPS(object):
                 except Exception, e:
                     print  e
                     pass
-                
-                
+        return self.csvSchedules, self.csvScheduleCount
+
+class EPFeaturesNotInOS(object):
+    def __init__(self, workingDir):
+        self.fileBasedSchedules = {}
+        self.workingDir = workingDir
+    
+    def createCSVSchedString(self, scheduleName):
+        # check if the schedule is already created
+        if scheduleName.upper() in self.fileBasedSchedules.keys(): return "\n"
+        # set up default values
+        schTypeLimitStr = "\n"
+        schTypeLimitName = "Fraction"
+        numOfHours = 8760
+        
+        # create schedule object based on file
+        # find file name and use it as schedule name
+        scheduleFileName = os.path.basename(scheduleName)
+        scheduleObjectName = "_".join(scheduleFileName.split(".")[:-1])
+        
+        # copy schedule file into working dir
+        scheduleNewAddress = os.path.join(self.workingDir, scheduleFileName)
+        shutil.copyfile(scheduleName, scheduleNewAddress)
+        
+        # put them as key, value so I can find the new name when write schedule
+        self.fileBasedSchedules[scheduleName.upper()] = scheduleObjectName
+        
+        # get the inputs if the schedule is generated by Honeybee
+        with open(scheduleName, "r") as schFile:
+            for lineCount, line in enumerate(schFile):
+                if lineCount == 3: break
+                elif lineCount == 0:
+                    # try to collect information related to type limit
+                    lineSeg = line.split(",")
+                    if not lineSeg[0].startswith("Honeybee"): break
+                    lowerLimit, upperLimit, numericType, unitType = lineSeg[1:5]
+                    
+                    # prepare the schedulTypeLimitObject
+                    schTypeLimitName = os.path.basename(scheduleName).lower(). \
+                                       replace(".", "").split("csv")[0] + "TypeLimit"
+                    
+                    schTypeLimitStr = "ScheduleTypeLimits,\t!Schedule Type\n" + \
+                                      schTypeLimitName + ",\t! Name\n" + \
+                                      lowerLimit.strip() + ",\t!- Lower Limit Value\n" + \
+                                      upperLimit.strip() + ",\t!- Upper Limit Value\n" + \
+                                      numericType.strip() + ",\t!- Numeric Type\n" + \
+                                      unitType.strip() + ";\t!- Unit Type\n\n"
+                elif lineCount == 2:
+                    # check timestep
+                    try: numOfHours *= int(line.split(",")[0])
+                    except: pass
+        
+        # scheduleStr writes the section Schedule:File in the EnergyPlus file
+        # for custom schedules.
+        scheduleStr = schTypeLimitStr + \
+                      "Schedule:File,\n" + \
+                      scheduleObjectName + ",\t!- Name\n" + \
+                      schTypeLimitName + ",\t!- Schedule Type Limits Name\n" + \
+                      scheduleNewAddress + ",\t!- File Name\n" + \
+                      "5,\t!- Column Number\n" + \
+                      "4,\t!- Rows To Skip\n" + \
+                      str(int(numOfHours)) + ",\t!- Hours of Data\n" + \
+                      "Comma;\t!- Column Separator\n"
+        
+        return scheduleStr
+    
+    def EPZoneAirMixing(self, zone, zoneMixName, mixFlowRate, objCount):
+        if zone.mixAirFlowSched[objCount].upper() == 'ALWAYS ON':
+            mixingSched = 'ALWAYS ON'		
+        elif zone.mixAirFlowSched[objCount].upper().endswith('CSV'):		
+            mixingSchedFileName = os.path.basename(zone.mixAirFlowSched[objCount])		
+            mixingSched = "_".join(mixingSchedFileName.split(".")[:-1])		
+        else: mixingSched = zone.mixAirFlowSched[objCount]
+        
+        return '\nZoneMixing,\n'+\
+            '\t' + zone.name + zoneMixName + 'AirMix' + str(objCount) + ',  !- Name\n' + \
+            '\t' + zone.name + ',  !- Zone Name\n' + \
+            '\t' + mixingSched + ',  !- Schedule Name\n' + \
+            '\t' + 'Flow/Zone' + ',  !- Design Flow Rate Calculation Method\n' + \
+            '\t' + str(mixFlowRate) + ',   !- Design Flow Rate {m3/s}\n' + \
+            '\t' + ',  !- Flow per Zone Floor Area {m3/s-m2}\n' + \
+            '\t' + ', !- Flow per Exterior Surface Area {m3/s-m2}\n' + \
+            '\t' + ',    !- Air Changes per Hour\n' + \
+            '\t' + zoneMixName  + ',     !- Source Zone Name\n' + \
+            '\t' + '0'  + ',     !- Delta Temperature\n' + \
+            '\t,                        !- Delta Temperature Schedule Name\n' + \
+            '\t,                        !- Minimum Zone Temperature Schedule Name\n' + \
+            '\t,                        !- Maximum Zone Temperature Schedule Name\n' + \
+            '\t,                        !- Minimum Source Zone Temperature Schedule Name\n' + \
+            '\t,                        !- Maximum Source Zone Temperature Schedule Name\n' + \
+            '\t,                        !- Minimum Outdoor Temperature Schedule Name\n' + \
+            '\t;                        !- Maximum Outdoor Temperature Schedule Name\n'
+    
+    def EPNatVentSimple(self, zone, natVentCount):
+        if zone.natVentSchedule[natVentCount] == None: natVentSched = 'ALWAYS ON'
+        elif zone.natVentSchedule[natVentCount].upper().endswith('CSV'):
+            natVentSchedFileName = os.path.basename(zone.natVentSchedule[natVentCount])
+            natVentSched = "_".join(natVentSchedFileName.split(".")[:-1])
+        else: natVentSched = zone.natVentSchedule[natVentCount]
+        
+        return '\nZoneVentilation:WindandStackOpenArea,\n' + \
+                '\t' + zone.name + 'NatVent' + str(natVentCount) + ',  !- Name\n' + \
+                '\t' + zone.name + ',  !- Zone Name\n' + \
+                '\t' + str(zone.windowOpeningArea[natVentCount]) + ',  !- Opening Area\n' + \
+                '\t' + natVentSched + ',  !- Nat Vent Schedule\n' + \
+                '\t' + str(zone.natVentWindDischarge[natVentCount]) + ',   !- Opening Effectiveness\n' + \
+                '\t' + str(zone.windowAngle[natVentCount]) + ',  !- Effective Angle\n' + \
+                '\t' + str(zone.windowHeightDiff[natVentCount]) + ', !- Height Difference\n' + \
+                '\t' + str(zone.natVentStackDischarge[natVentCount]) + ',    !- Discharge Coefficient for Opening\n' + \
+                '\t' + str(zone.natVentMinIndoorTemp[natVentCount])  + ',     !- Minimum Indoor Temperature\n' + \
+                '\t' + ',     !- Minimum Indoor Temperature Shcedule Name\n' + \
+                '\t' + str(zone.natVentMaxIndoorTemp[natVentCount])  + ',     !- Maximum Indoor Temperature\n' + \
+                '\t' + ',     !- Maximum Indoor Temperature Shcedule Name\n' + \
+                '\t' + '-100'  + ',     !- Delta Temperature\n' + \
+                '\t' + ',     !- Delta Temperature Shcedule Name\n' + \
+                '\t' + str(zone.natVentMinOutdoorTemp[natVentCount])  + ',     !- Minimum Outdoor Temperature\n' + \
+                '\t' + ',     !- Minimum Outdoor Temperature Shcedule Name\n' + \
+                '\t' + str(zone.natVentMaxOutdoorTemp[natVentCount])  + ',     !- Maximum Outdoor Temperature\n' + \
+                '\t' + ',     !- Maximum Outdoor Temperature Shcedule Name\n' + \
+                '\t' + '40' + ';                        !- Maximum Wind Speed\n'
+    
+    def EPNatVentFan(self, zone, natVentCount):
+        if zone.natVentSchedule[natVentCount] == None: natVentSched = 'ALWAYS ON'
+        else:
+            natVentSchedFileName = os.path.basename(zone.natVentSchedule[natVentCount])
+            natVentSched = "_".join(natVentSchedFileName.split(".")[:-1])
+        
+        return '\nZoneVentilation:DesignFlowRate,\n' + \
+                '\t' + zone.name + 'NatVent' + str(natVentCount) + ',  !- Name\n' + \
+                '\t' + zone.name + ',  !- Zone Name\n' + \
+                '\t' + natVentSched + ',  !- Nat Vent Schedule\n' + \
+                '\t' + 'Flow/Zone' + ',  !- Design Flow Rate Calculation Method\n' + \
+                '\t' + str(zone.fanFlow[natVentCount]) + ',   !- Design flow rate m3/s\n' + \
+                '\t' + ',  !- Design flow rate per floor area\n' + \
+                '\t' + ', !- Flow Rate per person\n' + \
+                '\t' + ',    !- Air chancges per hour\n' + \
+                '\t' + 'Intake' + ',  !- Ventilation Type\n' + \
+                '\t' + str(zone.FanPressure[natVentCount]) + ',   !- Fan Pressure Rise (Pa)\n' + \
+                '\t' + str(zone.FanEfficiency[natVentCount]) + ',   !- Fan Efficiency (Pa)\n' + \
+                '\t' + '1' + ',  !- Constant Term Coefficient\n' + \
+                '\t' + '0' + ',  !- Temperature Term Coefficient\n' + \
+                '\t' + '0' + ',  !- Velocity Term Coefficient\n' + \
+                '\t' + '0' + ',  !- Velocity Squared Term Coefficient\n' + \
+                '\t' + str(zone.natVentMinIndoorTemp[natVentCount])  + ',     !- Minimum Indoor Temperature\n' + \
+                '\t' + ',     !- Minimum Indoor Temperature Shcedule Name\n' + \
+                '\t' + str(zone.natVentMaxIndoorTemp[natVentCount])  + ',     !- Maximum Indoor Temperature\n' + \
+                '\t' + ',     !- Maximum Indoor Temperature Shcedule Name\n' + \
+                '\t' + '-100'  + ',     !- Delta Temperature\n' + \
+                '\t' + ',     !- Delta Temperature Shcedule Name\n' + \
+                '\t' + str(zone.natVentMinOutdoorTemp[natVentCount])  + ',     !- Minimum Outdoor Temperature\n' + \
+                '\t' + ',     !- Minimum Outdoor Temperature Shcedule Name\n' + \
+                '\t' + str(zone.natVentMaxOutdoorTemp[natVentCount])  + ',     !- Maximum Outdoor Temperature\n' + \
+                '\t' + ',     !- Maximum Outdoor Temperature Shcedule Name\n' + \
+                '\t' + '40' + ';                        !- Maximum Wind Speed\n'
+
+
 
 class RunOPS(object):
-    def __init__(self, model, weatherFilePath = r"C:\EnergyPlusV8-1-0\WeatherData\USA_CA_San.Francisco.Intl.AP.724940_TMY3.epw"):
+    def __init__(self, model, weatherFilePath, HBZones, csvSchedules, csvScheduleCount, additionalcsvSchedules):
         self.weatherFile = weatherFilePath # just for batch file as an alternate solution
-        self.EPPath = ops.Path(r"C:\EnergyPlusV8-1-0\EnergyPlus.exe")
+        self.EPPath = ops.Path(sc.sticky["honeybee_folders"]["EPPath"] + "\EnergyPlus.exe")
         self.epwFile = ops.Path(weatherFilePath)
-        self.iddFile = ops.Path(r"C:\EnergyPlusV8-1-0\Energy+.idd")
+        self.iddFile = ops.Path(sc.sticky["honeybee_folders"]["EPPath"] + "\Energy+.idd")
         self.model = model
-        
+        self.HBZones = HBZones
+        self.csvSchedules = csvSchedules
+        self.csvScheduleCount = csvScheduleCount
+        self.additionalcsvSchedules = additionalcsvSchedules
+    
     def osmToidf(self, workingDir, projectName, osmPath):
         # create a new folder to run the analysis
         projectFolder =os.path.join(workingDir, projectName)
@@ -2010,12 +2157,15 @@ class RunOPS(object):
         # remove the current object
         tableStyleObjects = workspace.getObjectsByType(ops.IddObjectType("OutputControl_Table_Style"))
         for obj in tableStyleObjects: obj.remove()
-
+        
         tableStyle = ops.IdfObject(ops.IddObjectType("OutputControl_Table_Style"))
         tableStyle.setString(0, "CommaAndHTML")
         workspace.addObject(tableStyle)
         
         workspace.save(idfFilePath, overwrite = True)
+        
+        ####Code added by chriswmackey to add natural ventilation parameters into the OpenStudio Model 
+        self.writeNonOSFeatures(idfFilePath, self.HBZones, workingDir)
         
         
         """
@@ -2028,29 +2178,62 @@ class RunOPS(object):
         if makeMonthly:
             self.writeIDFWithMonthly(idfFilePath)
         
-        #DBPath = ops.Path(os.path.join(projectFolder, projectName + "_osmToidf.db"))
-        
-        # start run manager
-        #rm = ops.RunManager(DBPath, True, True)        
-        
-        # create workflow
-        #wf = ops.Workflow("EnergyPlus")
-        
-        # put in queue and let it go
-        #rm.enqueue(wf.create(ops.Path(projectFolder), osmPath, self.epwFile), True)
-        #rm.setPaused(False)
-        
-        #while rm.workPending():
-        #    time.sleep(.5)
-        #    print "Converting osm to idf ..."
-        
-        #rm.Dispose() # don't remove this as Rhino will crash if you don't dispose run manager
         
         return idfFolder, idfFilePath
+    
+    
+    def writeNonOSFeatures(self, idfFilePath, HBZones, workingDir):
+        #Grab the lines of the exiting IDF.
+        fi = open(str(idfFilePath),'r')
+        fi.seek(0)
+        lines=[]
+        foundCSVSchedules = []
+        for line in fi:
+            if 'CSV' in line:
+                for columnCount, column in enumerate(line.split('.')):
+                    if columnCount == 0:
+                        origName = column + '.csv'
+                        newName = column
+                newName = '  ' + newName.split('\\')[-1]
+                if origName not in foundCSVSchedules:
+                    foundCSVSchedules.append(origName)
+                    lines.append(line)
+                else: lines.append(line.replace(origName, newName))
+            else:
+                lines.append(line)
+        fi.close()
         
+        #Write in any CSV schedules.
+        otherFeatureClass = EPFeaturesNotInOS(workingDir)
+        for schedule in self.csvSchedules:
+            lines.append(otherFeatureClass.createCSVSchedString(schedule))
+        for schedule in self.additionalcsvSchedules:
+            print schedule
+            lines.append(otherFeatureClass.createCSVSchedString(schedule))
+        
+        natVentStrings = []
+        for zone in HBZones:
+            if zone.natVent == True:
+                for natVentCount, natVentObj in enumerate(zone.natVentType):
+                    if natVentObj == 1 or natVentObj == 2:
+                        natVentStrings.append(otherFeatureClass.EPNatVentSimple(zone, natVentCount))
+                    elif natVentObj == 3:
+                        natVentStrings.append(otherFeatureClass.EPNatVentFan(zone, natVentCount))
+        
+        if len(natVentStrings) > 0:
+            for line in natVentStrings:
+                lines.append(line)
+        
+        lines.append('\nOutput:Surfaces:List,\n')
+        lines.append('\t' + 'Details;                 !- Report Type' + '\n')
+        
+        fiw = open(str(idfFilePath),'w')
+        for line in lines:
+            fiw.write(line)
+        fiw.close()
+    
+    
     def writeIDFWithMonthly(self, idfFilePath):
-        print "Making Monthly SQL reading possible."
-        print idfFilePath
         fi = open(str(idfFilePath),'r')
         fi.seek(0)
         prepare=False
@@ -2093,40 +2276,6 @@ class RunOPS(object):
                         lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 13"+ "\n")
                         lines.append("    Refrigeration:Electricity,!- Variable or Meter 14 Name"+ "\n")
                         lines.append("    SumOrAverage;            !- Aggregation Type for Variable or Meter 14"+ "\n")
-                        """
-                        lines.append("\n")
-                        lines.append("Output:Table:Monthly," + "\n")
-                        lines.append("    Building Energy Performance - Water,  !- Name"+ "\n")
-                        lines.append("    2,                       !- Digits After Decimal"+ "\n")
-                        lines.append("    InteriorLights:Water,  !- Variable or Meter 1 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 1"+ "\n")
-                        lines.append("    ExteriorLights:Water,  !- Variable or Meter 2 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 2"+ "\n")
-                        lines.append("    InteriorEquipment:Water,  !- Variable or Meter 3 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 3"+ "\n")
-                        lines.append("    ExteriorEquipment:Water,  !- Variable or Meter 4 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 4"+ "\n")
-                        lines.append("    Fans:Water,        !- Variable or Meter 5 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 5"+ "\n")
-                        lines.append("    Pumps:Water,       !- Variable or Meter 6 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 6"+ "\n")
-                        lines.append("    Heating:Water,     !- Variable or Meter 7 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 7"+ "\n")
-                        lines.append("    Cooling:Water,     !- Variable or Meter 8 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 8"+ "\n")
-                        lines.append("    HeatRejection:Water,  !- Variable or Meter 9 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 9"+ "\n")
-                        lines.append("    Humidifier:Water,  !- Variable or Meter 10 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 10"+ "\n")
-                        lines.append("    HeatRecovery:Water,!- Variable or Meter 11 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 11"+ "\n")
-                        lines.append("    WaterSystems:Water,!- Variable or Meter 12 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 12"+ "\n")
-                        lines.append("    Cogeneration:Water,!- Variable or Meter 13 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 13"+ "\n")
-                        lines.append("    Refrigeration:Water,!- Variable or Meter 14 Name"+ "\n")
-                        lines.append("    SumOrAverage;            !- Aggregation Type for Variable or Meter 14"+ "\n")
-                        """
                         lines.append("\n")
                         lines.append("Output:Table:Monthly,"+ "\n")
                         lines.append("  Building Energy Performance - Natural Gas,  !- Name"+ "\n")
@@ -2324,15 +2473,14 @@ class RunOPS(object):
             else:
                 prepare=True;
                 lines.append(line)
-        #Request that surface information be written into the eio file.
-        lines.append('\nOutput:Surfaces:List,\n')
-        lines.append('\t' + 'Details;                 !- Report Type' + '\n')
         
         fi.close()
         fiw = open(str(idfFilePath),'w')
         for line in lines:
             fiw.write(line)
         fiw.close()
+    
+    
     def runAnalysis(self, osmFile, useRunManager = False):
         
         # Preparation
@@ -2343,18 +2491,18 @@ class RunOPS(object):
         # create idf - I separated this job as putting them together
         # was making EnergyPlus to crash
         idfFolder, idfPath = self.osmToidf(workingDir, projectName, osmPath)
-        print 'made idf: ' + idfFolder,idfPath
+        print 'IDF had been created from the OSM: ' + str(idfPath)
         
         if not useRunManager:
             
-            resultFile = self.writeBatchFile(idfFolder, "ModelToIdf\\in.idf", self.weatherFile, EPDirectory = 'C:\\EnergyPlusV8-1-0')
+            resultFile = self.writeBatchFile(idfFolder, "ModelToIdf\\in.idf", self.weatherFile, EPDirectory = sc.sticky["honeybee_folders"]["EPPath"])
             return os.path.join(idfFolder, "ModelToIdf", "in.idf"), resultFile
         
         outputPath = ops.Path(idfFolder)
         
         rmDBPath = ops.Path(os.path.join(idfFolder, projectName + ".db"))
         try:
-            rm = ops.RunManager(rmDBPath, True, True)
+            rm = ops.RunManager(rmDBPath, True, True, False, False)
             
             # set up tool info to pass to run manager
             energyPlusTool = ops.ToolInfo(self.EPPath)
@@ -2398,7 +2546,7 @@ class RunOPS(object):
              rm.Dispose() # in case anything goes wrong it closes the rm
              print `e`
     
-    def writeBatchFile(self, workingDir, idfFileName, epwFileAddress, EPDirectory = 'C:\\EnergyPlusV8-1-0'):
+    def writeBatchFile(self, workingDir, idfFileName, epwFileAddress, EPDirectory = sc.sticky["honeybee_folders"]["EPPath"]):
         """
         This is here as an alternate until I can get RunManager to work
         """
@@ -2421,15 +2569,14 @@ class RunOPS(object):
         
         #execute the batch file
         os.system(batchFileAddress)
-        print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"+fullPath
         return fullPath + "Zsz.csv",fullPath+".sql",fullPath+".csv"
 
 class RunOPSRManage(object):
-    def __init__(self, model, measuredict, weatherFilePath = r"C:\EnergyPlusV8-1-0\WeatherData\USA_CA_San.Francisco.Intl.AP.724940_TMY3.epw"):
+    def __init__(self, model, measuredict, weatherFilePath):
         self.weatherFile = weatherFilePath # just for batch file as an alternate solution
-        self.EPPath = ops.Path(r"C:\EnergyPlusV8-1-0\EnergyPlus.exe")
+        self.EPPath = ops.Path(sc.sticky["honeybee_folders"]["EPPath"] + "\EnergyPlus.exe")
         self.epwFile = ops.Path(weatherFilePath)
-        self.iddFile = ops.Path(r"C:\EnergyPlusV8-1-0\Energy+.idd")
+        self.iddFile = ops.Path(sc.sticky["honeybee_folders"]["EPPath"] + "\Energy+.idd")
         self.model = model
         self.measuredict = measuredict
         
@@ -2561,7 +2708,7 @@ class RunOPSRManage(object):
                 pass
              print `e`
     
-    def writeBatchFile(self, workingDir, idfFileName, epwFileAddress, EPDirectory = 'C:\\EnergyPlusV8-1-0'):
+    def writeBatchFile(self, workingDir, idfFileName, epwFileAddress, EPDirectory = sc.sticky["honeybee_folders"]["EPPath"]):
         """
         This is here as an alternate until I can get RunManager to work
         """
@@ -2598,7 +2745,6 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     
     
     units = sc.doc.ModelUnitSystem
-    print units
     if `units` != 'Rhino.UnitSystem.Meters':
         msg = "Currently the OpenStudio component only works in meters. Change the units to Meters and try again!"
         ghenv.Component.AddRuntimeMessage(w, msg)
@@ -2620,7 +2766,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         if not sc.sticky['ladybug_release'].isCompatible(ghenv.Component): return -1
     except:
         warning = "You need a newer version of Ladybug to use this compoent." + \
-        " Use updateLadybug component to update userObjects.war" + \
+        " Use updateLadybug component to update userObjects.\n" + \
         "If you have already updated userObjects drag Ladybug_Ladybug component " + \
         "into canvas and try again."
         w = gh.GH_RuntimeMessageLevel.Warning
@@ -2677,6 +2823,10 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     # generate stories
     hb_writeOPS.generateStories(HBZones, model)
     
+    #Make a list of schedules to keep track of what needs to be written into the model.
+    additionalSchedList = []
+    additionalcsvSchedules = []
+    
     for zoneCount, zone in enumerate(HBZones):
         
         # prepare non-planar zones
@@ -2724,12 +2874,15 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
             if HAVCGroupID not in hb_writeOPS.HVACSystemDict.keys():
                 # add place holder for lists 
                 
-                hb_writeOPS.HVACSystemDict[HAVCGroupID] = [HVACIndex,[],HVACDetails,plantDetails]
+                hb_writeOPS.HVACSystemDict[HAVCGroupID] = [HVACIndex,[],HVACDetails,plantDetails, [], []]
         
-        # collect informations for systems here
+        # collect informations for systems here, such as the zones in each system and the recirculation specifcations for each zone.
         hb_writeOPS.HVACSystemDict[HAVCGroupID][1].append(thermalZone)
-        #print hb_writeOPS.HVACSystemDict
-
+        hb_writeOPS.HVACSystemDict[HAVCGroupID][4].append(zone.recirculatedAirPerArea)
+        zoneFlrArea = zone.getFloorArea()
+        totalZoneFlow = (zone.recirculatedAirPerArea*zoneFlrArea) +  (zone.ventilationPerArea*zoneFlrArea) + (zone.ventilationPerPerson*zone.numOfPeoplePerArea*zoneFlrArea)
+        hb_writeOPS.HVACSystemDict[HAVCGroupID][5].append(totalZoneFlow)
+        
         # add thermostat
         thermalZone = hb_writeOPS.addThermostat(zone, thermalZone, space, model)
         
@@ -2744,6 +2897,19 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
                 else:
                     hb_writeOPS.OPSNonePlanarFenSurface(HBSrf, OPSSrf, model, space)
         
+        
+        #Check other schedules.
+        if zone.natVent == True:
+            for ventObj in zone.natVentSchedule:
+                if ventObj != None:
+                    if ventObj.upper().endswith('.CSV'): additionalcsvSchedules.append(ventObj)
+                    else: additionalSchedList.append(ventObj)
+                elif 'ALWAYS ON' not in additionalSchedList: additionalSchedList.append('ALWAYS ON')
+    
+    #Add and extra schedules pulled off of the zones.
+    for schedName in additionalSchedList:
+        ossch = hb_writeOPS.getOSSchedule(schedName, model)
+    
     
     # this should be done once for the whole model
     hb_writeOPS.setAdjacentSurfaces()
@@ -2757,7 +2923,11 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         hb_writeOPS.OPSShdSurface(shdingSurfcaes, model)
     
     # outputs
-    hb_writeOPS.setOutputs(simulationOutputs, model)
+    if simulationOutputs:
+        csvSchedules, csvScheduleCount = hb_writeOPS.setOutputs(simulationOutputs, model)
+    else:
+        csvSchedules = []
+        csvScheduleCount = 0
     
     #save the model
     model.save(ops.Path(fname), True)
@@ -2765,17 +2935,32 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     print "Model saved to: " + fname
     workingDir, fileName = os.path.split(fname)
     projectName = (".").join(fileName.split(".")[:-1])
-    print projectName
-
+    
+    
     if runIt:
-        hb_runOPS = RunOPS(model, epwWeatherFile)
+        hb_runOPS = RunOPS(model, epwWeatherFile, HBZones, csvSchedules, csvScheduleCount, additionalcsvSchedules)
         #hb_runOPSRm = RunOPSRManage(model, hb_writeOPS.HVACSystemDict, epwWeatherFile)
         #hb_runOPSRm.runAnalysis(fname, False)
         idfFile, resultFile = hb_runOPS.runAnalysis(fname, useRunManager = False)
-        #this is the zone group id
-                # add HVAC system
-
-            
+        
+        try:
+            errorFileFullName = idfFile.replace('.idf', '.err')
+            errFile = open(errorFileFullName, 'r')
+            for line in errFile:
+                print line
+                if "**  Fatal  **" in line:
+                    warning = "The simulation has failed because of this fatal error: \n" + str(line)
+                    w = gh.GH_RuntimeMessageLevel.Warning
+                    ghenv.Component.AddRuntimeMessage(w, warning)
+                    resultFileAddress = None
+                elif "** Severe  **" in line:
+                    comment = "The simulation has not run correctly because of this severe error: \n" + str(line)
+                    c = gh.GH_RuntimeMessageLevel.Remark
+                    ghenv.Component.AddRuntimeMessage(c, comment)
+            errFile.close()
+        except:
+            pass
+        
         return fname, idfFile, resultFile
         
     return fname, None, None

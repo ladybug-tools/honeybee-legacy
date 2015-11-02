@@ -51,7 +51,7 @@ import Grasshopper.Kernel as gh
 
 ghenv.Component.Name = "Honeybee_OpenStudio Fan Detail"
 ghenv.Component.NickName = 'EPlusFan'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nOCT_26_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | AirsideSystems"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -72,7 +72,7 @@ def main():
             print 'You must define a fan type, either constant volume or variable volume.'
             msg = "Without a fan type, this component cannot work."
             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
-            
+        
         elif (_fanType == 1):
             print 'you have selected a variable volume fan, this is typically used for ASHRAE system types 5 and 7'
             print 'We have found the Honeybee default Variable Volume Fan Definition: '
@@ -165,7 +165,7 @@ def main():
             fanComponent['maxFlowRate'] = _maxFlowRate_
             fanComponent['motorEfficiency'] = _motorEfficiency_
             fanComponent['airStreamHeatPct'] = _motorPctInAirstream_
-        
+            
             if _fanName != None and _fanType != None:
                 actions = []
                 storedFanParams = {}

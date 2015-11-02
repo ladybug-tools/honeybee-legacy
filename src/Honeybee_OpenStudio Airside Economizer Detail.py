@@ -34,6 +34,7 @@ Provided by Honeybee 0.0.57
         _minimumLimitType_: ... do nothing and it defaults to Proportional Minimum (min depends on the supply air flow rate as opposed to an absolute number)
         _minimumOutdoorAirSchedule_: ... This is a schedule with values between 0 and 1, and it is multiplied by the minimumAirFlowRate.  It is usually left blank, but can be used to fine tune the economizer during warm-up time or after hours.
         _minimumOutdoorAirFracSchedule_: ... this overrides minOutdoorAirSchedule and minAirflowRate.  It is a schedule between 0 and 1.  It is often used to create a 100% outside air system.
+        _maximumOutdoorAirFracSchedule_: ... this is a schedule between 0 and 1.  It is often used to create a recirculating outside air system such as that in patient rooms.
         _maximumLimitDewpoint_: ... needed for when the ControlType is Fixed Dewpoint and Dry Bulb.  Otherwise leave blank
         _sensedMinimum_: ... is the minimum of whatever the control type, at this point the system goes to minimum flow
         _sensedMaximum_: ... is the maximum of whatever the control type, at this point the system goes to minimum flow
@@ -42,12 +43,12 @@ Provided by Honeybee 0.0.57
         _mechVentController_: an optional field, though highly recommended.  Open Studio provides default behavoir for this controller.
         _availabilityManagerList_ : allows you to toggle between different AvailabilityManagers.  Right now, we simply allow you to create a list that has only one AvailabilityManager, and the type of manager can be ScheduledOrNightCycle
     Returns:
-        airsideEconomizerParameters:...
+        airsideEconomizer: An airside economizer detail that can be plugged into the "Honeybee_Air Handling Unit Detail" component.
 """
 
 ghenv.Component.Name = "Honeybee_OpenStudio Airside Economizer Detail"
 ghenv.Component.NickName = 'AirSideEconomizer'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nOCT_28_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | AirsideSystems"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -71,6 +72,7 @@ def clearInputs(econocomponent):
     econocomponent['minLimitType'] = None
     econocomponent['minOutdoorAirSchedule'] = None
     econocomponent['minOutdoorAirFracSchedule'] = None
+    econocomponent['maxOutdoorAirFracSchedule'] = None
     econocomponent['maxLimitDewpoint'] = None
     econocomponent['sensedMin'] = None
     econocomponent['sensedMax'] = None
@@ -83,11 +85,6 @@ def clearInputs(econocomponent):
 class dictToClass(object):
     def __init__(self,pyDict):
         self.d = pyDict
-
-        
-        
-        
-
 
 ecdict = {
 0:'FixedDryBulb',
@@ -116,8 +113,8 @@ dxLockoutdict = {
 2:'LockoutwithCompressor'
 }
 
-print _economizerControlType_
-if sc.sticky.has_key('honeybee_release'):
+
+def main():
     print 'grabbed the Honeybee default AirSide Economizer Definition: '
     hb_AirsideEconomizerDef = sc.sticky['honeybee_AirsideEconomizerParams']().airEconoDict
     pp = pprint.PrettyPrinter(indent=4)
@@ -135,6 +132,7 @@ if sc.sticky.has_key('honeybee_release'):
     econocomponent['minLimitType'] = minLimitdict[_minimumLimitType_]
     econocomponent['minOutdoorAirSchedule'] = _minimumOutdoorAirSchedule_
     econocomponent['minOutdoorAirFracSchedule'] = _minimumOutdoorAirFracSchedule_
+    econocomponent['maxOutdoorAirFracSchedule'] = _maximumOutdoorAirFracSchedule_
     econocomponent['maxLimitDewpoint'] = _maximumLimitDewpoint_
     econocomponent['sensedMin'] = _sensedMinimum_
     econocomponent['sensedMax'] = _sensedMaximum_
@@ -149,46 +147,38 @@ if sc.sticky.has_key('honeybee_release'):
     else:
         econocomponent['availManagerList'] = _availabilityManagerList_
     
-    if _uniqueName != None:
-        if (_economizerControlType_ == 5 and _maximumLimitDewpoint_== None):
-            print 'Fixed Dewpoint and Dry Bulb economizer chosen without inputting dewpoint.  Please enter a dewpoint value now or your economizer definition will revert to the Honeybee defaults.'
-            msg = "You have chosen Control Type Fixed Dewpoint and Dry Bulb but you haven't input a maxLimitDewpoint.  Your economizer definition will be return to the Honeybee defaults until this is corrected."
+    
+    if (_economizerControlType_ == 5 and _maximumLimitDewpoint_== None):
+        print 'Fixed Dewpoint and Dry Bulb economizer chosen without inputting dewpoint.  Please enter a dewpoint value now or your economizer definition will revert to the Honeybee defaults.'
+        msg = "You have chosen Control Type Fixed Dewpoint and Dry Bulb but you haven't input a maxLimitDewpoint.  Your economizer definition will be return to the Honeybee defaults until this is corrected."
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+        econocomponent = clearInputs(econocomponent)
+    elif _minimumOutdoorAirFracSchedule_ != None:
+        if _minimumOutdoorAirSchedule_ != None:
+            print 'An error has been found in your definition, EnergyPlus only acceps either a minimum air schedule or minimum outdoor air fraction schedule, not both.'
+            msg = "You have chosen to provide both schedules, but you can only choose one.  Your economizer definition will return to the Honeybee defaults until this is corrected."
             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
             econocomponent = clearInputs(econocomponent)
-        elif _minimumOutdoorAirFracSchedule_ != None:
-            if _minimumOutdoorAirSchedule_ != None:
-                print 'An error has been found in your definition, EnergyPlus only acceps either a minimum air schedule or minimum outdoor air fraction schedule, not both.'
-                msg = "You have chosen to provide both schedules, but you can only choose one.  Your economizer definition will return to the Honeybee defaults until this is corrected."
-                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
-                econocomponent = clearInputs(econocomponent)
-            else:
-                print 'Warning:  choosing to use the MinimumOutdoorAirFraction schedule overrides the minimumOutdoorAir Schedule AND the minimum Airflow Rate setting.  Make sure this is what you want.'
-        
-        if (_economizerControlType_ == 4):
-            print 'Warning: You have chosen an electronic enthalpy controller.  Honeybee currently does not support electronic enthalpy controllers.  Please make another selection for controlType.'
-            print 'Your economizer definition will return to the Honeybee defaults until this is corrected.'
-            econocomponent = clearInputs(econocomponent)
-        elif (_economizerControlType_ != 0):
-            if (_economizerControlType_ != 5):
-                if( _sensedMinimum_ == None or _sensedMaximum_ == None):
-                    print 'Warning: you have chosen an control Type that is not based on dry bulb.'
-                    print 'We strongly suggest you provide your own values for sensedMinimum and sensedMaximum inputs for this component.'
-                    print 'If you have selected Enthalpy, units for sensedMax and sensed Min are in Joules/kg'
-                    print 'Differential controllers are based upon the measured difference between exhaust and outdoor supply air streams.'
         else:
-            pass
-
-    else:
-        print 'Warning: If you are going to update the default economizer to a new one, you have to provide at least a name for it.'
-        print 'Until a name is provided, the airside econmizer will remain the Honeybee default.'
-        msg = "If you wish to make a new Airside Economizer definition, at least provide a name for it."
-        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Error, msg)
+            print 'Warning:  choosing to use the MinimumOutdoorAirFraction schedule overrides the minimumOutdoorAir Schedule AND the minimum Airflow Rate setting.  Make sure this is what you want.'
+    
+    if (_economizerControlType_ == 4):
+        print 'Warning: You have chosen an electronic enthalpy controller.  Honeybee currently does not support electronic enthalpy controllers.  Please make another selection for controlType.'
+        print 'Your economizer definition will return to the Honeybee defaults until this is corrected.'
         econocomponent = clearInputs(econocomponent)
+    elif (_economizerControlType_ != 0):
+        if (_economizerControlType_ != 5):
+            if( _sensedMinimum_ == None or _sensedMaximum_ == None):
+                print 'Warning: you have chosen an control Type that is not based on dry bulb.'
+                print 'We strongly suggest you provide your own values for sensedMinimum and sensedMaximum inputs for this component.'
+                print 'If you have selected Enthalpy, units for sensedMax and sensed Min are in Joules/kg'
+                print 'Differential controllers are based upon the measured difference between exhaust and outdoor supply air streams.'
+    else:
+        pass
     
     actions = []
     storedEconoPar = {}
     for key in hb_AirsideEconomizerDef.keys():
-        print key, econocomponent[key]
         if econocomponent.has_key(key) and econocomponent[key] != None:
             if key == 'econoControl':
                 s = key + ' has been updated to ' + econocomponent[key]
@@ -224,15 +214,30 @@ if sc.sticky.has_key('honeybee_release'):
                 actions.append(s)
             storedEconoPar[key] = hb_AirsideEconomizerDef[key]
     
-    airsideEconomizerParameters = dictToClass(storedEconoPar)
+    airsideEconomizer = dictToClass(storedEconoPar)
     print 'your economizer definition: '
     pp.pprint(storedEconoPar)
     print ''
     print 'Here are all the actions completed by this component:'
     actions = sorted(actions)
     pp.pprint(actions)
+    
+    return airsideEconomizer
+
+
+
+
+initCheck = True
+if sc.sticky.has_key('honeybee_release'): pass
 else:
+    initCheck = False
     print "You should first let Honeybee to fly..."
     w = gh.GH_RuntimeMessageLevel.Warning
     ghenv.Component.AddRuntimeMessage(w, "You should let Honeybee to fly...")
-    airsideEconomizerParameters = []
+    airsideEconomizer = []
+
+if initCheck == True and _uniqueName != None:
+    airsideEconomizer = main()
+elif _uniqueName == None:
+    msg = "Provide a name for your economizer."
+    print msg

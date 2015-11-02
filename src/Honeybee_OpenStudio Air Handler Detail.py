@@ -30,13 +30,7 @@ Provided by Honeybee 0.0.57
         jsonfileloc_: ... For future
         _HVACSystemID:... use of the integers representing a system, as found in openStudioHVACSystemsList
         _availabilitySch_: ... a Honeybee or OpenStudio schedule reference.
-        _fanPlacement_: ... BlowThrough or DrawThrough
-        _coolingAirflowRate_: You may enter a maximum airflow rate in cooling (m3/s).  Typically this is left blank, so EnergyPlus can autosize.
-        _coolingOAFlowRate_: ...You may enter a maximum outdoor airflow rate in cooling (m3/s).  Typically this is left blank, so EnergyPlus can autosize.
-        _heatingAirflowRate_: ...You may enter a maximum airflow rate in heating (m3/s).  Typically this is left blank, so EnergyPlus can autosize.
-        _heatingOAFlowRate_: ... You may enter a maximum outdoor airflow rate in cooling (m3/s).  Typically this is left blank, so EnergyPlus can autosize.
-        _floatingAirflowRate_: ...You may enter a maximum airflow rate when floating (m3/s).  Typically this is left blank, so EnergyPlus can autosize.
-        _floatingOAFlowRate_: ...You may enter a maximum outdoor airflow rate in when floating (m3/s).  Typically this is left blank, so EnergyPlus can autosize.
+        _fanPlacement_: ... BlowThrough or DrawThrough.
         _coolingCoil_: ... Provide a definition fo a cooling coil (from the Honeybee component for cooling coils).  This component currently accepts one and two speed DX coil
         _heatingCoil_: ... Provide a definition fo a heating coil (from the Honeybee component for heating coils).  This component currently does not accept heating coils
         _fanDetail_: ... Provide a definition for a fan serving your air handler(s) .  This component current accepts constant volume fans that ride the fan curve, or a VFD fan
@@ -51,7 +45,7 @@ import Grasshopper.Kernel as gh
 
 ghenv.Component.Name = "Honeybee_OpenStudio Air Handler Detail"
 ghenv.Component.NickName = 'AirHandlerDetails'
-ghenv.Component.Message = 'VER 0.0.57\nOCT_18_2015'
+ghenv.Component.Message = 'VER 0.0.57\nOCT_31_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | AirsideSystems"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -180,20 +174,13 @@ def main(fanDetail,coolingCoil,heatingCoil,airsideEconomizer,availabilityManager
     #dx coil assignment errors (single speed where dual speed, etc. , using DX heating where hot water)
     
     if(_HVACSystemID !=None):
-
+        
         print 'You have assigned a valid HVAC system ID.'
         print str(_HVACSystemID) + ": " + sysDict[_HVACSystemID]
         sysdict = {}
-        # Used to pass to OSHVAC systems component
         sysdict['HVACID'] = _HVACSystemID
         sysdict['availSch'] = _availabilitySch_
         sysdict['fanPlacement'] = _fanPlacement_
-        sysdict['coolingAirflow'] = _coolingAirflowRate_
-        sysdict['coolingOAflow'] = _coolingOAFlowRate_
-        sysdict['heatingAirflow'] = _coolingAirflowRate_
-        sysdict['heatingOAflow'] = _coolingOAFlowRate_
-        sysdict['floatingAirflow'] = _coolingAirflowRate_
-        sysdict['floatingOAflow'] = _coolingOAFlowRate_
         if fanDetail != None:
             try:
                 if fanDetail.d['type'] == 0:
@@ -213,16 +200,16 @@ def main(fanDetail,coolingCoil,heatingCoil,airsideEconomizer,availabilityManager
                 sysdict['constVolSupplyFanDef'] = sc.sticky['honeybee_constantVolumeFanParams']().cvFanDict
                 sysdict['varVolSupplyFanDef'] = {}
             else:
-                print 'Variable volume fan parameters set to Honeybee default.'
+                print 'Variable volume fan parameters set to OpenStudio default.'
                 sysdict['varVolSupplyFanDef'] = sc.sticky['honeybee_variableVolumeFanParams']().vvFanDict
                 sysdict['constVolSupplyFanDef'] = {}
         
-
+        
         if airsideEconomizer != None: 
             # There is an economizer so add it to sysdict
             
             sysdict['airsideEconomizer'] = airsideEconomizer.d
-
+            
         if not isinstance(coolingCoil, str): 
             print 'upgrading cooling coil detail'
 
@@ -239,8 +226,7 @@ def main(fanDetail,coolingCoil,heatingCoil,airsideEconomizer,availabilityManager
         if availabilityManagerList != None:
             
             print 'found availMan!!!!!!!!!'
-            sysdict['availabilityManagerList'] = availabilityManagerList
-            print sysdict['availabilityManagerList']
+            sysdict['availabilityManagerList'] = availabilityManagerList.d
             
         else:
             # Set to always On
@@ -251,19 +237,14 @@ def main(fanDetail,coolingCoil,heatingCoil,airsideEconomizer,availabilityManager
         storedAHUParams = {}
         
         for key in sorted(hb_airHandler.keys()):
-            print key
             if sysdict.has_key(key):
-                
                 if key == 'varVolSupplyFanDef' or key == 'constVolSupplyFanDef':
-
                     storedAHUParams[key] = sysdict[key]
                 elif key == 'airsideEconomizer':
-
                     storedAHUParams[key] = sysdict[key]
                 else:
-                    
                     storedAHUParams[key] = sysdict[key]
-
+                    
             else:
                 if key == 'supplyFanDef':
                     storedAHUParams[key] = hb_airHandler[key]().cvFanDict
@@ -277,17 +258,21 @@ def main(fanDetail,coolingCoil,heatingCoil,airsideEconomizer,availabilityManager
 
                 else:
                     storedAHUParams[key] = hb_airHandler[key]
-        
+        storedAHUParams['HVACID'] = _HVACSystemID
         
         # Add availabilityManagerList to storedAHUParams
         
         
         #in the worst-case scenario, this will just send back honeybee defaults.
-
+        
         a = dictToClass(storedAHUParams)
         print 'your air handler definition:'
-        #pp.pprint(a.d)
-
+        pp.pprint(a.d)
+    else:
+        print 'you are required to input an HVAC System ID'
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, "You need to provide an HVAC System ID.")
+            
     """
     elif jsonstream_ != None and jsonfileloc_ == None:
         #placeholder tbd
@@ -306,21 +291,7 @@ def main(fanDetail,coolingCoil,heatingCoil,airsideEconomizer,availabilityManager
     #print sc.sticky["honeybee_AirHandlerParams"]().airHandlerDict
     return a
 
-
-def checkTheInputs(_HVACSystemID):
-    
-    if _HVACSystemID == None:
-    
-        print 'you are required to input an HVAC System ID'
-        w = gh.GH_RuntimeMessageLevel.Warning
-        ghenv.Component.AddRuntimeMessage(w, "You need to provide an HVAC System ID.")
-        return -1
-    
-    
 #likely deprecated
-
-if checkTheInputs(_HVACSystemID) != -1:
-    
-    airHandlerDetail = main(_fanDetail_,_coolingCoil_,_heatingCoil_,_airsideEconomizer_,_availabilityManagerList_)
+airHandlerDetail = main(_fanDetail_,_coolingCoil_,_heatingCoil_,_airsideEconomizer_,_availabilityManagerList_)
 
 #print airHandlerDetail

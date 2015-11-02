@@ -34,10 +34,10 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Radiance Materials Info"
 ghenv.Component.NickName = 'RADMaterialsInfo'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nNOV_01_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "01 | Daylight | Material"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.57\nNOV_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
 except: pass
@@ -61,16 +61,20 @@ def main():
             ghenv.Component.AddRuntimeMessage(w, warning)
             return -1
         
-        hb_RADMaterialAUX = sc.sticky["honeybee_RADMaterialAUX"]()
+        hb_RADMaterialAUX = sc.sticky["honeybee_RADMaterialAUX"]
         
         if _RADMaterial!= None:
             # check if the name is in the library
             addedToLib, materialName = hb_RADMaterialAUX.analyseRadMaterials(_RADMaterial, False)
             
-            if materialName in sc.sticky["honeybee_RADMaterialLib"].keys():
-                RADMaterialStr = hb_RADMaterialAUX.getRADMaterialString(materialName)
-                
-                return RADMaterialStr
+            if not hb_RADMaterialAUX.isMatrialExistInLibrary(materialName):
+                warningMsg = "Can't find " + materialName + " in RAD Material Library.\n" + \
+                            "Add the material to the library and try again."
+                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
+                return
+
+            RADMaterialStr = hb_RADMaterialAUX.getRADMaterialString(materialName)
+            return RADMaterialStr
             
     else:
         print "You should first let Honeybee to fly..."

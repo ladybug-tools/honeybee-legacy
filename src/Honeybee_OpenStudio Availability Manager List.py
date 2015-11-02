@@ -33,7 +33,7 @@ Provided by Honeybee 0.0.57
 
     Args:
         _name: ... provide a unique name for this manager list (required)
-        _type: ... there are two options currently available for AvailabilityManager types, Scheduled and NightCycle. (required)
+        _type: ... there are two options currently available for AvailabilityManager types, 0 = Scheduled and 1 = NightCycle. (required)
         _scheduleName: ... both types of AvailabilityManager require a schedule.  Just provide a schedule name available from Honeybee.  This schedule will determine whether the manager is available for control.  By default, if left blank (recommended) the schedule will be Always On (always available).  This is what most people want.
         _controlType_: ... an optional field for NightCycle type AvailabilityManagers only.  It will be ignored for type Scheduled.  There are two options 0: StayOff and 1:CycleOnAny (the default).  If left blank, it will default (this is usually what is preferred, so leave it blank if you are not sure)
     Returns:
@@ -50,7 +50,7 @@ import Grasshopper.Kernel as gh
 
 ghenv.Component.Name = "Honeybee_OpenStudio Availability Manager List"
 ghenv.Component.NickName = 'EPlusAvailabilityManagerList'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nOCT_30_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | AirsideSystems"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

@@ -57,7 +57,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Microclimate Map Analysis"
 ghenv.Component.NickName = 'MicroclimateMap'
-ghenv.Component.Message = 'VER 0.0.57\nAUG_30_2015'
+ghenv.Component.Message = 'VER 0.0.57\nOCT_30_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -239,7 +239,7 @@ def processPrevailOutdoorTemp(prevailingOutdoorTemp, avgMonthOrRunMean):
         alpha = 0.8
         divisor = 1 + alpha + math.pow(alpha,2) + math.pow(alpha,3) + math.pow(alpha,4) + math.pow(alpha,5)
         dividend = (sum(prevailingOutdoorTemp[-24:-1] + [prevailingOutdoorTemp[-1]])/24) + (alpha*(sum(prevailingOutdoorTemp[-48:-24])/24)) + (math.pow(alpha,2)*(sum(prevailingOutdoorTemp[-72:-48])/24)) + (math.pow(alpha,3)*(sum(prevailingOutdoorTemp[-96:-72])/24)) + (math.pow(alpha,4)*(sum(prevailingOutdoorTemp[-120:-96])/24)) + (math.pow(alpha,5)*(sum(prevailingOutdoorTemp[-144:-120])/24))
-        startingTemp = divisor/dividend
+        startingTemp = dividend/divisor
         if startingTemp < 10: coldTimes.append(0)
         outdoorTemp = prevailingOutdoorTemp[7:]
         startingMean = sum(outdoorTemp[:24])/24
