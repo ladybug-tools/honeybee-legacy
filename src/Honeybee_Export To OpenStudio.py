@@ -61,7 +61,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.57\nOCT_31_2015'
+ghenv.Component.Message = 'VER 0.0.57\nNOV_01_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nOCT_31_2015
@@ -442,6 +442,7 @@ class WriteOPS(object):
         #set the night cycle controls, when applicable
         if availManager != None:
             # availManager should be a dict.
+            
             if availManager['type'] == 'NightCycle':
                 try:
                     OSComponent.setNightCycleControlType(availManager['controlType'])
@@ -1220,39 +1221,35 @@ class WriteOPS(object):
                             print modelhc
                     
             elif systemIndex == 5:
-
+                
                 hvacHandle = ops.OpenStudioModelHVAC.addSystemType5(model).handle()
                 # get the airloop
                 airloop = model.getAirLoopHVAC(hvacHandle).get()
-                #modify the airLoopAvailabilityManager and the underlying availabilitySchedule
+                
                 
                 # add branches
-                for zone in thermalZoneVector:
+                for zoneCount, zone in enumerate(thermalZoneVector):
                     airloop.addBranchForZone(zone)
+                    
+                    #If there is recirculated air specificed, then specify it.
+                    if zoneRecircAir[zoneCount] != 0:
+                        x = airloop.demandComponents(ops.IddObjectType("OS:AirTerminal:SingleDuct:VAV:Reheat"))
+                        vavBox = model.getAirTerminalSingleDuctVAVReheat(x[zoneCount].handle()).get()
+                        vavBox.setZoneMinimumAirFlowMethod('FixedFlowRate')
+                        vavBox.setFixedMinimumAirFlowRate(zoneTotalAir[zoneCount])
+                        vavBox.setMaximumAirFlowRate(zoneTotalAir[zoneCount])
+                        print "Secified recirculation air for " +  str(zone.name()) + " to a value of " + str(zoneRecircAir[zoneCount]) + " m3/s per m2 of floor."
+                
+                
+                #modify the airLoopAvailabilityManager and the underlying availabilitySchedule
                 if(HVACDetails != None):
                     if HVACDetails['availSch'] != None:
-                    
                         availSch = self.getOSSchedule(HVACDetails['availSch'], model)
                         airloop.setAvailabilitySchedule(availSch)
-                    
-                    airloop = self.updateAvailManager(HVACDetails['availabilityManagerList'],airloop, model)
+                    if HVACDetails['availabilityManagerList'] != 'ALWAYS ON':
+                        airloop = self.updateAvailManager(HVACDetails['availabilityManagerList'],airloop, model)
                     
                     availManager=self.recallAvailManager(HVACDetails)
-                    #update the airloopHVAC component with autosize information
-                    designAirflowRate = 0
-                    if HVACDetails['coolingAirflow'] != 'Autosize':
-                        if HVACDetails['coolingAirflow'] > designAirflowRate: 
-                            designAirflowRate = HVACDetails['coolingAirflow']
-                    if HVACDetails['heatingAirflow'] != 'Autosize':
-                        if HVACDetails['heatingAirflow'] > designAirflowRate:
-                            designAirflowRate = HVACDetails['heatingAirflow']
-                    if HVACDetails['floatingAirflow'] != 'Autosize':
-                        if HVACDetails['floatingAirflow'] > designAirflowRate:
-                            designAirflowRate = HVACDetails['floatingAirflow']
-                    if designAirflowRate != 0:
-                        airloop.setDesignSupplyAirFlowRate(designAirflowRate)
-                        print 'updated design airflow rate'
-                    
                     oasys = airloop.airLoopHVACOutdoorAirSystem()
                     
                     
@@ -1316,13 +1313,13 @@ class WriteOPS(object):
                     airloop.addBranchForZone(zone)
                     
                 if HVACDetails!=None:
-                    print HVACDetails['availabilityManagerList']
                     
                     if HVACDetails['availSch'] != None:
                         availSch = self.getOSSchedule(HVACDetails['availSch'], model)
                         airloop.setAvailabilitySchedule(availSch)
                     
-                    airloop = self.updateAvailManager(HVACDetails['availabilityManagerList'],airloop, model)
+                    if HVACDetails['availabilityManagerList'] != 'ALWAYS ON':
+                        airloop = self.updateAvailManager(HVACDetails['availabilityManagerList'],airloop, model)
                     
                 if plantDetails!=None:
                     
@@ -1330,47 +1327,69 @@ class WriteOPS(object):
                 
             elif systemIndex == 7:
                 hvacHandle = ops.OpenStudioModelHVAC.addSystemType7(model).handle()
+                
                 # get the airloop
                 airloop = model.getAirLoopHVAC(hvacHandle).get()
-                # add branches
+                
+                # add branches and fan box parameters
+                recicTrigger = False
                 for zoneCount, zone in enumerate(thermalZoneVector):
                     #Add a branch for the zone
                     airloop.addBranchForZone(zone)
                     
                     #If there is recirculated air specificed, then specify it.
                     if zoneRecircAir[zoneCount] != 0:
+                        recicTrigger = True
                         x = airloop.demandComponents(ops.IddObjectType("OS:AirTerminal:SingleDuct:VAV:Reheat"))
                         vavBox = model.getAirTerminalSingleDuctVAVReheat(x[zoneCount].handle()).get()
                         vavBox.setZoneMinimumAirFlowMethod('FixedFlowRate')
                         vavBox.setFixedMinimumAirFlowRate(zoneTotalAir[zoneCount])
                         vavBox.setMaximumAirFlowRate(zoneTotalAir[zoneCount])
                         print "Secified recirculation air for " +  str(zone.name()) + " to a value of " + str(zoneRecircAir[zoneCount]) + " m3/s per m2 of floor."
-                    
+                
+                #If recirculated air has been specified, we need to set the size of the supply fan because autosize will make the fan too small.
+                if recicTrigger == True:
+                    fullHVACAirFlow = sum(zoneTotalAir)
                     if HVACDetails != None:
-                        #Update the availability manager.
-                        if HVACDetails['availabilityManagerList'] != 'ALWAYS ON':
-                            airloop = self.updateAvailManager(HVACDetails['availabilityManagerList'],airloop, model)
-                        
-                        #Edit the outdoor air sys.
-                        oasys = airloop.airLoopHVACOutdoorAirSystem() 
-                        if (oasys.is_initialized()== True) and (HVACDetails['airsideEconomizer'] != None):
-                            print 'overriding the OpenStudio airside economizer settings'
-                            oactrl = oasys.get().getControllerOutdoorAir()
-                            #set control type
-                            #can sensed min still be dry bulb for any of these?  Future release question
-                            econo = self.recallOASys(HVACDetails)
-                            oactrl = self.updateOASys(econo,oactrl,model)
-                            print 'economizer settings updated to economizer name: ' + HVACDetails['airsideEconomizer']['name']
-                            print ''
-                        
                         if HVACDetails['varVolSupplyFanDef'] != {}:
-                            print 'overriding the OpenStudio supply fan settings'
-                            x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:VariableVolume"))
-                            vvfan = model.getFanVariableVolume(x[0].handle()).get()
-                            sf = self.recallVVFan(HVACDetails)
-                            vvfan = self.updateVVFan(sf,vvfan)
-                            print 'supply fan settings updated to supply fan name: ' + HVACDetails['varVolSupplyFanDef']['name']
-                            print ''
+                            if HVACDetails['varVolSupplyFanDef']['maxFlowRate'] == 'Autosize': HVACDetails['varVolSupplyFanDef']['maxFlowRate'] = fullHVACAirFlow
+                        else:
+                            hb_varVolFan = sc.sticky['honeybee_variableVolumeFanParams']().vvFanDict
+                            hb_varVolFan['maxFlowRate'] = fullHVACAirFlow
+                            HVACDetails['varVolSupplyFanDef'] = hb_varVolFan
+                    else:
+                        sf = sc.sticky['honeybee_variableVolumeFanParams']().vvFanDict
+                        sf['maxFlowRate'] = fullHVACAirFlow
+                        x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:VariableVolume"))
+                        vvfan = model.getFanVariableVolume(x[0].handle()).get()
+                        vvfan = self.updateVVFan(sf,vvfan)
+                
+                
+                if HVACDetails != None:
+                    #Update the availability manager.
+                    if HVACDetails['availabilityManagerList'] != 'ALWAYS ON':
+                        airloop = self.updateAvailManager(HVACDetails['availabilityManagerList'],airloop, model)
+                    
+                    #Edit the outdoor air sys.
+                    oasys = airloop.airLoopHVACOutdoorAirSystem() 
+                    if (oasys.is_initialized()== True) and (HVACDetails['airsideEconomizer'] != None):
+                        print 'overriding the OpenStudio airside economizer settings'
+                        oactrl = oasys.get().getControllerOutdoorAir()
+                        #set control type
+                        #can sensed min still be dry bulb for any of these?  Future release question
+                        econo = self.recallOASys(HVACDetails)
+                        oactrl = self.updateOASys(econo,oactrl,model)
+                        print 'economizer settings updated to economizer name: ' + HVACDetails['airsideEconomizer']['name']
+                        print ''
+                    
+                    if HVACDetails['varVolSupplyFanDef'] != {}:
+                        print 'overriding the OpenStudio supply fan settings'
+                        x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:VariableVolume"))
+                        vvfan = model.getFanVariableVolume(x[0].handle()).get()
+                        sf = self.recallVVFan(HVACDetails)
+                        vvfan = self.updateVVFan(sf,vvfan)
+                        print 'supply fan settings updated to supply fan name: ' + HVACDetails['varVolSupplyFanDef']['name']
+                        print ''
                 
                 if plantDetails!=None:
                     #I think the idea here is to see if there is a hot water plant update(not sure how)
