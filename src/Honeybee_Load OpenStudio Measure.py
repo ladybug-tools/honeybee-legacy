@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.57
 """
 ghenv.Component.Name = "Honeybee_Load OpenStudio Measure"
 ghenv.Component.NickName = 'importOSMeasure'
-ghenv.Component.Message = 'VER 0.0.57\nNOV_30_2015'
+ghenv.Component.Message = 'VER 0.0.57\nNOV_03_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -69,6 +69,7 @@ class OPSMeasureArg:
         self.originalString = originalString
         self.name = self.get_name()
         self.display_name = self.get_display_name()
+        self.description = self.get_description()
         self.type = self.get_type()
         self.required = self.get_required()
         self.model_dependent = self.get_model_dependent()
@@ -82,7 +83,10 @@ class OPSMeasureArg:
     
     def get_display_name(self):
         return self.originalString.split("</display_name>")[0].split("<display_name>")[-1]
-    
+
+    def get_description(self):
+        return self.originalString.split("<description>")[-1].split("</description>")[0]
+        
     def get_type(self):
         return self.originalString.split("<type>")[-1].split("</type>")[0]
     
@@ -91,7 +95,8 @@ class OPSMeasureArg:
         return True if req.strip() == "true" else False
         
     def get_model_dependent(self):
-        return self.originalString.split("<model_dependent>")[-1].split("</model_dependent>")[0]
+        depends = self.originalString.split("<model_dependent>")[-1].split("</model_dependent>")[0]
+        return True if depends.strip() == "true" else False
     
     def get_default_value(self):
         value = self.originalString.split("<default_value>")[-1].split("</default_value>")[0]
