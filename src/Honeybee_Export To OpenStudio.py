@@ -61,7 +61,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.57\nNOV_01_2015'
+ghenv.Component.Message = 'VER 0.0.57\nNOV_02_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nOCT_31_2015
@@ -1337,29 +1337,30 @@ class WriteOPS(object):
                     #Add a branch for the zone
                     airloop.addBranchForZone(zone)
                     
-                    #If there is recirculated air specificed, then specify it.
-                    if zoneRecircAir[zoneCount] != 0:
-                        recicTrigger = True
+                    #If there is outdoor or recirculated air specificed, then the autosize feature of the terminal can fail to bring in the required airflow rate.
+                    #So we must hard size it.
+                    if zoneTotalAir[zoneCount] != 0:
+                        autoCalcFailTrigger = True
                         x = airloop.demandComponents(ops.IddObjectType("OS:AirTerminal:SingleDuct:VAV:Reheat"))
                         vavBox = model.getAirTerminalSingleDuctVAVReheat(x[zoneCount].handle()).get()
-                        vavBox.setZoneMinimumAirFlowMethod('FixedFlowRate')
-                        vavBox.setFixedMinimumAirFlowRate(zoneTotalAir[zoneCount])
-                        vavBox.setMaximumAirFlowRate(zoneTotalAir[zoneCount])
+                        maxAirflow = 4*float(zoneTotalAir[zoneCount])
+                        vavBox.setMaximumAirFlowRate(maxAirflow)
+                        vavBox.setConstantMinimumAirFlowFraction(0.25)
                         print "Secified recirculation air for " +  str(zone.name()) + " to a value of " + str(zoneRecircAir[zoneCount]) + " m3/s per m2 of floor."
                 
-                #If recirculated air has been specified, we need to set the size of the supply fan because autosize will make the fan too small.
-                if recicTrigger == True:
+                #If outdoor or recirculated air has been specified, we need to set the size of the supply fan because autosize will likely make the fan too small.
+                if autoCalcFailTrigger == True:
                     fullHVACAirFlow = sum(zoneTotalAir)
                     if HVACDetails != None:
                         if HVACDetails['varVolSupplyFanDef'] != {}:
-                            if HVACDetails['varVolSupplyFanDef']['maxFlowRate'] == 'Autosize': HVACDetails['varVolSupplyFanDef']['maxFlowRate'] = fullHVACAirFlow
+                            if HVACDetails['varVolSupplyFanDef']['maxFlowRate'] == 'Autosize': HVACDetails['varVolSupplyFanDef']['maxFlowRate'] = fullHVACAirFlow*4
                         else:
                             hb_varVolFan = sc.sticky['honeybee_variableVolumeFanParams']().vvFanDict
-                            hb_varVolFan['maxFlowRate'] = fullHVACAirFlow
+                            hb_varVolFan['maxFlowRate'] = fullHVACAirFlow*4
                             HVACDetails['varVolSupplyFanDef'] = hb_varVolFan
                     else:
                         sf = sc.sticky['honeybee_variableVolumeFanParams']().vvFanDict
-                        sf['maxFlowRate'] = fullHVACAirFlow
+                        sf['maxFlowRate'] = fullHVACAirFlow*4
                         x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:VariableVolume"))
                         vvfan = model.getFanVariableVolume(x[0].handle()).get()
                         vvfan = self.updateVVFan(sf,vvfan)
