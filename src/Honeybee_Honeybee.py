@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.57\nNOV_02_2015'
+ghenv.Component.Message = 'VER 0.0.57\nNOV_03_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -58,6 +58,7 @@ except: pass
 import rhinoscriptsyntax as rs
 import Rhino as rc
 import scriptcontext as sc
+import Grasshopper
 import Grasshopper.Kernel as gh
 from Grasshopper import DataTree
 from Grasshopper.Kernel.Data import GH_Path
@@ -143,6 +144,28 @@ class CheckIn():
                 
                 sc.sticky["Honeybee_DefaultFolder"] = os.path.join("C:\\Users\\", username, "AppData\\Roaming\\Ladybug\\")
                 
+        self.updateCategoryIcon()
+    
+    
+    @staticmethod
+    def updateCategoryIcon():
+        try:
+            url = "https://raw.githubusercontent.com/mostaphaRoudsari/Honeybee/master/resources/icon_16_16.png"
+            icon = os.path.join(sc.sticky["Honeybee_DefaultFolder"], "HB_icon_16_16.png")
+            if not os.path.isfile(icon):
+                client = System.Net.WebClient()
+                client.DownloadFile(url, icon)
+        
+            iconBitmap = System.Drawing.Bitmap(icon)
+            Grasshopper.Instances.ComponentServer.AddCategoryIcon("Honeybee", iconBitmap)
+        except:
+            # download failed
+            pass
+            
+        Grasshopper.Instances.ComponentServer.AddCategoryShortName("Honeybee", "HB")
+        Grasshopper.Instances.ComponentServer.AddCategorySymbolName("Honeybee", "H")
+        Grasshopper.Kernel.GH_ComponentServer.UpdateRibbonUI() #Reload the Ribbon    
+    
     def getComponentVersion(self):
         monthDict = {'JAN':'01', 'FEB':'02', 'MAR':'03', 'APR':'04', 'MAY':'05', 'JUN':'06',
                      'JUL':'07', 'AUG':'08', 'SEP':'09', 'OCT':'10', 'NOV':'11', 'DEC':'12'}        
