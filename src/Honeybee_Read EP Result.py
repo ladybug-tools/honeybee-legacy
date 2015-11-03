@@ -56,7 +56,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.57\nOCT_24_2015'
+ghenv.Component.Message = 'VER 0.0.57\nNOV_02_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nMAY_02_2015
@@ -645,7 +645,7 @@ if internalAirGain != testTracker and surfaceAirGain != testTracker:
             for numCount, num in enumerate(list[2:]):
                 airHeatGainRate.Add((num + surfaceAirGain[listCount][2:][numCount] + systemAirGain[listCount][2:][numCount]), GH_Path(listCount))
         
-        dataTypeList[17] = True
+        dataTypeList[18] = True
 
 #If we have information on volumetric flow for infiltration, natural ventilation, and/or eartht tube flow, add them together.
 if infiltrationFlow != testTracker:
@@ -679,7 +679,7 @@ if infiltrationFlow != testTracker:
             elif earthTubeThere[listCount] == 1 and mechSysThere[listCount] == 0 and natVentThere[listCount] == 0: airFlowVolume.Add((num + earthTubeFlow[listCount][2:][numCount]), GH_Path(listCount))
             elif earthTubeThere[listCount] == 0 and mechSysThere[listCount] == 0 and natVentThere[listCount] == 1: airFlowVolume.Add((num + natVentFlow[listCount][2:][numCount]), GH_Path(listCount))
             else: airFlowVolume.Add(num, GH_Path(listCount))
-        dataTypeList[16] = True
+        dataTypeList[17] = True
 
 
 #If some of the component outputs are not in the result csv file, blot the variable out of the component.
