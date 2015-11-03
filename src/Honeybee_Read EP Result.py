@@ -72,6 +72,16 @@ import scriptcontext as sc
 import copy
 import os
 
+#Check to be sure that the files exist.
+csvExists = True
+if _resultFileAddress and _resultFileAddress != None:
+    if not os.path.isfile(_resultFileAddress):
+        csvExists = False
+        warning = 'The result file does not exist.'
+        print warning
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+
+
 #Read the location and the analysis period info from the eio file, if there is one.
 #Also try to read the floor areas from this file to be used in EUI calculations.
 location = "NoLocation"
@@ -81,7 +91,7 @@ zoneNameList = []
 floorAreaList = []
 gotData = False
 
-if _resultFileAddress:
+if _resultFileAddress and csvExists == True:
     try:
         numZonesLine = 0
         numZonesIndex = 0
@@ -269,7 +279,7 @@ for name in zoneNameList:
 
 
 # PARSE THE RESULT FILE.
-if _resultFileAddress and gotData == True:
+if _resultFileAddress and gotData == True and csvExists == True:
     try:
         result = open(_resultFileAddress, 'r')
         
@@ -584,7 +594,7 @@ if _resultFileAddress and gotData == True:
         except: pass
         parseSuccess = False
         warn = 'Failed to parse the result file.  Check the folder of the file address you are plugging into this component and make sure that there is a .csv file in the folder. \n'+ \
-                  'If there is no csv file or there is a file with no data in it (it is 0 kB), your simulation probably did not run correctly. \n' + \
+                  'If there is a file with no data in it (it is 0 kB), your simulation probably did not run correctly. \n' + \
                   'In this case, check the report out of the Run Simulation component to see what severe or fatal errors happened in the simulation. \n' + \
                   'If the csv file is there and it seems like there is data in it (it is not 0 kB), you are probably requesting an output that this component does not yet handle well. \n' + \
                   'If you report this bug of reading the output on the GH forums, we should be able to fix this component to accept the output soon.'
