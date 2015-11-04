@@ -59,7 +59,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_PMV Comfort Analysis Recipe"
 ghenv.Component.NickName = 'PMVComfRecipe'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nNOV_04_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -257,7 +257,7 @@ def checkTheInputs():
     winStatusNumbers = []
     winStatusHeaders = []
     allWindowShadesSame = True
-    if windowShadeTransmiss_.BranchCount == 1:
+    if windowShadeTransmiss_.BranchCount == 1 and len(windowShadeTransmiss_.Branch(0)) != 8767:
         if windowShadeTransmiss_ != []:
             windowShadeTransmiss = []
             for shadeValue in windowShadeTransmiss_.Branch(0):
@@ -287,7 +287,7 @@ def checkTheInputs():
                 warning = 'windowShadeTransmiss_ must be either a list of 8760 values that correspond to hourly changing transmissivity over the year or a single constant value for the whole year.'
                 print warning
                 ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
-    elif windowShadeTransmiss_.BranchCount > 1:
+    elif windowShadeTransmiss_.BranchCount > 1 or len(windowShadeTransmiss_.Branch(0)) == 8767:
         allWindowShadesSame = False
         checkData14, checkData32, winStatusUnits, winStatusHeaders, winStatusNumbers, analysisPeriod = checkCreateDataTree(windowShadeTransmiss_, "windowShadeTransmiss_", "Surface Window System Solar Transmittance")
         #Convert all of the numbers in shade status data tree to window transmissivities.
