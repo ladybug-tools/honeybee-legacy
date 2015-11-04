@@ -28,9 +28,9 @@ If a folder-path is provided then the folder containing that folder is opened.
 Args:
     _destination: File path or Directory path
 """
-ghenv.Component.Name = "Explorer"
-ghenv.Component.NickName = 'explorer'
-ghenv.Component.Message = 'Ver Alpha\n27_July_2015'
+ghenv.Component.Name = "Honeybee_FileExplorer"
+ghenv.Component.NickName = 'fileExplorer'
+ghenv.Component.Message = 'VER 0.0.57\nNOV_03_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -38,6 +38,7 @@ except: pass
 import Grasshopper.Kernel as gh
 import os
 import subprocess
+
 def main(location):
     if location:
         try:
@@ -51,6 +52,6 @@ def main(location):
         except:
             raise Exception("The input: %s is not a valid path.\nA valid path would be something like D:\Honeybee\Results."%location)
     else:
-        raise Exception("The input is empty")
+        raise Exception("Connect a file path to destination input!")
 
 main(_destination)
