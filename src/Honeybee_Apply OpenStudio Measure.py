@@ -43,7 +43,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Apply OpenStudio Measure"
 ghenv.Component.NickName = 'applyOSMeasure'
-ghenv.Component.Message = 'VER 0.0.57\nNOV_03_2015'
+ghenv.Component.Message = 'VER 0.0.57\nNOV_04_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -88,7 +88,11 @@ def createOSArgument(arg):
     argument.setDisplayName(arg.display_name)
     argument.setDefaultValue(arg.default_value) #I'm not sure if this is neccessary
     argument.setDescription(arg.description)
-    argument.setValue(arg.userInput)
+    if arg.type != 'Boolean':
+        argument.setValue(str(arg.userInput))
+    else:
+        argument.setValue(arg.userInput)
+    
     return argument
 
 def main(epwFile, OSMeasure, osmFile):
@@ -121,29 +125,16 @@ def main(epwFile, OSMeasure, osmFile):
     measure = OpenStudio.BCLMeasure(OpenStudio.Path(OSMeasure.path))
     args = OpenStudio.OSArgumentVector()
     
-    #check if user has input any new value
-    isUpdatedArgument = False
-    argumentMap = OpenStudio.OSArgumentMap()
+    # check if user has input any new value
+    # create them and set the value
     for arg in OSMeasure.args.values():
         if str(arg.userInput) != str(arg.default_value):
             # this argument has been updated
             # create it first - we won't need to do this once we can load arguments programmatically
             osArgument = createOSArgument(arg)
-            argumentMap[arg.name] = osArgument
             args.Add(osArgument)
     
-    if isUpdatedArgument:
-        # set updated argument values
-        # Question: do I need to load the model to change the values for a meausre?
-        # I don't have model loaded here and I rathe not to do that and just change
-        # the values. There is a setArguments method but seems to be the call to set
-        # the arguments rather than updating the values
-        
-        #runner = OpenStudio.OSRunner()
-        #measure.run(model, runner, argumentMap)
-        pass
-        
-
+    # create the workflow
     rjb = OpenStudio.RubyJobBuilder(measure, args)
     rjb.setIncludeDir(OpenStudio.Path(rubyPath))
     wf.addJob(rjb.toWorkItem())
