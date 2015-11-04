@@ -30,11 +30,11 @@ Provided by Honeybee 0.0.57
         HBObjects: Any valid Honeybee object
         _names: List of new names for HBObjects
     Returns:
-        readMe!: Information about the Honeybee object
+        HBObjects: Renamed Honeybee objects
 """
-ghenv.Component.Name = "Honeybee_ChangeHBObjName"
-ghenv.Component.NickName = 'changeHBObjName'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Name = "Honeybee_Get or Set HB Object Name"
+ghenv.Component.NickName = 'getSetHBObjName'
+ghenv.Component.Message = 'VER 0.0.57\nNOV_04_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -71,15 +71,23 @@ def main(HBObjects, names):
     
     HBObjs = range(len(HBObjectsFromHive))
     
-    for count, HBO in enumerate(HBObjectsFromHive):
-        try:
-            HBO.setName(names[count])
-        except:
-            pass
+    if len(names)==0:
+        # There is no new name just return the names
+        for count, HBO in enumerate(HBObjectsFromHive):
+            HBObjs[count] = HBO.name
         
-        HBObjs[count] = HBO
-    
-    return hb_hive.addToHoneybeeHive(HBObjs, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+        return [], HBObjs
+    else:
+        for count, HBO in enumerate(HBObjectsFromHive):
+            try:
+                HBO.setName(names[count])
+            except:
+                pass
+            
+            HBObjs[count] = HBO
+        
+        return hb_hive.addToHoneybeeHive(HBObjs, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4())), []
 
-if _HBObjects and _names:
-    HBObjects = main(_HBObjects, _names)
+if _HBObjects:
+    
+    HBObjects, names = main(_HBObjects, names_)
