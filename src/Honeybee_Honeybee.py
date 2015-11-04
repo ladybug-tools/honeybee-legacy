@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.57\nNOV_03_2015'
+ghenv.Component.Message = 'VER 0.0.57\nNOV_04_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1212,7 +1212,6 @@ class DLAnalysisRecipe:
     
     def __repr__(self):
         return "Honybee.Recipe.%s"%self.studyFolder.replace("\\", "")
-
 
 class hb_MSHToRAD(object):
     
@@ -4930,6 +4929,14 @@ class EPZone(object):
         
         # XXX self.PVgenlist = []
     
+    
+    def transform(self, transform, clearSurfacesBC = True):
+        self.name += "_t"
+        self.geometry.Transform(transform)
+        self.cenPt.Transform(transform)
+        for surface in self.surfaces:
+            surface.transform(transform, clearSurfacesBC)
+    
     def assignScheduleBasedOnProgram(self, component = None):
         # create an open office is the program is not assigned
         if self.bldgProgram == None: self.bldgProgram = "Office"
@@ -5342,158 +5349,6 @@ class EPZone(object):
                '\nZone program: Unknown' + \
                '\n# of surfaces: ' + `len(self.surfaces)` + \
                '\n-----------------------------------'
-
-class HB_generatorsystem(object):
-    
-    def __init__(self,generatorsystem_name,simulationinverter,battery,windgenerators,PVgenerators,fuelgenerators,contextsurfaces,HBzonesurfaces,maintenance_cost):
-        
-        self.name = generatorsystem_name
-        
-        if simulationinverter == []:
-        
-            self.simulationinverter = None
-        else:
-            self.simulationinverter = simulationinverter
-        
-        self.maintenance_cost = maintenance_cost
-        self.contextsurfaces = contextsurfaces
-        self.HBzonesurfaces = HBzonesurfaces
-        self.battery = battery
-        self.windgenerators = windgenerators # Category includes Generator:WindTurbine
-        self.PVgenerators = PVgenerators # Category includes Generator:Photovoltaic
-        self.fuelgenerators = fuelgenerators # Category includes Generators:Mircoturbine,Generator:Combustion Turbine,Generator:InternalCombustionEngine
-
-        
-class Wind_gen(object):
-    
-    def __init__(self,name_,rotortype,powercontrol,rotor_speed,rotor_diameter,overall_height,number_of_blades,power_output,rated_wind_speed,cut_in_windspeed,cut_out_windspeed,overall_turbine_n,max_tip_speed_ratio,max_power_coefficient,local_av_windspeed,height_local_metrological_station,turbine_cost,powercoefficients):
-        
-        self.name = name_
-        self.type = 'Generator:WindTurbine'
-        self.rotortype = rotortype
-        self.powercontrol = powercontrol
-        self.numblades = number_of_blades
-        self.rotorspeed = rotor_speed
-        self.rotor_diameter = rotor_diameter
-        self.overall_height = overall_height
-        self.powerout = power_output
-        self.rated_wind_speed = rated_wind_speed
-        self.cut_in_windspeed = cut_in_windspeed
-        self.cut_out_windspeed = cut_out_windspeed
-        self.overall_turbine_n = overall_turbine_n
-        self.max_tip_speed_ratio = max_tip_speed_ratio
-        
-        self.local_av_windspeed = local_av_windspeed
-        self.height_local_metrological_station = height_local_metrological_station
-        self.cost_ = turbine_cost
-        
-        if (powercoefficients != None) or (powercoefficients != []) :
-            # Wind turbine is analaytical wind turbine
-            self.powercoefficients = powercoefficients
-        else:
-            self.powercoefficients = None
-        
-        if max_power_coefficient == None:
-            # Only simple wind turbine 
-            self.max_power_coefficient = ''
-        else: 
-            self.max_power_coefficient = max_power_coefficient
-        
-        
-        
-class PV_gen(object):
-    
-    # XXX possible generator types
-    """
-    Generator:InternalCombustionEngine
-    Generator:CombustionTurbine
-    Generator:Photovoltaic
-    Generator:FuelCell
-    Generator:MicroCHP
-    Generator:MicroTurbine
-    Generator:WindTurbine
-    """
-    
-    def __init__(self,_name,surfacename_,_integrationmode,No_parallel,No_series,costper_module,powerout,namePVperform,SA_solarcells,cell_n,performance_type = "PhotovoltaicPerformance:Simple"):
-        
-        self.name = _name
-        self.surfacename = surfacename_
-        self.type = 'Generator:Photovoltaic'
-        self.performancetype = performance_type
-        self.performancename =  namePVperform # One Photovoltaic performance object is made for each PV object so names are the same
-        self.integrationmode = _integrationmode
-        self.NOparallel = No_parallel
-        self.NOseries = No_series
-        
-        # Cost and power out of the Generator is the cost and power of each module by the number of modules in each generator
-        # number in series by number in parallel.
-        
-        self.cost_ = costper_module*No_series*No_parallel
-        self.powerout = powerout*No_series*No_parallel
-        
-        self.inverter = None # Define the inverter for this PV generator all PVgenerations being used in the same - run energy simulation must have the same inverter
-    
-        self.PV_performance(namePVperform,SA_solarcells,cell_n)
-        
-    def PV_performance(self,namePVperformobject,SA_solarcells = 0.5 ,cell_n = 0.12,cell_efficiencyinputmode = "Fixed", schedule_ = "always on"):
-    
-        self.namePVperformobject = namePVperformobject
-        self.surfaceareacells = SA_solarcells
-        self.cellefficiencyinputmode = cell_efficiencyinputmode
-        self.efficiency = cell_n
-        self.schedule = schedule_
-    
-class PVinverter(object):
-    
-    def __init__(self,inverter_name,inverter_cost,inverter_zone,inverter_n,replacement_time):
-   
-        if inverter_zone == None:
-            inverter_zone = ""
-        if inverter_n == None:
-            inverter_n = 0.9
-            
-        self.name = inverter_name
-        self.cost_ = inverter_cost
-        self.efficiency = inverter_n
-        self.zone = inverter_zone
-        self.replacementtime = replacement_time
-        self.ID = str(uuid.uuid4())
-        
-    # Need to be able to compare inverters to make sure that only one inverter is servicing all the PV in the system
-    # For some reason the class ID of the inverters was changing when putting in the hive this is a more fool proof way of comparing them.
-    # Note the zone that the inverter is attached to is not considered.
-    
-    def __hash__(self):
-        return hash(self.ID)
-       
-    def __eq__( self, other ):
-        return self.ID == self.ID
-        
-    def __ne__(self,other):
-        return self.ID != self.ID
-    
-class simple_battery(object):
-    
-    def __init__(self,_name,zone_name,n_charging,n_discharging,battery_capacity,max_discharging,max_charging,initial_charge,bat_cost,replacement_time):
-        
-        
-        if zone_name == None:
-            zone_name = ""
-            
-        self.name = _name
-        self.type = 'Battery:simple'
-        self.zonename = zone_name
-        self.chargingefficiency = n_charging
-        self.dischargingeffciency = n_discharging
-        self.batterycap = battery_capacity
-        self.maxcharge = max_charging
-        self.maxdischarge = max_discharging
-        self.initalcharge = initial_charge
-        self.cost_ = bat_cost
-        
-        self.replacementtime = replacement_time
-        self.ID = str(uuid.uuid4())
-        
 
 class hb_reEvaluateHBZones(object):
     """
@@ -6308,8 +6163,7 @@ class hb_EPSurface(object):
             return False
         else:
             return True
-        
-        
+    
     def extractGlzPoints(self, RAD = False, method = 2):
         glzCoordinatesList = []
         for glzSrf in self.childSrfs:
@@ -6489,6 +6343,29 @@ class hb_EPSurface(object):
         else:
             return 0 #wall
     
+    def transform(self, transform, clearBC = True):
+        """Transform EPSurface using a transform object
+           Transform can be any valid transform object (e.g Translate, Rotate, Mirror)
+        """
+        self.name += "_t"
+        self.geometry.Transform(transform)
+        self.meshedFace.Transform(transform)
+        # move center point and normal
+        self.cenPt.Transform(transform)
+        
+        self.normalVector.Transform(transform)
+        # move plane
+        self.basePlane.Transform(transform)
+        
+
+        if clearBC:
+            self.setBC("Outdoors", False)
+            self.setBCObjectToOutdoors()
+        if not self.isChild and self.hasChild:
+            self.punchedGeometry.Transform(transform)
+            for childSrf in self.childSrfs:
+                childSrf.transform(transform, clearBC)
+        
     def getTotalArea(self):
         return self.geometry.GetArea()
     
@@ -6812,6 +6689,158 @@ class hb_EPFenSurface(hb_EPSurface):
         self.groundViewFactor = 'autocalculate'
         self.isChild = True # is it really useful?
 
+
+class HB_generatorsystem(object):
+    
+    def __init__(self,generatorsystem_name,simulationinverter,battery,windgenerators,PVgenerators,fuelgenerators,contextsurfaces,HBzonesurfaces,maintenance_cost):
+        
+        self.name = generatorsystem_name
+        
+        if simulationinverter == []:
+        
+            self.simulationinverter = None
+        else:
+            self.simulationinverter = simulationinverter
+        
+        self.maintenance_cost = maintenance_cost
+        self.contextsurfaces = contextsurfaces
+        self.HBzonesurfaces = HBzonesurfaces
+        self.battery = battery
+        self.windgenerators = windgenerators # Category includes Generator:WindTurbine
+        self.PVgenerators = PVgenerators # Category includes Generator:Photovoltaic
+        self.fuelgenerators = fuelgenerators # Category includes Generators:Mircoturbine,Generator:Combustion Turbine,Generator:InternalCombustionEngine
+
+        
+class Wind_gen(object):
+    
+    def __init__(self,name_,rotortype,powercontrol,rotor_speed,rotor_diameter,overall_height,number_of_blades,power_output,rated_wind_speed,cut_in_windspeed,cut_out_windspeed,overall_turbine_n,max_tip_speed_ratio,max_power_coefficient,local_av_windspeed,height_local_metrological_station,turbine_cost,powercoefficients):
+        
+        self.name = name_
+        self.type = 'Generator:WindTurbine'
+        self.rotortype = rotortype
+        self.powercontrol = powercontrol
+        self.numblades = number_of_blades
+        self.rotorspeed = rotor_speed
+        self.rotor_diameter = rotor_diameter
+        self.overall_height = overall_height
+        self.powerout = power_output
+        self.rated_wind_speed = rated_wind_speed
+        self.cut_in_windspeed = cut_in_windspeed
+        self.cut_out_windspeed = cut_out_windspeed
+        self.overall_turbine_n = overall_turbine_n
+        self.max_tip_speed_ratio = max_tip_speed_ratio
+        
+        self.local_av_windspeed = local_av_windspeed
+        self.height_local_metrological_station = height_local_metrological_station
+        self.cost_ = turbine_cost
+        
+        if (powercoefficients != None) or (powercoefficients != []) :
+            # Wind turbine is analaytical wind turbine
+            self.powercoefficients = powercoefficients
+        else:
+            self.powercoefficients = None
+        
+        if max_power_coefficient == None:
+            # Only simple wind turbine 
+            self.max_power_coefficient = ''
+        else: 
+            self.max_power_coefficient = max_power_coefficient
+        
+        
+        
+class PV_gen(object):
+    
+    # XXX possible generator types
+    """
+    Generator:InternalCombustionEngine
+    Generator:CombustionTurbine
+    Generator:Photovoltaic
+    Generator:FuelCell
+    Generator:MicroCHP
+    Generator:MicroTurbine
+    Generator:WindTurbine
+    """
+    
+    def __init__(self,_name,surfacename_,_integrationmode,No_parallel,No_series,costper_module,powerout,namePVperform,SA_solarcells,cell_n,performance_type = "PhotovoltaicPerformance:Simple"):
+        
+        self.name = _name
+        self.surfacename = surfacename_
+        self.type = 'Generator:Photovoltaic'
+        self.performancetype = performance_type
+        self.performancename =  namePVperform # One Photovoltaic performance object is made for each PV object so names are the same
+        self.integrationmode = _integrationmode
+        self.NOparallel = No_parallel
+        self.NOseries = No_series
+        
+        # Cost and power out of the Generator is the cost and power of each module by the number of modules in each generator
+        # number in series by number in parallel.
+        
+        self.cost_ = costper_module*No_series*No_parallel
+        self.powerout = powerout*No_series*No_parallel
+        
+        self.inverter = None # Define the inverter for this PV generator all PVgenerations being used in the same - run energy simulation must have the same inverter
+    
+        self.PV_performance(namePVperform,SA_solarcells,cell_n)
+        
+    def PV_performance(self,namePVperformobject,SA_solarcells = 0.5 ,cell_n = 0.12,cell_efficiencyinputmode = "Fixed", schedule_ = "always on"):
+    
+        self.namePVperformobject = namePVperformobject
+        self.surfaceareacells = SA_solarcells
+        self.cellefficiencyinputmode = cell_efficiencyinputmode
+        self.efficiency = cell_n
+        self.schedule = schedule_
+    
+class PVinverter(object):
+    
+    def __init__(self,inverter_name,inverter_cost,inverter_zone,inverter_n,replacement_time):
+   
+        if inverter_zone == None:
+            inverter_zone = ""
+        if inverter_n == None:
+            inverter_n = 0.9
+            
+        self.name = inverter_name
+        self.cost_ = inverter_cost
+        self.efficiency = inverter_n
+        self.zone = inverter_zone
+        self.replacementtime = replacement_time
+        self.ID = str(uuid.uuid4())
+        
+    # Need to be able to compare inverters to make sure that only one inverter is servicing all the PV in the system
+    # For some reason the class ID of the inverters was changing when putting in the hive this is a more fool proof way of comparing them.
+    # Note the zone that the inverter is attached to is not considered.
+    
+    def __hash__(self):
+        return hash(self.ID)
+       
+    def __eq__( self, other ):
+        return self.ID == self.ID
+        
+    def __ne__(self,other):
+        return self.ID != self.ID
+    
+class simple_battery(object):
+    
+    def __init__(self,_name,zone_name,n_charging,n_discharging,battery_capacity,max_discharging,max_charging,initial_charge,bat_cost,replacement_time):
+        
+        
+        if zone_name == None:
+            zone_name = ""
+            
+        self.name = _name
+        self.type = 'Battery:simple'
+        self.zonename = zone_name
+        self.chargingefficiency = n_charging
+        self.dischargingeffciency = n_discharging
+        self.batterycap = battery_capacity
+        self.maxcharge = max_charging
+        self.maxdischarge = max_discharging
+        self.initalcharge = initial_charge
+        self.cost_ = bat_cost
+        
+        self.replacementtime = replacement_time
+        self.ID = str(uuid.uuid4())
+        
 
 class generationhb_hive(object):
     # A hive that only accepts Honeybee generation objects
