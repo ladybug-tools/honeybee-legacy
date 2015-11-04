@@ -41,7 +41,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_RADParameters"
 ghenv.Component.NickName = 'RADParameters'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nNOV_03_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -80,10 +80,12 @@ Param   Description             Min     Fast    Accur   Max     Notes
 -lw	    limit weight		    .05	    .01	    .002	0	    C
 """
 
-class dictToClass(object):
+class dictToClass:
     def __init__(self, pyDict):
         self.d = pyDict
-        
+    
+    def __repr__(self):
+        return "Honeybee.RadianceParameters"
 
 def parseRadParameters(radParString):
     """

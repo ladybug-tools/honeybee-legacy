@@ -2142,7 +2142,10 @@ class hb_WriteRAD(object):
                         numIll+=1
                     elif file.EndsWith('dc'):
                         numDc+=1
-                if numIll!= numOfCPUs * numOfIllFiles or  numDc!= numOfCPUs * numOfIllFiles:
+                # /2 in case of conceptual dynamic blinds in Daysim
+                if numIll!= numOfCPUs * numOfIllFiles or not \
+                    (numDc == numOfCPUs * numOfIllFiles or \
+                    numDc == numOfCPUs * numOfIllFiles /2):
                     print "Can't find the results for the study"
                     DSResultFilesAddress = []
             

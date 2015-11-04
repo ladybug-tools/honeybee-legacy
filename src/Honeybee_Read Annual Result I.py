@@ -46,10 +46,10 @@ Provided by Honeybee 0.0.57
 """
 ghenv.Component.Name = "Honeybee_Read Annual Result I"
 ghenv.Component.NickName = 'readAnnualResultsI'
-ghenv.Component.Message = 'VER 0.0.57\nSEP_10_2015'
+ghenv.Component.Message = 'VER 0.0.57\nNOV_03_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.57\nNOV_03_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
 except: pass
@@ -114,11 +114,16 @@ def convertIllFileDaraTreeIntoSortedDictionary(illFilesAddress):
     illFileSets = {}
     for branch in range(illFilesAddress.BranchCount):
         # sort files inside each branch if they are not sorted
-        fileNames = list(illFilesAddress.Branch(branch))
+        fileNames = list(illFilesAddress.Branch(branch))        
+            
         try:
-            fileNames = sorted(fileNames, key=lambda fileName: int(fileName.split(".")[-2].split("_")[-1]))
+            fileNames = sorted(fileNames, key=lambda fileName: int(fileName \
+                .split(".")[-2] \
+                .strip("_down") \
+                .strip("_up") \
+                .split("_")[-1]))
         except:
-            tmpmsg = "Can't sort .ill files based on the file names. Make sure the branches are sorted correctly."
+            tmpmsg = "Can't sort .ill files based on the file names. Make sure branches are sorted correctly."
             w = gh.GH_RuntimeMessageLevel.Warning
             ghenv.Component.AddRuntimeMessage(w, tmpmsg)
         
