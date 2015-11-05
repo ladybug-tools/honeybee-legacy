@@ -114,8 +114,8 @@ def main(hourlyValues, fileName):
             
             if t == -.5: t = 23.5
             
-            if occ > 0: occ = 1
-            else: occ = 0
+            if occ > 1: occ = 1
+            if occ < 0: occ = 0
             
             occLine = str(m) + "," + str(d) + "," + str(t) + "," + str(occ) + "\n"
             occFile.write(occLine)

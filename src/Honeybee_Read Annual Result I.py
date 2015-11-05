@@ -175,8 +175,9 @@ def convertEPScheduleToDSSchedule(scheduleName, folder):
             
             if t == -.5: t = 23.5
             
-            if occ > 0: occ = 1
-            else: occ = 0
+            if float(occ) > 1: occ = 1
+            elif float(occ) < 0: occ = 0
+            else: occ = float(occ)
             
             occLine = str(m) + "," + str(d) + "," + str(t) + "," + str(occ) + "\n"
             occFile.write(occLine)
