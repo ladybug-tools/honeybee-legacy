@@ -7117,9 +7117,9 @@ class hb_Hive(object):
         
         bb1 = brep.GetBoundingBox(False)
         bb2 = HBO.geometry.GetBoundingBox(False)
-        if bb1.Min.DistanceTo(bb2.Min) > sc.doc.ModelAbsoluteTolerance:
+        if bb1.Min.DistanceTo(bb2.Min) > 5 * sc.doc.ModelAbsoluteTolerance:
             raise Exception(msg)
-        elif bb1.Max.DistanceTo(bb2.Max) > sc.doc.ModelAbsoluteTolerance:
+        elif bb1.Max.DistanceTo(bb2.Max) > 5 * sc.doc.ModelAbsoluteTolerance:
             raise Exception(msg)
             
     def addToHoneybeeHive(self, HBObjects, GHComponentID):
