@@ -81,12 +81,12 @@ def main(HBZone):
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
         return -1
     
-    equipmentLoadPerArea = float(loads['EquipmentsLoadPerArea']) * 10.763961 #Per ft^2 to Per m^2
-    infiltrationRatePerArea = float(loads['infiltrationRatePerArea']) * 0.00508001
-    lightingDensityPerArea = float(loads['lightingDensityPerArea']) * 10.763961 #Per ft^2 to Per m^2
-    numOfPeoplePerArea = float(loads[ 'numOfPeoplePerArea']) * 10.763961 /1000 #Per 1000 ft^2 to Per m^2
-    ventilationPerArea = float(loads['ventilationPerArea']) * 0.00508001 #1 ft3/min.m2 = 5.08001016E-03 m3/s.m2
-    ventilationPerPerson = float(loads[ 'ventilationPerPerson']) * 0.0004719  #1 ft3/min.perosn = 4.71944743E-04 m3/s.person
+    equipmentLoadPerArea = loads['EquipmentsLoadPerArea']
+    infiltrationRatePerArea = loads['infiltrationRatePerArea']
+    lightingDensityPerArea = loads['lightingDensityPerArea']
+    numOfPeoplePerArea = loads[ 'numOfPeoplePerArea']
+    ventilationPerArea = loads['ventilationPerArea']
+    ventilationPerPerson = loads[ 'ventilationPerPerson']
     
     return equipmentLoadPerArea, infiltrationRatePerArea, lightingDensityPerArea, numOfPeoplePerArea, ventilationPerArea, ventilationPerPerson
     

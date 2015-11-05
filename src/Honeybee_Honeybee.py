@@ -5056,13 +5056,13 @@ class EPZone(object):
         
         if not returnDictionary:
             report = " Internal Loads [SI]:\n" + \
-            "EquipmentsLoadPerArea: " + "%.4f"%self.equipmentLoadPerArea + "\n" + \
-            "infiltrationRatePerArea: " + "%.4f"%self.infiltrationRatePerArea + "\n" + \
-            "lightingDensityPerArea: " + "%.4f"%self.lightingDensityPerArea + "\n" + \
-            "numOfPeoplePerArea: " + "%.4f"%self.numOfPeoplePerArea + "\n" + \
-            "ventilationPerPerson: " + "%.4f"%self.ventilationPerPerson + "\n" + \
-            "ventilationPerArea: " + "%.4f"%self.ventilationPerArea + "\n" + \
-            "recircAirPerArea: " + "%.4f"%self.recirculatedAirPerArea + "."
+            "EquipmentsLoadPerArea: " + "%.6f"%self.equipmentLoadPerArea + "\n" + \
+            "infiltrationRatePerArea: " + "%.6f"%self.infiltrationRatePerArea + "\n" + \
+            "lightingDensityPerArea: " + "%.6f"%self.lightingDensityPerArea + "\n" + \
+            "numOfPeoplePerArea: " + "%.6f"%self.numOfPeoplePerArea + "\n" + \
+            "ventilationPerPerson: " + "%.6f"%self.ventilationPerPerson + "\n" + \
+            "ventilationPerArea: " + "%.6f"%self.ventilationPerArea + "\n" + \
+            "recircAirPerArea: " + "%.6f"%self.recirculatedAirPerArea + "."
             
             return report        
             
