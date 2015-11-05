@@ -1494,8 +1494,20 @@ class hb_WriteRAD(object):
         customRADMat = {} # dictionary to collect the custom material names
         customMixFunRadMat = {} # dictionary to collect the custom mixfunc material names
         surfaceList = []
+        rotateObjects = False
         if len(HBObjects)!=0:
+            # if this is an annual analysis and north is not 0 rotate all Honeybee objects
+            if analysisRecipe.type == 2 and analysisRecipe.northDegrees!=0:
+                print "Rotating the scene for %d degrees"%analysisRecipe.northDegrees
+                
+                transform = rc.Geometry.Transform.Rotation(math.radians(analysisRecipe.northDegrees), \
+                            rc.Geometry.Point3d.Origin)
+                rotateObjects = True
+            
             for objCount, HBObj in enumerate(HBObjects):
+                
+                if rotateObjects: HBObj.transform(transform, False)
+                
                 # check if the object is zone or a surface (?)
                 if HBObj.objectType == "HBZone":
                     if HBObj.hasNonPlanarSrf or HBObj.hasInternalEdge:
@@ -1728,9 +1740,20 @@ class hb_WriteRAD(object):
             for ptList in testPoints:
                 ptnFile.write(str(len(ptList)) + ", ")
         
-        # faltten the test points
-        flattenTestPoints = self.lb_preparation.flattenList(testPoints)
-        flattenPtsNormals = self.lb_preparation.flattenList(ptsNormals)
+        # faltten the test points and make a copy
+        flattenTestPoints = [pt for pt in self.lb_preparation.flattenList(testPoints)]
+        flattenPtsNormals = [v for v in self.lb_preparation.flattenList(ptsNormals)]
+    
+        # if this is an annual analysis and north is not 0 rotate all Honeybee objects
+        if analysisRecipe.type == 2 and analysisRecipe.northDegrees!=0:
+            print "Rotating test points for %d degrees"%analysisRecipe.northDegrees
+            
+            transform = rc.Geometry.Transform.Rotation(math.radians(analysisRecipe.northDegrees), \
+                        rc.Geometry.Point3d.Origin)
+            
+            for pt in flattenTestPoints: pt.Transform(transform)
+            for v in flattenPtsNormals: v.Transform(transform)    
+    
         numOfPoints = len(flattenTestPoints)
     
         if numOfCPUs > numOfPoints: numOfCPUs = numOfPoints
@@ -1831,10 +1854,10 @@ class hb_WriteRAD(object):
                             'radfiles2daysim ' + heaFileName + ' -m -g\n'
             
             # rotate scene if angle is not 0!
-            if northAngleRotation!=0:
-                initBatchStr += \
-                ':: 1.5. Roate geometry and test points\n' + \
-                'rotate_scene ' + heaFileName + '\n'
+            #if northAngleRotation!=0:
+            #    initBatchStr += \
+            #    ':: 1.5. Roate geometry and test points\n' + \
+            #    'rotate_scene ' + heaFileName + '\n'
             
             if runAnnualGlare:
                 initBatchStr += \
@@ -3021,8 +3044,8 @@ class hb_WriteDS(object):
                   'viewpoint_file         ' + projectName + '_' + 'annualGlareView.vf\n' + \
                   'AdaptiveZoneApplies    ' + `adaptiveZone` + '\n' + \
                   'dgp_image_x_size       ' + `dgp_image_x` + '\n' + \
-                  'dgp_image_y_size       ' + `dgp_image_y` + '\n' + \
-                  'scene_rotation_angle ' + `northAngle` + '\n'
+                  'dgp_image_y_size       ' + `dgp_image_y` + '\n'
+                  # 'scene_rotation_angle ' + `northAngle` + '\n' # I just take care of this in Grasshopper
     
     # radiance parameters
     def DSRADStr(self, radParameters):

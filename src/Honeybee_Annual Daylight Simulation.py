@@ -38,10 +38,10 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Annual Daylight Simulation"
 ghenv.Component.NickName = 'annualDaylightSimulation'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nNOV_04_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.56\nNOV_04_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
@@ -60,8 +60,6 @@ def isAllNone(dataList):
     return True
 
 def main():
-    north_ = 0
-    
     # check for Honeybee
     if not sc.sticky.has_key('honeybee_release') or not sc.sticky.has_key('ladybug_release'):
         msg = "You should first let Honeybee and Ladybug to fly..."
