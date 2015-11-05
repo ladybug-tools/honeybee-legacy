@@ -24,7 +24,7 @@
 """
 Radiance Default Materials
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
 
     Args:
         HBObject_: List of Honeybee zones or surfaces
@@ -41,7 +41,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Set Radiance Materials"
 ghenv.Component.NickName = 'setRADMaterials'
-ghenv.Component.Message = 'VER 0.0.57\nNOV_01_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "01 | Daylight | Material"
 #compatibleHBVersion = VER 0.0.57\nNOV_01_2015

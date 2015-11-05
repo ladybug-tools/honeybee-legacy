@@ -23,7 +23,7 @@
 """
 Use this component to create a THERM polygon with material properties.
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
 
     Args:
         _geometry: A closed planar curve or list of closed planar curves that represent the portions of a construction that have the same material type.  This input can also accept closed planar surfaces/breps/polysurfaces and even meshes!
@@ -46,7 +46,7 @@ import math
 
 ghenv.Component.Name = 'Honeybee_Create Therm Polygons'
 ghenv.Component.NickName = 'createThermPolygons'
-ghenv.Component.Message = 'VER 0.0.57\nSEP_03_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.56\nSEP_03_2015

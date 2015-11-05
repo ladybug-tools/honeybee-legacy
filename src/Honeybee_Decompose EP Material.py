@@ -25,7 +25,7 @@
 Decompose EnergyPlus Material
 
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
     
     Args:
         _materialName: EnergyPlus material name
@@ -39,7 +39,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Decompose EP Material"
 ghenv.Component.NickName = 'DecomposeEPMaterial'
-ghenv.Component.Message = 'VER 0.0.57\nAUG_24_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

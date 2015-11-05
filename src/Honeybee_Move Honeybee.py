@@ -24,7 +24,7 @@
 Move Honeybee Objects
 
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
 
     Args:
         _HBObject: Honeybee surface or Honeybee zone
@@ -34,7 +34,7 @@ Provided by Honeybee 0.0.57
 """
 ghenv.Component.Name = "Honeybee_Move Honeybee"
 ghenv.Component.NickName = 'moveHBObj'
-ghenv.Component.Message = 'VER 0.0.57\nNOV_04_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.57\nNOV_04_2015

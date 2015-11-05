@@ -23,7 +23,7 @@
 """
 This component [removes | updates] Honeybee components from [grasshopper | a source folder]
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
 
     Args:
         sourceDirectory_: Optional address to a folder that contains Honeybee updated userObjects. If None the component will download the latest version from GitHUB.
@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Update Honeybee"
 ghenv.Component.NickName = 'updateHoneybee'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | Developers"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

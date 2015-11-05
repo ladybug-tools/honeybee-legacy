@@ -21,45 +21,44 @@
 
 
 """
-Make Adiabatic
+Change Honeybee Object Names
 
 -
 Provided by Honeybee 0.0.58
 
     Args:
-        HBSrfs_: A list of valid Honeybee surfaces
+        HBObjects: Any valid Honeybee object
+        _names: List of new names for HBObjects
     Returns:
-        HBSrfs: Modified list of Honeybee surfaces with 
+        readMe!: Information about the Honeybee object
 """
-
-ghenv.Component.Name = "Honeybee_Make Adiabatic"
-ghenv.Component.NickName = 'makeAdiabatic'
+ghenv.Component.Name = "Honeybee_ChangeHBObjName"
+ghenv.Component.NickName = 'changeHBObjName'
 ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "09 | Energy | Energy"
+ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
 
-import scriptcontext as sc
-import uuid
-import Grasshopper.Kernel as gh
 
-def main(HBSrfs):
-    
+import scriptcontext as sc
+import Grasshopper.Kernel as gh
+import uuid
+
+def main(HBObjects, names):
     # check for Honeybee
     if not sc.sticky.has_key('honeybee_release'):
-        print "You should first let Honeybee to fly..."
-        w = gh.GH_RuntimeMessageLevel.Warning
-        ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee to fly...")
+        msg = "You should first let Honeybee fly..."
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
         return
 
     try:
-        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
     except:
         warning = "You need a newer version of Honeybee to use this compoent." + \
-        " Use updateHoneybee component to update userObjects.\n" + \
+        "Use updateHoneybee component to update userObjects.\n" + \
         "If you have already updated userObjects drag Honeybee_Honeybee component " + \
         "into canvas and try again."
         w = gh.GH_RuntimeMessageLevel.Warning
@@ -68,13 +67,19 @@ def main(HBSrfs):
     
     # call the objects from the lib
     hb_hive = sc.sticky["honeybee_Hive"]()
-    HBSurfaces = hb_hive.callFromHoneybeeHive(HBSrfs)
-    for HBS in HBSurfaces:
-        HBS.BC = "Adiabatic"
+    HBObjectsFromHive = hb_hive.callFromHoneybeeHive(HBObjects)
     
-    HBSurfaces  = hb_hive.addToHoneybeeHive(HBSurfaces, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+    HBObjs = range(len(HBObjectsFromHive))
     
-    return HBSurfaces
+    for count, HBO in enumerate(HBObjectsFromHive):
+        try:
+            HBO.setName(names[count])
+        except:
+            pass
+        
+        HBObjs[count] = HBO
     
-if HBSrfs_ and HBSrfs_[0]!=None:
-    HBSrfs = main(HBSrfs_)
+    return hb_hive.addToHoneybeeHive(HBObjs, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+
+if _HBObjects and _names:
+    HBObjects = main(_HBObjects, _names)

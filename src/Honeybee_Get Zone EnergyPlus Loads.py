@@ -23,7 +23,7 @@
 """
 Look up loads for a Honeybee Zone
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
 
     Args:
         bldgProgram_:...
@@ -39,7 +39,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Get Zone EnergyPlus Loads"
 ghenv.Component.NickName = 'getHBZoneEPLoads'
-ghenv.Component.Message = 'VER 0.0.57\nNOV_04_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "07 | Energy | Schedule"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

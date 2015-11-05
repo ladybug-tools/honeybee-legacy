@@ -23,7 +23,7 @@
 """
 Create a Honeybee surface, which can be plugged into the "Run Daylight Sumilation" component or combined with other surfaces to make HBZones with the "createHBZones" component.
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
 
     Args:
         _geometry: List of Breps
@@ -60,7 +60,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_createHBSrfs'
 ghenv.Component.NickName = 'createHBSrfs'
-ghenv.Component.Message = 'VER 0.0.57\nNOV_01_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.57\nNOV_01_2015

@@ -23,7 +23,7 @@
 """
 Separate zones into perimeter and core
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
 
     Args:
         _bldgMasses: A Closed brep representing a building or a list of closed Breps.
@@ -38,7 +38,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = 'Honeybee_PerimeterCoreZoning'
 ghenv.Component.NickName = 'PerimeterCore'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

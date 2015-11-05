@@ -26,7 +26,7 @@
 """
 EPlus DX Coil
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
 
     Args:
         _dxCoilSpeed:...0 = 1 speed, 1 = 2 speed
@@ -60,7 +60,7 @@ import Grasshopper.Kernel as gh
 
 ghenv.Component.Name = "Honeybee_OpenStudio DX Cooling Coil"
 ghenv.Component.NickName = 'EPlusDXCoolingCoil'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | AirsideSystems"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

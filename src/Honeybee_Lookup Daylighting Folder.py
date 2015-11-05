@@ -23,7 +23,7 @@
 """
 Search Simulation Folder
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
     
     Args:
         _studyFolder: Path to base study folder. If _studyType is empty then it should be full path to study folder
@@ -48,7 +48,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Lookup Daylighting Folder"
 ghenv.Component.NickName = 'LookupFolder_Daylighting'
-ghenv.Component.Message = 'VER 0.0.57\nOCT_16_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

@@ -26,7 +26,7 @@ Radiance Opaque Material By Color
 Create a Standard Radiance Opaque Material. Many thanks to Axel Jacobs for his help and all the great resources he provided at jaloxa.eu
 Check out the color picker to see some great examples > http://www.jaloxa.eu/resources/radiance/colour_picker/index.shtml
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
 
     Args:
         _materialName: Material name
@@ -41,7 +41,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Radiance Opaque Material By Color"
 ghenv.Component.NickName = 'radOpaqueMaterialByColor'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "01 | Daylight | Material"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

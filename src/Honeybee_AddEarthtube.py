@@ -40,7 +40,7 @@ Where:
 For more information about the Energy Plus Earthtube please see:
 http://bigladdersoftware.com/epx/docs/8-2/input-output-reference/group-airflow.html#zoneearthtube-earth-tube
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
 
     Args:
         _HBZones: The Honeybee zones to which Earthtubes will be added to. Only one earth tube will be added to each zone.
@@ -114,7 +114,7 @@ Provided by Honeybee 0.0.57
 """
 
 ghenv.Component.Name = "Honeybee_AddEarthtube"
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

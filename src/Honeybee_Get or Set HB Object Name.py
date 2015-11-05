@@ -24,7 +24,7 @@
 Change Honeybee Object Names
 
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
 
     Args:
         HBObjects: Any valid Honeybee object
@@ -34,7 +34,7 @@ Provided by Honeybee 0.0.57
 """
 ghenv.Component.Name = "Honeybee_Get or Set HB Object Name"
 ghenv.Component.NickName = 'getSetHBObjName'
-ghenv.Component.Message = 'VER 0.0.57\nNOV_04_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

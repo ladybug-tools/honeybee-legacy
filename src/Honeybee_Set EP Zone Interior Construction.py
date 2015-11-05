@@ -25,7 +25,7 @@
 Set EP Zone Interior Construction
 
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
     
     Args:
         _HBZone: Honeybee zone
@@ -39,7 +39,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Set EP Zone Interior Construction"
 ghenv.Component.NickName = 'setEPZoneIntCnstr'
-ghenv.Component.Message = 'VER 0.0.57\nSEP_23_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

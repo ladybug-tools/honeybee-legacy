@@ -24,7 +24,7 @@
 Read Annual Daylight Results I [Standard Daysim Results]
 
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
 
     Args:
         _illFilesAddress: List of .ill files
@@ -46,7 +46,7 @@ Provided by Honeybee 0.0.57
 """
 ghenv.Component.Name = "Honeybee_Read Annual Result I"
 ghenv.Component.NickName = 'readAnnualResultsI'
-ghenv.Component.Message = 'VER 0.0.57\nNOV_04_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 #compatibleHBVersion = VER 0.0.57\nNOV_03_2015

@@ -29,7 +29,7 @@ _
 Note that internal masses assigned this way cannot "see" solar radiation that may potentially hit them and, as such, caution should be taken when using this component with internal mass objects that are not always in shade.
 Masses are only factored into the the thermal calculations of the zone by undergoing heat transfer with the indoor air.
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
 
     Args:
         _HBZones: HBZones for which internal masses are to be assigned.
@@ -46,7 +46,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Add Internal Mass to Zone"
 ghenv.Component.NickName = 'addInternalMass'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_11_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

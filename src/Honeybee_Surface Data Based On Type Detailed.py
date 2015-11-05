@@ -23,7 +23,7 @@
 """
 Use this component to separate grafed lists of surface data that come out of the "Honeybee_Read EP Surface Result" component based on rough surface type.  This component separates all surface types but takes sevaral seconds to load and requires HBZones.  For a quicker splitting of data, use the "Honeybee_Surface Data Based On Type" component.
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
 
     Args:
         _HBZone: Honeybee Zones for which you are interested in surface data.
@@ -44,7 +44,7 @@ Provided by Honeybee 0.0.57
 """
 ghenv.Component.Name = "Honeybee_Surface Data Based On Type Detailed"
 ghenv.Component.NickName = 'srfDataByTypeDetailed'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

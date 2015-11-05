@@ -27,7 +27,7 @@ You can download several measures from here: https://bcl.nrel.gov/nrel/types/mea
 
 Many thanks to NREL team for their support during the process. See (https://github.com/mostaphaRoudsari/Honeybee/issues/214) and (https://github.com/mostaphaRoudsari/Honeybee/issues/290)for just two examples!
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
 
     Args:
         _osmFilePath: A file path of the an OpemStdio file
@@ -43,7 +43,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Apply OpenStudio Measure"
 ghenv.Component.NickName = 'applyOSMeasure'
-ghenv.Component.Message = 'VER 0.0.57\nNOV_04_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

@@ -26,7 +26,7 @@ _
 This component reads only the results related to zone ideal air and earth tube HVAC systems.  For other results related to zones, you should use the "Honeybee_Read EP Result" component and, for results related to surfaces, you should use the "Honeybee_Read EP Surface Result" component.
 
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
     
     Args:
         _resultFileAddress: The result file address that comes out of the WriteIDF component.
@@ -45,7 +45,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Read EP HVAC Result"
 ghenv.Component.NickName = 'readEP_HVAC_Result'
-ghenv.Component.Message = 'VER 0.0.57\nOCT_27_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

@@ -25,7 +25,7 @@
 Use this component to delete out unwanted areas of a shade after a shade benefit evaluation has been run.  This will help turn your shade evaluation results into an actual shade brep based on a percentage of beneficial shade cells that you decide.
 
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
     
     Args:
         _shadeMesh: The shade mesh out of either of the shade benefit evaluators.
@@ -42,7 +42,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Optimal Shade Creator"
 ghenv.Component.NickName = 'ShadeCreator'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

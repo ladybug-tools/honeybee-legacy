@@ -22,7 +22,7 @@
 
 
 """
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
 
 Use this component to add Energy Plus Photovoltaic generators to a Honeybee Surface. Each surface can only have one Photovoltaic generator. While each PV generator is made up of one or several PV modules. 
 -
@@ -35,7 +35,7 @@ For more information about Photovolatic generators please see:
 http://bigladdersoftware.com/epx/docs/8-2/input-output-reference/group-electric-load-center.html#photovoltaic-generators
 
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
 
     Args:
         _HBSurfaces: A Honeybee/context surface or a list of Honeybee/context surfaces to which one Photovolatic generator will be mounted on each surface.
@@ -57,7 +57,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Generator_PV"
 ghenv.Component.NickName = 'PVgen'
-ghenv.Component.Message = 'VER 0.0.57\nOCT_23_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP" #"06 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

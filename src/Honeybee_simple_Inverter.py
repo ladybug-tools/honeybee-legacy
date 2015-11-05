@@ -22,7 +22,7 @@
 
 
 """
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
 
 Use this component to add EnergyPlus simple inverters to a Energy Plus simulation.
 
@@ -31,7 +31,7 @@ Find out more information about Energy Plus simple inverters here:
 http://bigladdersoftware.com/epx/docs/8-2/input-output-reference/group-electric-load-center.html#electricloadcenterinvertersimple
 
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
 
     Args:
         
@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_simple_Inverter"
 ghenv.Component.NickName = 'simple_Inverter'
-ghenv.Component.Message = 'VER 0.0.57\nAUG_26_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP" #"06 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

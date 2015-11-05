@@ -23,7 +23,7 @@
 """
 Radiance Materials Info
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
 
     Args:
         _RADMaterial: Radiance material name
@@ -34,7 +34,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Radiance Materials Info"
 ghenv.Component.NickName = 'RADMaterialsInfo'
-ghenv.Component.Message = 'VER 0.0.57\nNOV_01_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "01 | Daylight | Material"
 #compatibleHBVersion = VER 0.0.57\nNOV_01_2015
