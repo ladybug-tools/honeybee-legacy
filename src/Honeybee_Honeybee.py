@@ -7079,7 +7079,26 @@ class hb_Hive(object):
     
     class CopyClass(object):
         pass
-    
+    def checkifTransformed(self, brep, HBO):
+        """
+        This method ensures that Honeybee objects are not rotated or moved
+        by Grasshopper components
+        
+        This test is not restrict enough for mirroring and rotation
+        but I don't want to make whole Honeybee process slow because of
+        this extra test
+        """
+        msg = " %s has been moved, scaled or rotated.\nIf you need to move or rotate "%HBO.name + \
+              "a Honeybee object you should use Honeybee move, rotate or mirror components." + \
+              " You can find them under 12|WIP tab."
+        
+        bb1 = brep.GetBoundingBox(False)
+        bb2 = HBO.geometry.GetBoundingBox(False)
+        if bb1.Min.DistanceTo(bb2.Min) > sc.doc.ModelAbsoluteTolerance:
+            raise Exception(msg)
+        elif bb1.Max.DistanceTo(bb2.Max) > sc.doc.ModelAbsoluteTolerance:
+            raise Exception(msg)
+            
     def addToHoneybeeHive(self, HBObjects, GHComponentID):
         # check if the honeybeedictionary already existed
         # if not create the dictionary
@@ -7143,32 +7162,34 @@ class hb_Hive(object):
     def callFromHoneybeeHive(self, geometryList):
         HBObjects = []
         for geometry in geometryList:
-            try:
-                key = geometry.UserDictionary['HBID']
-                if sc.sticky['HBHive'].has_key(key):
-                    try:
-                        HBObject = sc.sticky['HBHive'][key]
-                        # after the first round meshedFace makes copy.deepcopy crash
-                        # so I need to regenerate meshFaces
-                        if HBObject.objectType == "HBZone":
-                            for surface in HBObject.surfaces:
-                                newMesh = rc.Geometry.Mesh()
-                                newMesh.Append(surface.meshedFace)
-                                surface.meshedFace = newMesh
-                        elif HBObject.objectType == "HBSurface": 
+            
+            key = geometry.UserDictionary['HBID']
+            if sc.sticky['HBHive'].has_key(key):
+                HBObject = sc.sticky['HBHive'][key]
+                
+                # make sure Honeybee object is not moved or rotated
+                self.checkifTransformed(geometry, HBObject)
+                
+                try:
+                    # after the first round meshedFace makes copy.deepcopy crash
+                    # so I need to regenerate meshFaces
+                    if HBObject.objectType == "HBZone":
+                        for surface in HBObject.surfaces:
                             newMesh = rc.Geometry.Mesh()
-                            newMesh.Append(HBObject.meshedFace)
-                            HBObject.meshedFace = newMesh
-                        
-                        HBObjects.append(copy.deepcopy(HBObject))
-                        
-                    except Exception, e:
-                        print `e`
-                        print "Failed to copy the object. Returning the original objects...\n" +\
-                        "This can cause strange behaviour!"
-                        HBObjects.append(sc.sticky['HBHive'][key])
-            except:
-                pass
+                            newMesh.Append(surface.meshedFace)
+                            surface.meshedFace = newMesh
+                    elif HBObject.objectType == "HBSurface": 
+                        newMesh = rc.Geometry.Mesh()
+                        newMesh.Append(HBObject.meshedFace)
+                        HBObject.meshedFace = newMesh
+                    
+                    HBObjects.append(copy.deepcopy(HBObject))
+                    
+                except Exception, e:
+                    print `e`
+                    print "Failed to copy the object. Returning the original objects...\n" +\
+                    "This can cause strange behaviour!"
+                    HBObjects.append(sc.sticky['HBHive'][key])
                 
         return HBObjects
 
