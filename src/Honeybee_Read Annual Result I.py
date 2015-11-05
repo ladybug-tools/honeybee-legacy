@@ -46,7 +46,7 @@ Provided by Honeybee 0.0.57
 """
 ghenv.Component.Name = "Honeybee_Read Annual Result I"
 ghenv.Component.NickName = 'readAnnualResultsI'
-ghenv.Component.Message = 'VER 0.0.57\nNOV_03_2015'
+ghenv.Component.Message = 'VER 0.0.57\nNOV_04_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 #compatibleHBVersion = VER 0.0.57\nNOV_03_2015
@@ -138,6 +138,51 @@ def convertIllFileDaraTreeIntoSortedDictionary(illFilesAddress):
     
     return illFileSets
 
+
+def convertEPScheduleToDSSchedule(scheduleName, folder):
+    
+    lb_preparation = sc.sticky["ladybug_Preparation"]()
+    HBScheduleList = sc.sticky["honeybee_ScheduleLib"].keys()
+    if scheduleName.upper() not in HBScheduleList:
+        raise ValueError("Can't find %s in EnergyPlus schedules."%(scheduleName))
+        
+    heading = "# Daysim occupancy file,,,\n" + \
+          "# time_step 60, comment: weekdays are based on user list inputs." + \
+          "daylight savings time is based on user input),,\n" + \
+          "# month,day,time,occupancy (1=present/0=absent)\n"
+
+    readSchedules = sc.sticky["honeybee_ReadSchedules"](scheduleName, 0)
+    dailyValues  = readSchedules.getScheduleValues()
+        
+    hourlyValues = []
+    for values in dailyValues: hourlyValues.extend(values)
+    
+    # create a temp folder inside folder will .ill files
+    if not os.path.isdir(folder): os.mkdir(folder)
+    
+    # write the values to file
+    fullPath = os.path.join(folder, scheduleName.replace(" ", "_") + ".csv")
+    
+    with open(fullPath, "w") as occFile:
+        occFile.write(heading)
+        for HOY, occ in enumerate(hourlyValues):
+            HOY += 1
+            d, m, t = lb_preparation.hour2Date(HOY, True)
+            
+            m += 1 #month starts from 0 in Ladybug hour2Date. I should fix this at some point
+            
+            t -= .5 # add half an hour to the time to be similar to daysim
+            
+            if t == -.5: t = 23.5
+            
+            if occ > 0: occ = 1
+            else: occ = 0
+            
+            occLine = str(m) + "," + str(d) + "," + str(t) + "," + str(occ) + "\n"
+            occFile.write(occLine)
+    
+    return fullPath
+
 def main(illFilesAddress, testPts, testVecs, occFiles, lightingControlGroups, SHDGroupI_Sensors, SHDGroupII_Sensors, DLAIllumThresholds, runInBackground = False):
     
     if sc.sticky.has_key('honeybee_release'):
@@ -159,7 +204,6 @@ def main(illFilesAddress, testPts, testVecs, occFiles, lightingControlGroups, SH
         hb_DSPath = hb_folders["DSPath"]
         hb_DSCore = hb_folders["DSCorePath"]
         hb_DSLibPath = hb_folders["DSLibPath"]
-    
     else:
         msg = "You should first let Honeybee to fly first..."
         
@@ -224,8 +268,6 @@ def main(illFilesAddress, testPts, testVecs, occFiles, lightingControlGroups, SH
         # not a sensor
         return False
     
-    
-    
     msg = str.Empty
     
     # PREPARATION/CHECKING THE INPUTS #
@@ -242,15 +284,23 @@ def main(illFilesAddress, testPts, testVecs, occFiles, lightingControlGroups, SH
     if len(DLAIllumThresholds)==0: DLAIllumThresholds = [300] * numOfSpaces
     
     # check for occupancy file
+    occupancyFilesFolder = os.path.join(sc.sticky["Honeybee_DefaultFolder"], "DaysimCSVOCC\\")
+
     if len(occFiles)!=0:
-        for fileName in occFiles:
-            try:
-                if not os.path.isfile(fileName):
-                    msg = "Can't find the occupancy file: " + fileName
+        for fileCount, fileName in enumerate(occFiles):
+            if fileName.lower().endswith(".csv"):
+                try:
+                    if not os.path.isfile(fileName):
+                        msg = "Can't find the occupancy file: " + fileName
+                        return msg, None
+                except:
+                    msg = "Occupancy file address is not valid."
                     return msg, None
-            except:
-                msg = "Occupancy file address is not valid."
-                return msg, None
+            else:
+                #try:
+                # might be an energyplus schedule
+                filePath = convertEPScheduleToDSSchedule(fileName, occupancyFilesFolder)
+                occFiles[fileCount] = filePath
     else:
         daysimOccFile = os.path.join(sc.sticky["Honeybee_DefaultFolder"], "DaysimCSVOCC\\userDefinedOcc_9to17.csv")
         occFiles = [daysimOccFile] * numOfSpaces
@@ -874,4 +924,3 @@ if _runIt and not isAllNone(_illFilesAddress) and not isAllNone(_testPoints):
                 sDA.Add(getsDA(DLARes), p)
                 htmReport.Add(htmLists[branchNum], p)
                     
-    
