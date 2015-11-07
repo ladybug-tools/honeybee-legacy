@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -7115,8 +7115,8 @@ class hb_Hive(object):
               "a Honeybee object you should use Honeybee move, rotate or mirror components." + \
               " You can find them under 12|WIP tab."
         
-        bb1 = brep.GetBoundingBox(False)
-        bb2 = HBO.geometry.GetBoundingBox(False)
+        bb1 = brep.GetBoundingBox(True)
+        bb2 = HBO.geometry.GetBoundingBox(True)
         if bb1.Min.DistanceTo(bb2.Min) > 5 * sc.doc.ModelAbsoluteTolerance:
             raise Exception(msg)
         elif bb1.Max.DistanceTo(bb2.Max) > 5 * sc.doc.ModelAbsoluteTolerance:
