@@ -48,7 +48,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_addHBGlz'
 ghenv.Component.NickName = 'addHBGlz'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.57\nNOV_01_2015
@@ -63,7 +63,6 @@ def main(HBObject, childSurfaces, childSurfacesName, EPConstructions, RADMateria
         
         glzCount = 0
         for srfCount, srf in enumerate(childSurfaces):
-            
             # check if the surface is located on the base surface
             if HBSurface.isPossibleChild(srf, tolerance):
                 # if yes then create the child surface
@@ -195,11 +194,11 @@ def main(HBObject, childSurfaces, childSurfacesName, EPConstructions, RADMateria
             HBObject = hb_hive.callFromHoneybeeHive([HBObject])[0]
         except:
             raise TypeError("Wrong input type for _HBObj. Connect a Honeybee Surface or a HoneybeeZone to HBObject input")
-            
+
         # check if the object is a zone or a surface
         if HBObject.objectType == "HBZone":
             # add window for each surface
-            for HBSurface in enumerate(HBObject.surfaces):
+            for HBSurface in HBObject.surfaces:
                 addPotentialChildSurface(HBSurface)
         else:
             # add window to the HBSurface
