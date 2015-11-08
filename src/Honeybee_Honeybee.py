@@ -310,9 +310,7 @@ class hb_findFolders():
         http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
         """
         def is_exe(fpath):
-            #print fpath
-            #if fpath.upper().find("EnergyPlus") > 0:
-            #    print fpath
+
             # Avoid Radiance and Daysim that comes with DIVA as it has a different
             # structure which doesn't match the standard Daysim
             if fpath.upper().find("DIVA")<0:
@@ -333,7 +331,10 @@ class hb_findFolders():
                 path = path.strip('"')
                 exe_file = os.path.join(path, program)
                 if is_exe(exe_file):
-                    return path, exe_file
+                    # This is a change to catch cases that user has radiance inastalled
+                    # at C:\Program Files\Radiance
+                    if path.strip().find(" ") == -1:
+                        return path, exe_file
         return None, None
 
 
