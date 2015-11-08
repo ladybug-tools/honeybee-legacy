@@ -48,7 +48,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_addHBGlz'
 ghenv.Component.NickName = 'addHBGlz'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_08_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.57\nNOV_01_2015
@@ -103,7 +103,7 @@ def main(HBObject, childSurfaces, childSurfacesName, EPConstructions, RADMateria
                         added, EPConstruction = hb_EPObjectsAux.addEPObjectToLib(EPConstruction, overwrite = True)
         
                         if not added:
-                            msg = name + " is not added to the project library!"
+                            msg = EPConstruction + " is not added to the project library!"
                             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
                             print msg
                             return
@@ -135,9 +135,9 @@ def main(HBObject, childSurfaces, childSurfacesName, EPConstructions, RADMateria
                             return
                     
                     addedToLib, HBFenSrf.RadMaterial = hb_RADMaterialAUX.analyseRadMaterials(RADMaterial, True)
-                    materialType = hb_RADMaterialAUX.getRADMaterialType(RADMaterial)
+                    materialType = hb_RADMaterialAUX.getRADMaterialType(HBFenSrf.RadMaterial)
                     if materialType == 'plastic':
-                        warningMsg = RADMaterial + " is not a typical glass material. Are you sure you selected the right material?"
+                        warningMsg = HBFenSrf.RadMaterial + " is not a typical glass material. Are you sure you selected the right material?"
                         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
                         return
     
