@@ -54,7 +54,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Run Daylight Simulation"
 ghenv.Component.NickName = 'runDaylightAnalysis'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 #compatibleHBVersion = VER 0.0.56\nSEP_10_2015

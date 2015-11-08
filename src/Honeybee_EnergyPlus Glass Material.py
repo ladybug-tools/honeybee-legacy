@@ -44,7 +44,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Glass Material"
 ghenv.Component.NickName = 'EPGlassMat'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

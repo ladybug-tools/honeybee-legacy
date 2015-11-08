@@ -64,7 +64,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Thermal Autonomy Analysis"
 ghenv.Component.NickName = 'ThermalAutonomy'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

@@ -44,7 +44,7 @@ import json
 
 ghenv.Component.Name = "Honeybee_OpenStudio Systems"
 ghenv.Component.NickName = 'OSHVACSystems'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"

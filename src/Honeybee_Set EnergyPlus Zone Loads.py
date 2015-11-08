@@ -41,7 +41,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Set EnergyPlus Zone Loads"
 ghenv.Component.NickName = 'setEPZoneLoads'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
 #compatibleHBVersion = VER 0.0.56\nOCT_31_2015

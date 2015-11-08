@@ -40,7 +40,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Balance Temperature Calculator"
 ghenv.Component.NickName = 'calcBalTemperature'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"

@@ -70,7 +70,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Set EP Air Flow"
 ghenv.Component.NickName = 'setEPNatVent'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
 #compatibleHBVersion = VER 0.0.56\nMAR_16_2015
