@@ -642,7 +642,7 @@ if dataTypeList[2] == True and dataTypeList[3] == True:
                         outdoorAirEnergy.Add((num/3600000) - (zoneCoolingEnergy[listCount][2:][numCount]/3600000) - heatingPyList[heatCoolTracker][7:][numCount] + coolingPyList[heatCoolTracker][7:][numCount], GH_Path(listCount))
                     heatCoolTracker += 1
                 except: pass
-            dataTypeList[10] = True
+            dataTypeList[11] = True
 
 # If we have information on gains through the air, group them all into a total air gains list.
 if internalAirGain != testTracker and surfaceAirGain != testTracker:
