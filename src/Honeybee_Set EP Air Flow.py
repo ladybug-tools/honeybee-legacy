@@ -437,7 +437,7 @@ def main(HBZones, natVentMethod, interZoneFlow, interZoneFlowSched, minIndoorTem
                         else:
                             if srf.hasChild:
                                 windows.append([])
-                                northAngles.append(srf.angle2North)
+                                northAngles.append(360 - srf.angle2North)
                                 for childSrf in srf.childSrfs:
                                     windows[srfCount].append(childSrf.geometry)
                                 srfCount += 1
