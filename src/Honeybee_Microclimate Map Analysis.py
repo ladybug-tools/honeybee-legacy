@@ -57,7 +57,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Microclimate Map Analysis"
 ghenv.Component.NickName = 'MicroclimateMap'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_11_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -1540,8 +1540,8 @@ def writeCSVUTCI(lb_preparation, directory, fileName, radTempMtx, airTempMtx, UT
     radTempFile = fileName + "RadiantTemp.csv"
     airTempFile = fileName + "AirTemp.csv"
     UTCIFile = fileName + "UTCI.csv"
-    OutdoorComfFile = fileName + "PPD.csv"
-    DegFromNeutralFile = fileName + "PMV.csv"
+    OutdoorComfFile = fileName + "OutdoorComf.csv"
+    DegFromNeutralFile = fileName + "DegFromTarget.csv"
     
     #Write the radiant temperature result file.
     if writeResultFile_ != 2:
