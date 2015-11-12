@@ -1250,94 +1250,93 @@ def mainUTCI(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNu
         
         #Run through every hour of the analysis to fill up the matrices.
         calcCancelled = False
-        #try:
-        def climateMapUTCI(count):
-            #Ability to cancel with Esc
-            if gh.GH_Document.IsEscapeKeyDown(): assert False
-            
-            # Get the hour.
-            hour = HOYs[count]
-            originalHour = originalHOYs[count]
-            
-            #Select out the relevant air and surface temperatures.
-            flowVolValues = []
-            heatGainValues = []
-            for zoneVal in flowVolDataNumbers: flowVolValues.append(zoneVal[hour-1])
-            for zoneVal in heatGainDataNumbers: heatGainValues.append(zoneVal[hour-1])
-            
-            #Compute the radiant temperature.
-            pointMRTValues = calculatePointMRT(srfTempDict, testPtsViewFactor, hour-1, originalHour-1, outdoorClac, outSrfTempDict, outdoorNonSrfViewFac, outDryBulbTemp)
-            if sum(zoneHasWindows) != 0:
-                if allWindowShadesSame == True: pointMRTValues = calculateSolarAdjustedMRT(pointMRTValues, hour, originalHour, diffSolarRad, directSolarRad, globHorizRad, count, sunVecInfo, testPtSkyView, testPtBlockedVec, winTrans, cloA, floorR, skyPatchMeshes, zoneHasWindows, outdoorClac, lb_comfortModels)
+        try:
+            def climateMapUTCI(count):
+                #Ability to cancel with Esc
+                if gh.GH_Document.IsEscapeKeyDown(): assert False
+                
+                # Get the hour.
+                hour = HOYs[count]
+                originalHour = originalHOYs[count]
+                
+                #Select out the relevant air and surface temperatures.
+                flowVolValues = []
+                heatGainValues = []
+                for zoneVal in flowVolDataNumbers: flowVolValues.append(zoneVal[hour-1])
+                for zoneVal in heatGainDataNumbers: heatGainValues.append(zoneVal[hour-1])
+                
+                #Compute the radiant temperature.
+                pointMRTValues = calculatePointMRT(srfTempDict, testPtsViewFactor, hour-1, originalHour-1, outdoorClac, outSrfTempDict, outdoorNonSrfViewFac, outDryBulbTemp)
+                if sum(zoneHasWindows) != 0:
+                    if allWindowShadesSame == True: pointMRTValues = calculateSolarAdjustedMRT(pointMRTValues, hour, originalHour, diffSolarRad, directSolarRad, globHorizRad, count, sunVecInfo, testPtSkyView, testPtBlockedVec, winTrans, cloA, floorR, skyPatchMeshes, zoneHasWindows, outdoorClac, lb_comfortModels)
+                    else:
+                        #To factor in the effect of blocked sunlight, I have to re-make the testPtSkyView and the testPtBlockedVec to reflect the conditions for the given hour.
+                        hourTestPtSkyView, hourTestPtBlockedVec = computeHourShadeDrawing(hour, testPtSkyView, testPtBlockedVec, winShdDict, testPtBlockName, outdoorClac)
+                        pointMRTValues = calculateSolarAdjustedMRT(pointMRTValues, hour, originalHour, diffSolarRad, directSolarRad, globHorizRad, count, sunVecInfo, hourTestPtSkyView, hourTestPtBlockedVec, neutralWinTransList, cloA, floorR, skyPatchMeshes, zoneHasWindows, outdoorClac, lb_comfortModels)
+                pointMRTValues = lb_preparation.flattenList(pointMRTValues)
+                radTempMtx[count+1] = pointMRTValues
+                
+                #Compute the air temperature.
+                pointAirTempValues = getAirPointValue(airTempDict, testPtZoneWeights, testPtsViewFactor, hour-1, originalHour-1, outdoorClac, outDryBulbTemp)
+                if mixedAirOverride[hour-1] == 0: pointAirTempValues = warpByHeight(pointAirTempValues, ptHeightWeights, flowVolValues, heatGainValues, adjacentList, adjacentNameList, groupedInletArea, groupedZoneHeights, groupedGlzHeights, groupedWinCeilDiffs, outdoorClac, outDryBulbTemp)
+                pointAirTempValues = lb_preparation.flattenList(pointAirTempValues)
+                airTempMtx[count+1] = pointAirTempValues
+                
+                #Compute the relative humidity.
+                pointRelHumidValues = getAirPointValue(relHumidDict, testPtZoneWeights, testPtsViewFactor, hour-1, originalHour-1, outdoorClac, outRelHumid)
+                pointRelHumidValues = lb_preparation.flattenList(pointRelHumidValues)
+                
+                #Compute the wind speed.
+                pointWindSpeedValues = []
+                if outdoorClac == True:
+                    for pointListCount, pointList in enumerate(testPtsViewFactor):
+                        if pointListCount != len(testPtsViewFactor)-1:
+                            for val in pointList:
+                                windFlowVal = flowVolValues[pointListCount]/projectedAreas[pointListCount]
+                                if allWindSpeedsSame == True: windFlowVal = windFlowVal + winSpeedNumbers[originalHour-1]
+                                else:
+                                    windFlowVal = windFlowVal + winSpeedNumbers[pointListCount][originalHour-1]
+                                pointWindSpeedValues.append(windFlowVal)
+                        else:
+                            for valCount, val in enumerate(pointList):
+                                ptWindSpeed = lb_wind.calcWindSpeedBasedOnHeight(outWindSpeed[originalHour-1], newOutdoorPtHeightWeights[valCount], d, a, 270, 0.14)
+                                pointWindSpeedValues.append(ptWindSpeed)
                 else:
-                    #To factor in the effect of blocked sunlight, I have to re-make the testPtSkyView and the testPtBlockedVec to reflect the conditions for the given hour.
-                    hourTestPtSkyView, hourTestPtBlockedVec = computeHourShadeDrawing(hour, testPtSkyView, testPtBlockedVec, winShdDict, testPtBlockName, outdoorClac)
-                    pointMRTValues = calculateSolarAdjustedMRT(pointMRTValues, hour, originalHour, diffSolarRad, directSolarRad, globHorizRad, count, sunVecInfo, hourTestPtSkyView, hourTestPtBlockedVec, neutralWinTransList, cloA, floorR, skyPatchMeshes, zoneHasWindows, outdoorClac, lb_comfortModels)
-            pointMRTValues = lb_preparation.flattenList(pointMRTValues)
-            radTempMtx[count+1] = pointMRTValues
-            
-            #Compute the air temperature.
-            pointAirTempValues = getAirPointValue(airTempDict, testPtZoneWeights, testPtsViewFactor, hour-1, originalHour-1, outdoorClac, outDryBulbTemp)
-            if mixedAirOverride[hour-1] == 0: pointAirTempValues = warpByHeight(pointAirTempValues, ptHeightWeights, flowVolValues, heatGainValues, adjacentList, adjacentNameList, groupedInletArea, groupedZoneHeights, groupedGlzHeights, groupedWinCeilDiffs, outdoorClac, outDryBulbTemp)
-            pointAirTempValues = lb_preparation.flattenList(pointAirTempValues)
-            airTempMtx[count+1] = pointAirTempValues
-            
-            #Compute the relative humidity.
-            pointRelHumidValues = getAirPointValue(relHumidDict, testPtZoneWeights, testPtsViewFactor, hour-1, originalHour-1, outdoorClac, outRelHumid)
-            pointRelHumidValues = lb_preparation.flattenList(pointRelHumidValues)
-            
-            #Compute the wind speed.
-            pointWindSpeedValues = []
-            if outdoorClac == True:
-                for pointListCount, pointList in enumerate(testPtsViewFactor):
-                    if pointListCount != len(testPtsViewFactor)-1:
+                    for pointListCount, pointList in enumerate(testPtsViewFactor):
                         for val in pointList:
                             windFlowVal = flowVolValues[pointListCount]/projectedAreas[pointListCount]
                             if allWindSpeedsSame == True: windFlowVal = windFlowVal + winSpeedNumbers[originalHour-1]
-                            else:
-                                windFlowVal = windFlowVal + winSpeedNumbers[pointListCount][originalHour-1]
+                            else: windFlowVal = windFlowVal + winSpeedNumbers[pointListCount][originalHour-1]
                             pointWindSpeedValues.append(windFlowVal)
-                    else:
-                        for valCount, val in enumerate(pointList):
-                            ptWindSpeed = lb_wind.calcWindSpeedBasedOnHeight(outWindSpeed[originalHour-1], newOutdoorPtHeightWeights[valCount], d, a, 270, 0.14)
-                            pointWindSpeedValues.append(ptWindSpeed)
-            else:
-                for pointListCount, pointList in enumerate(testPtsViewFactor):
-                    for val in pointList:
-                        windFlowVal = flowVolValues[pointListCount]/projectedAreas[pointListCount]
-                        if allWindSpeedsSame == True: windFlowVal = windFlowVal + winSpeedNumbers[originalHour-1]
-                        else: windFlowVal = windFlowVal + winSpeedNumbers[pointListCount][originalHour-1]
-                        pointWindSpeedValues.append(windFlowVal)
-            
-            #Compute the SET and PMV comfort.
-            utciPointValues = []
-            outdoorComfPointValues = []
-            degNeutralPointValues = []
-            
-            for ptCount, airTemp in enumerate(pointAirTempValues):
-                utci, comf, condition, stressVal = lb_comfortModels.comfUTCI(airTemp, pointMRTValues[ptCount], pointWindSpeedValues[ptCount], pointRelHumidValues[ptCount])
                 
-                utciPointValues.append(utci)
-                outdoorComfPointValues.append(comf)
-                degNeutralPointValues.append(utci-20)
+                #Compute the SET and PMV comfort.
+                utciPointValues = []
+                outdoorComfPointValues = []
+                degNeutralPointValues = []
+                
+                for ptCount, airTemp in enumerate(pointAirTempValues):
+                    utci, comf, condition, stressVal = lb_comfortModels.comfUTCI(airTemp, pointMRTValues[ptCount], pointWindSpeedValues[ptCount], pointRelHumidValues[ptCount])
+                    utciPointValues.append(utci)
+                    outdoorComfPointValues.append(comf)
+                    degNeutralPointValues.append(utci-20)
+                
+                UTCI_Mtx[count+1] = utciPointValues
+                OutdoorComfMtx[count+1] = outdoorComfPointValues
+                DegFromNeutralMtx[count+1] = degNeutralPointValues
             
-            UTCI_Mtx[count+1] = utciPointValues
-            OutdoorComfMtx[count+1] = outdoorComfPointValues
-            DegFromNeutralMtx[count+1] = degNeutralPointValues
-        
-        #Run through every hour of the analysis to fill up the matrices.
-        if parallel_ == True and len(HOYs) != 1:
-            tasks.Parallel.ForEach(range(len(HOYs)), climateMapUTCI)
-        else:
-            for hour in range(len(HOYs)):
-                #Ability to cancel with Esc
-                if gh.GH_Document.IsEscapeKeyDown(): assert False
-                climateMapUTCI(hour)
-        #except:
-        #    print "The calculation has been terminated by the user!"
-        #    e = gh.GH_RuntimeMessageLevel.Warning
-        #    ghenv.Component.AddRuntimeMessage(e, "The calculation has been terminated by the user!")
-        #    calcCancelled = True
+            #Run through every hour of the analysis to fill up the matrices.
+            if parallel_ == True and len(HOYs) != 1:
+                tasks.Parallel.ForEach(range(len(HOYs)), climateMapUTCI)
+            else:
+                for hour in range(len(HOYs)):
+                    #Ability to cancel with Esc
+                    if gh.GH_Document.IsEscapeKeyDown(): assert False
+                    climateMapUTCI(hour)
+        except:
+            print "The calculation has been terminated by the user!"
+            e = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(e, "The calculation has been terminated by the user!")
+            calcCancelled = True
         
         
         if calcCancelled == False:

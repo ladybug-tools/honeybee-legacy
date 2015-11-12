@@ -49,7 +49,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Visualize Microclimate Map"
 ghenv.Component.NickName = 'VisualizeMicroclimate'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_11_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -124,7 +124,18 @@ def checkTheInputs():
     if len(_comfResultsMtx[1:]) == 1: simStepPossible = False
     else: simStepPossible = True
     
-    #Check if the mtrix is special and includes the number of occupied hours to divide each summed point by.
+    #Check the HOY to be sure that it is in the counds of the matrix.
+    checkData3 = True
+    try:
+        if not stepOfSimulation_ == None:
+            if stepOfSimulation_ <=0 or stepOfSimulation_ > len(_comfResultsMtx):
+                checkData3 = False
+                warning = "stepOfSimulation_ is outside the bounds of the comfResultsMTX."
+                print warning
+                ghenv.Component.AddRuntimeMessage(w, warning)
+    except: pass
+    
+    #Check if the matrix is special and includes the number of occupied hours to divide each summed point by.
     if 'Occupied Thermal Comfort Percent' in dataType or 'Thermal Autonomy' in dataType or 'Over-Heated Percent' in dataType or 'Under-Heated Percent' in dataType: occDataType = True
     else: occDataType = False
     
@@ -133,7 +144,7 @@ def checkTheInputs():
     if occDataType == True or 'Thermal Comfort Percent' in dataType: totalAble = True
     
     #Do a final check of everything.
-    if checkData1 == True and checkData2 == True: checkData = True
+    if checkData1 == True and checkData2 == True  and checkData3 == True: checkData = True
     else: checkData = False
     
     return checkData, viewFactorMesh, dataType, annualData, simStepPossible, analysisPeriod, occDataType, totalAble
@@ -421,7 +432,11 @@ def main(pointValues, viewFactorMesh, dataType, lb_preparation, lb_visualization
     
     #Create the Title.
     try:
-        if stepOfSimulation_ != None and simStepPossible == True: titleTxt = '\n' + dataType + '\n' + 'Hour ' + str(stepOfSimulation_) + ' of simulation.'
+        if stepOfSimulation_ != None and simStepPossible == True:
+            startHOY = lb_preparation.date2Hour(startMonth, startDay, startHour)
+            actualHOY = startHOY + stepOfSimulation_ - 1
+            date = lb_preparation.hour2Date(actualHOY)
+            titleTxt = '\n' + dataType + '\n' + date
         elif len(analysisPeriod) > 0: titleTxt = '\n' + dataType + '\n' + titleDate
         else: titleTxt = '\n' + 'Average ' + dataType
     except:
