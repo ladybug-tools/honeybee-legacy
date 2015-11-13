@@ -70,7 +70,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Set EP Air Flow"
 ghenv.Component.NickName = 'setEPNatVent'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_13_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
 #compatibleHBVersion = VER 0.0.56\nMAR_16_2015
@@ -437,7 +437,8 @@ def main(HBZones, natVentMethod, interZoneFlow, interZoneFlowSched, minIndoorTem
                         else:
                             if srf.hasChild:
                                 windows.append([])
-                                northAngles.append(360 - srf.angle2North)
+                                if srf.angle2North == 0: northAngles.append(srf.angle2North)
+                                else: northAngles.append(360 - srf.angle2North)
                                 for childSrf in srf.childSrfs:
                                     windows[srfCount].append(childSrf.geometry)
                                 srfCount += 1
