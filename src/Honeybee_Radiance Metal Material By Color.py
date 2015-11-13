@@ -41,10 +41,10 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Radiance Metal Material By Color"
 ghenv.Component.NickName = 'radMetalMaterialByColor'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_13_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "01 | Daylight | Material"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.58\nNOV_13_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
@@ -70,13 +70,15 @@ def createRadMaterial(modifier, name, *args):
     return radMaterial + "\n"
 
 
-def main():
+def main(materialName, color, specularity, roughness):
     modifier = "metal"
     
     if sc.sticky.has_key('honeybee_release'):
     
         try:
             if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+            if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): return -1
+            
         except:
             warning = "You need a newer version of Honeybee to use this compoent." + \
             "Use updateHoneybee component to update userObjects.\n" + \
@@ -86,14 +88,14 @@ def main():
             ghenv.Component.AddRuntimeMessage(w, warning)
             return -1
     
-        if _materialName and _color!=None:
-            R = _color.R/255
-            G = _color.G/255
+        if materialName and color!=None:
+            R = color.R/255
+            G = color.G/255
             B = color.B/255
             
             if 0 <= R <= 1 and 0 <= G <= 1 and 0 <= B <= 1:
                 avrgRef = (0.265 * R + 0.670 * G + 0.065 * B)  * (1 - specularity) + specularity
-                materialName = _materialName.Replace(" ", "_")
+                materialName = materialName.Replace(" ", "_")
                 
                 RADMaterial = createRadMaterial(modifier, materialName, R,  G,  B, specularity, roughness)
                 if roughness > 0.2:
@@ -116,4 +118,4 @@ def main():
         ghenv.Component.AddRuntimeMessage(w, "You should first let both Ladybug and Honeybee to fly...")
     
 
-RADMaterial = main()
+RADMaterial = main(_materialName, _color, _specularity_, _roughness_)
