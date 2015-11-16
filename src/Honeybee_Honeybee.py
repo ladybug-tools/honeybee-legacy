@@ -6394,6 +6394,7 @@ class hb_EPSurface(object):
         
         if flip:
             self.geometry.Flip()
+            self.normalVector.Reverse()
             self.basePlane.Flip()
 
         if clearBC:
