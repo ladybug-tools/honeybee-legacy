@@ -31265,30 +31265,15 @@ Schedule:Year,
   12,                                     !- End Month 1
   31;                                     !- End Day 1
 
-Schedule:Week:Daily,
-  Schedule:Week:Daily {df200122-12c4-4f18-97b9-99e3f522244b}, !- Name
-  Warehouse HtgSetp FineStorage Default Schedule, !- Sunday Schedule:Day Name
-  Warehouse HtgSetp FineStorage Default Schedule, !- Monday Schedule:Day Name
-  Warehouse HtgSetp FineStorage Default Schedule, !- Tuesday Schedule:Day Name
-  Warehouse HtgSetp FineStorage Default Schedule, !- Wednesday Schedule:Day Name
-  Warehouse HtgSetp FineStorage Default Schedule, !- Thursday Schedule:Day Name
-  Warehouse HtgSetp FineStorage Default Schedule, !- Friday Schedule:Day Name
-  Warehouse HtgSetp FineStorage Default Schedule, !- Saturday Schedule:Day Name
-  Warehouse HtgSetp FineStorage Default Schedule, !- Holiday Schedule:Day Name
-  Warehouse HtgSetp FineStorage Summer Design Day, !- SummerDesignDay Schedule:Day Name
-  Warehouse HtgSetp FineStorage Winter Design Day, !- WinterDesignDay Schedule:Day Name
-  Warehouse HtgSetp FineStorage Default Schedule, !- CustomDay1 Schedule:Day Name
-  Warehouse HtgSetp FineStorage Default Schedule; !- CustomDay2 Schedule:Day Name
-
 Schedule:Year,
   DefaultCSVPlaceholder,          !- Name
   Fraction,                         !- Schedule Type Limits Name
-  Schedule:Week:Daily {51585971-c88d-4be0-a14b-a76b94309dc7}, !- Schedule:Week Name 1
+  Schedule:Week:Daily {68cd1592-94e4-4683-a3b7-5db7434f37d9}, !- Schedule:Week Name 1
   1,                                      !- Start Month 1
   1,                                      !- Start Day 1
   1,                                      !- End Month 1
   3,                                      !- End Day 1
-  Schedule:Week:Daily {04c08488-6f3c-49e5-bd04-f1f166e9f39e}, !- Schedule:Week Name 2
+  Schedule:Week:Daily {68cd1592-94e4-4683-a3b7-5db7434f37d9}, !- Schedule:Week Name 2
   1,                                      !- Start Month 2
   4,                                      !- Start Day 2
   12,                                     !- End Month 2
