@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_13_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_15_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -4966,12 +4966,12 @@ class EPZone(object):
         # XXX self.PVgenlist = []
     
     
-    def transform(self, transform, clearSurfacesBC = True):
+    def transform(self, transform, clearSurfacesBC = True, flip = False):
         self.name += "_t"
         self.geometry.Transform(transform)
         self.cenPt.Transform(transform)
         for surface in self.surfaces:
-            surface.transform(transform, clearSurfacesBC)
+            surface.transform(transform, clearSurfacesBC, flip)
     
     def assignScheduleBasedOnProgram(self, component = None):
         # create an open office is the program is not assigned
@@ -6379,7 +6379,7 @@ class hb_EPSurface(object):
         else:
             return 0 #wall
     
-    def transform(self, transform, clearBC = True):
+    def transform(self, transform, clearBC = True, flip = False):
         """Transform EPSurface using a transform object
            Transform can be any valid transform object (e.g Translate, Rotate, Mirror)
         """
@@ -6388,19 +6388,24 @@ class hb_EPSurface(object):
         self.meshedFace.Transform(transform)
         # move center point and normal
         self.cenPt.Transform(transform)
-        
         self.normalVector.Transform(transform)
         # move plane
         self.basePlane.Transform(transform)
         
+        if flip:
+            self.geometry.Flip()
+            self.basePlane.Flip()
 
         if clearBC:
             self.setBC("Outdoors", False)
             self.setBCObjectToOutdoors()
+            
         if not self.isChild and self.hasChild:
             self.punchedGeometry.Transform(transform)
+            if flip: self.punchedGeometry.Flip()
+            
             for childSrf in self.childSrfs:
-                childSrf.transform(transform, clearBC)
+                childSrf.transform(transform, clearBC, flip)
         
     def getTotalArea(self):
         return self.geometry.GetArea()

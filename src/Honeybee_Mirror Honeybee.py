@@ -21,7 +21,7 @@
 
 
 """
-Move Honeybee Objects
+Mirror Honeybee Objects
 
 -
 Provided by Honeybee 0.0.58
@@ -34,10 +34,10 @@ Provided by Honeybee 0.0.58
 """
 ghenv.Component.Name = "Honeybee_Mirror Honeybee"
 ghenv.Component.NickName = 'mirrorHBObj'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_15_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
-#compatibleHBVersion = VER 0.0.57\nNOV_04_2015
+#compatibleHBVersion = VER 0.0.57\nNOV_15_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
 except: pass
@@ -76,10 +76,10 @@ def main(HBObj, plane):
     
     # create a transform
     transform = rc.Geometry.Transform.Mirror(plane)
-    #transform = rc.Geometry.Transform.Rotation(3.14, rc.Geometry.Vector3d.ZAxis, rc.Geometry.Point3d.Origin)
     
-    HBObject.transform(transform)
-    if HBObject.objectType == 'HBZone': HBObject.checkZoneNormalsDir()
+    HBObject.transform(transform, True, True)
+    if HBObject.objectType == 'HBZone':
+        HBObject.checkZoneNormalsDir()
     
     HBObj = hb_hive.addToHoneybeeHive([HBObject], ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
 
