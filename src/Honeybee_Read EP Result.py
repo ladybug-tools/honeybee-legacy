@@ -26,7 +26,7 @@ _
 This component reads only the results related to zones.  For results related to surfaces, you should use the "Honeybee_Read EP Surface Result" component.
 
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
     
     Args:
         _resultFileAddress: The result file address that comes out of the WriteIDF component.
@@ -56,7 +56,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.57\nOCT_24_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nMAY_02_2015
@@ -72,6 +72,16 @@ import scriptcontext as sc
 import copy
 import os
 
+#Check to be sure that the files exist.
+csvExists = True
+if _resultFileAddress and _resultFileAddress != None:
+    if not os.path.isfile(_resultFileAddress):
+        csvExists = False
+        warning = 'The result file does not exist.'
+        print warning
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+
+
 #Read the location and the analysis period info from the eio file, if there is one.
 #Also try to read the floor areas from this file to be used in EUI calculations.
 location = "NoLocation"
@@ -81,7 +91,7 @@ zoneNameList = []
 floorAreaList = []
 gotData = False
 
-if _resultFileAddress:
+if _resultFileAddress and csvExists == True:
     try:
         numZonesLine = 0
         numZonesIndex = 0
@@ -269,7 +279,7 @@ for name in zoneNameList:
 
 
 # PARSE THE RESULT FILE.
-if _resultFileAddress and gotData == True:
+if _resultFileAddress and gotData == True and csvExists == True:
     try:
         result = open(_resultFileAddress, 'r')
         
@@ -584,7 +594,7 @@ if _resultFileAddress and gotData == True:
         except: pass
         parseSuccess = False
         warn = 'Failed to parse the result file.  Check the folder of the file address you are plugging into this component and make sure that there is a .csv file in the folder. \n'+ \
-                  'If there is no csv file or there is a file with no data in it (it is 0 kB), your simulation probably did not run correctly. \n' + \
+                  'If there is a file with no data in it (it is 0 kB), your simulation probably did not run correctly. \n' + \
                   'In this case, check the report out of the Run Simulation component to see what severe or fatal errors happened in the simulation. \n' + \
                   'If the csv file is there and it seems like there is data in it (it is not 0 kB), you are probably requesting an output that this component does not yet handle well. \n' + \
                   'If you report this bug of reading the output on the GH forums, we should be able to fix this component to accept the output soon.'
@@ -632,7 +642,7 @@ if dataTypeList[2] == True and dataTypeList[3] == True:
                         outdoorAirEnergy.Add((num/3600000) - (zoneCoolingEnergy[listCount][2:][numCount]/3600000) - heatingPyList[heatCoolTracker][7:][numCount] + coolingPyList[heatCoolTracker][7:][numCount], GH_Path(listCount))
                     heatCoolTracker += 1
                 except: pass
-            dataTypeList[10] = True
+            dataTypeList[11] = True
 
 # If we have information on gains through the air, group them all into a total air gains list.
 if internalAirGain != testTracker and surfaceAirGain != testTracker:
@@ -645,7 +655,7 @@ if internalAirGain != testTracker and surfaceAirGain != testTracker:
             for numCount, num in enumerate(list[2:]):
                 airHeatGainRate.Add((num + surfaceAirGain[listCount][2:][numCount] + systemAirGain[listCount][2:][numCount]), GH_Path(listCount))
         
-        dataTypeList[17] = True
+        dataTypeList[18] = True
 
 #If we have information on volumetric flow for infiltration, natural ventilation, and/or eartht tube flow, add them together.
 if infiltrationFlow != testTracker:
@@ -679,7 +689,7 @@ if infiltrationFlow != testTracker:
             elif earthTubeThere[listCount] == 1 and mechSysThere[listCount] == 0 and natVentThere[listCount] == 0: airFlowVolume.Add((num + earthTubeFlow[listCount][2:][numCount]), GH_Path(listCount))
             elif earthTubeThere[listCount] == 0 and mechSysThere[listCount] == 0 and natVentThere[listCount] == 1: airFlowVolume.Add((num + natVentFlow[listCount][2:][numCount]), GH_Path(listCount))
             else: airFlowVolume.Add(num, GH_Path(listCount))
-        dataTypeList[16] = True
+        dataTypeList[17] = True
 
 
 #If some of the component outputs are not in the result csv file, blot the variable out of the component.

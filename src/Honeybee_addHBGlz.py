@@ -24,13 +24,14 @@
 Use this component to add a custom glazing surface to a HBSurface or HBZone.
 
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
 
     Args:
         _HBObj: A HBZone or HBSurface to which you would like to add a customized glazing surface.
         _childSurfaces: A surface or list of surfaces that represent the custom window(s) that you would like to add.  Note that these surfaces should be co-planar to the connected HBSurface or one of the surfaces of the connected HBZones.
-        EPConstruction_: An optional EnergyPlus construction to set the material construction of the window added to the HBSurface or HBZone.  This can be either the name of a window construction from the OpenStudio library (coming out of the 'Honeybee_Call from EP Construction Library' component) or a custom window construction you created from the 'Honeybee_EnergyPlus Construction' component.
-        RADMaterial_: An optional Radiance material to set the material of the window added to the HBSurface or HBZone.  This can be either the name of a window material from the default Radaince library (coming out of the 'Honeybee_Call from Radiance Library' component) or a custom window material you created from any of the Radiance material components (like the 'Honeybee_Radiance Glass Material' component).
+        childSurfacesName_: An optional list of names for child surfaces. If names are provided the length of names should be the same as _childSurfaces.
+        EPConstruction_: An optional list of EnergyPlus constructions to set the material construction of the window added to the HBSurface or HBZone.  This can be either the name of a window construction from the OpenStudio library (coming out of the 'Honeybee_Call from EP Construction Library' component) or a custom window construction you created from the 'Honeybee_EnergyPlus Construction' component. The list should match with childSurfaces list. In case the list doesn't match the first construction will be used for all surfaces.
+        RADMaterial_: An optional Radiance material to set the material of the window added to the HBSurface or HBZone.  This can be either the name of a window material from the default Radaince library (coming out of the 'Honeybee_Call from Radiance Library' component) or a custom window material you created from any of the Radiance material components (like the 'Honeybee_Radiance Glass Material' component). The list should match with childSurfaces list. In case the list doesn't match the first material will be used for all surfaces.
     Returns:
         readMe!:...
         HBObjWGLZ: The Honeybee surface or zone with assigned glazing (in case of success).
@@ -47,7 +48,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_addHBGlz'
 ghenv.Component.NickName = 'addHBGlz'
-ghenv.Component.Message = 'VER 0.0.57\nNOV_01_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_08_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.57\nNOV_01_2015
@@ -56,18 +57,21 @@ try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
 except: pass
 
 
-def main(HBObject, childSurfaces, EPConstruction, RADMaterial, tolerance):
+def main(HBObject, childSurfaces, childSurfacesName, EPConstructions, RADMaterials, tolerance):
 
-    def addPotentialChildSurface(HBSurface, childSurfaces, EPConstruction, RADMaterial, tolerance):
+    def addPotentialChildSurface(HBSurface):
         
         glzCount = 0
         for srfCount, srf in enumerate(childSurfaces):
-            
             # check if the surface is located on the base surface
             if HBSurface.isPossibleChild(srf, tolerance):
                 # if yes then create the child surface
                 guid = str(uuid.uuid4())
-                name = "glz_" + str(glzCount) + "_" + HBSurface.name + "_" + "".join(guid.split("-")[:-1])
+                try:
+                    name = childSurfacesName[srfCount]
+                except:
+                   name = "glz_" + str(glzCount) + "_" + HBSurface.name + "_" + "".join(guid.split("-")[:-1])
+
                 number = guid.split("-")[-1]
                 glzCount += 1
                 HBFenSrf = hb_EPFenSurface(srf, number, name, HBSurface, 5)
@@ -77,7 +81,15 @@ def main(HBObject, childSurfaces, EPConstruction, RADMaterial, tolerance):
                     HBFenSrf.geometry.Flip()
                     HBFenSrf.normalVector.Reverse()
                 
-                if EPConstruction:
+                if len(EPConstructions)!=0:
+                    
+                    try:
+                        EPConstruction = EPConstructions[srfCount]
+                    except:
+                        EPConstruction = EPConstructions[0]
+                    
+                    if EPConstruction == None: continue
+                        
                     # if it is just the name of the material make sure it is already defined
                     if len(EPConstruction.split("\n")) == 1:
                         # if the material is not in the library add it to the library
@@ -91,7 +103,7 @@ def main(HBObject, childSurfaces, EPConstruction, RADMaterial, tolerance):
                         added, EPConstruction = hb_EPObjectsAux.addEPObjectToLib(EPConstruction, overwrite = True)
         
                         if not added:
-                            msg = name + " is not added to the project library!"
+                            msg = EPConstruction + " is not added to the project library!"
                             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
                             print msg
                             return
@@ -106,7 +118,15 @@ def main(HBObject, childSurfaces, EPConstruction, RADMaterial, tolerance):
                     
                 
                 
-                if RADMaterial!=None:
+                if len(RADMaterials)!= 0:
+                    
+                    try:
+                        RADMaterial = RADMaterials[srfCount]
+                    except:
+                        RADMaterial = RADMaterials[0]
+                    
+                    if RADMaterial == None: continue
+                    
                     if len(RADMaterial.strip().split(" ")) == 1:
                         if not hb_RADMaterialAUX.isMatrialExistInLibrary(RADMaterial):
                             warningMsg = "Can't find " + RADMaterial + " in RAD Material Library.\n" + \
@@ -115,9 +135,9 @@ def main(HBObject, childSurfaces, EPConstruction, RADMaterial, tolerance):
                             return
                     
                     addedToLib, HBFenSrf.RadMaterial = hb_RADMaterialAUX.analyseRadMaterials(RADMaterial, True)
-                    materialType = hb_RADMaterialAUX.getRADMaterialType(RADMaterial)
+                    materialType = hb_RADMaterialAUX.getRADMaterialType(HBFenSrf.RadMaterial)
                     if materialType == 'plastic':
-                        warningMsg = RADMaterial + " is not a typical glass material. Are you sure you selected the right material?"
+                        warningMsg = HBFenSrf.RadMaterial + " is not a typical glass material. Are you sure you selected the right material?"
                         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
                         return
     
@@ -147,7 +167,6 @@ def main(HBObject, childSurfaces, EPConstruction, RADMaterial, tolerance):
         hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
         hb_RADMaterialAUX = sc.sticky["honeybee_RADMaterialAUX"]
         
-        
         # if any of child surfaces is mesh, convert them to a surface
         cleanChildSurfaces = []
         for srf in childSurfaces:
@@ -161,22 +180,29 @@ def main(HBObject, childSurfaces, EPConstruction, RADMaterial, tolerance):
             
             # collect surfaces
             cleanChildSurfaces.append(srf)
-            
+        
+        # check number of faces and names
+        if len(childSurfacesName)!= 0:
+            if len(childSurfacesName)!=len(childSurfaces):
+                nameCount = len(childSurfacesName)
+                srfCount = len(childSurfaces)
+                raise Exception("Length of _childSurfaces [%s] should match length of childSurfacesName [%s]"%(srfCount, nameCount))
+        
         # call the surface from the hive
         hb_hive = sc.sticky["honeybee_Hive"]()
         try:
             HBObject = hb_hive.callFromHoneybeeHive([HBObject])[0]
         except:
-            raise Exception("Connect a Honeybee Surface or a HoneybeeZone to HBObject input")
-            
+            raise TypeError("Wrong input type for _HBObj. Connect a Honeybee Surface or a HoneybeeZone to HBObject input")
+
         # check if the object is a zone or a surface
         if HBObject.objectType == "HBZone":
             # add window for each surface
             for HBSurface in HBObject.surfaces:
-                addPotentialChildSurface(HBSurface, childSurfaces, EPConstruction, RADMaterial, tolerance)
+                addPotentialChildSurface(HBSurface)
         else:
             # add window to the HBSurface
-            addPotentialChildSurface(HBObject, childSurfaces, EPConstruction, RADMaterial, tolerance)
+            addPotentialChildSurface(HBObject)
         
         # add to the hive
         HBObject  = hb_hive.addToHoneybeeHive([HBObject], ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
@@ -194,7 +220,7 @@ if _HBObj!=None and len(_childSurfaces) and _childSurfaces[0]!=None:
     # if tolerance_==None:
     tolerance_ = sc.doc.ModelAbsoluteTolerance
         
-    results = main(_HBObj, _childSurfaces, EPConstruction_, RADMaterial_, tolerance_)
+    results = main(_HBObj, _childSurfaces, childSurfacesName_, EPConstructions_, RADMaterials_, tolerance_)
     
     if results != -1:
         HBObjWGLZ = results

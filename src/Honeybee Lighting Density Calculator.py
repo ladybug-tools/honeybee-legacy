@@ -26,7 +26,7 @@ Use this component to calculate the Lighting Density Per Area Load from informat
 Plug the result to the Honeybee setEPZoneLoads component, lightingDensityPerArea_ input
 
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
     
     Args:
         _lightLevel: A number representing the required light level in the room in lux. For instance, 500 lux for a typical office area or 300 lux for a typical residential space. Note that a lux value input here means that light level is reached everywhere on the room floor plan.
@@ -58,7 +58,7 @@ Provided by Honeybee 0.0.57
 """
 ghenv.Component.Name = "Honeybee Lighting Density Calculator"
 ghenv.Component.NickName = 'Lighting Density Per Area Calculator'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"

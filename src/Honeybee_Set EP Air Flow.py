@@ -35,7 +35,7 @@ Ventilation Wind = Cw * Opening Area * Schedule * WindSpd
 Ventilation Stack = Cd * Opening Area * Schedule * SQRT(2*g*DH*(|(Tzone-Todb)|/Tzone)) 
 Total Ventilation = SQRT((Ventilation Wind)^2 + (Ventilation Stack)^2)
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
 
     Args:
         _HBZones: The HBZones out of any of the HB components that generate or alter zones.
@@ -70,7 +70,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Set EP Air Flow"
 ghenv.Component.NickName = 'setEPNatVent'
-ghenv.Component.Message = 'VER 0.0.57\nOCT_25_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_13_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
 #compatibleHBVersion = VER 0.0.56\nMAR_16_2015
@@ -437,7 +437,8 @@ def main(HBZones, natVentMethod, interZoneFlow, interZoneFlowSched, minIndoorTem
                         else:
                             if srf.hasChild:
                                 windows.append([])
-                                northAngles.append(srf.angle2North)
+                                if srf.angle2North == 0: northAngles.append(srf.angle2North)
+                                else: northAngles.append(360 - srf.angle2North)
                                 for childSrf in srf.childSrfs:
                                     windows[srfCount].append(childSrf.geometry)
                                 srfCount += 1

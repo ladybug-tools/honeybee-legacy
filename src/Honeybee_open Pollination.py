@@ -24,14 +24,14 @@
 """
 Use this component to open the Pollination page
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
 
     Args:
         _download: Set Boolean to True to open the Pollination page
 """
 ghenv.Component.Name = "Honeybee_open Pollination"
 ghenv.Component.NickName = 'OpenPollination'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

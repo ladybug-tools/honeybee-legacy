@@ -23,7 +23,7 @@
 """
 Look up schedules for an specific bldgProgram and zoneProgram
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
 
     Args:
         bldgProgram_:...
@@ -39,12 +39,12 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Get EnergyPlus Schedules"
 ghenv.Component.NickName = 'getEPSchedules'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "07 | Energy | Schedule"
+ghenv.Component.SubCategory = "05 | Energy | Building Program"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
-try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
 import scriptcontext as sc
 import Grasshopper.Kernel as gh

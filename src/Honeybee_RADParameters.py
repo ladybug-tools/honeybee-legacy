@@ -27,7 +27,7 @@ Read more about the parameters at: http://daysim.ning.com/
 Here is my favorite presentation by John Mardaljevic: http://radiance-online.org/community/workshops/2011-berkeley-ca/presentations/day1/JM_AmbientCalculation.pdf
 
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
     
     Args:
         _quality: 0 > low, 1 > Medium, 2 > High
@@ -41,7 +41,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_RADParameters"
 ghenv.Component.NickName = 'RADParameters'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -80,10 +80,12 @@ Param   Description             Min     Fast    Accur   Max     Notes
 -lw	    limit weight		    .05	    .01	    .002	0	    C
 """
 
-class dictToClass(object):
+class dictToClass:
     def __init__(self, pyDict):
         self.d = pyDict
-        
+    
+    def __repr__(self):
+        return "Honeybee.RadianceParameters"
 
 def parseRadParameters(radParString):
     """

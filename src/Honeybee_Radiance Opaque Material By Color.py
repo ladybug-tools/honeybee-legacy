@@ -26,7 +26,7 @@ Radiance Opaque Material By Color
 Create a Standard Radiance Opaque Material. Many thanks to Axel Jacobs for his help and all the great resources he provided at jaloxa.eu
 Check out the color picker to see some great examples > http://www.jaloxa.eu/resources/radiance/colour_picker/index.shtml
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
 
     Args:
         _materialName: Material name
@@ -41,10 +41,10 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Radiance Opaque Material By Color"
 ghenv.Component.NickName = 'radOpaqueMaterialByColor'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_13_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "01 | Daylight | Material"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.58\nNOV_13_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
@@ -76,6 +76,8 @@ def main():
     
         try:
             if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+            if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): return -1
+            
         except:
             warning = "You need a newer version of Honeybee to use this compoent." + \
             "Use updateHoneybee component to update userObjects.\n" + \

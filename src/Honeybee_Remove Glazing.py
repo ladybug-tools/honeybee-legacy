@@ -24,7 +24,7 @@
 Remove Glazing 
 
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
 
     Args:
         _HBZones: A list of Honeybee Zones, this component can only use Honeybee Zones
@@ -40,7 +40,7 @@ Provided by Honeybee 0.0.57
 """
 ghenv.Component.Name = "Honeybee_Remove Glazing"
 ghenv.Component.NickName = 'remGlz'
-ghenv.Component.Message = 'VER 0.0.57\nOCT_07_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

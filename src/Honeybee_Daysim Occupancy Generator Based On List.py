@@ -26,7 +26,7 @@ Daysim calculates the outputs for the hours that the space is occupied. This com
 You can use this component to generate a Daysim schedule based of EnergyPlus schedule.
 
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
     Args:
         _occValues: A list of 0 and 1 that indicates the occupancy schedule. The length of the list should be equal to 8760. 
         _fileName_: Optional fileName for this schedule. Files will be saved to C:\Honeybee\DaysimOcc
@@ -38,7 +38,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Daysim Occupancy Generator Based On List"
 ghenv.Component.NickName = 'occupancyGenerator'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_13_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -114,8 +114,8 @@ def main(hourlyValues, fileName):
             
             if t == -.5: t = 23.5
             
-            if occ > 0: occ = 1
-            else: occ = 0
+            if occ >= .2: occ = 1
+            if occ < 0: occ = 0
             
             occLine = str(m) + "," + str(d) + "," + str(t) + "," + str(occ) + "\n"
             occFile.write(occLine)

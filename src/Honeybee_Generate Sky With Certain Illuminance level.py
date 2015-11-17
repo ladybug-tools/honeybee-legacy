@@ -23,7 +23,7 @@
 """
 Genrate a Uniform CIE Sky Based on Illuminace Value
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
     
     Args:
         _illuminanceValue : Desired value for horizontal sky illuminance in Lux
@@ -34,7 +34,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Generate Sky With Certain Illuminance level"
 ghenv.Component.NickName = 'genSkyIlluminanceLevel'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "02 | Daylight | Sky"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

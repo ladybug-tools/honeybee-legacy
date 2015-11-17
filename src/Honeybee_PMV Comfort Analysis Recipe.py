@@ -24,7 +24,7 @@
 """
 Use this component to assemble an adaptive comfort recipe for the "Honeybee_Annual Indoor Comfort Analysis" component.
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
     
     Args:
         _viewFactorMesh: The data tree of view factor meshes that comes out of the  "Honeybee_Indoor View Factor Calculator".
@@ -59,7 +59,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_PMV Comfort Analysis Recipe"
 ghenv.Component.NickName = 'PMVComfRecipe'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_13_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -257,8 +257,8 @@ def checkTheInputs():
     winStatusNumbers = []
     winStatusHeaders = []
     allWindowShadesSame = True
-    if windowShadeTransmiss_.BranchCount == 1:
-        if windowShadeTransmiss_ != []:
+    try:
+        if windowShadeTransmiss_.BranchCount == 1 and len(windowShadeTransmiss_.Branch(0)) != 8767:
             windowShadeTransmiss = []
             for shadeValue in windowShadeTransmiss_.Branch(0):
                 windowShadeTransmiss.append(shadeValue)
@@ -282,19 +282,18 @@ def checkTheInputs():
                     warning = 'windowShadeTransmiss_ must be a value between 0 and 1.'
                     print warning
                     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
-            else:
-                checkData14 = False
-                warning = 'windowShadeTransmiss_ must be either a list of 8760 values that correspond to hourly changing transmissivity over the year or a single constant value for the whole year.'
-                print warning
-                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
-    elif windowShadeTransmiss_.BranchCount > 1:
-        allWindowShadesSame = False
-        checkData14, checkData32, winStatusUnits, winStatusHeaders, winStatusNumbers, analysisPeriod = checkCreateDataTree(windowShadeTransmiss_, "windowShadeTransmiss_", "Surface Window System Solar Transmittance")
-        #Convert all of the numbers in shade status data tree to window transmissivities.
-        for winBCount, windowBranchList in enumerate(winStatusNumbers):
-            for shadHrCt, shadVal in enumerate(windowBranchList):
-                winStatusNumbers[winBCount][shadHrCt] = float(shadVal)
-    elif constantTransmis == True:
+        elif windowShadeTransmiss_.BranchCount > 1 or len(windowShadeTransmiss_.Branch(0)) == 8767:
+            allWindowShadesSame = False
+            checkData14, checkData32, winStatusUnits, winStatusHeaders, winStatusNumbers, analysisPeriod = checkCreateDataTree(windowShadeTransmiss_, "windowShadeTransmiss_", "Surface Window System Solar Transmittance")
+            #Convert all of the numbers in shade status data tree to window transmissivities.
+            for winBCount, windowBranchList in enumerate(winStatusNumbers):
+                for shadHrCt, shadVal in enumerate(windowBranchList):
+                    winStatusNumbers[winBCount][shadHrCt] = float(shadVal)
+        elif constantTransmis == True:
+            for count in range(8760):
+                winStatusNumbers.append(1)
+            print 'No value found for windowShadeTransmiss_.  The window shade status will be set to 1 assuming no additional shading beyond the window glass transmissivity.'
+    except:
         for count in range(8760):
             winStatusNumbers.append(1)
         print 'No value found for windowShadeTransmiss_.  The window shade status will be set to 1 assuming no additional shading beyond the window glass transmissivity.'

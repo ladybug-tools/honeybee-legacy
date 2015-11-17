@@ -24,7 +24,7 @@
 Radiance Mirror Material
 Read more here to understand Radiance materials: http://www.artifice.com/radiance/rad_materials.html
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
 
     Args:
         _materialName: Unique name for this material
@@ -38,10 +38,10 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Radiance Mirror Material"
 ghenv.Component.NickName = 'radMirrorMaterial'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_13_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "01 | Daylight | Material"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.58\nNOV_13_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
@@ -50,8 +50,6 @@ except: pass
 
 import math
 import scriptcontext as sc
-from clr import AddReference
-AddReference('Grasshopper')
 import Grasshopper.Kernel as gh
 
 
@@ -88,6 +86,8 @@ def main(materialName, RReflectance, GReflectance, BReflectance):
 
         try:
             if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+            if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): return -1
+            
         except:
             warning = "You need a newer version of Honeybee to use this compoent." + \
             "Use updateHoneybee component to update userObjects.\n" + \
@@ -119,5 +119,7 @@ def main(materialName, RReflectance, GReflectance, BReflectance):
         ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee to fly...")
 
 
-if _materialName and _RReflectance and _GReflectance and _BReflectance:
-    RADMaterial = main(_materialName, _RReflectance, _GReflectance, _BReflectance)
+results = main(_materialName, _RReflectance, _GReflectance, _BReflectance)
+
+if results!=-1:
+    RADMaterial = results

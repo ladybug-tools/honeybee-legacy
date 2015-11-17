@@ -23,7 +23,7 @@
 """
 Select surfaces by type
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
     Args:
         _HBZones: Honeybee Zones
         _showWalls_: Set to true to output the walls
@@ -38,7 +38,7 @@ Provided by Honeybee 0.0.57
 """
 ghenv.Component.Name = "Honeybee_Select by Type"
 ghenv.Component.NickName = 'selByType_'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

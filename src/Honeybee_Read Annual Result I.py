@@ -24,13 +24,13 @@
 Read Annual Daylight Results I [Standard Daysim Results]
 
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
 
     Args:
         _illFilesAddress: List of .ill files
         _testPoints: List of 3d Points
-        occupancyFiles_: Address to a Daysim occupancy file. You can find some example in \Daysim\occ. Use Honeybee Occupancy Generator to generate a custom occupancy file.
-        lightingControlGroups_: Daysim lighting control groups. Daysim can model up to 10 lighting control groups together. Default is > cntrlType = 3, lightingPower = 250, lightingSetpoint = 300, ballastLossFactor = 20, standbyPower = 3, delayTime = 5
+        occupancyFiles_: Address to a Daysim occupancy file. You can find some example in \Daysim\occ. Use Honeybee Occupancy Generator to generate a custom occupancy file. You can also use EnergyPlus Schedules directly. If the schedule is using continuous values any value larger than .2 will be considered as occupied.
+        lightingControlGroups_: Daysim lighting control groups. Daysim can model up to 10 lighting control groups together. Default is > cntrlType = 4, lightingPower = 250, lightingSetpoint = 300, ballastLossFactor = 20, standbyPower = 3, delayTime = 5
         _DLAIllumThresholds_: Illuminance threshold for Daylight Autonomy calculation in lux. Default is set to 300 lux.
         SHDGroupI_Sensors_: Senors for dhading group I. Use shadingGroupSensors component to prepare the inputs
         SHDGroupII_Sensors_: Senors for dhading group II. Use shadingGroupSensors component to prepare the inputs
@@ -46,10 +46,10 @@ Provided by Honeybee 0.0.57
 """
 ghenv.Component.Name = "Honeybee_Read Annual Result I"
 ghenv.Component.NickName = 'readAnnualResultsI'
-ghenv.Component.Message = 'VER 0.0.57\nSEP_10_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_13_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.57\nNOV_03_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
 except: pass
@@ -114,11 +114,16 @@ def convertIllFileDaraTreeIntoSortedDictionary(illFilesAddress):
     illFileSets = {}
     for branch in range(illFilesAddress.BranchCount):
         # sort files inside each branch if they are not sorted
-        fileNames = list(illFilesAddress.Branch(branch))
+        fileNames = list(illFilesAddress.Branch(branch))        
+            
         try:
-            fileNames = sorted(fileNames, key=lambda fileName: int(fileName.split(".")[-2].split("_")[-1]))
+            fileNames = sorted(fileNames, key=lambda fileName: int(fileName \
+                .split(".")[-2] \
+                .strip("_down") \
+                .strip("_up") \
+                .split("_")[-1]))
         except:
-            tmpmsg = "Can't sort .ill files based on the file names. Make sure the branches are sorted correctly."
+            tmpmsg = "Can't sort .ill files based on the file names. Make sure branches are sorted correctly."
             w = gh.GH_RuntimeMessageLevel.Warning
             ghenv.Component.AddRuntimeMessage(w, tmpmsg)
         
@@ -132,6 +137,51 @@ def convertIllFileDaraTreeIntoSortedDictionary(illFilesAddress):
         illFileSets[shadingGroupNumber].append(fileNames)
     
     return illFileSets
+
+
+def convertEPScheduleToDSSchedule(scheduleName, folder):
+    
+    lb_preparation = sc.sticky["ladybug_Preparation"]()
+    HBScheduleList = sc.sticky["honeybee_ScheduleLib"].keys()
+    if scheduleName.upper() not in HBScheduleList:
+        raise ValueError("Can't find %s in EnergyPlus schedules."%(scheduleName))
+        
+    heading = "# Daysim occupancy file,,,\n" + \
+          "# time_step 60, comment: weekdays are based on user list inputs." + \
+          "daylight savings time is based on user input),,\n" + \
+          "# month,day,time,occupancy (1=present/0=absent)\n"
+
+    readSchedules = sc.sticky["honeybee_ReadSchedules"](scheduleName, 0)
+    dailyValues  = readSchedules.getScheduleValues()
+        
+    hourlyValues = []
+    for values in dailyValues: hourlyValues.extend(values)
+    
+    # create a temp folder inside folder will .ill files
+    if not os.path.isdir(folder): os.mkdir(folder)
+    
+    # write the values to file
+    fullPath = os.path.join(folder, scheduleName.replace(" ", "_") + ".csv")
+    
+    with open(fullPath, "w") as occFile:
+        occFile.write(heading)
+        for HOY, occ in enumerate(hourlyValues):
+            HOY += 1
+            d, m, t = lb_preparation.hour2Date(HOY, True)
+            
+            m += 1 #month starts from 0 in Ladybug hour2Date. I should fix this at some point
+            
+            t -= .5 # add half an hour to the time to be similar to daysim
+            
+            if t == -.5: t = 23.5
+            
+            if float(occ) >= .2: occ = 1
+            else: occ = 0
+            
+            occLine = str(m) + "," + str(d) + "," + str(t) + "," + str(occ) + "\n"
+            occFile.write(occLine)
+    
+    return fullPath
 
 def main(illFilesAddress, testPts, testVecs, occFiles, lightingControlGroups, SHDGroupI_Sensors, SHDGroupII_Sensors, DLAIllumThresholds, runInBackground = False):
     
@@ -154,7 +204,6 @@ def main(illFilesAddress, testPts, testVecs, occFiles, lightingControlGroups, SH
         hb_DSPath = hb_folders["DSPath"]
         hb_DSCore = hb_folders["DSCorePath"]
         hb_DSLibPath = hb_folders["DSLibPath"]
-    
     else:
         msg = "You should first let Honeybee to fly first..."
         
@@ -175,7 +224,7 @@ def main(illFilesAddress, testPts, testVecs, occFiles, lightingControlGroups, SH
     
     class genDefaultLightingControl(object):
         
-        def __init__(self, sensorPts = [], cntrlType = 3, lightingPower = 250, lightingSetpoint = 300, ballastLossFactor = 20, standbyPower = 3, delayTime = 5):
+        def __init__(self, sensorPts = [], cntrlType = 4, lightingPower = 250, lightingSetpoint = 300, ballastLossFactor = 20, standbyPower = 3, delayTime = 5):
             
             self.sensorPts = sensorPts
             self.lightingControlStr = self.getLightingControlStr(cntrlType, lightingPower, lightingSetpoint, ballastLossFactor, standbyPower, delayTime)
@@ -219,8 +268,6 @@ def main(illFilesAddress, testPts, testVecs, occFiles, lightingControlGroups, SH
         # not a sensor
         return False
     
-    
-    
     msg = str.Empty
     
     # PREPARATION/CHECKING THE INPUTS #
@@ -237,15 +284,23 @@ def main(illFilesAddress, testPts, testVecs, occFiles, lightingControlGroups, SH
     if len(DLAIllumThresholds)==0: DLAIllumThresholds = [300] * numOfSpaces
     
     # check for occupancy file
+    occupancyFilesFolder = os.path.join(sc.sticky["Honeybee_DefaultFolder"], "DaysimCSVOCC\\")
+
     if len(occFiles)!=0:
-        for fileName in occFiles:
-            try:
-                if not os.path.isfile(fileName):
-                    msg = "Can't find the occupancy file: " + fileName
+        for fileCount, fileName in enumerate(occFiles):
+            if fileName.lower().endswith(".csv"):
+                try:
+                    if not os.path.isfile(fileName):
+                        msg = "Can't find the occupancy file: " + fileName
+                        return msg, None
+                except:
+                    msg = "Occupancy file address is not valid."
                     return msg, None
-            except:
-                msg = "Occupancy file address is not valid."
-                return msg, None
+            else:
+                #try:
+                # might be an energyplus schedule
+                filePath = convertEPScheduleToDSSchedule(fileName, occupancyFilesFolder)
+                occFiles[fileCount] = filePath
     else:
         daysimOccFile = os.path.join(sc.sticky["Honeybee_DefaultFolder"], "DaysimCSVOCC\\userDefinedOcc_9to17.csv")
         occFiles = [daysimOccFile] * numOfSpaces
@@ -869,4 +924,3 @@ if _runIt and not isAllNone(_illFilesAddress) and not isAllNone(_testPoints):
                 sDA.Add(getsDA(DLARes), p)
                 htmReport.Add(htmLists[branchNum], p)
                     
-    

@@ -27,7 +27,7 @@ Note that the last layer in the component is always the innermost layer and _lay
 _
 To add more layers in the construction, simply zoom into the component and hit the lowest "+" sign that shows up on the input side.  To remove layers from the construction, zoom into the component and hit the lowest "-" sign that shows up on the input side.
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
     
     Args:
         _name: A text name for your custom construction. This is what you will use as an input to other components in order to reference your custom construction.
@@ -44,7 +44,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Construction"
 ghenv.Component.NickName = 'EPConstruction'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

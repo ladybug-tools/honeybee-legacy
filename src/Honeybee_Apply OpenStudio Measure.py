@@ -27,7 +27,7 @@ You can download several measures from here: https://bcl.nrel.gov/nrel/types/mea
 
 Many thanks to NREL team for their support during the process. See (https://github.com/mostaphaRoudsari/Honeybee/issues/214) and (https://github.com/mostaphaRoudsari/Honeybee/issues/290)for just two examples!
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
 
     Args:
         _osmFilePath: A file path of the an OpemStdio file
@@ -43,7 +43,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Apply OpenStudio Measure"
 ghenv.Component.NickName = 'applyOSMeasure'
-ghenv.Component.Message = 'VER 0.0.57\nNOV_31_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -71,6 +71,30 @@ if openStudioLibFolder not in sys.path:
 import OpenStudio
 import time
 
+def createOSArgument(arg):
+    
+    if arg.type == 'Choice':
+        chs = OpenStudio.StringVector()
+        for choice in arg.choices:
+            chs.Add(choice.value)
+        argument = OpenStudio.OSArgument.makeChoiceArgument(arg.name, chs, arg.required, arg.model_dependent)
+    
+    elif arg.type == 'Boolean':
+        argument = OpenStudio.OSArgument.makeBoolArgument(arg.name, arg.required, arg.model_dependent)
+    
+    else:
+        raise Exception("%s is not Implemented")%arg.type
+    
+    argument.setDisplayName(arg.display_name)
+    argument.setDefaultValue(arg.default_value) #I'm not sure if this is neccessary
+    argument.setDescription(arg.description)
+    if arg.type != 'Boolean':
+        argument.setValue(str(arg.userInput))
+    else:
+        argument.setValue(arg.userInput)
+    
+    return argument
+
 def main(epwFile, OSMeasure, osmFile):
     
     # check inputs
@@ -92,7 +116,7 @@ def main(epwFile, OSMeasure, osmFile):
     osmPath = OpenStudio.Path(osmFile)
     epwPath = OpenStudio.Path(epwFile)
     epPath = OpenStudio.Path(openStudioFolder + r'\share\openstudio\EnergyPlusV8-3-0')
-    radPath = OpenStudio.Path(openStudioFolder + r'\share\openstudio\Radiance\bin')
+    radPath = OpenStudio.Path('c:\radince\bin') #openStudioFolder + r'\share\openstudio\Radiance\bin')
     rubyPath = OpenStudio.Path(openStudioFolder + r'\ruby-install\ruby\bin')
     outDir = OpenStudio.Path(workingDir + '\\' + OSMeasure.name.replace(" ", "_")) # I need to have extra check here to make sure name is valid
     
@@ -100,9 +124,17 @@ def main(epwFile, OSMeasure, osmFile):
     
     measure = OpenStudio.BCLMeasure(OpenStudio.Path(OSMeasure.path))
     args = OpenStudio.OSArgumentVector()
-    # TODO: we need to set the arguments here
-    # They are all under OSMeasure.args
     
+    # check if user has input any new value
+    # create them and set the value
+    for arg in OSMeasure.args.values():
+        if str(arg.userInput) != str(arg.default_value):
+            # this argument has been updated
+            # create it first - we won't need to do this once we can load arguments programmatically
+            osArgument = createOSArgument(arg)
+            args.Add(osArgument)
+    
+    # create the workflow
     rjb = OpenStudio.RubyJobBuilder(measure, args)
     rjb.setIncludeDir(OpenStudio.Path(rubyPath))
     wf.addJob(rjb.toWorkItem())

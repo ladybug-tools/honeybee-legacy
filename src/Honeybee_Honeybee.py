@@ -36,7 +36,7 @@ along with Honeybee; If not, see <http://www.gnu.org/licenses/>.
 Source code is available at: https://github.com/mostaphaRoudsari/Honeybee
 
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
     
     Args:
         defaultFolder_: Optional input for Honeybee default folder.
@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.57\nNOV_02_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_16_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -58,6 +58,7 @@ except: pass
 import rhinoscriptsyntax as rs
 import Rhino as rc
 import scriptcontext as sc
+import Grasshopper
 import Grasshopper.Kernel as gh
 from Grasshopper import DataTree
 from Grasshopper.Kernel.Data import GH_Path
@@ -143,6 +144,28 @@ class CheckIn():
                 
                 sc.sticky["Honeybee_DefaultFolder"] = os.path.join("C:\\Users\\", username, "AppData\\Roaming\\Ladybug\\")
                 
+        self.updateCategoryIcon()
+    
+    
+    @staticmethod
+    def updateCategoryIcon():
+        try:
+            url = "https://raw.githubusercontent.com/mostaphaRoudsari/Honeybee/master/resources/icon_16_16.png"
+            icon = os.path.join(sc.sticky["Honeybee_DefaultFolder"], "HB_icon_16_16.png")
+            if not os.path.isfile(icon):
+                client = System.Net.WebClient()
+                client.DownloadFile(url, icon)
+        
+            iconBitmap = System.Drawing.Bitmap(icon)
+            Grasshopper.Instances.ComponentServer.AddCategoryIcon("Honeybee", iconBitmap)
+        except:
+            # download failed
+            pass
+            
+        Grasshopper.Instances.ComponentServer.AddCategoryShortName("Honeybee", "HB")
+        Grasshopper.Instances.ComponentServer.AddCategorySymbolName("Honeybee", "H")
+        Grasshopper.Kernel.GH_ComponentServer.UpdateRibbonUI() #Reload the Ribbon    
+    
     def getComponentVersion(self):
         monthDict = {'JAN':'01', 'FEB':'02', 'MAR':'03', 'APR':'04', 'MAY':'05', 'JUN':'06',
                      'JUL':'07', 'AUG':'08', 'SEP':'09', 'OCT':'10', 'NOV':'11', 'DEC':'12'}        
@@ -271,6 +294,18 @@ class versionCheck(object):
                      "into canvas and try again."
         w = gh.GH_RuntimeMessageLevel.Warning
         GHComponent.AddRuntimeMessage(w, warningMsg)
+    
+    def isInputMissing(self, GHComponent):
+        isInputMissing = False
+        for param in GHComponent.Params.Input:
+            if param.NickName.startswith("_") and \
+                not param.NickName.endswith("_") and \
+                not param.VolatileDataCount:
+                    warning = "Input parameter %s failed to collect data!"%param.NickName
+                    GHComponent.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+                    isInputMissing = True
+        
+        return isInputMissing
 
 
 class hb_findFolders():
@@ -287,9 +322,7 @@ class hb_findFolders():
         http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
         """
         def is_exe(fpath):
-            #print fpath
-            #if fpath.upper().find("EnergyPlus") > 0:
-            #    print fpath
+
             # Avoid Radiance and Daysim that comes with DIVA as it has a different
             # structure which doesn't match the standard Daysim
             if fpath.upper().find("DIVA")<0:
@@ -310,7 +343,10 @@ class hb_findFolders():
                 path = path.strip('"')
                 exe_file = os.path.join(path, program)
                 if is_exe(exe_file):
-                    return path, exe_file
+                    # This is a change to catch cases that user has radiance inastalled
+                    # at C:\Program Files\Radiance
+                    if path.strip().find(" ") == -1:
+                        return path, exe_file
         return None, None
 
 
@@ -343,6 +379,8 @@ class PrepareTemplateEPLibFiles(object):
         sc.sticky ["honeybee_windowMaterialLib"] = {}
         sc.sticky["honeybee_ScheduleLib"] = {}
         sc.sticky["honeybee_ScheduleTypeLimitsLib"] = {}
+    
+    def cleanThermLib(self):
         sc.sticky["honeybee_thermMaterialLib"] = {}
     
     def downloadTemplates(self):
@@ -352,11 +390,13 @@ class PrepareTemplateEPLibFiles(object):
         # create the folder if it is not there
         if not os.path.isdir(workingDir): os.mkdir(workingDir)
         
-        # create a backup from users library
+        # create a backup from the user's library
         templateFile = os.path.join(workingDir, 'OpenStudioMasterTemplate.idf')
         bckupfile = os.path.join(workingDir, 'OpenStudioMasterTemplate_' + str(int(time.time())) +'.idf')
+        thermTemplateFile = os.path.join(workingDir, 'thermMaterial.csv')
+        thermBckupfile = os.path.join(workingDir, 'thermMaterial_' + str(int(time.time())) +'.csv')
         
-        # download template file
+        # download EP template file
         if self.downloadTemplate or not os.path.isfile(templateFile):
             # create a backup from users library
             try: shutil.copyfile(templateFile, bckupfile)
@@ -397,7 +437,6 @@ class PrepareTemplateEPLibFiles(object):
         else:
             pass
         
-        
         if not os.path.isfile(workingDir + '\OpenStudio_Standards.json'):
             print 'Download failed!!! You need OpenStudio_Standards.json to use honeybee.' + \
                 '\nPlease check your internet connection, and try again!'
@@ -416,7 +455,7 @@ class PrepareTemplateEPLibFiles(object):
                 '\nPlease check your internet connection, and try again!'
                 return -1
         
-        # add cutom library
+        # add custom library
         customEPLib = os.path.join(workingDir,"userCustomEPLibrary.idf")
         
         if not os.path.isfile(customEPLib):
@@ -427,8 +466,41 @@ class PrepareTemplateEPLibFiles(object):
         if os.path.isfile(customEPLib):
             libFilePaths.append(customEPLib)
         
-        return libFilePaths
+        #download THERM template file.
+        if self.downloadTemplate or not os.path.isfile(thermTemplateFile):
+            # create a backup from users library
+            try: shutil.copyfile(thermTemplateFile, thermBckupfile)
+            except: pass
+            
+            try:
+                ## download File
+                print 'Downloading thermMaterial.csv to ', workingDir
+                updatedLink = "https://raw.githubusercontent.com/mostaphaRoudsari/Honeybee/master/resources/thermMaterial.csv"
+                self.downloadFile(updatedLink, workingDir)
+                # clean current library
+                self.cleanThermLib()
+            except:
+                print 'Download failed!!! You need thermMaterial.csv to use the "export to THERM" capabilties of honeybee.' + \
+                '\nPlease check your internet connection, and try again!'
+                return -1
         
+        if not os.path.isfile(thermTemplateFile):
+            print 'Download failed!!! You need thermMaterial.csv to use the "export to THERM" capabilties of honeybee.' + \
+                '\nPlease check your internet connection, and try again!'
+            return -1
+        else:
+            # load the csv file
+            csvfilepath = os.path.join(workingDir, 'thermMaterial.csv')
+            try:
+                libFilePaths.append(csvfilepath)
+                print "Therm Material file is loaded from %s\n"%csvfilepath
+            except:
+                print 'Download failed!!! You need thermMaterial.csv to use the "export to THERM" capabilties of honeybee.' + \
+                '\nPlease check your internet connection, and try again!'
+                return -1
+        
+        return libFilePaths
+
 
 class HB_GetEPLibraries:
     
@@ -457,17 +529,24 @@ class HB_GetEPLibraries:
     def getEPScheduleTypeLimits(self):
         return self.libraries["ScheduleTypeLimits"]
     
-    def importEPLibrariesFromFile(self, EPfile, cleanCurrentLib = True, report = True):
+    def getTHERMMaterials(self):
+        return self.libraries["ThermMaterial"]
+    
+    def importEPLibrariesFromFile(self, EPfile, isMatFile, cleanCurrentLib = True, report = True):
         if not os.path.isfile(EPfile):
             raise Exception("Can't find EP library! at %s"%EPfile)
         
-        print "Loading EP materials, constructions and schedules from %s"%EPfile
-        EPObjects = EPLibs.getEnergyPlusObjectsFromFile(EPfile)
-        self.loadEPConstructionsMaterialsAndSchedules(EPObjects, cleanCurrentLib)
+        if isMatFile == False:
+            print "Loading EP materials, constructions and schedules from %s"%EPfile
+            EPObjects = EPLibs.getEnergyPlusObjectsFromFile(EPfile)
+            self.loadEPConstructionsMaterialsAndSchedules(EPObjects, cleanCurrentLib)
+        else:
+            print "Loading THERM materials from %s"%EPfile
+            self.getThermObjectsFromFile(EPfile)
         
         if report:
             self.report()
-
+    
     def cleanHBLibs(self):
         self.libraries = {
             "Material": {},
@@ -513,7 +592,7 @@ class HB_GetEPLibraries:
                         c = ""
                     self.libraries[shortKey][name][count] = v, c
                     count += 1
-
+    
     def report(self): 
         # Report findings
         print "%s EPConstructions are loaded available in Honeybee library"%str(len(self.libraries["Construction"]))
@@ -521,6 +600,7 @@ class HB_GetEPLibraries:
         print "%s EPWindowMaterial are loaded in Honeybee library"%str(len(self.libraries["WindowMaterial"]))
         print "%s schedules are loaded available in Honeybee library"%str(len(self.libraries["Schedule"]))
         print "%s schedule type limits are now loaded in Honeybee library"%str(len(self.libraries["ScheduleTypeLimits"]))
+        print "%s THERM materials are now loaded in Honeybee library"%str(len(self.libraries["ThermMaterial"]))
         print "\n"
     
     @staticmethod
@@ -562,6 +642,31 @@ class HB_GetEPLibraries:
         
         with open(epFilePath, "r") as epFile:
             return self.getEnergyPlusObjectsFromString("".join(epFile.readlines()))
+    
+    
+    
+    def getThermObjectsFromFile(self, matFile):
+        if not os.path.isfile(matFile):
+            raise ValueError("Can't find %s."%matFile)
+        
+        with open(matFile, "r") as mFile:
+            for rowCount, row in enumerate(mFile):
+                if rowCount != 0:
+                    try:
+                        matPropLine = row.split(',')
+                        matNameLine = row.split('"')
+                        matName = matNameLine[1]
+                        #Make a sub-dictionary for the material.
+                        self.libraries["ThermMaterial"][matName] = {}
+                        
+                        #Create the material with the values from the file.
+                        self.libraries["ThermMaterial"][matName]["Material Name"] = matName
+                        self.libraries["ThermMaterial"][matName]["Type"] = int(matPropLine[-1])
+                        self.libraries["ThermMaterial"][matName]["Conductivity"] = float(matPropLine[-5])
+                        self.libraries["ThermMaterial"][matName]["Absorptivity"] = float(matPropLine[-4])
+                        self.libraries["ThermMaterial"][matName]["Emissivity"] = float(matPropLine[-3])
+                        self.libraries["ThermMaterial"][matName]["RGBColor"] = System.Drawing.ColorTranslator.FromHtml("#" + matPropLine[-2])
+                    except: pass
 
 class RADMaterialAux(object):
 
@@ -1190,7 +1295,6 @@ class DLAnalysisRecipe:
     def __repr__(self):
         return "Honybee.Recipe.%s"%self.studyFolder.replace("\\", "")
 
-
 class hb_MSHToRAD(object):
     
     def __init__(self, mesh, fileName = None, workingDir = None, bitmap = None, radMaterial = None):
@@ -1472,8 +1576,20 @@ class hb_WriteRAD(object):
         customRADMat = {} # dictionary to collect the custom material names
         customMixFunRadMat = {} # dictionary to collect the custom mixfunc material names
         surfaceList = []
+        rotateObjects = False
         if len(HBObjects)!=0:
+            # if this is an annual analysis and north is not 0 rotate all Honeybee objects
+            if analysisRecipe.type == 2 and analysisRecipe.northDegrees!=0:
+                print "Rotating the scene for %d degrees"%analysisRecipe.northDegrees
+                
+                transform = rc.Geometry.Transform.Rotation(math.radians(analysisRecipe.northDegrees), \
+                            rc.Geometry.Point3d.Origin)
+                rotateObjects = True
+            
             for objCount, HBObj in enumerate(HBObjects):
+                
+                if rotateObjects: HBObj.transform(transform, False)
+                
                 # check if the object is zone or a surface (?)
                 if HBObj.objectType == "HBZone":
                     if HBObj.hasNonPlanarSrf or HBObj.hasInternalEdge:
@@ -1706,9 +1822,20 @@ class hb_WriteRAD(object):
             for ptList in testPoints:
                 ptnFile.write(str(len(ptList)) + ", ")
         
-        # faltten the test points
-        flattenTestPoints = self.lb_preparation.flattenList(testPoints)
-        flattenPtsNormals = self.lb_preparation.flattenList(ptsNormals)
+        # faltten the test points and make a copy
+        flattenTestPoints = [pt for pt in self.lb_preparation.flattenList(testPoints)]
+        flattenPtsNormals = [v for v in self.lb_preparation.flattenList(ptsNormals)]
+    
+        # if this is an annual analysis and north is not 0 rotate all Honeybee objects
+        if analysisRecipe.type == 2 and analysisRecipe.northDegrees!=0:
+            print "Rotating test points for %d degrees"%analysisRecipe.northDegrees
+            
+            transform = rc.Geometry.Transform.Rotation(math.radians(analysisRecipe.northDegrees), \
+                        rc.Geometry.Point3d.Origin)
+            
+            for pt in flattenTestPoints: pt.Transform(transform)
+            for v in flattenPtsNormals: v.Transform(transform)    
+    
         numOfPoints = len(flattenTestPoints)
     
         if numOfCPUs > numOfPoints: numOfCPUs = numOfPoints
@@ -1809,10 +1936,10 @@ class hb_WriteRAD(object):
                             'radfiles2daysim ' + heaFileName + ' -m -g\n'
             
             # rotate scene if angle is not 0!
-            if northAngleRotation!=0:
-                initBatchStr += \
-                ':: 1.5. Roate geometry and test points\n' + \
-                'rotate_scene ' + heaFileName + '\n'
+            #if northAngleRotation!=0:
+            #    initBatchStr += \
+            #    ':: 1.5. Roate geometry and test points\n' + \
+            #    'rotate_scene ' + heaFileName + '\n'
             
             if runAnnualGlare:
                 initBatchStr += \
@@ -2119,7 +2246,10 @@ class hb_WriteRAD(object):
                         numIll+=1
                     elif file.EndsWith('dc'):
                         numDc+=1
-                if numIll!= numOfCPUs * numOfIllFiles or  numDc!= numOfCPUs * numOfIllFiles:
+                # /2 in case of conceptual dynamic blinds in Daysim
+                if numIll!= numOfCPUs * numOfIllFiles or not \
+                    (numDc == numOfCPUs * numOfIllFiles or \
+                    numDc == numOfCPUs * numOfIllFiles /2):
                     print "Can't find the results for the study"
                     DSResultFilesAddress = []
             
@@ -2996,8 +3126,8 @@ class hb_WriteDS(object):
                   'viewpoint_file         ' + projectName + '_' + 'annualGlareView.vf\n' + \
                   'AdaptiveZoneApplies    ' + `adaptiveZone` + '\n' + \
                   'dgp_image_x_size       ' + `dgp_image_x` + '\n' + \
-                  'dgp_image_y_size       ' + `dgp_image_y` + '\n' + \
-                  'scene_rotation_angle ' + `northAngle` + '\n'
+                  'dgp_image_y_size       ' + `dgp_image_y` + '\n'
+                  # 'scene_rotation_angle ' + `northAngle` + '\n' # I just take care of this in Grasshopper
     
     # radiance parameters
     def DSRADStr(self, radParameters):
@@ -4904,6 +5034,14 @@ class EPZone(object):
         
         # XXX self.PVgenlist = []
     
+    
+    def transform(self, transform, clearSurfacesBC = True, flip = False):
+        self.name += "_t"
+        self.geometry.Transform(transform)
+        self.cenPt.Transform(transform)
+        for surface in self.surfaces:
+            surface.transform(transform, clearSurfacesBC, flip)
+    
     def assignScheduleBasedOnProgram(self, component = None):
         # create an open office is the program is not assigned
         if self.bldgProgram == None: self.bldgProgram = "Office"
@@ -5000,13 +5138,13 @@ class EPZone(object):
         
         if not returnDictionary:
             report = " Internal Loads [SI]:\n" + \
-            "EquipmentsLoadPerArea: " + "%.4f"%self.equipmentLoadPerArea + "\n" + \
-            "infiltrationRatePerArea: " + "%.4f"%self.infiltrationRatePerArea + "\n" + \
-            "lightingDensityPerArea: " + "%.4f"%self.lightingDensityPerArea + "\n" + \
-            "numOfPeoplePerArea: " + "%.4f"%self.numOfPeoplePerArea + "\n" + \
-            "ventilationPerPerson: " + "%.4f"%self.ventilationPerPerson + "\n" + \
-            "ventilationPerArea: " + "%.4f"%self.ventilationPerArea + "\n" + \
-            "recircAirPerArea: " + "%.4f"%self.recirculatedAirPerArea + "."
+            "EquipmentsLoadPerArea: " + "%.6f"%self.equipmentLoadPerArea + "\n" + \
+            "infiltrationRatePerArea: " + "%.6f"%self.infiltrationRatePerArea + "\n" + \
+            "lightingDensityPerArea: " + "%.6f"%self.lightingDensityPerArea + "\n" + \
+            "numOfPeoplePerArea: " + "%.6f"%self.numOfPeoplePerArea + "\n" + \
+            "ventilationPerPerson: " + "%.6f"%self.ventilationPerPerson + "\n" + \
+            "ventilationPerArea: " + "%.6f"%self.ventilationPerArea + "\n" + \
+            "recircAirPerArea: " + "%.6f"%self.recirculatedAirPerArea + "."
             
             return report        
             
@@ -5316,158 +5454,6 @@ class EPZone(object):
                '\nZone program: Unknown' + \
                '\n# of surfaces: ' + `len(self.surfaces)` + \
                '\n-----------------------------------'
-
-class HB_generatorsystem(object):
-    
-    def __init__(self,generatorsystem_name,simulationinverter,battery,windgenerators,PVgenerators,fuelgenerators,contextsurfaces,HBzonesurfaces,maintenance_cost):
-        
-        self.name = generatorsystem_name
-        
-        if simulationinverter == []:
-        
-            self.simulationinverter = None
-        else:
-            self.simulationinverter = simulationinverter
-        
-        self.maintenance_cost = maintenance_cost
-        self.contextsurfaces = contextsurfaces
-        self.HBzonesurfaces = HBzonesurfaces
-        self.battery = battery
-        self.windgenerators = windgenerators # Category includes Generator:WindTurbine
-        self.PVgenerators = PVgenerators # Category includes Generator:Photovoltaic
-        self.fuelgenerators = fuelgenerators # Category includes Generators:Mircoturbine,Generator:Combustion Turbine,Generator:InternalCombustionEngine
-
-        
-class Wind_gen(object):
-    
-    def __init__(self,name_,rotortype,powercontrol,rotor_speed,rotor_diameter,overall_height,number_of_blades,power_output,rated_wind_speed,cut_in_windspeed,cut_out_windspeed,overall_turbine_n,max_tip_speed_ratio,max_power_coefficient,local_av_windspeed,height_local_metrological_station,turbine_cost,powercoefficients):
-        
-        self.name = name_
-        self.type = 'Generator:WindTurbine'
-        self.rotortype = rotortype
-        self.powercontrol = powercontrol
-        self.numblades = number_of_blades
-        self.rotorspeed = rotor_speed
-        self.rotor_diameter = rotor_diameter
-        self.overall_height = overall_height
-        self.powerout = power_output
-        self.rated_wind_speed = rated_wind_speed
-        self.cut_in_windspeed = cut_in_windspeed
-        self.cut_out_windspeed = cut_out_windspeed
-        self.overall_turbine_n = overall_turbine_n
-        self.max_tip_speed_ratio = max_tip_speed_ratio
-        
-        self.local_av_windspeed = local_av_windspeed
-        self.height_local_metrological_station = height_local_metrological_station
-        self.cost_ = turbine_cost
-        
-        if (powercoefficients != None) or (powercoefficients != []) :
-            # Wind turbine is analaytical wind turbine
-            self.powercoefficients = powercoefficients
-        else:
-            self.powercoefficients = None
-        
-        if max_power_coefficient == None:
-            # Only simple wind turbine 
-            self.max_power_coefficient = ''
-        else: 
-            self.max_power_coefficient = max_power_coefficient
-        
-        
-        
-class PV_gen(object):
-    
-    # XXX possible generator types
-    """
-    Generator:InternalCombustionEngine
-    Generator:CombustionTurbine
-    Generator:Photovoltaic
-    Generator:FuelCell
-    Generator:MicroCHP
-    Generator:MicroTurbine
-    Generator:WindTurbine
-    """
-    
-    def __init__(self,_name,surfacename_,_integrationmode,No_parallel,No_series,costper_module,powerout,namePVperform,SA_solarcells,cell_n,performance_type = "PhotovoltaicPerformance:Simple"):
-        
-        self.name = _name
-        self.surfacename = surfacename_
-        self.type = 'Generator:Photovoltaic'
-        self.performancetype = performance_type
-        self.performancename =  namePVperform # One Photovoltaic performance object is made for each PV object so names are the same
-        self.integrationmode = _integrationmode
-        self.NOparallel = No_parallel
-        self.NOseries = No_series
-        
-        # Cost and power out of the Generator is the cost and power of each module by the number of modules in each generator
-        # number in series by number in parallel.
-        
-        self.cost_ = costper_module*No_series*No_parallel
-        self.powerout = powerout*No_series*No_parallel
-        
-        self.inverter = None # Define the inverter for this PV generator all PVgenerations being used in the same - run energy simulation must have the same inverter
-    
-        self.PV_performance(namePVperform,SA_solarcells,cell_n)
-        
-    def PV_performance(self,namePVperformobject,SA_solarcells = 0.5 ,cell_n = 0.12,cell_efficiencyinputmode = "Fixed", schedule_ = "always on"):
-    
-        self.namePVperformobject = namePVperformobject
-        self.surfaceareacells = SA_solarcells
-        self.cellefficiencyinputmode = cell_efficiencyinputmode
-        self.efficiency = cell_n
-        self.schedule = schedule_
-    
-class PVinverter(object):
-    
-    def __init__(self,inverter_name,inverter_cost,inverter_zone,inverter_n,replacement_time):
-   
-        if inverter_zone == None:
-            inverter_zone = ""
-        if inverter_n == None:
-            inverter_n = 0.9
-            
-        self.name = inverter_name
-        self.cost_ = inverter_cost
-        self.efficiency = inverter_n
-        self.zone = inverter_zone
-        self.replacementtime = replacement_time
-        self.ID = str(uuid.uuid4())
-        
-    # Need to be able to compare inverters to make sure that only one inverter is servicing all the PV in the system
-    # For some reason the class ID of the inverters was changing when putting in the hive this is a more fool proof way of comparing them.
-    # Note the zone that the inverter is attached to is not considered.
-    
-    def __hash__(self):
-        return hash(self.ID)
-       
-    def __eq__( self, other ):
-        return self.ID == self.ID
-        
-    def __ne__(self,other):
-        return self.ID != self.ID
-    
-class simple_battery(object):
-    
-    def __init__(self,_name,zone_name,n_charging,n_discharging,battery_capacity,max_discharging,max_charging,initial_charge,bat_cost,replacement_time):
-        
-        
-        if zone_name == None:
-            zone_name = ""
-            
-        self.name = _name
-        self.type = 'Battery:simple'
-        self.zonename = zone_name
-        self.chargingefficiency = n_charging
-        self.dischargingeffciency = n_discharging
-        self.batterycap = battery_capacity
-        self.maxcharge = max_charging
-        self.maxdischarge = max_discharging
-        self.initalcharge = initial_charge
-        self.cost_ = bat_cost
-        
-        self.replacementtime = replacement_time
-        self.ID = str(uuid.uuid4())
-        
 
 class hb_reEvaluateHBZones(object):
     """
@@ -6282,8 +6268,7 @@ class hb_EPSurface(object):
             return False
         else:
             return True
-        
-        
+    
     def extractGlzPoints(self, RAD = False, method = 2):
         glzCoordinatesList = []
         for glzSrf in self.childSrfs:
@@ -6463,6 +6448,35 @@ class hb_EPSurface(object):
         else:
             return 0 #wall
     
+    def transform(self, transform, clearBC = True, flip = False):
+        """Transform EPSurface using a transform object
+           Transform can be any valid transform object (e.g Translate, Rotate, Mirror)
+        """
+        self.name += "_t"
+        self.geometry.Transform(transform)
+        self.meshedFace.Transform(transform)
+        # move center point and normal
+        self.cenPt.Transform(transform)
+        self.normalVector.Transform(transform)
+        # move plane
+        self.basePlane.Transform(transform)
+        
+        if flip:
+            self.geometry.Flip()
+            self.normalVector.Reverse()
+            self.basePlane.Flip()
+
+        if clearBC:
+            self.setBC("Outdoors", False)
+            self.setBCObjectToOutdoors()
+            
+        if not self.isChild and self.hasChild:
+            self.punchedGeometry.Transform(transform)
+            if flip: self.punchedGeometry.Flip()
+            
+            for childSrf in self.childSrfs:
+                childSrf.transform(transform, clearBC, flip)
+        
     def getTotalArea(self):
         return self.geometry.GetArea()
     
@@ -6787,6 +6801,158 @@ class hb_EPFenSurface(hb_EPSurface):
         self.isChild = True # is it really useful?
 
 
+class HB_generatorsystem(object):
+    
+    def __init__(self,generatorsystem_name,simulationinverter,battery,windgenerators,PVgenerators,fuelgenerators,contextsurfaces,HBzonesurfaces,maintenance_cost):
+        
+        self.name = generatorsystem_name
+        
+        if simulationinverter == []:
+        
+            self.simulationinverter = None
+        else:
+            self.simulationinverter = simulationinverter
+        
+        self.maintenance_cost = maintenance_cost
+        self.contextsurfaces = contextsurfaces
+        self.HBzonesurfaces = HBzonesurfaces
+        self.battery = battery
+        self.windgenerators = windgenerators # Category includes Generator:WindTurbine
+        self.PVgenerators = PVgenerators # Category includes Generator:Photovoltaic
+        self.fuelgenerators = fuelgenerators # Category includes Generators:Mircoturbine,Generator:Combustion Turbine,Generator:InternalCombustionEngine
+
+        
+class Wind_gen(object):
+    
+    def __init__(self,name_,rotortype,powercontrol,rotor_speed,rotor_diameter,overall_height,number_of_blades,power_output,rated_wind_speed,cut_in_windspeed,cut_out_windspeed,overall_turbine_n,max_tip_speed_ratio,max_power_coefficient,local_av_windspeed,height_local_metrological_station,turbine_cost,powercoefficients):
+        
+        self.name = name_
+        self.type = 'Generator:WindTurbine'
+        self.rotortype = rotortype
+        self.powercontrol = powercontrol
+        self.numblades = number_of_blades
+        self.rotorspeed = rotor_speed
+        self.rotor_diameter = rotor_diameter
+        self.overall_height = overall_height
+        self.powerout = power_output
+        self.rated_wind_speed = rated_wind_speed
+        self.cut_in_windspeed = cut_in_windspeed
+        self.cut_out_windspeed = cut_out_windspeed
+        self.overall_turbine_n = overall_turbine_n
+        self.max_tip_speed_ratio = max_tip_speed_ratio
+        
+        self.local_av_windspeed = local_av_windspeed
+        self.height_local_metrological_station = height_local_metrological_station
+        self.cost_ = turbine_cost
+        
+        if (powercoefficients != None) or (powercoefficients != []) :
+            # Wind turbine is analaytical wind turbine
+            self.powercoefficients = powercoefficients
+        else:
+            self.powercoefficients = None
+        
+        if max_power_coefficient == None:
+            # Only simple wind turbine 
+            self.max_power_coefficient = ''
+        else: 
+            self.max_power_coefficient = max_power_coefficient
+        
+        
+        
+class PV_gen(object):
+    
+    # XXX possible generator types
+    """
+    Generator:InternalCombustionEngine
+    Generator:CombustionTurbine
+    Generator:Photovoltaic
+    Generator:FuelCell
+    Generator:MicroCHP
+    Generator:MicroTurbine
+    Generator:WindTurbine
+    """
+    
+    def __init__(self,_name,surfacename_,_integrationmode,No_parallel,No_series,costper_module,powerout,namePVperform,SA_solarcells,cell_n,performance_type = "PhotovoltaicPerformance:Simple"):
+        
+        self.name = _name
+        self.surfacename = surfacename_
+        self.type = 'Generator:Photovoltaic'
+        self.performancetype = performance_type
+        self.performancename =  namePVperform # One Photovoltaic performance object is made for each PV object so names are the same
+        self.integrationmode = _integrationmode
+        self.NOparallel = No_parallel
+        self.NOseries = No_series
+        
+        # Cost and power out of the Generator is the cost and power of each module by the number of modules in each generator
+        # number in series by number in parallel.
+        
+        self.cost_ = costper_module*No_series*No_parallel
+        self.powerout = powerout*No_series*No_parallel
+        
+        self.inverter = None # Define the inverter for this PV generator all PVgenerations being used in the same - run energy simulation must have the same inverter
+    
+        self.PV_performance(namePVperform,SA_solarcells,cell_n)
+        
+    def PV_performance(self,namePVperformobject,SA_solarcells = 0.5 ,cell_n = 0.12,cell_efficiencyinputmode = "Fixed", schedule_ = "always on"):
+    
+        self.namePVperformobject = namePVperformobject
+        self.surfaceareacells = SA_solarcells
+        self.cellefficiencyinputmode = cell_efficiencyinputmode
+        self.efficiency = cell_n
+        self.schedule = schedule_
+    
+class PVinverter(object):
+    
+    def __init__(self,inverter_name,inverter_cost,inverter_zone,inverter_n,replacement_time):
+   
+        if inverter_zone == None:
+            inverter_zone = ""
+        if inverter_n == None:
+            inverter_n = 0.9
+            
+        self.name = inverter_name
+        self.cost_ = inverter_cost
+        self.efficiency = inverter_n
+        self.zone = inverter_zone
+        self.replacementtime = replacement_time
+        self.ID = str(uuid.uuid4())
+        
+    # Need to be able to compare inverters to make sure that only one inverter is servicing all the PV in the system
+    # For some reason the class ID of the inverters was changing when putting in the hive this is a more fool proof way of comparing them.
+    # Note the zone that the inverter is attached to is not considered.
+    
+    def __hash__(self):
+        return hash(self.ID)
+       
+    def __eq__( self, other ):
+        return self.ID == self.ID
+        
+    def __ne__(self,other):
+        return self.ID != self.ID
+    
+class simple_battery(object):
+    
+    def __init__(self,_name,zone_name,n_charging,n_discharging,battery_capacity,max_discharging,max_charging,initial_charge,bat_cost,replacement_time):
+        
+        
+        if zone_name == None:
+            zone_name = ""
+            
+        self.name = _name
+        self.type = 'Battery:simple'
+        self.zonename = zone_name
+        self.chargingefficiency = n_charging
+        self.dischargingeffciency = n_discharging
+        self.batterycap = battery_capacity
+        self.maxcharge = max_charging
+        self.maxdischarge = max_discharging
+        self.initalcharge = initial_charge
+        self.cost_ = bat_cost
+        
+        self.replacementtime = replacement_time
+        self.ID = str(uuid.uuid4())
+        
+
 class generationhb_hive(object):
     # A hive that only accepts Honeybee generation objects
     
@@ -6904,6 +7070,13 @@ class thermPolygon(object):
             ghenv.Component.AddRuntimeMessage(w, warning)
         
         return material
+
+class thermBC(object):
+    def __init__(self, lineGeo, BCName, temperature, filmCoeff, radTemp, radTransCoeff, RGBColor):
+        #Set the name and object type.
+        self.objectType = "ThermBC"
+        self.hasChild = False
+        self.name = BCName
 
 
 class zoneNetworkSolving(object):
@@ -7024,7 +7197,26 @@ class hb_Hive(object):
     
     class CopyClass(object):
         pass
-    
+    def checkifTransformed(self, brep, HBO):
+        """
+        This method ensures that Honeybee objects are not rotated or moved
+        by Grasshopper components
+        
+        This test is not restrict enough for mirroring and rotation
+        but I don't want to make whole Honeybee process slow because of
+        this extra test
+        """
+        msg = " %s has been moved, scaled or rotated.\nIf you need to move or rotate "%HBO.name + \
+              "a Honeybee object you should use Honeybee move, rotate or mirror components." + \
+              " You can find them under 12|WIP tab."
+        
+        bb1 = brep.GetBoundingBox(True)
+        bb2 = HBO.geometry.GetBoundingBox(True)
+        if bb1.Min.DistanceTo(bb2.Min) > 5 * sc.doc.ModelAbsoluteTolerance:
+            raise Exception(msg)
+        elif bb1.Max.DistanceTo(bb2.Max) > 5 * sc.doc.ModelAbsoluteTolerance:
+            raise Exception(msg)
+            
     def addToHoneybeeHive(self, HBObjects, GHComponentID):
         # check if the honeybeedictionary already existed
         # if not create the dictionary
@@ -7088,32 +7280,34 @@ class hb_Hive(object):
     def callFromHoneybeeHive(self, geometryList):
         HBObjects = []
         for geometry in geometryList:
-            try:
-                key = geometry.UserDictionary['HBID']
-                if sc.sticky['HBHive'].has_key(key):
-                    try:
-                        HBObject = sc.sticky['HBHive'][key]
-                        # after the first round meshedFace makes copy.deepcopy crash
-                        # so I need to regenerate meshFaces
-                        if HBObject.objectType == "HBZone":
-                            for surface in HBObject.surfaces:
-                                newMesh = rc.Geometry.Mesh()
-                                newMesh.Append(surface.meshedFace)
-                                surface.meshedFace = newMesh
-                        elif HBObject.objectType == "HBSurface": 
+            
+            key = geometry.UserDictionary['HBID']
+            if sc.sticky['HBHive'].has_key(key):
+                HBObject = sc.sticky['HBHive'][key]
+                
+                # make sure Honeybee object is not moved or rotated
+                self.checkifTransformed(geometry, HBObject)
+                
+                try:
+                    # after the first round meshedFace makes copy.deepcopy crash
+                    # so I need to regenerate meshFaces
+                    if HBObject.objectType == "HBZone":
+                        for surface in HBObject.surfaces:
                             newMesh = rc.Geometry.Mesh()
-                            newMesh.Append(HBObject.meshedFace)
-                            HBObject.meshedFace = newMesh
-                        
-                        HBObjects.append(copy.deepcopy(HBObject))
-                        
-                    except Exception, e:
-                        print `e`
-                        print "Failed to copy the object. Returning the original objects...\n" +\
-                        "This can cause strange behaviour!"
-                        HBObjects.append(sc.sticky['HBHive'][key])
-            except:
-                pass
+                            newMesh.Append(surface.meshedFace)
+                            surface.meshedFace = newMesh
+                    elif HBObject.objectType == "HBSurface": 
+                        newMesh = rc.Geometry.Mesh()
+                        newMesh.Append(HBObject.meshedFace)
+                        HBObject.meshedFace = newMesh
+                    
+                    HBObjects.append(copy.deepcopy(HBObject))
+                    
+                except Exception, e:
+                    print `e`
+                    print "Failed to copy the object. Returning the original objects...\n" +\
+                    "This can cause strange behaviour!"
+                    HBObjects.append(sc.sticky['HBHive'][key])
                 
         return HBObjects
 
@@ -7657,8 +7851,10 @@ if checkIn.letItFly:
                         cleanLibs = True if pathCount == 0 else False
                     else:
                         cleanLibs = False
-                        
-                    EPLibs.importEPLibrariesFromFile(path, cleanLibs, False)                
+                    if path.endswith('.csv'): isMatFile = True
+                    else: isMatFile = False
+                    
+                    EPLibs.importEPLibrariesFromFile(path, isMatFile, cleanLibs, False)                
                 
                 EPLibs.report()
                 sc.sticky["honeybee_materialLib"] = EPLibs.getEPMaterials()
@@ -7666,8 +7862,7 @@ if checkIn.letItFly:
                 sc.sticky ["honeybee_constructionLib"] = EPLibs.getEPConstructions()
                 sc.sticky["honeybee_ScheduleLib"] = EPLibs.getEPSchedule()
                 sc.sticky["honeybee_ScheduleTypeLimitsLib"] = EPLibs.getEPScheduleTypeLimits()
-                sc.sticky["honeybee_thermMaterialLib"] = {}
-                                
+                sc.sticky["honeybee_thermMaterialLib"] = EPLibs.getTHERMMaterials()
             except:
                 print msg
                 ghenv.Component.AddRuntimeMessage(w, msg)
@@ -7690,6 +7885,7 @@ if checkIn.letItFly:
         sc.sticky["honeybee_EPTypes"] = EPTypes()
         sc.sticky["honeybee_EPZone"] = EPZone
         sc.sticky["honeybee_ThermPolygon"] = thermPolygon
+        sc.sticky["honeybee_ThermBC"] = thermBC
         sc.sticky["PVgen"] = PV_gen
         sc.sticky["PVinverter"] = PVinverter
         sc.sticky["HB_generatorsystem"] = HB_generatorsystem

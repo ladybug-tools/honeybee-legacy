@@ -23,7 +23,7 @@
 """
 Genrate Test Points for all Floor Surfaces in Honeybee Zone
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
     
     Args:
         _HBZone: HBZone; Test points will be generated for every floor surface inside zone
@@ -40,7 +40,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Generate Zone Test Points"
 ghenv.Component.NickName = 'genHBZoneTestPts'
-ghenv.Component.Message = 'VER 0.0.57\nSEP_03_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

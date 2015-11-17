@@ -24,7 +24,7 @@
 Use this component to get basic information on Honeybee Objects, whether they are HBSrfs or HBZones.
 
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.58
 
     Args:
         _HBObjects: Any valid Honeybee object.
@@ -33,7 +33,7 @@ Provided by Honeybee 0.0.57
 """
 ghenv.Component.Name = "Honeybee_AskMe"
 ghenv.Component.NickName = 'askMe'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_15_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
