@@ -21,18 +21,21 @@
 
 
 """
-Use this component to create a THERM polygon with material properties.
+Use this component to create a THERM boundary condition.
 -
-Provided by Honeybee 0.0.58
+Provided by Honeybee 0.0.57
 
     Args:
-        _geometry: A closed planar curve or list of closed planar curves that represent the portions of a construction that have the same material type.  This input can also accept closed planar surfaces/breps/polysurfaces and even meshes!
-        _material: Either the name of an EnergyPlus material from the OpenStudio library (from the "Call from EP Construction Library" component) or the output of any of the components in the "06 | Energy | Material" tab for creating materials.
-        name_: An optional name for the polygon to keep track of it through the creation of the THERM model.
-        RGBColor_: An optional color to set the color of the material when you import it into THERM.  All materials from the Honyebee Therm Library already possess colors but materials from the EP material lib will have a default blue color if no one is assigned here.
+        _boundaryCurves: A polyline or list of polylines that coincide with the thermPolygons that you plan to connect to the "Write Therm File" component.
+        temperature_: A numerical value that represents the temperature at the boundary in degrees Celcius.
+        filmCoefficient_: A numerical value in W/m2-K (or SI U-Values) that represents the conductivity of the air film at the boundary condition.  Typical values range from 26 W/m2-K (for an NFRC exterior envelope) to 2.5 W/m2-K (for an interior wood/vinyl surface).
+        name_: An optional name for the boundary condition to keep track of it through the creation of the THERM model.  If no value is input here, a default unique name will be generated.
+        radiantTemp_: An optional numerical value that sets the radiant temperature at the boundary condition in degrees Celcius.  If no value is input here, it will be assumed that the radiant temperature is the same as the air temperature (input above).
+        radTransCoeff_: An optional numerical value in W/m2-K (or SI U-Values) that represents the radiant conductivity of the boundary condition. If no value is input here, a default of -431602080 will ve used.
+        RGBColor_: An optional color to set the color of the boundary condition when you import it into THERM.
     Returns:
         readMe!:...
-        thermPolygon: A polygon representing material properties
+        thermBoundary: A polyline with the specified boudary condition properties, to be plugged into the "boundaries" input of the "Write Therm File" component.
 """
 
 import rhinoscriptsyntax as rs
@@ -45,9 +48,9 @@ import Grasshopper.Kernel as gh
 import uuid
 import math
 
-ghenv.Component.Name = 'Honeybee_Create Therm Polygons'
-ghenv.Component.NickName = 'createThermPolygons'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_16_2015'
+ghenv.Component.Name = 'Honeybee_Create Therm Boundaries'
+ghenv.Component.NickName = 'createThermBoundaries'
+ghenv.Component.Message = 'VER 0.0.57\nNOV_16_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.56\nNOV_16_2015
@@ -58,7 +61,7 @@ except: pass
 
 tolerance = sc.doc.ModelAbsoluteTolerance
 
-def main(geometry, material, srfName, RGBColor):
+def main(boundaryCurves, temperature, filmCoefficient, radiantTemp, radTransCoeff, RGBColor):
     # import the classes
     if sc.sticky.has_key('honeybee_release'):
     
@@ -74,8 +77,7 @@ def main(geometry, material, srfName, RGBColor):
             return -1
             
         # don't customize this part
-        hb_thermPolygon = sc.sticky["honeybee_ThermPolygon"]
-        hb_EPMaterialAUX = sc.sticky["honeybee_EPMaterialAUX"]()
+        hb_thermBC = sc.sticky["honeybee_ThermBC"]
         hb_hive = sc.sticky["honeybee_Hive"]()
     else:
         print "You should first let Honeybee to fly..."
@@ -83,58 +85,9 @@ def main(geometry, material, srfName, RGBColor):
         ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee to fly...")
         return
     
-    #Define a varialbe for acceptable geometry.
-    geometryAccepted = False
-    
-    # if the input is mesh, convert it to a surface
-    try:
-        # check if this is a mesh
-        geometry.Faces[0].IsQuad
-        # convert to brep
-        geometry = rc.Geometry.Brep.CreateFromMesh(geometry, False)
-        geometryAccepted = True
-    except:
-        pass
-    
-    #If the input is a polyline, convert it to a surface.
-    try:
-        geometry = rc.Geometry.Brep.CreatePlanarBreps(geometry)
-        if len(geometry) == 1:
-            geometryAccepted = True
-            geometry = geometry[0]
-        else:
-            warning = "The connected polyline geometry does not form a single closed planar surface. \n Try joining the curves into a single polyline before inputting them."
-            print warning
-            w = gh.GH_RuntimeMessageLevel.Warning
-            ghenv.Component.AddRuntimeMessage(w, warning)
-            return -1
-    except:
-        pass
-    
-    #If the input has failed all tests up to this point, it is hopefully a planar brep or surface and we will just check this.
-    if geometryAccepted == False:
-        try:
-            geometry.IsSurface
-            geometryAccepted = True
-        except: pass
-        try:
-            if geometry.HasBrepForm: geometry = geometry.ToBrep()
-            geometryAccepted = True
-        except: pass
-    
-    #If the geometry was not recognized, give a warning.
-    if geometryAccepted == False:
-        warning = "The connected geometry was not recgnized as a polyline, surface, brep/polysurface, or mesh."
-        print warning
-        w = gh.GH_RuntimeMessageLevel.Warning
-        ghenv.Component.AddRuntimeMessage(w, warning)
-        return -1
-    
-    #Check the RGBColor and set a defalt if none is connected.
-    if RGBColor == None: RGBColor = System.Drawing.Color.FromArgb(0, 0, 255)
     
     #Make a list to hold the final outputs.
-    HBThermPolygons = []
+    HBThermBoundary = []
     originalSrfName = srfName
     
     for faceCount in range(geometry.Faces.Count):
@@ -169,7 +122,6 @@ def main(geometry, material, srfName, RGBColor):
                 material = material.upper()
                 if material in sc.sticky ["honeybee_materialLib"].keys(): pass
                 elif material in sc.sticky ["honeybee_windowMaterialLib"].keys():pass
-                elif material in sc.sticky["honeybee_thermMaterialLib"].keys():pass
                 else:
                     warningMsg = "Can't find " + material + " in EP Material Library.\n" + \
                                 "Create the material and try again."
@@ -189,9 +141,10 @@ def main(geometry, material, srfName, RGBColor):
                     return -1
         
         #Make the therm polygon.
-        HBThermPolygon = hb_thermPolygon(geometry.Faces[faceCount].DuplicateFace(False), material, srfName, RGBColor)
+        HBThermPolygon = hb_thermPolygon(geometry.Faces[faceCount].DuplicateFace(False), material, srfName)
         
         HBThermPolygons.append(HBThermPolygon)
+    
     
     # add to the hive
     HBThermPolygon  = hb_hive.addToHoneybeeHive(HBThermPolygons, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
@@ -199,8 +152,8 @@ def main(geometry, material, srfName, RGBColor):
     return HBThermPolygon
 
 
-if _geometry != None and _material != None:
-    result= main(_geometry, _material, name_, RGBColor_)
+if _boundaryCurves != None and _temperature != None and _filmCoefficient != None:
+    result= main(_boundaryCurves, _temperature, _filmCoefficient, radiantTemp_, radTransCoeff_, RGBColor_)
     
     if result!=-1:
-        thermPolygon = result
+        thermBoundary = result

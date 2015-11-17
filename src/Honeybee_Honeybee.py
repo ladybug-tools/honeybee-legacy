@@ -7071,6 +7071,13 @@ class thermPolygon(object):
         
         return material
 
+class thermBC(object):
+    def __init__(self, lineGeo, BCName, temperature, filmCoeff, radTemp, radTransCoeff, RGBColor):
+        #Set the name and object type.
+        self.objectType = "ThermBC"
+        self.hasChild = False
+        self.name = BCName
+
 
 class zoneNetworkSolving(object):
     
@@ -7878,6 +7885,7 @@ if checkIn.letItFly:
         sc.sticky["honeybee_EPTypes"] = EPTypes()
         sc.sticky["honeybee_EPZone"] = EPZone
         sc.sticky["honeybee_ThermPolygon"] = thermPolygon
+        sc.sticky["honeybee_ThermBC"] = thermBC
         sc.sticky["PVgen"] = PV_gen
         sc.sticky["PVinverter"] = PVinverter
         sc.sticky["HB_generatorsystem"] = HB_generatorsystem
