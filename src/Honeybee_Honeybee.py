@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_18_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -294,6 +294,18 @@ class versionCheck(object):
                      "into canvas and try again."
         w = gh.GH_RuntimeMessageLevel.Warning
         GHComponent.AddRuntimeMessage(w, warningMsg)
+    
+    def isInputMissing(self, GHComponent):
+        isInputMissing = False
+        for param in GHComponent.Params.Input:
+            if param.NickName.startswith("_") and \
+                not param.NickName.endswith("_") and \
+                not param.VolatileDataCount:
+                    warning = "Input parameter %s failed to collect data!"%param.NickName
+                    GHComponent.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+                    isInputMissing = True
+        
+        return isInputMissing
 
 
 class hb_findFolders():
@@ -310,9 +322,7 @@ class hb_findFolders():
         http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
         """
         def is_exe(fpath):
-            #print fpath
-            #if fpath.upper().find("EnergyPlus") > 0:
-            #    print fpath
+
             # Avoid Radiance and Daysim that comes with DIVA as it has a different
             # structure which doesn't match the standard Daysim
             if fpath.upper().find("DIVA")<0:
@@ -333,7 +343,10 @@ class hb_findFolders():
                 path = path.strip('"')
                 exe_file = os.path.join(path, program)
                 if is_exe(exe_file):
-                    return path, exe_file
+                    # This is a change to catch cases that user has radiance inastalled
+                    # at C:\Program Files\Radiance
+                    if path.strip().find(" ") == -1:
+                        return path, exe_file
         return None, None
 
 
@@ -366,6 +379,8 @@ class PrepareTemplateEPLibFiles(object):
         sc.sticky ["honeybee_windowMaterialLib"] = {}
         sc.sticky["honeybee_ScheduleLib"] = {}
         sc.sticky["honeybee_ScheduleTypeLimitsLib"] = {}
+    
+    def cleanThermLib(self):
         sc.sticky["honeybee_thermMaterialLib"] = {}
     
     def downloadTemplates(self):
@@ -375,11 +390,13 @@ class PrepareTemplateEPLibFiles(object):
         # create the folder if it is not there
         if not os.path.isdir(workingDir): os.mkdir(workingDir)
         
-        # create a backup from users library
+        # create a backup from the user's library
         templateFile = os.path.join(workingDir, 'OpenStudioMasterTemplate.idf')
         bckupfile = os.path.join(workingDir, 'OpenStudioMasterTemplate_' + str(int(time.time())) +'.idf')
+        thermTemplateFile = os.path.join(workingDir, 'thermMaterial.csv')
+        thermBckupfile = os.path.join(workingDir, 'thermMaterial_' + str(int(time.time())) +'.csv')
         
-        # download template file
+        # download EP template file
         if self.downloadTemplate or not os.path.isfile(templateFile):
             # create a backup from users library
             try: shutil.copyfile(templateFile, bckupfile)
@@ -420,7 +437,6 @@ class PrepareTemplateEPLibFiles(object):
         else:
             pass
         
-        
         if not os.path.isfile(workingDir + '\OpenStudio_Standards.json'):
             print 'Download failed!!! You need OpenStudio_Standards.json to use honeybee.' + \
                 '\nPlease check your internet connection, and try again!'
@@ -439,7 +455,7 @@ class PrepareTemplateEPLibFiles(object):
                 '\nPlease check your internet connection, and try again!'
                 return -1
         
-        # add cutom library
+        # add custom library
         customEPLib = os.path.join(workingDir,"userCustomEPLibrary.idf")
         
         if not os.path.isfile(customEPLib):
@@ -450,8 +466,41 @@ class PrepareTemplateEPLibFiles(object):
         if os.path.isfile(customEPLib):
             libFilePaths.append(customEPLib)
         
-        return libFilePaths
+        #download THERM template file.
+        if self.downloadTemplate or not os.path.isfile(thermTemplateFile):
+            # create a backup from users library
+            try: shutil.copyfile(thermTemplateFile, thermBckupfile)
+            except: pass
+            
+            try:
+                ## download File
+                print 'Downloading thermMaterial.csv to ', workingDir
+                updatedLink = "https://raw.githubusercontent.com/mostaphaRoudsari/Honeybee/master/resources/thermMaterial.csv"
+                self.downloadFile(updatedLink, workingDir)
+                # clean current library
+                self.cleanThermLib()
+            except:
+                print 'Download failed!!! You need thermMaterial.csv to use the "export to THERM" capabilties of honeybee.' + \
+                '\nPlease check your internet connection, and try again!'
+                return -1
         
+        if not os.path.isfile(thermTemplateFile):
+            print 'Download failed!!! You need thermMaterial.csv to use the "export to THERM" capabilties of honeybee.' + \
+                '\nPlease check your internet connection, and try again!'
+            return -1
+        else:
+            # load the csv file
+            csvfilepath = os.path.join(workingDir, 'thermMaterial.csv')
+            try:
+                libFilePaths.append(csvfilepath)
+                print "Therm Material file is loaded from %s\n"%csvfilepath
+            except:
+                print 'Download failed!!! You need thermMaterial.csv to use the "export to THERM" capabilties of honeybee.' + \
+                '\nPlease check your internet connection, and try again!'
+                return -1
+        
+        return libFilePaths
+
 
 class HB_GetEPLibraries:
     
@@ -480,17 +529,24 @@ class HB_GetEPLibraries:
     def getEPScheduleTypeLimits(self):
         return self.libraries["ScheduleTypeLimits"]
     
-    def importEPLibrariesFromFile(self, EPfile, cleanCurrentLib = True, report = True):
+    def getTHERMMaterials(self):
+        return self.libraries["ThermMaterial"]
+    
+    def importEPLibrariesFromFile(self, EPfile, isMatFile, cleanCurrentLib = True, report = True):
         if not os.path.isfile(EPfile):
             raise Exception("Can't find EP library! at %s"%EPfile)
         
-        print "Loading EP materials, constructions and schedules from %s"%EPfile
-        EPObjects = EPLibs.getEnergyPlusObjectsFromFile(EPfile)
-        self.loadEPConstructionsMaterialsAndSchedules(EPObjects, cleanCurrentLib)
+        if isMatFile == False:
+            print "Loading EP materials, constructions and schedules from %s"%EPfile
+            EPObjects = EPLibs.getEnergyPlusObjectsFromFile(EPfile)
+            self.loadEPConstructionsMaterialsAndSchedules(EPObjects, cleanCurrentLib)
+        else:
+            print "Loading THERM materials from %s"%EPfile
+            self.getThermObjectsFromFile(EPfile)
         
         if report:
             self.report()
-
+    
     def cleanHBLibs(self):
         self.libraries = {
             "Material": {},
@@ -536,7 +592,7 @@ class HB_GetEPLibraries:
                         c = ""
                     self.libraries[shortKey][name][count] = v, c
                     count += 1
-
+    
     def report(self): 
         # Report findings
         print "%s EPConstructions are loaded available in Honeybee library"%str(len(self.libraries["Construction"]))
@@ -544,6 +600,7 @@ class HB_GetEPLibraries:
         print "%s EPWindowMaterial are loaded in Honeybee library"%str(len(self.libraries["WindowMaterial"]))
         print "%s schedules are loaded available in Honeybee library"%str(len(self.libraries["Schedule"]))
         print "%s schedule type limits are now loaded in Honeybee library"%str(len(self.libraries["ScheduleTypeLimits"]))
+        print "%s THERM materials are now loaded in Honeybee library"%str(len(self.libraries["ThermMaterial"]))
         print "\n"
     
     @staticmethod
@@ -585,6 +642,31 @@ class HB_GetEPLibraries:
         
         with open(epFilePath, "r") as epFile:
             return self.getEnergyPlusObjectsFromString("".join(epFile.readlines()))
+    
+    
+    
+    def getThermObjectsFromFile(self, matFile):
+        if not os.path.isfile(matFile):
+            raise ValueError("Can't find %s."%matFile)
+        
+        with open(matFile, "r") as mFile:
+            for rowCount, row in enumerate(mFile):
+                if rowCount != 0:
+                    try:
+                        matPropLine = row.split(',')
+                        matNameLine = row.split('"')
+                        matName = matNameLine[1]
+                        #Make a sub-dictionary for the material.
+                        self.libraries["ThermMaterial"][matName] = {}
+                        
+                        #Create the material with the values from the file.
+                        self.libraries["ThermMaterial"][matName]["Material Name"] = matName
+                        self.libraries["ThermMaterial"][matName]["Type"] = int(matPropLine[-1])
+                        self.libraries["ThermMaterial"][matName]["Conductivity"] = float(matPropLine[-5])
+                        self.libraries["ThermMaterial"][matName]["Absorptivity"] = float(matPropLine[-4])
+                        self.libraries["ThermMaterial"][matName]["Emissivity"] = float(matPropLine[-3])
+                        self.libraries["ThermMaterial"][matName]["RGBColor"] = System.Drawing.ColorTranslator.FromHtml("#" + matPropLine[-2])
+                    except: pass
 
 class RADMaterialAux(object):
 
@@ -4953,12 +5035,12 @@ class EPZone(object):
         # XXX self.PVgenlist = []
     
     
-    def transform(self, transform, clearSurfacesBC = True):
+    def transform(self, transform, clearSurfacesBC = True, flip = False):
         self.name += "_t"
         self.geometry.Transform(transform)
         self.cenPt.Transform(transform)
         for surface in self.surfaces:
-            surface.transform(transform, clearSurfacesBC)
+            surface.transform(transform, clearSurfacesBC, flip)
     
     def assignScheduleBasedOnProgram(self, component = None):
         # create an open office is the program is not assigned
@@ -6366,7 +6448,7 @@ class hb_EPSurface(object):
         else:
             return 0 #wall
     
-    def transform(self, transform, clearBC = True):
+    def transform(self, transform, clearBC = True, flip = False):
         """Transform EPSurface using a transform object
            Transform can be any valid transform object (e.g Translate, Rotate, Mirror)
         """
@@ -6375,19 +6457,25 @@ class hb_EPSurface(object):
         self.meshedFace.Transform(transform)
         # move center point and normal
         self.cenPt.Transform(transform)
-        
         self.normalVector.Transform(transform)
         # move plane
         self.basePlane.Transform(transform)
         
+        if flip:
+            self.geometry.Flip()
+            self.normalVector.Reverse()
+            self.basePlane.Flip()
 
         if clearBC:
             self.setBC("Outdoors", False)
             self.setBCObjectToOutdoors()
+            
         if not self.isChild and self.hasChild:
             self.punchedGeometry.Transform(transform)
+            if flip: self.punchedGeometry.Flip()
+            
             for childSrf in self.childSrfs:
-                childSrf.transform(transform, clearBC)
+                childSrf.transform(transform, clearBC, flip)
         
     def getTotalArea(self):
         return self.geometry.GetArea()
@@ -6983,6 +7071,13 @@ class thermPolygon(object):
         
         return material
 
+class thermBC(object):
+    def __init__(self, lineGeo, BCName, temperature, filmCoeff, radTemp, radTransCoeff, RGBColor):
+        #Set the name and object type.
+        self.objectType = "ThermBC"
+        self.hasChild = False
+        self.name = BCName
+
 
 class zoneNetworkSolving(object):
     
@@ -7115,8 +7210,8 @@ class hb_Hive(object):
               "a Honeybee object you should use Honeybee move, rotate or mirror components." + \
               " You can find them under 12|WIP tab."
         
-        bb1 = brep.GetBoundingBox(False)
-        bb2 = HBO.geometry.GetBoundingBox(False)
+        bb1 = brep.GetBoundingBox(True)
+        bb2 = HBO.geometry.GetBoundingBox(True)
         if bb1.Min.DistanceTo(bb2.Min) > 5 * sc.doc.ModelAbsoluteTolerance:
             raise Exception(msg)
         elif bb1.Max.DistanceTo(bb2.Max) > 5 * sc.doc.ModelAbsoluteTolerance:
@@ -7756,8 +7851,10 @@ if checkIn.letItFly:
                         cleanLibs = True if pathCount == 0 else False
                     else:
                         cleanLibs = False
-                        
-                    EPLibs.importEPLibrariesFromFile(path, cleanLibs, False)                
+                    if path.endswith('.csv'): isMatFile = True
+                    else: isMatFile = False
+                    
+                    EPLibs.importEPLibrariesFromFile(path, isMatFile, cleanLibs, False)                
                 
                 EPLibs.report()
                 sc.sticky["honeybee_materialLib"] = EPLibs.getEPMaterials()
@@ -7765,8 +7862,7 @@ if checkIn.letItFly:
                 sc.sticky ["honeybee_constructionLib"] = EPLibs.getEPConstructions()
                 sc.sticky["honeybee_ScheduleLib"] = EPLibs.getEPSchedule()
                 sc.sticky["honeybee_ScheduleTypeLimitsLib"] = EPLibs.getEPScheduleTypeLimits()
-                sc.sticky["honeybee_thermMaterialLib"] = {}
-                                
+                sc.sticky["honeybee_thermMaterialLib"] = EPLibs.getTHERMMaterials()
             except:
                 print msg
                 ghenv.Component.AddRuntimeMessage(w, msg)
@@ -7789,6 +7885,7 @@ if checkIn.letItFly:
         sc.sticky["honeybee_EPTypes"] = EPTypes()
         sc.sticky["honeybee_EPZone"] = EPZone
         sc.sticky["honeybee_ThermPolygon"] = thermPolygon
+        sc.sticky["honeybee_ThermBC"] = thermBC
         sc.sticky["PVgen"] = PV_gen
         sc.sticky["PVinverter"] = PVinverter
         sc.sticky["HB_generatorsystem"] = HB_generatorsystem

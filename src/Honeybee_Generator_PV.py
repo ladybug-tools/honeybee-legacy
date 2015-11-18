@@ -57,7 +57,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Generator_PV"
 ghenv.Component.NickName = 'PVgen'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_18_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP" #"06 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -70,6 +70,7 @@ import uuid
 import Grasshopper.Kernel as gh
 import itertools
 import Grasshopper
+import collections
 
 hb_hive = sc.sticky["honeybee_Hive"]() # Creating an instance of hb_hive here
 PV_gen = sc.sticky["PVgen"] # Linked to class PV_gen in honeybee honeybee 
@@ -220,6 +221,51 @@ def main(_name_,_HBSurfaces,_cellsEfficiency,_integrationMode,_NoParallel,_Noser
     
     PVgencount = 0
     
+    # CHECK that the same surfaces are not having PV generators added to them twice. If they are stop the component.
+    
+    class myDict(dict):
+
+        def __init__(self):
+            self = dict()
+    
+        def add(self, key, value):
+            self[key] = value
+
+    HBsurfaces = myDict()
+    
+    for HBsurface in HBSurfacesfromhive:
+        
+        # In order of Honeybee surface, Honeybee surface ID and Brep which corresponds to that Honeybee surface
+        
+        HBsurfaces.add(HBsurface,HBsurface.ID)
+        
+    if len(HBsurfaces.values()) != len(set(HBsurfaces.values())):
+        
+        # Identify duplicateIDs
+        
+        duplicateIDs = collections.Counter([item for item in HBsurfaces.values()]).keys()
+        
+        surfaceCount = 0
+        
+        for surface,surfaceID in HBsurfaces.items():
+            
+            if surfaceID in duplicateIDs:
+                
+                warn = "Into the input _HBSurfaces you have input the same surface " + HBsurface.name + " twice. Use Geometry preview to make sure \n"+\
+                "that the same surfaces are not being input several times. This component will not run until this is fixed."
+                
+                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Error, warn)
+                
+                # Draw a preview of the geometry so the user can identify it.
+                
+                preview = Grasshopper.Kernel.GH_PreviewUtil()
+                
+                preview.AddBrep(_HBSurfaces[surfaceCount])
+                
+                surfaceCount =+ 1
+                
+                return
+
     try:
         for name,surface,celleff,mode,parallel,series,modelcost,powerout in itertools.izip_longest(_name_,HBSurfacesfromhive,_cellsEfficiency,_integrationMode,_NoParallel,_Noseries,_costPVPerModule,_powerOutputPerModule): 
     
@@ -317,15 +363,29 @@ def main(_name_,_HBSurfaces,_cellsEfficiency,_integrationMode,_NoParallel,_Noser
             
             SA_solarcell = (powerout*parallel*series)/(1000*surface.getArea()*celleff)
             
-            if SA_solarcell > 0.85:
+            print SA_solarcell
+            
+            if (SA_solarcell > 0.85) and (SA_solarcell < 1):
                 
-                warn = "According to your inputs solar panels cover more than 85% of the surface area of one of the Honeybee Surfaces! \n "+\
-                "Are you sure that the power rating and the number of modules on each surface is correct? \n "+\
-                "This value is calculated from the total power output of each PV generator (The sum of each PV module in that generator) divided by the surface area of the surface they are mounted on."
-                "If this value is greater than 100% of the surface EnergyPlus will not run"
+                warn = "According to your inputs solar panels cover more than 85% of the surface area of the Honeybee surface "+ surface.name+ "\n"+\
+                "Are you sure that the power rating and the number of modules on this surface are correct? \n "+\
+                "This value is calculated from the total power output of each PV generator (The sum of each PV module in that generator) divided by the surface area of the surface they are mounted on. \n"+ \
+                "Don't worry though this component will still run!"
                 w = gh.GH_RuntimeMessageLevel.Warning
                 ghenv.Component.AddRuntimeMessage(w, warn)
-            
+                
+                
+            if SA_solarcell >= 1:
+                
+                warn = "Error! According to your inputs solar panels cover more than 100% of the surface area of the Honeybee surface " + surface.name+"\n"+\
+                "Are you sure that the power rating and the number of modules on each surface is correct? \n "+\
+                "This value is calculated from the total power output of each PV generator (The sum of each PV module in that generator) divided by the surface area of the surface they are mounted on."
+                "This component will not run until the surface area is less than 100%."
+                w = gh.GH_RuntimeMessageLevel.Error
+                ghenv.Component.AddRuntimeMessage(w, warn)
+                
+                return 
+                
             message1 = "According to the data you entered it is calculated that the modules of this PV generator cover roughly "+str(round(SA_solarcell*100,2))+ " % of the surface area of this surface"
                 
             # A hb_EPShdSurface
