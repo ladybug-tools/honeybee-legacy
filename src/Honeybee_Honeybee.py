@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_16_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_17_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -808,7 +808,7 @@ class RADMaterialAux(object):
                 currentMixedFunctionsDict[materialName] =  materialName
                 
                 # find the base materials for the mixed function
-                mixfunMaterial = getMaterialFromHBLibrary(materialName)
+                mixfunMaterial = self.getMaterialFromHBLibrary(materialName)
                 
                 material1 = mixfunMaterial.values[0][0]
                 material2 = mixfunMaterial.values[0][1]
@@ -982,7 +982,10 @@ class RADMaterialAux(object):
           try:
             return self.radMaterialLibrary[materialName]
           except:
-            raise ValueError("%s can't be find in library"%str(materialName))
+            if materialName.lower() != 'void':
+                raise ValueError("%s can't be find in library"%str(materialName))
+            else:
+                return
     
     def getRADMaterialType(self, materialName):
         """Return material type"""
@@ -1712,9 +1715,12 @@ class hb_WriteRAD(object):
             matFile.write(matStr)
             matFile.write("\n# start of material(s) specific to this study (if any)\n")
             for radMatName in customRADMat.keys():
-
-                matFile.write(self.hb_RADMaterialAUX.getRADMaterialString(radMatName) + "\n")
-
+                try:
+                    matFile.write(self.hb_RADMaterialAUX.getRADMaterialString(radMatName) + "\n")
+                except:
+                    # This is the case for void material
+                    pass
+                    
                 # check if the material is is trans
                 if self.hb_RADMaterialAUX.getRADMaterialType(radMatName) == "trans":
                     # get the st value
