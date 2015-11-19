@@ -47,7 +47,11 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
+<<<<<<< HEAD
+ghenv.Component.Message = 'VER 0.0.58\nNOV_18_2015'
+=======
 ghenv.Component.Message = 'VER 0.0.58\nNOV_19_2015'
+>>>>>>> fabf9d2e8b577b4831cd1915a302d193725356cf
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -483,6 +487,7 @@ class PrepareTemplateEPLibFiles(object):
                 print 'Download failed!!! You need thermMaterial.csv to use the "export to THERM" capabilties of honeybee.' + \
                 '\nPlease check your internet connection, and try again!'
                 return -1
+<<<<<<< HEAD
         
         if not os.path.isfile(thermTemplateFile):
             print 'Download failed!!! You need thermMaterial.csv to use the "export to THERM" capabilties of honeybee.' + \
@@ -499,6 +504,24 @@ class PrepareTemplateEPLibFiles(object):
                 '\nPlease check your internet connection, and try again!'
                 return -1
         
+=======
+        
+        if not os.path.isfile(thermTemplateFile):
+            print 'Download failed!!! You need thermMaterial.csv to use the "export to THERM" capabilties of honeybee.' + \
+                '\nPlease check your internet connection, and try again!'
+            return -1
+        else:
+            # load the csv file
+            csvfilepath = os.path.join(workingDir, 'thermMaterial.csv')
+            try:
+                libFilePaths.append(csvfilepath)
+                print "Therm Material file is loaded from %s\n"%csvfilepath
+            except:
+                print 'Download failed!!! You need thermMaterial.csv to use the "export to THERM" capabilties of honeybee.' + \
+                '\nPlease check your internet connection, and try again!'
+                return -1
+        
+>>>>>>> fabf9d2e8b577b4831cd1915a302d193725356cf
         return libFilePaths
 
 
@@ -7084,6 +7107,8 @@ class thermBC(object):
         self.objectType = "ThermBC"
         self.hasChild = False
         self.name = BCName
+<<<<<<< HEAD
+=======
         
         #Create a dictionary with all of the inputs for the BC properties.
         self.BCProperties = {}
@@ -7126,6 +7151,7 @@ class thermBC(object):
             self.vertices.append(self.geometry.Point(vertexCount))
         
         return self.geometry
+>>>>>>> fabf9d2e8b577b4831cd1915a302d193725356cf
 
 
 class zoneNetworkSolving(object):
