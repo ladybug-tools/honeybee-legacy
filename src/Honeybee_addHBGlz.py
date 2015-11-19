@@ -48,7 +48,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_addHBGlz'
 ghenv.Component.NickName = 'addHBGlz'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_08_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.57\nNOV_01_2015
@@ -63,7 +63,6 @@ def main(HBObject, childSurfaces, childSurfacesName, EPConstructions, RADMateria
         
         glzCount = 0
         for srfCount, srf in enumerate(childSurfaces):
-            
             # check if the surface is located on the base surface
             if HBSurface.isPossibleChild(srf, tolerance):
                 # if yes then create the child surface
@@ -104,7 +103,7 @@ def main(HBObject, childSurfaces, childSurfacesName, EPConstructions, RADMateria
                         added, EPConstruction = hb_EPObjectsAux.addEPObjectToLib(EPConstruction, overwrite = True)
         
                         if not added:
-                            msg = name + " is not added to the project library!"
+                            msg = EPConstruction + " is not added to the project library!"
                             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
                             print msg
                             return
@@ -136,9 +135,9 @@ def main(HBObject, childSurfaces, childSurfacesName, EPConstructions, RADMateria
                             return
                     
                     addedToLib, HBFenSrf.RadMaterial = hb_RADMaterialAUX.analyseRadMaterials(RADMaterial, True)
-                    materialType = hb_RADMaterialAUX.getRADMaterialType(RADMaterial)
+                    materialType = hb_RADMaterialAUX.getRADMaterialType(HBFenSrf.RadMaterial)
                     if materialType == 'plastic':
-                        warningMsg = RADMaterial + " is not a typical glass material. Are you sure you selected the right material?"
+                        warningMsg = HBFenSrf.RadMaterial + " is not a typical glass material. Are you sure you selected the right material?"
                         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
                         return
     
@@ -195,11 +194,11 @@ def main(HBObject, childSurfaces, childSurfacesName, EPConstructions, RADMateria
             HBObject = hb_hive.callFromHoneybeeHive([HBObject])[0]
         except:
             raise TypeError("Wrong input type for _HBObj. Connect a Honeybee Surface or a HoneybeeZone to HBObject input")
-            
+
         # check if the object is a zone or a surface
         if HBObject.objectType == "HBZone":
             # add window for each surface
-            for HBSurface in enumerate(HBObject.surfaces):
+            for HBSurface in HBObject.surfaces:
                 addPotentialChildSurface(HBSurface)
         else:
             # add window to the HBSurface

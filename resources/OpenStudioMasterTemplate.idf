@@ -31265,6 +31265,20 @@ Schedule:Year,
   12,                                     !- End Month 1
   31;                                     !- End Day 1
 
+Schedule:Year,
+  DefaultCSVPlaceholder,          !- Name
+  Fraction,                         !- Schedule Type Limits Name
+  Schedule:Week:Daily {68cd1592-94e4-4683-a3b7-5db7434f37d9}, !- Schedule:Week Name 1
+  1,                                      !- Start Month 1
+  1,                                      !- Start Day 1
+  1,                                      !- End Month 1
+  3,                                      !- End Day 1
+  Schedule:Week:Daily {68cd1592-94e4-4683-a3b7-5db7434f37d9}, !- Schedule:Week Name 2
+  1,                                      !- Start Month 2
+  4,                                      !- Start Day 2
+  12,                                     !- End Month 2
+  31;                                     !- End Day 2
+
 OutputControl:ReportingTolerances,
   0.2,                                    !- Tolerance for Time Heating Setpoint Not Met {deltaC}
   0.2;                                    !- Tolerance for Time Cooling Setpoint Not Met {deltaC}

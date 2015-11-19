@@ -36,7 +36,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = 'Honeybee_Separate Zones By Floor'
 ghenv.Component.NickName = 'separateZonesByFloor'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

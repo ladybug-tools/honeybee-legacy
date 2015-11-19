@@ -38,7 +38,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Daysim Glare Control Recipe"
 ghenv.Component.NickName = 'DSGlareControl'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

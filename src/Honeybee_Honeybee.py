@@ -47,7 +47,11 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
+<<<<<<< HEAD
 ghenv.Component.Message = 'VER 0.0.58\nNOV_18_2015'
+=======
+ghenv.Component.Message = 'VER 0.0.58\nNOV_19_2015'
+>>>>>>> fabf9d2e8b577b4831cd1915a302d193725356cf
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -483,6 +487,7 @@ class PrepareTemplateEPLibFiles(object):
                 print 'Download failed!!! You need thermMaterial.csv to use the "export to THERM" capabilties of honeybee.' + \
                 '\nPlease check your internet connection, and try again!'
                 return -1
+<<<<<<< HEAD
         
         if not os.path.isfile(thermTemplateFile):
             print 'Download failed!!! You need thermMaterial.csv to use the "export to THERM" capabilties of honeybee.' + \
@@ -499,6 +504,24 @@ class PrepareTemplateEPLibFiles(object):
                 '\nPlease check your internet connection, and try again!'
                 return -1
         
+=======
+        
+        if not os.path.isfile(thermTemplateFile):
+            print 'Download failed!!! You need thermMaterial.csv to use the "export to THERM" capabilties of honeybee.' + \
+                '\nPlease check your internet connection, and try again!'
+            return -1
+        else:
+            # load the csv file
+            csvfilepath = os.path.join(workingDir, 'thermMaterial.csv')
+            try:
+                libFilePaths.append(csvfilepath)
+                print "Therm Material file is loaded from %s\n"%csvfilepath
+            except:
+                print 'Download failed!!! You need thermMaterial.csv to use the "export to THERM" capabilties of honeybee.' + \
+                '\nPlease check your internet connection, and try again!'
+                return -1
+        
+>>>>>>> fabf9d2e8b577b4831cd1915a302d193725356cf
         return libFilePaths
 
 
@@ -808,7 +831,7 @@ class RADMaterialAux(object):
                 currentMixedFunctionsDict[materialName] =  materialName
                 
                 # find the base materials for the mixed function
-                mixfunMaterial = getMaterialFromHBLibrary(materialName)
+                mixfunMaterial = self.getMaterialFromHBLibrary(materialName)
                 
                 material1 = mixfunMaterial.values[0][0]
                 material2 = mixfunMaterial.values[0][1]
@@ -982,7 +1005,10 @@ class RADMaterialAux(object):
           try:
             return self.radMaterialLibrary[materialName]
           except:
-            raise ValueError("%s can't be find in library"%str(materialName))
+            if materialName.lower() != 'void':
+                raise ValueError("%s can't be find in library"%str(materialName))
+            else:
+                return
     
     def getRADMaterialType(self, materialName):
         """Return material type"""
@@ -1712,9 +1738,13 @@ class hb_WriteRAD(object):
             matFile.write(matStr)
             matFile.write("\n# start of material(s) specific to this study (if any)\n")
             for radMatName in customRADMat.keys():
-
-                matFile.write(self.hb_RADMaterialAUX.getRADMaterialString(radMatName) + "\n")
-
+                
+                try:
+                    matFile.write(self.hb_RADMaterialAUX.getRADMaterialString(radMatName) + "\n")
+                except:
+                    # This is the case for void material
+                    pass
+                
                 # check if the material is is trans
                 if self.hb_RADMaterialAUX.getRADMaterialType(radMatName) == "trans":
                     # get the st value
@@ -7077,6 +7107,51 @@ class thermBC(object):
         self.objectType = "ThermBC"
         self.hasChild = False
         self.name = BCName
+<<<<<<< HEAD
+=======
+        
+        #Create a dictionary with all of the inputs for the BC properties.
+        self.BCProperties = {}
+        self.BCProperties['Name'] = BCName
+        self.BCProperties['Type'] = "1"
+        self.BCProperties['H'] = str(filmCoeff)
+        self.BCProperties['HeatFlux'] = "0"
+        self.BCProperties['Temperature'] = str(temperature)
+        if RGBColor == None: self.BCProperties['RGBColor'] = str(System.Drawing.ColorTranslator.ToHtml(RGBColor))
+        else: self.BCProperties['RGBColor'] = '0x80FFFF'
+        if radTemp == None: self.BCProperties['Tr'] = str(temperature)
+        else: self.BCProperties['Tr'] = str(radTemp)
+        if radTransCoeff == None: self.BCProperties['Hr'] = "-431602080.000000"
+        else: self.BCProperties['Hr'] = str(radTransCoeff)
+        self.BCProperties['Ei'] = "1.000000" 
+        self.BCProperties['Viewfactor'] = "1.000000"
+        self.BCProperties['RadiationModel'] = "3"
+        self.BCProperties['ConvectionFlag'] = "1"
+        self.BCProperties['FluxFlag'] = "0"
+        self.BCProperties['RadiationFlag'] = "1"
+        self.BCProperties['ConstantTemperatureFlag'] = "0"
+        self.BCProperties['EmisModifier'] = "1.000000"
+        
+        #Create a dictionary for the geometry.
+        self.BCGeo = {}
+        self.BCGeo['BCPolygon ID'] = "29"
+        self.BCGeo['BC'] = BCName
+        self.BCGeo['units'] = "mm"
+        self.BCGeo['EnclosureID'] = "0"
+        self.BCGeo['UFactorTag'] = ""
+        self.BCGeo['Emissivity'] = "0.900000"
+        
+        #Increase the therm ID count.
+        sc.sticky["thermBCCount"] = sc.sticky["thermBCCount"] + 1
+        
+        #Keep track of the vertices.
+        self.geometry = lineGeo.ToNurbsCurve()
+        self.vertices = []
+        for vertexCount in range(self.geometry.PointCount):
+            self.vertices.append(self.geometry.Point(vertexCount))
+        
+        return self.geometry
+>>>>>>> fabf9d2e8b577b4831cd1915a302d193725356cf
 
 
 class zoneNetworkSolving(object):
@@ -7891,6 +7966,7 @@ if checkIn.letItFly:
         sc.sticky["HB_generatorsystem"] = HB_generatorsystem
         sc.sticky["wind_generator"] = Wind_gen
         sc.sticky["simple_battery"] = simple_battery
+        sc.sticky["thermBCCount"] = 0
         sc.sticky["honeybee_reEvaluateHBZones"] = hb_reEvaluateHBZones
         sc.sticky["honeybee_AirsideEconomizerParams"] = hb_airsideEconoParams
         sc.sticky["honeybee_constantVolumeFanParams"] = hb_constVolFanParams

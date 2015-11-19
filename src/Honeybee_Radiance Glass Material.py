@@ -40,20 +40,16 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Radiance Glass Material"
 ghenv.Component.NickName = 'radGlassMaterial'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_13_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "01 | Daylight | Material"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
-#compatibleLBVersion = VER 0.0.59\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.58\nNOV_13_2015
+#compatibleLBVersion = VER 0.0.59\nNOV_11_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
 
-
-
 import math
 import scriptcontext as sc
-from clr import AddReference
-AddReference('Grasshopper')
 import Grasshopper.Kernel as gh
 
 
@@ -91,6 +87,7 @@ def main():
     
         try:
             if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+            if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): return -1
         except:
             warning = "You need a newer version of Honeybee to use this compoent." + \
             "Use updateHoneybee component to update userObjects.\n" + \

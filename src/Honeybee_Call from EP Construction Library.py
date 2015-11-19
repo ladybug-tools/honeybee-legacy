@@ -30,15 +30,16 @@ Provided by Honeybee 0.0.58
         keywords_: List of keywords to filter the list of materials
             
     Returns:
+        ThermMaterials: List of THERM materials in Honeybee library.  Note that Therm materials do not contain enough information to be used for EnergyPlus.  They can only be used for THERM polygons with the "Honeybee_Create Therm Polygons" component.
         EPMaterials: List of EP materials in Honeybee library
-        EPWindowMaterils: List of EP window materials in Honeybee library
+        EPWindowMaterials: List of EP window materials in Honeybee library
         EPConstructios:  List of EP constructions in Honeybee library
 
 """
 
 ghenv.Component.Name = "Honeybee_Call from EP Construction Library"
 ghenv.Component.NickName = 'callFromEPConstrLibrary'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_16_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -56,17 +57,19 @@ if sc.sticky.has_key("honeybee_release") and sc.sticky.has_key("honeybee_constru
     
     EPConstructions = sc.sticky ["honeybee_constructionLib"].keys()
     EPMaterials =  sc.sticky ["honeybee_materialLib"].keys()
-    EPWindowMaterils = sc.sticky ["honeybee_windowMaterialLib"].keys()
+    EPWindowMaterials = sc.sticky ["honeybee_windowMaterialLib"].keys()
+    ThermMaterials = sc.sticky["honeybee_thermMaterialLib"].keys()
     
     EPConstructions.sort()
     EPMaterials.sort()
-    EPWindowMaterils.sort()
+    EPWindowMaterials.sort()
+    ThermMaterials.sort()
     
     if len(keywords_)!=0 and keywords_[0]!=None:
         EPConstructions = hb_EPMaterialAUX.searchListByKeyword(EPConstructions, keywords_)
         EPMaterials = hb_EPMaterialAUX.searchListByKeyword(EPMaterials, keywords_)
-        EPWindowMaterils = hb_EPMaterialAUX.searchListByKeyword(EPWindowMaterils, keywords_)
-        
+        EPWindowMaterials = hb_EPMaterialAUX.searchListByKeyword(EPWindowMaterials, keywords_)
+        ThermMaterials = hb_EPMaterialAUX.searchListByKeyword(ThermMaterials, keywords_)
 else:
     print "You should first let the Honeybee fly..."
     w = gh.GH_RuntimeMessageLevel.Warning

@@ -29,8 +29,8 @@ Provided by Honeybee 0.0.58
     Args:
         _illFilesAddress: List of .ill files
         _testPoints: List of 3d Points
-        occupancyFiles_: Address to a Daysim occupancy file. You can find some example in \Daysim\occ. Use Honeybee Occupancy Generator to generate a custom occupancy file.
-        lightingControlGroups_: Daysim lighting control groups. Daysim can model up to 10 lighting control groups together. Default is > cntrlType = 3, lightingPower = 250, lightingSetpoint = 300, ballastLossFactor = 20, standbyPower = 3, delayTime = 5
+        occupancyFiles_: Address to a Daysim occupancy file. You can find some example in \Daysim\occ. Use Honeybee Occupancy Generator to generate a custom occupancy file. You can also use EnergyPlus Schedules directly. If the schedule is using continuous values any value larger than .2 will be considered as occupied.
+        lightingControlGroups_: Daysim lighting control groups. Daysim can model up to 10 lighting control groups together. Default is > cntrlType = 4, lightingPower = 250, lightingSetpoint = 300, ballastLossFactor = 20, standbyPower = 3, delayTime = 5
         _DLAIllumThresholds_: Illuminance threshold for Daylight Autonomy calculation in lux. Default is set to 300 lux.
         SHDGroupI_Sensors_: Senors for dhading group I. Use shadingGroupSensors component to prepare the inputs
         SHDGroupII_Sensors_: Senors for dhading group II. Use shadingGroupSensors component to prepare the inputs
@@ -46,7 +46,7 @@ Provided by Honeybee 0.0.58
 """
 ghenv.Component.Name = "Honeybee_Read Annual Result I"
 ghenv.Component.NickName = 'readAnnualResultsI'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_13_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 #compatibleHBVersion = VER 0.0.57\nNOV_03_2015
@@ -175,9 +175,8 @@ def convertEPScheduleToDSSchedule(scheduleName, folder):
             
             if t == -.5: t = 23.5
             
-            if float(occ) > 1: occ = 1
-            elif float(occ) < 0: occ = 0
-            else: occ = float(occ)
+            if float(occ) >= .2: occ = 1
+            else: occ = 0
             
             occLine = str(m) + "," + str(d) + "," + str(t) + "," + str(occ) + "\n"
             occFile.write(occLine)
@@ -225,7 +224,7 @@ def main(illFilesAddress, testPts, testVecs, occFiles, lightingControlGroups, SH
     
     class genDefaultLightingControl(object):
         
-        def __init__(self, sensorPts = [], cntrlType = 3, lightingPower = 250, lightingSetpoint = 300, ballastLossFactor = 20, standbyPower = 3, delayTime = 5):
+        def __init__(self, sensorPts = [], cntrlType = 4, lightingPower = 250, lightingSetpoint = 300, ballastLossFactor = 20, standbyPower = 3, delayTime = 5):
             
             self.sensorPts = sensorPts
             self.lightingControlStr = self.getLightingControlStr(cntrlType, lightingPower, lightingSetpoint, ballastLossFactor, standbyPower, delayTime)

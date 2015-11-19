@@ -46,7 +46,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_Set EP Surface Construction'
 ghenv.Component.NickName = 'setEPSrfCnstr'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

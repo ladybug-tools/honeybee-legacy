@@ -34,6 +34,7 @@ Provided by Honeybee 0.0.58
         legendPosition_: A number between 0 to 11 to set legend position to the given direction WS|W|WN|NW|N|NE|EN|E|ES|SE|S|SW
         numOfSegments_: An interger representing the number of steps between the high and low boundary of the legend. Default value is set to 10.
         maskThreshold_: Optional number for masking threshold. Pixels with values less than this number will be rendered in black.
+        printExtrema_: Set to True to cause extrema points to be printed on the brightest and darkest pixels of the input picture.
         useAlterColors_: Set to True to use the alternate colorset.
         _render: Set to True to render the new image
     Returns:
@@ -42,7 +43,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_FalseColor"
 ghenv.Component.NickName = 'FalseColor'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_18_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -101,7 +102,9 @@ legendPos = { 0 : "WS",
               11 : "SW"
               }
 
-def main(HDRFilePath, legendUnit, legendMax, conversionF, contourLines, contourBands, legendPosition, numOfSegments, useAlterColors, maskThreshold):
+def main(HDRFilePath, legendUnit, legendMax, conversionF, contourLines, \
+        contourBands, legendPosition, numOfSegments, useAlterColors, \
+        maskThreshold, printExtrema):
 
     # import the classes
     if sc.sticky.has_key('honeybee_release'):
@@ -169,6 +172,9 @@ def main(HDRFilePath, legendUnit, legendMax, conversionF, contourLines, contourB
     if useAlterColors:
         batchStr_body += "-spec "
     
+    if printExtrema:
+        batchStr_body += "-e "
+        
     batchStr = batchStr_head + batchStr_body + "-z > " + outputFile + "\nexit"
     batchFileName = fileAddress + 'FALSECLR.BAT'
     
@@ -221,4 +227,8 @@ if _HDRFilePath and _render:
     
     if maskThreshold_ == None: maskThreshold_ = 0.1
     
-    outputFilePath = main(_HDRFilePath, legendUnit, legendMax_, conversionF, contourLines_, contourBands_, legendPosition_, numOfSegments_, useAlterColors_, maskThreshold_)
+    if printExtrema_ == None: printExtrema_ = False
+    
+    outputFilePath = main(_HDRFilePath, legendUnit, legendMax_, conversionF, \
+                contourLines_, contourBands_, legendPosition_, numOfSegments_, \
+                useAlterColors_, maskThreshold_, printExtrema_)

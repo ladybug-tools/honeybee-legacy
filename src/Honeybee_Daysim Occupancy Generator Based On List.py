@@ -38,7 +38,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Daysim Occupancy Generator Based On List"
 ghenv.Component.NickName = 'occupancyGenerator'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_05_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_13_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -114,7 +114,7 @@ def main(hourlyValues, fileName):
             
             if t == -.5: t = 23.5
             
-            if occ > 1: occ = 1
+            if occ >= .2: occ = 1
             if occ < 0: occ = 0
             
             occLine = str(m) + "," + str(d) + "," + str(t) + "," + str(occ) + "\n"
