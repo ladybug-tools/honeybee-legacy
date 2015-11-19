@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_17_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_19_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1715,12 +1715,13 @@ class hb_WriteRAD(object):
             matFile.write(matStr)
             matFile.write("\n# start of material(s) specific to this study (if any)\n")
             for radMatName in customRADMat.keys():
+                
                 try:
                     matFile.write(self.hb_RADMaterialAUX.getRADMaterialString(radMatName) + "\n")
                 except:
                     # This is the case for void material
                     pass
-                    
+                
                 # check if the material is is trans
                 if self.hb_RADMaterialAUX.getRADMaterialType(radMatName) == "trans":
                     # get the st value
@@ -7083,6 +7084,48 @@ class thermBC(object):
         self.objectType = "ThermBC"
         self.hasChild = False
         self.name = BCName
+        
+        #Create a dictionary with all of the inputs for the BC properties.
+        self.BCProperties = {}
+        self.BCProperties['Name'] = BCName
+        self.BCProperties['Type'] = "1"
+        self.BCProperties['H'] = str(filmCoeff)
+        self.BCProperties['HeatFlux'] = "0"
+        self.BCProperties['Temperature'] = str(temperature)
+        if RGBColor == None: self.BCProperties['RGBColor'] = str(System.Drawing.ColorTranslator.ToHtml(RGBColor))
+        else: self.BCProperties['RGBColor'] = '0x80FFFF'
+        if radTemp == None: self.BCProperties['Tr'] = str(temperature)
+        else: self.BCProperties['Tr'] = str(radTemp)
+        if radTransCoeff == None: self.BCProperties['Hr'] = "-431602080.000000"
+        else: self.BCProperties['Hr'] = str(radTransCoeff)
+        self.BCProperties['Ei'] = "1.000000" 
+        self.BCProperties['Viewfactor'] = "1.000000"
+        self.BCProperties['RadiationModel'] = "3"
+        self.BCProperties['ConvectionFlag'] = "1"
+        self.BCProperties['FluxFlag'] = "0"
+        self.BCProperties['RadiationFlag'] = "1"
+        self.BCProperties['ConstantTemperatureFlag'] = "0"
+        self.BCProperties['EmisModifier'] = "1.000000"
+        
+        #Create a dictionary for the geometry.
+        self.BCGeo = {}
+        self.BCGeo['BCPolygon ID'] = "29"
+        self.BCGeo['BC'] = BCName
+        self.BCGeo['units'] = "mm"
+        self.BCGeo['EnclosureID'] = "0"
+        self.BCGeo['UFactorTag'] = ""
+        self.BCGeo['Emissivity'] = "0.900000"
+        
+        #Increase the therm ID count.
+        sc.sticky["thermBCCount"] = sc.sticky["thermBCCount"] + 1
+        
+        #Keep track of the vertices.
+        self.geometry = lineGeo.ToNurbsCurve()
+        self.vertices = []
+        for vertexCount in range(self.geometry.PointCount):
+            self.vertices.append(self.geometry.Point(vertexCount))
+        
+        return self.geometry
 
 
 class zoneNetworkSolving(object):
@@ -7897,6 +7940,7 @@ if checkIn.letItFly:
         sc.sticky["HB_generatorsystem"] = HB_generatorsystem
         sc.sticky["wind_generator"] = Wind_gen
         sc.sticky["simple_battery"] = simple_battery
+        sc.sticky["thermBCCount"] = 0
         sc.sticky["honeybee_reEvaluateHBZones"] = hb_reEvaluateHBZones
         sc.sticky["honeybee_AirsideEconomizerParams"] = hb_airsideEconoParams
         sc.sticky["honeybee_constantVolumeFanParams"] = hb_constVolFanParams
