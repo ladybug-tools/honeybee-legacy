@@ -54,11 +54,11 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Color Surfaces by EP Result"
 ghenv.Component.NickName = 'ColorSurfaces'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_20_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
-#compatibleLBVersion = VER 0.0.59\nFEB_01_2015
+#compatibleLBVersion = VER 0.0.59\nNOV_20_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
 except: pass
 
@@ -599,7 +599,7 @@ def getData(pyZoneData, surfaceAreas, annualData, simStep, srfNormalizable, srfH
 
 def main(zoneValues, zones, srfBreps, srfHeaders, title, legendTitle, lb_preparation, lb_visualization, legendPar):
     #Read the legend parameters.
-    lowB, highB, numSeg, customColors, legendBasePoint, legendScale, legendFont, legendFontSize, legendBold = lb_preparation.readLegendParameters(legendPar, False)
+    lowB, highB, numSeg, customColors, legendBasePoint, legendScale, legendFont, legendFontSize, legendBold, decimalPlaces, removeLessThan = lb_preparation.readLegendParameters(legendPar, False)
     
     #Get the colors
     colors = lb_visualization.gradientColor(zoneValues, lowB, highB, customColors)
@@ -627,7 +627,7 @@ def main(zoneValues, zones, srfBreps, srfHeaders, title, legendTitle, lb_prepara
     #Create the legend.
     lb_visualization.calculateBB(zones, True)
     if legendBasePoint == None: legendBasePoint = lb_visualization.BoundingBoxPar[0]
-    legendSrfs, legendText, legendTextCrv, textPt, textSize = lb_visualization.createLegend(zoneValues, lowB, highB, numSeg, legendTitle, lb_visualization.BoundingBoxPar, legendBasePoint, legendScale, legendFont, legendFontSize, legendBold)
+    legendSrfs, legendText, legendTextCrv, textPt, textSize = lb_visualization.createLegend(zoneValues, lowB, highB, numSeg, legendTitle, lb_visualization.BoundingBoxPar, legendBasePoint, legendScale, legendFont, legendFontSize, legendBold, decimalPlaces, removeLessThan)
     legendColors = lb_visualization.gradientColor(legendText[:-1], lowB, highB, customColors)
     legendSrfs = lb_visualization.colorMesh(legendColors, legendSrfs)
     

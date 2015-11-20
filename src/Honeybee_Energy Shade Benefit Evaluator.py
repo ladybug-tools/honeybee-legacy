@@ -70,11 +70,11 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Energy Shade Benefit Evaluator"
 ghenv.Component.NickName = 'EnergyShadeBenefit'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_20_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
-#compatibleLBVersion = VER 0.0.59\nJUL_16_2015
+#compatibleLBVersion = VER 0.0.59\nNOV_20_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
 except: pass
 
@@ -747,17 +747,22 @@ def main(allDataDict, sunVectors, skyResolution, legendPar, lb_preparation, lb_v
         #Get the colors for the analysis mesh based on the calculated benefit values unless a user has connected specific legendPar.
         legendFont = 'Verdana'
         if legendPar:
-            lowB, highB, numSeg, customColors, legendBasePoint, legendScale, legendFont, legendFontSize, legendBold = lb_preparation.readLegendParameters(legendPar, False)
+            lowB, highB, numSeg, customColors, legendBasePoint, legendScale, legendFont, legendFontSize, legendBold, decimalPlaces, removeLessThan = lb_preparation.readLegendParameters(legendPar, False)
+            if legendPar[3] == []:
+                customColors = lb_visualization.gradientLibrary[12]
+                customColors.reverse()
         else:
             lowB = -1 * legendVal
             highB = legendVal
             numSeg = 11
-            customColors = customColors = lb_visualization.gradientLibrary[12]
+            customColors = lb_visualization.gradientLibrary[12]
             customColors.reverse()
             legendBasePoint = None
             legendScale = 1
             legendFontSize = None
             legendBold = False
+            decimalPlaces = 2
+            removeLessThan = False
         
         #If the user has not input custom boundaries, automatically choose the boundaries for them.
         if lowB == "min": lowB = -1 * legendVal
@@ -806,7 +811,7 @@ def main(allDataDict, sunVectors, skyResolution, legendPar, lb_preparation, lb_v
         analysisTitle = '\nShade Benefit Analysis'
         if legendBasePoint == None: legendBasePoint = lb_visualization.BoundingBoxPar[0]
         
-        legendSrfs, legendText, legendTextCrv, textPt, textSize = lb_visualization.createLegend(shadeNetEffect, lowB, highB, numSeg, legendTitle, lb_visualization.BoundingBoxPar, legendBasePoint, legendScale, legendFont, legendFontSize, legendBold)
+        legendSrfs, legendText, legendTextCrv, textPt, textSize = lb_visualization.createLegend(shadeNetEffect, lowB, highB, numSeg, legendTitle, lb_visualization.BoundingBoxPar, legendBasePoint, legendScale, legendFont, legendFontSize, legendBold, decimalPlaces, removeLessThan)
         legendColors = lb_visualization.gradientColor(legendText[:-1], lowB, highB, customColors)
         legendSrfs = lb_visualization.colorMesh(legendColors, legendSrfs)
         

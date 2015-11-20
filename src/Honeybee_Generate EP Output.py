@@ -46,7 +46,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Generate EP Output"
 ghenv.Component.NickName = 'EPOutput'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_20_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -149,13 +149,14 @@ def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, zoneHVACMetrics,
 
 #Check the inputs to be sure that the right data types are selected.
 initCheck = True
-if timestep_ == "monthly" or timestep_ == "hourly" or timestep_ == "daily" or timestep_ == "annual" or timestep_.lower() == "timestep": pass
-elif timestep_ == None:
-    timestep_ = "hourly"
-else:
-    initCheck = False
-    print "Incorrect value connected for timestep_.  Allowable inputs include monthly, hourly, daily or annual."
-    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, "Incorrect value connected for timestep_.  Allowable inputs include monthly, hourly, daily or annual.")
+try:
+    if timestep_.lower() == "monthly" or timestep_.lower() == "hourly" or timestep_.lower() == "daily" or timestep_.lower() == "annual" or timestep_.lower() == "timestep": pass
+except:
+    if timestep_ == None: timestep_ = "hourly"
+    else:
+        initCheck =False
+        print "Incorrect value connected for timestep_.  Allowable inputs include monthly, hourly, daily or annual."
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, "Incorrect value connected for timestep_.  Allowable inputs include monthly, hourly, daily or annual.")
 
 
 #Generate the simulation outputs if the above checks are sucessful.

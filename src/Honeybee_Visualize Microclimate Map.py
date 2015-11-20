@@ -49,11 +49,11 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Visualize Microclimate Map"
 ghenv.Component.NickName = 'VisualizeMicroclimate'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_11_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_20_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
-#compatibleLBVersion = VER 0.0.59\nJUL_17_2015
+#compatibleLBVersion = VER 0.0.59\nNOV_20_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "6"
 except: pass
 
@@ -293,7 +293,7 @@ def computeComfValues(comfResultsMtx, analysisP, comfMtxAnalysisP, stepOfSimulat
 
 def main(pointValues, viewFactorMesh, dataType, lb_preparation, lb_visualization, legendPar, analysisPeriod, simStepPossible, annualData, percentOrTotal):
     #Read the legend parameters.
-    lowB, highB, numSeg, customColors, legendBasePoint, legendScale, legendFont, legendFontSize, legendBold = lb_preparation.readLegendParameters(legendPar, False)
+    lowB, highB, numSeg, customColors, legendBasePoint, legendScale, legendFont, legendFontSize, legendBold, decimalPlaces, removeLessThan = lb_preparation.readLegendParameters(legendPar, False)
     
     #Read the data type and assign default values for mesh types.
     if dataType == 'Degrees From Target' or dataType == 'Predicted Mean Vote' or dataType == 'Degrees From Neutral UTCI':
@@ -391,7 +391,7 @@ def main(pointValues, viewFactorMesh, dataType, lb_preparation, lb_visualization
     #Create the legend.
     lb_visualization.calculateBB(resultMesh, True)
     if legendBasePoint == None: legendBasePoint = lb_visualization.BoundingBoxPar[0]
-    legendSrfs, legendText, legendTextCrv, textPt, textSize = lb_visualization.createLegend(pointValuesFinal, lowB, highB, numSeg, legendTitle, lb_visualization.BoundingBoxPar, legendBasePoint, legendScale, legendFont, legendFontSize, legendBold)
+    legendSrfs, legendText, legendTextCrv, textPt, textSize = lb_visualization.createLegend(pointValuesFinal, lowB, highB, numSeg, legendTitle, lb_visualization.BoundingBoxPar, legendBasePoint, legendScale, legendFont, legendFontSize, legendBold, decimalPlaces, removeLessThan)
     legendColors = lb_visualization.gradientColor(legendText[:-1], lowB, highB, customColors)
     legendSrfs = lb_visualization.colorMesh(legendColors, legendSrfs)
     
