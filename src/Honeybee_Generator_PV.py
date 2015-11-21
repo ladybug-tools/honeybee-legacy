@@ -418,7 +418,7 @@ def main(_name_,_HBSurfaces,_cellsEfficiency,_integrationMode,_NoParallel,_Noser
                 
             PVgencount = PVgencount+1
     
-    except IndexError:
+    except:
         
         # This catches an error when there is a missing member exception ie length of one of inputs is longer than 
         # number of Honeybee surfaces not sure how to just catch missing member exception!
