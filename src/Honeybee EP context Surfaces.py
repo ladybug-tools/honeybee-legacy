@@ -12,7 +12,7 @@ prepare shading/context geometries
 
 ghenv.Component.Name = 'Honeybee EP context Surfaces'
 ghenv.Component.NickName = 'HB_EPContextSrf'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_20_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.57\nNOV_01_2015
@@ -64,7 +64,8 @@ def main(shdSurfaces, EPTransSchedule, meshingSettings, justBoundingBox):
                     shdBreps.append(brep.GetBoundingBox(True).ToBrep())
                 else:
                     shdBreps.append(brep)
-        else: shdBreps = shdSurfaces
+        else:
+            shdBreps = shdSurfaces
         
         shadingClasses = []
         shadingMeshPreview = []
@@ -82,17 +83,29 @@ def main(shdSurfaces, EPTransSchedule, meshingSettings, justBoundingBox):
         
         for brepCount, brep in enumerate(shdBreps):
             if brep != None:
-                #if len(brep.DuplicateEdgeCurves(False))>1:
+                isPlanar = True
+                # check planarity
+                for face in brep.Faces:
+                    if not face.IsPlanar(tolerance):
+                        isPlanar = False
+                        break
                 
-                meshArray = rc.Geometry.Mesh.CreateFromBrep(brep, mp)
-                for mesh in meshArray:
-                    for meshFace in range(mesh.Faces.Count):
-                        vertices = list(mesh.Faces.GetFaceVertices(meshFace))[1:]
-                        vertices = vertices + [sc.doc.ModelAbsoluteTolerance]
-                        # create the brep from mesh
-                        shdBrep = rc.Geometry.Brep.CreateFromCornerPoints(*vertices)
-                        
-                        thisShading = hb_EPSHDSurface(shdBrep, 1000*brepCount + meshFace, 'shdSrf_' + `brepCount` + '_' + `meshFace` + "_" + str(uuid.uuid4()))
+                shadingBreps = []
+                if not isPlanar:
+                    meshArray = rc.Geometry.Mesh.CreateFromBrep(brep, mp)
+                    for mesh in meshArray:
+                        for meshFace in range(mesh.Faces.Count):
+                            vertices = list(mesh.Faces.GetFaceVertices(meshFace))[1:]
+                            vertices = vertices + [sc.doc.ModelAbsoluteTolerance]
+                            # create the brep from mesh
+                            shdBrep = rc.Geometry.Brep.CreateFromCornerPoints(*vertices)
+                            shadingBreps.append(shdBrep)
+                else:
+                    for face in brep.Faces:
+                        shadingBreps.append(face.DuplicateFace(False))
+                
+                for faceCount, shdBrep in enumerate(shadingBreps):
+                        thisShading = hb_EPSHDSurface(shdBrep, 1000*brepCount + faceCount, 'shdSrf_' + `brepCount` + '_' + `faceCount` + "_" + str(uuid.uuid4()))
                         
                         # add transmittance schedule if any
                         if EPTransSchedule!=None:
