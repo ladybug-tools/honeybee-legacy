@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_20_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_22_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -7102,7 +7102,7 @@ class thermBC(object):
         self.BCProperties['H'] = str(filmCoeff)
         self.BCProperties['HeatFlux'] = "0"
         self.BCProperties['Temperature'] = str(temperature)
-        if RGBColor == None: self.BCProperties['RGBColor'] = str(System.Drawing.ColorTranslator.ToHtml(RGBColor))
+        if RGBColor != None: self.BCProperties['RGBColor'] = str(System.Drawing.ColorTranslator.ToHtml(RGBColor))
         else: self.BCProperties['RGBColor'] = '0x80FFFF'
         if radTemp == None: self.BCProperties['Tr'] = str(temperature)
         else: self.BCProperties['Tr'] = str(radTemp)
@@ -7126,14 +7126,17 @@ class thermBC(object):
         self.BCGeo['UFactorTag'] = ""
         self.BCGeo['Emissivity'] = "0.900000"
         
-        #Increase the therm ID count.
+        #Increase the Therm ID count.
         sc.sticky["thermBCCount"] = sc.sticky["thermBCCount"] + 1
         
         #Keep track of the vertices.
-        self.geometry = lineGeo.ToNurbsCurve()
+        self.geometry = lineGeo
         self.vertices = []
         for vertexCount in range(self.geometry.PointCount):
             self.vertices.append(self.geometry.Point(vertexCount))
+        
+        #Make note of the plane in which the surface lies.
+        self.plane = self.geometry.TryGetPlane(sc.doc.ModelAbsoluteTolerance)
         
         return self.geometry
 

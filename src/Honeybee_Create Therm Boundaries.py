@@ -26,7 +26,7 @@ Use this component to create a THERM boundary condition.
 Provided by Honeybee 0.0.57
 
     Args:
-        _boundaryCurves: A polyline or list of polylines that coincide with the thermPolygons that you plan to connect to the "Write Therm File" component.
+        _boundaryCurve: A polyline or list of polylines that coincide with the thermPolygons that you plan to connect to the "Write Therm File" component.
         temperature_: A numerical value that represents the temperature at the boundary in degrees Celcius.
         filmCoefficient_: A numerical value in W/m2-K (or SI U-Values) that represents the conductivity of the air film at the boundary condition.  Typical values range from 26 W/m2-K (for an NFRC exterior envelope) to 2.5 W/m2-K (for an interior wood/vinyl surface).
         name_: An optional name for the boundary condition to keep track of it through the creation of the THERM model.  If no value is input here, a default unique name will be generated.
@@ -50,7 +50,7 @@ import math
 
 ghenv.Component.Name = 'Honeybee_Create Therm Boundaries'
 ghenv.Component.NickName = 'createThermBoundaries'
-ghenv.Component.Message = 'VER 0.0.57\nNOV_16_2015'
+ghenv.Component.Message = 'VER 0.0.57\nNOV_22_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.56\nNOV_16_2015
@@ -61,7 +61,7 @@ except: pass
 
 tolerance = sc.doc.ModelAbsoluteTolerance
 
-def main(boundaryCurves, temperature, filmCoefficient, radiantTemp, radTransCoeff, RGBColor):
+def main(boundaryCurve, temperature, filmCoefficient, crvName, radiantTemp, radTransCoeff, RGBColor):
     # import the classes
     if sc.sticky.has_key('honeybee_release'):
     
@@ -88,72 +88,38 @@ def main(boundaryCurves, temperature, filmCoefficient, radiantTemp, radTransCoef
     
     #Make a list to hold the final outputs.
     HBThermBoundary = []
-    originalSrfName = srfName
     
-    for faceCount in range(geometry.Faces.Count):
-        #Check to be sure that the surface is planar.
-        if geometry.Faces[faceCount].IsPlanar(sc.doc.ModelAbsoluteTolerance): pass
-        else:
-            warning = "The connected surface geometry is not planar."
-            print warning
-            w = gh.GH_RuntimeMessageLevel.Warning
-            ghenv.Component.AddRuntimeMessage(w, warning)
-            return -1
-        
-        # 0. check if user input a name for this surface
-        guid = str(uuid.uuid4())
-        number = guid.split("-")[-1]
-        
-        if srfName != None:
-            if originalSrfName == None: originalSrfName = srfName
-            originalSrfName = originalSrfName.strip().replace(" ","_")
-            if geometry.Faces.Count != 1:
-                srfName = originalSrfName + "_" + `faceCount`
-            else: srfName = originalSrfName
-        else:
-            # generate a random name
-            # the name will be overwritten for energy simulation
-            srfName = "".join(guid.split("-")[:-1])
-        
-        # 1.3 assign a material
-        if material!=None:
-            # if it is just the name of the material make sure it is already defined
-            if len(material.split("\n")) == 1:
-                material = material.upper()
-                if material in sc.sticky ["honeybee_materialLib"].keys(): pass
-                elif material in sc.sticky ["honeybee_windowMaterialLib"].keys():pass
-                else:
-                    warningMsg = "Can't find " + material + " in EP Material Library.\n" + \
-                                "Create the material and try again."
-                    print warningMsg
-                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
-                    return -1
-            # if the material is not in the library add it to the library
-            else:
-                # it is a full string
-                added, material = hb_EPMaterialAUX.addEPConstructionToLib(material, overwrite = True)
-                material = material.upper()
-                
-                if not added:
-                    msg = material + " is not added to the project library!"
-                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
-                    print msg
-                    return -1
-        
-        #Make the therm polygon.
-        HBThermPolygon = hb_thermPolygon(geometry.Faces[faceCount].DuplicateFace(False), material, srfName)
-        
-        HBThermPolygons.append(HBThermPolygon)
+    #Check to be sure that the polyline is planar.
+    boundaryCurve = rc.Geometry.PolylineCurve(boundaryCurve)
+    if boundaryCurve.IsPlanar(sc.doc.ModelAbsoluteTolerance): pass
+    else:
+        warning = "The connected boundaryCurve geometry is not planar."
+        print warning
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+        return -1
     
+    # 0. check if user input a name for this polyline
+    guid = str(uuid.uuid4())
+    number = guid.split("-")[-1]
+    
+    if crvName != None:
+        crvName = crvName.strip().replace(" ","_")
+    else:
+        # generate a random name
+        crvName = "".join(guid.split("-")[:-1])
+    
+    #Make the therm boundary condition.
+    HBThermBC = hb_thermBC(boundaryCurve, crvName, temperature, filmCoefficient, radiantTemp, radTransCoeff, RGBColor)
     
     # add to the hive
-    HBThermPolygon  = hb_hive.addToHoneybeeHive(HBThermPolygons, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+    thermBoundary  = hb_hive.addToHoneybeeHive([HBThermBC], ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
     
-    return HBThermPolygon
+    return thermBoundary
 
 
-if _boundaryCurves != None and _temperature != None and _filmCoefficient != None:
-    result= main(_boundaryCurves, _temperature, _filmCoefficient, radiantTemp_, radTransCoeff_, RGBColor_)
+if _boundaryCurve != None and _temperature != None and _filmCoefficient != None:
+    result= main(_boundaryCurve, _temperature, _filmCoefficient, name_, radiantTemp_, radTransCoeff_, RGBColor_)
     
     if result!=-1:
         thermBoundary = result
