@@ -68,7 +68,7 @@ Provided by Ladybug 0.0.45
 
 ghenv.Component.Name = "Honeybee_Re-run IDF"
 ghenv.Component.NickName = 'Re-Run IDF'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_20_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -77,9 +77,34 @@ ghenv.Component.AdditionalHelpFromDocStrings = "0"
 
 
 import os
+import Grasshopper.Kernel as gh
+import time
 
+def checkTheInputs(EPDirectory,idfFileName):
+    
+    if os.path.exists(EPDirectory) == False:
+        
+        warning = "This component could not find the directory for EnergyPlus which is " + str(EPDirectory) +"\n"+\
+        "to fix this error specify the correct directory in the input EPDirectory"
+        
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+        
+        return -1
+        
+   
+    if ('C:' in idfFileName) or ('\\' in idfFileName):
+        
+        warning = "The idfFileName must simply be a idfFileName e.g unnamed.idf. Your idfFileName contains backspaces and/or C:! \n"+\
+        "This must be fixed before this component can be run!"
+    
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+        
+        
+        return -1
+    
+    
 
-def writeBatchFile(workingDir, idfFileName, epwFileAddress, EPDirectory = 'C:\\EnergyPlusV8-1-0'):
+def writeBatchFile(workingDir, idfFileName, epwFileAddress, EPDirectory = 'C:\\EnergyPlusV8-2-0'):
     workingDrive = workingDir[:2]
     
     if idfFileName.endswith('.idf'):  shIdfFileName = idfFileName.replace('.idf', '')
@@ -146,16 +171,31 @@ if checkdata1 and checkdata2 and checkdata3 and checkdata4:
     checkdata = True
 else:
     checkdata =  False
+# Set the EPDirectory if there is no input
 
-
-
+if EPDirectory == None:
+    EPDirectory = 'C:\\EnergyPlusV8-2-0'
 
 
 if checkdata:
-    batchFileAddress = writeBatchFile(workingDir, idfFileName, epwFileAddress, EPDirectory = 'C:\\EnergyPlusV8-1-0')
     
-    runBatchFile(batchFileAddress)
-    if idfFileName.endswith('.idf'):  shIdfFileName = idfFileName.replace('.idf', '')
-    else: shIdfFileName = idfFileName
-    resultFileAddress = str(workingDir) + str(shIdfFileName) + '.csv'
-    print 'EnergyPlus Re-run successful!'
+    if checkTheInputs(EPDirectory,idfFileName) != -1:
+    
+        batchFileAddress = writeBatchFile(workingDir, idfFileName, epwFileAddress, EPDirectory)
+        
+        runBatchFile(batchFileAddress)
+        if idfFileName.endswith('.idf'):  shIdfFileName = idfFileName.replace('.idf', '')
+        else: shIdfFileName = idfFileName
+        resultFileAddress = str(workingDir) + str(shIdfFileName) + '.csv'
+        
+        time = time.localtime(time.time())
+        
+        day = time[2]
+        month = time[1]
+        hour = time[3]
+        minute = time[4]
+        
+        if len(str(minute)) == 1:
+            minute = '0'+str(minute)
+
+        print 'EnergyPlus file '+ str(shIdfFileName)+'.idf ' + 're-run successful at '+ str(hour) +':' + str(minute) + ' on '+str(day)+'/'+ str(month) + '!'
