@@ -50,7 +50,7 @@ import math
 
 ghenv.Component.Name = 'Honeybee_Create Therm Boundaries'
 ghenv.Component.NickName = 'createThermBoundaries'
-ghenv.Component.Message = 'VER 0.0.57\nNOV_22_2015'
+ghenv.Component.Message = 'VER 0.0.57\nNOV_24_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.56\nNOV_16_2015
@@ -91,7 +91,9 @@ def main(boundaryCurve, temperature, filmCoefficient, crvName, radiantTemp, radT
     
     #Check to be sure that the polyline is planar.
     boundaryCurve = rc.Geometry.PolylineCurve(boundaryCurve)
-    if boundaryCurve.IsPlanar(sc.doc.ModelAbsoluteTolerance): pass
+    boundPlane = None
+    if boundaryCurve.IsPlanar(sc.doc.ModelAbsoluteTolerance):
+        boundPlane = boundaryCurve.TryGetPlane(sc.doc.ModelAbsoluteTolerance)[-1]
     else:
         warning = "The connected boundaryCurve geometry is not planar."
         print warning
@@ -110,7 +112,7 @@ def main(boundaryCurve, temperature, filmCoefficient, crvName, radiantTemp, radT
         crvName = "".join(guid.split("-")[:-1])
     
     #Make the therm boundary condition.
-    HBThermBC = hb_thermBC(boundaryCurve, crvName, temperature, filmCoefficient, radiantTemp, radTransCoeff, RGBColor)
+    HBThermBC = hb_thermBC(boundaryCurve, crvName, temperature, filmCoefficient, boundPlane, radiantTemp, radTransCoeff, RGBColor)
     
     # add to the hive
     thermBoundary  = hb_hive.addToHoneybeeHive([HBThermBC], ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))

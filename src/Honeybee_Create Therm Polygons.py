@@ -136,7 +136,9 @@ def main(geometry, material, srfName, RGBColor):
     
     for faceCount in range(geometry.Faces.Count):
         #Check to be sure that the surface is planar.
-        if geometry.Faces[faceCount].IsPlanar(sc.doc.ModelAbsoluteTolerance): pass
+        polyPlane = None
+        if geometry.Faces[faceCount].IsPlanar(sc.doc.ModelAbsoluteTolerance):
+            plane = geometry.Faces[faceCount].TryGetPlane(sc.doc.ModelAbsoluteTolerance)[-1]
         else:
             warning = "The connected surface geometry is not planar."
             print warning
@@ -186,7 +188,7 @@ def main(geometry, material, srfName, RGBColor):
                     return -1
         
         #Make the therm polygon.
-        HBThermPolygon = hb_thermPolygon(geometry.Faces[faceCount].DuplicateFace(False), material, srfName, RGBColor)
+        HBThermPolygon = hb_thermPolygon(geometry.Faces[faceCount].DuplicateFace(False), material, srfName, plane, RGBColor)
         
         HBThermPolygons.append(HBThermPolygon)
     

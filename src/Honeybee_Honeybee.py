@@ -7014,7 +7014,7 @@ class generationhb_hive(object):
         return generationobjects
 
 class thermPolygon(object):
-    def __init__(self, surfaceGeo, material, srfName, RGBColor):
+    def __init__(self, surfaceGeo, material, srfName, plane, RGBColor):
         #Set the name and material.
         self.objectType = "ThermPolygon"
         self.hasChild = False
@@ -7047,7 +7047,7 @@ class thermPolygon(object):
             self.vertices.append(vertex)
         
         #Make note of the plane in which the surface lies.
-        self.plane = self.geometry.Faces[0].TryGetPlane(sc.doc.ModelAbsoluteTolerance)
+        self.plane = plane
         
         return self.geometry
     
@@ -7104,7 +7104,7 @@ class thermPolygon(object):
         return material
 
 class thermBC(object):
-    def __init__(self, lineGeo, BCName, temperature, filmCoeff, radTemp, radTransCoeff, RGBColor):
+    def __init__(self, lineGeo, BCName, temperature, filmCoeff, plane, radTemp, radTransCoeff, RGBColor):
         #Set the name and object type.
         self.objectType = "ThermBC"
         self.hasChild = False
@@ -7151,7 +7151,7 @@ class thermBC(object):
             self.vertices.append(self.geometry.Point(vertexCount))
         
         #Make note of the plane in which the surface lies.
-        self.plane = self.geometry.TryGetPlane(sc.doc.ModelAbsoluteTolerance)
+        self.plane = plane
         
         return self.geometry
 

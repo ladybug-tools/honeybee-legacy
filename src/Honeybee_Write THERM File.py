@@ -62,10 +62,46 @@ w = gh.GH_RuntimeMessageLevel.Warning
 
 
 def checkTheInputs():
-    #Make sure that the connected objects are of the right type.
+    #Call the polygons from the hive.
+    hb_hive = sc.sticky["honeybee_Hive"]()
+    try:
+        thermPolygons = hb_hive.callFromHoneybeeHive(_polygons)
+        thermBCs = hb_hive.callFromHoneybeeHive(_boundaries)
+    except:
+        warning = "Failed to call _polygons and _boundaries from the HB Hive. \n Make srue that connected geometry to _polygons is from the 'Create Therm Polygons' component \n and that geometry to _boundaries is from the 'Create Therm Boundaries' component."
+        print warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+        return -1
     
+    #Make sure that the connected objects are of the right type.
+    checkData1 = True
+    for polygon in thermPolygons:
+        try:
+            if polygon.objectType == "ThermPolygon": pass
+            else: checkData1 = False
+        except:
+            checkData1 = False
+    if checkData1 == False:
+        warning = "Geometry connected to _polygons are not valid thermPolygons from the 'Create Therm Polygons' component."
+        print warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+    
+    checkData2 = True
+    for boundary in thermBCs:
+        try:
+            if boundary.objectType == "ThermBC": pass
+            else: checkData2 = False
+        except:
+            checkData2 = False
+    if checkData2 == False:
+        warning = "Geometry connected to _boundaries are not valid thermBoundaries from the 'Create Therm Bounrdaies' component."
+        print warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
     
     #Make sure that all of the geometry is in the same plane.
+    checkData3 = False
+    basePlane = thermPolygons[0].plane
+    print basePlane
     
     
     #Make sure that the Therm polygons form a single polysurface without any holes (only one set of naked edges).
@@ -131,9 +167,11 @@ else:
 
 
 #If the intital check is good, run the component.
+dataCheck = False
 if initCheck:
     checkData = checkTheInputs()
-    if checkData:
+    if checkData != -1: dataCheck = checkData
+    if dataCheck:
         result = main()
         if result != -1:
             output = result
