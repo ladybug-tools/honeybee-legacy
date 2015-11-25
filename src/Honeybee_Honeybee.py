@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_22_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_24_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -665,7 +665,7 @@ class HB_GetEPLibraries:
                     try:
                         matPropLine = row.split(',')
                         matNameLine = row.split('"')
-                        matName = matNameLine[1]
+                        matName = matNameLine[1].upper()
                         #Make a sub-dictionary for the material.
                         self.libraries["ThermMaterial"][matName] = {}
                         
@@ -7021,9 +7021,10 @@ class thermPolygon(object):
         self.name = srfName
         
         #Check if the material exists in the THERM Library and, if not, add it.
-        if material in sc.sticky["honeybee_thermMaterialLib"].keys():
-            if sc.sticky["honeybee_thermMaterialLib"][material]["RGBColor"] == RGBColor: pass
-            else: material = self.makeThermMatFromEPMat(material+str(RGBColor), RGBColor)
+        if material.upper() in sc.sticky["honeybee_thermMaterialLib"].keys():
+            if RGBColor == None: RGBColor = sc.sticky["honeybee_thermMaterialLib"][material.upper()]["RGBColor"]
+            elif sc.sticky["honeybee_thermMaterialLib"][material.upper()]["RGBColor"] == RGBColor: pass
+            else: material = self.makeThermMatCopy(material, material+str(RGBColor), RGBColor)
         else:
             material = self.makeThermMatFromEPMat(material, RGBColor)
         self.material = material
@@ -7049,6 +7050,20 @@ class thermPolygon(object):
         self.plane = self.geometry.Faces[0].TryGetPlane(sc.doc.ModelAbsoluteTolerance)
         
         return self.geometry
+    
+    def makeThermMatCopy(self, orgigMat, materialName, RGBColor):
+        #Make a sub-dictionary for the material.
+        sc.sticky["honeybee_thermMaterialLib"][materialName] = {}
+        
+        #Create the material with values from the original material.
+        sc.sticky["honeybee_thermMaterialLib"][materialName]["Material Name"] = sc.sticky["honeybee_thermMaterialLib"][orgigMat]["Material Name"]
+        sc.sticky["honeybee_thermMaterialLib"][materialName]["Type"] = sc.sticky["honeybee_thermMaterialLib"][orgigMat]["Type"]
+        sc.sticky["honeybee_thermMaterialLib"][materialName]["Conductivity"] = sc.sticky["honeybee_thermMaterialLib"][orgigMat]["Conductivity"]
+        sc.sticky["honeybee_thermMaterialLib"][materialName]["Absorptivity"] = sc.sticky["honeybee_thermMaterialLib"][orgigMat]["Absorptivity"]
+        sc.sticky["honeybee_thermMaterialLib"][materialName]["Emissivity"] = sc.sticky["honeybee_thermMaterialLib"][orgigMat]["Emissivity"]
+        sc.sticky["honeybee_thermMaterialLib"][materialName]["RGBColor"] = RGBColor
+        
+        return materialName
     
     def makeThermMatFromEPMat(self, material, RGBColor):
         #Make a sub-dictionary for the material.

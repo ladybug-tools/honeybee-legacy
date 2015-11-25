@@ -47,7 +47,7 @@ import math
 
 ghenv.Component.Name = 'Honeybee_Create Therm Polygons'
 ghenv.Component.NickName = 'createThermPolygons'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_16_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_24_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.56\nNOV_16_2015
@@ -129,9 +129,6 @@ def main(geometry, material, srfName, RGBColor):
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, warning)
         return -1
-    
-    #Check the RGBColor and set a defalt if none is connected.
-    if RGBColor == None: RGBColor = System.Drawing.Color.FromArgb(0, 0, 255)
     
     #Make a list to hold the final outputs.
     HBThermPolygons = []
