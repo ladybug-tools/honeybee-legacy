@@ -57,7 +57,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Generator_PV"
 ghenv.Component.NickName = 'PVgen'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_18_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_25_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP" #"06 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -112,7 +112,7 @@ def checktheinputs(_name_,_HBSurfaces,_cellsEfficiency,_integrationMode,_NoParal
         return -1  
         
     # Check that Honeybee Zones are connected
-    
+   
     if (_PVInverter == []) or (_PVInverter == None):
         
         print " Please connect an inverter to _PVInverter"
@@ -274,6 +274,48 @@ def main(_name_,_HBSurfaces,_cellsEfficiency,_integrationMode,_NoParallel,_Noser
             surface.PVgenlist = [] # Set the PVgenlist of each surface back to empty otherwise PVgen objects will accumulate on each run
             
             namePVperform = "DefaultSimplePVperformance" + str(PVgencount)+ " " + str(surface.name) # Create a name for the PVperformance object for each PV generator - this is always created by automatically here not by the user
+            
+            # Raise some warnings for the following circumstances 
+            
+            centerPt, normalVector = surface.getSrfCenPtandNormalAlternate()
+            
+            if normalVector[2] == -1:
+                
+                w = gh.GH_RuntimeMessageLevel.Warning
+                
+                warn = "Are you sure that you want to mount PV generators on " + str(surface.name) +" \n"+\
+                "the surface normal of this surface is facing down!"
+                
+                ghenv.Component.AddRuntimeMessage(w, warn)
+                
+            if surface.type == 2.5:
+                
+                w = gh.GH_RuntimeMessageLevel.Warning
+                
+                warn = str(surface.name) +" is a on-ground slab you probably don't want to mount PV panels on it \n"+\
+                "but we will go ahead and do it anyway."
+                
+                ghenv.Component.AddRuntimeMessage(w, warn)
+
+            if surface.type == 2.25:
+                
+                w = gh.GH_RuntimeMessageLevel.Warning
+                
+                warn = str(surface.name) +" is a underground slab you probably don't want to mount PV panels on it \n"+\
+                "but we will go ahead and do it anyway."
+                
+                ghenv.Component.AddRuntimeMessage(w, warn)
+
+                
+            if surface.type == 0.5:
+            
+                w = gh.GH_RuntimeMessageLevel.Warning
+                
+                warn = str(surface.name) +" is a underground wall you probably don't want to mount PV panels on it \n"+\
+                "but we will go ahead and do it anyway."
+                
+                ghenv.Component.AddRuntimeMessage(w, warn)
+            
             
             try:
     
