@@ -55,9 +55,19 @@ surfaces = []
 HBSurfacestypezero = []
 otherHBSurfaces = []
 showCases = []
-if _showWalls_: showCases.append(0)
+if _showWalls_ == True: 
+    showCases.append(0)
+    # Undergroundwall
+    showCases.append(0.5)
+    
 if _showAirWalls_: showCases.append(4)
-if _showFloors_: showCases.append(2)
+if _showFloors_ == True: 
+    showCases.append(2)
+    # For on-ground slab
+    showCases.append(2.5)
+    # For underground slab
+    showCases.append(2.25)
+    
 if _showCeilings_: showCases.append(3)
 if _showRoofs_: showCases.append(1)
 
@@ -88,8 +98,11 @@ def main(HBZones):
         
         # Extract surfaces from HBZones?
         for srf in zone.surfaces:
+            print srf
+            print srf.type
             try:
                 if srf.type in showCases:
+                    print srf
                     if srf.type == 0 and srf.hasChild:
                         surfaces.append(srf.punchedGeometry)
                         
