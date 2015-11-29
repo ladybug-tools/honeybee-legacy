@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_24_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_28_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -548,7 +548,7 @@ class HB_GetEPLibraries:
         
         if isMatFile == False:
             print "Loading EP materials, constructions and schedules from %s"%EPfile
-            EPObjects = EPLibs.getEnergyPlusObjectsFromFile(EPfile)
+            EPObjects = self.getEnergyPlusObjectsFromFile(EPfile)
             self.loadEPConstructionsMaterialsAndSchedules(EPObjects, cleanCurrentLib)
         else:
             print "Loading THERM materials from %s"%EPfile
@@ -575,7 +575,12 @@ class HB_GetEPLibraries:
         if cleanCurrentLib: self.cleanHBLibs()
         
         for EPObjectStr in EPObjectsString:
-            lines = EPObjectStr.strip().split("\n")
+            rawLines = EPObjectStr.strip().split("\n")
+            lines = []
+            for line in rawLines:
+                if line.strip() == '' or line.startswith('!'): continue
+                lines.append(line)
+                
             if len(lines) == 1: continue
             
             key = lines[0].split(",")[0].strip()
