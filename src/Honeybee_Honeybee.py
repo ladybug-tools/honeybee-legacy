@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_28_2015'
+ghenv.Component.Message = 'VER 0.0.58\nNOV_30_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -581,7 +581,7 @@ class HB_GetEPLibraries:
                 if line.strip() == '' or line.startswith('!'): continue
                 lines.append(line)
                 
-            if len(lines) == 1: continue
+            if len(lines) < 2: continue
             
             key = lines[0].split(",")[0].strip()
             shortKey = key.split(":")[0]
