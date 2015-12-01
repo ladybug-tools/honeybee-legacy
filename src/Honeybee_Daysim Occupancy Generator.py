@@ -38,7 +38,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Daysim Occupancy Generator"
 ghenv.Component.NickName = 'occupancyGenerator'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.58\nDEC_01_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -122,6 +122,9 @@ def main(analysisPeriod, dailyOffHours, weekendDays, fileName):
     
     fullPath = folder + fileName
     
+    if not fullPath.lower().endswith('.csv'):
+        fullPath += '.csv'
+        
     with open(fullPath, "w") as occFile:
         occFile.write(heading)
         for HOY in range(1,8761):
