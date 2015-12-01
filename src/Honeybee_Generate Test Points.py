@@ -40,7 +40,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Generate Test Points"
 ghenv.Component.NickName = 'genTestPts'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.58\nDEC_01_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -142,21 +142,23 @@ def getTestPts(inputMesh, movingDis, moveTestMesh= False, parallel = True):
                 
         return flattenList(testPoint), flattenList(srfNormals), flattenList(meshSrfArea), inputMesh
 
+ghenv.Component.Params.Input[1].Name = '_gridSize'
+ghenv.Component.Params.Input[1].NickName = '_gridSize'
 
-if _testSurface!=None and _gridSize!=None and _distBaseSrf!=None:
+if _testGeometry!=None:
+    inputMesh = []
     
+    if type(_testGeometry) == rc.Geometry.Mesh and _distBaseSrf!=None:
+        ghenv.Component.Params.Input[1].Name = '.'
+        ghenv.Component.Params.Input[1].NickName = '.'
+        inputMesh.append(_testGeometry)
+        
+    elif _gridSize!=None and _distBaseSrf!=None:
+        initMesh = createMesh([_testGeometry], _gridSize)
+        for m in initMesh: inputMesh.append(m)     
+
     if _distBaseSrf<0:
         msg = "Distance from base should be greater than 0. Flip the input surface instead of using a negative number."
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
-        
     else:
-        initMesh = createMesh([_testSurface], _gridSize)
-    
-        inputMesh = []
-        for m in initMesh: inputMesh.append(m)
-        
-        try:
-            testPoints, ptsVectors, facesArea, mesh = getTestPts(inputMesh, _distBaseSrf, moveTestMesh_)
-        except:
-            # just for the first release
-            testPoints, ptsVectors, facesArea, mesh = getTestPts(inputMesh, _distBaseSrf, False)
+        testPoints, ptsVectors, facesArea, mesh = getTestPts(inputMesh, _distBaseSrf, moveTestMesh_)
