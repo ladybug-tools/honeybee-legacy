@@ -48,7 +48,7 @@ import math
 
 ghenv.Component.Name = 'Honeybee_Write THERM File'
 ghenv.Component.NickName = 'writeTHERM'
-ghenv.Component.Message = 'VER 0.0.57\nNOV_24_2015'
+ghenv.Component.Message = 'VER 0.0.57\nNOV_28_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.56\nNOV_16_2015
@@ -74,51 +74,101 @@ def checkTheInputs():
         return -1
     
     #Make sure that the connected objects are of the right type.
-    checkData1 = True
+    checkData = True
     for polygon in thermPolygons:
         try:
             if polygon.objectType == "ThermPolygon": pass
             else: checkData1 = False
         except:
-            checkData1 = False
-    if checkData1 == False:
+            checkData = False
+    if checkData == False:
         warning = "Geometry connected to _polygons are not valid thermPolygons from the 'Create Therm Polygons' component."
         print warning
         ghenv.Component.AddRuntimeMessage(w, warning)
+        reutrn -1
     
-    checkData2 = True
     for boundary in thermBCs:
         try:
             if boundary.objectType == "ThermBC": pass
-            else: checkData2 = False
+            else: checkData = False
         except:
-            checkData2 = False
-    if checkData2 == False:
+            checkData = False
+    if checkData == False:
         warning = "Geometry connected to _boundaries are not valid thermBoundaries from the 'Create Therm Bounrdaies' component."
         print warning
         ghenv.Component.AddRuntimeMessage(w, warning)
+        return -1
     
     #Make sure that all of the geometry is in the same plane.
-    checkData3 = False
-    basePlane = thermPolygons[0].plane
-    print basePlane
+    basePlaneNormal = thermPolygons[0].normalVector
     
+    #Check the polygon geometry
+    for polygon in thermPolygons:
+        if not polygon.normalVector == basePlaneNormal:
+            #Check if the normal is just facing the opposite direction.
+            polyNormalRev = rc.Geometry.Vector3d(polygon.normalVector)
+            polyNormalRev.Reverse()
+            if polyNormalRev == basePlaneNormal:
+                polygon.normalVector = polyNormalRev
+                polygon.plane.Flip()
+                polygon.geometry.Flip()
+                polygon.polylineGeo.Reverse()
+                polygon.vertices.reverse()
+            else:
+                checkData = False
+                warning = "Geometry for polygon " + polygon.name + " with material " + polygon.material + " is not in the same plane as the other connected geometry."
+                print warning
+                ghenv.Component.AddRuntimeMessage(w, warning)
+    
+    #Check the BC geometry
+    for boundary in thermBCs:
+        if not boundary.normalVector == basePlaneNormal:
+            #Check if the normal is just facing the opposite direction.
+            boundaryNormalRev = rc.Geometry.Vector3d(boundary.normalVector)
+            boundaryNormalRev.Reverse()
+            if boundaryNormalRev == basePlaneNormal:
+                boundary.normalVector = boundaryNormalRev
+                boundary.plane.Flip()
+                boundary.geometry.Reverse()
+                boundary.vertices.reverse()
+            else:
+                checkData = False
+                warning = "Geometry for boundary " + boundary.name + " with temperature " + boundary.BCProperties['Temperature'] + " is not in the same plane as the other connected geometry."
+                print warning
+                ghenv.Component.AddRuntimeMessage(w, warning)
+    
+    if checkData == False:
+        return -1
     
     #Make sure that the Therm polygons form a single polysurface without any holes (only one set of naked edges).
+    allPolygonGeo = []
+    for polygon in thermPolygons:
+        allPolygonGeo.append(polygon.geometry)
+    joinedPolygons = rc.Geometry.Brep.JoinBreps(allPolygonGeo, sc.doc.ModelAbsoluteTolerance)
+    print joinedPolygons
     
     
-    
+    #Make sure that all of the edges of the boundaries can be assigned to a polygon.
     
     
     return False
 
 
 def main():
-    #From the plane that the surfaces are in in Rhino, translate them to the origin of a the Therm scene.
+    #Find any edge boundaries that have not been assigned and add them to the list of boundaries as adiabtic conditions.
+    
+    
+    #Find any air gaps in the window and, if found, make NFRC boundaries for the air gap.
+    
+    
+    
+    #From the plane that the surfaces are in in Rhino, translate them to the new origin of a the Therm scene.
+    
+    
     #Keep track of this transformation and write it into the XML so that results can be read back onto the original geometry after running THERM.
     
     
-    #Make sure that the vertices of the boundaries can be assigned to a polygon.
+    
     
     
     

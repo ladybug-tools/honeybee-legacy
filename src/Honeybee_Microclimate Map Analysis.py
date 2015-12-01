@@ -57,7 +57,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Microclimate Map Analysis"
 ghenv.Component.NickName = 'MicroclimateMap'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_11_2015'
+ghenv.Component.Message = 'VER 0.0.58\nDEC_01_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -714,12 +714,18 @@ def mainAdapt(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataN
     
     #Check the data anlysis period and subtract the start day from each of the HOYs.
     originalHOYs = []
+    yearEndTrigger = False
     if dataAnalysisPeriod != [(1,1,1),(12,31,24)]:
         FinalHOYs, mon, days = lb_preparation.getHOYsBasedOnPeriod(dataAnalysisPeriod, 1)
         for hCount, hour in enumerate(HOYs):
             originalHOYs.append(hour)
-            HOYs[hCount] = hour - FinalHOYs[0]
+            if hour == 1:
+                yearEndTrigger = True
+                HOYs[hCount] = hour - FinalHOYs[0] + 8760
+            elif yearEndTrigger == False: HOYs[hCount] = hour - FinalHOYs[0]
+            else: HOYs[hCount] = hour - FinalHOYs[0] + 8760
     else: originalHOYs = HOYs
+    
     #Check to be sure that the requested analysis period and the analysis period of the connected data align.
     periodsAlign = True
     for hour in HOYs:
@@ -940,11 +946,16 @@ def mainPMV(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNum
     
     #Check the data anlysis period and subtract the start day from each of the HOYs.
     originalHOYs = []
+    yearEndTrigger = False
     if dataAnalysisPeriod != [(1,1,1),(12,31,24)]:
         FinalHOYs, mon, days = lb_preparation.getHOYsBasedOnPeriod(dataAnalysisPeriod, 1)
         for hCount, hour in enumerate(HOYs):
             originalHOYs.append(hour)
-            HOYs[hCount] = hour - FinalHOYs[0]
+            if hour == 1:
+                yearEndTrigger = True
+                HOYs[hCount] = hour - FinalHOYs[0] + 8760
+            elif yearEndTrigger == False: HOYs[hCount] = hour - FinalHOYs[0]
+            else: HOYs[hCount] = hour - FinalHOYs[0] + 8760
     else: originalHOYs = HOYs
     
     #Check to be sure that the requested analysis period and the analysis period of the connected data align.
@@ -1147,11 +1158,16 @@ def mainUTCI(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNu
     
     #Check the data anlysis period and subtract the start day from each of the HOYs.
     originalHOYs = []
+    yearEndTrigger = False
     if dataAnalysisPeriod != [(1,1,1),(12,31,24)]:
         FinalHOYs, mon, days = lb_preparation.getHOYsBasedOnPeriod(dataAnalysisPeriod, 1)
         for hCount, hour in enumerate(HOYs):
             originalHOYs.append(hour)
-            HOYs[hCount] = hour - FinalHOYs[0]
+            if hour == 1:
+                yearEndTrigger = True
+                HOYs[hCount] = hour - FinalHOYs[0] + 8760
+            elif yearEndTrigger == False: HOYs[hCount] = hour - FinalHOYs[0]
+            else: HOYs[hCount] = hour - FinalHOYs[0] + 8760
     else: originalHOYs = HOYs
     
     #Check to be sure that the requested analysis period and the analysis period of the connected data align.
