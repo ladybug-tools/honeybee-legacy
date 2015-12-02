@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_30_2015'
+ghenv.Component.Message = 'VER 0.0.58\nDEC_02_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -296,17 +296,7 @@ class versionCheck(object):
         GHComponent.AddRuntimeMessage(w, warningMsg)
     
     def isInputMissing(self, GHComponent):
-        isInputMissing = False
-        isAnyConnected = False
-        for param in GHComponent.Params.Input:
-            if param.NickName.startswith("_") and \
-                not param.NickName.endswith("_") and \
-                param.VolatileDataCount:
-                    isAnyConnected = True
-                    break
-        
-        if not isAnyConnected: return True
-        
+        isInputMissing = False        
         for param in GHComponent.Params.Input:
             if param.NickName.startswith("_") and \
                 not param.NickName.endswith("_") and \
