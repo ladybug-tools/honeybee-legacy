@@ -57,7 +57,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Microclimate Map Analysis"
 ghenv.Component.NickName = 'MicroclimateMap'
-ghenv.Component.Message = 'VER 0.0.58\nDEC_01_2015'
+ghenv.Component.Message = 'VER 0.0.58\nDEC_02_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -714,24 +714,20 @@ def mainAdapt(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataN
     
     #Check the data anlysis period and subtract the start day from each of the HOYs.
     originalHOYs = []
-    yearEndTrigger = False
     if dataAnalysisPeriod != [(1,1,1),(12,31,24)]:
         FinalHOYs, mon, days = lb_preparation.getHOYsBasedOnPeriod(dataAnalysisPeriod, 1)
         for hCount, hour in enumerate(HOYs):
             originalHOYs.append(hour)
-            if hour == 1:
-                yearEndTrigger = True
-                HOYs[hCount] = hour - FinalHOYs[0] + 8760
-            elif yearEndTrigger == False: HOYs[hCount] = hour - FinalHOYs[0]
+            if hour - FinalHOYs[0] >= 0: HOYs[hCount] = hour - FinalHOYs[0]
             else: HOYs[hCount] = hour - FinalHOYs[0] + 8760
     else: originalHOYs = HOYs
     
     #Check to be sure that the requested analysis period and the analysis period of the connected data align.
     periodsAlign = True
-    for hour in HOYs:
-        if hour < 0: periodsAlign = False
-        try: srfTempNumbers[0][hour-1]
-        except: periodsAlign = False
+    hrStart = originalHOYs[0]
+    hrEnd = originalHOYs[-1]
+    if hrStart in FinalHOYs and hrEnd in FinalHOYs: pass
+    else: periodsAlign = False
     if periodsAlign == False:
         warning = 'The analysis period of the energy simulation data and the analysisPeriodOrHOY_ plugged into this component do not align.'
         print warning
@@ -946,24 +942,20 @@ def mainPMV(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNum
     
     #Check the data anlysis period and subtract the start day from each of the HOYs.
     originalHOYs = []
-    yearEndTrigger = False
     if dataAnalysisPeriod != [(1,1,1),(12,31,24)]:
         FinalHOYs, mon, days = lb_preparation.getHOYsBasedOnPeriod(dataAnalysisPeriod, 1)
         for hCount, hour in enumerate(HOYs):
             originalHOYs.append(hour)
-            if hour == 1:
-                yearEndTrigger = True
-                HOYs[hCount] = hour - FinalHOYs[0] + 8760
-            elif yearEndTrigger == False: HOYs[hCount] = hour - FinalHOYs[0]
+            if hour - FinalHOYs[0] >= 0: HOYs[hCount] = hour - FinalHOYs[0]
             else: HOYs[hCount] = hour - FinalHOYs[0] + 8760
     else: originalHOYs = HOYs
     
     #Check to be sure that the requested analysis period and the analysis period of the connected data align.
     periodsAlign = True
-    for hour in HOYs:
-        if hour < 0: periodsAlign = False
-        try: srfTempNumbers[0][hour-1]
-        except: periodsAlign = False
+    hrStart = originalHOYs[0]
+    hrEnd = originalHOYs[-1]
+    if hrStart in FinalHOYs and hrEnd in FinalHOYs: pass
+    else: periodsAlign = False
     if periodsAlign == False:
         warning = 'The analysis period of the energy simulation data and the analysisPeriodOrHOY_ plugged into this component do not align.'
         print warning
@@ -1158,28 +1150,20 @@ def mainUTCI(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNu
     
     #Check the data anlysis period and subtract the start day from each of the HOYs.
     originalHOYs = []
-    yearEndTrigger = False
     if dataAnalysisPeriod != [(1,1,1),(12,31,24)]:
         FinalHOYs, mon, days = lb_preparation.getHOYsBasedOnPeriod(dataAnalysisPeriod, 1)
         for hCount, hour in enumerate(HOYs):
             originalHOYs.append(hour)
-            if hour == 1:
-                yearEndTrigger = True
-                HOYs[hCount] = hour - FinalHOYs[0] + 8760
-            elif yearEndTrigger == False: HOYs[hCount] = hour - FinalHOYs[0]
+            if hour - FinalHOYs[0] >= 0: HOYs[hCount] = hour - FinalHOYs[0]
             else: HOYs[hCount] = hour - FinalHOYs[0] + 8760
     else: originalHOYs = HOYs
     
     #Check to be sure that the requested analysis period and the analysis period of the connected data align.
     periodsAlign = True
-    for hour in HOYs:
-        if hour < 0: periodsAlign = False
-        if outdoorClac == True:
-            try: outSrfTempNumbers[0][hour-1]
-            except: periodsAlign = False
-        else:
-            try: srfTempNumbers[0][hour-1]
-            except: periodsAlign = False
+    hrStart = originalHOYs[0]
+    hrEnd = originalHOYs[-1]
+    if hrStart in FinalHOYs and hrEnd in FinalHOYs: pass
+    else: periodsAlign = False
     if periodsAlign == False:
         warning = 'The analysis period of the energy simulation data and the analysisPeriodOrHOY_ plugged into this component do not align.'
         print warning
