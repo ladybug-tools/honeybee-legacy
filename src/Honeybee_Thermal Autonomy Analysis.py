@@ -64,7 +64,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Thermal Autonomy Analysis"
 ghenv.Component.NickName = 'ThermalAutonomy'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nAUG_30_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -143,7 +143,8 @@ def recallHBZoneProperties(HOYs, occupancyThere):
                             for columnCount, column in enumerate(line.split(',')):
                                 if columnCount == 4:
                                     values.append(float(column))
-            values = lb_preparation.flattenList(values)
+            try: values = lb_preparation.flattenList(values)
+            except: pass
             analysisPValues = []
             for hour in HOYs:
                 analysisPValues.append(values[hour-1])

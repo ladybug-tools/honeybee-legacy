@@ -54,7 +54,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Color Zones by EP Result"
 ghenv.Component.NickName = 'ColorZones'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJUL_22_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -211,40 +211,18 @@ def checkTheInputs():
         if "Floor Normalized" in dataType:
             normable = False
             total = True
-        elif "Total Thermal Energy for" in dataType: normable = True
-        elif "Thermal Energy Balance for" in dataType: normable = True
-        elif "Cooling Energy for" in dataType: normable = True
-        elif "Heating Energy for" in dataType: normable = True
-        elif "Electric Lighting Energy for" in dataType: normable = True
-        elif "Electric Equipment Energy for" in dataType: normable = True
-        elif "People Energy for" in dataType: normable = True
-        elif "Total Solar Gain for" in dataType: normable = True
-        elif "Solar Beam Energy for" in dataType: normable = True
-        elif "Solar Diffuse Energy for" in dataType: normable = True
-        elif "Infiltration Energy for" in dataType: normable = True
-        elif "Natural Ventilation Energy for" in dataType: normable = True
-        elif "Operative Temperature for" in dataType: normable = False
-        elif "Air Temperature for" in dataType: normable = False
-        elif "Radiant Temperature for" in dataType: normable = False
-        elif "Zone Air Relative Humidity" in dataType: normable = False
+        elif "Energy" in dataType: normable = True
+        elif "Gain" in dataType: normable = True
+        elif "Loss" in dataType: normable = True
+        elif "Temperature" in dataType: normable = False
+        elif "Humidity" in dataType: normable = False
         elif "Predicted Mean Vote" in dataType: normable = False
         elif "Percentage of People Dissatisfied" in dataType: normable = False
-        elif "Standard Effective Temperature" in dataType: normable = False
         elif "Comfortable Or Not" in dataType: normable = False
-        elif "Adaptive Comfort" in dataType: normable = False
-        elif "Degrees from Target Temperature" in dataType: normable = False
-        elif "Adaptive Target Temperature" in dataType: normable = False
+        elif "Comfort" in dataType: normable = False
         elif "Universal Thermal Climate Index" in dataType: normable = False
-        elif "Outdoor Comfort" in dataType: normable = False
-        elif "Sensible Cooling Energy" in dataType: normable = True
-        elif "Latent Cooling Energy" in dataType: normable = True
-        elif "Sensible Heating Energy" in dataType: normable = True
-        elif "Latent Heating Energy" in dataType: normable = True
-        elif "Supply Air Mass Flow Rate" in dataType: normable = True
-        elif "Supply Air Temperature" in dataType: normable = False
-        elif "Supply Air Relative Humidity" in dataType: normable = False
-        elif "Air Flow Volume" in dataType: normable = True
-        elif "Air Heat Gain Rate" in dataType: normable = False
+        elif "Mass" in dataType: normable = True
+        elif "Volume" in dataType: normable = True
         else:
             normable = False
             warning = "Component cannot tell what data type is being connected.  Data will be averaged for each zone by default."

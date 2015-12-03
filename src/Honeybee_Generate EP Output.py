@@ -46,7 +46,7 @@ Provided by Honeybee 0.0.57
 
 ghenv.Component.Name = "Honeybee_Generate EP Output"
 ghenv.Component.NickName = 'EPOutput'
-ghenv.Component.Message = 'VER 0.0.57\nJUL_06_2015'
+ghenv.Component.Message = 'VER 0.0.57\nSEP_14_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -83,6 +83,8 @@ def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, zoneHVACMetrics,
     if zoneGainsAndLosses == True:
         simulationOutputs.append("Output:Variable,*,Zone Windows Total Transmitted Solar Radiation Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone People Total Heating Energy, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Zone Total Heating Energy, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Zone Total Cooling Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Infiltration Total Heat Loss Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Infiltration Total Heat Gain Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Ventilation Total Heat Loss Energy, " + timePeriod)
