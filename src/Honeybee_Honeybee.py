@@ -2192,7 +2192,7 @@ class hb_WriteRAD(object):
             
             return initBatchFileName, batchFiles, fileNames, pcompFileName, RADResultFilesAddress
         
-    def executeBatchFiles(self, batchFileNames, maxPRuns = None, shell = False):
+    def executeBatchFiles(self, batchFileNames, maxPRuns = None, shell = False, waitingTime = 0.5):
     
         """Run a number of batch files in parallel and
             wait to end of the analysis.
@@ -2221,7 +2221,8 @@ class hb_WriteRAD(object):
                     # execute the files
                     jobs.append(subprocess.Popen(batchFileNames[pid].replace("\\", "/") , shell = shell))
                     pid+=1
-        
+                    time.sleep(waitingTime)
+                
                 # count how many jobs are running and how many are done
                 running = 0
                 finished = 0
@@ -2235,7 +2236,7 @@ class hb_WriteRAD(object):
                 if running == maxPRuns:
                     # wait for half a second
                     #print "waiting..."
-                    time.sleep(0.5)
+                    time.sleep(waitingTime)
         
                 if finished ==  total:
                     done = True
@@ -2246,8 +2247,8 @@ class hb_WriteRAD(object):
     def runBatchFiles(self, initBatchFileName, batchFileNames, fileNames, \
                       pcompBatchFile, waitingTime, runInBackground = False):
         
-        self.executeBatchFiles([initBatchFileName], maxPRuns = 1, shell = runInBackground)
-        self.executeBatchFiles(batchFileNames, maxPRuns = len(batchFileNames), shell = runInBackground)
+        self.executeBatchFiles([initBatchFileName], maxPRuns = 1, shell = runInBackground, waitingTime = waitingTime)
+        self.executeBatchFiles(batchFileNames, maxPRuns = len(batchFileNames), shell = runInBackground, waitingTime = waitingTime)
         
         if pcompBatchFile!="":
             os.system(pcompBatchFile) # put all the files together
