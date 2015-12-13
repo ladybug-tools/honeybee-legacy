@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.58\nDEC_12_2015'
+ghenv.Component.Message = 'VER 0.0.58\nDEC_13_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -7321,6 +7321,7 @@ class hb_Hive(object):
         msg = " %s has been moved, scaled or rotated.\nIf you need to move or rotate "%HBO.name + \
               "a Honeybee object you should use Honeybee move, rotate or mirror components." + \
               " You can find them under 12|WIP tab."
+        if HBO.objectType == "HBIES": return
         
         bb1 = brep.GetBoundingBox(True)
         bb2 = HBO.geometry.GetBoundingBox(True)
