@@ -41,17 +41,14 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_RADParameters"
 ghenv.Component.NickName = 'RADParameters'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.58\nDEC_12_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.56\nDEC_12_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
 except: pass
 
-
-from clr import AddReference
-AddReference('Grasshopper')
 import Grasshopper.Kernel as gh
 import scriptcontext as sc
 
@@ -112,50 +109,78 @@ def parseRadParameters(radParString):
             try:
                 value = float(value)
             except:
-                continue # cases such as empty string
+                # case for parameters with no input values -u, -i
+                if key.strip()=="":
+                    continue
+                value = " "
+                
         
         radPar["_" + key.strip()+ "_"] = value 
-    
+
     return radPar
 
 
-if sc.sticky.has_key('honeybee_release'):
+def main():
+    
+    if sc.sticky.has_key('honeybee_release'):
+        # check honeybee version
+        try:
+                if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+                if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): return -1
+                
+        except:
+            warning = "You need a newer version of Honeybee to use this compoent." + \
+            "Use updateHoneybee component to update userObjects.\n" + \
+            "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+            "into canvas and try again."
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+            return -1
+        
+        hb_radParDict = sc.sticky["honeybee_RADParameters"]().radParDict
+        hb_additionalPar = sc.sticky["honeybee_RADParameters"]().additionalRadPars
+        
+        # there should be a smarter way to read the input values
+        componentValues = {
+                    "_ab_" : _ab_,
+                    "_ad_" : _ad_,
+                    "_as_" : _as_,
+                    "_ar_" : _ar_,
+                    "_aa_" : _aa_}
+        
+        
+        radParFromString = parseRadParameters(additionalP_)
+        
+        # replace/add new parameters to componentValues
+        
+        for key, value in radParFromString.items():
+            componentValues[key] = value
+        
+        radPar = {}
+        radPar["additional"] = []
+        
+        for key in hb_radParDict.keys():
+            
+            par = key.replace("_", "") # remove _ doe a cleaner print
+            
+            if componentValues.has_key(key) and componentValues[key]!= None:
+                print par + " = " + str(componentValues[key])
+                radPar[key] = componentValues[key]
+            else:
+                print par + " = " + str(hb_radParDict[key][_quality])
+                radPar[key] = hb_radParDict[key][_quality]
+        
+        # check additional parameters
+        for par in hb_additionalPar:
+            if par in radParFromString:
+                # add additional parameter
+                par  = par.replace("_", "")
+                radPar["additional"].append(par)
+                print par
+        
+        return dictToClass(radPar)
 
-    hb_radParDict = sc.sticky["honeybee_RADParameters"]().radParDict
-    
-    
-    # there should be a smarter way to read the input values
-    componentValues = {
-                "_ab_" : _ab_,
-                "_ad_" : _ad_,
-                "_as_" : _as_,
-                "_ar_" : _ar_,
-                "_aa_" : _aa_}
-    
-    
-    radParFromString = parseRadParameters(additionalP_)
-    
-    # replace/add new parameters to componentValues
-    
-    for key, value in radParFromString.items():
-        componentValues[key] = value
-    
-    radPar = {}
-    
-    for key in hb_radParDict.keys():
-        
-        par = key.replace("_", "") # remove _ doe a cleaner print
-        
-        if componentValues.has_key(key) and componentValues[key]!= None:
-            print par + " = " + str(componentValues[key])
-            radPar[key] = componentValues[key]
-        else:
-            print par + " = " + str(hb_radParDict[key][_quality])
-            radPar[key] = hb_radParDict[key][_quality]
-    
-    radParameters = dictToClass(radPar)
-else:
-    print "You should first let Honeybee to fly..."
-    w = gh.GH_RuntimeMessageLevel.Warning
-    ghenv.Component.AddRuntimeMessage(w, "You should let Honeybee to fly...")
-    radParameters = []
+
+results = main()
+if results!=-1:
+    radParameters = results

@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.58\nDEC_02_2015'
+ghenv.Component.Message = 'VER 0.0.58\nDEC_12_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -2945,7 +2945,7 @@ class hb_WriteRADAUX(object):
             # radiation analysis
             line0 = "rpict -i "
         
-        line1 = "-t 10 "+ \
+        line1_1 = "-t 10 "+ \
                 view + " -af " + ambFile +  " " + \
                 " -ps " + str(radParameters["_ps_"]) + " -pt " + str(radParameters["_pt_"]) + \
                 " -pj " + str(radParameters["_pj_"]) + " -dj " + str(radParameters["_dj_"]) + \
@@ -2955,12 +2955,18 @@ class hb_WriteRADAUX(object):
                 " -ab " + `radParameters["_ab_"]` + \
                 " -ad " + `radParameters["_ad_"]` + " -as " +  `radParameters["_as_"]` + \
                 " -ar " + `radParameters["_ar_"]` + " -aa " +  '%.3f'%radParameters["_aa_"] + \
-                " -lr " + `radParameters["_lr_"]`  + " -lw " + '%.3f'%radParameters["_lw_"] + " -av 0 0 0 " + \
-                " " + octFile + " > " + unfFile + "\n"
-    
+                " -lr " + `radParameters["_lr_"]`  + " -lw " + '%.3f'%radParameters["_lw_"] + " -av 0 0 0 "
+                
+        line1_2 = " "
+        if radParameters.has_key("additional"):
+            for par in radParameters["additional"]:
+                line1_2 += "-%s  "%par
+        
+        line1_3 = octFile + " > " + unfFile + "\n"
+        
         line2 = "del " + unfFile + "\n"
         
-        return line0 + line1 + line2
+        return line0 + line1_1 + line1_2 + line1_3 + line2
 
     def rpictLine(self, view, projectName, viewName, radParameters, analysisType = 0, cpuCount = 0):
         octFile = projectName + ".oct"
@@ -2978,7 +2984,7 @@ class hb_WriteRADAUX(object):
             # radiation analysis
             line0 = "rpict -i "
         
-        line1 = "-t 10 "+ \
+        line1_1 = "-t 10 "+ \
                 view + " -af " + ambFile +  " " + \
                 " -ps " + str(radParameters["_ps_"]) + " -pt " + str(radParameters["_pt_"]) + \
                 " -pj " + str(radParameters["_pj_"]) + " -dj " + str(radParameters["_dj_"]) + \
@@ -2988,12 +2994,19 @@ class hb_WriteRADAUX(object):
                 " -ab " + `radParameters["_ab_"]` + \
                 " -ad " + `radParameters["_ad_"]` + " -as " +  `radParameters["_as_"]` + \
                 " -ar " + `radParameters["_ar_"]` + " -aa " +  '%.3f'%radParameters["_aa_"] + \
-                " -lr " + `radParameters["_lr_"]`  + " -lw " + '%.3f'%radParameters["_lw_"] + " -av 0 0 0 " + \
-                " " + octFile + " > " + unfFile + "\n"
+                " -lr " + `radParameters["_lr_"]`  + " -lw " + '%.3f'%radParameters["_lw_"] + " -av 0 0 0 "
+        
+        line1_2 = " "
+        if radParameters.has_key("additional"):
+            for par in radParameters["additional"]:
+                line1_2 += "-%s  "%par
+        
+        line1_3 = octFile + " > " + unfFile + "\n"
+                
     
         line2 = "pfilt -1 -r .6 -x/2 -y/2 " + unfFile + " > " + outputFile + "\n"
         
-        return line0 + line1 + line2
+        return line0 + line1_1 + line1_2 + line1_3 + line2
         
         
     def falsecolorLine(self, projectName, viewName):
@@ -3013,17 +3026,23 @@ class hb_WriteRADAUX(object):
             # print "Fix this for radiation analysis"
             line0 = "rtrace -I "
             
-        line1 = " -h -dp " + str(radParameters["_dp_"]) + \
+        line1_1 = " -h -dp " + str(radParameters["_dp_"]) + \
                 " -ds " + str(radParameters["_ds_"]) + " -dt " + str(radParameters["_dt_"]) + \
                 " -dc " + str(radParameters["_dc_"]) + " -dr " + str(radParameters["_dr_"]) + \
                 " -st " + str(radParameters["_st_"]) + " -lr " + str(radParameters["_lr_"]) + \
                 " -lw " + str(radParameters["_lw_"]) + " -ab " + str(radParameters["_ab_"]) + \
                 " -ad " + str(radParameters["_ad_"]) + " -as " + str(radParameters["_as_"]) + \
-                " -ar " + str(radParameters["_ar_"]) + " -aa " + str(radParameters["_aa_"]) + \
-                " " + octFileName + ".oct < " + ptsFile + \
-                " > " + outputFile + "\n"
+                " -ar " + str(radParameters["_ar_"]) + " -aa " + str(radParameters["_aa_"])
         
-        return line0 + line1
+        line1_2 = " "
+        if radParameters.has_key("additional"):
+            for par in radParameters["additional"]:
+                line1_2 += "-%s  "%par
+            
+        line1_3 = " " + octFileName + ".oct < " + ptsFile + \
+                  " > " + outputFile + "\n"
+        
+        return line0 + line1_1 + line1_2 + line1_3
         
     def testPtsStr(self, testPoint, ptsNormal):
         return  '%.4f'%testPoint.X + '\t' + \
@@ -7407,6 +7426,8 @@ class hb_RADParameters(object):
         "xScale": [1, 2, 6],
         "yScale": [1, 2, 6]
         }
+        
+        self.additionalRadPars = ["_u_", "_bv_", "_dv_", "_w_"]
 
 class hb_DSParameters(object):
     
