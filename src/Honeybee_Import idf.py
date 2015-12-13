@@ -12,10 +12,10 @@ Constructions, schedules and systems will be neglected
 """
 ghenv.Component.Name = "Honeybee_Import idf"
 ghenv.Component.NickName = 'importIdf'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.58\nDEC_13_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.56\nDEC_13_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "4"
 
@@ -150,10 +150,13 @@ def main(idfFile, importEPObjects = False):
     # import libraries if needed
     if importEPObjects:
         EPLibs = hb_GetEPLibs()
-        EPLibs.loadEPConstructionsAndMaterials([idfFile], False)
-        EPLibs.loadEPSchedules([idfFile], False)
+        EPLibs.importEPLibrariesFromFile(idfFile, False, False, True)
     
-    
+        sc.sticky["honeybee_materialLib"].update(EPLibs.getEPMaterials())
+        sc.sticky["honeybee_windowMaterialLib"].update(EPLibs.getEPWindowMaterial())
+        sc.sticky ["honeybee_constructionLib"].update(EPLibs.getEPConstructions())
+        sc.sticky["honeybee_ScheduleLib"].update(EPLibs.getEPSchedule())
+        sc.sticky["honeybee_ScheduleTypeLimitsLib"].update(EPLibs.getEPScheduleTypeLimits())
     
     EPKeys = ["Zone,", "BuildingSurface:Detailed", "FenestrationSurface:Detailed", \
               "Shading:Site:Detailed", "Shading:Building:Detailed", "Shading:Zone:Detailed", \
