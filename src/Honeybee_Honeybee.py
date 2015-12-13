@@ -2192,43 +2192,63 @@ class hb_WriteRAD(object):
             
             return initBatchFileName, batchFiles, fileNames, pcompFileName, RADResultFilesAddress
         
+    def executeBatchFiles(self, batchFileNames, maxPRuns = None, shell = False):
+    
+        """Run a number of batch files in parallel and
+            wait to end of the analysis.
+    
+            Args:
+                batchFileNames: List of batch files
+                maxPRuns: max number of files to be ran in parallel (default = 0)
+                shell: set to True if you do NOT want to see the cmd window while the analysis is runnig
+        """
+    
+        if not maxPRuns : maxPRuns = 1
+        maxPRuns = int(maxPRuns)
+        total = len(batchFileNames)
+        
+        if maxPRuns < 1: maxPRuns = 1
+        if maxPRuns > total: maxPRuns = total
+        
+        running = 0
+        done = False
+        jobs = []
+        pid = 0
+        
+        try:
+            while not done:
+                if running < maxPRuns and pid < total:
+                    # execute the files
+                    jobs.append(subprocess.Popen(batchFileNames[pid].replace("\\", "/") , shell = shell))
+                    pid+=1
+        
+                # count how many jobs are running and how many are done
+                running = 0
+                finished = 0
+                for job in jobs:
+                    if job.poll() is None:
+                        #one job is still running
+                        running += 1
+                    else:
+                        finished += 1
+        
+                if running == maxPRuns:
+                    # wait for half a second
+                    #print "waiting..."
+                    time.sleep(0.5)
+        
+                if finished ==  total:
+                    done = True
+        
+        except Exception, e:
+            print "Something went wrong: %s"%str(e) 
     
     def runBatchFiles(self, initBatchFileName, batchFileNames, fileNames, \
                       pcompBatchFile, waitingTime, runInBackground = False):
         
-        def isTheStudyOver(fileNames):
-            while True:
-                cmd = 'WMIC PROCESS get Commandline' #,Processid'
-                proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-                cmdCount = 0
-                for line in proc.stdout:
-                    if (line.strip().startswith("C:\\Windows\\system32\\cmd") or line.strip().startswith("cmd")) \
-                        and line.strip().endswith(".bat"):
-                        fileName = line.strip().split(" ")[-1].split("/")[-1]
-                        # I should check the file names and make sure they are the right files
-                        if fileName in fileNames:
-                            cmdCount += 1
-                time.sleep(0.2)
-                if cmdCount == 0:
-                    return
+        self.executeBatchFiles([initBatchFileName], maxPRuns = 1, shell = runInBackground)
+        self.executeBatchFiles(batchFileNames, maxPRuns = len(batchFileNames), shell = runInBackground)
         
-        def executeBatchFiles(batchFileNames, waitingTime, runInBackground):
-            cmd = ''
-            if not runInBackground: cmd = 'start cmd /c '
-            
-            for batchFileName in batchFileNames:
-                batchFileName = batchFileName.replace("\\", "/")
-                p = subprocess.Popen(cmd + batchFileName , shell=True)
-                time.sleep(waitingTime)
-
-        if runInBackground:
-            subprocess.Popen(initBatchFileName, shell=True)
-        else:
-            os.system(initBatchFileName)
-            
-        time.sleep(waitingTime)
-        executeBatchFiles(batchFileNames, waitingTime, runInBackground)
-        isTheStudyOver(fileNames)
         if pcompBatchFile!="":
             os.system(pcompBatchFile) # put all the files together
         
