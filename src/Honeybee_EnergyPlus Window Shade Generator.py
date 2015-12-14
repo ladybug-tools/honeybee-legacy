@@ -62,7 +62,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Window Shade Generator"
 ghenv.Component.NickName = 'EPWindowShades'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.58\nDEC_13_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -122,7 +122,7 @@ def checkTheInputs(zoneNames, windowNames, windowSrfs, isZone):
     checkData4 = True
     if blindsSchedule_ == None:
         schedule = "ALWAYSON"
-        print "No blinds schedule has been connected.  It will be assumed that the blinds are always drawn"
+        print "No blinds schedule has been connected.  It will be assumed that the blinds are drawn when the setpoints are met."
     else:
         schedule= blindsSchedule_.upper()
         HBScheduleList = sc.sticky["honeybee_ScheduleLib"].keys()
@@ -153,8 +153,8 @@ def checkTheInputs(zoneNames, windowNames, windowSrfs, isZone):
     
     allData = []
     allData.append(makePyTree(zoneData1_))
-    allData.append(makePyTree(zoneData2_))
-    allData.append(makePyTree(zoneData3_))
+    #allData.append(makePyTree(zoneData2_))
+    #allData.append(makePyTree(zoneData3_))
     
     #Test to see if the data lists have a headers on them, which is necessary to match the data to a zone or window.  If there's no header, the data cannot be coordinated with this component.
     checkData3 = True
@@ -213,9 +213,6 @@ def checkTheInputs(zoneNames, windowNames, windowSrfs, isZone):
                         if str(winNm) == str(windowName.upper()):
                             alignedDataTree[inputDataTreeCount].append(allData[inputDataTreeCount][listCount])
                             srfData = True
-                
-                if zoneData == False and srfData == False and alignedDataTree != [[], [], []]:
-                    print "A window was not matched with its respective zone/surface data."
     
     if checkData2 == True and checkData3 == True and checkData4 == True and checkData5 == True: checkData = True
     else: checkData = False
@@ -243,110 +240,170 @@ def analyzeGlz(glzSrf, distBetween, numOfShds, horOrVertical, lb_visualization, 
         minZPt = rc.Geometry.Point3d(minZPt.X, minZPt.Y, minZPt.Z)
         maxZPt = bbox.Corner(False, True, False)
         maxZPt = rc.Geometry.Point3d(maxZPt.X, maxZPt.Y, maxZPt.Z - sc.doc.ModelAbsoluteTolerance)
-        centerPt = bbox.Center 
+        minYPt = bbox.Corner(True, True, True)
+        minYPt = rc.Geometry.Point3d(minYPt.X, minYPt.Y, minYPt.Z)
+        maxYPt = bbox.Corner(True, False, True)
+        maxYPt = rc.Geometry.Point3d(maxYPt.X, maxYPt.Y, maxYPt.Z - sc.doc.ModelAbsoluteTolerance)
+        
         #glazing hieghts
         glzHeight = minZPt.DistanceTo(maxZPt)
+        glzWidth = minYPt.DistanceTo(maxYPt)
         
         # find number of shadings
-        try:
-            numOfShd = int(numOfShds)
-            shadingHeight = glzHeight/numOfShd
-            shadingRemainder = shadingHeight
-        except:
-            shadingHeight = distBetween
-            shadingRemainder = (((glzHeight/distBetween) - math.floor(glzHeight/distBetween))*distBetween)
-            if shadingRemainder == 0:
+        if glzHeight == sc.doc.ModelAbsoluteTolerance:
+            try:
+                numOfShd = int(numOfShds)
+                shadingHeight = glzWidth/numOfShd
                 shadingRemainder = shadingHeight
+            except:
+                shadingHeight = distBetween
+                shadingRemainder = (((glzWidth/distBetween) - math.floor(glzWidth/distBetween))*distBetween)
+                if shadingRemainder == 0:
+                    shadingRemainder = shadingHeight
+        else:
+            try:
+                numOfShd = int(numOfShds)
+                shadingHeight = glzHeight/numOfShd
+                shadingRemainder = shadingHeight
+            except:
+                shadingHeight = distBetween
+                shadingRemainder = (((glzHeight/distBetween) - math.floor(glzHeight/distBetween))*distBetween)
+                if shadingRemainder == 0:
+                    shadingRemainder = shadingHeight
         
         # find shading base planes
         planeOrigins = []
         planes = []
-        X, Y, z = minZPt.X, minZPt.Y, minZPt.Z
-        zHeights = rs.frange(minZPt.Z + shadingRemainder, maxZPt.Z + 0.5*sc.doc.ModelAbsoluteTolerance, shadingHeight)
         try:
-            for Z in zHeights:
-                planes.append(rc.Geometry.Plane(rc.Geometry.Point3d(X, Y, Z), rc.Geometry.Vector3d.ZAxis))
+            #A surface that is not perfectly horizontal.
+            zHeights = rs.frange(minZPt.Z + shadingRemainder, maxZPt.Z + 0.5*sc.doc.ModelAbsoluteTolerance, shadingHeight)
+            X, Y, z = minZPt.X, minZPt.Y, minZPt.Z
+            try:
+                for Z in zHeights:
+                    planes.append(rc.Geometry.Plane(rc.Geometry.Point3d(X, Y, Z), rc.Geometry.Vector3d.ZAxis))
+            except:
+                # single shading
+                planes.append(rc.Geometry.Plane(rc.Geometry.Point3d(maxZPt), rc.Geometry.Vector3d.ZAxis))
+            # sort the planes
+            sortedPlanes = sorted(planes, key=lambda a: a.Origin.Z)
         except:
-            # single shading
-            planes.append(rc.Geometry.Plane(rc.Geometry.Point3d(maxZPt), rc.Geometry.Vector3d.ZAxis))
-        # sort the planes
-        sortedPlanes = sorted(planes, key=lambda a: a.Origin.Z)
+            # Perfectly horizontal surface that requires planes sorted by Y instead of Z.
+            yHeights = rs.frange(minYPt.Y + shadingRemainder, maxYPt.Y + 0.5*sc.doc.ModelAbsoluteTolerance, shadingHeight)
+            X, y, Z = minYPt.X, minYPt.Y, minYPt.Z
+            try:
+                for Y in yHeights:
+                    planes.append(rc.Geometry.Plane(rc.Geometry.Point3d(X, Y, Z), rc.Geometry.Vector3d.YAxis))
+            except:
+                # single shading
+                planes.append(rc.Geometry.Plane(rc.Geometry.Point3d(maxYPt), rc.Geometry.Vector3d.YAxis))
+            # sort the planes
+            sortedPlanes = sorted(planes, key=lambda a: a.Origin.Y)
     
     elif horOrVertical == False:
         # Vertical
         # Define a vector to be used to generate the planes
-        planeVec = rc.Geometry.Vector3d(normalVector.X, normalVector.Y, 0)
-        planeVec.Rotate(1.570796, rc.Geometry.Vector3d.ZAxis)
-        
-        
-        #Define a bounding box for use in calculating the number of shades to generate
-        minXYPt = bbox.Corner(True, True, True)
-        minXYPt = rc.Geometry.Point3d(minXYPt.X, minXYPt.Y, minXYPt.Z)
-        maxXYPt = bbox.Corner(False, False, True)
-        maxXYPt = rc.Geometry.Point3d(maxXYPt.X, maxXYPt.Y, maxXYPt.Z)
-        centerPt = bbox.Center
-        
-        #Test to be sure that the values are parallel to the correct vector.
-        testVec = rc.Geometry.Vector3d.Subtract(rc.Geometry.Vector3d(minXYPt.X, minXYPt.Y, minXYPt.Z), rc.Geometry.Vector3d(maxXYPt.X, maxXYPt.Y, maxXYPt.Z))
-        if testVec.IsParallelTo(planeVec) == 0:
-            minXYPt = bbox.Corner(False, True, True)
-            minXYPt = rc.Geometry.Point3d(minXYPt.X, minXYPt.Y, minXYPt.Z)
-            maxXYPt = bbox.Corner(True, False, True)
-            maxXYPt = rc.Geometry.Point3d(maxXYPt.X, maxXYPt.Y, maxXYPt.Z)
-        
-        #Adjust the points to ensure the creation of the correct number of shades starting from the northernmost side of the window.
-        tolVec = rc.Geometry.Vector3d.Subtract(rc.Geometry.Vector3d(minXYPt.X, minXYPt.Y, minXYPt.Z), rc.Geometry.Vector3d(maxXYPt.X, maxXYPt.Y, maxXYPt.Z))
-        tolVec.Unitize()
-        tolVec = rc.Geometry.Vector3d.Multiply(sc.doc.ModelAbsoluteTolerance*2, tolVec)
-        
-        if tolVec.X > 0 and  tolVec.Y > 0:
-            tolVec = rc.Geometry.Vector3d.Multiply(1, tolVec)
-            norOrient = False
-        if tolVec.X < 0 and  tolVec.Y > 0:
-            tolVec = rc.Geometry.Vector3d.Multiply(1, tolVec)
-            norOrient = False
-        if tolVec.X < 0 and  tolVec.Y < 0:
-            tolVec = rc.Geometry.Vector3d.Multiply(-1, tolVec)
-            norOrient = True
-        else:
-            tolVec = rc.Geometry.Vector3d.Multiply(-1, tolVec)
-            norOrient = True
-        
-        maxXYPt = rc.Geometry.Point3d.Subtract(maxXYPt, tolVec)
-        minXYPt = rc.Geometry.Point3d.Subtract(minXYPt, tolVec)
-        
-        #glazing distance
-        glzHeight = minXYPt.DistanceTo(maxXYPt)
-        
-        # find number of shadings
-        try:
-            numOfShd = int(numOfShds)
-            shadingHeight = glzHeight/numOfShd
-            shadingRemainder = shadingHeight
-        except:
-            shadingHeight = distBetween
-            shadingRemainder = (((glzHeight/distBetween) - math.floor(glzHeight/distBetween))*distBetween)
-            if shadingRemainder == 0:
+        if normalVector.X == 0 and normalVector.Y == 0:
+            # Perfectly horizontal surface that requires planes sorted by X instead of Z.
+            minXPt = bbox.Corner(True, True, True)
+            minXPt = rc.Geometry.Point3d(minXPt.X, minXPt.Y, minXPt.Z)
+            maxXPt = bbox.Corner(False, True, True)
+            maxXPt = rc.Geometry.Point3d(maxXPt.X, maxXPt.Y, maxXPt.Z - sc.doc.ModelAbsoluteTolerance)
+            glzWidth = minXPt.DistanceTo(maxXPt)
+            
+            try:
+                numOfShd = int(numOfShds)
+                shadingHeight = glzWidth/numOfShd
                 shadingRemainder = shadingHeight
-        
-        # find shading base planes
-        planeOrigins = []
-        planes = []
-        
-        pointCurve = rc.Geometry.Curve.CreateControlPointCurve([maxXYPt, minXYPt])
-        divisionParams = pointCurve.DivideByLength(shadingHeight, True)
-        divisionPoints = []
-        for param in divisionParams:
-            divisionPoints.append(pointCurve.PointAt(param))
-        
-        planePoints = divisionPoints
-        try:
-            for point in planePoints:
-                planes.append(rc.Geometry.Plane(point, planeVec))
-        except:
-            # single shading
-            planes.append(rc.Geometry.Plane(rc.Geometry.Point3d(minXYPt), planeVec))
-        sortedPlanes = planes
+            except:
+                shadingHeight = distBetween
+                shadingRemainder = (((glzWidth/distBetween) - math.floor(glzWidth/distBetween))*distBetween)
+                if shadingRemainder == 0:
+                    shadingRemainder = shadingHeight
+            
+            planeOrigins = []
+            planes = []
+            
+            xHeights = rs.frange(minXPt.X + shadingRemainder, maxXPt.X + 0.5*sc.doc.ModelAbsoluteTolerance, shadingHeight)
+            x, Y, Z = minXPt.X, minXPt.Y, minXPt.Z
+            try:
+                for X in xHeights:
+                    planes.append(rc.Geometry.Plane(rc.Geometry.Point3d(X, Y, Z), rc.Geometry.Vector3d.XAxis))
+            except:
+                # single shading
+                planes.append(rc.Geometry.Plane(rc.Geometry.Point3d(maxXPt), rc.Geometry.Vector3d.XAxis))
+            # sort the planes
+            sortedPlanes = sorted(planes, key=lambda a: a.Origin.X)
+        else:
+            planeVec = rc.Geometry.Vector3d(normalVector.X, normalVector.Y, 0)
+            planeVec.Rotate(1.570796, rc.Geometry.Vector3d.ZAxis)
+            
+            #Define a bounding box for use in calculating the number of shades to generate
+            minXYPt = bbox.Corner(True, True, True)
+            minXYPt = rc.Geometry.Point3d(minXYPt.X, minXYPt.Y, minXYPt.Z)
+            maxXYPt = bbox.Corner(False, False, True)
+            maxXYPt = rc.Geometry.Point3d(maxXYPt.X, maxXYPt.Y, maxXYPt.Z)
+            
+            #Test to be sure that the values are parallel to the correct vector.
+            testVec = rc.Geometry.Vector3d.Subtract(rc.Geometry.Vector3d(minXYPt.X, minXYPt.Y, minXYPt.Z), rc.Geometry.Vector3d(maxXYPt.X, maxXYPt.Y, maxXYPt.Z))
+            if testVec.IsParallelTo(planeVec) == 0:
+                minXYPt = bbox.Corner(False, True, True)
+                minXYPt = rc.Geometry.Point3d(minXYPt.X, minXYPt.Y, minXYPt.Z)
+                maxXYPt = bbox.Corner(True, False, True)
+                maxXYPt = rc.Geometry.Point3d(maxXYPt.X, maxXYPt.Y, maxXYPt.Z)
+            
+            #Adjust the points to ensure the creation of the correct number of shades starting from the northernmost side of the window.
+            tolVec = rc.Geometry.Vector3d.Subtract(rc.Geometry.Vector3d(minXYPt.X, minXYPt.Y, minXYPt.Z), rc.Geometry.Vector3d(maxXYPt.X, maxXYPt.Y, maxXYPt.Z))
+            tolVec.Unitize()
+            tolVec = rc.Geometry.Vector3d.Multiply(sc.doc.ModelAbsoluteTolerance*2, tolVec)
+            
+            if tolVec.X > 0 and  tolVec.Y > 0:
+                tolVec = rc.Geometry.Vector3d.Multiply(1, tolVec)
+                norOrient = False
+            if tolVec.X < 0 and  tolVec.Y > 0:
+                tolVec = rc.Geometry.Vector3d.Multiply(1, tolVec)
+                norOrient = False
+            if tolVec.X < 0 and  tolVec.Y < 0:
+                tolVec = rc.Geometry.Vector3d.Multiply(-1, tolVec)
+                norOrient = True
+            else:
+                tolVec = rc.Geometry.Vector3d.Multiply(-1, tolVec)
+                norOrient = True
+            
+            maxXYPt = rc.Geometry.Point3d.Subtract(maxXYPt, tolVec)
+            minXYPt = rc.Geometry.Point3d.Subtract(minXYPt, tolVec)
+            
+            #glazing distance
+            glzHeight = minXYPt.DistanceTo(maxXYPt)
+            
+            # find number of shadings
+            try:
+                numOfShd = int(numOfShds)
+                shadingHeight = glzHeight/numOfShd
+                shadingRemainder = shadingHeight
+            except:
+                shadingHeight = distBetween
+                shadingRemainder = (((glzHeight/distBetween) - math.floor(glzHeight/distBetween))*distBetween)
+                if shadingRemainder == 0:
+                    shadingRemainder = shadingHeight
+            
+            # find shading base planes
+            planeOrigins = []
+            planes = []
+            
+            pointCurve = rc.Geometry.Curve.CreateControlPointCurve([maxXYPt, minXYPt])
+            divisionParams = pointCurve.DivideByLength(shadingHeight, True)
+            divisionPoints = []
+            for param in divisionParams:
+                divisionPoints.append(pointCurve.PointAt(param))
+            
+            planePoints = divisionPoints
+            try:
+                for point in planePoints:
+                    planes.append(rc.Geometry.Plane(point, planeVec))
+            except:
+                # single shading
+                planes.append(rc.Geometry.Plane(rc.Geometry.Point3d(minXYPt), planeVec))
+            sortedPlanes = planes
     
     
     return sortedPlanes, shadingHeight
@@ -398,8 +455,11 @@ def makeShade(_glzSrf, depth, numShds, distBtwn):
             for an in initAngles: angles.append(an-(360/(2*len(valueList))))
             angles.append(360)
             for angleCount in range(len(angles)-1):
-                if angles[angleCount] <= (getAngle2North(normalVector))%360 <= angles[angleCount +1]:
-                    targetValue = valueList[angleCount%len(valueList)]
+                try:
+                    if angles[angleCount] <= (getAngle2North(normalVector))%360 <= angles[angleCount +1]:
+                        targetValue = valueList[angleCount%len(valueList)]
+                except:
+                    targetValue = valueList[0]
             value = targetValue
         return value
     
@@ -433,30 +493,42 @@ def makeShade(_glzSrf, depth, numShds, distBtwn):
         try: intCrvs.append(rc.Geometry.Brep.CreateContourCurves(_glzSrf, plane)[0])
         except: print "One intersection failed."
     
-    if normalVector != rc.Geometry.Vector3d.ZAxis:
-        normalVectorPerp = rc.Geometry.Vector3d(normalVector.X, normalVector.Y, 0)
+    if normalVector != rc.Geometry.Vector3d.ZAxis: normalVectorPerp = rc.Geometry.Vector3d(normalVector.X, normalVector.Y, 0)
+    else: normalVectorPerp = rc.Geometry.Vector3d(0, 0, normalVector.Z)
     angleFromNorm = math.degrees(rc.Geometry.Vector3d.VectorAngle(normalVectorPerp, normalVector))
     if normalVector.Z < 0: angleFromNorm = angleFromNorm*(-1)
     
     #If the user has set the shades to generate on the interior, flip the normal vector.
-    if interiorOrExter == True:
-        normalVectorPerp.Reverse()
+    if interiorOrExter == True: normalVectorPerp.Reverse()
     else: interiorOrExter = False
     
     normalVecOrignal = rc.Geometry.Vector3d(normalVectorPerp)
     
     #If a shdAngle is provided, use it to rotate the planes by that angle
     if shdAngle != None:
-        if horOrVertical == True or horOrVertical == None:
-            horOrVertical = True
-            planeVec = rc.Geometry.Vector3d(normalVector.X, normalVector.Y, 0)
-            planeVec.Rotate(1.570796, rc.Geometry.Vector3d.ZAxis)
-            normalVectorPerp.Rotate((shdAngle*0.01745329), planeVec)
-        elif horOrVertical == False:
+        if normalVectorPerp.X == 0 and normalVectorPerp.Y == 0:
             planeVec = rc.Geometry.Vector3d.ZAxis
-            if getAngle2North(normalVectorPerp) < 180:
+            if horOrVertical == True or horOrVertical == None:
+                horOrVertical = True
+                planeVec.Rotate(1.570796, rc.Geometry.Vector3d.YAxis)
                 normalVectorPerp.Rotate((shdAngle*0.01745329), planeVec)
-            else: normalVectorPerp.Rotate((shdAngle*-0.01745329), planeVec)
+            elif horOrVertical == False:
+                planeVec.Rotate(1.570796, rc.Geometry.Vector3d.XAxis)
+                normalVectorPerp.Rotate((shdAngle*0.01745329), planeVec)
+        else:
+            if horOrVertical == True or horOrVertical == None:
+                horOrVertical = True
+                planeVec = rc.Geometry.Vector3d(normalVector.X, normalVector.Y, 0)
+                planeVec.Rotate(1.570796, rc.Geometry.Vector3d.ZAxis)
+                normalVectorPerp.Rotate((shdAngle*0.01745329), planeVec)
+            elif horOrVertical == False:
+                planeVec = rc.Geometry.Vector3d.ZAxis
+                try:
+                    if getAngle2North(normalVectorPerp) < 180:
+                        normalVectorPerp.Rotate((shdAngle*0.01745329), planeVec)
+                    else: normalVectorPerp.Rotate((shdAngle*-0.01745329), planeVec)
+                except:
+                    normalVectorPerp.Rotate((shdAngle*0.01745329), planeVec)
     else:
         shdAngle = 0
     
@@ -494,7 +566,6 @@ def makeShade(_glzSrf, depth, numShds, distBtwn):
     for shdSrf in shadingSurfaces:
         shdSrf.Transform(blindsTransform)
     
-    
     #Get the EnergyPlus distance to glass.
     EPDistToGlass = distToGlass + (depth)*(0.5)*math.cos(math.radians(EPshdAngle))
     if EPDistToGlass < 0.01: EPDistToGlass = 0.01
@@ -509,12 +580,12 @@ def makeShade(_glzSrf, depth, numShds, distBtwn):
         assignEPCheckInit = False
         warning = "Note that E+ does not like shading depths greater than 1. HBObjWShades will not be generated.  shadeBreps will still be produced and you can account for these shades using a 'Honeybee_EP Context Surfaces' component."
         print warning
-        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Remark, warning)
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
     if shadingHeight > 1:
         assignEPCheckInit = False
         warning = "Note that E+ does not like distances between shades that are greater than 1. HBObjWShades will not be generated.  shadeBreps will still be produced and you can account for these shades using a 'Honeybee_EP Context Surfaces' component."
         print warning
-        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Remark, warning)
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
     
     
     return shadingSurfaces, EPSlatOrient, depth, shadingHeight, EPshdAngle, EPDistToGlass, EPinteriorOrExter, assignEPCheckInit
@@ -567,7 +638,7 @@ def createEPBlindMat(blindsMaterial, EPSlatOrient, depth, shadingHeight, EPshdAn
 
 def createEPBlindControl(blindsMaterial, schedule, EPinteriorOrExter, name):
     if schedule == 'ALWAYSON':
-        schedCntrlType = 'ALWAYSON'
+        schedCntrlType = 'OnIfHighZoneAirTemperature'
         schedCntrl = 'No'
         schedName = ''
     elif schedule.upper().endswith('CSV'):
@@ -579,6 +650,14 @@ def createEPBlindControl(blindsMaterial, schedule, EPinteriorOrExter, name):
         schedName = schedule
         schedCntrlType = 'OnIfScheduleAllows'
         schedCntrl = 'Yes'
+        
+    if blindsSetpoint_ == None:
+        
+        setPoint = ''
+    
+    else:
+         setPoint = blindsSetpoint_
+        
     
     EPBlindControl = 'WindowProperty:ShadingControl,\n' + \
         '\t' + 'BlindCntrlFor_' + name +',            !- Name\n' + \
@@ -586,7 +665,7 @@ def createEPBlindControl(blindsMaterial, schedule, EPinteriorOrExter, name):
         '\t' + ',                        !- Construction with Shading Name\n' + \
         '\t' + schedCntrlType + ',                !- Shading Control Type\n' + \
         '\t' + schedName + ',                        !- Schedule Name\n' + \
-        '\t' + ',                        !- Setpoint {W/m2, W or deg C}\n' + \
+        '\t' + setPoint+ ',                        !- Setpoint {W/m2, W or deg C}\n' + \
         '\t' + schedCntrl + ',                      !- Shading Control Is Scheduled\n' + \
         '\t' + 'No,                      !- Glare Control Is Active\n' + \
         '\t' + blindsMaterial[0] + "_" + name + ',           !- Shading Device Material Name\n' + \
@@ -644,7 +723,6 @@ def main():
                 isZoneList.append(0)
                 warning = "Note that, when using this component for individual surfaces, you should make sure that the direction of the surface is facing the outdoors in order to be sure that your shades are previewing correctly."
                 print warning
-                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Remark, warning)
                 
                 if not hasattr(object, 'type'):
                     # find the type based on 
@@ -658,12 +736,12 @@ def main():
                 if object.hasChild:
                     if object.BC != 'OUTDOORS' and object.BC != 'Outdoors':
                         assignEPCheck = False
-                        warning = "The boundary condition of the input object must be outdoors.  E+ cannot create shades for intdoor windows."
+                        warning = "The boundary condition of the input object must be outdoors.  E+ cannot create shades for indoor windows."
                         print warning
                         ghenv.Component.AddRuntimeMessage(w, warning)
                     elif object.isPlanar == False:
                         assignEPCheck = False
-                        warning = "The surface must not be curved.  With the way that we mesh curved surfaces for E+, the program would just freak out with blinds."
+                        warning = "The surface must not be curved.  With the way that honeybee meshes curved surfaces for E+, the program would just freak out."
                         print warning
                         ghenv.Component.AddRuntimeMessage(w, warning)
                     else:
