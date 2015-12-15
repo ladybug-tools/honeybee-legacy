@@ -38,7 +38,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Daysim Occupancy Generator"
 ghenv.Component.NickName = 'occupancyGenerator'
-ghenv.Component.Message = 'VER 0.0.58\nDEC_01_2015'
+ghenv.Component.Message = 'VER 0.0.58\nDEC_15_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -139,7 +139,7 @@ def main(analysisPeriod, dailyOffHours, weekendDays, fileName):
             
             occ = 0
             # if day is not a weekend
-            if not int(DOY%7) + 2 in weekendDays:
+            if not int(DOY%7) + 1 in weekendDays:
                 # check if the hour is in occupied hours
                 if HOY in occHours:
                     # check if the hour is the hour off
