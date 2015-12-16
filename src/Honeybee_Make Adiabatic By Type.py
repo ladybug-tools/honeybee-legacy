@@ -28,7 +28,7 @@ Provided by Honeybee 0.0.58
 
     Args:
         _HBZones: HBZones for which some surface types will be turned to adiabatic.
-        walls_: Set to 'True' to have this surface type turned adiabatic.
+        walls_: Set to 'True' to have this surface type turned adiabatic. This input can also accept lists of boolean values and will assign different adiabatic values based on cardinal direction, starting with north and moving counter-clockwise.
         undergroundWalls_: Set to 'True' to have this surface type turned adiabatic.
         roofs_: Set to 'True' to have this surface type turned adiabatic.
         undergroundCeilings_: Set to 'True' to have this surface type turned adiabatic.
@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Make Adiabatic By Type"
 ghenv.Component.NickName = 'makeAdiabaticByType'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.58\nDEC_16_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -58,6 +58,7 @@ except: pass
 import scriptcontext as sc
 import uuid
 import Grasshopper.Kernel as gh
+import rhinoscriptsyntax as rs
 
 def main(HBZones):
     
@@ -83,9 +84,10 @@ def main(HBZones):
     hb_hive = sc.sticky["honeybee_Hive"]()
     HBObjectsFromHive = hb_hive.callFromHoneybeeHive(HBZones)
     
+    
+    #Get the types to be made adiabatic.
     types = []
     intTypes = []
-    if walls_: types.append(0)
     if undergroundWalls_: types.append(0.5)
     if roofs_: types.append(1)
     if undergroundCeilings_: types.append(1.5)
@@ -103,14 +105,34 @@ def main(HBZones):
     if airWalls_: intTypes.append(4)
     if ceilings_: intTypes.append(3)
     
+    #See if the wall properties are being specified based on orientation.
+    angles = []
+    if len(walls_) == 0: pass
+    elif len(walls_) == 1: types.append(0)
+    else:
+        types.append(0)
+        initAngles = rs.frange(0, 360, 360/len(walls_))
+        for an in initAngles: angles.append(an-(360/(2*len(walls_))))
+        angles.append(360)
+    
+    
     for HBO in HBObjectsFromHive:
         
         for HBS in HBO.surfaces:
             if HBS.BC != 'Surface':
                 if HBS.type in types:
-                    HBS.BC = "Adiabatic"
-                    HBS.sunExposure = "NoSun"
-                    HBS.windExposure = "NoWind"
+                    if HBS.type == 0 and len(walls_) > 1:
+                        for angleCount in range(len(angles)-1):
+                            if angles[angleCount]+(0.5*sc.doc.ModelAngleToleranceDegrees) <= HBS.angle2North%360 <= angles[angleCount +1]+(0.5*sc.doc.ModelAngleToleranceDegrees):
+                                targetAdiabatic = walls_[angleCount%len(walls_)]
+                        if targetAdiabatic == True:
+                            HBS.BC = "Adiabatic"
+                            HBS.sunExposure = "NoSun"
+                            HBS.windExposure = "NoWind"
+                    else:
+                        HBS.BC = "Adiabatic"
+                        HBS.sunExposure = "NoSun"
+                        HBS.windExposure = "NoWind"
                 if HBS.hasChild and 5 in types:
                     for childSrf in HBS.childSrfs:
                         childSrf.BC = "Adiabatic"
