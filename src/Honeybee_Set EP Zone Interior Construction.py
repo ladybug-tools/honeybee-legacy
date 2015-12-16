@@ -31,7 +31,8 @@ Provided by Honeybee 0.0.58
         _HBZone: Honeybee zone
         intWallEPConstruction_: Optional new construction for interior walls
         intWindowEPConstruction_: Optional new construction for interior windows 
-        intFloorEPConstruction_: Optional new construction for interior floors and ceilings
+        intFloorEPConstruction_: Optional new construction for interior floors
+        intCeilingEPConstruction_: Optional new construction for interior ceilings.  If no value is connected here but a value is connected for interior floors, the intCeiling construction will be assumed to be the same as the intFloor construction above.
     Returns:
         modifiedHBZone:  Honeybee zone with updated constructions
 
@@ -39,7 +40,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Set EP Zone Interior Construction"
 ghenv.Component.NickName = 'setEPZoneIntCnstr'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.58\nDEC_16_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -80,7 +81,7 @@ def checkAirWalls(construction, srf):
         srf.setType(4, isUserInput= True)
         updateZoneMixing(srf, srf.parent, srf.BCObject.parent)
 
-def main(HBZone, wallEPCnst, windowEPCnst, flrEPCnst):
+def main(HBZone, wallEPCnst, windowEPCnst, flrEPCnst, cielConstr):
     
     # Make sure Honeybee is flying
     if not sc.sticky.has_key('honeybee_release'):
@@ -122,11 +123,15 @@ def main(HBZone, wallEPCnst, windowEPCnst, flrEPCnst):
                     hb_EPObjectsAux.assignEPConstruction(srf, wallEPCnst, ghenv.Component)
                     hb_EPObjectsAux.assignEPConstruction(srf.BCObject, wallEPCnst, ghenv.Component)
                     checkAirWalls(wallEPCnst, srf)
+                elif srf.type == 3 and cielConstr!=None:
+                    hb_EPObjectsAux.assignEPConstruction(srf, cielConstr, ghenv.Component)
+                    hb_EPObjectsAux.assignEPConstruction(srf.BCObject, cielConstr, ghenv.Component)
+                    checkAirWalls(cielConstr, srf)
                 elif (srf.type == 2 or srf.type == 3) and flrEPCnst!=None:
                     hb_EPObjectsAux.assignEPConstruction(srf, flrEPCnst, ghenv.Component)
                     hb_EPObjectsAux.assignEPConstruction(srf.BCObject, flrEPCnst, ghenv.Component)
                     checkAirWalls(flrEPCnst, srf)
-                    
+        
         # add zones to dictionary
         HBZones  = hb_hive.addToHoneybeeHive([HBZoneObject], ghenv.Component.InstanceGuid.ToString())
         
@@ -138,5 +143,5 @@ def main(HBZone, wallEPCnst, windowEPCnst, flrEPCnst):
 
 if _HBZone:
     result = main(_HBZone, intWallEPConstruction_, intWindowEPConstruction_, \
-            intFloorEPConstruction_)
+            intFloorEPConstruction_, intCeilingEPConstruction_)
     if result!=-1: modifiedHBZone = result
