@@ -110,27 +110,29 @@ def main(HBZone, wallEPCnst, windowEPCnst, flrEPCnst, cielConstr):
 
     if HBZoneObject != None:
         for srf in HBZoneObject.surfaces:
-            if srf.BCObject.name != "": # only internal surfaces
-                print srf.BCObject.name
-                print srf.BCObject
+            if srf.BC.lower() == "surface" or srf.BC.lower() == "adiabatic": # only internal surfaces
                 if windowEPCnst!=None and srf.hasChild:
                     for childSrf in srf.childSrfs:
                         hb_EPObjectsAux.assignEPConstruction(childSrf, windowEPCnst, ghenv.Component)
-                        hb_EPObjectsAux.assignEPConstruction(childSrf.BCObject, windowEPCnst, ghenv.Component)
-                        if windowEPCnst.ToUpper() == "AIR WALL":
-                            updateZoneMixing(childSrf, srf.parent, srf.BCObject.parent)
+                        if srf.BC.lower() == "surface":
+                            hb_EPObjectsAux.assignEPConstruction(childSrf.BCObject, windowEPCnst, ghenv.Component)
+                            if windowEPCnst.ToUpper() == "AIR WALL":
+                                updateZoneMixing(childSrf, srf.parent, srf.BCObject.parent)
                 if srf.type == 0 and wallEPCnst!=None:
                     hb_EPObjectsAux.assignEPConstruction(srf, wallEPCnst, ghenv.Component)
-                    hb_EPObjectsAux.assignEPConstruction(srf.BCObject, wallEPCnst, ghenv.Component)
-                    checkAirWalls(wallEPCnst, srf)
+                    if srf.BC.lower() == "surface":
+                        hb_EPObjectsAux.assignEPConstruction(srf.BCObject, wallEPCnst, ghenv.Component)
+                        checkAirWalls(wallEPCnst, srf)
                 elif srf.type == 3 and cielConstr!=None:
                     hb_EPObjectsAux.assignEPConstruction(srf, cielConstr, ghenv.Component)
-                    hb_EPObjectsAux.assignEPConstruction(srf.BCObject, cielConstr, ghenv.Component)
-                    checkAirWalls(cielConstr, srf)
+                    if srf.BC.lower() == "surface":
+                        hb_EPObjectsAux.assignEPConstruction(srf.BCObject, cielConstr, ghenv.Component)
+                        checkAirWalls(cielConstr, srf)
                 elif (srf.type == 2 or srf.type == 3) and flrEPCnst!=None:
                     hb_EPObjectsAux.assignEPConstruction(srf, flrEPCnst, ghenv.Component)
-                    hb_EPObjectsAux.assignEPConstruction(srf.BCObject, flrEPCnst, ghenv.Component)
-                    checkAirWalls(flrEPCnst, srf)
+                    if srf.BC.lower() == "surface":
+                        hb_EPObjectsAux.assignEPConstruction(srf.BCObject, flrEPCnst, ghenv.Component)
+                        checkAirWalls(flrEPCnst, srf)
         
         # add zones to dictionary
         HBZones  = hb_hive.addToHoneybeeHive([HBZoneObject], ghenv.Component.InstanceGuid.ToString())
