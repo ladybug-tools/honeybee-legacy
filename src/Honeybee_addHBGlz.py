@@ -48,7 +48,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_addHBGlz'
 ghenv.Component.NickName = 'addHBGlz'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_08_2015'
+ghenv.Component.Message = 'VER 0.0.58\nDEC_17_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.57\nNOV_01_2015
@@ -97,16 +97,21 @@ def main(HBObject, childSurfaces, childSurfacesName, EPConstructions, RADMateria
                             warningMsg = "Can't find " + EPConstruction + " in EP Construction Library.\n" + \
                                         "Add the construction to the library and try again."
                             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
-                            return
+                            return 
                     else:
-                        # it is a full string
+                        # it is a full string.
+                        if EPConstruction.startswith('WindowMaterial:'):
+                            warningMsg = "Your window construction, " + EPConstruction.split('\n')[1].split(',')[0] + ", is a window material and not a full window construction.\n" + \
+                                        "Pass this window material through a 'Honeybee_EnergyPlus Construction' component cand connect the construction to this one."
+                            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
+                            return 
                         added, EPConstruction = hb_EPObjectsAux.addEPObjectToLib(EPConstruction, overwrite = True)
-        
+                        
                         if not added:
                             msg = EPConstruction + " is not added to the project library!"
                             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
                             print msg
-                            return
+                            return 
                     
                     try:
                         HBFenSrf.setEPConstruction(EPConstruction)
