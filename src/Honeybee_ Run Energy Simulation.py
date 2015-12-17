@@ -62,7 +62,7 @@ Provided by Honeybee 0.0.58
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.58\nDEC_17_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_28_2015
@@ -2144,13 +2144,13 @@ if _writeIdf == True and _epwFile and _HBZones and _HBZones[0]!=None:
                     print line
                     if "**  Fatal  **" in line:
                         warning = "The simulation has failed because of this fatal error: \n" + str(line)
-                        w = gh.GH_RuntimeMessageLevel.Warning
+                        w = gh.GH_RuntimeMessageLevel.Error
                         ghenv.Component.AddRuntimeMessage(w, warning)
                         resultFileAddress = None
                     elif "** Severe  **" in line:
                         comment = "The simulation has not run correctly because of this severe error: \n" + str(line)
-                        c = gh.GH_RuntimeMessageLevel.Remark
-                        ghenv.Component.AddRuntimeMessage(c, comment)
+                        w = gh.GH_RuntimeMessageLevel.Warning
+                        ghenv.Component.AddRuntimeMessage(w, comment)
                 errFile.close()
             except:
                 pass
