@@ -70,7 +70,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Set EP Air Flow"
 ghenv.Component.NickName = 'setEPNatVent'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_13_2015'
+ghenv.Component.Message = 'VER 0.0.58\nDEC_17_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
 #compatibleHBVersion = VER 0.0.56\nMAR_16_2015
@@ -297,7 +297,12 @@ def setDefaults(natVentMethod):
             if len(_inletOutletHeight) > 0: checkData20, inletOutletHeight = checkWithHBZone(_inletOutletHeight, "_inletOutletHeight")
             else: checkData20, inletOutletHeight = False, None
             if len(_windowAngle2North) > 0: checkData25, windowAngle2North = checkWithHBZone(_windowAngle2North, "_windowAngle2North")
-            else: checkData25, windowAngle2North = False, None
+            else:
+                if sum(windDisCoeff) == 0:
+                    checkData25, windowAngle2North = True, range(len(_HBZones))
+                else:
+                    checkData25, windowAngle2North = False, None
+                    print "Connect an input for '_windowAngle2North."
         except:
             checkData19, effectiveArea = False, None
             checkData20, inletOutletHeight = False, None
