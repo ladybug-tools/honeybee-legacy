@@ -60,7 +60,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_createHBSrfs'
 ghenv.Component.NickName = 'createHBSrfs'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.58\nDEC_17_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.57\nNOV_01_2015
@@ -137,9 +137,13 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
         # If the user has set a construction as Air Wall, change the surface type to air wall.
         try:
             if EPConstruction.ToUpper() == "AIR WALL":
-                srfType = 4
-                infoMsg = "Setting the construction to Air Wall will also ensure that the surface has the air wall srfType_."
-                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Remark, infoMsg)
+                if srfType == None or srfType == "4":
+                    srfType = 4
+                    infoMsg = "Setting the construction to Air Wall will also ensure that the surface has the air wall srfType_."
+                    print infoMsg
+                else:
+                    infoMsg = "By manually setting the srfType_ to be something other than 4: Air Wall on this component and also setting the Air Wall construction, you are overriding the air mixing properties of the air wall and only using the air wall as a construction."
+                    print infoMsg
         except: pass
         
         if srfType == 4 or srfType == 4.0 or srfType == "4" or srfType == "4.0":
@@ -147,10 +151,10 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
                 if EPConstruction.ToUpper() == "AIR WALL": pass
                 else:
                     infoMsg = "Setting the srfType to 4 will also ensure that the surface has the air wall construction."
-                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Remark, infoMsg)
+                    print infoMsg
             except:
                 infoMsg = "Setting the srfType to 4 will also ensure that the surface has the air wall construction."
-                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Remark, infoMsg)
+                print infoMsg
             EPConstruction = "AIR WALL"
         
         # 1.1 check for surface type
@@ -185,8 +189,6 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
                                      "The surface is more likely a " + HBSurface.srfType[int(HBSurface.type)] + ".\n" + \
                                      "Honeybee won't overwrite the type so you may need to manually flip the surface."
                         print warningMsg
-                        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Remark, warningMsg)
-                        
                     HBSurface.setType(surfaceType, isUserInput= True)
                 except:
                     warningMsg = "You are using an old version of Honeybee_Honeybee! Update your files and try again."
