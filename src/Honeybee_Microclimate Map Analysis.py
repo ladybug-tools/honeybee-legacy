@@ -57,7 +57,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Microclimate Map Analysis"
 ghenv.Component.NickName = 'MicroclimateMap'
-ghenv.Component.Message = 'VER 0.0.58\nDEC_02_2015'
+ghenv.Component.Message = 'VER 0.0.58\nDEC_16_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -720,7 +720,7 @@ def mainAdapt(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataN
             originalHOYs.append(hour)
             if hour - FinalHOYs[0] >= 0: HOYs[hCount] = hour - FinalHOYs[0]
             else: HOYs[hCount] = hour - FinalHOYs[0] + 8760
-    else: originalHOYs = HOYs
+    else: FinalHOYs = originalHOYs = HOYs
     
     #Check to be sure that the requested analysis period and the analysis period of the connected data align.
     periodsAlign = True
@@ -764,7 +764,6 @@ def mainAdapt(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataN
                         coldMsg += '\n'
                         coldMsg += monthNames[month]
                 print coldMsg
-                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Remark, coldMsg)
             else:
                 totalColdInPeriod = []
                 for day in dayNums:
@@ -772,7 +771,6 @@ def mainAdapt(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataN
                 if totalColdInPeriod != []:
                     coldMsg = "There were " + str(len(totalColdInPeriod)) + " days of the analysis period when the outdoor temperatures were too cold for the official " + modelName + "standard. \n A correlation from recent research has been used in these cases."
                     print coldMsg
-                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Remark, coldMsg)
         
         
         #Make sure that the EPW Data does not include headers.
@@ -948,7 +946,7 @@ def mainPMV(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNum
             originalHOYs.append(hour)
             if hour - FinalHOYs[0] >= 0: HOYs[hCount] = hour - FinalHOYs[0]
             else: HOYs[hCount] = hour - FinalHOYs[0] + 8760
-    else: originalHOYs = HOYs
+    else: FinalHOYs = originalHOYs = HOYs
     
     #Check to be sure that the requested analysis period and the analysis period of the connected data align.
     periodsAlign = True
@@ -1156,7 +1154,7 @@ def mainUTCI(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNu
             originalHOYs.append(hour)
             if hour - FinalHOYs[0] >= 0: HOYs[hCount] = hour - FinalHOYs[0]
             else: HOYs[hCount] = hour - FinalHOYs[0] + 8760
-    else: originalHOYs = HOYs
+    else: FinalHOYs = originalHOYs = HOYs
     
     #Check to be sure that the requested analysis period and the analysis period of the connected data align.
     periodsAlign = True
