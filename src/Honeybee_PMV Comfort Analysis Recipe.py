@@ -59,7 +59,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_PMV Comfort Analysis Recipe"
 ghenv.Component.NickName = 'PMVComfRecipe'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_13_2015'
+ghenv.Component.Message = 'VER 0.0.58\nDEC_19_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -608,23 +608,29 @@ def checkTheInputs():
     
     #If there are comfort parameters hooked up, read them out.
     checkData27 = True
+    PPDComfortThresh = 10.0
+    humidRatioUp = 0.03
+    humidRatioLow = 0.0
+    
     if comfortPar_ != []:
-        try:
-            PPDComfortThresh = float(comfortPar_[0])
-            humidRatioUp = float(comfortPar_[1])
-            humidRatioLow = float(comfortPar_[2])
-        except:
-            PPDComfortThresh = 10.0
-            humidRatioUp = 0.03
-            humidRatioLow = 0.0
+        if len(comfortPar_) == 3:
+            try:
+                PPDComfortThresh = float(comfortPar_[0])
+                humidRatioUp = float(comfortPar_[1])
+                humidRatioLow = float(comfortPar_[2])
+            except:
+                PPDComfortThresh = 10.0
+                humidRatioUp = 0.03
+                humidRatioLow = 0.0
+                checkData27 = False
+                warning = 'The comfortPar are not valid comfort parameters from the Ladybug_PMV Comfort Parameters component.'
+                print warning
+                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+        else:
             checkData27 = False
-            warning = 'The comfortPar are not valid comfort parameters from the Ladybug_Comfort Parameters component.'
+            warning = 'The comfortPar are not valid comfort parameters from the Ladybug_PMV Comfort Parameters component.'
             print warning
             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
-    else:
-        PPDComfortThresh = 10.0
-        humidRatioUp = 0.03
-        humidRatioLow = 0.0
     
     #Do a final check of everything.
     if checkData1 == True and checkData2 == True and checkData3 == True and checkData4 == True and checkData5 == True and checkData7 == True and checkData8 == True and checkData9 == True and checkData10 == True and checkData11 == True and checkData12 == True and checkData13 == True and checkData14 == True and checkData15 == True and checkData16 == True and checkData17 == True and checkData18 == True and checkData19 == True and checkData20 == True and checkData21 == True and checkData22 == True and checkData23 == True and checkData24 == True and checkData25 == True  and checkData26 == True and checkData27 == True and checkData28 == True  and checkData29 == True and checkData30 == True and checkData31 == True and checkData32 == True  and checkData33 == True:
