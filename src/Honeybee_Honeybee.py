@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.58\nDEC_13_2015'
+ghenv.Component.Message = 'VER 0.0.58\nDEC_21_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -3022,7 +3022,7 @@ class hb_WriteRADAUX(object):
             for par in radParameters["additional"]:
                 line1_2 += "-%s  "%par
         
-        line1_3 = octFile + " > " + unfFile + "\n"
+        line1_3 = " -e error.log " + octFile + " > " + unfFile + "\n"
                 
     
         line2 = "pfilt -1 -r .6 -x/2 -y/2 " + unfFile + " > " + outputFile + "\n"
@@ -3060,7 +3060,7 @@ class hb_WriteRADAUX(object):
             for par in radParameters["additional"]:
                 line1_2 += "-%s  "%par
             
-        line1_3 = " " + octFileName + ".oct < " + ptsFile + \
+        line1_3 = " -e error.log " + octFileName + ".oct < " + ptsFile + \
                   " > " + outputFile + "\n"
         
         return line0 + line1_1 + line1_2 + line1_3
