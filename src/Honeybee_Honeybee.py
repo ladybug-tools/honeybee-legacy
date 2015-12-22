@@ -1824,8 +1824,8 @@ class hb_WriteRAD(object):
         
         if analysisRecipe.type == 0: return [], [] #image-based simulation
         
-        testPoints = analysisRecipe.testPts
-        ptsNormals = analysisRecipe.vectors
+        testPoints = copy.deepcopy(analysisRecipe.testPts)
+        ptsNormals = copy.deepcopy(analysisRecipe.vectors)
         
         # write a pattern file which I can use later to re-branch the points
         ptnFileName = os.path.join(subWorkingDir, radFileName + '.ptn')
