@@ -40,7 +40,7 @@ from __future__ import print_function
 
 ghenv.Component.Name = "Honeybee_Extrude Windows"
 ghenv.Component.NickName = 'extrudeWindows'
-ghenv.Component.Message = 'VER 0.0.58\nDec_22_2015'
+ghenv.Component.Message = 'VER 0.0.58\nDEC_22_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
