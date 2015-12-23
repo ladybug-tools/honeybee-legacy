@@ -38,8 +38,8 @@ Provided by Honeybee 0.0.58
 
 from __future__ import print_function
 
-ghenv.Component.Name = "Honeybee_Extrude_Windows"
-ghenv.Component.NickName = 'ExtrudeWindows'
+ghenv.Component.Name = "Honeybee_Extrude Windows"
+ghenv.Component.NickName = 'extrudeWindows'
 ghenv.Component.Message = 'VER 0.0.58\nDec_20_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
@@ -50,43 +50,40 @@ except: pass
 
 
 import Rhino as rc
-import rhinoscriptsyntax as rs
 import scriptcontext as sc
+import Grasshopper.Kernel as gh
 
 if _thickness and _glazings is not None:
-    
-    
+
     #In case a single thickness value is specfied.
-    try:
-        if len(_thickness) ==1:
+    if len(_thickness) ==1:
             _thickness = _thickness*len(_glazings)
-    except TypeError:
-        #In case the value is specified through a slider.
-        _thickness = [_thickness]*len(_glazings)
-        
-    
-    #Just to ensure that the thickness values are numbers.
-    _thickness = map(float,_thickness)
-    
+    #In case multiple values are provided then ensure that the number of values equal the number of glazings.
+    else:
+        assert len(_thickness) == len(_glazings),"\nIn case individual thicknesses are being provided then" +\
+        " the number of values should be equal to the number of _glazings"
+
     GlazingWalls =[]
     tol = sc.doc.ModelAbsoluteTolerance
     
     for glid,glazing in enumerate(_glazings):
         
         #Extract surface normal of the glazing, scale the surface normal to the size specified by the _thickness variable
-        centroid,normal =  rs.SurfaceAreaCentroid(glazing)
-        closestpoint = rs.SurfaceClosestPoint(glazing,centroid)
-        surfnormal = rs.SurfaceNormal(glazing,closestpoint)
-        surfnormalscaled = rs.VectorScale(surfnormal,_thickness[glid])
+        centroid = rc.Geometry.AreaMassProperties.Compute(glazing).Centroid
+        closestPoint = rc.Geometry.Surface.ClosestPoint(glazing,centroid)[1:]
+        surfNormal = rc.Geometry.Surface.NormalAt(glazing,*closestPoint)
+        surfNormalScaled = surfNormal*_thickness[glid]
         
+
         #Use the scaled vector to loft to create individual glazing walls.
-        edges = rs.DuplicateEdgeCurves(glazing)
+        glazingBrep = rc.Geometry.Brep.CreateFromSurface(glazing)
+        edges = rc.Geometry.Brep.DuplicateEdgeCurves(glazingBrep)
+
         for segment in edges:
-            segment = rs.coercecurve(segment)
             segmentCopy = segment.DuplicateCurve()
-            segmentCopy.Translate(surfnormalscaled)
+            segmentCopy.Translate(surfNormalScaled)
             srfs = rc.Geometry.Brep.CreateFromLoft([segment,segmentCopy],
-            rc.Geometry.Point3d.Unset, rc.Geometry.Point3d.Unset, \
+            rc.Geometry.Point3d.Unset, rc.Geometry.Point3d.Unset, 
             rc.Geometry.LoftType.Normal, False)
             GlazingWalls.extend(srfs)
     
@@ -94,4 +91,5 @@ if _thickness and _glazings is not None:
     WindowExtrusions = rc.Geometry.Brep.JoinBreps(GlazingWalls,tol)
 
 else:
-    raise Exception("Both the inputs are required for this component to run")
+    w = gh.GH_RuntimeMessageLevel.Warning
+    ghenv.Component.AddRuntimeMessage(w, "Inputs for both _glazings and _thickness are required for this component to run.")
