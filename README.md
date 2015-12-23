@@ -48,5 +48,6 @@ Contributors(a-z):
 
 [Sandeep Ahuja](https://github.com/sahuja9)
 
+[Sarith Subramaniam](https://github.com/sariths)
 
 So many thanks to Radiance, Daysim, EnergyPlus and OpenStudio!
