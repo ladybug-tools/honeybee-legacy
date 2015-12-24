@@ -54,7 +54,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Run Daylight Simulation"
 ghenv.Component.NickName = 'runDaylightAnalysis'
-ghenv.Component.Message = 'VER 0.0.58\nDEC_21_2015'
+ghenv.Component.Message = 'VER 0.0.58\nDEC_23_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 #compatibleHBVersion = VER 0.0.56\nDEC_21_2015
@@ -327,7 +327,7 @@ if _writeRad == True and _analysisRecipe!=None and ((len(_HBObjects)!=0 and _HBO
                 for line in errLines:
                     if line.strip() == "" or line.strip().startswith("***"): continue
                     errMsg += line + "\n"
-                
+                    
                 errMsg = "Failed to read the results!\n" + errMsg
                 print errMsg
                 raise Exception(errMsg)
@@ -340,12 +340,17 @@ if _writeRad == True and _analysisRecipe!=None and ((len(_HBObjects)!=0 and _HBO
             # check the error log
             errFile = os.path.join(studyFolder + "error.log")
             errMsg = ""
+            warnMsg = ""
             with open(errFile, 'r') as err:
                 errLines = err.readlines()
             
             for line in errLines:
                 if line.strip() == "" or line.strip().startswith("***"): continue
                 if line.strip().startswith("rpict: ") and line.strip().endswith("hours"): continue
+                if line.strip().startswith("rpict: ") and line.strip().find("warning")!=-1:
+                    warnMsg += line + "\n"
+                    continue
+                    
                 errMsg += line + "\n"
             
             if errMsg != "":
@@ -353,6 +358,11 @@ if _writeRad == True and _analysisRecipe!=None and ((len(_HBObjects)!=0 and _HBO
                 print errMsg
                 raise Exception(errMsg)
             
+            if warnMsg != "":
+                print warnMsg
+                w = gh.GH_RuntimeMessageLevel.Warning
+                ghenv.Component.AddRuntimeMessage(w, warnMsg)
+                
             resultFiles = HDRFiles
         
         if annualGlareResults!=[] and annualGlareResults!={}:
