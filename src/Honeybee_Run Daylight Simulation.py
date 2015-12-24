@@ -54,24 +54,19 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Run Daylight Simulation"
 ghenv.Component.NickName = 'runDaylightAnalysis'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.58\nDEC_23_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
-#compatibleHBVersion = VER 0.0.56\nSEP_10_2015
+#compatibleHBVersion = VER 0.0.56\nDEC_21_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
 
-
-import Rhino as rc
 import scriptcontext as sc
-import rhinoscriptsyntax as rs
 import os
 import time
 import System
-import shutil
 import Grasshopper.Kernel as gh
-import math
 from Grasshopper import DataTree
 from Grasshopper.Kernel.Data import GH_Path
 
@@ -314,18 +309,60 @@ if _writeRad == True and _analysisRecipe!=None and ((len(_HBObjects)!=0 and _HBO
             
             exec(resultsOutputName + "= DataTree[System.Object]()")
             totalPtsCount = 0
-            for branchNum in range(numOfBranches):
-                p = GH_Path(branchNum)
-                for ptCount in range(numOfPts[branchNum]):
-                    resValue = "%.2f"%values[totalPtsCount]
-                    exec(resultsOutputName + ".Add(resValue, p)")
-                    totalPtsCount += 1
-            
+            try:
+                for branchNum in range(numOfBranches):
+                    p = GH_Path(branchNum)
+                    for ptCount in range(numOfPts[branchNum]):
+                        resValue = "%.2f"%values[totalPtsCount]
+                        exec(resultsOutputName + ".Add(resValue, p)")
+                        totalPtsCount += 1
+                
+            except:
+                # Failed to load the results - check the error log
+                errFile = os.path.join(studyFolder + "error.log")
+                errMsg = ""
+                with open(errFile, 'r') as err:
+                    errLines = err.readlines()
+                
+                for line in errLines:
+                    if line.strip() == "" or line.strip().startswith("***"): continue
+                    errMsg += line + "\n"
+                    
+                errMsg = "Failed to read the results!\n" + errMsg
+                print errMsg
+                raise Exception(errMsg)
+                
         elif annualResultFiles != []:
             # sort ill files
             resultFiles = hb_readAnnualResultsAux.sortIllFiles(annualResultFiles)
             
         elif HDRFiles != []:
+            # check the error log
+            errFile = os.path.join(studyFolder + "error.log")
+            errMsg = ""
+            warnMsg = ""
+            with open(errFile, 'r') as err:
+                errLines = err.readlines()
+            
+            for line in errLines:
+                if line.strip() == "" or line.strip().startswith("***"): continue
+                if line.strip().startswith("rpict: ") and line.strip().endswith("hours"): continue
+                if line.strip().startswith("rpict: ") and line.strip().find("warning")!=-1:
+                    warnMsg += line + "\n"
+                    continue
+                    
+                errMsg += line + "\n"
+            
+            if errMsg != "":
+                errMsg = "Failed to read the results!\n" + errMsg
+                print errMsg
+                raise Exception(errMsg)
+            
+            if warnMsg != "":
+                print warnMsg
+                w = gh.GH_RuntimeMessageLevel.Warning
+                ghenv.Component.AddRuntimeMessage(w, warnMsg)
+                
             resultFiles = HDRFiles
         
         if annualGlareResults!=[] and annualGlareResults!={}:

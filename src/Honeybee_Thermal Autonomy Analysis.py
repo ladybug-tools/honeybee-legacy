@@ -64,7 +64,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Thermal Autonomy Analysis"
 ghenv.Component.NickName = 'ThermalAutonomy'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.58\nDEC_21_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -268,6 +268,7 @@ def checkCreateDataTree(dataTree, dataName, dataType):
     return dataCheck5, dataCheck6, headerUnits, dataHeaders, dataNumbers, [header[5], header[6]]
 
 def checkOccupancyFile(occupancyFile, HOYs):
+    checkData5 = True
     if occupancyFile.lower().endswith(".csv"):
         # check if csv file exists.
         if not os.path.isfile(occupancyFile):
@@ -277,7 +278,7 @@ def checkOccupancyFile(occupancyFile, HOYs):
             checkData5 = False
         else:
             values = []
-            result = open(occupancyFiles, 'r')
+            result = open(occupancyFile, 'r')
             for lineCount, line in enumerate(result):
                 if lineCount < 4: pass
                 else:

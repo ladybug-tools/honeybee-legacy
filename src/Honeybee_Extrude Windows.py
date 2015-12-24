@@ -30,9 +30,9 @@ Provided by Honeybee 0.0.58
 
     Args:
         _glazings: Any number of glazing polygons.
-        _thickness: Thickness of the window. Can be a single number or a list of numbers. If its a list then the list should be equal to the number of glazings. Default value is 1.0.
+        _thickness: Thickness of the window. Can be a single number or a list of numbers. If its a list then the list should be equal to the number of glazings.
     Returns:
-        GlazingWalls: Geometric representations of glazing walls.
+        windowExtrusions: Geometric representations of glazing walls.
 """
 
 
@@ -40,7 +40,7 @@ from __future__ import print_function
 
 ghenv.Component.Name = "Honeybee_Extrude Windows"
 ghenv.Component.NickName = 'extrudeWindows'
-ghenv.Component.Message = 'VER 0.0.58\nDec_20_2015'
+ghenv.Component.Message = 'VER 0.0.58\nDEC_22_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -88,8 +88,10 @@ if _thickness and _glazings is not None:
             GlazingWalls.extend(srfs)
     
     #combine everything together.
-    WindowExtrusions = rc.Geometry.Brep.JoinBreps(GlazingWalls,tol)
+    windowExtrusions = rc.Geometry.Brep.JoinBreps(GlazingWalls,tol)
 
 else:
     w = gh.GH_RuntimeMessageLevel.Warning
     ghenv.Component.AddRuntimeMessage(w, "Inputs for both _glazings and _thickness are required for this component to run.")
+
+
