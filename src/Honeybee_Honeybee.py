@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.58\nDEC_21_2015'
+ghenv.Component.Message = 'VER 0.0.58\nDEC_28_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -5672,7 +5672,7 @@ class hb_reEvaluateHBZones(object):
         newFenSrf.shadingControlName = baseChildSurface.shadingControlName
         newFenSrf.frameName = baseChildSurface.frameName
         newFenSrf.Multiplier = baseChildSurface.Multiplier
-        newFenSrf.blindsMaterial = baseChildSurface.blindsMaterial
+        newFenSrf.shadeMaterial = baseChildSurface.shadeMaterial
         newFenSrf.shadingControl = baseChildSurface.shadingControl
         newFenSrf.shadingSchName = baseChildSurface.shadingSchName
         
@@ -6832,9 +6832,9 @@ class hb_EPFenSurface(hb_EPSurface):
             parentZone: class of the zone that this surface belongs to"""
         hb_EPSurface.__init__(self, surface, srfNumber, srfName, parentSurface, surafceType)
         
-        self.blindsMaterial = ""
-        self.shadingControl = ""
-        self.shadingSchName = ""
+        self.shadeMaterial = []
+        self.shadingControl = []
+        self.shadingSchName = []
         
         if not self.isPlanar:
             try:
@@ -6845,7 +6845,7 @@ class hb_EPFenSurface(hb_EPSurface):
 
         # calculate punchedWall
         self.parent.punchedGeometry = punchedWall
-        self.shadingControlName = ''
+        self.shadingControlName = []
         self.frameName = ''
         self.Multiplier = 1
         self.BCObject = self.outdoorBCObject()

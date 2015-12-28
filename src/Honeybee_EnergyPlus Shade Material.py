@@ -1,4 +1,4 @@
-# This component creates a material for blinds
+# This component creates a material for shades
 #
 # Honeybee: A Plugin for Environmental Analysis (GPL) started by Mostapha Sadeghipour Roudsari
 # 
@@ -22,26 +22,28 @@
 
 
 """
-Use this component to create a cutom material for blinds, which can be plugged into the "Honeybee_Zone Shade Generator" component.
+Use this component to create a custom material for shades, which can be plugged into the "Honeybee_EnergyPlus Window Shade Generator" component.
 _
-The output of this component can also be used in a construction but note that default values will be applied for blind thicknesses and angles of the slats.  In order to adjust these characteristics of the blind material, you should plug the output here into a "Honeybee_Zone Shades" component.
+In order to apply the material to a window shade and adjust geometric characteristics of the shade, you should plug the output of this component into a "Honeybee_EnergyPlus Window Shade Generator" component.
+_
+Note that the material characteristics here can refer to either blind slats, roller shades, perforated exterior metal screens, or the properties of electrochromic glazing in an "on" state.
 -
 Provided by Honeybee 0.0.58
     
     Args:
-        materialName_: An optional name for the blind material.
-        reflectance_: A number between 0 and 1 that represents the front reflectance of the blind material.  The default value is set to 0.65.
-        transmittance_: A number between 0 and 1 that represents the transmittance of the blind material. The default value is set to 0 for a perfectly opaque shade.
-        emissivity_: A number between 0 and 1 that represents the emissivity of the blind material. The default value is set to 0.9 for a non-metalic shade.
-        slatThickness_: An optional number representing the thickness of each blind slat in millimeters.  The default is set to 0.25 mm for a very thin shade.
-        conductivity_: An optional number representing the conductivity of the blind material in W/m-K.  The default is set to 221 W/m-K.
+        materialName_: An optional name for the shade material.
+        reflectance_: A number between 0 and 1 that represents the front reflectance of the shade material.  The default value is set to 0.65.
+        transmittance_: A number between 0 and 1 that represents the transmittance of the shade material. The default value is set to 0 for a perfectly opaque shade.
+        emissivity_: A number between 0 and 1 that represents the emissivity of the shade material. The default value is set to 0.9 for a non-metalic shade.
+        thickness_: An optional number representing the thickness of the shade in meters.  For blinds, this is the thickness of each blind slat and, for roller shades and screens, this is the thickness of the fabric or screen material.  For electrochromic windows, this variable is discounted since window materials with n mass are used. The default is set to 0.00025 m for a very thin shade.
+        conductivity_: An optional number representing the conductivity of the shade material in W/m-K.  The default is set to 221 W/m-K.
     Returns:
-        blindMaterial: A blind material that can be plugged into the ZoneShades component.
+        shadeMaterial: A shade material that can be plugged into the ZoneShades component.
 """
 
-ghenv.Component.Name = "Honeybee_EnergyPlus Blinds Material"
-ghenv.Component.NickName = 'EPBlindsMat'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Name = "Honeybee_EnergyPlus Shade Material"
+ghenv.Component.NickName = 'EPShadeMat'
+ghenv.Component.Message = 'VER 0.0.58\nDEC_28_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -89,8 +91,8 @@ def setDefaults():
             print warning
             ghenv.Component.AddRuntimeMessage(w, warning)
     
-    if slatThickness_ == None: slatThickness = 0.00025
-    else: slatThickness = slatThickness_/1000
+    if thickness_ == None: thickness = 0.00025
+    else: thickness = thickness_
     
     if conductivity_ == None: conductivity = 221
     else: conductivity = conductivity_
@@ -100,12 +102,12 @@ def setDefaults():
     else: checkData = False
     
     
-    return checkData, materialName, reflectance, transmittance, emissivity, slatThickness, conductivity
+    return checkData, materialName, reflectance, transmittance, emissivity, thickness, conductivity
 
 
-def main(name, reflectance, transmittance, emissivity, slatThickness, conductivity):
+def main(name, reflectance, transmittance, emissivity, thickness, conductivity):
     
-    values = [name.upper(), reflectance, transmittance, emissivity, slatThickness, conductivity]
+    values = [name.upper(), reflectance, transmittance, emissivity, thickness, conductivity]
     comments = ["Name", "Reflectance", "Transmittance", "Emissivity", "Slat Thickness", "Conductivity"]
     
     materialStr = "WindowMaterial:Blind,\n"
@@ -119,6 +121,6 @@ def main(name, reflectance, transmittance, emissivity, slatThickness, conductivi
     return materialStr
 
 
-checkData, materialName, reflectance, transmittance, emissivity, slatThickness, conductivity = setDefaults()
+checkData, materialName, reflectance, transmittance, emissivity, thickness, conductivity = setDefaults()
 if checkData == True:
-    blindsMaterial = main(materialName, reflectance, transmittance, emissivity, slatThickness, conductivity)
+    shadeMaterial = main(materialName, reflectance, transmittance, emissivity, thickness, conductivity)

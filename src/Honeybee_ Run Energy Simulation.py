@@ -16,7 +16,6 @@
 # GNU General Public License for more details.
 # 
 # You should have received a copy of the GNU General Public License
-# along with Honeybee; If not, see <http://www.gnu.org/licenses/>.
 # 
 # @license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
 
@@ -62,10 +61,10 @@ Provided by Honeybee 0.0.58
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.58\nDEC_17_2015'
+ghenv.Component.Message = 'VER 0.0.58\nDEC_28_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nFEB_28_2015
+#compatibleHBVersion = VER 0.0.56\nDEC_28_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
@@ -1564,15 +1563,16 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                             EPConstructionsCollection.append(childSrf.construction.upper())
                     # Check if there is any shading for the window.
                     
-                    if childSrf.blindsMaterial != "" and childSrf.shadingControl != "":
-                        try:
-                            if childSrf.blindsMaterial.split('\n')[1].split(',')[0] not in alreadyThereList:
-                                idfFile.write(childSrf.blindsMaterial)
-                                idfFile.write(childSrf.shadingControl)
-                                if childSrf.shadingSchName != 'ALWAYSON':
-                                    EPScheduleCollection.append(childSrf.shadingSchName.upper())
-                                alreadyThereList.append(childSrf.blindsMaterial.split('\n')[1].split(',')[0])
-                        except: pass
+                    if childSrf.shadeMaterial != [] and childSrf.shadingControl != []:
+                        for shadingCount, windowShading in enumerate(childSrf.shadeMaterial):
+                            try:
+                                if childSrf.windowShading.split('\n')[1].split(',')[0] not in alreadyThereList:
+                                    idfFile.write(childSrf.windowShading)
+                                    idfFile.write(childSrf.shadingControl[shadingCount])
+                                    if childSrf.shadingSchName != 'ALWAYSON':
+                                        EPScheduleCollection.append(childSrf.shadingSchName.upper())
+                                    alreadyThereList.append(childSrf.windowShading.split('\n')[1].split(',')[0])
+                            except: pass
                     
                 # write the glazing strings
                 idfFile.write(hb_writeIDF.EPFenSurface(srf))
