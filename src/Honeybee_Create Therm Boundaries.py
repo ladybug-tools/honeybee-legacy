@@ -50,7 +50,7 @@ import math
 
 ghenv.Component.Name = 'Honeybee_Create Therm Boundaries'
 ghenv.Component.NickName = 'createThermBoundaries'
-ghenv.Component.Message = 'VER 0.0.57\nNOV_24_2015'
+ghenv.Component.Message = 'VER 0.0.57\nDEC_29_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.56\nNOV_16_2015
