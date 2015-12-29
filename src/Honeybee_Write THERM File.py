@@ -45,23 +45,52 @@ import System
 import Grasshopper.Kernel as gh
 import uuid
 import math
+import copy
+import datetime
 
 ghenv.Component.Name = 'Honeybee_Write THERM File'
 ghenv.Component.NickName = 'writeTHERM'
-ghenv.Component.Message = 'VER 0.0.57\nNOV_28_2015'
+ghenv.Component.Message = 'VER 0.0.57\nDEC_29_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
-#compatibleHBVersion = VER 0.0.56\nNOV_16_2015
+#compatibleHBVersion = VER 0.0.56\nDEC_29_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
 except: pass
 
 
 w = gh.GH_RuntimeMessageLevel.Warning
+e = gh.GH_RuntimeMessageLevel.Error
 
 
 
 def checkTheInputs():
+    #Check the filename.
+    xmlFileName = 'unnamed'
+    if fileName_ != None:
+        if fileName_.upper().endswith('.THMX'): xmlFileName = fileName_.upper().split('.THMX')[0]
+        else: xmlFileName = fileName_
+    
+    #If there is a workingDir, make sure that it exists and, if not, try to make it.
+    workingDir = None
+    if workingDir_ != None:
+        if not os.path.exists(workingDir_):
+            try:
+                os.makedirs(workingDir_)
+                workingDir = workingDir_
+            except:
+                checkData3 = False
+                warning =  'cannot create the working directory as: ', workingDir_ + \
+                      '\nPlease set a new working directory.'
+                print warning
+                ghenv.Component.AddRuntimeMessage(w, warning)
+                return -1
+    else:
+        if workingDir_ == None: workingDir = sc.sticky["Ladybug_DefaultFolder"] + xmlFileName + '\\THERM\\'
+        else: workingDir = workingDir_
+        if not os.path.exists(workingDir): os.makedirs(workingDir)
+        print 'Current working directory is set to: ' + workingDir
+    
     #Call the polygons from the hive.
     hb_hive = sc.sticky["honeybee_Hive"]()
     try:
@@ -140,40 +169,269 @@ def checkTheInputs():
     if checkData == False:
         return -1
     
-    #Make sure that the Therm polygons form a single polysurface without any holes (only one set of naked edges).
+    #Make sure that the Therm polygons form a single polysurface.
     allPolygonGeo = []
     for polygon in thermPolygons:
         allPolygonGeo.append(polygon.geometry)
     joinedPolygons = rc.Geometry.Brep.JoinBreps(allPolygonGeo, sc.doc.ModelAbsoluteTolerance)
-    print joinedPolygons
+    if len(joinedPolygons) != 1:
+        warning = "Geometry connected to _polygons does not form a single polysurface when joined and thus will cause THERM to crash."
+        print warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+        return -1
+    #Make sure that the polysurface does not have any holes (only one set of naked edges).
+    polygonBoundaries = joinedPolygons[0].DuplicateNakedEdgeCurves(True, False)
+    allBoundary = rc.Geometry.Curve.JoinCurves(polygonBoundaries, sc.doc.ModelAbsoluteTolerance)
+    if len(allBoundary) != 1:
+        warning = "Geometry connected to _polygons does not have a single boundary (there are holes in the model). \n These holes will cause THERM to crash. \n Note that air gaps in your model whould be represented with a polygon having an 'air' material."
+        print warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+        return -1
+    
+    #If all of the planes align, establish the reference plane for the THERM scene.
+    refrencePlane = None
+    allGeoVertices = joinedPolygons[0].DuplicateVertices()
+    allGeometryBB = rc.Geometry.BoundingBox(allGeoVertices)
+    basePlaneOrigin = rc.Geometry.BoundingBox.Corner(allGeometryBB, True, True, True)
+    basePlane = rc.Geometry.Plane(basePlaneOrigin, basePlaneNormal)
     
     
-    #Make sure that all of the edges of the boundaries can be assigned to a polygon.
-    
-    
-    return False
+    return workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, polygonBoundaries
 
 
-def main():
-    #Find any edge boundaries that have not been assigned and add them to the list of boundaries as adiabtic conditions.
+def dictToXMLBC(dict, startTag, dataType):
+    def makeStr(keys, xmlStr):
+        for item in keys:
+            xmlStr = xmlStr + str(item)
+            xmlStr = xmlStr + '="'
+            xmlStr = xmlStr + str(dict[item])
+            xmlStr = xmlStr + '" '
+        return xmlStr
     
+    xmlStr = '\t<' + dataType + ' '
+    keys1 = ['Name', 'Type', 'H', 'HeatFlux', 'Temperature', 'RGBColor']
+    keys2 = ['Tr', 'Hr', 'Ei', 'Viewfactor', 'RadiationModel']
+    keys3 = ['ConvectionFlag', 'FluxFlag', 'RadiationFlag', 'ConstantTemperatureFlag', 'EmisModifier']
+    xmlStr = makeStr(keys1, xmlStr)
+    xmlStr = xmlStr + '\n\t\t'
+    xmlStr = makeStr(keys2, xmlStr)
+    xmlStr = xmlStr + '\n\t\t'
+    xmlStr = makeStr(keys3, xmlStr)
+    xmlStr = xmlStr + '/>\n'
+    return xmlStr
+
+def dictToXMLSimple(dict, startTag, dataType):
+    xmlStr = '\t<' + dataType + ' '
+    if dataType == 'Material': keys = ['Name', 'Type', 'Conductivity', 'Absorptivity', 'Emissivity', 'RGBColor']
+    elif dataType == 'BoundaryCondition': keys = ['Name', 'Type', 'H', 'HeatFlux', 'Temperature', 'RGBColor', 'Tr', 'Hr', 'Ei', 'Viewfactor', 'RadiationModel', 'ConvectionFlag', 'FluxFlag', 'RadiationFlag', 'ConstantTemperatureFlag', 'EmisModifier']
+    elif dataType == 'Polygon': keys = ['ID', 'Material', 'NSides', 'Type', 'units']
+    elif dataType == 'Point': keys = ['index', 'x', 'y']
+    elif dataType == 'BCPolygon': keys = ['ID', 'BC', 'units', 'PolygonID', 'EnclosureID', 'UFactorTag', 'Emissivity']
+    else: keys = dict.keys()
+    for count, item in enumerate(keys):
+        xmlStr = xmlStr + str(item)
+        xmlStr = xmlStr + '="'
+        xmlStr = xmlStr + str(dict[item])
+        xmlStr = xmlStr + '" '
+    if startTag: xmlStr = xmlStr + '>'
+    else: xmlStr = xmlStr + '/>'
+    xmlStr = xmlStr + '\n'
+    return xmlStr
+
+def dictToXMLComplex(propList, dataType):
+    xmlStr = ''
+    for lineCount, line in enumerate(propList):
+        if lineCount == 0: xmlStr = xmlStr + dictToXMLSimple(line, True, dataType)
+        else: xmlStr = xmlStr + '\t' + dictToXMLSimple(line, False, 'Point')
+    xmlStr = xmlStr + '\t</' + dataType + '>\n'
+    return xmlStr
+
+def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundary):
+    #Call the needed classes.
+    lb_preparation = sc.sticky["ladybug_Preparation"]()
+    thermMatLib = sc.sticky["honeybee_thermMaterialLib"]
+    thermDefault = sc.sticky["honeybee_ThermDefault"]()
+    
+    #From Rhino world coordinates, make a translatio to the origin of a Therm scene.
+    #Check the units of the Rhino file and scale everything from meters to millimeters. Keep track of this transformation as well.
+    planeReorientation = rc.Geometry.Transform.ChangeBasis(basePlane, rc.Geometry.Plane.WorldXY)
+    conversionFactor = lb_preparation.checkUnits()*1000
+    unitsScale = rc.Geometry.Transform.Scale(rc.Geometry.Plane.WorldXY, conversionFactor, conversionFactor, conversionFactor)
+    numDecPlaces = len(list(str(sc.doc.ModelAbsoluteTolerance)))-2
+    
+    ###CHECK THE POLYGONS AND ASSEMBLE THEM INTO DICTIONARIES.
+    allMaterials = []
+    materialNames = []
+    allPolygon = []
+    for pCount, polygon in enumerate(thermPolygons):
+        #Check the material.
+        if polygon.material not in materialNames:
+            materialNames.append(polygon.material)
+            try:
+                matFromLib = copy.copy(thermMatLib[polygon.material])
+                matFromLib["RGBColor"] = System.Drawing.ColorTranslator.ToHtml(matFromLib["RGBColor"])
+                allMaterials.append(matFromLib)
+            except:
+                warning = "The material " + polygon.material + " could not be found in your material library. \n Make sure your HB_HB component is in the back of your GH canvas by selecting it and hitting Cntrl+B. \n Then, right click on the GH canvas and hit 'recompute.'"
+                print warning
+                ghenv.Component.AddRuntimeMessage(e, warning)
+                return -1
+        
+        #Build up a dictionary of properties.
+        polygonDesc = []
+        
+        polygonProp = {}
+        polygonProp['ID'] = str(pCount+1)
+        polygonProp['Material'] = polygon.material
+        polygonProp['NSides'] = str(len(polygon.vertices))
+        polygonProp['Type'] = "1"
+        polygonProp['units'] = "mm"
+        polygonDesc.append(polygonProp)
+        
+        #Write the transformed geometry into the dictionary.
+        for vertCount, vertex in enumerate(polygon.vertices):
+            vertTrans = copy.copy(vertex)
+            vertTrans.Transform(planeReorientation)
+            vertTrans.Transform(unitsScale)
+            vertTransDict = {'index': str(vertCount), 'x': str(round(vertTrans.X, numDecPlaces)), 'y': str(round(vertTrans.Y, numDecPlaces))}
+            polygonDesc.append(vertTransDict)
+        
+        allPolygon.append(polygonDesc)
+    
+    
+    ###CHECK THE BOUNDARY CONDITIONS AND ASSEMBLE THEM INTO DICTIONARIES.
+    boundConditions = []
+    boundConditNames = []
+    for boundcondit in thermBCs:
+        if boundcondit.BCProperties['Name'] not in boundConditNames:
+            boundConditNames.append(boundcondit.BCProperties['Name'])
+            boundConditions.append(boundcondit.BCProperties)
+    boundConditions.append(thermDefault.adiabaticBCProperties)
+    
+    #Figure out the properties of the individual segments.
+    allBound = []
+    boundCount = len(thermPolygons)+1
+    for boundSeg in allBoundary:
+        #Set up a dictionary to hold the information on the segment.
+        boundDesc = []
+        boundProp =  {}
+        segStartPt = boundSeg.PointAtStart
+        segEndPt = boundSeg.PointAtEnd
+        
+        #Find the Therm polygon associated with the boundary.
+        PolygonID = None
+        for pCount, polygon in enumerate(thermPolygons):
+            polyGeo = polygon.polylineGeo
+            if str(polyGeo.Contains(segEndPt)) == 'Coincident' and str(polyGeo.Contains(segStartPt)) == 'Coincident':
+                PolygonID = pCount+1
+        
+        #Check if the boundary aligns with any of the connected _boundaries.  If not, set the segment to be adiabatic.
+        boundType = 'Adiabatic'
+        boundGeoProp = {'UFactorTag': '', 'ID': str(boundCount), 'BC': 'Exterior', 'Emissivity': '0.900000', 'EnclosureID': '0'}
+        for boundary in thermBCs:
+            boundGeo = boundary.geometry
+            closestEndPt = rc.Geometry.PolylineCurve.ClosestPoint(boundGeo, segEndPt, sc.doc.ModelAbsoluteTolerance)[0]
+            closestStartPt = rc.Geometry.PolylineCurve.ClosestPoint(boundGeo, segStartPt, sc.doc.ModelAbsoluteTolerance)[0]
+            if closestEndPt and closestStartPt:
+                boundType = boundary.BCProperties['Name']
+                boundGeoProp = copy.copy(boundary.BCGeo)
+                boundGeoProp['ID'] = str(boundCount)
+        
+        #put all of the proerties into the dictionary.
+        boundProp['ID'] = boundGeoProp['ID']
+        boundProp['BC'] = boundType
+        boundProp['units'] = "mm"
+        boundProp['PolygonID'] = PolygonID
+        boundProp['EnclosureID'] = boundGeoProp['EnclosureID']
+        boundProp['UFactorTag'] = boundGeoProp['UFactorTag']
+        boundProp['Emissivity'] = boundGeoProp['Emissivity']
+        boundDesc.append(boundProp)
+        
+        #Put the transformed vertices into the dictionary.
+        segStartPtTrans = copy.copy(segStartPt)
+        segStartPtTrans.Transform(planeReorientation)
+        segStartPtTrans.Transform(unitsScale)
+        startPtDict = {'index': '0', 'x': str(round(segStartPtTrans.X, numDecPlaces)), 'y': str(round(segStartPtTrans.Y, numDecPlaces))}
+        
+        segEndPtTrans = copy.copy(segEndPt)
+        segEndPtTrans.Transform(planeReorientation)
+        segEndPtTrans.Transform(unitsScale)
+        endPtDict = {'index': '1', 'x': str(round(segEndPtTrans.X, numDecPlaces)), 'y': str(round(segEndPtTrans.Y, numDecPlaces))}
+        
+        boundDesc.append(startPtDict)
+        boundDesc.append(endPtDict)
+        
+        allBound.append(boundDesc)
+        boundCount += 1
     
     #Find any air gaps in the window and, if found, make NFRC boundaries for the air gap.
+    #For now, I m not icnluding this functionality until I understand it better.
     
     
     
-    #From the plane that the surfaces are in in Rhino, translate them to the new origin of a the Therm scene.
+    ### WRITE EVERYTHING TO THERM FILE
+    #Set up the file.
+    xmlFilePath = workingDir + xmlFileName + '.thmx'
+    xmlFile = open(xmlFilePath, "w")
+    
+    #HEADER
+    #Keep track of the transformations used to convert between Rhino space and THERM space. Write it into the XML so that results can be read back onto the original geometry after running THERM.
+    headerStr = '<?xml version="1.0"?>\n' + \
+        '<THERM-XML xmlns="http://windows.lbl.gov">\n' + \
+        '<ThermVersion>Version 7.3.2.0</ThermVersion>\n' + \
+        '<SaveDate>' + str(datetime.datetime.now()) + '</SaveDate>\n' + \
+        '\n' + \
+        '<Title>' + xmlFileName + '</Title>\n' + \
+        '<CreatedBy>' + os.getenv("USERNAME")+ '</CreatedBy>\n' + \
+        '<Company></Company>\n' + \
+        '<Client></Client>\n' + \
+        '<CrossSectionType>Sill</CrossSectionType>\n' + \
+        '<Notes>RhinoUnits-' + str(sc.doc.ModelUnitSystem) + ', RhinoOrigin-'+ '(' + str(basePlane.OriginX) + ',' + str(basePlane.OriginY) + ',' + str(basePlane.OriginZ) + '), RhinoZAxis-'+ '(' + str(basePlane.Normal.X) + ',' + str(basePlane.Normal.Y) + ',' + str(basePlane.Normal.Z) +')</Notes>\n' + \
+        '<Units>SI</Units>\n' + \
+        '<MeshControl MeshLevel="6" ErrorCheckFlag="1" ErrorLimit="10.000000" MaxIterations="5" CMAflag="0" />\n'
+    xmlFile.write(headerStr)
     
     
-    #Keep track of this transformation and write it into the XML so that results can be read back onto the original geometry after running THERM.
+    #MATERIALS
+    xmlFile.write('<Materials>\n')
+    for material in allMaterials:
+        xmlFile.write(dictToXMLSimple(material, False, 'Material'))
+    xmlFile.write('</Materials>\n')
     
     
+    #BOUNDARY CONDITIONS
+    xmlFile.write('<BoundaryConditions>\n')
+    for bound in boundConditions:
+        xmlFile.write(dictToXMLBC(bound, False, 'BoundaryCondition'))
+    xmlFile.write('</BoundaryConditions>\n')
     
     
+    #POLYGONS
+    xmlFile.write('<Polygons>\n')
+    for polygon in allPolygon:
+        xmlFile.write(dictToXMLComplex(polygon, 'Polygon'))
+    xmlFile.write('</Polygons>\n')
     
     
+    #BOUNDARIES
+    xmlFile.write('<Boundaries>\n')
+    for boundSeg in allBound:
+        xmlFile.write(dictToXMLComplex(boundSeg, 'BCPolygon'))
+    xmlFile.write('</Boundaries>\n')
     
-    return -1
+    
+    #RESULTS
+    xmlFile.write('<Results>\n')
+    xmlFile.write('\t<Case>\n')
+    xmlFile.write('\t\t<FrameCavities>\n')
+    xmlFile.write('\t\t</FrameCavities>\n')
+    xmlFile.write('\t</Case>\n')
+    xmlFile.write('</Results>\n')
+    xmlFile.write('</THERM-XML>\n')
+    
+    xmlFile.close()
+    
+    return xmlFilePath
 
 
 
@@ -217,13 +475,12 @@ else:
 
 
 #If the intital check is good, run the component.
-dataCheck = False
-if initCheck:
-    checkData = checkTheInputs()
-    if checkData != -1: dataCheck = checkData
-    if dataCheck:
-        result = main()
+if initCheck and _writeTHMFile:
+    initInputs = checkTheInputs()
+    if initInputs != -1:
+        workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundary = initInputs
+        result = main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundary)
         if result != -1:
-            output = result
+            thermFileAddress = result
 
 

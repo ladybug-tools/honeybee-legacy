@@ -78,6 +78,7 @@ import cPickle as pickle
 import subprocess
 import uuid
 import re
+import random
 
 PI = math.pi
 
@@ -665,7 +666,7 @@ class HB_GetEPLibraries:
                         self.libraries["ThermMaterial"][matName] = {}
                         
                         #Create the material with the values from the file.
-                        self.libraries["ThermMaterial"][matName]["Material Name"] = matName
+                        self.libraries["ThermMaterial"][matName]["Name"] = matName
                         self.libraries["ThermMaterial"][matName]["Type"] = int(matPropLine[-1])
                         self.libraries["ThermMaterial"][matName]["Conductivity"] = float(matPropLine[-5])
                         self.libraries["ThermMaterial"][matName]["Absorptivity"] = float(matPropLine[-4])
@@ -7049,6 +7050,27 @@ class generationhb_hive(object):
         return generationobjects
 
 
+class thermDefaults(object):
+    def __init__(self):
+        
+        self.adiabaticBCProperties = {}
+        self.adiabaticBCProperties['Name'] = 'Adiabatic'
+        self.adiabaticBCProperties['Type'] = "0"
+        self.adiabaticBCProperties['H'] = '0.000000'
+        self.adiabaticBCProperties['HeatFlux'] = "0.000000"
+        self.adiabaticBCProperties['Temperature'] = '0.000000'
+        self.adiabaticBCProperties['RGBColor'] = '0x000000'
+        self.adiabaticBCProperties['Tr'] = '0.000000'
+        self.adiabaticBCProperties['Hr'] = '0.000000'
+        self.adiabaticBCProperties['Ei'] = "1.000000" 
+        self.adiabaticBCProperties['Viewfactor'] = "1.000000"
+        self.adiabaticBCProperties['RadiationModel'] = "0"
+        self.adiabaticBCProperties['ConvectionFlag'] = "0"
+        self.adiabaticBCProperties['FluxFlag'] = "1"
+        self.adiabaticBCProperties['RadiationFlag'] = "0"
+        self.adiabaticBCProperties['ConstantTemperatureFlag'] = "0"
+        self.adiabaticBCProperties['EmisModifier'] = "1.000000"
+
 class thermPolygon(object):
     def __init__(self, surfaceGeo, material, srfName, plane, RGBColor):
         #Set the name and material.
@@ -7094,7 +7116,7 @@ class thermPolygon(object):
         sc.sticky["honeybee_thermMaterialLib"][materialName] = {}
         
         #Create the material with values from the original material.
-        sc.sticky["honeybee_thermMaterialLib"][materialName]["Material Name"] = sc.sticky["honeybee_thermMaterialLib"][orgigMat]["Material Name"]
+        sc.sticky["honeybee_thermMaterialLib"][materialName]["Name"] = sc.sticky["honeybee_thermMaterialLib"][orgigMat]["Name"]
         sc.sticky["honeybee_thermMaterialLib"][materialName]["Type"] = sc.sticky["honeybee_thermMaterialLib"][orgigMat]["Type"]
         sc.sticky["honeybee_thermMaterialLib"][materialName]["Conductivity"] = sc.sticky["honeybee_thermMaterialLib"][orgigMat]["Conductivity"]
         sc.sticky["honeybee_thermMaterialLib"][materialName]["Absorptivity"] = sc.sticky["honeybee_thermMaterialLib"][orgigMat]["Absorptivity"]
@@ -7108,12 +7130,16 @@ class thermPolygon(object):
         sc.sticky["honeybee_thermMaterialLib"][material] = {}
         
         #Create the material with just default values.
-        sc.sticky["honeybee_thermMaterialLib"][material]["Material Name"] = 0
+        sc.sticky["honeybee_thermMaterialLib"][material]["Name"] = material
         sc.sticky["honeybee_thermMaterialLib"][material]["Type"] = 0
         sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] = None
         sc.sticky["honeybee_thermMaterialLib"][material]["Absorptivity"] = 0.5
         sc.sticky["honeybee_thermMaterialLib"][material]["Emissivity"] = 0.9
-        sc.sticky["honeybee_thermMaterialLib"][material]["RGBColor"] = RGBColor
+        if RGBColor != None: sc.sticky["honeybee_thermMaterialLib"][material]["RGBColor"] = RGBColor
+        else:
+            r = lambda: random.randint(0,255)
+            randColor = ('#%02X%02X%02X' % (r(),r(),r()))
+            sc.sticky["honeybee_thermMaterialLib"][material]["RGBColor"] = System.Drawing.ColorTranslator.FromHtml(randColor)
         
         #Unpack values from the decomposed material to replace the defaults.
         hb_EPMaterialAUX = EPMaterialAux()
@@ -7153,7 +7179,7 @@ class thermBC(object):
         self.BCProperties['Name'] = BCName
         self.BCProperties['Type'] = "1"
         self.BCProperties['H'] = str(filmCoeff)
-        self.BCProperties['HeatFlux'] = "0"
+        self.BCProperties['HeatFlux'] = "0.000000"
         self.BCProperties['Temperature'] = str(temperature)
         if RGBColor != None: self.BCProperties['RGBColor'] = str(System.Drawing.ColorTranslator.ToHtml(RGBColor))
         else: self.BCProperties['RGBColor'] = '0x80FFFF'
@@ -7172,9 +7198,8 @@ class thermBC(object):
         
         #Create a dictionary for the geometry.
         self.BCGeo = {}
-        self.BCGeo['BCPolygon ID'] = "29"
+        self.BCGeo['ID'] = str(sc.sticky["thermBCCount"])
         self.BCGeo['BC'] = BCName
-        self.BCGeo['units'] = "mm"
         self.BCGeo['EnclosureID'] = "0"
         self.BCGeo['UFactorTag'] = ""
         self.BCGeo['Emissivity'] = "0.900000"
@@ -7182,7 +7207,7 @@ class thermBC(object):
         #Increase the Therm ID count.
         sc.sticky["thermBCCount"] = sc.sticky["thermBCCount"] + 1
         
-        #Keep track of the vertices.
+        #Build surface geometry and extract the vertices.
         self.geometry = lineGeo
         self.vertices = []
         for vertexCount in range(self.geometry.PointCount):
@@ -8007,12 +8032,13 @@ if checkIn.letItFly:
         sc.sticky["honeybee_EPZone"] = EPZone
         sc.sticky["honeybee_ThermPolygon"] = thermPolygon
         sc.sticky["honeybee_ThermBC"] = thermBC
+        sc.sticky["honeybee_ThermDefault"] = thermDefaults
         sc.sticky["PVgen"] = PV_gen
         sc.sticky["PVinverter"] = PVinverter
         sc.sticky["HB_generatorsystem"] = HB_generatorsystem
         sc.sticky["wind_generator"] = Wind_gen
         sc.sticky["simple_battery"] = simple_battery
-        sc.sticky["thermBCCount"] = 0
+        sc.sticky["thermBCCount"] = 1
         sc.sticky["honeybee_reEvaluateHBZones"] = hb_reEvaluateHBZones
         sc.sticky["honeybee_AirsideEconomizerParams"] = hb_airsideEconoParams
         sc.sticky["honeybee_constantVolumeFanParams"] = hb_constVolFanParams
