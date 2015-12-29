@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.58\nDEC_28_2015'
+ghenv.Component.Message = 'VER 0.0.58\nDEC_29_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -7048,6 +7048,7 @@ class generationhb_hive(object):
         
         return generationobjects
 
+
 class thermPolygon(object):
     def __init__(self, surfaceGeo, material, srfName, plane, RGBColor):
         #Set the name and material.
@@ -7081,8 +7082,10 @@ class thermPolygon(object):
         for vertex in self.geometry.DuplicateVertices():
             self.vertices.append(vertex)
         
-        #Make note of the plane in which the surface lies.
+        #Make note of the plane in which the surface lies and the normal vector.
         self.plane = plane
+        self.normalVector = plane.Normal
+        self.normalVector.Unitize()
         
         return self.geometry
     
@@ -7187,8 +7190,11 @@ class thermBC(object):
         
         #Make note of the plane in which the surface lies.
         self.plane = plane
+        self.normalVector = plane.Normal
+        self.normalVector.Unitize()
         
         return self.geometry
+
 
 
 class zoneNetworkSolving(object):
