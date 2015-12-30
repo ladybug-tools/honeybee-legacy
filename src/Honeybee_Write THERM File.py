@@ -193,10 +193,10 @@ def checkTheInputs():
     else:
         #Check to be sure the curve is facing counter-clockwise.
         encircling = allBoundary[0]
-        encircingVerts = []
-        for vertexCount in range(encircling.SegmentCount):
-            encircingVerts.append(encircling.PointAt(vertexCount))
-        if isAntiClockWise(encircingVerts, basePlaneNormal): encircling.Reverse()
+        encricSrf = rc.Geometry.Brep.CreatePlanarBreps(encircling)[0]
+        encricSrfPlane = encricSrf.Faces[0].TryGetPlane(sc.doc.ModelAbsoluteTolerance)[-1]
+        encricSrfNormal = encricSrfPlane.Normal
+        if encricSrfNormal != basePlaneNormal: encircling.Reverse()
         polygonBoundaries = encircling.DuplicateSegments()
     
     #If all of the planes align, establish the reference plane for the THERM scene.
@@ -208,20 +208,6 @@ def checkTheInputs():
     
     
     return workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, polygonBoundaries
-
-def isAntiClockWise(pts, faceNormal):
-    def crossProduct(vector1, vector2):
-        return vector1.X * vector2.X + vector1.Y * vector2.Y + vector1.Z * vector2.Z
-    
-    # check if the order if clock-wise
-    vector0 = rc.Geometry.Vector3d(pts[1]- pts[0])
-    vector1 = rc.Geometry.Vector3d(pts[-1]- pts[0])
-    ptsNormal = rc.Geometry.Vector3d.CrossProduct(vector0, vector1)
-    
-    # in case points are anti-clockwise then normals should be parallel
-    if crossProduct(ptsNormal, faceNormal) > 0:
-        return True
-    return False
 
 
 def dictToXMLBC(dict, startTag, dataType):
