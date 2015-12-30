@@ -50,10 +50,10 @@ import datetime
 
 ghenv.Component.Name = 'Honeybee_Write THERM File'
 ghenv.Component.NickName = 'writeTHERM'
-ghenv.Component.Message = 'VER 0.0.57\nDEC_29_2015'
+ghenv.Component.Message = 'VER 0.0.57\nDEC_30_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
-#compatibleHBVersion = VER 0.0.56\nDEC_29_2015
+#compatibleHBVersion = VER 0.0.56\nDEC_30_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
 except: pass
@@ -130,6 +130,7 @@ def checkTheInputs():
     
     #Make sure that all of the geometry is in the same plane.
     basePlaneNormal = thermPolygons[0].normalVector
+    if basePlaneNormal.X == 0 and basePlaneNormal.Y == 0 and basePlaneNormal.Z < 0: basePlaneNormal.Reverse()
     
     #Check the polygon geometry
     for polygon in thermPolygons:
@@ -142,12 +143,14 @@ def checkTheInputs():
                 polygon.plane.Flip()
                 polygon.geometry.Flip()
                 polygon.polylineGeo.Reverse()
-                polygon.vertices.reverse()
             else:
                 checkData = False
                 warning = "Geometry for polygon " + polygon.name + " with material " + polygon.material + " is not in the same plane as the other connected geometry."
                 print warning
                 ghenv.Component.AddRuntimeMessage(w, warning)
+        else:
+            #Clockwise vertices.
+            polygon.vertices.reverse()
     
     #Check the BC geometry
     for boundary in thermBCs:
@@ -181,22 +184,44 @@ def checkTheInputs():
         return -1
     #Make sure that the polysurface does not have any holes (only one set of naked edges).
     polygonBoundaries = joinedPolygons[0].DuplicateNakedEdgeCurves(True, False)
-    allBoundary = rc.Geometry.Curve.JoinCurves(polygonBoundaries, sc.doc.ModelAbsoluteTolerance)
+    allBoundary = rc.Geometry.PolylineCurve.JoinCurves(polygonBoundaries, sc.doc.ModelAbsoluteTolerance)
     if len(allBoundary) != 1:
         warning = "Geometry connected to _polygons does not have a single boundary (there are holes in the model). \n These holes will cause THERM to crash. \n Note that air gaps in your model whould be represented with a polygon having an 'air' material."
         print warning
         ghenv.Component.AddRuntimeMessage(w, warning)
         return -1
+    else:
+        #Check to be sure the curve is facing counter-clockwise.
+        encircling = allBoundary[0]
+        encircingVerts = []
+        for vertexCount in range(encircling.SegmentCount):
+            encircingVerts.append(encircling.PointAt(vertexCount))
+        if isAntiClockWise(encircingVerts, basePlaneNormal): encircling.Reverse()
+        polygonBoundaries = encircling.DuplicateSegments()
     
     #If all of the planes align, establish the reference plane for the THERM scene.
     refrencePlane = None
     allGeoVertices = joinedPolygons[0].DuplicateVertices()
     allGeometryBB = rc.Geometry.BoundingBox(allGeoVertices)
-    basePlaneOrigin = rc.Geometry.BoundingBox.Corner(allGeometryBB, True, True, True)
+    basePlaneOrigin = rc.Geometry.BoundingBox.Corner(allGeometryBB, True, False, False)
     basePlane = rc.Geometry.Plane(basePlaneOrigin, basePlaneNormal)
     
     
     return workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, polygonBoundaries
+
+def isAntiClockWise(pts, faceNormal):
+    def crossProduct(vector1, vector2):
+        return vector1.X * vector2.X + vector1.Y * vector2.Y + vector1.Z * vector2.Z
+    
+    # check if the order if clock-wise
+    vector0 = rc.Geometry.Vector3d(pts[1]- pts[0])
+    vector1 = rc.Geometry.Vector3d(pts[-1]- pts[0])
+    ptsNormal = rc.Geometry.Vector3d.CrossProduct(vector0, vector1)
+    
+    # in case points are anti-clockwise then normals should be parallel
+    if crossProduct(ptsNormal, faceNormal) > 0:
+        return True
+    return False
 
 
 def dictToXMLBC(dict, startTag, dataType):
@@ -233,7 +258,7 @@ def dictToXMLSimple(dict, startTag, dataType):
         xmlStr = xmlStr + '="'
         xmlStr = xmlStr + str(dict[item])
         xmlStr = xmlStr + '" '
-    if startTag: xmlStr = xmlStr + '>'
+    if startTag: xmlStr = xmlStr[:-1] + '>'
     else: xmlStr = xmlStr + '/>'
     xmlStr = xmlStr + '\n'
     return xmlStr
@@ -254,9 +279,10 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
     
     #From Rhino world coordinates, make a translatio to the origin of a Therm scene.
     #Check the units of the Rhino file and scale everything from meters to millimeters. Keep track of this transformation as well.
-    planeReorientation = rc.Geometry.Transform.ChangeBasis(basePlane, rc.Geometry.Plane.WorldXY)
+    planeReorientation = rc.Geometry.Transform.ChangeBasis(rc.Geometry.Plane.WorldXY, basePlane)
     conversionFactor = lb_preparation.checkUnits()*1000
     unitsScale = rc.Geometry.Transform.Scale(rc.Geometry.Plane.WorldXY, conversionFactor, conversionFactor, conversionFactor)
+    bufferTansl = rc.Geometry.Transform.Translation(250, -100, 0)
     numDecPlaces = len(list(str(sc.doc.ModelAbsoluteTolerance)))-2
     
     ###CHECK THE POLYGONS AND ASSEMBLE THEM INTO DICTIONARIES.
@@ -269,7 +295,9 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
             materialNames.append(polygon.material)
             try:
                 matFromLib = copy.copy(thermMatLib[polygon.material])
-                matFromLib["RGBColor"] = System.Drawing.ColorTranslator.ToHtml(matFromLib["RGBColor"])
+                matFromLib["Name"] = matFromLib["Name"].title()
+                correctFormatCol = str(System.Drawing.ColorTranslator.ToHtml(matFromLib["RGBColor"]))
+                matFromLib["RGBColor"] = '0x' + correctFormatCol.split('#')[-1]
                 allMaterials.append(matFromLib)
             except:
                 warning = "The material " + polygon.material + " could not be found in your material library. \n Make sure your HB_HB component is in the back of your GH canvas by selecting it and hitting Cntrl+B. \n Then, right click on the GH canvas and hit 'recompute.'"
@@ -282,7 +310,7 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
         
         polygonProp = {}
         polygonProp['ID'] = str(pCount+1)
-        polygonProp['Material'] = polygon.material
+        polygonProp['Material'] = polygon.material.title()
         polygonProp['NSides'] = str(len(polygon.vertices))
         polygonProp['Type'] = "1"
         polygonProp['units'] = "mm"
@@ -293,6 +321,7 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
             vertTrans = copy.copy(vertex)
             vertTrans.Transform(planeReorientation)
             vertTrans.Transform(unitsScale)
+            vertTrans.Transform(bufferTansl)
             vertTransDict = {'index': str(vertCount), 'x': str(round(vertTrans.X, numDecPlaces)), 'y': str(round(vertTrans.Y, numDecPlaces))}
             polygonDesc.append(vertTransDict)
         
@@ -302,15 +331,17 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
     ###CHECK THE BOUNDARY CONDITIONS AND ASSEMBLE THEM INTO DICTIONARIES.
     boundConditions = []
     boundConditNames = []
+    boundConditions.append(thermDefault.adiabaticBCProperties)
     for boundcondit in thermBCs:
         if boundcondit.BCProperties['Name'] not in boundConditNames:
             boundConditNames.append(boundcondit.BCProperties['Name'])
-            boundConditions.append(boundcondit.BCProperties)
-    boundConditions.append(thermDefault.adiabaticBCProperties)
+            boundFromLib = copy.copy(boundcondit.BCProperties)
+            boundFromLib['Name'] = boundFromLib['Name'].title()
+            boundConditions.append(boundFromLib)
     
     #Figure out the properties of the individual segments.
     allBound = []
-    boundCount = len(thermPolygons)+1
+    boundCount = (len(thermPolygons)*2)+1
     for boundSeg in allBoundary:
         #Set up a dictionary to hold the information on the segment.
         boundDesc = []
@@ -318,23 +349,29 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
         segStartPt = boundSeg.PointAtStart
         segEndPt = boundSeg.PointAtEnd
         
+        #Set a default BC of adiabatic.
+        boundType = 'Adiabatic'
+        boundGeoProp = {'UFactorTag': '', 'ID': str(boundCount), 'BC': 'Exterior', 'Emissivity': '0.900000', 'EnclosureID': '0'}
+        matEmiss = 0.9
+        
         #Find the Therm polygon associated with the boundary.
         PolygonID = None
         for pCount, polygon in enumerate(thermPolygons):
             polyGeo = polygon.polylineGeo
             if str(polyGeo.Contains(segEndPt)) == 'Coincident' and str(polyGeo.Contains(segStartPt)) == 'Coincident':
                 PolygonID = pCount+1
+                boundGeoProp['Emissivity'] = thermMatLib[polygon.material]['Emissivity']
+                matEmiss = thermMatLib[polygon.material]['Emissivity']
         
-        #Check if the boundary aligns with any of the connected _boundaries.  If not, set the segment to be adiabatic.
-        boundType = 'Adiabatic'
-        boundGeoProp = {'UFactorTag': '', 'ID': str(boundCount), 'BC': 'Exterior', 'Emissivity': '0.900000', 'EnclosureID': '0'}
+        #Check if the boundary aligns with any of the connected _boundaries.
         for boundary in thermBCs:
             boundGeo = boundary.geometry
             closestEndPt = rc.Geometry.PolylineCurve.ClosestPoint(boundGeo, segEndPt, sc.doc.ModelAbsoluteTolerance)[0]
             closestStartPt = rc.Geometry.PolylineCurve.ClosestPoint(boundGeo, segStartPt, sc.doc.ModelAbsoluteTolerance)[0]
             if closestEndPt and closestStartPt:
-                boundType = boundary.BCProperties['Name']
+                boundType = boundary.BCProperties['Name'].title()
                 boundGeoProp = copy.copy(boundary.BCGeo)
+                boundGeoProp['Emissivity'] = matEmiss
                 boundGeoProp['ID'] = str(boundCount)
         
         #put all of the proerties into the dictionary.
@@ -351,11 +388,13 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
         segStartPtTrans = copy.copy(segStartPt)
         segStartPtTrans.Transform(planeReorientation)
         segStartPtTrans.Transform(unitsScale)
+        segStartPtTrans.Transform(bufferTansl)
         startPtDict = {'index': '0', 'x': str(round(segStartPtTrans.X, numDecPlaces)), 'y': str(round(segStartPtTrans.Y, numDecPlaces))}
         
         segEndPtTrans = copy.copy(segEndPt)
         segEndPtTrans.Transform(planeReorientation)
         segEndPtTrans.Transform(unitsScale)
+        segEndPtTrans.Transform(bufferTansl)
         endPtDict = {'index': '1', 'x': str(round(segEndPtTrans.X, numDecPlaces)), 'y': str(round(segEndPtTrans.Y, numDecPlaces))}
         
         boundDesc.append(startPtDict)

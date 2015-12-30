@@ -39,7 +39,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Decompose EP Material"
 ghenv.Component.NickName = 'DecomposeEPMaterial'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.58\nDEC_30_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -48,7 +48,8 @@ try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
 
 import scriptcontext as sc
-    
+import Grasshopper.Kernel as gh
+
 def main(matName):
     if not sc.sticky["honeybee_release"]:
         print "You should first let Honeybee to fly..."
@@ -65,7 +66,7 @@ def main(matName):
         "into canvas and try again."
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, warning)
-        return -1    
+        return -1
     
     # get the constuction
     try:
@@ -76,8 +77,12 @@ def main(matName):
         return -1
     
     if sc.sticky.has_key("honeybee_materialLib"):
-        return hb_EPMaterialAUX.decomposeMaterial(matName.upper(), ghenv.Component)
-        
+        result = hb_EPMaterialAUX.decomposeMaterial(matName.upper(), ghenv.Component)
+        if result == -1:
+            warning = "Failed to find " + matName + " in the Honeybee material library."
+            print warning
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+        return result
 
 if _materialName!=None:
     results = main(_materialName)

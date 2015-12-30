@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.58\nDEC_29_2015'
+ghenv.Component.Message = 'VER 0.0.58\nDEC_30_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -3618,34 +3618,41 @@ class EPMaterialAux(object):
     
     def decomposeMaterial(self, matName, GHComponent = None):
         try:
+            thermTrigger = False
             try:
                 materialObj = sc.sticky["honeybee_materialLib"][matName.upper()]
             except:
-                materialObj = sc.sticky["honeybee_windowMaterialLib"][matName.upper()]
-                
+                try:
+                    materialObj = sc.sticky["honeybee_windowMaterialLib"][matName.upper()]
+                except:
+                    materialObj = sc.sticky["honeybee_thermMaterialLib"][matName.upper()]
+                    thermTrigger = True
+            
             comments = []
             values = []
+            UValueSI, UValueIP = None, None
             
-            #print matName
-            for layer in materialObj.keys():
-                try:
-                    value, comment = materialObj[layer]
-                    # print value + ',\t!-' + comment + "\n"
-                    values.append(value)
-                    comments.append(comment)
-                except:
-                    value = materialObj[layer]
-                    values.append(value)
-                    comments.append('Material Type')
-            
-            UValueSI = self.calcEPMaterialUValue(materialObj, GHComponent)
-            UValueIP = self.convertUValueToIP(UValueSI)
+            if thermTrigger == False:
+                for layer in materialObj.keys():
+                    try:
+                        value, comment = materialObj[layer]
+                        # print value + ',\t!-' + comment + "\n"
+                        values.append(value)
+                        comments.append(comment)
+                    except:
+                        value = materialObj[layer]
+                        values.append(value)
+                        comments.append('Material Type')
+                UValueSI = self.calcEPMaterialUValue(materialObj, GHComponent)
+                UValueIP = self.convertUValueToIP(UValueSI)
+            else:
+                for layer in materialObj.keys():
+                    comments.append(layer)
+                    values.append(materialObj[layer])
             
             return values, comments, UValueSI, UValueIP
-            
         except Exception, e:
             print `e`
-            print "Failed to find " + matName + " in the Honeybee material library."
             return -1
     
     def decomposeEPCnstr(self, cnstrName, GHComponent = None):
