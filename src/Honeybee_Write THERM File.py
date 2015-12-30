@@ -149,7 +149,7 @@ def checkTheInputs():
                 print warning
                 ghenv.Component.AddRuntimeMessage(w, warning)
         else:
-            #Clockwise vertices.
+            #Ensure vertices are counter-clockwise in order to align with the boundary condition segments.
             polygon.vertices.reverse()
     
     #Check the BC geometry
@@ -342,6 +342,7 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
     #Figure out the properties of the individual segments.
     allBound = []
     boundCount = (len(thermPolygons)*2)+1
+    matchedBoundaries = []
     for boundSeg in allBoundary:
         #Set up a dictionary to hold the information on the segment.
         boundDesc = []
@@ -373,6 +374,7 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
                 boundGeoProp = copy.copy(boundary.BCGeo)
                 boundGeoProp['Emissivity'] = matEmiss
                 boundGeoProp['ID'] = str(boundCount)
+                if boundType not in matchedBoundaries: matchedBoundaries.append(boundType)
         
         #put all of the proerties into the dictionary.
         boundProp['ID'] = boundGeoProp['ID']
@@ -403,6 +405,16 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
         allBound.append(boundDesc)
         boundCount += 1
     
+    #Check to be sure that all _boundaries have been matched with _polygons and, if not, give a warning that the BC is being left out.
+    if len(thermBCs) != len(matchedBoundaries):
+        allBndNames = []
+        for b in thermBCs: allBndNames.append(b.name)
+        for name in allBndNames:
+            if name not in matchedBoundaries:
+                warning = "The boundary '" + name + "' could not be matched with the rest of the connected geometry and is therefore being left out of the exported THERM file. \n To include it in the export, make sure that this boundary's geometry is flush with your the edges of your _polygons."
+                print warning
+                ghenv.Component.AddRuntimeMessage(w, warning)
+    
     #Find any air gaps in the window and, if found, make NFRC boundaries for the air gap.
     #For now, I m not icnluding this functionality until I understand it better.
     
@@ -411,6 +423,7 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
     ### WRITE EVERYTHING TO THERM FILE
     #Set up the file.
     xmlFilePath = workingDir + xmlFileName + '.thmx'
+    resultDataPath = workingDir + xmlFileName + '_thmx.o'
     xmlFile = open(xmlFilePath, "w")
     
     #HEADER
@@ -470,7 +483,7 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
     
     xmlFile.close()
     
-    return xmlFilePath
+    return xmlFilePath, resultDataPath
 
 
 
@@ -520,6 +533,6 @@ if initCheck and _writeTHMFile:
         workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundary = initInputs
         result = main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundary)
         if result != -1:
-            thermFileAddress = result
+            thermFileAddress, resultFileAddress = result
 
 
