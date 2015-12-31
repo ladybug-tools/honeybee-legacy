@@ -268,7 +268,7 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
     planeReorientation = rc.Geometry.Transform.ChangeBasis(rc.Geometry.Plane.WorldXY, basePlane)
     conversionFactor = lb_preparation.checkUnits()*1000
     unitsScale = rc.Geometry.Transform.Scale(rc.Geometry.Plane.WorldXY, conversionFactor, conversionFactor, conversionFactor)
-    bufferTansl = rc.Geometry.Transform.Translation(250, -100, 0)
+    bufferTansl = rc.Geometry.Transform.Translation(250, -50, 0)
     numDecPlaces = len(list(str(sc.doc.ModelAbsoluteTolerance)))-2
     
     ###CHECK THE POLYGONS AND ASSEMBLE THEM INTO DICTIONARIES.
@@ -424,7 +424,7 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
         '<Company></Company>\n' + \
         '<Client></Client>\n' + \
         '<CrossSectionType>Sill</CrossSectionType>\n' + \
-        '<Notes>RhinoUnits-' + str(sc.doc.ModelUnitSystem) + ', RhinoOrigin-'+ '(' + str(basePlane.OriginX) + ',' + str(basePlane.OriginY) + ',' + str(basePlane.OriginZ) + '), RhinoZAxis-'+ '(' + str(basePlane.Normal.X) + ',' + str(basePlane.Normal.Y) + ',' + str(basePlane.Normal.Z) +')</Notes>\n' + \
+        '<Notes>RhinoUnits-' + str(sc.doc.ModelUnitSystem) + ', RhinoOrigin-'+ '(' + str(basePlane.OriginX) + ',' + str(basePlane.OriginY) + ',' + str(basePlane.OriginZ) + '), RhinoXAxis-'+ '(' + str(basePlane.XAxis.X) + ',' + str(basePlane.XAxis.Y) + ',' + str(basePlane.XAxis.Z) + '), RhinoYAxis-'+ '(' + str(basePlane.YAxis.X) + ',' + str(basePlane.YAxis.Y) + ',' + str(basePlane.YAxis.Z)+')</Notes>\n' + \
         '<Units>SI</Units>\n' + \
         '<MeshControl MeshLevel="6" ErrorCheckFlag="1" ErrorLimit="10.000000" MaxIterations="5" CMAflag="0" />\n'
     xmlFile.write(headerStr)
