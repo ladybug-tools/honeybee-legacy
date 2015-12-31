@@ -61,7 +61,7 @@ Provided by Honeybee 0.0.58
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.58\nDEC_28_2015'
+ghenv.Component.Message = 'VER 0.0.58\nDEC_30_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nDEC_28_2015
@@ -192,10 +192,12 @@ class WriteIDF(object):
         try:
             for childSrf in surface.childSrfs:
                 # check surface area
-                
                 glzCoordinates = childSrf.coordinates
-                
                 checked, glzCoordinates= self.checkCoordinates(glzCoordinates)
+                
+                #Check shading objects.
+                if childSrf.shadingControlName == []: shdCntrl = ''
+                else: shdCntrl = childSrf.shadingControlName[0]
                 
                 if checked:
                     str_1 = '\nFenestrationSurface:Detailed,\n' + \
@@ -205,7 +207,7 @@ class WriteIDF(object):
                         '\t' + childSrf.parent.name + ',\t!- Surface Name\n' + \
                         '\t' + childSrf.BCObject.name + ',\t!- Outside Boundary Condition Object\n' + \
                         '\t' + childSrf.groundViewFactor + ',\t!- View Factor to Ground\n' + \
-                        '\t' + childSrf.shadingControlName + ',\t!- Shading Control Name\n' + \
+                        '\t' + shdCntrl + ',\t!- Shading Control Name\n' + \
                         '\t' + childSrf.frameName + ',\t!- Frame and Divider Name\n' + \
                         '\t' + `childSrf.Multiplier`+ ',\t!- Multiplier\n' + \
                         '\t' + `len(glzCoordinates)` + ',\t!- Number of Vertices\n'
@@ -223,7 +225,9 @@ class WriteIDF(object):
                     glzStr += "\n"
         except Exception, e:
             print e
-            print "Failed to write " + childSrf.name + " to idf file"
+            warning = "Failed to write " + childSrf.name + " to idf file"
+            print warning
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
             pass
             
         return glzStr
@@ -1565,15 +1569,19 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                     
                     if childSrf.shadeMaterial != [] and childSrf.shadingControl != []:
                         for shadingCount, windowShading in enumerate(childSrf.shadeMaterial):
+                            
                             try:
-                                if childSrf.windowShading.split('\n')[1].split(',')[0] not in alreadyThereList:
-                                    idfFile.write(childSrf.windowShading)
+                                if windowShading.split('\n')[1].split(',')[0] not in alreadyThereList:
+                                    idfFile.write(windowShading)
                                     idfFile.write(childSrf.shadingControl[shadingCount])
-                                    if childSrf.shadingSchName != 'ALWAYSON':
-                                        EPScheduleCollection.append(childSrf.shadingSchName.upper())
-                                    alreadyThereList.append(childSrf.windowShading.split('\n')[1].split(',')[0])
+                                    
+                                    if childSrf.shadingSchName[shadingCount] != 'ALWAYS ON':
+                                        print childSrf.shadingSchName
+                                        EPScheduleCollection.append(childSrf.shadingSchName[shadingCount].upper())
+                                    
+                                    alreadyThereList.append(windowShading.split('\n')[1].split(',')[0])
                             except: pass
-                    
+                
                 # write the glazing strings
                 idfFile.write(hb_writeIDF.EPFenSurface(srf))
                 # else: idfFile.write(hb_writeIDF.EPNonPlanarFenSurface(srf))

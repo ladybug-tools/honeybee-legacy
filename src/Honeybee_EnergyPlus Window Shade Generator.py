@@ -78,7 +78,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Window Shade Generator"
 ghenv.Component.NickName = 'EPWindowShades'
-ghenv.Component.Message = 'VER 0.0.58\nDEC_28_2015'
+ghenv.Component.Message = 'VER 0.0.58\nDEC_30_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nDEC_28_2015
@@ -237,7 +237,7 @@ def checkAllInputs(zoneNames, windowNames, windowSrfs, isZone):
     checkData4 = True
     schedule = None
     if shadeSchedule_ == None:
-        schedule = "ALWAYSON"
+        schedule = "ALWAYS ON"
         print "No shades schedule has been connected.  It will be assumed that the shades are drawn when the setpoints are met."
     else:
         schedule= shadeSchedule_.upper()
@@ -934,6 +934,7 @@ def createEPBlindMat(shadeMaterial, EPSlatOrient, depth, shadingHeight, EPshdAng
     return EPBlindMat
 
 def createEPShadeMat(shadeMaterial, airPerm, distToGlass, name):
+    if airPerm == None: airPerm = 0
     EPShadeMat = "WindowMaterial:Shade,\n" + \
         '\t' + shadeMaterial[0] + "_" + name + ",                        !- Name\n" + \
         '\t' + str(shadeMaterial[2]) + ",                        !- Solar Transmittance {dimensionless}\n" + \
@@ -988,8 +989,8 @@ def createEPBlindControl(blindCntrlName, shadeMaterial, schedule, EPinteriorOrEx
         shadeName = ''
     
     #Check the schedule
-    if schedule == 'ALWAYSON':
-        schedCntrlType = 'ALWAYSON'
+    if schedule == 'ALWAYS ON':
+        schedCntrlType = 'ALWAYS ON'
         schedCntrl = 'No'
         schedName = ''
     elif schedule.upper().endswith('CSV'):
