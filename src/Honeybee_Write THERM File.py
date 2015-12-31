@@ -50,7 +50,7 @@ import datetime
 
 ghenv.Component.Name = 'Honeybee_Write THERM File'
 ghenv.Component.NickName = 'writeTHERM'
-ghenv.Component.Message = 'VER 0.0.57\nDEC_30_2015'
+ghenv.Component.Message = 'VER 0.0.57\nDEC_31_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.56\nDEC_30_2015
@@ -130,7 +130,7 @@ def checkTheInputs():
     
     #Make sure that all of the geometry is in the same plane.
     basePlaneNormal = thermPolygons[0].normalVector
-    if basePlaneNormal.X == 0 and basePlaneNormal.Y == 0 and basePlaneNormal.Z < 0: basePlaneNormal.Reverse()
+    if basePlaneNormal.Z < 0: basePlaneNormal.Reverse()
     
     #Check the polygon geometry
     for polygon in thermPolygons:
@@ -204,10 +204,20 @@ def checkTheInputs():
     allGeoVertices = joinedPolygons[0].DuplicateVertices()
     allGeometryBB = rc.Geometry.BoundingBox(allGeoVertices)
     basePlaneOrigin = rc.Geometry.BoundingBox.Corner(allGeometryBB, True, False, False)
+    thermFileOrigin = rc.Geometry.BoundingBox.Corner(allGeometryBB, True, True, True)
     basePlane = rc.Geometry.Plane(basePlaneOrigin, basePlaneNormal)
     
+    #If the plane is not in the worldXY, rotate it so that the THERM y-axis and Rhino z-axis are aligned.
+    basePlaneNormal.Unitize()
+    rhinoZAxis = rc.Geometry.Vector3d(0,0,1)
+    if basePlaneNormal != rhinoZAxis:
+        planeProject = rc.Geometry.Transform.PlanarProjection(basePlane)
+        rhinoZAxis.Transform(planeProject)
+        planeRotation = rc.Geometry.Transform.Rotation(basePlane.YAxis, rhinoZAxis, basePlaneOrigin)
+        basePlane.Transform(planeRotation)
     
-    return workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, polygonBoundaries
+    
+    return workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, polygonBoundaries, thermFileOrigin
 
 
 def dictToXMLBC(dict, startTag, dataType):
@@ -257,7 +267,16 @@ def dictToXMLComplex(propList, dataType):
     xmlStr = xmlStr + '\t</' + dataType + '>\n'
     return xmlStr
 
-def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundary):
+#def uFacTagGenerator(lengthType, length, conversionFactor):
+#    themLength = length*conversionFactor
+#    uFacStr = '\t\t\t<Projection>\n' + \
+#            '\t\t\t\t<Length-type>' + lengthType + '</Length-type>\n' + \
+#            '\t\t\t\t<Length units="mm" value="' + str(themLength) + '" />\n' + \
+#            '\t\t\t\t<U-factor units="W/m2-K" value="NA" />\n' + \
+#</Projection>
+
+
+def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundary, thermFileOrigin):
     #Call the needed classes.
     lb_preparation = sc.sticky["ladybug_Preparation"]()
     thermMatLib = sc.sticky["honeybee_thermMaterialLib"]
@@ -361,6 +380,7 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
                 boundGeoProp['Emissivity'] = matEmiss
                 boundGeoProp['ID'] = str(boundCount)
                 if boundType not in matchedBoundaries: matchedBoundaries.append(boundType)
+                if boundary.uFactorTag != None: boundGeoProp['UFactorTag'] = boundary.uFactorTag
         
         #put all of the proerties into the dictionary.
         boundProp['ID'] = boundGeoProp['ID']
@@ -409,6 +429,7 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
     ### WRITE EVERYTHING TO THERM FILE
     #Set up the file.
     xmlFilePath = workingDir + xmlFileName + '.thmx'
+    uFactorFile = workingDir + xmlFileName + '_thmx.thmx'
     resultDataPath = workingDir + xmlFileName + '_thmx.o'
     xmlFile = open(xmlFilePath, "w")
     
@@ -424,7 +445,7 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
         '<Company></Company>\n' + \
         '<Client></Client>\n' + \
         '<CrossSectionType>Sill</CrossSectionType>\n' + \
-        '<Notes>RhinoUnits-' + str(sc.doc.ModelUnitSystem) + ', RhinoOrigin-'+ '(' + str(basePlane.OriginX) + ',' + str(basePlane.OriginY) + ',' + str(basePlane.OriginZ) + '), RhinoXAxis-'+ '(' + str(basePlane.XAxis.X) + ',' + str(basePlane.XAxis.Y) + ',' + str(basePlane.XAxis.Z) + '), RhinoYAxis-'+ '(' + str(basePlane.YAxis.X) + ',' + str(basePlane.YAxis.Y) + ',' + str(basePlane.YAxis.Z)+')</Notes>\n' + \
+        '<Notes>RhinoUnits-' + str(sc.doc.ModelUnitSystem) + ', RhinoOrigin-'+ '(' + str(thermFileOrigin.X) + ',' + str(thermFileOrigin.Y) + ',' + str(thermFileOrigin.Z) + '), RhinoXAxis-'+ '(' + str(basePlane.XAxis.X) + ',' + str(basePlane.XAxis.Y) + ',' + str(basePlane.XAxis.Z) + '), RhinoYAxis-'+ '(' + str(basePlane.YAxis.X) + ',' + str(basePlane.YAxis.Y) + ',' + str(basePlane.YAxis.Z) + '), RhinoZAxis-'+ '(' + str(basePlane.ZAxis.X) + ',' + str(basePlane.ZAxis.Y) + ',' + str(basePlane.ZAxis.Z)+')</Notes>\n' + \
         '<Units>SI</Units>\n' + \
         '<MeshControl MeshLevel="6" ErrorCheckFlag="1" ErrorLimit="10.000000" MaxIterations="5" CMAflag="0" />\n'
     xmlFile.write(headerStr)
@@ -469,7 +490,7 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
     
     xmlFile.close()
     
-    return xmlFilePath, resultDataPath
+    return xmlFilePath, uFactorFile, resultDataPath
 
 
 
@@ -516,9 +537,9 @@ else:
 if initCheck and _writeTHMFile:
     initInputs = checkTheInputs()
     if initInputs != -1:
-        workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundary = initInputs
-        result = main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundary)
+        workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundary, thermFileOrigin = initInputs
+        result = main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundary, thermFileOrigin)
         if result != -1:
-            thermFileAddress, resultFileAddress = result
+            thermFile, uFactorFile, resultFile = result
 
 

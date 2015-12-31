@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.58\nDEC_30_2015'
+ghenv.Component.Message = 'VER 0.0.58\nDEC_31_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -7059,7 +7059,7 @@ class generationhb_hive(object):
 
 class thermDefaults(object):
     def __init__(self):
-        
+        #Set a default adiabatic boundary condition.
         self.adiabaticBCProperties = {}
         self.adiabaticBCProperties['Name'] = 'Adiabatic'
         self.adiabaticBCProperties['Type'] = "0"
@@ -7077,6 +7077,8 @@ class thermDefaults(object):
         self.adiabaticBCProperties['RadiationFlag'] = "0"
         self.adiabaticBCProperties['ConstantTemperatureFlag'] = "0"
         self.adiabaticBCProperties['EmisModifier'] = "1.000000"
+        
+        #Set some default U-Factor Tags
 
 class thermPolygon(object):
     def __init__(self, surfaceGeo, material, srfName, plane, RGBColor):
@@ -7175,7 +7177,7 @@ class thermPolygon(object):
         return material
 
 class thermBC(object):
-    def __init__(self, lineGeo, BCName, temperature, filmCoeff, plane, radTemp, radTransCoeff, RGBColor):
+    def __init__(self, lineGeo, BCName, temperature, filmCoeff, plane, radTemp, radTransCoeff, RGBColor, uFactorTag):
         #Set the name and object type.
         self.objectType = "ThermBC"
         self.hasChild = False
@@ -7224,6 +7226,11 @@ class thermBC(object):
         self.plane = plane
         self.normalVector = plane.Normal
         self.normalVector.Unitize()
+        
+        #Set the U-Factor tag information.
+        self.uFactorTag = None
+        if uFactorTag != None: self.uFactorTag = uFactorTag
+        
         
         return self.geometry
 

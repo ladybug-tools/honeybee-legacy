@@ -28,17 +28,18 @@ Before you run the file in THERM, make sure that you go to Options > Preferences
 Provided by Honeybee 0.0.57
     
     Args:
-        _resultFileAddress: The resultFileAddress from the "Write THERM File" component.  Make sure that you have opened THERM and run your file before using this component. Also, before you run the file in THERM, make sure that you go to Options > Preferences > Simulation and ckeck "Save Conrad results file (.O)" in order to enure that your THERM simulation writes all results out in a format that this component understands.
-        thermFileAddress_: An optional filepath to a THERM file that has been generated with the 'Honeybee_Write THERM File' component.  The header of this file contains information on the transformations used to map the original geometry between Rhino space and the THERM canvas.  As a result, connecting a file here ensures that imported results happen on top of the original Rhino geometry.  If no file address is connected here, the THERM results are imported with their THERM canvass coordinates.
+        _resultFile: The resultFileAddress from the "Write THERM File" component.  Make sure that you have opened THERM and run your file before using this component. Also, before you run the file in THERM, make sure that you go to Options > Preferences > Simulation and ckeck "Save Conrad results file (.O)" in order to enure that your THERM simulation writes this file.
+        thermFile_: An optional filepath to a THERM file that has been generated with the 'Honeybee_Write THERM File' component.  The header of this file contains information on the transformations used to map the original geometry between Rhino space and the THERM canvas.  As a result, connecting a file here ensures that imported results happen on top of the original Rhino geometry.  If no file address is connected here, the THERM results are imported with their THERM canvass coordinates.
+        uFactorFile_: An optional path to a THERM file that has been saved after importing and simulating files generated with the 'Honeybee_Write THERM File' component. Before you run the file in THERM, make sure that you go to Options > Preferences > Preferences and ckeck "Automatic XML Export on Save" in order to enure that your THERM simulation writes this uFactorFile.
         dataType_: An optional integer to set the type of data to import.  If left blank, this component will import the temperature data.  Choose from the following two options:
-            0 - Temperature (temperature values at each point in C)
-            1 - Heat Flux (heat flux values at each point in C)
+            0 - Temperature (temperature meshValues at each point in C)
+            1 - Heat Flux (heat flux meshValues at each point in C)
         legendPar_: Optional legend parameters from the Ladybug "Legend Parameters" component.
         runIt_: Set boolean to "True" to run the component and import THERM results to Rhino/GH.
     Returns:
         readMe!: ...
-        values: The numerical values of the results in either degrees C or W/m2 (depending on the dataYpe_ input of this component).
-        points: The points of the mesh that THERM has generated.
+        meshValues: The numerical meshValues of the results in either degrees C or W/m2 (depending on the dataYpe_ input of this component).
+        meshPoints: The meshPoints of the mesh that THERM has generated.
         coloredMesh: A mesh of the original THERM geometry that is colored with the results.
         legend: A legend for the coloredMesh above. Connect this output to a grasshopper "Geo" component in order to preview this legend separately in the Rhino scene.  
         legendBasePt: The legend base point, which can be used to move the legend in relation to the newMesh with the grasshopper "move" component.
@@ -55,10 +56,10 @@ import math
 
 ghenv.Component.Name = 'Honeybee_Read THERM Result'
 ghenv.Component.NickName = 'readTHERM'
-ghenv.Component.Message = 'VER 0.0.57\nDEC_30_2015'
+ghenv.Component.Message = 'VER 0.0.57\nDEC_31_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
-#compatibleHBVersion = VER 0.0.56\nDEC_30_2015
+#compatibleHBVersion = VER 0.0.56\nDEC_31_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
 except: pass
@@ -73,43 +74,77 @@ def checkTheInputs():
     lb_preparation = sc.sticky["ladybug_Preparation"]()
     
     #Check if the result file exists.
-    if not os.path.isfile(_resultFileAddress):
-        warning = "Cannot find the result file. Check the location of the file on your machine. \n If it is not there, make sure that you have opened THERM and run your file before using this component. \n Also, before you run the file in THERM, make sure that you go to Options > Preferences > Simulation and ckeck 'Save Conrad results file (.O).'"
+    if not os.path.isfile(_resultFile):
+        warning = "Cannot find the result file. Check the location of the file on your machine. \n If it is not there, make sure that you have opened THERM and run your .thmx file before using this component. \n Also, before you run the file in THERM, make sure that you go to Options > Preferences > Simulation and ckeck 'Save Conrad results file (.O).'"
         print warning
-        ghenv.Component.AddRuntimeMessage(e, warning)
+        ghenv.Component.AddRuntimeMessage(w, warning)
         return -1
     
-    #If there is a thermFileAddress_ connected, check to make sure it exists and contains transformation data.
+    #If there is a thermFile_ connected, check to make sure it exists and contains transformation data.
     planeReorientation = None
     unitsScale = None
-    bufferTansl = rc.Geometry.Transform.Translation(0.067, -0.0615, 0)
-    if thermFileAddress_ != None:
-        if not os.path.isfile(_resultFileAddress):
-            warning = "Cannot find the THERM file at the thermFileAddress_. \n Result geometry will not be imported to the location of the original Rhino geometry."
+    rhinoOrig = None
+    if thermFile_ != None:
+        if not os.path.isfile(thermFile_):
+            warning = "Cannot find the THERM file at the thermFile_. \n Result geometry will not be imported to the location of the original Rhino geometry."
             print warning
             ghenv.Component.AddRuntimeMessage(w, warning)
         else:
             #Try to extract the transformations from the file header.
-            thermFi = open(thermFileAddress_, 'r')
+            thermFi = open(thermFile_, 'r')
             for lineCount, line in enumerate(thermFi):
                 if '<Notes>' in line and '</Notes>' in line:
                     if 'RhinoUnits-' in line and 'RhinoOrigin-' in line and 'RhinoXAxis-' in line:
                         origRhinoUnits = line.split(',')[0].split('RhinoUnits-')[-1]
                         origRhinoOrigin = line.split('),')[0].split('RhinoOrigin-(')[-1].split(',')
                         origRhinoXaxis = line.split('),')[1].split('RhinoXAxis-(')[-1].split(',')
-                        origRhinoYaxis = line.split(')</Notes>')[0].split('RhinoYAxis-(')[-1].split(',')
+                        origRhinoYaxis = line.split('),')[2].split('RhinoYAxis-(')[-1].split(',')
+                        origRhinoZaxis = line.split(')</Notes>')[0].split('RhinoZAxis-(')[-1].split(',')
                         
-                        basePlane = rc.Geometry.Plane(rc.Geometry.Point3d(float(origRhinoOrigin[0]), float(origRhinoOrigin[1]), float(origRhinoOrigin[2])), rc.Geometry.Vector3d(float(origRhinoXaxis[0]), float(origRhinoXaxis[1]), float(origRhinoXaxis[2])), rc.Geometry.Vector3d(float(origRhinoYaxis[0]), float(origRhinoYaxis[1]), float(origRhinoYaxis[2])))
-                        planeReorientation = rc.Geometry.Transform.ChangeBasis(basePlane, rc.Geometry.Plane.WorldXY)
+                        rhinoOrig = rc.Geometry.Point3d(float(origRhinoOrigin[0]), float(origRhinoOrigin[1]), float(origRhinoOrigin[2]))
+                        thermPlane = rc.Geometry.Plane(rhinoOrig, rc.Geometry.Plane.WorldXY.XAxis, rc.Geometry.Plane.WorldXY.YAxis)
+                        basePlane = rc.Geometry.Plane(rhinoOrig, rc.Geometry.Vector3d(float(origRhinoXaxis[0]), float(origRhinoXaxis[1]), float(origRhinoXaxis[2])), rc.Geometry.Vector3d(float(origRhinoYaxis[0]), float(origRhinoYaxis[1]), float(origRhinoYaxis[2])))
+                        basePlaneNormal = rc.Geometry.Vector3d(float(origRhinoZaxis[0]), float(origRhinoZaxis[1]), float(origRhinoZaxis[2]))
+                        planeReorientation = rc.Geometry.Transform.ChangeBasis(basePlane, thermPlane)
                         
                         conversionFactor = lb_preparation.checkUnits()
                         conversionFactor = 1/conversionFactor
                         unitsScale = rc.Geometry.Transform.Scale(rc.Geometry.Plane.WorldXY, conversionFactor, conversionFactor, conversionFactor)
                     else:
-                        warning = "Cannot find the transformation data in the header of the THERM file at the thermFileAddress_. \n Result geometry will not be imported to the location of the original Rhino geometry."
+                        warning = "Cannot find the transformation data in the header of the THERM file at the thermFile_. \n Result geometry will not be imported to the location of the original Rhino geometry."
                         print warning
                         ghenv.Component.AddRuntimeMessage(w, warning)
             thermFi.close()
+    
+    #If there is a uFactorFile_ connected, check to make sure it exists and contains te U-Factor data.
+    uFactorNames = []
+    uFactors = []
+    if uFactorFile_ != None:
+        if not os.path.isfile(uFactorFile_):
+            warning = "Cannot find the U-Factor file. Make sure that you have saved your THERM file after simulating it to ensure that this file is generated. \n Also, Before you run the file in THERM, make sure that you go to Options > Preferences > Preferences and ckeck 'Automatic XML Export on Save' in order to enure that your THERM simulation writes this uFactorFile. \n No values will be output from the uFactors or uFactorTags."
+            print warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+        else:
+            #Try to extract the transformations from the file header.
+            uFacFile = open(uFactorFile_, 'r')
+            tagTrigger = False
+            tagName = ''
+            for lineCount, line in enumerate(uFacFile):
+                if '<Tag>' in line and '</Tag>' in line:
+                    tagTrigger = True
+                    tagName = line.split('<Tag>')[-1].split('</Tag>')[0]
+                elif '</U-factors>' in line: tagTrigger = False
+                elif tagTrigger == True:
+                    if '<Length-type>' in line:
+                        lengthStr = line.split('<Length-type>')[-1].split('</Length-type>')[0]
+                        uFactorNames.append(tagName + ' - ' + lengthStr)
+                    if '<U-factor value="NA" />' in line:
+                        del uFactorNames[-1]
+                    if '<U-factor units="W/m2-K" value="' in line:
+                        uFactor = float(line.split('<U-factor units="W/m2-K" value="')[-1].split('" />')[0])
+                        uFactors.append(uFactor)
+            uFacFile.close()
+    
     
     #If there is an input for dataType_, check to make sure that it makes sense.
     dataType = 0
@@ -121,10 +156,10 @@ def checkTheInputs():
             ghenv.Component.AddRuntimeMessage(e, warning)
             return -1
     
-    return dataType, planeReorientation, unitsScale, bufferTansl
+    return dataType, planeReorientation, unitsScale, rhinoOrig, uFactorNames, uFactors
 
 
-def main(dataType, planeReorientation, unitsScale, bufferTansl):
+def main(dataType, planeReorientation, unitsScale, rhinoOrig):
     #Import the class.
     lb_preparation = sc.sticky["ladybug_Preparation"]()
     lb_visualization = sc.sticky["ladybug_ResultVisualization"]()
@@ -132,25 +167,25 @@ def main(dataType, planeReorientation, unitsScale, bufferTansl):
     #Create lists to be filled up with data from the file.
     pointData = []
     elementData = []
-    values = []
+    meshValues = []
     disjointedIndices = []
     pointTrigger = False
     elementTrigger = False
-    valuesTrigger = False
+    meshValuesTrigger = False
     disjointTrigger = False
     
     #Parse the result file into the lists.
-    resultFile = open(_resultFileAddress, 'r')
+    resultFile = open(_resultFile, 'r')
     for lineCount, line in enumerate(resultFile):
         if 'node number    x1-coordinate     x2-coordinate      temperature' in line: pointTrigger = True
         elif 'elem. no.   i      j      k      l      matl. no.    matl. angle       volume' in line: elementTrigger = True
-        elif 'node    temperature          x-flux         y-flux' in line: valuesTrigger = True
+        elif 'node    temperature          x-flux         y-flux' in line: meshValuesTrigger = True
         elif 'warning --- mesh is disjoint at these nodes' in line: disjointTrigger = True
         elif '********************************************************************************' in line:
             pointTrigger = False
             elementTrigger = False
             disjointTrigger = False
-        elif 'Boundary Element Edge Data: nseg=     168  type=conv' in line: valuesTrigger = False
+        elif 'Boundary Element Edge Data: nseg=     168  type=conv' in line: meshValuesTrigger = False
         elif pointTrigger == True:
             try:
                 columns = line.split('    ')
@@ -168,11 +203,11 @@ def main(dataType, planeReorientation, unitsScale, bufferTansl):
                 l = int(columns[5])
                 elementData.append([i, j, k, l])
             except: pass
-        elif valuesTrigger == True:
+        elif meshValuesTrigger == True:
             try:
                 columns = line.split('   ')
-                if dataType == 0: values.append(float(columns[-3]))
-                else: values.append(math.sqrt((math.pow(float(columns[-1]),2))+(math.pow(float(columns[-2]),2))))
+                if dataType == 0: meshValues.append(float(columns[-3]))
+                else: meshValues.append(math.sqrt((math.pow(float(columns[-1]),2))+(math.pow(float(columns[-2]),2))))
             except: pass
         elif disjointTrigger == True:
             columns = line.split('  ')
@@ -182,17 +217,22 @@ def main(dataType, planeReorientation, unitsScale, bufferTansl):
     
     resultFile.close()
     
-    #Remove any disjointed points from each list.
+    #Remove any disjointed meshPoints from each list.
     for count, index in enumerate(disjointedIndices):
         del pointData[index-1-count]
-        del values[index-1-count]
+        del meshValues[index-1-count]
     
     #If we have a Rhino transform from the thermFile, transform all of the point data.
     if planeReorientation != None:
         for point in pointData:
-            point.Transform(bufferTansl)
-            point.Transform(unitsScale)
             point.Transform(planeReorientation)
+        thermBB = rc.Geometry.BoundingBox(pointData)
+        thermOrigin = rc.Geometry.BoundingBox.Corner(thermBB, True, True, True)
+        vecDiff = rc.Geometry.Point3d.Subtract(rhinoOrig, thermOrigin)
+        planeTransl = rc.Geometry.Transform.Translation(vecDiff.X, vecDiff.Y, vecDiff.Z)
+        for point in pointData:
+            point.Transform(planeTransl)
+            point.Transform(unitsScale)
     
     #Build up a mesh from the point and element data.
     feMesh = rc.Geometry.Mesh()
@@ -205,7 +245,7 @@ def main(dataType, planeReorientation, unitsScale, bufferTansl):
     #Read the legend parameters.
     lowB, highB, numSeg, customColors, legendBasePoint, legendScale, legendFont, legendFontSize, legendBold, decimalPlaces, removeLessThan = lb_preparation.readLegendParameters(legendPar_, False)
     if len(legendPar_) == 0 or legendPar_[3] == []: customColors = lb_visualization.gradientLibrary[20]
-    colors = lb_visualization.gradientColor(values, lowB, highB, customColors)
+    colors = lb_visualization.gradientColor(meshValues, lowB, highB, customColors)
     feMesh.VertexColors.CreateMonotoneMesh(System.Drawing.Color.Gray)
     for count, col in enumerate(colors):
         try: feMesh.VertexColors[count] = col
@@ -227,7 +267,7 @@ def main(dataType, planeReorientation, unitsScale, bufferTansl):
     if dataType == 0: legendTitle = 'C'
     else: legendTitle = 'W/m2'
     if legendBasePoint == None: legendBasePoint = lb_visualization.BoundingBoxPar[0]
-    legendSrfs, legendText, legendTextCrv, textPt, textSize = lb_visualization.createLegend(values, lowB, highB, numSeg, legendTitle, lb_visualization.BoundingBoxPar, legendBasePoint, legendScale, legendFont, legendFontSize, legendBold, decimalPlaces, removeLessThan)
+    legendSrfs, legendText, legendTextCrv, textPt, textSize = lb_visualization.createLegend(meshValues, lowB, highB, numSeg, legendTitle, lb_visualization.BoundingBoxPar, legendBasePoint, legendScale, legendFont, legendFontSize, legendBold, decimalPlaces, removeLessThan)
     legendColors = lb_visualization.gradientColor(legendText[:-1], lowB, highB, customColors)
     legendSrfs = lb_visualization.colorMesh(legendColors, legendSrfs)
     
@@ -238,7 +278,7 @@ def main(dataType, planeReorientation, unitsScale, bufferTansl):
     titleTextCurve = lb_visualization.text2srf([titleTxt], [titleBasePt], legendFont, textSize, legendBold)
     
     
-    return values, pointData, feMesh, [legendSrfs] + lb_preparation.flattenList(legendTextCrv), legendBasePoint, lb_preparation.flattenList(titleTextCurve), titleBasePt
+    return meshValues, pointData, feMesh, [legendSrfs] + lb_preparation.flattenList(legendTextCrv), legendBasePoint, lb_preparation.flattenList(titleTextCurve), titleBasePt
 
 
 
@@ -265,14 +305,14 @@ else:
 
 
 #If the intital check is good, run the component.
-if initCheck and _resultFileAddress and _runIt:
+if initCheck and _resultFile and _runIt:
     initInputs = checkTheInputs()
     if initInputs != -1:
-        dataType, planeReorientation, unitsScale, bufferTansl = initInputs
-        result = main(dataType, planeReorientation, unitsScale, bufferTansl)
+        dataType, planeReorientation, unitsScale, rhinoOrig, uFactorTags, uFactors = initInputs
+        result = main(dataType, planeReorientation, unitsScale, rhinoOrig)
         if result != -1:
-            values, points, coloredMesh, legend, legendBasePt, title, titleBasePt = result
+            meshValues, meshPoints, coloredMesh, legend, legendBasePt, title, titleBasePt = result
 
-ghenv.Component.Params.Output[2].Hidden = True
-ghenv.Component.Params.Output[5].Hidden = True
-ghenv.Component.Params.Output[7].Hidden = True
+ghenv.Component.Params.Output[4].Hidden = True
+ghenv.Component.Params.Output[8].Hidden = True
+ghenv.Component.Params.Output[10].Hidden = True
