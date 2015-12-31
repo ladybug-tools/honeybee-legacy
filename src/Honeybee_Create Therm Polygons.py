@@ -58,6 +58,18 @@ except: pass
 
 tolerance = sc.doc.ModelAbsoluteTolerance
 
+def getSrfCenPtandNormal(surface):
+    brepFace = surface.Faces[0]
+    u_domain = brepFace.Domain(0)
+    v_domain = brepFace.Domain(1)
+    centerU = (u_domain.Min + u_domain.Max)/2
+    centerV = (v_domain.Min + v_domain.Max)/2
+    
+    centerPt = brepFace.PointAt(centerU, centerV)
+    normalVector = brepFace.NormalAt(centerU, centerV)
+    
+    return centerPt, normalVector
+
 def main(geometry, material, srfName, RGBColor):
     # import the classes
     if sc.sticky.has_key('honeybee_release'):
@@ -138,7 +150,8 @@ def main(geometry, material, srfName, RGBColor):
         #Check to be sure that the surface is planar.
         polyPlane = None
         if geometry.Faces[faceCount].IsPlanar(sc.doc.ModelAbsoluteTolerance):
-            plane = geometry.Faces[faceCount].TryGetPlane(sc.doc.ModelAbsoluteTolerance)[-1]
+            centPt, normal = getSrfCenPtandNormal(geometry)
+            plane = rc.Geometry.Plane(centPt, normal)
         else:
             warning = "The connected surface geometry is not planar."
             print warning

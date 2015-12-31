@@ -132,6 +132,39 @@ def checkTheInputs():
     basePlaneNormal = thermPolygons[0].normalVector
     if basePlaneNormal.Z < 0: basePlaneNormal.Reverse()
     
+    allPolygonGeo = []
+    for polygon in thermPolygons:
+        allPolygonGeo.append(polygon.geometry)
+    joinedPolygons = rc.Geometry.Brep.JoinBreps(allPolygonGeo, sc.doc.ModelAbsoluteTolerance)
+    
+    #Establish the reference plane for the THERM scene.
+    rhinoZAxis = rc.Geometry.Vector3d(0,0,1)
+    refrencePlane = None
+    allGeoVertices = joinedPolygons[0].DuplicateVertices()
+    allGeometryBB = rc.Geometry.BoundingBox(allGeoVertices)
+    if basePlaneNormal == rhinoZAxis: basePlaneOrigin = rc.Geometry.BoundingBox.Corner(allGeometryBB, True, False, False)
+    else: basePlaneOrigin = rc.Geometry.BoundingBox.Corner(allGeometryBB, True, True, False)
+    thermFileOrigin = rc.Geometry.BoundingBox.Corner(allGeometryBB, True, True, True)
+    basePlane = rc.Geometry.Plane(basePlaneOrigin, basePlaneNormal)
+    
+    #If the plane is not in the worldXY, rotate it so that the THERM y-axis and Rhino z-axis are aligned.
+    def alignYtoZ(basePlane, basePlaneNormal):
+        basePlaneNormal.Unitize()
+        rhinoZAxis = rc.Geometry.Vector3d(0,0,1)
+        if basePlaneNormal != rhinoZAxis:
+            planeProject = rc.Geometry.Transform.PlanarProjection(basePlane)
+            rhinoZAxis.Transform(planeProject)
+            planeRotation = rc.Geometry.Transform.Rotation(basePlane.YAxis, rhinoZAxis, basePlaneOrigin)
+            basePlane.Transform(planeRotation)
+    
+    alignYtoZ(basePlane, basePlaneNormal)
+    
+    #If the plane X-Axis is negative, flip it.
+    if basePlane.XAxis.X < 0 or basePlane.XAxis.Y < 0 or basePlane.XAxis.Y < 0:
+        basePlaneNormal.Reverse()
+        basePlane.Flip()
+        alignYtoZ(basePlane, basePlaneNormal)
+    
     #Check the polygon geometry
     for polygon in thermPolygons:
         if not polygon.normalVector == basePlaneNormal:
@@ -139,6 +172,7 @@ def checkTheInputs():
             polyNormalRev = rc.Geometry.Vector3d(polygon.normalVector)
             polyNormalRev.Reverse()
             if polyNormalRev == basePlaneNormal:
+                
                 polygon.normalVector = polyNormalRev
                 polygon.plane.Flip()
                 polygon.geometry.Flip()
@@ -154,7 +188,9 @@ def checkTheInputs():
     
     #Check the BC geometry
     for boundary in thermBCs:
-        if not boundary.normalVector == basePlaneNormal:
+        if boundary.geometry.SpanCount == 1:
+            boundary.normalVector = basePlaneNormal
+        elif not boundary.normalVector == basePlaneNormal:
             #Check if the normal is just facing the opposite direction.
             boundaryNormalRev = rc.Geometry.Vector3d(boundary.normalVector)
             boundaryNormalRev.Reverse()
@@ -183,7 +219,7 @@ def checkTheInputs():
         ghenv.Component.AddRuntimeMessage(w, warning)
         return -1
     #Make sure that the polysurface does not have any holes (only one set of naked edges).
-    polygonBoundaries = joinedPolygons[0].DuplicateNakedEdgeCurves(True, False)
+    polygonBoundaries = joinedPolygons[0].DuplicateNakedEdgeCurves(True, True)
     allBoundary = rc.Geometry.PolylineCurve.JoinCurves(polygonBoundaries, sc.doc.ModelAbsoluteTolerance)
     if len(allBoundary) != 1:
         warning = "Geometry connected to _polygons does not have a single boundary (there are holes in the model). \n These holes will cause THERM to crash. \n Note that air gaps in your model whould be represented with a polygon having an 'air' material."
@@ -198,23 +234,6 @@ def checkTheInputs():
         encricSrfNormal = encricSrfPlane.Normal
         if encricSrfNormal != basePlaneNormal: encircling.Reverse()
         polygonBoundaries = encircling.DuplicateSegments()
-    
-    #If all of the planes align, establish the reference plane for the THERM scene.
-    refrencePlane = None
-    allGeoVertices = joinedPolygons[0].DuplicateVertices()
-    allGeometryBB = rc.Geometry.BoundingBox(allGeoVertices)
-    basePlaneOrigin = rc.Geometry.BoundingBox.Corner(allGeometryBB, True, False, False)
-    thermFileOrigin = rc.Geometry.BoundingBox.Corner(allGeometryBB, True, True, True)
-    basePlane = rc.Geometry.Plane(basePlaneOrigin, basePlaneNormal)
-    
-    #If the plane is not in the worldXY, rotate it so that the THERM y-axis and Rhino z-axis are aligned.
-    basePlaneNormal.Unitize()
-    rhinoZAxis = rc.Geometry.Vector3d(0,0,1)
-    if basePlaneNormal != rhinoZAxis:
-        planeProject = rc.Geometry.Transform.PlanarProjection(basePlane)
-        rhinoZAxis.Transform(planeProject)
-        planeRotation = rc.Geometry.Transform.Rotation(basePlane.YAxis, rhinoZAxis, basePlaneOrigin)
-        basePlane.Transform(planeRotation)
     
     
     return workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, polygonBoundaries, thermFileOrigin
@@ -267,13 +286,6 @@ def dictToXMLComplex(propList, dataType):
     xmlStr = xmlStr + '\t</' + dataType + '>\n'
     return xmlStr
 
-#def uFacTagGenerator(lengthType, length, conversionFactor):
-#    themLength = length*conversionFactor
-#    uFacStr = '\t\t\t<Projection>\n' + \
-#            '\t\t\t\t<Length-type>' + lengthType + '</Length-type>\n' + \
-#            '\t\t\t\t<Length units="mm" value="' + str(themLength) + '" />\n' + \
-#            '\t\t\t\t<U-factor units="W/m2-K" value="NA" />\n' + \
-#</Projection>
 
 
 def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundary, thermFileOrigin):
@@ -364,7 +376,7 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
         PolygonID = None
         for pCount, polygon in enumerate(thermPolygons):
             polyGeo = polygon.polylineGeo
-            if str(polyGeo.Contains(segEndPt)) == 'Coincident' and str(polyGeo.Contains(segStartPt)) == 'Coincident':
+            if str(polyGeo.Contains(segEndPt, basePlane, sc.doc.ModelAbsoluteTolerance)) == 'Coincident' and str(polyGeo.Contains(segStartPt, basePlane, sc.doc.ModelAbsoluteTolerance)) == 'Coincident':
                 PolygonID = pCount+1
                 boundGeoProp['Emissivity'] = thermMatLib[polygon.material]['Emissivity']
                 matEmiss = thermMatLib[polygon.material]['Emissivity']
@@ -372,8 +384,8 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
         #Check if the boundary aligns with any of the connected _boundaries.
         for boundary in thermBCs:
             boundGeo = boundary.geometry
-            closestEndPt = rc.Geometry.PolylineCurve.ClosestPoint(boundGeo, segEndPt, sc.doc.ModelAbsoluteTolerance)[0]
-            closestStartPt = rc.Geometry.PolylineCurve.ClosestPoint(boundGeo, segStartPt, sc.doc.ModelAbsoluteTolerance)[0]
+            closestEndPt = rc.Geometry.PolylineCurve.ClosestPoint(boundGeo, segEndPt, sc.doc.ModelAbsoluteTolerance*2)[0]
+            closestStartPt = rc.Geometry.PolylineCurve.ClosestPoint(boundGeo, segStartPt, sc.doc.ModelAbsoluteTolerance*2)[0]
             if closestEndPt and closestStartPt:
                 boundType = boundary.BCProperties['Name'].title()
                 boundGeoProp = copy.copy(boundary.BCGeo)
