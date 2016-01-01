@@ -188,32 +188,53 @@ def main(dataType, planeReorientation, unitsScale, rhinoOrig):
         elif 'Boundary Element Edge Data: nseg=     168  type=conv' in line: meshValuesTrigger = False
         elif pointTrigger == True:
             try:
-                columns = line.split('    ')
-                xCoord = float(columns[-3])
-                yCoord = float(columns[-2])
-                #if yCoord < -0.1: print columns
-                pointData.append(rc.Geometry.Point3d(xCoord, yCoord, 0))
+                coordList = []
+                intCount = 0
+                columns = line.split(' ')
+                for col in columns:
+                    if col != '':
+                        intCount += 1
+                        if intCount > 1 and intCount <4: coordList.append(float(col))
+                if coordList != []:
+                    xCoord = float(coordList[0])
+                    yCoord = float(coordList[1])
+                    pointData.append(rc.Geometry.Point3d(xCoord, yCoord, 0))
             except: pass
         elif elementTrigger == True:
             try:
-                columns = line.split('    ')
-                i = int(columns[2])
-                j = int(columns[3])
-                k = int(columns[4])
-                l = int(columns[5])
-                elementData.append([i, j, k, l])
+                elementList = []
+                intCount = 0
+                columns = line.split(' ')
+                for col in columns:
+                    if col != '':
+                        intCount += 1
+                        if intCount > 1 and intCount <6: elementList.append(int(col))
+                if elementList != []: elementData.append(elementList)
             except: pass
         elif meshValuesTrigger == True:
             try:
-                columns = line.split('   ')
-                if dataType == 0: meshValues.append(float(columns[-3]))
-                else: meshValues.append(math.sqrt((math.pow(float(columns[-1]),2))+(math.pow(float(columns[-2]),2))))
+                valList = []
+                intCount = 0
+                columns = line.split(' ')
+                for col in columns:
+                    if col != '':
+                        intCount += 1
+                        if intCount > 1 and intCount <5: valList.append(float(col))
+                if valList != []:
+                    if dataType == 0: meshValues.append(valList[0])
+                    else: meshValues.append(math.sqrt((math.pow(float(valList[1]),2))+(math.pow(float(valList[2]),2))))
+                    xCoord = float(coordList[0])
+                    yCoord = float(coordList[1])
+                    pointData.append(rc.Geometry.Point3d(xCoord, yCoord, 0))
             except: pass
         elif disjointTrigger == True:
-            columns = line.split('  ')
-            for val in columns:
-                try: disjointedIndices.append(int(val))
-                except: pass
+            indexList = []
+            columns = line.split(' ')
+            for col in columns:
+                if col != '':
+                    try: indexList.append(int(col))
+                    except: pass
+            if indexList != []: disjointedIndices.extend(indexList)
     
     resultFile.close()
     
