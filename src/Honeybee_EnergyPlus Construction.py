@@ -44,13 +44,17 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Construction"
 ghenv.Component.NickName = 'EPConstruction'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_01_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
+
+import scriptcontext as sc
+import Grasshopper.Kernel as gh
+import os
 
 # set the right names
 numInputs = ghenv.Component.Params.Input.Count
@@ -60,13 +64,12 @@ for input in range(numInputs):
     
     ghenv.Component.Params.Input[input].NickName = inputName
     ghenv.Component.Params.Input[input].Name = inputName
+    
 ghenv.Component.Attributes.Owner.OnPingDocument()
-
-
-# read the layers
-import scriptcontext as sc
-import Grasshopper.Kernel as gh
-import os
+if numInputs > 11:
+    err = "Maximum number of layers in an EnergyPlus construction is 10.\n" + \
+          "Remove the last input you just added to the component"
+    raise ValueError(err)
 
 def main():
     
