@@ -39,10 +39,10 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Decompose EP Material"
 ghenv.Component.NickName = 'DecomposeEPMaterial'
-ghenv.Component.Message = 'VER 0.0.58\nDEC_30_2015'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_02_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.56\nJAN_02_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass

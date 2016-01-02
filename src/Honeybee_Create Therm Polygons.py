@@ -47,10 +47,10 @@ import math
 
 ghenv.Component.Name = 'Honeybee_Create Therm Polygons'
 ghenv.Component.NickName = 'createThermPolygons'
-ghenv.Component.Message = 'VER 0.0.58\nDEC_30_2015'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_02_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
-#compatibleHBVersion = VER 0.0.56\nNOV_16_2015
+#compatibleHBVersion = VER 0.0.56\nJAN_02_2015
 #compatibleLBVersion = VER 0.0.59\nNOV_07_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
 except: pass
@@ -202,6 +202,10 @@ def main(geometry, material, srfName, RGBColor):
         
         #Make the therm polygon.
         HBThermPolygon = hb_thermPolygon(geometry.Faces[faceCount].DuplicateFace(False), material, srfName, plane, RGBColor)
+        
+        if HBThermPolygon.warning != None:
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, HBThermPolygon.warning)
         
         HBThermPolygons.append(HBThermPolygon)
     

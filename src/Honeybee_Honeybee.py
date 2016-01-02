@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.58\nDEC_31_2015'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_02_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -3647,8 +3647,10 @@ class EPMaterialAux(object):
                 UValueIP = self.convertUValueToIP(UValueSI)
             else:
                 for layer in materialObj.keys():
-                    comments.append(layer)
-                    values.append(materialObj[layer])
+                    if layer == 'Name': pass
+                    else:
+                        comments.append(layer)
+                        values.append(materialObj[layer])
             
             return values, comments, UValueSI, UValueIP
         except Exception, e:
@@ -7086,14 +7088,17 @@ class thermPolygon(object):
         self.objectType = "ThermPolygon"
         self.hasChild = False
         self.name = srfName
+        self.warning = None
         
         #Check if the material exists in the THERM Library and, if not, add it.
-        if material.upper() in sc.sticky["honeybee_thermMaterialLib"].keys():
+        if material.upper() in sc.sticky["honeybee_materialLib"].keys() or material.upper() in sc.sticky["honeybee_windowMaterialLib"].keys(): material = self.makeThermMatFromEPMat(material, RGBColor)
+        elif material.upper() in sc.sticky["honeybee_thermMaterialLib"].keys():
             if RGBColor == None: RGBColor = sc.sticky["honeybee_thermMaterialLib"][material.upper()]["RGBColor"]
             elif sc.sticky["honeybee_thermMaterialLib"][material.upper()]["RGBColor"] == RGBColor: pass
             else: material = self.makeThermMatCopy(material, material+str(RGBColor), RGBColor)
         else:
-            material = self.makeThermMatFromEPMat(material, RGBColor)
+            material = None
+            self.warning = 'Failed to fins material in either the therm maerial, EP Material, or EP Window Material libraries.'
         self.material = material
         
         #Extract the segments of the polyline and make sure none of them are curved.
@@ -7135,6 +7140,7 @@ class thermPolygon(object):
         return materialName
     
     def makeThermMatFromEPMat(self, material, RGBColor):
+        warning = None
         #Make a sub-dictionary for the material.
         sc.sticky["honeybee_thermMaterialLib"][material] = {}
         
@@ -7165,14 +7171,12 @@ class thermPolygon(object):
             sc.sticky["honeybee_thermMaterialLib"][material]["CavityModel"] = 5
         elif sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] == None:
             #This is a no-mass material and we are not going to be able to figure out a conductivity. The best we can do is give a warning.
-            if values[0] == "WindowMaterial:SimpleGlazingSystem": sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] = values[2]*0.01
-            elif values[0] == "WindowMaterial:NoMass": sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] = values[3]/0.01
-            warning = "You have connected a No-Mass material and, as a result, Honeybee can not figure out what conductivity the material has. \n " +\
-            "Honeybee is going to assume that the No-mass material is vert thin with a thickness of 1 cm but we might be completely off.  n\ " +\
-            "Try connecting a material with mass or make you own THERM material."
-            print warning
-            w = gh.GH_RuntimeMessageLevel.Warning
-            ghenv.Component.AddRuntimeMessage(w, warning)
+            if values[0] == "WindowMaterial:SimpleGlazingSystem": sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] = float(values[2])*0.01
+            elif values[0] == "WindowMaterial:NoMass": sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] = float(values[3])/0.01
+            self.warning = "You have connected a No-Mass material and, as a result, Honeybee can not figure out what conductivity the material has. \n " +\
+            "Honeybee is going to assume that the No-mass material is very thin with a thickness of 1 cm but we might be completely off.  \n " +\
+            "Try connecting a material with mass or make you own EnergyPlus material and connect it to this component."
+            print self.warning
         
         return material
 
