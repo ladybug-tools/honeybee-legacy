@@ -129,7 +129,7 @@ def checkTheInputs():
         return -1
     
     #Make sure that all of the geometry is in the same plane.
-    basePlaneNormal = thermPolygons[0].normalVector
+    basePlaneNormal = copy.copy(thermPolygons[0].normalVector)
     if basePlaneNormal.Z < 0: basePlaneNormal.Reverse()
     
     allPolygonGeo = []
@@ -172,7 +172,7 @@ def checkTheInputs():
             polyNormalRev = rc.Geometry.Vector3d(polygon.normalVector)
             polyNormalRev.Reverse()
             if polyNormalRev == basePlaneNormal:
-                
+                #print polygon.normalVector
                 polygon.normalVector = polyNormalRev
                 polygon.plane.Flip()
                 polygon.geometry.Flip()
