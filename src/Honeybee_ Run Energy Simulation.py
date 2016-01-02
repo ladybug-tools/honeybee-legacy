@@ -61,7 +61,7 @@ Provided by Honeybee 0.0.58
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.58\nDEC_30_2015'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_02_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nDEC_28_2015
@@ -2101,8 +2101,8 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         print "[8 of 8] No outputs! You usually want to get some outputs when you run an analysis. Just saying..."
         print "We'll just request some energy-related outputs for you that are monthly."
         outPutsDefalut = 'OutputControl:Table:Style,Comma; \n' + \
-            'Output:Variable,*,Zone Ideal Loads Zone Total Cooling Energy, monthly; \n' + \
-            'Output:Variable,*,Zone Ideal Loads Zone Total Heating Energy, monthly; \n' + \
+            'Output:Variable,*,Zone Ideal Loads Supply Air Total Cooling Energy, monthly; \n' + \
+            'Output:Variable,*,Zone Ideal Loads Supply Air Total Heating Energy, monthly; \n' + \
             'Output:Variable,*,Zone Lights Electric Energy, monthly; \n' + \
             'Output:Variable,*,Zone Electric Equipment Electric Energy, monthly;'
         idfFile.write('\n')
