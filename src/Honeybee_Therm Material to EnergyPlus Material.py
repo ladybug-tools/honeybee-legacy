@@ -77,7 +77,7 @@ def checkInputs():
 def main(thermMaterial, roughness, thickness, density, specificHeat):
     
     name = thermMaterial['Name']
-    conductivity = thermMaterial['Conductivity']
+    conductivity = float(thermMaterial['Conductivity'])*1.73
     thermAbsp = thermMaterial['Emissivity']
     solAbsp = thermMaterial['Absorptivity']
     visAbsp = thermMaterial['Absorptivity']
