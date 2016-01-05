@@ -48,7 +48,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Lookup Daylighting Folder"
 ghenv.Component.NickName = 'LookupFolder_Daylighting'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_04_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -117,7 +117,7 @@ def main(studyFolder):
     epwFile = str.Empty
     analysisType = str.Empty
     analysisMesh = []
-    
+    iesFiles = []
     radianceFiles = []
     materialFiles = []
     dgpFiles = []
@@ -157,6 +157,8 @@ def main(studyFolder):
                     radianceFiles.append(os.path.join(studyFolder, fileName))
             elif fileName.lower().endswith(".sky"):
                 skyFiles.append(os.path.join(studyFolder, fileName))
+            elif fileName.lower().endswith(".ies"):
+                iesFiles.append(os.path.join(studyFolder, fileName))
             elif fileName.lower().endswith(".typ"):
                 with open(os.path.join(studyFolder, fileName), "r") as typf:
                     analysisType = typf.readline().strip()
@@ -189,9 +191,9 @@ def main(studyFolder):
     
     imgFiles = gifFiles + tifFiles + bmpFiles + jpgFiles
     
-    return msg, [illFiles, resFiles, ptsFiles, hdrFiles, imgFiles, epwFile, \
-           analysisType, analysisMesh, radianceFiles, materialFiles, skyFiles, \
-           dgpFiles, octFiles, annualProfiles, htmReport]
+    return msg, [illFiles, resFiles, ptsFiles, hdrFiles, imgFiles, iesFiles, \
+           epwFile, analysisType, analysisMesh, radianceFiles, materialFiles, \
+           skyFiles, dgpFiles, octFiles, annualProfiles, htmReport]
     
 
 ghenv.Component.Params.Output[2].NickName = "resultFiles"
@@ -223,7 +225,7 @@ if _studyFolder!=None:
         if msg!=str.Empty:
             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
         else:
-            illFiles, resFiles, ptsFiles, hdrFiles, imageFiles, epwFile, analysisType, \
+            illFiles, resFiles, ptsFiles, hdrFiles, imageFiles, iesFiles, epwFile, analysisType, \
             analysisMesh, radianceFiles, materialFiles, skyFiles, dgpFiles, octFiles, \
             annualProfiles, htmReport = results
             
