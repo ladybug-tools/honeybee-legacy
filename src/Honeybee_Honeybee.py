@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.58\nJAN_02_2016'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_04_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -8021,12 +8021,12 @@ if checkIn.letItFly:
                     EPLibs.importEPLibrariesFromFile(path, isMatFile, cleanLibs, False)                
                 
                 EPLibs.report()
-                sc.sticky["honeybee_materialLib"] = EPLibs.getEPMaterials()
-                sc.sticky["honeybee_windowMaterialLib"] = EPLibs.getEPWindowMaterial()
-                sc.sticky ["honeybee_constructionLib"] = EPLibs.getEPConstructions()
-                sc.sticky["honeybee_ScheduleLib"] = EPLibs.getEPSchedule()
-                sc.sticky["honeybee_ScheduleTypeLimitsLib"] = EPLibs.getEPScheduleTypeLimits()
-                sc.sticky["honeybee_thermMaterialLib"] = EPLibs.getTHERMMaterials()
+                sc.sticky["honeybee_materialLib"].update(EPLibs.getEPMaterials())
+                sc.sticky["honeybee_windowMaterialLib"].update(EPLibs.getEPWindowMaterial())
+                sc.sticky ["honeybee_constructionLib"].update(EPLibs.getEPConstructions())
+                sc.sticky["honeybee_ScheduleLib"].update(EPLibs.getEPSchedule())
+                sc.sticky["honeybee_ScheduleTypeLimitsLib"].update(EPLibs.getEPScheduleTypeLimits())
+                sc.sticky["honeybee_thermMaterialLib"].update(EPLibs.getTHERMMaterials())
             except:
                 print msg
                 ghenv.Component.AddRuntimeMessage(w, msg)
