@@ -506,6 +506,8 @@ if _iesFilePath and _luminaireID and _luminaireZone and checkLadybug and checkHo
 
     filenamefull=os.path.split(_iesFilePath)[1]
     filenameonly,ext = os.path.splitext(filenamefull)
+    originalIesFileName = filenameonly
+    
     
     if _luminaireID:
         filenameonly= _luminaireID
@@ -515,8 +517,9 @@ if _iesFilePath and _luminaireID and _luminaireZone and checkLadybug and checkHo
         dirpath = os.path.join(dirpath,'ies')
 
     else:
-         dirpath = os.path.split(_iesFilePath)[0]
-         dirpath = os.path.join(dirpath,'ies')
+#         dirpath = os.path.split(_iesFilePath)[0]
+         dirpath = sc.sticky['Honeybee_DefaultFolder']
+         dirpath = os.path.join(dirpath,'ies',originalIesFileName)
          
     if not os.path.exists(dirpath):
        os.mkdir(dirpath)
