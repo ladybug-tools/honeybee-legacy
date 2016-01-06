@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.58\nJAN_04_2016'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_05_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1942,7 +1942,7 @@ class hb_WriteRAD(object):
             
             initBatchFile = open(initBatchFileName, "w")
             initBatchFile.write(pathStr)
-            initBatchStr =  'C:\n' + \
+            initBatchStr =  os.path.splitdrive(self.hb_DSPath)[0] + '\n' + \
                             'CD ' + self.hb_DSPath + '\n' + \
                             'epw2wea  ' + subWorkingDir + "\\" + self.lb_preparation.removeBlankLight(locName) + '.epw ' + subWorkingDir + "\\" +  self.lb_preparation.removeBlankLight(locName) + '.wea\n' + \
                             ':: 1. Generate Daysim version of Radiance Files\n' + \
@@ -2063,7 +2063,7 @@ class hb_WriteRAD(object):
             pathStr = "SET RAYPATH=.;" + self.hb_RADLibPath + "\nPATH=" + self.hb_RADPath + ";$PATH\n"
             batchFile.write(pathStr)
             
-            batchFile.write("c:\n")
+            batchFile.write(os.path.splitdrive(subWorkingDir)[0]  + "\n")
             batchFile.write("cd " + subWorkingDir + "\n")
             
             # write OCT file
@@ -2112,7 +2112,7 @@ class hb_WriteRAD(object):
                 batchFile = open(batchFileName, "w")
                 # write path files
                 batchFile.write(pathStr)
-                batchFile.write("c:\n")
+                batchFile.write(os.path.splitdrive(subWorkingDir)[0] + "\n")
                 batchFile.write("cd " + subWorkingDir + "\n")
                 
                 # calculate vs and vl for thi cpu
@@ -2151,7 +2151,7 @@ class hb_WriteRAD(object):
                     
                     # write path files
                     pcompFile.write(pathStr)
-                    pcompFile.write("c:\n")
+                    pcompFile.write(os.path.splitdrive(subWorkingDir)[0] + "\n")
                     pcompFile.write("cd " + subWorkingDir + "\n")
                     
                     for mergedName, pieces in HDRPieces.items():
@@ -2180,7 +2180,7 @@ class hb_WriteRAD(object):
                 batchFile = open(batchFileName, "w")
                 # write path files
                 batchFile.write(pathStr)
-                batchFile.write("c:\n")
+                batchFile.write(os.path.splitdrive(subWorkingDir)[0] + "\n")
                 batchFile.write("cd " + subWorkingDir + "\n")
                 
                 # 3.4. add rtrace lin
