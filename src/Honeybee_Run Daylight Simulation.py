@@ -54,7 +54,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Run Daylight Simulation"
 ghenv.Component.NickName = 'runDaylightAnalysis'
-ghenv.Component.Message = 'VER 0.0.58\nDEC_23_2015'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_10_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 #compatibleHBVersion = VER 0.0.56\nDEC_21_2015
@@ -159,6 +159,7 @@ def main(north, originalHBObjects, analysisRecipe, runRad, numOfCPUs, workingDir
         # double check and make sure that the parameters are set good enough
         # for grid based simulation
         hb_writeRADAUX.checkInputParametersForGridBasedAnalysis()
+        analysisRecipe.radParameters =  hb_writeRADAUX.radParameters
         
     #conversionFac = lb_preparation.checkUnits()
     
