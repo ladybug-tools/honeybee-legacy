@@ -61,7 +61,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_09_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nOCT_31_2015
@@ -82,8 +82,11 @@ import shutil
 rc.Runtime.HostUtils.DisplayOleAlerts(False)
 
 if sc.sticky.has_key('honeybee_release'):
-
-    openStudioLibFolder = "C:/Program Files/OpenStudio 1.9.0/CSharp/openstudio/"
+    
+    installedOPS = [f for f in os.listdir("C:\\Program Files") if f.startswith("OpenStudio")]
+    installedOPS = sorted(installedOPS, key = lambda x: int("".join(x.split(" ")[-1].split("."))), reverse = True)
+    
+    openStudioLibFolder = "C:/Program Files/%s/CSharp/openstudio/"%installedOPS[0]
     
     if os.path.isdir(openStudioLibFolder) and os.path.isfile(os.path.join(openStudioLibFolder, "openStudio.dll")):
         # openstudio is there
@@ -2150,16 +2153,27 @@ class EPFeaturesNotInOS(object):
 
 
 class RunOPS(object):
-    def __init__(self, model, weatherFilePath, HBZones, csvSchedules, csvScheduleCount, additionalcsvSchedules):
+    def __init__(self, model, weatherFilePath, HBZones, csvSchedules, \
+            csvScheduleCount, additionalcsvSchedules, openStudioLibFolder):
         self.weatherFile = weatherFilePath # just for batch file as an alternate solution
-        self.EPPath = ops.Path(sc.sticky["honeybee_folders"]["EPPath"] + "\EnergyPlus.exe")
+        self.openStudioDir = "/".join(openStudioLibFolder.split("/")[:3]) + "/share/openstudio"
+        self.EPFolder = self.getEPFolder()
+        self.EPPath = ops.Path(self.EPFolder + "\EnergyPlus.exe")
         self.epwFile = ops.Path(weatherFilePath)
-        self.iddFile = ops.Path(sc.sticky["honeybee_folders"]["EPPath"] + "\Energy+.idd")
+        self.iddFile = ops.Path(self.EPFolder + "\Energy+.idd")
         self.model = model
         self.HBZones = HBZones
         self.csvSchedules = csvSchedules
         self.csvScheduleCount = csvScheduleCount
         self.additionalcsvSchedules = additionalcsvSchedules
+    
+    def getEPFolder(self):
+        print self.openStudioDir
+        fList = os.listdir(self.openStudioDir)
+        for f in fList:
+            fullpath = os.path.join(self.openStudioDir, f)
+            if os.path.isdir(fullpath) and f.startswith("EnergyPlusV"):
+                return fullpath
     
     def osmToidf(self, workingDir, projectName, osmPath):
         # create a new folder to run the analysis
@@ -2515,7 +2529,7 @@ class RunOPS(object):
         
         if not useRunManager:
             
-            resultFile = self.writeBatchFile(idfFolder, "ModelToIdf\\in.idf", self.weatherFile, EPDirectory = sc.sticky["honeybee_folders"]["EPPath"])
+            resultFile = self.writeBatchFile(idfFolder, "ModelToIdf\\in.idf", self.weatherFile)
             return os.path.join(idfFolder, "ModelToIdf", "in.idf"), resultFile
         
         outputPath = ops.Path(idfFolder)
@@ -2566,10 +2580,11 @@ class RunOPS(object):
              rm.Dispose() # in case anything goes wrong it closes the rm
              print `e`
     
-    def writeBatchFile(self, workingDir, idfFileName, epwFileAddress, EPDirectory = sc.sticky["honeybee_folders"]["EPPath"]):
+    def writeBatchFile(self, workingDir, idfFileName, epwFileAddress):
         """
         This is here as an alternate until I can get RunManager to work
         """
+        EPDirectory = self.EPFolder
         workingDrive = workingDir[:2]
         if idfFileName.EndsWith('.idf'):  shIdfFileName = idfFileName.replace('.idf', '')
         else: shIdfFileName = idfFileName
@@ -2579,8 +2594,8 @@ class RunOPS(object):
         fullPath = workingDir + shIdfFileName
         
         folderName = workingDir.replace( (workingDrive + '\\'), '')
-        batchStr = workingDrive + '\ncd\\' +  folderName + '\n' + EPDirectory + \
-                '\\Epl-run ' + fullPath + ' ' + fullPath + ' idf ' + epwFileAddress + ' EP N nolimit N N 0 Y'
+        batchStr = workingDrive + '\ncd\\' +  folderName + '\n"' + EPDirectory + \
+                '\\Epl-run" ' + fullPath + ' ' + fullPath + ' idf ' + epwFileAddress + ' EP N nolimit N N 0 Y'
     
         batchFileAddress = fullPath +'.bat'
         batchfile = open(batchFileAddress, 'w')
@@ -2591,167 +2606,6 @@ class RunOPS(object):
         os.system(batchFileAddress)
         return fullPath + "Zsz.csv",fullPath+".sql",fullPath+".csv"
 
-class RunOPSRManage(object):
-    def __init__(self, model, measuredict, weatherFilePath):
-        self.weatherFile = weatherFilePath # just for batch file as an alternate solution
-        self.EPPath = ops.Path(sc.sticky["honeybee_folders"]["EPPath"] + "\EnergyPlus.exe")
-        self.epwFile = ops.Path(weatherFilePath)
-        self.iddFile = ops.Path(sc.sticky["honeybee_folders"]["EPPath"] + "\Energy+.idd")
-        self.model = model
-        self.measuredict = measuredict
-        
-    def osmToidf(self, workingDir, projectName, osmPath):
-        # create a new folder to run the analysis
-        projectFolder =os.path.join(workingDir, projectName)
-        
-        try: os.mkdir(projectFolder)
-        except: pass
-        
-        idfFolder = os.path.join(projectFolder)
-        idfFilePath = ops.Path(os.path.join(projectFolder, "ModelToIdf", "in.idf"))
-        
-        forwardTranslator = ops.EnergyPlusForwardTranslator()
-        workspace = forwardTranslator.translateModel(self.model)
-        
-        # remove the current object
-        tableStyleObjects = workspace.getObjectsByType(ops.IddObjectType("OutputControl_Table_Style"))
-        for obj in tableStyleObjects: obj.remove()
-
-        tableStyle = ops.IdfObject(ops.IddObjectType("OutputControl_Table_Style"))
-        tableStyle.setString(0, "CommaAndHTML")
-        workspace.addObject(tableStyle)
-        
-        workspace.save(idfFilePath, overwrite = True)
-
-        #DBPath = ops.Path(os.path.join(projectFolder, projectName + "_osmToidf.db"))
-        
-        # start run manager
-        #rm = ops.RunManager(DBPath, True, True)        
-        
-        # create workflow
-        #wf = ops.Workflow("EnergyPlus")
-        
-        # put in queue and let it go
-        #rm.enqueue(wf.create(ops.Path(projectFolder), osmPath, self.epwFile), True)
-        #rm.setPaused(False)
-        
-        #while rm.workPending():
-        #    time.sleep(.5)
-        #    print "Converting osm to idf ..."
-        
-        #rm.Dispose() # don't remove this as Rhino will crash if you don't dispose run manager
-        
-        return idfFolder, idfFilePath
-        
-    def runAnalysis(self, osmFile, RunSimulation = False):
-        
-
-        # Preparation
-        workingDir, fileName = os.path.split(osmFile)
-        projectName = (".").join(fileName.split(".")[:-1])
-        osmPath = ops.Path(osmFile)
-        
-        
-        projectFolder =os.path.join(workingDir, projectName)
-        
-        try: os.mkdir(projectFolder)
-        except: pass
-        
-        try:
-            # create idf - I separated this job as putting them together
-            # was making EnergyPlus to crash
-            #idfFolder, idfPath = self.osmToidf(workingDir, projectName, osmPath)
-            zone_handles = " "
-            #remote = ops.RemoteBCL()
-            #remote.downloadComponent("5f126600-ca2f-4611-9121-6dfea2de49d6")
-            bclfile = 'C:\\Users\\Chiensi\\BCL\\5f126600-ca2f-4611-9121-6dfea2de49d6\\e83a66c9-c8d6-4896-a979-ba75f3dacb02'
-            #local = ops.LocalBCL()
-            #print dir(local)
-            #measure = local.getMeasure("5f126600-ca2f-4611-9121-6dfea2de49d6")
-            
-            #measure = component.files("rb")
-            #if measure.empty == True:
-            #  print 'No .rb file found'
-            #  assert False
-            #  return
-            
-            #measure_path = component.files("rb")[0]
-            bclpath = ops.Path(bclfile)
-            #measure_root_path = os.path.dirname(bclpath)
-            #print measure_root_path
-            
-            bcl_measure = ops.BCLMeasure(bclpath)
-            
-            DBPath = ops.Path(os.path.join(projectFolder, projectName + "_osmToidf.db"))
-            run_manager = ops.RunManager(DBPath,True)
-            #run_manager.setPaused(true)
-            
-            values = []
-            ruleset = ops.OpenStudioRuleset()
-            #print dir(ruleset)
-            
-            # arguments = ruleset.getArguments(bcl_measure,model)
-            arguments = ""
-            zone_arg = arguments[0]
-            zone_arg.setValue(zone_handles)
-            values.append(zone_arg)
-            
-            rjb = ops.Runmanager.RubyJobBuilder(bcl_measure,values)
-            #rjb.setIncludeDir(OpenStudiio::Path.new("$OpenStudio_Dir")
-    
-            workflow = ops.Runmanager.Workflow()
-            workflow.addJob(rjb.toWorkItem())
-    
-            if RunSimulation:
-                workflow.addJob(ops.Runmanager.JobType("ModelToIdf"))
-                workflow.addJob(ops.Runmanager.JobType("EnergyPlusPreProcess"))
-                workflow.addJob(ops.Runmanager.JobType("EnergyPlus"))
-            
-            co = ops.RunManager.ConfigOptions()
-            co.fastFindEnergyPlus()
-            co.findTools(False)
-           
-            tools = co.getTools()
-            workflow.add(tools)
-    
-            
-            job = workflow.create(projectFolder, osmPath, self.epwFile)
-            run_manager.enqueue(job, false)
-            run_manager.waitForFinished()
-        
-
-                
-        except Exception, e:
-             try: 
-                run_manager.Dispose() # in case anything goes wrong it closes the rm
-             except: 
-                pass
-             print `e`
-    
-    def writeBatchFile(self, workingDir, idfFileName, epwFileAddress, EPDirectory = sc.sticky["honeybee_folders"]["EPPath"]):
-        """
-        This is here as an alternate until I can get RunManager to work
-        """
-        workingDrive = workingDir[:2]
-        if idfFileName.EndsWith('.idf'):  shIdfFileName = idfFileName.replace('.idf', '')
-        else: shIdfFileName = idfFileName
-        
-        if not workingDir.EndsWith('\\'): workingDir = workingDir + '\\'
-        
-        fullPath = workingDir + shIdfFileName
-        
-        folderName = workingDir.replace( (workingDrive + '\\'), '')
-        batchStr = workingDrive + '\ncd\\' +  folderName + '\n' + EPDirectory + \
-                '\\Epl-run ' + fullPath + ' ' + fullPath + ' idf ' + epwFileAddress + ' EP N nolimit N N 0 Y'
-    
-        batchFileAddress = fullPath +'.bat'
-        batchfile = open(batchFileAddress, 'w')
-        batchfile.write(batchStr)
-        batchfile.close()
-        
-        #execute the batch file
-        os.system(batchFileAddress)
-        return fullPath + ".csv"
 
 def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameters, simulationOutputs, runIt, workingDir = "C:\ladybug", fileName = "openStudioModel.osm"):
     
@@ -2812,6 +2666,12 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
 
     print 'Current working directory is set to: ', subWorkingDir
     
+    # remove current folder
+    try:
+        lb_preparation.nukedir(subWorkingDir, rmdir = False)
+    except:
+        pass
+        
     fname = os.path.join(subWorkingDir, fileName + ".osm")
     
     # initiate OpenStudio model
@@ -2958,9 +2818,9 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     
     
     if runIt:
-        hb_runOPS = RunOPS(model, epwWeatherFile, HBZones, csvSchedules, csvScheduleCount, additionalcsvSchedules)
-        #hb_runOPSRm = RunOPSRManage(model, hb_writeOPS.HVACSystemDict, epwWeatherFile)
-        #hb_runOPSRm.runAnalysis(fname, False)
+        hb_runOPS = RunOPS(model, epwWeatherFile, HBZones, csvSchedules, \
+            csvScheduleCount, additionalcsvSchedules, openStudioLibFolder)
+            
         idfFile, resultFile = hb_runOPS.runAnalysis(fname, useRunManager = False)
         
         try:
@@ -2975,7 +2835,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
                     resultFileAddress = None
                 elif "** Severe  **" in line:
                     comment = "The simulation has not run correctly because of this severe error: \n" + str(line)
-                    c = gh.GH_RuntimeMessageLevel.Remark
+                    c = gh.GH_RuntimeMessageLevel.Warning
                     ghenv.Component.AddRuntimeMessage(c, comment)
             errFile.close()
         except:
