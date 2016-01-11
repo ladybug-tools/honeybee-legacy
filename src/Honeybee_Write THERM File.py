@@ -50,7 +50,7 @@ import datetime
 
 ghenv.Component.Name = 'Honeybee_Write THERM File'
 ghenv.Component.NickName = 'writeTHERM'
-ghenv.Component.Message = 'VER 0.0.57\nDEC_31_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJAN_11_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.56\nDEC_30_2015
@@ -437,6 +437,10 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
     #For now, I m not icnluding this functionality until I understand it better.
     
     
+    #Check the orientation of the baseplane and specify it either as a sill or jamb.
+    CrossSectionType = 'Sill'
+    if basePlane.Normal.Z < -0.70710678118 or basePlane.Normal.Z > 0.70710678118: CrossSectionType = 'Jamb'
+    
     
     ### WRITE EVERYTHING TO THERM FILE
     #Set up the file.
@@ -456,7 +460,7 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
         '<CreatedBy>' + os.getenv("USERNAME")+ '</CreatedBy>\n' + \
         '<Company></Company>\n' + \
         '<Client></Client>\n' + \
-        '<CrossSectionType>Sill</CrossSectionType>\n' + \
+        '<CrossSectionType>'+ CrossSectionType + '</CrossSectionType>\n' + \
         '<Notes>RhinoUnits-' + str(sc.doc.ModelUnitSystem) + ', RhinoOrigin-'+ '(' + str(thermFileOrigin.X) + ',' + str(thermFileOrigin.Y) + ',' + str(thermFileOrigin.Z) + '), RhinoXAxis-'+ '(' + str(basePlane.XAxis.X) + ',' + str(basePlane.XAxis.Y) + ',' + str(basePlane.XAxis.Z) + '), RhinoYAxis-'+ '(' + str(basePlane.YAxis.X) + ',' + str(basePlane.YAxis.Y) + ',' + str(basePlane.YAxis.Z) + '), RhinoZAxis-'+ '(' + str(basePlane.ZAxis.X) + ',' + str(basePlane.ZAxis.Y) + ',' + str(basePlane.ZAxis.Z)+')</Notes>\n' + \
         '<Units>SI</Units>\n' + \
         '<MeshControl MeshLevel="6" ErrorCheckFlag="1" ErrorLimit="10.000000" MaxIterations="5" CMAflag="0" />\n'
