@@ -56,7 +56,7 @@ import math
 
 ghenv.Component.Name = 'Honeybee_Read THERM Result'
 ghenv.Component.NickName = 'readTHERM'
-ghenv.Component.Message = 'VER 0.0.57\nDEC_31_2015'
+ghenv.Component.Message = 'VER 0.0.57\nJAN_11_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.56\nDEC_31_2015
@@ -185,7 +185,7 @@ def main(dataType, planeReorientation, unitsScale, rhinoOrig):
             pointTrigger = False
             elementTrigger = False
             disjointTrigger = False
-        elif 'Boundary Element Edge Data: nseg=     168  type=conv' in line: meshValuesTrigger = False
+        elif 'Boundary Element Edge Data:' in line: meshValuesTrigger = False
         elif pointTrigger == True:
             try:
                 coordList = []
@@ -242,6 +242,7 @@ def main(dataType, planeReorientation, unitsScale, rhinoOrig):
     for count, index in enumerate(disjointedIndices):
         del pointData[index-1-count]
         del meshValues[index-1-count]
+    
     
     #If we have a Rhino transform from the thermFile, transform all of the point data.
     if planeReorientation != None:
