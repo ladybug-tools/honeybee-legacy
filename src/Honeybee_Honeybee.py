@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.58\nJAN_05_2016'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_11_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -182,7 +182,7 @@ class CheckIn():
         # print int(availableVersion.replace(".", "")), int(currentVersion.replace(".", ""))
         return int(availableVersion.replace(".", "")) > int(currentVersion.replace(".", ""))
     
-    def checkForUpdates(self, LB= True, HB= True, OpenStudio = True, template = True):
+    def checkForUpdates(self, LB= True, HB= True, OpenStudio = True, template = True, therm = True):
         
         url = "https://github.com/mostaphaRoudsari/ladybug/raw/master/resources/versions.txt"
         versionFile = os.path.join(sc.sticky["Honeybee_DefaultFolder"], "versions.txt")
@@ -190,7 +190,8 @@ class CheckIn():
         client.DownloadFile(url, versionFile)
         with open("c:/ladybug/versions.txt", "r")as vf:
             versions= eval("\n".join(vf.readlines()))
-            
+        honeybeeDefaultFolder = sc.sticky["Honeybee_DefaultFolder"]
+        
         if LB:
             ladybugVersion = versions['Ladybug']
             currentLadybugVersion = self.getComponentVersion() # I assume that this function will be called inside Ladybug_ladybug Component
@@ -231,7 +232,6 @@ class CheckIn():
                 sc.sticky["isNewerOSAvailable"] = False
                 
         if template:
-            honeybeeDefaultFolder = sc.sticky["Honeybee_DefaultFolder"]
             templateFile = os.path.join(honeybeeDefaultFolder, 'OpenStudioMasterTemplate.idf')
             
             # check file doesn't exist then it should be downloaded
@@ -249,6 +249,22 @@ class CheckIn():
             templateVersion = versions['Template']
             return self.isNewerVersionAvailable(currentTemplateVersion, templateVersion)
         
+        if therm:
+            thermFile = os.path.join(honeybeeDefaultFolder, 'thermMaterial.csv')
+            # check file doesn't exist then it should be downloaded
+            if not os.path.isfile(thermFile):
+                return True
+            
+            # find the version
+            try:
+                with open(thermFile) as tempFile:
+                    currentThermVersion = eval(tempFile.readline().split("!")[-1].strip())["version"]
+            except Exception, e:
+                return True
+            
+            # finally if the file exist and already has a version, compare the versions
+            thermVersion = versions['THERM']
+            return self.isNewerVersionAvailable(currentThermVersion, thermVersion)
 
 class versionCheck(object):
     
@@ -657,7 +673,7 @@ class HB_GetEPLibraries:
         
         with open(matFile, "r") as mFile:
             for rowCount, row in enumerate(mFile):
-                if rowCount != 0:
+                if rowCount > 1:
                     try:
                         matPropLine = row.split(',')
                         matNameLine = row.split('"')
@@ -7869,7 +7885,7 @@ def checkGHPythonVersion(target = "0.6.0.3"):
     else: return True
 
 try:
-    downloadTemplate = checkIn.checkForUpdates(LB= False, HB= True, OpenStudio = True, template = True)
+    downloadTemplate = checkIn.checkForUpdates(LB= False, HB= True, OpenStudio = True, template = True, therm = True)
 except:
     # no internet connection
     downloadTemplate = False
