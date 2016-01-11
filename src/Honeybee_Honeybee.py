@@ -230,7 +230,25 @@ class CheckIn():
                 sc.sticky["isNewerOSAvailable"] = True
             else:
                 sc.sticky["isNewerOSAvailable"] = False
-                
+        
+        if therm:
+            thermFile = os.path.join(honeybeeDefaultFolder, 'thermMaterial.csv')
+            # check file doesn't exist then it should be downloaded
+            isNewerThermAvailable = False
+            if not os.path.isfile(thermFile):
+                isNewerThermAvailable = True
+            else:
+                # find the version
+                with open(thermFile) as tempFile:
+                    currentThermVersion = eval(tempFile.readline().split("!")[-1].strip())["version"]
+            
+            # finally if the file exist and already has a version, compare the versions
+            thermVersion = versions['THERM']
+            if isNewerThermAvailable or self.isNewerVersionAvailable(currentThermVersion, thermVersion):
+                sc.sticky["isNewerTHERMAvailable"] = True
+            else:
+                sc.sticky["isNewerTHERMAvailable"] = False
+        
         if template:
             templateFile = os.path.join(honeybeeDefaultFolder, 'OpenStudioMasterTemplate.idf')
             
@@ -248,23 +266,6 @@ class CheckIn():
             # finally if the file exist and already has a version, compare the versions
             templateVersion = versions['Template']
             return self.isNewerVersionAvailable(currentTemplateVersion, templateVersion)
-        
-        if therm:
-            thermFile = os.path.join(honeybeeDefaultFolder, 'thermMaterial.csv')
-            # check file doesn't exist then it should be downloaded
-            if not os.path.isfile(thermFile):
-                return True
-            
-            # find the version
-            try:
-                with open(thermFile) as tempFile:
-                    currentThermVersion = eval(tempFile.readline().split("!")[-1].strip())["version"]
-            except Exception, e:
-                return True
-            
-            # finally if the file exist and already has a version, compare the versions
-            thermVersion = versions['THERM']
-            return self.isNewerVersionAvailable(currentThermVersion, thermVersion)
 
 class versionCheck(object):
     
@@ -440,7 +441,7 @@ class PrepareTemplateEPLibFiles(object):
             return -1
         else:
             libFilePaths = [os.path.join(workingDir, 'OpenStudioMasterTemplate.idf')]
-            
+        
         # download openstudio standards
         if not os.path.isfile(workingDir + '\OpenStudio_Standards.json'):
             try:
@@ -484,7 +485,7 @@ class PrepareTemplateEPLibFiles(object):
             libFilePaths.append(customEPLib)
         
         #download THERM template file.
-        if self.downloadTemplate or not os.path.isfile(thermTemplateFile):
+        if sc.sticky["isNewerTHERMAvailable"] or not os.path.isfile(thermTemplateFile):
             # create a backup from users library
             try: shutil.copyfile(thermTemplateFile, thermBckupfile)
             except: pass
