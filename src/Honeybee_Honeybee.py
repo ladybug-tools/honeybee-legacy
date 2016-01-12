@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.58\nJAN_11_2016'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_12_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -1355,13 +1355,14 @@ class hb_MSHToRAD(object):
             self.matName = "radMaterial"
             
             if radMaterial != None:
+                radMaterial = RADMaterialAux.getRadianceObjectsFromString(radMaterial)[0]
+                
                 try:
-                    self.matName = radMaterial.split("\n")[0].split(" ")[2]
-                except: # Exception, e:
-                    # print `e`
-                    # not a standard radiance material
-                    pass
-            
+                    self.matName = radMaterial.split("\n")[0].split(" ")[-1].rstrip()
+                    assert self.matName != ""
+                except:
+                    raise Exception("Failed to import %s. Double check the material definition."%radMaterial)
+                
         self.RADMaterial = radMaterial
         
     def meshToObj(self):
