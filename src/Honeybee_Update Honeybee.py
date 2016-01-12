@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Update Honeybee"
 ghenv.Component.NickName = 'updateHoneybee'
-ghenv.Component.Message = 'VER 0.0.58\nJAN_11_2016'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_12_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | Developers"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -208,8 +208,13 @@ def updateTheComponent(component, newUOFolder, lb_preparation):
     isNewer, newCode = isNewerVersion(newUO, component)
     # replace the code inside the component with userObject code
     if isNewer:
-        component.Code = newCode
-        component.ExpireSolution(True)
+        if component.CodeInputParam == None:
+            component.Code = newCode
+            component.ExpireSolution(True)
+        else:
+            warning = "Failed to update %s. Remove code input from the component and try again!"%component.Name
+            print warning
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
     
 
 def main(sourceDirectory, updateThisFile, updateAllUObjects):
