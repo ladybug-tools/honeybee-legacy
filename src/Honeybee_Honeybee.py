@@ -7203,7 +7203,7 @@ class thermPolygon(object):
         if values[0] == "WindowMaterial:Gas":
             sc.sticky["honeybee_thermMaterialLib"][material]["Type"] = 1
             sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] = 0.435449 * 0.58
-            sc.sticky["honeybee_thermMaterialLib"][material]["CavityModel"] = 5
+            sc.sticky["honeybee_thermMaterialLib"][material]["CavityModel"] = 4
         elif sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] == None:
             #This is a no-mass material and we are not going to be able to figure out a conductivity. The best we can do is give a warning.
             if values[0] == "WindowMaterial:SimpleGlazingSystem": sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] = float(values[2])*0.01

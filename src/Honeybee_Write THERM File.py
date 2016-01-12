@@ -50,7 +50,7 @@ import datetime
 
 ghenv.Component.Name = 'Honeybee_Write THERM File'
 ghenv.Component.NickName = 'writeTHERM'
-ghenv.Component.Message = 'VER 0.0.57\nJAN_11_2016'
+ghenv.Component.Message = 'VER 0.0.57\nJAN_12_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.56\nDEC_30_2015
@@ -291,6 +291,11 @@ def dictToXMLComplex(propList, dataType):
     xmlStr = xmlStr + '\t</' + dataType + '>\n'
     return xmlStr
 
+permittedAbbreviations = ['NFRC', 'CEN']
+def checkAbbreviations(matName):
+    for abbrev in permittedAbbreviations:
+        if abbrev.title() in matName: matName = matName.replace(abbrev.title(), abbrev.upper())
+    return matName
 
 
 def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundary, thermFileOrigin):
@@ -321,13 +326,14 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
                 matFromLib["Name"] = matFromLib["Name"].title()
                 correctFormatCol = str(System.Drawing.ColorTranslator.ToHtml(matFromLib["RGBColor"]))
                 matFromLib["RGBColor"] = '0x' + correctFormatCol.split('#')[-1]
-                allMaterials.append(matFromLib)
-                #Put in an extra check for certain common abbreviations.
-                if 'Nfrc' in matFromLib["Name"]: matFromLib["Name"] = matFromLib["Name"].replace('Nfrc', 'NFRC')
+                matFromLib["Name"] = checkAbbreviations(matFromLib["Name"])
                 #Check for frame cavity materials.
-                if 'Frame Cavity Slightly Ventilated NFRC' in matFromLib["Name"]:
-                    matFromLib["CavityModel"] = 5
+                if matFromLib["Type"] == 1:
                     airCavityPolygons.append(polygon.geometry)
+                    if 'Frame Cavity Slightly Ventilated NFRC' in matFromLib["Name"]: matFromLib["CavityModel"] = 5
+                    elif 'Frame Cavity NFRC 100' in matFromLib["Name"]: matFromLib["CavityModel"] = 4
+                    elif 'Frame Cavity - CEN Simplified' in matFromLib["Name"]: matFromLib["CavityModel"] = 1
+                allMaterials.append(matFromLib)
             except:
                 warning = "The material " + polygon.material + " could not be found in your material library. \n Make sure your HB_HB component is in the back of your GH canvas by selecting it and hitting Cntrl+B. \n Then, right click on the GH canvas and hit 'recompute.'"
                 print warning
@@ -339,9 +345,8 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
         
         polygonProp = {}
         polygonProp['ID'] = str(pCount+1)
-        #Put in an extra check for certain common abbreviations in material name.
         matName = polygon.material.title()
-        if 'Nfrc' in matName: matName = matName.replace('Nfrc', 'NFRC')
+        matName = checkAbbreviations(matName)
         polygonProp['Material'] = matName
         polygonProp['NSides'] = str(len(polygon.vertices))
         polygonProp['Type'] = "1"
@@ -479,7 +484,7 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
                 for pCount, polygon in enumerate(thermPolygons):
                     polyGeo = polygon.polylineGeo
                     if str(polyGeo.Contains(segEndPt, basePlane, sc.doc.ModelAbsoluteTolerance)) == 'Coincident' and str(polyGeo.Contains(segStartPt, basePlane, sc.doc.ModelAbsoluteTolerance)) == 'Coincident':
-                        if 'Frame Cavity Slightly Ventilated' in polygon.name: boundProp['PolygonID'] = pCount+1
+                        if sc.sticky["honeybee_thermMaterialLib"][polygon.material]['Type'] == 1: boundProp['PolygonID'] = pCount+1
                         else: boundProp['Emissivity'] = thermMatLib[polygon.material]['Emissivity']
                 boundDesc.append(boundProp)
                 
