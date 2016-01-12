@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Update Honeybee"
 ghenv.Component.NickName = 'updateHoneybee'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_11_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | Developers"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -118,11 +118,21 @@ def downloadSourceAndUnzip(lb_preparation):
     return userObjectsFolder
 
 def getAllTheComponents(onlyGHPython = True):
+    
     components = []
     
     document = ghenv.Component.OnPingDocument()
     
-    for component in document.Objects:
+    objects = list(document.Objects)
+    
+    # check if there is any cluster and collect the objects inside clusters
+    for obj in objects:
+        if type(obj) == gh.Special.GH_Cluster:
+            clusterDoc = obj.Document("")
+            for clusterObj in  clusterDoc.Objects:
+                objects.append(clusterObj)
+    
+    for component in objects:
         if onlyGHPython and type(component)!= type(ghenv.Component):
             pass
         else:
@@ -216,17 +226,6 @@ def main(sourceDirectory, updateThisFile, updateAllUObjects):
     
     destinationDirectory = folders.ClusterFolders[0]
 
-    if updateThisFile:
-        # find all the userObjects
-        ghComps = getAllTheComponents()
-        
-        # for each of them check and see if there is a userObject with the same name is available
-        for ghComp in ghComps:
-            if ghComp.Name != "Honeybee_Update Honeybee":
-                updateTheComponent(ghComp, userObjectsFolder, lb_preparation)
-        
-        return "Done!", True
-        
     # copy files from source to destination
     if updateAllUObjects:
         if not userObjectsFolder  or not os.path.exists(userObjectsFolder ):
@@ -267,6 +266,17 @@ def main(sourceDirectory, updateThisFile, updateAllUObjects):
             shutil.copy2(srcFullPath, dstFullPath)
         
         return "Done!" , True
+    
+    if updateThisFile:
+        # find all the userObjects
+        ghComps = getAllTheComponents()
+        
+        # for each of them check and see if there is a userObject with the same name is available
+        for ghComp in ghComps:
+            if ghComp.Name != "Honeybee_Update Honeybee":
+                updateTheComponent(ghComp, userObjectsFolder, lb_preparation)
+        
+        return "Done!", True
 
 if _updateThisFile or _updateAllUObjects:
     
