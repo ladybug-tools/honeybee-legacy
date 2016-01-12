@@ -262,7 +262,12 @@ def dictToXMLBC(dict, startTag, dataType):
 
 def dictToXMLSimple(dict, startTag, dataType):
     xmlStr = '\t<' + dataType + ' '
-    if dataType == 'Material': keys = ['Name', 'Type', 'Conductivity', 'Absorptivity', 'Emissivity', 'RGBColor']
+    if dataType == 'Material':
+        try:
+            test = dict["CavityModel"]
+            keys = ['Name', 'Type', 'Conductivity', 'Absorptivity', 'Emissivity', 'RGBColor', 'CavityModel']
+        except:
+            keys = ['Name', 'Type', 'Conductivity', 'Absorptivity', 'Emissivity', 'RGBColor']
     elif dataType == 'BoundaryCondition': keys = ['Name', 'Type', 'H', 'HeatFlux', 'Temperature', 'RGBColor', 'Tr', 'Hr', 'Ei', 'Viewfactor', 'RadiationModel', 'ConvectionFlag', 'FluxFlag', 'RadiationFlag', 'ConstantTemperatureFlag', 'EmisModifier']
     elif dataType == 'Polygon': keys = ['ID', 'Material', 'NSides', 'Type', 'units']
     elif dataType == 'Point': keys = ['index', 'x', 'y']
@@ -306,6 +311,7 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
     allMaterials = []
     materialNames = []
     allPolygon = []
+    airCavityPolygons = []
     for pCount, polygon in enumerate(thermPolygons):
         #Check the material.
         if polygon.material not in materialNames:
@@ -316,6 +322,12 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
                 correctFormatCol = str(System.Drawing.ColorTranslator.ToHtml(matFromLib["RGBColor"]))
                 matFromLib["RGBColor"] = '0x' + correctFormatCol.split('#')[-1]
                 allMaterials.append(matFromLib)
+                #Put in an extra check for certain common abbreviations.
+                if 'Nfrc' in matFromLib["Name"]: matFromLib["Name"] = matFromLib["Name"].replace('Nfrc', 'NFRC')
+                #Check for frame cavity materials.
+                if 'Frame Cavity Slightly Ventilated NFRC' in matFromLib["Name"]:
+                    matFromLib["CavityModel"] = 5
+                    airCavityPolygons.append(polygon.geometry)
             except:
                 warning = "The material " + polygon.material + " could not be found in your material library. \n Make sure your HB_HB component is in the back of your GH canvas by selecting it and hitting Cntrl+B. \n Then, right click on the GH canvas and hit 'recompute.'"
                 print warning
@@ -327,7 +339,10 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
         
         polygonProp = {}
         polygonProp['ID'] = str(pCount+1)
-        polygonProp['Material'] = polygon.material.title()
+        #Put in an extra check for certain common abbreviations in material name.
+        matName = polygon.material.title()
+        if 'Nfrc' in matName: matName = matName.replace('Nfrc', 'NFRC')
+        polygonProp['Material'] = matName
         polygonProp['NSides'] = str(len(polygon.vertices))
         polygonProp['Type'] = "1"
         polygonProp['units'] = "mm"
@@ -433,13 +448,66 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
                 print warning
                 ghenv.Component.AddRuntimeMessage(w, warning)
     
+    #WRITE IN BOUNDARY CONDITIONS FOR AIR MATERIALS.
     #Find any air gaps in the window and, if found, make NFRC boundaries for the air gap.
     #For now, I m not icnluding this functionality until I understand it better.
-    
+    frameCavityBounds = []
+    if len(airCavityPolygons) != 0:
+        #Extract the boundary of all joined air polygons.
+        joinedAirPolygons = rc.Geometry.Brep.JoinBreps(airCavityPolygons, sc.doc.ModelAbsoluteTolerance)
+        for airPoly in joinedAirPolygons:
+            polygonBoundaries = airPoly.DuplicateNakedEdgeCurves(True, True)
+            allAirBoundary = rc.Geometry.PolylineCurve.JoinCurves(polygonBoundaries, sc.doc.ModelAbsoluteTolerance)
+            for encircling in allAirBoundary:
+                #Check to be sure the curve is facing counter-clockwise.
+                encricSrf = rc.Geometry.Brep.CreatePlanarBreps(encircling)[0]
+                encricSrfPlane = encricSrf.Faces[0].TryGetPlane(sc.doc.ModelAbsoluteTolerance)[-1]
+                if encricSrfPlane.Normal != basePlane.Normal: encircling.Reverse()
+                frameCavityBounds.append(encircling.DuplicateSegments())
+        
+        for enclosureCount, enclosure in enumerate(frameCavityBounds):
+            for airSegment in enclosure:
+                #Define Default Parameters.
+                boundDesc = []
+                boundProp = {'UFactorTag': '', 'ID': str(boundCount), 'BC': 'Frame Cavity Surface', 'Emissivity': '0.900000', 'EnclosureID': str(enclosureCount+1), 'PolygonID': '0', 'units': "mm"}
+                segEndPt = airSegment.PointAtEnd
+                segStartPt = airSegment.PointAtStart
+                boundCount += 1
+                
+                #Find the Therm polygon associated with the boundary.
+                PolygonID = None
+                for pCount, polygon in enumerate(thermPolygons):
+                    polyGeo = polygon.polylineGeo
+                    if str(polyGeo.Contains(segEndPt, basePlane, sc.doc.ModelAbsoluteTolerance)) == 'Coincident' and str(polyGeo.Contains(segStartPt, basePlane, sc.doc.ModelAbsoluteTolerance)) == 'Coincident':
+                        if 'Frame Cavity Slightly Ventilated' in polygon.name: boundProp['PolygonID'] = pCount+1
+                        else: boundProp['Emissivity'] = thermMatLib[polygon.material]['Emissivity']
+                boundDesc.append(boundProp)
+                
+                #Put the transformed vertices into the dictionary.
+                segStartPtTrans = copy.copy(segStartPt)
+                segStartPtTrans.Transform(planeReorientation)
+                segStartPtTrans.Transform(unitsScale)
+                segStartPtTrans.Transform(bufferTansl)
+                startPtDict = {'index': '0', 'x': str(round(segStartPtTrans.X, numDecPlaces)), 'y': str(round(segStartPtTrans.Y, numDecPlaces))}
+                
+                segEndPtTrans = copy.copy(segEndPt)
+                segEndPtTrans.Transform(planeReorientation)
+                segEndPtTrans.Transform(unitsScale)
+                segEndPtTrans.Transform(bufferTansl)
+                endPtDict = {'index': '1', 'x': str(round(segEndPtTrans.X, numDecPlaces)), 'y': str(round(segEndPtTrans.Y, numDecPlaces))}
+                
+                boundDesc.append(startPtDict)
+                boundDesc.append(endPtDict)
+                
+                allBound.append(boundDesc)
+        
+        #Add the frame cavity surface to the BC types to write into the header.
+        boundConditions.append(thermDefault.frameCavityBCProperties)
     
     #Check the orientation of the baseplane and specify it either as a sill or jamb.
     CrossSectionType = 'Sill'
     if basePlane.Normal.Z < -0.70710678118 or basePlane.Normal.Z > 0.70710678118: CrossSectionType = 'Jamb'
+    
     
     
     ### WRITE EVERYTHING TO THERM FILE

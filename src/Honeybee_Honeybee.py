@@ -7097,7 +7097,24 @@ class thermDefaults(object):
         self.adiabaticBCProperties['ConstantTemperatureFlag'] = "0"
         self.adiabaticBCProperties['EmisModifier'] = "1.000000"
         
-        #Set some default U-Factor Tags
+        #Set some default Boundary Conditions for air cavity surfaces
+        self.frameCavityBCProperties = {}
+        self.frameCavityBCProperties['Name'] = 'Frame Cavity Surface'
+        self.frameCavityBCProperties['Type'] = "7"
+        self.frameCavityBCProperties['H'] = '0.000000'
+        self.frameCavityBCProperties['HeatFlux'] = "0.000000"
+        self.frameCavityBCProperties['Temperature'] = '0.000000'
+        self.frameCavityBCProperties['RGBColor'] = '0xFF0000'
+        self.frameCavityBCProperties['Tr'] = '0.000000'
+        self.frameCavityBCProperties['Hr'] = '0.000000'
+        self.frameCavityBCProperties['Ei'] = "1.000000" 
+        self.frameCavityBCProperties['Viewfactor'] = "1.000000"
+        self.frameCavityBCProperties['RadiationModel'] = "0"
+        self.frameCavityBCProperties['ConvectionFlag'] = "0"
+        self.frameCavityBCProperties['FluxFlag'] = "1"
+        self.frameCavityBCProperties['RadiationFlag'] = "0"
+        self.frameCavityBCProperties['ConstantTemperatureFlag'] = "0"
+        self.frameCavityBCProperties['EmisModifier'] = "1.000000"
 
 class thermPolygon(object):
     def __init__(self, surfaceGeo, material, srfName, plane, RGBColor):
