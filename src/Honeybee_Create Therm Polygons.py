@@ -28,7 +28,6 @@ Provided by Honeybee 0.0.58
     Args:
         _geometry: A closed planar curve or list of closed planar curves that represent the portions of a construction that have the same material type.  This input can also accept closed planar surfaces/breps/polysurfaces and even meshes!
         _material: Either the name of an EnergyPlus material from the OpenStudio library (from the "Call from EP Construction Library" component) or the output of any of the components in the "06 | Energy | Material" tab for creating materials.
-        name_: An optional name for the polygon to keep track of it through the creation of the THERM model.
         RGBColor_: An optional color to set the color of the material when you import it into THERM.  All materials from the Honyebee Therm Library already possess colors but materials from the EP material lib will have a default blue color if no one is assigned here.
     Returns:
         readMe!:...
@@ -47,10 +46,10 @@ import math
 
 ghenv.Component.Name = 'Honeybee_Create Therm Polygons'
 ghenv.Component.NickName = 'createThermPolygons'
-ghenv.Component.Message = 'VER 0.0.58\nJAN_02_2016'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_12_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
-#compatibleHBVersion = VER 0.0.56\nJAN_02_2015
+#compatibleHBVersion = VER 0.0.56\nJAN_12_2015
 #compatibleLBVersion = VER 0.0.59\nNOV_07_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
 except: pass
@@ -70,7 +69,7 @@ def getSrfCenPtandNormal(surface):
     
     return centerPt, normalVector
 
-def main(geometry, material, srfName, RGBColor):
+def main(geometry, material, RGBColor):
     # import the classes
     if sc.sticky.has_key('honeybee_release'):
     
@@ -144,7 +143,6 @@ def main(geometry, material, srfName, RGBColor):
     
     #Make a list to hold the final outputs.
     HBThermPolygons = []
-    originalSrfName = srfName
     
     for faceCount in range(geometry.Faces.Count):
         #Check to be sure that the surface is planar.
@@ -159,22 +157,7 @@ def main(geometry, material, srfName, RGBColor):
             ghenv.Component.AddRuntimeMessage(w, warning)
             return -1
         
-        # 0. check if user input a name for this surface
-        guid = str(uuid.uuid4())
-        number = guid.split("-")[-1]
-        
-        if srfName != None:
-            if originalSrfName == None: originalSrfName = srfName
-            originalSrfName = originalSrfName.strip().replace(" ","_")
-            if geometry.Faces.Count != 1:
-                srfName = originalSrfName + "_" + `faceCount`
-            else: srfName = originalSrfName
-        else:
-            # generate a random name
-            # the name will be overwritten for energy simulation
-            srfName = "".join(guid.split("-")[:-1])
-        
-        # 1.3 assign a material
+        #Assign a material
         if material!=None:
             # if it is just the name of the material make sure it is already defined
             if len(material.split("\n")) == 1:
@@ -201,7 +184,9 @@ def main(geometry, material, srfName, RGBColor):
                     return -1
         
         #Make the therm polygon.
-        HBThermPolygon = hb_thermPolygon(geometry.Faces[faceCount].DuplicateFace(False), material, srfName, plane, RGBColor)
+        guid = str(uuid.uuid4())
+        polyName = "".join(guid.split("-")[:-1])
+        HBThermPolygon = hb_thermPolygon(geometry.Faces[faceCount].DuplicateFace(False), material, polyName, plane, RGBColor)
         
         if HBThermPolygon.warning != None:
             w = gh.GH_RuntimeMessageLevel.Warning
@@ -216,7 +201,7 @@ def main(geometry, material, srfName, RGBColor):
 
 
 if _geometry != None and _material != None:
-    result= main(_geometry, _material, name_, RGBColor_)
+    result= main(_geometry, _material, RGBColor_)
     
     if result!=-1:
         thermPolygon = result

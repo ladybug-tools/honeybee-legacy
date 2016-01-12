@@ -53,7 +53,7 @@ ghenv.Component.NickName = 'writeTHERM'
 ghenv.Component.Message = 'VER 0.0.57\nJAN_12_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
-#compatibleHBVersion = VER 0.0.56\nDEC_30_2015
+#compatibleHBVersion = VER 0.0.56\nJAN_12_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
 except: pass
@@ -61,7 +61,7 @@ except: pass
 
 w = gh.GH_RuntimeMessageLevel.Warning
 e = gh.GH_RuntimeMessageLevel.Error
-
+tol = sc.doc.ModelAbsoluteTolerance
 
 
 def checkTheInputs():
@@ -97,7 +97,7 @@ def checkTheInputs():
         thermPolygons = hb_hive.callFromHoneybeeHive(_polygons)
         thermBCs = hb_hive.callFromHoneybeeHive(_boundaries)
     except:
-        warning = "Failed to call _polygons and _boundaries from the HB Hive. \n Make srue that connected geometry to _polygons is from the 'Create Therm Polygons' component \n and that geometry to _boundaries is from the 'Create Therm Boundaries' component."
+        warning = "Failed to call _polygons and _boundaries from the HB Hive. \n Make sure that connected geometry to _polygons is from the 'Create Therm Polygons' component \n and that geometry to _boundaries is from the 'Create Therm Boundaries' component."
         print warning
         ghenv.Component.AddRuntimeMessage(w, warning)
         return -1
@@ -142,7 +142,7 @@ def checkTheInputs():
     refrencePlane = None
     allGeoVertices = joinedPolygons[0].DuplicateVertices()
     allGeometryBB = rc.Geometry.BoundingBox(allGeoVertices)
-    if basePlaneNormal == rhinoZAxis: basePlaneOrigin = rc.Geometry.BoundingBox.Corner(allGeometryBB, True, False, False)
+    if abs(basePlaneNormal.X) < tol and abs(basePlaneNormal.Y) < tol and abs(basePlaneNormal.Z - 1) < tol: basePlaneOrigin = rc.Geometry.BoundingBox.Corner(allGeometryBB, True, False, False)
     else: basePlaneOrigin = rc.Geometry.BoundingBox.Corner(allGeometryBB, True, True, False)
     thermFileOrigin = rc.Geometry.BoundingBox.Corner(allGeometryBB, True, True, True)
     basePlane = rc.Geometry.Plane(basePlaneOrigin, basePlaneNormal)
@@ -157,44 +157,45 @@ def checkTheInputs():
             planeRotation = rc.Geometry.Transform.Rotation(basePlane.YAxis, rhinoZAxis, basePlaneOrigin)
             basePlane.Transform(planeRotation)
     
-    alignYtoZ(basePlane, basePlaneNormal)
-    
-    #If the plane X-Axis is negative, flip it.
-    if basePlane.XAxis.X < 0 or basePlane.XAxis.Y < 0 or basePlane.XAxis.Y < 0:
-        basePlaneNormal.Reverse()
-        basePlane.Flip()
+    if abs(basePlaneNormal.X) < tol and abs(basePlaneNormal.Y) < tol and abs(basePlaneNormal.Z - 1) < tol: pass
+    else:
         alignYtoZ(basePlane, basePlaneNormal)
+        #If the plane X-Axis is negative, flip it.
+        if basePlane.XAxis.X < -tol:
+            basePlaneNormal.Reverse()
+            basePlane.Flip()
+            alignYtoZ(basePlane, basePlaneNormal)
     
     #Check the polygon geometry
     for polygon in thermPolygons:
-        if not polygon.normalVector == basePlaneNormal:
+        if abs(polygon.normalVector.X - basePlaneNormal.X) < tol and abs(polygon.normalVector.Y - basePlaneNormal.Y) < tol and abs(polygon.normalVector.Z - basePlaneNormal.Z) < tol: pass
+        else:
             #Check if the normal is just facing the opposite direction.
             polyNormalRev = rc.Geometry.Vector3d(polygon.normalVector)
             polyNormalRev.Reverse()
-            if polyNormalRev == basePlaneNormal:
-                #print polygon.normalVector
+            
+            if abs(polyNormalRev.X - basePlaneNormal.X)< tol and abs(polyNormalRev.Y - basePlaneNormal.Y) < tol and abs(polyNormalRev.Z - basePlaneNormal.Z) < tol:
                 polygon.normalVector = polyNormalRev
                 polygon.plane.Flip()
                 polygon.geometry.Flip()
                 polygon.polylineGeo.Reverse()
+                polygon.vertices.reverse()
             else:
                 checkData = False
-                warning = "Geometry for polygon " + polygon.name + " with material " + polygon.material + " is not in the same plane as the other connected geometry."
+                warning = "The geometry for polygon with material " + polygon.material + " is not in the same plane as the other connected geometry."
                 print warning
                 ghenv.Component.AddRuntimeMessage(w, warning)
-        else:
-            #Ensure vertices are counter-clockwise in order to align with the boundary condition segments.
-            polygon.vertices.reverse()
     
     #Check the BC geometry
     for boundary in thermBCs:
         if boundary.geometry.SpanCount == 1:
             boundary.normalVector = basePlaneNormal
-        elif not boundary.normalVector == basePlaneNormal:
+        elif abs(boundary.normalVector.X - basePlaneNormal.X) < tol and abs(boundary.normalVector.Y - basePlaneNormal.Y) < tol and abs(boundary.normalVector.Z - basePlaneNormal.Z) < tol:pass
+        else:
             #Check if the normal is just facing the opposite direction.
             boundaryNormalRev = rc.Geometry.Vector3d(boundary.normalVector)
             boundaryNormalRev.Reverse()
-            if boundaryNormalRev == basePlaneNormal:
+            if abs(boundaryNormalRev.X - basePlaneNormal.X) < tol and abs(boundaryNormalRev.Y - basePlaneNormal.Y) < tol and abs(boundaryNormalRev.Z - basePlaneNormal.Z) < tol:
                 boundary.normalVector = boundaryNormalRev
                 boundary.plane.Flip()
                 boundary.geometry.Reverse()
@@ -232,12 +233,49 @@ def checkTheInputs():
         encricSrf = rc.Geometry.Brep.CreatePlanarBreps(encircling)[0]
         encricSrfPlane = encricSrf.Faces[0].TryGetPlane(sc.doc.ModelAbsoluteTolerance)[-1]
         encricSrfNormal = encricSrfPlane.Normal
-        if encricSrfNormal != basePlaneNormal: encircling.Reverse()
+        if abs(encricSrfNormal.X - basePlaneNormal.X) < tol and abs(encricSrfNormal.Y - basePlaneNormal.Y) < tol and abs(encricSrfNormal.Z - basePlaneNormal.Z) < tol: encircling.Reverse()
+        #else: encircling.Reverse()
         polygonBoundaries = encircling.DuplicateSegments()
     
+    #Get the centroid of all geometry
+    allGeoCentroid = rc.Geometry.AreaMassProperties.Compute(joinedPolygons[0]).Centroid
     
-    return workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, polygonBoundaries, thermFileOrigin
+    return workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, polygonBoundaries, thermFileOrigin, allGeoCentroid
 
+def calcBestFitVector(vertices, basePlane):
+    #Transform all points into the XY Plane
+    transformToXY = rc.Geometry.Transform.ChangeBasis(rc.Geometry.Plane.WorldXY, basePlane)
+    for pt in vertices: pt.Transform(transformToXY)
+    
+    #Compute some things we need.
+    sumx = 0
+    sumy = 0
+    sumx2 = 0
+    sumy2 = 0
+    sumxy = 0
+    for pt in vertices:
+        x = pt.X
+        y = pt.Y
+        sumx  = sumx  + x
+        sumy  = sumy  + y
+        sumx2 = sumx2 + (x * x)
+        sumy2 = sumy2 + (y * y)
+        sumxy = sumxy + (x * y)
+    sxx = sumx2 - (sumx * sumx / len(vertices))
+    syy = sumy2 - (sumy * sumy / len(vertices))
+    sxy = sumxy - (sumx * sumy / len(vertices))
+    
+    #Compute a slope vector in the XY plane.
+    if sxx < sc.doc.ModelAbsoluteTolerance: slopeVec = rc.Geometry.Vector3d.YAxis
+    else:
+        slopeVec = rc.Geometry.Vector3d(sxx, sxy, 0)
+        slopeVec.Unitize()
+    
+    #Transform the slope vector back to the original plane
+    transformFromXY = rc.Geometry.Transform.ChangeBasis(basePlane, rc.Geometry.Plane.WorldXY)
+    slopeVec.Transform(transformFromXY)
+    
+    return slopeVec
 
 def dictToXMLBC(dict, startTag, dataType):
     def makeStr(keys, xmlStr):
@@ -298,15 +336,17 @@ def checkAbbreviations(matName):
     return matName
 
 
-def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundary, thermFileOrigin):
+def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundary, thermFileOrigin, allGeoCentroid):
     #Call the needed classes.
     lb_preparation = sc.sticky["ladybug_Preparation"]()
     thermMatLib = sc.sticky["honeybee_thermMaterialLib"]
     thermDefault = sc.sticky["honeybee_ThermDefault"]()
-    
     #From Rhino world coordinates, make a translatio to the origin of a Therm scene.
     #Check the units of the Rhino file and scale everything from meters to millimeters. Keep track of this transformation as well.
     planeReorientation = rc.Geometry.Transform.ChangeBasis(rc.Geometry.Plane.WorldXY, basePlane)
+    #rc.Geometry.Plane(basePlane.Origin, rc.Geometry.Vector3d.XAxis, rc.Geometry.Vector3d.YAxis)
+    #planeReorientation = rc.Geometry.Transform.ChangeBasis(rc.Geometry.Plane.WorldXY, rc.Geometry.Plane(rc.Geometry.Point3d.Origin, basePlane.XAxis, basePlane.YAxis))
+    #zeroTransl = rc.Geometry.Transform.Translation(rc.Geometry.Vector3d(basePlane.Origin.X, basePlane.Origin.Y, basePlane.Origin.Z))
     conversionFactor = lb_preparation.checkUnits()*1000
     unitsScale = rc.Geometry.Transform.Scale(rc.Geometry.Plane.WorldXY, conversionFactor, conversionFactor, conversionFactor)
     bufferTansl = rc.Geometry.Transform.Translation(250, -50, 0)
@@ -357,6 +397,7 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
         for vertCount, vertex in enumerate(polygon.vertices):
             vertTrans = copy.copy(vertex)
             vertTrans.Transform(planeReorientation)
+            #vertTrans.Transform(zeroTransl)
             vertTrans.Transform(unitsScale)
             vertTrans.Transform(bufferTansl)
             vertTransDict = {'index': str(vertCount), 'x': str(round(vertTrans.X, numDecPlaces)), 'y': str(round(vertTrans.Y, numDecPlaces))}
@@ -380,6 +421,7 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
     allBound = []
     boundCount = (len(thermPolygons)*2)+1
     matchedBoundaries = []
+    boundForAirFilm = {'bTypeName' : [], 'geometry' : [], 'emissivity' : []}
     for boundSeg in allBoundary:
         #Set up a dictionary to hold the information on the segment.
         boundDesc = []
@@ -427,12 +469,14 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
         #Put the transformed vertices into the dictionary.
         segStartPtTrans = copy.copy(segStartPt)
         segStartPtTrans.Transform(planeReorientation)
+        #segStartPtTrans.Transform(zeroTransl)
         segStartPtTrans.Transform(unitsScale)
         segStartPtTrans.Transform(bufferTansl)
         startPtDict = {'index': '0', 'x': str(round(segStartPtTrans.X, numDecPlaces)), 'y': str(round(segStartPtTrans.Y, numDecPlaces))}
         
         segEndPtTrans = copy.copy(segEndPt)
         segEndPtTrans.Transform(planeReorientation)
+        #segStartPtTrans.Transform(zeroTransl)
         segEndPtTrans.Transform(unitsScale)
         segEndPtTrans.Transform(bufferTansl)
         endPtDict = {'index': '1', 'x': str(round(segEndPtTrans.X, numDecPlaces)), 'y': str(round(segEndPtTrans.Y, numDecPlaces))}
@@ -442,6 +486,56 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
         
         allBound.append(boundDesc)
         boundCount += 1
+        
+        #Add values to the airfilm dictionary.
+        boundForAirFilm['bTypeName'].append(boundType)
+        boundForAirFilm['geometry'].append(boundSeg)
+        boundForAirFilm['emissivity'].append(boundProp['Emissivity'])
+    
+    #If someone has not specified a numerical value for air film, then auto-calculate the film coefficeint based on the Rhino geometry and emissivity of materials.
+    for boundaryType in boundConditions:
+        if boundaryType['H'] == 'OUTDOOR': boundaryType['H'] = '22.7'
+        elif boundaryType['H'] == 'INDOOR':
+            #Find all of the segments that this BCType references and get their average emissivity and slope in the Rhino scene.
+            emissivities = []
+            lengths = []
+            lineSegs = []
+            for boundCount, boundName in enumerate(boundForAirFilm['bTypeName']):
+                if boundName == boundaryType['Name']:
+                    emissivities.append(boundForAirFilm['emissivity'][boundCount])
+                    lengths.append(boundForAirFilm['geometry'][boundCount].GetLength())
+                    lineSegs.append(boundForAirFilm['geometry'][boundCount])
+            #Compute an average emissivity that is wieghted by the length of the segments.
+            totalLength = sum(lengths)
+            emissWeights = []
+            for count, val in enumerate(lengths): emissWeights.append((val*emissivities[count])/totalLength)
+            weightAvgEmiss = sum(emissWeights)
+            
+            #Compute an average direction of heat flow across the boundary.
+            segmentVertices = []
+            fullPolylines = rc.Geometry.PolylineCurve.JoinCurves(lineSegs, sc.doc.ModelAbsoluteTolerance)
+            for pLine in fullPolylines:
+                curveParameters = pLine.DivideByCount(10, True)
+                for param in curveParameters: segmentVertices.append(pLine.PointAt(param))
+            segmentVerticesCopy = copy.deepcopy(segmentVertices)
+            heatFlowDirect = calcBestFitVector(segmentVerticesCopy, basePlane)
+            heatFlowDirect.Rotate(math.radians(90), basePlane.Normal)
+            #Compute the area centriod of the polylines and use the relationship between this area centriod and that of all geometry to determine whether heat flow needs to be flipped.
+            xVals = []; yVals = []; zVals = []
+            for pt in segmentVertices:
+                xVals.append(pt.X)
+                yVals.append(pt.Y)
+                zVals.append(pt.Z)
+            boundCentroid = rc.Geometry.Point3d(sum(xVals)/len(xVals), sum(yVals)/len(xVals), sum(zVals)/len(xVals))
+            roughHeatFlowDirect = rc.Geometry.Point3d.Subtract(allGeoCentroid, boundCentroid)
+            if rc.Geometry.Vector3d.VectorAngle(heatFlowDirect, roughHeatFlowDirect) > 90: heatFlowDirect.Reverse()
+            #Turn the heat flow direction into a dimensionless value for a linear interoplation.
+            dimHeatFlow = 1 - (math.degrees(rc.Geometry.Vector3d.VectorAngle(heatFlowDirect, rc.Geometry.Vector3d.ZAxis))/180)
+            
+            #Compute a film coefficient from the emissivity, heat flow direction, and a paramterization of AHSHRAE fundemantals.
+            heatFlowFactor = (-12.443 * (math.pow(dimHeatFlow,3))) + (24.28 * (math.pow(dimHeatFlow,2))) - (16.898 * dimHeatFlow) + 8.1275
+            filmCoeff = (heatFlowFactor * dimHeatFlow) + (5.81176 * weightAvgEmiss) + 0.9629
+            boundaryType['H'] = str(filmCoeff)
     
     #Check to be sure that all _boundaries have been matched with _polygons and, if not, give a warning that the BC is being left out.
     if len(thermBCs) != len(matchedBoundaries):
@@ -452,6 +546,7 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
                 warning = "The boundary '" + name + "' could not be matched with the rest of the connected geometry and is therefore being left out of the exported THERM file. \n To include it in the export, make sure that this boundary's geometry is flush with your the edges of your _polygons."
                 print warning
                 ghenv.Component.AddRuntimeMessage(w, warning)
+    
     
     #WRITE IN BOUNDARY CONDITIONS FOR AIR MATERIALS.
     #Find any air gaps in the window and, if found, make NFRC boundaries for the air gap.
@@ -467,7 +562,8 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
                 #Check to be sure the curve is facing counter-clockwise.
                 encricSrf = rc.Geometry.Brep.CreatePlanarBreps(encircling)[0]
                 encricSrfPlane = encricSrf.Faces[0].TryGetPlane(sc.doc.ModelAbsoluteTolerance)[-1]
-                if encricSrfPlane.Normal != basePlane.Normal: encircling.Reverse()
+                if abs(encricSrfPlane.Normal.X - basePlane.Normal.X) < tol and abs(encricSrfPlane.Normal.Y - basePlane.Normal.Y) < tol and abs(encricSrfPlane.Normal.Z - basePlane.Normal.Z) < tol: pass
+                else: encircling.Reverse()
                 frameCavityBounds.append(encircling.DuplicateSegments())
         
         for enclosureCount, enclosure in enumerate(frameCavityBounds):
@@ -491,12 +587,14 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
                 #Put the transformed vertices into the dictionary.
                 segStartPtTrans = copy.copy(segStartPt)
                 segStartPtTrans.Transform(planeReorientation)
+                #segStartPtTrans.Transform(zeroTransl)
                 segStartPtTrans.Transform(unitsScale)
                 segStartPtTrans.Transform(bufferTansl)
                 startPtDict = {'index': '0', 'x': str(round(segStartPtTrans.X, numDecPlaces)), 'y': str(round(segStartPtTrans.Y, numDecPlaces))}
                 
                 segEndPtTrans = copy.copy(segEndPt)
                 segEndPtTrans.Transform(planeReorientation)
+                #segStartPtTrans.Transform(zeroTransl)
                 segEndPtTrans.Transform(unitsScale)
                 segEndPtTrans.Transform(bufferTansl)
                 endPtDict = {'index': '1', 'x': str(round(segEndPtTrans.X, numDecPlaces)), 'y': str(round(segEndPtTrans.Y, numDecPlaces))}
@@ -626,8 +724,8 @@ else:
 if initCheck and _writeTHMFile:
     initInputs = checkTheInputs()
     if initInputs != -1:
-        workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundary, thermFileOrigin = initInputs
-        result = main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundary, thermFileOrigin)
+        workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundary, thermFileOrigin, allGeoCentroid = initInputs
+        result = main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundary, thermFileOrigin, allGeoCentroid)
         if result != -1:
             thermFile, uFactorFile, resultFile = result
 
