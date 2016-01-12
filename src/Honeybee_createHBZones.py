@@ -48,7 +48,7 @@ import math
 
 ghenv.Component.Name = 'Honeybee_createHBZones'
 ghenv.Component.NickName = 'createHBZones'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.58\nDEC_03_2015'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -89,8 +89,17 @@ def main(zoneName,  HBZoneProgram, HBSurfaces, isConditioned):
     # call the surface from the hive
     hb_hive = sc.sticky["honeybee_Hive"]()
     
-    HBSurfaces = hb_hive.callFromHoneybeeHive(HBSurfaces)
+    try:
+        HBSurfaces = hb_hive.callFromHoneybeeHive(HBSurfaces)
     
+    except:
+        
+        w = gh.GH_RuntimeMessageLevel.Warning
+        warn = "One of the surfaces you entered is not a Honeybee surface! \n"+\
+        "please make sure all surfaces entered are Honeybee surfaces! This component will not run until you do!"
+        ghenv.Component.AddRuntimeMessage(w,warn )
+        return
+        
     # bldg program
     try: bldgProgram, zoneProgram = HBZoneProgram.split("::")
     except: bldgProgram, zoneProgram = 'Office', 'OpenOffice'
