@@ -485,7 +485,7 @@ class PrepareTemplateEPLibFiles(object):
             libFilePaths.append(customEPLib)
         
         #download THERM template file.
-        if sc.sticky["isNewerTHERMAvailable"] or not os.path.isfile(thermTemplateFile):
+        if sc.sticky.has_key("isNewerTHERMAvailable") and sc.sticky["isNewerTHERMAvailable"] or not os.path.isfile(thermTemplateFile):
             # create a backup from users library
             try: shutil.copyfile(thermTemplateFile, thermBckupfile)
             except: pass
