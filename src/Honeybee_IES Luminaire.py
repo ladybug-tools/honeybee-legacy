@@ -32,7 +32,7 @@ Technical Notes:
 ----------------------
 The parsing of IES files is based on IES LM-63-2002. 
 .
-This component has only compatible with Type C photometry. 
+This component is only compatible with Type C photometry. 
 However, if Type B photometry is to be used, external programs such as the Photometric Toolbox can be used to convert Type B photometry to Type C.
 .
 The luminous shapes, as defined by LM-63-2002 currently compatible with this component are rectangular, circular and rectangular with luminous openings.
@@ -62,25 +62,26 @@ In case the customLamp_ option is being used, the lumen depreciation factor of t
         _radDir_: Custom location for the luminaire rad file. The default location is the same as where the original IES file is located.
         customLamp_: Specify a custom lamp using the IES Custom Lamp component
         extendLumAxesToPt_: Specify a point to which the luminaire axes should be extended to. Please note that if the aiming of the luminaire is very far way from this point then some abnormal results might be seen.
-        _writeRad: Toggle to True to write the luminaire array rad file.
+        _writeRad: Set to True to create the file for electric lighting simulation.
 
     Returns:
         luminaire3dWeb: The geometry created in the Rhino viewport for visualizing the luminaire. Can be used for generating previews.
-        luminaireDefinition: A description of the luminaire generated after parsing the IES file.
+        luminaireDetails: A description of the luminaire generated after parsing the IES file.
         luminaireList: List of luminaires and their locations and mounting angles.
         radFilePath: Location of the RAD file that should be included in the project. Connect this output to the _additionalRadFiles_ input in the Honeybee_Run_DaylightSimulation module.
         
 
 """
-
-
+#Development notes:
+#   Dr. Richard Mistrick from Penn State and Leland Curtis and Reinhardt Swart from SmithGroupJJR provided valuable inputs during the development of this script.
+#   While Type B photometry and ILLUMDAT file formats are not supported at present, they will be supported in the future.
 
 from __future__ import print_function
 from __future__ import division
 
 ghenv.Component.Name = "Honeybee_IES Luminaire"
 ghenv.Component.NickName = 'iesLuminaire'
-ghenv.Component.Message = 'VER 0.0.58\nJan_02_2016'
+ghenv.Component.Message = 'VER 0.0.58\nJan_10_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 
@@ -160,7 +161,7 @@ class Luminaire:
         def __str__(self):
            """
                 1. Utility function that overloads the print method to produce a readable definition of the IES file.
-                2. The parsing of keywords is based on IES LM-63-2012
+                2. The parsing of keywords is based on IES LM-63-2002
            """
            
            #Specify the photometry and units type based on the number.
@@ -183,6 +184,10 @@ class Luminaire:
                luminousDim = "{0},{1},{2}.\n(The luminous opening is circular. {3} is the diameter of the luminous opening)".format(width,length,height,abs(width)) 
            elif width > 0 and length > 0 and height> 0:
                luminousDim = "{0},{1},{2}.\n(The luminous opening is rectangular with luminous sides.)".format(width,length,height) 
+               
+           elif int(width) == 0 and int(length) == 0 and int(height) == 0:
+               luminousDim = "{0},{1},{2}.\n(The luminous opening is a point source. The IES data might be for a lamp)".format(width,length,height) 
+               self.width = -0.01
            else:
                 
                raise Exception("The luminous dimensions for the specfied luminaire are ({},{},{}). This format, which is neither rectangular nor circular, is not supported currently".format(width,length,height))                
@@ -434,7 +439,7 @@ def createLumWeb(Luminaire):
 #Draw C0-G0 axes for the luminaire.
 def createLumAxes(Luminaire):
     """
-        Draw the C0-G0 Axes for the Luminaire as per IES LM-63-2012.
+        Draw the C0-G0 Axes for the Luminaire as per IES LM-63-2002.
     """
     fileUnit = {1:0.304,2:1}[Luminaire.unitType]
     width,length,height = fileUnit*Luminaire.width,fileUnit*Luminaire.length,fileUnit*Luminaire.height
@@ -443,13 +448,13 @@ def createLumAxes(Luminaire):
     if (not length) and width <0:
         length = abs(width)
 
-    horzAxis = rc.Geometry.Line(rc.Geometry.Point3d(0,0,0),rc.Geometry.Point3d(2*length/2,0,0))
+    horzAxis = rc.Geometry.Line(rc.Geometry.Point3d(0,0,0),rc.Geometry.Point3d(1.2*length/2,0,0))
     vertAxis = rc.Geometry.Line(rc.Geometry.Point3d(0,0,0),rc.Geometry.Point3d(0,0,-2*length/2))
 
     return [horzAxis,vertAxis]
 
 
-#Transform geometry as per the IES LM-63 2012 convetions.
+#Transform geometry as per the IES LM-63 2002 convetions.
 def transformGeometry(geometry,spin,tilt,rotate,transform,mul):
     """
         Utility function for transforming all the drawn objects.
@@ -502,7 +507,7 @@ if _iesFilePath and _luminaireID and _luminaireZone and checkLadybug and checkHo
     rx=ry=rz = 0
     
     luminaire = makeLum(_iesFilePath)
-    luminaireDefinition = str(luminaire)
+    luminaireDetails = str(luminaire)
 
     filenamefull=os.path.split(_iesFilePath)[1]
     filenameonly,ext = os.path.splitext(filenamefull)
@@ -551,7 +556,7 @@ if _iesFilePath and _luminaireID and _luminaireZone and checkLadybug and checkHo
     luminaire3dWeb = []
     luminaireList = []
     for idx,lumArr in enumerate(_luminaireZone):
-            for index,values in enumerate(lumArr['points']):
+            for index,values in enumerate(lumArr.points):
                 width,height = luminaire.width,luminaire.length
                 if width>height:
                     TiltVector = (1,0,0)
@@ -603,7 +608,7 @@ if _iesFilePath and _luminaireID and _luminaireZone and checkLadybug and checkHo
                 if extendLumAxesToPt_:
                     vertAimingLine = rc.Geometry.Line(rc.Geometry.Point3d(0,0,0),rc.Geometry.Point3d(0,0,-1))
                     vertAimingLine = transformGeometry(vertAimingLine,Spin,Tilt,Rotate,Location,1)
-                    scalingFactor = vertAimingLine.ClosestParameter(_extendLumAxesToPt_)
+                    scalingFactor = vertAimingLine.ClosestParameter(extendLumAxesToPt_)
                                     
                     x1,y1,z1 = vertAimingLine.From
                     x2,y2,z2 = vertAimingLine.To
@@ -668,7 +673,7 @@ if _iesFilePath and _luminaireID and _luminaireZone and checkLadybug and checkHo
             return radpath,_luminaireID
 
         if customLamp_:
-            winbatchstring += createCustomLamp(customLamp_,"")
+            winbatchstring += createCustomLamp(customLamp_.lamp,"")
         else:
             winbatchstring += "ies2rad -dm -o {1} -p {0} -m {2} {3}".format(dirpath,filenameonly,_lightLossFactor_*_candelaMultiplier_,_iesFilePath)    
 
@@ -679,17 +684,17 @@ if _iesFilePath and _luminaireID and _luminaireZone and checkLadybug and checkHo
             
             for idx,lumArr in enumerate(_luminaireZone):
                 
-                if lumArr['lamp']:
+                if lumArr.lamp:
                     winbatchstring = "SET RAYPATH=.;%s\n"%radLib
                     winbatchstring += "PATH=.;%s\n"%radBin
                     winbatchstring += "cd %s\n"%dirpath
-                    winbatchstring += createCustomLamp(lumArr['lamp'],str(idx))
+                    winbatchstring += createCustomLamp(lumArr.lamp.lamp,str(idx))
                     radPathVal,dummyVal = createLumRadFile(str(idx),winbatchstring)
                 else:
                     radPathVal = radpathfull
                     
                     
-                for index,values in enumerate(lumArr['points']):
+                for index,values in enumerate(lumArr.points):
                     #Code to create photometric web and luminaire polygon.
                     width,height = luminaire.width,luminaire.length
                     if width>height:
