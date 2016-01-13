@@ -56,7 +56,7 @@ import math
 
 ghenv.Component.Name = 'Honeybee_Read THERM Result'
 ghenv.Component.NickName = 'readTHERM'
-ghenv.Component.Message = 'VER 0.0.57\nJAN_11_2016'
+ghenv.Component.Message = 'VER 0.0.57\nJAN_13_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.56\nDEC_31_2015
@@ -125,7 +125,7 @@ def checkTheInputs():
             print warning
             ghenv.Component.AddRuntimeMessage(w, warning)
         else:
-            #Try to extract the transformations from the file header.
+            #Try to extract the U-factors from the file header.
             uFacFile = open(uFactorFile_, 'r')
             tagTrigger = False
             tagName = ''
