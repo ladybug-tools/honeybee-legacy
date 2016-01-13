@@ -350,7 +350,8 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
     lb_preparation = sc.sticky["ladybug_Preparation"]()
     thermMatLib = sc.sticky["honeybee_thermMaterialLib"]
     thermDefault = sc.sticky["honeybee_ThermDefault"]()
-    #From Rhino world coordinates, make a translatio to the origin of a Therm scene.
+    
+    #Make a set of transformations from Rhino world coordinates to the Therm scene.
     #Check the units of the Rhino file and scale everything from meters to millimeters. Keep track of this transformation as well.
     planeReorientation = rc.Geometry.Transform.ChangeBasis(rc.Geometry.Plane.WorldXY, basePlane)
     conversionFactor = lb_preparation.checkUnits()*1000
@@ -367,6 +368,7 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
         numDecPlaces = 0
     #Set the tolerance at the default THERM tolerance.
     numDecPlaces = 2
+    
     
     ###CHECK THE POLYGONS AND ASSEMBLE THEM INTO DICTIONARIES.
     allMaterials = []
@@ -422,6 +424,8 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
     
     
     ###CHECK THE BOUNDARY CONDITIONS AND ASSEMBLE THEM INTO DICTIONARIES.
+    matchedBoundaries = []
+    
     boundConditions = []
     boundConditNames = []
     boundConditions.append(thermDefault.adiabaticBCProperties)
@@ -435,7 +439,6 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
     #Figure out the properties of the individual segments.
     allBound = []
     boundCount = (len(thermPolygons)*2)+1
-    matchedBoundaries = []
     boundForAirFilm = {'bTypeName' : [], 'geometry' : [], 'emissivity' : []}
     for boundSeg in allBoundary:
         #Set up a dictionary to hold the information on the segment.
@@ -550,20 +553,9 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
             filmCoeff = (heatFlowFactor * dimHeatFlow) + (5.81176 * weightAvgEmiss) + 0.9629
             boundaryType['H'] = str(filmCoeff)
     
-    #Check to be sure that all _boundaries have been matched with _polygons and, if not, give a warning that the BC is being left out.
-    if len(thermBCs) != len(matchedBoundaries):
-        allBndNames = []
-        for b in thermBCs: allBndNames.append(b.name)
-        for name in allBndNames:
-            if name not in matchedBoundaries:
-                warning = "The boundary '" + name + "' could not be matched with the rest of the connected geometry and is therefore being left out of the exported THERM file. \n To include it in the export, make sure that this boundary's geometry is flush with your the edges of your _polygons."
-                print warning
-                ghenv.Component.AddRuntimeMessage(w, warning)
-    
     
     #WRITE IN BOUNDARY CONDITIONS FOR AIR MATERIALS.
-    #Find any air gaps in the window and, if found, make NFRC boundaries for the air gap.
-    #For now, I m not icnluding this functionality until I understand it better.
+    #Find any air gaps in the construction and, if found, make default NFRC boundaries for the air gap.
     frameCavityBounds = []
     if len(airCavityPolygons) != 0:
         #Extract the boundary of all joined air polygons.
@@ -585,6 +577,8 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
                 segEndPt = airSegment.PointAtEnd
                 segStartPt = airSegment.PointAtStart
                 boundCount += 1
+                
+                #First, check if the user has specified any boundary conditions for the air cavity.
                 
                 #Find the Therm polygon associated with the boundary.
                 PolygonID = None
@@ -616,7 +610,20 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
         #Add the frame cavity surface to the BC types to write into the header.
         boundConditions.append(thermDefault.frameCavityBCProperties)
     
-    #Check the orientation of the baseplane and specify it either as a sill or jamb.
+    
+    #Check to be sure that all _boundaries have been matched with _polygons and, if not, give a warning that the BC is being left out.
+    if len(thermBCs) != len(matchedBoundaries):
+        allBndNames = []
+        for b in thermBCs: allBndNames.append(b.name)
+        for name in allBndNames:
+            if name not in matchedBoundaries:
+                warning = "The boundary '" + name + "' could not be matched with the rest of the connected geometry and is therefore being left out of the exported THERM file. \n To include it in the export, make sure that this boundary's geometry is flush with your the edges of your _polygons."
+                print warning
+                ghenv.Component.AddRuntimeMessage(w, warning)
+    
+    
+    #CHECK THE ORIENTATION OF THE PLANE IN THE RHINO SCENE.
+    #Specify it either as a sill or jamb.
     CrossSectionType = 'Sill'
     if basePlane.Normal.Z < -0.70710678118 or basePlane.Normal.Z > 0.70710678118: CrossSectionType = 'Jamb'
     
