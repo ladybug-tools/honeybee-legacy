@@ -139,38 +139,42 @@ def checkTheInputs():
     
     #Establish the reference plane for the THERM scene.
     refrencePlane = None
-    allGeoVertices = joinedPolygons[0].DuplicateVertices()
-    allGeometryBB = rc.Geometry.BoundingBox(allGeoVertices)
+    allGeometryBB = joinedPolygons[0].GetBoundingBox(rc.Geometry.Plane.WorldXY)
     if abs(basePlaneNormal.X) < tol and abs(basePlaneNormal.Y) < tol and abs(basePlaneNormal.Z - 1) < tol: basePlaneOrigin = rc.Geometry.BoundingBox.Corner(allGeometryBB, True, False, False)
     else: basePlaneOrigin = rc.Geometry.BoundingBox.Corner(allGeometryBB, True, True, False)
     thermFileOrigin = rc.Geometry.BoundingBox.Corner(allGeometryBB, True, True, True)
     basePlane = rc.Geometry.Plane(basePlaneOrigin, basePlaneNormal)
     
     #If the plane is not in the worldXY, rotate it so that the THERM y-axis and Rhino z-axis are aligned.
-    def alignYtoZ(basePlane, basePlaneNormal):
-        basePlaneNormal.Unitize()
-        if abs(basePlaneNormal.X) < tol and abs(basePlaneNormal.Y) < tol and abs(basePlaneNormal.Z - 1) < tol:
-            basePlaneNormal = rc.Geometry.Vector3d.ZAxis
-            basePlane = rc.Geometry.Plane(basePlane.Origin, rc.Geometry.Vector3d.XAxis, rc.Geometry.Vector3d.YAxis)
-        else:
-            rhinoZAxis = rc.Geometry.Vector3d(0,0,1)
-            planeProject = rc.Geometry.Transform.PlanarProjection(basePlane)
-            rhinoZAxis.Transform(planeProject)
-            rhinoZAxis.Unitize()
-            rotationAngle = rc.Geometry.Vector3d.VectorAngle(basePlane.YAxis, rhinoZAxis)
-            planeRotation = rc.Geometry.Transform.Rotation(rotationAngle, basePlaneNormal, basePlane.Origin)
-            basePlane.Transform(planeRotation)
-            basePlaneNormal.Transform(planeRotation)
+    basePlaneNormal.Unitize()
+    if abs(basePlaneNormal.X) < tol and abs(basePlaneNormal.Y) < tol and abs(basePlaneNormal.Z - 1) < tol:
+        basePlaneNormal = rc.Geometry.Vector3d.ZAxis
+        basePlane = rc.Geometry.Plane(basePlane.Origin, rc.Geometry.Vector3d.XAxis, rc.Geometry.Vector3d.YAxis)
+    else:
+        #Calculate the angle between the geometry plane an the projection of the Rhino Z-Axis into that plane.
+        rhinoZAxis = rc.Geometry.Vector3d(0,0,1)
+        planeProject = rc.Geometry.Transform.PlanarProjection(basePlane)
+        rhinoZAxis.Transform(planeProject)
+        rhinoZAxis.Unitize()
+        rotationAngle = rc.Geometry.Vector3d.VectorAngle(basePlane.YAxis, rhinoZAxis)
+        #Rotate the plane
+        planeRotation = rc.Geometry.Transform.Rotation(rotationAngle, basePlaneNormal, basePlane.Origin)
+        basePlane.Transform(planeRotation)
     
-    alignYtoZ(basePlane, basePlaneNormal)
-    print basePlane.XAxis
-    #If the plane X-Axis is negative, flip the axis.
+    #If the plane X-Axis is negative, flip the X and Zaxis.
     if basePlane.XAxis.X < -tol:
         basePlaneNormal.Reverse()
         newXAxis = copy.copy(basePlane.XAxis)
         newXAxis.Reverse()
         basePlane = rc.Geometry.Plane(basePlane.Origin, newXAxis, basePlane.YAxis)
-    print basePlane.XAxis
+    
+    #Caclulate a new origin that is based on the bouding box in the new plane.
+    newAllGeometryBB = joinedPolygons[0].GetBoundingBox(basePlane)
+    newBasePlaneOrigin = rc.Geometry.BoundingBox.Corner(newAllGeometryBB, True, False, False)
+    changeBTrans = rc.Geometry.Transform.ChangeBasis(basePlane, rc.Geometry.Plane.WorldXY)
+    newBasePlaneOrigin.Transform(changeBTrans)
+    basePlane = rc.Geometry.Plane(newBasePlaneOrigin, basePlane.XAxis, basePlane.YAxis)
+    
     
     #Check the polygon geometry
     for polygon in thermPolygons:
@@ -353,6 +357,16 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
     unitsScale = rc.Geometry.Transform.Scale(rc.Geometry.Plane.WorldXY, conversionFactor, conversionFactor, conversionFactor)
     bufferTansl = rc.Geometry.Transform.Translation(250, -50, 0)
     numDecPlaces = len(list(str(sc.doc.ModelAbsoluteTolerance)))-2
+    numConversionFacPlaces = len(list(str(sc.doc.ModelAbsoluteTolerance)))-2
+    numDecPlaces = numDecPlaces - numConversionFacPlaces
+    #If the Rhino model tolerance is not fine enough, give a warning.
+    if numDecPlaces < 0:
+        warning = "Your Rhino model tolerance is coarser than 1 mm and your geometry might not export nicely to THERM. \n It is recommended that you have a Rhino tolerance of at least 1 mm."
+        print warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+        numDecPlaces = 0
+    #Set the tolerance at the default THERM tolerance.
+    numDecPlaces = 2
     
     ###CHECK THE POLYGONS AND ASSEMBLE THEM INTO DICTIONARIES.
     allMaterials = []
