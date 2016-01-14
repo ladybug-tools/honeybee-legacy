@@ -28,6 +28,7 @@ Provided by Honeybee 0.0.57
     Args:
         _polygons: A list of thermPolygons from one or more "Honeybee_Create Therm Polygons" components.
         _boundaries: A list of thermBoundaries from one or more "Honeybee_Create Therm Boundaries" components.
+        meshLevel_: An optional integer to set the mesh level of the resulting exported file.  The default is set to a coarse value of 6 but it may be necessary to increase this if THERM tells you to 'increase the quad tree mesh parameter in the file'.
         workingDir_: An optional working directory to a folder on your system, into which you would like to write the THERM XML and results.  The default will write these files in into your Ladybug default folder.  NOTE THAT DIRECTORIES INPUT HERE SHOULD NOT HAVE ANY SPACES OR UNDERSCORES IN THE FILE PATH.
         fileName_: An optional text string which will be used to name your THERM XML.  Change this to aviod over-writing results of previous runs of this component.
         _writeXML: Set to "True" to have the component take your connected UWGParemeters and write them into an XML file.  The file path of the resulting XML file will appear in the xmlFileAddress output of this component.  Note that only setting this to "True" and not setting the output below to "True" will not automatically run the XML through the Urban Weather Generator for you.
@@ -50,7 +51,7 @@ import datetime
 
 ghenv.Component.Name = 'Honeybee_Write THERM File'
 ghenv.Component.NickName = 'writeTHERM'
-ghenv.Component.Message = 'VER 0.0.57\nJAN_13_2016'
+ghenv.Component.Message = 'VER 0.0.57\nJAN_14_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.56\nJAN_12_2015
@@ -627,6 +628,9 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
     CrossSectionType = 'Sill'
     if basePlane.Normal.Z < -0.70710678118 or basePlane.Normal.Z > 0.70710678118: CrossSectionType = 'Jamb'
     
+    #CHECK THE MESH LEVEL.
+    if meshLevel_: meshLevel = str(meshLevel_)
+    else: meshLevel = '6'
     
     
     ### WRITE EVERYTHING TO THERM FILE
@@ -650,7 +654,7 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
         '<CrossSectionType>'+ CrossSectionType + '</CrossSectionType>\n' + \
         '<Notes>RhinoUnits-' + str(sc.doc.ModelUnitSystem) + ', RhinoOrigin-'+ '(' + str(thermFileOrigin.X) + ',' + str(thermFileOrigin.Y) + ',' + str(thermFileOrigin.Z) + '), RhinoXAxis-'+ '(' + str(basePlane.XAxis.X) + ',' + str(basePlane.XAxis.Y) + ',' + str(basePlane.XAxis.Z) + '), RhinoYAxis-'+ '(' + str(basePlane.YAxis.X) + ',' + str(basePlane.YAxis.Y) + ',' + str(basePlane.YAxis.Z) + '), RhinoZAxis-'+ '(' + str(basePlane.ZAxis.X) + ',' + str(basePlane.ZAxis.Y) + ',' + str(basePlane.ZAxis.Z)+')</Notes>\n' + \
         '<Units>SI</Units>\n' + \
-        '<MeshControl MeshLevel="6" ErrorCheckFlag="1" ErrorLimit="10.000000" MaxIterations="5" CMAflag="0" />\n'
+        '<MeshControl MeshLevel="' + meshLevel + '" ErrorCheckFlag="1" ErrorLimit="10.000000" MaxIterations="5" CMAflag="0" />\n'
     xmlFile.write(headerStr)
     
     
