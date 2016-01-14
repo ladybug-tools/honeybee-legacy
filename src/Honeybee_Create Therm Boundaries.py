@@ -34,6 +34,7 @@ Provided by Honeybee 0.0.57
             Typical film coefficient values range from 26 W/m2-K (for an NFRC exterior envelope) to 2.5 W/m2-K (for an interior wood/vinyl surface).
             _
             Note that, when inputting 'outdoor', the component will assume an outdoor wind speed of 3.4 m/s (22.7 W/m2-K) and, for higher wind speeds, higher film coefficients should be input (ie. 6.7 m/s = 34.0 W/m2-K).
+        emissivity_: An optional number between 0 and 1 to set an override for the emissivity along the boundary.  By default, the Grasshopper components will take the emissivity of the material that is adjacent to the boundary.  However, a value here can over-ride this value to account for coatings like those on Low-E glass or matte paint on metallic materials.
         uFactorTag_: An optional text string to define a U-Factor tag for the boundary condition.  U-Factor tags are used tell THERM the boundary on which you would like to compute a U-Value.  The default is set to to have no U-Factor tag.  This input can be any text string.  For example "Frame", "Edge", or "Spacer."
         RGBColor_: An optional color to set the color of the boundary condition when you import it into THERM.
     Returns:
@@ -53,7 +54,7 @@ import math
 
 ghenv.Component.Name = 'Honeybee_Create Therm Boundaries'
 ghenv.Component.NickName = 'createThermBoundaries'
-ghenv.Component.Message = 'VER 0.0.57\nJAN_12_2016'
+ghenv.Component.Message = 'VER 0.0.57\nJAN_14_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.56\nJAN_12_2016
@@ -64,7 +65,7 @@ except: pass
 
 tolerance = sc.doc.ModelAbsoluteTolerance
 
-def main(boundaryCurve, temperature, filmCoefficient, crvName, uFactorTag, RGBColor):
+def main(boundaryCurve, temperature, filmCoefficient, crvName, emissivity, uFactorTag, RGBColor):
     # import the classes
     hb_thermBC = sc.sticky["honeybee_ThermBC"]
     hb_hive = sc.sticky["honeybee_Hive"]()
@@ -78,6 +79,15 @@ def main(boundaryCurve, temperature, filmCoefficient, crvName, uFactorTag, RGBCo
         if filmCoefficient.upper() == 'INDOOR' or filmCoefficient.upper() == 'OUTDOOR': filmCoefficient = filmCoefficient.upper()
         else:
             warning = "The connected _filmCoefficient is not recognized. \n This input must be either a numerical value or the word 'indoor' or 'outdoor' (without quotations)."
+            print warning
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+            return -1
+    
+    #Check to be sure that any emissivity values make sense.
+    if emissivity != None:
+        if emissivity > 1 or emissivity < 0:
+            warning = "_emissivity must be between 0 and 1"
             print warning
             w = gh.GH_RuntimeMessageLevel.Warning
             ghenv.Component.AddRuntimeMessage(w, warning)
@@ -106,7 +116,7 @@ def main(boundaryCurve, temperature, filmCoefficient, crvName, uFactorTag, RGBCo
         crvName = "".join(guid.split("-")[:-1])
     
     #Make the therm boundary condition.
-    HBThermBC = hb_thermBC(boundaryCurve, crvName, temperature, filmCoefficient, boundPlane, None, None, RGBColor, uFactorTag)
+    HBThermBC = hb_thermBC(boundaryCurve, crvName, temperature, filmCoefficient, boundPlane, None, None, RGBColor, uFactorTag, emissivity)
     
     # add to the hive
     thermBoundary  = hb_hive.addToHoneybeeHive([HBThermBC], ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
@@ -133,7 +143,7 @@ else:
 
 
 if initCheck == True and _boundaryCurve != None and _name != None and _temperature != None and _filmCoefficient != None:
-    result= main(_boundaryCurve, _temperature, _filmCoefficient, _name, uFactorTag_, RGBColor_)
+    result= main(_boundaryCurve, _temperature, _filmCoefficient, _name, emissivity_, uFactorTag_, RGBColor_)
     
     if result!=-1:
         thermBoundary = result

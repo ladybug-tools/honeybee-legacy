@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.58\nJAN_12_2016'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_14_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -7216,7 +7216,7 @@ class thermPolygon(object):
         return material
 
 class thermBC(object):
-    def __init__(self, lineGeo, BCName, temperature, filmCoeff, plane, radTemp, radTransCoeff, RGBColor, uFactorTag):
+    def __init__(self, lineGeo, BCName, temperature, filmCoeff, plane, radTemp, radTransCoeff, RGBColor, uFactorTag, emissOverride):
         #Set the name and object type.
         self.objectType = "ThermBC"
         self.hasChild = False
@@ -7270,6 +7270,8 @@ class thermBC(object):
         self.uFactorTag = None
         if uFactorTag != None: self.uFactorTag = uFactorTag
         
+        #Set any emissivity over-rides.
+        self.emissivityOverride = emissOverride
         
         return self.geometry
 

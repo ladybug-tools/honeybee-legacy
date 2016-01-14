@@ -48,6 +48,7 @@ import uuid
 import math
 import copy
 import datetime
+import decimal
 
 ghenv.Component.Name = 'Honeybee_Write THERM File'
 ghenv.Component.NickName = 'writeTHERM'
@@ -358,15 +359,15 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
     conversionFactor = lb_preparation.checkUnits()*1000
     unitsScale = rc.Geometry.Transform.Scale(rc.Geometry.Plane.WorldXY, conversionFactor, conversionFactor, conversionFactor)
     bufferTansl = rc.Geometry.Transform.Translation(250, -50, 0)
-    numDecPlaces = len(list(str(sc.doc.ModelAbsoluteTolerance)))-2
-    numConversionFacPlaces = len(list(str(sc.doc.ModelAbsoluteTolerance)))-2
+    d = decimal.Decimal(str(sc.doc.ModelAbsoluteTolerance))
+    numDecPlaces = abs(d.as_tuple().exponent)
+    numConversionFacPlaces = len(list(str(int(conversionFactor))))-1
     numDecPlaces = numDecPlaces - numConversionFacPlaces
     #If the Rhino model tolerance is not fine enough, give a warning.
-    if numDecPlaces < 0:
-        warning = "Your Rhino model tolerance is coarser than 1 mm and your geometry might not export nicely to THERM. \n It is recommended that you have a Rhino tolerance of at least 1 mm."
+    if numDecPlaces < 2:
+        warning = "Your Rhino model tolerance is coarser than the default tolerance for THERM. \n It is recommended that you decrease your Rhino model tolerance to 0.01 mm by typing 'units' in the Rhino command bar and adding decimal places to the 'tolerance'."
         print warning
         ghenv.Component.AddRuntimeMessage(w, warning)
-        numDecPlaces = 0
     #Set the tolerance at the default THERM tolerance.
     numDecPlaces = 2
     
@@ -388,7 +389,6 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
                 matFromLib["Name"] = checkAbbreviations(matFromLib["Name"])
                 #Check for frame cavity materials.
                 if matFromLib["Type"] == 1:
-                    airCavityPolygons.append(polygon.geometry)
                     if 'Frame Cavity Slightly Ventilated NFRC' in matFromLib["Name"]: matFromLib["CavityModel"] = 5
                     elif 'Frame Cavity NFRC 100' in matFromLib["Name"]: matFromLib["CavityModel"] = 4
                     elif 'Frame Cavity - CEN Simplified' in matFromLib["Name"]: matFromLib["CavityModel"] = 1
@@ -398,6 +398,11 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
                 print warning
                 ghenv.Component.AddRuntimeMessage(e, warning)
                 return -1
+        
+        #Check if the polygon is an air material.
+        matFromLib = copy.copy(thermMatLib[polygon.material])
+        if matFromLib["Type"] == 1:
+            airCavityPolygons.append(polygon.geometry)
         
         #Build up a dictionary of properties.
         polygonDesc = []
@@ -470,7 +475,8 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
             if closestEndPt and closestStartPt:
                 boundType = boundary.BCProperties['Name'].title()
                 boundGeoProp = copy.copy(boundary.BCGeo)
-                boundGeoProp['Emissivity'] = matEmiss
+                if boundary.emissivityOverride == None: boundGeoProp['Emissivity'] = matEmiss
+                else: boundGeoProp['Emissivity'] = boundary.emissivityOverride
                 boundGeoProp['ID'] = str(boundCount)
                 if boundType not in matchedBoundaries: matchedBoundaries.append(boundType)
                 if boundary.uFactorTag != None: boundGeoProp['UFactorTag'] = boundary.uFactorTag
@@ -553,6 +559,8 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
             heatFlowFactor = (-12.443 * (math.pow(dimHeatFlow,3))) + (24.28 * (math.pow(dimHeatFlow,2))) - (16.898 * dimHeatFlow) + 8.1275
             filmCoeff = (heatFlowFactor * dimHeatFlow) + (5.81176 * weightAvgEmiss) + 0.9629
             boundaryType['H'] = str(filmCoeff)
+    allNotMatched = False
+    if len(thermBCs) != len(matchedBoundaries): allNotMatched = True
     
     
     #WRITE IN BOUNDARY CONDITIONS FOR AIR MATERIALS.
@@ -579,8 +587,6 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
                 segStartPt = airSegment.PointAtStart
                 boundCount += 1
                 
-                #First, check if the user has specified any boundary conditions for the air cavity.
-                
                 #Find the Therm polygon associated with the boundary.
                 PolygonID = None
                 for pCount, polygon in enumerate(thermPolygons):
@@ -588,6 +594,20 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
                     if str(polyGeo.Contains(segEndPt, basePlane, sc.doc.ModelAbsoluteTolerance)) == 'Coincident' and str(polyGeo.Contains(segStartPt, basePlane, sc.doc.ModelAbsoluteTolerance)) == 'Coincident':
                         if sc.sticky["honeybee_thermMaterialLib"][polygon.material]['Type'] == 1: boundProp['PolygonID'] = pCount+1
                         else: boundProp['Emissivity'] = thermMatLib[polygon.material]['Emissivity']
+                
+                #First, check if the user has specified any boundary conditions for the air cavity.
+                if allNotMatched:
+                    #Check if the boundary aligns with any of the connected _boundaries.
+                    for boundary in thermBCs:
+                        boundGeo = boundary.geometry
+                        #print rc.Geometry.PolylineCurve.ClosestPoint(boundGeo, segEndPt, sc.doc.ModelAbsoluteTolerance*2)[0]
+                        closestEndPt = rc.Geometry.PolylineCurve.ClosestPoint(boundGeo, segEndPt, sc.doc.ModelAbsoluteTolerance*2)[0]
+                        closestStartPt = rc.Geometry.PolylineCurve.ClosestPoint(boundGeo, segStartPt, sc.doc.ModelAbsoluteTolerance*2)[0]
+                        if closestEndPt and closestStartPt:
+                            if boundary.emissivityOverride != None: boundProp['Emissivity'] = boundary.emissivityOverride
+                            if boundary.uFactorTag != None: boundProp['UFactorTag'] = boundary.uFactorTag
+                            if boundary.name not in matchedBoundaries: matchedBoundaries.append(boundary.name)
+                
                 boundDesc.append(boundProp)
                 
                 #Put the transformed vertices into the dictionary.
@@ -611,13 +631,12 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
         #Add the frame cavity surface to the BC types to write into the header.
         boundConditions.append(thermDefault.frameCavityBCProperties)
     
-    
     #Check to be sure that all _boundaries have been matched with _polygons and, if not, give a warning that the BC is being left out.
     if len(thermBCs) != len(matchedBoundaries):
         allBndNames = []
         for b in thermBCs: allBndNames.append(b.name)
         for name in allBndNames:
-            if name not in matchedBoundaries:
+            if name.title() not in matchedBoundaries:
                 warning = "The boundary '" + name + "' could not be matched with the rest of the connected geometry and is therefore being left out of the exported THERM file. \n To include it in the export, make sure that this boundary's geometry is flush with your the edges of your _polygons."
                 print warning
                 ghenv.Component.AddRuntimeMessage(w, warning)
