@@ -61,7 +61,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.58\nJAN_09_2016'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_13_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nOCT_31_2015
@@ -2029,19 +2029,25 @@ class EPFeaturesNotInOS(object):
                 elif lineCount == 0:
                     # try to collect information related to type limit
                     lineSeg = line.split(",")
-                    if not lineSeg[0].startswith("Honeybee"): break
-                    lowerLimit, upperLimit, numericType, unitType = lineSeg[1:5]
-                    
-                    # prepare the schedulTypeLimitObject
-                    schTypeLimitName = os.path.basename(scheduleName).lower(). \
-                                       replace(".", "").split("csv")[0] + "TypeLimit"
-                    
-                    schTypeLimitStr = "ScheduleTypeLimits,\t!Schedule Type\n" + \
-                                      schTypeLimitName + ",\t! Name\n" + \
-                                      lowerLimit.strip() + ",\t!- Lower Limit Value\n" + \
-                                      upperLimit.strip() + ",\t!- Upper Limit Value\n" + \
-                                      numericType.strip() + ",\t!- Numeric Type\n" + \
-                                      unitType.strip() + ";\t!- Unit Type\n\n"
+                    if not lineSeg[0].startswith("Honeybee"):
+                        schTypeLimitStr = "ScheduleTypeLimits,\t!Schedule Type\n" + \
+                                          '    FRACTION' + ",\t! Name\n" + \
+                                          '    0' + ",\t!- Lower Limit Value\n" + \
+                                          '    1' + ",\t!- Upper Limit Value\n" + \
+                                          '    CONTINUOUS' + ";\t!- Numeric Type\n\n"
+                    else:
+                        lowerLimit, upperLimit, numericType, unitType = lineSeg[1:5]
+                        
+                        # prepare the schedulTypeLimitObject
+                        schTypeLimitName = os.path.basename(scheduleName).lower(). \
+                                           replace(".", "").split("csv")[0] + "TypeLimit"
+                        
+                        schTypeLimitStr = "ScheduleTypeLimits,\t!Schedule Type\n" + \
+                                          schTypeLimitName + ",\t! Name\n" + \
+                                          lowerLimit.strip() + ",\t!- Lower Limit Value\n" + \
+                                          upperLimit.strip() + ",\t!- Upper Limit Value\n" + \
+                                          numericType.strip() + ",\t!- Numeric Type\n" + \
+                                          unitType.strip() + ";\t!- Unit Type\n\n"
                 elif lineCount == 2:
                     # check timestep
                     try: numOfHours *= int(line.split(",")[0])
@@ -2218,12 +2224,16 @@ class RunOPS(object):
     
     def writeNonOSFeatures(self, idfFilePath, HBZones, workingDir):
         #Grab the lines of the exiting IDF.
+        wrongLineTrigger = True
         fi = open(str(idfFilePath),'r')
         fi.seek(0)
         lines=[]
         foundCSVSchedules = []
-        for line in fi:
-            if 'CSV' in line:
+        for lineCount, line in enumerate(fi):
+            if 'Schedule:' in line:
+                lines.append(line)
+                wrongLineTrigger = True
+            elif 'CSV' in line or 'csv' in line:
                 for columnCount, column in enumerate(line.split('.')):
                     if columnCount == 0:
                         origName = column + '.csv'
@@ -2231,8 +2241,11 @@ class RunOPS(object):
                 newName = '  ' + newName.split('\\')[-1]
                 if origName not in foundCSVSchedules:
                     foundCSVSchedules.append(origName)
-                    lines.append(line)
+                if wrongLineTrigger ==True: lines.append(line)
                 else: lines.append(line.replace(origName, newName))
+            elif wrongLineTrigger == True:
+                wrongLineTrigger = False
+                lines.append(line)
             else:
                 lines.append(line)
         fi.close()
