@@ -39,9 +39,9 @@ import scriptcontext as sc
 import Grasshopper.Kernel as gh
 import os
 
-ghenv.Component.Name = 'Honeybee_Import THERM XMLe'
+ghenv.Component.Name = 'Honeybee_Import THERM XML'
 ghenv.Component.NickName = 'importTHERM'
-ghenv.Component.Message = 'VER 0.0.57\nJAN_13_2016'
+ghenv.Component.Message = 'VER 0.0.57\nJAN_14_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.56\nJAN_12_2015
