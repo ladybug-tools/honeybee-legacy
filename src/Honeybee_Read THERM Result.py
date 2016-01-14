@@ -56,7 +56,7 @@ import math
 
 ghenv.Component.Name = 'Honeybee_Read THERM Result'
 ghenv.Component.NickName = 'readTHERM'
-ghenv.Component.Message = 'VER 0.0.57\nJAN_13_2016'
+ghenv.Component.Message = 'VER 0.0.57\nJAN_14_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.56\nDEC_31_2015
@@ -275,6 +275,7 @@ def main(dataType, planeReorientation, unitsScale, rhinoOrig):
     
     #Get the bounding box of the secene that will work in 3 dimensions.
     meshBB = rc.Geometry.BoundingBox(pointData)
+    finalLegBasePt = meshBB.Corner(False, True, True)
     meshBox = rc.Geometry.Box(meshBB)
     bbDim = [meshBox.X[1]-meshBox.X[0], meshBox.Y[1]-meshBox.Y[0], meshBox.Z[1]-meshBox.Z[0]]
     bbDim.sort()
@@ -288,7 +289,11 @@ def main(dataType, planeReorientation, unitsScale, rhinoOrig):
     lb_visualization.calculateBB([sceneBox], True)
     if dataType == 0: legendTitle = 'C'
     else: legendTitle = 'W/m2'
-    if legendBasePoint == None: legendBasePoint = lb_visualization.BoundingBoxPar[0]
+    if legendBasePoint == None:
+        legendBasePoint = finalLegBasePt
+        lst = list(lb_visualization.BoundingBoxPar)
+        lst[0] = legendBasePoint
+        lb_visualization.BoundingBoxPar = tuple(lst)
     legendSrfs, legendText, legendTextCrv, textPt, textSize = lb_visualization.createLegend(meshValues, lowB, highB, numSeg, legendTitle, lb_visualization.BoundingBoxPar, legendBasePoint, legendScale, legendFont, legendFontSize, legendBold, decimalPlaces, removeLessThan)
     legendColors = lb_visualization.gradientColor(legendText[:-1], lowB, highB, customColors)
     legendSrfs = lb_visualization.colorMesh(legendColors, legendSrfs)
