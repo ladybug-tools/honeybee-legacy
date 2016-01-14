@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2015, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
+# Copyright (c) 2013-2015, Chris Mackey <Chris@MackeyArchitecture.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -42,7 +42,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Therm Material to EnergyPlus Material"
 ghenv.Component.NickName = 'ThermMat2EPMat'
-ghenv.Component.Message = 'VER 0.0.58\nJAN_02_2016'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_14_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -59,7 +59,9 @@ def checkInputs():
     #Get the material from the THERM Library.
     ThermMaterials = sc.sticky["honeybee_thermMaterialLib"].keys()
     thermMaterial = None
-    if not _thermMaterial.upper() in ThermMaterials:
+    if _thermMaterial.startswith("<Material"):
+        thermMaterial = addThermMatToLib(_thermMaterial)
+    elif not _thermMaterial.upper() in ThermMaterials:
         warning = "Cannot find _thermMaterial in THERM Material library."
         ghenv.Component.AddRuntimeMessage(w, warning)
         return -1
@@ -73,6 +75,28 @@ def checkInputs():
     
     return thermMaterial
 
+
+def addThermMatToLib(materialString):
+    #Parse the string.
+    materialName = materialString.split('Name=')[-1].split(' ')[0].replace('_', ' ').upper()
+    type = int(materialString.split('Type=')[-1].split(' ')[0])
+    conductivity = float(materialString.split('Conductivity=')[-1].split(' ')[0])
+    absorptivity = float(materialString.split('Absorptivity=')[-1].split(' ')[0])
+    emissivity = float(materialString.split('Emissivity=')[-1].split(' ')[0])
+    RGBColor = System.Drawing.ColorTranslator.FromHtml(materialString.split('RGBColor=')[-1].split('/>')[0])
+    
+    #Make a sub-dictionary for the material.
+    sc.sticky["honeybee_thermMaterialLib"][materialName] = {}
+    
+    #Create the material with values from the original material.
+    sc.sticky["honeybee_thermMaterialLib"][materialName]["Name"] = materialName
+    sc.sticky["honeybee_thermMaterialLib"][materialName]["Type"] = type
+    sc.sticky["honeybee_thermMaterialLib"][materialName]["Conductivity"] = conductivity
+    sc.sticky["honeybee_thermMaterialLib"][materialName]["Absorptivity"] = absorptivity
+    sc.sticky["honeybee_thermMaterialLib"][materialName]["Emissivity"] = emissivity
+    sc.sticky["honeybee_thermMaterialLib"][materialName]["RGBColor"] = RGBColor
+    
+    return materialName
 
 def main(thermMaterial, roughness, thickness, density, specificHeat):
     

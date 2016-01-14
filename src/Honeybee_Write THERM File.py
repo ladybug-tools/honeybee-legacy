@@ -317,6 +317,7 @@ def dictToXMLSimple(dict, startTag, dataType):
             keys = ['Name', 'Type', 'Conductivity', 'Absorptivity', 'Emissivity', 'RGBColor', 'CavityModel']
         except:
             keys = ['Name', 'Type', 'Conductivity', 'Absorptivity', 'Emissivity', 'RGBColor']
+            dict['Type'] = 0
     elif dataType == 'BoundaryCondition': keys = ['Name', 'Type', 'H', 'HeatFlux', 'Temperature', 'RGBColor', 'Tr', 'Hr', 'Ei', 'Viewfactor', 'RadiationModel', 'ConvectionFlag', 'FluxFlag', 'RadiationFlag', 'ConstantTemperatureFlag', 'EmisModifier']
     elif dataType == 'Polygon': keys = ['ID', 'Material', 'NSides', 'Type', 'units']
     elif dataType == 'Point': keys = ['index', 'x', 'y']
@@ -392,6 +393,7 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
                     if 'Frame Cavity Slightly Ventilated NFRC' in matFromLib["Name"]: matFromLib["CavityModel"] = 5
                     elif 'Frame Cavity NFRC 100' in matFromLib["Name"]: matFromLib["CavityModel"] = 4
                     elif 'Frame Cavity - CEN Simplified' in matFromLib["Name"]: matFromLib["CavityModel"] = 1
+                    else: matFromLib["CavityModel"] = 4
                 allMaterials.append(matFromLib)
             except:
                 warning = "The material " + polygon.material + " could not be found in your material library. \n Make sure your HB_HB component is in the back of your GH canvas by selecting it and hitting Cntrl+B. \n Then, right click on the GH canvas and hit 'recompute.'"
