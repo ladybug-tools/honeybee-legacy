@@ -52,7 +52,7 @@ import decimal
 
 ghenv.Component.Name = 'Honeybee_Write THERM File'
 ghenv.Component.NickName = 'writeTHERM'
-ghenv.Component.Message = 'VER 0.0.57\nJAN_14_2016'
+ghenv.Component.Message = 'VER 0.0.57\nJAN_15_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.56\nJAN_12_2015
@@ -575,8 +575,8 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
             polygonBoundaries = airPoly.DuplicateNakedEdgeCurves(True, True)
             allAirBoundary = rc.Geometry.PolylineCurve.JoinCurves(polygonBoundaries, sc.doc.ModelAbsoluteTolerance)
             for encircling in allAirBoundary:
-                #Check to be sure the curve is facing counter-clockwise.
-                if str(encircling.ClosedCurveOrientation(basePlane)) == 'CounterClockwise':
+                #Check to be sure the curve is facing clockwise.
+                if str(encircling.ClosedCurveOrientation(basePlane)) == 'Clockwise':
                     encircling.Reverse()
                 frameCavityBounds.append(encircling.DuplicateSegments())
         
