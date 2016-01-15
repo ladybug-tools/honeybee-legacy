@@ -38,7 +38,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Daysim Occupancy Generator Based On List"
 ghenv.Component.NickName = 'occupancyGenerator'
-ghenv.Component.Message = 'VER 0.0.58\nDEC_01_2015'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_15_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
