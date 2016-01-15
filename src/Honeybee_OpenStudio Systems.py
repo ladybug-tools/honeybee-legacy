@@ -33,8 +33,7 @@ Provided by Honeybee 0.0.58
     Returns:
         HBZones:...
 """
-from clr import AddReference
-AddReference('Grasshopper')
+
 import Grasshopper.Kernel as gh
 import scriptcontext as sc
 import uuid
@@ -44,7 +43,7 @@ import json
 
 ghenv.Component.Name = "Honeybee_OpenStudio Systems"
 ghenv.Component.NickName = 'OSHVACSystems'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_15_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -103,6 +102,13 @@ def main(HBZones, HVACSystems,seeHVACDesc):
         newZoneList = []
         for zoneCount, zone in enumerate(HBZonesFromHive):
             
+            if not zone.isConditioned:
+                warning = "%s is not conditioned. Systems will not be added to this zone."%zone.name
+                results[zone.name] = warning
+                w = gh.GH_RuntimeMessageLevel.Warning
+                ghenv.Component.AddRuntimeMessage(w, warning)
+                continue
+                
             try: 
                 #in the case where the user enters multiple HVAC Indices
                 HVACIndex = HVACSystems[zoneCount]
@@ -295,7 +301,7 @@ def main(HBZones, HVACSystems,seeHVACDesc):
             HBZones  = hb_hive.addToHoneybeeHive(HBZonesFromHive, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
         
     else:
-        results.append("You should first let Honeybee to fly...")
+        results["0"] = "You should first let Honeybee to fly..."
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, "You should let Honeybee to fly...")
 

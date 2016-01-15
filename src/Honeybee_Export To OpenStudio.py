@@ -61,7 +61,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.58\nJAN_13_2016'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_15_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nOCT_31_2015
@@ -1009,15 +1009,16 @@ class WriteOPS(object):
     def addSystemsToZones(self, model):
         
         for HAVCGroupID in self.HVACSystemDict.keys():
-            
             # HAVC system index for this group and thermal zones
             systemIndex, thermalZones, HVACDetails,plantDetails,zoneRecircAir,zoneTotalAir = self.HVACSystemDict[HAVCGroupID]
             # put thermal zones into a vector
             thermalZoneVector = ops.ThermalZoneVector(thermalZones)
             # add systems. There are 10 standard ASHRAE systems + Ideal Air Loads
             if systemIndex == 0 or systemIndex == -1:
-                for zone in thermalZoneVector: zone.setUseIdealAirLoads(True)
-            
+                for zone in thermalZoneVector:
+                        if zone.isConditioned:
+                            zone.setUseIdealAirLoads(True)
+                            
             elif systemIndex == 1:
                 
                 # 1: PTAC, Residential - thermalZoneVector because ZoneHVAC
@@ -2758,26 +2759,28 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         # assign the thermal zone
         space, thermalZone = hb_writeOPS.assignThermalZone(zone, space, model)
         
-        # add HVAC system
-        HAVCGroupID, HVACIndex, HVACDetails, plantDetails = zone.HVACSystem
         
-        # print HAVCGroupID,HVACIndex,HVACDetails,plantDetails
-        
-        if HAVCGroupID!= -1:
-            if HAVCGroupID not in hb_writeOPS.HVACSystemDict.keys():
-                # add place holder for lists 
-                
-                hb_writeOPS.HVACSystemDict[HAVCGroupID] = [HVACIndex,[],HVACDetails,plantDetails, [], []]
-        
-        # collect informations for systems here, such as the zones in each system and the recirculation specifcations for each zone.
-        hb_writeOPS.HVACSystemDict[HAVCGroupID][1].append(thermalZone)
-        hb_writeOPS.HVACSystemDict[HAVCGroupID][4].append(zone.recirculatedAirPerArea)
-        zoneFlrArea = zone.getFloorArea()
-        totalZoneFlow = (zone.recirculatedAirPerArea*zoneFlrArea) +  (zone.ventilationPerArea*zoneFlrArea) + (zone.ventilationPerPerson*zone.numOfPeoplePerArea*zoneFlrArea)
-        hb_writeOPS.HVACSystemDict[HAVCGroupID][5].append(totalZoneFlow)
-        
-        # add thermostat
-        thermalZone = hb_writeOPS.addThermostat(zone, thermalZone, space, model)
+        if zone.isConditioned:
+            # add HVAC system
+            HAVCGroupID, HVACIndex, HVACDetails, plantDetails = zone.HVACSystem
+            
+            #print zone.isConditioned
+            #print HAVCGroupID,HVACIndex,HVACDetails,plantDetails
+            
+            if HAVCGroupID!= -1:
+                if HAVCGroupID not in hb_writeOPS.HVACSystemDict.keys():
+                    # add place holder for lists
+                    hb_writeOPS.HVACSystemDict[HAVCGroupID] = [HVACIndex,[],HVACDetails,plantDetails, [], []]
+            
+            # collect informations for systems here, such as the zones in each system and the recirculation specifcations for each zone.
+            hb_writeOPS.HVACSystemDict[HAVCGroupID][1].append(thermalZone)
+            hb_writeOPS.HVACSystemDict[HAVCGroupID][4].append(zone.recirculatedAirPerArea)
+            zoneFlrArea = zone.getFloorArea()
+            totalZoneFlow = (zone.recirculatedAirPerArea*zoneFlrArea) +  (zone.ventilationPerArea*zoneFlrArea) + (zone.ventilationPerPerson*zone.numOfPeoplePerArea*zoneFlrArea)
+            hb_writeOPS.HVACSystemDict[HAVCGroupID][5].append(totalZoneFlow)
+            
+            # add thermostat
+            thermalZone = hb_writeOPS.addThermostat(zone, thermalZone, space, model)
         
         # write the surfaces
         for HBSrf in zone.surfaces:
