@@ -433,7 +433,6 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
     
     ###CHECK THE BOUNDARY CONDITIONS AND ASSEMBLE THEM INTO DICTIONARIES.
     matchedBoundaries = []
-    
     boundConditions = []
     boundConditNames = []
     boundConditions.append(thermDefault.adiabaticBCProperties)
@@ -483,7 +482,7 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
                 if boundType not in matchedBoundaries: matchedBoundaries.append(boundType)
                 if boundary.uFactorTag != None: boundGeoProp['UFactorTag'] = boundary.uFactorTag
         
-        #put all of the proerties into the dictionary.
+        #put all of the properties into the dictionary.
         boundProp['ID'] = boundGeoProp['ID']
         boundProp['BC'] = boundType
         boundProp['units'] = "mm"
@@ -632,6 +631,65 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
         
         #Add the frame cavity surface to the BC types to write into the header.
         boundConditions.append(thermDefault.frameCavityBCProperties)
+    
+    
+    if len(thermBCs) != len(matchedBoundaries):
+        #Try one final attempt to see if the boundaries are specified at a finer resolution than that of the material polygons.
+        boundsToRemove = []
+        newMatchedBnds = []
+        for boundar in thermBCs:
+            if boundar.name.title() not in matchedBoundaries:
+                segEndPt = boundar.geometry.PointAtEnd
+                segStartPt = boundar.geometry.PointAtStart
+                for segmentCount, segment in enumerate(allBoundary):
+                    closestEndPt = rc.Geometry.PolylineCurve.ClosestPoint(segment, segEndPt, sc.doc.ModelAbsoluteTolerance*2)[0]
+                    closestStartPt = rc.Geometry.PolylineCurve.ClosestPoint(segment, segStartPt, sc.doc.ModelAbsoluteTolerance*2)[0]
+                    if closestEndPt and closestStartPt:
+                        #Add the boundary to the lists to keep track of everything.
+                        if boundar.name not in newMatchedBnds: newMatchedBnds.append(boundar.name)
+                        if allBound[segmentCount][0]['ID'] not in boundsToRemove: boundsToRemove.append(allBound[segmentCount][0]['ID'])
+                        #Define Default Parameters.
+                        boundDesc = []
+                        boundProp = {'UFactorTag': '', 'ID': str(boundCount), 'BC': boundar.name, 'Emissivity': allBound[segmentCount][0]['Emissivity'], 'EnclosureID': "0", 'PolygonID': allBound[segmentCount][0]['PolygonID'], 'units': "mm"}
+                        #Change defaults if they are specified.
+                        if boundar.uFactorTag != None: boundProp['UFactorTag'] = boundar.uFactorTag
+                        if boundar.emissivityOverride != None: boundProp['Emissivity'] = boundar.emissivityOverride
+                        boundDesc.append(boundProp)
+                        #Check to make sure that the boundary is facing the direction of the full boundary line.
+                        boundarLine = rc.Geometry.Line(segStartPt, segEndPt)
+                        boundLineDir = boundarLine.Direction
+                        boundLineDir.Unitize()
+                        segDir = rc.Geometry.Line(segment.PointAtStart, segment.PointAtEnd).Direction
+                        segDir.Unitize()
+                        if boundLineDir != segDir:
+                            segStartPtCopy = copy.copy(segStartPt)
+                            segStartPt = copy.copy(segEndPt)
+                            segEndPt = segStartPtCopy
+                        #Put the transformed vertices into the dictionary.
+                        segStartPtTrans = copy.copy(segStartPt)
+                        segStartPtTrans.Transform(planeReorientation)
+                        segStartPtTrans.Transform(unitsScale)
+                        segStartPtTrans.Transform(bufferTansl)
+                        startPtDict = {'index': '0', 'x': str(round(segStartPtTrans.X, numDecPlaces)), 'y': str(round(segStartPtTrans.Y, numDecPlaces))}
+                        
+                        segEndPtTrans = copy.copy(segEndPt)
+                        segEndPtTrans.Transform(planeReorientation)
+                        segEndPtTrans.Transform(unitsScale)
+                        segEndPtTrans.Transform(bufferTansl)
+                        endPtDict = {'index': '1', 'x': str(round(segEndPtTrans.X, numDecPlaces)), 'y': str(round(segEndPtTrans.Y, numDecPlaces))}
+                        
+                        boundDesc.append(startPtDict)
+                        boundDesc.append(endPtDict)
+                        
+                        allBound.append(boundDesc)
+                        boundCount += 1
+        #Remove the replaced boundaries from the list.
+        newAllBound = []
+        for currentBound in allBound:
+            if currentBound[0]['ID'] not in boundsToRemove:newAllBound.append(currentBound)
+        allBound = newAllBound
+        matchedBoundaries.extend(newMatchedBnds)
+        #Re-create polygons where the vertices have changed.
     
     #Check to be sure that all _boundaries have been matched with _polygons and, if not, give a warning that the BC is being left out.
     if len(thermBCs) != len(matchedBoundaries):
