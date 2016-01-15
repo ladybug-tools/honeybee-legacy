@@ -41,7 +41,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Therm Material"
 ghenv.Component.NickName = 'ThermMaterial'
-ghenv.Component.Message = 'VER 0.0.58\nJAN_14_2016'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_15_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.56\nJAN_14_2016
@@ -51,6 +51,7 @@ except: pass
 
 import Grasshopper.Kernel as gh
 import System
+import random
 w = gh.GH_RuntimeMessageLevel.Warning
 
 
