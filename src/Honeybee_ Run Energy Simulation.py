@@ -999,11 +999,7 @@ class WriteIDF(object):
     
     def write_PVgenperformanceobject(self,PVgen):
         
-        print PVgen.mode
-        
         if PVgen.mode == 'simple':
-            
-            print "test here"
             
             return '\nPhotovoltaicPerformance:Simple,\n' + \
                 '\t' + str(PVgen.namePVperformobject) + ',\t!- Name\n' + \
@@ -1021,7 +1017,7 @@ class WriteIDF(object):
                     PVgen.sandia[count] = PVgen.namePVperformobject+',         !- Name'
                     
             return '\n'.join(PVgen.sandia)
-                
+            
     def simple_inverter(self,inverter):
         
         return '\nElectricLoadCenter:Inverter:Simple,\n' + \
@@ -1865,11 +1861,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                         for PVgen in HBsystemgenerator.PVgenerators:
                             
                             idfFile.write(hb_writeIDF.write_PVgen(PVgen))
-                            
-                            #print hb_writeIDF.write_PVgenperformanceobject(PVgen)
-
                             idfFile.write(hb_writeIDF.write_PVgenperformanceobject(PVgen))
-                            
                             WriteIDF.financialdata.append('PVgenerator cost - '+str(PVgen.cost_)) # - Does the class PV_gen need an ID?
                         
                         # Write HBsystemgenerator inverters
