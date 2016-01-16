@@ -16,7 +16,6 @@
 # GNU General Public License for more details.
 # 
 # You should have received a copy of the GNU General Public License
-# along with Honeybee; If not, see <http://www.gnu.org/licenses/>.
 # 
 # @license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
 
@@ -62,10 +61,10 @@ Provided by Honeybee 0.0.58
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_16_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nFEB_28_2015
+#compatibleHBVersion = VER 0.0.56\nDEC_28_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
@@ -193,10 +192,12 @@ class WriteIDF(object):
         try:
             for childSrf in surface.childSrfs:
                 # check surface area
-                
                 glzCoordinates = childSrf.coordinates
-                
                 checked, glzCoordinates= self.checkCoordinates(glzCoordinates)
+                
+                #Check shading objects.
+                if childSrf.shadingControlName == []: shdCntrl = ''
+                else: shdCntrl = childSrf.shadingControlName[0]
                 
                 if checked:
                     str_1 = '\nFenestrationSurface:Detailed,\n' + \
@@ -206,7 +207,7 @@ class WriteIDF(object):
                         '\t' + childSrf.parent.name + ',\t!- Surface Name\n' + \
                         '\t' + childSrf.BCObject.name + ',\t!- Outside Boundary Condition Object\n' + \
                         '\t' + childSrf.groundViewFactor + ',\t!- View Factor to Ground\n' + \
-                        '\t' + childSrf.shadingControlName + ',\t!- Shading Control Name\n' + \
+                        '\t' + shdCntrl + ',\t!- Shading Control Name\n' + \
                         '\t' + childSrf.frameName + ',\t!- Frame and Divider Name\n' + \
                         '\t' + `childSrf.Multiplier`+ ',\t!- Multiplier\n' + \
                         '\t' + `len(glzCoordinates)` + ',\t!- Number of Vertices\n'
@@ -224,7 +225,9 @@ class WriteIDF(object):
                     glzStr += "\n"
         except Exception, e:
             print e
-            print "Failed to write " + childSrf.name + " to idf file"
+            warning = "Failed to write " + childSrf.name + " to idf file"
+            print warning
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
             pass
             
         return glzStr
@@ -988,7 +991,7 @@ class WriteIDF(object):
             '\t' + str(PVgen.name) + ',\t!- Name\n' + \
             '\t' + str(PVgen.surfacename) + ',\t!- Surface Name\n'+\
             '\t' + str(PVgen.performancetype) + ',\t!- Photovoltaic Performance Object Type\n'+\
-            '\t' + str(PVgen.performancename) + ',\t!- Module Performance Name\n'+\
+            '\t' + str(PVgen.namePVperformobject) + ',\t!- Module Performance Name\n'+\
             '\t' + str(PVgen.integrationmode) + ',\t!- Heat Transfer Integration Mode\n'+\
             '\t' + str(PVgen.NOparallel) + ',\t!- Number of Series Strings in Parallel {dimensionless}\n'+\
             '\t' + str(PVgen.NOseries) + ';\t!- Number of Modules in Series {dimensionless}\n'
@@ -996,13 +999,29 @@ class WriteIDF(object):
     
     def write_PVgenperformanceobject(self,PVgen):
         
-        return '\nPhotovoltaicPerformance:Simple,\n' + \
-            '\t' + str(PVgen.namePVperformobject) + ',\t!- Name\n' + \
-            '\t' + str(PVgen.surfaceareacells) + ',\t!- Fraction of Surface Area with Active Solar Cells {dimensionless}\n'+\
-            '\t' + str(PVgen.cellefficiencyinputmode) + ',\t!- Conversion Efficiency Input Mode\n'+\
-            '\t' + str(PVgen.efficiency) + ',\t!- Value for Cell Efficiency if Fixed\n'+\
-            '\t' + str(PVgen.schedule) + ';\t!- Efficiency Schedule Name\n'
+        print PVgen.mode
+        
+        if PVgen.mode == 'simple':
             
+            print "test here"
+            
+            return '\nPhotovoltaicPerformance:Simple,\n' + \
+                '\t' + str(PVgen.namePVperformobject) + ',\t!- Name\n' + \
+                '\t' + str(PVgen.surfaceareacells) + ',\t!- Fraction of Surface Area with Active Solar Cells {dimensionless}\n'+\
+                '\t' + str(PVgen.cellefficiencyinputmode) + ',\t!- Conversion Efficiency Input Mode\n'+\
+                '\t' + str(PVgen.efficiency) + ',\t!- Value for Cell Efficiency if Fixed\n'+\
+                '\t' + str(PVgen.schedule) + ';\t!- Efficiency Schedule Name\n'
+                
+        if PVgen.mode == 'sandia':
+            
+            # Replace name in sandia with name of the PV surface.
+            for count,line in enumerate(PVgen.sandia):
+                if "         !- Name" in line:
+                
+                    PVgen.sandia[count] = PVgen.namePVperformobject+',         !- Name'
+                    
+            return '\n'.join(PVgen.sandia)
+                
     def simple_inverter(self,inverter):
         
         return '\nElectricLoadCenter:Inverter:Simple,\n' + \
@@ -1564,16 +1583,21 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                             EPConstructionsCollection.append(childSrf.construction.upper())
                     # Check if there is any shading for the window.
                     
-                    if childSrf.blindsMaterial != "" and childSrf.shadingControl != "":
-                        try:
-                            if childSrf.blindsMaterial.split('\n')[1].split(',')[0] not in alreadyThereList:
-                                idfFile.write(childSrf.blindsMaterial)
-                                idfFile.write(childSrf.shadingControl)
-                                if childSrf.shadingSchName != 'ALWAYSON':
-                                    EPScheduleCollection.append(childSrf.shadingSchName.upper())
-                                alreadyThereList.append(childSrf.blindsMaterial.split('\n')[1].split(',')[0])
-                        except: pass
-                    
+                    if childSrf.shadeMaterial != [] and childSrf.shadingControl != []:
+                        for shadingCount, windowShading in enumerate(childSrf.shadeMaterial):
+                            
+                            try:
+                                if windowShading.split('\n')[1].split(',')[0] not in alreadyThereList:
+                                    idfFile.write(windowShading)
+                                    idfFile.write(childSrf.shadingControl[shadingCount])
+                                    
+                                    if childSrf.shadingSchName[shadingCount] != 'ALWAYS ON':
+                                        print childSrf.shadingSchName
+                                        EPScheduleCollection.append(childSrf.shadingSchName[shadingCount].upper())
+                                    
+                                    alreadyThereList.append(windowShading.split('\n')[1].split(',')[0])
+                            except: pass
+                
                 # write the glazing strings
                 idfFile.write(hb_writeIDF.EPFenSurface(srf))
                 # else: idfFile.write(hb_writeIDF.EPNonPlanarFenSurface(srf))
@@ -1841,7 +1865,11 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                         for PVgen in HBsystemgenerator.PVgenerators:
                             
                             idfFile.write(hb_writeIDF.write_PVgen(PVgen))
+                            
+                            #print hb_writeIDF.write_PVgenperformanceobject(PVgen)
+
                             idfFile.write(hb_writeIDF.write_PVgenperformanceobject(PVgen))
+                            
                             WriteIDF.financialdata.append('PVgenerator cost - '+str(PVgen.cost_)) # - Does the class PV_gen need an ID?
                         
                         # Write HBsystemgenerator inverters
@@ -2093,8 +2121,8 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         print "[8 of 8] No outputs! You usually want to get some outputs when you run an analysis. Just saying..."
         print "We'll just request some energy-related outputs for you that are monthly."
         outPutsDefalut = 'OutputControl:Table:Style,Comma; \n' + \
-            'Output:Variable,*,Zone Ideal Loads Zone Total Cooling Energy, monthly; \n' + \
-            'Output:Variable,*,Zone Ideal Loads Zone Total Heating Energy, monthly; \n' + \
+            'Output:Variable,*,Zone Ideal Loads Supply Air Total Cooling Energy, monthly; \n' + \
+            'Output:Variable,*,Zone Ideal Loads Supply Air Total Heating Energy, monthly; \n' + \
             'Output:Variable,*,Zone Lights Electric Energy, monthly; \n' + \
             'Output:Variable,*,Zone Electric Equipment Electric Energy, monthly;'
         idfFile.write('\n')
@@ -2144,13 +2172,13 @@ if _writeIdf == True and _epwFile and _HBZones and _HBZones[0]!=None:
                     print line
                     if "**  Fatal  **" in line:
                         warning = "The simulation has failed because of this fatal error: \n" + str(line)
-                        w = gh.GH_RuntimeMessageLevel.Warning
+                        w = gh.GH_RuntimeMessageLevel.Error
                         ghenv.Component.AddRuntimeMessage(w, warning)
                         resultFileAddress = None
                     elif "** Severe  **" in line:
                         comment = "The simulation has not run correctly because of this severe error: \n" + str(line)
-                        c = gh.GH_RuntimeMessageLevel.Remark
-                        ghenv.Component.AddRuntimeMessage(c, comment)
+                        w = gh.GH_RuntimeMessageLevel.Warning
+                        ghenv.Component.AddRuntimeMessage(w, comment)
                 errFile.close()
             except:
                 pass

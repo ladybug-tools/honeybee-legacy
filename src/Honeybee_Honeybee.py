@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_20_2015'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_16_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -78,6 +78,7 @@ import cPickle as pickle
 import subprocess
 import uuid
 import re
+import random
 
 PI = math.pi
 
@@ -296,17 +297,7 @@ class versionCheck(object):
         GHComponent.AddRuntimeMessage(w, warningMsg)
     
     def isInputMissing(self, GHComponent):
-        isInputMissing = False
-        isAnyConnected = False
-        for param in GHComponent.Params.Input:
-            if param.NickName.startswith("_") and \
-                not param.NickName.endswith("_") and \
-                param.VolatileDataCount:
-                    isAnyConnected = True
-                    break
-        
-        if not isAnyConnected: return True
-        
+        isInputMissing = False        
         for param in GHComponent.Params.Input:
             if param.NickName.startswith("_") and \
                 not param.NickName.endswith("_") and \
@@ -548,7 +539,7 @@ class HB_GetEPLibraries:
         
         if isMatFile == False:
             print "Loading EP materials, constructions and schedules from %s"%EPfile
-            EPObjects = EPLibs.getEnergyPlusObjectsFromFile(EPfile)
+            EPObjects = self.getEnergyPlusObjectsFromFile(EPfile)
             self.loadEPConstructionsMaterialsAndSchedules(EPObjects, cleanCurrentLib)
         else:
             print "Loading THERM materials from %s"%EPfile
@@ -575,8 +566,13 @@ class HB_GetEPLibraries:
         if cleanCurrentLib: self.cleanHBLibs()
         
         for EPObjectStr in EPObjectsString:
-            lines = EPObjectStr.strip().split("\n")
-            if len(lines) == 1: continue
+            rawLines = EPObjectStr.strip().split("\n")
+            lines = []
+            for line in rawLines:
+                if line.strip() == '' or line.startswith('!'): continue
+                lines.append(line)
+                
+            if len(lines) < 2: continue
             
             key = lines[0].split(",")[0].strip()
             shortKey = key.split(":")[0]
@@ -665,12 +661,12 @@ class HB_GetEPLibraries:
                     try:
                         matPropLine = row.split(',')
                         matNameLine = row.split('"')
-                        matName = matNameLine[1]
+                        matName = matNameLine[1].upper()
                         #Make a sub-dictionary for the material.
                         self.libraries["ThermMaterial"][matName] = {}
                         
                         #Create the material with the values from the file.
-                        self.libraries["ThermMaterial"][matName]["Material Name"] = matName
+                        self.libraries["ThermMaterial"][matName]["Name"] = matName
                         self.libraries["ThermMaterial"][matName]["Type"] = int(matPropLine[-1])
                         self.libraries["ThermMaterial"][matName]["Conductivity"] = float(matPropLine[-5])
                         self.libraries["ThermMaterial"][matName]["Absorptivity"] = float(matPropLine[-4])
@@ -1829,8 +1825,8 @@ class hb_WriteRAD(object):
         
         if analysisRecipe.type == 0: return [], [] #image-based simulation
         
-        testPoints = analysisRecipe.testPts
-        ptsNormals = analysisRecipe.vectors
+        testPoints = copy.deepcopy(analysisRecipe.testPts)
+        ptsNormals = copy.deepcopy(analysisRecipe.vectors)
         
         # write a pattern file which I can use later to re-branch the points
         ptnFileName = os.path.join(subWorkingDir, radFileName + '.ptn')
@@ -1946,7 +1942,7 @@ class hb_WriteRAD(object):
             
             initBatchFile = open(initBatchFileName, "w")
             initBatchFile.write(pathStr)
-            initBatchStr =  'C:\n' + \
+            initBatchStr =  os.path.splitdrive(self.hb_DSPath)[0] + '\n' + \
                             'CD ' + self.hb_DSPath + '\n' + \
                             'epw2wea  ' + subWorkingDir + "\\" + self.lb_preparation.removeBlankLight(locName) + '.epw ' + subWorkingDir + "\\" +  self.lb_preparation.removeBlankLight(locName) + '.wea\n' + \
                             ':: 1. Generate Daysim version of Radiance Files\n' + \
@@ -2067,7 +2063,7 @@ class hb_WriteRAD(object):
             pathStr = "SET RAYPATH=.;" + self.hb_RADLibPath + "\nPATH=" + self.hb_RADPath + ";$PATH\n"
             batchFile.write(pathStr)
             
-            batchFile.write("c:\n")
+            batchFile.write(os.path.splitdrive(subWorkingDir)[0]  + "\n")
             batchFile.write("cd " + subWorkingDir + "\n")
             
             # write OCT file
@@ -2116,7 +2112,7 @@ class hb_WriteRAD(object):
                 batchFile = open(batchFileName, "w")
                 # write path files
                 batchFile.write(pathStr)
-                batchFile.write("c:\n")
+                batchFile.write(os.path.splitdrive(subWorkingDir)[0] + "\n")
                 batchFile.write("cd " + subWorkingDir + "\n")
                 
                 # calculate vs and vl for thi cpu
@@ -2155,7 +2151,7 @@ class hb_WriteRAD(object):
                     
                     # write path files
                     pcompFile.write(pathStr)
-                    pcompFile.write("c:\n")
+                    pcompFile.write(os.path.splitdrive(subWorkingDir)[0] + "\n")
                     pcompFile.write("cd " + subWorkingDir + "\n")
                     
                     for mergedName, pieces in HDRPieces.items():
@@ -2184,7 +2180,7 @@ class hb_WriteRAD(object):
                 batchFile = open(batchFileName, "w")
                 # write path files
                 batchFile.write(pathStr)
-                batchFile.write("c:\n")
+                batchFile.write(os.path.splitdrive(subWorkingDir)[0] + "\n")
                 batchFile.write("cd " + subWorkingDir + "\n")
                 
                 # 3.4. add rtrace lin
@@ -2197,43 +2193,64 @@ class hb_WriteRAD(object):
             
             return initBatchFileName, batchFiles, fileNames, pcompFileName, RADResultFilesAddress
         
+    def executeBatchFiles(self, batchFileNames, maxPRuns = None, shell = False, waitingTime = 0.5):
+    
+        """Run a number of batch files in parallel and
+            wait to end of the analysis.
+    
+            Args:
+                batchFileNames: List of batch files
+                maxPRuns: max number of files to be ran in parallel (default = 0)
+                shell: set to True if you do NOT want to see the cmd window while the analysis is runnig
+        """
+    
+        if not maxPRuns : maxPRuns = 1
+        maxPRuns = int(maxPRuns)
+        total = len(batchFileNames)
+        
+        if maxPRuns < 1: maxPRuns = 1
+        if maxPRuns > total: maxPRuns = total
+        
+        running = 0
+        done = False
+        jobs = []
+        pid = 0
+        
+        try:
+            while not done:
+                if running < maxPRuns and pid < total:
+                    # execute the files
+                    jobs.append(subprocess.Popen(batchFileNames[pid].replace("\\", "/") , shell = shell))
+                    pid+=1
+                    time.sleep(waitingTime)
+                
+                # count how many jobs are running and how many are done
+                running = 0
+                finished = 0
+                for job in jobs:
+                    if job.poll() is None:
+                        #one job is still running
+                        running += 1
+                    else:
+                        finished += 1
+        
+                if running == maxPRuns:
+                    # wait for half a second
+                    #print "waiting..."
+                    time.sleep(waitingTime)
+        
+                if finished ==  total:
+                    done = True
+        
+        except Exception, e:
+            print "Something went wrong: %s"%str(e) 
     
     def runBatchFiles(self, initBatchFileName, batchFileNames, fileNames, \
                       pcompBatchFile, waitingTime, runInBackground = False):
         
-        def isTheStudyOver(fileNames):
-            while True:
-                cmd = 'WMIC PROCESS get Commandline' #,Processid'
-                proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-                cmdCount = 0
-                for line in proc.stdout:
-                    if (line.strip().startswith("C:\\Windows\\system32\\cmd") or line.strip().startswith("cmd")) \
-                        and line.strip().endswith(".bat"):
-                        fileName = line.strip().split(" ")[-1].split("/")[-1]
-                        # I should check the file names and make sure they are the right files
-                        if fileName in fileNames:
-                            cmdCount += 1
-                time.sleep(0.2)
-                if cmdCount == 0:
-                    return
+        self.executeBatchFiles([initBatchFileName], maxPRuns = 1, shell = runInBackground, waitingTime = waitingTime)
+        self.executeBatchFiles(batchFileNames, maxPRuns = len(batchFileNames), shell = runInBackground, waitingTime = waitingTime)
         
-        def executeBatchFiles(batchFileNames, waitingTime, runInBackground):
-            cmd = ''
-            if not runInBackground: cmd = 'start cmd /c '
-            
-            for batchFileName in batchFileNames:
-                batchFileName = batchFileName.replace("\\", "/")
-                p = subprocess.Popen(cmd + batchFileName , shell=True)
-                time.sleep(waitingTime)
-
-        if runInBackground:
-            subprocess.Popen(initBatchFileName, shell=True)
-        else:
-            os.system(initBatchFileName)
-            
-        time.sleep(waitingTime)
-        executeBatchFiles(batchFileNames, waitingTime, runInBackground)
-        isTheStudyOver(fileNames)
         if pcompBatchFile!="":
             os.system(pcompBatchFile) # put all the files together
         
@@ -2950,7 +2967,7 @@ class hb_WriteRADAUX(object):
             # radiation analysis
             line0 = "rpict -i "
         
-        line1 = "-t 10 "+ \
+        line1_1 = "-t 10 "+ \
                 view + " -af " + ambFile +  " " + \
                 " -ps " + str(radParameters["_ps_"]) + " -pt " + str(radParameters["_pt_"]) + \
                 " -pj " + str(radParameters["_pj_"]) + " -dj " + str(radParameters["_dj_"]) + \
@@ -2960,12 +2977,18 @@ class hb_WriteRADAUX(object):
                 " -ab " + `radParameters["_ab_"]` + \
                 " -ad " + `radParameters["_ad_"]` + " -as " +  `radParameters["_as_"]` + \
                 " -ar " + `radParameters["_ar_"]` + " -aa " +  '%.3f'%radParameters["_aa_"] + \
-                " -lr " + `radParameters["_lr_"]`  + " -lw " + '%.3f'%radParameters["_lw_"] + " -av 0 0 0 " + \
-                " " + octFile + " > " + unfFile + "\n"
-    
+                " -lr " + `radParameters["_lr_"]`  + " -lw " + '%.3f'%radParameters["_lw_"] + " -av 0 0 0 "
+                
+        line1_2 = " "
+        if radParameters.has_key("additional"):
+            for par in radParameters["additional"]:
+                line1_2 += "-%s  "%par
+        
+        line1_3 = octFile + " > " + unfFile + "\n"
+        
         line2 = "del " + unfFile + "\n"
         
-        return line0 + line1 + line2
+        return line0 + line1_1 + line1_2 + line1_3 + line2
 
     def rpictLine(self, view, projectName, viewName, radParameters, analysisType = 0, cpuCount = 0):
         octFile = projectName + ".oct"
@@ -2983,7 +3006,7 @@ class hb_WriteRADAUX(object):
             # radiation analysis
             line0 = "rpict -i "
         
-        line1 = "-t 10 "+ \
+        line1_1 = "-t 10 "+ \
                 view + " -af " + ambFile +  " " + \
                 " -ps " + str(radParameters["_ps_"]) + " -pt " + str(radParameters["_pt_"]) + \
                 " -pj " + str(radParameters["_pj_"]) + " -dj " + str(radParameters["_dj_"]) + \
@@ -2993,12 +3016,19 @@ class hb_WriteRADAUX(object):
                 " -ab " + `radParameters["_ab_"]` + \
                 " -ad " + `radParameters["_ad_"]` + " -as " +  `radParameters["_as_"]` + \
                 " -ar " + `radParameters["_ar_"]` + " -aa " +  '%.3f'%radParameters["_aa_"] + \
-                " -lr " + `radParameters["_lr_"]`  + " -lw " + '%.3f'%radParameters["_lw_"] + " -av 0 0 0 " + \
-                " " + octFile + " > " + unfFile + "\n"
+                " -lr " + `radParameters["_lr_"]`  + " -lw " + '%.3f'%radParameters["_lw_"] + " -av 0 0 0 "
+        
+        line1_2 = " "
+        if radParameters.has_key("additional"):
+            for par in radParameters["additional"]:
+                line1_2 += "-%s  "%par
+        
+        line1_3 = " -e error.log " + octFile + " > " + unfFile + "\n"
+                
     
         line2 = "pfilt -1 -r .6 -x/2 -y/2 " + unfFile + " > " + outputFile + "\n"
         
-        return line0 + line1 + line2
+        return line0 + line1_1 + line1_2 + line1_3 + line2
         
         
     def falsecolorLine(self, projectName, viewName):
@@ -3018,17 +3048,23 @@ class hb_WriteRADAUX(object):
             # print "Fix this for radiation analysis"
             line0 = "rtrace -I "
             
-        line1 = " -h -dp " + str(radParameters["_dp_"]) + \
+        line1_1 = " -h -dp " + str(radParameters["_dp_"]) + \
                 " -ds " + str(radParameters["_ds_"]) + " -dt " + str(radParameters["_dt_"]) + \
                 " -dc " + str(radParameters["_dc_"]) + " -dr " + str(radParameters["_dr_"]) + \
                 " -st " + str(radParameters["_st_"]) + " -lr " + str(radParameters["_lr_"]) + \
                 " -lw " + str(radParameters["_lw_"]) + " -ab " + str(radParameters["_ab_"]) + \
                 " -ad " + str(radParameters["_ad_"]) + " -as " + str(radParameters["_as_"]) + \
-                " -ar " + str(radParameters["_ar_"]) + " -aa " + str(radParameters["_aa_"]) + \
-                " " + octFileName + ".oct < " + ptsFile + \
-                " > " + outputFile + "\n"
+                " -ar " + str(radParameters["_ar_"]) + " -aa " + str(radParameters["_aa_"])
         
-        return line0 + line1
+        line1_2 = " "
+        if radParameters.has_key("additional"):
+            for par in radParameters["additional"]:
+                line1_2 += "-%s  "%par
+            
+        line1_3 = " -e error.log " + octFileName + ".oct < " + ptsFile + \
+                  " > " + outputFile + "\n"
+        
+        return line0 + line1_1 + line1_2 + line1_3
         
     def testPtsStr(self, testPoint, ptsNormal):
         return  '%.4f'%testPoint.X + '\t' + \
@@ -3582,34 +3618,43 @@ class EPMaterialAux(object):
     
     def decomposeMaterial(self, matName, GHComponent = None):
         try:
+            thermTrigger = False
             try:
                 materialObj = sc.sticky["honeybee_materialLib"][matName.upper()]
             except:
-                materialObj = sc.sticky["honeybee_windowMaterialLib"][matName.upper()]
-                
+                try:
+                    materialObj = sc.sticky["honeybee_windowMaterialLib"][matName.upper()]
+                except:
+                    materialObj = sc.sticky["honeybee_thermMaterialLib"][matName.upper()]
+                    thermTrigger = True
+            
             comments = []
             values = []
+            UValueSI, UValueIP = None, None
             
-            #print matName
-            for layer in materialObj.keys():
-                try:
-                    value, comment = materialObj[layer]
-                    # print value + ',\t!-' + comment + "\n"
-                    values.append(value)
-                    comments.append(comment)
-                except:
-                    value = materialObj[layer]
-                    values.append(value)
-                    comments.append('Material Type')
-            
-            UValueSI = self.calcEPMaterialUValue(materialObj, GHComponent)
-            UValueIP = self.convertUValueToIP(UValueSI)
+            if thermTrigger == False:
+                for layer in materialObj.keys():
+                    try:
+                        value, comment = materialObj[layer]
+                        # print value + ',\t!-' + comment + "\n"
+                        values.append(value)
+                        comments.append(comment)
+                    except:
+                        value = materialObj[layer]
+                        values.append(value)
+                        comments.append('Material Type')
+                UValueSI = self.calcEPMaterialUValue(materialObj, GHComponent)
+                UValueIP = self.convertUValueToIP(UValueSI)
+            else:
+                for layer in materialObj.keys():
+                    if layer == 'Name': pass
+                    else:
+                        comments.append(layer)
+                        values.append(materialObj[layer])
             
             return values, comments, UValueSI, UValueIP
-            
         except Exception, e:
             print `e`
-            print "Failed to find " + matName + " in the Honeybee material library."
             return -1
     
     def decomposeEPCnstr(self, cnstrName, GHComponent = None):
@@ -5637,7 +5682,7 @@ class hb_reEvaluateHBZones(object):
         newFenSrf.shadingControlName = baseChildSurface.shadingControlName
         newFenSrf.frameName = baseChildSurface.frameName
         newFenSrf.Multiplier = baseChildSurface.Multiplier
-        newFenSrf.blindsMaterial = baseChildSurface.blindsMaterial
+        newFenSrf.shadeMaterial = baseChildSurface.shadeMaterial
         newFenSrf.shadingControl = baseChildSurface.shadingControl
         newFenSrf.shadingSchName = baseChildSurface.shadingSchName
         
@@ -6797,9 +6842,9 @@ class hb_EPFenSurface(hb_EPSurface):
             parentZone: class of the zone that this surface belongs to"""
         hb_EPSurface.__init__(self, surface, srfNumber, srfName, parentSurface, surafceType)
         
-        self.blindsMaterial = ""
-        self.shadingControl = ""
-        self.shadingSchName = ""
+        self.shadeMaterial = []
+        self.shadingControl = []
+        self.shadingSchName = []
         
         if not self.isPlanar:
             try:
@@ -6810,7 +6855,7 @@ class hb_EPFenSurface(hb_EPSurface):
 
         # calculate punchedWall
         self.parent.punchedGeometry = punchedWall
-        self.shadingControlName = ''
+        self.shadingControlName = []
         self.frameName = ''
         self.Multiplier = 1
         self.BCObject = self.outdoorBCObject()
@@ -6889,16 +6934,17 @@ class PV_gen(object):
     Generator:WindTurbine
     """
     
-    def __init__(self,_name,surfacename_,_integrationmode,No_parallel,No_series,costper_module,powerout,namePVperform,SA_solarcells,cell_n,performance_type = "PhotovoltaicPerformance:Simple"):
+    def __init__(self,_name,surfacename_,_integrationmode,No_parallel,No_series,costper_module,powerout,namePVperformobject,SA_solarcells,cell_n,sandia):
         
         self.name = _name
         self.surfacename = surfacename_
         self.type = 'Generator:Photovoltaic'
-        self.performancetype = performance_type
-        self.performancename =  namePVperform # One Photovoltaic performance object is made for each PV object so names are the same
+        
         self.integrationmode = _integrationmode
         self.NOparallel = No_parallel
         self.NOseries = No_series
+        
+        self.namePVperformobject =  namePVperformobject # One Photovoltaic performance object is made for each PV object so names are the same
         
         # Cost and power out of the Generator is the cost and power of each module by the number of modules in each generator
         # number in series by number in parallel.
@@ -6908,15 +6954,37 @@ class PV_gen(object):
         
         self.inverter = None # Define the inverter for this PV generator all PVgenerations being used in the same - run energy simulation must have the same inverter
     
-        self.PV_performance(namePVperform,SA_solarcells,cell_n)
-        
-    def PV_performance(self,namePVperformobject,SA_solarcells = 0.5 ,cell_n = 0.12,cell_efficiencyinputmode = "Fixed", schedule_ = "always on"):
+        if sandia == []:
+            
+            self.mode = 'simple'
+            self.performancetype = 'PhotovoltaicPerformance:Simple'
+            
+            # Use PhotovoltaicPerformance:Simple, call the method below.
+            
+            self.PV_performanceSimple(namePVperformobject,SA_solarcells,cell_n)
+            
+        if sandia != []:
+            
+            # Use PhotovoltaicPerformance:Sandia,
+            
+            self.mode = 'sandia'
+            self.performancetype = 'PhotovoltaicPerformance:Sandia'
+            
+            self.PV_performanceSandia(sandia,namePVperformobject)
+            
+    def PV_performanceSimple(self,namePVperformobject,SA_solarcells,cell_n,cell_efficiencyinputmode = "Fixed", schedule_ = "always on"):
     
         self.namePVperformobject = namePVperformobject
         self.surfaceareacells = SA_solarcells
         self.cellefficiencyinputmode = cell_efficiencyinputmode
         self.efficiency = cell_n
         self.schedule = schedule_
+        
+        
+    def PV_performanceSandia(self,sandia,namePVperformobject):
+        
+        self.sandia = sandia
+        
     
 class PVinverter(object):
     
@@ -7013,19 +7081,47 @@ class generationhb_hive(object):
         
         return generationobjects
 
+
+class thermDefaults(object):
+    def __init__(self):
+        #Set a default adiabatic boundary condition.
+        self.adiabaticBCProperties = {}
+        self.adiabaticBCProperties['Name'] = 'Adiabatic'
+        self.adiabaticBCProperties['Type'] = "0"
+        self.adiabaticBCProperties['H'] = '0.000000'
+        self.adiabaticBCProperties['HeatFlux'] = "0.000000"
+        self.adiabaticBCProperties['Temperature'] = '0.000000'
+        self.adiabaticBCProperties['RGBColor'] = '0x000000'
+        self.adiabaticBCProperties['Tr'] = '0.000000'
+        self.adiabaticBCProperties['Hr'] = '0.000000'
+        self.adiabaticBCProperties['Ei'] = "1.000000" 
+        self.adiabaticBCProperties['Viewfactor'] = "1.000000"
+        self.adiabaticBCProperties['RadiationModel'] = "0"
+        self.adiabaticBCProperties['ConvectionFlag'] = "0"
+        self.adiabaticBCProperties['FluxFlag'] = "1"
+        self.adiabaticBCProperties['RadiationFlag'] = "0"
+        self.adiabaticBCProperties['ConstantTemperatureFlag'] = "0"
+        self.adiabaticBCProperties['EmisModifier'] = "1.000000"
+        
+        #Set some default U-Factor Tags
+
 class thermPolygon(object):
-    def __init__(self, surfaceGeo, material, srfName, RGBColor):
+    def __init__(self, surfaceGeo, material, srfName, plane, RGBColor):
         #Set the name and material.
         self.objectType = "ThermPolygon"
         self.hasChild = False
         self.name = srfName
+        self.warning = None
         
         #Check if the material exists in the THERM Library and, if not, add it.
-        if material in sc.sticky["honeybee_thermMaterialLib"].keys():
-            if sc.sticky["honeybee_thermMaterialLib"][material]["RGBColor"] == RGBColor: pass
-            else: material = self.makeThermMatFromEPMat(material+str(RGBColor), RGBColor)
+        if material.upper() in sc.sticky["honeybee_materialLib"].keys() or material.upper() in sc.sticky["honeybee_windowMaterialLib"].keys(): material = self.makeThermMatFromEPMat(material, RGBColor)
+        elif material.upper() in sc.sticky["honeybee_thermMaterialLib"].keys():
+            if RGBColor == None: RGBColor = sc.sticky["honeybee_thermMaterialLib"][material.upper()]["RGBColor"]
+            elif sc.sticky["honeybee_thermMaterialLib"][material.upper()]["RGBColor"] == RGBColor: pass
+            else: material = self.makeThermMatCopy(material, material+str(RGBColor), RGBColor)
         else:
-            material = self.makeThermMatFromEPMat(material, RGBColor)
+            material = None
+            self.warning = 'Failed to fins material in either the therm maerial, EP Material, or EP Window Material libraries.'
         self.material = material
         
         #Extract the segments of the polyline and make sure none of them are curved.
@@ -7045,51 +7141,70 @@ class thermPolygon(object):
         for vertex in self.geometry.DuplicateVertices():
             self.vertices.append(vertex)
         
-        #Make note of the plane in which the surface lies.
-        self.plane = self.geometry.Faces[0].TryGetPlane(sc.doc.ModelAbsoluteTolerance)
+        #Make note of the plane in which the surface lies and the normal vector.
+        self.plane = plane
+        self.normalVector = plane.Normal
+        self.normalVector.Unitize()
         
         return self.geometry
     
+    def makeThermMatCopy(self, orgigMat, materialName, RGBColor):
+        #Make a sub-dictionary for the material.
+        sc.sticky["honeybee_thermMaterialLib"][materialName] = {}
+        
+        #Create the material with values from the original material.
+        sc.sticky["honeybee_thermMaterialLib"][materialName]["Name"] = sc.sticky["honeybee_thermMaterialLib"][orgigMat]["Name"]
+        sc.sticky["honeybee_thermMaterialLib"][materialName]["Type"] = sc.sticky["honeybee_thermMaterialLib"][orgigMat]["Type"]
+        sc.sticky["honeybee_thermMaterialLib"][materialName]["Conductivity"] = sc.sticky["honeybee_thermMaterialLib"][orgigMat]["Conductivity"]
+        sc.sticky["honeybee_thermMaterialLib"][materialName]["Absorptivity"] = sc.sticky["honeybee_thermMaterialLib"][orgigMat]["Absorptivity"]
+        sc.sticky["honeybee_thermMaterialLib"][materialName]["Emissivity"] = sc.sticky["honeybee_thermMaterialLib"][orgigMat]["Emissivity"]
+        sc.sticky["honeybee_thermMaterialLib"][materialName]["RGBColor"] = RGBColor
+        
+        return materialName
+    
     def makeThermMatFromEPMat(self, material, RGBColor):
+        warning = None
         #Make a sub-dictionary for the material.
         sc.sticky["honeybee_thermMaterialLib"][material] = {}
         
         #Create the material with just default values.
-        sc.sticky["honeybee_thermMaterialLib"][material]["Material Name"] = 0
+        sc.sticky["honeybee_thermMaterialLib"][material]["Name"] = material
         sc.sticky["honeybee_thermMaterialLib"][material]["Type"] = 0
         sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] = None
         sc.sticky["honeybee_thermMaterialLib"][material]["Absorptivity"] = 0.5
         sc.sticky["honeybee_thermMaterialLib"][material]["Emissivity"] = 0.9
-        sc.sticky["honeybee_thermMaterialLib"][material]["RGBColor"] = RGBColor
+        if RGBColor != None: sc.sticky["honeybee_thermMaterialLib"][material]["RGBColor"] = RGBColor
+        else:
+            r = lambda: random.randint(0,255)
+            randColor = ('#%02X%02X%02X' % (r(),r(),r()))
+            sc.sticky["honeybee_thermMaterialLib"][material]["RGBColor"] = System.Drawing.ColorTranslator.FromHtml(randColor)
         
         #Unpack values from the decomposed material to replace the defaults.
         hb_EPMaterialAUX = EPMaterialAux()
         values, comments, UValueSI, UValueIP = hb_EPMaterialAUX.decomposeMaterial(material)
         
         for count, comment in enumerate(comments):
-            if "CONDUCTIVITY" in comment.upper(): sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] = float(values[count])
+            if "CONDUCTIVITY" in comment.upper(): sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] = float(values[count])*0.58
             if "EMISSIVITY" in comment.upper(): sc.sticky["honeybee_thermMaterialLib"][material]["Emissivity"] = float(values[count])
         
         #If there is no conductivity found, it might be an air material, in which case we set the value.
         if values[0] == "WindowMaterial:Gas":
             sc.sticky["honeybee_thermMaterialLib"][material]["Type"] = 1
-            sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] = 0.435449
+            sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] = 0.435449 * 0.58
             sc.sticky["honeybee_thermMaterialLib"][material]["CavityModel"] = 5
         elif sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] == None:
             #This is a no-mass material and we are not going to be able to figure out a conductivity. The best we can do is give a warning.
-            if values[0] == "WindowMaterial:SimpleGlazingSystem": sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] = values[2]*0.01
-            elif values[0] == "WindowMaterial:NoMass": sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] = values[3]/0.01
-            warning = "You have connected a No-Mass material and, as a result, Honeybee can not figure out what conductivity the material has. \n " +\
-            "Honeybee is going to assume that the No-mass material is vert thin with a thickness of 1 cm but we might be completely off.  n\ " +\
-            "Try connecting a material with mass or make you own THERM material."
-            print warning
-            w = gh.GH_RuntimeMessageLevel.Warning
-            ghenv.Component.AddRuntimeMessage(w, warning)
+            if values[0] == "WindowMaterial:SimpleGlazingSystem": sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] = float(values[2])*0.01
+            elif values[0] == "WindowMaterial:NoMass": sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] = float(values[3])/0.01
+            self.warning = "You have connected a No-Mass material and, as a result, Honeybee can not figure out what conductivity the material has. \n " +\
+            "Honeybee is going to assume that the No-mass material is very thin with a thickness of 1 cm but we might be completely off.  \n " +\
+            "Try connecting a material with mass or make you own EnergyPlus material and connect it to this component."
+            print self.warning
         
         return material
 
 class thermBC(object):
-    def __init__(self, lineGeo, BCName, temperature, filmCoeff, radTemp, radTransCoeff, RGBColor):
+    def __init__(self, lineGeo, BCName, temperature, filmCoeff, plane, radTemp, radTransCoeff, RGBColor, uFactorTag):
         #Set the name and object type.
         self.objectType = "ThermBC"
         self.hasChild = False
@@ -7100,9 +7215,9 @@ class thermBC(object):
         self.BCProperties['Name'] = BCName
         self.BCProperties['Type'] = "1"
         self.BCProperties['H'] = str(filmCoeff)
-        self.BCProperties['HeatFlux'] = "0"
+        self.BCProperties['HeatFlux'] = "0.000000"
         self.BCProperties['Temperature'] = str(temperature)
-        if RGBColor == None: self.BCProperties['RGBColor'] = str(System.Drawing.ColorTranslator.ToHtml(RGBColor))
+        if RGBColor != None: self.BCProperties['RGBColor'] = str(System.Drawing.ColorTranslator.ToHtml(RGBColor))
         else: self.BCProperties['RGBColor'] = '0x80FFFF'
         if radTemp == None: self.BCProperties['Tr'] = str(temperature)
         else: self.BCProperties['Tr'] = str(radTemp)
@@ -7119,23 +7234,33 @@ class thermBC(object):
         
         #Create a dictionary for the geometry.
         self.BCGeo = {}
-        self.BCGeo['BCPolygon ID'] = "29"
+        self.BCGeo['ID'] = str(sc.sticky["thermBCCount"])
         self.BCGeo['BC'] = BCName
-        self.BCGeo['units'] = "mm"
         self.BCGeo['EnclosureID'] = "0"
         self.BCGeo['UFactorTag'] = ""
         self.BCGeo['Emissivity'] = "0.900000"
         
-        #Increase the therm ID count.
+        #Increase the Therm ID count.
         sc.sticky["thermBCCount"] = sc.sticky["thermBCCount"] + 1
         
-        #Keep track of the vertices.
-        self.geometry = lineGeo.ToNurbsCurve()
+        #Build surface geometry and extract the vertices.
+        self.geometry = lineGeo
         self.vertices = []
         for vertexCount in range(self.geometry.PointCount):
             self.vertices.append(self.geometry.Point(vertexCount))
         
+        #Make note of the plane in which the surface lies.
+        self.plane = plane
+        self.normalVector = plane.Normal
+        self.normalVector.Unitize()
+        
+        #Set the U-Factor tag information.
+        self.uFactorTag = None
+        if uFactorTag != None: self.uFactorTag = uFactorTag
+        
+        
         return self.geometry
+
 
 
 class zoneNetworkSolving(object):
@@ -7268,6 +7393,7 @@ class hb_Hive(object):
         msg = " %s has been moved, scaled or rotated.\nIf you need to move or rotate "%HBO.name + \
               "a Honeybee object you should use Honeybee move, rotate or mirror components." + \
               " You can find them under 12|WIP tab."
+        if HBO.objectType == "HBIES": return
         
         bb1 = brep.GetBoundingBox(True)
         bb2 = HBO.geometry.GetBoundingBox(True)
@@ -7394,6 +7520,8 @@ class hb_RADParameters(object):
         "xScale": [1, 2, 6],
         "yScale": [1, 2, 6]
         }
+        
+        self.additionalRadPars = ["_u_", "_bv_", "_dv_", "_w_"]
 
 class hb_DSParameters(object):
     
@@ -7844,7 +7972,7 @@ if checkIn.letItFly:
         sc.sticky["honeybee_folders"]["DSLibPath"] = hb_DSLibPath
     
         # supported versions for EnergyPlus
-        EPVersions = ["V8-3-0", "V8-2-10", "V8-2-9", "V8-2-8", "V8-2-7", "V8-2-6", \
+        EPVersions = ["V8-4-0","V8-3-0", "V8-2-10", "V8-2-9", "V8-2-8", "V8-2-7", "V8-2-6", \
                       "V8-2-5", "V8-2-4", "V8-2-3", "V8-2-2", "V8-2-1", "V8-2-0", \
                       "V8-1-5", "V8-1-4", "V8-1-3", "V8-1-2", "V8-1-1", "V8-1-0"]
                       
@@ -7916,12 +8044,12 @@ if checkIn.letItFly:
                     EPLibs.importEPLibrariesFromFile(path, isMatFile, cleanLibs, False)                
                 
                 EPLibs.report()
-                sc.sticky["honeybee_materialLib"] = EPLibs.getEPMaterials()
-                sc.sticky["honeybee_windowMaterialLib"] = EPLibs.getEPWindowMaterial()
-                sc.sticky ["honeybee_constructionLib"] = EPLibs.getEPConstructions()
-                sc.sticky["honeybee_ScheduleLib"] = EPLibs.getEPSchedule()
-                sc.sticky["honeybee_ScheduleTypeLimitsLib"] = EPLibs.getEPScheduleTypeLimits()
-                sc.sticky["honeybee_thermMaterialLib"] = EPLibs.getTHERMMaterials()
+                sc.sticky["honeybee_materialLib"].update(EPLibs.getEPMaterials())
+                sc.sticky["honeybee_windowMaterialLib"].update(EPLibs.getEPWindowMaterial())
+                sc.sticky ["honeybee_constructionLib"].update(EPLibs.getEPConstructions())
+                sc.sticky["honeybee_ScheduleLib"].update(EPLibs.getEPSchedule())
+                sc.sticky["honeybee_ScheduleTypeLimitsLib"].update(EPLibs.getEPScheduleTypeLimits())
+                sc.sticky["honeybee_thermMaterialLib"].update(EPLibs.getTHERMMaterials())
             except:
                 print msg
                 ghenv.Component.AddRuntimeMessage(w, msg)
@@ -7945,12 +8073,13 @@ if checkIn.letItFly:
         sc.sticky["honeybee_EPZone"] = EPZone
         sc.sticky["honeybee_ThermPolygon"] = thermPolygon
         sc.sticky["honeybee_ThermBC"] = thermBC
+        sc.sticky["honeybee_ThermDefault"] = thermDefaults
         sc.sticky["PVgen"] = PV_gen
         sc.sticky["PVinverter"] = PVinverter
         sc.sticky["HB_generatorsystem"] = HB_generatorsystem
         sc.sticky["wind_generator"] = Wind_gen
         sc.sticky["simple_battery"] = simple_battery
-        sc.sticky["thermBCCount"] = 0
+        sc.sticky["thermBCCount"] = 1
         sc.sticky["honeybee_reEvaluateHBZones"] = hb_reEvaluateHBZones
         sc.sticky["honeybee_AirsideEconomizerParams"] = hb_airsideEconoParams
         sc.sticky["honeybee_constantVolumeFanParams"] = hb_constVolFanParams
