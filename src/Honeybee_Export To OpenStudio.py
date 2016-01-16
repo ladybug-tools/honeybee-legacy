@@ -1905,7 +1905,7 @@ class WriteOPS(object):
             
             
             glazing = ops.SubSurface(windowPointVectors, model)
-            if glzingSurfaceName == "": glazing.setName(childSrf.name + '_' + `count`)
+            if glzingSurfaceName == "": glazing.setName(childSrf.name)
             else: glazing.setName(glzingSurfaceName)
             glazing.setSurface(openStudioParentSrf)
             glazing.setSubSurfaceType(childSrf.srfType[childSrf.type])
