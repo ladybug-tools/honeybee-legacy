@@ -61,7 +61,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.58\nJAN_15_2016'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_16_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nOCT_31_2015
@@ -86,11 +86,19 @@ if sc.sticky.has_key('honeybee_release'):
     installedOPS = [f for f in os.listdir("C:\\Program Files") if f.startswith("OpenStudio")]
     installedOPS = sorted(installedOPS, key = lambda x: int("".join(x.split(" ")[-1].split("."))), reverse = True)
     
-    openStudioLibFolder = "C:/Program Files/%s/CSharp/openstudio/"%installedOPS[0]
-    
+    if len(installedOPS) != 0:
+        openStudioLibFolder = "C:/Program Files/%s/CSharp/openstudio/"%installedOPS[0]
+        QtFolder = "C:/Program Files/%s/Ruby/openstudio/"%installedOPS[0]
+    else:
+        openStudioLibFolder = ""
+        QtFolder = ""
+
     if os.path.isdir(openStudioLibFolder) and os.path.isfile(os.path.join(openStudioLibFolder, "openStudio.dll")):
         # openstudio is there
-        # I need to add a function to check the version and compare with available version
+        # add both folders to path to avoid PINVOKE exception
+        if not openStudioLibFolder in os.environ['PATH'] or QtFolder not in os.environ['PATH']:
+            os.environ['PATH'] = ";".join([openStudioLibFolder, QtFolder, os.environ['PATH']])
+        
         openStudioIsReady = True
         import clr
         clr.AddReferenceToFileAndPath(openStudioLibFolder+"\\openStudio.dll")
@@ -107,18 +115,6 @@ if sc.sticky.has_key('honeybee_release'):
               "\nYou need to download and install OpenStudio to be able to use this component."
               
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
-    
-#    if openStudioIsReady and sc.sticky.has_key('honeybee_release') and \
-#        sc.sticky.has_key("isNewerOSAvailable") and sc.sticky["isNewerOSAvailable"]:
-#        # check if there is an update available
-#        msg1 = "There is a newer version of OpenStudio libraries available to download! " + \
-#                      "We strongly recommend you to download the newer version from this link and replace it with current files at " + \
-#                      openStudioLibFolder +"."
-#        msg2 = "https://dl.dropboxusercontent.com/u/16228160/Honeybee/OpenStudio.zip"
-#        print msg1
-#        print msg2
-#        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg1)
-#        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg2)
 else:
     openStudioIsReady = False
 
@@ -753,8 +749,8 @@ class WriteOPS(object):
             #setFractionofTowerCapacityinFreeConvectionRegime for future
             #setMinimumAirFlowRateRatio for future (vfd specific?)
             pass
-        print ostower
-        return ostower
+        #print ostower
+        #return ostower
         
     def updateChiller(self,uchiller,oschiller):
         #print oschiller
@@ -2539,7 +2535,7 @@ class RunOPS(object):
         # create idf - I separated this job as putting them together
         # was making EnergyPlus to crash
         idfFolder, idfPath = self.osmToidf(workingDir, projectName, osmPath)
-        print 'IDF had been created from the OSM: ' + str(idfPath)
+        print 'OSM > IDF: ' + str(idfPath)
         
         if not useRunManager:
             
@@ -2865,7 +2861,6 @@ if _epwWeatherFile and _writeOSM and openStudioIsReady:
     results = main(_HBZones, HBContext_, north_, _epwWeatherFile,
                   _analysisPeriod_, _energySimPar_, simulationOutputs_,
                   runSimulation_, workingDir_, fileName_)
-    print results
     if results!=-1:
         osmFileAddress, idfFileAddress, resultsFiles = results
         try:
