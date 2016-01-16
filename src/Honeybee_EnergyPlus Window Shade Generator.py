@@ -78,7 +78,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Window Shade Generator"
 ghenv.Component.NickName = 'EPWindowShades'
-ghenv.Component.Message = 'VER 0.0.58\nDEC_30_2015'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_16_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nDEC_28_2015
@@ -935,14 +935,18 @@ def createEPBlindMat(shadeMaterial, EPSlatOrient, depth, shadingHeight, EPshdAng
 
 def createEPShadeMat(shadeMaterial, airPerm, distToGlass, name):
     if airPerm == None: airPerm = 0
+    #If air permeability is non-zero, determine infrared transmittance from it.
+    infraredTrans = airPerm
+    emissivity = (1-airPerm)*shadeMaterial[3]
+    
     EPShadeMat = "WindowMaterial:Shade,\n" + \
         '\t' + shadeMaterial[0] + "_" + name + ",                        !- Name\n" + \
         '\t' + str(shadeMaterial[2]) + ",                        !- Solar Transmittance {dimensionless}\n" + \
         '\t' + str(shadeMaterial[1]) + ",                        !- Solar Reflectance {dimensionless}\n" + \
         '\t' + str(shadeMaterial[2]) + ",                        !- Visible Transmittance {dimensionless}\n" + \
         '\t' + str(shadeMaterial[1]) + ",                        !- Visible Reflectance {dimensionless}\n" + \
-        '\t' + str(shadeMaterial[3]) + ",                        !- Infrared Hemispherical Emissivity {dimensionless}\n" + \
-        '\t' + str(shadeMaterial[2]) + ",                        !- Infrared Transmittance {dimensionless}\n" + \
+        '\t' + str(emissivity) + ",                        !- Infrared Hemispherical Emissivity {dimensionless}\n" + \
+        '\t' + str(infraredTrans) + ",                        !- Infrared Transmittance {dimensionless}\n" + \
         '\t' + str(shadeMaterial[4]) + ",                        !- Thickness {m}\n" + \
         '\t' + str(shadeMaterial[5]) + ",                        !- Conductivity {W/m-K}\n" + \
         '\t' + str(distToGlass) + ",                    !- Shade to Glass Distance {m}\n" + \
@@ -966,7 +970,7 @@ def createEPWindowMat(shadeMaterial, name):
         '\t' + str(shadeMaterial[2]) + ',    !Visible Transmittance at Normal Incidence\n' + \
         '\t' + str(shadeMaterial[1]) + ',    !Front Side Visible Reflectance at Normal Incidence\n' + \
         '\t' + str(shadeMaterial[1]) + ',    !Back Side Visible Reflectance at Normal Incidence\n' + \
-        '\t' + str(shadeMaterial[2]) + ',    !Infrared Transmittance at Normal Incidence\n' + \
+        '\t' + '0' + ',    !Infrared Transmittance at Normal Incidence\n' + \
         '\t' + str(shadeMaterial[3]) + ',    !Front Side Infrared Hemispherical Emissivity\n' + \
         '\t' + str(shadeMaterial[3]) + ',    !Back Side Infrared Hemispherical Emissivity\n' + \
         '\t' + str(shadeMaterial[5]) + ',    !Conductivity {W/m-K}\n' + \
