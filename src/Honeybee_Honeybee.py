@@ -182,7 +182,7 @@ class CheckIn():
         # print int(availableVersion.replace(".", "")), int(currentVersion.replace(".", ""))
         return int(availableVersion.replace(".", "")) > int(currentVersion.replace(".", ""))
     
-    def checkForUpdates(self, LB= True, HB= True, OpenStudio = True, template = True):
+    def checkForUpdates(self, LB= True, HB= True, OpenStudio = True, template = True, therm = True):
         
         url = "https://github.com/mostaphaRoudsari/ladybug/raw/master/resources/versions.txt"
         versionFile = os.path.join(sc.sticky["Honeybee_DefaultFolder"], "versions.txt")
@@ -190,7 +190,8 @@ class CheckIn():
         client.DownloadFile(url, versionFile)
         with open("c:/ladybug/versions.txt", "r")as vf:
             versions= eval("\n".join(vf.readlines()))
-            
+        honeybeeDefaultFolder = sc.sticky["Honeybee_DefaultFolder"]
+        
         if LB:
             ladybugVersion = versions['Ladybug']
             currentLadybugVersion = self.getComponentVersion() # I assume that this function will be called inside Ladybug_ladybug Component
@@ -229,9 +230,26 @@ class CheckIn():
                 sc.sticky["isNewerOSAvailable"] = True
             else:
                 sc.sticky["isNewerOSAvailable"] = False
-                
+        
+        if therm:
+            thermFile = os.path.join(honeybeeDefaultFolder, 'thermMaterial.csv')
+            # check file doesn't exist then it should be downloaded
+            isNewerThermAvailable = False
+            if not os.path.isfile(thermFile):
+                isNewerThermAvailable = True
+            else:
+                # find the version
+                with open(thermFile) as tempFile:
+                    currentThermVersion = eval(tempFile.readline().split("!")[-1].strip())["version"]
+            
+            # finally if the file exist and already has a version, compare the versions
+            thermVersion = versions['THERM']
+            if isNewerThermAvailable or self.isNewerVersionAvailable(currentThermVersion, thermVersion):
+                sc.sticky["isNewerTHERMAvailable"] = True
+            else:
+                sc.sticky["isNewerTHERMAvailable"] = False
+        
         if template:
-            honeybeeDefaultFolder = sc.sticky["Honeybee_DefaultFolder"]
             templateFile = os.path.join(honeybeeDefaultFolder, 'OpenStudioMasterTemplate.idf')
             
             # check file doesn't exist then it should be downloaded
@@ -248,7 +266,6 @@ class CheckIn():
             # finally if the file exist and already has a version, compare the versions
             templateVersion = versions['Template']
             return self.isNewerVersionAvailable(currentTemplateVersion, templateVersion)
-        
 
 class versionCheck(object):
     
@@ -424,7 +441,7 @@ class PrepareTemplateEPLibFiles(object):
             return -1
         else:
             libFilePaths = [os.path.join(workingDir, 'OpenStudioMasterTemplate.idf')]
-            
+        
         # download openstudio standards
         if not os.path.isfile(workingDir + '\OpenStudio_Standards.json'):
             try:
@@ -468,7 +485,7 @@ class PrepareTemplateEPLibFiles(object):
             libFilePaths.append(customEPLib)
         
         #download THERM template file.
-        if self.downloadTemplate or not os.path.isfile(thermTemplateFile):
+        if sc.sticky.has_key("isNewerTHERMAvailable") and sc.sticky["isNewerTHERMAvailable"] or not os.path.isfile(thermTemplateFile):
             # create a backup from users library
             try: shutil.copyfile(thermTemplateFile, thermBckupfile)
             except: pass
@@ -657,7 +674,7 @@ class HB_GetEPLibraries:
         
         with open(matFile, "r") as mFile:
             for rowCount, row in enumerate(mFile):
-                if rowCount != 0:
+                if rowCount > 1:
                     try:
                         matPropLine = row.split(',')
                         matNameLine = row.split('"')
@@ -1338,13 +1355,14 @@ class hb_MSHToRAD(object):
             self.matName = "radMaterial"
             
             if radMaterial != None:
+                radMaterial = RADMaterialAux.getRadianceObjectsFromString(radMaterial)[0]
+                
                 try:
-                    self.matName = radMaterial.split("\n")[0].split(" ")[2]
-                except: # Exception, e:
-                    # print `e`
-                    # not a standard radiance material
-                    pass
-            
+                    self.matName = radMaterial.split("\n")[0].split(" ")[-1].rstrip()
+                    assert self.matName != ""
+                except:
+                    raise Exception("Failed to import %s. Double check the material definition."%radMaterial)
+                
         self.RADMaterial = radMaterial
         
     def meshToObj(self):
@@ -6920,7 +6938,6 @@ class Wind_gen(object):
             self.max_power_coefficient = max_power_coefficient
         
         
-        
 class PV_gen(object):
     
     # XXX possible generator types
@@ -7103,7 +7120,24 @@ class thermDefaults(object):
         self.adiabaticBCProperties['ConstantTemperatureFlag'] = "0"
         self.adiabaticBCProperties['EmisModifier'] = "1.000000"
         
-        #Set some default U-Factor Tags
+        #Set some default Boundary Conditions for air cavity surfaces
+        self.frameCavityBCProperties = {}
+        self.frameCavityBCProperties['Name'] = 'Frame Cavity Surface'
+        self.frameCavityBCProperties['Type'] = "7"
+        self.frameCavityBCProperties['H'] = '0.000000'
+        self.frameCavityBCProperties['HeatFlux'] = "0.000000"
+        self.frameCavityBCProperties['Temperature'] = '0.000000'
+        self.frameCavityBCProperties['RGBColor'] = '0xFF0000'
+        self.frameCavityBCProperties['Tr'] = '0.000000'
+        self.frameCavityBCProperties['Hr'] = '0.000000'
+        self.frameCavityBCProperties['Ei'] = "1.000000" 
+        self.frameCavityBCProperties['Viewfactor'] = "1.000000"
+        self.frameCavityBCProperties['RadiationModel'] = "0"
+        self.frameCavityBCProperties['ConvectionFlag'] = "0"
+        self.frameCavityBCProperties['FluxFlag'] = "1"
+        self.frameCavityBCProperties['RadiationFlag'] = "0"
+        self.frameCavityBCProperties['ConstantTemperatureFlag'] = "0"
+        self.frameCavityBCProperties['EmisModifier'] = "1.000000"
 
 class thermPolygon(object):
     def __init__(self, surfaceGeo, material, srfName, plane, RGBColor):
@@ -7191,7 +7225,7 @@ class thermPolygon(object):
         if values[0] == "WindowMaterial:Gas":
             sc.sticky["honeybee_thermMaterialLib"][material]["Type"] = 1
             sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] = 0.435449 * 0.58
-            sc.sticky["honeybee_thermMaterialLib"][material]["CavityModel"] = 5
+            sc.sticky["honeybee_thermMaterialLib"][material]["CavityModel"] = 4
         elif sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] == None:
             #This is a no-mass material and we are not going to be able to figure out a conductivity. The best we can do is give a warning.
             if values[0] == "WindowMaterial:SimpleGlazingSystem": sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] = float(values[2])*0.01
@@ -7204,7 +7238,7 @@ class thermPolygon(object):
         return material
 
 class thermBC(object):
-    def __init__(self, lineGeo, BCName, temperature, filmCoeff, plane, radTemp, radTransCoeff, RGBColor, uFactorTag):
+    def __init__(self, lineGeo, BCName, temperature, filmCoeff, plane, radTemp, radTransCoeff, RGBColor, uFactorTag, emissOverride):
         #Set the name and object type.
         self.objectType = "ThermBC"
         self.hasChild = False
@@ -7258,6 +7292,8 @@ class thermBC(object):
         self.uFactorTag = None
         if uFactorTag != None: self.uFactorTag = uFactorTag
         
+        #Set any emissivity over-rides.
+        self.emissivityOverride = emissOverride
         
         return self.geometry
 
@@ -7892,7 +7928,7 @@ def checkGHPythonVersion(target = "0.6.0.3"):
     else: return True
 
 try:
-    downloadTemplate = checkIn.checkForUpdates(LB= False, HB= True, OpenStudio = True, template = True)
+    downloadTemplate = checkIn.checkForUpdates(LB= False, HB= True, OpenStudio = True, template = True, therm = True)
 except:
     # no internet connection
     downloadTemplate = False
