@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.58\nJAN_14_2016'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_16_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -6938,7 +6938,6 @@ class Wind_gen(object):
             self.max_power_coefficient = max_power_coefficient
         
         
-        
 class PV_gen(object):
     
     # XXX possible generator types
@@ -6952,16 +6951,17 @@ class PV_gen(object):
     Generator:WindTurbine
     """
     
-    def __init__(self,_name,surfacename_,_integrationmode,No_parallel,No_series,costper_module,powerout,namePVperform,SA_solarcells,cell_n,performance_type = "PhotovoltaicPerformance:Simple"):
+    def __init__(self,_name,surfacename_,_integrationmode,No_parallel,No_series,costper_module,powerout,namePVperformobject,SA_solarcells,cell_n,sandia):
         
         self.name = _name
         self.surfacename = surfacename_
         self.type = 'Generator:Photovoltaic'
-        self.performancetype = performance_type
-        self.performancename =  namePVperform # One Photovoltaic performance object is made for each PV object so names are the same
+        
         self.integrationmode = _integrationmode
         self.NOparallel = No_parallel
         self.NOseries = No_series
+        
+        self.namePVperformobject =  namePVperformobject # One Photovoltaic performance object is made for each PV object so names are the same
         
         # Cost and power out of the Generator is the cost and power of each module by the number of modules in each generator
         # number in series by number in parallel.
@@ -6971,15 +6971,37 @@ class PV_gen(object):
         
         self.inverter = None # Define the inverter for this PV generator all PVgenerations being used in the same - run energy simulation must have the same inverter
     
-        self.PV_performance(namePVperform,SA_solarcells,cell_n)
-        
-    def PV_performance(self,namePVperformobject,SA_solarcells = 0.5 ,cell_n = 0.12,cell_efficiencyinputmode = "Fixed", schedule_ = "always on"):
+        if sandia == []:
+            
+            self.mode = 'simple'
+            self.performancetype = 'PhotovoltaicPerformance:Simple'
+            
+            # Use PhotovoltaicPerformance:Simple, call the method below.
+            
+            self.PV_performanceSimple(namePVperformobject,SA_solarcells,cell_n)
+            
+        if sandia != []:
+            
+            # Use PhotovoltaicPerformance:Sandia,
+            
+            self.mode = 'sandia'
+            self.performancetype = 'PhotovoltaicPerformance:Sandia'
+            
+            self.PV_performanceSandia(sandia,namePVperformobject)
+            
+    def PV_performanceSimple(self,namePVperformobject,SA_solarcells,cell_n,cell_efficiencyinputmode = "Fixed", schedule_ = "always on"):
     
         self.namePVperformobject = namePVperformobject
         self.surfaceareacells = SA_solarcells
         self.cellefficiencyinputmode = cell_efficiencyinputmode
         self.efficiency = cell_n
         self.schedule = schedule_
+        
+        
+    def PV_performanceSandia(self,sandia,namePVperformobject):
+        
+        self.sandia = sandia
+        
     
 class PVinverter(object):
     
@@ -7986,7 +8008,7 @@ if checkIn.letItFly:
         sc.sticky["honeybee_folders"]["DSLibPath"] = hb_DSLibPath
     
         # supported versions for EnergyPlus
-        EPVersions = ["V8-3-0", "V8-2-10", "V8-2-9", "V8-2-8", "V8-2-7", "V8-2-6", \
+        EPVersions = ["V8-4-0","V8-3-0", "V8-2-10", "V8-2-9", "V8-2-8", "V8-2-7", "V8-2-6", \
                       "V8-2-5", "V8-2-4", "V8-2-3", "V8-2-2", "V8-2-1", "V8-2-0", \
                       "V8-1-5", "V8-1-4", "V8-1-3", "V8-1-2", "V8-1-1", "V8-1-0"]
                       

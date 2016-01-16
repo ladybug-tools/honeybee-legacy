@@ -61,7 +61,7 @@ Provided by Honeybee 0.0.58
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.58\nJAN_02_2016'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_16_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nDEC_28_2015
@@ -991,7 +991,7 @@ class WriteIDF(object):
             '\t' + str(PVgen.name) + ',\t!- Name\n' + \
             '\t' + str(PVgen.surfacename) + ',\t!- Surface Name\n'+\
             '\t' + str(PVgen.performancetype) + ',\t!- Photovoltaic Performance Object Type\n'+\
-            '\t' + str(PVgen.performancename) + ',\t!- Module Performance Name\n'+\
+            '\t' + str(PVgen.namePVperformobject) + ',\t!- Module Performance Name\n'+\
             '\t' + str(PVgen.integrationmode) + ',\t!- Heat Transfer Integration Mode\n'+\
             '\t' + str(PVgen.NOparallel) + ',\t!- Number of Series Strings in Parallel {dimensionless}\n'+\
             '\t' + str(PVgen.NOseries) + ';\t!- Number of Modules in Series {dimensionless}\n'
@@ -999,12 +999,24 @@ class WriteIDF(object):
     
     def write_PVgenperformanceobject(self,PVgen):
         
-        return '\nPhotovoltaicPerformance:Simple,\n' + \
-            '\t' + str(PVgen.namePVperformobject) + ',\t!- Name\n' + \
-            '\t' + str(PVgen.surfaceareacells) + ',\t!- Fraction of Surface Area with Active Solar Cells {dimensionless}\n'+\
-            '\t' + str(PVgen.cellefficiencyinputmode) + ',\t!- Conversion Efficiency Input Mode\n'+\
-            '\t' + str(PVgen.efficiency) + ',\t!- Value for Cell Efficiency if Fixed\n'+\
-            '\t' + str(PVgen.schedule) + ';\t!- Efficiency Schedule Name\n'
+        if PVgen.mode == 'simple':
+            
+            return '\nPhotovoltaicPerformance:Simple,\n' + \
+                '\t' + str(PVgen.namePVperformobject) + ',\t!- Name\n' + \
+                '\t' + str(PVgen.surfaceareacells) + ',\t!- Fraction of Surface Area with Active Solar Cells {dimensionless}\n'+\
+                '\t' + str(PVgen.cellefficiencyinputmode) + ',\t!- Conversion Efficiency Input Mode\n'+\
+                '\t' + str(PVgen.efficiency) + ',\t!- Value for Cell Efficiency if Fixed\n'+\
+                '\t' + str(PVgen.schedule) + ';\t!- Efficiency Schedule Name\n'
+                
+        if PVgen.mode == 'sandia':
+            
+            # Replace name in sandia with name of the PV surface.
+            for count,line in enumerate(PVgen.sandia):
+                if "         !- Name" in line:
+                
+                    PVgen.sandia[count] = PVgen.namePVperformobject+',         !- Name'
+                    
+            return '\n'.join(PVgen.sandia)
             
     def simple_inverter(self,inverter):
         
