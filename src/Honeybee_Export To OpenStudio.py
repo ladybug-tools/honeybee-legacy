@@ -1779,29 +1779,38 @@ class WriteOPS(object):
     
         return construction
     
-    def opsZoneSurface (self, surface, model, space, namingMethod = 0, coordinatesList = False):
+    @staticmethod
+    def checkCoordinates(coordinates):
+        # check if coordinates are so close or duplicated
+        # this is a place holder for now I just return true
+        #return True, glzCoordinates
+    
+        def isDuplicate(pt, newPts):
+            for p in newPts:
+                if pt.DistanceTo(p) < 2 * sc.doc.ModelAbsoluteTolerance:
+                    return True
+            return False
+            
+        newCoordinates = [coordinates[0]]
+        for pt in coordinates[1:]:
+            if not isDuplicate(pt, newCoordinates):
+                newCoordinates.append(pt)
+            
+        if len(newCoordinates) > 2:
+            return True, newCoordinates
+        else:
+            print "One of the surfaces has less than 3 identical coordinates and is removed."
+            return False,[]
+            
+    def opsZoneSurface (self, surface, model, space):
         # collect Honeybee surfaces for nonplanar cases
         # this is just for OpenStudio and not energyplus
-        hbSurfaces = []
+        coordinates = surface.coordinates
+        checked, coordinates= self.checkCoordinates(coordinates)
         
-        if not coordinatesList: coordinatesList = surface.extractPoints()
-        
-        # print surface
-        if namingMethod == 1:
-            # these walls are only there as parent surfaces for nonplanar glazing surfaces
-            srfNaming = 'count_for_glazing'
-        elif type(coordinatesList[0])is not list and type(coordinatesList[0]) is not tuple:
-            coordinatesList = [coordinatesList]
-            srfNaming = 'no_counting'
-        else:
-            srfNaming = 'counting'
-        
-        fullString = ''
-        for count, coordinates in enumerate(coordinatesList):
-            if srfNaming == 'count_for_glazing': surfaceName = surface.name + '_glzP_' + `count`
-            elif srfNaming == 'counting': surfaceName = surface.name + '_' + `count`
-            elif srfNaming == 'no_counting': surfaceName = surface.name
-            
+        if int(surface.type) == 4: surface.type = 0
+        if checked:
+          
             # generate OpenStudio points
             pointVectors = ops.Point3dVector();
             
@@ -1811,7 +1820,7 @@ class WriteOPS(object):
             
             # create surface
             thisSurface = ops.Surface(pointVectors, model);
-            thisSurface.setName(surfaceName);
+            thisSurface.setName(surface.name);
             thisSurface.setSpace(space);
             thisSurface.setSurfaceType(surface.srfType[surface.type]);
             srfType = surface.srfType[int(surface.type)].lower().capitalize()
@@ -1832,61 +1841,26 @@ class WriteOPS(object):
             
             thisSurface.setConstruction(construction)
             thisSurface.setOutsideBoundaryCondition(surface.BC.capitalize())
-            thisSurface.setSunExposure(surface.sunExposure)
-            thisSurface.setWindExposure(surface.windExposure)
+            if surface.BC.capitalize()!= "ADIABATIC":
+                thisSurface.setSunExposure(surface.sunExposure.capitalize())
+                thisSurface.setWindExposure(surface.windExposure.capitalize())
+            else:
+                thisSurface.setSunExposure("NOSUN")
+                thisSurface.setWindExposure("NOWIND")
+                
             
             # Boundary condition object
             #setAdjacentSurface(self: Surface, surface: Surface)
             if surface.BC.lower() == "surface" and surface.BCObject.name.strip()!="":
                 self.adjacentSurfacesDict[surface.name] = [surface.BCObject.name, thisSurface]
             
-            hbSurfaces.append(thisSurface)
-        
-        if len(hbSurfaces)==1: return thisSurface
-        else: return hbSurfaces
-    
-    def OPSNonePlanarFenSurface(self, surface, openStudioParentSrf, model, space):
-        glzCoordinateLists = surface.extractGlzPoints()
-        
-        #draw the base surface
-        parentSurfaces = self.opsZoneSurface (surface, model, space, namingMethod = 1, coordinatesList = glzCoordinateLists)
-        
-        def averagePts(ptList):
-            pt = rc.Geometry.Point3d(0,0,0)
-            for p in ptList: pt = pt + p
-            return rc.Geometry.Point3d(pt.X/len(ptList), pt.Y/len(ptList), pt.Z/len(ptList))
+            return thisSurface
+
             
-        distance = 2 * sc.doc.ModelAbsoluteTolerance
-        cornerStyle = rc.Geometry.CurveOffsetCornerStyle.None
-        # offset was so slow so I changed the method to this
-        #insetCoordinates = []
-        for surfaceCount, coordinates in enumerate(glzCoordinateLists):
-            pts = []
-            for pt in coordinates: pts.append(rc.Geometry.Point3d(pt.X, pt.Y, pt.Z))
-            cenPt = averagePts(pts)
-            insetPts = []
-            for pt in pts:
-                movingVector = rc.Geometry.Vector3d(cenPt-pt)
-                movingVector.Unitize()
-                newPt = rc.Geometry.Point3d.Add(pt, movingVector * 2 * sc.doc.ModelAbsoluteTolerance)
-                insetPts.append(newPt)
-            
-            #insetCoordinates.append(insetPts)
-            parentSurface = parentSurfaces[surfaceCount]
-            glzSurfaceName = "glz_" + str(parentSurface.name()).replace("_glazP", "", 1)
-            
-            self.OPSFenSurface (surface, parentSurface, model, parentNamingMethod = 1, glzCoordinatesList = [insetPts], glzingSurfaceName = glzSurfaceName)
+    def OPSFenSurface (self, surface, openStudioParentSrf, model):
         
-            
-    def OPSFenSurface (self, surface, openStudioParentSrf, model, parentNamingMethod = 0, glzCoordinatesList = False, glzingSurfaceName = ""):
-        
-        if not glzCoordinatesList: glzCoordinatesList = surface.extractGlzPoints()
-        
-        
-        for count, coordinates in enumerate(glzCoordinatesList):
-            
-            try: childSrf = surface.childSrfs[count]
-            except:  childSrf = surface.childSrfs[0]
+        for childSrf in surface.childSrfs:
+            coordinates = childSrf.coordinates
             
             # generate OpenStudio points
             windowPointVectors = ops.Point3dVector();
@@ -1894,7 +1868,7 @@ class WriteOPS(object):
             for pt in coordinates:
                 # add the points to an openStudio list
                 windowPointVectors.Add(ops.Point3d(pt.X,pt.Y,pt.Z))
-            # print coordinates
+
             # create construction
             if not self.isConstructionInLib(childSrf.EPConstruction):
                 construction = self.getOSConstruction(childSrf.EPConstruction, model)
@@ -1903,10 +1877,8 @@ class WriteOPS(object):
             else:
                 construction = self.getConstructionFromLib(childSrf.EPConstruction, model)
             
-            
             glazing = ops.SubSurface(windowPointVectors, model)
-            if glzingSurfaceName == "": glazing.setName(childSrf.name)
-            else: glazing.setName(glzingSurfaceName)
+            glazing.setName(childSrf.name)
             glazing.setSurface(openStudioParentSrf)
             glazing.setSubSurfaceType(childSrf.srfType[childSrf.type])
             glazing.setConstruction(construction)
@@ -2666,7 +2638,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     
     lb_preparation = sc.sticky["ladybug_Preparation"]()
     hb_hive = sc.sticky["honeybee_Hive"]()
-    
+    hb_reEvaluateHBZones= sc.sticky["honeybee_reEvaluateHBZones"]
     
     if workingDir == None: workingDir = sc.sticky["Honeybee_DefaultFolder"] 
     
@@ -2710,6 +2682,9 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     # call Honeybee objects from the hive
     HBZones = hb_hive.callFromHoneybeeHive(HBZones)
     
+    reEvaluate = hb_reEvaluateHBZones(HBZones, None)
+    reEvaluate.evaluateZones()
+    
     # generate stories
     hb_writeOPS.generateStories(HBZones, model)
     
@@ -2718,11 +2693,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     additionalcsvSchedules = []
     
     for zoneCount, zone in enumerate(HBZones):
-        
-        # prepare non-planar zones
-        if zone.hasNonPlanarSrf or zone.hasInternalEdge:
-            zone.prepareNonPlanarZone()
-    
+
         # create a space - OpenStudio works based of space and not zone
         # Honeybee though is structured based on zones similar to EnergyPlus
         space = ops.Space(model)
@@ -2734,7 +2705,6 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         space = hb_writeOPS.setupLevels(zone, space)
         
         # schedules
-        
         space = hb_writeOPS.setDefaultSchedule(zone, space, model)
         
         # infiltration
@@ -2781,14 +2751,11 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         # write the surfaces
         for HBSrf in zone.surfaces:
             
-            OPSSrf = hb_writeOPS.opsZoneSurface(HBSrf, model, space, namingMethod = 0, coordinatesList = False)
+            OPSSrf = hb_writeOPS.opsZoneSurface(HBSrf, model, space)
             
             if HBSrf.hasChild:
-                if HBSrf.isPlanar:
                     hb_writeOPS.OPSFenSurface(HBSrf, OPSSrf, model)
-                else:
-                    hb_writeOPS.OPSNonePlanarFenSurface(HBSrf, OPSSrf, model, space)
-        
+                    
         
         #Check other schedules.
         if zone.natVent == True:
