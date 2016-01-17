@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.58
         HBContext: Input your honeybee context
         meshSettings_: Custom mesh setting. Use Grasshopper mesh setting components
         _writegbXML: Set to true to create gbxml
-        workingDir: C:\gbXML by default
+        _workingDir: Working directory
         fileName: choose a filename, no need to add the xml extension.  
     Returns:
         readMe!: ...
@@ -44,7 +44,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_GrizzlyBear"
 ghenv.Component.NickName = 'grizzlyBear'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_16_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -1625,7 +1625,7 @@ class WritegbXML(object):
     
 
 
-if gbXMLIsReady and _location and _writegbXML:
+if gbXMLIsReady and _location and _writegbXML and _workingDir:
         #try:
         #instantiate gbXML object
         wgb = WritegbXML(_location, zipCode_)
@@ -1791,12 +1791,12 @@ if gbXMLIsReady and _location and _writegbXML:
 
         try:
             logging.info('Creating the gbxml file')
-            filepath= workingDir+fileName+".xml"
+            filepath= _workingDir+fileName+".xml"
             logging.info('gbxml file created.')
             print 'gbXML File Successfully Written'
             print 'Latest updates fixed Width and Height error at surface and openings'
         except:
             logging.info('there likely is not a filename.  using default.')
-            filepath=workingDir+"test.xml"
+            filepath=_workingDir + "test.xml"
         res = gbx.BasicSerialization.CreateXML(filepath,gb)
         resultFileAddress = filepath
