@@ -5631,6 +5631,7 @@ class hb_reEvaluateHBZones(object):
             modifiedSurfaces = []
             for surface in HBZone.surfaces:
                 srfs = self.checkZoneSurface(surface)
+                
                 try: modifiedSurfaces.extend(srfs)
                 except: modifiedSurfaces.append(srfs)
             
@@ -5913,7 +5914,11 @@ class hb_reEvaluateHBZones(object):
         
     def checkZoneSurface(self, surface):
         if not hasattr(surface, 'coordinates'):
+            if not surface.isPlanar:
+                surface.geometry = surface.punchedGeometry
+            
             coordinatesL = surface.extractPoints()
+                
         else:
             coordinatesL = surface.coordinates
         
@@ -6241,7 +6246,7 @@ class hb_EPSurface(object):
                 meshPar.SimplePlanes = True
             else:
                 meshPar = rc.Geometry.MeshingParameters.Smooth
-                
+        
         self.meshedFace = rc.Geometry.Mesh.CreateFromBrep(self.geometry, meshPar)[0]
         
         if self.meshedFace.IsValid or self.hasInternalEdge:
