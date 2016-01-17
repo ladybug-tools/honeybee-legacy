@@ -70,7 +70,7 @@ def main(HBObject, childSurfaces, childSurfacesName, EPConstructions, RADMateria
                 try:
                     name = childSurfacesName[srfCount]
                 except:
-                   name = "glz_" + str(glzCount) + "_" + HBSurface.name + "_" + "".join(guid.split("-")[:-1])
+                   name = HBSurface.name + "_glz_" + str(glzCount) + "_" + "".join(guid.split("-")[:-1])
 
                 number = guid.split("-")[-1]
                 glzCount += 1

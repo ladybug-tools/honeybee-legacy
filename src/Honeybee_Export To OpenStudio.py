@@ -61,10 +61,10 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.58\nJAN_16_2016'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_17_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nOCT_31_2015
+#compatibleHBVersion = VER 0.0.56\nJAN_17_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
@@ -1882,6 +1882,14 @@ class WriteOPS(object):
             glazing.setSurface(openStudioParentSrf)
             glazing.setSubSurfaceType(childSrf.srfType[childSrf.type])
             glazing.setConstruction(construction)
+            
+            # Boundary condition object
+            #setAdjacentSurface(self: Surface, surface: Surface)
+            if surface.BC.lower() == "surface" and surface.BCObject.name.strip()!="":
+                if childSrf.name == childSrf.BCObject.name:
+                    raise Exception("Interior facing surfaces can't have the same name: %s"%childSrf.name + \
+                        "\nRename one of the surfaces and try again!")
+                self.adjacentSurfacesDict[childSrf.name] = [childSrf.BCObject.name, glazing]
     
     def OPSShdSurface(self, shdSurfaces, model):
         shadingGroup = ops.ShadingSurfaceGroup(model)
@@ -1916,7 +1924,10 @@ class WriteOPS(object):
         for surfaceName in self.adjacentSurfacesDict.keys():
             adjacentSurfaceName, OSSurface = self.adjacentSurfacesDict[surfaceName]
             adjacentOSSurface = self.adjacentSurfacesDict[adjacentSurfaceName][1]
-            OSSurface.setAdjacentSurface(adjacentOSSurface)
+            try:
+                OSSurface.setAdjacentSurface(adjacentOSSurface)
+            except:
+                OSSurface.setAdjacentSubSurface(adjacentOSSurface)
     
     def setOutputVariable(self, fields, model):
         """
@@ -2777,7 +2788,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     hb_writeOPS.addSystemsToZones(model)
     
     # add shading surfaces if any
-    if HBContext != []:
+    if HBContext!=[] and HBContext[0]!=None:
         shdingSurfcaes = hb_hive.callFromHoneybeeHive(HBContext)
         hb_writeOPS.OPSShdSurface(shdingSurfcaes, model)
     
@@ -2824,7 +2835,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         
     return fname, None, None
 
-if _epwWeatherFile and _writeOSM and openStudioIsReady:
+if _HBZones and _HBZones[0]!=None and _epwWeatherFile and _writeOSM and openStudioIsReady:
     results = main(_HBZones, HBContext_, north_, _epwWeatherFile,
                   _analysisPeriod_, _energySimPar_, simulationOutputs_,
                   runSimulation_, workingDir_, fileName_)

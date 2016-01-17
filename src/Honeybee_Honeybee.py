@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.58\nJAN_16_2016'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_17_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -5578,7 +5578,7 @@ class hb_reEvaluateHBZones(object):
                 
             surface.name = name
             print warning + " Name is changed to: " + surface.name
-            
+                
         self.srfNames.append(surface.name)            
         
         if not surface.isChild and surface.hasChild:
@@ -5791,7 +5791,7 @@ class hb_reEvaluateHBZones(object):
                     else:
                         # multiple non-rectangle rectangle window
                         # this naming should be fixed and be based on original surface
-                        glzSurfaceName = surface.name + "_glz_" + `count`
+                        glzSurfaceName = child.name + "_glzP_" + `count`
                     
                     # create glazing surface
                     HBGlzSrf = self.createSubGlzSurfaceFromBaseSrf(child, surface, glzSurfaceName, count, coordinates)
@@ -5810,7 +5810,7 @@ class hb_reEvaluateHBZones(object):
                         if len(surface.childSrfs) == len(glzCoordinates):
                             glzAdjcSrfName = childSrfsNames[count]
                         else:
-                            glzAdjcSrfName = adjcSrf.name + "_glz_" + `count`
+                            glzAdjcSrfName = childSrfsNames[count] + "_glzP_" + `count`
                             
                         adjcGlzPt = glzCoordinates[1:]
                         adjcGlzPt.reverse()
@@ -5844,6 +5844,11 @@ class hb_reEvaluateHBZones(object):
             
                 
             for count, glzCoordinate in enumerate(glzCoordinates):
+                try:
+                    baseGlazingName = surface.childSrfs[count].name
+                except:
+                    baseGlazingName = surface.childSrfs[0].name
+                    
                 # check if the points are recetangle
                 if len(glzCoordinate) == 3 or isRectangle(glzCoordinate):
                     insetGlzCoordinates = [glzCoordinate]
@@ -5869,7 +5874,7 @@ class hb_reEvaluateHBZones(object):
                     insetPts = self.getInsetGlazingCoordinates(insetGlzCoordinate)
 
                     # create new window and go for it
-                    glzSurfaceName = newSurface.name + "_glz_" + `count`
+                    glzSurfaceName = baseGlazingName + "_glzP_" + `count`
                     
                     HBGlzSrf = self.createSubGlzSurfaceFromBaseSrf(baseChildSrf, newSurface, glzSurfaceName, count, insetPts)
                     
@@ -5877,11 +5882,17 @@ class hb_reEvaluateHBZones(object):
                         # add glazing to adjacent surface
                         if count == 0:
                             adjcSrf = newSurface.BCObject
+                            try:
+                                adjBaseGlazingName = adjcSrf.childSrfs[count]
+                            except:
+                                adjBaseGlazingName = adjcSrf.childSrfs[0]
+                            
                             adjcSrf.childSrfs = []
                         
                         # add glazing to adjacent surface
                         adjcSrf = newSurface.BCObject
-                        glzAdjcSrfName = adjcSrf.name + "_glz_" + `count`
+                        
+                        glzAdjcSrfName = adjBaseGlazingName + "_glzP_" + `count`
                             
                         adjcGlzPt = insetPts[1:]
                         adjcGlzPt.reverse()

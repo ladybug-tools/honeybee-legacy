@@ -46,10 +46,10 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Read EP Surface Result"
 ghenv.Component.NickName = 'readEPSrfResult'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_17_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.56\nJAN_17_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "4"
 
@@ -153,7 +153,7 @@ if _resultFileAddress:
                 else:
                     if "SRFP" in line or "GLZP" in line:
                         curvedGeometry = True
-                        if "_GLZP_" in line and "_GLZ_" in line: surfaceName = line.split(",")[1].split("_GLZP_")[0] + "_GLZ_0"
+                        if "_GLZP_" in line: surfaceName = line.split(",")[1].split("_GLZP_")[0]
                         elif "_SRFP_" in line: surfaceName = line.split(",")[1].split("_SRFP")[0]
                         else: surfaceName = None
                         if surfaceName:
@@ -278,7 +278,7 @@ def checkSrfName(csvName, dataType):
     
     if "SRFP" in csvName or "GLZP" in csvName:
         duplicate = True
-        if "_GLZP_" in csvName and "_GLZ_" in csvName: csvName = csvName.split("_GLZP")[0] + "_GLZ_0"
+        if "_GLZP_" in csvName: csvName = csvName.split("_GLZP")[0]
         elif "_SRFP" in csvName: csvName = csvName.split("_SRFP")[0]
         else: csvName = None
     

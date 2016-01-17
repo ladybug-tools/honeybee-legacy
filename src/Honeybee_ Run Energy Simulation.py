@@ -61,10 +61,10 @@ Provided by Honeybee 0.0.58
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.58\nJAN_16_2016'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_17_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nJAN_16_2016
+#compatibleHBVersion = VER 0.0.56\nJAN_17_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
