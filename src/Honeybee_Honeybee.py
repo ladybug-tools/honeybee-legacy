@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.58\nJAN_17_2016'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_18_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -5800,14 +5800,19 @@ class hb_reEvaluateHBZones(object):
                     # create adjacent glazingin case needed
                     if surface.BC.upper() == 'SURFACE':
                         # add glazing to adjacent surface
+                        adjcSrf = surface.BCObject
+                        
+                        assert len(surface.childSrfs) != len(adjcSrf.childSrfs), \
+                            "Adjacent surfaces %s and %s do not have the same number of galzings.\n"%(surface.name, adjcSrf.name) + \
+                            "Check your energy model and try again."
+                        
+                        # add glazing to adjacent surface
                         if count == 0:
                             adjcSrf = surface.BCObject
                             childSrfsNames = []
                             for childSurface in adjcSrf.childSrfs:  childSrfsNames.append(childSurface.name)
                             adjcSrf.childSrfs = []
                         
-                        # add glazing to adjacent surface
-                        adjcSrf = surface.BCObject
                         if len(surface.childSrfs) == len(glzCoordinates):
                             glzAdjcSrfName = childSrfsNames[count]
                         else:
