@@ -52,7 +52,7 @@ import decimal
 
 ghenv.Component.Name = 'Honeybee_Write THERM File'
 ghenv.Component.NickName = 'writeTHERM'
-ghenv.Component.Message = 'VER 0.0.57\nJAN_15_2016'
+ghenv.Component.Message = 'VER 0.0.57\nJAN_18_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.56\nJAN_12_2015
@@ -637,6 +637,8 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
         #Try one final attempt to see if the boundaries are specified at a finer resolution than that of the material polygons.
         boundsToRemove = []
         newMatchedBnds = []
+        polygonToChange = []
+        polygonNewSegments = []
         for boundar in thermBCs:
             if boundar.name.title() not in matchedBoundaries:
                 segEndPt = boundar.geometry.PointAtEnd
@@ -648,6 +650,7 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
                         #Add the boundary to the lists to keep track of everything.
                         if boundar.name not in newMatchedBnds: newMatchedBnds.append(boundar.name)
                         if allBound[segmentCount][0]['ID'] not in boundsToRemove: boundsToRemove.append(allBound[segmentCount][0]['ID'])
+                        if allBound[segmentCount][0]['PolygonID'] not in polygonToChange: polygonToChange.append(allBound[segmentCount][0]['PolygonID'])
                         #Define Default Parameters.
                         boundDesc = []
                         boundProp = {'UFactorTag': '', 'ID': str(boundCount), 'BC': boundar.name, 'Emissivity': allBound[segmentCount][0]['Emissivity'], 'EnclosureID': "0", 'PolygonID': allBound[segmentCount][0]['PolygonID'], 'units': "mm"}
@@ -665,6 +668,7 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
                             segStartPtCopy = copy.copy(segStartPt)
                             segStartPt = copy.copy(segEndPt)
                             segEndPt = segStartPtCopy
+                        polygonNewSegments.append(rc.Geometry.LineCurve(copy.copy(segStartPt), copy.copy(segEndPt)))
                         #Put the transformed vertices into the dictionary.
                         segStartPtTrans = copy.copy(segStartPt)
                         segStartPtTrans.Transform(planeReorientation)
@@ -690,6 +694,40 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
         allBound = newAllBound
         matchedBoundaries.extend(newMatchedBnds)
         #Re-create polygons where the vertices have changed.
+        newPolygons = []
+        for pCount, polygon in enumerate(thermPolygons):
+            if pCount+1 in polygonToChange:
+                newLineSegments = []
+                polyGeoSegments = polygon.polylineGeo.DuplicateSegments()
+                for segm in polyGeoSegments:
+                    replaceSeg = False
+                    for pSeg in polygonNewSegments:
+                        segStartPt = pSeg.PointAtStart
+                        segEndPt = pSeg.PointAtEnd
+                        closestEndPt = rc.Geometry.PolylineCurve.ClosestPoint(segm, segEndPt, sc.doc.ModelAbsoluteTolerance*2)[0]
+                        closestStartPt = rc.Geometry.PolylineCurve.ClosestPoint(segm, segStartPt, sc.doc.ModelAbsoluteTolerance*2)[0]
+                        if closestEndPt and closestStartPt:
+                            newLineSegments.append(pSeg)
+                            replaceSeg = True
+                    if replaceSeg == False: newLineSegments.append(segm)
+                newPolyline = rc.Geometry.PolylineCurve.JoinCurves(newLineSegments, sc.doc.ModelAbsoluteTolerance, True)[0]
+                if newPolyline.IsClosed == False:
+                    closingLine = rc.Geometry.LineCurve(newPolyline.PointAtEnd, newPolyline.PointAtStart)
+                    newPolyline = rc.Geometry.PolylineCurve.JoinCurves([newPolyline, closingLine], sc.doc.ModelAbsoluteTolerance, True)[0]
+                polygonDesc = [allPolygon[pCount][0]]
+                #Write the transformed geometry into the dictionary.
+                for vertCount, vertex in enumerate(newPolyline.DuplicateSegments()):
+                    vertTrans = copy.copy(vertex.PointAtStart)
+                    vertTrans.Transform(planeReorientation)
+                    vertTrans.Transform(unitsScale)
+                    vertTrans.Transform(bufferTansl)
+                    vertTransDict = {'index': str(vertCount), 'x': str(round(vertTrans.X, numDecPlaces)), 'y': str(round(vertTrans.Y, numDecPlaces))}
+                    polygonDesc.append(vertTransDict)
+                
+                newPolygons.append(polygonDesc)
+            else:
+                newPolygons.append(allPolygon[pCount])
+        allPolygon = newPolygons
     
     #Check to be sure that all _boundaries have been matched with _polygons and, if not, give a warning that the BC is being left out.
     if len(thermBCs) != len(matchedBoundaries):
