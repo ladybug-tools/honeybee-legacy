@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.58\nJAN_18_2016'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_19_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -7159,6 +7159,28 @@ class thermDefaults(object):
         self.frameCavityBCProperties['RadiationFlag'] = "0"
         self.frameCavityBCProperties['ConstantTemperatureFlag'] = "0"
         self.frameCavityBCProperties['EmisModifier'] = "1.000000"
+    
+    def addThermMatToLib(self, materialString):
+        #Parse the string.
+        materialName = materialString.split('Name=')[-1].split(' ')[0].replace('_', ' ').upper()
+        type = int(materialString.split('Type=')[-1].split(' ')[0])
+        conductivity = float(materialString.split('Conductivity=')[-1].split(' ')[0])
+        absorptivity = float(materialString.split('Absorptivity=')[-1].split(' ')[0])
+        emissivity = float(materialString.split('Emissivity=')[-1].split(' ')[0])
+        RGBColor = System.Drawing.ColorTranslator.FromHtml(materialString.split('RGBColor=')[-1].split('/>')[0])
+        
+        #Make a sub-dictionary for the material.
+        sc.sticky["honeybee_thermMaterialLib"][materialName] = {}
+        
+        #Create the material with values from the original material.
+        sc.sticky["honeybee_thermMaterialLib"][materialName]["Name"] = materialName
+        sc.sticky["honeybee_thermMaterialLib"][materialName]["Type"] = type
+        sc.sticky["honeybee_thermMaterialLib"][materialName]["Conductivity"] = conductivity
+        sc.sticky["honeybee_thermMaterialLib"][materialName]["Absorptivity"] = absorptivity
+        sc.sticky["honeybee_thermMaterialLib"][materialName]["Emissivity"] = emissivity
+        sc.sticky["honeybee_thermMaterialLib"][materialName]["RGBColor"] = RGBColor
+        
+        return materialName
 
 class thermPolygon(object):
     def __init__(self, surfaceGeo, material, srfName, plane, RGBColor):

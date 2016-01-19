@@ -46,7 +46,7 @@ import math
 
 ghenv.Component.Name = 'Honeybee_Create Therm Polygons'
 ghenv.Component.NickName = 'createThermPolygons'
-ghenv.Component.Message = 'VER 0.0.58\nJAN_14_2016'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_19_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.56\nJAN_12_2015
@@ -69,27 +69,6 @@ def getSrfCenPtandNormal(surface):
     
     return centerPt, normalVector
 
-def addThermMatToLib(materialString):
-    #Parse the string.
-    materialName = materialString.split('Name=')[-1].split(' ')[0].replace('_', ' ').upper()
-    type = int(materialString.split('Type=')[-1].split(' ')[0])
-    conductivity = float(materialString.split('Conductivity=')[-1].split(' ')[0])
-    absorptivity = float(materialString.split('Absorptivity=')[-1].split(' ')[0])
-    emissivity = float(materialString.split('Emissivity=')[-1].split(' ')[0])
-    RGBColor = System.Drawing.ColorTranslator.FromHtml(materialString.split('RGBColor=')[-1].split('/>')[0])
-    
-    #Make a sub-dictionary for the material.
-    sc.sticky["honeybee_thermMaterialLib"][materialName] = {}
-    
-    #Create the material with values from the original material.
-    sc.sticky["honeybee_thermMaterialLib"][materialName]["Name"] = materialName
-    sc.sticky["honeybee_thermMaterialLib"][materialName]["Type"] = type
-    sc.sticky["honeybee_thermMaterialLib"][materialName]["Conductivity"] = conductivity
-    sc.sticky["honeybee_thermMaterialLib"][materialName]["Absorptivity"] = absorptivity
-    sc.sticky["honeybee_thermMaterialLib"][materialName]["Emissivity"] = emissivity
-    sc.sticky["honeybee_thermMaterialLib"][materialName]["RGBColor"] = RGBColor
-    
-    return materialName
 
 def main(geometry, material, RGBColor):
     # import the classes
@@ -109,6 +88,7 @@ def main(geometry, material, RGBColor):
         # don't customize this part
         hb_thermPolygon = sc.sticky["honeybee_ThermPolygon"]
         hb_EPMaterialAUX = sc.sticky["honeybee_EPMaterialAUX"]()
+        thermDefault = sc.sticky["honeybee_ThermDefault"]()
         hb_hive = sc.sticky["honeybee_Hive"]()
     else:
         print "You should first let Honeybee to fly..."
@@ -184,7 +164,7 @@ def main(geometry, material, RGBColor):
             # if it is just the name of the material make sure it is already defined
             if material.startswith("<Material"):
                 #Its a full string of a custom THERM material.
-                material = addThermMatToLib(material)
+                material = thermDefault.addThermMatToLib(material)
             elif len(material.split("\n")) == 1:
                 #Its the name of a material.
                 material = material.upper()
