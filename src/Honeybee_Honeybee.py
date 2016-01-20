@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.58\nJAN_19_2016'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_20_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -7162,12 +7162,16 @@ class thermDefaults(object):
     
     def addThermMatToLib(self, materialString):
         #Parse the string.
-        materialName = materialString.split('Name=')[-1].split(' ')[0].replace('_', ' ').upper()
+        materialName = materialString.split('Material Name=')[-1].split(' Type=')[0].upper()
         type = int(materialString.split('Type=')[-1].split(' ')[0])
         conductivity = float(materialString.split('Conductivity=')[-1].split(' ')[0])
         absorptivity = float(materialString.split('Absorptivity=')[-1].split(' ')[0])
         emissivity = float(materialString.split('Emissivity=')[-1].split(' ')[0])
-        RGBColor = System.Drawing.ColorTranslator.FromHtml(materialString.split('RGBColor=')[-1].split('/>')[0])
+        try:
+            RGBColor = System.Drawing.ColorTranslator.FromHtml(materialString.split('RGBColor=')[-1].split('/>')[0])
+        except:
+            RGBColor = System.Drawing.ColorTranslator.FromHtml(materialString.split('RGBColor=')[-1].split(' ')[0])
+            CavityModel = int(materialString.split('CavityModel=')[-1].split('/>')[0])
         
         #Make a sub-dictionary for the material.
         sc.sticky["honeybee_thermMaterialLib"][materialName] = {}
@@ -7179,6 +7183,9 @@ class thermDefaults(object):
         sc.sticky["honeybee_thermMaterialLib"][materialName]["Absorptivity"] = absorptivity
         sc.sticky["honeybee_thermMaterialLib"][materialName]["Emissivity"] = emissivity
         sc.sticky["honeybee_thermMaterialLib"][materialName]["RGBColor"] = RGBColor
+        try:
+            sc.sticky["honeybee_thermMaterialLib"][materialName]["CavityModel"] = CavityModel
+        except: pass
         
         return materialName
 
@@ -7197,8 +7204,8 @@ class thermPolygon(object):
             elif sc.sticky["honeybee_thermMaterialLib"][material.upper()]["RGBColor"] == RGBColor: pass
             else: material = self.makeThermMatCopy(material, material+str(RGBColor), RGBColor)
         else:
+            self.warning = 'Failed to find material ' + material + ' in either the therm maerial, EP Material, or EP Window Material libraries.'
             material = None
-            self.warning = 'Failed to fins material in either the therm maerial, EP Material, or EP Window Material libraries.'
         self.material = material
         
         #Extract the segments of the polyline and make sure none of them are curved.
