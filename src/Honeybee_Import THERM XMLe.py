@@ -22,6 +22,8 @@
 
 """
 Use this component to read the content of a THERM XML file into Grasshopper.  The component will extract both THERM polygons and boundary conditions along with all of their properties.
+_
+At this point in time, U-Factor tags are not supported but all other features should be imported.
 -
 Provided by Honeybee 0.0.57
 
@@ -83,6 +85,19 @@ def main(thermXMLFile):
     polygonVertices = []
     polygonMaterials = []
     thermPolygons = []
+    BCTypes = []
+    BCTypeTrigger = False
+    BCTypeNames = []
+    BCSegments = []
+    BCSegmentsTrigger = False
+    BCindex = 0
+    grabPtData = False
+    x1 = 0
+    y1 = 0
+    x2 = 0
+    y2 = 0
+    
+    #Establish some default information about the translations
     plane = rc.Geometry.Plane.WorldXY
     planeReorientation = None
     rhinoOrig = None
@@ -95,8 +110,12 @@ def main(thermXMLFile):
     for lineCount, line in enumerate(thermFi):
         if '<Materials>' in line: materialsTrigger = True
         elif '</Materials>' in line: materialsTrigger = False
+        elif '<BoundaryConditions>' in line: BCTypeTrigger = True
+        elif '</BoundaryConditions>' in line: BCTypeTrigger = False
         elif '<Polygons>' in line: polygonTrigger = True
         elif '</Polygons>' in line: polygonTrigger = False
+        elif '<Boundaries>' in line: BCSegmentsTrigger = True
+        elif '</Boundaries>' in line: BCSegmentsTrigger = False
         #Try to extract the transformations from the file header.
         elif '<Notes>' in line and '</Notes>' in line:
             if 'RhinoUnits-' in line and 'RhinoOrigin-' in line and 'RhinoXAxis-' in line:
@@ -123,6 +142,18 @@ def main(thermXMLFile):
             if materialName.upper() not in sc.sticky["honeybee_thermMaterialLib"].keys():
                 material = thermDefault.addThermMatToLib(materialStr)
         
+        #Try to extract the types of Boundary Conditions.
+        if BCTypeTrigger == True:
+            if 'Adiabatic' in line or 'Frame Cavity Surface' in line: pass
+            elif '<BoundaryCondition Name' in line:
+                BCDict = {}
+                BCDict['Name'] = line.split('Name="')[-1].split('" Type')[0]
+                BCDict['Temperature'] = float(line.split('Temperature="')[-1].split('" ')[0])
+                BCDict['filmCoefficient'] = float(line.split('H="')[-1].split('" ')[0])
+                BCTypeNames.append(BCDict['Name'])
+                BCTypes.append(BCDict)
+                BCSegments.append([])
+        
         #Try to extract the polygons from the file.
         if polygonTrigger == True:
             if '<Polygon ID' in line:
@@ -142,6 +173,23 @@ def main(thermXMLFile):
                 yCoord = float(line.split('y="')[-1].split('"')[0])
                 polygonVertex = rc.Geometry.Point3d(xCoord, yCoord, 0)
                 polygonVertices.append(polygonVertex)
+        
+        #Try to extract the BC segments.
+        if BCSegmentsTrigger == True:
+            if 'Adiabatic' in line or 'Frame Cavity Surface' in line: grabPtData = False
+            elif '<BCPolygon ID' in line:
+                grabPtData = True
+                BCTypeName = line.split('BC="')[-1].split('" units=')[0]
+                for count, BCTpy in enumerate(BCTypeNames):
+                    if BCTpy == BCTypeName: BCindex = count
+            elif grabPtData == True and '<Point index="0"' in line:
+                x1 = float(line.split('x="')[-1].split('" ')[0])
+                y1 = float(line.split('y="')[-1].split('" />')[0])
+            elif grabPtData == True and '<Point index="1"' in line:
+                x2 = float(line.split('x="')[-1].split('" ')[0])
+                y2 = float(line.split('y="')[-1].split('" />')[0])
+                BCSegments[BCindex].append(rc.Geometry.LineCurve(rc.Geometry.Point3d(x1,y1,0), rc.Geometry.Point3d(x2,y2,0)))
+        
     thermFi.close()
     
     #Check to see if there is a base plane override connected to the component.
@@ -151,16 +199,21 @@ def main(thermXMLFile):
         plane = basePlane_
     
     #Transform the geometry to be at the correct scale in the Rhino scene.
-    for geo in thermPolygons:
-        geo.Transform(unitsScale)
+    for geo in thermPolygons: geo.Transform(unitsScale)
+    for geoList in BCSegments:
+        for geo in geoList: geo.Transform(unitsScale)
     if planeReorientation != None:
         for geo in thermPolygons: geo.Transform(planeReorientation)
+        for geoList in BCSegments:
+            for geo in geoList: geo.Transform(planeReorientation)
         joinedPolygons = rc.Geometry.Brep.JoinBreps(thermPolygons, sc.doc.ModelAbsoluteTolerance)[0]
         thermBB = joinedPolygons.GetBoundingBox(rc.Geometry.Plane.WorldXY)
         thermOrigin = rc.Geometry.BoundingBox.Corner(thermBB, True, True, True)
         vecDiff = rc.Geometry.Point3d.Subtract(rhinoOrig, thermOrigin)
         planeTransl = rc.Geometry.Transform.Translation(vecDiff.X, vecDiff.Y, vecDiff.Z)
         for geo in thermPolygons: geo.Transform(planeTransl)
+        for geoList in BCSegments:
+            for geo in geoList: geo.Transform(planeTransl)
     
     #Create the THERM Polygons.
     for count, geo in enumerate(thermPolygons):
@@ -174,6 +227,18 @@ def main(thermXMLFile):
             thermPolygonsFinal.append(HBThermPolygon)
     #Add All THERM Polygons to the hive.
     thermPolygonsFin = hb_hive.addToHoneybeeHive(thermPolygonsFinal, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+    
+    #Create the THERM BCs.
+    for bcCount, segList in enumerate(BCSegments):
+        allSeg = rc.Geometry.PolylineCurve.JoinCurves(segList)
+        for seg in allSeg:
+            partsOfSeg = seg.DuplicateSegments()
+            segPts =[partsOfSeg[0].PointAtStart]
+            for part in partsOfSeg: segPts.append(part.PointAtEnd)
+            finalGeo = rc.Geometry.PolylineCurve(segPts)
+            HBThermBC = hb_thermBC(finalGeo, BCTypes[bcCount]['Name'].title(), BCTypes[bcCount]['Temperature'], BCTypes[bcCount]['filmCoefficient'], plane, None, None, None, None, None)
+            thermBound  = hb_hive.addToHoneybeeHive([HBThermBC], ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+            thermBCs.extend(thermBound)
     
     return thermPolygonsFin, thermBCs
 
