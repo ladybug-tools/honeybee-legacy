@@ -33,7 +33,7 @@ Provided by Honeybee 0.0.58
     Args:
         _name: A text name for your NoMass Opaque Material.
         _roughness_: A text value that indicated the roughness of your material.  This can be either "VeryRough", "Rough", "MediumRough", "MediumSmooth", "Smooth", and "VerySmooth".  The default is set to "Rough".
-        _R-Value: A number representing the R-Value of the material in m2-K/W.
+        _R_Value: A number representing the R-Value of the material in m2-K/W.
         _thermAbsp_: An number between 0 and 1 that represents the thermal abstorptance of the material.  The default is set to 0.9, which is common for most non-metallic materials.
         _solAbsp_: An number between 0 and 1 that represents the abstorptance of solar radiation by the material.  The default is set to 0.7, which is common for most non-metallic materials.
         _visAbsp_: An number between 0 and 1 that represents the abstorptance of visible light by the material.  The default is set to 0.7, which is common for most non-metallic materials.
@@ -44,7 +44,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_EnergyPlus NoMass Opaque Material"
 ghenv.Component.NickName = 'EPNoMassMat'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_21_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
