@@ -101,7 +101,7 @@ def addThermMatToLib(materialString):
 def main(thermMaterial, roughness, thickness, density, specificHeat):
     
     name = thermMaterial['Name']
-    conductivity = float(thermMaterial['Conductivity'])*1.73
+    conductivity = float(thermMaterial['Conductivity'])
     thermAbsp = thermMaterial['Emissivity']
     solAbsp = thermMaterial['Absorptivity']
     visAbsp = thermMaterial['Absorptivity']

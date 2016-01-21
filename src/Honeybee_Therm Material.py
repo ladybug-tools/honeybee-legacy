@@ -59,7 +59,7 @@ w = gh.GH_RuntimeMessageLevel.Warning
 def main(materialName, conductivity, absorptivity, emissivity, type, RGBColor):
     #Set some default values.
     materialName = materialName.replace(' ' , '_')
-    conductivity = conductivity/1.73
+    conductivity = conductivity
     if absorptivity == None: absorptivity = 0.5
     if emissivity == None: emissivity = 0.9
     if type == None: type = 0
