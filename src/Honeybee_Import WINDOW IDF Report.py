@@ -21,13 +21,13 @@
 
 
 """
-Use this component to import a window construction output from LBNL WINDOW as an EnergyPlus IDF File report.  This resulting construction can be assigned to any window using the Honeybee components.
+Use this component to import an EnergyPlus window construction from LBNL WINDOW.  This construction can then be assigned to any Honebee window for an EnergyPlus model.
 
 -
 Provided by Honeybee 0.0.58
     
     Args:
-        _windowIDFReport: A filepath to a 'EnergyPlus IDF' window construction file report exported by LBNL WINDOW.
+        _windowIDFReport: A filepath to a 'EnergyPlus IDF' report exported by LBNL WINDOW.
     Returns:
         EPConstruction: An EnergyPlus construction that can be assigned to any window in Honeybee using components like 'Honeybee_addHBGlz', 'Honeybee_Glazing based on ratio', or 'Honeybee_Set EP Zone Construction'.
 
@@ -37,10 +37,10 @@ ghenv.Component.Name = 'Honeybee_Import WINDOW IDF Report'
 ghenv.Component.NickName = 'importWINDOWidf'
 ghenv.Component.Message = 'VER 0.0.57\nJAN_21_2016'
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "12 | WIP"
+ghenv.Component.SubCategory = "11 | Energy | THERM"
 #compatibleHBVersion = VER 0.0.56\nJAN_21_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
-try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
 
 

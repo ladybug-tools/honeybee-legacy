@@ -98,9 +98,9 @@ import math
 
 ghenv.Component.Name = "Honeybee_IES Custom Lamp"
 ghenv.Component.NickName = 'iesCustomLamp'
-ghenv.Component.Message = 'VER 0.0.58\nJAN_10_2016'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_21_2016'
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "12 | WIP"
+ghenv.Component.SubCategory = "13 | WIP"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "6"
 except: pass
 

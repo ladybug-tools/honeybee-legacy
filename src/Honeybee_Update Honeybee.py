@@ -35,9 +35,9 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Update Honeybee"
 ghenv.Component.NickName = 'updateHoneybee'
-ghenv.Component.Message = 'VER 0.0.58\nJAN_12_2016'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_21_2016'
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "11 | Developers"
+ghenv.Component.SubCategory = "12 | Developers"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"

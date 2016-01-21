@@ -43,15 +43,16 @@ ghenv.Component.Name = "Honeybee_Therm Material"
 ghenv.Component.NickName = 'ThermMaterial'
 ghenv.Component.Message = 'VER 0.0.58\nJAN_21_2016'
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "12 | WIP"
+ghenv.Component.SubCategory = "11 | Energy | THERM"
 #compatibleHBVersion = VER 0.0.56\nJAN_14_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
-try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
 except: pass
 
 import Grasshopper.Kernel as gh
 import System
 import random
+import scriptcontext as sc
 w = gh.GH_RuntimeMessageLevel.Warning
 
 
@@ -73,9 +74,25 @@ def main(materialName, conductivity, absorptivity, emissivity, type, RGBColor):
     
     return materialString
 
+#Honeybee check.
+initCheck = True
+if not sc.sticky.has_key('honeybee_release') == True:
+    initCheck = False
+    print "You should first let Honeybee fly..."
+    ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee fly...")
+else:
+    try:
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): initCheck = False
+        if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): initCheck = False
+    except:
+        initCheck = False
+        warning = "You need a newer version of Honeybee to use this compoent." + \
+        "Use updateHoneybee component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+        "into canvas and try again."
+        ghenv.Component.AddRuntimeMessage(w, warning)
 
-
-if _materialName != None and _conductivity != None:
+if initCheck == True and _materialName != None and _conductivity != None:
     result= main(_materialName, _conductivity, absorptivity_, emissivity_, type_, RGBColor_)
     
     if result!=-1:

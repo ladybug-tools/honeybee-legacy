@@ -40,9 +40,9 @@ from __future__ import print_function
 
 ghenv.Component.Name = "Honeybee_Extrude Windows"
 ghenv.Component.NickName = 'extrudeWindows'
-ghenv.Component.Message = 'VER 0.0.58\nDEC_22_2015'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_21_2016'
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "12 | WIP"
+ghenv.Component.SubCategory = "13 | WIP"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"

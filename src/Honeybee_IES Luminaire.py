@@ -81,9 +81,9 @@ from __future__ import division
 
 ghenv.Component.Name = "Honeybee_IES Luminaire"
 ghenv.Component.NickName = 'iesLuminaire'
-ghenv.Component.Message = 'VER 0.0.58\nJan_10_2016'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_21_2016'
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "12 | WIP"
+ghenv.Component.SubCategory = "13 | WIP"
 
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass

@@ -57,9 +57,9 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Generator_PV"
 ghenv.Component.NickName = 'PVgen'
-ghenv.Component.Message = 'VER 0.0.58\nJAN_16_2016'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_21_2016'
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "12 | WIP" #"06 | Honeybee"
+ghenv.Component.SubCategory = "13 | WIP" #"06 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nJAN_16_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3" #"0"

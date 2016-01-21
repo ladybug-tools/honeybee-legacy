@@ -34,6 +34,14 @@ Provided by Honeybee 0.0.58
 # check for libraries
 # default is C:\\Ladybug\\OpenStudio
 
+
+ghenv.Component.Name = "Honeybee_Get Annual SQL Data"
+ghenv.Component.NickName = 'getAnnualSQLData'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_21_2016'
+ghenv.Component.Category = "Honeybee"
+ghenv.Component.SubCategory = "13 | WIP"
+ghenv.Component.AdditionalHelpFromDocStrings = "2"
+
 import os
 import System
 import scriptcontext as sc
@@ -86,12 +94,7 @@ else:
     openStudioIsReady = False
     
     
-ghenv.Component.Name = "Honeybee_Get Annual SQL Data"
-ghenv.Component.NickName = 'getAnnualSQLData'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
-ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "12 | WIP"
-ghenv.Component.AdditionalHelpFromDocStrings = "2"
+
 
 class dictToClass(object):
     def __init__(self,pyDict):

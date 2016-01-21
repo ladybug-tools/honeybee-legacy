@@ -52,12 +52,12 @@ import decimal
 
 ghenv.Component.Name = 'Honeybee_Write THERM File'
 ghenv.Component.NickName = 'writeTHERM'
-ghenv.Component.Message = 'VER 0.0.57\nJAN_18_2016'
+ghenv.Component.Message = 'VER 0.0.57\nJAN_21_2016'
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "12 | WIP"
+ghenv.Component.SubCategory = "11 | Energy | THERM"
 #compatibleHBVersion = VER 0.0.56\nJAN_12_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
-try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
 
 

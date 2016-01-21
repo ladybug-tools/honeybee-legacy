@@ -30,9 +30,9 @@ Args:
 """
 ghenv.Component.Name = "Honeybee_FileExplorer"
 ghenv.Component.NickName = 'fileExplorer'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_21_2016'
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "12 | WIP"
+ghenv.Component.SubCategory = "13 | WIP"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
 except: pass
 import Grasshopper.Kernel as gh

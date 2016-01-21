@@ -46,12 +46,12 @@ import math
 
 ghenv.Component.Name = 'Honeybee_Create Therm Polygons'
 ghenv.Component.NickName = 'createThermPolygons'
-ghenv.Component.Message = 'VER 0.0.58\nJAN_19_2016'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_21_2016'
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "12 | WIP"
+ghenv.Component.SubCategory = "11 | Energy | THERM"
 #compatibleHBVersion = VER 0.0.56\nJAN_12_2015
 #compatibleLBVersion = VER 0.0.59\nNOV_07_2015
-try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
 except: pass
 
 
@@ -72,29 +72,10 @@ def getSrfCenPtandNormal(surface):
 
 def main(geometry, material, RGBColor):
     # import the classes
-    if sc.sticky.has_key('honeybee_release'):
-    
-        try:
-            if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
-        except:
-            warning = "You need a newer version of Honeybee to use this compoent." + \
-            "Use updateHoneybee component to update userObjects.\n" + \
-            "If you have already updated userObjects drag Honeybee_Honeybee component " + \
-            "into canvas and try again."
-            w = gh.GH_RuntimeMessageLevel.Warning
-            ghenv.Component.AddRuntimeMessage(w, warning)
-            return -1
-            
-        # don't customize this part
-        hb_thermPolygon = sc.sticky["honeybee_ThermPolygon"]
-        hb_EPMaterialAUX = sc.sticky["honeybee_EPMaterialAUX"]()
-        thermDefault = sc.sticky["honeybee_ThermDefault"]()
-        hb_hive = sc.sticky["honeybee_Hive"]()
-    else:
-        print "You should first let Honeybee to fly..."
-        w = gh.GH_RuntimeMessageLevel.Warning
-        ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee to fly...")
-        return
+    hb_thermPolygon = sc.sticky["honeybee_ThermPolygon"]
+    hb_EPMaterialAUX = sc.sticky["honeybee_EPMaterialAUX"]()
+    thermDefault = sc.sticky["honeybee_ThermDefault"]()
+    hb_hive = sc.sticky["honeybee_Hive"]()
     
     #Define a varialbe for acceptable geometry.
     geometryAccepted = False
@@ -206,7 +187,26 @@ def main(geometry, material, RGBColor):
     return HBThermPolygon
 
 
-if _geometry != None and _material != None:
+#Honeybee check.
+initCheck = True
+if not sc.sticky.has_key('honeybee_release') == True:
+    initCheck = False
+    print "You should first let Honeybee fly..."
+    ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee fly...")
+else:
+    try:
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): initCheck = False
+        if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): initCheck = False
+    except:
+        initCheck = False
+        warning = "You need a newer version of Honeybee to use this compoent." + \
+        "Use updateHoneybee component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+        "into canvas and try again."
+        ghenv.Component.AddRuntimeMessage(w, warning)
+
+
+if initCheck == True and _geometry != None and _material != None:
     result= main(_geometry, _material, RGBColor_)
     
     if result!=-1:
