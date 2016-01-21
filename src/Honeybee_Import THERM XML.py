@@ -22,11 +22,14 @@
 
 """
 Use this component to read the content of a THERM XML file into Grasshopper.  The component will extract both THERM polygons and boundary conditions along with all of their properties.
+_
+At this point in time, U-Factor tags are not supported but all other features should be imported.
 -
 Provided by Honeybee 0.0.57
 
     Args:
         _thermXMLFile: A filepath to a therm XML file on your machine.
+        basePlane_: An optional plane or point to set the location and orientation of the THERM file geometry in the Rhino scene.  The default will seatch for location information within the THERM file and, if none is found, geomtry is brought into the World XY plane.
     Returns:
         readMe!:...
         thermPolygons: The therm polygons within the therm XML file.
@@ -38,10 +41,12 @@ import Rhino as rc
 import scriptcontext as sc
 import Grasshopper.Kernel as gh
 import os
+import copy
+import uuid
 
 ghenv.Component.Name = 'Honeybee_Import THERM XML'
 ghenv.Component.NickName = 'importTHERM'
-ghenv.Component.Message = 'VER 0.0.57\nJAN_14_2016'
+ghenv.Component.Message = 'VER 0.0.57\nJAN_21_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | WIP"
 #compatibleHBVersion = VER 0.0.56\nJAN_12_2015
@@ -57,9 +62,13 @@ e = gh.GH_RuntimeMessageLevel.Error
 def main(thermXMLFile):
     #Call the relevant classes
     lb_preparation = sc.sticky["ladybug_Preparation"]()
+    hb_thermPolygon = sc.sticky["honeybee_ThermPolygon"]
+    hb_thermBC = sc.sticky["honeybee_ThermBC"]
+    hb_hive = sc.sticky["honeybee_Hive"]()
+    thermDefault = sc.sticky["honeybee_ThermDefault"]()
     
-    #Make a series of lists to be filled
-    thermPolygons = []
+    #Make a series of lists to be filled.
+    thermPolygonsFinal = []
     thermBCs = []
     
     #Check if the result file exists.
@@ -70,9 +79,26 @@ def main(thermXMLFile):
         return -1
     
     #Define some parameters to be changes while the file is open.
+    materialsTrigger = False
     polygonTrigger = False
     newPolygonTrigger = False
     polygonVertices = []
+    polygonMaterials = []
+    thermPolygons = []
+    BCTypes = []
+    BCTypeTrigger = False
+    BCTypeNames = []
+    BCSegments = []
+    BCSegmentsTrigger = False
+    BCindex = 0
+    grabPtData = False
+    x1 = 0
+    y1 = 0
+    x2 = 0
+    y2 = 0
+    
+    #Establish some default information about the translations
+    plane = rc.Geometry.Plane.WorldXY
     planeReorientation = None
     rhinoOrig = None
     conversionFactor = lb_preparation.checkUnits()
@@ -82,8 +108,14 @@ def main(thermXMLFile):
     #Open the file and begin extracting the relevant bits of information.
     thermFi = open(thermXMLFile, 'r')
     for lineCount, line in enumerate(thermFi):
-        if '<Polygons>' in line: polygonTrigger = True
+        if '<Materials>' in line: materialsTrigger = True
+        elif '</Materials>' in line: materialsTrigger = False
+        elif '<BoundaryConditions>' in line: BCTypeTrigger = True
+        elif '</BoundaryConditions>' in line: BCTypeTrigger = False
+        elif '<Polygons>' in line: polygonTrigger = True
         elif '</Polygons>' in line: polygonTrigger = False
+        elif '<Boundaries>' in line: BCSegmentsTrigger = True
+        elif '</Boundaries>' in line: BCSegmentsTrigger = False
         #Try to extract the transformations from the file header.
         elif '<Notes>' in line and '</Notes>' in line:
             if 'RhinoUnits-' in line and 'RhinoOrigin-' in line and 'RhinoXAxis-' in line:
@@ -98,15 +130,36 @@ def main(thermXMLFile):
                 basePlane = rc.Geometry.Plane(rhinoOrig, rc.Geometry.Vector3d(float(origRhinoXaxis[0]), float(origRhinoXaxis[1]), float(origRhinoXaxis[2])), rc.Geometry.Vector3d(float(origRhinoYaxis[0]), float(origRhinoYaxis[1]), float(origRhinoYaxis[2])))
                 basePlaneNormal = rc.Geometry.Vector3d(float(origRhinoZaxis[0]), float(origRhinoZaxis[1]), float(origRhinoZaxis[2]))
                 planeReorientation = rc.Geometry.Transform.ChangeBasis(basePlane, thermPlane)
-            else:
+                plane = basePlane
+            elif basePlane_ == None:
                 warning = "Cannot find any transformation data in the header of the THERM file. \n Result geometry will be imported to the Rhino model origin."
                 print warning
         
-        #Try to extract the polygons from the file header.
+        #Extract the materials from the file header.
+        elif materialsTrigger == True:
+            materialStr = line.strip().replace('"', '')
+            materialName = copy.copy(materialStr).split('Material Name=')[-1].split(' Type=')[0]
+            if materialName.upper() not in sc.sticky["honeybee_thermMaterialLib"].keys():
+                material = thermDefault.addThermMatToLib(materialStr)
+        
+        #Try to extract the types of Boundary Conditions.
+        if BCTypeTrigger == True:
+            if 'Adiabatic' in line or 'Frame Cavity Surface' in line: pass
+            elif '<BoundaryCondition Name' in line:
+                BCDict = {}
+                BCDict['Name'] = line.split('Name="')[-1].split('" Type')[0]
+                BCDict['Temperature'] = float(line.split('Temperature="')[-1].split('" ')[0])
+                BCDict['filmCoefficient'] = float(line.split('H="')[-1].split('" ')[0])
+                BCTypeNames.append(BCDict['Name'])
+                BCTypes.append(BCDict)
+                BCSegments.append([])
+        
+        #Try to extract the polygons from the file.
         if polygonTrigger == True:
             if '<Polygon ID' in line:
                 newPolygonTrigger = True
                 polygonVertices = []
+                polygonMaterials.append(line.split('Material="')[-1].split('" ')[0].upper())
             elif '</Polygon>' in line:
                 newPolygonTrigger = False
                 #Make the vertices into a brep and append it to the list.
@@ -120,23 +173,74 @@ def main(thermXMLFile):
                 yCoord = float(line.split('y="')[-1].split('"')[0])
                 polygonVertex = rc.Geometry.Point3d(xCoord, yCoord, 0)
                 polygonVertices.append(polygonVertex)
+        
+        #Try to extract the BC segments.
+        if BCSegmentsTrigger == True:
+            if 'Adiabatic' in line or 'Frame Cavity Surface' in line: grabPtData = False
+            elif '<BCPolygon ID' in line:
+                grabPtData = True
+                BCTypeName = line.split('BC="')[-1].split('" units=')[0]
+                for count, BCTpy in enumerate(BCTypeNames):
+                    if BCTpy == BCTypeName: BCindex = count
+            elif grabPtData == True and '<Point index="0"' in line:
+                x1 = float(line.split('x="')[-1].split('" ')[0])
+                y1 = float(line.split('y="')[-1].split('" />')[0])
+            elif grabPtData == True and '<Point index="1"' in line:
+                x2 = float(line.split('x="')[-1].split('" ')[0])
+                y2 = float(line.split('y="')[-1].split('" />')[0])
+                BCSegments[BCindex].append(rc.Geometry.LineCurve(rc.Geometry.Point3d(x1,y1,0), rc.Geometry.Point3d(x2,y2,0)))
+        
     thermFi.close()
     
+    #Check to see if there is a base plane override connected to the component.
+    if basePlane_ != None:
+        planeReorientation = rc.Geometry.Transform.ChangeBasis(rc.Geometry.Plane.WorldXY, rc.Geometry.Plane(rc.Geometry.Point3d.Origin, basePlane_.XAxis, basePlane_.YAxis))
+        rhinoOrig = basePlane_.Origin
+        plane = basePlane_
+    
     #Transform the geometry to be at the correct scale in the Rhino scene.
-    for geo in thermPolygons:
-        geo.Transform(unitsScale)
+    for geo in thermPolygons: geo.Transform(unitsScale)
+    for geoList in BCSegments:
+        for geo in geoList: geo.Transform(unitsScale)
     if planeReorientation != None:
-        for geo in thermPolygons:
-            geo.Transform(planeReorientation)
+        for geo in thermPolygons: geo.Transform(planeReorientation)
+        for geoList in BCSegments:
+            for geo in geoList: geo.Transform(planeReorientation)
         joinedPolygons = rc.Geometry.Brep.JoinBreps(thermPolygons, sc.doc.ModelAbsoluteTolerance)[0]
         thermBB = joinedPolygons.GetBoundingBox(rc.Geometry.Plane.WorldXY)
         thermOrigin = rc.Geometry.BoundingBox.Corner(thermBB, True, True, True)
         vecDiff = rc.Geometry.Point3d.Subtract(rhinoOrig, thermOrigin)
         planeTransl = rc.Geometry.Transform.Translation(vecDiff.X, vecDiff.Y, vecDiff.Z)
-        for geo in thermPolygons:
-            geo.Transform(planeTransl)
+        for geo in thermPolygons: geo.Transform(planeTransl)
+        for geoList in BCSegments:
+            for geo in geoList: geo.Transform(planeTransl)
     
-    return thermPolygons, thermBCs
+    #Create the THERM Polygons.
+    for count, geo in enumerate(thermPolygons):
+        guid = str(uuid.uuid4())
+        polyName = "".join(guid.split("-")[:-1])
+        HBThermPolygon = hb_thermPolygon(geo.Faces[0].DuplicateFace(False), polygonMaterials[count], polyName, plane, None)
+        if HBThermPolygon.warning != None:
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, HBThermPolygon.warning)
+        else:
+            thermPolygonsFinal.append(HBThermPolygon)
+    #Add All THERM Polygons to the hive.
+    thermPolygonsFin = hb_hive.addToHoneybeeHive(thermPolygonsFinal, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+    
+    #Create the THERM BCs.
+    for bcCount, segList in enumerate(BCSegments):
+        allSeg = rc.Geometry.PolylineCurve.JoinCurves(segList)
+        for seg in allSeg:
+            partsOfSeg = seg.DuplicateSegments()
+            segPts =[partsOfSeg[0].PointAtStart]
+            for part in partsOfSeg: segPts.append(part.PointAtEnd)
+            finalGeo = rc.Geometry.PolylineCurve(segPts)
+            HBThermBC = hb_thermBC(finalGeo, BCTypes[bcCount]['Name'].title(), BCTypes[bcCount]['Temperature'], BCTypes[bcCount]['filmCoefficient'], plane, None, None, None, None, None)
+            thermBound  = hb_hive.addToHoneybeeHive([HBThermBC], ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+            thermBCs.extend(thermBound)
+    
+    return thermPolygonsFin, thermBCs
 
 
 #If Honeybee or Ladybug is not flying or is an older version, give a warning.
