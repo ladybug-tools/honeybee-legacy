@@ -49,7 +49,7 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Visualize Microclimate Map"
 ghenv.Component.NickName = 'VisualizeMicroclimate'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_20_2015'
+ghenv.Component.Message = 'VER 0.0.58\nJAN_22_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -401,7 +401,7 @@ def main(pointValues, viewFactorMesh, dataType, lb_preparation, lb_visualization
     
     #If there is an analysis period, format the text for it in the legend title.
     try:
-        if len(analysisPeriod_) == 0 or annualData == False:
+        if len(analysisPeriod_) == 0 and annualData == False:
             startMonth = analysisPeriod[0][0]
             endMonth = analysisPeriod[1][0]
             startDay = analysisPeriod[0][1]
