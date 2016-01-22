@@ -100,7 +100,7 @@ def addThermMatToLib(materialString):
 
 def main(thermMaterial, roughness, thickness, density, specificHeat):
     
-    name = thermMaterial['Name']
+    name = thermMaterial['Name'].replace(',', '')
     conductivity = float(thermMaterial['Conductivity'])
     thermAbsp = thermMaterial['Emissivity']
     solAbsp = thermMaterial['Absorptivity']
