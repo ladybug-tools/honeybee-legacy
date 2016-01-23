@@ -23,7 +23,7 @@
 """
 Analyses Recipe for Annual Daylight Simulation with Daysim
 -
-Provided by Honeybee 0.0.58
+Provided by Honeybee 0.0.59
     
     Args:
         _outputUnits_: A list of numbers to indicate output units for test points. Defualt is 2. [1] solar irradiance (W/m2), [2] illumiance (lux) - Default is 2
@@ -38,7 +38,8 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_DSParameters"
 ghenv.Component.NickName = 'DSParameters'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.59\nJAN_23_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

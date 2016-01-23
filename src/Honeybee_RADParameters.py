@@ -27,7 +27,7 @@ Read more about the parameters at: http://daysim.ning.com/
 Here is my favorite presentation by John Mardaljevic: http://radiance-online.org/community/workshops/2011-berkeley-ca/presentations/day1/JM_AmbientCalculation.pdf
 
 -
-Provided by Honeybee 0.0.58
+Provided by Honeybee 0.0.59
     
     Args:
         _quality: 0 > low, 1 > Medium, 2 > High
@@ -41,7 +41,8 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_RADParameters"
 ghenv.Component.NickName = 'RADParameters'
-ghenv.Component.Message = 'VER 0.0.58\nDEC_12_2015'
+ghenv.Component.Message = 'VER 0.0.59\nJAN_23_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"
 #compatibleHBVersion = VER 0.0.56\nDEC_12_2015

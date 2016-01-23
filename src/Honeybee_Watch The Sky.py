@@ -23,7 +23,7 @@
 """
 Watch The Sky
 -
-Provided by Honeybee 0.0.58
+Provided by Honeybee 0.0.59
     
     Args:
         _skyFilePath: Path to a radiance sky file
@@ -37,7 +37,8 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Watch The Sky"
 ghenv.Component.NickName = 'watchTheSky'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_25_2015'
+ghenv.Component.Message = 'VER 0.0.59\nJAN_23_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "02 | Daylight | Sky"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

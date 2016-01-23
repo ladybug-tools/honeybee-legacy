@@ -20,7 +20,7 @@
 # @license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
 
 """
-Provided by Honeybee 0.0.58
+Provided by Honeybee 0.0.59
 
 Use this component to create your own horizontial axis wind turbine to use in Energyplus simulations. This component simulates wind turbines by using either the simple Power Calculation method which means that the Maximum Power coefficient must be calculated.
 -
@@ -30,7 +30,7 @@ Please see more information about wind turbines at: http://bigladdersoftware.com
 -
 Wind turbines are assumed to have a life time of 25 years.
 -
-Provided by Honeybee 0.0.58
+Provided by Honeybee 0.0.59
 
     Args:
         TemplateMediumTurbine_: If set to True a medium sized turbine will be created with pre-set values, the turbines values can be viewed from the ReadMe! output. Template values can be changed for each input below by entering a value for each input. Otherwise if no input is given template values will be used for each input.
@@ -75,7 +75,8 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Generator_Wind_Horizontialaxis"
 ghenv.Component.NickName = 'Generator:Wind:Horizontialaxis'
-ghenv.Component.Message = 'VER 0.0.58\nJAN_21_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJAN_23_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP" #"06 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

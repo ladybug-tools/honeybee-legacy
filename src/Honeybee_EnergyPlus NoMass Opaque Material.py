@@ -28,7 +28,7 @@ _
 If you want to create a material that accounts for mass, you should use the "Honeybee_EnergyPlus Window Material" component.
 
 -
-Provided by Honeybee 0.0.58
+Provided by Honeybee 0.0.59
     
     Args:
         _name: A text name for your NoMass Opaque Material.
@@ -44,7 +44,8 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_EnergyPlus NoMass Opaque Material"
 ghenv.Component.NickName = 'EPNoMassMat'
-ghenv.Component.Message = 'VER 0.0.58\nJAN_21_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJAN_23_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

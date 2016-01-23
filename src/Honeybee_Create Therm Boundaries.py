@@ -23,7 +23,7 @@
 """
 Use this component to create a THERM boundary condition.
 -
-Provided by Honeybee 0.0.57
+Provided by Honeybee 0.0.59
 
     Args:
         _boundaryCurve: A polyline or list of polylines that coincide with the thermPolygons that you plan to connect to the "Write Therm File" component.
@@ -54,9 +54,10 @@ import math
 
 ghenv.Component.Name = 'Honeybee_Create Therm Boundaries'
 ghenv.Component.NickName = 'createThermBoundaries'
-ghenv.Component.Message = 'VER 0.0.57\nJAN_21_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJAN_23_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "11 | Energy | THERM"
+ghenv.Component.SubCategory = "11 | THERM"
 #compatibleHBVersion = VER 0.0.56\nJAN_12_2016
 #compatibleLBVersion = VER 0.0.59\nNOV_07_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"

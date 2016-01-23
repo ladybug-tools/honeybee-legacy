@@ -24,7 +24,7 @@
 Import Radiance Test Grid
 
 -
-Provided by Honeybee 0.0.58
+Provided by Honeybee 0.0.59
 
     Args:
         input1: ...
@@ -33,7 +33,8 @@ Provided by Honeybee 0.0.58
 """
 ghenv.Component.Name = "Honeybee_Import Pts File"
 ghenv.Component.NickName = 'importPts'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.59\nJAN_23_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

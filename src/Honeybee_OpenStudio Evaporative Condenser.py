@@ -23,7 +23,7 @@
 """
 Evaporative Condenser
 -
-Provided by Honeybee 0.0.58
+Provided by Honeybee 0.0.59
 
     Args:
         _uniqueName : ... a required field to uniquely name the evaporative condenser
@@ -45,7 +45,8 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_OpenStudio Evaporative Condenser"
 ghenv.Component.NickName = 'EvaporativeCondenser'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.59\nJAN_23_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | AirsideSystems"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

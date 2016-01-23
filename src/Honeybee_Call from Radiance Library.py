@@ -24,7 +24,7 @@
 Call Radiance Materials from Library
 
 -
-Provided by Honeybee 0.0.58
+Provided by Honeybee 0.0.59
     
     Args:
         keywords_: List of keywords to filter the list of materials
@@ -37,7 +37,8 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Call from Radiance Library"
 ghenv.Component.NickName = 'callFromLibrary'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.59\nJAN_23_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "01 | Daylight | Material"
 #compatibleHBVersion = VER 0.0.57\nNOV_01_2015

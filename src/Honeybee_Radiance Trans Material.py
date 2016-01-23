@@ -26,7 +26,7 @@ Radiance Trans Material
 This component is useful to create translucent materials. Many thanks to David Mead for his slides at:
 http://radiance-online.org/community/workshops/2010-freiburg/PDF/DavidMead.pdf
 -
-Provided by Honeybee 0.0.58
+Provided by Honeybee 0.0.59
     
     Args:
         _materialName: Unique name for this material
@@ -45,7 +45,8 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Radiance Trans Material"
 ghenv.Component.NickName = 'radTransMaterial'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.59\nJAN_23_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "01 | Daylight | Material"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

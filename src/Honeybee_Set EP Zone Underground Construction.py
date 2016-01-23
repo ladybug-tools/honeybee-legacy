@@ -25,7 +25,7 @@
 Update EP construction of zone based on type
 
 -
-Provided by Honeybee 0.0.58
+Provided by Honeybee 0.0.59
     
     Args:
         _HBZone: Honeybee zone
@@ -40,7 +40,8 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Set EP Zone Underground Construction"
 ghenv.Component.NickName = 'setEPZoneUnderGroundCnstr'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.59\nJAN_23_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

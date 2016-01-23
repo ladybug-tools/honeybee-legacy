@@ -24,7 +24,7 @@
 Call from EP Library
 
 -
-Provided by Honeybee 0.0.58
+Provided by Honeybee 0.0.59
     
     Args:
         keywords_: List of keywords to filter the list of materials
@@ -39,7 +39,8 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Call from EP Construction Library"
 ghenv.Component.NickName = 'callFromEPConstrLibrary'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_16_2015'
+ghenv.Component.Message = 'VER 0.0.59\nJAN_23_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

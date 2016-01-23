@@ -26,7 +26,7 @@
 """
 EPlus EIR Chiller
 -
-Provided by Honeybee 0.0.58
+Provided by Honeybee 0.0.59
 
     Args:
         _name : ... provide a unique name for each chiller that you specify
@@ -60,7 +60,8 @@ import Grasshopper.Kernel as gh
 
 ghenv.Component.Name = "Honeybee_OpenStudio EIR Chiller"
 ghenv.Component.NickName = 'EPlusEIRChiller'
-ghenv.Component.Message = 'VER 0.0.58\nJAN_21_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJAN_23_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

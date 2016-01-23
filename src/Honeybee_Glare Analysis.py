@@ -30,7 +30,7 @@ Check this link for more information about glare analysis. Thanks to Christoph R
 http://web.mit.edu/tito_/www/Projects/Glare/GlareRecommendationsForPractice.html
 
 -
-Provided by Honeybee 0.0.58
+Provided by Honeybee 0.0.59
     
     Args:
         _HDRImagePath: Path to an HDR image file
@@ -48,7 +48,8 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Glare Analysis"
 ghenv.Component.NickName = 'glareAnalysis'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.59\nJAN_23_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015

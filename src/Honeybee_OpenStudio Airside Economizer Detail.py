@@ -23,7 +23,7 @@
 """
 Airside Economizer
 -
-Provided by Honeybee 0.0.58
+Provided by Honeybee 0.0.59
 
     Args:
         _uniqueName : a required field to uniquely name the economizer
@@ -48,7 +48,8 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_OpenStudio Airside Economizer Detail"
 ghenv.Component.NickName = 'AirSideEconomizer'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.59\nJAN_23_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | AirsideSystems"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
