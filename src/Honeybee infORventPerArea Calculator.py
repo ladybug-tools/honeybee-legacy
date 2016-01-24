@@ -4,7 +4,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2015, Abraham Yezioro <ayez@ar.technion.ac.il> 
+# Copyright (c) 2013-2016, Abraham Yezioro <ayez@ar.technion.ac.il> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -54,9 +54,6 @@ import rhinoscriptsyntax as rs
 import System
 from System import Object
 from System import Drawing
-from clr import AddReference as addr
-addr("Grasshopper")
-
 from Grasshopper import DataTree
 from Grasshopper.Kernel.Data import GH_Path
 ###################################
@@ -94,8 +91,8 @@ def main(HBZones, airChangeHour):
         return -1
     
     try:
-        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): 
-            return -1
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+        if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): return -1
     except:
         warning = "You need a newer version of Honeybee to use this compoent." + \
         "Use updateHoneybee component to update userObjects.\n" + \

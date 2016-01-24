@@ -104,6 +104,7 @@ def main(idfFile, importEPObjects = False):
 
         try:
             if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+            if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): return -1
         except:
             warning = "You need a newer version of Honeybee to use this compoent." + \
             " Use updateHoneybee component to update userObjects.\n" + \

@@ -5,7 +5,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2015, Abraham Yezioro <ayez@ar.technion.ac.il> 
+# Copyright (c) 2013-2016, Abraham Yezioro <ayez@ar.technion.ac.il> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -156,6 +156,7 @@ def checktheinputs(schedules_,_designFlowrates,_mincoolingTemps_,_maxheatingTemp
     
     try:
         if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+        if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): return -1
     except:
         warning = "You need a newer version of Honeybee to use this compoent." + \
         "Use updateHoneybee component to update userObjects.\n" + \

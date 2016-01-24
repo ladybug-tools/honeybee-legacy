@@ -5,7 +5,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2015, Chris Mackey and Mostapha Sadeghipour Roudsari <Chris@MackeyArchitecture.com - Sadeghipour@gmail.com> 
+# Copyright (c) 2013-2016, Chris Mackey and Mostapha Sadeghipour Roudsari <Chris@MackeyArchitecture.com - Sadeghipour@gmail.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -864,6 +864,7 @@ def main(windowHeight, sillHeight, glzRatio, skyLightRatio, breakUpWindow, break
     if sc.sticky.has_key('ladybug_release')and sc.sticky.has_key('honeybee_release'):
         try:
             if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+            if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): return -1
         except:
             warning = "You need a newer version of Honeybee to use this compoent." + \
             " Use updateHoneybee component to update userObjects.\n" + \
