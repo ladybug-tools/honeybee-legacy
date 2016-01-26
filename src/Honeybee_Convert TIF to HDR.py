@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Convert TIF to HDR"
 ghenv.Component.NickName = 'TIF > HDR'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_23_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"

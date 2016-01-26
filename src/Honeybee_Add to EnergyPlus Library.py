@@ -38,7 +38,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Add to EnergyPlus Library"
 ghenv.Component.NickName = 'addToEPLibrary'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_23_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
