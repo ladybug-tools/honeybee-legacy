@@ -161,7 +161,7 @@ def checkTheInputs():
         rhinoZAxis.Unitize()
         rotationAngle = rc.Geometry.Vector3d.VectorAngle(basePlane.YAxis, rhinoZAxis)
         #Rotate the plane
-        planeRotation = rc.Geometry.Transform.Rotation(rotationAngle, basePlaneNormal, basePlane.Origin)
+        planeRotation = rc.Geometry.Transform.Rotation(-rotationAngle, basePlaneNormal, basePlane.Origin)
         basePlane.Transform(planeRotation)
     
     #If the plane X-Axis is negative, flip the X and Zaxis.
