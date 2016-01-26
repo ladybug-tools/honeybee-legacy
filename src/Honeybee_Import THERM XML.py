@@ -46,7 +46,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_Import THERM XML'
 ghenv.Component.NickName = 'importTHERM'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_23_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -233,13 +233,17 @@ def main(thermXMLFile):
     for bcCount, segList in enumerate(BCSegments):
         allSeg = rc.Geometry.PolylineCurve.JoinCurves(segList)
         for seg in allSeg:
-            partsOfSeg = seg.DuplicateSegments()
-            segPts =[partsOfSeg[0].PointAtStart]
-            for part in partsOfSeg: segPts.append(part.PointAtEnd)
+            try:
+                partsOfSeg = seg.DuplicateSegments()
+                segPts =[partsOfSeg[0].PointAtStart]
+                for part in partsOfSeg: segPts.append(part.PointAtEnd)
+            except:
+                segPts = [seg.PointAtStart, seg.PointAtEnd]
             finalGeo = rc.Geometry.PolylineCurve(segPts)
             HBThermBC = hb_thermBC(finalGeo, BCTypes[bcCount]['Name'].title(), BCTypes[bcCount]['Temperature'], BCTypes[bcCount]['filmCoefficient'], plane, None, None, None, None, None)
             thermBound  = hb_hive.addToHoneybeeHive([HBThermBC], ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
             thermBCs.extend(thermBound)
+            
     
     return thermPolygonsFin, thermBCs
 

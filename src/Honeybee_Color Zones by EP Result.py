@@ -54,7 +54,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Color Zones by EP Result"
 ghenv.Component.NickName = 'ColorZones'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_23_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -386,7 +386,8 @@ def getData(pyZoneData, zoneFlrAreas, annualData, simStep, zoneNormalizable, zon
             for zone, list in enumerate(pyZoneData):
                 zoneNormData = []
                 for item in list:
-                    zoneNormData.append(item/(zoneFlrAreas[zone]))
+                    try: zoneNormData.append(item/(zoneFlrAreas[zone]))
+                    except: zoneNormData.append(0)
                 normedZoneData.append(zoneNormData)
         
         #If none of the analysisperiod or stepOfSim are connected, just total or average all the data.
