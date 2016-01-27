@@ -146,6 +146,7 @@ if _resultFileAddress:
                     srfAreaLines = range(lineCount+3, lineCount+3+int(numZones)+int(numSrfs)+int(numFixShd)+int(numBldgShd)+int(numAttShd))
                 else:
                     srfAreaLines = range(lineCount+2, lineCount+2+int(numZones)+int(numSrfs))
+            elif '-FRAME' in line: srfAreaLines.append(srfAreaLines[-1]+1)
             elif lineCount in srfAreaLines:
                 if "Shading_Surface" in line: pass
                 elif "Zone_Surfaces" in line:
@@ -272,6 +273,7 @@ def makeHeaderGrafted(list, path1, path2, srfName, timestep, name, units, normab
 
 #Make a function to check the srf name and type Name.
 def checkSrfName(csvName, dataType):
+    srfFound = False
     srfName = None
     duplicate = False
     pieceNum = 1
@@ -284,9 +286,10 @@ def checkSrfName(csvName, dataType):
         else: csvName = None
     
     if csvName:
-        for branch, list in enumerate(zoneSrfNameList):
-            for count, name in enumerate(list):
+        for branch, namelist in enumerate(zoneSrfNameList):
+            for count, name in enumerate(namelist):
                 if name == csvName:
+                    srfFound = True
                     srfName = name
                     path.append([branch, count])
                     typeName = zoneSrfTypeList[branch][count]
@@ -298,8 +301,11 @@ def checkSrfName(csvName, dataType):
                             pieceNum = 1
                     else:
                         pieceNum = 1
+        if srfFound == False:
+            path.append(-1)
     else:
         path.append(-1)
+    
     
     return srfName, typeName, pieceNum, duplicate
 
