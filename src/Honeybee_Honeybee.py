@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJAN_30_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -240,8 +240,10 @@ class CheckIn():
                 isNewerThermAvailable = True
             else:
                 # find the version
-                with open(thermFile) as tempFile:
-                    currentThermVersion = eval(tempFile.readline().split("!")[-1].strip())["version"]
+                try:
+                    with open(thermFile) as tempFile:
+                        currentThermVersion = eval(tempFile.readline().split("!")[-1].strip())["version"]
+                except: isNewerThermAvailable = True
             
             # finally if the file exist and already has a version, compare the versions
             thermVersion = versions['THERM']
