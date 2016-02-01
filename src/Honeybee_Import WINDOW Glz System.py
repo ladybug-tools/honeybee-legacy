@@ -210,7 +210,6 @@ def main(windowGlzSysReport, glzPlane, sightLineToGlz, spacerHeight, edgeOfGlass
     envConditTrigger1 = False
     envConditTrigger2 = False
     gasTrigger = False
-    firstGlzPane = True
     
     try:
         #Open the file and begin extracting the relevant bits of information.
@@ -232,8 +231,10 @@ def main(windowGlzSysReport, glzPlane, sightLineToGlz, spacerHeight, edgeOfGlass
                     glzProps = tableColumns[-1].strip().split(' ')
                     glzSysThicknesses.append(float(glzProps[0]))
                     glzSysKEffs.append(float(glzProps[-1]))
-                    if firstGlzPane == True: glzSysEmiss.append(float(glzProps[-3]))
-                    else: glzSysEmiss.append(float(glzProps[-2]))
+                    emiss1 = float(glzProps[-3])
+                    emiss2 = float(glzProps[-2])
+                    if emiss1 > emiss2: glzSysEmiss.append(emiss1)
+                    else: glzSysEmiss.append(emiss2)
                     gasTrigger = True
                 else:
                     layerName = line[7:22].strip().replace(' ', '_')
@@ -242,7 +243,6 @@ def main(windowGlzSysReport, glzPlane, sightLineToGlz, spacerHeight, edgeOfGlass
                     glzSysKEffs.append(float(line[73:].strip()))
                     glzSysEmiss.append(0.9)
                     gasTrigger = False
-                firstGlzPane = False
             elif 'Uvalue' in line and envConditTrigger1 == True:
                 outdoorProps.append(float(line[7:16].strip()))
                 indoorProps.append(float(line[16:23].strip()))
@@ -365,6 +365,7 @@ def main(windowGlzSysReport, glzPlane, sightLineToGlz, spacerHeight, edgeOfGlass
                 w = gh.GH_RuntimeMessageLevel.Warning
                 ghenv.Component.AddRuntimeMessage(w, HBThermPolygon.warning)
             thermPolygons.append(HBThermPolygon)
+            materials.append(spacerMaterial)
     
     #Add All THERM Polygons to the hive.
     thermPolygonsFinal  = hb_hive.addToHoneybeeHive(thermPolygons, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
