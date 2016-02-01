@@ -56,7 +56,7 @@ import math
 
 ghenv.Component.Name = 'Honeybee_Read THERM Result'
 ghenv.Component.NickName = 'readTHERM'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nFEB_01_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -244,7 +244,7 @@ def main(dataType, planeReorientation, unitsScale, rhinoOrig):
         del pointData[index-1-count]
         del meshValues[index-1-count]
     
-    
+    for point in pointData: point.Transform(unitsScale)
     #If we have a Rhino transform from the thermFile, transform all of the point data.
     if planeReorientation != None:
         for point in pointData:
@@ -255,7 +255,6 @@ def main(dataType, planeReorientation, unitsScale, rhinoOrig):
         planeTransl = rc.Geometry.Transform.Translation(vecDiff.X, vecDiff.Y, vecDiff.Z)
         for point in pointData:
             point.Transform(planeTransl)
-            point.Transform(unitsScale)
     
     #Build up a mesh from the point and element data.
     feMesh = rc.Geometry.Mesh()
