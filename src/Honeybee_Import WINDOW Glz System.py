@@ -53,7 +53,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_Import WINDOW Glz System'
 ghenv.Component.NickName = 'importWINDOW'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nFEB_01_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -210,53 +210,60 @@ def main(windowGlzSysReport, glzPlane, sightLineToGlz, spacerHeight, edgeOfGlass
     gasTrigger = False
     firstGlzPane = True
     
-    #Open the file and begin extracting the relevant bits of information.
-    textFile = open(windowGlzSysReport, 'r')
-    for lineCount, line in enumerate(textFile):
-        if 'Layer Data for Glazing System' in line: materialTrigger1 = True
-        elif 'Environmental Conditions' in line:
-            materialTrigger1 = False
-            envConditTrigger1 = True
-            outdoorProps.append(line.split('Environmental Conditions:')[-1].strip())
-        elif 'Optical Properties for Glazing System' in line: envConditTrigger1 = False
-        elif 'Outside' in line and materialTrigger1 == True: materialTrigger2 = True
-        elif 'Inside' in line and materialTrigger1 == True: materialTrigger2 = False
-        elif materialTrigger1 == True and materialTrigger2 == True:
-            if gasTrigger == False:
-                tableColumns = line.split('#')
-                layerName = tableColumns[0][7:].strip()
-                glzSysNames.append(layerName)
-                glzProps = tableColumns[-1].strip().split(' ')
-                glzSysThicknesses.append(float(glzProps[0]))
-                glzSysKEffs.append(float(glzProps[-1]))
-                if firstGlzPane == True: glzSysEmiss.append(float(glzProps[-3]))
-                else: glzSysEmiss.append(float(glzProps[-2]))
-                gasTrigger = True
-            else:
-                layerName = line[7:22].strip().replace(' ', '_')
-                glzSysNames.append(layerName)
-                glzSysThicknesses.append(float(line[22:30].strip()))
-                glzSysKEffs.append(float(line[73:].strip()))
-                glzSysEmiss.append(0.9)
-                gasTrigger = False
-            firstGlzPane = False
-        elif 'Uvalue' in line and envConditTrigger1 == True:
-            outdoorProps.append(float(line[7:16].strip()))
-            indoorProps.append(float(line[16:23].strip()))
-            #Compute an outdoor film coefficient from the wind speed.
-            windspeed = float(line[22:30].strip())
-            if windspeed < 3.4: outdoorProps.append(22.7)
-            else: outdoorProps.append((1.544*windspeed*windspeed)-(12.17*windspeed)+46.23)
-            #Compute an indoor film coefficient from the orientation.
-            #Turn the heat flow direction into a dimensionless value for a linear interoplation.
-            if _orientation_ == None or _orientation_.lower() == 'horizontal': dimHeatFlow = 0.5
-            else: dimHeatFlow = float(_orientation_)/180
-            #Compute a film coefficient from the emissivity, heat flow direction, and a paramterization of AHSHRAE fundemantals.
-            heatFlowFactor = (-12.443 * (math.pow(dimHeatFlow,3))) + (24.28 * (math.pow(dimHeatFlow,2))) - (16.898 * dimHeatFlow) + 8.1275
-            filmCoeff = (heatFlowFactor * dimHeatFlow) + (5.81176 * glzSysEmiss[-1]) + 0.9629
-            indoorProps.append(filmCoeff)
-    textFile.close()
-    
+    try:
+        #Open the file and begin extracting the relevant bits of information.
+        textFile = open(windowGlzSysReport, 'r')
+        for lineCount, line in enumerate(textFile):
+            if 'Layer Data for Glazing System' in line: materialTrigger1 = True
+            elif 'Environmental Conditions' in line:
+                materialTrigger1 = False
+                envConditTrigger1 = True
+                outdoorProps.append(line.split('Environmental Conditions:')[-1].strip())
+            elif 'Optical Properties for Glazing System' in line: envConditTrigger1 = False
+            elif 'Outside' in line and materialTrigger1 == True: materialTrigger2 = True
+            elif 'Inside' in line and materialTrigger1 == True: materialTrigger2 = False
+            elif materialTrigger1 == True and materialTrigger2 == True:
+                if gasTrigger == False:
+                    tableColumns = line.split('#')
+                    layerName = tableColumns[0][7:].strip()
+                    glzSysNames.append(layerName)
+                    glzProps = tableColumns[-1].strip().split(' ')
+                    glzSysThicknesses.append(float(glzProps[0]))
+                    glzSysKEffs.append(float(glzProps[-1]))
+                    if firstGlzPane == True: glzSysEmiss.append(float(glzProps[-3]))
+                    else: glzSysEmiss.append(float(glzProps[-2]))
+                    gasTrigger = True
+                else:
+                    layerName = line[7:22].strip().replace(' ', '_')
+                    glzSysNames.append(layerName)
+                    glzSysThicknesses.append(float(line[22:30].strip()))
+                    glzSysKEffs.append(float(line[73:].strip()))
+                    glzSysEmiss.append(0.9)
+                    gasTrigger = False
+                firstGlzPane = False
+            elif 'Uvalue' in line and envConditTrigger1 == True:
+                outdoorProps.append(float(line[7:16].strip()))
+                indoorProps.append(float(line[16:23].strip()))
+                #Compute an outdoor film coefficient from the wind speed.
+                windspeed = float(line[22:30].strip())
+                if windspeed < 3.4: outdoorProps.append(22.7)
+                else: outdoorProps.append((1.544*windspeed*windspeed)-(12.17*windspeed)+46.23)
+                #Compute an indoor film coefficient from the orientation.
+                #Turn the heat flow direction into a dimensionless value for a linear interoplation.
+                if _orientation_ == None or _orientation_.lower() == 'horizontal': dimHeatFlow = 0.5
+                else: dimHeatFlow = float(_orientation_)/180
+                #Compute a film coefficient from the emissivity, heat flow direction, and a paramterization of AHSHRAE fundemantals.
+                heatFlowFactor = (-12.443 * (math.pow(dimHeatFlow,3))) + (24.28 * (math.pow(dimHeatFlow,2))) - (16.898 * dimHeatFlow) + 8.1275
+                filmCoeff = (heatFlowFactor * dimHeatFlow) + (5.81176 * glzSysEmiss[-1]) + 0.9629
+                indoorProps.append(filmCoeff)
+        textFile.close()
+    except:
+        try: textFile.close()
+        except: pass
+        msg = "Material properties not found in txt file. \nMake sure that your version of LBNL WINDOW is up to date."
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Error, msg)
+        print msg
+        return -1
     
     
     #Create the window material geometry in the Rhino scene.
