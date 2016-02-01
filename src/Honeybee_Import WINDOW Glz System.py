@@ -236,7 +236,7 @@ def main(windowGlzSysReport, glzPlane, sightLineToGlz, spacerHeight, edgeOfGlass
                 else:
                     layerName = line[7:22].strip().replace(' ', '_')
                     glzSysNames.append(layerName)
-                    glzSysThicknesses.append(float(line[22:30].strip()))
+                    glzSysThicknesses.append(float(line[23:29].strip()))
                     glzSysKEffs.append(float(line[73:].strip()))
                     glzSysEmiss.append(0.9)
                     gasTrigger = False
@@ -245,7 +245,7 @@ def main(windowGlzSysReport, glzPlane, sightLineToGlz, spacerHeight, edgeOfGlass
                 outdoorProps.append(float(line[7:16].strip()))
                 indoorProps.append(float(line[16:23].strip()))
                 #Compute an outdoor film coefficient from the wind speed.
-                windspeed = float(line[22:30].strip())
+                windspeed = float(line[23:29].strip())
                 if windspeed < 3.4: outdoorProps.append(22.7)
                 else: outdoorProps.append((1.544*windspeed*windspeed)-(12.17*windspeed)+46.23)
                 #Compute an indoor film coefficient from the orientation.
