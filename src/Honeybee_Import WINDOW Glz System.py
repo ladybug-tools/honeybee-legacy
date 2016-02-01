@@ -39,6 +39,8 @@ Provided by Honeybee 0.0.59
         thermPolygons: The therm polygons for the glazing system.
         indoorBCs: The thermBCs that represent the interior side of the glazing system, including separate boundary conditions for the edge of frame and center of glass.  Note that a boundary condition for with the 'Frame' UFactorTag must be made separately.
         outdoorBC: A single thermBC that represents the exterior side of the glazing system.  This includes the exterior conditions taken from the report.
+        --------------------: ...
+        materials: A list of materials that correspond to the thermPolygons.  These can be used to assign the properties to new glazing geomtry.
         indoorProperties: A list of properties for the interior boundary condition in the following order: Name, temperature, film coefficient.  These can be used to create a boundary condition for the 'Frame.'
         outdoorProperties: A list of properties for the exterior boundary condition in the following order: Name, temperature, film coefficient.  These can be used to create a boundary condition that includes the frame of the window.
 """
@@ -200,7 +202,7 @@ def main(windowGlzSysReport, glzPlane, sightLineToGlz, spacerHeight, edgeOfGlass
     glzSysEmiss = []
     indoorProps = ['WINDOW Interior']
     outdoorProps = []
-    
+    materials = []
     
     #Define some parameters to be changes while the file is open.
     materialTrigger1 = False
@@ -340,6 +342,7 @@ def main(windowGlzSysReport, glzPlane, sightLineToGlz, spacerHeight, edgeOfGlass
             material = thermDefault.addThermMatToLib(materialStr)
             allMaterials.append(material)
         else: material = glzSysNames[count].upper()
+        materials.append(material)
         
         #Create the THERM polygon.
         guid = str(uuid.uuid4())
@@ -378,7 +381,7 @@ def main(windowGlzSysReport, glzPlane, sightLineToGlz, spacerHeight, edgeOfGlass
     thermInBoundary2  = hb_hive.addToHoneybeeHive([indoorRemainThermBC], ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
     
     
-    return thermPolygonsFinal, thermInBoundary1 + thermInBoundary2, thermOutBoundary, indoorProps, outdoorProps
+    return thermPolygonsFinal, thermInBoundary1 + thermInBoundary2, thermOutBoundary, materials, indoorProps, outdoorProps
 
 
 #If Honeybee or Ladybug is not flying or is an older version, give a warning.
@@ -424,4 +427,4 @@ if initCheck and _windowGlzSysReport:
         glzPlane, sightLineToGlz, spacerHeight, edgeOfGlassDim, glzSystemHeight, spacerMaterial, conversionFactor, thermDefault = checkData
         result = main(_windowGlzSysReport, glzPlane, sightLineToGlz, spacerHeight, edgeOfGlassDim, glzSystemHeight, spacerMaterial, conversionFactor, thermDefault)
         if result != -1:
-            thermPolygons, indoorBCs, outdoorBC, indoorProperties, outdoorProperties = result
+            thermPolygons, indoorBCs, outdoorBC, materials, indoorProperties, outdoorProperties = result
