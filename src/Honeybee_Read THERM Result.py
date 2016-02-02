@@ -56,7 +56,7 @@ import math
 
 ghenv.Component.Name = 'Honeybee_Read THERM Result'
 ghenv.Component.NickName = 'readTHERM'
-ghenv.Component.Message = 'VER 0.0.59\nFEB_01_2016'
+ghenv.Component.Message = 'VER 0.0.59\nFEB_02_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -233,7 +233,12 @@ def main(dataType, planeReorientation, unitsScale, rhinoOrig):
             columns = line.split(' ')
             for col in columns:
                 if col != '':
-                    try: indexList.append(int(col))
+                    try:
+                        disind = int(col)
+                        if len(pointData) > 10000:
+                            indexList.append(int(str(disind)[:5]))
+                            indexList.append(int(str(disind)[5:]))
+                        else: indexList.append(disind)
                     except: pass
             if indexList != []: disjointedIndices.extend(indexList)
     
