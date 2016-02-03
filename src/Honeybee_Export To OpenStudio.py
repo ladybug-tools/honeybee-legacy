@@ -61,7 +61,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nFEB_03_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -132,6 +132,14 @@ class WriteOPS(object):
         
         if self.simParameters[4] != None: self.ddyFile = self.simParameters[4]
         else: self.ddyFile = weatherFilePath.replace(".epw", ".ddy", 1)
+        
+        # check ddy file to be available
+        if not os.path.isfile(self.ddyFile):
+            raise ValueError("Can't find %s. Use energySimPar to define the path to .ddy file"%self.ddyFile)
+        
+        # check ddy file to be available
+        if not self.ddyFile.lower().endswith(".ddy"):
+            raise ValueError("%s is not a valid ddy file. Use energySimPar to define the path to .ddy file"%self.ddyFile)
         
         self.constructionList = sc.sticky ["honeybee_constructionLib"]
         self.materialList = {}
