@@ -57,7 +57,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Microclimate Map Analysis"
 ghenv.Component.NickName = 'MicroclimateMap'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nFEB_03_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -168,7 +168,7 @@ def setDefaults(lb_defaultFolder, lb_preparation):
                 ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
             if checkData1 == True:
                 d, m, t = lb_preparation.hour2Date(HOYs[0], True)
-                analysisPeriod = [(m, d, t), (m, d, t)]
+                analysisPeriod = [(m+1, d, t), (m+1, d, t)]
         except:
             try:
                 HOYs, months, days = lb_preparation.getHOYsBasedOnPeriod(analysisPeriodOrHOY_, 1)
@@ -471,7 +471,8 @@ def warpByHeight(pointAirTempValues, ptHeightWeights, flowVolValues, heatGainVal
         if archimedesNumbers[zoneCount] < 59 and archimedesNumbers[zoneCount] != 0:
             #Linear stratification profile.
             dimInterfHeights.append(0)
-            dimensionlessTempDelta = 0.58 - (0.14 * math.log10(archiNumWinScale[zoneCount]))
+            try: dimensionlessTempDelta = 0.58 - (0.14 * math.log10(archiNumWinScale[zoneCount]))
+            except: dimensionlessTempDelta = 0.58
             dimTempDeltas.append(dimensionlessTempDelta)
             cielTemps.append((dimensionlessTempDelta/2)*tempChanges[zoneCount])
         elif archimedesNumbers[zoneCount] != 0:
