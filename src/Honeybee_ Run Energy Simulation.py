@@ -61,7 +61,7 @@ Provided by Honeybee 0.0.59
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nFEB_03_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -934,6 +934,9 @@ class WriteIDF(object):
             numberOfLayers = len(scheduleData.keys())
             scheduleStr = scheduleData[0] + ",\n"
             
+            if numberOfLayers == 1:
+                return scheduleStr  + "  " +  scheduleName + ";   !- name\n\n"
+            
             # add the name
             scheduleStr =  scheduleStr  + "  " +  scheduleName + ",   !- name\n"
             
@@ -1344,7 +1347,6 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         
     
     lb_preparation = sc.sticky["ladybug_Preparation"]()
-    hb_scheduleLib = sc.sticky["honeybee_DefaultScheduleLib"]()
     hb_reEvaluateHBZones= sc.sticky["honeybee_reEvaluateHBZones"]
     hb_hive = sc.sticky["honeybee_Hive"]()
     hb_EPScheduleAUX = sc.sticky["honeybee_EPScheduleAUX"]()
