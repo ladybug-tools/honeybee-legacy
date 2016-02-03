@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_30_2016'
+ghenv.Component.Message = 'VER 0.0.59\nFEB_02_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -3591,10 +3591,19 @@ class EPMaterialAux(object):
         
         elif materialType.lower() == "windowmaterial:gas":
             thickness = float(materialObj[2][0])
+            #All of these materials are taken from LBNL WINDOW 7.4 Gas Library assuming a 1 cm-thick gap.
             if materialObj[1][0].lower() == "air":
-                # conductivity = 0.1603675
-                # considering ('0.18' for 'Thermal Resistance {m2-K/W}')
-                UValueSI = 5.55555555556
+                # conductivity = 0.02407 {W/m-K}
+                UValueSI = 2.407
+            elif materialObj[1][0].lower() == "argon":
+                # conductivity = 0.016348 {W/m-K}
+                UValueSI = 1.6348
+            elif materialObj[1][0].lower() == "krypton":
+                # conductivity = 0.008663 {W/m-K}
+                UValueSI = 0.8663
+            elif materialObj[1][0].lower() == "xenon":
+                # conductivity = 0.005160 {W/m-K}
+                UValueSI = 0.516
             else:
                 warningMsg = "Honeybee can't calculate the UValue for " + materialObj[1][0] + ".\n" + \
                     "Let us know if you think it is really neccesary and we will add it to the list. :)"
@@ -3604,8 +3613,9 @@ class EPMaterialAux(object):
                     
                     print materialObj
         else:
-            warningMsg = "Honeybee currently doesn't support U-Value calculation for " + materialType + ".\n" +\
-                "Let us know if you think it is really neccesary and we will add it to the list. :)"
+            warningMsg = "Honeybee currently can't calculate U-Values for " + materialType + ".\n" +\
+                "Your Honeybee EnergyPlus simulations will still run fine with this material and this is only a Honeybee interface limitation." + ".\n" +\
+                "Let us know if you think HB should calcualte this material type and we will add it to the list. :)"
             if GHComponent!=None:
                 w = gh.GH_RuntimeMessageLevel.Warning
                 GHComponent.AddRuntimeMessage(w, warningMsg)
