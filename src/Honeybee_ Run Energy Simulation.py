@@ -65,7 +65,7 @@ ghenv.Component.Message = 'VER 0.0.59\nFEB_03_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nJAN_21_2016
+#compatibleHBVersion = VER 0.0.56\nFEB_03_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
@@ -1475,7 +1475,8 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     idfFile.write(hb_writeIDF.EPRunPeriod('customRun', stDay, stMonth, endDay, endMonth))
     
     # for now I write all the type limits but it can be cleaner
-    scheduleTypeLimits = sc.sticky["honeybee_ScheduleTypeLimitsLib"].keys()
+    scheduleTypeLimits = set([key.upper() for key in sc.sticky["honeybee_ScheduleTypeLimitsLib"].keys()])
+    
     for scheduleTypeLimit in scheduleTypeLimits:
         try: idfFile.write(hb_writeIDF.EPSCHStr(scheduleTypeLimit))
         except: pass
