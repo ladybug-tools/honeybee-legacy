@@ -37,7 +37,7 @@ Provided by Honeybee 0.0.59
 """
 ghenv.Component.Name = "Honeybee infORventPerArea Calculator"
 ghenv.Component.NickName = 'ACH2m3/s-m2 Calculator'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nFEB_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
@@ -78,7 +78,7 @@ def checkInputs():
     else:
         checkData = False
         msg = "At least one of the inputs is incorrect. Fix it according to the hints of each of them."
-    
+        ghenv.Component.AddRuntimeMessage(w, msg)
     
     return checkData
 
@@ -89,7 +89,6 @@ def main(HBZones, airChangeHour):
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee to fly...")
         return -1
-    
     try:
         if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
         if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): return -1
