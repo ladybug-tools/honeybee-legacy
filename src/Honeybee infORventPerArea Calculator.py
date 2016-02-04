@@ -78,6 +78,7 @@ def checkInputs():
     else:
         checkData = False
         msg = "At least one of the inputs is incorrect. Fix it according to the hints of each of them."
+        ghenv.Component.AddRuntimeMessage(w, msg)
     
     
     return checkData
