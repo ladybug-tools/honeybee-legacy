@@ -58,6 +58,7 @@ Provided by Honeybee 0.0.59
         report: Check here to see a report of the EnergyPlus run, including errors.
         idfFileAddress: The file path of the IDF file that has been generated on your machine.
         resultFileAddress: The file path of the CSV result file that has been generated on your machine.  This only happens when you set "runEnergyPlus_" to "True."
+        studyFolder: The directory in which the simulation has been run.  Connect this to the 'Honeybee_Lookup EnergyPlus' folder to bring many of the files in this directory into Grasshopper.
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
@@ -80,6 +81,7 @@ import math
 import shutil
 import collections
 import subprocess
+import copy
 
 rc.Runtime.HostUtils.DisplayOleAlerts(False)
 
@@ -1364,8 +1366,12 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     elif idfFileName[-3:] != 'idf': idfFileName = idfFileName + '.idf'
     
     # make working directory
-    if workingDir: workingDir = lb_preparation.removeBlankLight(workingDir)
-    else: workingDir = "c:\\ladybug"
+    if workingDir:
+        workingDir = lb_preparation.removeBlankLight(workingDir)
+        originalWorkingDir = copy.copy(workingDir)
+    else:
+        workingDir = "c:\\ladybug"
+        originalWorkingDir = os.path.join("c:\\ladybug", idfFileName.split(".idf")[0])
     
     workingDir = os.path.join(workingDir, idfFileName.split(".idf")[0], "EnergyPlus")
     
@@ -2142,11 +2148,13 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     
     ######################## RUN ENERGYPLUS SIMULATION #######################
     resultFileFullName = None
+    studyFolder = None
     if runEnergyPlus:
         print "Analysis is running!..."
         # write the batch file
         hb_runIDF.writeBatchFile(workingDir, idfFileName, epwFileAddress, sc.sticky["honeybee_folders"]["EPPath"], runEnergyPlus > 1)
         resultFileFullName = idfFileFullName.replace('.idf', '.csv')
+        studyFolder = originalWorkingDir
         try:
             print workingDir + '\eplusout.csv'
             test = open(workingDir + '\eplusout.csv', 'r')
@@ -2158,7 +2166,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     else:
         print "Set runEnergyPlus to True!"
         
-    return idfFileFullName, resultFileFullName 
+    return idfFileFullName, resultFileFullName, studyFolder
         
 
 if _writeIdf == True and _epwFile and _HBZones and _HBZones[0]!=None:
@@ -2167,7 +2175,7 @@ if _writeIdf == True and _epwFile and _HBZones and _HBZones[0]!=None:
                   HBContext_, simulationOutputs_, _writeIdf, runEnergyPlus_,
                   _workingDir_, _idfFileName_, meshSettings_)
     if result!= -1:
-        idfFileAddress, resultFileAddress = result
+        idfFileAddress, resultFileAddress, studyFolder = result
         if runEnergyPlus_:
             try:
                 errorFileFullName = idfFileAddress.replace('.idf', '.err')
