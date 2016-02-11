@@ -37,7 +37,7 @@ Provided by Honeybee 0.0.59
 """
 ghenv.Component.Name = "Honeybee infORventPerArea Calculator"
 ghenv.Component.NickName = 'ACH2m3/s-m2 Calculator'
-ghenv.Component.Message = 'VER 0.0.59\nFEB_04_2016'
+ghenv.Component.Message = 'VER 0.0.59\nFEB_11_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
@@ -66,7 +66,7 @@ def checkInputs():
     checkData1 = False # Check _airChangeHour
     if _airChangeHour:
         try:
-            if _airChangeHour >= 0.2:
+            if _airChangeHour >= 0.0001:
                 checkData1 = True
             else: pass
         except: pass
