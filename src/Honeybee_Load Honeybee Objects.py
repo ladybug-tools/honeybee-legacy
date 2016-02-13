@@ -38,20 +38,126 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Load Honeybee Objects"
 ghenv.Component.NickName = 'loadHBObjects'
-ghenv.Component.Message = 'VER 0.0.59\nFEB_05_2016'
+ghenv.Component.Message = 'VER 0.0.59\nFEB_12_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"
-#compatibleHBVersion = VER 0.0.58\nNOV_13_2015
+#compatibleHBVersion = VER 0.0.59\nFEB_12_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
-
 
 import cPickle as pickle
 import scriptcontext as sc
 import Grasshopper.Kernel as gh
 import os
+import uuid
+from Rhino.Geometry import *
+
+class outdoorBCObject(object):
+    """
+    BCObject for surfaces with outdoor BC
+    """
+    def __init__(self, name = ""):
+        self.name = name
+
+
+def loadHBObjects(HBData):
+    
+    hb_EPZone = sc.sticky["honeybee_EPZone"]
+    hb_EPSrf = sc.sticky["honeybee_EPSurface"]
+    hb_EPZoneSurface = sc.sticky["honeybee_EPZoneSurface"]
+    hb_EPSHDSurface = sc.sticky["honeybee_EPShdSurface"]
+    hb_EPFenSurface = sc.sticky["honeybee_EPFenSurface"]
+    
+    hb_hive = sc.sticky["honeybee_Hive"]()
+    
+    # a global dictonary to collect data
+    ids = HBData["ids"]
+    objs = HBData["objs"]
+    HBObjects = {}
+    
+    def loadHBZone(HBZoneData):
+        # programs is set to default but will be overwritten
+        HBZone = hb_EPZone(HBZoneData['geometry'], \
+                HBZoneData['num'], HBZoneData['name'], \
+                ('Office', 'OpenOffice'), HBZoneData['isConditioned'])
+                
+        # update fields in HBZone
+        for key, value in HBZoneData.iteritems():
+            HBZone.__dict__[key] = value
+        
+        HBObjects[HBZone.ID] = HBZone
+        
+    def loadHBSurface(HBSurfaceData):
+        # EPFenSurface
+        if HBSurfaceData['type'] == 5:
+            HBBaseSurface = HBObjects[HBSurfaceData['parent']]
+            HBSurface = hb_EPFenSurface(HBSurfaceData['geometry'], \
+                HBSurfaceData['num'], HBSurfaceData['name'], HBBaseSurface, 5)
+                
+        elif HBSurfaceData['type'] == 6:
+            HBSurface = hb_EPSHDSurface(HBSurfaceData['geometry'], \
+                HBSurfaceData['num'], HBSurfaceData['name'])
+        else:
+            HBSurface = hb_EPZoneSurface(HBSurfaceData['geometry'], \
+                HBSurfaceData['num'], HBSurfaceData['name'])
+        
+        for key, value in HBSurfaceData.iteritems():
+            HBSurface.__dict__[key] = value
+        
+        HBObjects[HBSurface.ID] = HBSurface
+    
+    def updateHoneybeeObjects():
+        
+        for id, HBObject in HBObjects.iteritems():
+            
+            if HBObject.objectType == 'HBZone':
+                HBObject.surfaces = [HBObjects[id] for id in HBObject.surfaces]
+                continue
+                
+            # replace parent ID with the object
+            if HBObject.parent != None:
+                # replace parent object with ID
+                HBObject.parent = HBObjects[HBObject.parent]
+                
+            if not HBObject.isChild and HBObject.hasChild:
+                HBObject.childSrfs = [HBObjects[id] for id in HBObject.childSrfs]
+                HBObject.calculatePunchedSurface()
+            
+            if HBObject.type==6:
+                HBObject.childSrfs = [HBObjects[id] for id in HBObject.childSrfs]
+                
+            if HBObject.type!=6 and HBObject.BCObject.lower() == "outdoors":
+                HBObject.BCObject = outdoorBCObject()
+                
+            if HBObject.type!=6 and HBObject.BC.lower() == "surface":
+                # replace parent object with ID
+                HBObject.BCObject = HBObjects[HBObject.BCObject]
+        
+    
+    for id, HBO in objs.iteritems():
+        if HBO['objectType'] == 'HBSurface' and HBO['type'] == 5: continue
+        
+        if HBO['objectType'] == 'HBSurface' and HBO['type'] != 5:
+            loadHBSurface(HBO)
+        elif HBO['objectType'] == 'HBZone':
+            loadHBZone(HBO)
+        else:
+            raise Exception("Unsupported object! Assure all objects are Honeybee objects")
+    
+    # create Fenestration surfaces
+    for id, HBO in objs.iteritems():
+        if HBO['objectType'] == 'HBSurface' and HBO['type'] == 5:
+            loadHBSurface(HBO)
+            
+    #replace ids with objects in surfaces
+    updateHoneybeeObjects()
+    
+    # return new Honeybee objects
+    return hb_hive.addToHoneybeeHive([HBObjects[id] for id in HBData["ids"]], \
+        ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+        
 
 def main(filePath, load):
     if not sc.sticky.has_key('honeybee_release'):
@@ -68,7 +174,7 @@ def main(filePath, load):
         raise ValueError("Can't find %s"%filePath)
     
     with open(filePath, "rb") as inf:
-        return pickle.load(inf)
+        return loadHBObjects(pickle.load(inf))
     
 
 results = main(_filePath, _load)

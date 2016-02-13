@@ -25,6 +25,7 @@ Dump Honeybee Objects
 
 Use this component to dump Honeybee objects to a file on your system.
 You can use load Honeybee objects to load the file to Grasshopper.
+WARNING: The component is WIP and it doesn't package schedules and materials
 -
 Provided by Honeybee 0.0.59
 
@@ -38,11 +39,11 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Dump Honeybee Objects"
 ghenv.Component.NickName = 'dumpHBObjects'
-ghenv.Component.Message = 'VER 0.0.59\nFEB_05_2016'
+ghenv.Component.Message = 'VER 0.0.59\nFEB_12_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"
-#compatibleHBVersion = VER 0.0.58\nNOV_13_2015
+#compatibleHBVersion = VER 0.0.59\nFEB_12_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
@@ -52,6 +53,79 @@ import cPickle as pickle
 import scriptcontext as sc
 import Grasshopper.Kernel as gh
 import os
+from pprint import pprint
+from collections import namedtuple
+
+def dumpHBObjects(HBObjects):
+    hb_hive = sc.sticky["honeybee_Hive"]()
+    HBObjects = hb_hive.callFromHoneybeeHive(HBObjects)
+    ids = [HBObject.ID for HBObject in HBObjects]
+    # a global dictonary to collect data
+    objs = {}
+    idsToBeChecked = {}
+    
+    def dumpHBZone(HBZone):
+        if HBZone.objectType != 'HBZone': return
+        
+        # dump all surfaces and replace surfaces with ids
+        surfaceIds = [srf.ID for srf in HBZone.surfaces]
+        for surface in HBZone.surfaces:
+            dumpHBSurface(surface)
+        
+        HBZone.surfaces = surfaceIds
+        objs[HBZone.ID] = HBZone.__dict__
+        
+    def dumpHBSurface(HBSurface):
+
+        # replace parent object with it's ID
+        if HBSurface.parent != None:
+            # make sure parent object is also in the list
+            idsToBeChecked[HBSurface.parent.ID] = HBSurface.parent.name
+            # replace parent object with ID
+            HBSurface.parent = HBSurface.parent.ID
+            
+        if not HBSurface.isChild and HBSurface.hasChild:
+            childIds = [childSrf.ID for childSrf in HBSurface.childSrfs]
+            for childSrf in HBSurface.childSrfs:
+                dumpHBSurface(childSrf)
+            
+            HBSurface.childSrfs = childIds
+        
+        if HBSurface.type == 6:
+            HBSurface.childSrfs = [childSrf.ID for childSrf in HBSurface.childSrfs]
+            
+        try:
+            HBSurface.BCObject.name
+            HBSurface.BCObject = "Outdoors" #This will be replaced by Oudoor object in loading
+        except:
+            pass
+            
+        try:
+            if HBSurface.BC.lower() == "surface":
+                idsToBeChecked[HBSurface.BCObject.ID] = HBSurface.BCObject.name            
+                # replace parent object with ID
+                HBSurface.BCObject = BCObject.ID
+        except:
+            pass
+            
+        objs[HBSurface.ID] = HBSurface.__dict__
+        
+    for id, HBO in zip(ids, HBObjects):
+        if HBO.objectType == 'HBSurface':
+            dumpHBSurface(HBO)
+        elif HBO.objectType == 'HBZone':
+            dumpHBZone(HBO)
+        else:
+            raise Exception("Unsupported object! Assure all objects are Honeybee objects")
+    
+    # make sure all the parent objects and boundary condition objects are included
+    # in the file
+    keys = objs.keys()
+    for id, name in idsToBeChecked.iteritems():
+        assert id in keys,\
+            " InputError: Parent/Adjacent object %s is not in the list of HBObjects."%name
+            
+    return {'ids':ids, 'objs': objs}
 
 def main(HBObjects, filePath, dump):
     if not sc.sticky.has_key('honeybee_release'):
@@ -67,8 +141,12 @@ def main(HBObjects, filePath, dump):
     if not os.path.isdir(os.path.split(filePath)[0]):
         raise ValueError("Can't find %s"%os.path.split(filePath)[0])
     
+    HBData = dumpHBObjects(HBObjects)
+    
+    #pprint(HBData)
+    
     with open(filePath, "wb") as outf:
-        pickle.dump(HBObjects, outf)
+        pickle.dump(HBData, outf)
         print "Saved file to %s"%filePath
     
 
