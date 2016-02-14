@@ -39,7 +39,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Dump Honeybee Objects"
 ghenv.Component.NickName = 'dumpHBObjects'
-ghenv.Component.Message = 'VER 0.0.59\nFEB_12_2016'
+ghenv.Component.Message = 'VER 0.0.59\nFEB_14_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"
@@ -95,18 +95,18 @@ def dumpHBObjects(HBObjects):
             HBSurface.childSrfs = [childSrf.ID for childSrf in HBSurface.childSrfs]
             
         try:
-            HBSurface.BCObject.name
-            HBSurface.BCObject = "Outdoors" #This will be replaced by Oudoor object in loading
+            if HBSurface.BC.lower() == "outdoors" or HBSurface.BC.lower() == "ground":
+                HBSurface.BCObject.name
+                HBSurface.BCObject = "Outdoors" #This will be replaced by Oudoor object in loading
         except:
+            print HBSurface.BC.lower()
+            # not out outdoor BC
             pass
             
-        try:
-            if HBSurface.BC.lower() == "surface":
-                idsToBeChecked[HBSurface.BCObject.ID] = HBSurface.BCObject.name            
-                # replace parent object with ID
-                HBSurface.BCObject = BCObject.ID
-        except:
-            pass
+        if HBSurface.BC.lower() == "surface":
+            idsToBeChecked[HBSurface.BCObject.ID] = HBSurface.BCObject.name
+            # replace parent object with ID
+            HBSurface.BCObject = HBSurface.BCObject.ID
             
         objs[HBSurface.ID] = HBSurface.__dict__
         
