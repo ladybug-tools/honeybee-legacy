@@ -26,8 +26,8 @@ Search Energy Simulation Folder
 Provided by Honeybee 0.0.59
     
     Args:
-        _studyFolder: Path to base study folder. If _studyType is empty then it should be full path to study folder. It can be a single simulation folder or a folder containing subfolders produced by parametric simulations
-        _studyType_: Optional input for Honeybee EnergyPlus study type
+        _studyFolder: Path to base study folder. It can be a single simulation folder or a folder containing subfolders produced by parametric simulations
+        _studyType: Input for Honeybee EnergyPlus study type
                     1 > Energy Plus
                     2 > OpenStudio
         refresh_: Refresh
@@ -44,7 +44,7 @@ Provided by Honeybee 0.0.59
 """
 ghenv.Component.Name = "Honeybee_Lookup EnergyPlus Folder"
 ghenv.Component.NickName = 'LookupFolder_EnergyPlus'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_31_2016'
+ghenv.Component.Message = 'VER 0.0.59\nFEB_03_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -73,32 +73,6 @@ osmFiles = []
 
 def main(studyFolder, subFoldersOS):
     msg = str.Empty
-    
-    if not (sc.sticky.has_key('ladybug_release')and sc.sticky.has_key('honeybee_release')):
-        msg = "You should first let Ladybug and Honeybee fly..."
-        return msg, None
-
-    try:
-        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
-    except:
-        warning = "You need a newer version of Honeybee to use this compoent." + \
-        " Use updateHoneybee component to update userObjects.\n" + \
-        "If you have already updated userObjects drag Honeybee_Honeybee component " + \
-        "into canvas and try again."
-        w = gh.GH_RuntimeMessageLevel.Warning
-        ghenv.Component.AddRuntimeMessage(w, warning)
-        return -1
-
-    try:
-        if not sc.sticky['ladybug_release'].isCompatible(ghenv.Component): return -1
-    except:
-        warning = "You need a newer version of Ladybug to use this compoent." + \
-        " Use updateLadybug component to update userObjects.\n" + \
-        "If you have already updated userObjects drag Ladybug_Ladybug component " + \
-        "into canvas and try again."
-        w = gh.GH_RuntimeMessageLevel.Warning
-        ghenv.Component.AddRuntimeMessage(w, warning)
-        return -1
     
     lb_preparation = sc.sticky["ladybug_Preparation"]()
     hb_serializeObjects = sc.sticky["honeybee_SerializeObjects"]
@@ -174,33 +148,71 @@ studyTypes = {
 subFolders   = []
 #subFoldersOS = []
 
-if _studyFolder!=None and os.path.isdir(_studyFolder):
+
+#If Honeybee or Ladybug is not flying or is an older version, give a warning.
+initCheck = True
+#Ladybug check.
+if not sc.sticky.has_key('ladybug_release') == True:
+    initCheck = False
+    print "You should first let Ladybug fly..."
+    ghenv.Component.AddRuntimeMessage(w, "You should first let Ladybug fly...")
+else:
+    try:
+        if not sc.sticky['ladybug_release'].isCompatible(ghenv.Component): initCheck = False
+        if sc.sticky['ladybug_release'].isInputMissing(ghenv.Component): initCheck = False
+    except:
+        initCheck = False
+        warning = "You need a newer version of Ladybug to use this compoent." + \
+        "Use updateLadybug component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Ladybug_Ladybug component " + \
+        "into canvas and try again."
+        ghenv.Component.AddRuntimeMessage(w, warning)
+#Honeybee check.
+if not sc.sticky.has_key('honeybee_release') == True:
+    initCheck = False
+    print "You should first let Honeybee fly..."
+    ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee fly...")
+else:
+    try:
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): initCheck = False
+    except:
+        initCheck = False
+        warning = "You need a newer version of Honeybee to use this compoent." + \
+        "Use updateHoneybee component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+        "into canvas and try again."
+        ghenv.Component.AddRuntimeMessage(w, warning)
+
+
+
+if _studyFolder!=None and os.path.isdir(_studyFolder) and initCheck == True:
     # check if the type is provided
-    if _studyType_!=None:
+    if _studyType!=None:
         try:
     #####
             dirNames = os.listdir(_studyFolder)
             dirNames.sort()
             for dirName in dirNames: 
                 ##print 'dirName1: ', dirName
-                if dirName == studyTypes[_studyType_]:# Check if the inputFolder has a "EnergyPlus" directory. if so use this only inputFolder
+                if dirName == studyTypes[_studyType]:# Check if the inputFolder has a "EnergyPlus" directory. if so use this only inputFolder
                     subFolders.append(os.path.join(_studyFolder, dirName))
                     print 'Found it ... found it in 1'
                     break
             else:
                 for dirName in dirNames: # This is the name for EACH case
-                    if os.path.isdir(os.path.join(_studyFolder, dirName, studyTypes[_studyType_])):
-                        subFolders.append(os.path.join(_studyFolder, dirName, studyTypes[_studyType_]))
-                        ##print 'Found it ... found it in 2'    # This is the FOR block where files are found
+                    if os.path.isdir(os.path.join(_studyFolder, dirName, studyTypes[_studyType])):
+                        ##aa = os.path.join(_studyFolder, dirName, studyTypes[_studyType])   ####
+                        subFolders.append(os.path.join(_studyFolder, dirName, studyTypes[_studyType]))
+                        ##print 'Found it ... found it in 2\t', aa    # This is the FOR block where files are found
                         
             ################################################################
             ### Now find the directories and files relevant to studyType ###
             ################################################################
             for studyTypeName in subFolders:
                 studyFolder = studyTypeName
-                if _studyType_ == 1: # EnergyPlus
+                if _studyType == 1: # EnergyPlus
                     subFoldersOS = "None"
-                elif _studyType_ == 2: # OpenStudio
+                elif _studyType == 2: # OpenStudio
                     dirOSNames = os.listdir(studyFolder)
                     dirOSNames.sort()
                     for dirOSName in dirOSNames: 
@@ -208,7 +220,7 @@ if _studyFolder!=None and os.path.isdir(_studyFolder):
                             subFoldersOS = os.path.join(studyFolder, dirOSName, "ModelToIdf")
 
                 res = main(studyFolder, subFoldersOS)
-            
+                
                 if res != -1:
                     msg, results = res
                     
@@ -222,8 +234,8 @@ if _studyFolder!=None and os.path.isdir(_studyFolder):
             warning = "Please provide a valid studyType! See hint"
             w = gh.GH_RuntimeMessageLevel.Warning
             ghenv.Component.AddRuntimeMessage(w, warning)
-else:
-    warning = "Please provide a studyFolder"
-    w = gh.GH_RuntimeMessageLevel.Warning
-    ghenv.Component.AddRuntimeMessage(w, warning)
-    
+    else:       #No StudyType provided
+        print 'No StudyType provided'
+        warning = "Please provide a studyType! See hint"
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
