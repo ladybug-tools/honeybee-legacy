@@ -48,7 +48,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Energy Simulation Par"
 ghenv.Component.NickName = 'EnergySimPar'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nFEB_13_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -85,7 +85,11 @@ def main(timestep, shadowCalcPar, solarDistribution, simulationControls, ddyFile
     
     # I will add check for inputs later
     if timestep == None: timestep = 6
-    if shadowCalcPar == []: shadowCalcPar = ["AverageOverDaysInFrequency", 30, 3000]
+    if shadowCalcPar == []:
+        shadowCalcPar = ["AverageOverDaysInFrequency", 30, 3000]
+    
+    assert len(shadowCalcPar) == 3, "Wrong input for shadow calculation parameters."
+        
     if solarDistribution == None:
         solarDistribution = solarDist["4"]
     else:
