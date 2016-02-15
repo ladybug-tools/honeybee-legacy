@@ -52,11 +52,11 @@ import decimal
 
 ghenv.Component.Name = 'Honeybee_Write THERM File'
 ghenv.Component.NickName = 'writeTHERM'
-ghenv.Component.Message = 'VER 0.0.59\nFEB_14_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
-#compatibleHBVersion = VER 0.0.56\nJAN_12_2016
+#compatibleHBVersion = VER 0.0.56\nJAN_12_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
@@ -132,7 +132,7 @@ def checkTheInputs():
         return -1
     
     #Make sure that all of the geometry is in the same plane.
-    basePlaneNormal = rc.Geometry.Vector3d(thermPolygons[0].normalVector.X, thermPolygons[0].normalVector.Y, thermPolygons[0].normalVector.Z)
+    basePlaneNormal = copy.copy(thermPolygons[0].normalVector)
     if basePlaneNormal.Z < 0: basePlaneNormal.Reverse()
     
     allPolygonGeo = []
@@ -167,7 +167,7 @@ def checkTheInputs():
     #If the plane X-Axis is negative, flip the X and Zaxis.
     if basePlane.XAxis.X < -tol:
         basePlaneNormal.Reverse()
-        newXAxis = rc.Geometry.Vector3d(basePlane.XAxis.X, basePlane.XAxis.Y, basePlane.XAxis.Z)
+        newXAxis = copy.copy(basePlane.XAxis)
         newXAxis.Reverse()
         basePlane = rc.Geometry.Plane(basePlane.Origin, newXAxis, basePlane.YAxis)
     
@@ -384,10 +384,7 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
         if polygon.material not in materialNames:
             materialNames.append(polygon.material)
             try:
-                matFromLib = {"Name": thermMatLib[polygon.material]["Name"], "Type":thermMatLib[polygon.material]["Type"], "Conductivity":thermMatLib[polygon.material]["Conductivity"], "Absorptivity": thermMatLib[polygon.material]["Absorptivity"], "Emissivity":thermMatLib[polygon.material]["Emissivity"], "RGBColor":thermMatLib[polygon.material]["RGBColor"]}
-                try:
-                    matFromLib["CavityModel"] = thermMatLib[polygon.material]
-                except: pass
+                matFromLib = copy.copy(thermMatLib[polygon.material])
                 matFromLib["Name"] = matFromLib["Name"].title()
                 correctFormatCol = str(System.Drawing.ColorTranslator.ToHtml(matFromLib["RGBColor"]))
                 matFromLib["RGBColor"] = '0x' + correctFormatCol.split('#')[-1]
@@ -406,7 +403,8 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
                 return -1
         
         #Check if the polygon is an air material.
-        if thermMatLib[polygon.material]["Type"] == 1:
+        matFromLib = copy.copy(thermMatLib[polygon.material])
+        if matFromLib["Type"] == 1:
             airCavityPolygons.append(polygon.geometry)
         
         #Build up a dictionary of properties.
@@ -424,7 +422,7 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
         
         #Write the transformed geometry into the dictionary.
         for vertCount, vertex in enumerate(polygon.vertices):
-            vertTrans = rc.Geometry.Point3d(vertex.X, vertex.Y, vertex.Z)
+            vertTrans = copy.copy(vertex)
             vertTrans.Transform(planeReorientation)
             vertTrans.Transform(unitsScale)
             vertTrans.Transform(bufferTansl)
@@ -442,7 +440,7 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
     for boundcondit in thermBCs:
         if boundcondit.BCProperties['Name'] not in boundConditNames:
             boundConditNames.append(boundcondit.BCProperties['Name'])
-            boundFromLib = copy.deepcopy(boundcondit.BCProperties)
+            boundFromLib = copy.copy(boundcondit.BCProperties)
             boundFromLib['Name'] = boundFromLib['Name'].title()
             boundConditions.append(boundFromLib)
     
@@ -478,7 +476,7 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
             closestStartPt = rc.Geometry.PolylineCurve.ClosestPoint(boundGeo, segStartPt, sc.doc.ModelAbsoluteTolerance*2)[0]
             if closestEndPt and closestStartPt:
                 boundType = boundary.BCProperties['Name'].title()
-                boundGeoProp = copy.deepcopy(boundary.BCGeo)
+                boundGeoProp = copy.copy(boundary.BCGeo)
                 if boundary.emissivityOverride == None: boundGeoProp['Emissivity'] = matEmiss
                 else: boundGeoProp['Emissivity'] = boundary.emissivityOverride
                 boundGeoProp['ID'] = str(boundCount)
@@ -496,13 +494,13 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
         boundDesc.append(boundProp)
         
         #Put the transformed vertices into the dictionary.
-        segStartPtTrans = rc.Geometry.Point3d(segStartPt.X, segStartPt.Y, segStartPt.Z)
+        segStartPtTrans = copy.copy(segStartPt)
         segStartPtTrans.Transform(planeReorientation)
         segStartPtTrans.Transform(unitsScale)
         segStartPtTrans.Transform(bufferTansl)
         startPtDict = {'index': '0', 'x': str(round(segStartPtTrans.X, numDecPlaces)), 'y': str(round(segStartPtTrans.Y, numDecPlaces))}
         
-        segEndPtTrans = rc.Geometry.Point3d(segEndPt.X, segEndPt.Y, segEndPt.Z)
+        segEndPtTrans = copy.copy(segEndPt)
         segEndPtTrans.Transform(planeReorientation)
         segEndPtTrans.Transform(unitsScale)
         segEndPtTrans.Transform(bufferTansl)
@@ -615,13 +613,13 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
                 boundDesc.append(boundProp)
                 
                 #Put the transformed vertices into the dictionary.
-                segStartPtTrans = rc.Geometry.Point3d(segStartPt.X, segStartPt.Y, segStartPt.Z)
+                segStartPtTrans = copy.copy(segStartPt)
                 segStartPtTrans.Transform(planeReorientation)
                 segStartPtTrans.Transform(unitsScale)
                 segStartPtTrans.Transform(bufferTansl)
                 startPtDict = {'index': '0', 'x': str(round(segStartPtTrans.X, numDecPlaces)), 'y': str(round(segStartPtTrans.Y, numDecPlaces))}
                 
-                segEndPtTrans = rc.Geometry.Point3d(segEndPt.X, segEndPt.Y, segEndPt.Z)
+                segEndPtTrans = copy.copy(segEndPt)
                 segEndPtTrans.Transform(planeReorientation)
                 segEndPtTrans.Transform(unitsScale)
                 segEndPtTrans.Transform(bufferTansl)
@@ -668,18 +666,18 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
                         segDir = rc.Geometry.Line(segment.PointAtStart, segment.PointAtEnd).Direction
                         segDir.Unitize()
                         if boundLineDir != segDir:
-                            segStartPtCopy = rc.Geometry.Point3d(segStartPt.X, segStartPt.Y, segStartPt.Z)
-                            segStartPt = rc.Geometry.Point3d(segEndPt.X, segEndPt.Y, segEndPt.Z)
+                            segStartPtCopy = copy.copy(segStartPt)
+                            segStartPt = copy.copy(segEndPt)
                             segEndPt = segStartPtCopy
-                        polygonNewSegments.append(rc.Geometry.LineCurve(rc.Geometry.Point3d(segStartPt.X, segStartPt.Y, segStartPt.Z), rc.Geometry.Point3d(segEndPt.X, segEndPt.Y, segEndPt.Z)))
+                        polygonNewSegments.append(rc.Geometry.LineCurve(copy.copy(segStartPt), copy.copy(segEndPt)))
                         #Put the transformed vertices into the dictionary.
-                        segStartPtTrans = rc.Geometry.Point3d(segStartPt.X, segStartPt.Y, segStartPt.Z)
+                        segStartPtTrans = copy.copy(segStartPt)
                         segStartPtTrans.Transform(planeReorientation)
                         segStartPtTrans.Transform(unitsScale)
                         segStartPtTrans.Transform(bufferTansl)
                         startPtDict = {'index': '0', 'x': str(round(segStartPtTrans.X, numDecPlaces)), 'y': str(round(segStartPtTrans.Y, numDecPlaces))}
                         
-                        segEndPtTrans = rc.Geometry.Point3d(segEndPt.X, segEndPt.Y, segEndPt.Z)
+                        segEndPtTrans = copy.copy(segEndPt)
                         segEndPtTrans.Transform(planeReorientation)
                         segEndPtTrans.Transform(unitsScale)
                         segEndPtTrans.Transform(bufferTansl)
@@ -720,7 +718,7 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
                 polygonDesc = [allPolygon[pCount][0]]
                 #Write the transformed geometry into the dictionary.
                 for vertCount, vertex in enumerate(newPolyline.DuplicateSegments()):
-                    vertTrans = rc.Geometry.Point3d(vertex.PointAtStart.X, vertex.PointAtStart.Y, vertex.PointAtStart.Z)
+                    vertTrans = copy.copy(vertex.PointAtStart)
                     vertTrans.Transform(planeReorientation)
                     vertTrans.Transform(unitsScale)
                     vertTrans.Transform(bufferTansl)
