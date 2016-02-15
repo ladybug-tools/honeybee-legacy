@@ -52,7 +52,7 @@ import decimal
 
 ghenv.Component.Name = 'Honeybee_Write THERM File'
 ghenv.Component.NickName = 'writeTHERM'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nFEB_15_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -235,7 +235,12 @@ def checkTheInputs():
         return -1
     
     #Make sure that the polysurface does not have any holes (only one set of naked edges).
-    polygonBoundaries = joinedPolygons[0].DuplicateNakedEdgeCurves(True, True)
+    polygonBoundaries = []
+    polygonBoundariesEdges = joinedPolygons[0].Edges
+    for edge in polygonBoundariesEdges:
+        if str(edge.Valence) == 'Naked': polygonBoundaries.append(edge.ToNurbsCurve())
+    #The DuplicateNakedEdgeCurves method does not work on everyone's machine and so I am using the code above for the time being.
+    #polygonBoundaries = joinedPolygons[0].DuplicateNakedEdgeCurves(True, True)
     allBoundary = rc.Geometry.PolylineCurve.JoinCurves(polygonBoundaries, sc.doc.ModelAbsoluteTolerance)
     if len(allBoundary) != 1:
         warning = "Geometry connected to _polygons does not have a single boundary (there are holes in the model). \n These holes will cause THERM to crash. \n Note that air gaps in your model whould be represented with a polygon having an 'air' material."
@@ -572,7 +577,11 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
         #Extract the boundary of all joined air polygons.
         joinedAirPolygons = rc.Geometry.Brep.JoinBreps(airCavityPolygons, sc.doc.ModelAbsoluteTolerance)
         for airPoly in joinedAirPolygons:
-            polygonBoundaries = airPoly.DuplicateNakedEdgeCurves(True, True)
+            polygonBoundaries = []
+            polygonBoundariesEdges = airPoly.Edges
+            for edge in polygonBoundariesEdges:
+                if str(edge.Valence) == 'Naked': polygonBoundaries.append(edge.ToNurbsCurve())
+            #polygonBoundaries = airPoly.DuplicateNakedEdgeCurves(True, True)
             allAirBoundary = rc.Geometry.PolylineCurve.JoinCurves(polygonBoundaries, sc.doc.ModelAbsoluteTolerance)
             for encircling in allAirBoundary:
                 #Check to be sure the curve is facing clockwise.
