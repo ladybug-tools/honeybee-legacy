@@ -2848,8 +2848,9 @@ class hb_WriteRADAUX(object):
             elif sc.doc.Views.ActiveView.ActiveViewport.IsParallelProjection: cameraType = 2
         
         # paralell view sizes
-        viewHSizeP = int(sc.doc.Views.ActiveView.ActiveViewport.Size.Width)
-        viewVSizeP = int(sc.doc.Views.ActiveView.ActiveViewport.Size.Height)
+        viewRect = sc.doc.Views.ActiveView.ActiveViewport.GetNearRect()
+        viewHSizeP =  int(viewRect[0].DistanceTo(viewRect[1]))
+        viewVSizeP =  int(viewRect[0].DistanceTo(viewRect[2]))
         
         # read image size
         viewHSize = int(sc.doc.Views.ActiveView.ActiveViewport.Size.Width)
