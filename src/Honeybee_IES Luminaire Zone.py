@@ -49,8 +49,7 @@
 
 ghenv.Component.Name = "Honeybee_IES Luminaire Zone"
 ghenv.Component.NickName = 'iesLuminaireZone'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
-ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
+ghenv.Component.Message = 'VER 0.0.59\nFeb_13_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"
 
@@ -108,7 +107,7 @@ if _ptsList:
                 luminaireArray.append((pt,(spinAngle,tiltAngle,orientationAngle)))
                 print("Location(x,y,z):({0},{1},{2}). Aiming Angles(degrees): Spin:{3}, Tilt:{4}, Rotation:{5}".format(pt[0],pt[1],pt[2],spinAngle,tiltAngle,orientationAngle))
             else:    
-
+                print("Location(x,y,z):({0},{1},{2}). Aiming Angles(degrees): Spin:{3}, Tilt:{4}, Rotation:{5}".format(pt[0],pt[1],pt[2],_spin_,_tilt_,_orientation_))
                 luminaireArray.append((pt,(_spin_,-_tilt_,_orientation_)))
 
     except:
