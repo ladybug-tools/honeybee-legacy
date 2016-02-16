@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.59\nFEB_12_2016'
+ghenv.Component.Message = 'VER 0.0.59\nFEB_16_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -4212,6 +4212,7 @@ class ReadEPSchedules(object):
         self.startHOY = 1
         self.endHOY = 24
         self.unit = "unknown"
+        self.comapctKeywords = ['Weekdays', 'Weekends', 'Alldays', 'AllOtherDays', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
     
     def getScheduleTypeLimitsData(self, schName):
         
@@ -4324,6 +4325,91 @@ class ReadEPSchedules(object):
         return scheduleConstant
     
     
+    def getCompactEPScheduleValues(self, schName):
+        
+        if schName == None: schName = self.schName
+        
+        values, comments = self.hb_EPScheduleAUX.getScheduleDataByName(schName.upper(), ghenv.Component)
+        typeLimitName = values[1]
+        lowerLimit, upperLimit, numericType, unitType = \
+                self.getScheduleTypeLimitsData(typeLimitName)
+        
+        #Separate out the different periods.
+        totalValues = []
+        periodValues = []
+        headerDone = False
+        for val in values:
+            newPeriod = False
+            for word in self.comapctKeywords:
+                if word in val: newPeriod = True
+            if newPeriod == True:
+                if headerDone == True:
+                    totalValues.append(periodValues)
+                periodValues = [val]
+                headerDone = True
+            elif headerDone == True:
+                periodValues.append(val)
+        totalValues.append(periodValues)
+        
+        #For each day period, construct a day schedule.
+        dayType = []
+        dayValues = []
+        for dayVals in totalValues:
+            dayType.append(dayVals[0].title().split('For: ')[-1])
+            numberOfDaySch = int((len(dayVals) - 1) /2)
+            
+            hourlyValues = range(24)
+            startHour = 0
+            for i in range(numberOfDaySch):
+                value = float(dayVals[2 * i + 2])
+                untilTime = map(int, dayVals[2 * i + 1].split(":")[1:])
+                endHour = int(untilTime[0] +  untilTime[1]/60)
+                for hour in range(startHour, endHour):
+                    hourlyValues[hour] = value
+                
+                startHour = endHour
+            dayValues.append(hourlyValues)
+        
+        #Construct a week schedule from the day schedules.
+        #Map the dayTypes to the days of the week.
+        ['Weekdays', 'Weekends', 'Alldays', 'AllOtherDays', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+        weekVals = [-1, -1, -1, -1, -1, -1, -1]
+        for typeCount, type in enumerate(dayType):
+            if type == 'Alldays':
+                for count, val in enumerate(weekVals):
+                    weekVals[count] = typeCount
+            elif type == 'Weekdays':
+                for count, val in enumerate(weekVals):
+                    if count < 6 and count != 0: weekVals[count] = typeCount
+            elif type == 'Weekends':
+                weekVals[0] = typeCount
+                weekVals[-1] = typeCount
+            elif type == 'Sunday': weekVals[0] = typeCount
+            elif type == 'Monday': weekVals[1] = typeCount
+            elif type == 'Tuesday': weekVals[2] = typeCount
+            elif type == 'Wednesday': weekVals[3] = typeCount
+            elif type == 'Thursday': weekVals[4] = typeCount
+            elif type == 'Friday': weekVals[5] = typeCount
+            elif type == 'Saturday': weekVals[6] = typeCount
+            elif type == 'Allotherdays':
+                for count, val in enumerate(weekVals):
+                    if val == -1: weekVals[count] = typeCount
+        
+        #Turn the week schedule into a year schedule.
+        hourlyValues = []
+        dayVals = []
+        dayofWeek = -1
+        for day in range(365):
+            if dayofWeek == 6: dayofWeek = 0
+            else: dayofWeek += 1
+            dayVals.append(weekVals[dayofWeek])
+        for day in dayVals:
+            hourlyValues.extend(dayValues[day])
+        
+        print hourlyValues
+        return hourlyValues
+    
+    
     def getYearlyEPScheduleValues(self, schName = None):
         # place holder for 365 days
         hourlyValues = range(365)
@@ -4353,6 +4439,7 @@ class ReadEPSchedules(object):
             
         return hourlyValues
     
+    
     def getScheduleValues(self, schName = None):
         if schName == None:
             schName = self.schName
@@ -4373,6 +4460,8 @@ class ReadEPSchedules(object):
                 hourlyValues = self.getWeeklyEPScheduleValues(schName)
             elif scheduleType == "schedule:constant":
                 hourlyValues = self.getConstantEPScheduleValues(schName)
+            elif scheduleType == "schedule:compact":
+                hourlyValues = self.getCompactEPScheduleValues(schName)
             else:
                 print "Honeybee doesn't support " + scheduleType + " currently." + \
                       "Email us the type and we will try to add it to Honeybee."
