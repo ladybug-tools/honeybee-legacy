@@ -23,18 +23,18 @@
 """
     This component is to be used for specifying the location of luminaires for electric lighting simulations.
     -
-    For external lighting applications the best option would be to use the aimPoint_ option to specify where all the luminaires should be aimed to.
+    For external lighting applications the best option would be to use the aimingPoint_ option to specify where all the luminaires should be aimed to.
     In case luminaires are being aimed by specifying spin, tilt and orientation angles, the following conventions apply:
         1. _spin_ : specifies the rotation of a luminaire about its G0 axis.
         2. _tilt_: species the rotation of a luminaire around the Y axis.
         3. _orientation_: specifies the rotation of a luminaire around the Z axis.
     The recommended sequence of applying rotations is tilt,orientation and spin. 
     _
-    The rotation conventions followed in this component adhere to the IES LM-63-2002 and were tested against indoor lighting simulations with AGI32 software.
+    The aiming conventions followed in this component are based on the IES LM-63-2002 and were tested against indoor lighting simulations with AGI32 software.
 
 
     Args:
-        _ptsList: List of points/3d coordinates where the luminaire are to be located.
+        _ptsList: List of points/3d coordinates where the luminaires are to be located.
         _spin_: Luminaire spin angle. 
         _tilt_: Luminaire tilt angle.
         _orientation_: Luminaire rotation angle.
@@ -42,15 +42,16 @@
         customLamp_: Specify a custom lamp using the IES Custom Lamp component
     Returns:
         luminaireZone: List of coordinates and rotation angles for luminaires
+        locations: List of luminaire coordinates alone. This output can be used for previewing luminaire locations.
 """
 
 
 
 ghenv.Component.Name = "Honeybee_IES Luminaire Zone"
 ghenv.Component.NickName = 'iesLuminaireZone'
-ghenv.Component.Message = 'VER 0.0.58\nJan_02_2016'
+ghenv.Component.Message = 'VER 0.0.59\nFeb_13_2016'
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "12 | WIP"
+ghenv.Component.SubCategory = "13 | WIP"
 
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
@@ -62,6 +63,14 @@ import math
 import sys
 
 
+class lumZone:
+    
+    def __init__(self, points, lamp):
+        self.points = points
+        self.lamp = lamp
+    
+    def __repr__(self):
+        return "Honeybee.luminaireZone"
 
 #Lambda function for setting default values.
 setdefault = lambda var,defval:var if var else defval
@@ -70,7 +79,7 @@ setdefault = lambda var,defval:var if var else defval
 _tilt_,_spin_,_orientation_ = map(lambda x: setdefault(x,0.0),(_tilt_,_spin_,_orientation_))
 
 luminaireArray= []
-
+locations = []
 if _ptsList:
     try:
         for pt in _ptsList:
@@ -98,12 +107,12 @@ if _ptsList:
                 luminaireArray.append((pt,(spinAngle,tiltAngle,orientationAngle)))
                 print("Location(x,y,z):({0},{1},{2}). Aiming Angles(degrees): Spin:{3}, Tilt:{4}, Rotation:{5}".format(pt[0],pt[1],pt[2],spinAngle,tiltAngle,orientationAngle))
             else:    
-
+                print("Location(x,y,z):({0},{1},{2}). Aiming Angles(degrees): Spin:{3}, Tilt:{4}, Rotation:{5}".format(pt[0],pt[1],pt[2],_spin_,_tilt_,_orientation_))
                 luminaireArray.append((pt,(_spin_,-_tilt_,_orientation_)))
 
     except:
         print(sys.exc_info())
-    luminaireZone = [{'points':luminaireArray,'lamp':customLamp_}]
+    luminaireZone = lumZone(luminaireArray,customLamp_)
 else:
     w = gh.GH_RuntimeMessageLevel.Warning
     ghenv.Component.AddRuntimeMessage(w, "At least one 3dpoint is required as input in _ptsList for this component to work.")

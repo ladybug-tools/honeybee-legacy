@@ -32,7 +32,7 @@ Technical Notes:
 ----------------------
 The parsing of IES files is based on IES LM-63-2002. 
 .
-This component has only compatible with Type C photometry. 
+This component is only compatible with Type C photometry. 
 However, if Type B photometry is to be used, external programs such as the Photometric Toolbox can be used to convert Type B photometry to Type C.
 .
 The luminous shapes, as defined by LM-63-2002 currently compatible with this component are rectangular, circular and rectangular with luminous openings.
@@ -62,27 +62,29 @@ In case the customLamp_ option is being used, the lumen depreciation factor of t
         _radDir_: Custom location for the luminaire rad file. The default location is the same as where the original IES file is located.
         customLamp_: Specify a custom lamp using the IES Custom Lamp component
         extendLumAxesToPt_: Specify a point to which the luminaire axes should be extended to. Please note that if the aiming of the luminaire is very far way from this point then some abnormal results might be seen.
-        _writeRad: Toggle to True to write the luminaire array rad file.
+        _writeRad: Set to True to create the file for electric lighting simulation.
 
     Returns:
         luminaire3dWeb: The geometry created in the Rhino viewport for visualizing the luminaire. Can be used for generating previews.
-        luminaireDefinition: A description of the luminaire generated after parsing the IES file.
+        luminaireDetails: A description of the luminaire generated after parsing the IES file.
         luminaireList: List of luminaires and their locations and mounting angles.
-        radFilePath: Location of the RAD file that should be included in the project. Connect this output to the _additionalRadFiles_ input in the Honeybee_Run_DaylightSimulation module.
+        elecLightingData: Details about the luminaire, locations and lamps used in the simulation. Connect this output to the _elecLightingData input of the Honeybee_IES Project component.
+        radFilePath: Location of the RAD file that should be included in the project. Connect this output to the _additionalRadFiles_ input in the Honeybee_Run_DaylightSimulation module. This output will soon be deprecated. It is recommended that you use the elecLightingData output instead.
         
 
 """
-
-
+#Development notes:
+#   Dr. Richard Mistrick from Penn State and Leland Curtis and Reinhardt Swart from SmithGroupJJR provided valuable inputs during the development of this script.
+#   While Type B photometry and ILLUMDAT file formats are not supported at present, they will be supported in the future.
 
 from __future__ import print_function
 from __future__ import division
 
 ghenv.Component.Name = "Honeybee_IES Luminaire"
 ghenv.Component.NickName = 'iesLuminaire'
-ghenv.Component.Message = 'VER 0.0.58\nJan_02_2016'
+ghenv.Component.Message = 'VER 0.0.59\nFeb_15_2016'
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "12 | WIP"
+ghenv.Component.SubCategory = "13 | WIP"
 
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
@@ -160,7 +162,7 @@ class Luminaire:
         def __str__(self):
            """
                 1. Utility function that overloads the print method to produce a readable definition of the IES file.
-                2. The parsing of keywords is based on IES LM-63-2012
+                2. The parsing of keywords is based on IES LM-63-2002
            """
            
            #Specify the photometry and units type based on the number.
@@ -183,6 +185,10 @@ class Luminaire:
                luminousDim = "{0},{1},{2}.\n(The luminous opening is circular. {3} is the diameter of the luminous opening)".format(width,length,height,abs(width)) 
            elif width > 0 and length > 0 and height> 0:
                luminousDim = "{0},{1},{2}.\n(The luminous opening is rectangular with luminous sides.)".format(width,length,height) 
+               
+           elif int(width) == 0 and int(length) == 0 and int(height) == 0:
+               luminousDim = "{0},{1},{2}.\n(The luminous opening is a point source. The IES data might be for a lamp)".format(width,length,height) 
+               self.width = -0.01
            else:
                 
                raise Exception("The luminous dimensions for the specfied luminaire are ({},{},{}). This format, which is neither rectangular nor circular, is not supported currently".format(width,length,height))                
@@ -209,16 +215,35 @@ class Luminaire:
                         "Lumens per lamp: {3}\n"+
                         "Units Type: {2}\n"+
                         "Luminous Dimensions(width,length,height): {4}\n\n"+
-                        "Number of Vertical Angles:{0.numVertAng}\n"
-                        "Vertical Angle limits:{0.arrVertAng[0]},{0.arrVertAng[-1]}\n\n"
-                        "Number of Horizontal Angles: {0.numHorzAng}\n"
-                        "Horizontal Angle limits: {0.arrHorzAng[0]},{0.arrHorzAng[-1]}\n")
+                        "Number of Vertical Angles:{0.numVertAng}\n"+
+                        "Vertical Angle limits:{0.arrVertAng[0]},{0.arrVertAng[-1]}\n\n"+
+                        "Number of Horizontal Angles: {0.numHorzAng}\n"+
+                        "Horizontal Angle limits: {0.arrHorzAng[0]},{0.arrHorzAng[-1]}\n\n"+
+                        "Input Watts:   {0.inpWatts}\n"+
+                        "Ballast Factor: {0.balFact}\n")
                                     
            lumstring = lumstring.format(self,photometryType,unitsType,lumens,luminousDim)
 
            return lumstring
            
-            
+
+class electricLightingData:
+    def __init__(self,lumID,lumZone,luminaire,llf,candelaMul,customLamp,lumPath,lumFile,dirPath):
+        self.lumID = lumID
+        self.lumZone = lumZone
+        self.luminaire = luminaire
+        self.llf = llf
+        self.candelaMul = candelaMul
+        self.customLamp = customLamp
+        self.radPath = lumPath
+        self.lumFile = lumFile
+        self.dirPath = dirPath
+    def __repr__(self):
+        return "Honeybee.electricLightingData"
+
+
+
+
 #Parse IES file, Instantiate luminaire class.            
 def makeLum(fileName):
     """
@@ -234,29 +259,49 @@ def makeLum(fileName):
     #Step1: Parse the entire file for keywords.
     lumName = manName=lumDes=lampCat=lampDes=""
     iesType=None
-    with open(fileName) as iesData:
-        for idx,lines in enumerate(iesData):
-            lineSplit = lines.split()
-            if lines.strip() and lumData['iesType'] == 'Not specified in file.':
-                lumData['iesType'] = lines.strip()
-            if "[LUMCAT]" in lines:
-                lumData['lumCat'] = " ".join(lineSplit[1:])
-            if "MANUFAC" in lines:
-                lumData['lumMan']= " ".join(lineSplit[1:])
-            if "[LUMINAIRE]" in lines:
-                lumData['lumDes'] = " ".join(lineSplit[1:])
-            if "[LAMPCAT]" in lines:
-                lumData['lampCat'] = " ".join(lineSplit[1:])
-            if "[LAMP]" in lines:
-                lumData['lampDes'] = " ".join(lineSplit[1:])
+
+    if len(fileName) == 1:
+        fileName = fileName[0]
+    else:
+        fileName = "\n".join(fileName)
     
+
     
+    #If the actual contents of the ies file are provided instead of the 
+    try:
+        with open(fileName) as iesData:
+            iesData = iesData.readlines()
+    except (SystemError,ValueError):
+        iesData = fileName.split("\n")
+
+    
+
+    for idx,lines in enumerate(iesData):
+        lineSplit = lines.split()
+        if lines.strip() and lumData['iesType'] == 'Not specified in file.':
+            lumData['iesType'] = lines.strip()
+        if "[LUMCAT]" in lines:
+            lumData['lumCat'] = " ".join(lineSplit[1:])
+        if "MANUFAC" in lines:
+            lumData['lumMan']= " ".join(lineSplit[1:])
+        if "[LUMINAIRE]" in lines:
+            lumData['lumDes'] = " ".join(lineSplit[1:])
+        if "[LAMPCAT]" in lines:
+            lumData['lampCat'] = " ".join(lineSplit[1:])
+        if "[LAMP]" in lines:
+            lumData['lampDes'] = " ".join(lineSplit[1:])
+    
+   
     
     #Step2: Parse again, this time for reading photometric data.
-    with open(fileName,'r') as iesFile:
-        iesFile = iesFile.read()   #Read ies file.
-        iesFile = iesFile.replace(',',' ') #If commas exist, replace them with spaces so that splitting is easier.
-        iesFile = iesFile.split()
+    try:
+        with open(fileName,'r') as iesFile:
+            iesFile = iesFile.read()   #Read ies file.
+    except (SystemError,ValueError):
+        iesFile = fileName
+#    print(iesFile)
+    iesFile = iesFile.replace(',',' ') #If commas exist, replace them with spaces so that splitting is easier.
+    iesFile = iesFile.split()
      
     
      
@@ -434,7 +479,7 @@ def createLumWeb(Luminaire):
 #Draw C0-G0 axes for the luminaire.
 def createLumAxes(Luminaire):
     """
-        Draw the C0-G0 Axes for the Luminaire as per IES LM-63-2012.
+        Draw the C0-G0 Axes for the Luminaire as per IES LM-63-2002.
     """
     fileUnit = {1:0.304,2:1}[Luminaire.unitType]
     width,length,height = fileUnit*Luminaire.width,fileUnit*Luminaire.length,fileUnit*Luminaire.height
@@ -443,13 +488,13 @@ def createLumAxes(Luminaire):
     if (not length) and width <0:
         length = abs(width)
 
-    horzAxis = rc.Geometry.Line(rc.Geometry.Point3d(0,0,0),rc.Geometry.Point3d(2*length/2,0,0))
+    horzAxis = rc.Geometry.Line(rc.Geometry.Point3d(0,0,0),rc.Geometry.Point3d(1.2*length/2,0,0))
     vertAxis = rc.Geometry.Line(rc.Geometry.Point3d(0,0,0),rc.Geometry.Point3d(0,0,-2*length/2))
 
     return [horzAxis,vertAxis]
 
 
-#Transform geometry as per the IES LM-63 2012 convetions.
+#Transform geometry as per the IES LM-63 2002 convetions.
 def transformGeometry(geometry,spin,tilt,rotate,transform,mul):
     """
         Utility function for transforming all the drawn objects.
@@ -498,17 +543,35 @@ def transformGeometry(geometry,spin,tilt,rotate,transform,mul):
 #If all the input requirements are satisfied then, proceed by drawing the luminaires inside Rhino.
 if _iesFilePath and _luminaireID and _luminaireZone and checkLadybug and checkHoneybee:
         
+    
+    #Store original values for later use.
+    _luminaireIdSpecified = _luminaireID
+    _iesFilePathSpecified = _iesFilePath
+    
     #Rotations for ies2rad.
     rx=ry=rz = 0
     
     luminaire = makeLum(_iesFilePath)
-    luminaireDefinition = str(luminaire)
+    luminaireDetails = str(luminaire)
+    
+    filenamefull,filenameonly,originalIesFileName = luminaire.lumCat+"_inGhFile",luminaire.lumCat,luminaire.lumCat
+    
+    #function to replace white spaces
+    def repSpc(originalString):
+        while " " in originalString:
+            originalString = originalString.replace(" ","")
+        return originalString
+        
+    filenamefull,filenameonly,originalIesFileName = map(repSpc,(filenamefull,filenameonly,originalIesFileName))
+    
+    
+    if len(_iesFilePath)==1:
+        if os.path.exists(_iesFilePath[0]):
+            filePath = _iesFilePath[0]
+            filenamefull=os.path.split(filePath)[1]
+            filenameonly,ext = os.path.splitext(filenamefull)
+            originalIesFileName = filenameonly
 
-    filenamefull=os.path.split(_iesFilePath)[1]
-    filenameonly,ext = os.path.splitext(filenamefull)
-    originalIesFileName = filenameonly
-    
-    
     if _luminaireID:
         filenameonly= _luminaireID
     if _radDir_:
@@ -551,7 +614,7 @@ if _iesFilePath and _luminaireID and _luminaireZone and checkLadybug and checkHo
     luminaire3dWeb = []
     luminaireList = []
     for idx,lumArr in enumerate(_luminaireZone):
-            for index,values in enumerate(lumArr['points']):
+            for index,values in enumerate(lumArr.points):
                 width,height = luminaire.width,luminaire.length
                 if width>height:
                     TiltVector = (1,0,0)
@@ -603,7 +666,7 @@ if _iesFilePath and _luminaireID and _luminaireZone and checkLadybug and checkHo
                 if extendLumAxesToPt_:
                     vertAimingLine = rc.Geometry.Line(rc.Geometry.Point3d(0,0,0),rc.Geometry.Point3d(0,0,-1))
                     vertAimingLine = transformGeometry(vertAimingLine,Spin,Tilt,Rotate,Location,1)
-                    scalingFactor = vertAimingLine.ClosestParameter(_extendLumAxesToPt_)
+                    scalingFactor = vertAimingLine.ClosestParameter(extendLumAxesToPt_)
                                     
                     x1,y1,z1 = vertAimingLine.From
                     x2,y2,z2 = vertAimingLine.To
@@ -618,9 +681,22 @@ if _iesFilePath and _luminaireID and _luminaireZone and checkLadybug and checkHo
     
     luminaireList = "\n".join(luminaireList)
 
-
     if _writeRad:  
-
+        if len(_iesFilePath)==1:
+            _iesFilePath = _iesFilePath[0]
+            if not os.path.exists(_iesFilePath):
+                newIesFile = os.path.join(dirpath,filenamefull+".ies")
+                with open(newIesFile,'w') as iesFileWrite:
+                    print(_iesFilePath,file=iesFileWrite,end="\n")
+                _iesFilePath = os.path.join(dirpath,filenamefull+".ies")
+        else:
+            newIesFile = os.path.join(dirpath,filenamefull+".ies")
+            with open(newIesFile,'w') as iesFileWrite:
+                for lines in _iesFilePath:
+                    print(lines,file=iesFileWrite,end="\n")
+            _iesFilePath = os.path.join(dirpath,filenamefull+".ies")         
+            
+            
         winbatchstring = "SET RAYPATH=.;%s\n"%radLib
         winbatchstring += "PATH=.;%s\n"%radBin
         winbatchstring += "cd %s\n"%dirpath
@@ -658,17 +734,16 @@ if _iesFilePath and _luminaireID and _luminaireZone and checkLadybug and checkHo
             radpath = os.path.join(dirpath,filenameonly+zoneId+'.rad')
             _luminaireID = os.path.join(dirpath,"{}_arr.rad".format(filenameonly+zoneId))
             _batchname = os.path.join(dirpath,"{}.bat".format(filenameonly+zoneId))
-        
+            
+            
             with open(_batchname,'w') as batchfile:
                 print(batString,file=batchfile)  
             #Run the batch file and wait for the operation to finish.
-            runbatch = sp.Popen(_batchname)
-            runbatch.wait()
-            
+            runbatch = os.system(_batchname)
             return radpath,_luminaireID
 
         if customLamp_:
-            winbatchstring += createCustomLamp(customLamp_,"")
+            winbatchstring += createCustomLamp(customLamp_.lamp,"")
         else:
             winbatchstring += "ies2rad -dm -o {1} -p {0} -m {2} {3}".format(dirpath,filenameonly,_lightLossFactor_*_candelaMultiplier_,_iesFilePath)    
 
@@ -679,17 +754,17 @@ if _iesFilePath and _luminaireID and _luminaireZone and checkLadybug and checkHo
             
             for idx,lumArr in enumerate(_luminaireZone):
                 
-                if lumArr['lamp']:
+                if lumArr.lamp:
                     winbatchstring = "SET RAYPATH=.;%s\n"%radLib
                     winbatchstring += "PATH=.;%s\n"%radBin
                     winbatchstring += "cd %s\n"%dirpath
-                    winbatchstring += createCustomLamp(lumArr['lamp'],str(idx))
+                    winbatchstring += createCustomLamp(lumArr.lamp.lamp,str(idx))
                     radPathVal,dummyVal = createLumRadFile(str(idx),winbatchstring)
                 else:
                     radPathVal = radpathfull
                     
                     
-                for index,values in enumerate(lumArr['points']):
+                for index,values in enumerate(lumArr.points):
                     #Code to create photometric web and luminaire polygon.
                     width,height = luminaire.width,luminaire.length
                     if width>height:
@@ -709,6 +784,10 @@ if _iesFilePath and _luminaireID and _luminaireZone and checkLadybug and checkHo
                     print("!xform -rz {} -ry {} -rz {} -t {} {} {} {}".format(Spin,Tilt,Rotate,xcor,ycor,zcor,radPathVal),file=radfile)
                     
         radFilePath = _luminaireID
+
+        elecLightingData = electricLightingData(lumID=_luminaireIdSpecified,lumPath=_luminaireID,lumZone=_luminaireZone,
+                                                luminaire=copy.deepcopy(luminaire),llf=_lightLossFactor_,candelaMul=_candelaMultiplier_,
+                                                customLamp=customLamp_,lumFile=filenamefull,dirPath=dirpath)
             
 elif not _iesFilePath:
     ghenv.Component.AddRuntimeMessage(w, "_iesFilePath is a required input. Please specify the filepath for an IES file.")
