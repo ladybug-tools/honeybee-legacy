@@ -21,9 +21,11 @@
 
 
 """
-Analysis Recipie for Vertical Sky Component
-
-The idea Based on this discussion on RADIANCE: http://www.radiance-online.org/pipermail/radiance-general/2006-September/004017.html
+Analysis Recipie for Vertical Sky Component, which is typically used to evaluate daylight and sky access in urban areas.
+_
+The Vertical Sky Component (VSC) is described by the UK Building Research Establishment (BRE) as the ratio of the direct sky illuminance falling on the vertical wall at a reference point, to the simultaneous horizontal illuminance under an unobstructed sky [Littlefair, 1991]. It also states that the Standard CIE Overcast Sky model is to be used for the sky illuminance distribution. This means that the reference value for the VSC percentage is effectively the unobstructed horizontal sky component.
+_
+The calculation performed by this component comes from this discussion on the RADIANCE forum: http://www.radiance-online.org/pipermail/radiance-general/2006-September/004017.html
 -
 Provided by Honeybee 0.0.59
     
@@ -38,7 +40,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Vertical Sky Component"
 ghenv.Component.NickName = 'verticalSkyComponent'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nFEB_15_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"

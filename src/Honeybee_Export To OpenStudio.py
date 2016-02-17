@@ -57,11 +57,12 @@ Provided by Honeybee 0.0.59
         resultFileAddress: The file path of the CSV result file that has been generated on your machine.  This only happens when you set "runSimulation_" to "True."
         sqlFileAddress: The file path of the SQL result file that has been generated on your machine. This only happens when you set "runSimulation_" to "True."
         meterFileAddress: The file path of the building's meter result file that has been generated on your machine. This only happens when you set "runSimulation_" to "True."
+        studyFolder: The directory in which the simulation has been run.  Connect this to the 'Honeybee_Lookup EnergyPlus' folder to bring many of the files in this directory into Grasshopper.
 """
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nFEB_03_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -79,6 +80,7 @@ import Grasshopper.Kernel as gh
 import time
 from pprint import pprint
 import shutil
+import copy
 
 rc.Runtime.HostUtils.DisplayOleAlerts(False)
 
@@ -132,6 +134,14 @@ class WriteOPS(object):
         
         if self.simParameters[4] != None: self.ddyFile = self.simParameters[4]
         else: self.ddyFile = weatherFilePath.replace(".epw", ".ddy", 1)
+        
+        # check ddy file to be available
+        if not os.path.isfile(self.ddyFile):
+            raise ValueError("Can't find %s. Use energySimPar to define the path to .ddy file"%self.ddyFile)
+        
+        # check ddy file to be available
+        if not self.ddyFile.lower().endswith(".ddy"):
+            raise ValueError("%s is not a valid ddy file. Use energySimPar to define the path to .ddy file"%self.ddyFile)
         
         self.constructionList = sc.sticky ["honeybee_constructionLib"]
         self.materialList = {}
@@ -2653,7 +2663,11 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     hb_hive = sc.sticky["honeybee_Hive"]()
     hb_reEvaluateHBZones= sc.sticky["honeybee_reEvaluateHBZones"]
     
-    if workingDir == None: workingDir = sc.sticky["Honeybee_DefaultFolder"] 
+    if workingDir == None:
+        workingDir = sc.sticky["Honeybee_DefaultFolder"] 
+        originalWorkDir = os.path.join(workingDir, fileName)
+    else:
+        originalWorkDir = copy.copy(workingDir)
     
     if fileName == None: fileName = "unnamed"
     
@@ -2824,7 +2838,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
                     warning = "The simulation has failed because of this fatal error: \n" + str(line)
                     w = gh.GH_RuntimeMessageLevel.Warning
                     ghenv.Component.AddRuntimeMessage(w, warning)
-                    resultFileAddress = None
+                    resultFile = None
                 elif "** Severe  **" in line:
                     comment = "The simulation has not run correctly because of this severe error: \n" + str(line)
                     c = gh.GH_RuntimeMessageLevel.Warning
@@ -2833,16 +2847,16 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         except:
             pass
         
-        return fname, idfFile, resultFile
+        return fname, idfFile, resultFile, originalWorkDir
         
-    return fname, None, None
+    return fname, None, None, originalWorkDir
 
 if _HBZones and _HBZones[0]!=None and _epwWeatherFile and _writeOSM and openStudioIsReady:
     results = main(_HBZones, HBContext_, north_, _epwWeatherFile,
                   _analysisPeriod_, _energySimPar_, simulationOutputs_,
                   runSimulation_, workingDir_, fileName_)
     if results!=-1:
-        osmFileAddress, idfFileAddress, resultsFiles = results
+        osmFileAddress, idfFileAddress, resultsFiles, studyFolder = results
         try:
             resultsFileAddress = resultsFiles[2]
             sqlFileAddress = resultsFiles[1]

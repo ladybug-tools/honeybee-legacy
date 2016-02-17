@@ -30,14 +30,15 @@ Provided by Honeybee 0.0.59
     
     Args:
         _HBZones: Honeybee zones for which you want to calculate the infiltration or ventilation rates.
-        _airChangeHour: Air Changes per Hour. 
+        _airChangeHour: Air Changes per Hour. Given at ambien pressure. Give a value of 0.2 or higher.
+        _at50PA_: Boolean. Set to true if you want to get a value at 50 Pascal. You probably want this for PassiveHouse calculations. Default is False as for ambient calculation.
     Returns:
         readMe!: Report of the calculations
         infORventPerArea: infiltrationRatePerArea or ventilationPerArea in m3/s-m2 (Cubic meters per second per square meter of floor)
 """
-ghenv.Component.Name = "Honeybee infORventPerArea Calculator"
+ghenv.Component.Name = "Honeybee_infORventPerArea Calculator"
 ghenv.Component.NickName = 'ACH2m3/s-m2 Calculator'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nFEB_13_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
@@ -64,23 +65,33 @@ tol = sc.doc.ModelAbsoluteTolerance
 
 def checkInputs():
     checkData1 = False # Check _airChangeHour
+    checkData2 = False # Check _HBZones
+    at50PA = 1
     if _airChangeHour:
         try:
+            #if _airChangeHour >= 0.0001:
             if _airChangeHour >= 0.2:
                 checkData1 = True
             else: pass
         except: pass
     else:
-        print 'Give a positive value for airChangeHour'
+        print 'Give a value for airChangeHour bigger than 0.2'
     
-    if checkData1 == True:
+    if _HBZones and _HBZones[0]!=None:
+        checkData2 = True
+
+    if checkData1 == True and checkData2 == True:
         checkData = True
+        if _at50PA_ == True:
+            at50PA = 20
+        else:
+            at50PA = 1
     else:
         checkData = False
         msg = "At least one of the inputs is incorrect. Fix it according to the hints of each of them."
+        ghenv.Component.AddRuntimeMessage(w, msg)
     
-    
-    return checkData
+    return checkData, at50PA
 
 def main(HBZones, airChangeHour):
     # import the classes
@@ -89,7 +100,6 @@ def main(HBZones, airChangeHour):
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee to fly...")
         return -1
-    
     try:
         if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
         if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): return -1
@@ -125,7 +135,7 @@ def main(HBZones, airChangeHour):
         
         #Calculate infiltration/ventilation per area (m3/s-m2).
         try:
-            infORventPerArea.append((airChangeHour * flrVolumes[count] / 3600) / flrAreas[count])
+            infORventPerArea.append(((airChangeHour / at50PA) * flrVolumes[count] / 3600) / flrAreas[count])
         except:
             warning = "One of the HBZones did not have any floor area.  The oringal air change values will be kept."
             print warning
@@ -154,7 +164,7 @@ def main(HBZones, airChangeHour):
 
 #Check the inputs.
 checkData = False
-checkData = checkInputs()
+checkData, at50PA = checkInputs()
 
 #if _HBZones!= None:
 #if _HBZones != None and checkData == True:

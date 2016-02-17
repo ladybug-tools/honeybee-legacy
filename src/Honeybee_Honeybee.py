@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_30_2016'
+ghenv.Component.Message = 'VER 0.0.59\nFEB_16_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -600,7 +600,7 @@ class HB_GetEPLibraries:
             values = lines[2:]
             # it's a two line object such as Any Number scheduleTypeLimit
             if values == []:
-                name = lines[1].split(";")[0].strip() # name is the last input
+                name = lines[1].split(";")[0].strip().upper() # name is the last input
                 
             if shortKey in self.libraries:
                 self.libraries[shortKey][name] = dict() # create an empty dictonary
@@ -2848,8 +2848,9 @@ class hb_WriteRADAUX(object):
             elif sc.doc.Views.ActiveView.ActiveViewport.IsParallelProjection: cameraType = 2
         
         # paralell view sizes
-        viewHSizeP = int(sc.doc.Views.ActiveView.ActiveViewport.Size.Width)
-        viewVSizeP = int(sc.doc.Views.ActiveView.ActiveViewport.Size.Height)
+        viewRect = sc.doc.Views.ActiveView.ActiveViewport.GetNearRect()
+        viewHSizeP =  int(viewRect[0].DistanceTo(viewRect[1]))
+        viewVSizeP =  int(viewRect[0].DistanceTo(viewRect[2]))
         
         # read image size
         viewHSize = int(sc.doc.Views.ActiveView.ActiveViewport.Size.Width)
@@ -3591,10 +3592,19 @@ class EPMaterialAux(object):
         
         elif materialType.lower() == "windowmaterial:gas":
             thickness = float(materialObj[2][0])
+            #All of these materials are taken from LBNL WINDOW 7.4 Gas Library assuming a 1 cm-thick gap.
             if materialObj[1][0].lower() == "air":
-                # conductivity = 0.1603675
-                # considering ('0.18' for 'Thermal Resistance {m2-K/W}')
-                UValueSI = 5.55555555556
+                # conductivity = 0.02407 {W/m-K}
+                UValueSI = 2.407
+            elif materialObj[1][0].lower() == "argon":
+                # conductivity = 0.016348 {W/m-K}
+                UValueSI = 1.6348
+            elif materialObj[1][0].lower() == "krypton":
+                # conductivity = 0.008663 {W/m-K}
+                UValueSI = 0.8663
+            elif materialObj[1][0].lower() == "xenon":
+                # conductivity = 0.005160 {W/m-K}
+                UValueSI = 0.516
             else:
                 warningMsg = "Honeybee can't calculate the UValue for " + materialObj[1][0] + ".\n" + \
                     "Let us know if you think it is really neccesary and we will add it to the list. :)"
@@ -3604,8 +3614,9 @@ class EPMaterialAux(object):
                     
                     print materialObj
         else:
-            warningMsg = "Honeybee currently doesn't support U-Value calculation for " + materialType + ".\n" +\
-                "Let us know if you think it is really neccesary and we will add it to the list. :)"
+            warningMsg = "Honeybee currently can't calculate U-Values for " + materialType + ".\n" +\
+                "Your Honeybee EnergyPlus simulations will still run fine with this material and this is only a Honeybee interface limitation." + ".\n" +\
+                "Let us know if you think HB should calcualte this material type and we will add it to the list. :)"
             if GHComponent!=None:
                 w = gh.GH_RuntimeMessageLevel.Warning
                 GHComponent.AddRuntimeMessage(w, warningMsg)
@@ -4202,6 +4213,7 @@ class ReadEPSchedules(object):
         self.startHOY = 1
         self.endHOY = 24
         self.unit = "unknown"
+        self.comapctKeywords = ['Weekdays', 'Weekends', 'Alldays', 'AllOtherDays', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
     
     def getScheduleTypeLimitsData(self, schName):
         
@@ -4314,6 +4326,91 @@ class ReadEPSchedules(object):
         return scheduleConstant
     
     
+    def getCompactEPScheduleValues(self, schName):
+        
+        if schName == None: schName = self.schName
+        
+        values, comments = self.hb_EPScheduleAUX.getScheduleDataByName(schName.upper(), ghenv.Component)
+        typeLimitName = values[1]
+        lowerLimit, upperLimit, numericType, unitType = \
+                self.getScheduleTypeLimitsData(typeLimitName)
+        
+        #Separate out the different periods.
+        totalValues = []
+        periodValues = []
+        headerDone = False
+        for val in values:
+            newPeriod = False
+            for word in self.comapctKeywords:
+                if word in val: newPeriod = True
+            if newPeriod == True:
+                if headerDone == True:
+                    totalValues.append(periodValues)
+                periodValues = [val]
+                headerDone = True
+            elif headerDone == True:
+                periodValues.append(val)
+        totalValues.append(periodValues)
+        
+        #For each day period, construct a day schedule.
+        dayType = []
+        dayValues = []
+        for dayVals in totalValues:
+            dayType.append(dayVals[0].title().split('For: ')[-1])
+            numberOfDaySch = int((len(dayVals) - 1) /2)
+            
+            hourlyValues = range(24)
+            startHour = 0
+            for i in range(numberOfDaySch):
+                value = float(dayVals[2 * i + 2])
+                untilTime = map(int, dayVals[2 * i + 1].split(":")[1:])
+                endHour = int(untilTime[0] +  untilTime[1]/60)
+                for hour in range(startHour, endHour):
+                    hourlyValues[hour] = value
+                
+                startHour = endHour
+            dayValues.append(hourlyValues)
+        
+        #Construct a week schedule from the day schedules.
+        #Map the dayTypes to the days of the week.
+        ['Weekdays', 'Weekends', 'Alldays', 'AllOtherDays', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+        weekVals = [-1, -1, -1, -1, -1, -1, -1]
+        for typeCount, type in enumerate(dayType):
+            if type == 'Alldays':
+                for count, val in enumerate(weekVals):
+                    weekVals[count] = typeCount
+            elif type == 'Weekdays':
+                for count, val in enumerate(weekVals):
+                    if count < 6 and count != 0: weekVals[count] = typeCount
+            elif type == 'Weekends':
+                weekVals[0] = typeCount
+                weekVals[-1] = typeCount
+            elif type == 'Sunday': weekVals[0] = typeCount
+            elif type == 'Monday': weekVals[1] = typeCount
+            elif type == 'Tuesday': weekVals[2] = typeCount
+            elif type == 'Wednesday': weekVals[3] = typeCount
+            elif type == 'Thursday': weekVals[4] = typeCount
+            elif type == 'Friday': weekVals[5] = typeCount
+            elif type == 'Saturday': weekVals[6] = typeCount
+            elif type == 'Allotherdays':
+                for count, val in enumerate(weekVals):
+                    if val == -1: weekVals[count] = typeCount
+        
+        #Turn the week schedule into a year schedule.
+        hourlyValues = []
+        dayVals = []
+        dayofWeek = -1
+        for day in range(365):
+            if dayofWeek == 6: dayofWeek = 0
+            else: dayofWeek += 1
+            dayVals.append(weekVals[dayofWeek])
+        for day in dayVals:
+            hourlyValues.extend(dayValues[day])
+        
+        print hourlyValues
+        return hourlyValues
+    
+    
     def getYearlyEPScheduleValues(self, schName = None):
         # place holder for 365 days
         hourlyValues = range(365)
@@ -4343,6 +4440,7 @@ class ReadEPSchedules(object):
             
         return hourlyValues
     
+    
     def getScheduleValues(self, schName = None):
         if schName == None:
             schName = self.schName
@@ -4363,6 +4461,8 @@ class ReadEPSchedules(object):
                 hourlyValues = self.getWeeklyEPScheduleValues(schName)
             elif scheduleType == "schedule:constant":
                 hourlyValues = self.getConstantEPScheduleValues(schName)
+            elif scheduleType == "schedule:compact":
+                hourlyValues = self.getCompactEPScheduleValues(schName)
             else:
                 print "Honeybee doesn't support " + scheduleType + " currently." + \
                       "Email us the type and we will try to add it to Honeybee."
@@ -4461,340 +4561,6 @@ class materialLibrary(object):
                    1: 'OFFICE_SCH',
                    2: 'RESIDENTIAL_SCH',
                    3: 'HOTEL_SCH'}
-
-class scheduleLibrary(object):
-    
-    # schedule library should be updated to functions
-    # so it can be used to generate schedueles
-    def __init__(self):
-        
-        self.ScheduleTypeLimits = '\n' + \
-        'ScheduleTypeLimits,\n' + \
-        '\tFraction,                !- Name\n' + \
-        '\t0,                       !- Lower Limit Value\n' + \
-        '\t1,                       !- Upper Limit Value\n' + \
-        '\tCONTINUOUS;              !- Numeric Type\n' + \
-        '\n' + \
-        'ScheduleTypeLimits,\n' + \
-        '\tOn/Off,                  !- Name\n' + \
-        '\t0,                       !- Lower Limit Value\n' + \
-        '\t1,                       !- Upper Limit Value\n' + \
-        '\tDISCRETE;                !- Numeric Type\n' + \
-        '\n' + \
-        'ScheduleTypeLimits,\n' + \
-        '\tTemperature,             !- Name\n' + \
-        '\t-60,                     !- Lower Limit Value\n' + \
-        '\t200,                     !- Upper Limit Value\n' + \
-        '\tCONTINUOUS;              !- Numeric Type\n' + \
-        '\n' + \
-        'ScheduleTypeLimits,\n' + \
-        '\tControl Type,            !- Name\n' + \
-        '\t0,                       !- Lower Limit Value\n' + \
-        '\t4,                       !- Upper Limit Value\n' + \
-        '\tDISCRETE;                !- Numeric Type\n' + \
-        '\n' + \
-        'ScheduleTypeLimits,\n' + \
-        '\tAny Number;              !- Name\n'
-        
-        self.largeOfficeEquipmentSchedule = '\n' + \
-            'Schedule:Compact,\n' + \
-            '\tLarge Office_BLDG_EQUIP_SCH,  !- Name\n' + \
-            '\tFraction,                !- Schedule Type Limits Name\n' + \
-            '\tThrough: 12/31,          !- Field 1\n' + \
-            '\tFor: Weekdays,           !- Field 2\n' + \
-            '\tUntil: 08:00,            !- Field 3\n' + \
-            '\t0.40,                    !- Field 4\n' + \
-            '\tUntil: 12:00,            !- Field 5\n' + \
-            '\t0.90,                    !- Field 6\n' + \
-            '\tUntil: 13:00,            !- Field 7\n' + \
-            '\t0.80,                    !- Field 8\n' + \
-            '\tUntil: 17:00,            !- Field 9\n' + \
-            '\t0.90,                    !- Field 10\n' + \
-            '\tUntil: 18:00,            !- Field 11\n' + \
-            '\t0.80,                    !- Field 12\n' + \
-            '\tUntil: 20:00,            !- Field 13\n' + \
-            '\t0.60,                    !- Field 14\n' + \
-            '\tUntil: 22:00,            !- Field 15\n' + \
-            '\t0.50,                    !- Field 16\n' + \
-            '\tUntil: 24:00,            !- Field 17\n' + \
-            '\t0.40,                    !- Field 18\n' + \
-            '\tFor: Saturday,           !- Field 19\n' + \
-            '\tUntil: 06:00,            !- Field 20\n' + \
-            '\t0.30,                    !- Field 21\n' + \
-            '\tUntil: 08:00,            !- Field 22\n' + \
-            '\t0.4,                     !- Field 23\n' + \
-            '\tUntil: 14:00,            !- Field 24\n' + \
-            '\t0.5,                     !- Field 25\n' + \
-            '\tUntil: 17:00,            !- Field 26\n' + \
-            '\t0.35,                    !- Field 27\n' + \
-            '\tUntil: 24:00,            !- Field 28\n' + \
-            '\t0.30,                    !- Field 29\n' + \
-            '\tFor: SummerDesignDay,    !- Field 30\n' + \
-            '\tUntil: 24:00,            !- Field 31\n' + \
-            '\t1.0,                     !- Field 32\n' + \
-            '\tFor: WinterDesignDay,    !- Field 33\n' + \
-            '\tUntil: 24:00,            !- Field 34\n' + \
-            '\t0.0,                     !- Field 35\n' + \
-            '\tFor: AllOtherDays,       !- Field 36\n' + \
-            '\tUntil: 24:00,            !- Field 37\n' + \
-            '\t0.30;                    !- Field 38\n'
-        
-        self.largeOfficeElevatorsSchedule = '\n' + \
-            'Schedule:Compact,\n' + \
-            '\tLarge Office_BLDG_ELEVATORS,  !- Name\n' + \
-            '\tFraction,                !- Schedule Type Limits Name\n' + \
-            '\tThrough: 12/31,          !- Field 1\n' + \
-            '\tFor: AllDays,            !- Field 2\n' + \
-            '\tUntil: 04:00,            !- Field 3\n' + \
-            '\t0.05,                    !- Field 4\n' + \
-            '\tUntil: 05:00,            !- Field 5\n' + \
-            '\t0.10,                    !- Field 6\n' + \
-            '\tUntil: 06:00,            !- Field 7\n' + \
-            '\t0.20,                    !- Field 8\n' + \
-            '\tUntil: 07:00,            !- Field 9\n' + \
-            '\t0.40,                    !- Field 10\n' + \
-            '\tUntil: 09:00,            !- Field 11\n' + \
-            '\t0.50,                    !- Field 12\n' + \
-            '\tUntil: 10:00,            !- Field 13\n' + \
-            '\t0.35,                    !- Field 14\n' + \
-            '\tUntil: 16:00,            !- Field 15\n' + \
-            '\t0.15,                    !- Field 16\n' + \
-            '\tUntil: 17:00,            !- Field 17\n' + \
-            '\t0.35,                    !- Field 18\n' + \
-            '\tUntil: 19:00,            !- Field 19\n' + \
-            '\t0.50,                    !- Field 20\n' + \
-            '\tUntil: 21:00,            !- Field 21\n' + \
-            '\t0.40,                    !- Field 22\n' + \
-            '\tUntil: 22:00,            !- Field 23\n' + \
-            '\t0.30,                    !- Field 24\n' + \
-            '\tUntil: 23:00,            !- Field 25\n' + \
-            '\t0.20,                    !- Field 26\n' + \
-            '\tUntil: 24:00,            !- Field 27\n' + \
-            '\t0.10;                    !- Field 28\n'
-            
-        self.largeOfficeOccupancySchedule = '\n' + \
-            'Schedule:Compact,\n' + \
-            '\tLarge Office_BLDG_OCC_SCH,  !- Name\n' + \
-            '\tFraction,                !- Schedule Type Limits Name\n' + \
-            '\tThrough: 12/31,          !- Field 1\n' + \
-            '\tFor: SummerDesignDay,    !- Field 2\n' + \
-            '\tUntil: 06:00,            !- Field 3\n' + \
-            '\t0.0,                     !- Field 4\n' + \
-            '\tUntil: 22:00,            !- Field 5\n' + \
-            '\t1.0,                     !- Field 6\n' + \
-            '\tUntil: 24:00,            !- Field 7\n' + \
-            '\t0.05,                    !- Field 8\n' + \
-            '\tFor: Weekdays,           !- Field 9\n' + \
-            '\tUntil: 06:00,            !- Field 10\n' + \
-            '\t0.0,                     !- Field 11\n' + \
-            '\tUntil: 07:00,            !- Field 12\n' + \
-            '\t0.1,                     !- Field 13\n' + \
-            '\tUntil: 08:00,            !- Field 14\n' + \
-            '\t0.2,                     !- Field 15\n' + \
-            '\tUntil: 12:00,            !- Field 16\n' + \
-            '\t0.95,                    !- Field 17\n' + \
-            '\tUntil: 13:00,            !- Field 18\n' + \
-            '\t0.5,                     !- Field 19\n' + \
-            '\tUntil: 17:00,            !- Field 20\n' + \
-            '\t0.95,                    !- Field 21\n' + \
-            '\tUntil: 18:00,            !- Field 22\n' + \
-            '\t0.7,                     !- Field 23\n' + \
-            '\tUntil: 20:00,            !- Field 24\n' + \
-            '\t0.4,                     !- Field 25\n' + \
-            '\tUntil: 22:00,            !- Field 26\n' + \
-            '\t0.1,                     !- Field 27\n' + \
-            '\tUntil: 24:00,            !- Field 28\n' + \
-            '\t0.05,                    !- Field 29\n' + \
-            '\tFor: Saturday,           !- Field 30\n' + \
-            '\tUntil: 06:00,            !- Field 31\n' + \
-            '\t0.0,                     !- Field 32\n' + \
-            '\tUntil: 08:00,            !- Field 33\n' + \
-            '\t0.1,                     !- Field 34\n' + \
-            '\tUntil: 14:00,            !- Field 35\n' + \
-            '\t0.5,                     !- Field 36\n' + \
-            '\tUntil: 17:00,            !- Field 37\n' + \
-            '\t0.1,                     !- Field 38\n' + \
-            '\tUntil: 24:00,            !- Field 39\n' + \
-            '\t0.0,                     !- Field 40\n' + \
-            '\tFor: AllOtherDays,       !- Field 41\n' + \
-            '\tUntil: 24:00,            !- Field 42\n' + \
-            '\t0.0;                     !- Field 43\n'
-            
-        self.largeOfficeWorkEffSchedule = '\n' + \
-            'Schedule:Compact,\n' + \
-            '\tLarge Office_WORK_EFF_SCH,  !- Name\n' + \
-            '\tOn/Off,                  !- Schedule Type Limits Name\n' + \
-            '\tThrough: 12/31,          !- Field 1\n' + \
-            '\tFor: AllDays,            !- Field 2\n' + \
-            '\tUntil: 24:00,            !- Field 3\n' + \
-            '\t0.0;                     !- Field 4\n'
-            
-        self.largeOfficeInfiltrationSchedule = '\n' + \
-            'Schedule:Compact,\n' + \
-            '\tLarge Office_INFIL_QUARTER_ON_SCH,  !- Name\n' + \
-            '\tFraction,                !- Schedule Type Limits Name\n' + \
-            '\tThrough: 12/31,          !- Field 1\n' + \
-            '\tFor: Weekdays SummerDesignDay,  !- Field 2\n' + \
-            '\tUntil: 06:00,            !- Field 3\n' + \
-            '\t1.0,                     !- Field 4\n' + \
-            '\tUntil: 22:00,            !- Field 5\n' + \
-            '\t0.25,                    !- Field 6\n' + \
-            '\tUntil: 24:00,            !- Field 7\n' + \
-            '\t1.0,                     !- Field 8\n' + \
-            '\tFor: Saturday WinterDesignDay,  !- Field 9\n' + \
-            '\tUntil: 06:00,            !- Field 10\n' + \
-            '\t1.0,                     !- Field 11\n' + \
-            '\tUntil: 18:00,            !- Field 12\n' + \
-            '\t0.25,                    !- Field 13\n' + \
-            '\tUntil: 24:00,            !- Field 14\n' + \
-            '\t1.0,                     !- Field 15\n' + \
-            '\tFor: Sunday Holidays AllOtherDays,  !- Field 16\n' + \
-            '\tUntil: 24:00,            !- Field 17\n' + \
-            '\t1.0;                     !- Field 18\n'
-            
-        self.largeOfficeClothingSchedule = '\n' + \
-            'Schedule:Compact,\n' + \
-            '\tLarge Office_CLOTHING_SCH,  !- Name\n' + \
-            '\tFraction,                !- Schedule Type Limits Name\n' + \
-            '\tThrough: 04/30,          !- Field 1\n' + \
-            '\tFor: AllDays,            !- Field 2\n' + \
-            '\tUntil: 24:00,            !- Field 3\n' + \
-            '\t1.0,                     !- Field 4\n' + \
-            '\tThrough: 09/30,          !- Field 5\n' + \
-            '\tFor: AllDays,            !- Field 6\n' + \
-            '\tUntil: 24:00,            !- Field 7\n' + \
-            '\t0.5,                     !- Field 8\n' + \
-            '\tThrough: 12/31,          !- Field 9\n' + \
-            '\tFor: AllDays,            !- Field 10\n' + \
-            '\tUntil: 24:00,            !- Field 11\n' + \
-            '\t1.0;                     !- Field 12\n'
-            
-        self.alwaysOffSchedule = '\n' + \
-            'Schedule:Compact,\n' + \
-            '\tAlways_Off,              !- Name\n' + \
-            '\tOn/Off,                  !- Schedule Type Limits Name\n' + \
-            '\tThrough: 12/31,          !- Field 1\n' + \
-            '\tFor: AllDays,            !- Field 2\n' + \
-            '\tUntil: 24:00,            !- Field 3\n' + \
-            '\t0;                       !- Field 4\n'
-            
-        self.largeOfficeHeatingSetPtSchedule = '\n' + \
-            'Schedule:Compact,\n' + \
-            '\tLarge Office_HTGSETP_SCH,!- Name\n' + \
-            '\tTemperature,             !- Schedule Type Limits Name\n' + \
-            '\tThrough: 12/31,          !- Field 1\n' + \
-            '\tFor: Weekdays,           !- Field 2\n' + \
-            '\tUntil: 06:00,            !- Field 3\n' + \
-            '\t15.6,                    !- Field 4\n' + \
-            '\tUntil: 22:00,            !- Field 5\n' + \
-            '\t21.0,                    !- Field 6\n' + \
-            '\tUntil: 24:00,            !- Field 7\n' + \
-            '\t15.6,                    !- Field 8\n' + \
-            '\tFor SummerDesignDay,     !- Field 9\n' + \
-            '\tUntil: 24:00,            !- Field 10\n' + \
-            '\t15.6,                    !- Field 11\n' + \
-            '\tFor: Saturday,           !- Field 12\n' + \
-            '\tUntil: 06:00,            !- Field 13\n' + \
-            '\t15.6,                    !- Field 14\n' + \
-            '\tUntil: 18:00,            !- Field 15\n' + \
-            '\t21.0,                    !- Field 16\n' + \
-            '\tUntil: 24:00,            !- Field 17\n' + \
-            '\t15.6,                    !- Field 18\n' + \
-            '\tFor: WinterDesignDay,    !- Field 19\n' + \
-            '\tUntil: 24:00,            !- Field 20\n' + \
-            '\t21.0,                    !- Field 21\n' + \
-            '\tFor: AllOtherDays,       !- Field 22\n' + \
-            '\tUntil: 24:00,            !- Field 23\n' + \
-            '\t15.6;                    !- Field 24\n'
-            
-        self.largeOfficeCoolingSetPtSchedule = '\n' + \
-            'Schedule:Compact,\n' + \
-            '\tLarge Office_CLGSETP_SCH,!- Name\n' + \
-            '\tTemperature,             !- Schedule Type Limits Name\n' + \
-            '\tThrough: 12/31,          !- Field 1\n' + \
-            '\tFor: Weekdays SummerDesignDay,  !- Field 2\n' + \
-            '\tUntil: 06:00,            !- Field 3\n' + \
-            '\t26.7,                    !- Field 4\n' + \
-            '\tUntil: 22:00,            !- Field 5\n' + \
-            '\t24.0,                    !- Field 6\n' + \
-            '\tUntil: 24:00,            !- Field 7\n' + \
-            '\t26.7,                    !- Field 8\n' + \
-            '\tFor: Saturday,           !- Field 9\n' + \
-            '\tUntil: 06:00,            !- Field 10\n' + \
-            '\t26.7,                    !- Field 11\n' + \
-            '\tUntil: 18:00,            !- Field 12\n' + \
-            '\t24.0,                    !- Field 13\n' + \
-            '\tUntil: 24:00,            !- Field 14\n' + \
-            '\t26.7,                    !- Field 15\n' + \
-            '\tFor WinterDesignDay,     !- Field 16\n' + \
-            '\tUntil: 24:00,            !- Field 17\n' + \
-            '\t26.7,                    !- Field 18\n' + \
-            '\tFor: AllOtherDays,       !- Field 19\n' + \
-            '\tUntil: 24:00,            !- Field 20\n' + \
-            '\t26.7;                    !- Field 21\n'
-        
-        self.largeOfficeActivitySchedule = '\n' + \
-            'Schedule:Compact,\n' + \
-            '\tLarge Office_ACTIVITY_SCH,  !- Name\n' + \
-            '\tAny Number,              !- Schedule Type Limits Name\n' + \
-            '\tThrough: 12/31,          !- Field 1\n' + \
-            '\tFor: AllDays,            !- Field 2\n' + \
-            '\tUntil: 24:00,            !- Field 3\n' + \
-            '\t120;                     !- Field 4\n'
-        
-        self.alwaysOnSchedule = '\n' + \
-            'Schedule:Compact,\n' + \
-            '\tAlways_On,               !- Name\n' + \
-            '\tOn/Off,                  !- Schedule Type Limits Name\n' + \
-            '\tThrough: 12/31,          !- Field 1\n' + \
-            '\tFor: AllDays,            !- Field 2\n' + \
-            '\tUntil: 24:00,            !- Field 3\n' + \
-            '\t1;                       !- Field 4\n'
-        
-        self.largeOfficeLightingSchedule = '\n' + \
-            'Schedule:Compact,\n' + \
-            '\tLarge Office_BLDG_LIGHT_SCH,  !- Name\n' + \
-            '\tFraction,                !- Schedule Type Limits Name\n' + \
-            '\tThrough: 12/31,          !- Field 1\n' + \
-            '\tFor: Weekdays,           !- Field 2\n' + \
-            '\tUntil: 05:00,            !- Field 3\n' + \
-            '\t0.05,                    !- Field 4\n' + \
-            '\tUntil: 07:00,            !- Field 5\n' + \
-            '\t0.1,                     !- Field 6\n' + \
-            '\tUntil: 08:00,            !- Field 7\n' + \
-            '\t0.3,                     !- Field 8\n' + \
-            '\tUntil: 17:00,            !- Field 9\n' + \
-            '\t0.9,                     !- Field 10\n' + \
-            '\tUntil: 18:00,            !- Field 11\n' + \
-            '\t0.7,                     !- Field 12\n' + \
-            '\tUntil: 20:00,            !- Field 13\n' + \
-            '\t0.5,                     !- Field 14\n' + \
-            '\tUntil: 22:00,            !- Field 15\n' + \
-            '\t0.3,                     !- Field 16\n' + \
-            '\tUntil: 23:00,            !- Field 17\n' + \
-            '\t0.1,                     !- Field 18\n' + \
-            '\tUntil: 24:00,            !- Field 19\n' + \
-            '\t0.05,                    !- Field 20\n' + \
-            '\tFor: Saturday,           !- Field 21\n' + \
-            '\tUntil: 06:00,            !- Field 22\n' + \
-            '\t0.05,                    !- Field 23\n' + \
-            '\tUntil: 08:00,            !- Field 24\n' + \
-            '\t0.1,                     !- Field 25\n' + \
-            '\tUntil: 14:00,            !- Field 26\n' + \
-            '\t0.5,                     !- Field 27\n' + \
-            '\tUntil: 17:00,            !- Field 28\n' + \
-            '\t0.15,                    !- Field 29\n' + \
-            '\tUntil: 24:00,            !- Field 30\n' + \
-            '\t0.05,                    !- Field 31\n' + \
-            '\tFor: SummerDesignDay,    !- Field 32\n' + \
-            '\tUntil: 24:00,            !- Field 33\n' + \
-            '\t1.0,                     !- Field 34\n' + \
-            '\tFor: WinterDesignDay,    !- Field 35\n' + \
-            '\tUntil: 24:00,            !- Field 36\n' + \
-            '\t0.0,                     !- Field 37\n' + \
-            '\tFor: AllOtherDays,       !- Field 38\n' + \
-            '\tUntil: 24:00,            !- Field 39\n' + \
-            '\t0.05;                    !- Field 40\n'
 
 class BuildingProgramsLib(object):
     def __init__(self):
@@ -5028,6 +4794,7 @@ class EPZone(object):
         self.geometry = zoneBrep
         
         self.num = zoneID
+        self.ID = str(uuid.uuid4())
         self.name = zoneName
         self.hasNonPlanarSrf = False
         self.hasInternalEdge = False
@@ -5118,6 +4885,9 @@ class EPZone(object):
         # XXX self.PVgenlist = []
     
     
+    def resetID(self):
+        self.ID = str(uuid.uuid4())
+        
     def transform(self, transform, clearSurfacesBC = True, flip = False):
         self.name += "_t"
         self.geometry.Transform(transform)
@@ -6136,7 +5906,10 @@ class hb_EPSurface(object):
             # I can remove default constructions at some point
             self.construction = self.cnstrSet[int(self.type)]
             self.EPConstruction = self.construction
-            
+    
+    def resetID(self):
+        self.ID = str(uuid.uuid4())
+        
     def checkPlanarity(self):
         # planarity tolerance should change for different 
         return self.geometry.Faces[0].IsPlanar(1e-3)
@@ -7500,7 +7273,12 @@ class hb_Hive(object):
         childGeometries = []
         
         for HBObject in HBObjects:
-            key = GHComponentID + HBObject.name
+            try:
+                HBObject.resetID()
+                key = HBObject.ID
+            except:
+                #HB object is generated by an older version of Honeybee
+                key = GHComponentID + HBObject.name
             
             sc.sticky['HBHive'][key] = HBObject
             
@@ -7545,8 +7323,8 @@ class hb_Hive(object):
                     geometry = geo.Duplicate()
                 geometry.UserDictionary.Set('HBID', key)
                 geometries.append(geometry)
-            except Exception, e:
-                print "Reached the maximum array size for UserDictionary: " + `e`
+            except Exception as e:
+                print `e`
                     
         # return geometry with the ID
         return geometries
@@ -7554,7 +7332,6 @@ class hb_Hive(object):
     def callFromHoneybeeHive(self, geometryList):
         HBObjects = []
         for geometry in geometryList:
-            
             key = geometry.UserDictionary['HBID']
             if sc.sticky['HBHive'].has_key(key):
                 HBObject = sc.sticky['HBHive'][key]
@@ -8151,7 +7928,6 @@ if checkIn.letItFly:
         sc.sticky["honeybee_generationHive"] = generationhb_hive
         sc.sticky["honeybee_GetEPLibs"] = HB_GetEPLibraries
         sc.sticky["honeybee_DefaultMaterialLib"] = materialLibrary
-        sc.sticky["honeybee_DefaultScheduleLib"] = scheduleLibrary
         sc.sticky["honeybee_DefaultSurfaceLib"] = EPSurfaceLib
         sc.sticky["honeybee_EPMaterialAUX"] = EPMaterialAux
         sc.sticky["honeybee_EPScheduleAUX"] = EPScheduleAux

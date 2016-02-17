@@ -33,7 +33,8 @@ Provided by Honeybee 0.0.59
         uFactorFile_: An optional path to a THERM file that has been saved after importing and simulating files generated with the 'Honeybee_Write THERM File' component. Before you run the file in THERM, make sure that you go to Options > Preferences > Preferences and check "Automatic XML Export on Save" in order to enure that your THERM simulation writes this uFactorFile.
         dataType_: An optional integer to set the type of data to import.  If left blank, this component will import the temperature data.  Choose from the following two options:
             0 - Temperature (temperature meshValues at each point in C)
-            1 - Heat Flux (heat flux meshValues at each point in C)
+            1 - Heat Flux (heat flux meshValues at each point in W/m2)
+        SIorIP_: Set to 'True' to have all data imported with SI units (Celcius and W/m2) and set to 'False' to have all data imported with IP Units (Farenheit and BTU/ft2).  The default is set to 'True' for SI.
         legendPar_: Optional legend parameters from the Ladybug "Legend Parameters" component.
         runIt_: Set boolean to "True" to run the component and import THERM results to Rhino/GH.
     Returns:
@@ -56,7 +57,7 @@ import math
 
 ghenv.Component.Name = 'Honeybee_Read THERM Result'
 ghenv.Component.NickName = 'readTHERM'
-ghenv.Component.Message = 'VER 0.0.59\nFEB_01_2016'
+ghenv.Component.Message = 'VER 0.0.59\nFEB_03_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -117,7 +118,7 @@ def checkTheInputs():
                         ghenv.Component.AddRuntimeMessage(w, warning)
             thermFi.close()
     
-    #If there is a uFactorFile_ connected, check to make sure it exists and contains te U-Factor data.
+    #If there is a uFactorFile_ connected, check to make sure it exists and contains the U-Factor data.
     uFactorNames = []
     uFactors = []
     if uFactorFile_ != None:
@@ -145,7 +146,8 @@ def checkTheInputs():
                         uFactor = float(line.split('<U-factor units="W/m2-K" value="')[-1].split('" />')[0])
                         uFactors.append(uFactor)
             uFacFile.close()
-    
+        if SIorIP_ == False:
+            for count, val in enumerate(uFactors): uFactors[count] = val*0.316998331
     
     #If there is an input for dataType_, check to make sure that it makes sense.
     dataType = 0
@@ -233,7 +235,12 @@ def main(dataType, planeReorientation, unitsScale, rhinoOrig):
             columns = line.split(' ')
             for col in columns:
                 if col != '':
-                    try: indexList.append(int(col))
+                    try:
+                        disind = int(col)
+                        if len(pointData) > 10000:
+                            indexList.append(int(str(disind)[:5]))
+                            indexList.append(int(str(disind)[5:]))
+                        else: indexList.append(disind)
                     except: pass
             if indexList != []: disjointedIndices.extend(indexList)
     
@@ -263,6 +270,13 @@ def main(dataType, planeReorientation, unitsScale, rhinoOrig):
     for face in elementData:
         feMesh.Faces.AddFace(face[0]-1, face[1]-1, face[2]-1, face[3]-1)
     
+    #If IP units have been requested, convert everything.
+    if SIorIP_ == False:
+        if dataType == 0:
+            for count, val in enumerate(meshValues): meshValues[count] = val*(9/5) + 32
+        else:
+            for count, val in enumerate(meshValues): meshValues[count] = val*0.316998331
+    
     #Color the mesh with the data and create a legend/title.
     #Read the legend parameters.
     lowB, highB, numSeg, customColors, legendBasePoint, legendScale, legendFont, legendFontSize, legendBold, decimalPlaces, removeLessThan = lb_preparation.readLegendParameters(legendPar_, False)
@@ -287,8 +301,12 @@ def main(dataType, planeReorientation, unitsScale, rhinoOrig):
     
     #Create the legend.
     lb_visualization.calculateBB([sceneBox], True)
-    if dataType == 0: legendTitle = 'C'
-    else: legendTitle = 'W/m2'
+    if SIorIP_ == False:
+        if dataType == 0: legendTitle = 'F'
+        else: legendTitle = 'BTU/ft2'
+    else:
+        if dataType == 0: legendTitle = 'C'
+        else: legendTitle = 'W/m2'
     if legendBasePoint == None:
         legendBasePoint = finalLegBasePt
         lst = list(lb_visualization.BoundingBoxPar)
