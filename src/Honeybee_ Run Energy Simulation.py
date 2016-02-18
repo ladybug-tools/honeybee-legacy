@@ -62,11 +62,11 @@ Provided by Honeybee 0.0.59
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.59\nFEB_03_2016'
+ghenv.Component.Message = 'VER 0.0.59\nFEB_18_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nFEB_03_2016
+#compatibleHBVersion = VER 0.0.56\nFEB_18_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
@@ -319,7 +319,7 @@ class WriteIDF(object):
             
     def EPIdealAirSystem(self, zone, thermostatName):
         if zone.isConditioned:
-            
+            #Supply air controls.
             if zone.coolSupplyAirTemp == "": coolSupply = "13"
             else: coolSupply = zone.coolSupplyAirTemp
             if zone.heatSupplyAirTemp == "": heatSupply = "50"
@@ -333,13 +333,20 @@ class WriteIDF(object):
                 scheduleObjectName = "_".join(scheduleFileName.split(".")[:-1])
             else: scheduleObjectName = ""
             
+            #Humidity Control
+            if zone.humidityMax != "": dehumidCntrl = "Humidistat"
+            else: dehumidCntrl = ""
+            if zone.humidityMin != "": humidCntrl = "Humidistat"
+            else: humidCntrl = ""
             
+            #Airside Economizer
             if zone.airSideEconomizer == 'DifferentialDryBulb':
                 if coolLimit == "NoLimit" or coolLimit == "LimitFlowRate": coolLimit = 'LimitFlowRate'
                 else: coolLimit = 'LimitFlowRateAndCapacity'
                 maxAirFlowRate = 'autosize'
             else: maxAirFlowRate = ''
             
+            #Heat Recovery
             if zone.heatRecovery == 'Sensible' and zone.heatRecoveryEffectiveness == '':
                 zone.heatRecoveryEffectiveness = "0.7"
             
@@ -363,11 +370,11 @@ class WriteIDF(object):
                 '\t' + zone.coolingCapacity + ',  !- Maximum Total Cooling Capacity\n' + \
                 '\t' + ',  !- Heating Availability Schedule\n' + \
                 '\t' + ',  !- Cooling Availability Schedule\n' + \
-                '\t' + '' + ',  !- Dehumidification Control Type\n' + \
+                '\t' + dehumidCntrl + ',  !- Dehumidification Control Type\n' + \
                 '\t' + ',  !- Cooling Sensible Heat Ratio\n' + \
-                '\t' + '' + ',  !- Dehumidification Setpoint\n' + \
-                '\t' + 'None' + ',  !- Humidification Control Type\n' + \
-                '\t' + '' + ',  !- Humidification Setpoint\n' + \
+                '\t' + str(zone.humidityMax) + ',  !- Dehumidification Setpoint\n' + \
+                '\t' + humidCntrl + ',  !- Humidification Control Type\n' + \
+                '\t' + str(zone.humidityMin) + ',  !- Humidification Setpoint\n' + \
                 '\t' + zone.outdoorAirReq + ',  !- Outdoor Air Method\n' + \
                 '\t' + flowPerPerson + ',  !- Outdoor Air Flow Rate Per Person\n' + \
                 '\t' + flowPerZoneArea + ',  !- Outdoor Air Flow Rate Per Floor Zone Area\n' + \

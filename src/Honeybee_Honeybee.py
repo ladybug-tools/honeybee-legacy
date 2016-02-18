@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.59\nFEB_16_2016'
+ghenv.Component.Message = 'VER 0.0.59\nFEB_18_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -4837,6 +4837,8 @@ class EPZone(object):
         self.heatingSetPt= ""
         self.coolingSetback= ""
         self.heatingSetback= ""
+        self.humidityMax= ""
+        self.humidityMin= ""
         
         #Air System Properties.
         self.recirculatedAirPerArea = 0
@@ -5575,9 +5577,10 @@ class hb_reEvaluateHBZones(object):
                         # add glazing to adjacent surface
                         adjcSrf = surface.BCObject
                         
-                        assert len(surface.childSrfs) != len(adjcSrf.childSrfs), \
-                            "Adjacent surfaces %s and %s do not have the same number of galzings.\n"%(surface.name, adjcSrf.name) + \
-                            "Check your energy model and try again."
+                        #This well-intentioned check was stopping good geomtry from being run through EnergyPlus.  It has thus been disabled. - Chris Mackey
+                        #assert len(surface.childSrfs) != len(adjcSrf.childSrfs), \
+                        #    "Adjacent surfaces %s and %s do not have the same number of galzings.\n"%(surface.name, adjcSrf.name) + \
+                        #    "Check your energy model and try again."
                         
                         # add glazing to adjacent surface
                         if count == 0:
