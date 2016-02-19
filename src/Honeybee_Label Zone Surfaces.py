@@ -42,7 +42,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Label Zone Surfaces"
 ghenv.Component.NickName = 'LabelSurfaces'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nFEB_19_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -94,6 +94,23 @@ def setDefaults():
     
     return textSize, font, windows, attribute
 
+def getSrfCenPtandNormal(surface):
+    brepFace = surface.Faces[0]
+    if brepFace.IsPlanar and brepFace.IsSurface:
+        u_domain = brepFace.Domain(0)
+        v_domain = brepFace.Domain(1)
+        centerU = (u_domain.Min + u_domain.Max)/2
+        centerV = (v_domain.Min + v_domain.Max)/2
+        
+        centerPt = brepFace.PointAt(centerU, centerV)
+        normalVector = brepFace.NormalAt(centerU, centerV)
+    else:
+        centroid = rc.Geometry.AreaMassProperties.Compute(brepFace).Centroid
+        uv = brepFace.ClosestPoint(centroid)
+        centerPt = brepFace.PointAt(uv[1], uv[2])
+        normalVector = brepFace.NormalAt(uv[1], uv[2])
+    
+    return centerPt, normalVector
 
 def main(HBZoneObjects, textSize, font, windows, attribute):
     lb_visualization = sc.sticky["ladybug_ResultVisualization"]()
@@ -140,9 +157,9 @@ def main(HBZoneObjects, textSize, font, windows, attribute):
             bBox = rc.Geometry.Box(srf.geometry.GetBoundingBox(False))
             shortestDimensions.extend([bBox.X[1]-bBox.X[0], bBox.Y[1]-bBox.Y[0], bBox.Z[1]-bBox.Z[0]])
             srfCentPts.append(bBox.Center)
-            if srf.geometry.IsSurface and srf.geometry.Surfaces[0].IsPlanar():
-                planarBool, plane = srf.geometry.Surfaces[0].TryGetPlane(tol)
-                plane.Origin = bBox.Center
+            if srf.geometry.Surfaces[0].IsPlanar():
+                centPt, normal = getSrfCenPtandNormal(srf.geometry)
+                plane = rc.Geometry.Plane(centPt, normal)
                 if rc.Geometry.Vector3d.VectorAngle(plane.ZAxis, rc.Geometry.Plane.WorldXY.ZAxis) > sc.doc.ModelAngleToleranceRadians and rc.Geometry.Vector3d.VectorAngle(plane.ZAxis, rc.Geometry.Vector3d(0,0,-1)) > sc.doc.ModelAngleToleranceRadians:
                     angle2Z = rc.Geometry.Vector3d.VectorAngle(rc.Geometry.Plane.WorldXY.ZAxis, plane.YAxis, plane)
                     planeRotate = rc.Geometry.Transform.Rotation(-angle2Z, plane.ZAxis, plane.Origin)
@@ -168,8 +185,8 @@ def main(HBZoneObjects, textSize, font, windows, attribute):
                     shortestDimensions.extend([bBox.X[1]-bBox.X[0], bBox.Y[1]-bBox.Y[0], bBox.Z[1]-bBox.Z[0]])
                     srfCentPts.append(bBox.Center)
                     if childSrf.geometry.IsSurface and childSrf.geometry.Surfaces[0].IsPlanar():
-                        planarBool, plane = childSrf.geometry.Surfaces[0].TryGetPlane(tol)
-                        plane.Origin = bBox.Center
+                        centPt, normal = getSrfCenPtandNormal(childSrf.geometry)
+                        plane = rc.Geometry.Plane(centPt, normal)
                         if rc.Geometry.Vector3d.VectorAngle(plane.ZAxis, rc.Geometry.Plane.WorldXY.ZAxis) > sc.doc.ModelAngleToleranceRadians and rc.Geometry.Vector3d.VectorAngle(plane.ZAxis, rc.Geometry.Vector3d(0,0,-1)) > sc.doc.ModelAngleToleranceRadians:
                             angle2Z = rc.Geometry.Vector3d.VectorAngle(rc.Geometry.Plane.WorldXY.ZAxis, plane.YAxis, plane)
                             planeRotate = rc.Geometry.Transform.Rotation(-angle2Z, plane.ZAxis, plane.Origin)
