@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Make Adiabatic By Type"
 ghenv.Component.NickName = 'makeAdiabaticByType'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nFEB_19_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -110,7 +110,8 @@ def main(HBZones):
     #See if the wall properties are being specified based on orientation.
     angles = []
     if len(walls_) == 0: pass
-    elif len(walls_) == 1: types.append(0)
+    elif len(walls_) == 1:
+        if walls_[0] != False: types.append(0)
     else:
         types.append(0)
         initAngles = rs.frange(0, 360, 360/len(walls_))
@@ -121,7 +122,7 @@ def main(HBZones):
     for HBO in HBObjectsFromHive:
         
         for HBS in HBO.surfaces:
-            if HBS.BC != 'Surface':
+            if HBS.BC.title() != 'Surface':
                 if HBS.type in types:
                     if HBS.type == 0 and len(walls_) > 1:
                         for angleCount in range(len(angles)-1):
