@@ -38,7 +38,6 @@ Provided by Honeybee 0.0.59
         viewResolution_: An interger between 0 and 4 to set the number of times that the tergenza skyview patches are split.  A higher number will ensure a greater accuracy but will take longer.  The default is set to 0 for a quick calculation.
         removeAirWalls_: Set to "True" to remove air walls from the view factor calculation.  The default is set to "True" sinc you usually want to remove air walls from your view factor calculations.
         includeOutdoor_: Set to 'True' to have the final visualization take the parts of the input Srf that are outdoors and color them with temperatures representative of outdoor conditions.  Note that these colors of conditions will only approximate those of the outdoors, showing the assumptions of the Energy model rather than being a perfectly accurate representation of outdoor conditions.  The default is set to 'False' as the inclusion of outdoor conditions can often increase the calculation time.
-        recallHBHive_: Set to "True" to recall the zones from the hive each time the input changes and "False" to simply copy the zones to memory.  Calling the zones from the hive can take some more time but this is necessary if you are making changes to the zones and you want to check them.  Otherwise, if you are performing a parametric run that does not change the geometry, it is nice to set this to "False" for speed.  The default is set to "True" as it's often better to be safe and just recalle the zones.
         ============: ...
         parallel_: Set to "True" to run the calculation with multiple cores and "False" to run it with a single core.  Multiple cores can increase the speed of the calculation substantially and is recommended if you are not running other big or important processes.  The default is set to "True."
         _buildMesh: Set boolean to "True" to generate a mesh based on your zones and the input distFromFloorOrSrf_ and gridSize_.  This is a necessary step before calculating view factors from each test point to the surrounding zone surfaces.
@@ -59,11 +58,11 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nFEB_21_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.56\nFEB_21_2016
 #compatibleLBVersion = VER 0.0.59\nJUN_25_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "6"
 except: pass
@@ -125,7 +124,7 @@ def copyHBZoneData():
         zoneCentPts.append(HZone.GetBoundingBox(False).Center)
         
         #Copy some of the basic zone properties.
-        zone = hb_hive.callFromHoneybeeHive([HZone])[0]
+        zone = hb_hive.visualizeFromHoneybeeHive([HZone])[0]
         zoneNames.append(zone.name)
         zoneNatVentArea.append(zone.windowOpeningArea)
         zoneVolumes.append(zone.getZoneVolume())
@@ -1478,48 +1477,50 @@ def computeFloorReflect(testPts, testPtViewFactor, zoneSrfTypes, flrRefList):
     return zoneFlrReflects
 
 
-#Set the default to always recall HBzones from the hive.
-recallHBHive = True
-if recallHBHive_ == None: pass
-else: recallHBHive = recallHBHive_
 
-#Start clocks to give a total calculation time report at the end
-start = time.clock()
-total_rs = None
-total_ms = None
-total_fs = None
 
-#Check to see if there is already HBZonedata.
-HBDataCheck = False
-try:
-    test = len(hb_zoneData)
-    HBDataCheck = True
-except: pass
+#If Honeybee or Ladybug is not flying or is an older version, give a warning.
+initCheck = True
 
-#If the HBzone data has not been copied to memory or if the data is old, get it.
-initCheck = False
-if _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('ladybug_release') == True and len(_HBZones) > 0 and recallHBHive == True:
-    if _HBZones[0] != None:
-        copyHBZoneData()
-        hb_zoneData = sc.sticky["Honeybee_ViewFacotrSrfData"]
-        initCheck = True
-        total_rs = time.clock() - start
-elif _HBZones != [] and sc.sticky.has_key('honeybee_release') == False:
-    print "You should first let Honeybee fly..."
-    ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee fly...")
-elif _HBZones != [] and sc.sticky.has_key('ladybug_release') == False:
+#Ladybug check.
+if not sc.sticky.has_key('ladybug_release') == True:
+    initCheck = False
     print "You should first let Ladybug fly..."
     ghenv.Component.AddRuntimeMessage(w, "You should first let Ladybug fly...")
-elif _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('ladybug_release') == True and len(_HBZones) > 0 and HBDataCheck == True:
-    if _HBZones[0] != None:
-        hb_zoneData = sc.sticky["Honeybee_ViewFacotrSrfData"]
-        initCheck = True
-elif _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('ladybug_release') == True and len(_HBZones) > 0 and HBDataCheck == False:
-    if _HBZones[0] != None:
-        copyHBZoneData()
-        hb_zoneData = sc.sticky["Honeybee_ViewFacotrSrfData"]
-        initCheck = True
-        total_rs = time.clock() - start
+else:
+    try:
+        if not sc.sticky['ladybug_release'].isCompatible(ghenv.Component): initCheck = False
+    except:
+        initCheck = False
+        warning = "You need a newer version of Ladybug to use this compoent." + \
+        "Use updateLadybug component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Ladybug_Ladybug component " + \
+        "into canvas and try again."
+        ghenv.Component.AddRuntimeMessage(w, warning)
+
+
+#Honeybee check.
+if not sc.sticky.has_key('honeybee_release') == True:
+    initCheck = False
+    print "You should first let Honeybee fly..."
+    ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee fly...")
+else:
+    try:
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): initCheck = False
+    except:
+        initCheck = False
+        warning = "You need a newer version of Honeybee to use this compoent." + \
+        "Use updateHoneybee component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+        "into canvas and try again."
+        ghenv.Component.AddRuntimeMessage(w, warning)
+
+
+
+
+#Start clocks to give a total calculation time report at the end
+total_ms = None
+total_fs = None
 
 
 #Set the default to not generate the mesh.
@@ -1531,6 +1532,8 @@ else: buildMesh = _buildMesh
 #Check the data input.
 checkData = False
 if initCheck == True:
+    copyHBZoneData()
+    hb_zoneData = sc.sticky["Honeybee_ViewFacotrSrfData"]
     if hb_zoneData[10] == True:
         lb_preparation = sc.sticky["ladybug_Preparation"]()
         checkData, gridSize, distFromFloor, viewResolution, removeInt, sectionMethod, sectionBreps, includeOutdoor, constantTransmis, addShdTransmiss = checkTheInputs()
@@ -1583,7 +1586,6 @@ if checkData == True and _runIt == True and geoCheck == True and buildMesh == Tr
 
 #Print out a report of calculation time.
 print "_"
-if total_rs != None: print str(round(total_rs, 3)) + " seconds were spent recalling HBZones from the hive."
 if total_ms != None: print str(round(total_ms, 3)) + " seconds were spent creating the view factor mesh."
 if total_fs != None: print str(round(total_fs, 3)) + " seconds were spent calculating view factors."
 

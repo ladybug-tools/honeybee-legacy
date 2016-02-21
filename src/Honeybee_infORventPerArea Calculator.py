@@ -38,11 +38,11 @@ Provided by Honeybee 0.0.59
 """
 ghenv.Component.Name = "Honeybee_infORventPerArea Calculator"
 ghenv.Component.NickName = 'ACH2m3/s-m2 Calculator'
-ghenv.Component.Message = 'VER 0.0.59\nFEB_13_2016'
+ghenv.Component.Message = 'VER 0.0.59\nFEB_21_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.56\nFEB_21_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
@@ -119,7 +119,7 @@ def main(HBZones, airChangeHour):
     
     # call the objects from the hive
     hb_hive = sc.sticky["honeybee_Hive"]()
-    zones = hb_hive.callFromHoneybeeHive(HBZones)
+    zones = hb_hive.visualizeFromHoneybeeHive(HBZones)
     
     for count, HZone in enumerate(zones):
         flrArea = HZone.getFloorArea()

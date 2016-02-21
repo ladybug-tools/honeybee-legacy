@@ -36,11 +36,11 @@ Provided by Honeybee 0.0.59
 """
 ghenv.Component.Name = "Honeybee_Decompose Based On Boundary Condition"
 ghenv.Component.NickName = 'decomposeByBC'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nFEB_21_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.56\nFEB_21_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
 except: pass
@@ -78,7 +78,7 @@ def main(HBZone):
     # call the objects from the lib
     hb_hive = sc.sticky["honeybee_Hive"]()
 
-    zone = hb_hive.callFromHoneybeeHive([HBZone])[0]
+    zone = hb_hive.visualizeFromHoneybeeHive([HBZone])[0]
 
     for srf in zone.surfaces:
         if srf.BC.lower() == "outdoors":

@@ -38,7 +38,6 @@ Provided by Honeybee 0.0.59
         analysisPeriod_: Optional analysisPeriod_ to take a slice out of an annual data stream.  Note that this will only work if the connected data is for a full year and the data is hourly.  Otherwise, this input will be ignored. Also note that connecting a value to "stepOfSimulation_" will override this input.
         stepOfSimulation_: Optional interger for the hour of simulation to color the zones with.  Connecting a value here will override the analysisPeriod_ input.
         legendPar_: Optional legend parameters from the Ladybug Legend Parameters component.
-        recallHBHive_: Set to "True" to recall the zones from the hive each time the input changes and "False" to simply copy the zones to memory.  Calling the zones from the hive can take some more time but this is necessary if you are making changes to the zones and you want to check them.  Otherwise, if you are just scrolling through attributes, it is nice to set this to "False" for speed.  The default is set to "False" for speed.
         _runIt: Set boolean to "True" to run the component and color the zones.
     Returns:
         readMe!: ...
@@ -54,11 +53,11 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Color Zones by EP Result"
 ghenv.Component.NickName = 'ColorZones'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nFEB_21_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.56\nFEB_21_2016
 #compatibleLBVersion = VER 0.0.59\nNOV_20_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
 except: pass
@@ -83,8 +82,7 @@ inputsDict = {
 4: ["analysisPeriod_", "Optional analysisPeriod_ to take a slice out of an annual data stream.  Note that this will only work if the connected data is for a full year and the data is hourly.  Otherwise, this input will be ignored. Also note that connecting a value to 'stepOfSimulation_' will override this input."],
 5: ["stepOfSimulation_", "Optional interger for the hour of simulation to color the zones with.  Connecting a value here will override the analysisPeriod_ input."],
 6: ["legendPar_", "Optional legend parameters from the Ladybug Legend Parameters component."],
-7: ["recallHBHive_", "Set to 'True' to recall the zones from the hive each time the input changes and 'False' to simply copy the zones to memory.  Calling the zones from the hive can take some more time but this is necessary if you are making changes to the zones and you want to check them.  Otherwise, if you are just scrolling through attributes, it is nice to set this to 'False' for speed.  The default is set to 'False' for speed."],
-8: ["_runIt", "Set boolean to 'True' to run the component and color the zones."]
+7: ["_runIt", "Set boolean to 'True' to run the component and color the zones."]
 }
 
 outputsDict = {
@@ -116,7 +114,7 @@ def copyHBZoneData():
     for HZone in _HBZones:
         zoneBreps.append(HZone)
         zoneCentPts.append(HZone.GetBoundingBox(False).Center)
-        zone = hb_hive.callFromHoneybeeHive([HZone])[0]
+        zone = hb_hive.visualizeFromHoneybeeHive([HZone])[0]
         if zone.name.endswith(" "):
             zoneNames.append(''.join(list(zone.name)[:-1]))
         elif zone.name.startswith(" "):
@@ -276,7 +274,7 @@ def checkZones(zoneHeaders, pyZoneData, hb_zoneData):
 
 def manageInputOutput(annualData, simStep, zoneNormalizable, zoneHeaders, pyZoneData):
     #If some of the component inputs and outputs are not right, blot them out or change them.
-    for input in range(9):
+    for input in range(8):
         if input == 3 and zoneNormalizable == False:
             ghenv.Component.Params.Input[input].NickName = "__________"
             ghenv.Component.Params.Input[input].Name = "."
@@ -338,7 +336,7 @@ def manageInputOutput(annualData, simStep, zoneNormalizable, zoneHeaders, pyZone
         return -1
 
 def restoreInputOutput():
-    for input in range(9):
+    for input in range(8):
         ghenv.Component.Params.Input[input].NickName = inputsDict[input][0]
         ghenv.Component.Params.Input[input].Name = inputsDict[input][0]
         ghenv.Component.Params.Input[input].Description = inputsDict[input][1]
@@ -646,37 +644,43 @@ def main(zoneValues, zones, zoneFloors, newZoneBreps, zoneHeaders, title, legend
 
 
 
+#If Honeybee or Ladybug is not flying or is an older version, give a warning.
+initCheck = True
 
-#If the HBzone data has not been copied to memory or if the data is old, get it.
-initCheck = False
-if _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and recallHBHive_ == True:
-    copyHBZoneData()
-    hb_zoneData = sc.sticky["Honeybee_ZoneData"]
-    initCheck = True
-elif _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('Honeybee_ZoneData') == False:
-    copyHBZoneData()
-    hb_zoneData = sc.sticky["Honeybee_ZoneData"]
-    initCheck = True
-elif _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('Honeybee_ZoneData') == True:
-    hb_zoneData = sc.sticky["Honeybee_ZoneData"]
-    initCheck = True
-    if len(_HBZones) == len(hb_zoneData[0]):
-        for count, brep in enumerate(_HBZones):
-            boundBoxVert = brep.GetBoundingBox(False).Center
-            if boundBoxVert.X <= hb_zoneData[3][count].X+tol and boundBoxVert.X >= hb_zoneData[3][count].X-tol and boundBoxVert.Y <= hb_zoneData[3][count].Y+tol and boundBoxVert.Y >= hb_zoneData[3][count].Y-tol and boundBoxVert.Z <= hb_zoneData[3][count].Z+tol and boundBoxVert.Z >= hb_zoneData[3][count].Z-tol: pass
-            else:
-                initCheck = False
-    else: initCheck = False
-    if initCheck == True: pass
-    else:
-        copyHBZoneData()
-        hb_zoneData = sc.sticky["Honeybee_ZoneData"]
-    initCheck = True
-elif _HBZones != [] and sc.sticky.has_key('honeybee_release') == False:
-    print "You should first let Honeybee  fly..."
+#Ladybug check.
+if not sc.sticky.has_key('ladybug_release') == True:
+    initCheck = False
+    print "You should first let Ladybug fly..."
+    ghenv.Component.AddRuntimeMessage(w, "You should first let Ladybug fly...")
+else:
+    try:
+        if not sc.sticky['ladybug_release'].isCompatible(ghenv.Component): initCheck = False
+        if sc.sticky['ladybug_release'].isInputMissing(ghenv.Component): initCheck = False
+    except:
+        initCheck = False
+        warning = "You need a newer version of Ladybug to use this compoent." + \
+        "Use updateLadybug component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Ladybug_Ladybug component " + \
+        "into canvas and try again."
+        ghenv.Component.AddRuntimeMessage(w, warning)
+
+
+#Honeybee check.
+if not sc.sticky.has_key('honeybee_release') == True:
+    initCheck = False
+    print "You should first let Honeybee fly..."
     ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee fly...")
 else:
-    pass
+    try:
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): initCheck = False
+    except:
+        initCheck = False
+        warning = "You need a newer version of Honeybee to use this compoent." + \
+        "Use updateHoneybee component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+        "into canvas and try again."
+        ghenv.Component.AddRuntimeMessage(w, warning)
+
 
 
 
@@ -695,6 +699,9 @@ else: restoreInputOutput()
 #If the data is meant to be normalized by floor area, check the zones.
 if checkData == True and normByFlr == None: normByFlr = True
 if _runIt == True and checkData == True and _HBZones != []:
+    copyHBZoneData()
+    hb_zoneData = sc.sticky["Honeybee_ZoneData"]
+    
     zoneNames, zoneFlrAreas, zoneFloors, pyZoneData, zoneHeaders, newZoneBreps = checkZones(zoneHeaders, pyZoneData, hb_zoneData)
     zoneValues, floorNormZoneData, title, legendTitle, lb_preparation, lb_visualization = getData(pyZoneData, zoneFlrAreas, annualData, simStep, zoneNormalizable, zoneHeaders, headerUnits, normByFlr, analysisPeriod, stepOfSimulation, total)
 

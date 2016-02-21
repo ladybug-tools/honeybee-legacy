@@ -32,7 +32,6 @@ Provided by Honeybee 0.0.59
         windows_: Set to "True" to have the component label the window surfaces in the model instead of the opaque surfaces.  By default, this is set to "False" to label just the opaque surfaces.
         textHeight_: An optional number for text height in Rhino model units that can be used to change the size of the label text in the Rhino scene.  The default is set based on the dimensions of the zones.
         font_: An optional number that can be used to change the font of the label in the Rhino scene. The default is set to "Verdana".
-        recallHBHive_: Set to "True" to recall the zones from the hive each time the input changes and "False" to simply copy the zones to memory.  Calling the zones from the hive can take some more time but this is necessary if you are making changes to the zones and you want to check them.  Otherwise, if you are just scrolling through attributes, it is nice to set this to "False" for speed.  The default is set to "True" as this is safer.
     Returns:
         surfaceAttributes: The names of each of the connected zone surfaces.
         labelBasePts: The basepoint of the text labels.  Use this along with the surfaceAttributes ouput above and a GH "TexTag3D" component to make your own lables.
@@ -42,11 +41,11 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Label Zone Surfaces"
 ghenv.Component.NickName = 'LabelSurfaces'
-ghenv.Component.Message = 'VER 0.0.59\nFEB_19_2016'
+ghenv.Component.Message = 'VER 0.0.59\nFEB_21_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.56\nFEB_21_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
 except: pass
@@ -66,16 +65,12 @@ tol = sc.doc.ModelAbsoluteTolerance
 def copyHBZoneData():
     hb_hive = sc.sticky["honeybee_Hive"]()
     zones = []
-    zoneBreps = []
-    zoneCentPts = []
     
     for HZone in _HBObjects:
-        zoneBreps.append(HZone)
-        zoneCentPts.append(HZone.GetBoundingBox(False).Center)
-        zone = hb_hive.callFromHoneybeeHive([HZone])[0]
+        zone = hb_hive.visualizeFromHoneybeeHive([HZone])[0]
         zones.append(zone)
     
-    sc.sticky["Honeybee_LabelSrfData"] = [zoneBreps, zones, zoneCentPts]
+    sc.sticky["Honeybee_LabelSrfData"] = zones
 
 
 def setDefaults():
@@ -243,46 +238,51 @@ def main(HBZoneObjects, textSize, font, windows, attribute):
     
     return surfaceAttributes, surfaceLabels, wireFrames, newPts
 
-if recallHBHive_ == None: recallHBHive = True
-else: recallHBHive = recallHBHive_
 
-#If the HBzone data has not been copied to memory or if the data is old, get it.
-initCheck = False
-if recallHBHive == True:
-    copyHBZoneData()
-    hb_zoneData = sc.sticky["Honeybee_LabelSrfData"]
-    initCheck = True
-elif _HBObjects != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('ladybug_release') == True and sc.sticky.has_key('Honeybee_LabelSrfData') == False:
-    copyHBZoneData()
-    hb_zoneData = sc.sticky["Honeybee_LabelSrfData"]
-    initCheck = True
-elif _HBObjects != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('Honeybee_LabelSrfData') == True:
-    hb_zoneData = sc.sticky["Honeybee_LabelSrfData"]
-    checkZones = True
-    if len(_HBObjects) == len(hb_zoneData[0]):
-        for count, brep in enumerate(_HBObjects):
-            boundBoxVert = brep.GetBoundingBox(False).Center
-            if boundBoxVert.X <= hb_zoneData[2][count].X+tol and boundBoxVert.X >= hb_zoneData[2][count].X-tol and boundBoxVert.Y <= hb_zoneData[2][count].Y+tol and boundBoxVert.Y >= hb_zoneData[2][count].Y-tol and boundBoxVert.Z <= hb_zoneData[2][count].Z+tol and boundBoxVert.Z >= hb_zoneData[2][count].Z-tol: pass
-            else:
-                checkZones = False
-    else: checkZones = False
-    if checkZones == True: pass
-    else:
-        copyHBZoneData()
-        hb_zoneData = sc.sticky["Honeybee_LabelSrfData"]
-    initCheck = True
-elif sc.sticky.has_key('honeybee_release') == False or sc.sticky.has_key('ladybug_release') == False:
-    print "You should first let Honeybee amd Ladybug fly..."
-    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, "You should first let Honeybee and Ladybug fly...")
+#If Honeybee or Ladybug is not flying or is an older version, give a warning.
+initCheck = True
+
+#Ladybug check.
+if not sc.sticky.has_key('ladybug_release') == True:
+    initCheck = False
+    print "You should first let Ladybug fly..."
+    ghenv.Component.AddRuntimeMessage(w, "You should first let Ladybug fly...")
 else:
-    pass
+    try:
+        if not sc.sticky['ladybug_release'].isCompatible(ghenv.Component): initCheck = False
+        if sc.sticky['ladybug_release'].isInputMissing(ghenv.Component): initCheck = False
+    except:
+        initCheck = False
+        warning = "You need a newer version of Ladybug to use this compoent." + \
+        "Use updateLadybug component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Ladybug_Ladybug component " + \
+        "into canvas and try again."
+        ghenv.Component.AddRuntimeMessage(w, warning)
 
 
+#Honeybee check.
+if not sc.sticky.has_key('honeybee_release') == True:
+    initCheck = False
+    print "You should first let Honeybee fly..."
+    ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee fly...")
+else:
+    try:
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): initCheck = False
+    except:
+        initCheck = False
+        warning = "You need a newer version of Honeybee to use this compoent." + \
+        "Use updateHoneybee component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+        "into canvas and try again."
+        ghenv.Component.AddRuntimeMessage(w, warning)
 
 
-if _HBObjects != [] and initCheck == True:
+if initCheck== True and _HBObjects != [] and initCheck == True:
+    copyHBZoneData()
+    hb_zoneData = sc.sticky["Honeybee_LabelSrfData"]
+    
     textSize, font, windows, attribute = setDefaults()
-    surfaceTxtLabels, srfTextLabels, wireFrames, labelBasePts = main(hb_zoneData[1], textSize, font, windows, attribute)
+    surfaceTxtLabels, srfTextLabels, wireFrames, labelBasePts = main(hb_zoneData, textSize, font, windows, attribute)
     
     #Unpack the data trees of curves and label text.
     brepTxtLabels = DataTree[Object]()
