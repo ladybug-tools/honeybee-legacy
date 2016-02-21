@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.59\nFEB_18_2016'
+ghenv.Component.Message = 'VER 0.0.59\nFEB_21_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -7363,6 +7363,13 @@ class hb_Hive(object):
                     "This can cause strange behaviour!"
                     HBObjects.append(sc.sticky['HBHive'][key])
                 
+        return HBObjects
+    
+    def visualizeFromHoneybeeHive(self, geometryList):
+        HBObjects = []
+        for geometry in geometryList:
+            key = geometry.UserDictionary['HBID']
+            if sc.sticky['HBHive'].has_key(key): HBObjects.append(sc.sticky['HBHive'][key])
         return HBObjects
 
 class hb_RADParameters(object):
