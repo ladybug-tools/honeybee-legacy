@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.59\nFEB_21_2016'
+ghenv.Component.Message = 'VER 0.0.59\nFEB_24_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -7956,6 +7956,7 @@ if checkIn.letItFly:
         sc.sticky["wind_generator"] = Wind_gen
         sc.sticky["simple_battery"] = simple_battery
         sc.sticky["thermBCCount"] = 1
+        sc.sticky["hBZoneCount"] = 0
         sc.sticky["honeybee_reEvaluateHBZones"] = hb_reEvaluateHBZones
         sc.sticky["honeybee_AirsideEconomizerParams"] = hb_airsideEconoParams
         sc.sticky["honeybee_constantVolumeFanParams"] = hb_constVolFanParams
