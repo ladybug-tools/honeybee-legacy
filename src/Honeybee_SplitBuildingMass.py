@@ -49,7 +49,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = 'Honeybee_SplitBuildingMass'
 ghenv.Component.NickName = 'SplitMass'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_31_2016'
+ghenv.Component.Message = 'VER 0.0.59\nFEB_25_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -346,15 +346,15 @@ def getFloorCrvs(buildingMass, floorHeights, maxHeights):
         
         #Match the curve seams in order to ensure proper zone splitting later.
         if len(contourCrvs)!= 0:
-            crvCentPt = rc.Geometry.AreaMassProperties.Compute(contourCrvs[0]).Centroid
+            crvCentPt = rc.Geometry.AreaMassProperties.Compute(contourCrvs[-1]).Centroid
             # get a point from the center of the contour curve to a seam in order to adjust the seam of all other curves.
             curveLengths = []
             for curve in contourCrvs:
                 curveLengths.append(curve.GetLength())
             curveLengths.sort()
             longestCurveLength = curveLengths[-1]
-            factor = ((longestCurveLength)/(contourCrvs[0].PointAtStart.X - crvCentPt.X))*2
-            seamVectorPt = rc.Geometry.Vector3d((contourCrvs[0].PointAtStart.X - crvCentPt.X)*factor, (contourCrvs[0].PointAtStart.Y - crvCentPt.Y)*factor, 0)
+            factor = ((longestCurveLength)/(contourCrvs[-1].PointAtStart.X - crvCentPt.X))*2
+            seamVectorPt = rc.Geometry.Vector3d((contourCrvs[-1].PointAtStart.X - crvCentPt.X)*factor, (contourCrvs[-1].PointAtStart.Y - crvCentPt.Y)*factor, 0)
             
             # Try to adjust the seam of the curves.
             crvAdjust = []
