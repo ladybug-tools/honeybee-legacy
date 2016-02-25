@@ -145,7 +145,7 @@ def main(maximumRoofAngle, zoneMasses, zoneNames, zonePrograms, isConditioned):
         # zone name
         try: zoneName = zoneNames[zoneKey].strip().replace(" ","_").replace(":","-")
         except:
-            zoneName = "zone_" + sc.sticky["hBZoneCount"]
+            zoneName = "zone_" + str(sc.sticky["hBZoneCount"])
             sc.sticky["hBZoneCount"] += 1
         
         # zone programs
