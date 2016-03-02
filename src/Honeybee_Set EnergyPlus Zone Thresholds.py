@@ -40,7 +40,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Set EnergyPlus Zone Thresholds"
 ghenv.Component.NickName = 'setEPZoneThresholds'
-ghenv.Component.Message = 'VER 0.0.59\nFEB_18_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAR_01_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
@@ -138,8 +138,6 @@ def updateSetPoints(schName, setPt, setBk):
             # check if schedule has setback and give a warning if it doesn't
             if numberOfSetPts == 1 and setBk!="":
                 warning = dailySchedule + " has no setback. Only setPt will be changed."
-                w = gh.GH_RuntimeMessageLevel.Remark
-                ghenv.Component.AddRuntimeMessage(w, warning)
                 print warning
                 
             # change the values in the list

@@ -62,7 +62,7 @@ Provided by Honeybee 0.0.59
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.59\nFEB_18_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAR_01_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -87,7 +87,6 @@ rc.Runtime.HostUtils.DisplayOleAlerts(False)
 
 
 class WriteIDF(object):
-    
     # Add all HBcontext surfaces from both HBContext_ and HB generator here so that if user connects the same
     # HBcontext surfaces to both HB generator and HBcontext duplicate surfaces will be detected and an error thrown.
     
@@ -335,9 +334,9 @@ class WriteIDF(object):
             
             #Humidity Control
             if zone.humidityMax != "": dehumidCntrl = "Humidistat"
-            else: dehumidCntrl = ""
+            else: dehumidCntrl = "None"
             if zone.humidityMin != "": humidCntrl = "Humidistat"
-            else: humidCntrl = ""
+            else: humidCntrl = "None"
             
             #Airside Economizer
             if zone.airSideEconomizer == 'DifferentialDryBulb':
