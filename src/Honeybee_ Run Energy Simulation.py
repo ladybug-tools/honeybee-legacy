@@ -62,7 +62,7 @@ Provided by Honeybee 0.0.59
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.59\nMAR_01_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAR_05_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -2104,7 +2104,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     if additionalStrings_ != []:
         idfFile.write("\n")
         for string in additionalStrings_:
-            if ":" in string:
+            if ":" in string and not '!' in string:
                 idfFile.write("\n")
                 idfFile.write("\n")
                 idfFile.write(string)
@@ -2173,7 +2173,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         print "Set runEnergyPlus to True!"
         
     return idfFileFullName, resultFileFullName, studyFolder
-        
+
 
 if _writeIdf == True and _epwFile and _HBZones and _HBZones[0]!=None:
     
