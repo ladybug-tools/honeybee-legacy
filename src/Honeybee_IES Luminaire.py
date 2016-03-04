@@ -55,11 +55,12 @@ In case the customLamp_ option is being used, the lumen depreciation factor of t
         _luminaireZone: List of (3-d coordinate, Aiming Angle) combinations that are generated through the IES Luminaire Array component.
         _lightLossFactor_: Optional value for light loss factor. Default is 1.0
         _candelaMultiplier_: Assign a scaling value for the candela tables. This value gets multiplied by the _lightLossFactor_ value.
+        _customLumName_: Specify a custom name for the luminaire. This input should only be used in case the manufacturer hasn't provided a value for [LUMCAT] in the photometric data.
         _drawLuminaireWeb_: Draw a geometric representation of the candela distribution of the luminaire on the Rhino viewport. If set to True then geometry normalized to unit dimensions will be drawn. If a number is provided, then geometry will be drawn and scaled to that value.
         _drawLuminaireAxes_: Draw the C0-G0 axes of the luminaire on the Rhino viewport. If set to True then axes normalized to 1.5 times the unit dimensions will be drawn. If a number is provided, then geometry will be drawn and scaled to that value.
         _drawLuminairePoly_: Draw the polygon, circle or box representing the luminous opening of the luminaire on the Rhino viewport. If set to True then geometry normalized to unit dimensions will be drawn. If a number is provided, then geometry will be drawn and scaled to that value.
         _luminaireID: Custom name for the luminaire rad file. The default name is the same as the name of the IES file.
-        _radDir_: Custom location for the luminaire rad file. The default location is the same as where the original IES file is located.
+        _radDir_: Custom location for the luminaire rad file. The default location is inside the Ladybug folder on your system.
         customLamp_: Specify a custom lamp using the IES Custom Lamp component
         extendLumAxesToPt_: Specify a point to which the luminaire axes should be extended to. Please note that if the aiming of the luminaire is very far way from this point then some abnormal results might be seen.
         _writeRad: Set to True to create the file for electric lighting simulation.
@@ -82,7 +83,7 @@ from __future__ import division
 
 ghenv.Component.Name = "Honeybee_IES Luminaire"
 ghenv.Component.NickName = 'iesLuminaire'
-ghenv.Component.Message = 'VER 0.0.59\nFeb_15_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMar_03_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"
 
@@ -100,7 +101,8 @@ import os
 import subprocess as sp
 import sys
 import time
-
+import shutil
+import datetime
 
 w = gh.GH_RuntimeMessageLevel.Warning
 
@@ -139,6 +141,7 @@ class Luminaire:
             self.numHorzAng = lumData['numHorzAng']
             self.photType = lumData['photType']
             self.unitType = lumData['unitType']
+            self.testDetails = lumData['testDetails']
             self.width = lumData['width']
             self.length = lumData['length']
             self.height = lumData['height']
@@ -205,8 +208,10 @@ class Luminaire:
                lumstring += """Lamp Catalog Number: {}\n""".format(self.lampCat)
  
            if self.lampDes:
-               lumstring += """Lamp Description: {}\n\n""".format(self.lampDes)
-
+               lumstring += """Lamp Description: {}\n""".format(self.lampDes)
+            
+           if self.testDetails:
+               lumstring += """Luminaire Test Details: {}\n\n""".format(self.testDetails) 
 
            lumstring+= ("Luminaire Manufacturer: {0.lumMan}\n"+
                         "IES File Format Type: {0.iesType}\n"+
@@ -245,13 +250,14 @@ class electricLightingData:
 
 
 #Parse IES file, Instantiate luminaire class.            
-def makeLum(fileName):
+def makeLum(fileName,_customLumName_):
     """
         This function parses an IES file and then instantiates a luminaire class.   
         1. Function for parsing the IES file.
         2. Keywords are parsed first, followed by the photometric data.
     """
-    
+
+
     #Initiate the dictionary to store 
     
     lumData = dict.fromkeys(('lumCat','lumMan','lumDes','lampCat','lampDes','iesType'),'Not specified in file.')
@@ -275,13 +281,18 @@ def makeLum(fileName):
         iesData = fileName.split("\n")
 
     
-
+    
     for idx,lines in enumerate(iesData):
         lineSplit = lines.split()
+        
+        #This if-test assigns the IES format type (eg. IESNA: LM-63-2002) to the dictionary.
         if lines.strip() and lumData['iesType'] == 'Not specified in file.':
             lumData['iesType'] = lines.strip()
         if "[LUMCAT]" in lines:
             lumData['lumCat'] = " ".join(lineSplit[1:])
+            if _customLumName_:
+                lumData['lumCat'] = _customLumName_.strip().replace(" ","_")
+
         if "MANUFAC" in lines:
             lumData['lumMan']= " ".join(lineSplit[1:])
         if "[LUMINAIRE]" in lines:
@@ -290,9 +301,29 @@ def makeLum(fileName):
             lumData['lampCat'] = " ".join(lineSplit[1:])
         if "[LAMP]" in lines:
             lumData['lampDes'] = " ".join(lineSplit[1:])
+        
+        
+        #As a fail-safe, I am assiging the [TEST] value as name. I could have done this re but I thought of not adding an extra dependency.
+        if "[TEST]" in lines:
+            lumData['testDetails'] = " ".join(lineSplit[1:])
     
-   
-    
+    #Updated on 03/03/2016. I didn't think this was required, however, it turns out that some manufacturers don't assign names to their luminaires.
+    #Assign a luminaire catalog number if the IES file doesn't have one already. The lumcat will be assigned on the basis of _luminaireID.
+    #As this is not the best solution, I am issuing a warning and asking the user to specify a name through _customLumName_.
+    if lumData['lumCat'] == 'Not specified in file.':
+        if _customLumName_:
+                _customLumName_ = _customLumName_.strip().replace(" ","_")
+                lumManName = _customLumName_
+        else:
+            timeStampforlumCat = time.strftime("%d%b_%H") #This time stamp should be enough to avoid any conflicts.
+            lumManName =_luminaireID + "_"+timeStampforlumCat
+            warningString = "The chosen photometry doesn't have a Luminaire Catalog information. So a _luminaireID-based catalog number was defined for it.\n"
+            warningString += "The best way to resolve this warning would to assign a proper name for the luminaire using the _customLumName_ input"
+            ghenv.Component.AddRuntimeMessage(w, warningString)
+            
+        lumData['lumCat'] = lumManName
+
+
     #Step2: Parse again, this time for reading photometric data.
     try:
         with open(fileName,'r') as iesFile:
@@ -539,19 +570,51 @@ def transformGeometry(geometry,spin,tilt,rotate,transform,mul):
     
     return geometry
     
+
+#Create a valid, IES2RAD-compatible copy of the IES file inside the ladybug folder.
+def fixIesFile(originalPathName,_radDir_):
+    dirName,fileName = os.path.split(originalPathName)
+    fileNameOnly,ext = os.path.splitext(fileName)
     
+    fileNameFixed = fileNameOnly.replace(" ","_")
+    
+    if _radDir_:
+        if os.path.isdir(_radDir_):
+            assert " " not in _radDir_,"The value for _radDir_ should not have any spaces in it"
+            dirpath = os.path.join(_radDir_,'tempIesFiles')
+    else:
+        dirpath = sc.sticky['Honeybee_DefaultFolder']
+        dirpath = os.path.join(dirpath,'ies','tempIesFiles')
+    fileNameFullFixed = os.path.join(dirpath,fileNameFixed+'.ies')
+
+    if not os.path.exists(dirpath):
+       os.mkdir(dirpath)    
+    shutil.copy(originalPathName,fileNameFullFixed)
+    return fileNameFullFixed
+
 #If all the input requirements are satisfied then, proceed by drawing the luminaires inside Rhino.
 if _iesFilePath and _luminaireID and _luminaireZone and checkLadybug and checkHoneybee:
         
+        
+    if len(_iesFilePath)==1:
+        if os.path.exists(_iesFilePath[0]):
+            
+            #Probably not a best practice thing. But I'd have to break a lot of code if I don't do this !
+            _iesFilePath[0] = fixIesFile(_iesFilePath[0],_radDir_) 
+            filePath = _iesFilePath[0]
+            filenamefull=os.path.split(filePath)[1]
+            filenameonly,ext = os.path.splitext(filenamefull)
+            originalIesFileName = filenameonly
     
     #Store original values for later use.
     _luminaireIdSpecified = _luminaireID
     _iesFilePathSpecified = _iesFilePath
     
+    
     #Rotations for ies2rad.
     rx=ry=rz = 0
     
-    luminaire = makeLum(_iesFilePath)
+    luminaire = makeLum(_iesFilePath,_customLumName_)
     luminaireDetails = str(luminaire)
     
     filenamefull,filenameonly,originalIesFileName = luminaire.lumCat+"_inGhFile",luminaire.lumCat,luminaire.lumCat
@@ -561,16 +624,9 @@ if _iesFilePath and _luminaireID and _luminaireZone and checkLadybug and checkHo
         while " " in originalString:
             originalString = originalString.replace(" ","")
         return originalString
-        
+
     filenamefull,filenameonly,originalIesFileName = map(repSpc,(filenamefull,filenameonly,originalIesFileName))
-    
-    
-    if len(_iesFilePath)==1:
-        if os.path.exists(_iesFilePath[0]):
-            filePath = _iesFilePath[0]
-            filenamefull=os.path.split(filePath)[1]
-            filenameonly,ext = os.path.splitext(filenamefull)
-            originalIesFileName = filenameonly
+
 
     if _luminaireID:
         filenameonly= _luminaireID
@@ -683,7 +739,7 @@ if _iesFilePath and _luminaireID and _luminaireZone and checkLadybug and checkHo
 
     if _writeRad:  
         if len(_iesFilePath)==1:
-            _iesFilePath = _iesFilePath[0]
+            _iesFilePath = filePath
             if not os.path.exists(_iesFilePath):
                 newIesFile = os.path.join(dirpath,filenamefull+".ies")
                 with open(newIesFile,'w') as iesFileWrite:
@@ -741,14 +797,16 @@ if _iesFilePath and _luminaireID and _luminaireZone and checkLadybug and checkHo
             #Run the batch file and wait for the operation to finish.
             runbatch = os.system(_batchname)
             return radpath,_luminaireID
-
+        
         if customLamp_:
             winbatchstring += createCustomLamp(customLamp_.lamp,"")
         else:
             winbatchstring += "ies2rad -dm -o {1} -p {0} -m {2} {3}".format(dirpath,filenameonly,_lightLossFactor_*_candelaMultiplier_,_iesFilePath)    
 
         radpathfull,_luminaireID = createLumRadFile("",winbatchstring)
-
+        
+        
+        
         with open(_luminaireID,'w') as radfile:
             print("#Radfile created by the IES Photometry tool in Honeybee/GrassHopper",file=radfile)
             
