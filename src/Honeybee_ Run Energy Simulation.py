@@ -62,7 +62,7 @@ Provided by Honeybee 0.0.59
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.59\nMAR_05_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAR_10_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -339,7 +339,7 @@ class WriteIDF(object):
             else: humidCntrl = "None"
             
             #Airside Economizer
-            if zone.airSideEconomizer == 'DifferentialDryBulb':
+            if zone.airSideEconomizer == 'DifferentialDryBulb' or zone.airSideEconomizer == 'DifferentialEnthalpy':
                 if coolLimit == "NoLimit" or coolLimit == "LimitFlowRate": coolLimit = 'LimitFlowRate'
                 else: coolLimit = 'LimitFlowRateAndCapacity'
                 maxAirFlowRate = 'autosize'
