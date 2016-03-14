@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.59\nFEB_24_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAR_14_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -4843,7 +4843,6 @@ class EPZone(object):
         #Air System Properties.
         self.recirculatedAirPerArea = 0
         self.outdoorAirReq = "Sum"
-        self.useVAVTemplate = False
         self.coolSupplyAirTemp= ""
         self.heatSupplyAirTemp= ""
         self.coolingCapacity= ""
@@ -4852,6 +4851,7 @@ class EPZone(object):
         self.heatRecovery= ""
         self.heatRecoveryEffectiveness= ""
         self.HVACAvailabilitySched = "ALWAYS ON"
+        self.ventilationSched = ""
         
         if zoneBrep != None:
             self.isClosed = self.geometry.IsSolid
@@ -4969,6 +4969,7 @@ class EPZone(object):
             "lightingSchedule: " + str(self.lightingSchedule) + "\n" + \
             "equipmentSchedule: " + str(self.equipmentSchedule) + "\n" + \
             "infiltrationSchedule: " + str(self.infiltrationSchedule)+ "\n" + \
+            "ventilationSchedule: " + str(self.ventilationSched)+ "\n" + \
             "HVACAvailabilitySched: " + str(self.HVACAvailabilitySched) + "."
             
             return report
@@ -4981,6 +4982,7 @@ class EPZone(object):
                             "lightingSchedule" : str(self.lightingSchedule),
                             "equipmentSchedule" : str(self.equipmentSchedule),
                             "infiltrationSchedule" : str(self.infiltrationSchedule),
+                            "ventilationSched: " : str(self.ventilationSched),
                             "HVACAvailabilitySched" : str(self.HVACAvailabilitySched)}
             
             return scheduleDict
