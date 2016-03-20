@@ -52,10 +52,11 @@ import Grasshopper.Kernel as gh
 import os
 import math
 import uuid
+import decimal
 
 ghenv.Component.Name = 'Honeybee_Import WINDOW Glz System'
 ghenv.Component.NickName = 'importWINDOW'
-ghenv.Component.Message = 'VER 0.0.59\nFEB_01_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAR_20_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -418,6 +419,22 @@ else:
         "Use updateHoneybee component to update userObjects.\n" + \
         "If you have already updated userObjects drag Honeybee_Honeybee component " + \
         "into canvas and try again."
+        ghenv.Component.AddRuntimeMessage(w, warning)
+
+#If the Rhino model tolerance is not fine enough for THERM modelling, give a warning.
+if initCheck == True:
+    lb_preparation = sc.sticky["ladybug_Preparation"]()
+    conversionFactor = lb_preparation.checkUnits()*1000
+    d = decimal.Decimal(str(sc.doc.ModelAbsoluteTolerance))
+    numDecPlaces = abs(d.as_tuple().exponent)
+    numConversionFacPlaces = len(list(str(int(conversionFactor))))-1
+    numDecPlaces = numDecPlaces - numConversionFacPlaces
+    if numDecPlaces < 2:
+        zeroText = ''
+        for val in range(abs(2-numDecPlaces)): zeroText = zeroText + '0'
+        correctDecimal = '0.' + zeroText + str(sc.doc.ModelAbsoluteTolerance).split('.')[-1]
+        warning = "Your Rhino model tolerance is coarser than the default tolerance for THERM. \n It is recommended that you decrease your Rhino model tolerance to " + correctDecimal + " " + str(sc.doc.ModelUnitSystem) + " \n by typing 'units' in the Rhino command bar and adding decimal places to the 'tolerance'."
+        print warning
         ghenv.Component.AddRuntimeMessage(w, warning)
 
 

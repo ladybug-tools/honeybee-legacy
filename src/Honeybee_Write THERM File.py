@@ -52,7 +52,7 @@ import decimal
 
 ghenv.Component.Name = 'Honeybee_Write THERM File'
 ghenv.Component.NickName = 'writeTHERM'
-ghenv.Component.Message = 'VER 0.0.59\nMAR_14_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAR_20_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -354,7 +354,7 @@ def checkAbbreviations(matName):
     return matName
 
 
-def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundary, thermFileOrigin, allGeoCentroid):
+def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundary, thermFileOrigin, allGeoCentroid, conversionFactor):
     #Call the needed classes.
     lb_preparation = sc.sticky["ladybug_Preparation"]()
     thermMatLib = sc.sticky["honeybee_thermMaterialLib"]
@@ -363,18 +363,9 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
     #Make a set of transformations from Rhino world coordinates to the Therm scene.
     #Check the units of the Rhino file and scale everything from meters to millimeters. Keep track of this transformation as well.
     planeReorientation = rc.Geometry.Transform.ChangeBasis(rc.Geometry.Plane.WorldXY, basePlane)
-    conversionFactor = lb_preparation.checkUnits()*1000
     unitsScale = rc.Geometry.Transform.Scale(rc.Geometry.Plane.WorldXY, conversionFactor, conversionFactor, conversionFactor)
     bufferTansl = rc.Geometry.Transform.Translation(250, -50, 0)
-    d = decimal.Decimal(str(sc.doc.ModelAbsoluteTolerance))
-    numDecPlaces = abs(d.as_tuple().exponent)
-    numConversionFacPlaces = len(list(str(int(conversionFactor))))-1
-    numDecPlaces = numDecPlaces - numConversionFacPlaces
-    #If the Rhino model tolerance is not fine enough, give a warning.
-    if numDecPlaces < 2:
-        warning = "Your Rhino model tolerance is coarser than the default tolerance for THERM. \n It is recommended that you decrease your Rhino model tolerance to 0.01 mm by typing 'units' in the Rhino command bar and adding decimal places to the 'tolerance'."
-        print warning
-        ghenv.Component.AddRuntimeMessage(w, warning)
+    
     #Set the tolerance at the default THERM tolerance.
     numDecPlaces = 2
     
@@ -866,13 +857,29 @@ else:
         "into canvas and try again."
         ghenv.Component.AddRuntimeMessage(w, warning)
 
+#If the Rhino model tolerance is not fine enough for THERM modelling, give a warning.
+if initCheck == True:
+    lb_preparation = sc.sticky["ladybug_Preparation"]()
+    conversionFactor = lb_preparation.checkUnits()*1000
+    d = decimal.Decimal(str(sc.doc.ModelAbsoluteTolerance))
+    numDecPlaces = abs(d.as_tuple().exponent)
+    numConversionFacPlaces = len(list(str(int(conversionFactor))))-1
+    numDecPlaces = numDecPlaces - numConversionFacPlaces
+    if numDecPlaces < 2:
+        zeroText = ''
+        for val in range(abs(2-numDecPlaces)): zeroText = zeroText + '0'
+        correctDecimal = '0.' + zeroText + str(sc.doc.ModelAbsoluteTolerance).split('.')[-1]
+        warning = "Your Rhino model tolerance is coarser than the default tolerance for THERM. \n It is recommended that you decrease your Rhino model tolerance to " + correctDecimal + " " + str(sc.doc.ModelUnitSystem) + " \n by typing 'units' in the Rhino command bar and adding decimal places to the 'tolerance'."
+        print warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+
 
 #If the intital check is good, run the component.
 if initCheck and _writeTHMFile:
     initInputs = checkTheInputs()
     if initInputs != -1:
-        workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundary, thermFileOrigin, allGeoCentroid = initInputs
-        result = main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundary, thermFileOrigin, allGeoCentroid)
+        workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundary, thermFileOrigin, allGeoCentroidr = initInputs
+        result = main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundary, thermFileOrigin, allGeoCentroid, conversionFactor)
         if result != -1:
             thermFile, uFactorFile, resultFile = result
 
