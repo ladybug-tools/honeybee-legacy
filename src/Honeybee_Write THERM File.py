@@ -80,7 +80,7 @@ def checkTheInputs():
         if not os.path.exists(workingDir_):
             try:
                 os.makedirs(workingDir_)
-                workingDir = workingDir_
+                
             except:
                 checkData3 = False
                 warning =  'cannot create the working directory as: ', workingDir_ + \
@@ -88,11 +88,15 @@ def checkTheInputs():
                 print warning
                 ghenv.Component.AddRuntimeMessage(w, warning)
                 return -1
+        else:
+            workingDir = workingDir_
     else:
         if workingDir_ == None: workingDir = sc.sticky["Ladybug_DefaultFolder"] + xmlFileName + '\\THERM\\'
         else: workingDir = workingDir_
         if not os.path.exists(workingDir): os.makedirs(workingDir)
         print 'Current working directory is set to: ' + workingDir
+    
+    if not workingDir.endswith('\\'): workingDir = workingDir + '\\'
     
     #Call the polygons from the hive.
     hb_hive = sc.sticky["honeybee_Hive"]()
