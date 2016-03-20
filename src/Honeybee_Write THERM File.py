@@ -243,16 +243,19 @@ def checkTheInputs():
     #polygonBoundaries = joinedPolygons[0].DuplicateNakedEdgeCurves(True, True)
     allBoundary = rc.Geometry.PolylineCurve.JoinCurves(polygonBoundaries, sc.doc.ModelAbsoluteTolerance)
     if len(allBoundary) != 1:
-        warning = "Geometry connected to _polygons does not have a single boundary (there are holes in the model). \n These holes will cause THERM to crash. \n Note that air gaps in your model whould be represented with a polygon having an 'air' material."
+        boundLengths = []
+        for bnd in allBoundary: boundLengths.append(bnd.GetLength())
+        boundLengths, allBoundary = zip(*sorted(zip(boundLengths, allBoundary)))
+        encircling = allBoundary[-1]
+        warning = "Geometry connected to _polygons does not have a single boundary (there are holes in the model). \n You will have to fill in these gaps when you bring your model into THERM. \n Note that air gaps in your model can be represented with a polygon having an 'air' material."
         print warning
         ghenv.Component.AddRuntimeMessage(w, warning)
-        return -1
     else:
         #Check to be sure the curve is facing counter-clockwise.
         encircling = allBoundary[0]
-        if str(encircling.ClosedCurveOrientation(basePlane)) == 'CounterClockwise':
-            encircling.Reverse()
-        polygonBoundaries = encircling.DuplicateSegments()
+    if str(encircling.ClosedCurveOrientation(basePlane)) == 'CounterClockwise':
+        encircling.Reverse()
+    polygonBoundaries = encircling.DuplicateSegments()
     
     #Get the centroid of all geometry
     allGeoCentroid = rc.Geometry.AreaMassProperties.Compute(joinedPolygons[0]).Centroid
