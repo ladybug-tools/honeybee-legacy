@@ -27,8 +27,12 @@ Provided by Honeybee 0.0.59
 
     Args:
         _windowGlzSysReport: A filepath to a detailed galzing system text file report exportedby WINDOW.
-        _location_: An optional point to set the location of the glazing system in the Rhino scene.  The default is set to the Rhino origin.
-        _orientation_: A number from 0 to 180 to set the orientation of the glazing system in the vertical XZ plane or simply the word 'horizontal' to represent a surface laying flat in the XY plane.  The default is set to 90 to have the gazing system be perfectly vertical.
+        _location_: An optional plane or point to set the location of the glazing system in the Rhino scene.  The default is set to the Rhino origin and in the XY plane.
+        _orientation_: An integer that sets the orientation of the window in the Rhino scene.  Choose from the following options that correspond with THERM's options:
+            0 = Up
+            1 = Down
+            2 = Left
+            3 = Right
         _sightLineToGlzBottom_: A number in Rhino model units that represents the distance from the bottom of the glass pane to the end of the frame (where the 'edge of glass' starts).  The default is set to 12.7 mm.
         _spacerHeight_: A number in Rhino model units that represents the distance from the bottom of the glass pane to the end of the spacer. The default is set to 12.7 mm.
         _edgeOfGlassDim_: A number in Rhino model units that represents the distance from the start of the frame to the start of the 'center of glass' zone.  This 'edge of glass' zone typically has a U-Value that is higher than the rest of the glass. The default is set to 63.5 mm.
@@ -56,7 +60,7 @@ import decimal
 
 ghenv.Component.Name = 'Honeybee_Import WINDOW Glz System'
 ghenv.Component.NickName = 'importWINDOW'
-ghenv.Component.Message = 'VER 0.0.59\nMAR_20_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAR_22_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -100,33 +104,31 @@ def checkTheInputs():
     
     #Check to be sure that the orientation makes sense and derive a plane for the geometry in the Rhino scene.
     glzPlane = None
-    if _location_ == None: location = rc.Geometry.Point3d.Origin
-    else: location = _location_
+    if _location_ == None: glzPlane = rc.Geometry.Plane.WorldXY
+    else: glzPlane = _location_
+    
     if _orientation_ != None:
-        try:
-            orientation = float(_orientation_)
-            if orientation >= 0 and orientation <= 180:
-                yAxis = rc.Geometry.Vector3d.YAxis
-                xAxis = rc.Geometry.Vector3d.XAxis
-                oreintTrans = rc.Geometry.Transform.Rotation(math.radians(orientation-90), rc.Geometry.Vector3d.YAxis, rc.Geometry.Point3d.Origin)
-                yAxis.Transform(oreintTrans)
-                xAxis.Transform(oreintTrans)
-                glzPlane = rc.Geometry.Plane(location, xAxis, yAxis)
-            else:
-                warning = "_orientation_ must be between 0 and 180."
-                print warning
-                ghenv.Component.AddRuntimeMessage(e, warning)
-                return -1
-        except:
-            if _orientation_.lower() == 'horizontal':
-              glzPlane = rc.Geometry.Plane(location, rc.Geometry.Vector3d.XAxis, rc.Geometry.Vector3d(0,0,-1))
-            else:
-              warning = "Input for _orientation_ not recognized."
-              print warning
-              ghenv.Component.AddRuntimeMessage(e, warning)
-              return -1
-    elif _location_ != None:
-        glzPlane = rc.Geometry.Plane(location, rc.Geometry.Vector3d.XAxis, rc.Geometry.Vector3d.YAxis)
+        if _orientation_ >= 0 and _orientation_ <= 3:
+            yAxis = glzPlane.YAxis
+            xAxis = glzPlane.XAxis
+            
+            if _orientation_ == 0: orientAngle = 0
+            elif _orientation_ == 1: orientAngle = 180
+            elif _orientation_ == 2: orientAngle = -90
+            elif _orientation_ == 3: orientAngle = 90
+            
+            oreintTrans = rc.Geometry.Transform.Rotation(math.radians(orientAngle), glzPlane.ZAxis, rc.Geometry.Point3d.Origin)
+            yAxis.Transform(oreintTrans)
+            xAxis.Transform(oreintTrans)
+            if _orientation_ == 1: xAxis.Reverse()
+            elif _orientation_ == 3: xAxis.Reverse()
+            
+            glzPlane = rc.Geometry.Plane(glzPlane.Origin, xAxis, yAxis)
+        else:
+            warning = "_orientation_ must be between 0 and 3."
+            print warning
+            ghenv.Component.AddRuntimeMessage(e, warning)
+            return -1
     
     
     #Set any defaults for the dimensions of the glazing system.
@@ -253,8 +255,10 @@ def main(windowGlzSysReport, glzPlane, sightLineToGlz, spacerHeight, edgeOfGlass
                 else: outdoorProps.append((1.544*windspeed*windspeed)-(12.17*windspeed)+46.23)
                 #Compute an indoor film coefficient from the orientation.
                 #Turn the heat flow direction into a dimensionless value for a linear interoplation.
-                if _orientation_ == None or _orientation_.lower() == 'horizontal': dimHeatFlow = 0.5
-                else: dimHeatFlow = float(_orientation_)/180
+                if abs(glzPlane.ZAxis.Z) >= 0.70710678: dimHeatFlow = 0.5
+                else:
+                    ang2Horiz = rc.Geometry.Vector3d.VectorAngle(glzPlane.YAxis, rc.Geometry.Vector3d.XAxis)
+                    dimHeatFlow = float(ang2Horiz)/180
                 #Compute a film coefficient from the emissivity, heat flow direction, and a paramterization of AHSHRAE fundemantals.
                 heatFlowFactor = (-12.443 * (math.pow(dimHeatFlow,3))) + (24.28 * (math.pow(dimHeatFlow,2))) - (16.898 * dimHeatFlow) + 8.1275
                 filmCoeff = (heatFlowFactor * dimHeatFlow) + (5.81176 * glzSysEmiss[-1]) + 0.9629
@@ -271,14 +275,14 @@ def main(windowGlzSysReport, glzPlane, sightLineToGlz, spacerHeight, edgeOfGlass
     
     #Create the window material geometry in the Rhino scene.
     initWindowGeos = []
-    extrusionVec = rc.Geometry.Vector3d(0,0,glzSystemHeight)
-    gasExtrusionVec = rc.Geometry.Vector3d(0,0,glzSystemHeight-spacerHeight)
+    extrusionVec = rc.Geometry.Vector3d(0,glzSystemHeight,0)
+    gasExtrusionVec = rc.Geometry.Vector3d(0,glzSystemHeight-spacerHeight,0)
     XCoord = 0
     glassPane = True
     for thickness in glzSysThicknesses:
         if glassPane == False:
             glassPane = True
-            materialLine = rc.Geometry.LineCurve(rc.Geometry.Point3d(XCoord,0,spacerHeight), rc.Geometry.Point3d(XCoord+thickness,0,spacerHeight))
+            materialLine = rc.Geometry.LineCurve(rc.Geometry.Point3d(XCoord,spacerHeight, 0), rc.Geometry.Point3d(XCoord+thickness,spacerHeight, 0))
             materialSrf = rc.Geometry.Surface.CreateExtrusion(materialLine, gasExtrusionVec)
         else:
             glassPane = False
@@ -296,19 +300,18 @@ def main(windowGlzSysReport, glzPlane, sightLineToGlz, spacerHeight, edgeOfGlass
             if glassPane == False:
                 glassPane = True
                 materialLine = rc.Geometry.LineCurve(rc.Geometry.Point3d(newXCoord,0,0), rc.Geometry.Point3d(newXCoord+thickness,0,0))
-                materialSrf = rc.Geometry.Surface.CreateExtrusion(materialLine, rc.Geometry.Vector3d(0,0,spacerHeight))
+                materialSrf = rc.Geometry.Surface.CreateExtrusion(materialLine, rc.Geometry.Vector3d(0,spacerHeight,0))
                 initSpacerGeos.append(rc.Geometry.Brep.CreateFromSurface(materialSrf))
             else: glassPane = False
             newXCoord += thickness
     
     #Generate the boundary condition geometries.
-    outdoorBCGeo = rc.Geometry.PolylineCurve([rc.Geometry.Point3d.Origin, rc.Geometry.Point3d(0,0,glzSystemHeight)])
-    indoorFrameBCGeo = rc.Geometry.PolylineCurve([rc.Geometry.Point3d(XCoord,0,sightLineToGlz), rc.Geometry.Point3d(XCoord,0,sightLineToGlz+edgeOfGlassDim)])
-    indoorRemainBCGeo = rc.Geometry.PolylineCurve([rc.Geometry.Point3d(XCoord,0,sightLineToGlz+edgeOfGlassDim), rc.Geometry.Point3d(XCoord,0,glzSystemHeight)])
+    outdoorBCGeo = rc.Geometry.PolylineCurve([rc.Geometry.Point3d.Origin, rc.Geometry.Point3d(0,glzSystemHeight,0)])
+    indoorFrameBCGeo = rc.Geometry.PolylineCurve([rc.Geometry.Point3d(XCoord,sightLineToGlz,0), rc.Geometry.Point3d(XCoord,sightLineToGlz+edgeOfGlassDim,0)])
+    indoorRemainBCGeo = rc.Geometry.PolylineCurve([rc.Geometry.Point3d(XCoord,sightLineToGlz+edgeOfGlassDim,0), rc.Geometry.Point3d(XCoord,glzSystemHeight,0)])
     
     #Transform the geometries into the corrext scale and plane.
-    plane = rc.Geometry.Plane.WorldZX
-    plane.Flip()
+    plane = rc.Geometry.Plane.WorldXY
     conversionFactor = conversionFactor/1000
     conversionFactor = 1/(conversionFactor*1000)
     unitsScale = rc.Geometry.Transform.Scale(rc.Geometry.Plane.WorldXY, conversionFactor, conversionFactor, conversionFactor)
@@ -317,14 +320,14 @@ def main(windowGlzSysReport, glzPlane, sightLineToGlz, spacerHeight, edgeOfGlass
     outdoorBCGeo.Transform(unitsScale)
     indoorFrameBCGeo.Transform(unitsScale)
     indoorRemainBCGeo.Transform(unitsScale)
-    if glzPlane != None:
-        planeTransform = rc.Geometry.Transform.ChangeBasis(glzPlane, rc.Geometry.Plane.WorldXY)
-        for geo in initWindowGeos: geo.Transform(planeTransform)
-        for geo in initSpacerGeos: geo.Transform(planeTransform)
-        outdoorBCGeo.Transform(planeTransform)
-        indoorFrameBCGeo.Transform(planeTransform)
-        indoorRemainBCGeo.Transform(planeTransform)
-        plane.Transform(planeTransform)
+    
+    planeTransform = rc.Geometry.Transform.ChangeBasis(glzPlane, rc.Geometry.Plane.WorldXY)
+    for geo in initWindowGeos: geo.Transform(planeTransform)
+    for geo in initSpacerGeos: geo.Transform(planeTransform)
+    outdoorBCGeo.Transform(planeTransform)
+    indoorFrameBCGeo.Transform(planeTransform)
+    indoorRemainBCGeo.Transform(planeTransform)
+    plane.Transform(planeTransform)
     
     #Create the thermPolygons for the window materials.
     allMaterials = []
