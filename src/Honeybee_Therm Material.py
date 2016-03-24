@@ -30,9 +30,13 @@ Provided by Honeybee 0.0.59
         _conductivity: A number representing the conductivity of the THERM material in W/m-K.
         absorptivity_: A number between 0 and 1 that represents the solar absorptivity of the material. The default is set to 0.5.
         emissivity_: A number between 0 and 1 that represents the emissivity of the material. The default is set to 0.9.
-        type_:  An integer that represents the type of material.  The defaul is set to 0 - solid.  Choose from the following options:
-            0 - Solid material
-            1 - Gas material
+        cavityModel_:  An integer that represents the cavity model to use for the material (if it is a gas).  If you are creating a solid material, just leave this input blank.  Cavity models (4 - ISO 15099) and (5 - ISO 15099 ventilated) are used for most situations.  Choose from the following options:
+            0 - NFRC
+            1 - CEN
+            2 - CEN (slightly ventilated)
+            3 - NFRC with user dimensions
+            4 - ISO 15099
+            5 - ISO 15099 ventilated
          RGBColor_: An optional color to set the color of the material when you import it into THERM.
     Returns:
         thermMaterial: A therm material that can be plugged into the "Honeybee_Create Therm Polygons" component.
@@ -41,7 +45,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Therm Material"
 ghenv.Component.NickName = 'ThermMaterial'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAR_24_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -57,13 +61,14 @@ import scriptcontext as sc
 w = gh.GH_RuntimeMessageLevel.Warning
 
 
-def main(materialName, conductivity, absorptivity, emissivity, type, RGBColor):
+def main(materialName, conductivity, absorptivity, emissivity, cavityModel, RGBColor):
     #Set some default values.
     materialName = materialName.replace(' ' , '_')
     conductivity = conductivity
     if absorptivity == None: absorptivity = 0.5
     if emissivity == None: emissivity = 0.9
-    if type == None: type = 0
+    if cavityModel == None: type = 0
+    else: type = 1
     if RGBColor == None:
         r = lambda: random.randint(0,255)
         RGBColor = ('#%02X%02X%02X' % (r(),r(),r()))
@@ -71,7 +76,10 @@ def main(materialName, conductivity, absorptivity, emissivity, type, RGBColor):
         RGBColor = System.Drawing.ColorTranslator.ToHtml(RGBColor)
     
     #Make the string.
-    materialString = '<Material Name=' +materialName+ ' Type=' +str(type)+ ' Conductivity=' + str(conductivity) + ' Absorptivity=' + str(absorptivity) + ' Emissivity=' + str(emissivity) + ' RGBColor=' + str(RGBColor) + '/>'
+    if type == 0:
+        materialString = '<Material Name=' +materialName+ ' Type=' +str(type)+ ' Conductivity=' + str(conductivity) + ' Absorptivity=' + str(absorptivity) + ' Emissivity=' + str(emissivity) + ' RGBColor=' + str(RGBColor) + '/>'
+    else:
+        materialString = '<Material Name=' +materialName+ ' Type=' +str(type)+ ' Conductivity=' + str(conductivity) + ' Absorptivity=' + str(absorptivity) + ' Emissivity=' + str(emissivity) + ' RGBColor=' + str(RGBColor) + ' CavityModel=' + str(cavityModel) + '/>'
     
     return materialString
 
@@ -94,7 +102,7 @@ else:
         ghenv.Component.AddRuntimeMessage(w, warning)
 
 if initCheck == True and _materialName != None and _conductivity != None:
-    result= main(_materialName, _conductivity, absorptivity_, emissivity_, type_, RGBColor_)
+    result= main(_materialName, _conductivity, absorptivity_, emissivity_, cavityModel_, RGBColor_)
     
     if result!=-1:
         thermMaterial = result
