@@ -128,6 +128,19 @@ def main(geometry, material, RGBColor):
         ghenv.Component.AddRuntimeMessage(w, warning)
         return -1
     
+    #Make sure that the polygon does not have any holes (only one set of naked edges).
+    polygonBoundaries = []
+    polygonBoundariesEdges = geometry.Edges
+    for edge in polygonBoundariesEdges:
+        if str(edge.Valence) == 'Naked': polygonBoundaries.append(edge.ToNurbsCurve())
+    allBoundary = rc.Geometry.PolylineCurve.JoinCurves(polygonBoundaries, sc.doc.ModelAbsoluteTolerance)
+    if len(allBoundary) != 1:
+        warning = "_geomtry does not have a single boundary (there are holes in the polygon). \n Try breaking the polygon up into two or more polygons such that there is only one boundary."
+        print warning
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+        return -1
+    
     #Make a list to hold the final outputs.
     HBThermPolygons = []
     
