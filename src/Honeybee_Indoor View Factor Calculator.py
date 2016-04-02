@@ -58,7 +58,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.59\nFEB_21_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAPR_02_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -248,6 +248,7 @@ def checkTheInputs():
     #Check the grid size and set a default based on the size of each zone if nothing is connected.
     rhinoModelUnits = str(sc.doc.ModelUnitSystem)
     checkData1 = False
+    gridSize = None
     if gridSize_ == None:
         if _HBZones != []:
             checkData1 = True
