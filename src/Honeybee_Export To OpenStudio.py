@@ -62,7 +62,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.59\nFEB_03_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAPR_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -2662,15 +2662,16 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     lb_preparation = sc.sticky["ladybug_Preparation"]()
     hb_hive = sc.sticky["honeybee_Hive"]()
     hb_reEvaluateHBZones= sc.sticky["honeybee_reEvaluateHBZones"]
+
+    if fileName == None: 
+         fileName = "unnamed"
     
     if workingDir == None:
         workingDir = sc.sticky["Honeybee_DefaultFolder"] 
         originalWorkDir = os.path.join(workingDir, fileName)
     else:
         originalWorkDir = copy.copy(workingDir)
-    
-    if fileName == None: fileName = "unnamed"
-    
+
     subWorkingDir = lb_preparation.makeWorkingDir(os.path.join(workingDir, fileName, "OpenStudio")).replace("\\\\", "\\")
 
     print 'Current working directory is set to: ', subWorkingDir
