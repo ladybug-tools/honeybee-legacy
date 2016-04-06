@@ -43,7 +43,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Shade Material"
 ghenv.Component.NickName = 'EPShadeMat'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAPR_05_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
@@ -92,6 +92,14 @@ def setDefaults():
             print warning
             ghenv.Component.AddRuntimeMessage(w, warning)
     
+    checkData4 = True
+    if (reflectance + transmittance) > 0.99: #!< 1:
+        checkData4 = False
+        warning = "reflectance_ + transmittance_ must be lower than 1."
+        print warning
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+    
+    
     if thickness_ == None: thickness = 0.00025
     else: thickness = thickness_
     
@@ -99,7 +107,7 @@ def setDefaults():
     else: conductivity = conductivity_
     
     
-    if checkData1 == True and checkData2 == True and checkData3 == True: checkData = True
+    if checkData1 == True and checkData2 == True and checkData3 == True and checkData4 == True: checkData = True
     else: checkData = False
     
     
