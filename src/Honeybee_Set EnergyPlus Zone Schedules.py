@@ -27,13 +27,14 @@ Provided by Honeybee 0.0.59
 
     Args:
         _HBZones: HBZones for which you want to change shcedules.
-        occupancySchedule_: A text string representing the occupancy shceudle that you want to use.  This can be either a shcedule from the schedule libirary or a CSV file path to a CSV schedule you created with the "Honeybee_Create CSV Schedule" component.
+        occupancySchedules_: A text string representing the occupancy shceudle that you want to use.  This can be either a shcedule from the schedule libirary or a CSV file path to a CSV schedule you created with the "Honeybee_Create CSV Schedule" component.
         occupancyActivitySchs_: A text string representing the shceudle for the metabolic rate of the occupants that you want to use.  This can be either a shcedule from the schedule libirary or a CSV file path to a CSV schedule you created with the "Honeybee_Create CSV Schedule" component. If this is a CSV schedule, the values in it should be Watts and the "units_" input should be "ActivityLevel."
-        heatingSetPtSchedule_: A text string representing the heating setpoint shceudle that you want to use.  This can be either a shcedule from the schedule libirary or a CSV file path to a CSV schedule you created with the "Honeybee_Create CSV Schedule" component.  If it is a CSV schedule, the values in it should be temperature values in Celcius and the "units_" input should be "Temperature."
-        coolingSetPtSchedule_: A text string representing the cooling setpoint shceudle that you want to use.  This can be either a shcedule from the schedule libirary or a CSV file path to a CSV schedule you created with the "Honeybee_Create CSV Schedule" component.  If it is a CSV schedule, the values in it should be temperature values in Celcius and the "units_" input should be "Temperature."
-        lightingSchedule_: A text string representing the lighting shceudle that you want to use.  This can be either a shcedule from the schedule libirary or a CSV file path to a CSV schedule you created with the "Honeybee_Create CSV Schedule" component.
-        equipmentSchedule_: A text string representing the equipment shceudle that you want to use.  This can be either a shcedule from the schedule libirary or a CSV file path to a CSV schedule you created with the "Honeybee_Create CSV Schedule" component.
-        infiltrationSchedule_: A text string representing the infiltration shceudle that you want to use.  This can be either a shcedule from the schedule libirary or a CSV file path to a CSV schedule you created with the "Honeybee_Create CSV Schedule" component.
+        heatingSetPtSchedules_: A text string representing the heating setpoint shceudle that you want to use.  This can be either a shcedule from the schedule libirary or a CSV file path to a CSV schedule you created with the "Honeybee_Create CSV Schedule" component.  If it is a CSV schedule, the values in it should be temperature values in Celcius and the "units_" input should be "Temperature."
+        coolingSetPtSchedules_: A text string representing the cooling setpoint shceudle that you want to use.  This can be either a shcedule from the schedule libirary or a CSV file path to a CSV schedule you created with the "Honeybee_Create CSV Schedule" component.  If it is a CSV schedule, the values in it should be temperature values in Celcius and the "units_" input should be "Temperature."
+        lightingScheduless_: A text string representing the lighting shceudle that you want to use.  This can be either a shcedule from the schedule libirary or a CSV file path to a CSV schedule you created with the "Honeybee_Create CSV Schedule" component.
+        equipmentSchedules_: A text string representing the equipment shceudle that you want to use.  This can be either a shcedule from the schedule libirary or a CSV file path to a CSV schedule you created with the "Honeybee_Create CSV Schedule" component.
+        infiltrationSchedules_: A text string representing the infiltration shceudle that you want to use.  This can be either a shcedule from the schedule libirary or a CSV file path to a CSV schedule you created with the "Honeybee_Create CSV Schedule" component.
+        ventilationSchedules_: A text string representing the ventilation shceudle that you want to use.  This can be either a shcedule from the schedule libirary or a CSV file path to a CSV schedule you created with the "Honeybee_Create CSV Schedule" component.
         HVACAvailabiltySchs_: A text string representing the HVAC availability that you want to use.  This can be either a shcedule from the schedule libirary or a CSV file path to a CSV schedule you created with the "Honeybee_Create CSV Schedule" component.
     Returns:
         schedules: A report of what shcedules are assigned to each zone.
@@ -42,11 +43,11 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Set EnergyPlus Zone Schedules"
 ghenv.Component.NickName = 'setEPZoneSchedules'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAR_14_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.56\nMAR_14_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
@@ -87,14 +88,17 @@ def checkTheInputs():
     if len(infiltrationSchedules_) == 1: infiltrationSchedules = duplicateData(infiltrationSchedules_, len(_HBZones))
     else: infiltrationSchedules = infiltrationSchedules_
     
+    if len(ventilationSchedules_) == 1: ventilationSchedules = duplicateData(ventilationSchedules_, len(_HBZones))
+    else: ventilationSchedules = ventilationSchedules_
+    
     if len(HVACAvailabilitySchs_) == 1: HVACAvailabilitySchs = duplicateData(HVACAvailabilitySchs_, len(_HBZones))
     else: HVACAvailabilitySchs = HVACAvailabilitySchs_
     
     
-    return occupancySchedules, occupancyActivitySchs, coolingSetPtSchedules, heatingSetPtSchedules, lightingSchedules, equipmentSchedules, infiltrationSchedules, HVACAvailabilitySchs
+    return occupancySchedules, occupancyActivitySchs, coolingSetPtSchedules, heatingSetPtSchedules, lightingSchedules, equipmentSchedules, infiltrationSchedules, ventilationSchedules, HVACAvailabilitySchs
 
 
-def main(HBZones, occupancySchedule, occupancyActivitySch, heatingSetPtSchedule, coolingSetPtSchedule, lightingSchedule, equipmentSchedule, infiltrationSchedule, HVACAvailabilitySchs):
+def main(HBZones, occupancySchedule, occupancyActivitySch, heatingSetPtSchedule, coolingSetPtSchedule, lightingSchedule, equipmentSchedule, infiltrationSchedule, ventilationSchedules, HVACAvailabilitySchs):
     # check for Honeybee
     if not sc.sticky.has_key('honeybee_release'):
         print "You should first let Honeybee to fly..."
@@ -114,8 +118,8 @@ def main(HBZones, occupancySchedule, occupancyActivitySch, heatingSetPtSchedule,
         ghenv.Component.AddRuntimeMessage(w, warning)
         return -1
     
-    # make sure schedules are in HB schedule 
-    schedules = [occupancySchedule, heatingSetPtSchedule, coolingSetPtSchedule, lightingSchedule, equipmentSchedule, infiltrationSchedule, HVACAvailabilitySchs]
+    # make sure schedules are in HB schedule library.
+    schedules = [occupancySchedule, heatingSetPtSchedule, coolingSetPtSchedule, lightingSchedule, equipmentSchedule, infiltrationSchedule, ventilationSchedules, HVACAvailabilitySchs]
     HBScheduleList = sc.sticky["honeybee_ScheduleLib"].keys()
     
     for scheduleList in schedules:
@@ -163,6 +167,9 @@ def main(HBZones, occupancySchedule, occupancyActivitySch, heatingSetPtSchedule,
         if infiltrationSchedule != [] and infiltrationSchedule[0] != None:
             try: HBZone.infiltrationSchedule = infiltrationSchedule[zoneCount]
             except: HBZone.infiltrationSchedule = infiltrationSchedule[0]
+        if ventilationSchedules != [] and ventilationSchedules[0] != None:
+            try: HBZone.ventilationSched = ventilationSchedules[zoneCount]
+            except: HBZone.ventilationSched = ventilationSchedules[0]
         if HVACAvailabilitySchs != [] and HVACAvailabilitySchs[0] != None:
             try: HBZone.HVACAvailabilitySched = HVACAvailabilitySchs[zoneCount]
             except: HBZone.HVACAvailabilitySched = HVACAvailabilitySchs[0]
@@ -175,11 +182,9 @@ def main(HBZones, occupancySchedule, occupancyActivitySch, heatingSetPtSchedule,
     
 
 
-occupancySchedules, occupancyActivitySchs, coolingSetPtSchedules, heatingSetPtSchedules, lightingSchedules, equipmentSchedules, infiltrationSchedules, HVACAvailabilitySchs = checkTheInputs()
-
 if _HBZones and _HBZones[0]!=None:
-    occupancySchedules, occupancyActivitySchs, coolingSetPtSchedules, heatingSetPtSchedules, lightingSchedules, equipmentSchedules, infiltrationSchedules, HVACAvailabilitySchs = checkTheInputs()
+    occupancySchedules, occupancyActivitySchs, coolingSetPtSchedules, heatingSetPtSchedules, lightingSchedules, equipmentSchedules, infiltrationSchedules, ventilationSchedules, HVACAvailabilitySchs = checkTheInputs()
     
-    results = main(_HBZones, occupancySchedules, occupancyActivitySchs, heatingSetPtSchedules, coolingSetPtSchedules, lightingSchedules, equipmentSchedules, infiltrationSchedules, HVACAvailabilitySchs)
+    results = main(_HBZones, occupancySchedules, occupancyActivitySchs, heatingSetPtSchedules, coolingSetPtSchedules, lightingSchedules, equipmentSchedules, infiltrationSchedules, ventilationSchedules, HVACAvailabilitySchs)
     
     if results != -1: HBZones, schedules = results

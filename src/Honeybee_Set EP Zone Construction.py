@@ -29,7 +29,7 @@ Provided by Honeybee 0.0.59
     
     Args:
         _HBZone: Honeybee zone
-        wallEPConstruction_: Optional new construction for walls
+        wallEPConstruction_: Optional new construction for walls. This input can also accept lists of construction names and will assign different constructions based on cardinal direction, starting with north and moving counter-clockwise.
         windowEPConstruction_: Optional new construction for windows
         roofEPConstruction_: Optional new construction for roofs
         floorEPConstruction_: Optional new construction for floors
@@ -42,7 +42,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Set EP Zone Construction"
 ghenv.Component.NickName = 'setEPZoneCnstr'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAR_07_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
@@ -54,6 +54,7 @@ except: pass
 import scriptcontext as sc
 import Rhino as rc
 import Grasshopper.Kernel as gh
+import rhinoscriptsyntax as rs
 
 def main(HBZone, wallEPCnst, windowEPCnst, roofEPCnst, flrEPCnst, expFlrEpCnst, \
         skylightEPCnst):
@@ -85,6 +86,15 @@ def main(HBZone, wallEPCnst, windowEPCnst, roofEPCnst, flrEPCnst, expFlrEpCnst, 
     # here I should check for each construction to be in the library
     hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
     
+    
+    #See if the wall properties are being specified based on orientation.
+    angles = []
+    if len(wallEPCnst) > 0:
+        initAngles = rs.frange(0, 360, 360/len(wallEPCnst))
+        for an in initAngles: angles.append(an-(360/(2*len(wallEPCnst))))
+        angles.append(360)
+    
+    
     if HBZoneObject != None:
         for srf in HBZoneObject.surfaces:
             if srf.BCObject.name == "": # not internal surfaces 
@@ -97,8 +107,13 @@ def main(HBZone, wallEPCnst, windowEPCnst, roofEPCnst, flrEPCnst, expFlrEpCnst, 
                     for childSrf in srf.childSrfs:
                         hb_EPObjectsAux.assignEPConstruction(childSrf, skylightEPCnst, ghenv.Component)
                 
-                if srf.type == 0 and wallEPCnst!=None:
-                    hb_EPObjectsAux.assignEPConstruction(srf, wallEPCnst, ghenv.Component)
+                if srf.type == 0 and len(wallEPCnst) != 0:
+                    if len(wallEPCnst) > 1:
+                        for angleCount in range(len(angles)-1):
+                            if angles[angleCount]+(0.5*sc.doc.ModelAngleToleranceDegrees) <= srf.angle2North%360 <= angles[angleCount +1]+(0.5*sc.doc.ModelAngleToleranceDegrees):
+                                hb_EPObjectsAux.assignEPConstruction(srf, wallEPCnst[angleCount%len(wallEPCnst)], ghenv.Component)
+                    else:
+                        hb_EPObjectsAux.assignEPConstruction(srf, wallEPCnst[0], ghenv.Component)
                 elif srf.type == 1 and roofEPCnst!=None:
                     hb_EPObjectsAux.assignEPConstruction(srf, roofEPCnst, ghenv.Component)
                 elif srf.type == 2 and flrEPCnst!=None:

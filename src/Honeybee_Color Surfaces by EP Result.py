@@ -38,7 +38,6 @@ Provided by Honeybee 0.0.59
         analysisPeriod_: Optional analysisPeriod_ to take a slice out of an annual data stream.  Note that this will only work if the connected data is for a full year and the data is hourly.  Otherwise, this input will be ignored. Also note that connecting a value to "stepOfSimulation_" will override this input.
         stepOfSimulation_: Optional interger for the hour of simulation to color the surfaces with.  Connecting a value here will override the analysisPeriod_ input.
         legendPar_: Optional legend parameters from the Ladybug Legend Parameters component.
-        recallHBHive_: Set to "True" to recall the zones from the hive each time the input changes and "False" to simply copy the zones to memory.  Calling the zones from the hive can take some more time but this is necessary if you are making changes to the zones and you want to check them.  Otherwise, if you are just scrolling through attributes, it is nice to set this to "False" for speed.  The default is set to "False" for speed.
         _runIt: Set boolean to "True" to run the component and color the zone surfaces.
     Returns:
         readMe!: ...
@@ -54,11 +53,11 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Color Surfaces by EP Result"
 ghenv.Component.NickName = 'ColorSurfaces'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nFEB_21_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.56\nFEB_21_2016
 #compatibleLBVersion = VER 0.0.59\nNOV_20_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
 except: pass
@@ -83,8 +82,7 @@ inputsDict = {
 4: ["analysisPeriod_", "Optional analysisPeriod_ to take a slice out of an annual data stream.  Note that this will only work if the connected data is for a full year and the data is hourly.  Otherwise, this input will be ignored. Also note that connecting a value to 'stepOfSimulation_' will override this input."],
 5: ["stepOfSimulation_", "Optional interger for the hour of simulation to color the surfaces with.  Connecting a value here will override the analysisPeriod_ input."],
 6: ["legendPar_", "Optional legend parameters from the Ladybug Legend Parameters component."],
-7: ["recallHBHive_", "Set to 'True' to recall the zones from the hive each time the input changes and 'False' to simply copy the zones to memory.  Calling the zones from the hive can take some more time but this is necessary if you are making changes to the zones and you want to check them.  Otherwise, if you are just scrolling through attributes, it is nice to set this to 'False' for speed.  The default is set to 'False' for speed."],
-8: ["_runIt", "Set boolean to 'True' to run the component and color the zone surfaces."]
+7: ["_runIt", "Set boolean to 'True' to run the component and color the zone surfaces."]
 }
 
 outputsDict = {
@@ -115,7 +113,7 @@ def copyHBZoneData():
     for HZone in _HBZones:
         zoneBreps.append(HZone)
         zoneCentPts.append(HZone.GetBoundingBox(False).Center)
-        zone = hb_hive.callFromHoneybeeHive([HZone])[0]
+        zone = hb_hive.visualizeFromHoneybeeHive([HZone])[0]
         for srf in zone.surfaces:
             surfaceNames.append(srf.name)
             if srf.hasChild:
@@ -296,7 +294,7 @@ def getZoneSrfs(srfHeaders, pyZoneData, hb_zoneData):
 
 def manageInputOutput(annualData, simStep, srfNormalizable, srfHeaders, pyZoneData):
     #If some of the component inputs and outputs are not right, blot them out or change them.
-    for input in range(9):
+    for input in range(8):
         if input == 3 and srfNormalizable == False:
             ghenv.Component.Params.Input[input].NickName = "__________"
             ghenv.Component.Params.Input[input].Name = "."
@@ -357,7 +355,7 @@ def manageInputOutput(annualData, simStep, srfNormalizable, srfHeaders, pyZoneDa
         return -1
 
 def restoreInputOutput():
-    for input in range(9):
+    for input in range(8):
         ghenv.Component.Params.Input[input].NickName = inputsDict[input][0]
         ghenv.Component.Params.Input[input].Name = inputsDict[input][0]
         ghenv.Component.Params.Input[input].Description = inputsDict[input][1]
@@ -644,38 +642,43 @@ def main(zoneValues, zones, srfBreps, srfHeaders, title, legendTitle, lb_prepara
     return transparentColors, srfBreps, srfMeshes, zoneWires, [legendSrfs, legendTextCrv, titleTextCurve], legendBasePoint
 
 
+#If Honeybee or Ladybug is not flying or is an older version, give a warning.
+initCheck = True
+
+#Ladybug check.
+if not sc.sticky.has_key('ladybug_release') == True:
+    initCheck = False
+    print "You should first let Ladybug fly..."
+    ghenv.Component.AddRuntimeMessage(w, "You should first let Ladybug fly...")
+else:
+    try:
+        if not sc.sticky['ladybug_release'].isCompatible(ghenv.Component): initCheck = False
+        if sc.sticky['ladybug_release'].isInputMissing(ghenv.Component): initCheck = False
+    except:
+        initCheck = False
+        warning = "You need a newer version of Ladybug to use this compoent." + \
+        "Use updateLadybug component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Ladybug_Ladybug component " + \
+        "into canvas and try again."
+        ghenv.Component.AddRuntimeMessage(w, warning)
 
 
-#If the HBzone data has not been copied to memory or if the data is old, get it.
-initCheck = False
-if _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and recallHBHive_ == True:
-    copyHBZoneData()
-    hb_zoneData = sc.sticky["Honeybee_SrfData"]
-    initCheck = True
-elif _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('Honeybee_SrfData') == False:
-    copyHBZoneData()
-    hb_zoneData = sc.sticky["Honeybee_SrfData"]
-    initCheck = True
-elif _HBZones != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('Honeybee_SrfData') == True:
-    hb_zoneData = sc.sticky["Honeybee_SrfData"]
-    checkZones = True
-    if len(_HBZones) == len(hb_zoneData[0]):
-        for count, brep in enumerate(_HBZones):
-            boundBoxVert = brep.GetBoundingBox(False).Center
-            if boundBoxVert.X <= hb_zoneData[3][count].X+tol and boundBoxVert.X >= hb_zoneData[3][count].X-tol and boundBoxVert.Y <= hb_zoneData[3][count].Y+tol and boundBoxVert.Y >= hb_zoneData[3][count].Y-tol and boundBoxVert.Z <= hb_zoneData[3][count].Z+tol and boundBoxVert.Z >= hb_zoneData[3][count].Z-tol: pass
-            else:
-                checkZones = False
-    else: checkZones = False
-    if checkZones == True: pass
-    else:
-        copyHBZoneData()
-        hb_zoneData = sc.sticky["Honeybee_SrfData"]
-    initCheck = True
-elif _HBZones != [] and sc.sticky.has_key('honeybee_release') == False:
-    print "You should first let Honeybee  fly..."
+#Honeybee check.
+if not sc.sticky.has_key('honeybee_release') == True:
+    initCheck = False
+    print "You should first let Honeybee fly..."
     ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee fly...")
 else:
-    pass
+    try:
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): initCheck = False
+    except:
+        initCheck = False
+        warning = "You need a newer version of Honeybee to use this compoent." + \
+        "Use updateHoneybee component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+        "into canvas and try again."
+        ghenv.Component.AddRuntimeMessage(w, warning)
+
 
 
 #Check the data input.
@@ -695,6 +698,9 @@ if checkData == True and normByFlr == None: normByFlr = True
 
 dataCheck = False
 if _runIt == True and checkData == True and _HBZones != []:
+    copyHBZoneData()
+    hb_zoneData = sc.sticky["Honeybee_SrfData"]
+    
     dataCheck, surfaceNames, srfAreas, srfBreps, pyZoneData, srfHeaders, zoneBreps = getZoneSrfs(srfHeaders, pyZoneData, hb_zoneData)
     if dataCheck == True:
         srfValues, normalizedSrfData, title, legendTitle, lb_preparation, lb_visualization = getData(pyZoneData, srfAreas, annualData, simStep, srfNormalizable, srfHeaders, headerUnits, normByFlr, analysisPeriod, stepOfSimulation, total)

@@ -39,7 +39,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Dump Honeybee Objects"
 ghenv.Component.NickName = 'dumpHBObjects'
-ghenv.Component.Message = 'VER 0.0.59\nFEB_14_2016'
+ghenv.Component.Message = 'VER 0.0.59\nFEB_25_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"
@@ -102,8 +102,9 @@ def dumpHBObjects(HBObjects):
             print HBSurface.BC.lower()
             # not out outdoor BC
             pass
-            
-        if HBSurface.BC.lower() == "surface":
+        
+        # in case the surface is adjacent to another surface
+        if hasattr(HBSurface.BCObject, "ID"):
             idsToBeChecked[HBSurface.BCObject.ID] = HBSurface.BCObject.name
             # replace parent object with ID
             HBSurface.BCObject = HBSurface.BCObject.ID

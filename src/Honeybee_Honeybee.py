@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.59\nFEB_16_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAR_14_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -4837,11 +4837,12 @@ class EPZone(object):
         self.heatingSetPt= ""
         self.coolingSetback= ""
         self.heatingSetback= ""
+        self.humidityMax= ""
+        self.humidityMin= ""
         
         #Air System Properties.
         self.recirculatedAirPerArea = 0
         self.outdoorAirReq = "Sum"
-        self.useVAVTemplate = False
         self.coolSupplyAirTemp= ""
         self.heatSupplyAirTemp= ""
         self.coolingCapacity= ""
@@ -4850,6 +4851,7 @@ class EPZone(object):
         self.heatRecovery= ""
         self.heatRecoveryEffectiveness= ""
         self.HVACAvailabilitySched = "ALWAYS ON"
+        self.ventilationSched = ""
         
         if zoneBrep != None:
             self.isClosed = self.geometry.IsSolid
@@ -4967,6 +4969,7 @@ class EPZone(object):
             "lightingSchedule: " + str(self.lightingSchedule) + "\n" + \
             "equipmentSchedule: " + str(self.equipmentSchedule) + "\n" + \
             "infiltrationSchedule: " + str(self.infiltrationSchedule)+ "\n" + \
+            "ventilationSchedule: " + str(self.ventilationSched)+ "\n" + \
             "HVACAvailabilitySched: " + str(self.HVACAvailabilitySched) + "."
             
             return report
@@ -4979,6 +4982,7 @@ class EPZone(object):
                             "lightingSchedule" : str(self.lightingSchedule),
                             "equipmentSchedule" : str(self.equipmentSchedule),
                             "infiltrationSchedule" : str(self.infiltrationSchedule),
+                            "ventilationSched: " : str(self.ventilationSched),
                             "HVACAvailabilitySched" : str(self.HVACAvailabilitySched)}
             
             return scheduleDict
@@ -5575,9 +5579,10 @@ class hb_reEvaluateHBZones(object):
                         # add glazing to adjacent surface
                         adjcSrf = surface.BCObject
                         
-                        assert len(surface.childSrfs) != len(adjcSrf.childSrfs), \
-                            "Adjacent surfaces %s and %s do not have the same number of galzings.\n"%(surface.name, adjcSrf.name) + \
-                            "Check your energy model and try again."
+                        #This well-intentioned check was stopping good geomtry from being run through EnergyPlus.  It has thus been disabled. - Chris Mackey
+                        #assert len(surface.childSrfs) != len(adjcSrf.childSrfs), \
+                        #    "Adjacent surfaces %s and %s do not have the same number of galzings.\n"%(surface.name, adjcSrf.name) + \
+                        #    "Check your energy model and try again."
                         
                         # add glazing to adjacent surface
                         if count == 0:
@@ -7361,6 +7366,13 @@ class hb_Hive(object):
                     HBObjects.append(sc.sticky['HBHive'][key])
                 
         return HBObjects
+    
+    def visualizeFromHoneybeeHive(self, geometryList):
+        HBObjects = []
+        for geometry in geometryList:
+            key = geometry.UserDictionary['HBID']
+            if sc.sticky['HBHive'].has_key(key): HBObjects.append(sc.sticky['HBHive'][key])
+        return HBObjects
 
 class hb_RADParameters(object):
     def __init__(self):
@@ -7946,6 +7958,7 @@ if checkIn.letItFly:
         sc.sticky["wind_generator"] = Wind_gen
         sc.sticky["simple_battery"] = simple_battery
         sc.sticky["thermBCCount"] = 1
+        sc.sticky["hBZoneCount"] = 0
         sc.sticky["honeybee_reEvaluateHBZones"] = hb_reEvaluateHBZones
         sc.sticky["honeybee_AirsideEconomizerParams"] = hb_airsideEconoParams
         sc.sticky["honeybee_constantVolumeFanParams"] = hb_constVolFanParams

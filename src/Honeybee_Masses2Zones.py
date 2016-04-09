@@ -53,11 +53,11 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_Masses2Zones'
 ghenv.Component.NickName = 'Mass2Zone'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nFEB_24_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.56\nFEB_24_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
 except: pass
@@ -143,9 +143,10 @@ def main(maximumRoofAngle, zoneMasses, zoneNames, zonePrograms, isConditioned):
     # create zones out of masses
     for zoneKey, zone in enumerate(zoneMasses):
         # zone name
-        try: zoneName = zoneNames[zoneKey].strip().replace(" ","_")
-        except: zoneName = "zone_" + str(zoneKey)
-        # str(uuid.uuid4())
+        try: zoneName = zoneNames[zoneKey].strip().replace(" ","_").replace(":","-")
+        except:
+            zoneName = "zone_" + str(sc.sticky["hBZoneCount"])
+            sc.sticky["hBZoneCount"] += 1
         
         # zone programs
         try: thisZoneProgram = zonePrograms[zoneKey].split("::")

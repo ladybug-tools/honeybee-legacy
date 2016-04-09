@@ -27,7 +27,7 @@ Provided by Honeybee 0.0.59
 
     Args:
         _polygons: A list of thermPolygons from one or more "Honeybee_Create Therm Polygons" components.
-        _boundaries: A list of thermBoundaries from one or more "Honeybee_Create Therm Boundaries" components.
+        boundaries_: A list of thermBoundaries from one or more "Honeybee_Create Therm Boundaries" components.
         meshLevel_: An optional integer to set the mesh level of the resulting exported file.  The default is set to a coarse value of 6 but it may be necessary to increase this if THERM tells you to 'increase the quad tree mesh parameter in the file'.
         workingDir_: An optional working directory to a folder on your system, into which you would like to write the THERM XML and results.  The default will write these files in into your Ladybug default folder.  NOTE THAT DIRECTORIES INPUT HERE SHOULD NOT HAVE ANY SPACES OR UNDERSCORES IN THE FILE PATH.
         fileName_: An optional text string which will be used to name your THERM XML.  Change this to aviod over-writing results of previous runs of this component.
@@ -52,7 +52,7 @@ import decimal
 
 ghenv.Component.Name = 'Honeybee_Write THERM File'
 ghenv.Component.NickName = 'writeTHERM'
-ghenv.Component.Message = 'VER 0.0.59\nFEB_15_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAR_22_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -80,7 +80,7 @@ def checkTheInputs():
         if not os.path.exists(workingDir_):
             try:
                 os.makedirs(workingDir_)
-                workingDir = workingDir_
+                
             except:
                 checkData3 = False
                 warning =  'cannot create the working directory as: ', workingDir_ + \
@@ -88,19 +88,23 @@ def checkTheInputs():
                 print warning
                 ghenv.Component.AddRuntimeMessage(w, warning)
                 return -1
+        else:
+            workingDir = workingDir_
     else:
         if workingDir_ == None: workingDir = sc.sticky["Ladybug_DefaultFolder"] + xmlFileName + '\\THERM\\'
         else: workingDir = workingDir_
         if not os.path.exists(workingDir): os.makedirs(workingDir)
         print 'Current working directory is set to: ' + workingDir
     
+    if not workingDir.endswith('\\'): workingDir = workingDir + '\\'
+    
     #Call the polygons from the hive.
     hb_hive = sc.sticky["honeybee_Hive"]()
     try:
         thermPolygons = hb_hive.callFromHoneybeeHive(_polygons)
-        thermBCs = hb_hive.callFromHoneybeeHive(_boundaries)
+        thermBCs = hb_hive.callFromHoneybeeHive(boundaries_)
     except:
-        warning = "Failed to call _polygons and _boundaries from the HB Hive. \n Make sure that connected geometry to _polygons is from the 'Create Therm Polygons' component \n and that geometry to _boundaries is from the 'Create Therm Boundaries' component."
+        warning = "Failed to call _polygons and boundaries_ from the HB Hive. \n Make sure that connected geometry to _polygons is from the 'Create Therm Polygons' component \n and that geometry to boundaries_ is from the 'Create Therm Boundaries' component."
         print warning
         ghenv.Component.AddRuntimeMessage(w, warning)
         return -1
@@ -126,7 +130,7 @@ def checkTheInputs():
         except:
             checkData = False
     if checkData == False:
-        warning = "Geometry connected to _boundaries are not valid thermBoundaries from the 'Create Therm Bounrdaies' component."
+        warning = "Geometry connected to boundaries_ are not valid thermBoundaries from the 'Create Therm Bounrdaies' component."
         print warning
         ghenv.Component.AddRuntimeMessage(w, warning)
         return -1
@@ -243,16 +247,19 @@ def checkTheInputs():
     #polygonBoundaries = joinedPolygons[0].DuplicateNakedEdgeCurves(True, True)
     allBoundary = rc.Geometry.PolylineCurve.JoinCurves(polygonBoundaries, sc.doc.ModelAbsoluteTolerance)
     if len(allBoundary) != 1:
-        warning = "Geometry connected to _polygons does not have a single boundary (there are holes in the model). \n These holes will cause THERM to crash. \n Note that air gaps in your model whould be represented with a polygon having an 'air' material."
+        boundLengths = []
+        for bnd in allBoundary: boundLengths.append(bnd.GetLength())
+        boundLengths, allBoundary = zip(*sorted(zip(boundLengths, allBoundary)))
+        encircling = allBoundary[-1]
+        warning = "Geometry connected to _polygons does not have a single boundary (there are holes in the model). \n You will have to fill in these gaps when you bring your model into THERM. \n Note that air gaps in your model can be represented with a polygon having an 'air' material."
         print warning
         ghenv.Component.AddRuntimeMessage(w, warning)
-        return -1
     else:
         #Check to be sure the curve is facing counter-clockwise.
         encircling = allBoundary[0]
-        if str(encircling.ClosedCurveOrientation(basePlane)) == 'CounterClockwise':
-            encircling.Reverse()
-        polygonBoundaries = encircling.DuplicateSegments()
+    if str(encircling.ClosedCurveOrientation(basePlane)) == 'CounterClockwise':
+        encircling.Reverse()
+    polygonBoundaries = encircling.DuplicateSegments()
     
     #Get the centroid of all geometry
     allGeoCentroid = rc.Geometry.AreaMassProperties.Compute(joinedPolygons[0]).Centroid
@@ -354,7 +361,7 @@ def checkAbbreviations(matName):
     return matName
 
 
-def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundary, thermFileOrigin, allGeoCentroid):
+def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundary, thermFileOrigin, allGeoCentroid, conversionFactor):
     #Call the needed classes.
     lb_preparation = sc.sticky["ladybug_Preparation"]()
     thermMatLib = sc.sticky["honeybee_thermMaterialLib"]
@@ -363,18 +370,9 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
     #Make a set of transformations from Rhino world coordinates to the Therm scene.
     #Check the units of the Rhino file and scale everything from meters to millimeters. Keep track of this transformation as well.
     planeReorientation = rc.Geometry.Transform.ChangeBasis(rc.Geometry.Plane.WorldXY, basePlane)
-    conversionFactor = lb_preparation.checkUnits()*1000
     unitsScale = rc.Geometry.Transform.Scale(rc.Geometry.Plane.WorldXY, conversionFactor, conversionFactor, conversionFactor)
     bufferTansl = rc.Geometry.Transform.Translation(250, -50, 0)
-    d = decimal.Decimal(str(sc.doc.ModelAbsoluteTolerance))
-    numDecPlaces = abs(d.as_tuple().exponent)
-    numConversionFacPlaces = len(list(str(int(conversionFactor))))-1
-    numDecPlaces = numDecPlaces - numConversionFacPlaces
-    #If the Rhino model tolerance is not fine enough, give a warning.
-    if numDecPlaces < 2:
-        warning = "Your Rhino model tolerance is coarser than the default tolerance for THERM. \n It is recommended that you decrease your Rhino model tolerance to 0.01 mm by typing 'units' in the Rhino command bar and adding decimal places to the 'tolerance'."
-        print warning
-        ghenv.Component.AddRuntimeMessage(w, warning)
+    
     #Set the tolerance at the default THERM tolerance.
     numDecPlaces = 2
     
@@ -474,7 +472,7 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
                 boundGeoProp['Emissivity'] = thermMatLib[polygon.material]['Emissivity']
                 matEmiss = thermMatLib[polygon.material]['Emissivity']
         
-        #Check if the boundary aligns with any of the connected _boundaries.
+        #Check if the boundary aligns with any of the connected boundaries_.
         for boundary in thermBCs:
             boundGeo = boundary.geometry
             closestEndPt = rc.Geometry.PolylineCurve.ClosestPoint(boundGeo, segEndPt, sc.doc.ModelAbsoluteTolerance*2)[0]
@@ -608,7 +606,7 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
                 
                 #First, check if the user has specified any boundary conditions for the air cavity.
                 if allNotMatched:
-                    #Check if the boundary aligns with any of the connected _boundaries.
+                    #Check if the boundary aligns with any of the connected boundaries_.
                     for boundary in thermBCs:
                         boundGeo = boundary.geometry
                         #print rc.Geometry.PolylineCurve.ClosestPoint(boundGeo, segEndPt, sc.doc.ModelAbsoluteTolerance*2)[0]
@@ -739,7 +737,7 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
                 newPolygons.append(allPolygon[pCount])
         allPolygon = newPolygons
     
-    #Check to be sure that all _boundaries have been matched with _polygons and, if not, give a warning that the BC is being left out.
+    #Check to be sure that all boundaries_ have been matched with _polygons and, if not, give a warning that the BC is being left out.
     if len(thermBCs) != len(matchedBoundaries):
         allBndNames = []
         for b in thermBCs: allBndNames.append(b.name)
@@ -866,13 +864,29 @@ else:
         "into canvas and try again."
         ghenv.Component.AddRuntimeMessage(w, warning)
 
+#If the Rhino model tolerance is not fine enough for THERM modelling, give a warning.
+if initCheck == True:
+    lb_preparation = sc.sticky["ladybug_Preparation"]()
+    conversionFactor = lb_preparation.checkUnits()*1000
+    d = decimal.Decimal(str(sc.doc.ModelAbsoluteTolerance))
+    numDecPlaces = abs(d.as_tuple().exponent)
+    numConversionFacPlaces = len(list(str(int(conversionFactor))))-1
+    numDecPlaces = numDecPlaces - numConversionFacPlaces
+    if numDecPlaces < 2:
+        zeroText = ''
+        for val in range(abs(2-numDecPlaces)): zeroText = zeroText + '0'
+        correctDecimal = '0.' + zeroText + str(sc.doc.ModelAbsoluteTolerance).split('.')[-1]
+        warning = "Your Rhino model tolerance is coarser than the default tolerance for THERM. \n It is recommended that you decrease your Rhino model tolerance to " + correctDecimal + " " + str(sc.doc.ModelUnitSystem) + " \n by typing 'units' in the Rhino command bar and adding decimal places to the 'tolerance'."
+        print warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+
 
 #If the intital check is good, run the component.
 if initCheck and _writeTHMFile:
     initInputs = checkTheInputs()
     if initInputs != -1:
         workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundary, thermFileOrigin, allGeoCentroid = initInputs
-        result = main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundary, thermFileOrigin, allGeoCentroid)
+        result = main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundary, thermFileOrigin, allGeoCentroid, conversionFactor)
         if result != -1:
             thermFile, uFactorFile, resultFile = result
 

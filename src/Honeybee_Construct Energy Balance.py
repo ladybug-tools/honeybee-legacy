@@ -50,11 +50,11 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Construct Energy Balance"
 ghenv.Component.NickName = 'energyBalance'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nFEB_21_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nMAY_02_2015
+#compatibleHBVersion = VER 0.0.56\nFEB_21_2016
 #compatibleLBVersion = VER 0.0.59\nAPR_04_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "0"
 
@@ -192,7 +192,7 @@ def getSrfNames(HBZones):
         # call the objects from the lib
         hb_hive = sc.sticky["honeybee_Hive"]()
         
-        zone = hb_hive.callFromHoneybeeHive([zone])[0]
+        zone = hb_hive.visualizeFromHoneybeeHive([zone])[0]
         
         for srf in zone.surfaces:
             if srf.BC.upper() == "OUTDOORS" or srf.BC.upper() == "GROUND":
@@ -271,7 +271,7 @@ def main(HBZones, heatingLoad, solarLoad, lightingLoad, equipLoad, peopleLoad, s
     hb_hive = sc.sticky["honeybee_Hive"]()
     flrAreas = []
     for Hzone in HBZones:
-        zone = hb_hive.callFromHoneybeeHive([Hzone])[0]
+        zone = hb_hive.visualizeFromHoneybeeHive([Hzone])[0]
         flrAreas.append(zone.getFloorArea())
     totalFlrArea = sum(flrAreas)
     
@@ -411,15 +411,27 @@ def main(HBZones, heatingLoad, solarLoad, lightingLoad, equipLoad, peopleLoad, s
     else: return -1
 
 
-hbCheck = True
-if sc.sticky.has_key('honeybee_release') == False:
-    hbCheck = False
-    print "You should first let Honeybee  fly..."
+#Honeybee check.
+initCheck = True
+if not sc.sticky.has_key('honeybee_release') == True:
+    initCheck = False
+    print "You should first let Honeybee fly..."
     ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee fly...")
+else:
+    try:
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): initCheck = False
+        if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): initCheck = False
+    except:
+        initCheck = False
+        warning = "You need a newer version of Honeybee to use this compoent." + \
+        "Use updateHoneybee component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+        "into canvas and try again."
+        ghenv.Component.AddRuntimeMessage(w, warning)
 
 
 
-if hbCheck == True and _HBZones != []:
+if initCheck == True and _HBZones != []:
     if heating_.BranchCount > 0 or totalSolarGain_.BranchCount > 0 or  electricLight_.BranchCount > 0 or  electricEquip_.BranchCount > 0 or  peopleGains_.BranchCount > 0 or  surfaceEnergyFlow_.BranchCount > 0 or infiltrationEnergy_.BranchCount > 0 or outdoorAirEnergy_.BranchCount > 0 or natVentEnergy_.BranchCount > 0 or cooling_.BranchCount > 0:
         result = main(_HBZones, heating_, totalSolarGain_, electricLight_, electricEquip_, peopleGains_, surfaceEnergyFlow_, infiltrationEnergy_, outdoorAirEnergy_, natVentEnergy_, cooling_)
         

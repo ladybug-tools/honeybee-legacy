@@ -57,7 +57,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Microclimate Map Analysis"
 ghenv.Component.NickName = 'MicroclimateMap'
-ghenv.Component.Message = 'VER 0.0.59\nFEB_03_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAPR_05_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -1186,7 +1186,7 @@ def mainUTCI(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNu
         #Change the outdoor point heights to be for 10 meters above in order to correctly account for wind speeds.
         newOutdoorPtHeightWeights = []
         for height in outdoorPtHeightWeights:
-            newOutdoorPtHeightWeights.append(height+10)
+            newOutdoorPtHeightWeights.append(height)
         
         #Make a dictionary that will relate the zoneSrfNames to the srfTempValues.
         try: srfTempDict = createSrfDict(zoneSrfNames, "srfName", "srfTemp", srfTempHeaders, srfTempNumbers)
@@ -1292,24 +1292,34 @@ def mainUTCI(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNu
                     for pointListCount, pointList in enumerate(testPtsViewFactor):
                         if pointListCount != len(testPtsViewFactor)-1:
                             for val in pointList:
-                                windFlowVal = flowVolValues[pointListCount]/projectedAreas[pointListCount]
-                                if allWindSpeedsSame == True: windFlowVal = windFlowVal + winSpeedNumbers[originalHour-1]
-                                else:
-                                    windFlowVal = windFlowVal + winSpeedNumbers[pointListCount][originalHour-1]
-                                pointWindSpeedValues.append(windFlowVal)
+                                try:
+                                    if allWindSpeedsSame == 1: pointWindSpeedValues.append(winSpeedNumbers[originalHour-1])
+                                    elif allWindSpeedsSame == 0: pointWindSpeedValues.append(winSpeedNumbers[pointListCount][originalHour-1])
+                                    elif allWindSpeedsSame == -1: pointWindSpeedValues = winSpeedNumbers[originalHour-1]
+                                except:
+                                    windFlowVal = flowVolValues[pointListCount]/projectedAreas[pointListCount]
+                                    pointWindSpeedValues.append(windFlowVal)
                         else:
                             for valCount, val in enumerate(pointList):
-                                ptWindSpeed = lb_wind.calcWindSpeedBasedOnHeight(outWindSpeed[originalHour-1], newOutdoorPtHeightWeights[valCount], d, a, 270, 0.14)
-                                pointWindSpeedValues.append(ptWindSpeed)
+                                try:
+                                    if allWindSpeedsSame == 1: pointWindSpeedValues.append(winSpeedNumbers[originalHour-1])
+                                    elif allWindSpeedsSame == 0: pointWindSpeedValues.append(winSpeedNumbers[pointListCount][originalHour-1])
+                                    elif allWindSpeedsSame == -1: pointWindSpeedValues = winSpeedNumbers[originalHour-1]
+                                except:
+                                    windFlowVal = lb_wind.calcWindSpeedBasedOnHeight(outWindSpeed[originalHour-1], newOutdoorPtHeightWeights[valCount], d, a, 270, 0.14)
+                                    pointWindSpeedValues.append(windFlowVal)
                 else:
                     for pointListCount, pointList in enumerate(testPtsViewFactor):
                         for val in pointList:
-                            windFlowVal = flowVolValues[pointListCount]/projectedAreas[pointListCount]
-                            if allWindSpeedsSame == True: windFlowVal = windFlowVal + winSpeedNumbers[originalHour-1]
-                            else: windFlowVal = windFlowVal + winSpeedNumbers[pointListCount][originalHour-1]
-                            pointWindSpeedValues.append(windFlowVal)
+                            try:
+                                if allWindSpeedsSame == 1: pointWindSpeedValues.append(winSpeedNumbers[originalHour-1])
+                                elif allWindSpeedsSame == 0: pointWindSpeedValues.append(winSpeedNumbers[pointListCount][originalHour-1])
+                                elif allWindSpeedsSame == -1: pointWindSpeedValues = winSpeedNumbers[originalHour-1]
+                            except:
+                                windFlowVal = flowVolValues[pointListCount]/projectedAreas[pointListCount]
+                                pointWindSpeedValues.append(windFlowVal)
                 
-                #Compute the SET and PMV comfort.
+                #Compute the UTCI and comfort.
                 utciPointValues = []
                 outdoorComfPointValues = []
                 degNeutralPointValues = []

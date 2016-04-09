@@ -51,7 +51,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Glazing based on ratio"
 ghenv.Component.NickName = 'glazingCreator'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAR_30_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -608,6 +608,39 @@ def createSkylightGlazing(baseSrf, glazingRatio, planarBool, edgeLinear, breakUp
     
     return glzSrf, lastSuccessfulRestOfSrf
 
+# This function is taken from the util.js script of the CBE comfort tool page.
+def bisect(a, b, fn, epsilon, target):
+
+    while (abs(b - a) > 2 * epsilon):
+        midpoint = (b + a) / 2
+        a_T = fn(a)
+        b_T = fn(b)
+        midpoint_T = fn(midpoint)
+        if (a_T - target) * (midpoint_T - target) < 0: b = midpoint
+        elif (b_T - target) * (midpoint_T - target) < 0: a = midpoint
+        else: return -999
+
+    return midpoint
+
+# This function is taken from the util.js script of the CBE comfort tool page.
+def secant(a, b, fn, epsilon):
+    # root-finding only
+    f1 = fn(a)
+    if abs(f1) <= epsilon: return a
+    f2 = fn(b)
+    if abs(f2) <= epsilon: return b
+    
+    for i in range(100):
+        slope = (f2 - f1) / (b - a)
+        c = b - f2 / slope
+        f3 = fn(c)
+        if abs(f3) < epsilon: return c
+        a = b
+        b = c
+        f1 = f2
+        f2 = f3
+
+    return 'NaN'
 
 def createGlazingCurved(baseSrf, glzRatio, planar):
     
@@ -686,27 +719,35 @@ def createGlazingCurved(baseSrf, glzRatio, planar):
     except: coordinatesList = baseSrf.DuplicateVertices()
     
     succ, glzArea, glzCurve, splittedSrfs = OffsetCurveOnSurface(border, face, offsetDist, normalvector, planar)
-    if succ == False:
-        pass
-    else:
-        while abs(targetArea-glzArea) > 0.01 * targetArea and i < 20:
-            i += 1
-            succ, glzArea, glzCurve, splittedSrfs = OffsetCurveOnSurface(border, face, offsetDist, normalvector, planar)
-            if targetArea < glzArea:
-                offsetDist = offsetDist + (offsetDist/(2*i))
-            else:
-                offsetDist = offsetDist - (offsetDist/(2*i))
-            
-            if succ:
-                srfs.append(splittedSrfs)
-                try:
-                    lastSuccessfulGlzSrf = splittedSrfs[1]
-                    lastSuccessfulRestOfSrf = splittedSrfs[0]
-                    lastSuccessfulArea = glzArea
-                except Exception, e:
-                    lastSuccessfulGlzSrf = None
-                    lastSuccessfulRestOfSrf = None
-                    lastSuccessfulArea = 0
+    
+    
+    if baseSrf!= None:
+        srfCent = rc.Geometry.AreaMassProperties.Compute(baseSrf).Centroid
+        srfClstParam = border.ClosestPoint(srfCent)[1]
+        srfClstPt = border.PointAt(srfClstParam)
+        
+        glzO_l = 0.01
+        glzO_r = srfCent.DistanceTo(srfClstPt) - 0.01
+        eps = 0.01  # precision of glazing ratio.
+        def fn(offDist):
+            return (targetArea - OffsetCurveOnSurface(border, face, offDist, normalvector, planar)[1])
+        
+        offsetDist = secant(glzO_l, glzO_r, fn, eps)
+        if offsetDist == 'NaN':
+            offsetDist = bisect(glzO_l, glzO_r, fn, eps, 0)
+    
+        succ, glzArea, glzCurve, splittedSrfs = OffsetCurveOnSurface(border, face, offsetDist, normalvector, planar)
+    
+    if succ:
+        srfs.append(splittedSrfs)
+        try:
+            lastSuccessfulGlzSrf = splittedSrfs[1]
+            lastSuccessfulRestOfSrf = splittedSrfs[0]
+            lastSuccessfulArea = glzArea
+        except Exception, e:
+            lastSuccessfulGlzSrf = None
+            lastSuccessfulRestOfSrf = None
+            lastSuccessfulArea = 0
                     
     
     return lastSuccessfulGlzSrf, lastSuccessfulRestOfSrf

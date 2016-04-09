@@ -32,17 +32,19 @@ Provided by Honeybee 0.0.59
         coolingSetback_: A number or list of numbers that represent the thermostat cooling setback in degrees Celcius.  The cooling setback is the indoor temperature that the space will be kept at when it is unoccipied.  Note that not all building types have a setback.  This can be either a single number to be applied to all connected zones or a list of numbers for each different zone.
         heatingSetPt_: A number or list of numbers that represent the thermostat heating setpoint in degrees Celcius.  The heating setpoint is effectively the indoor temperature below which the heating system is turned on.  This can be either a single number to be applied to all connected zones or a list of numbers for each different zone.
         heatingSetback_: A number or list of numbers that represent the thermostat heating setback in degrees Celcius.  The heating setback is the indoor temperature that the space will be kept at when it is unoccipied.  Note that not all building types have a setback.  This can be either a single number to be applied to all connected zones or a list of numbers for each different zone.
+        maxHumidity_: A number or list of numbers that represent the maximum relative humidity allowed by a humidistat in %.  The HVAC will dehumidify the zone air  if the relative humidity goes above this threshold.  The default is set to 'no limit' or no humidistat. This can be either a single number to be applied to all connected zones or a list of numbers for each different zone.
+        minHumidity_ : A number or list of numbers that represent the minimum relative humidity allowed by a humidistat in %.  The HVAC will humidify the zone air if the relative humidity goes below this threshold.  The default is set to 'no limit' or no humidistat. This can be either a single number to be applied to all connected zones or a list of numbers for each different zone.
     Returns:
         HBZones: HBZones with thresolds set.
 """
 
 ghenv.Component.Name = "Honeybee_Set EnergyPlus Zone Thresholds"
 ghenv.Component.NickName = 'setEPZoneThresholds'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAR_01_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.56\nFEB_18_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
@@ -75,8 +77,13 @@ def checkTheInputs():
     if len(heatingSetback_) == 1: heatingSetback = duplicateData(heatingSetback_, len(_HBZones))
     else: heatingSetback = heatingSetback_
     
+    if len(maxHumidity_) == 1: maxHumidity = duplicateData(maxHumidity_, len(_HBZones))
+    else: maxHumidity = maxHumidity_
     
-    return daylightThreshold, coolingSetPt, coolingSetback, heatingSetPt, heatingSetback
+    if len(minHumidity_) == 1: minHumidity = duplicateData(minHumidity_, len(_HBZones))
+    else: minHumidity = minHumidity_
+    
+    return daylightThreshold, coolingSetPt, coolingSetback, heatingSetPt, heatingSetback, maxHumidity, minHumidity
 
 def updateSetPoints(schName, setPt, setBk):
     """
@@ -131,8 +138,6 @@ def updateSetPoints(schName, setPt, setBk):
             # check if schedule has setback and give a warning if it doesn't
             if numberOfSetPts == 1 and setBk!="":
                 warning = dailySchedule + " has no setback. Only setPt will be changed."
-                w = gh.GH_RuntimeMessageLevel.Remark
-                ghenv.Component.AddRuntimeMessage(w, warning)
                 print warning
                 
             # change the values in the list
@@ -194,8 +199,7 @@ def updateSetPoints(schName, setPt, setBk):
     
     return name
 
-def main(HBZones, daylightThreshold, coolingSetPt, heatingSetPt, coolingSetback, \
-         heatingSetback):
+def main(HBZones, daylightThreshold, coolingSetPt, heatingSetPt, coolingSetback, heatingSetback, maxHumidity, minHumidity):
     
     # check for Honeybee
     if not sc.sticky.has_key('honeybee_release'):
@@ -203,7 +207,6 @@ def main(HBZones, daylightThreshold, coolingSetPt, heatingSetPt, coolingSetback,
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee to fly...")
         return -1
-
     try:
         if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
         if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): return -1
@@ -232,7 +235,6 @@ def main(HBZones, daylightThreshold, coolingSetPt, heatingSetPt, coolingSetback,
             zone.coolingSetPt = str(coolingSetPt[zoneCount])
             # print "Cooling setpoint for " + zone.name + " is set to: " + zone.coolingSetPt
         except: pass
-
         try:
             zone.coolingSetback = str(coolingSetback[zoneCount])
             # print "Cooling setback for " + zone.name + " is set to: " + zone.coolingSetback
@@ -256,6 +258,15 @@ def main(HBZones, daylightThreshold, coolingSetPt, heatingSetPt, coolingSetback,
         zone.heatingSetPtSchedule = updateSetPoints(zone.heatingSetPtSchedule, \
                                                     zone.heatingSetPt, zone.heatingSetback)
         
+        try:
+            zone.humidityMax = str(maxHumidity[zoneCount])
+            # print "Heating setpoint for " + zone.name + " is set to: " + zone.humidityMax
+        except: pass
+        
+        try:
+            zone.humidityMin = str(minHumidity[zoneCount])
+            # print "Heating setpoint for " + zone.name + " is set to: " + zone.minHumidity
+        except: pass
         
         
     # send the zones back to the hive
@@ -263,15 +274,16 @@ def main(HBZones, daylightThreshold, coolingSetPt, heatingSetPt, coolingSetback,
         
     return HBZones
 
+
 if _HBZones:
     
     daylightThreshold_ = []
     
     daylightThreshold, coolingSetPt, coolingSetback, heatingSetPt, \
-    heatingSetback = checkTheInputs()
+    heatingSetback, maxHumidity, minHumidity = checkTheInputs()
     
     zones = main(_HBZones, daylightThreshold, coolingSetPt, heatingSetPt, \
-                   coolingSetback, heatingSetback)
+                   coolingSetback, heatingSetback, maxHumidity, minHumidity)
     
     if zones!=-1:
         HBZones = zones

@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2016, Chris MAckey <Chris@MackeyArchitecture.com> 
+# Copyright (c) 2013-2016, Chris Mackey <Chris@MackeyArchitecture.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -35,7 +35,10 @@ Provided by Honeybee 0.0.59
         heatSupplyAirTemp_: A number or list of numbers that represent the temperature of the air used to heat the zone in degrees Celcius.  If no value is input here, the system will use air at 50 C.  This input can be either a single number to be applied to all connected zones or a list of numbers for each different zone.
         maxCoolingCapacity_:  A number or list of numbers that represent the maximum cooling power that the system can deliver in kiloWatts.  If no value is input here, the system will have no limit to its cooling capacity.  This input can be either a single number to be applied to all connected zones or a list of numbers for each different zone.
         maxHeatingCapacity_:  A number or list of numbers that represent the maximum heating power that the system can deliver in kiloWatts.  If no value is input here, the system will have no limit to its heating capacity.  This input can be either a single number to be applied to all connected zones or a list of numbers for each different zone.
-        airSideEconomizer_: Set to "True" to have the ideal air system include an air side economizer.  This essentially means that the HVAC system will increase the outdoor air flow rate when there is a cooling load and the outdoor air temperature is below the temperature of the exhaust air.  If this input is set to "False", the HVAC system will constantly provide the same amount of outdoor air and will run the compressor to remove heat. This may result in cases where there is a lot of cooling energy in winter or unexpected parts of the year.  This input can be either a single boolean value to be applied to all connected zones or a list of boolean values for each different zone. The defailt is set to "True" to include an air side economizer.
+        airSideEconomizer_: An integer or boolean value that sets the economizer on the ideal ir loads system.  This input can be either a single boolean/integer value to be applied to all connected zones or a list of boolean/integer values for each different zone. The defailt is set to "True" or 1 to include a differential dry bulb air side economizer.  Choose from the following options:
+            0 / False- None - The HVAC system will constantly provide the same amount of outdoor air and will run the compressor to remove heat. This may result in cases where there is a lot of cooling energy in winter or unexpected parts of the year.
+            1 / True - Differential Dry Bulb Economizer - The ideal air system include a differential dry bulb air side economizer.  This essentially means that the HVAC system will increase the outdoor air flow rate when there is a cooling load and the outdoor air temperature is below the temperature of the exhaust air. 
+            2        - Differential Enthalpy Economizer - The ideal air system include a differential enthalpy air side economizer.  This essentially means that the HVAC system will increase the outdoor air flow rate when there is a cooling load and the outdoor air enthalpy is below the temperature of the exhaust air. 
         heatRecovery_: Set to "True" to have the ideal air system include a heat recovery system.  This essentially means that the HVAC system will pass the outlet air through a heat exchanger with the inlet air before exhausting it, helping recover heat that would normally be lost through the exhaust.  If this input is set to "False" or left untouched, the HVAC system will simply exhaust air without having it interact with incoming air. This input can be either a single boolean value to be applied to all connected zones or a list of boolean values for each different zone.
         recoveryEffectiveness_: If the above input has been set to "True", input a number between 0 and 1 here to set the fraction of heat that is recovered by the heat recovery system.  By default, this value is 0.7.
     Returns:
@@ -44,7 +47,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Set Ideal Air Loads Parameters"
 ghenv.Component.NickName = 'setEPIdealAir'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAR_10_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -164,12 +167,15 @@ def main(HBZones, coolSupplyAirTemp, heatSupplyAirTemp, maxCoolingCapacity, maxH
         except: pass
         
         try:
-            if airSideEconomizer[zoneCount] == True:
-                zone.airSideEconomizer = 'DifferentialDryBulb'
-                print zone.name + " will have an air side economizer."
-            else:
+            if airSideEconomizer[zoneCount] == 0:
                 zone.airSideEconomizer = ''
-                print zone.name + " will not have an air side economizer."
+                print zone.name + " will NOT have an air side economizer."
+            elif airSideEconomizer[zoneCount] == 2:
+                zone.airSideEconomizer = 'DifferentialEnthalpy'
+                print zone.name + " will have a differential enthalpy air side economizer."
+            else:
+                zone.airSideEconomizer = 'DifferentialDryBulb'
+                print zone.name + " will have a differential dry bulb air side economizer."
         except: pass
         
         try:
