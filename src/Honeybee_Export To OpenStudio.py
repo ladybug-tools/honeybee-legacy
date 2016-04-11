@@ -62,7 +62,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.59\nAPR_04_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAPR_11_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -81,6 +81,7 @@ import time
 from pprint import pprint
 import shutil
 import copy
+import math
 
 rc.Runtime.HostUtils.DisplayOleAlerts(False)
 
@@ -196,7 +197,7 @@ class WriteOPS(object):
     def setNorth(self, north, model):
         northAngle, northVector = self.lb_preparation.angle2north(north)
         building = ops.Model.getBuilding(model)
-        building.setNorthAxis(northAngle)
+        building.setNorthAxis(math.degrees(northAngle))
     
     def generateStories(self, HBZones, model):
         levels = []
