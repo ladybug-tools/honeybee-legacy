@@ -78,7 +78,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Window Shade Generator"
 ghenv.Component.NickName = 'EPWindowShades'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAPR_11_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -189,6 +189,7 @@ def restoreComponentInputs():
             inputName = 'zoneData' + str(input-14) +'_'
             ghenv.Component.Params.Input[input].NickName = inputName
             ghenv.Component.Params.Input[input].Name = inputName
+            ghenv.Component.Params.Input[input].Access = gh.GH_ParamAccess.tree
     
     numOutputs = ghenv.Component.Params.Output.Count
     for output in range(numOutputs):
@@ -197,7 +198,7 @@ def restoreComponentInputs():
             ghenv.Component.Params.Output[output].Name = outputsDict[output][0]
             ghenv.Component.Params.Output[output].Description = outputsDict[output][1]
         else:
-            outputName = 'zoneData' + str(input-6) +'Tree'
+            outputName = 'zoneData' + str(output-6) +'Tree'
             ghenv.Component.Params.Output[output].NickName = outputName
             ghenv.Component.Params.Output[output].Name = outputName
             ghenv.Component.Params.Output[output].Description = 'Data trees of ' + outputName + ', which align with the branches for each window above.'
@@ -802,16 +803,15 @@ def makeBlind(_glzSrf, depth, numShds, distBtwn):
         assignEPCheckInit = False
         warning = "The input distToGlass_ value is so large that it will cause EnergyPlus to crash."
         print warning
-        ghenv.Component.AddRuntimeMessage(w, warning)
     
     #Check the depth and the shadingHeight to see if E+ will crash.
     if depth > 1:
         assignEPCheckInit = False
-        warning = "Note that E+ does not like shading depths greater than 1. HBObjWShades will not be generated.  shadeBreps will still be produced and you can account for these shades using a 'Honeybee_EP Context Surfaces' component."
+        warning = "NHBObjWShades will not be generated.  shadeBreps will still be produced and you can account for these shades using a 'Honeybee_EP Context Surfaces' component."
         print warning
     if shadingHeight > 1:
         assignEPCheckInit = False
-        warning = "Note that E+ does not like distances between shades that are greater than 1. HBObjWShades will not be generated.  shadeBreps will still be produced and you can account for these shades using a 'Honeybee_EP Context Surfaces' component."
+        warning = "HBObjWShades will not be generated.  shadeBreps will still be produced and you can account for these shades using a 'Honeybee_EP Context Surfaces' component."
         print warning
     
     
