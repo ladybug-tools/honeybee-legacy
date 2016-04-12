@@ -44,8 +44,8 @@ Provided by Honeybee 0.0.59
         windowShadeTransmiss_: A decimal value between 0 and 1 that represents the transmissivity of the shades on the windows of a zone (1 is no shade and 0 is fully shaded).  This input can also be a list of 8760 values between 0 and 1 that represents a list of hourly window shade transmissivities to be applied to all windows of the model. Finally and most importantly, this can be the 'windowTransmissivity' output of the 'Read EP Surface Result' component for an energy model that has been run with window shades.  This final option ensures that the energy model and the confort map results are always aligned although it is the most computationally expensive of the options.  The default is set to 0, which assumes no additional shading to windows.
         clothingAbsorptivity_: An optional decimal value between 0 and 1 that represents the fraction of solar radiation absorbed by the human body. The default is set to 0.7 for (average/brown) skin and average clothing.  You may want to increase this value for darker skin or darker clothing.
         additionalWindSpeed_: An additional value of indoor wind speed in m/s to be added to the base speed computed from the zone volume and hourly flow volume.  Use this input to account for objects like ceiling fans that might increase the interior wind speed felt by the occupants while not affecting the total flow volume into the zone much. This input can also be a list of 8760 additional wind speed values that represent the hours of the year when wind speed is increased.  Lastly, this input can be a data tree of values with branches that are each 8760 values long and correspond to the branches of the input viewFactorMesh_.  This last option enables you to specify different wind speeds for different continuous air volumes.
-        outdoorTerrain_: An interger from 0 to 3 that sets the terrain class associated with the wind speed used in outdoor wind calculations. Interger values represent the following terrain classes:
-            0 = Urban: large city centres, 50% of buildings above 21m over a distance of at least 2000m upwind.
+        outdoorTerrain_: An interger or text string that sets the terrain class associated with the wind speed used in outdoor wind calculations. Interger values represent the following terrain classes:
+            0 = City: large city centres, 50% of buildings above 21m over a distance of at least 2000m upwind.
             1 = Suburban: suburbs, wooded areas.
             2 = Country: open, with scattered objects generally less than 10m high.
             3 = Water: Flat, unobstructed areas exposed to wind flowing over a large water body (no more than 500m inland).
@@ -57,12 +57,12 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Adaptive Comfort Analysis Recipe"
 ghenv.Component.NickName = 'AdaptComfRecipe'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAPR_12_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
-#compatibleLBVersion = VER 0.0.59\nJUL_06_2015
+#compatibleLBVersion = VER 0.0.59\nAPR_12_2016
 try: ghenv.Component.AdditionalHelpFromDocStrings = "6"
 except: pass
 
@@ -514,12 +514,12 @@ def checkTheInputs():
     
     
     #Check the outdoor terrain.
-    # Evaluate the terrain type to get the right roughness length.
-    checkData29, terrainType, gradientHeightDiv, d, a, yValues, yAxisMaxRhinoHeight, nArrows, printMsg = lb_wind.terrain(outdoorTerrain_)
-    print printMsg
+    checkData29, terrainType, d, a = lb_wind.readTerrainType(outdoorTerrain_)
     if checkData29 == False:
-        w = gh.GH_RuntimeMessageLevel.Warning
-        ghenv.Component.AddRuntimeMessage(w, printMsg)
+        warning = "Invalid input for terrainType_."
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+    else:
+        print "Terrain set to " + terrainType + "."
     
     #Check the inletHeightOverride_.
     inletHeightOverride = []

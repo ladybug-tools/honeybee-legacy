@@ -57,12 +57,12 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Microclimate Map Analysis"
 ghenv.Component.NickName = 'MicroclimateMap'
-ghenv.Component.Message = 'VER 0.0.59\nAPR_05_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAPR_12_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
-#compatibleLBVersion = VER 0.0.59\nJUL_06_2015
+#compatibleLBVersion = VER 0.0.59\nAPR_12_2016
 try: ghenv.Component.AdditionalHelpFromDocStrings = "6"
 except: pass
 
@@ -889,7 +889,7 @@ def mainAdapt(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataN
                                 pointWindSpeedValues.append(windFlowVal)
                         else:
                             for valCount, val in enumerate(pointList):
-                                ptWindSpeed = lb_wind.calcWindSpeedBasedOnHeight(outWindSpeed[originalHour-1], outdoorPtHeightWeights[valCount], d, a, 270, 0.14)
+                                ptWindSpeed = lb_wind.powerLawWind(outWindSpeed[originalHour-1], outdoorPtHeightWeights[valCount], d, a, 270, 0.14)
                                 pointWindSpeedValues.append(ptWindSpeed)
                 else:
                     for pointListCount, pointList in enumerate(testPtsViewFactor):
@@ -1084,7 +1084,7 @@ def mainPMV(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNum
                                 pointWindSpeedValues.append(windFlowVal)
                         else:
                             for valCount, val in enumerate(pointList):
-                                ptWindSpeed = lb_wind.calcWindSpeedBasedOnHeight(outWindSpeed[originalHour-1], outdoorPtHeightWeights[valCount], d, a, 270, 0.14)
+                                ptWindSpeed = lb_wind.powerLawWind(outWindSpeed[originalHour-1], outdoorPtHeightWeights[valCount], d, a, 270, 0.14)
                                 pointWindSpeedValues.append(ptWindSpeed)
                 else:
                     for pointListCount, pointList in enumerate(testPtsViewFactor):
@@ -1306,7 +1306,7 @@ def mainUTCI(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNu
                                     elif allWindSpeedsSame == 0: pointWindSpeedValues.append(winSpeedNumbers[pointListCount][originalHour-1])
                                     elif allWindSpeedsSame == -1: pointWindSpeedValues = winSpeedNumbers[originalHour-1]
                                 except:
-                                    windFlowVal = lb_wind.calcWindSpeedBasedOnHeight(outWindSpeed[originalHour-1], newOutdoorPtHeightWeights[valCount], d, a, 270, 0.14)
+                                    windFlowVal = lb_wind.powerLawWind(outWindSpeed[originalHour-1], newOutdoorPtHeightWeights[valCount], d, a, 270, 0.14)
                                     pointWindSpeedValues.append(windFlowVal)
                 else:
                     for pointListCount, pointList in enumerate(testPtsViewFactor):

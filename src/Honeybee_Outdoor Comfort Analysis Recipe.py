@@ -50,8 +50,8 @@ Provided by Honeybee 0.0.59
             Finally, this input can be the file path to a .csv file that is organized with 8760 values in each column and a number of columns that correspond to the number of test points.  This last option is recommended if trying to synchronize CFD results with the microclimate maps.
             _
             If no value is input here, the comfort map components will compute a minimum indoor air speed from the zone volume and hourly flow volume and will use the EPW wind speed for outdoor conditions.
-        outdoorTerrain_: An interger from 0 to 3 that sets the terrain class associated with the wind speed used in outdoor wind calculations. Interger values represent the following terrain classes:
-            0 = Urban: large city centres, 50% of buildings above 21m over a distance of at least 2000m upwind.
+        outdoorTerrain_: An interger or text string that sets the terrain class associated with the wind speed used in outdoor wind calculations. Interger values represent the following terrain classes:
+            0 = City: large city centres, 50% of buildings above 21m over a distance of at least 2000m upwind.
             1 = Suburban: suburbs, wooded areas.
             2 = Country: open, with scattered objects generally less than 10m high.
             3 = Water: Flat, unobstructed areas exposed to wind flowing over a large water body (no more than 500m inland).
@@ -63,12 +63,12 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Outdoor Comfort Analysis Recipe"
 ghenv.Component.NickName = 'OutdoorComfRecipe'
-ghenv.Component.Message = 'VER 0.0.59\nAPR_05_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAPR_12_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
-#compatibleLBVersion = VER 0.0.59\nFEB_01_2015
+#compatibleLBVersion = VER 0.0.59\nAPR_12_2016
 try: ghenv.Component.AdditionalHelpFromDocStrings = "6"
 except: pass
 
@@ -601,12 +601,12 @@ def checkTheInputs():
             print 'No value found for cloAbsorptivity_.  The absorptivity will be set to 0.7 for average brown skin and typical clothing.'
         
         #Check the outdoor terrain.
-        # Evaluate the terrain type to get the right roughness length.
-        checkData31, terrainType, gradientHeightDiv, d, a, yValues, yAxisMaxRhinoHeight, nArrows, printMsg = lb_wind.terrain(outdoorTerrain_)
-        print printMsg
+        checkData31, terrainType, d, a = lb_wind.readTerrainType(outdoorTerrain_)
         if checkData31 == False:
-            w = gh.GH_RuntimeMessageLevel.Warning
-            ghenv.Component.AddRuntimeMessage(w, printMsg)
+            warning = "Invalid input for terrainType_."
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+        else:
+            print "Terrain set to " + terrainType + "."
         
         #Check the inletHeightOverride_.
         inletHeightOverride = []

@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.59\nMAR_14_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAPR_11_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -132,10 +132,10 @@ class CheckIn():
                 sc.sticky["Honeybee_DefaultFolder"] = "c:\\ladybug\\"
             else:
                 # let's use the user folder
-                username = os.getenv("USERNAME")
+                appdata = os.getenv("APPDATA")
                 # make sure username doesn't have space
-                if (" " in username):
-                    msg = "User name on this system: " + username + " has white space." + \
+                if (" " in appdata):
+                    msg = "User name on this system: " + appdata + " has white space." + \
                           " Default fodelr cannot be set.\nUse defaultFolder_ to set the path to another folder and try again!" + \
                           "\nHoneybee failed to fly! :("
                     print msg
@@ -144,7 +144,7 @@ class CheckIn():
                     self.letItFly = False
                     return
                 
-                sc.sticky["Honeybee_DefaultFolder"] = os.path.join("C:\\Users\\", username, "AppData\\Roaming\\Ladybug\\")
+                sc.sticky["Honeybee_DefaultFolder"] = os.path.join(appdata, "Ladybug\\")
                 
         self.updateCategoryIcon()
     
