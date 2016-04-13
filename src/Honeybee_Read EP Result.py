@@ -56,7 +56,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.59\nMAR_19_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAPR_13_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -503,7 +503,9 @@ if _resultFileAddress and gotData == True and csvExists == True:
                     
                     if normByFlr == True:
                         try: flrArea = floorAreaList[int(path[columnCount])]
-                        except: flrArea = floorAreaList[int(path[columnCount][0])]
+                        except:
+                            try: flrArea = floorAreaList[int(path[columnCount][0])]
+                            except: flrArea = sum(floorAreaList)
                     else: flrArea = 1
                     
                     if key[columnCount] == 0:
