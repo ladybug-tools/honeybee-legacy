@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2016, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
+# Copyright (c) 2016, Duncan Cox <duncanjamescox@gmail.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -30,21 +30,12 @@ Provided by Honeybee 0.0.59
         _orientation: The orientation/s that you'd like to add glazing to.
         _ratio: The window to wall ratio.
     Returns:
-        _glzratio: A list of glazing orientations that can be plugged into (glazingCreator).
+        glzRatio: A list of glazing orientations that can be plugged into (glazingCreator).
 """
-
-import rhinoscriptsyntax as rs
-import Rhino as rc
-import scriptcontext as sc
-import os
-import sys
-import System
-import Grasshopper.Kernel as gh
-import uuid
 
 ghenv.Component.Name = 'Honeybee_orientHBGlz'
 ghenv.Component.NickName = 'orientHBGlz'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAPR_11_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -53,16 +44,17 @@ ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
 except: pass
 
-o_list = ['North', 'East', 'South', 'West']
-_glzRatio = [0,0,0,0]
+o_list = ['north', 'east', 'south', 'west']
+glzRatio = [0,0,0,0]
+for a in _orientation:
+  try:   
+    i = o_list.index(a.lower())
+  except ValueError:
+    print "%s is not a valid orientation." % str(a)
+  finally:
+    # input is valid, let's assign the direction
+    glzRatio[i] = _ratio
 
-
-for a in xrange(0,len(_orientation)):
-    
-    i = o_list.index(_orientation[a])
-
-    _glzRatio[i] = _ratio
-    
 
 
 
