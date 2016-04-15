@@ -62,7 +62,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.59\nAPR_11_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAPR_16_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -151,6 +151,7 @@ class WriteOPS(object):
         self.levels = {}
         self.HVACSystemDict = {}
         self.adjacentSurfacesDict = {}
+        self.thermalZonesDict = {}
         
         self.csvSchedules = []
         self.csvScheduleCount = 0
@@ -436,8 +437,6 @@ class WriteOPS(object):
         # Will change it to what it used to be later
         thermalZone.setName(zone.name)
         return space, thermalZone
-    
-        
         
     def recallAvailManager(self,HVACDetails):
         return HVACDetails['availabilityManagerList']
@@ -1555,6 +1554,16 @@ class WriteOPS(object):
         infiltration.setSchedule(self.getOSSchedule(zone.infiltrationSchedule, model))
         infiltration.setSpace(space)
     
+    def setAirMixing(self, zone, model):
+        # air mixing from air walls
+        targetZone = self.thermalZonesDict[zone.name]
+        zoneMixing = ops.ZoneMixing(targetZone)
+        for mixZoneCount, zoneMixName in enumerate(zone.mixAirZoneList):
+            sourceZone = self.thermalZonesDict[zoneMixName]
+            zoneMixing.setSourceZone(sourceZone)
+            zoneMixing.setDesignFlowRate(zone.mixAirFlowList[mixZoneCount])
+            zoneMixing.setSchedule(self.getOSSchedule(zone.mixAirFlowSched[mixZoneCount], model))
+    
     def setDefaultSchedule(self, zone, space, model):
         # I'm not sure how default schedule will be useful
         # if I have to create separate definitions for people, light, equipments and infiltration!
@@ -2058,33 +2067,6 @@ class EPFeaturesNotInOS(object):
                       "Comma;\t!- Column Separator\n"
         
         return scheduleStr
-    
-    def EPZoneAirMixing(self, zone, zoneMixName, mixFlowRate, objCount):
-        if zone.mixAirFlowSched[objCount].upper() == 'ALWAYS ON':
-            mixingSched = 'ALWAYS ON'		
-        elif zone.mixAirFlowSched[objCount].upper().endswith('CSV'):		
-            mixingSchedFileName = os.path.basename(zone.mixAirFlowSched[objCount])		
-            mixingSched = "_".join(mixingSchedFileName.split(".")[:-1])		
-        else: mixingSched = zone.mixAirFlowSched[objCount]
-        
-        return '\nZoneMixing,\n'+\
-            '\t' + zone.name + zoneMixName + 'AirMix' + str(objCount) + ',  !- Name\n' + \
-            '\t' + zone.name + ',  !- Zone Name\n' + \
-            '\t' + mixingSched + ',  !- Schedule Name\n' + \
-            '\t' + 'Flow/Zone' + ',  !- Design Flow Rate Calculation Method\n' + \
-            '\t' + str(mixFlowRate) + ',   !- Design Flow Rate {m3/s}\n' + \
-            '\t' + ',  !- Flow per Zone Floor Area {m3/s-m2}\n' + \
-            '\t' + ', !- Flow per Exterior Surface Area {m3/s-m2}\n' + \
-            '\t' + ',    !- Air Changes per Hour\n' + \
-            '\t' + zoneMixName  + ',     !- Source Zone Name\n' + \
-            '\t' + '0'  + ',     !- Delta Temperature\n' + \
-            '\t,                        !- Delta Temperature Schedule Name\n' + \
-            '\t,                        !- Minimum Zone Temperature Schedule Name\n' + \
-            '\t,                        !- Maximum Zone Temperature Schedule Name\n' + \
-            '\t,                        !- Minimum Source Zone Temperature Schedule Name\n' + \
-            '\t,                        !- Maximum Source Zone Temperature Schedule Name\n' + \
-            '\t,                        !- Minimum Outdoor Temperature Schedule Name\n' + \
-            '\t;                        !- Maximum Outdoor Temperature Schedule Name\n'
     
     def EPNatVentSimple(self, zone, natVentCount):
         if zone.natVentSchedule[natVentCount] == None: natVentSched = 'ALWAYS ON'
@@ -2722,7 +2704,6 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     additionalcsvSchedules = []
     
     for zoneCount, zone in enumerate(HBZones):
-
         # create a space - OpenStudio works based of space and not zone
         # Honeybee though is structured based on zones similar to EnergyPlus
         space = ops.Space(model)
@@ -2736,7 +2717,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         # schedules
         space = hb_writeOPS.setDefaultSchedule(zone, space, model)
         
-        # infiltration
+        #   INFILTRATION
         hb_writeOPS.setInfiltration(zone, space, model)
         
         # set people definition
@@ -2754,13 +2735,12 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         # assign the thermal zone
         space, thermalZone = hb_writeOPS.assignThermalZone(zone, space, model)
         
+        #Keep the thermal zones in a dictionary for later.
+        hb_writeOPS.thermalZonesDict[zone.name] = thermalZone
         
         if zone.isConditioned:
             # add HVAC system
             HAVCGroupID, HVACIndex, HVACDetails, plantDetails = zone.HVACSystem
-            
-            #print zone.isConditioned
-            #print HAVCGroupID,HVACIndex,HVACDetails,plantDetails
             
             if HAVCGroupID!= -1:
                 if HAVCGroupID not in hb_writeOPS.HVACSystemDict.keys():
@@ -2798,12 +2778,16 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     for schedName in additionalSchedList:
         ossch = hb_writeOPS.getOSSchedule(schedName, model)
     
-    
     # this should be done once for the whole model
     hb_writeOPS.setAdjacentSurfaces()
     
     # add systems
     hb_writeOPS.addSystemsToZones(model)
+    
+    # add zone air mixing objects.
+    for zoneCount, zone in enumerate(HBZones):
+        if zone.mixAir == True: hb_writeOPS.setAirMixing(zone, model)
+    
     
     # add shading surfaces if any
     if HBContext!=[] and HBContext[0]!=None:
