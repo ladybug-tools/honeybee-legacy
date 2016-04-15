@@ -1338,7 +1338,6 @@ class WriteOPS(object):
                 
             elif systemIndex == 7:
                 hvacHandle = ops.OpenStudioModelHVAC.addSystemType7(model).handle()
-                
                 # get the airloop
                 airloop = model.getAirLoopHVAC(hvacHandle).get()
                 
@@ -1349,9 +1348,9 @@ class WriteOPS(object):
                     airloop.addBranchForZone(zone)
                     
                     #If there is outdoor or recirculated air specificed, then the autosize feature of the terminal can fail to bring in the required airflow rate.
-                    #So we must hard size it.
-                    if zoneTotalAir[zoneCount] != 0:
-                        autoCalcFailTrigger = True
+                    #So we must hard size the terminal.
+                    if zoneRecircAir[zoneCount] != 0:
+                        recicTrigger = True
                         x = airloop.demandComponents(ops.IddObjectType("OS:AirTerminal:SingleDuct:VAV:Reheat"))
                         vavBox = model.getAirTerminalSingleDuctVAVReheat(x[zoneCount].handle()).get()
                         maxAirflow = 4*float(zoneTotalAir[zoneCount])
@@ -1360,7 +1359,7 @@ class WriteOPS(object):
                         print "Secified recirculation air for " +  str(zone.name()) + " to a value of " + str(zoneRecircAir[zoneCount]) + " m3/s per m2 of floor."
                 
                 #If outdoor or recirculated air has been specified, we need to set the size of the supply fan because autosize will likely make the fan too small.
-                if autoCalcFailTrigger == True:
+                if recicTrigger == True:
                     fullHVACAirFlow = sum(zoneTotalAir)
                     if HVACDetails != None:
                         if HVACDetails['varVolSupplyFanDef'] != {}:
@@ -1540,8 +1539,6 @@ class WriteOPS(object):
             self.bldgTypes[spaceTypeName] = spaceType
         else:
             spaceType = self.bldgTypes[spaceTypeName]
-            print 'the space type is:' + str(spaceType)
-            
         
         space.setSpaceType(spaceType)
         
@@ -1940,15 +1937,16 @@ class WriteOPS(object):
                 if shadingSch!="": shdSurface.setTransmittanceSchedule(shadingSch)
                 
     
-    
     def setAdjacentSurfaces(self):
         for surfaceName in self.adjacentSurfacesDict.keys():
             adjacentSurfaceName, OSSurface = self.adjacentSurfacesDict[surfaceName]
-            adjacentOSSurface = self.adjacentSurfacesDict[adjacentSurfaceName][1]
             try:
-                OSSurface.setAdjacentSurface(adjacentOSSurface)
+                adjacentOSSurface = self.adjacentSurfacesDict[adjacentSurfaceName][1]
+                try: OSSurface.setAdjacentSurface(adjacentOSSurface)
+                except: OSSurface.setAdjacentSubSurface(adjacentOSSurface)
             except:
-                OSSurface.setAdjacentSubSurface(adjacentOSSurface)
+                warning = "Adjacent surface " + adjacentSurfaceName + " was not found."
+                print warning
     
     def setOutputVariable(self, fields, model):
         """
