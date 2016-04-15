@@ -26,18 +26,17 @@ Set schedules and loads for zones based on program
 Provided by Honeybee 0.0.59
 
     Args:
-        _HBZones:...
-        bldgProgram_:...
-        zoneProgram_:...
+        _HBZones: A HBZone or list of HBZones for which you want to change the program (including schedules and loads).
+        zonePrograms_: The zone program that you want to assign to the HBZones.  This should be a value from the "Honeybee_ListZonePrograms" component.  This input can also be a list of programs tha aligns with the input HBZones.
     Returns:
-        currentSchedules:...
-        currentLoads:...
-        HBZones:...
+        currentSchedules: The schedules that have been assigned to the zones.
+        currentLoads: The loads that have been assigned to the zones
+        HBZones: HBZones that have had their program set to the input zonePrograms_.
 """
 
 ghenv.Component.Name = "Honeybee_Set Loads And Schedules"
 ghenv.Component.NickName = 'SetLoadsAndSchedules'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAPR_26_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
@@ -83,7 +82,7 @@ def main(HBZones, zonePrograms):
     for zoneCount, HBZone in enumerate(HBObjectsFromHive):
         # zone programs
         try: bldgProgram, zoneProgram = zonePrograms[zoneCount].split("::")
-        except: continue
+        except: pass
         
         # make sure the combination is valid before changing it for the zone
         if bldgProgram!=None and bldgProgram not in bldgProgramDict.values():
