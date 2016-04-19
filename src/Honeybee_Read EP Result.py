@@ -622,30 +622,30 @@ heatingPyList = None
 if dataTypeList[2] == True and dataTypeList[3] == True:
     coolingPyList = createPyList(cooling)
     heatingPyList = createPyList(heating)
-    
-    if len(coolingPyList) > 0 and len(heatingPyList) > 0:
-        for listCount, list in enumerate(coolingPyList):
-            makeHeader(totalThermalEnergy, listCount, list[2].split(' for')[-1], list[4].split('(')[-1].split(')')[0], "Total Thermal Energy", energyUnit, True)
-            for numCount, num in enumerate(list[7:]):
-                totalThermalEnergy.Add((num + heatingPyList[listCount][7:][numCount]), GH_Path(listCount))
-            dataTypeList[0] = True
+    if len(coolingPyList) == len(heatingPyList):
+        if len(coolingPyList) > 0 and len(heatingPyList) > 0:
+            for listCount, list in enumerate(coolingPyList):
+                makeHeader(totalThermalEnergy, listCount, list[2].split(' for')[-1], list[4].split('(')[-1].split(')')[0], "Total Thermal Energy", energyUnit, True)
+                for numCount, num in enumerate(list[7:]):
+                    totalThermalEnergy.Add((num + heatingPyList[listCount][7:][numCount]), GH_Path(listCount))
+                dataTypeList[0] = True
+                
+                makeHeader(thermalEnergyBalance, listCount, list[2].split(' for')[-1], list[4].split('(')[-1].split(')')[0], "Thermal Energy Balance", energyUnit, True)
+                for numCount, num in enumerate(list[7:]):
+                    thermalEnergyBalance.Add((heatingPyList[listCount][7:][numCount] - num), GH_Path(listCount))
+                dataTypeList[1] = True
             
-            makeHeader(thermalEnergyBalance, listCount, list[2].split(' for')[-1], list[4].split('(')[-1].split(')')[0], "Thermal Energy Balance", energyUnit, True)
-            for numCount, num in enumerate(list[7:]):
-                thermalEnergyBalance.Add((heatingPyList[listCount][7:][numCount] - num), GH_Path(listCount))
-            dataTypeList[1] = True
-        
-        #If we have the cooling/heating coil energy and the heat energy added/removed from the zone, compute the portion of the energy balance that the outdoor air is responsible for.
-        heatCoolTracker = 0
-        if zoneHeatingEnergy != testTracker and zoneCoolingEnergy != testTracker:
-            for listCount, list in enumerate(zoneHeatingEnergy):
-                try:
-                    makeHeader(outdoorAirEnergy, listCount, list[0], list[1], "Outdoor Air Energy", energyUnit, True)
-                    for numCount, num in enumerate(list[2:]):
-                        outdoorAirEnergy.Add((num/3600000) - (zoneCoolingEnergy[listCount][2:][numCount]/3600000) - heatingPyList[heatCoolTracker][7:][numCount] + coolingPyList[heatCoolTracker][7:][numCount], GH_Path(listCount))
-                    heatCoolTracker += 1
-                except: pass
-            dataTypeList[11] = True
+            #If we have the cooling/heating coil energy and the heat energy added/removed from the zone, compute the portion of the energy balance that the outdoor air is responsible for.
+            heatCoolTracker = 0
+            if zoneHeatingEnergy != testTracker and zoneCoolingEnergy != testTracker:
+                for listCount, list in enumerate(zoneHeatingEnergy):
+                    try:
+                        makeHeader(outdoorAirEnergy, listCount, list[0], list[1], "Outdoor Air Energy", energyUnit, True)
+                        for numCount, num in enumerate(list[2:]):
+                            outdoorAirEnergy.Add((num/3600000) - (zoneCoolingEnergy[listCount][2:][numCount]/3600000) - heatingPyList[heatCoolTracker][7:][numCount] + coolingPyList[heatCoolTracker][7:][numCount], GH_Path(listCount))
+                        heatCoolTracker += 1
+                    except: pass
+                dataTypeList[11] = True
 
 # If we have information on gains through the air, group them all into a total air gains list.
 if internalAirGain != testTracker and surfaceAirGain != testTracker:
