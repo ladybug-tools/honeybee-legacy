@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.59\nAPR_11_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAPR_19_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -5698,7 +5698,8 @@ class hb_reEvaluateHBZones(object):
     def checkZoneSurface(self, surface):
         if not hasattr(surface, 'coordinates'):
             if not surface.isPlanar:
-                surface.geometry = surface.punchedGeometry
+                if hasattr(surface, 'punchedGeometry'):
+                    surface.geometry = surface.punchedGeometry
             
             coordinatesL = surface.extractPoints()
                 

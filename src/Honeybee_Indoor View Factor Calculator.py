@@ -58,7 +58,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.59\nAPR_02_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAPR_15_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -1471,7 +1471,10 @@ def computeFloorReflect(testPts, testPtViewFactor, zoneSrfTypes, flrRefList):
             ptViewFacs.append(missingViewFac)
             ptRefs.append(defaultRef)
             weightedFloorRef = 0
-            for refCount, ref in enumerate(ptRefs): weightedFloorRef = weightedFloorRef + ref*ptViewFacs[refCount]
+            for refCount, ref in enumerate(ptRefs):
+                try:
+                    weightedFloorRef = weightedFloorRef + ref*ptViewFacs[refCount]
+                except: pass
             weightedFloorRef = weightedFloorRef * 2
             zoneFlrReflects[zoneCount].append(weightedFloorRef)
     

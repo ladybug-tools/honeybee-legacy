@@ -56,7 +56,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.59\nMAR_19_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAPR_19_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -289,29 +289,28 @@ if _resultFileAddress and gotData == True and csvExists == True:
                 #ANALYZE THE FILE HEADING
                 key = []; path = []
                 for columnCount, column in enumerate(line.split(',')):
-                    if 'Zone Ideal Loads Supply Air Total Cooling Energy' in column or 'Zone Packaged Terminal Heat Pump Total Cooling Energy' in column or 'Chiller Electric Energy' in column:
+                    if 'Zone Ideal Loads Supply Air Total Cooling Energy' in column or 'Chiller Electric Energy' in column or 'Cooling Coil Electric Energy' in column:
                         key.append(0)
                         if 'Zone Ideal Loads Supply Air Total Cooling Energy' in column and 'ZONEHVAC' in column:
                             zoneName = checkZone(" " + ":".join(column.split(":")[:-1]).split('ZONEHVAC')[0])
                             if zoneName == None: zoneName = checkZone(" " + ":".join(column.split(":")[:-1]).split(' ZONEHVAC')[0])
                         elif 'IDEAL LOADS AIR SYSTEM' in column: zoneName = checkZone(" " + ":".join(column.split(":")[:-1]).split(' IDEAL LOADS AIR SYSTEM')[0])
-                        elif 'ZONE HVAC PACKAGED TERMINAL HEAT PUMP' in column: zoneName = checkZoneSys(" " + ":".join(column.split(":")[:-1]).split('ZONE HVAC PACKAGED TERMINAL HEAT PUMP ')[-1])
+                        elif 'Cooling Coil Electric Energy' in column: zoneName = checkZoneSys(" " + ":".join(column.split(":")[:-1]).split('COIL COOLING DX SINGLE SPEED ')[-1])
                         elif 'Chiller Electric Energy' in column:
-                            zoneName = checkCentralSys(1, 0)
+                            zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('CHILLER ELECTRIC EIR ')[-1], 0)
                             centralSys = True
                         else: zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
                         makeHeader(cooling, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Cooling Energy", energyUnit, True)
                         dataTypeList[2] = True
                     
-                    elif 'Zone Ideal Loads Supply Air Total Heating Energy' in column or 'Zone Packaged Terminal Heat Pump Total Heating Energy' in column or 'Boiler Heating Energy' in column:
+                    elif 'Zone Ideal Loads Supply Air Total Heating Energy' in column  or 'Boiler Heating Energy' in column:
                         key.append(1)
                         if 'Zone Ideal Loads Supply Air Total Heating Energy' in column and 'ZONEHVAC' in column:
                             zoneName = checkZone(" " + ":".join(column.split(":")[:-1]).split('ZONEHVAC')[0])
                             if zoneName == None: zoneName = checkZone(" " + ":".join(column.split(":")[:-1]).split(' ZONEHVAC')[0])
                         elif 'IDEAL LOADS AIR SYSTEM' in column: zoneName = checkZone(" " + ":".join(column.split(":")[:-1]).split(' IDEAL LOADS AIR SYSTEM')[0])
-                        elif 'ZONE HVAC PACKAGED TERMINAL HEAT PUMP' in column: zoneName = checkZoneSys(" " + ":".join(column.split(":")[:-1]).split('ZONE HVAC PACKAGED TERMINAL HEAT PUMP ')[-1])
                         elif 'Boiler Heating Energy' in column:
-                            zoneName = checkCentralSys(1, 1)
+                            zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('BOILER HOT WATER ')[-1], 1)
                             centralSys = True
                         else: zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
                         makeHeader(heating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Heating Energy", energyUnit, True)
@@ -503,7 +502,9 @@ if _resultFileAddress and gotData == True and csvExists == True:
                     
                     if normByFlr == True:
                         try: flrArea = floorAreaList[int(path[columnCount])]
-                        except: flrArea = floorAreaList[int(path[columnCount][0])]
+                        except:
+                            try: flrArea = floorAreaList[int(path[columnCount][0])]
+                            except: flrArea = sum(floorAreaList)
                     else: flrArea = 1
                     
                     if key[columnCount] == 0:
@@ -621,30 +622,30 @@ heatingPyList = None
 if dataTypeList[2] == True and dataTypeList[3] == True:
     coolingPyList = createPyList(cooling)
     heatingPyList = createPyList(heating)
-    
-    if len(coolingPyList) > 0 and len(heatingPyList) > 0:
-        for listCount, list in enumerate(coolingPyList):
-            makeHeader(totalThermalEnergy, listCount, list[2].split(' for')[-1], list[4].split('(')[-1].split(')')[0], "Total Thermal Energy", energyUnit, True)
-            for numCount, num in enumerate(list[7:]):
-                totalThermalEnergy.Add((num + heatingPyList[listCount][7:][numCount]), GH_Path(listCount))
-            dataTypeList[0] = True
+    if len(coolingPyList) == len(heatingPyList):
+        if len(coolingPyList) > 0 and len(heatingPyList) > 0:
+            for listCount, list in enumerate(coolingPyList):
+                makeHeader(totalThermalEnergy, listCount, list[2].split(' for')[-1], list[4].split('(')[-1].split(')')[0], "Total Thermal Energy", energyUnit, True)
+                for numCount, num in enumerate(list[7:]):
+                    totalThermalEnergy.Add((num + heatingPyList[listCount][7:][numCount]), GH_Path(listCount))
+                dataTypeList[0] = True
+                
+                makeHeader(thermalEnergyBalance, listCount, list[2].split(' for')[-1], list[4].split('(')[-1].split(')')[0], "Thermal Energy Balance", energyUnit, True)
+                for numCount, num in enumerate(list[7:]):
+                    thermalEnergyBalance.Add((heatingPyList[listCount][7:][numCount] - num), GH_Path(listCount))
+                dataTypeList[1] = True
             
-            makeHeader(thermalEnergyBalance, listCount, list[2].split(' for')[-1], list[4].split('(')[-1].split(')')[0], "Thermal Energy Balance", energyUnit, True)
-            for numCount, num in enumerate(list[7:]):
-                thermalEnergyBalance.Add((heatingPyList[listCount][7:][numCount] - num), GH_Path(listCount))
-            dataTypeList[1] = True
-        
-        #If we have the cooling/heating coil energy and the heat energy added/removed from the zone, compute the portion of the energy balance that the outdoor air is responsible for.
-        heatCoolTracker = 0
-        if zoneHeatingEnergy != testTracker and zoneCoolingEnergy != testTracker:
-            for listCount, list in enumerate(zoneHeatingEnergy):
-                try:
-                    makeHeader(outdoorAirEnergy, listCount, list[0], list[1], "Outdoor Air Energy", energyUnit, True)
-                    for numCount, num in enumerate(list[2:]):
-                        outdoorAirEnergy.Add((num/3600000) - (zoneCoolingEnergy[listCount][2:][numCount]/3600000) - heatingPyList[heatCoolTracker][7:][numCount] + coolingPyList[heatCoolTracker][7:][numCount], GH_Path(listCount))
-                    heatCoolTracker += 1
-                except: pass
-            dataTypeList[11] = True
+            #If we have the cooling/heating coil energy and the heat energy added/removed from the zone, compute the portion of the energy balance that the outdoor air is responsible for.
+            heatCoolTracker = 0
+            if zoneHeatingEnergy != testTracker and zoneCoolingEnergy != testTracker:
+                for listCount, list in enumerate(zoneHeatingEnergy):
+                    try:
+                        makeHeader(outdoorAirEnergy, listCount, list[0], list[1], "Outdoor Air Energy", energyUnit, True)
+                        for numCount, num in enumerate(list[2:]):
+                            outdoorAirEnergy.Add((num/3600000) - (zoneCoolingEnergy[listCount][2:][numCount]/3600000) - heatingPyList[heatCoolTracker][7:][numCount] + coolingPyList[heatCoolTracker][7:][numCount], GH_Path(listCount))
+                        heatCoolTracker += 1
+                    except: pass
+                dataTypeList[11] = True
 
 # If we have information on gains through the air, group them all into a total air gains list.
 if internalAirGain != testTracker and surfaceAirGain != testTracker:

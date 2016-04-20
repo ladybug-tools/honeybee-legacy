@@ -39,7 +39,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Dump Honeybee Objects"
 ghenv.Component.NickName = 'dumpHBObjects'
-ghenv.Component.Message = 'VER 0.0.59\nFEB_25_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAPR_18_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"
@@ -95,11 +95,11 @@ def dumpHBObjects(HBObjects):
             HBSurface.childSrfs = [childSrf.ID for childSrf in HBSurface.childSrfs]
             
         try:
-            if HBSurface.BC.lower() == "outdoors" or HBSurface.BC.lower() == "ground":
+            if HBSurface.BC.lower() in ["outdoors", "ground", "adiabatic"]:
                 HBSurface.BCObject.name
                 HBSurface.BCObject = "Outdoors" #This will be replaced by Oudoor object in loading
         except:
-            print HBSurface.BC.lower()
+            # print HBSurface.BC.lower()
             # not out outdoor BC
             pass
         
@@ -144,7 +144,7 @@ def main(HBObjects, filePath, dump):
     
     HBData = dumpHBObjects(HBObjects)
     
-    #pprint(HBData)
+    # pprint(HBData)
     
     with open(filePath, "wb") as outf:
         pickle.dump(HBData, outf)
