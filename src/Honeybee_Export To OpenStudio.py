@@ -62,7 +62,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.59\nAPR_16_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAPR_20_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -432,7 +432,6 @@ class WriteOPS(object):
     def assignThermalZone(self, zone, space, model):
         thermalZone = ops.ThermalZone(model)
         ops.OpenStudioModelHVAC.setThermalZone(space, thermalZone)
-        #thermalZone.setName("thermalZone_" + zone.name)
         # This is a temporary change to make the component work with the current result reader
         # Will change it to what it used to be later
         thermalZone.setName(zone.name)
@@ -468,7 +467,7 @@ class WriteOPS(object):
                     print 'Error: OSComponent '+str(OSComponent)+' cannot set night cycle availability manager!!'
         
         return OSComponent
-        
+    
     def recallOASys(self,HVACDetails):
         #do not modify these strings unless EnergyPlus strings change
         contrlType = {
@@ -519,7 +518,7 @@ class WriteOPS(object):
         'mvCtrl':HVACDetails['airsideEconomizer']['mvCtrl']
         }
         return oaDesc
-        
+    
     def updateOASys(self,econo,oactrl,model):
         if econo == None: return
         if econo['econoControl'] == "FixedDryBulb":
@@ -614,7 +613,7 @@ class WriteOPS(object):
         
         print "success for economizer!"
         return oactrl
-        
+    
     def recallCVFan(self,HVACDetails):
         print 'getting supply fan from the hive'
         sfdesc = {
@@ -626,7 +625,7 @@ class WriteOPS(object):
         'maxFlowRate':HVACDetails['constVolSupplyFanDef']['maxFlowRate']
         }
         return sfdesc
-        
+    
     def recallEvapCondenser(self,condenserDetails):
         print 'getting your evaporative condenser details'
         evapC = {
@@ -642,11 +641,8 @@ class WriteOPS(object):
             evapC['hiEvapCondAirflowRate'] = condenserDetails['hiEvapCondAirflowRate']
             evapC['hiEvapPumpPower'] = condenserDetails['hiEvapPumpPower']
         return evapC
-            
-        
-        
-    def updateDXHeatingCoil(self,hbhc,modelhc):
     
+    def updateDXHeatingCoil(self,hbhc,modelhc):
         #right now, this only works for a one speed coil
         #will need to add something about type to distinguish between other coils
         if hbhc['type'] == 0:
@@ -687,7 +683,6 @@ class WriteOPS(object):
             print "resistiveDefrostHeaterCapacity set to: " + str(hbhc['resistiveDefrostCap'])
         #curves for future will be defined here
         
-
         return modelhc
     
     def updateCVFan(self,sf,cvfan):
@@ -717,10 +712,10 @@ class WriteOPS(object):
     
     def recallChiller(self,plantDetails):
         return plantDetails['chiller']
-        
+    
     def recallCoolingTower(self,plantDetails):
         return plantDetails['coolingTower']
-        
+    
     def updateCoolingTower(self,utower,ostower):
         #universal commands across all three cooling towers
         ostower.setName(utower['name']) #defaults to a name always
@@ -760,9 +755,7 @@ class WriteOPS(object):
             #setFractionofTowerCapacityinFreeConvectionRegime for future
             #setMinimumAirFlowRateRatio for future (vfd specific?)
             pass
-        #print ostower
-        #return ostower
-        
+    
     def updateChiller(self,uchiller,oschiller):
         #print oschiller
         #print uchiller
@@ -806,7 +799,7 @@ class WriteOPS(object):
             osboiler.setDesignWaterFlowRate(uboil['designWaterFlowRate'])
         osboiler.setSizingFactor(uboil['sizingFactor'])
         return osboiler
-    #using a recall function is optional.  It is only designed to make reading the code easier
+    
     def recallVVFan(self,HVACDetails):
         print 'getting supply fan from the hive'
         
@@ -825,7 +818,7 @@ class WriteOPS(object):
         'fanPowerCoefficient5':HVACDetails['varVolSupplyFanDef']['fanPowerCoefficient5']
         }
         return sfdesc
-    #using a recall function is optional.  It is only designed to make reading the code easier
+    
     def recallCoolingCoil(self,HVACDetails):
         #this function works for both 1speed and 2speed coils
         #if once speed, the LowSpead values are just ignored
@@ -906,7 +899,6 @@ class WriteOPS(object):
             #Power Coefficient 5 updated
         print 'success updating fan!'
         return vvfan
-    
     
     def updateCoolingCoil(self,cc,coolcoil):
         #works equally well for 1speed and 2speed DX coils.  
@@ -1012,23 +1004,22 @@ class WriteOPS(object):
                 
                 pass
         return coolcoil
-        
+    
+    
     def addSystemsToZones(self, model):
-        
         for HAVCGroupID in self.HVACSystemDict.keys():
             # HAVC system index for this group and thermal zones
             systemIndex, thermalZones, HVACDetails,plantDetails,zoneRecircAir,zoneTotalAir = self.HVACSystemDict[HAVCGroupID]
             # put thermal zones into a vector
             thermalZoneVector = ops.ThermalZoneVector(thermalZones)
+            
             # add systems. There are 10 standard ASHRAE systems + Ideal Air Loads
             if systemIndex == 0 or systemIndex == -1:
                 for zone in thermalZoneVector:
                         if zone.isConditioned:
                             zone.setUseIdealAirLoads(True)
-                            
             elif systemIndex == 1:
-                
-                # 1: PTAC, Residential - thermalZoneVector because ZoneHVAC
+                # 1: PTAC, Residential
                 ops.OpenStudioModelHVAC.addSystemType1(model, thermalZoneVector)
                 allptacs = model.getZoneHVACPackagedTerminalAirConditioners()
                 
@@ -1037,7 +1028,6 @@ class WriteOPS(object):
                     
                     #Set general air system parameters.
                     if HVACDetails != None:
-                        #if HVACDetails['availSch'] != None: ptac.setAvailabilitySchedule(HVACDetails['availSch'])
                         if HVACDetails['fanPlacement'] != None: ptac.setFanPlacement(HVACDetails['fanPlacement'])
                         
                         sch = ptac.availabilitySchedule()
@@ -1081,7 +1071,7 @@ class WriteOPS(object):
                                     osboiler = self.updateBoiler(uboil,osboiler)
                 
             elif systemIndex == 2:
-                # 2: PTHP, Residential - thermalZoneVector because ZoneHVAC
+                # 2: PTHP, Residential
                 ops.OpenStudioModelHVAC.addSystemType2(model, thermalZoneVector)
                 allpthps = model.getZoneHVACPackagedTerminalHeatPumps()
                 
@@ -1124,46 +1114,37 @@ class WriteOPS(object):
                         print "Secified recirculation air for " +  str(thermalZoneVector[zoneCount].name()) + " to a value of " + str(zoneRecircAir[zoneCount]) + " m3/s per m2 of floor."
                 
             elif systemIndex == 3:
-                print 'Making ASHRAE System Type 3'
+                # 3: Packaged Single Zone - AC
                 for zone in thermalZoneVector:
                     handle = ops.OpenStudioModelHVAC.addSystemType3(model).handle()
-                    #print HVACDetails
                     
                     if HVACDetails != None:
-                        #print handle
-                        #print HVACDetails
                         airloop = model.getAirLoopHVAC(handle).get()
                         airloop.addBranchForZone(zone)
                         print 'zone added to PSZ air loop'
                         oasys = airloop.airLoopHVACOutdoorAirSystem()
-                        
                         
                         if (oasys.is_initialized()== True) and (HVACDetails['airsideEconomizer'] != None):
                             print 'overriding the OpenStudio airside economizer settings'
                             oactrl = oasys.get().getControllerOutdoorAir()
                             #set control type
                             #can sensed min still be dry bulb for any of these?  Future release question
-                            
-                            
                             econo = self.recallOASys(HVACDetails)
                             oactrl = self.updateOASys(econo,oactrl,model)
                             print 'economizer settings updated to economizer name: ' + HVACDetails['airsideEconomizer']['name']
                             print ''
                         
                         #apply fan changes
-                        print HVACDetails['constVolSupplyFanDef']
                         if HVACDetails['constVolSupplyFanDef'] != None:
                             print 'overriding the OpenStudio supply fan settings'
-                            
                             x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:ConstantVolume"))
                             cvfan = model.getFanConstantVolume(x[0].handle()).get()
                             sf = self.recallCVFan(HVACDetails)
                             cvfan = self.updateCVFan(sf,cvfan)
                             print 'supply fan settings updated to supply fan name: ' + HVACDetails['constVolSupplyFanDef']['name']
-    
+                        
                         if HVACDetails['coolingCoil'] != None:
                             print 'overriding the OpenStudio 1-stage cooling DX cooling coil defaults.'
-
                             comps = airloop.supplyComponents()
                             #the default is a single speed compressor
                             #what happens if the user changes to a 2speed compressor?
@@ -1173,18 +1154,15 @@ class WriteOPS(object):
                             coolcoil = self.updateCoolingCoil(HVACDetails['coolingCoil'],coolcoil)
                     
             elif systemIndex == 4:
+                # 4: Packaged Single Zone - HP
                 for zone in thermalZoneVector:
                     handle = ops.OpenStudioModelHVAC.addSystemType4(model).handle()
-
+                    
                     if HVACDetails != None:
-                        #print handle
-                        #print HVACDetails
                         airloop = model.getAirLoopHVAC(handle).get()
                         airloop.addBranchForZone(zone)
                         print 'zone added to PSZ-HP air loop'
                         oasys = airloop.airLoopHVACOutdoorAirSystem()
-                        
-                        print HVACDetails['airsideEconomizer']
                         
                         if oasys.is_initialized() and HVACDetails['airsideEconomizer'] != None:
                             print 'overriding the OpenStudio airside economizer settings'
@@ -1195,48 +1173,42 @@ class WriteOPS(object):
                             oactrl = self.updateOASys(econo,oactrl,model)
                             print 'economizer settings updated to economizer name: ' + HVACDetails['airsideEconomizer']['name']
                             print ''
-
+                        
                         #apply fan changes
-                        print HVACDetails['constVolSupplyFanDef']
                         if HVACDetails['constVolSupplyFanDef'] != 0:
                             print 'overriding the OpenStudio supply fan settings'
-
                             x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:ConstantVolume"))
                             cvfan = model.getFanConstantVolume(x[0].handle()).get()
                             sf = self.recallCVFan(HVACDetails)
                             cvfan = self.updateCVFan(sf,cvfan)
                             print 'supply fan settings updated to supply fan name: ' + HVACDetails['constVolSupplyFanDef']['name']
-    
+                        
                         if HVACDetails['coolingCoil'] != None:
                             print 'overriding the OpenStudio 1-stage cooling DX cooling coil defaults.'
-
                             comps = airloop.supplyComponents()
                             #the default is a single speed compressor
                             #what happens if the user changes to a 2speed compressor?
                             c = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:DX:SingleSpeed"))
                             handle = c[0].handle()
                             coolcoil = model.getCoilCoolingDXSingleSpeed(handle).get()
-
                             coolcoil = self.updateCoolingCoil(HVACDetails['coolingCoil'],coolcoil)
-                            
+                        
                         if HVACDetails['heatingCoil'] != None:
                             print 'overriding the OpenStudio DX heating coil settings'
                             #print airloop
                             hc = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Heating:DX:SingleSpeed"))
                             handle = hc[0].handle()
                             modelhc = model.getCoilHeatingDXSingleSpeed(handle).get()
-
                             hbhc = HVACDetails['heatingCoil']
                             modelhc = self.updateDXHeatingCoil(hbhc,modelhc)
                             print 'New Heating Coil Definition:'
                             print modelhc
-                    
+            
             elif systemIndex == 5:
-                
+                # 5: Packaged VAV w/ Reheat
                 hvacHandle = ops.OpenStudioModelHVAC.addSystemType5(model).handle()
                 # get the airloop
                 airloop = model.getAirLoopHVAC(hvacHandle).get()
-                
                 
                 # add branches
                 for zoneCount, zone in enumerate(thermalZoneVector):
@@ -1314,7 +1286,7 @@ class WriteOPS(object):
                                 osboiler = self.updateBoiler(uboil,osboiler)
                                 
             elif systemIndex == 6:
-                print HVACDetails['availSch']
+                # 6: Packaged VAV w/ PFP Boxes
                 hvacHandle = ops.OpenStudioModelHVAC.addSystemType6(model).handle()
                 
                 # get the airloop
@@ -1332,11 +1304,10 @@ class WriteOPS(object):
                     if HVACDetails['availabilityManagerList'] != 'ALWAYS ON':
                         airloop = self.updateAvailManager(HVACDetails['availabilityManagerList'],airloop, model)
                     
-                if plantDetails!=None:
-                    
-                    print HVACDetails['availabilityManagerList']
-                
+                if plantDetails!=None: pass
+            
             elif systemIndex == 7:
+                # 7: VAV w/ Reheat
                 hvacHandle = ops.OpenStudioModelHVAC.addSystemType7(model).handle()
                 # get the airloop
                 airloop = model.getAirLoopHVAC(hvacHandle).get()
@@ -1482,6 +1453,18 @@ class WriteOPS(object):
                                     print 'Condenser loop unneeded.'
                                     cwl.remove()
                                     print 'Condenser loop removed.'
+            
+            elif systemIndex == 11:
+                # 11: DOAS + Fan Coil Units
+                ops.OpenStudioModelHVAC.addSystemType1(model, thermalZoneVector)
+                allptacs = model.getZoneHVACPackagedTerminalAirConditioners()
+                
+                for zoneCount, ptac in enumerate(allptacs):
+                    hvacHandle = ptac.handle()
+                
+                #hvacHandle = ops.OpenStudioModelHVAC.addExampleModelObjects(model).handle()
+                #print hvacHandle
+            
             else:
                 msg = "HVAC system index " + str(systemIndex) +  " is not implemented yet!"
                 ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)

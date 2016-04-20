@@ -21,17 +21,24 @@
 
 
 """
-OpenStudio Systems, without the inputs in _airSideDetails_ and _plantDetails_ default Open Studio systems will be created.
+Use this component to assign OpenStudio Systems to your HBZones.  By default, all HBZones are assigned an Ideal Air Loads system and this component can be used to change this to a real system from the OpenStudioHVACSystemsList component.
+This component is also used to adjust the features of the HVAC system using the _airSideDetails_ and _plantDetails_ respectively.  Without the inputs in _airSideDetails_ and _plantDetails_, template Open Studio systems will be used.
 -
 Provided by Honeybee 0.0.59
 
     Args:
-        _HBZones:...
-        _HVACSystems: ...
-        _airSideDetails_: Use Honeybee_OpenStudio detail component to define the details
-        _seeHVACDesc_: Set to True to see the HVAC system description
+        _HBZones: The HBZones for which you want to change/adjust the HVAC system.
+        _HVACSystems: A HVAC system template from the "Honeybee_OpenStudioHVACSystemsList" component.  ASHRAE recommends using the following baseline systems for different building types and fuel sources:
+            BUILDING TYPE               FOSSIL FUEL/HYBRID/PURCHASED HEAT            ELECTRIC ONLY
+            Residential                 1: PTAC | Residential                                   2: PTHP | Residential
+            Non-Res 3 Floors            3: Packaged Single Zone - AC                            4: Packaged Single Zone - HP
+            Non-Res 4-5 Floors          5: Packaged VAV w/ Reheat                               6: Packaged VAV w/ PFP Boxes
+            Non-Res >5 Floors           7: VAV w/ Reheat                                        8: VAV w/ PFP Boxes
+            Heated Only Sotrage         9: Warm Air Furnace - Gas Fired                         10: Warm Air Furnace - Electric
+        _airSideDetails_: Parameters from the "Honeybee_OpenStudio Air Handler Detail" component that define the features of the air side (or ventilation side) of the HVAC system.
+        _plantDetails_: Parameters from the "Honeybee_OpenStudio Plant Details" component that define the features of the plant (or water side) of the HVAC system.
     Returns:
-        HBZones:...
+        HBZones: HBZones that have been modified to have the assigned _HVACSystems.
 """
 
 import Grasshopper.Kernel as gh
@@ -43,30 +50,27 @@ import json
 
 ghenv.Component.Name = "Honeybee_OpenStudio Systems"
 ghenv.Component.NickName = 'OSHVACSystems'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAPR_20_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
+#compatibleHBVersion = VER 0.0.56\nJAN_12_2015
+#compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
 except: pass
 
 class dictToClass(object):
     def __init__(self,pyDict):
         self.d = pyDict
-        
-        
+
 class checkHVACSystemID(object):
     """ If airside details are connected checks that _HVACSystems and _HVACSystemID in airside details are consisent will only print warn1 once but warn2 up to how many zones there are"""
     _instance = None
-	
     def __new__(self,*args,**kwargs):
-
         self._instance = super(checkHVACSystemID,self).__new__(self)
-
-            
+    
     @classmethod
     def warningsForHBZone(cls,HBzone,HVACsystem,systemAirSideDetails):
-	    
         if HVACsystem != systemAirSideDetails.d['HVACID']:
             
             if cls._instance == None:
@@ -83,259 +87,116 @@ class checkHVACSystemID(object):
             ghenv.Component.AddRuntimeMessage(w, warn2)
             
             return -1
-	    
-	    
-def main(HBZones, HVACSystems,seeHVACDesc):
+
+def main(HBZones, HVACSystems):
     # check for Honeybee
     results = {}
     systems={}
     
-    if sc.sticky.has_key('honeybee_release'):
-    
     # call the objects from the lib
-        hb_hive = sc.sticky["honeybee_Hive"]()
-        HBZonesFromHive = hb_hive.callFromHoneybeeHive(HBZones)
-        # HVAC Group ID
+    hb_hive = sc.sticky["honeybee_Hive"]()
+    HBZonesFromHive = hb_hive.callFromHoneybeeHive(HBZones)
+    
+    #create a single HVAC Group ID to create a unique reference to the HVAC details imported (or none if none)
+    HVACGroupID = ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4())
+    # assign the systems
+    newZoneList = []
+    for zoneCount, zone in enumerate(HBZonesFromHive):
         
-        #create a single HVAC Group ID to create a unique reference to the HVAC details imported (or none if none)
-        HVACGroupID = ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4())
-        # assign the systems
-        newZoneList = []
-        for zoneCount, zone in enumerate(HBZonesFromHive):
+        if not zone.isConditioned:
+            warning = "%s is not conditioned. Systems will not be added to this zone."%zone.name
+            results[zone.name] = warning
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+            continue
+        
+        try: 
+            #in the case where the user enters multiple HVAC Indices
+            HVACIndex = HVACSystems[zoneCount]
             
-            if not zone.isConditioned:
-                warning = "%s is not conditioned. Systems will not be added to this zone."%zone.name
-                results[zone.name] = warning
-                w = gh.GH_RuntimeMessageLevel.Warning
-                ghenv.Component.AddRuntimeMessage(w, warning)
-                continue
-                
-            try: 
-                #in the case where the user enters multiple HVAC Indices
-                HVACIndex = HVACSystems[zoneCount]
-                
-                # Conduct checks here
-                
-                #results.append('creating HVAC descriptions for Honeybee zones (method 1)')
-                #and they enter different HVAC details for each HVAC Index (not ideal, but possible)
-                if (len(_airSideDetails_) > 1):
-                
-                    #results.append('Individual details have been supplied by user for each system, which will be assigned to each.')
-                    HVACGroupID = ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4())
-                    
-                    if checkHVACSystemID.warningsForHBZone(zone,HVACIndex,_airSideDetails_[zoneCount]) != -1:
-                        
-                        zone.HVACSystem = [HVACGroupID, HVACIndex, _airSideDetails_[zoneCount].d]
-                    
-                    #results.append('HVAC detail ' +str(zoneCount+1)+ ' has been applied to this HVAC system.')
-                else:
-                    #there is only one detail, or no details
-                    if len(_airSideDetails_) == 1:
-                        
-                        if len(_plantDetails_) == 1:
-                            
-                            if checkHVACSystemID.warningsForHBZone(zone,HVACIndex,_airSideDetails_[zoneCount]) != -1:
-                                
-                                zone.HVACSystem = [HVACGroupID, HVACIndex, _airSideDetails_[0].d, _plantDetails_[0].d]
-                                #results.append('your single HVAC detail has been applied to this HVAC system with plant description.')
-                                if(seeHVACDesc):
-                                    #this is simple, because there is only one airside system, so all zones will be added
-                                    if len(results)==0:
-                                        newZoneList.append(zone.name)
-                                        aside = _airSideDetails_[zoneCount].d
-                                        aside['zones']=newZoneList
-                                        results[HVACGroupID]=aside
-                                    else:
-                                        for system in results:
-                                            system['zones'].append(zone.name)
-                        else:
-                            if checkHVACSystemID.warningsForHBZone(zone,HVACIndex,_airSideDetails_[zoneCount]) != -1:
-                                
-                                # This code running 
-                                zone.HVACSystem = [HVACGroupID, HVACIndex, _airSideDetails_[0].d, None]
-                                
-                                if(seeHVACDesc):
-                                    #this is simple, because there is only one airside system, so all zones will be added
-                                    if len(results)==0:
-                                        newZoneList.append(zone.name)
-                                        aside = _airSideDetails_[zoneCount].d
-                                        aside['zones']=newZoneList
-                                        results[HVACGroupID]=aside
-                                    else:
-                                        for system in results:
-                                            system['zones'].append(zone.name)
+            #If they enter different HVAC details for each HVAC Index (not ideal, but possible).
+            if (len(_airSideDetails_) > 1):
+                HVACGroupID = ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4())
+                if checkHVACSystemID.warningsForHBZone(zone,HVACIndex,_airSideDetails_[zoneCount]) != -1:
+                    zone.HVACSystem = [HVACGroupID, HVACIndex, _airSideDetails_[zoneCount].d]
+            else:
+                #there is only one detail, or no details
+                if len(_airSideDetails_) == 1:
+                    if len(_plantDetails_) == 1:
+                        if checkHVACSystemID.warningsForHBZone(zone,HVACIndex,_airSideDetails_[zoneCount]) != -1:
+                            zone.HVACSystem = [HVACGroupID, HVACIndex, _airSideDetails_[0].d, _plantDetails_[0].d]
                     else:
+                        if checkHVACSystemID.warningsForHBZone(zone,HVACIndex,_airSideDetails_[zoneCount]) != -1:
+                            zone.HVACSystem = [HVACGroupID, HVACIndex, _airSideDetails_[0].d, None]
+                else:
+                    if len(_plantDetails_) == 1:
+                        zone.HVACSystem = [HVACGroupID, HVACIndex, None,_plantDetails_[0].d]
+                    else:
+                        zone.HVACSystem = [HVACGroupID, HVACIndex, None, None]
+        except IndexError: 
+            HVACIndex = HVACSystems[0]
+            # Check that HVAC system inputs in airside components and this component are consisent!
+            if (len(_airSideDetails_) > 1):
+                HVACGroupID = ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4())
+                if checkHVACSystemID.warningsForHBZone(zone,HVACIndex,_airSideDetails_[zoneCount]) != -1:
+                    zone.HVACSystem = [HVACGroupID, HVACIndex, _airSideDetails_[zoneCount].d]
+            else:
+                #there is only one detail, or no details
+                if len(_airSideDetails_) == 1:
+                    if checkHVACSystemID.warningsForHBZone(zone,HVACIndex,_airSideDetails_[0]) != -1:
+                        if len(_plantDetails_) == 1:
+                            zone.HVACSystem = [HVACGroupID, HVACIndex, _airSideDetails_[0].d,_plantDetails_[0].d]
+                        else:
+                            zone.HVACSystem = [HVACGroupID, HVACIndex, _airSideDetails_[0].d,None]
+                    else: 
                         if len(_plantDetails_) == 1:
                             zone.HVACSystem = [HVACGroupID, HVACIndex, None,_plantDetails_[0].d]
-                            
-                            #print _plantDetails_[0].d
-                            
-                            if(seeHVACDesc):
-                                #this is simple, because there is only one airside system, so all zones will be added
-                                if len(results)==0:
-                                    newZoneList.append(zone.name)
-                                    aside = _airSideDetails_[zoneCount].d
-                                    aside['zones']=newZoneList
-                                    results[HVACGroupID]=aside
-                                    
-                                else:
-                                    for system in results:
-                                        system['zones'].append(zone.name)
                         else:
-                            zone.HVACSystem = [HVACGroupID, HVACIndex, None, None]
-                            if(seeHVACDesc):
-                                #this is simple, because there is only one airside system, so all zones will be added
-                                if len(results)==0:
-                                    newZoneList.append(zone.name)
-                                    aside = _airSideDetails_[zoneCount].d
-                                    aside['zones']=newZoneList
-                                    results[HVACGroupID]=aside
-                                else:
-                                    for system in results:
-                                        system['zones'].append(zone.name)
-                                        
-                                        
-            except IndexError: 
-                HVACIndex = HVACSystems[0]
-                
-                # Check that HVAC system inputs in airside components and this component are consisent!
-                
-                #results.append('creating HVAC descriptions for Honeybee zones (method 2)')
-                if (len(_airSideDetails_) > 1):
-                    #results.append('Individual details have been provided for the HVAC Systems, which will be applied now.')
-                    HVACGroupID = ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4())
-                    
-                    if checkHVACSystemID.warningsForHBZone(zone,HVACIndex,_airSideDetails_[zoneCount]) != -1:
-                        
-                        zone.HVACSystem = [HVACGroupID, HVACIndex, _airSideDetails_[zoneCount].d]
-                        #results.append('HVAC detail ' +str(zoneCount+1)+ ' has been applied to this HVAC system.')
-                        
+                            zone.HVACSystem = [HVACGroupID, HVACIndex, None,None]
                 else:
-                    #there is only one detail, or no details
-                    if len(_airSideDetails_) == 1:
-                        
-                        if checkHVACSystemID.warningsForHBZone(zone,HVACIndex,_airSideDetails_[0]) != -1:
-                            
-                            if len(_plantDetails_) == 1:
-                                
-                                zone.HVACSystem = [HVACGroupID, HVACIndex, _airSideDetails_[0].d,_plantDetails_[0].d]
-                                #print _airSideDetails_[0].d
-                                #results.append('your single HVAC detail has been applied to this HVAC system with plant description.')
-                                #results.append('HVAC system unique id: ' + HVACGroupID)
-                                if(seeHVACDesc):
-                                    if len(results)==0:
-                                        newZoneList.append(zone.name)
-                                        aside = _airSideDetails_[zoneCount].d
-                                        aside['zones']=newZoneList
-                                        results[HVACGroupID]=aside
-                                        pp.pprint(results)
-                                    else:
-                                        for systemname,vals in results.items():
-                                            print systemname
-                                            vals['zones'].append(zone.name)
-                            else:
-                                zone.HVACSystem = [HVACGroupID, HVACIndex, _airSideDetails_[0].d,None]
-                                if(seeHVACDesc):
-                                    if len(results)==0:
-                                        newZoneList.append(zone.name)
-                                        aside = _airSideDetails_[zoneCount].d
-                                        aside['zones']=newZoneList
-                                        results[HVACGroupID]=aside
-                                    else:
-                                        for system in results:
-                                            system['zones'].append(zone.name)
-                        else: 
-                            if len(_plantDetails_) == 1:
-                                zone.HVACSystem = [HVACGroupID, HVACIndex, None,_plantDetails_[0].d]
-                                if(seeHVACDesc):
-                                    if len(results)==0:
-                                        newZoneList.append(zone.name)
-                                        aside = _airSideDetails_[zoneCount].d
-                                        aside['zones']=newZoneList
-                                        results[HVACGroupID]=aside
-                                    else:
-                                        for system in results:
-                                            system['zones'].append(zone.name)
-                            else:
-                                zone.HVACSystem = [HVACGroupID, HVACIndex, None,None]
-                                if(seeHVACDesc):
-                                    if len(results)==0:
-                                        newZoneList.append(zone.name)
-                                        aside = _airSideDetails_[zoneCount].d
-                                        aside['zones']=newZoneList
-                                        results[HVACGroupID]=aside
-                                    else:
-                                        for system in results:
-                                            system['zones'].append(zone.name)
+                    if len(_plantDetails_) == 1:
+                        zone.HVACSystem = [HVACGroupID, HVACIndex, None,_plantDetails_[0].d]
                     else:
-                        if len(_plantDetails_) == 1:
-                            zone.HVACSystem = [HVACGroupID, HVACIndex, None,_plantDetails_[0].d]
-                            
-                            #print _plantDetails_[0].d
-                            
-                            if(seeHVACDesc):
-                                #this is simple, because there is only one airside system, so all zones will be added
-                                if len(results)==0:
-                                    newZoneList.append(zone.name)
-                                    aside = _airSideDetails_[zoneCount].d
-                                    aside['zones']=newZoneList
-                                    results[HVACGroupID]=aside
-                                    
-                                else:
-                                    for system in results:
-                                        system['zones'].append(zone.name)
-                        else:
-                            zone.HVACSystem = [HVACGroupID, HVACIndex, None, None]
-                            if(seeHVACDesc):
-                                #this is simple, because there is only one airside system, so all zones will be added
-                                if len(results)==0:
-                                    newZoneList.append(zone.name)
-                                    aside = _airSideDetails_[zoneCount].d
-                                    aside['zones']=newZoneList
-                                    results[HVACGroupID]=aside
-                                else:
-                                    for system in results:
-                                        system['zones'].append(zone.name)
+                        zone.HVACSystem = [HVACGroupID, HVACIndex, None, None]
             
-            # If no changes made, this component shouldn't output HBZones
+            if len(results)==0:
+                newZoneList.append(zone.name)
+                try:
+                    aside = _airSideDetails_[zoneCount].d
+                    aside['zones']=newZoneList
+                    results[HVACGroupID]=aside
+                except: pass
+            else:
+                for system in results:
+                    system['zones'].append(zone.name)
             
             HBZones  = hb_hive.addToHoneybeeHive(HBZonesFromHive, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
-        
-    else:
-        results["0"] = "You should first let Honeybee to fly..."
-        w = gh.GH_RuntimeMessageLevel.Warning
-        ghenv.Component.AddRuntimeMessage(w, "You should let Honeybee to fly...")
-
+    
     return HBZones,results
-    
-    
-def checkTheInputs(_HVACSystemID):
-    
-    if _HVACSystems != None and _airSideDetails_ != None:
-        
-        print 'If air side details are entered through _airSideDetails_. The HVACSystemID must be specified in the Air Handler Detail component.\n'+ \
-        'Please either disconnect the input from _HVACSystems or _airSideDetails_ and try again.'
-        
-        warn =  'If air side details are entered through _airSideDetails_. The HVACSystemID must be specified in the Air Handler Detail component.\n'+ \
-        'Please either disconnect the input from _HVACSystems or _airSideDetails_ and try again.'
-        
-        w = gh.GH_RuntimeMessageLevel.Warning
-        ghenv.Component.AddRuntimeMessage(w, warn)
-        return -1
-        
-    
-    
-if _HBZones and _HVACSystems:
-    pp = pprint.PrettyPrinter(indent=4)
-    if _seeHVACDesc_ == None:
-        _seeHVACDesc_ = False
-        
-    HBZones,out = main(_HBZones, _HVACSystems, _seeHVACDesc_)
-    print "the dictionary:"
-    pp.pprint(out)
-    airsideDetails = dictToClass(out)
 
-    #test to make sure it makes valid json (it does!).  Use an online json validator to be sure.
-    #filename="C:\\Temp\\test.json"
-    #with open(filename,'w') as outfile:
-    #    json.dump(out,outfile)
+
+#Honeybee check.
+initCheck = True
+if not sc.sticky.has_key('honeybee_release') == True:
+    initCheck = False
+    print "You should first let Honeybee fly..."
+    ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee fly...")
+else:
+    try:
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): initCheck = False
+        if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): initCheck = False
+    except:
+        initCheck = False
+        warning = "You need a newer version of Honeybee to use this compoent." + \
+        "Use updateHoneybee component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+        "into canvas and try again."
+        ghenv.Component.AddRuntimeMessage(w, warning)
+
+
+if initCheck and _HBZones and _HVACSystems:
+    HBZones,out = main(_HBZones, _HVACSystems)
+    
+    pp = pprint.PrettyPrinter(indent=4)
+    print "HVAC Description:"
+    pp.pprint(out)
