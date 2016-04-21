@@ -56,7 +56,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.59\nAPR_19_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAPR_21_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -331,11 +331,14 @@ if _resultFileAddress and gotData == True and csvExists == True:
                     elif 'Fan Electric Energy' in column:
                         key.append(15)
                         if 'FAN CONSTANT VOLUME' in column:
-                            zoneName = checkZoneSys(" " + ":".join(column.split(":")[:-1]).split('FAN CONSTANT VOLUME ')[-1])
+                            zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('FAN CONSTANT VOLUME ')[-1], 2)
                             makeHeader(fanElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Fan Electric Energy", energyUnit, True)
                         elif 'FAN VARIABLE VOLUME' in column:
                             centralSys = True
                             zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('FAN VARIABLE VOLUME ')[-1], 2)
+                            makeHeader(fanElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Fan Electric Energy", energyUnit, True)
+                        elif 'FAN ON OFF' in column:
+                            zoneName = checkZoneSys(" " + ":".join(column.split(":")[:-1]).split('FAN ON OFF ')[-1])
                             makeHeader(fanElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Fan Electric Energy", energyUnit, True)
                         elif 'Zone Ventilation Fan Electric Energy' in column:
                             zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
@@ -489,9 +492,6 @@ if _resultFileAddress and gotData == True and csvExists == True:
                     else:
                         key.append(-1)
                         path.append(-1)
-                    
-                #print key
-                #print path
             else:
                 for columnCount, column in enumerate(line.split(',')):
                     if key[columnCount] != 14:
