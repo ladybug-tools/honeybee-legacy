@@ -1014,7 +1014,11 @@ class WriteOPS(object):
             thermalZoneVector = ops.ThermalZoneVector(thermalZones)
             
             # add systems. There are 10 standard ASHRAE systems + Ideal Air Loads
-            if systemIndex == 0 or systemIndex == -1:
+            if systemIndex == -1:
+                # -1: Thermostat Only (no ideal air system).
+                pass
+            elif systemIndex == 0:
+                # 0: Ideal Air Loads
                 for zone in thermalZoneVector:
                         if zone.isConditioned:
                             zone.setUseIdealAirLoads(True)
@@ -1284,7 +1288,7 @@ class WriteOPS(object):
                                 osboiler = model.getBoilerHotWater(boiler.handle()).get()
                                 uboil = self.recallBoiler(plantDetails)
                                 osboiler = self.updateBoiler(uboil,osboiler)
-                                
+            
             elif systemIndex == 6:
                 # 6: Packaged VAV w/ PFP Boxes
                 hvacHandle = ops.OpenStudioModelHVAC.addSystemType6(model).handle()
@@ -1453,17 +1457,6 @@ class WriteOPS(object):
                                     print 'Condenser loop unneeded.'
                                     cwl.remove()
                                     print 'Condenser loop removed.'
-            
-            elif systemIndex == 11:
-                # 11: DOAS + Fan Coil Units
-                ops.OpenStudioModelHVAC.addSystemType1(model, thermalZoneVector)
-                allptacs = model.getZoneHVACPackagedTerminalAirConditioners()
-                
-                for zoneCount, ptac in enumerate(allptacs):
-                    hvacHandle = ptac.handle()
-                
-                #hvacHandle = ops.OpenStudioModelHVAC.addExampleModelObjects(model).handle()
-                #print hvacHandle
             
             else:
                 msg = "HVAC system index " + str(systemIndex) +  " is not implemented yet!"
