@@ -46,7 +46,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Read EP Surface Result"
 ghenv.Component.NickName = 'readEPSrfResult'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAPR_23_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -239,7 +239,7 @@ srfPiecesList = []
 srfPieceDataList = []
 
 if curvedGeometry == True:
-    for dataType in range(8):
+    for dataType in range(9):
         srfPiecesList.append([])
         srfPieceDataList.append([])
         for zoneCount, zone in enumerate(zoneSrfNameList):
@@ -297,7 +297,8 @@ def checkSrfName(csvName, dataType):
                         try:
                             srfPiecesList[dataType][branch][count] = srfPiecesList[dataType][branch][count] + 1
                             pieceNum = srfPiecesList[dataType][branch][count]
-                        except:
+                        except Exception as e:
+                            print e
                             pieceNum = 1
                     else:
                         pieceNum = 1
@@ -337,13 +338,13 @@ if _resultFileAddress and gotZoneData == True and gotSrfData == True:
                 key = []; path = []; duplicateList = []; pieceNumList = []
                 for columnCount, column in enumerate(line.split(',')):
                     srfName = column.split(':')[0]
-                    
                     if 'Surface Inside Face Temperature' in column:
                         if gotSrfData == True:
                             srfName, typeName, pieceNum, duplicate = checkSrfName(srfName, 0)
                             duplicateList.append(duplicate)
                             pieceNumList.append(pieceNum)
-                            if pieceNum < 2 and path[columnCount] != -1: makeHeaderGrafted(surfaceIndoorTemp, int(path[columnCount][0]), int(path[columnCount][1]), srfName, column.split('(')[-1].split(')')[0], "Inner Surface Temperature", "C", False, typeName)
+                            if pieceNum < 2 and path[columnCount] != -1:
+                                makeHeaderGrafted(surfaceIndoorTemp, int(path[columnCount][0]), int(path[columnCount][1]), srfName, column.split('(')[-1].split(')')[0], "Inner Surface Temperature", "C", False, typeName)
                         else:
                             path.append([InTemp])
                             duplicateList.append(False)
@@ -358,7 +359,8 @@ if _resultFileAddress and gotZoneData == True and gotSrfData == True:
                             srfName, typeName, pieceNum, duplicate = checkSrfName(srfName, 1)
                             duplicateList.append(duplicate)
                             pieceNumList.append(pieceNum)
-                            if pieceNum < 2 and path[columnCount] != -1: makeHeaderGrafted(surfaceOutdoorTemp, int(path[columnCount][0]), int(path[columnCount][1]), srfName, column.split('(')[-1].split(')')[0], "Outer Surface Temperature", "C", False, typeName)
+                            if pieceNum < 2 and path[columnCount] != -1:
+                                makeHeaderGrafted(surfaceOutdoorTemp, int(path[columnCount][0]), int(path[columnCount][1]), srfName, column.split('(')[-1].split(')')[0], "Outer Surface Temperature", "C", False, typeName)
                         else:
                             path.append([OutTemp])
                             duplicateList.append(False)
@@ -460,7 +462,8 @@ if _resultFileAddress and gotZoneData == True and gotSrfData == True:
                             srfName, typeName, pieceNum, duplicate = checkSrfName(srfName, 8)
                             duplicateList.append(duplicate)
                             pieceNumList.append(pieceNum)
-                            if pieceNum < 2 and path[columnCount] != -1: makeHeaderGrafted(windowTransmissivity, int(path[columnCount][0]), int(path[columnCount][1]), srfName, column.split('(')[-1].split(')')[0], "Surface Window System Solar Transmittance", "Fraction", True, typeName)
+                            if pieceNum < 2 and path[columnCount] != -1: 
+                                makeHeaderGrafted(windowTransmissivity, int(path[columnCount][0]), int(path[columnCount][1]), srfName, column.split('(')[-1].split(')')[0], "Surface Window System Solar Transmittance", "Fraction", True, typeName)
                         else:
                             path.append([glzTransmiss])
                             duplicateList.append(False)
@@ -488,9 +491,6 @@ if _resultFileAddress and gotZoneData == True and gotSrfData == True:
                         path.append(-1)
                         duplicateList.append(-1)
                         pieceNumList.append(-1)
-                    
-                #print key
-                #print path
             else:
                 for columnCount, column in enumerate(line.split(',')):
                     if path[columnCount] != -1:
@@ -512,53 +512,68 @@ if _resultFileAddress and gotZoneData == True and gotSrfData == True:
                             srfArea = 1
                         
                         if key[columnCount] == 1:
-                            if duplicate == False: surfaceIndoorTemp.Add(float(column), p)
+                            if duplicate == False:
+                                surfaceIndoorTemp.Add(float(column), p)
                             else:
-                                if pieceCount == 1: srfPieceDataList[0][path[columnCount][0]][path[columnCount][1]].append(float(column))
-                                else: srfPieceDataList[0][path[columnCount][0]][path[columnCount][1]][lineCount-1] == (srfPieceDataList[0][path[columnCount][0]][path[columnCount][1]][lineCount-1] + float(column))/2
+                                if pieceCount == 1:
+                                    srfPieceDataList[0][path[columnCount][0]][path[columnCount][1]].append(float(column))
+                                else:
+                                    srfPieceDataList[0][path[columnCount][0]][path[columnCount][1]][lineCount-1] = \
+                                        (srfPieceDataList[0][path[columnCount][0]][path[columnCount][1]][lineCount-1] + float(column))/2
                         elif key[columnCount] == 2:
-                            if duplicate == False: surfaceOutdoorTemp.Add(float(column), p)
+                            if duplicate == False:
+                                surfaceOutdoorTemp.Add(float(column), p)
                             else:
-                                if pieceCount == 1: srfPieceDataList[1][path[columnCount][0]][path[columnCount][1]].append(float(column))
-                                else: srfPieceDataList[1][path[columnCount][0]][path[columnCount][1]][lineCount-1] == (srfPieceDataList[1][path[columnCount][0]][path[columnCount][1]][lineCount-1] + float(column))/2
+                                if pieceCount == 1:
+                                    srfPieceDataList[1][path[columnCount][0]][path[columnCount][1]].append(float(column))
+                                else:
+                                    srfPieceDataList[1][path[columnCount][0]][path[columnCount][1]][lineCount-1] = \
+                                        (srfPieceDataList[0][path[columnCount][0]][path[columnCount][1]][lineCount-1] + float(column))/2
                         elif key[columnCount] == 3:
                             if duplicate == False: opaqueEnergyFlow.Add((float(column)/3600000)/srfArea, p)
                             else:
                                 if pieceCount == 1: srfPieceDataList[2][path[columnCount][0]][path[columnCount][1]].append((float(column)/3600000)/srfArea)
-                                else: srfPieceDataList[2][path[columnCount][0]][path[columnCount][1]][lineCount-1] == srfPieceDataList[2][path[columnCount][0]][path[columnCount][1]][lineCount-1] + (float(column)/3600000)/srfArea
+                                else: srfPieceDataList[2][path[columnCount][0]][path[columnCount][1]][lineCount-1] = srfPieceDataList[2][path[columnCount][0]][path[columnCount][1]][lineCount-1] + (float(column)/3600000)/srfArea
                         elif key[columnCount] == 4:
                             if duplicate == False: glazEnergyFlow.Add((((float(column))/3600000) + ((float( line.split(',')[columnCount+1] ))*(-1)/3600000))/srfArea, p)
                             else:
                                 if pieceCount == 1: srfPieceDataList[3][path[columnCount][0]][path[columnCount][1]].append((((float(column))/3600000) + ((float( line.split(',')[columnCount+1] ))*(-1)/3600000))/srfArea)
-                                else: srfPieceDataList[3][path[columnCount][0]][path[columnCount][1]][lineCount-1] == srfPieceDataList[3][path[columnCount][0]][path[columnCount][1]][lineCount-1] + (((float(column))/3600000) + ((float( line.split(',')[columnCount+1] ))*(-1)/3600000))/srfArea
+                                else: srfPieceDataList[3][path[columnCount][0]][path[columnCount][1]][lineCount-1] = srfPieceDataList[3][path[columnCount][0]][path[columnCount][1]][lineCount-1] + (((float(column))/3600000) + ((float( line.split(',')[columnCount+1] ))*(-1)/3600000))/srfArea
                         elif key[columnCount] == 5:
                             pass
                         elif key[columnCount] == 6:
                             if duplicate == False: windowBeamEnergy.Add(((float(column))/3600000)/srfArea, p)
                             else:
                                 if pieceCount == 1: srfPieceDataList[5][path[columnCount][0]][path[columnCount][1]].append((float(column)/3600000)/srfArea)
-                                else: srfPieceDataList[5][path[columnCount][0]][path[columnCount][1]][lineCount-1] == srfPieceDataList[5][path[columnCount][0]][path[columnCount][1]][lineCount-1] + (float(column)/3600000)/srfArea
+                                else: srfPieceDataList[5][path[columnCount][0]][path[columnCount][1]][lineCount-1] = srfPieceDataList[5][path[columnCount][0]][path[columnCount][1]][lineCount-1] + (float(column)/3600000)/srfArea
                         elif key[columnCount] == 7:
                             if duplicate == False: windowDiffEnergy.Add(((float(column))/3600000)/srfArea, p)
                             else:
                                 if pieceCount == 1: srfPieceDataList[6][path[columnCount][0]][path[columnCount][1]].append((float(column)/3600000)/srfArea)
-                                else: srfPieceDataList[6][path[columnCount][0]][path[columnCount][1]][lineCount-1] == srfPieceDataList[6][path[columnCount][0]][path[columnCount][1]][lineCount-1] + (float(column)/3600000)/srfArea
+                                else: srfPieceDataList[6][path[columnCount][0]][path[columnCount][1]][lineCount-1] = srfPieceDataList[6][path[columnCount][0]][path[columnCount][1]][lineCount-1] + (float(column)/3600000)/srfArea
                         elif key[columnCount] == 8:
-                            if duplicate == False: windowTotalSolarEnergy.Add(((float(column))/3600000)/srfArea, p)
+                            if duplicate == False:
+                                windowTotalSolarEnergy.Add(((float(column))/3600000)/srfArea, p)
                             else:
-                                if pieceCount == 1: srfPieceDataList[7][path[columnCount][0]][path[columnCount][1]].append((float(column)/3600000)/srfArea)
-                                else: srfPieceDataList[7][path[columnCount][0]][path[columnCount][1]][lineCount-1] == srfPieceDataList[7][path[columnCount][0]][path[columnCount][1]][lineCount-1] + (float(column)/3600000)/srfArea
+                                if pieceCount == 1:
+                                    srfPieceDataList[7][path[columnCount][0]][path[columnCount][1]].append((float(column)/3600000)/srfArea)
+                                else:
+                                    srfPieceDataList[7][path[columnCount][0]][path[columnCount][1]][lineCount-1] = \
+                                        srfPieceDataList[7][path[columnCount][0]][path[columnCount][1]][lineCount-1] + (float(column)/3600000)/srfArea
                         elif key[columnCount] == 10:
-                            if duplicate == False: windowTransmissivity.Add(float(column), p)
+                            if duplicate == False:
+                                windowTransmissivity.Add(float(column), p)
                             else:
-                                if pieceCount == 1: srfPieceDataList[1][path[columnCount][0]][path[columnCount][1]].append(float(column))
-                                else: srfPieceDataList[1][path[columnCount][0]][path[columnCount][1]][lineCount-1] == (srfPieceDataList[1][path[columnCount][0]][path[columnCount][1]][lineCount-1] + float(column))/2
+                                if pieceCount == 1:
+                                    srfPieceDataList[8][path[columnCount][0]][path[columnCount][1]].append(float(column))
+                                else:
+                                    srfPieceDataList[8][path[columnCount][0]][path[columnCount][1]][lineCount-1] = (srfPieceDataList[8][path[columnCount][0]][path[columnCount][1]][lineCount-1] + float(column))/2
                         elif key[columnCount] == 9:
                             otherSurfaceData.Add(float(column), p)
                     
-        result.close()
         parseSuccess = True
-    except:
+    except Exception as e:
+        print e
         parseSuccess = False
         warn = 'Failed to parse the result file.  Check the folder of the file address you are plugging into this component and make sure that there is a .csv file in the folder. \n'+ \
                   'If there is no csv file or there is a file with no data in it (it is 0 kB), your simulation probably did not run correctly. \n' + \
@@ -567,7 +582,10 @@ if _resultFileAddress and gotZoneData == True and gotSrfData == True:
                   'If you report this bug of reading the output on the GH forums, we should be able to fix this component to accept the output soon.'
         print warn
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warn)
-
+    finally:
+        result.close()
+        
+    
 #Check to make sure that the normalization by surface worked.
 if normAreaWorked == False:
     warn = 'Normalizing by surface area does not work if you have more than one type of otherSurfaceData.  All types after the first are not normailzed.'
@@ -591,6 +609,7 @@ if curvedGeometry == True:
         elif dataType == 5: addCurvedDataToTree(zoneList, windowTotalSolarEnergy)
         elif dataType == 6: addCurvedDataToTree(zoneList, windowBeamEnergy)
         elif dataType == 7: addCurvedDataToTree(zoneList, windowDiffEnergy)
+        elif dataType == 8: addCurvedDataToTree(zoneList, windowTransmissivity)
 
 
 # If there is both a list for flow in and out of the surfaces, create a list with the energy flow of all surfaces.
