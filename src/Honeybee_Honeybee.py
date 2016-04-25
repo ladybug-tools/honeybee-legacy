@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.59\nAPR_19_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAPR_25_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -55,6 +55,8 @@ try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
 
 
+import sys
+sys.path = sorted(sys.path, key=lambda p: p.find("Python27"))
 
 import rhinoscriptsyntax as rs
 import Rhino as rc
@@ -65,7 +67,6 @@ from Grasshopper import DataTree
 from Grasshopper.Kernel.Data import GH_Path
 import math
 import shutil
-import sys
 import os
 import System.Threading.Tasks as tasks
 import System
