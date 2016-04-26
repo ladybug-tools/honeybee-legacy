@@ -44,7 +44,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_R-Value With Air Films"
 ghenv.Component.NickName = 'RValueAirFilms'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAPR_26_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
@@ -90,7 +90,7 @@ def main(_uValue_SI, surfaceType_):
             RValue_SI = 1/_uValue_SI
             newRValue_SI = RValue_SI + addedR
             newUValue_SI = 1/newRValue_SI
-            newRValue_IP = RValue_SI * 5.678263337
+            newRValue_IP = newRValue_SI * 5.678263337
             newUValue_IP = 1/newRValue_IP
             
             return newUValue_SI, newUValue_IP, newRValue_SI, newRValue_IP
