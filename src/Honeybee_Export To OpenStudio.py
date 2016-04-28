@@ -62,7 +62,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.59\nAPR_20_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAPR_27_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -2122,13 +2122,14 @@ class RunOPS(object):
         self.additionalcsvSchedules = additionalcsvSchedules
     
     def getEPFolder(self):
-        print self.openStudioDir
         fList = os.listdir(self.openStudioDir)
         for f in fList:
             fullpath = os.path.join(self.openStudioDir, f)
-            if os.path.isdir(fullpath) and f.startswith("EnergyPlusV"):
+            if os.path.isdir(fullpath) and f.startswith("EnergyPlus"):
                 return fullpath
-    
+            else:
+                raise Exception("Failed to find EnergyPlus folder at %s." % self.openStudioDir)
+                
     def osmToidf(self, workingDir, projectName, osmPath):
         # create a new folder to run the analysis
         projectFolder =os.path.join(workingDir, projectName)
