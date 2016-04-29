@@ -38,7 +38,7 @@ Provided by Ladybug 0.0.45
 
 ghenv.Component.Name = "Honeybee_Re-run OSM"
 ghenv.Component.NickName = 'Re-Run OSM'
-ghenv.Component.Message = 'VER 0.0.59\nAPR_20_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAPR_29_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"
@@ -49,18 +49,45 @@ ghenv.Component.AdditionalHelpFromDocStrings = "0"
 
 import os
 import scriptcontext as sc
-
-
-openStudioFolder = r"C:\Program Files\OpenStudio 1.10.0\\"
-openStudioLibFolder = openStudioFolder + r"\CSharp\openstudio"
-openStudioIsReady = True
-import clr
-clr.AddReferenceToFileAndPath(openStudioLibFolder+"\\openStudio.dll")
-import sys
-if openStudioLibFolder not in sys.path:
-    sys.path.append(openStudioLibFolder)
-import OpenStudio
 import time
+
+
+if sc.sticky.has_key('honeybee_release'):
+    
+    installedOPS = [f for f in os.listdir("C:\\Program Files") if f.startswith("OpenStudio")]
+    installedOPS = sorted(installedOPS, key = lambda x: int("".join(x.split(" ")[-1].split("."))), reverse = True)
+    
+    if len(installedOPS) != 0:
+        openStudioLibFolder = "C:/Program Files/%s/CSharp/openstudio/"%installedOPS[0]
+        QtFolder = "C:/Program Files/%s/Ruby/openstudio/"%installedOPS[0]
+    else:
+        openStudioLibFolder = ""
+        QtFolder = ""
+
+    if os.path.isdir(openStudioLibFolder) and os.path.isfile(os.path.join(openStudioLibFolder, "openStudio.dll")):
+        # openstudio is there
+        # add both folders to path to avoid PINVOKE exception
+        if not openStudioLibFolder in os.environ['PATH'] or QtFolder not in os.environ['PATH']:
+            os.environ['PATH'] = ";".join([openStudioLibFolder, QtFolder, os.environ['PATH']])
+        
+        openStudioIsReady = True
+        import clr
+        clr.AddReferenceToFileAndPath(openStudioLibFolder+"\\openStudio.dll")
+    
+        import sys
+        if openStudioLibFolder not in sys.path:
+            sys.path.append(openStudioLibFolder)
+    
+        import OpenStudio as ops
+    else:
+        openStudioIsReady = False
+        # let the user know that they need to download OpenStudio libraries
+        msg = "Cannot find OpenStudio libraries at " + openStudioLibFolder + \
+              "\nYou need to download and install OpenStudio to be able to use this component."
+              
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+else:
+    openStudioIsReady = False
 
 
 def writeBatchFile(EPFolder, workingDir, idfFileName, epwFileAddress):
@@ -159,5 +186,6 @@ def main(epwFile, osmFile):
     return projectFolder, modifiedIdfFilePath, resultsFileAddress
 
 
-if _runIt and _epwFileAddress and _osmFilePath:
+
+if openStudioIsReady and _runIt and _epwFileAddress and _osmFilePath:
     projectFolder, IdfFilePath, resultFileAddress = main(_epwFileAddress, _osmFilePath)
