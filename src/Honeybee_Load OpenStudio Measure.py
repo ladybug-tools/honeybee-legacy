@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.59
 """
 ghenv.Component.Name = "Honeybee_Load OpenStudio Measure"
 ghenv.Component.NickName = 'importOSMeasure'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAPR_29_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"
@@ -48,6 +48,45 @@ import os
 import Grasshopper.Kernel as gh
 import scriptcontext as sc
 from pprint import pprint
+
+if sc.sticky.has_key('honeybee_release'):
+    
+    installedOPS = [f for f in os.listdir("C:\\Program Files") if f.startswith("OpenStudio")]
+    installedOPS = sorted(installedOPS, key = lambda x: int("".join(x.split(" ")[-1].split("."))), reverse = True)
+    
+    if len(installedOPS) != 0:
+        openStudioFolder = "C:/Program Files/%s/"%installedOPS[0]
+        openStudioLibFolder = "C:/Program Files/%s/CSharp/openstudio/"%installedOPS[0]
+        QtFolder = "C:/Program Files/%s/Ruby/openstudio/"%installedOPS[0]
+    else:
+        openStudioFolder = ""
+        openStudioLibFolder = ""
+        QtFolder = ""
+    
+    if os.path.isdir(openStudioLibFolder) and os.path.isfile(os.path.join(openStudioLibFolder, "openStudio.dll")):
+        # openstudio is there
+        # add both folders to path to avoid PINVOKE exception
+        if not openStudioLibFolder in os.environ['PATH'] or QtFolder not in os.environ['PATH']:
+            os.environ['PATH'] = ";".join([openStudioLibFolder, QtFolder, os.environ['PATH']])
+        
+        openStudioIsReady = True
+        import clr
+        clr.AddReferenceToFileAndPath(openStudioLibFolder+"\\openStudio.dll")
+    
+        import sys
+        if openStudioLibFolder not in sys.path:
+            sys.path.append(openStudioLibFolder)
+    
+        import OpenStudio
+    else:
+        openStudioIsReady = False
+        # let the user know that they need to download OpenStudio libraries
+        msg = "Cannot find OpenStudio libraries at " + openStudioLibFolder + \
+              "\nYou need to download and install OpenStudio to be able to use this component."
+              
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+else:
+    openStudioIsReady = False
 
 class OPSChoice:
     
@@ -111,7 +150,9 @@ class OPSMeasureArg:
     
     def update_value(self, userInput):
         #currently everything is string
-        if str(userInput).lower() not in self.validChoices:
+        if len(self.validChoices) == 0:
+            self.userInput = userInput
+        elif str(userInput).lower() not in self.validChoices:
             #give warning
             msg = str(userInput) + " is not a valid input for " + self.display_name + ".\nValid inputs are: " + str(self.choices)
             give_warning(msg)
@@ -207,10 +248,18 @@ class OpenStudioMeasure:
 
 
 if _OSMeasure:
-
+    
     xmlFile = os.path.join(_OSMeasure, "measure.xml")
     if not os.path.isfile(xmlFile): raise Exception("Can't find measure at " + xmlFile)
     
+    measure = OpenStudio.BCLMeasure(OpenStudio.Path(_OSMeasure))
+    
+    if measure.arguments().Count == 0:
+        msg = "Failed to load measure arguments. You need to regenerate measure.xml file." + \
+            "\nCheck this disucssion to know how to do that using OpenStudio application." + \
+            "\nhttps://unmethours.com/question/16955/openstudiobclmeasurearguments-returns-an-empty-vector/"
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Error, msg)
+        
     # load arguments
     args = get_measureArgs(xmlFile)
     
@@ -245,5 +294,5 @@ else:
         ghenv.Component.Description = OSMeasure.description
         pprint(OSMeasure.args)
     except Exception , e:
-        print "Couldn't load the measure!"
+        print "Couldn't load the measure!\n%s" % str(e)
         pass

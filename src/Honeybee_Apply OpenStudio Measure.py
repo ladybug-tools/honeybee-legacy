@@ -43,7 +43,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Apply OpenStudio Measure"
 ghenv.Component.NickName = 'applyOSMeasure'
-ghenv.Component.Message = 'VER 0.0.59\nAPR_20_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAPR_29_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"
@@ -109,16 +109,22 @@ def createOSArgument(arg):
     elif arg.type == 'Boolean':
         argument = OpenStudio.OSArgument.makeBoolArgument(arg.name, arg.required, arg.model_dependent)
     
+    elif arg.type == 'Double':
+        argument = OpenStudio.OSArgument.makeDoubleArgument(arg.name, arg.required, arg.model_dependent)
     else:
-        raise Exception("%s is not Implemented")%arg.type
+        raise Exception("%s is not Implemented" % arg.type)
     
     argument.setDisplayName(arg.display_name)
     argument.setDefaultValue(arg.default_value) #I'm not sure if this is neccessary
     argument.setDescription(arg.description)
-    if arg.type != 'Boolean':
-        argument.setValue(str(arg.userInput))
-    else:
-        argument.setValue(arg.userInput)
+    
+    if arg.userInput is not None:
+        if arg.type == 'Double':
+            argument.setValue(float(arg.userInput))    
+        elif arg.type != 'Boolean':
+            argument.setValue(str(arg.userInput))
+        else:
+            argument.setValue(bool(arg.userInput))
     
     return argument
 
@@ -200,26 +206,25 @@ def main(epwFile, OSMeasure, osmFile):
         jobErrors = jobtree.errors()
         
         print "Errors and Warnings:"
-        for msg in jobErrors.errors():
-          print msg
+        print "\n".join(jobErrors.errors())
         
         if jobErrors.succeeded():
           print "Passed!"
         else:
           print "Failed!"
-        
         rm.Dispose()
         
-    except:
+    except Exception as e:
+        print str(e)
+    finally:
         rm.Dispose()
     
     projectFolder = os.path.normpath(workingDir + '\\' + OSMeasure.name.replace(" ", "_") + "\\0-UserScript")
-    modifiedOsmFilePath = os.path.normpath(projectFolder + "\\eplusin.osm")
-    modifiedIdfFilePath = "" # I need to add exapnd idf to workflow to get these two
-    resultsFileAddress = ""
     
-    return projectFolder, modifiedIdfFilePath, modifiedOsmFilePath, resultsFileAddress
+    return projectFolder
 
 
 if openStudioIsReady and _runIt and _epwWeatherFile and _OSMeasure and _osmFilePath:
-    projectFolder, modifiedIdfFilePath, modifiedOsmFilePath, resultsFileAddress = main(_epwWeatherFile, _OSMeasure, _osmFilePath)
+    projectFolder = main(_epwWeatherFile, _OSMeasure, _osmFilePath)
+    if projectFolder is not None:
+        outputFiles = os.listdir(projectFolder)
