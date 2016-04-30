@@ -55,6 +55,7 @@ except: pass
 import os
 import scriptcontext as sc
 import time
+from distutils.dir_util import copy_tree
 
 # I need to add a central function to check the version and compare with available version.
 if sc.sticky.has_key('honeybee_release'):
@@ -128,6 +129,24 @@ def createOSArgument(arg):
     
     return argument
 
+def getEPFolder(openStudioDir):
+    fullDir = openStudioDir + "/share/openstudio"
+    fList = os.listdir(fullDir)
+    for f in fList:
+        fullpath = os.path.join(fullDir, f)
+        if os.path.isdir(fullpath) and f.startswith("EnergyPlus"):
+            return fullpath
+    
+    raise Exception("Failed to find EnergyPlus folder at %s." % openStudioDir)
+
+def copyRubyFolder(openStudioDir):
+    """OpenStudio has a bug and looks for ruby files under CSharp folder and not
+    under OpenStudio folder. This function copy files under CSharp folder if it
+    hasn't been copied."""
+    if not os.path.isdir(openStudioDir + "/CSharp/Ruby"):
+        copy_tree(openStudioDir + "/Ruby", openStudioDir + "/CSharp/Ruby")
+    
+
 def main(epwFile, OSMeasure, osmFile):
     
     # check inputs
@@ -148,10 +167,12 @@ def main(epwFile, OSMeasure, osmFile):
     rmDBPath = OpenStudio.Path(workingDir + '/runmanager.db')
     osmPath = OpenStudio.Path(osmFile)
     epwPath = OpenStudio.Path(epwFile)
-    epPath = OpenStudio.Path(openStudioFolder + r'\share\openstudio\EnergyPlusV8-3-0')
+    epPath = OpenStudio.Path(getEPFolder(openStudioFolder))
     radPath = OpenStudio.Path('c:\radince\bin') #openStudioFolder + r'\share\openstudio\Radiance\bin')
     rubyPath = OpenStudio.Path(openStudioFolder + r'\ruby-install\ruby\bin')
     outDir = OpenStudio.Path(workingDir + '\\' + OSMeasure.name.replace(" ", "_")) # I need to have extra check here to make sure name is valid
+    
+    copyRubyFolder(openStudioFolder)
     
     wf = OpenStudio.Workflow()
     
