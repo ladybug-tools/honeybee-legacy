@@ -253,12 +253,14 @@ if _OSMeasure:
     if not os.path.isfile(xmlFile): raise Exception("Can't find measure at " + xmlFile)
     
     measure = OpenStudio.BCLMeasure(OpenStudio.Path(_OSMeasure))
-    
+
     if measure.arguments().Count == 0:
+        print "https://youtu.be/S4wvL7_DJBM"
         msg = "Failed to load measure arguments. You need to regenerate measure.xml file." + \
             "\nCheck this disucssion to know how to do that using OpenStudio application." + \
-            "\nhttps://unmethours.com/question/16955/openstudiobclmeasurearguments-returns-an-empty-vector/"
-        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Error, msg)
+            "\nhttps://unmethours.com/question/16955/openstudiobclmeasurearguments-returns-an-empty-vector/" + \
+            "\n\nCheck read me for the link to the YouTube video that shows you how to fix this."
+        raise Exception(msg)
         
     # load arguments
     args = get_measureArgs(xmlFile)
