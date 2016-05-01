@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.59\nAPR_25_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAPR_30_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -4872,8 +4872,9 @@ class EPZone(object):
         # assign loads
         self.assignLoadsBasedOnProgram()
         
-        if isConditioned: self.HVACSystem = ["GroupI", 0, None, None] # assign ideal loads as default
-        else: self.HVACSystem = ["NoHVAC", -1, None, None] # no system        
+        # Assign a default HVAC System.
+        if isConditioned: self.HVACSystem = ["GroupI", 0, None, None, None] # assign ideal loads as default
+        else: self.HVACSystem = ["NoHVAC", -1, None, None, None] # no system        
         
         self.isConditioned = isConditioned
         self.isThisTheTopZone = False
@@ -6705,7 +6706,7 @@ class HB_generatorsystem(object):
         self.PVgenerators = PVgenerators # Category includes Generator:Photovoltaic
         self.fuelgenerators = fuelgenerators # Category includes Generators:Mircoturbine,Generator:Combustion Turbine,Generator:InternalCombustionEngine
 
-        
+
 class Wind_gen(object):
     
     def __init__(self,name_,rotortype,powercontrol,rotor_speed,rotor_diameter,overall_height,number_of_blades,power_output,rated_wind_speed,cut_in_windspeed,cut_out_windspeed,overall_turbine_n,max_tip_speed_ratio,max_power_coefficient,local_av_windspeed,height_local_metrological_station,turbine_cost,powercoefficients):
@@ -6740,8 +6741,8 @@ class Wind_gen(object):
             self.max_power_coefficient = ''
         else: 
             self.max_power_coefficient = max_power_coefficient
-        
-        
+
+
 class PV_gen(object):
     
     # XXX possible generator types
@@ -6805,8 +6806,7 @@ class PV_gen(object):
     def PV_performanceSandia(self,sandia,namePVperformobject):
         
         self.sandia = sandia
-        
-    
+
 class PVinverter(object):
     
     def __init__(self,inverter_name,inverter_cost,inverter_zone,inverter_n,replacement_time):
@@ -7514,6 +7514,444 @@ class SerializeObjects(object):
         with open(self.filePath, 'rb') as inf:
             self.data = pickle.load(inf)
 
+
+class hb_hvacProperties(object):
+    def __init__(self):
+        
+        # A dictionary that contains all of the names of the HVAC systems that correspond to the integer IDs.
+        self.sysDict = {
+        -1:'THERMOSTAT/HUMIDISTAT ONLY',
+        0:'IDEAL AIR LOADS',
+        1:'PACKAGED TERMINAL AIR CONDITIONING',
+        2:'PACKAGED TERMINAL HEAT PUMP',
+        3:'PACKAGED SINGLE ZONE - AC',
+        4:'PACKAGED SINGLE ZONE - HP',
+        5:'PACKAGED VAV WITH REHEAT',
+        6:'PACKAGED VAV WITH PARALLEL FAN POWERED BOXES',
+        7:'VARIABLE AIR VOLUME WITH REHEAT',
+        8:'VARIABLE AIR VOLUME WITH PARALLEL FAN POWERED BOXES',
+        9:'WARM AIR FURNACE - GAS FIRED',
+        10:'WARM AIR FURNACE - ELECTRIC'
+        }
+        
+        # Dictionaries that state which features can be changed for each of the different systems.
+        # It is used to give warnings to the user if they set a parameter that does not exist on the assigned HVAC system.
+        self.airCapabilities = {
+        0: {'FanPlace': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        1: {'FanPlace': True, 'HeatSupTemp' : True, 'CoolSupTemp' : False, 'Econ' : False, 'HeatRecov' : False},
+        2: {'FanPlace': True, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Econ' : False, 'HeatRecov' : False},
+        3: {'FanPlace': True, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Econ' : True, 'HeatRecov' : True},
+        4: {'FanPlace': True, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Econ' : True, 'HeatRecov' : True},
+        5: {'FanPlace': True, 'HeatSupTemp' : True, 'CoolSupTemp' : False, 'Econ' : True, 'HeatRecov' : True},
+        6: {'FanPlace': True, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Econ' : True, 'HeatRecov' : True},
+        7: {'FanPlace': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        8: {'FanPlace': True, 'HeatSupTemp' : False, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        9: {'FanPlace': True, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Econ' : True, 'HeatRecov' : True},
+        10: {'FanPlace': True, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Econ' : True, 'HeatRecov' : True}
+        }
+        
+        self.heatCapabilities = {
+        0: {'COP' : False, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
+        1: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
+        2: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
+        3: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
+        4: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
+        5: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
+        6: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
+        7: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
+        8: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
+        9: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
+        10: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False}
+        }
+        
+        self.coolCapabilities = {
+        0: {'COP' : False, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
+        1: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
+        2: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
+        3: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
+        4: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
+        5: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
+        6: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
+        7: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
+        8: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
+        9: {'COP' : False, 'Avail' : False, 'SupTemp' : False, 'PumpEff' : False},
+        10: {'COP' : False, 'Avail' : False, 'SupTemp' : False, 'PumpEff' : False}
+        }
+    
+    @staticmethod
+    def generateWarning(sysType, varType, detailType):
+        msg = 'The HVAC system type, ' + sysType + ' does not support the assigning of \n' + varType + \
+        ' but one has been assigned in the ' + detailType +'.'
+        return msg
+    
+    @staticmethod
+    def checkSchedule(schedule):
+        error = None
+        schedule= schedule.upper()
+        
+        if schedule!=None and not schedule.lower().endswith(".csv") and schedule not in sc.sticky["honeybee_ScheduleLib"].keys():
+            error = "Cannot find " + schedule + " in Honeybee schedule library."
+            return False, error
+        elif schedule!=None and schedule.lower().endswith(".csv"):
+            # check if csv file is existed
+            if not os.path.isfile(schedule):
+                error = "Cannot find the shchedule file: " + schedule
+                return False, error
+        return True, error
+
+
+class hb_airDetail(object):
+    def __init__(self, HVACAvailabiltySched=None, fanTotalEfficiency=None, fanMotorEfficiency=None, fanPressureRise=None, \
+        fanPlacement=None, heatingSupplyAirTemp=None, coolingSupplyAirTemp=None, airsideEconomizer=None, heatRecovery=None, recoveryEffectiveness=None):
+        
+        self.areInputsChecked = False
+        self.sysProps = hb_hvacProperties()
+        
+        self.economizerCntrlDict = {
+        0 : 'NoEconomizer',
+        1:'DifferentialDryBulb',
+        2:'FixedDryBulb',
+        3:'DifferentialEnthalply',
+        4:'FixedEnthalpy',
+        5:'ElectronicEnthalpy',
+        6:'FixedDewpointandDryBulb',
+        7:'DifferentialDryBulbandEnthalpy'
+        }
+        
+        self.fanPlaceDict = {
+        True: 'Draw Through',
+        False: 'Blow Through'
+        }
+        
+        if HVACAvailabiltySched:
+            self.HVACAvailabiltySched = HVACAvailabiltySched
+        else:
+            self.HVACAvailabiltySched = "ALWAYS ON"
+        if fanTotalEfficiency:
+            self.fanTotalEfficiency = float(fanTotalEfficiency)
+        else:
+            self.fanTotalEfficiency = "Default"
+        if fanMotorEfficiency:
+            self.fanMotorEfficiency = float(fanMotorEfficiency)
+        else:
+            self.fanMotorEfficiency = "Default"
+        if fanPressureRise:
+            self.fanPressureRise = float(fanPressureRise)
+        else:
+            self.fanPressureRise = "Default"
+        if fanPlacement != None:
+            self.fanPlacement = self.fanPlaceDict[bool(fanPlacement)]
+        else:
+            self.fanPlacement = "Default"
+        if heatingSupplyAirTemp:
+            self.heatingSupplyAirTemp = float(heatingSupplyAirTemp)
+        else:
+            self.heatingSupplyAirTemp = "Default"
+        if coolingSupplyAirTemp:
+            self.coolingSupplyAirTemp = float(coolingSupplyAirTemp)
+        else:
+            self.coolingSupplyAirTemp = "Default"
+        if airsideEconomizer != None:
+            self.airsideEconomizer = int(airsideEconomizer)
+        else:
+            self.airsideEconomizer = "Default"
+        if heatRecovery != None:
+            self.heatRecovery = bool(heatRecovery)
+        else:
+            self.heatRecovery = "Default"
+        if recoveryEffectiveness:
+            self.recoveryEffectiveness = float(recoveryEffectiveness)
+        else:
+            self.recoveryEffectiveness = "Default"
+    
+    @classmethod
+    def fromTextStr(cls, textStr):
+        paramList = []
+        success = True
+        
+        for count, line in enumerate(textStr.split('\n')):
+            if count == 0:
+                if 'AIR DETAILS' not in line.upper():
+                    success = False
+            else:
+                param = line.split(': ')[-1]
+                if param.upper() != 'DEFAULT':
+                    paramList.append(param)
+                else:
+                    paramList.append(None)
+        
+        if success == True:
+            airDetailObj = cls(paramList[0], paramList[1], paramList[2], paramList[3], paramList[4], paramList[5], paramList[6], paramList[7], paramList[8], paramList[9])
+            airDetailObj.areInputsChecked = True
+            return airDetailObj
+        else:
+            return None
+    
+    def checkInputVariables(self):
+        errors = []
+        success = True
+        
+        if self.HVACAvailabiltySched != "ALWAYS ON":
+            success, error = self.sysProps.checkSchedule(self.HVACAvailabiltySched)
+            if success is False:
+                errors.append(error)
+        if self.fanTotalEfficiency != "Default":
+            if self.fanTotalEfficiency > 1 or self.fanTotalEfficiency < 0:
+                success = False
+                errors.append("Fan Total Efficiency must be betweeon 0 and 1.")
+        if self.fanMotorEfficiency != "Default":
+            if self.fanMotorEfficiency > 1 or self.fanMotorEfficiency < 0:
+                success = False
+                errors.append("Fan Motor Efficiency must be betweeon 0 and 1.")
+        if self.airsideEconomizer != "Default":
+            if self.airsideEconomizer > 7 or self.airsideEconomizer < 0:
+                success = False
+                errors.append("Air Side Economizer not a valid control type.")
+            else:
+                self.airsideEconomizer = self.economizerCntrlDict[airsideEconomizer]
+        if self.recoveryEffectiveness != 'Default':
+            if self.heatRecovery == 'Default' or self.heatRecovery == False:
+                success = False
+                errors.append("Heat recovery effectivness specified without setting heatRecovery to True.")
+            if self.recoveryEffectiveness > 1 or self.recoveryEffectiveness < 0:
+                success = False
+                errors.append("Heat Recovery Effeictiveness must be between 0 and 1.")
+        
+        return success, errors
+    
+    def checkSysCompatability(self, sysInt):
+        errors = []
+        sysType = self.sysProps.sysDict[sysInt]
+        hvacCapabilities = self.sysProps.airCapabilities[sysInt]
+        
+        if self.fanPlacement != 'Default' and hvacCapabilities['FanPlace'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'FAN PLACEMENT', 'airDetails'))
+        if self.heatingSupplyAirTemp != 'Default' and hvacCapabilities['HeatSupTemp'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'HEATING SUPPLY AIR TEMPERATURE', 'airDetails'))
+        if self.coolingSupplyAirTemp != 'Default' and hvacCapabilities['CoolSupTemp'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'COOLING SUPPLY AIR TEMPERATURE', 'airDetails'))
+        if self.airsideEconomizer != 'Default' and hvacCapabilities['Econ'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'AN AIRSIDE ECONOMIZER', 'airDetails'))
+        if self.heatRecovery != 'Default' and hvacCapabilities['HeatRecov'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'A HEAT RECOVERY SYSTEM', 'airDetails'))
+        if self.recoveryEffectiveness != 'Default' and hvacCapabilities['HeatRecov'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'HEAT RECOVERY EFFECTIVENESS', 'airDetails'))
+        
+        return errors
+    
+    def class2Str(self):
+        allGood = True
+        if not self.areInputsChecked:
+            allGood, errors = self.checkInputVariables()
+        
+        if allGood:
+            textStr = 'Air Details\n' + \
+            '  Availability Schedule: ' + str(self.HVACAvailabiltySched) + '\n'  + \
+            '  Fan Total Efficiency: ' + str(self.fanTotalEfficiency) + '\n' + \
+            '  Fan Motor Efficiency: ' + str(self.fanMotorEfficiency) + '\n' + \
+            '  Fan Pressure Rise: ' + str(self.fanPressureRise) + '\n' + \
+            '  Fan Placement: ' + str(self.fanPlacement) + '\n' + \
+            '  Heating Supply Air Temperature: ' + str(self.heatingSupplyAirTemp) + '\n' + \
+            '  Cooling Supply Air Temperature: ' + str(self.coolingSupplyAirTemp) + '\n' + \
+            '  Airside Economizer Method: ' + str(self.airsideEconomizer) + '\n' + \
+            '  Heat Recovery: ' + str(self.heatRecovery) + '\n' + \
+            '  Heat Recovery Effectiveness: ' + str(self.recoveryEffectiveness)
+            
+            return True, textStr
+        else:
+            return False, errors
+
+
+class hb_heatingDetail(object):
+    def __init__(self, heatingAvailSched=None, heatingEffOrCOP=None, supplyTemperature=None, pumpMotorEfficiency=None):
+        
+        self.areInputsChecked = False
+        self.sysProps = hb_hvacProperties()
+        
+        if heatingAvailSched:
+            self.heatingAvailSched = heatingAvailSched
+        else:
+            self.heatingAvailSched = "ALWAYS ON"
+        if heatingEffOrCOP != None:
+            self.heatingEffOrCOP = float(heatingEffOrCOP)
+        else:
+            self.heatingEffOrCOP = "Default"
+        if supplyTemperature != None:
+            self.supplyTemperature = float(supplyTemperature)
+        else:
+            self.supplyTemperature = "Default"
+        if pumpMotorEfficiency != None:
+            self.pumpMotorEfficiency = float(pumpMotorEfficiency)
+        else:
+            self.pumpMotorEfficiency = "Default"
+    
+    @classmethod
+    def fromTextStr(cls, textStr):
+        paramList = []
+        success = True
+        
+        for count, line in enumerate(textStr.split('\n')):
+            if count == 0:
+                if 'HEATING DETAILS' not in line.upper():
+                    success = False
+            else:
+                param = line.split(': ')[-1]
+                if param.upper() != 'DEFAULT':
+                    paramList.append(param)
+                else:
+                    paramList.append(None)
+        
+        if success == True:
+            heatDetailObj = cls(paramList[0], paramList[1], paramList[2], paramList[3])
+            heatDetailObj.areInputsChecked = True
+            return heatDetailObj
+        else:
+            return None
+    
+    def checkInputVariables(self):
+        errors = []
+        success = True
+        
+        if self.heatingAvailSched != "ALWAYS ON":
+            success, error = self.sysProps.checkSchedule(self.heatingAvailSched)
+            if success is False:
+                errors.append(error)
+        if self.pumpMotorEfficiency != "Default":
+            if self.pumpMotorEfficiency > 1 or self.pumpMotorEfficiency < 0:
+                success = False
+                errors.append("Pump Motor Efficiency must be betweeon 0 and 1.")
+        
+        return success, errors
+    
+    def checkSysCompatability(self, sysInt):
+        errors = []
+        
+        sysType = self.sysProps.sysDict[sysInt]
+        heatCapabilities = self.sysProps.heatCapabilities[sysInt]
+        
+        if self.heatingAvailSched != 'ALWAYS ON' and heatCapabilities['Avail'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'HEATING AVAILABILITY SCHEDULE', 'heatingDetails'))
+        if self.heatingEffOrCOP != 'Default' and heatCapabilities['COP'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'HEATING SYSTEM EFFICIENCY OR COP', 'heatingDetails'))
+        if self.supplyTemperature != 'Default' and heatCapabilities['SupTemp'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'HEATING SYSTEM SUPPLY TEMPERATURE', 'heatingDetails'))
+        if self.pumpMotorEfficiency != 'Default' and heatCapabilities['PumpEff'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'HEATING SYSTEM PUMP MOTOR EFFICIENCY', 'heatingDetails'))
+        
+        return errors
+    
+    def class2Str(self):
+        allGood = True
+        if not self.areInputsChecked:
+            allGood, errors = self.checkInputVariables()
+        
+        if allGood:
+            textStr = 'Heating Details\n' + \
+            '  Heating Availability Schedule: ' + str(self.heatingAvailSched) + '\n' + \
+            '  Heating System Efficiency or COP: ' + str(self.heatingEffOrCOP) + '\n' + \
+            '  Heating System Supply Temperature: ' + str(self.supplyTemperature) + '\n' + \
+            '  Heating Hystem Pump Motor Efficiency: ' + str(self.pumpMotorEfficiency)
+            
+            return True, textStr
+        else:
+            return False, errors
+
+
+class hb_coolingDetail(object):
+    def __init__(self, coolingAvailSched=None, coolingCOP=None, supplyTemperature=None, pumpMotorEfficiency=None):
+        
+        self.areInputsChecked = False
+        self.sysProps = hb_hvacProperties()
+        
+        if coolingAvailSched:
+            self.coolingAvailSched = coolingAvailSched
+        else:
+            self.coolingAvailSched = "ALWAYS ON"
+        if coolingCOP != None:
+            self.coolingCOP = float(coolingCOP)
+        else:
+            self.coolingCOP = "Default"
+        if supplyTemperature != None:
+            self.supplyTemperature = float(supplyTemperature)
+        else:
+            self.supplyTemperature = "Default"
+        if pumpMotorEfficiency != None:
+            self.pumpMotorEfficiency = float(pumpMotorEfficiency)
+        else:
+            self.pumpMotorEfficiency = "Default"
+    
+    @classmethod
+    def fromTextStr(cls, textStr):
+        paramList = []
+        success = True
+        
+        for count, line in enumerate(textStr.split('\n')):
+            if count == 0:
+                if 'COOLING DETAILS' not in line.upper():
+                    success = False
+            else:
+                param = line.split(': ')[-1]
+                if param.upper() != 'DEFAULT':
+                    paramList.append(param)
+                else:
+                    paramList.append(None)
+        
+        if success == True:
+            coolDetailObj = cls(paramList[0], paramList[1], paramList[2], paramList[3])
+            coolDetailObj.areInputsChecked = True
+            return coolDetailObj
+        else:
+            return None
+    
+    def checkInputVariables(self):
+        errors = []
+        success = True
+        
+        if self.coolingAvailSched != "ALWAYS ON":
+            success, error = self.sysProps.checkSchedule(self.coolingAvailSched)
+            if success is False:
+                errors.append(error)
+        if self.pumpMotorEfficiency != "Default":
+            if self.pumpMotorEfficiency > 1 or self.pumpMotorEfficiency < 0:
+                success = False
+                errors.append("Pump Motor Efficiency must be betweeon 0 and 1.")
+        
+        return success, errors
+    
+    def checkSysCompatability(self, sysInt):
+        errors = []
+        
+        sysType = self.sysProps.sysDict[sysInt]
+        coolCapabilities = self.sysProps.coolCapabilities[sysInt]
+        
+        if self.coolingAvailSched != 'ALWAYS ON' and coolCapabilities['Avail'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'COOLING AVAILABILITY SCHEDULE', 'coolingDetails'))
+        if self.coolingCOP != 'Default' and coolCapabilities['COP'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'COOLING SYSTEM COP', 'coolingDetails'))
+        if self.supplyTemperature != 'Default' and coolCapabilities['SupTemp'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'COOLING SYSTEM SUPPLY TEMPERATURE', 'coolingDetails'))
+        if self.pumpMotorEfficiency != 'Default' and coolCapabilities['PumpEff'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'COOLING SYSTEM PUMP MOTOR EFFICIENCY', 'coolingDetails'))
+        
+        return errors
+    
+    def class2Str(self):
+        allGood = True
+        if not self.areInputsChecked:
+            allGood, errors = self.checkInputVariables()
+        
+        if allGood:
+            textStr = 'Cooling Details\n' + \
+            '  Cooling Availability Schedule: ' + str(self.coolingAvailSched) + '\n' + \
+            '  Cooling System COP: ' + str(self.coolingCOP) + '\n' + \
+            '  Cooling System Supply Temperature: ' + str(self.supplyTemperature) + '\n' + \
+            '  Cooling Hystem Pump Motor Efficiency: ' + str(self.pumpMotorEfficiency)
+            
+            return True, textStr
+        else:
+            return False, errors
+
+
 class hb_hwBoilerParams(object):
     def __init__(self):
         self.hwBoilerDict = {
@@ -7962,6 +8400,12 @@ if checkIn.letItFly:
         sc.sticky["thermBCCount"] = 1
         sc.sticky["hBZoneCount"] = 0
         sc.sticky["honeybee_reEvaluateHBZones"] = hb_reEvaluateHBZones
+        sc.sticky["honeybee_hvacProperties"] = hb_hvacProperties
+        sc.sticky["honeybee_hvacAirDetails"] = hb_airDetail
+        sc.sticky["honeybee_hvacHeatingDetails"] = hb_heatingDetail
+        sc.sticky["honeybee_hvacCoolingDetails"] = hb_coolingDetail
+        
+        
         sc.sticky["honeybee_AirsideEconomizerParams"] = hb_airsideEconoParams
         sc.sticky["honeybee_constantVolumeFanParams"] = hb_constVolFanParams
         sc.sticky["honeybee_variableVolumeFanParams"] = hb_varVolFanParams
@@ -7976,6 +8420,8 @@ if checkIn.letItFly:
         sc.sticky["honeybee_chillerEIRParams"] = hb_chillerEIRParams
         sc.sticky["honeybee_coolingTowerParams"] = hb_coolingTowerParams
         sc.sticky["honeybee_availManagerList"] = hb_availManagerParams
+        
+        
         sc.sticky["honeybee_EPSurface"] = hb_EPSurface
         sc.sticky["honeybee_EPShdSurface"] = hb_EPShdSurface
         sc.sticky["honeybee_EPZoneSurface"] = hb_EPZoneSurface
