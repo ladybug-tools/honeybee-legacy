@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.59\nAPR_30_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAY_01_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -7537,17 +7537,17 @@ class hb_hvacProperties(object):
         # Dictionaries that state which features can be changed for each of the different systems.
         # It is used to give warnings to the user if they set a parameter that does not exist on the assigned HVAC system.
         self.airCapabilities = {
-        0: {'FanPlace': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        1: {'FanPlace': True, 'HeatSupTemp' : True, 'CoolSupTemp' : False, 'Econ' : False, 'HeatRecov' : False},
-        2: {'FanPlace': True, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Econ' : False, 'HeatRecov' : False},
-        3: {'FanPlace': True, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Econ' : True, 'HeatRecov' : True},
-        4: {'FanPlace': True, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Econ' : True, 'HeatRecov' : True},
-        5: {'FanPlace': True, 'HeatSupTemp' : True, 'CoolSupTemp' : False, 'Econ' : True, 'HeatRecov' : True},
-        6: {'FanPlace': True, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Econ' : True, 'HeatRecov' : True},
-        7: {'FanPlace': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        8: {'FanPlace': True, 'HeatSupTemp' : False, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        9: {'FanPlace': True, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Econ' : True, 'HeatRecov' : True},
-        10: {'FanPlace': True, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Econ' : True, 'HeatRecov' : True}
+        0: {'FanTotEff': False, 'FanMotEff': False, 'FanPres': False, 'FanPlace': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        1: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'HeatSupTemp' : True, 'CoolSupTemp' : False, 'Econ' : False, 'HeatRecov' : False},
+        2: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Econ' : False, 'HeatRecov' : False},
+        3: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Econ' : True, 'HeatRecov' : True},
+        4: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Econ' : True, 'HeatRecov' : True},
+        5: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'HeatSupTemp' : True, 'CoolSupTemp' : False, 'Econ' : True, 'HeatRecov' : True},
+        6: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Econ' : True, 'HeatRecov' : True},
+        7: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        8: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'HeatSupTemp' : False, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        9: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Econ' : True, 'HeatRecov' : True},
+        10: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Econ' : True, 'HeatRecov' : True}
         }
         
         self.heatCapabilities = {
@@ -7608,19 +7608,38 @@ class hb_airDetail(object):
         self.sysProps = hb_hvacProperties()
         
         self.economizerCntrlDict = {
-        0 : 'NoEconomizer',
+        0:'NoEconomizer',
         1:'DifferentialDryBulb',
-        2:'FixedDryBulb',
-        3:'DifferentialEnthalply',
+        2:'DifferentialEnthalpy',
+        3:'FixedDryBulb',
         4:'FixedEnthalpy',
         5:'ElectronicEnthalpy',
         6:'FixedDewpointandDryBulb',
-        7:'DifferentialDryBulbandEnthalpy'
+        7:'DifferentialDryBulbandEnthalpy',
+        'NoEconomizer': 'NoEconomizer',
+        'DifferentialDryBulb':'DifferentialDryBulb',
+        'DifferentialEnthalpy':'DifferentialEnthalpy',
+        'FixedDryBulb':'FixedDryBulb',
+        'FixedEnthalpy':'FixedEnthalpy',
+        'ElectronicEnthalpy':'ElectronicEnthalpy',
+        'FixedDewpointandDryBulb':'FixedDewpointandDryBulb',
+        'DifferentialDryBulbandEnthalpy':'DifferentialDryBulbandEnthalpy'
         }
         
         self.fanPlaceDict = {
         True: 'Draw Through',
-        False: 'Blow Through'
+        False: 'Blow Through',
+        'Draw Through': 'Draw Through',
+        'Blow Through': 'Blow Through'
+        }
+        
+        self.heatRecovDict = {
+        0: 'None',
+        1: 'Sensible',
+        2: 'Enthalpy',
+        'None': 'None',
+        'Sensible': 'Sensible',
+        'Enthalpy': 'Enthalpy'
         }
         
         if HVACAvailabiltySched:
@@ -7640,7 +7659,7 @@ class hb_airDetail(object):
         else:
             self.fanPressureRise = "Default"
         if fanPlacement != None:
-            self.fanPlacement = self.fanPlaceDict[bool(fanPlacement)]
+            self.fanPlacement = self.fanPlaceDict[fanPlacement]
         else:
             self.fanPlacement = "Default"
         if heatingSupplyAirTemp:
@@ -7652,11 +7671,14 @@ class hb_airDetail(object):
         else:
             self.coolingSupplyAirTemp = "Default"
         if airsideEconomizer != None:
-            self.airsideEconomizer = int(airsideEconomizer)
+            try:
+                self.airsideEconomizer = int(airsideEconomizer)
+            except:
+                self.airsideEconomizer = self.economizerCntrlDict[airsideEconomizer]
         else:
             self.airsideEconomizer = "Default"
         if heatRecovery != None:
-            self.heatRecovery = bool(heatRecovery)
+            self.heatRecovery = self.heatRecovDict[heatRecovery]
         else:
             self.heatRecovery = "Default"
         if recoveryEffectiveness:
@@ -7708,9 +7730,9 @@ class hb_airDetail(object):
                 success = False
                 errors.append("Air Side Economizer not a valid control type.")
             else:
-                self.airsideEconomizer = self.economizerCntrlDict[airsideEconomizer]
+                self.airsideEconomizer = self.economizerCntrlDict[self.airsideEconomizer]
         if self.recoveryEffectiveness != 'Default':
-            if self.heatRecovery == 'Default' or self.heatRecovery == False:
+            if self.heatRecovery == 'Default' or self.heatRecovery == 'None':
                 success = False
                 errors.append("Heat recovery effectivness specified without setting heatRecovery to True.")
             if self.recoveryEffectiveness > 1 or self.recoveryEffectiveness < 0:
@@ -7724,6 +7746,12 @@ class hb_airDetail(object):
         sysType = self.sysProps.sysDict[sysInt]
         hvacCapabilities = self.sysProps.airCapabilities[sysInt]
         
+        if self.fanTotalEfficiency != 'Default' and hvacCapabilities['FanTotEff'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'FAN TOTAL EFFICIENCY', 'airDetails'))
+        if self.fanMotorEfficiency != 'Default' and hvacCapabilities['FanMotEff'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'FAN MOTOR EFFICIENCY', 'airDetails'))
+        if self.fanPressureRise != 'Default' and hvacCapabilities['FanPres'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'FAN PRESSURE RISE', 'airDetails'))
         if self.fanPlacement != 'Default' and hvacCapabilities['FanPlace'] == False:
             errors.append(self.sysProps.generateWarning(sysType, 'FAN PLACEMENT', 'airDetails'))
         if self.heatingSupplyAirTemp != 'Default' and hvacCapabilities['HeatSupTemp'] == False:
@@ -7732,6 +7760,11 @@ class hb_airDetail(object):
             errors.append(self.sysProps.generateWarning(sysType, 'COOLING SUPPLY AIR TEMPERATURE', 'airDetails'))
         if self.airsideEconomizer != 'Default' and hvacCapabilities['Econ'] == False:
             errors.append(self.sysProps.generateWarning(sysType, 'AN AIRSIDE ECONOMIZER', 'airDetails'))
+        if sysInt == 0:
+            if self.airsideEconomizer == 'Default' or self.airsideEconomizer == 'NoEconomizer' or self.airsideEconomizer == 'DifferentialDryBulb' or self.airsideEconomizer == 'DifferentialEnthalpy':
+                pass
+            else:
+                errors.append('Airside economizer type ' + self.airsideEconomizer + ' is not supported for IDEAL AIR LOADS SYSTEMS.')
         if self.heatRecovery != 'Default' and hvacCapabilities['HeatRecov'] == False:
             errors.append(self.sysProps.generateWarning(sysType, 'A HEAT RECOVERY SYSTEM', 'airDetails'))
         if self.recoveryEffectiveness != 'Default' and hvacCapabilities['HeatRecov'] == False:

@@ -40,13 +40,16 @@ Provided by Honeybee 0.0.59
         airsideEconomizer_: An integer or boolean value (0/1) that sets the economizer on the HVAC system.  The default is set to "True" or 1 to include a differential dry bulb air side economizer when possible.  Choose from the following options:
             0 - No Economizer - The HVAC system will constantly provide the same amount of minimum outdoor air and may run the cooling system to remove heat and meet thermostat setpoints.
             1 - Differential Dry Bulb - The HVAC system will increase the outdoor air flow rate when there is a cooling load and the outdoor air temperature is below the temperature of the return (or exhaust) air. 
-            2 - Fixed Dry Bulb - The HVAC system will increase the outdoor air flow rate when there is a cooling load and the outdoor air temperature is below a specified dry bulb temperature limit (default is 28C).
-            3 - Differential Enthalpy - The HVAC system will increase the outdoor air flow rate when there is a cooling load and the outdoor air enthalpy is below that of the return (or exhaust) air.
+            2 - Differential Enthalpy - The HVAC system will increase the outdoor air flow rate when there is a cooling load and the outdoor air enthalpy is below that of the return (or exhaust) air.
+            3 - Fixed Dry Bulb - The HVAC system will increase the outdoor air flow rate when there is a cooling load and the outdoor air temperature is below a specified dry bulb temperature limit (default is 28C).
             4 - Fixed Enthalpy - The HVAC system will increase the outdoor air flow rate when there is a cooling load and the outdoor air enthalpy is below a specified enthalpy limit (default is 64000 J/kg).
             5 - Electronic Enthalpy - The HVAC system will calculate the humidity ratio limit of the outdoor air based on the dry-bulb temperature of outdoor air and a quadratic/cubic curve, and compare it to the actual outdoor air humidity ratio. If the actual outdoor humidity ratio is lower than the calculated humidity ratio limit and there is cooling load, then the outdoor airflow rate is increased.
             6 - Fixed Dew Point and Dry Bulb - The HVAC system will compare both the outdoor dewpoint temperature and the outdoor dry-bulb temperature to their specified high limit values (default of 28C).  The outdoor air flow rate will be increased when there is cooling load and the outdoor air is below both thresholds.
             7 - Differential Dry Bulb And Enthalpy - The HVAC system will increase the outdoor air flow rate when there is a cooling load and the outdoor air temperature is below a specified dry bulb temperature limit (default is 28C) AND enthalpy below a specified enthalpy limit (default is 64000 J/kg).
-        heatRecovery_: Set to "True" to have the HVAC system include heat recovery between the exhaust and sypply air (if possible).  This essentially means that the HVAC system will pass the outlet air through a heat exchanger with the inlet air before exhausting it, helping recover heat that would normally be lost through the exhaust.  If this input is set to "False" or left untouched, the HVAC system will simply exhaust air without having it interact with incoming air.
+        heatRecovery_: An integer or boolean value (0/1) that sets the heat recovery on the HVAC system.  The default is set to "False" or 0 to NOT include heat recovery.  Choose from the following options:
+             0 - None (The HVAC system will simply exhaust air without having it interact with incoming air).
+             1 - Sensible (The HVAC system will pass the exhaust air through a sensible heat exchanger with the fresh outdoor air before exhausting it, helping recover heat that would normally be lost through the exhaust).
+             2 - Enthalpy (The HVAC system will pass the exhaust air through a sensible and latent heat exchanger with the fresh outdoor air before exhausting it).
         recoveryEffectiveness_: If the above input has been set to "True", input a number between 0 and 1 here to set the fraction of heat that is recovered by the heat recovery system.  By default, this value is typically around 0.7.
     Returns:
         airDetails: A description of the HVAC ventilation system (or system air side), which can be plugged into "Honeybee_OpenStudio Systems" component.
@@ -55,11 +58,11 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_OpenStudio Air Details"
 ghenv.Component.NickName = 'AirDetails'
-ghenv.Component.Message = 'VER 0.0.59\nAPR_30_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAY_01_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | HVACSystems"
-#compatibleHBVersion = VER 0.0.56\nAPR_30_2016
+#compatibleHBVersion = VER 0.0.56\nMAY_01_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
