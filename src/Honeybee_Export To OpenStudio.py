@@ -436,17 +436,26 @@ class WriteOPS(object):
         return space, thermalZone
     
     
+    
+    def setRecircOnSingleZoneSys(self, hbZone, system, fan):
+        zoneFlrArea = hbZone.getFloorArea()
+        totalZoneFlow = (hbZone.recirculatedAirPerArea*zoneFlrArea) +  (hbZone.ventilationPerArea*zoneFlrArea) + (hbZone.ventilationPerPerson*hbZone.numOfPeoplePerArea*zoneFlrArea)
+        system.setSupplyAirFlowRateDuringCoolingOperation(totalZoneFlow)
+        system.setSupplyAirFlowRateDuringHeatingOperation(totalZoneFlow)
+        system.setSupplyAirFlowRateWhenNoCoolingorHeatingisNeeded(totalZoneFlow)
+        fan.setMaximumFlowRate(totalZoneFlow)
+    
     def updateOASys(self,cntrlType,oactrl):
         oactrl.setEconomizerControlType(cntrlType)
         return oactrl
     
-    def updateCVFan(self,sf,cvfan):
-        if sf['motorEfficiency'] != None: 
-            cvfan.setMotorEfficiency(sf['motorEfficiency'])
-        if sf['fanEfficiency'] != None: 
-            cvfan.setFanEfficiency(sf['fanEfficiency'])
-        if sf['pressureRise'] != None: 
-            cvfan.setPressureRise(sf['pressureRise'])
+    def updateCVFan(self,cvfan,totalEfficiency,motorEfficiency,pressureRise):
+        if totalEfficiency != 'Default': 
+            cvfan.setFanEfficiency(totalEfficiency)
+        if motorEfficiency != 'Default':
+            cvfan.setMotorEfficiency(motorEfficiency)
+        if pressureRise != 'Default': 
+            cvfan.setPressureRise(pressureRise)
         
         return cvfan
     
@@ -459,45 +468,51 @@ class WriteOPS(object):
             vvfan.setPressureRise(sf['pressureRise'])
         return vvfan
     
+    def updatePump(self, pump, pumpMotorEfficiency):
+        if pumpMotorEfficiency != 'Default':
+            pump.setMotorEfficiency(pumpMotorEfficiency)
+        return pump
+    
     def updateChiller(self,uchiller,oschiller):
         oschiller.setReferenceCOP(uchiller['rCOP'])
         oschiller.setReferenceLeavingChilledWaterTemperature(uchiller['rLeavingChWt'])
         oschiller.setReferenceEnteringCondenserFluidTemperature(uchiller['rEnteringCWT'])
         return oschiller
-        
-    def updateBoiler(self,uboil,osboiler):
-        osboiler.setNominalThermalEfficiency(uboil['nominalEfficiency'])
-        osboiler.setDesignWaterOutletTemperature(uboil['designOutletTemperature'])
-        #osboiler.setWaterOutletUpperTemperatureLimit(uboil['outletTempMaximum'])
+   
+    def updateBoiler(self, model, osboiler, heatingEffOrCOP, supplyTemperature):
+        if heatingEffOrCOP != 'Default':
+            osboiler.setNominalThermalEfficiency(heatingEffOrCOP)
+        if supplyTemperature != 'Default':
+            osboiler.setDesignWaterOutletTemperature(supplyTemperature)
         return osboiler
     
     def updateDXHeatingCoil(self,hbhc,modelhc):
         if hbhc['ratedCOP'] != None:
             modelhc.setRatedCOP(hbhc['ratedCOP'])
-        
         return modelhc
     
-    def updateCoolingCoil(self,cc,coolcoil):
-        #works equally well for 1speed and 2speed DX coils.  
-        if cc['type'] == 1:
-            if cc['ratedHighSpeedCOP'] != None:
-                coolcoil.setRatedHighSpeedCOP(cc['ratedHighSpeedCOP'])
-            if cc['ratedLowSpeedCOP'] != None:
-                coolcoil.setRatedLowSpeedCOP(cc['ratedLowSpeedCOP'])
-                print 'updated low speed rated COP'
-        elif cc['type'] == 0:
-            if cc['ratedCOP'] != None:
-                coolcoil.setRatedCOP(ops.OptionalDouble(cc['ratedCOP']))
-                print 'updated rated COP'
-        
+    def updateDXCoolingCoil(self, model, coolcoil, coolingAvailSched, coolingCOP):
+        if coolingAvailSched != 'ALWAYS ON':
+             coolAvailSch = self.getOSSchedule(coolingAvailSched,model)
+             coolcoil.setAvailabilitySchedule(coolAvailSch)
+        if coolingCOP != 'Default':
+            coolcoil.setRatedCOP(coolingCOP)
         return coolcoil
     
+    def updateWaterHeatingCoil(self, model, heatcoil, heatingAvailSched, supplyTemperature):
+        if heatingAvailSched != 'ALWAYS ON':
+             heatAvailSch = self.getOSSchedule(heatingAvailSched,model)
+             heatcoil.setAvailabilitySchedule(heatAvailSch)
+        if supplyTemperature != 'Default':
+            heatcoil.setRatedInletWaterTemperature(supplyTemperature)
+            heatcoil.setRatedOutletWaterTemperature(supplyTemperature-11)
+        return heatcoil
     
     
     def addSystemsToZones(self, model):
         for HAVCGroupID in self.HVACSystemDict.keys():
             # HAVC system index for this group and thermal zones.
-            systemIndex, thermalZones, hbZones, airDetails, heatingDetails, coolingDetails, zoneRecircAir, zoneTotalAir = self.HVACSystemDict[HAVCGroupID]
+            systemIndex, thermalZones, hbZones, airDetails, heatingDetails, coolingDetails = self.HVACSystemDict[HAVCGroupID]
             # put thermal zones into a vector
             thermalZoneVector = ops.ThermalZoneVector(thermalZones)
             
@@ -522,14 +537,12 @@ class WriteOPS(object):
                     #Set the dehumidifcation / humidification based on the presence/absence of a zone humidistat.
                     if hbZones[zoneCount].humidityMax != "":
                         zoneIdealAir.setDehumidificationControlType("Humidistat")
-                    else:
-                        zoneIdealAir.setDehumidificationControlType("None")
+                    else: zoneIdealAir.setDehumidificationControlType("None")
                     if hbZones[zoneCount].humidityMin != "":
                         zoneIdealAir.setHumidificationControlType("Humidistat")
-                    else:
-                        zoneIdealAir.setHumidificationControlType("None")
+                    else: zoneIdealAir.setHumidificationControlType("None")
                     
-                    # Change the parameters of the ideal air system if airDetails are connected.
+                    # Set the airDetails.
                     if airDetails != None:
                         if airDetails.HVACAvailabiltySched != 'ALWAYS ON':
                             hvacAvailSch = self.getOSSchedule(airDetails.HVACAvailabiltySched,model)
@@ -549,13 +562,13 @@ class WriteOPS(object):
                             zoneIdealAir.setSensibleHeatRecoveryEffectiveness(airDetails.recoveryEffectiveness)
                             zoneIdealAir.setLatentHeatRecoveryEffectiveness(airDetails.recoveryEffectiveness)
                     
-                    # Change the parameters of the heating system if heatingDetails are connected.
+                    # Set the heatingDetails.
                     if heatingDetails != None:
                         if heatingDetails.heatingAvailSched != 'ALWAYS ON':
                             heatAvailSch = self.getOSSchedule(heatingDetails.heatingAvailSched,model)
                             zoneIdealAir.setHeatingAvailabilitySchedule(heatAvailSch)
                     
-                    # Change the parameters of the cooling system if coolingDetails are connected.
+                    # Set the coolingDetails.
                     if coolingDetails != None:
                         if coolingDetails.coolingAvailSched != 'ALWAYS ON':
                             coolAvailSch = self.getOSSchedule(coolingDetails.coolingAvailSched,model)
@@ -566,55 +579,66 @@ class WriteOPS(object):
                 
             elif systemIndex == 1:
                 # 1: PTAC, Residential
+                # Add the system to the model
                 ops.OpenStudioModelHVAC.addSystemType1(model, thermalZoneVector)
                 allptacs = model.getZoneHVACPackagedTerminalAirConditioners()
                 
                 for zoneCount, ptac in enumerate(allptacs):
                     hvacHandle = ptac.handle()
                     
-                    #Set general air system parameters.
-                    if HVACDetails != None:
-                        if HVACDetails['fanPlacement'] != None: ptac.setFanPlacement(HVACDetails['fanPlacement'])
-                        
-                        sch = ptac.availabilitySchedule()
-                        if len(HVACDetails['constVolSupplyFanDef']) > 0:
-                            print 'overriding the OpenStudio supply fan settings'
+                    #Set the airDetails.
+                    if airDetails != None:
+                        if airDetails.HVACAvailabiltySched != 'ALWAYS ON':
+                            hvacAvailSch = self.getOSSchedule(airDetails.HVACAvailabiltySched,model)
+                            ptac.setAvailabilitySchedule(hvacAvailSch)
+                        if airDetails.fanPlacement != 'Default':
+                            ptac.setFanPlacement(airDetails.fanPlacement)
+                        if airDetails.fanTotalEfficiency != "Default" or airDetails.fanMotorEfficiency != "Default" or airDetails.fanPressureRise != "Default":
                             sfname = ptac.supplyAirFan().name()
                             cvfan = model.getFanConstantVolumeByName(str(sfname)).get()
-                            sf = self.recallCVFan(HVACDetails)
-                            cvfan = self.updateCVFan(sf,cvfan)
-                            print 'supply fan settings updated to supply fan name: ' + HVACDetails['constVolSupplyFanDef']['name']
-                        else:
-                            print 'no supply fan defined'
-                            pass
-                        if HVACDetails['coolingCoil'] != None:
-                            print 'overriding the OpenStudio cooling coil settings.'
-                            ccname = ptac.coolingCoil().name()
-                            cc = model.getCoilCoolingDXSingleSpeedByName(str(ccname)).get()
-                            print cc
-                            coolcoil = self.updateCoolingCoil(HVACDetails['coolingCoil'],cc)
-                    
-                    #Set zone-specific parameters like a specified portion of recirculated air.
-                    if zoneRecircAir[zoneCount] != 0:
-                        ptac.setSupplyAirFlowRateDuringCoolingOperation(zoneTotalAir[zoneCount])
-                        ptac.setSupplyAirFlowRateDuringHeatingOperation(zoneTotalAir[zoneCount])
-                        ptac.setSupplyAirFlowRateWhenNoCoolingorHeatingisNeeded(zoneTotalAir[zoneCount])
-                        print "Secified recirculation air for " +  str(thermalZoneVector[zoneCount].name()) + " to a value of " + str(zoneRecircAir[zoneCount]) + " m3/s per m2 of floor."
-                    
-                    #Set plant details.
-                    if plantDetails != None:
-                        if plantDetails['boiler'] != None:
+                            cvfan = self.updateCVFan(cvfan,airDetails.fanTotalEfficiency,airDetails.fanMotorEfficiency,airDetails.fanPressureRise)
+                        if airDetails.heatingSupplyAirTemp != 'Default':
                             x = ptac.heatingCoil().name()
                             hc = model.getCoilHeatingWaterByName(str(x)).get()
-                            hwl = hc.plantLoop().get()
-                            boilervec = hwl.supplyComponents(ops.IddObjectType("OS:Boiler:HotWater"))
-                            for bc,boiler in enumerate(boilervec):
-                                #sequencing, is this possible?
-                                #below's example has no sequencing capabilities
-                                if len(plantDetails['boiler']) > 0:
-                                    osboiler = model.getBoilerHotWater(boiler.handle()).get()
-                                    uboil = self.recallBoiler(plantDetails)
-                                    osboiler = self.updateBoiler(uboil,osboiler)
+                            hc.setRatedOutletAirTemperature(airDetails.heatingSupplyAirTemp)
+                    
+                    #Set the heatingDetails.
+                    if heatingDetails != None:
+                        if heatingDetails.heatingAvailSched != "ALWAYS ON" or heatingDetails.supplyTemperature != 'Default':
+                            x = ptac.heatingCoil().name()
+                            hc = model.getCoilHeatingWaterByName(str(x)).get()
+                            heatcoil = self.updateWaterHeatingCoil(model, hc, heatingDetails.heatingAvailSched, heatingDetails.supplyTemperature)
+                    
+                    #Set the coolingDetails.
+                    if coolingDetails != None:
+                        if coolingDetails.coolingAvailSched != "ALWAYS ON" or coolingDetails.coolingCOP != "Default":
+                            ccname = ptac.coolingCoil().name()
+                            cc = model.getCoilCoolingDXSingleSpeedByName(str(ccname)).get()
+                            coolcoil = self.updateDXCoolingCoil(model, cc, coolingDetails.coolingAvailSched, coolingDetails.coolingCOP)
+                    
+                    # Set zone-specific parameters like a specified portion of recirculated air.
+                    # Recirculated air also means that we have to hard-size the fan.
+                    if hbZones[zoneCount].recirculatedAirPerArea != 0:
+                        sfname = ptac.supplyAirFan().name()
+                        cvfan = model.getFanConstantVolumeByName(str(sfname)).get()
+                        self.setRecircOnSingleZoneSys(hbZones[zoneCount], ptac, cvfan)
+                
+                #If heating details are set, change them at the level of the boiler.
+                if heatingDetails != None:
+                    if heatingDetails.heatingEffOrCOP != "Default" or heatingDetails.supplyTemperature != "Default"  or heatingDetails.pumpMotorEfficiency != "Default":
+                        x = ptac.heatingCoil().name()
+                        hc = model.getCoilHeatingWaterByName(str(x)).get()
+                        hwl = hc.plantLoop().get()
+                        if heatingDetails.heatingEffOrCOP != "Default" or heatingDetails.supplyTemperature != "Default":
+                            boilerVec = hwl.supplyComponents(ops.IddObjectType("OS:Boiler:HotWater"))
+                            for boiler in boilerVec:
+                                osBoiler = model.getBoilerHotWater(boiler.handle()).get()
+                                osBoiler = self.updateBoiler(model, osBoiler, heatingDetails.heatingEffOrCOP, heatingDetails.supplyTemperature)
+                        if heatingDetails.pumpMotorEfficiency != "Default":
+                            pumpVec = hwl.supplyComponents(ops.IddObjectType("OS:Pump:VariableSpeed"))
+                            for pump in enumerate(pumpVec):
+                                osPump = model.getPumpVariableSpeed(pump[1].handle()).get()
+                                osPump = self.updatePump(osPump, heatingDetails.pumpMotorEfficiency)
                 
             elif systemIndex == 2:
                 # 2: PTHP, Residential
@@ -2260,15 +2284,11 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
             if HAVCGroupID!= -1:
                 if HAVCGroupID not in hb_writeOPS.HVACSystemDict.keys():
                     # add place holder for lists
-                    hb_writeOPS.HVACSystemDict[HAVCGroupID] = [HVACIndex, [], [], airDetails ,heatDetails ,coolDetails , [], []]
+                    hb_writeOPS.HVACSystemDict[HAVCGroupID] = [HVACIndex, [], [], airDetails ,heatDetails ,coolDetails]
             
-            # collect informations for systems here, such as the zones in each system and the recirculation specifcations for each zone.
+            # collect the information for systems here, such as the zones in each system and the recirculation specifcations for each zone.
             hb_writeOPS.HVACSystemDict[HAVCGroupID][1].append(thermalZone)
             hb_writeOPS.HVACSystemDict[HAVCGroupID][2].append(zone)
-            hb_writeOPS.HVACSystemDict[HAVCGroupID][6].append(zone.recirculatedAirPerArea)
-            zoneFlrArea = zone.getFloorArea()
-            totalZoneFlow = (zone.recirculatedAirPerArea*zoneFlrArea) +  (zone.ventilationPerArea*zoneFlrArea) + (zone.ventilationPerPerson*zone.numOfPeoplePerArea*zoneFlrArea)
-            hb_writeOPS.HVACSystemDict[HAVCGroupID][7].append(totalZoneFlow)
             
             # add thermostat
             thermalZone = hb_writeOPS.addThermostat(zone, thermalZone, space, model)
