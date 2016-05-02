@@ -38,7 +38,7 @@ Provided by Ladybug 0.0.45
 
 ghenv.Component.Name = "Honeybee_Re-run OSM"
 ghenv.Component.NickName = 'Re-Run OSM'
-ghenv.Component.Message = 'VER 0.0.59\nAPR_29_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAY_02_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"
@@ -58,9 +58,11 @@ if sc.sticky.has_key('honeybee_release'):
     installedOPS = sorted(installedOPS, key = lambda x: int("".join(x.split(" ")[-1].split("."))), reverse = True)
     
     if len(installedOPS) != 0:
+        openStudioFolder = "C:/Program Files/%s/"%installedOPS[0]
         openStudioLibFolder = "C:/Program Files/%s/CSharp/openstudio/"%installedOPS[0]
         QtFolder = "C:/Program Files/%s/Ruby/openstudio/"%installedOPS[0]
     else:
+        openStudioFolder = ""
         openStudioLibFolder = ""
         QtFolder = ""
 
@@ -78,7 +80,7 @@ if sc.sticky.has_key('honeybee_release'):
         if openStudioLibFolder not in sys.path:
             sys.path.append(openStudioLibFolder)
     
-        import OpenStudio as ops
+        import OpenStudio
     else:
         openStudioIsReady = False
         # let the user know that they need to download OpenStudio libraries
@@ -130,8 +132,8 @@ def main(epwFile, osmFile):
     rmDBPath = OpenStudio.Path(workingDir + '/runmanager.db')
     osmPath = OpenStudio.Path(osmFile)
     epwPath = OpenStudio.Path(epwFile)
-    epPath = OpenStudio.Path(openStudioFolder + r'\share\openstudio\EnergyPlusV8-4-0')
-    radPath = OpenStudio.Path('c:\radince\bin') #openStudioFolder + r'\share\openstudio\Radiance\bin')
+    epPath = OpenStudio.Path(openStudioFolder + r'\share\openstudio\EnergyPlus-8-5-0')
+    radPath = OpenStudio.Path('c:\radince\bin')
     rubyPath = OpenStudio.Path(openStudioFolder + r'\ruby-install\ruby\bin')
     outDir = OpenStudio.Path(workingDir) # I need to have extra check here to make sure name is valid
     
