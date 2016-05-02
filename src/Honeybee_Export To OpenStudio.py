@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2016, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
+# Copyright (c) 2013-2016, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com>, Chris Mackey <Chris@MackeyArchitecture.com>, and Chien Si Harriman <charriman@terabuild.com>
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -62,7 +62,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.59\nMAY_01_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAY_02_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -436,6 +436,83 @@ class WriteOPS(object):
         return space, thermalZone
     
     
+    
+    
+    def updateFan(self,fan,totalEfficiency,motorEfficiency,pressureRise):
+        if totalEfficiency != 'Default': 
+            fan.setFanEfficiency(totalEfficiency)
+        if motorEfficiency != 'Default':
+            fan.setMotorEfficiency(motorEfficiency)
+        if pressureRise != 'Default': 
+            fan.setPressureRise(pressureRise)
+    
+    def updatePump(self, pump, pumpMotorEfficiency):
+        if pumpMotorEfficiency != 'Default':
+            pump.setMotorEfficiency(pumpMotorEfficiency)
+    
+    def updateChiller(self, model, osChiller, coolingCOP, supplyTemperature):
+        if coolingCOP != 'Default':
+            osChiller.setReferenceCOP(coolingCOP)
+        if supplyTemperature != 'Default':
+            osChiller.setReferenceLeavingChilledWaterTemperature(supplyTemperature)
+   
+    def updateBoiler(self, model, osboiler, heatingEffOrCOP, supplyTemperature):
+        if heatingEffOrCOP != 'Default':
+            osboiler.setNominalThermalEfficiency(heatingEffOrCOP)
+        if supplyTemperature != 'Default':
+            osboiler.setDesignWaterOutletTemperature(supplyTemperature)
+    
+    def updateDXCoolingCoil(self, model, coolCoil, coolingAvailSched, coolingCOP):
+        if coolingAvailSched != 'ALWAYS ON':
+             coolAvailSch = self.getOSSchedule(coolingAvailSched, model)
+             coolCoil.setAvailabilitySchedule(coolAvailSch)
+        if coolingCOP != 'Default':
+            coolCoil.setRatedCOP(ops.OptionalDouble(coolingCOP))
+    
+    def updateDXCoolingCoilTwoSpeed(self, model, coolCoil, coolingAvailSched, coolingCOP):
+        if coolingAvailSched != 'ALWAYS ON':
+             coolAvailSch = self.getOSSchedule(coolingAvailSched, model)
+             coolCoil.setAvailabilitySchedule(coolAvailSch)
+        if coolingCOP != 'Default':
+            coolCoil.setRatedHighSpeedCOP(coolingCOP)
+            coolCoil.setRatedLowSpeedCOP(coolingCOP)
+    
+    def updateWaterCoolingCoil(delf, model, coolCoil, coolingAvailSched, supplyTemperature):
+        if coolingAvailSched != 'ALWAYS ON':
+             coolAvailSch = self.getOSSchedule(coolingAvailSched,model)
+             coolCoil.setAvailabilitySchedule(coolAvailSch)
+        if supplyTemperature != 'Default':
+            coolCoil.setDesignInletWaterTemperature(supplyTemperature)
+    
+    def updateDXHeatingCoil(self, model, heatCoil, heatingAvailSched, heatingEffOrCOP):
+        if heatingAvailSched != 'ALWAYS ON':
+             heatAvailSch = self.getOSSchedule(heatingAvailSched, model)
+             heatCoil.setAvailabilitySchedule(heatAvailSch)
+        if heatingEffOrCOP != 'Default':
+            heatCoil.setRatedCOP(heatingEffOrCOP)
+    
+    def updateGasHeatingCoil(self, model, heatCoil, heatingAvailSched, heatingEffOrCOP):
+        if heatingAvailSched != 'ALWAYS ON':
+             heatAvailSch = self.getOSSchedule(heatingAvailSched, model)
+             heatCoil.setAvailabilitySchedule(heatAvailSch)
+        if heatingEffOrCOP != 'Default':
+            heatCoil.setGasBurnerEfficiency(heatingEffOrCOP)
+    
+    def updateElectricHeatingCoil(self, model, heatCoil, heatingAvailSched, heatingEffOrCOP):
+        if heatingAvailSched != 'ALWAYS ON':
+             heatAvailSch = self.getOSSchedule(heatingAvailSched, model)
+             heatCoil.setAvailabilitySchedule(heatAvailSch)
+        if heatingEffOrCOP != 'Default':
+            heatCoil.setEfficiency(heatingEffOrCOP)
+    
+    def updateWaterHeatingCoil(self, model, heatcoil, heatingAvailSched, supplyTemperature):
+        if heatingAvailSched != 'ALWAYS ON':
+             heatAvailSch = self.getOSSchedule(heatingAvailSched,model)
+             heatcoil.setAvailabilitySchedule(heatAvailSch)
+        if supplyTemperature != 'Default':
+            heatcoil.setRatedInletWaterTemperature(supplyTemperature)
+            heatcoil.setRatedOutletWaterTemperature(supplyTemperature-11)
+    
     def getZoneTotalAir(self, hbZone):
         zoneFlrArea = hbZone.getFloorArea()
         totalZoneFlow = (hbZone.recirculatedAirPerArea*zoneFlrArea) +  (hbZone.ventilationPerArea*zoneFlrArea) + (hbZone.ventilationPerPerson*hbZone.numOfPeoplePerArea*zoneFlrArea)
@@ -448,9 +525,15 @@ class WriteOPS(object):
         system.setSupplyAirFlowRateWhenNoCoolingorHeatingisNeeded(totalZoneFlow)
         fan.setMaximumFlowRate(totalZoneFlow)
     
-    def updateOASys(self,cntrlType,oactrl):
-        oactrl.setEconomizerControlType(cntrlType)
-        return oactrl
+    def sizeAirTerminalForRecirc(self, vavBox, zoneTotAir):
+        vavBox.setMaximumAirFlowRate(4*zoneTotAir)
+        vavBox.setConstantMinimumAirFlowFraction(0.25)
+    
+    def sizeVAVFanForRecirc(self, model, airloop, recircAirFlowRates):
+        fullHVACAirFlow = sum(recircAirFlowRates)
+        x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:VariableVolume"))
+        vvfan = model.getFanVariableVolume(x[0].handle()).get()
+        vvfan.setMaximumFlowRate(fullHVACAirFlow*4)
     
     def addHeatRecovToModel(self, model, airloop, heatRecovery, recoveryEffectiveness):
         # Create an air-to-air heat exchanger.
@@ -475,101 +558,103 @@ class WriteOPS(object):
         outdoorNode = airloop.reliefAirNode().get()
         pszacHeatEx.addToNode(outdoorNode)
     
-    def updateFan(self,fan,totalEfficiency,motorEfficiency,pressureRise):
-        if totalEfficiency != 'Default': 
-            fan.setFanEfficiency(totalEfficiency)
-        if motorEfficiency != 'Default':
-            fan.setMotorEfficiency(motorEfficiency)
-        if pressureRise != 'Default': 
-            fan.setPressureRise(pressureRise)
-        return fan
+    def adjustAirSideEcon(self, airloop, airDetails):
+        oasys = airloop.airLoopHVACOutdoorAirSystem()
+        oactrl = oasys.get().getControllerOutdoorAir()
+        oactrl.setEconomizerControlType(airDetails.airsideEconomizer)
     
-    def updateVVFan(self,sf,vvfan):
-        if sf['motorEfficiency'] != None: 
-            vvfan.setMotorEfficiency(sf['motorEfficiency'])
-        if sf['fanEfficiency'] != None: 
-            vvfan.setFanEfficiency(sf['fanEfficiency'])
-        if sf['pressureRise'] != None: 
-            vvfan.setPressureRise(sf['pressureRise'])
-        return vvfan
+    def adjustCVAirLoop(self, model, airloop, airDetails):
+        if airDetails.HVACAvailabiltySched != 'ALWAYS ON':
+            hvacAvailSch = self.getOSSchedule(airDetails.HVACAvailabiltySched, model)
+            airloop.setAvailabilitySchedule(hvacAvailSch)
+        if airDetails.fanTotalEfficiency != "Default" or airDetails.fanMotorEfficiency != "Default" or airDetails.fanPressureRise != "Default":
+            x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:ConstantVolume"))
+            cvfan = model.getFanConstantVolume(x[0].handle()).get()
+            self.updateFan(cvfan,airDetails.fanTotalEfficiency,airDetails.fanMotorEfficiency,airDetails.fanPressureRise)
+        if airDetails.fanPlacement != 'Default':
+            if airDetails.fanPlacement == 'Blow Through':
+                x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:ConstantVolume"))
+                cvfan = model.getFanConstantVolume(x[0].handle()).get()
+                mixAirNode = airloop.mixedAirNode().get()
+                cvfan.addToNode(mixAirNode)
+        if airDetails.airsideEconomizer != 'Default':
+            self.adjustAirSideEcon(airloop, airDetails)
+        if airDetails.heatRecovery != 'Default' and airDetails.heatRecovery != 'None':
+            self.addHeatRecovToModel(model, airloop, airDetails.heatRecovery, airDetails.recoveryEffectiveness)
     
-    def updatePump(self, pump, pumpMotorEfficiency):
-        if pumpMotorEfficiency != 'Default':
-            pump.setMotorEfficiency(pumpMotorEfficiency)
-        return pump
+    def adjustVAVAirLoop(self, model, airloop, airDetails):
+        if airDetails.HVACAvailabiltySched != 'ALWAYS ON':
+            hvacAvailSch = self.getOSSchedule(airDetails.HVACAvailabiltySched, model)
+            airloop.setAvailabilitySchedule(hvacAvailSch)
+        if airDetails.fanTotalEfficiency != "Default" or airDetails.fanMotorEfficiency != "Default" or airDetails.fanPressureRise != "Default":
+            x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:VariableVolume"))
+            vvfan = model.getFanVariableVolume(x[0].handle()).get()
+            self.updateFan(vvfan,airDetails.fanTotalEfficiency,airDetails.fanMotorEfficiency,airDetails.fanPressureRise)
+        if airDetails.fanPlacement != 'Default':
+            if airDetails.fanPlacement == 'Blow Through':
+                x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:VariableVolume"))
+                vvfan = model.getFanVariableVolume(x[0].handle()).get()
+                mixAirNode = airloop.mixedAirNode().get()
+                vvfan.addToNode(mixAirNode)
+        if airDetails.airsideEconomizer != 'Default':
+            self.adjustAirSideEcon(airloop, airDetails)
+        if airDetails.heatRecovery != 'Default' and airDetails.heatRecovery != 'None':
+            self.addHeatRecovToModel(model, airloop, airDetails.heatRecovery, airDetails.recoveryEffectiveness)
     
-    def updateChiller(self, model, osChiller, coolingCOP, supplyTemperature):
-        if coolingCOP != 'Default':
-            osChiller.setReferenceCOP(coolingCOP)
-        if supplyTemperature != 'Default':
-            osChiller.setReferenceLeavingChilledWaterTemperature(supplyTemperature)
-        return osChiller
-   
-    def updateBoiler(self, model, osboiler, heatingEffOrCOP, supplyTemperature):
-        if heatingEffOrCOP != 'Default':
-            osboiler.setNominalThermalEfficiency(heatingEffOrCOP)
-        if supplyTemperature != 'Default':
-            osboiler.setDesignWaterOutletTemperature(supplyTemperature)
-        return osboiler
+    def adjustWaterReheatCoil(self, model, vavBox, airDetails, heatingDetails):
+        if heatingDetails != None:
+            if heatingDetails.heatingAvailSched != "ALWAYS ON" or heatingDetails.supplyTemperature != "Default":
+                reheatCoil = vavBox.reheatCoil()
+                hc = model.getCoilHeatingWater(reheatCoil.handle()).get()
+                self.updateWaterHeatingCoil(model, hc, heatingDetails.heatingAvailSched, heatingDetails.supplyTemperature)
+        if airDetails != None:
+            if airDetails.heatingSupplyAirTemp != 'Default':
+                reheatCoil = vavBox.reheatCoil()
+                hc = model.getCoilHeatingWater(reheatCoil.handle()).get()
+                hc.setRatedOutletAirTemperature(airDetails.heatingSupplyAirTemp)
     
-    def updateDXCoolingCoil(self, model, coolCoil, coolingAvailSched, coolingCOP):
-        if coolingAvailSched != 'ALWAYS ON':
-             coolAvailSch = self.getOSSchedule(coolingAvailSched, model)
-             coolCoil.setAvailabilitySchedule(coolAvailSch)
-        if coolingCOP != 'Default':
-            coolCoil.setRatedCOP(ops.OptionalDouble(coolingCOP))
-        return coolCoil
+    def adjustElectricReheatCoil(self, model, vavBox, heatingDetails):
+        if heatingDetails != None:
+            if heatingDetails.heatingAvailSched != "ALWAYS ON" or heatingDetails.heatingEffOrCOP != 'Default':
+                reheatCoil = vavBox.reheatCoil()
+                hc = model.getCoilHeatingElectric(reheatCoil.handle()).get()
+                self.updateElectricHeatingCoil(model, hc, heatingDetails.heatingAvailSched, heatingDetails.heatingEffOrCOP)
     
-    def updateDXCoolingCoilTwoSpeed(self, model, coolCoil, coolingAvailSched, coolingCOP):
-        if coolingAvailSched != 'ALWAYS ON':
-             coolAvailSch = self.getOSSchedule(coolingAvailSched, model)
-             coolCoil.setAvailabilitySchedule(coolAvailSch)
-        if coolingCOP != 'Default':
-            coolCoil.setRatedHighSpeedCOP(coolingCOP)
-            coolCoil.setRatedLowSpeedCOP(coolingCOP)
-        return coolCoil
+    def adjustHotWaterLoop(self, model, airloop, heatingDetails):
+        if heatingDetails.heatingAvailSched != "ALWAYS ON" or heatingDetails.heatingEffOrCOP != "Default" or heatingDetails.supplyTemperature != "Default"  or heatingDetails.pumpMotorEfficiency != "Default":
+            x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Heating:Water"))
+            hc = model.getCoilHeatingWater(x[0].handle()).get()
+            hwl = hc.plantLoop().get()
+            if heatingDetails.heatingEffOrCOP != "Default" or heatingDetails.supplyTemperature != "Default":
+                boilerVec = hwl.supplyComponents(ops.IddObjectType("OS:Boiler:HotWater"))
+                for boiler in boilerVec:
+                    osBoiler = model.getBoilerHotWater(boiler.handle()).get()
+                    self.updateBoiler(model, osBoiler, heatingDetails.heatingEffOrCOP, heatingDetails.supplyTemperature)
+            if heatingDetails.pumpMotorEfficiency != "Default":
+                pumpVec = hwl.supplyComponents(ops.IddObjectType("OS:Pump:VariableSpeed"))
+                for pump in enumerate(pumpVec):
+                    osPump = model.getPumpVariableSpeed(pump[1].handle()).get()
+                    self.updatePump(osPump, heatingDetails.pumpMotorEfficiency)
+            if heatingDetails.heatingAvailSched != "ALWAYS ON" or heatingDetails.supplyTemperature != "Default":
+                self.updateWaterHeatingCoil(model, hc, heatingDetails.heatingAvailSched, heatingDetails.supplyTemperature)
     
-    def updateWaterCoolingCoil(delf, model, coolCoil, coolingAvailSched, supplyTemperature):
-        if coolingAvailSched != 'ALWAYS ON':
-             coolAvailSch = self.getOSSchedule(coolingAvailSched,model)
-             coolCoil.setAvailabilitySchedule(coolAvailSch)
-        if supplyTemperature != 'Default':
-            coolCoil.setDesignInletWaterTemperature(supplyTemperature)
-        return coolCoil
-    
-    def updateDXHeatingCoil(self, model, heatCoil, heatingAvailSched, heatingEffOrCOP):
-        if heatingAvailSched != 'ALWAYS ON':
-             heatAvailSch = self.getOSSchedule(heatingAvailSched, model)
-             heatCoil.setAvailabilitySchedule(heatAvailSch)
-        if heatingEffOrCOP != 'Default':
-            heatCoil.setRatedCOP(heatingEffOrCOP)
-        return heatCoil
-    
-    def updateGasHeatingCoil(self, model, heatCoil, heatingAvailSched, heatingEffOrCOP):
-        if heatingAvailSched != 'ALWAYS ON':
-             heatAvailSch = self.getOSSchedule(heatingAvailSched, model)
-             heatCoil.setAvailabilitySchedule(heatAvailSch)
-        if heatingEffOrCOP != 'Default':
-            heatCoil.setGasBurnerEfficiency(heatingEffOrCOP)
-        return heatCoil
-    
-    def updateElectricHeatingCoil(self, model, heatCoil, heatingAvailSched, heatingEffOrCOP):
-        if heatingAvailSched != 'ALWAYS ON':
-             heatAvailSch = self.getOSSchedule(heatingAvailSched, model)
-             heatCoil.setAvailabilitySchedule(heatAvailSch)
-        if heatingEffOrCOP != 'Default':
-            heatCoil.setEfficiency(heatingEffOrCOP)
-        return heatCoil
-    
-    def updateWaterHeatingCoil(self, model, heatcoil, heatingAvailSched, supplyTemperature):
-        if heatingAvailSched != 'ALWAYS ON':
-             heatAvailSch = self.getOSSchedule(heatingAvailSched,model)
-             heatcoil.setAvailabilitySchedule(heatAvailSch)
-        if supplyTemperature != 'Default':
-            heatcoil.setRatedInletWaterTemperature(supplyTemperature)
-            heatcoil.setRatedOutletWaterTemperature(supplyTemperature-11)
-        return heatcoil
-    
+    def adjustChilledWaterLoop(self, model, airloop, coolingDetails):
+        if coolingDetails.coolingAvailSched != "ALWAYS ON" or coolingDetails.coolingCOP != "Default" or coolingDetails.supplyTemperature != "Default"  or coolingDetails.pumpMotorEfficiency != "Default":
+            x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:Water"))
+            cc = model.getCoilCoolingWater(x[0].handle()).get()
+            cwl = cc.plantLoop().get()
+            if coolingDetails.coolingCOP != "Default" or coolingDetails.supplyTemperature != "Default":
+                chillervec = cwl.supplyComponents(ops.IddObjectType("OS:Chiller:Electric:EIR"))
+                for chiller in chillervec:
+                    osChiller = model.getChillerElectricEIR(chiller.handle()).get()
+                    self.updateChiller(model, osChiller, coolingDetails.coolingCOP, coolingDetails.supplyTemperature)
+            if coolingDetails.pumpMotorEfficiency != "Default":
+                pumpVec = cwl.supplyComponents(ops.IddObjectType("OS:Pump:VariableSpeed"))
+                for pump in enumerate(pumpVec):
+                    osPump = model.getPumpVariableSpeed(pump[1].handle()).get()
+                    self.updatePump(osPump, coolingDetails.pumpMotorEfficiency)
+            if coolingDetails.coolingAvailSched != "ALWAYS ON" or coolingDetails.supplyTemperature != "Default":
+                self.updateWaterCoolingCoil(model, cc, coolingDetails.coolingAvailSched, coolingDetails.supplyTemperature)
     
     def addSystemsToZones(self, model):
         for HAVCGroupID in self.HVACSystemDict.keys():
@@ -663,7 +748,7 @@ class WriteOPS(object):
                             if airDetails.fanTotalEfficiency != "Default" or airDetails.fanMotorEfficiency != "Default" or airDetails.fanPressureRise != "Default":
                                 sfname = ptac.supplyAirFan().name()
                                 cvfan = model.getFanConstantVolumeByName(str(sfname)).get()
-                                cvfan = self.updateFan(cvfan,airDetails.fanTotalEfficiency,airDetails.fanMotorEfficiency,airDetails.fanPressureRise)
+                                self.updateFan(cvfan,airDetails.fanTotalEfficiency,airDetails.fanMotorEfficiency,airDetails.fanPressureRise)
                             if airDetails.heatingSupplyAirTemp != 'Default':
                                 x = ptac.heatingCoil().name()
                                 hc = model.getCoilHeatingWaterByName(str(x)).get()
@@ -674,14 +759,14 @@ class WriteOPS(object):
                             if heatingDetails.heatingAvailSched != "ALWAYS ON" or heatingDetails.supplyTemperature != 'Default':
                                 x = ptac.heatingCoil().name()
                                 hc = model.getCoilHeatingWaterByName(str(x)).get()
-                                heatcoil = self.updateWaterHeatingCoil(model, hc, heatingDetails.heatingAvailSched, heatingDetails.supplyTemperature)
+                                self.updateWaterHeatingCoil(model, hc, heatingDetails.heatingAvailSched, heatingDetails.supplyTemperature)
                         
                         #Set the coolingDetails.
                         if coolingDetails != None:
                             if coolingDetails.coolingAvailSched != "ALWAYS ON" or coolingDetails.coolingCOP != "Default":
                                 ccname = ptac.coolingCoil().name()
                                 cc = model.getCoilCoolingDXSingleSpeedByName(str(ccname)).get()
-                                coolcoil = self.updateDXCoolingCoil(model, cc, coolingDetails.coolingAvailSched, coolingDetails.coolingCOP)
+                                self.updateDXCoolingCoil(model, cc, coolingDetails.coolingAvailSched, coolingDetails.coolingCOP)
                         
                         # Set zone-specific parameters like a specified portion of recirculated air.
                         # Recirculated air also means that we have to hard-size the fan.
@@ -701,12 +786,12 @@ class WriteOPS(object):
                             boilerVec = hwl.supplyComponents(ops.IddObjectType("OS:Boiler:HotWater"))
                             for boiler in boilerVec:
                                 osBoiler = model.getBoilerHotWater(boiler.handle()).get()
-                                osBoiler = self.updateBoiler(model, osBoiler, heatingDetails.heatingEffOrCOP, heatingDetails.supplyTemperature)
+                                self.updateBoiler(model, osBoiler, heatingDetails.heatingEffOrCOP, heatingDetails.supplyTemperature)
                         if heatingDetails.pumpMotorEfficiency != "Default":
                             pumpVec = hwl.supplyComponents(ops.IddObjectType("OS:Pump:VariableSpeed"))
                             for pump in enumerate(pumpVec):
                                 osPump = model.getPumpVariableSpeed(pump[1].handle()).get()
-                                osPump = self.updatePump(osPump, heatingDetails.pumpMotorEfficiency)
+                                self.updatePump(osPump, heatingDetails.pumpMotorEfficiency)
                 
             elif systemIndex == 2:
                 # 2: PTHP, Residential
@@ -729,21 +814,21 @@ class WriteOPS(object):
                             if airDetails.fanTotalEfficiency != "Default" or airDetails.fanMotorEfficiency != "Default" or airDetails.fanPressureRise != "Default":
                                 sfname = pthp.supplyAirFan().name()
                                 cvfan = model.getFanConstantVolumeByName(str(sfname)).get()
-                                cvfan = self.updateFan(cvfan,airDetails.fanTotalEfficiency,airDetails.fanMotorEfficiency,airDetails.fanPressureRise)
+                                self.updateFan(cvfan,airDetails.fanTotalEfficiency,airDetails.fanMotorEfficiency,airDetails.fanPressureRise)
                         
                         #Set the heatingDetails.
                         if heatingDetails != None:
                             if heatingDetails.heatingAvailSched != "ALWAYS ON" or heatingDetails.heatingEffOrCOP != 'Default':
                                 x = pthp.heatingCoil().handle()
                                 hc = model.getCoilHeatingDXSingleSpeed(x).get()
-                                heatcoil = self.updateDXHeatingCoil(model, hc, heatingDetails.heatingAvailSched, heatingDetails.heatingEffOrCOP)
+                                self.updateDXHeatingCoil(model, hc, heatingDetails.heatingAvailSched, heatingDetails.heatingEffOrCOP)
                         
                         #Set the coolingDetails.
                         if coolingDetails != None:
                             if coolingDetails.coolingAvailSched != "ALWAYS ON" or coolingDetails.coolingCOP != "Default":
                                 ccname = pthp.coolingCoil().name()
                                 cc = model.getCoilCoolingDXSingleSpeedByName(str(ccname)).get()
-                                coolcoil = self.updateDXCoolingCoil(model, cc, coolingDetails.coolingAvailSched, coolingDetails.coolingCOP)
+                                self.updateDXCoolingCoil(model, cc, coolingDetails.coolingAvailSched, coolingDetails.coolingCOP)
                         
                         # Set zone-specific parameters like a specified portion of recirculated air.
                         # Recirculated air also means that we have to hard-size the fan.
@@ -762,25 +847,7 @@ class WriteOPS(object):
                     
                     #Set the airDetails.
                     if airDetails != None:
-                        if airDetails.HVACAvailabiltySched != 'ALWAYS ON':
-                            hvacAvailSch = self.getOSSchedule(airDetails.HVACAvailabiltySched, model)
-                            airloop.setAvailabilitySchedule(hvacAvailSch)
-                        if airDetails.fanTotalEfficiency != "Default" or airDetails.fanMotorEfficiency != "Default" or airDetails.fanPressureRise != "Default":
-                            x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:ConstantVolume"))
-                            cvfan = model.getFanConstantVolume(x[0].handle()).get()
-                            cvfan = self.updateFan(cvfan,airDetails.fanTotalEfficiency,airDetails.fanMotorEfficiency,airDetails.fanPressureRise)
-                        if airDetails.fanPlacement != 'Default':
-                            if airDetails.fanPlacement == 'Blow Through':
-                                x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:ConstantVolume"))
-                                cvfan = model.getFanConstantVolume(x[0].handle()).get()
-                                mixAirNode = airloop.mixedAirNode().get()
-                                cvfan.addToNode(mixAirNode)
-                        if airDetails.airsideEconomizer != 'Default':
-                            oasys = airloop.airLoopHVACOutdoorAirSystem()
-                            oactrl = oasys.get().getControllerOutdoorAir()
-                            oactrl.setEconomizerControlType(airDetails.airsideEconomizer)
-                        if airDetails.heatRecovery != 'Default' and airDetails.heatRecovery != 'None':
-                            self.addHeatRecovToModel(model, airloop, airDetails.heatRecovery, airDetails.recoveryEffectiveness)
+                        self.adjustCVAirLoop(model, airloop, airDetails)
                     
                     #Set the heatingDetails.
                     if heatingDetails != None:
@@ -788,7 +855,7 @@ class WriteOPS(object):
                             comps = airloop.supplyComponents()
                             hcs = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Heating:Gas"))
                             hc = model.getCoilHeatingGas(hcs[0].handle()).get()
-                            heatcoil = self.updateGasHeatingCoil(model, hc, heatingDetails.heatingAvailSched, heatingDetails.heatingEffOrCOP)
+                            self.updateGasHeatingCoil(model, hc, heatingDetails.heatingAvailSched, heatingDetails.heatingEffOrCOP)
                     
                     #Set the coolingDetails.
                     if coolingDetails != None:
@@ -796,7 +863,7 @@ class WriteOPS(object):
                             comps = airloop.supplyComponents()
                             ccs = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:DX:SingleSpeed"))
                             cc = model.getCoilCoolingDXSingleSpeed(ccs[0].handle()).get()
-                            coolcoil = self.updateDXCoolingCoil(model, cc, coolingDetails.coolingAvailSched, coolingDetails.coolingCOP)
+                            self.updateDXCoolingCoil(model, cc, coolingDetails.coolingAvailSched, coolingDetails.coolingCOP)
                 
             elif systemIndex == 4:
                 # 4: Packaged Single Zone - HP
@@ -807,25 +874,7 @@ class WriteOPS(object):
                     
                     #Set the airDetails.
                     if airDetails != None:
-                        if airDetails.HVACAvailabiltySched != 'ALWAYS ON':
-                            hvacAvailSch = self.getOSSchedule(airDetails.HVACAvailabiltySched, model)
-                            airloop.setAvailabilitySchedule(hvacAvailSch)
-                        if airDetails.fanTotalEfficiency != "Default" or airDetails.fanMotorEfficiency != "Default" or airDetails.fanPressureRise != "Default":
-                            x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:ConstantVolume"))
-                            cvfan = model.getFanConstantVolume(x[0].handle()).get()
-                            cvfan = self.updateFan(cvfan,airDetails.fanTotalEfficiency,airDetails.fanMotorEfficiency,airDetails.fanPressureRise)
-                        if airDetails.fanPlacement != 'Default':
-                            if airDetails.fanPlacement == 'Blow Through':
-                                x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:ConstantVolume"))
-                                cvfan = model.getFanConstantVolume(x[0].handle()).get()
-                                mixAirNode = airloop.mixedAirNode().get()
-                                cvfan.addToNode(mixAirNode)
-                        if airDetails.airsideEconomizer != 'Default':
-                            oasys = airloop.airLoopHVACOutdoorAirSystem()
-                            oactrl = oasys.get().getControllerOutdoorAir()
-                            oactrl.setEconomizerControlType(airDetails.airsideEconomizer)
-                        if airDetails.heatRecovery != 'Default' and airDetails.heatRecovery != 'None':
-                            self.addHeatRecovToModel(model, airloop, airDetails.heatRecovery, airDetails.recoveryEffectiveness)
+                        self.adjustCVAirLoop(model, airloop, airDetails)
                     
                     #Set the heatingDetails.
                     if heatingDetails != None:
@@ -833,7 +882,7 @@ class WriteOPS(object):
                             comps = airloop.supplyComponents()
                             hcs = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Heating:DX:SingleSpeed"))
                             hc = model.getCoilHeatingDXSingleSpeed(hcs[0].handle()).get()
-                            heatcoil = self.updateDXHeatingCoil(model, hc, heatingDetails.heatingAvailSched, heatingDetails.heatingEffOrCOP)
+                            self.updateDXHeatingCoil(model, hc, heatingDetails.heatingAvailSched, heatingDetails.heatingEffOrCOP)
                     
                     #Set the coolingDetails.
                     if coolingDetails != None:
@@ -841,7 +890,7 @@ class WriteOPS(object):
                             comps = airloop.supplyComponents()
                             ccs = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:DX:SingleSpeed"))
                             cc = model.getCoilCoolingDXSingleSpeed(ccs[0].handle()).get()
-                            coolcoil = self.updateDXCoolingCoil(model, cc, coolingDetails.coolingAvailSched, coolingDetails.coolingCOP)
+                            self.updateDXCoolingCoil(model, cc, coolingDetails.coolingAvailSched, coolingDetails.coolingCOP)
             
             elif systemIndex == 5:
                 # 5: Packaged VAV w/ Reheat
@@ -861,47 +910,16 @@ class WriteOPS(object):
                     vavBox = model.getAirTerminalSingleDuctVAVReheat(x[zoneCount].handle()).get()
                     if hbZones[zoneCount].recirculatedAirPerArea != 0:
                         recicTrigger = True
-                        vavBox.setMaximumAirFlowRate(4*zoneTotAir)
-                        vavBox.setConstantMinimumAirFlowFraction(0.25)
-                    if heatingDetails != None:
-                        if heatingDetails.heatingAvailSched != "ALWAYS ON" or heatingDetails.supplyTemperature != "Default":
-                            reheatCoil = vavBox.reheatCoil()
-                            hc = model.getCoilHeatingWater(reheatCoil.handle()).get()
-                            self.updateWaterHeatingCoil(model, hc, heatingDetails.heatingAvailSched, heatingDetails.supplyTemperature)
-                    if airDetails != None:
-                        if airDetails.heatingSupplyAirTemp != 'Default':
-                            reheatCoil = vavBox.reheatCoil()
-                            hc = model.getCoilHeatingWater(reheatCoil.handle()).get()
-                            hc.setRatedOutletAirTemperature(airDetails.heatingSupplyAirTemp)
+                        self.sizeAirTerminalForRecirc(vavBox, zoneTotAir)
+                    self.adjustWaterReheatCoil(model, vavBox, airDetails, heatingDetails)
                 
                 #If there is recirculated air, we also have to hard size the fan to ensure that enough air can get through the system.
                 if recicTrigger == True:
-                    fullHVACAirFlow = sum(recircAirFlowRates)
-                    x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:VariableVolume"))
-                    vvfan = model.getFanVariableVolume(x[0].handle()).get()
-                    vvfan.setMaximumFlowRate(fullHVACAirFlow*4)
+                    self.sizeVAVFanForRecirc(model, airloop, recircAirFlowRates)
                 
                 #Set the airDetails.
                 if airDetails != None:
-                    if airDetails.HVACAvailabiltySched != 'ALWAYS ON':
-                        hvacAvailSch = self.getOSSchedule(airDetails.HVACAvailabiltySched, model)
-                        airloop.setAvailabilitySchedule(hvacAvailSch)
-                    if airDetails.fanTotalEfficiency != "Default" or airDetails.fanMotorEfficiency != "Default" or airDetails.fanPressureRise != "Default":
-                        x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:VariableVolume"))
-                        vvfan = model.getFanVariableVolume(x[0].handle()).get()
-                        vvfan = self.updateFan(vvfan,airDetails.fanTotalEfficiency,airDetails.fanMotorEfficiency,airDetails.fanPressureRise)
-                    if airDetails.fanPlacement != 'Default':
-                        if airDetails.fanPlacement == 'Blow Through':
-                            x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:VariableVolume"))
-                            vvfan = model.getFanVariableVolume(x[0].handle()).get()
-                            mixAirNode = airloop.mixedAirNode().get()
-                            vvfan.addToNode(mixAirNode)
-                    if airDetails.airsideEconomizer != 'Default':
-                        oasys = airloop.airLoopHVACOutdoorAirSystem()
-                        oactrl = oasys.get().getControllerOutdoorAir()
-                        oactrl.setEconomizerControlType(airDetails.airsideEconomizer)
-                    if airDetails.heatRecovery != 'Default' and airDetails.heatRecovery != 'None':
-                        self.addHeatRecovToModel(model, airloop, airDetails.heatRecovery, airDetails.recoveryEffectiveness)
+                    self.adjustVAVAirLoop(model, airloop, airDetails)
                     if airDetails.heatingSupplyAirTemp != 'Default':
                         x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Heating:Water"))
                         hc = model.getCoilHeatingWater(x[0].handle()).get()
@@ -909,24 +927,7 @@ class WriteOPS(object):
                 
                 # Set the heatingDetails at the level of the boiler.
                 if heatingDetails != None:
-                    if heatingDetails.heatingAvailSched != "ALWAYS ON" or heatingDetails.heatingEffOrCOP != "Default" or heatingDetails.supplyTemperature != "Default"  or heatingDetails.pumpMotorEfficiency != "Default":
-                        x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Heating:Water"))
-                        hc = model.getCoilHeatingWater(x[0].handle()).get()
-                        hwl = hc.plantLoop().get()
-                        if heatingDetails.heatingEffOrCOP != "Default" or heatingDetails.supplyTemperature != "Default":
-                            boilerVec = hwl.supplyComponents(ops.IddObjectType("OS:Boiler:HotWater"))
-                            for boiler in boilerVec:
-                                osBoiler = model.getBoilerHotWater(boiler.handle()).get()
-                                osBoiler = self.updateBoiler(model, osBoiler, heatingDetails.heatingEffOrCOP, heatingDetails.supplyTemperature)
-                        if heatingDetails.pumpMotorEfficiency != "Default":
-                            pumpVec = hwl.supplyComponents(ops.IddObjectType("OS:Pump:VariableSpeed"))
-                            for pump in enumerate(pumpVec):
-                                osPump = model.getPumpVariableSpeed(pump[1].handle()).get()
-                                osPump = self.updatePump(osPump, heatingDetails.pumpMotorEfficiency)
-                        if heatingDetails.heatingAvailSched != "ALWAYS ON" or heatingDetails.supplyTemperature != "Default":
-                            x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Heating:Water"))
-                            hc = model.getCoilHeatingWater(x[0].handle()).get()
-                            self.updateWaterHeatingCoil(model, hc, heatingDetails.heatingAvailSched, heatingDetails.supplyTemperature)
+                    self.adjustHotWaterLoop(model, airloop, heatingDetails)
                 
                 # Set the coolingDetails at the level of the central DX coil.
                 if coolingDetails != None:
@@ -934,7 +935,7 @@ class WriteOPS(object):
                         comps = airloop.supplyComponents()
                         ccs = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:DX:TwoSpeed"))
                         cc = model.getCoilCoolingDXTwoSpeed(ccs[0].handle()).get()
-                        coolcoil = self.updateDXCoolingCoilTwoSpeed(model, cc, coolingDetails.coolingAvailSched, coolingDetails.coolingCOP)
+                        self.updateDXCoolingCoilTwoSpeed(model, cc, coolingDetails.coolingAvailSched, coolingDetails.coolingCOP)
             
             elif systemIndex == 6:
                 # 6: Packaged VAV w/ PFP Boxes
@@ -954,42 +955,16 @@ class WriteOPS(object):
                     vavBox = model.getAirTerminalSingleDuctParallelPIUReheat(x[zoneCount].handle()).get()
                     if hbZones[zoneCount].recirculatedAirPerArea != 0:
                         recicTrigger = True
-                        vavBox.setMaximumPrimaryAirFlowRate(4*zoneTotAir)
-                        vavBox.setMinimumPrimaryAirFlowFraction(0.25)
-                    if heatingDetails != None:
-                        if heatingDetails.heatingAvailSched != "ALWAYS ON" or heatingDetails.heatingEffOrCOP != 'Default':
-                            reheatCoil = vavBox.reheatCoil()
-                            hc = model.getCoilHeatingElectric(reheatCoil.handle()).get()
-                            self.updateElectricHeatingCoil(model, hc, heatingDetails.heatingAvailSched, heatingDetails.heatingEffOrCOP)
+                        self.sizeAirTerminalForRecirc(vavBox, zoneTotAir)
+                    self.adjustElectricReheatCoil(model, vavBox, heatingDetails)
                 
                 #If there is recirculated air, we also have to hard size the fan to ensure that enough air can get through the system.
                 if recicTrigger == True:
-                    fullHVACAirFlow = sum(recircAirFlowRates)
-                    x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:VariableVolume"))
-                    vvfan = model.getFanVariableVolume(x[0].handle()).get()
-                    vvfan.setMaximumFlowRate(4*fullHVACAirFlow)
+                    self.sizeVAVFanForRecirc(model, airloop, recircAirFlowRates)
                 
                 #Set the airDetails.
                 if airDetails != None:
-                    if airDetails.HVACAvailabiltySched != 'ALWAYS ON':
-                        hvacAvailSch = self.getOSSchedule(airDetails.HVACAvailabiltySched, model)
-                        airloop.setAvailabilitySchedule(hvacAvailSch)
-                    if airDetails.fanTotalEfficiency != "Default" or airDetails.fanMotorEfficiency != "Default" or airDetails.fanPressureRise != "Default":
-                        x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:VariableVolume"))
-                        vvfan = model.getFanVariableVolume(x[0].handle()).get()
-                        vvfan = self.updateFan(vvfan,airDetails.fanTotalEfficiency,airDetails.fanMotorEfficiency,airDetails.fanPressureRise)
-                    if airDetails.fanPlacement != 'Default':
-                        if airDetails.fanPlacement == 'Blow Through':
-                            x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:VariableVolume"))
-                            vvfan = model.getFanVariableVolume(x[0].handle()).get()
-                            mixAirNode = airloop.mixedAirNode().get()
-                            vvfan.addToNode(mixAirNode)
-                    if airDetails.airsideEconomizer != 'Default':
-                        oasys = airloop.airLoopHVACOutdoorAirSystem()
-                        oactrl = oasys.get().getControllerOutdoorAir()
-                        oactrl.setEconomizerControlType(airDetails.airsideEconomizer)
-                    if airDetails.heatRecovery != 'Default' and airDetails.heatRecovery != 'None':
-                        self.addHeatRecovToModel(model, airloop, airDetails.heatRecovery, airDetails.recoveryEffectiveness)
+                    self.adjustVAVAirLoop(model, airloop, airDetails)
                 
                 # Set the heatingDetails at the level of the electric resistance heater.
                 if heatingDetails != None:
@@ -997,7 +972,7 @@ class WriteOPS(object):
                         comps = airloop.supplyComponents()
                         hcs = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Heating:Electric"))
                         hc = model.getCoilHeatingElectric(hcs[0].handle()).get()
-                        heatcoil = self.updateElectricHeatingCoil(model, hc, heatingDetails.heatingAvailSched, heatingDetails.heatingEffOrCOP)
+                        self.updateElectricHeatingCoil(model, hc, heatingDetails.heatingAvailSched, heatingDetails.heatingEffOrCOP)
                 
                 # Set the coolingDetails at the level of the central DX coil.
                 if coolingDetails != None:
@@ -1005,7 +980,7 @@ class WriteOPS(object):
                         comps = airloop.supplyComponents()
                         ccs = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:DX:TwoSpeed"))
                         cc = model.getCoilCoolingDXTwoSpeed(ccs[0].handle()).get()
-                        coolcoil = self.updateDXCoolingCoilTwoSpeed(model, cc, coolingDetails.coolingAvailSched, coolingDetails.coolingCOP)
+                        self.updateDXCoolingCoilTwoSpeed(model, cc, coolingDetails.coolingAvailSched, coolingDetails.coolingCOP)
             
             elif systemIndex == 7:
                 # 7: VAV w/ Reheat
@@ -1025,47 +1000,16 @@ class WriteOPS(object):
                     vavBox = model.getAirTerminalSingleDuctVAVReheat(x[zoneCount].handle()).get()
                     if hbZones[zoneCount].recirculatedAirPerArea != 0:
                         recicTrigger = True
-                        vavBox.setMaximumAirFlowRate(4*zoneTotAir)
-                        vavBox.setConstantMinimumAirFlowFraction(0.25)
-                    if heatingDetails != None:
-                        if heatingDetails.heatingAvailSched != "ALWAYS ON" or heatingDetails.supplyTemperature != "Default":
-                            reheatCoil = vavBox.reheatCoil()
-                            hc = model.getCoilHeatingWater(reheatCoil.handle()).get()
-                            self.updateWaterHeatingCoil(model, hc, heatingDetails.heatingAvailSched, heatingDetails.supplyTemperature)
-                    if airDetails != None:
-                        if airDetails.heatingSupplyAirTemp != 'Default':
-                            reheatCoil = vavBox.reheatCoil()
-                            hc = model.getCoilHeatingWater(reheatCoil.handle()).get()
-                            hc.setRatedOutletAirTemperature(airDetails.heatingSupplyAirTemp)
+                        self.sizeAirTerminalForRecirc(vavBox, zoneTotAir)
+                    self.adjustWaterReheatCoil(model, vavBox, airDetails, heatingDetails)
                 
                 #If there is recirculated air, we also have to hard size the fan to ensure that enough air can get through the system.
                 if recicTrigger == True:
-                    fullHVACAirFlow = sum(recircAirFlowRates)
-                    x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:VariableVolume"))
-                    vvfan = model.getFanVariableVolume(x[0].handle()).get()
-                    vvfan.setMaximumFlowRate(fullHVACAirFlow*4)
+                    self.sizeVAVFanForRecirc(model, airloop, recircAirFlowRates)
                 
                 #Set the airDetails.
                 if airDetails != None:
-                    if airDetails.HVACAvailabiltySched != 'ALWAYS ON':
-                        hvacAvailSch = self.getOSSchedule(airDetails.HVACAvailabiltySched, model)
-                        airloop.setAvailabilitySchedule(hvacAvailSch)
-                    if airDetails.fanTotalEfficiency != "Default" or airDetails.fanMotorEfficiency != "Default" or airDetails.fanPressureRise != "Default":
-                        x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:VariableVolume"))
-                        vvfan = model.getFanVariableVolume(x[0].handle()).get()
-                        vvfan = self.updateFan(vvfan,airDetails.fanTotalEfficiency,airDetails.fanMotorEfficiency,airDetails.fanPressureRise)
-                    if airDetails.fanPlacement != 'Default':
-                        if airDetails.fanPlacement == 'Blow Through':
-                            x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:VariableVolume"))
-                            vvfan = model.getFanVariableVolume(x[0].handle()).get()
-                            mixAirNode = airloop.mixedAirNode().get()
-                            vvfan.addToNode(mixAirNode)
-                    if airDetails.airsideEconomizer != 'Default':
-                        oasys = airloop.airLoopHVACOutdoorAirSystem()
-                        oactrl = oasys.get().getControllerOutdoorAir()
-                        oactrl.setEconomizerControlType(airDetails.airsideEconomizer)
-                    if airDetails.heatRecovery != 'Default' and airDetails.heatRecovery != 'None':
-                        self.addHeatRecovToModel(model, airloop, airDetails.heatRecovery, airDetails.recoveryEffectiveness)
+                    self.adjustVAVAirLoop(model, airloop, airDetails)
                     if airDetails.heatingSupplyAirTemp != 'Default':
                         x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Heating:Water"))
                         hc = model.getCoilHeatingWater(x[0].handle()).get()
@@ -1077,45 +1021,11 @@ class WriteOPS(object):
                 
                 # Set the heatingDetails at the level of the boiler.
                 if heatingDetails != None:
-                    if heatingDetails.heatingAvailSched != "ALWAYS ON" or heatingDetails.heatingEffOrCOP != "Default" or heatingDetails.supplyTemperature != "Default"  or heatingDetails.pumpMotorEfficiency != "Default":
-                        x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Heating:Water"))
-                        hc = model.getCoilHeatingWater(x[0].handle()).get()
-                        hwl = hc.plantLoop().get()
-                        if heatingDetails.heatingEffOrCOP != "Default" or heatingDetails.supplyTemperature != "Default":
-                            boilerVec = hwl.supplyComponents(ops.IddObjectType("OS:Boiler:HotWater"))
-                            for boiler in boilerVec:
-                                osBoiler = model.getBoilerHotWater(boiler.handle()).get()
-                                osBoiler = self.updateBoiler(model, osBoiler, heatingDetails.heatingEffOrCOP, heatingDetails.supplyTemperature)
-                        if heatingDetails.pumpMotorEfficiency != "Default":
-                            pumpVec = hwl.supplyComponents(ops.IddObjectType("OS:Pump:VariableSpeed"))
-                            for pump in enumerate(pumpVec):
-                                osPump = model.getPumpVariableSpeed(pump[1].handle()).get()
-                                osPump = self.updatePump(osPump, heatingDetails.pumpMotorEfficiency)
-                        if heatingDetails.heatingAvailSched != "ALWAYS ON" or heatingDetails.supplyTemperature != "Default":
-                            x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Heating:Water"))
-                            hc = model.getCoilHeatingWater(x[0].handle()).get()
-                            self.updateWaterHeatingCoil(model, hc, heatingDetails.heatingAvailSched, heatingDetails.supplyTemperature)
+                    self.adjustHotWaterLoop(model, airloop, heatingDetails)
                 
                 # Set the coolingDetails at the level of the chiller.
                 if coolingDetails != None:
-                    if coolingDetails.coolingAvailSched != "ALWAYS ON" or coolingDetails.coolingCOP != "Default" or coolingDetails.supplyTemperature != "Default"  or coolingDetails.pumpMotorEfficiency != "Default":
-                        x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:Water"))
-                        cc = model.getCoilCoolingWater(x[0].handle()).get()
-                        cwl = cc.plantLoop().get()
-                        if coolingDetails.coolingCOP != "Default" or coolingDetails.supplyTemperature != "Default":
-                            chillervec = cwl.supplyComponents(ops.IddObjectType("OS:Chiller:Electric:EIR"))
-                            for chiller in chillervec:
-                                osChiller = model.getChillerElectricEIR(chiller.handle()).get()
-                                osChiller = self.updateChiller(model, osChiller, coolingDetails.coolingCOP, coolingDetails.supplyTemperature)
-                        if coolingDetails.pumpMotorEfficiency != "Default":
-                            pumpVec = cwl.supplyComponents(ops.IddObjectType("OS:Pump:VariableSpeed"))
-                            for pump in enumerate(pumpVec):
-                                osPump = model.getPumpVariableSpeed(pump[1].handle()).get()
-                                osPump = self.updatePump(osPump, coolingDetails.pumpMotorEfficiency)
-                        if coolingDetails.coolingAvailSched != "ALWAYS ON" or coolingDetails.supplyTemperature != "Default":
-                            x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:Water"))
-                            cc = model.getCoilCoolingWater(x[0].handle()).get()
-                            self.updateWaterCoolingCoil(model, cc, coolingDetails.coolingAvailSched, coolingDetails.supplyTemperature)
+                    self.adjustChilledWaterLoop(model, airloop, coolingDetails)
             
             elif systemIndex == 8:
                 # 8: VAV w/ PFP Boxes
@@ -1135,42 +1045,16 @@ class WriteOPS(object):
                     vavBox = model.getAirTerminalSingleDuctParallelPIUReheat(x[zoneCount].handle()).get()
                     if hbZones[zoneCount].recirculatedAirPerArea != 0:
                         recicTrigger = True
-                        vavBox.setMaximumPrimaryAirFlowRate(4*zoneTotAir)
-                        vavBox.setMinimumPrimaryAirFlowFraction(0.25)
-                    if heatingDetails != None:
-                        if heatingDetails.heatingAvailSched != "ALWAYS ON" or heatingDetails.heatingEffOrCOP != 'Default':
-                            reheatCoil = vavBox.reheatCoil()
-                            hc = model.getCoilHeatingElectric(reheatCoil.handle()).get()
-                            self.updateElectricHeatingCoil(model, hc, heatingDetails.heatingAvailSched, heatingDetails.heatingEffOrCOP)
+                        self.sizeAirTerminalForRecirc(vavBox, zoneTotAir)
+                    self.adjustElectricReheatCoil(model, vavBox, heatingDetails)
                 
                 #If there is recirculated air, we also have to hard size the fan to ensure that enough air can get through the system.
                 if recicTrigger == True:
-                    fullHVACAirFlow = sum(recircAirFlowRates)
-                    x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:VariableVolume"))
-                    vvfan = model.getFanVariableVolume(x[0].handle()).get()
-                    vvfan.setMaximumFlowRate(fullHVACAirFlow*4)
+                    self.sizeVAVFanForRecirc(model, airloop, recircAirFlowRates)
                 
                 #Set the airDetails.
                 if airDetails != None:
-                    if airDetails.HVACAvailabiltySched != 'ALWAYS ON':
-                        hvacAvailSch = self.getOSSchedule(airDetails.HVACAvailabiltySched, model)
-                        airloop.setAvailabilitySchedule(hvacAvailSch)
-                    if airDetails.fanTotalEfficiency != "Default" or airDetails.fanMotorEfficiency != "Default" or airDetails.fanPressureRise != "Default":
-                        x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:VariableVolume"))
-                        vvfan = model.getFanVariableVolume(x[0].handle()).get()
-                        vvfan = self.updateFan(vvfan,airDetails.fanTotalEfficiency,airDetails.fanMotorEfficiency,airDetails.fanPressureRise)
-                    if airDetails.fanPlacement != 'Default':
-                        if airDetails.fanPlacement == 'Blow Through':
-                            x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:VariableVolume"))
-                            vvfan = model.getFanVariableVolume(x[0].handle()).get()
-                            mixAirNode = airloop.mixedAirNode().get()
-                            vvfan.addToNode(mixAirNode)
-                    if airDetails.airsideEconomizer != 'Default':
-                        oasys = airloop.airLoopHVACOutdoorAirSystem()
-                        oactrl = oasys.get().getControllerOutdoorAir()
-                        oactrl.setEconomizerControlType(airDetails.airsideEconomizer)
-                    if airDetails.heatRecovery != 'Default' and airDetails.heatRecovery != 'None':
-                        self.addHeatRecovToModel(model, airloop, airDetails.heatRecovery, airDetails.recoveryEffectiveness)
+                    self.adjustVAVAirLoop(model, airloop, airDetails)
                     if airDetails.coolingSupplyAirTemp != 'Default':
                         x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:Water"))
                         hc = model.getCoilCoolingWater(x[0].handle()).get()
@@ -1182,28 +1066,11 @@ class WriteOPS(object):
                         comps = airloop.supplyComponents()
                         hcs = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Heating:Electric"))
                         hc = model.getCoilHeatingElectric(hcs[0].handle()).get()
-                        heatcoil = self.updateElectricHeatingCoil(model, hc, heatingDetails.heatingAvailSched, heatingDetails.heatingEffOrCOP)
+                        self.updateElectricHeatingCoil(model, hc, heatingDetails.heatingAvailSched, heatingDetails.heatingEffOrCOP)
                 
                 # Set the coolingDetails at the level of the chiller.
                 if coolingDetails != None:
-                    if coolingDetails.coolingAvailSched != "ALWAYS ON" or coolingDetails.coolingCOP != "Default" or coolingDetails.supplyTemperature != "Default"  or coolingDetails.pumpMotorEfficiency != "Default":
-                        x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:Water"))
-                        cc = model.getCoilCoolingWater(x[0].handle()).get()
-                        cwl = cc.plantLoop().get()
-                        if coolingDetails.coolingCOP != "Default" or coolingDetails.supplyTemperature != "Default":
-                            chillervec = cwl.supplyComponents(ops.IddObjectType("OS:Chiller:Electric:EIR"))
-                            for chiller in chillervec:
-                                osChiller = model.getChillerElectricEIR(chiller.handle()).get()
-                                osChiller = self.updateChiller(model, osChiller, coolingDetails.coolingCOP, coolingDetails.supplyTemperature)
-                        if coolingDetails.pumpMotorEfficiency != "Default":
-                            pumpVec = cwl.supplyComponents(ops.IddObjectType("OS:Pump:VariableSpeed"))
-                            for pump in enumerate(pumpVec):
-                                osPump = model.getPumpVariableSpeed(pump[1].handle()).get()
-                                osPump = self.updatePump(osPump, coolingDetails.pumpMotorEfficiency)
-                        if coolingDetails.coolingAvailSched != "ALWAYS ON" or coolingDetails.supplyTemperature != "Default":
-                            x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:Water"))
-                            cc = model.getCoilCoolingWater(x[0].handle()).get()
-                            self.updateWaterCoolingCoil(model, cc, coolingDetails.coolingAvailSched, coolingDetails.supplyTemperature)
+                    self.adjustChilledWaterLoop(model, airloop, coolingDetails)
             
             else:
                 msg = "HVAC system index " + str(systemIndex) +  " is not implemented yet!"
