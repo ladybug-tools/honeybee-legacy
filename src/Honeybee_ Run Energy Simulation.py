@@ -62,7 +62,7 @@ Provided by Honeybee 0.0.59
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.59\nMAR_14_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAY_02_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -351,10 +351,7 @@ class WriteIDF(object):
             else: coolLimit = 'LimitCapacity'
             if zone.heatingCapacity == "": heatLimit = "NoLimit"
             else: heatLimit = 'LimitCapacity'
-            if zone.HVACAvailabilitySched != "ALWAYS ON":
-                scheduleFileName = os.path.basename(zone.HVACAvailabilitySched)
-                scheduleObjectName = "_".join(scheduleFileName.split(".")[:-1])
-            else: scheduleObjectName = ""
+            scheduleObjectName = ""
             
             #Humidity Control
             if zone.humidityMax != "": dehumidCntrl = "Humidistat"

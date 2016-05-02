@@ -35,7 +35,6 @@ Provided by Honeybee 0.0.59
         equipmentSchedules_: A text string representing the equipment shceudle that you want to use.  This can be either a shcedule from the schedule libirary or a CSV file path to a CSV schedule you created with the "Honeybee_Create CSV Schedule" component.
         infiltrationSchedules_: A text string representing the infiltration shceudle that you want to use.  This can be either a shcedule from the schedule libirary or a CSV file path to a CSV schedule you created with the "Honeybee_Create CSV Schedule" component.
         ventilationSchedules_: A text string representing the ventilation shceudle that you want to use.  This can be either a shcedule from the schedule libirary or a CSV file path to a CSV schedule you created with the "Honeybee_Create CSV Schedule" component.
-        HVACAvailabiltySchs_: A text string representing the HVAC availability that you want to use.  This can be either a shcedule from the schedule libirary or a CSV file path to a CSV schedule you created with the "Honeybee_Create CSV Schedule" component.
     Returns:
         schedules: A report of what shcedules are assigned to each zone.
         HBZones: HBZones that have had thier shcedules modified.
@@ -43,7 +42,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Set EnergyPlus Zone Schedules"
 ghenv.Component.NickName = 'setEPZoneSchedules'
-ghenv.Component.Message = 'VER 0.0.59\nMAR_14_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAY_02_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
@@ -91,14 +90,11 @@ def checkTheInputs():
     if len(ventilationSchedules_) == 1: ventilationSchedules = duplicateData(ventilationSchedules_, len(_HBZones))
     else: ventilationSchedules = ventilationSchedules_
     
-    if len(HVACAvailabilitySchs_) == 1: HVACAvailabilitySchs = duplicateData(HVACAvailabilitySchs_, len(_HBZones))
-    else: HVACAvailabilitySchs = HVACAvailabilitySchs_
     
-    
-    return occupancySchedules, occupancyActivitySchs, coolingSetPtSchedules, heatingSetPtSchedules, lightingSchedules, equipmentSchedules, infiltrationSchedules, ventilationSchedules, HVACAvailabilitySchs
+    return occupancySchedules, occupancyActivitySchs, coolingSetPtSchedules, heatingSetPtSchedules, lightingSchedules, equipmentSchedules, infiltrationSchedules, ventilationSchedules
 
 
-def main(HBZones, occupancySchedule, occupancyActivitySch, heatingSetPtSchedule, coolingSetPtSchedule, lightingSchedule, equipmentSchedule, infiltrationSchedule, ventilationSchedules, HVACAvailabilitySchs):
+def main(HBZones, occupancySchedule, occupancyActivitySch, heatingSetPtSchedule, coolingSetPtSchedule, lightingSchedule, equipmentSchedule, infiltrationSchedule, ventilationSchedules):
     # check for Honeybee
     if not sc.sticky.has_key('honeybee_release'):
         print "You should first let Honeybee to fly..."
@@ -119,7 +115,7 @@ def main(HBZones, occupancySchedule, occupancyActivitySch, heatingSetPtSchedule,
         return -1
     
     # make sure schedules are in HB schedule library.
-    schedules = [occupancySchedule, heatingSetPtSchedule, coolingSetPtSchedule, lightingSchedule, equipmentSchedule, infiltrationSchedule, ventilationSchedules, HVACAvailabilitySchs]
+    schedules = [occupancySchedule, heatingSetPtSchedule, coolingSetPtSchedule, lightingSchedule, equipmentSchedule, infiltrationSchedule, ventilationSchedules]
     HBScheduleList = sc.sticky["honeybee_ScheduleLib"].keys()
     
     for scheduleList in schedules:
@@ -170,9 +166,6 @@ def main(HBZones, occupancySchedule, occupancyActivitySch, heatingSetPtSchedule,
         if ventilationSchedules != [] and ventilationSchedules[0] != None:
             try: HBZone.ventilationSched = ventilationSchedules[zoneCount]
             except: HBZone.ventilationSched = ventilationSchedules[0]
-        if HVACAvailabilitySchs != [] and HVACAvailabilitySchs[0] != None:
-            try: HBZone.HVACAvailabilitySched = HVACAvailabilitySchs[zoneCount]
-            except: HBZone.HVACAvailabilitySched = HVACAvailabilitySchs[0]
         
         schedules.append(HBZone.getCurrentSchedules())
     
@@ -183,8 +176,8 @@ def main(HBZones, occupancySchedule, occupancyActivitySch, heatingSetPtSchedule,
 
 
 if _HBZones and _HBZones[0]!=None:
-    occupancySchedules, occupancyActivitySchs, coolingSetPtSchedules, heatingSetPtSchedules, lightingSchedules, equipmentSchedules, infiltrationSchedules, ventilationSchedules, HVACAvailabilitySchs = checkTheInputs()
+    occupancySchedules, occupancyActivitySchs, coolingSetPtSchedules, heatingSetPtSchedules, lightingSchedules, equipmentSchedules, infiltrationSchedules, ventilationSchedules = checkTheInputs()
     
-    results = main(_HBZones, occupancySchedules, occupancyActivitySchs, heatingSetPtSchedules, coolingSetPtSchedules, lightingSchedules, equipmentSchedules, infiltrationSchedules, ventilationSchedules, HVACAvailabilitySchs)
+    results = main(_HBZones, occupancySchedules, occupancyActivitySchs, heatingSetPtSchedules, coolingSetPtSchedules, lightingSchedules, equipmentSchedules, infiltrationSchedules, ventilationSchedules)
     
     if results != -1: HBZones, schedules = results

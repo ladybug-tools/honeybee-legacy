@@ -4851,7 +4851,6 @@ class EPZone(object):
         self.airSideEconomizer= 'DifferentialDryBulb'
         self.heatRecovery= ""
         self.heatRecoveryEffectiveness= ""
-        self.HVACAvailabilitySched = "ALWAYS ON"
         self.ventilationSched = ""
         
         if zoneBrep != None:
@@ -4971,8 +4970,7 @@ class EPZone(object):
             "lightingSchedule: " + str(self.lightingSchedule) + "\n" + \
             "equipmentSchedule: " + str(self.equipmentSchedule) + "\n" + \
             "infiltrationSchedule: " + str(self.infiltrationSchedule)+ "\n" + \
-            "ventilationSchedule: " + str(self.ventilationSched)+ "\n" + \
-            "HVACAvailabilitySched: " + str(self.HVACAvailabilitySched) + "."
+            "ventilationSchedule: " + str(self.ventilationSched)+ "."
             
             return report
         
@@ -4984,8 +4982,7 @@ class EPZone(object):
                             "lightingSchedule" : str(self.lightingSchedule),
                             "equipmentSchedule" : str(self.equipmentSchedule),
                             "infiltrationSchedule" : str(self.infiltrationSchedule),
-                            "ventilationSched: " : str(self.ventilationSched),
-                            "HVACAvailabilitySched" : str(self.HVACAvailabilitySched)}
+                            "ventilationSched: " : str(self.ventilationSched)}
             
             return scheduleDict
 

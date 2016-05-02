@@ -1343,13 +1343,14 @@ class WriteOPS(object):
         electricEqipment.setSpace(space)
         
     def setDesignSpecificationOutdoorAir(self, zone, space, model):
-        
         ventilation = ops.DesignSpecificationOutdoorAir(model)
         ventilation.setName(zone.name + "_DSOA")
         ventilation.setOutdoorAirMethod("Sum")
         ventilation.setOutdoorAirFlowperPerson(zone.ventilationPerPerson)
         ventilation.setOutdoorAirFlowperFloorArea(zone.ventilationPerArea)
-        #ventilation.setOutdoorAirFlowRate(0)
+        if zone.ventilationSched != '':
+            ventSch = self.getOSSchedule(zone.ventilationSched,model)
+            ventilation.setOutdoorAirFlowRateFractionSchedule(zone.ventilationSched)
         space.setDesignSpecificationOutdoorAir(ventilation)
         return space
     
