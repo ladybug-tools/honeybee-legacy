@@ -1169,9 +1169,14 @@ class WriteOPS(object):
         # create a humidistat.
         humidistat = ops.ZoneControlHumidistat(model)
         
-        # assign schedules
+        # name the humidistat
         humidistat.setName("humidistat" + str(space.name()))
-        humidTypeLimits = self.createOSScheduleTypeLimitsFromValues(model, 0, 100, 'CONTINUOUS', 'Percent')
+        
+        # get type limits for humidity and create them if they don't exist.
+        try:
+            humidTypeLimits = self.humidTypeLimits
+        except:
+            humidTypeLimits = self.humidTypeLimits = self.createOSScheduleTypeLimitsFromValues(model, 0, 100, 'CONTINUOUS', 'Percent')
         
         
         if HBZone.humidityMax != "":
