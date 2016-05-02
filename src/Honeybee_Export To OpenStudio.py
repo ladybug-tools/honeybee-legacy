@@ -1072,6 +1072,48 @@ class WriteOPS(object):
                 if coolingDetails != None:
                     self.adjustChilledWaterLoop(model, airloop, coolingDetails)
             
+            elif systemIndex == 9:
+                # 9: Warm Air Furnace - Gas Fired
+                hvacHandle = ops.OpenStudioModelHVAC.addSystemType9(model).handle()
+                airloop = model.getAirLoopHVAC(hvacHandle).get()
+                
+                # Add branches for zones.
+                for zoneCount, zone in enumerate(thermalZoneVector):
+                    airloop.addBranchForZone(zone)
+                
+                #Set the airDetails.
+                if airDetails != None:
+                    self.adjustCVAirLoop(model, airloop, airDetails)
+                
+                #Set the heatingDetails.
+                if heatingDetails != None:
+                    if heatingDetails.heatingAvailSched != "ALWAYS ON" or heatingDetails.heatingEffOrCOP != 'Default':
+                        comps = airloop.supplyComponents()
+                        hcs = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Heating:Gas"))
+                        hc = model.getCoilHeatingGas(hcs[0].handle()).get()
+                        self.updateGasHeatingCoil(model, hc, heatingDetails.heatingAvailSched, heatingDetails.heatingEffOrCOP)
+            
+            elif systemIndex == 10:
+                # 10: Warm Air Furnace - Electric
+                hvacHandle = ops.OpenStudioModelHVAC.addSystemType10(model).handle()
+                airloop = model.getAirLoopHVAC(hvacHandle).get()
+                
+                # Add branches for zones.
+                for zoneCount, zone in enumerate(thermalZoneVector):
+                    airloop.addBranchForZone(zone)
+                
+                #Set the airDetails.
+                if airDetails != None:
+                    self.adjustCVAirLoop(model, airloop, airDetails)
+                
+                # Set the heatingDetails at the level of the electric resistance heater.
+                if heatingDetails != None:
+                    if heatingDetails.heatingAvailSched != "ALWAYS ON" or heatingDetails.heatingEffOrCOP != 'Default':
+                        comps = airloop.supplyComponents()
+                        hcs = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Heating:Electric"))
+                        hc = model.getCoilHeatingElectric(hcs[0].handle()).get()
+                        self.updateElectricHeatingCoil(model, hc, heatingDetails.heatingAvailSched, heatingDetails.heatingEffOrCOP)
+            
             else:
                 msg = "HVAC system index " + str(systemIndex) +  " is not implemented yet!"
                 ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
