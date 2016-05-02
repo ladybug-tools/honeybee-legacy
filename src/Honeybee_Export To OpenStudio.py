@@ -1001,6 +1001,7 @@ class WriteOPS(object):
                 airloop = model.getAirLoopHVAC(hvacHandle).get()
                 recircAirFlowRates = []
                 recicTrigger = False
+                dehumidTrigger = False
                 
                 # Add branches for zones.
                 for zoneCount, zone in enumerate(thermalZoneVector):
@@ -1014,11 +1015,26 @@ class WriteOPS(object):
                     if hbZones[zoneCount].recirculatedAirPerArea != 0:
                         recicTrigger = True
                         self.sizeAirTerminalForRecirc(vavBox, zoneTotAir)
+                    if hbZones[zoneCount].humidityMax != '':
+                        dehumidTrigger = True
                     self.adjustWaterReheatCoil(model, vavBox, airDetails, heatingDetails)
                 
                 #If there is recirculated air, we also have to hard size the fan to ensure that enough air can get through the system.
                 if recicTrigger == True:
                     self.sizeVAVFanForRecirc(model, airloop, recircAirFlowRates)
+                
+                # If there is a maximum humidity assigned to the zone, set the cooling coil to dehumidify the air.
+                if dehumidTrigger == True:
+                    # Set the cooling coil to control humidity.
+                    x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:Water"))
+                    cc = model.getCoilCoolingWater(x[0].handle()).get()
+                    ccontroller = cc.controllerWaterCoil().get()
+                    ccontroller.setControlVariable('TemperatureAndHumidityRatio')
+                    # Add a humidity set point controller into the air loop.
+                    humidController = ops.SetpointManagerMultiZoneHumidityMaximum(model)
+                    humidController.setMinimumSetpointHumidityRatio(0.001)
+                    setPNode = airloop.supplyOutletNode()
+                    humidController.addToNode(setPNode)
                 
                 #Set the airDetails.
                 if airDetails != None:
