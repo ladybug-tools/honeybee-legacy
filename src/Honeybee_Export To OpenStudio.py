@@ -1002,6 +1002,7 @@ class WriteOPS(object):
                 recircAirFlowRates = []
                 recicTrigger = False
                 dehumidTrigger = False
+                humidTrigger = False
                 
                 # Add branches for zones.
                 for zoneCount, zone in enumerate(thermalZoneVector):
@@ -1017,12 +1018,13 @@ class WriteOPS(object):
                         self.sizeAirTerminalForRecirc(vavBox, zoneTotAir)
                     if hbZones[zoneCount].humidityMax != '':
                         dehumidTrigger = True
+                    if hbZones[zoneCount].humidityMin != '':
+                        humidTrigger = True
                     self.adjustWaterReheatCoil(model, vavBox, airDetails, heatingDetails)
                 
                 #If there is recirculated air, we also have to hard size the fan to ensure that enough air can get through the system.
                 if recicTrigger == True:
                     self.sizeVAVFanForRecirc(model, airloop, recircAirFlowRates)
-                
                 # If there is a maximum humidity assigned to the zone, set the cooling coil to dehumidify the air.
                 if dehumidTrigger == True:
                     # Set the cooling coil to control humidity.
@@ -1033,6 +1035,15 @@ class WriteOPS(object):
                     # Add a humidity set point controller into the air loop.
                     humidController = ops.SetpointManagerMultiZoneHumidityMaximum(model)
                     humidController.setMinimumSetpointHumidityRatio(0.001)
+                    setPNode = airloop.supplyOutletNode()
+                    humidController.addToNode(setPNode)
+                # If there is a minimum humidity assigned to the zone, add in an electric humidifier to humidify the air.
+                if humidTrigger == True:
+                    humidifier = ops.HumidifierSteamElectric(model)
+                    mixAirNode = airloop.mixedAirNode().get()
+                    humidifier.addToNode(mixAirNode)
+                    # Add a humidity set point controller into the air loop.
+                    humidController = ops.SetpointManagerMultiZoneHumidityMinimum(model)
                     setPNode = airloop.supplyOutletNode()
                     humidController.addToNode(setPNode)
                 
