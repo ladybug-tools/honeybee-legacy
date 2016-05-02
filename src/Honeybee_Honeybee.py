@@ -7536,18 +7536,24 @@ class hb_hvacProperties(object):
         
         # Dictionaries that state which features can be changed for each of the different systems.
         # It is used to give warnings to the user if they set a parameter that does not exist on the assigned HVAC system.
+        self.thresholdCapabilities = {
+        0: {'recirc' : False, 'humidCntrl' : True},
+        1: {'recirc' : True, 'humidCntrl' : False},
+        2: {'recirc' : True, 'humidCntrl' : False},
+        3: {'recirc' : False, 'humidCntrl' : False},
+        4: {'recirc' : False, 'humidCntrl' : False},
+        5: {'recirc' : True, 'humidCntrl' : True},
+        6: {'recirc' : True, 'humidCntrl' : True},
+        7: {'recirc' : True, 'humidCntrl' : True},
+        8: {'recirc' : True, 'humidCntrl' : True},
+        9: {'recirc' : False, 'humidCntrl' : False},
+        10: {'recirc' : False, 'humidCntrl' : False}
+        }
+        
         self.airCapabilities = {
         0: {'FanTotEff': False, 'FanMotEff': False, 'FanPres': False, 'FanPlace': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
         1: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'HeatSupTemp' : True, 'CoolSupTemp' : False, 'Econ' : False, 'HeatRecov' : False},
         2: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Econ' : False, 'HeatRecov' : False},
-        3: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Econ' : True, 'HeatRecov' : True},
-        4: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Econ' : True, 'HeatRecov' : True},
-        5: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'HeatSupTemp' : True, 'CoolSupTemp' : False, 'Econ' : True, 'HeatRecov' : True},
-        6: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Econ' : True, 'HeatRecov' : True},
-        7: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        8: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'HeatSupTemp' : False, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        9: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Econ' : True, 'HeatRecov' : True},
-        10: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Econ' : True, 'HeatRecov' : True}
         }
         
         self.heatCapabilities = {

@@ -85,6 +85,20 @@ def main(HBZones, HVACIndex, hb_hvacProperties, hb_airDetail, hb_heatingDetail, 
         zone.HVACSystem = [HVACGroupID, HVACIndex]
         
         if HVACIndex != -1:
+            #Check to be sure that the user has not assigned capabilties that the HVAC system does not support.
+            hvacCapabil = hb_hvacProperties.thresholdCapabilities[HVACIndex]
+            if hvacCapabil['recirc'] == False and zone.recirculatedAirPerArea != 0:
+                warning = "HVAC system " + hb_hvacProperties.sysDict[HVACIndex] + " does not support \n" + \
+                "AIR RECIRCULATION but recirculation has been assigned to the HBZones."
+                print warning
+                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+            if hvacCapabil['humidCntrl'] == False:
+                if zone.humidityMax != '' or zone.humidityMin != '':
+                    warning = "HVAC system " + hb_hvacProperties.sysDict[HVACIndex] + " does not support \n" + \
+                    "HUMIDITY CONTROL but humidity thresholds been assigned to the HBZones."
+                    print warning
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+            
             # Check for any HVAC airside details.
             try:
                 if _airDetails_:
