@@ -1187,11 +1187,11 @@ class WriteOPS(object):
         if HBZone.humidityMin != "":
             values = ["schedule:constant", humidTypeLimits, float(HBZone.humidityMin)]
             minHumidSched = self.createConstantOSSchedule("minHumidity" + str(space.name()), values, model)
-            humidistat.setHumidifyingRelativeHumiditySetpointSchedule(maxHumidSched)
+            humidistat.setHumidifyingRelativeHumiditySetpointSchedule(minHumidSched)
         else:
             values = ["schedule:constant", humidTypeLimits, 0]
             minHumidSched = self.createConstantOSSchedule("minHumidity" + str(space.name()), values, model)
-            humidistat.setHumidifyingRelativeHumiditySetpointSchedule(maxHumidSched)
+            humidistat.setHumidifyingRelativeHumiditySetpointSchedule(minHumidSched)
         
         OSThermalZone.setZoneControlHumidistat(humidistat)
     
