@@ -260,6 +260,18 @@ class WriteOPS(object):
     def getScheduleFromLib(self, scheduleName):
         return self.scheduleList[scheduleName]
     
+    def createOSScheduleTypeLimitsFromValues(self, model, lowerLimit, upperLimit, numericType, unitType):
+        typeLimit = ops.ScheduleTypeLimits(model)
+        try: typeLimit.setLowerLimitValue(float(lowerLimit))
+        except: pass
+        try: typeLimit.setUpperLimitValue(float(upperLimit))
+        except: pass
+        typeLimit.setNumericType(numericType)
+        try: typeLimit.setUnitType(unitType)
+        except: pass
+        
+        return typeLimit
+    
     def createOSScheduleTypeLimits(self, schdTypeLimitsName, model):
         """
         ['ScheduleTypeLimits', '0', '1', 'Continuous']
@@ -287,7 +299,8 @@ class WriteOPS(object):
         scheduleConstant.setValue(float(values[2]))
         if values[1] != None:
             typeLimitName = values[1]
-            sscheduleConstant.setScheduleTypeLimits(self.getScheduleFromLib(typeLimitName))
+            try: scheduleConstant.setScheduleTypeLimits(self.getScheduleFromLib(typeLimitName))
+            except: scheduleConstant.setScheduleTypeLimits(typeLimitName)
         return scheduleConstant
         
     def createDayOSSchedule(self, schName, values, model):
@@ -1131,10 +1144,6 @@ class WriteOPS(object):
         coolingSetPtSchedule = self.getOSSchedule(HBZone.coolingSetPtSchedule, model)
         
         if HBZone.heatingSetPt != "":
-            #msg = "Currently you need to change the HeatingSetPt inside the shcedule: " + HBZone.heatingSetPtSchedule
-            #ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
-            #heatingSetPtSchedule.addValue(time24hrs, HBZone.heatingSetPt)
-            # overwrite the existing schedule
             heatingSch = ops.ScheduleRuleset(model)
             heatingSch.setName("Heating Sch")
             defaultDaySchedule = heatingSch.defaultDaySchedule()
@@ -1145,8 +1154,6 @@ class WriteOPS(object):
         thermostat.setHeatingSetpointTemperatureSchedule(heatingSetPtSchedule)
         
         if HBZone.coolingSetPt != "":
-            # I'm not sure if this is the right way of assigning the set points
-            # in combination with thermostat setpoint schedule
             coolingSch = ops.ScheduleRuleset(model)
             coolingSch.setName("Cooling Sch")
             defaultDaySchedule = coolingSch.defaultDaySchedule()
@@ -1157,7 +1164,32 @@ class WriteOPS(object):
         thermostat.setCoolingSetpointTemperatureSchedule(coolingSetPtSchedule)
         
         OSThermalZone.setThermostatSetpointDualSetpoint(thermostat)
+    
+    def addHumidistat(self, HBZone, OSThermalZone, space, model):
+        # create a humidistat.
+        humidistat = ops.ZoneControlHumidistat(model)
         
+        # assign schedules
+        humidistat.setName("humidistat" + str(space.name()))
+        humidTypeLimits = self.createOSScheduleTypeLimitsFromValues(model, 0, 100, 'CONTINUOUS', 'Percent')
+        
+        
+        if HBZone.humidityMax != "":
+            values = ["schedule:constant", humidTypeLimits, float(HBZone.humidityMax)]
+            maxHumidSched = self.createConstantOSSchedule("maxHumidity" + str(space.name()), values, model)
+            humidistat.setDehumidifyingRelativeHumiditySetpointSchedule(maxHumidSched)
+        
+        if HBZone.humidityMin != "":
+            values = ["schedule:constant", humidTypeLimits, float(HBZone.humidityMin)]
+            minHumidSched = self.createConstantOSSchedule("minHumidity" + str(space.name()), values, model)
+            humidistat.setHumidifyingRelativeHumiditySetpointSchedule(maxHumidSched)
+        else:
+            values = ["schedule:constant", humidTypeLimits, 0]
+            minHumidSched = self.createConstantOSSchedule("minHumidity" + str(space.name()), values, model)
+            humidistat.setHumidifyingRelativeHumiditySetpointSchedule(maxHumidSched)
+        
+        OSThermalZone.setZoneControlHumidistat(humidistat)
+    
     def setupNameAndType(self, zone, space, model):
         space.setName(zone.name)
         
@@ -2381,7 +2413,11 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
             hb_writeOPS.HVACSystemDict[HAVCGroupID][2].append(zone)
             
             # add thermostat
-            thermalZone = hb_writeOPS.addThermostat(zone, thermalZone, space, model)
+            hb_writeOPS.addThermostat(zone, thermalZone, space, model)
+            
+            # add humidistat if specified
+            if zone.humidityMax != "" or zone.humidityMin != "":
+                hb_writeOPS.addHumidistat(zone, thermalZone, space, model)
         
         # write the surfaces
         for HBSrf in zone.surfaces:
