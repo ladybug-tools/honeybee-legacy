@@ -774,52 +774,46 @@ class WriteOPS(object):
                 # 4: Packaged Single Zone - HP
                 for zone in thermalZoneVector:
                     handle = ops.OpenStudioModelHVAC.addSystemType4(model).handle()
+                    airloop = model.getAirLoopHVAC(handle).get()
+                    airloop.addBranchForZone(zone)
                     
-                    if HVACDetails != None:
-                        airloop = model.getAirLoopHVAC(handle).get()
-                        airloop.addBranchForZone(zone)
-                        print 'zone added to PSZ-HP air loop'
-                        oasys = airloop.airLoopHVACOutdoorAirSystem()
-                        
-                        if oasys.is_initialized() and HVACDetails['airsideEconomizer'] != None:
-                            print 'overriding the OpenStudio airside economizer settings'
-                            oactrl = oasys.get().getControllerOutdoorAir()
-                            #set control type
-                            #can sensed min still be dry bulb for any of these?  Future release question
-                            econo = self.recallOASys(HVACDetails)
-                            oactrl = self.updateOASys(econo,oactrl,model)
-                            print 'economizer settings updated to economizer name: ' + HVACDetails['airsideEconomizer']['name']
-                            print ''
-                        
-                        #apply fan changes
-                        if HVACDetails['constVolSupplyFanDef'] != 0:
-                            print 'overriding the OpenStudio supply fan settings'
+                    #Set the airDetails.
+                    if airDetails != None:
+                        if airDetails.HVACAvailabiltySched != 'ALWAYS ON':
+                            hvacAvailSch = self.getOSSchedule(airDetails.HVACAvailabiltySched, model)
+                            airloop.setAvailabilitySchedule(hvacAvailSch)
+                        if airDetails.fanTotalEfficiency != "Default" or airDetails.fanMotorEfficiency != "Default" or airDetails.fanPressureRise != "Default":
                             x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:ConstantVolume"))
                             cvfan = model.getFanConstantVolume(x[0].handle()).get()
-                            sf = self.recallCVFan(HVACDetails)
-                            cvfan = self.updateCVFan(sf,cvfan)
-                            print 'supply fan settings updated to supply fan name: ' + HVACDetails['constVolSupplyFanDef']['name']
-                        
-                        if HVACDetails['coolingCoil'] != None:
-                            print 'overriding the OpenStudio 1-stage cooling DX cooling coil defaults.'
+                            cvfan = self.updateCVFan(cvfan,airDetails.fanTotalEfficiency,airDetails.fanMotorEfficiency,airDetails.fanPressureRise)
+                        if airDetails.fanPlacement != 'Default':
+                            if airDetails.fanPlacement == 'Blow Through':
+                                x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:ConstantVolume"))
+                                cvfan = model.getFanConstantVolume(x[0].handle()).get()
+                                mixAirNode = airloop.mixedAirNode().get()
+                                cvfan.addToNode(mixAirNode)
+                        if airDetails.airsideEconomizer != 'Default':
+                            oasys = airloop.airLoopHVACOutdoorAirSystem()
+                            oactrl = oasys.get().getControllerOutdoorAir()
+                            oactrl.setEconomizerControlType(airDetails.airsideEconomizer)
+                        if airDetails.heatRecovery != 'Default' and airDetails.heatRecovery != 'None':
+                            self.addHeatRecovToModel(model, airloop, airDetails.heatRecovery, airDetails.recoveryEffectiveness)
+                    
+                    #Set the heatingDetails.
+                    if heatingDetails != None:
+                        if heatingDetails.heatingAvailSched != "ALWAYS ON" or heatingDetails.heatingEffOrCOP != 'Default':
                             comps = airloop.supplyComponents()
-                            #the default is a single speed compressor
-                            #what happens if the user changes to a 2speed compressor?
-                            c = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:DX:SingleSpeed"))
-                            handle = c[0].handle()
-                            coolcoil = model.getCoilCoolingDXSingleSpeed(handle).get()
-                            coolcoil = self.updateCoolingCoil(HVACDetails['coolingCoil'],coolcoil)
-                        
-                        if HVACDetails['heatingCoil'] != None:
-                            print 'overriding the OpenStudio DX heating coil settings'
-                            #print airloop
-                            hc = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Heating:DX:SingleSpeed"))
-                            handle = hc[0].handle()
-                            modelhc = model.getCoilHeatingDXSingleSpeed(handle).get()
-                            hbhc = HVACDetails['heatingCoil']
-                            modelhc = self.updateDXHeatingCoil(hbhc,modelhc)
-                            print 'New Heating Coil Definition:'
-                            print modelhc
+                            hcs = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Heating:DX:SingleSpeed"))
+                            hc = model.getCoilHeatingDXSingleSpeed(hcs[0].handle()).get()
+                            heatcoil = self.updateDXHeatingCoil(model, hc, heatingDetails.heatingAvailSched, heatingDetails.heatingEffOrCOP)
+                    
+                    #Set the coolingDetails.
+                    if coolingDetails != None:
+                        if coolingDetails.coolingAvailSched != "ALWAYS ON" or coolingDetails.coolingCOP != "Default":
+                            comps = airloop.supplyComponents()
+                            ccs = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:DX:SingleSpeed"))
+                            cc = model.getCoilCoolingDXSingleSpeed(ccs[0].handle()).get()
+                            coolcoil = self.updateDXCoolingCoil(model, cc, coolingDetails.coolingAvailSched, coolingDetails.coolingCOP)
             
             elif systemIndex == 5:
                 # 5: Packaged VAV w/ Reheat
