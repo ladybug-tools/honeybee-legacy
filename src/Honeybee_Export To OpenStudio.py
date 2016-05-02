@@ -548,6 +548,33 @@ class WriteOPS(object):
         vvfan = model.getFanVariableVolume(x[0].handle()).get()
         vvfan.setMaximumFlowRate(fullHVACAirFlow*4)
     
+    def addDehumidController(self, model, airloop):
+        # Add a humidity set point controller into the air loop.
+        humidController = ops.SetpointManagerMultiZoneHumidityMaximum(model)
+        humidController.setMinimumSetpointHumidityRatio(0.001)
+        setPNode = airloop.supplyOutletNode()
+        humidController.addToNode(setPNode)
+    
+    def addChilledWaterDehumid(self, model, airloop):
+        # Set the cooling coil to control humidity. 
+        x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:Water"))
+        cc = model.getCoilCoolingWater(x[0].handle()).get()
+        ccontroller = cc.controllerWaterCoil().get()
+        ccontroller.setControlVariable('TemperatureAndHumidityRatio')
+        self.addDehumidController(model, airloop)
+    
+    def addHumidifierController(self, model, airloop):
+        # Add a humidity set point controller into the air loop.
+        humidController = ops.SetpointManagerMultiZoneHumidityMinimum(model)
+        setPNode = airloop.supplyOutletNode()
+        humidController.addToNode(setPNode)
+    
+    def addElectricHumidifier(self, model, airloop):
+        humidifier = ops.HumidifierSteamElectric(model)
+        mixAirNode = airloop.mixedAirNode().get()
+        humidifier.addToNode(mixAirNode)
+        self.addHumidifierController(model, airloop)
+    
     def addHeatRecovToModel(self, model, airloop, heatRecovery, recoveryEffectiveness):
         # Create an air-to-air heat exchanger.
         pszacHeatEx = ops.HeatExchangerAirToAirSensibleAndLatent(model)
@@ -595,7 +622,7 @@ class WriteOPS(object):
         if airDetails.heatRecovery != 'Default' and airDetails.heatRecovery != 'None':
             self.addHeatRecovToModel(model, airloop, airDetails.heatRecovery, airDetails.recoveryEffectiveness)
     
-    def adjustVAVAirLoop(self, model, airloop, airDetails):
+    def adjustVAVAirLoop(self, model, airloop, airDetails, fanAdjustable=True):
         if airDetails.HVACAvailabiltySched != 'ALWAYS ON':
             hvacAvailSch = self.getOSSchedule(airDetails.HVACAvailabiltySched, model)
             airloop.setAvailabilitySchedule(hvacAvailSch)
@@ -603,16 +630,16 @@ class WriteOPS(object):
             x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:VariableVolume"))
             vvfan = model.getFanVariableVolume(x[0].handle()).get()
             self.updateFan(vvfan,airDetails.fanTotalEfficiency,airDetails.fanMotorEfficiency,airDetails.fanPressureRise)
-        if airDetails.fanPlacement != 'Default':
+        if airDetails.airsideEconomizer != 'Default':
+            self.adjustAirSideEcon(airloop, airDetails)
+        if airDetails.heatRecovery != 'Default' and airDetails.heatRecovery != 'None':
+            self.addHeatRecovToModel(model, airloop, airDetails.heatRecovery, airDetails.recoveryEffectiveness)
+        if airDetails.fanPlacement != 'Default' and fanAdjustable == True:
             if airDetails.fanPlacement == 'Blow Through':
                 x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:VariableVolume"))
                 vvfan = model.getFanVariableVolume(x[0].handle()).get()
                 mixAirNode = airloop.mixedAirNode().get()
                 vvfan.addToNode(mixAirNode)
-        if airDetails.airsideEconomizer != 'Default':
-            self.adjustAirSideEcon(airloop, airDetails)
-        if airDetails.heatRecovery != 'Default' and airDetails.heatRecovery != 'None':
-            self.addHeatRecovToModel(model, airloop, airDetails.heatRecovery, airDetails.recoveryEffectiveness)
     
     def adjustWaterReheatCoil(self, model, vavBox, airDetails, heatingDetails):
         if heatingDetails != None:
@@ -678,6 +705,12 @@ class WriteOPS(object):
             thermalZoneHandles = []
             for tZone in thermalZones:
                 thermalZoneHandles.append(str(tZone.handle()))
+            
+            # Variables that signal whether the zones have something definied that needs to be applied to the whole HVAC.
+            recircAirFlowRates = []
+            recicTrigger = False
+            dehumidTrigger = False
+            humidTrigger = False
             
             # add systems. There are 10 standard ASHRAE systems + Ideal Air Loads
             if systemIndex == -1:
@@ -747,7 +780,7 @@ class WriteOPS(object):
                 zoneCount = 0
                 
                 for ptac in allptacs:
-                    zoneHandle = str(pthp.thermalZone().get().handle())
+                    zoneHandle = str(ptac.thermalZone().get().handle())
                     if zoneHandle in thermalZoneHandles:
                         hvacHandle = ptac.handle()
                         
@@ -858,6 +891,9 @@ class WriteOPS(object):
                     airloop = model.getAirLoopHVAC(handle).get()
                     airloop.addBranchForZone(zone)
                     
+                    if hbZones[zoneCount].humidityMin != '':
+                        self.addElectricHumidifier(model, airloop)
+                    
                     #Set the airDetails.
                     if airDetails != None:
                         self.adjustCVAirLoop(model, airloop, airDetails)
@@ -880,10 +916,13 @@ class WriteOPS(object):
                 
             elif systemIndex == 4:
                 # 4: Packaged Single Zone - HP
-                for zone in thermalZoneVector:
+                for zoneCount, zone in enumerate(thermalZoneVector):
                     handle = ops.OpenStudioModelHVAC.addSystemType4(model).handle()
                     airloop = model.getAirLoopHVAC(handle).get()
                     airloop.addBranchForZone(zone)
+                    
+                    if hbZones[zoneCount].humidityMin != '':
+                        self.addElectricHumidifier(model, airloop)
                     
                     #Set the airDetails.
                     if airDetails != None:
@@ -909,8 +948,6 @@ class WriteOPS(object):
                 # 5: Packaged VAV w/ Reheat
                 hvacHandle = ops.OpenStudioModelHVAC.addSystemType5(model).handle()
                 airloop = model.getAirLoopHVAC(hvacHandle).get()
-                recircAirFlowRates = []
-                recicTrigger = False
                 
                 # Add branches for zones.
                 for zoneCount, zone in enumerate(thermalZoneVector):
@@ -924,11 +961,16 @@ class WriteOPS(object):
                     if hbZones[zoneCount].recirculatedAirPerArea != 0:
                         recicTrigger = True
                         self.sizeAirTerminalForRecirc(vavBox, zoneTotAir)
+                    if hbZones[zoneCount].humidityMin != '':
+                        humidTrigger = True
                     self.adjustWaterReheatCoil(model, vavBox, airDetails, heatingDetails)
                 
                 #If there is recirculated air, we also have to hard size the fan to ensure that enough air can get through the system.
                 if recicTrigger == True:
                     self.sizeVAVFanForRecirc(model, airloop, recircAirFlowRates)
+                # If there is a minimum humidity assigned to the zone, add in an electric humidifier to humidify the air.
+                if humidTrigger == True:
+                    self.addElectricHumidifier(model, airloop)
                 
                 #Set the airDetails.
                 if airDetails != None:
@@ -954,8 +996,6 @@ class WriteOPS(object):
                 # 6: Packaged VAV w/ PFP Boxes
                 hvacHandle = ops.OpenStudioModelHVAC.addSystemType6(model).handle()
                 airloop = model.getAirLoopHVAC(hvacHandle).get()
-                recircAirFlowRates = []
-                recicTrigger = False
                 
                 # Add branches for zones.
                 for zoneCount, zone in enumerate(thermalZoneVector):
@@ -977,7 +1017,7 @@ class WriteOPS(object):
                 
                 #Set the airDetails.
                 if airDetails != None:
-                    self.adjustVAVAirLoop(model, airloop, airDetails)
+                    self.adjustVAVAirLoop(model, airloop, airDetails, False)
                 
                 # Set the heatingDetails at the level of the electric resistance heater.
                 if heatingDetails != None:
@@ -999,10 +1039,6 @@ class WriteOPS(object):
                 # 7: VAV w/ Reheat
                 hvacHandle = ops.OpenStudioModelHVAC.addSystemType7(model).handle()
                 airloop = model.getAirLoopHVAC(hvacHandle).get()
-                recircAirFlowRates = []
-                recicTrigger = False
-                dehumidTrigger = False
-                humidTrigger = False
                 
                 # Add branches for zones.
                 for zoneCount, zone in enumerate(thermalZoneVector):
@@ -1027,25 +1063,10 @@ class WriteOPS(object):
                     self.sizeVAVFanForRecirc(model, airloop, recircAirFlowRates)
                 # If there is a maximum humidity assigned to the zone, set the cooling coil to dehumidify the air.
                 if dehumidTrigger == True:
-                    # Set the cooling coil to control humidity.
-                    x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:Water"))
-                    cc = model.getCoilCoolingWater(x[0].handle()).get()
-                    ccontroller = cc.controllerWaterCoil().get()
-                    ccontroller.setControlVariable('TemperatureAndHumidityRatio')
-                    # Add a humidity set point controller into the air loop.
-                    humidController = ops.SetpointManagerMultiZoneHumidityMaximum(model)
-                    humidController.setMinimumSetpointHumidityRatio(0.001)
-                    setPNode = airloop.supplyOutletNode()
-                    humidController.addToNode(setPNode)
+                    self.addChilledWaterDehumid(model, airloop)
                 # If there is a minimum humidity assigned to the zone, add in an electric humidifier to humidify the air.
                 if humidTrigger == True:
-                    humidifier = ops.HumidifierSteamElectric(model)
-                    mixAirNode = airloop.mixedAirNode().get()
-                    humidifier.addToNode(mixAirNode)
-                    # Add a humidity set point controller into the air loop.
-                    humidController = ops.SetpointManagerMultiZoneHumidityMinimum(model)
-                    setPNode = airloop.supplyOutletNode()
-                    humidController.addToNode(setPNode)
+                    self.addElectricHumidifier(model, airloop)
                 
                 #Set the airDetails.
                 if airDetails != None:
@@ -1071,8 +1092,6 @@ class WriteOPS(object):
                 # 8: VAV w/ PFP Boxes
                 hvacHandle = ops.OpenStudioModelHVAC.addSystemType8(model).handle()
                 airloop = model.getAirLoopHVAC(hvacHandle).get()
-                recircAirFlowRates = []
-                recicTrigger = False
                 
                 # Add branches for zones.
                 for zoneCount, zone in enumerate(thermalZoneVector):
@@ -1086,15 +1105,20 @@ class WriteOPS(object):
                     if hbZones[zoneCount].recirculatedAirPerArea != 0:
                         recicTrigger = True
                         self.sizeAirTerminalForRecirc(vavBox, zoneTotAir)
+                    if hbZones[zoneCount].humidityMax != '':
+                        dehumidTrigger = True
                     self.adjustElectricReheatCoil(model, vavBox, heatingDetails)
                 
                 #If there is recirculated air, we also have to hard size the fan to ensure that enough air can get through the system.
                 if recicTrigger == True:
                     self.sizeVAVFanForRecirc(model, airloop, recircAirFlowRates)
+                # If there is a maximum humidity assigned to the zone, set the cooling coil to dehumidify the air.
+                if dehumidTrigger == True:
+                    self.addChilledWaterDehumid(model, airloop)
                 
                 #Set the airDetails.
                 if airDetails != None:
-                    self.adjustVAVAirLoop(model, airloop, airDetails)
+                    self.adjustVAVAirLoop(model, airloop, airDetails, False)
                     if airDetails.coolingSupplyAirTemp != 'Default':
                         x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:Water"))
                         hc = model.getCoilCoolingWater(x[0].handle()).get()
@@ -1208,6 +1232,10 @@ class WriteOPS(object):
         
         if HBZone.humidityMax != "":
             values = ["schedule:constant", humidTypeLimits, float(HBZone.humidityMax)]
+            maxHumidSched = self.createConstantOSSchedule("maxHumidity" + str(space.name()), values, model)
+            humidistat.setDehumidifyingRelativeHumiditySetpointSchedule(maxHumidSched)
+        else:
+            values = ["schedule:constant", humidTypeLimits, 100]
             maxHumidSched = self.createConstantOSSchedule("maxHumidity" + str(space.name()), values, model)
             humidistat.setDehumidifyingRelativeHumiditySetpointSchedule(maxHumidSched)
         

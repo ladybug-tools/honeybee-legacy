@@ -92,10 +92,16 @@ def main(HBZones, HVACIndex, hb_hvacProperties, hb_airDetail, hb_heatingDetail, 
                 "AIR RECIRCULATION but recirculation has been assigned to the HBZones."
                 print warning
                 ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
-            if hvacCapabil['humidCntrl'] == False:
-                if zone.humidityMax != '' or zone.humidityMin != '':
+            if hvacCapabil['dehumidCntrl'] == False:
+                if zone.humidityMax != '':
                     warning = "HVAC system " + hb_hvacProperties.sysDict[HVACIndex] + " does not support \n" + \
-                    "HUMIDITY CONTROL but humidity thresholds been assigned to the HBZones."
+                    "DEHUMIDIFICATION but a maximum humidity threshold has been assigned to the HBZones."
+                    print warning
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+            if hvacCapabil['humidCntrl'] == False:
+                if zone.humidityMin != '':
+                    warning = "HVAC system " + hb_hvacProperties.sysDict[HVACIndex] + " does not support \n" + \
+                    "HUMIDIFICATION but a minimum humidity threshold has been assigned to the HBZones."
                     print warning
                     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
             
