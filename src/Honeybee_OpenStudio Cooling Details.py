@@ -41,7 +41,7 @@ import Grasshopper.Kernel as gh
 
 ghenv.Component.Name = "Honeybee_OpenStudio Cooling Details"
 ghenv.Component.NickName = 'CoolingDetails'
-ghenv.Component.Message = 'VER 0.0.59\nMAY_01_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAY_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | HVACSystems"
@@ -55,6 +55,7 @@ except: pass
 import scriptcontext as sc
 import Grasshopper.Kernel as gh
 
+w = gh.GH_RuntimeMessageLevel.Warning
 
 def main(hb_coolingDetail):
     myCoolDetails = hb_coolingDetail(_coolingAvailSched_, _coolingCOP_, supplyTemperature_, \
