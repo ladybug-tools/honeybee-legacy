@@ -2489,7 +2489,11 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         
         if zone.isConditioned:
             # add HVAC system
-            HAVCGroupID, HVACIndex, airDetails, heatDetails, coolDetails = zone.HVACSystem
+            try:
+                HAVCGroupID, HVACIndex, airDetails, heatDetails, coolDetails = zone.HVACSystem
+            except:
+                HAVCGroupID, HVACIndex = zone.HVACSystem
+                airDetails, heatDetails, coolDetails = None, None, None
             
             if HAVCGroupID!= -1:
                 if HAVCGroupID not in hb_writeOPS.HVACSystemDict.keys():
