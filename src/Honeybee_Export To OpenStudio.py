@@ -62,7 +62,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.59\nMAY_02_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAY_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -598,6 +598,11 @@ class WriteOPS(object):
         outdoorNode = airloop.reliefAirNode().get()
         pszacHeatEx.addToNode(outdoorNode)
     
+    def addDefaultAirsideEcon(self, airloop):
+        oasys = airloop.airLoopHVACOutdoorAirSystem()
+        oactrl = oasys.get().getControllerOutdoorAir()
+        oactrl.setEconomizerControlType('DifferentialDryBulb')
+    
     def adjustAirSideEcon(self, airloop, airDetails):
         oasys = airloop.airLoopHVACOutdoorAirSystem()
         oactrl = oasys.get().getControllerOutdoorAir()
@@ -619,6 +624,8 @@ class WriteOPS(object):
                 cvfan.addToNode(mixAirNode)
         if airDetails.airsideEconomizer != 'Default':
             self.adjustAirSideEcon(airloop, airDetails)
+        else:
+            self.addDefaultAirsideEcon(airloop)
         if airDetails.heatRecovery != 'Default' and airDetails.heatRecovery != 'None':
             self.addHeatRecovToModel(model, airloop, airDetails.heatRecovery, airDetails.recoveryEffectiveness)
     
@@ -632,6 +639,8 @@ class WriteOPS(object):
             self.updateFan(vvfan,airDetails.fanTotalEfficiency,airDetails.fanMotorEfficiency,airDetails.fanPressureRise)
         if airDetails.airsideEconomizer != 'Default':
             self.adjustAirSideEcon(airloop, airDetails)
+        else:
+            self.addDefaultAirsideEcon(airloop)
         if airDetails.heatRecovery != 'Default' and airDetails.heatRecovery != 'None':
             self.addHeatRecovToModel(model, airloop, airDetails.heatRecovery, airDetails.recoveryEffectiveness)
         if airDetails.fanPlacement != 'Default' and fanAdjustable == True:
@@ -897,6 +906,8 @@ class WriteOPS(object):
                     #Set the airDetails.
                     if airDetails != None:
                         self.adjustCVAirLoop(model, airloop, airDetails)
+                    else:
+                        self.addDefaultAirsideEcon(airloop)
                     
                     #Set the heatingDetails.
                     if heatingDetails != None:
@@ -927,6 +938,8 @@ class WriteOPS(object):
                     #Set the airDetails.
                     if airDetails != None:
                         self.adjustCVAirLoop(model, airloop, airDetails)
+                    else:
+                        self.addDefaultAirsideEcon(airloop)
                     
                     #Set the heatingDetails.
                     if heatingDetails != None:
@@ -979,6 +992,8 @@ class WriteOPS(object):
                         x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Heating:Water"))
                         hc = model.getCoilHeatingWater(x[0].handle()).get()
                         hc.setRatedOutletAirTemperature(airDetails.heatingSupplyAirTemp)
+                else:
+                    self.addDefaultAirsideEcon(airloop)
                 
                 # Set the heatingDetails at the level of the boiler.
                 if heatingDetails != None:
@@ -1018,6 +1033,8 @@ class WriteOPS(object):
                 #Set the airDetails.
                 if airDetails != None:
                     self.adjustVAVAirLoop(model, airloop, airDetails, False)
+                else:
+                    self.addDefaultAirsideEcon(airloop)
                 
                 # Set the heatingDetails at the level of the electric resistance heater.
                 if heatingDetails != None:
@@ -1079,6 +1096,8 @@ class WriteOPS(object):
                         x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:Water"))
                         hc = model.getCoilCoolingWater(x[0].handle()).get()
                         hc.setDesignOutletAirTemperature(airDetails.coolingSupplyAirTemp)
+                else:
+                    self.addDefaultAirsideEcon(airloop)
                 
                 # Set the heatingDetails at the level of the boiler.
                 if heatingDetails != None:
@@ -1123,6 +1142,8 @@ class WriteOPS(object):
                         x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:Water"))
                         hc = model.getCoilCoolingWater(x[0].handle()).get()
                         hc.setDesignOutletAirTemperature(airDetails.coolingSupplyAirTemp)
+                else:
+                    self.addDefaultAirsideEcon(airloop)
                 
                 # Set the heatingDetails at the level of the electric resistance heater.
                 if heatingDetails != None:
@@ -1148,6 +1169,8 @@ class WriteOPS(object):
                 #Set the airDetails.
                 if airDetails != None:
                     self.adjustCVAirLoop(model, airloop, airDetails)
+                else:
+                    self.addDefaultAirsideEcon(airloop)
                 
                 #Set the heatingDetails.
                 if heatingDetails != None:
@@ -1169,6 +1192,8 @@ class WriteOPS(object):
                 #Set the airDetails.
                 if airDetails != None:
                     self.adjustCVAirLoop(model, airloop, airDetails)
+                else:
+                    self.addDefaultAirsideEcon(airloop)
                 
                 # Set the heatingDetails at the level of the electric resistance heater.
                 if heatingDetails != None:

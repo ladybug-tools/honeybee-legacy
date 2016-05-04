@@ -44,7 +44,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_OpenStudio Systems"
 ghenv.Component.NickName = 'OSHVACSystems'
-ghenv.Component.Message = 'VER 0.0.59\nMAY_02_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAY_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | HVACSystems"
@@ -205,5 +205,5 @@ else:
         ghenv.Component.AddRuntimeMessage(w, warning)
 
 
-if initCheck and len(_HBZones) > 0 and _HVACSystems != None:
+if initCheck and len(_HBZones) > 0 and _HVACSystems != None and _HBZones[0] != None:
     HBZones = main(_HBZones, _HVACSystems, hb_hvacProperties, hb_airDetail, hb_heatingDetail, hb_coolingDetail)
