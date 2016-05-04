@@ -554,6 +554,7 @@ class WriteOPS(object):
         humidController.setMinimumSetpointHumidityRatio(0.001)
         setPNode = airloop.supplyOutletNode()
         humidController.addToNode(setPNode)
+        return setPNode
     
     def addChilledWaterDehumid(self, model, airloop):
         # Set the cooling coil to control humidity. 
@@ -561,7 +562,8 @@ class WriteOPS(object):
         cc = model.getCoilCoolingWater(x[0].handle()).get()
         ccontroller = cc.controllerWaterCoil().get()
         ccontroller.setControlVariable('TemperatureAndHumidityRatio')
-        self.addDehumidController(model, airloop)
+        sensorNode = self.addDehumidController(model, airloop)
+        ccontroller.setSensorNode(sensorNode)
     
     def addHumidifierController(self, model, airloop):
         # Add a humidity set point controller into the air loop.
