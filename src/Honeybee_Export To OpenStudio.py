@@ -577,28 +577,30 @@ class WriteOPS(object):
         humidifier.addToNode(mixAirNode)
         self.addHumidifierController(model, airloop)
     
-    def addHeatRecovToModel(self, model, airloop, heatRecovery, recoveryEffectiveness):
+    def addHeatRecovToModel(self, model, airloop, heatRecovery, recoveryEffectiveness, econLockout=False):
         # Create an air-to-air heat exchanger.
-        pszacHeatEx = ops.HeatExchangerAirToAirSensibleAndLatent(model)
-        # Change the properties of the heat exchanger.
+        heatEx = ops.HeatExchangerAirToAirSensibleAndLatent(model)
+        #Set how the economizer interacts with the heat recovery.
+        heatEx.setEconomizerLockout(econLockout)
+        # Change the properties of the heat exchanger based on the inputs.
         if heatRecovery == 'Sensible':
-            pszacHeatEx.setLatentEffectivenessat100CoolingAirFlow(0)
-            pszacHeatEx.setLatentEffectivenessat100HeatingAirFlow(0)
-            pszacHeatEx.setLatentEffectivenessat75CoolingAirFlow(0)
-            pszacHeatEx.setLatentEffectivenessat75HeatingAirFlow(0)
+            heatEx.setLatentEffectivenessat100CoolingAirFlow(0)
+            heatEx.setLatentEffectivenessat100HeatingAirFlow(0)
+            heatEx.setLatentEffectivenessat75CoolingAirFlow(0)
+            heatEx.setLatentEffectivenessat75HeatingAirFlow(0)
         if recoveryEffectiveness != 'Default':
-            pszacHeatEx.setSensibleEffectivenessat100CoolingAirFlow(recoveryEffectiveness)
-            pszacHeatEx.setSensibleEffectivenessat100HeatingAirFlow(recoveryEffectiveness)
-            pszacHeatEx.setSensibleEffectivenessat75CoolingAirFlow(recoveryEffectiveness)
-            pszacHeatEx.setSensibleEffectivenessat75HeatingAirFlow(recoveryEffectiveness)
+            heatEx.setSensibleEffectivenessat100CoolingAirFlow(recoveryEffectiveness)
+            heatEx.setSensibleEffectivenessat100HeatingAirFlow(recoveryEffectiveness)
+            heatEx.setSensibleEffectivenessat75CoolingAirFlow(recoveryEffectiveness)
+            heatEx.setSensibleEffectivenessat75HeatingAirFlow(recoveryEffectiveness)
             if heatRecovery != 'Sensible':
-                pszacHeatEx.setLatentEffectivenessat100CoolingAirFlow(recoveryEffectiveness)
-                pszacHeatEx.setLatentEffectivenessat100HeatingAirFlow(recoveryEffectiveness)
-                pszacHeatEx.setLatentEffectivenessat75CoolingAirFlow(recoveryEffectiveness)
-                pszacHeatEx.setLatentEffectivenessat75HeatingAirFlow(recoveryEffectiveness)
+                heatEx.setLatentEffectivenessat100CoolingAirFlow(recoveryEffectiveness)
+                heatEx.setLatentEffectivenessat100HeatingAirFlow(recoveryEffectiveness)
+                heatEx.setLatentEffectivenessat75CoolingAirFlow(recoveryEffectiveness)
+                heatEx.setLatentEffectivenessat75HeatingAirFlow(recoveryEffectiveness)
         # Add the heat exchanger to the model.
         outdoorNode = airloop.reliefAirNode().get()
-        pszacHeatEx.addToNode(outdoorNode)
+        heatEx.addToNode(outdoorNode)
     
     def addDefaultAirsideEcon(self, airloop):
         oasys = airloop.airLoopHVACOutdoorAirSystem()
@@ -611,6 +613,7 @@ class WriteOPS(object):
         oactrl.setEconomizerControlType(airDetails.airsideEconomizer)
     
     def adjustCVAirLoop(self, model, airloop, airDetails):
+        econLockout = False
         if airDetails.HVACAvailabiltySched != 'ALWAYS ON':
             hvacAvailSch = self.getOSSchedule(airDetails.HVACAvailabiltySched, model)
             airloop.setAvailabilitySchedule(hvacAvailSch)
@@ -625,13 +628,16 @@ class WriteOPS(object):
                 mixAirNode = airloop.mixedAirNode().get()
                 cvfan.addToNode(mixAirNode)
         if airDetails.airsideEconomizer != 'Default':
+            if airDetails.airsideEconomizer == 'NoEconomizer':
+                econLockout = True
             self.adjustAirSideEcon(airloop, airDetails)
         else:
             self.addDefaultAirsideEcon(airloop)
         if airDetails.heatRecovery != 'Default' and airDetails.heatRecovery != 'None':
-            self.addHeatRecovToModel(model, airloop, airDetails.heatRecovery, airDetails.recoveryEffectiveness)
+            self.addHeatRecovToModel(model, airloop, airDetails.heatRecovery, airDetails.recoveryEffectiveness, econLockout)
     
     def adjustVAVAirLoop(self, model, airloop, airDetails, fanAdjustable=True):
+        econLockout = False
         if airDetails.HVACAvailabiltySched != 'ALWAYS ON':
             hvacAvailSch = self.getOSSchedule(airDetails.HVACAvailabiltySched, model)
             airloop.setAvailabilitySchedule(hvacAvailSch)
@@ -641,10 +647,12 @@ class WriteOPS(object):
             self.updateFan(vvfan,airDetails.fanTotalEfficiency,airDetails.fanMotorEfficiency,airDetails.fanPressureRise)
         if airDetails.airsideEconomizer != 'Default':
             self.adjustAirSideEcon(airloop, airDetails)
+            if airDetails.airsideEconomizer == 'NoEconomizer':
+                econLockout = True
         else:
             self.addDefaultAirsideEcon(airloop)
         if airDetails.heatRecovery != 'Default' and airDetails.heatRecovery != 'None':
-            self.addHeatRecovToModel(model, airloop, airDetails.heatRecovery, airDetails.recoveryEffectiveness)
+            self.addHeatRecovToModel(model, airloop, airDetails.heatRecovery, airDetails.recoveryEffectiveness, econLockout)
         if airDetails.fanPlacement != 'Default' and fanAdjustable == True:
             if airDetails.fanPlacement == 'Blow Through':
                 x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:VariableVolume"))
@@ -2489,11 +2497,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         
         if zone.isConditioned:
             # add HVAC system
-            try:
-                HAVCGroupID, HVACIndex, airDetails, heatDetails, coolDetails = zone.HVACSystem
-            except:
-                HAVCGroupID, HVACIndex = zone.HVACSystem
-                airDetails, heatDetails, coolDetails = None, None, None
+            HAVCGroupID, HVACIndex, airDetails, heatDetails, coolDetails = zone.HVACSystem
             
             if HAVCGroupID!= -1:
                 if HAVCGroupID not in hb_writeOPS.HVACSystemDict.keys():
