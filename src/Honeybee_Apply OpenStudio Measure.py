@@ -43,7 +43,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Apply OpenStudio Measure"
 ghenv.Component.NickName = 'applyOSMeasure'
-ghenv.Component.Message = 'VER 0.0.59\nAPR_29_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAY_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"
@@ -144,9 +144,13 @@ def copyRubyFolder(openStudioDir):
     under OpenStudio folder. This function copy files under CSharp folder if it
     hasn't been copied."""
     if not os.path.isdir(openStudioDir + "/CSharp/Ruby"):
-        copy_tree(openStudioDir + "/Ruby", openStudioDir + "/CSharp/Ruby")
-    
-
+        try:
+            copy_tree(openStudioDir + "/Ruby", openStudioDir + "/CSharp/Ruby")
+        except Exception as e:
+            msg = "Failed to copy %s folder to %s. Please copy the folder manually" \
+            " and try again" % (openStudioDir + "/Ruby", openStudioDir + "/CSharp/Ruby")
+            raise IOError(msg)
+            
 def main(epwFile, OSMeasure, osmFile):
     
     # check inputs
