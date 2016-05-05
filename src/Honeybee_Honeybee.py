@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.59\nMAY_02_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAY_05_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -5284,6 +5284,13 @@ class EPZone(object):
     
     def getZoneVolume(self):
         return self.geometry.GetVolume()
+    
+    def getExposedArea(self):
+        totalExpArea = 0
+        for HBSrf in self.surfaces:
+            if HBSrf.BC.lower() == "outdoors":
+                totalExpArea += HBSrf.getTotalArea()
+        return totalExpArea
     
     def getFloorZLevel(self):
         # useful for gbXML export
