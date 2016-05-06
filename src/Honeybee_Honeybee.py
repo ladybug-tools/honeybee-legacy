@@ -81,6 +81,7 @@ import subprocess
 import uuid
 import re
 import random
+from collections import namedtuple
 
 PI = math.pi
 
@@ -4872,8 +4873,9 @@ class EPZone(object):
         self.assignLoadsBasedOnProgram()
         
         # Assign a default HVAC System.
-        if isConditioned: self.HVACSystem = ["GroupI", 0, None, None, None] # assign ideal loads as default
-        else: self.HVACSystem = ["NoHVAC", -1, None, None, None] # no system        
+        HVACSystem = namedtuple('HVACSystem', 'GroupID Index airDetails heatingDetails coolingDetails')
+        if isConditioned: self.HVACSystem = HVACSystem(GroupID="GroupI", Index=0, airDetails=None, heatingDetails=None, coolingDetails=None) # assign ideal loads as default
+        else: self.HVACSystem = HVACSystem(GroupID="NoHVAC", Index=-1, airDetails=None, heatingDetails=None, coolingDetails=None)# no system
         
         self.isConditioned = isConditioned
         self.isThisTheTopZone = False

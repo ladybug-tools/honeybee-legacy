@@ -44,7 +44,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_OpenStudio Systems"
 ghenv.Component.NickName = 'OSHVACSystems'
-ghenv.Component.Message = 'VER 0.0.59\nMAY_04_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAY_06_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | HVACSystems"
@@ -56,6 +56,7 @@ except: pass
 import Grasshopper.Kernel as gh
 import scriptcontext as sc
 import uuid
+from collections import namedtuple
 
 w = gh.GH_RuntimeMessageLevel.Warning
 
@@ -66,6 +67,7 @@ def main(HBZones, HVACIndex, hb_hvacProperties, hb_airDetail, hb_heatingDetail, 
     HBZonesFromHive = hb_hive.callFromHoneybeeHive(HBZones)
     
     #create a single HVAC Group ID to create a unique reference to the HVAC details imported (or none if none)
+    HVACSystem = namedtuple('HVACSystem', 'GroupID Index airDetails heatingDetails coolingDetails')
     HVACGroupID = ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4())
     
     for zoneCount, zone in enumerate(HBZonesFromHive):
@@ -81,8 +83,10 @@ def main(HBZones, HVACIndex, hb_hvacProperties, hb_airDetail, hb_heatingDetail, 
             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
             continue
         
-        # Assign the HVAC System to the zone.
-        zone.HVACSystem = [HVACGroupID, HVACIndex]
+        # Assign default details.
+        aDetail = None
+        hDetail = None
+        cDetail = None
         
         if HVACIndex != -1:
             #Check to be sure that the user has not assigned capabilties that the HVAC system does not support.
@@ -114,16 +118,12 @@ def main(HBZones, HVACIndex, hb_hvacProperties, hb_airDetail, hb_heatingDetail, 
                         for error in capabilErrors:
                             print error
                             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, error)
-                        zone.HVACSystem.append(airDetailObj)
+                        aDetail = airDetailObj
                     else:
-                        zone.HVACSystem.append(None)
                         warning = '_airDetials_ are not valid.'
                         print warning
                         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
-                else:
-                    zone.HVACSystem.append(None)
             except:
-                zone.HVACSystem.append(None)
                 warning = '_airDetials_ are not valid.'
                 print warning
                 ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
@@ -138,16 +138,12 @@ def main(HBZones, HVACIndex, hb_hvacProperties, hb_airDetail, hb_heatingDetail, 
                         for error in capabilErrors:
                             print error
                             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, error)
-                        zone.HVACSystem.append(heatDetailObj)
+                        hDetail = heatDetailObj
                     else:
-                        zone.HVACSystem.append(None)
                         warning = '_heatingDetials_ are not valid.'
                         print warning
                         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
-                else:
-                    zone.HVACSystem.append(None)
             except:
-                zone.HVACSystem.append(None)
                 warning = '_heatingDetials_ are not valid.'
                 print warning
                 ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
@@ -162,20 +158,18 @@ def main(HBZones, HVACIndex, hb_hvacProperties, hb_airDetail, hb_heatingDetail, 
                         for error in capabilErrors:
                             print error
                             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, error)
-                        zone.HVACSystem.append(coolDetailObj)
+                        cDetail = coolDetailObj
                     else:
-                        zone.HVACSystem.append(None)
                         warning = '_coolingDetials_ are not valid.'
                         print warning
                         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
-                else:
-                    zone.HVACSystem.append(None)
             except:
-                zone.HVACSystem.append(None)
                 warning = '_coolingDetials_ are not valid.'
                 print warning
                 ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
         
+        #Assign the HVAC System to the zone.
+        zone.HVACSystem = HVACSystem(GroupID=HVACGroupID, Index=HVACIndex, airDetails=aDetail, heatingDetails=hDetail, coolingDetails=cDetail)
         
         HBZones  = hb_hive.addToHoneybeeHive(HBZonesFromHive, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
     

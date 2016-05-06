@@ -62,11 +62,11 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.59\nMAY_04_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAY_06_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nMAY_01_2016
+#compatibleHBVersion = VER 0.0.56\nMAY_06_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
@@ -2497,12 +2497,12 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         
         if zone.isConditioned:
             # add HVAC system
-            HAVCGroupID, HVACIndex, airDetails, heatDetails, coolDetails = zone.HVACSystem
+            HAVCGroupID = zone.HVACSystem.GroupID
             
             if HAVCGroupID!= -1:
                 if HAVCGroupID not in hb_writeOPS.HVACSystemDict.keys():
                     # add place holder for lists
-                    hb_writeOPS.HVACSystemDict[HAVCGroupID] = [HVACIndex, [], [], airDetails ,heatDetails ,coolDetails]
+                    hb_writeOPS.HVACSystemDict[HAVCGroupID] = [zone.HVACSystem.Index, [], [], zone.HVACSystem.airDetails, zone.HVACSystem.heatingDetails, zone.HVACSystem.coolingDetails]
             
             # collect the information for systems here, such as the zones in each system and the recirculation specifcations for each zone.
             hb_writeOPS.HVACSystemDict[HAVCGroupID][1].append(thermalZone)
@@ -2517,9 +2517,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         
         # write the surfaces
         for HBSrf in zone.surfaces:
-            
             OPSSrf = hb_writeOPS.opsZoneSurface(HBSrf, model, space)
-            
             if HBSrf.hasChild:
                     hb_writeOPS.OPSFenSurface(HBSrf, OPSSrf, model)
                     
