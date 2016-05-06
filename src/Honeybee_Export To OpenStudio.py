@@ -51,7 +51,7 @@ Provided by Honeybee 0.0.59
         fileName_: Optional text which will be used to name your OSM, IDF and result files.  Change this to aviod over-writing results of previous energy simulations.
         workingDir_: An optional working directory to a folder on your system, into which your OSM, IDF and result files will be written.  NOTE THAT DIRECTORIES INPUT HERE SHOULD NOT HAVE ANY SPACES OR UNDERSCORES IN THE FILE PATH.
     Returns:
-        report: Check here to see a report of the EnergyPlus run, including errors.
+        readMe!: Check here to see a report of the EnergyPlus run, including errors.
         osmFileAddress: The file path of the OSM file that has been generated on your machine.
         idfFileAddress: The file path of the IDF file that has been generated on your machine. This only happens when you set "runSimulation_" to "True."
         resultFileAddress: The file path of the CSV result file that has been generated on your machine.  This only happens when you set "runSimulation_" to "True."
@@ -548,11 +548,14 @@ class WriteOPS(object):
         vvfan = model.getFanVariableVolume(x[0].handle()).get()
         vvfan.setMaximumFlowRate(fullHVACAirFlow*4)
     
-    def addDehumidController(self, model, airloop):
+    def addDehumidController(self, model, airloop, ccontroller):
         # Add a humidity set point controller into the air loop.
         humidController = ops.SetpointManagerMultiZoneHumidityMaximum(model)
         humidController.setMinimumSetpointHumidityRatio(0.001)
         setPNode = airloop.supplyOutletNode()
+        # I should be using the controller sensor node but trying to call it causes Rhino to crash.
+        #For now, I am just using the supply outlet node, which works well aside from an error that E+ gives us.
+        #setPNode = ccontroller.sensorNode().get()
         humidController.addToNode(setPNode)
         return setPNode
     
@@ -562,7 +565,7 @@ class WriteOPS(object):
         cc = model.getCoilCoolingWater(x[0].handle()).get()
         ccontroller = cc.controllerWaterCoil().get()
         ccontroller.setControlVariable('TemperatureAndHumidityRatio')
-        sensorNode = self.addDehumidController(model, airloop)
+        sensorNode = self.addDehumidController(model, airloop, ccontroller)
         ccontroller.setSensorNode(sensorNode)
     
     def addHumidifierController(self, model, airloop):
@@ -602,10 +605,13 @@ class WriteOPS(object):
         outdoorNode = airloop.reliefAirNode().get()
         heatEx.addToNode(outdoorNode)
     
-    def addDefaultAirsideEcon(self, airloop):
+    def addDefaultAirsideEcon(self, airloop, dehumidTrigger):
         oasys = airloop.airLoopHVACOutdoorAirSystem()
         oactrl = oasys.get().getControllerOutdoorAir()
-        oactrl.setEconomizerControlType('DifferentialDryBulb')
+        if dehumidTrigger is True:
+            oactrl.setEconomizerControlType('DifferentialEnthalpy')
+        else:
+            oactrl.setEconomizerControlType('DifferentialDryBulb')
     
     def adjustAirSideEcon(self, airloop, airDetails):
         oasys = airloop.airLoopHVACOutdoorAirSystem()
@@ -632,11 +638,11 @@ class WriteOPS(object):
                 econLockout = True
             self.adjustAirSideEcon(airloop, airDetails)
         else:
-            self.addDefaultAirsideEcon(airloop)
+            self.addDefaultAirsideEcon(airloop, False)
         if airDetails.heatRecovery != 'Default' and airDetails.heatRecovery != 'None':
             self.addHeatRecovToModel(model, airloop, airDetails.heatRecovery, airDetails.recoveryEffectiveness, econLockout)
     
-    def adjustVAVAirLoop(self, model, airloop, airDetails, fanAdjustable=True):
+    def adjustVAVAirLoop(self, model, airloop, airDetails, dehumidTrigger, fanAdjustable=True):
         econLockout = False
         if airDetails.HVACAvailabiltySched != 'ALWAYS ON':
             hvacAvailSch = self.getOSSchedule(airDetails.HVACAvailabiltySched, model)
@@ -650,7 +656,7 @@ class WriteOPS(object):
             if airDetails.airsideEconomizer == 'NoEconomizer':
                 econLockout = True
         else:
-            self.addDefaultAirsideEcon(airloop)
+            self.addDefaultAirsideEcon(airloop, dehumidTrigger)
         if airDetails.heatRecovery != 'Default' and airDetails.heatRecovery != 'None':
             self.addHeatRecovToModel(model, airloop, airDetails.heatRecovery, airDetails.recoveryEffectiveness, econLockout)
         if airDetails.fanPlacement != 'Default' and fanAdjustable == True:
@@ -741,21 +747,25 @@ class WriteOPS(object):
                 for zoneCount, zone in enumerate(thermalZoneVector):
                     #Set the zone's use of ideal air to "True."
                     zone.setUseIdealAirLoads(True)
-                    
                     # Create the ideal air system
                     zoneIdealAir = ops.ZoneHVACIdealLoadsAirSystem(model)
                     
-                    # Set an airside economizer and demand controlled ventilation by default.
-                    zoneIdealAir.setOutdoorAirEconomizerType('DifferentialDryBulb')
-                    zoneIdealAir.setDemandControlledVentilationType('OccupancySchedule')
-                    
                     #Set the dehumidifcation / humidification based on the presence/absence of a zone humidistat.
+                    dehumidTrigger = False
                     if hbZones[zoneCount].humidityMax != "":
+                        dehumidTrigger = True
                         zoneIdealAir.setDehumidificationControlType("Humidistat")
                     else: zoneIdealAir.setDehumidificationControlType("None")
                     if hbZones[zoneCount].humidityMin != "":
                         zoneIdealAir.setHumidificationControlType("Humidistat")
                     else: zoneIdealAir.setHumidificationControlType("None")
+                    
+                    # Set an airside economizer and demand controlled ventilation by default.
+                    if dehumidTrigger is True:
+                        zoneIdealAir.setOutdoorAirEconomizerType('DifferentialEnthalpy')
+                    else:
+                        zoneIdealAir.setOutdoorAirEconomizerType('DifferentialDryBulb')
+                    zoneIdealAir.setDemandControlledVentilationType('OccupancySchedule')
                     
                     # Set the airDetails.
                     if airDetails != None:
@@ -776,6 +786,9 @@ class WriteOPS(object):
                         if airDetails.recoveryEffectiveness != 'Default':
                             zoneIdealAir.setSensibleHeatRecoveryEffectiveness(airDetails.recoveryEffectiveness)
                             zoneIdealAir.setLatentHeatRecoveryEffectiveness(airDetails.recoveryEffectiveness)
+                    else:
+                        zoneIdealAir.setCoolingLimit('LimitFlowRate')
+                        zoneIdealAir.autosizeMaximumCoolingAirFlowRate()
                     
                     # Set the heatingDetails.
                     if heatingDetails != None:
@@ -917,7 +930,7 @@ class WriteOPS(object):
                     if airDetails != None:
                         self.adjustCVAirLoop(model, airloop, airDetails)
                     else:
-                        self.addDefaultAirsideEcon(airloop)
+                        self.addDefaultAirsideEcon(airloop, False)
                     
                     #Set the heatingDetails.
                     if heatingDetails != None:
@@ -949,7 +962,7 @@ class WriteOPS(object):
                     if airDetails != None:
                         self.adjustCVAirLoop(model, airloop, airDetails)
                     else:
-                        self.addDefaultAirsideEcon(airloop)
+                        self.addDefaultAirsideEcon(airloop, False)
                     
                     #Set the heatingDetails.
                     if heatingDetails != None:
@@ -997,13 +1010,13 @@ class WriteOPS(object):
                 
                 #Set the airDetails.
                 if airDetails != None:
-                    self.adjustVAVAirLoop(model, airloop, airDetails)
+                    self.adjustVAVAirLoop(model, airloop, airDetails, dehumidTrigger)
                     if airDetails.heatingSupplyAirTemp != 'Default':
                         x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Heating:Water"))
                         hc = model.getCoilHeatingWater(x[0].handle()).get()
                         hc.setRatedOutletAirTemperature(airDetails.heatingSupplyAirTemp)
                 else:
-                    self.addDefaultAirsideEcon(airloop)
+                    self.addDefaultAirsideEcon(airloop, False)
                 
                 # Set the heatingDetails at the level of the boiler.
                 if heatingDetails != None:
@@ -1042,9 +1055,9 @@ class WriteOPS(object):
                 
                 #Set the airDetails.
                 if airDetails != None:
-                    self.adjustVAVAirLoop(model, airloop, airDetails, False)
+                    self.adjustVAVAirLoop(model, airloop, airDetails, False, False)
                 else:
-                    self.addDefaultAirsideEcon(airloop)
+                    self.addDefaultAirsideEcon(airloop, False)
                 
                 # Set the heatingDetails at the level of the electric resistance heater.
                 if heatingDetails != None:
@@ -1097,7 +1110,7 @@ class WriteOPS(object):
                 
                 #Set the airDetails.
                 if airDetails != None:
-                    self.adjustVAVAirLoop(model, airloop, airDetails)
+                    self.adjustVAVAirLoop(model, airloop, airDetails, dehumidTrigger)
                     if airDetails.heatingSupplyAirTemp != 'Default':
                         x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Heating:Water"))
                         hc = model.getCoilHeatingWater(x[0].handle()).get()
@@ -1107,7 +1120,7 @@ class WriteOPS(object):
                         hc = model.getCoilCoolingWater(x[0].handle()).get()
                         hc.setDesignOutletAirTemperature(airDetails.coolingSupplyAirTemp)
                 else:
-                    self.addDefaultAirsideEcon(airloop)
+                    self.addDefaultAirsideEcon(airloop, dehumidTrigger)
                 
                 # Set the heatingDetails at the level of the boiler.
                 if heatingDetails != None:
@@ -1147,13 +1160,13 @@ class WriteOPS(object):
                 
                 #Set the airDetails.
                 if airDetails != None:
-                    self.adjustVAVAirLoop(model, airloop, airDetails, False)
+                    self.adjustVAVAirLoop(model, airloop, airDetails, dehumidTrigger, False)
                     if airDetails.coolingSupplyAirTemp != 'Default':
                         x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:Water"))
                         hc = model.getCoilCoolingWater(x[0].handle()).get()
                         hc.setDesignOutletAirTemperature(airDetails.coolingSupplyAirTemp)
                 else:
-                    self.addDefaultAirsideEcon(airloop)
+                    self.addDefaultAirsideEcon(airloop, dehumidTrigger)
                 
                 # Set the heatingDetails at the level of the electric resistance heater.
                 if heatingDetails != None:
@@ -1180,7 +1193,7 @@ class WriteOPS(object):
                 if airDetails != None:
                     self.adjustCVAirLoop(model, airloop, airDetails)
                 else:
-                    self.addDefaultAirsideEcon(airloop)
+                    self.addDefaultAirsideEcon(airloop, False)
                 
                 #Set the heatingDetails.
                 if heatingDetails != None:
@@ -1203,7 +1216,7 @@ class WriteOPS(object):
                 if airDetails != None:
                     self.adjustCVAirLoop(model, airloop, airDetails)
                 else:
-                    self.addDefaultAirsideEcon(airloop)
+                    self.addDefaultAirsideEcon(airloop, False)
                 
                 # Set the heatingDetails at the level of the electric resistance heater.
                 if heatingDetails != None:
@@ -2581,7 +2594,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
                     w = gh.GH_RuntimeMessageLevel.Warning
                     ghenv.Component.AddRuntimeMessage(w, warning)
                     resultFile = None
-                elif "** Severe  **" in line:
+                elif "** Severe  **" in line and 'CheckControllerListOrder' not in line:
                     comment = "The simulation has not run correctly because of this severe error: \n" + str(line)
                     c = gh.GH_RuntimeMessageLevel.Warning
                     ghenv.Component.AddRuntimeMessage(c, comment)

@@ -37,7 +37,7 @@ Provided by Honeybee 0.0.59
             False = Blow Through (the fan comes before the coils such that air is blown through the heating/cooling coils).
         _heatingSupplyAirTemp_: A number representing the target temperature of the supply air when the system is in heating mode.  For large systems, this is the rated outlet air temperature of the heating coil.  Defaults typically range from 30C to 50C.
         _coolingSupplyAirTemp_: A number representing the target temperature of the supply air when the system is in cooling mode.  For large systems, this is the rated outlet air temperature of the cooling coil.  Defaults are typically around 12C.
-        airsideEconomizer_: An integer or boolean value (0/1) that sets the economizer on the HVAC system.  The default is set to "True" or 1 to include a differential dry bulb air side economizer when possible.  Choose from the following options:
+        airsideEconomizer_: An integer or boolean value (0/1) that sets the economizer on the HVAC system.  The default is set to "True" or "1" to include a Differential Dry Bulb air side economizer or "2" for a Differential Enthalpy economizer if the zone has humidity control.  Choose from the following options:
             0 - No Economizer - The HVAC system will constantly provide the same amount of minimum outdoor air and may run the cooling system to remove heat and meet thermostat setpoints.
             1 - Differential Dry Bulb - The HVAC system will increase the outdoor air flow rate when there is a cooling load and the outdoor air temperature is below the temperature of the return (or exhaust) air. 
             2 - Differential Enthalpy - The HVAC system will increase the outdoor air flow rate when there is a cooling load and the outdoor air enthalpy is below that of the return (or exhaust) air.
@@ -58,7 +58,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_OpenStudio Air Details"
 ghenv.Component.NickName = 'AirDetails'
-ghenv.Component.Message = 'VER 0.0.59\nMAY_04_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAY_06_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | HVACSystems"
