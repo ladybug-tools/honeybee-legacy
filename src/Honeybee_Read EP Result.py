@@ -260,8 +260,12 @@ def checkCentralSys(sysInt, sysType):
     elif sysType == 1: zoneName = " Boiler " + str(sysInt)
     elif sysType == 2: zoneName = " Fan" + str(sysInt)
     elif sysType == 3: zoneName = " Pump" + str(sysInt)
+    elif sysType == 4: zoneName = " Humidifier" + str(sysInt)
     else: zoneName = 'Unknown'
-    path.append(len(zoneNameList)+int(sysInt))
+    if sysType != 4:
+        path.append(len(zoneNameList)+int(sysInt))
+    else:
+        path.append(len(zoneNameList)+len(zoneNameList)+int(sysInt))
     
     return zoneName
 
@@ -306,13 +310,16 @@ if _resultFileAddress and gotData == True and csvExists == True:
                         makeHeader(cooling, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Cooling Energy", energyUnit, True)
                         dataTypeList[2] = True
                     
-                    elif 'Zone Ideal Loads Supply Air Total Heating Energy' in column  or 'Boiler Heating Energy' in column:
+                    elif 'Zone Ideal Loads Supply Air Total Heating Energy' in column  or 'Boiler Heating Energy' in column or 'Humidifier Electric Energy' in column:
                         key.append(1)
                         if 'Zone Ideal Loads Supply Air Total Heating Energy' in column and 'ZONE HVAC' in column:
                             zoneName = checkZoneSys(" " + (":".join(column.split(":")[:-1])).split('ZONE HVAC IDEAL LOADS AIR SYSTEM ')[-1])
                         elif 'IDEAL LOADS AIR SYSTEM' in column: zoneName = checkZone(" " + ":".join(column.split(":")[:-1]).split(' IDEAL LOADS AIR SYSTEM')[0])
                         elif 'Boiler Heating Energy' in column:
                             zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('BOILER HOT WATER ')[-1], 1)
+                            centralSys = True
+                        elif 'HUMIDIFIER STEAM ELECTRIC' in column:
+                            zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('HUMIDIFIER STEAM ELECTRIC ')[-1], 4)
                             centralSys = True
                         else: zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
                         makeHeader(heating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Heating Energy", energyUnit, True)
