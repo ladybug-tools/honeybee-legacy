@@ -70,10 +70,13 @@ def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, zoneHVACMetrics,
     
     if zoneEnergyUse == True:
         simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Supply Air Total Cooling Energy, " + timePeriod)
-        simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Supply Air Total Heating Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Cooling Coil Electric Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Chiller Electric Energy, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Supply Air Total Heating Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Boiler Heating Energy, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Heating Coil Total Heating Energy, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Heating Coil Gas Energy, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Heating Coil Electric Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Humidifier Electric Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Fan Electric Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Ventilation Fan Electric Energy, " + timePeriod)

@@ -210,7 +210,6 @@ except: pass
 #Make a list to keep track of what outputs are in the result file.
 dataTypeList = [False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False]
 parseSuccess = False
-centralSys = False
 
 #If the energy values are set to be normalized, make the units in kWh/m2.
 energyUnit = "kWh"
@@ -252,6 +251,11 @@ def checkZone(csvName):
 
 def checkZoneSys(sysInt):
     zoneName = zoneNameList[int(sysInt)-1]
+    path.append(int(sysInt)-1)
+    return zoneName
+
+def checkSys(sysInt, sysType):
+    zoneName = " " + sysType + " " + str(sysInt)
     path.append(int(sysInt)-1)
     return zoneName
 
@@ -305,25 +309,31 @@ if _resultFileAddress and gotData == True and csvExists == True:
                             zoneName = checkZoneSys(" " + ":".join(column.split(":")[:-1]).split('COIL COOLING DX TWO SPEED ')[-1])
                         elif 'Chiller Electric Energy' in column:
                             zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('CHILLER ELECTRIC EIR ')[-1], 0)
-                            centralSys = True
                         else: zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
                         makeHeader(cooling, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Cooling Energy", energyUnit, True)
                         dataTypeList[2] = True
                     
-                    elif 'Zone Ideal Loads Supply Air Total Heating Energy' in column  or 'Boiler Heating Energy' in column or 'Humidifier Electric Energy' in column:
+                    elif 'Zone Ideal Loads Supply Air Total Heating Energy' in column  or 'Boiler Heating Energy' in column or 'Heating Coil Total Heating Energy' in column or 'Heating Coil Gas Energy' in column or 'Heating Coil Electric Energy' in column or 'Humidifier Electric Energy' in column:
                         key.append(1)
                         if 'Zone Ideal Loads Supply Air Total Heating Energy' in column and 'ZONE HVAC' in column:
                             zoneName = checkZoneSys(" " + (":".join(column.split(":")[:-1])).split('ZONE HVAC IDEAL LOADS AIR SYSTEM ')[-1])
                         elif 'IDEAL LOADS AIR SYSTEM' in column: zoneName = checkZone(" " + ":".join(column.split(":")[:-1]).split(' IDEAL LOADS AIR SYSTEM')[0])
+                        elif 'COIL HEATING DX SINGLE SPEED' in column:
+                            zoneName = checkZoneSys(" " + ":".join(column.split(":")[:-1]).split('COIL HEATING DX SINGLE SPEED ')[-1])
+                        elif 'COIL HEATING GAS' in column and not 'Heating Coil Electric Energy' in column:
+                            zoneName = checkSys(" " + ":".join(column.split(":")[:-1]).split('COIL HEATING GAS ')[-1], 'Gas Coil')
+                        elif 'COIL HEATING ELECTRIC' in column:
+                            zoneName = checkSys(" " + ":".join(column.split(":")[:-1]).split('COIL HEATING ELECTRIC ')[-1], 'Electric Coil')
                         elif 'Boiler Heating Energy' in column:
                             zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('BOILER HOT WATER ')[-1], 1)
-                            centralSys = True
                         elif 'HUMIDIFIER STEAM ELECTRIC' in column:
                             zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('HUMIDIFIER STEAM ELECTRIC ')[-1], 4)
-                            centralSys = True
-                        else: zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
-                        makeHeader(heating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Heating Energy", energyUnit, True)
-                        dataTypeList[3] = True
+                        try:
+                            makeHeader(heating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Heating Energy", energyUnit, True)
+                            dataTypeList[3] = True
+                        except:
+                            key.append(-1)
+                            path.append(-1)
                     
                     elif 'Zone Lights Electric Energy' in column:
                         key.append(2)
@@ -343,7 +353,6 @@ if _resultFileAddress and gotData == True and csvExists == True:
                             zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('FAN CONSTANT VOLUME ')[-1], 2)
                             makeHeader(fanElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Fan Electric Energy", energyUnit, True)
                         elif 'FAN VARIABLE VOLUME' in column:
-                            centralSys = True
                             zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('FAN VARIABLE VOLUME ')[-1], 2)
                             makeHeader(fanElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Fan Electric Energy", energyUnit, True)
                         elif 'FAN ON OFF' in column:
@@ -363,7 +372,6 @@ if _resultFileAddress and gotData == True and csvExists == True:
                             zoneName = checkZoneSys(" " + ":".join(column.split(":")[:-1]).split('PUMP CONSTANT SPEED ')[-1])
                             makeHeader(pumpElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Pump Electric Energy", energyUnit, True)
                         elif 'PUMP VARIABLE SPEED' in column:
-                            centralSys = True
                             zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('PUMP VARIABLE SPEED ')[-1], 3)
                             makeHeader(pumpElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Pump Electric Energy", energyUnit, True)
                         dataTypeList[7] = True
