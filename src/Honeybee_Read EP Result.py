@@ -56,7 +56,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.59\nMAY_01_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAY_06_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -293,8 +293,12 @@ if _resultFileAddress and gotData == True and csvExists == True:
                         key.append(0)
                         if 'Zone Ideal Loads Supply Air Total Cooling Energy' in column and 'ZONE HVAC' in column:
                             zoneName = checkZoneSys(" " + (":".join(column.split(":")[:-1])).split('ZONE HVAC IDEAL LOADS AIR SYSTEM ')[-1])
-                        elif 'IDEAL LOADS AIR SYSTEM' in column: zoneName = checkZone(" " + ":".join(column.split(":")[:-1]).split(' IDEAL LOADS AIR SYSTEM')[0])
-                        elif 'Cooling Coil Electric Energy' in column: zoneName = checkZoneSys(" " + ":".join(column.split(":")[:-1]).split('COIL COOLING DX SINGLE SPEED ')[-1])
+                        elif 'IDEAL LOADS AIR SYSTEM' in column:
+                            zoneName = checkZone(" " + ":".join(column.split(":")[:-1]).split(' IDEAL LOADS AIR SYSTEM')[0])
+                        elif 'COIL COOLING DX SINGLE SPEED' in column:
+                            zoneName = checkZoneSys(" " + ":".join(column.split(":")[:-1]).split('COIL COOLING DX SINGLE SPEED ')[-1])
+                        elif 'COIL COOLING DX TWO SPEED' in column:
+                            zoneName = checkZoneSys(" " + ":".join(column.split(":")[:-1]).split('COIL COOLING DX TWO SPEED ')[-1])
                         elif 'Chiller Electric Energy' in column:
                             zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('CHILLER ELECTRIC EIR ')[-1], 0)
                             centralSys = True
