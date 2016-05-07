@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.59\nMAY_06_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAY_07_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -8215,24 +8215,6 @@ if checkIn.letItFly:
         sc.sticky["honeybee_hvacAirDetails"] = hb_airDetail
         sc.sticky["honeybee_hvacHeatingDetails"] = hb_heatingDetail
         sc.sticky["honeybee_hvacCoolingDetails"] = hb_coolingDetail
-        
-        
-        sc.sticky["honeybee_AirsideEconomizerParams"] = hb_airsideEconoParams
-        sc.sticky["honeybee_constantVolumeFanParams"] = hb_constVolFanParams
-        sc.sticky["honeybee_variableVolumeFanParams"] = hb_varVolFanParams
-        sc.sticky["honeybee_AirHandlerParams"] = hb_AirHandlerParams
-        sc.sticky["honeybee_2xDXCoilParams"] = hb_2xDXCoilParams
-        sc.sticky["honeybee_2xDXHeatingCoilParams"] = hb_2xDXHeatingCoilParams
-        sc.sticky["honeybee_1xDXCoilParams"] = hb_1xDXCoilParams
-        sc.sticky["honeybee_1xDXHeatingCoilParams"] = hb_1xDXHeatingCoilParams
-        sc.sticky["honeybee_lspeedevapcondParams"] = hb_lspeedEvapCondParams
-        sc.sticky["honeybee_hspeedevapcondParams"] = hb_hspeedEvapCondParams
-        sc.sticky["honeybee_hwBoilerParams"] = hb_hwBoilerParams
-        sc.sticky["honeybee_chillerEIRParams"] = hb_chillerEIRParams
-        sc.sticky["honeybee_coolingTowerParams"] = hb_coolingTowerParams
-        sc.sticky["honeybee_availManagerList"] = hb_availManagerParams
-        
-        
         sc.sticky["honeybee_EPSurface"] = hb_EPSurface
         sc.sticky["honeybee_EPShdSurface"] = hb_EPShdSurface
         sc.sticky["honeybee_EPZoneSurface"] = hb_EPZoneSurface
