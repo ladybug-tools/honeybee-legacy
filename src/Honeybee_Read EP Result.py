@@ -306,7 +306,7 @@ if _resultFileAddress and gotData == True and csvExists == True:
                         elif 'COIL COOLING DX SINGLE SPEED' in column:
                             zoneName = checkZoneSys(" " + ":".join(column.split(":")[:-1]).split('COIL COOLING DX SINGLE SPEED ')[-1])
                         elif 'COIL COOLING DX TWO SPEED' in column:
-                            zoneName = checkZoneSys(" " + ":".join(column.split(":")[:-1]).split('COIL COOLING DX TWO SPEED ')[-1])
+                            zoneName = checkSys(" " + ":".join(column.split(":")[:-1]).split('COIL COOLING DX TWO SPEED ')[-1], 'DX Cooling Coil')
                         elif 'Chiller Electric Energy' in column:
                             zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('CHILLER ELECTRIC EIR ')[-1], 0)
                         else: zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
