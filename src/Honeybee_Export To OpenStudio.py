@@ -548,7 +548,7 @@ class WriteOPS(object):
         vvfan = model.getFanVariableVolume(x[0].handle()).get()
         vvfan.setMaximumFlowRate(fullHVACAirFlow*4)
     
-    def addDehumidController(self, model, airloop, ccontroller):
+    def addDehumidController(self, model, airloop):
         # Add a humidity set point controller into the air loop.
         humidController = ops.SetpointManagerMultiZoneHumidityMaximum(model)
         humidController.setMinimumSetpointHumidityRatio(0.001)
@@ -565,7 +565,7 @@ class WriteOPS(object):
         cc = model.getCoilCoolingWater(x[0].handle()).get()
         ccontroller = cc.controllerWaterCoil().get()
         ccontroller.setControlVariable('TemperatureAndHumidityRatio')
-        sensorNode = self.addDehumidController(model, airloop, ccontroller)
+        sensorNode = self.addDehumidController(model, airloop)
         ccontroller.setSensorNode(sensorNode)
     
     def addHumidifierController(self, model, airloop):
@@ -573,11 +573,12 @@ class WriteOPS(object):
         humidController = ops.SetpointManagerMultiZoneHumidityMinimum(model)
         setPNode = airloop.supplyOutletNode()
         humidController.addToNode(setPNode)
+        return setPNode
     
     def addElectricHumidifier(self, model, airloop):
         humidifier = ops.HumidifierSteamElectric(model)
-        mixAirNode = airloop.mixedAirNode().get()
-        humidifier.addToNode(mixAirNode)
+        supplyNode = airloop.supplyOutletNode()
+        humidifier.addToNode(supplyNode)
         self.addHumidifierController(model, airloop)
     
     def addHeatRecovToModel(self, model, airloop, heatRecovery, recoveryEffectiveness, econLockout=False):
@@ -1047,11 +1048,16 @@ class WriteOPS(object):
                     if hbZones[zoneCount].recirculatedAirPerArea != 0:
                         recicTrigger = True
                         self.sizeAirTerminalForRecirc(vavBox, zoneTotAir)
+                    if hbZones[zoneCount].humidityMin != '':
+                        humidTrigger = True
                     self.adjustElectricReheatCoil(model, vavBox, heatingDetails)
                 
                 #If there is recirculated air, we also have to hard size the fan to ensure that enough air can get through the system.
                 if recicTrigger == True:
                     self.sizeVAVFanForRecirc(model, airloop, recircAirFlowRates)
+                # If there is a minimum humidity assigned to the zone, add in an electric humidifier to humidify the air.
+                if humidTrigger == True:
+                    self.addElectricHumidifier(model, airloop)
                 
                 #Set the airDetails.
                 if airDetails != None:
@@ -1149,6 +1155,8 @@ class WriteOPS(object):
                         self.sizeAirTerminalForRecirc(vavBox, zoneTotAir)
                     if hbZones[zoneCount].humidityMax != '':
                         dehumidTrigger = True
+                    if hbZones[zoneCount].humidityMin != '':
+                        humidTrigger = True
                     self.adjustElectricReheatCoil(model, vavBox, heatingDetails)
                 
                 #If there is recirculated air, we also have to hard size the fan to ensure that enough air can get through the system.
@@ -1157,6 +1165,9 @@ class WriteOPS(object):
                 # If there is a maximum humidity assigned to the zone, set the cooling coil to dehumidify the air.
                 if dehumidTrigger == True:
                     self.addChilledWaterDehumid(model, airloop)
+                # If there is a minimum humidity assigned to the zone, add in an electric humidifier to humidify the air.
+                if humidTrigger == True:
+                    self.addElectricHumidifier(model, airloop)
                 
                 #Set the airDetails.
                 if airDetails != None:
@@ -1188,6 +1199,12 @@ class WriteOPS(object):
                 # Add branches for zones.
                 for zoneCount, zone in enumerate(thermalZoneVector):
                     airloop.addBranchForZone(zone)
+                    if hbZones[zoneCount].humidityMin != '':
+                        humidTrigger = True
+                
+                # If there is a minimum humidity assigned to the zone, add in an electric humidifier to humidify the air.
+                if humidTrigger == True:
+                    self.addElectricHumidifier(model, airloop)
                 
                 #Set the airDetails.
                 if airDetails != None:
@@ -1211,6 +1228,12 @@ class WriteOPS(object):
                 # Add branches for zones.
                 for zoneCount, zone in enumerate(thermalZoneVector):
                     airloop.addBranchForZone(zone)
+                    if hbZones[zoneCount].humidityMin != '':
+                        humidTrigger = True
+                
+                # If there is a minimum humidity assigned to the zone, add in an electric humidifier to humidify the air.
+                if humidTrigger == True:
+                    self.addElectricHumidifier(model, airloop)
                 
                 #Set the airDetails.
                 if airDetails != None:
