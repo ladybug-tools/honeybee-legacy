@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.59\nMAY_07_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAY_08_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -7537,7 +7537,8 @@ class hb_hvacProperties(object):
         7:'VARIABLE AIR VOLUME WITH REHEAT',
         8:'VARIABLE AIR VOLUME WITH PARALLEL FAN POWERED BOXES',
         9:'WARM AIR FURNACE - GAS FIRED',
-        10:'WARM AIR FURNACE - ELECTRIC'
+        10:'WARM AIR FURNACE - ELECTRIC',
+        11:'FAN COIL UNITS + DOAS'
         }
         
         # Dictionaries that state which features can be changed for each of the different systems.
@@ -7553,7 +7554,8 @@ class hb_hvacProperties(object):
         7: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True},
         8: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True},
         9: {'recirc' : False, 'humidCntrl' : True, 'dehumidCntrl' : False},
-        10: {'recirc' : False, 'humidCntrl' : True, 'dehumidCntrl' : False}
+        10: {'recirc' : False, 'humidCntrl' : True, 'dehumidCntrl' : False},
+        11: {'recirc' : False, 'humidCntrl' : True, 'dehumidCntrl' : True}
         }
         
         self.airCapabilities = {
@@ -7567,7 +7569,8 @@ class hb_hvacProperties(object):
         7: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
         8: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'HeatSupTemp' : False, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
         9: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        10: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True}
+        10: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        11: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True}
         }
         
         self.heatCapabilities = {
@@ -7581,7 +7584,8 @@ class hb_hvacProperties(object):
         7: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
         8: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
         9: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
-        10: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False}
+        10: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
+        11: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True}
         }
         
         self.coolCapabilities = {
@@ -7595,7 +7599,8 @@ class hb_hvacProperties(object):
         7: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
         8: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
         9: {'COP' : False, 'Avail' : False, 'SupTemp' : False, 'PumpEff' : False},
-        10: {'COP' : False, 'Avail' : False, 'SupTemp' : False, 'PumpEff' : False}
+        10: {'COP' : False, 'Avail' : False, 'SupTemp' : False, 'PumpEff' : False},
+        11: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True}
         }
     
     @staticmethod

@@ -62,11 +62,11 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.59\nMAY_07_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAY_08_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nMAY_06_2016
+#compatibleHBVersion = VER 0.0.56\nMAY_08_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
@@ -289,8 +289,9 @@ class WriteOPS(object):
         
         return typeLimit
     
-    def createConstantScheduleRuleset(self, schName, typeLimitName, value, model):
+    def createConstantScheduleRuleset(self, ruleSetName, schName, typeLimitName, value, model):
         scheduleRuleset = ops.ScheduleRuleset(model)
+        scheduleRuleset.setName(ruleSetName)
         scheduleDay = scheduleRuleset.defaultDaySchedule()
         scheduleDay.setName(schName)
         scheduleDay.setScheduleTypeLimits(self.createOSScheduleTypeLimits(typeLimitName, model))
@@ -460,8 +461,342 @@ class WriteOPS(object):
         return space, thermalZone
     
     
+    ### START OF FUNCTIONS FOR CREATING HVAC SYSTEMS FROM SCRATCH ###
+    """
+    These functions are a python adaptation of several functions from the OsLib_HVAC.rb.
+    These ruby versions of these functions are used for many of the 
+    Advanced Energy Design Guideline (AEDG) measures that have been released by NREL.
+    """
+    def createDefaultAEDGPump(self, model, pEfficiency):
+        pump = ops.PumpVariableSpeed(model)
+        pump.setRatedPumpHead(119563) #Pa
+        pump.setMotorEfficiency(pEfficiency)
+        pump.setCoefficient1ofthePartLoadPerformanceCurve(0)
+        pump.setCoefficient2ofthePartLoadPerformanceCurve(0.0216)
+        pump.setCoefficient3ofthePartLoadPerformanceCurve(-0.0325)
+        pump.setCoefficient4ofthePartLoadPerformanceCurve(1.0095)
+        return pump
+    
+    def createDefaultAEDGFan(self, model, airDetails):
+        fan = ops.FanConstantVolume(model, model.alwaysOnDiscreteSchedule())
+        if airDetails != None and airDetails.totalEfficiency != 'Default': 
+            fan.setFanEfficiency(totalEfficiency)
+        else:
+            fan.setFanEfficiency(0.6)
+        if airDetails != None and airDetails.pressureRise != 'Default': 
+            fan.setPressureRise(pressureRise)
+        else:
+            fan.setPressureRise(500) #Pa
+        fan.autosizeMaximumFlowRate()
+        if airDetails != None and airDetails.motorEfficiency != 'Default':
+            fan.setMotorEfficiency(motorEfficiency)
+        else:
+            fan.setMotorEfficiency(0.9)
+        fan.setMotorInAirstreamFraction(1.0)
+        return fan
+    
+    def createHotWaterPlant(self, model, hotWaterSetpointSchedule, heatingDetails, HVACCount):
+        hotWaterPlant = ops.PlantLoop(model)
+        hotWaterPlant.setName("Hot Water Loop" + str(HVACCount))
+        hotWaterPlant.setMaximumLoopTemperature(100)
+        hotWaterPlant.setMinimumLoopTemperature(0)
+        loopSizing = hotWaterPlant.sizingPlant()
+        loopSizing.setLoopType("Heating")
+        loopSizing.setDesignLoopExitTemperature(82)  
+        loopSizing.setLoopDesignTemperatureDifference(11)
+        # create a pump
+        if heatingDetails != None and heatingDetails.pumpMotorEfficiency != 'Default':
+            pEfficiency = heatingDetails.pumpMotorEfficiency
+        else:
+            pEfficiency = 0.9
+        pump = self.createDefaultAEDGPump(model, pEfficiency)
+        # create a boiler
+        boiler = ops.BoilerHotWater(model)
+        if heatingDetails != None and heatingDetails.heatingEffOrCOP != 'Default':
+            boiler.setNominalThermalEfficiency(heatingDetails.heatingEffOrCOP)
+        else:
+            boiler.setNominalThermalEfficiency(0.9)
+        if heatingDetails != None and heatingDetails.supplyTemperature != 'Default':
+            boiler.setDesignWaterOutletTemperature(heatingDetails.supplyTemperature)
+        # create a scheduled setpoint manager
+        setpointManagerScheduled = ops.SetpointManagerScheduled(model,hotWaterSetpointSchedule)
+        # create pipes
+        pipeSupplyBypass = ops.PipeAdiabatic(model)
+        pipeSupplyOutlet = ops.PipeAdiabatic(model)
+        pipeDemandBypass = ops.PipeAdiabatic(model)
+        pipeDemandInlet = ops.PipeAdiabatic(model)
+        pipeDemandOutlet = ops.PipeAdiabatic(model)
+        # connect components to plant loop
+        # supply side components
+        hotWaterPlant.addSupplyBranchForComponent(boiler)
+        hotWaterPlant.addSupplyBranchForComponent(pipeSupplyBypass)
+        pump.addToNode(hotWaterPlant.supplyInletNode())
+        pipeSupplyOutlet.addToNode(hotWaterPlant.supplyOutletNode())
+        setpointManagerScheduled.addToNode(hotWaterPlant.supplyOutletNode())
+        # demand side components (water coils are added as they are added to airloops and zoneHVAC)
+        hotWaterPlant.addDemandBranchForComponent(pipeDemandBypass)
+        pipeDemandInlet.addToNode(hotWaterPlant.demandInletNode())
+        pipeDemandOutlet.addToNode(hotWaterPlant.demandOutletNode())
+        
+        # pass back hot water plant
+        return hotWaterPlant
+    
+    def createChilledWaterPlant(self, model, chilledWaterSetpointSchedule, coolingDetails, HVACCount, chillerType):
+        chilleWaterPlant = ops.PlantLoop(model)
+        chilleWaterPlant.setName("Chilled Water Loop" + str(HVACCount))
+        chilleWaterPlant.setMaximumLoopTemperature(98)
+        chilleWaterPlant.setMinimumLoopTemperature(1)
+        loopSizing = chilleWaterPlant.sizingPlant()
+        loopSizing.setLoopType("Cooling")
+        loopSizing.setDesignLoopExitTemperature(6.7)  
+        loopSizing.setLoopDesignTemperatureDifference(6.7)
+        # create a pump
+        if coolingDetails != None and coolingDetails.pumpMotorEfficiency != 'Default':
+            pEfficiency = coolingDetails.pumpMotorEfficiency
+        else:
+            pEfficiency = 0.9
+        pump = self.createDefaultAEDGPump(model, pEfficiency)
+        # create a chiller
+        if chillerType == "WaterCooled":
+            # create clgCapFuncTempCurve
+            clgCapFuncTempCurve = ops.CurveBiquadratic(model)
+            clgCapFuncTempCurve.setCoefficient1Constant(1.07E+00)
+            clgCapFuncTempCurve.setCoefficient2x(4.29E-02)
+            clgCapFuncTempCurve.setCoefficient3xPOW2(4.17E-04)
+            clgCapFuncTempCurve.setCoefficient4y(-8.10E-03)
+            clgCapFuncTempCurve.setCoefficient5yPOW2(-4.02E-05)
+            clgCapFuncTempCurve.setCoefficient6xTIMESY(-3.86E-04)
+            clgCapFuncTempCurve.setMinimumValueofx(0)
+            clgCapFuncTempCurve.setMaximumValueofx(20)
+            clgCapFuncTempCurve.setMinimumValueofy(0)
+            clgCapFuncTempCurve.setMaximumValueofy(50)
+            # create eirFuncTempCurve
+            eirFuncTempCurve = ops.CurveBiquadratic(model)
+            eirFuncTempCurve.setCoefficient1Constant(4.68E-01)
+            eirFuncTempCurve.setCoefficient2x(-1.38E-02)
+            eirFuncTempCurve.setCoefficient3xPOW2(6.98E-04)
+            eirFuncTempCurve.setCoefficient4y(1.09E-02)
+            eirFuncTempCurve.setCoefficient5yPOW2(4.62E-04)
+            eirFuncTempCurve.setCoefficient6xTIMESY(-6.82E-04)
+            eirFuncTempCurve.setMinimumValueofx(0)
+            eirFuncTempCurve.setMaximumValueofx(20)
+            eirFuncTempCurve.setMinimumValueofy(0)
+            eirFuncTempCurve.setMaximumValueofy(50)
+            # create eirFuncPlrCurve
+            eirFuncPlrCurve = ops.CurveQuadratic(model)
+            eirFuncPlrCurve.setCoefficient1Constant(1.41E-01)
+            eirFuncPlrCurve.setCoefficient2x(6.55E-01)
+            eirFuncPlrCurve.setCoefficient3xPOW2(2.03E-01)
+            eirFuncPlrCurve.setMinimumValueofx(0)
+            eirFuncPlrCurve.setMaximumValueofx(1.2)
+            # construct chiller
+            chiller = ops.ChillerElectricEIR(model,clgCapFuncTempCurve,eirFuncTempCurve,eirFuncPlrCurve)
+            if coolingDetails != None and coolingDetails.coolingCOP != 'Default':
+                chiller.setReferenceCOP(coolingCOP)
+            else:
+                chiller.setReferenceCOP(6.1)
+            if coolingDetails != None and coolingDetails.supplyTemperature != 'Default':
+                chiller.setReferenceLeavingChilledWaterTemperature(supplyTemperature)
+            chiller.setCondenserType("WaterCooled")
+            chiller.setChillerFlowMode("ConstantFlow")
+        elif chillerType == "AirCooled":
+            # create clgCapFuncTempCurve
+            clgCapFuncTempCurve = ops.CurveBiquadratic(model)
+            clgCapFuncTempCurve.setCoefficient1Constant(1.05E+00)
+            clgCapFuncTempCurve.setCoefficient2x(3.36E-02)
+            clgCapFuncTempCurve.setCoefficient3xPOW2(2.15E-04)
+            clgCapFuncTempCurve.setCoefficient4y(-5.18E-03)
+            clgCapFuncTempCurve.setCoefficient5yPOW2(-4.42E-05)
+            clgCapFuncTempCurve.setCoefficient6xTIMESY(-2.15E-04)
+            clgCapFuncTempCurve.setMinimumValueofx(0)
+            clgCapFuncTempCurve.setMaximumValueofx(20)
+            clgCapFuncTempCurve.setMinimumValueofy(0)
+            clgCapFuncTempCurve.setMaximumValueofy(50)
+            # create eirFuncTempCurve
+            eirFuncTempCurve = ops.CurveBiquadratic(model)
+            eirFuncTempCurve.setCoefficient1Constant(5.83E-01)
+            eirFuncTempCurve.setCoefficient2x(-4.04E-03)
+            eirFuncTempCurve.setCoefficient3xPOW2(4.68E-04)
+            eirFuncTempCurve.setCoefficient4y(-2.24E-04)
+            eirFuncTempCurve.setCoefficient5yPOW2(4.81E-04)
+            eirFuncTempCurve.setCoefficient6xTIMESY(-6.82E-04)
+            eirFuncTempCurve.setMinimumValueofx(0)
+            eirFuncTempCurve.setMaximumValueofx(20)
+            eirFuncTempCurve.setMinimumValueofy(0)
+            eirFuncTempCurve.setMaximumValueofy(50)
+            # create eirFuncPlrCurve
+            eirFuncPlrCurve = ops.CurveQuadratic(model)
+            eirFuncPlrCurve.setCoefficient1Constant(4.19E-02)
+            eirFuncPlrCurve.setCoefficient2x(6.25E-01)
+            eirFuncPlrCurve.setCoefficient3xPOW2(3.23E-01)
+            eirFuncPlrCurve.setMinimumValueofx(0)
+            eirFuncPlrCurve.setMaximumValueofx(1.2)
+            # construct chiller
+            chiller = ops.ChillerElectricEIR(model,clgCapFuncTempCurve,eirFuncTempCurve,eirFuncPlrCurve)
+            if coolingDetails != None and coolingDetails.coolingCOP != 'Default':
+                chiller.setReferenceCOP(coolingCOP)
+            else:
+                chiller.setReferenceCOP(2.93)
+            if coolingDetails != None and coolingDetails.supplyTemperature != 'Default':
+                chiller.setReferenceLeavingChilledWaterTemperature(supplyTemperature)
+            chiller.setCondenserType("AirCooled")
+            chiller.setChillerFlowMode("ConstantFlow")
+        
+        # create a scheduled setpoint manager
+        setpointManagerScheduled = ops.SetpointManagerScheduled(model, chilledWaterSetpointSchedule)
+        # create pipes
+        pipeSupplyBypass = ops.PipeAdiabatic(model)
+        pipeSupplyOutlet = ops.PipeAdiabatic(model)
+        pipeDemandBypass = ops.PipeAdiabatic(model)
+        pipeDemandInlet = ops.PipeAdiabatic(model)
+        pipeDemandOutlet = ops.PipeAdiabatic(model)
+        # connect components to plant loop
+        # supply side components
+        chilleWaterPlant.addSupplyBranchForComponent(chiller)
+        chilleWaterPlant.addSupplyBranchForComponent(pipeSupplyBypass)
+        pump.addToNode(chilleWaterPlant.supplyInletNode())
+        pipeSupplyOutlet.addToNode(chilleWaterPlant.supplyOutletNode())
+        setpointManagerScheduled.addToNode(chilleWaterPlant.supplyOutletNode())
+        # demand side components (water coils are added as they are added to airloops and ZoneHVAC)
+        chilleWaterPlant.addDemandBranchForComponent(pipeDemandBypass)
+        pipeDemandInlet.addToNode(chilleWaterPlant.demandInletNode())
+        pipeDemandOutlet.addToNode(chilleWaterPlant.demandOutletNode())
+        
+        # pass back chilled water plant
+        return chilleWaterPlant
     
     
+    def createDOASAirLoop(self, model, thermalZones, setpointSchedule, airDetails, heatingDetails, coolingDetails, HVACCount, hotWaterPlant=None, chilledWaterPlant=None, terminalOption=None):
+        airloopPrimary = ops.AirLoopHVAC(model)
+        airloopPrimary.setName("DOAS Air Loop HVAC" + str(HVACCount))
+        # modify system sizing properties
+        sizingSystem = airloopPrimary.sizingSystem()
+        # set central heating and cooling temperatures for sizing
+        sizingSystem.setCentralCoolingDesignSupplyAirTemperature(12.8)
+        sizingSystem.setCentralHeatingDesignSupplyAirTemperature(40) #ML OS default is 16.7
+        # load specification
+        sizingSystem.setSystemOutdoorAirMethod("VentilationRateProcedure") #ML OS default is ZoneSum
+        sizingSystem.setTypeofLoadtoSizeOn("VentilationRequirement") #DOAS
+        sizingSystem.setAllOutdoorAirinCooling(True) #DOAS
+        sizingSystem.setAllOutdoorAirinHeating(True) #DOAS
+        
+        airLoopComps = []
+        # set availability schedule
+        if airDetails != None and airDetails.HVACAvailabiltySched != 'ALWAYS ON':
+            hvacAvailSch = self.getOSSchedule(airDetails.HVACAvailabiltySched, model)
+            airloopPrimary.setAvailabilitySchedule(hvacAvailSch)
+        else:
+            airloopPrimary.setAvailabilitySchedule(model.alwaysOnDiscreteSchedule())
+        
+        # constant speed fan
+        sizingSystem.setMinimumSystemAirFlowRatio(1.0) #DCV
+        fan = self.createDefaultAEDGFan(model, airDetails)
+        airLoopComps.append(fan)
+        # create heating coil
+        heatingCoil = ops.CoilHeatingWater(model, model.alwaysOnDiscreteSchedule())
+        if heatingDetails != None and heatingDetails.heatingAvailSched != 'ALWAYS ON':
+             heatAvailSch = self.getOSSchedule(heatingDetails.heatingAvailSched,model)
+             heatingCoil.setAvailabilitySchedule(heatAvailSch)
+        if heatingDetails != None and heatingDetails.supplyTemperature != 'Default':
+            heatingCoil.setRatedInletWaterTemperature(heatingDetails.supplyTemperature)
+            heatingCoil.setRatedOutletWaterTemperature(heatingDetails.supplyTemperature-11)
+        airLoopComps.append(heatingCoil)
+        # create cooling coil
+        coolingCoil = ops.CoilCoolingWater(model, model.alwaysOnDiscreteSchedule())
+        if coolingDetails != None and coolingDetails.coolingAvailSched != 'ALWAYS ON':
+             coolAvailSch = self.getOSSchedule(coolingDetails.coolingAvailSched, model)
+             coolingCoil.setAvailabilitySchedule(coolAvailSch)
+        if coolingDetails != None and coolingDetails.supplyTemperature != 'Default':
+            coolingCoil.setDesignInletWaterTemperature(coolingDetails.supplyTemperature)
+        airLoopComps.append(coolingCoil)
+        
+        # create controller outdoor air
+        controllerOA = ops.ControllerOutdoorAir(model)
+        controllerOA.autosizeMinimumOutdoorAirFlowRate()
+        controllerOA.autosizeMaximumOutdoorAirFlowRate()
+        # create ventilation schedules and assign to OA controller for DOAS
+        controllerOA.setMinimumFractionofOutdoorAirSchedule(model.alwaysOnDiscreteSchedule())
+        controllerOA.setMaximumFractionofOutdoorAirSchedule(model.alwaysOnDiscreteSchedule())
+        
+        controllerOA.setHeatRecoveryBypassControlType("BypassWhenOAFlowGreaterThanMinimum")
+        # create outdoor air system
+        systemOA = ops.AirLoopHVACOutdoorAirSystem(model, controllerOA)
+        airLoopComps.append(systemOA)
+         
+        # create scheduled setpoint manager for airloop
+        # DOAS or VAV for cooling and not ventilation
+        setpointManager = ops.SetpointManagerScheduled(model, setpointSchedule)
+        
+        # connect components to airloop
+        # find the supply inlet node of the airloop
+        airloopSupplyInlet = airloopPrimary.supplyInletNode()
+        # add the components to the airloop
+        for count, comp in enumerate(airLoopComps):
+          comp.addToNode(airloopSupplyInlet)
+          if count == 1 and hotWaterPlant != None:
+            hotWaterPlant.addDemandBranchForComponent(comp)
+            comp.controllerWaterCoil().get().setMinimumActuatedFlow(0)
+          elif count == 2 and chilledWaterPlant != None:
+            chilledWaterPlant.addDemandBranchForComponent(comp)
+            comp.controllerWaterCoil().get().setMinimumActuatedFlow(0)
+        
+        # Add airside economizer if requested
+        if airDetails != None and airDetails.airsideEconomizer != 'Default':
+            self.adjustAirSideEcon(airloopPrimary, airDetails)
+            if airDetails.airsideEconomizer == 'NoEconomizer':
+                econLockout = True
+        else:
+            self.addDefaultAirsideEcon(airloopPrimary, False)
+        
+        # add erv to outdoor air system either based on user input or add the default AEDG erv.
+        if airDetails != None and airDetails.heatRecovery != 'Default' and airDetails.heatRecovery != 'None':
+            self.addHeatRecovToModel(model, airloopPrimary, airDetails.heatRecovery, airDetails.recoveryEffectiveness, False, True)
+        else:
+            self.addHeatRecovToModel(model, airloopPrimary, 'Enthalpy', 0.75, False, True, 0.69)
+        
+        # add setpoint manager to supply equipment outlet node
+        setpointManager.addToNode(airloopPrimary.supplyOutletNode())
+        # add thermal zones to airloop
+        for zone in thermalZones:
+            # make an air terminal for the zone
+            if terminalOption == "VAV":
+                airTerminal = ops.AirTerminalSingleDuctVAVNoReheat(model, model.alwaysOnDiscreteSchedule())
+            else:
+                airTerminal = ops.AirTerminalSingleDuctUncontrolled(model, model.alwaysOnDiscreteSchedule())
+            
+            # attach new terminal to the zone and to the airloop
+            airloopPrimary.addBranchForZone(zone, airTerminal.to_StraightComponent())
+        
+        return airloopPrimary
+    
+    def createZoneEquip(self, model, thermalZones, equipList, hotWaterPlant=None, chilledWaterPlant=None):
+        if 'FanCoil' in equipList:
+            for zone in thermalZones:
+                # create fan coil
+                # create fan
+                fan = ops.FanOnOff(model, model.alwaysOnDiscreteSchedule())
+                fan.setFanEfficiency(0.5)
+                fan.setPressureRise(75) #Pa
+                fan.autosizeMaximumFlowRate()
+                fan.setMotorEfficiency(0.9)
+                fan.setMotorInAirstreamFraction(1.0)
+                # create cooling coil and connect to chilled water plant
+                coolingCoil = ops.CoilCoolingWater(model, model.alwaysOnDiscreteSchedule())
+                chilledWaterPlant.addDemandBranchForComponent(coolingCoil)
+                coolingCoil.controllerWaterCoil().get().setMinimumActuatedFlow(0)
+                # create heating coil and connect to hot water plant
+                heatingCoil = ops.CoilHeatingWater(model, model.alwaysOnDiscreteSchedule())
+                hotWaterPlant.addDemandBranchForComponent(heatingCoil)
+                heatingCoil.controllerWaterCoil().get().setMinimumActuatedFlow(0)
+                # construct fan coil
+                fanCoil = ops.ZoneHVACFourPipeFanCoil(model, model.alwaysOnDiscreteSchedule(), fan, coolingCoil, heatingCoil)
+                fanCoil.setMaximumOutdoorAirFlowRate(0)                                                          
+                # add fan coil to thermal zone
+                fanCoil.addToThermalZone(zone)
+    
+    ### END OF FUNCTIONS FOR CREATING HVAC SYSTEMS FROM SCRATCH ###
+    
+    ### START OF FUNCTIONS FOR EDITING HVAC SYSTEMS ###
     def updateFan(self,fan,totalEfficiency,motorEfficiency,pressureRise):
         if totalEfficiency != 'Default': 
             fan.setFanEfficiency(totalEfficiency)
@@ -592,7 +927,7 @@ class WriteOPS(object):
         humidifier.addToNode(supplyNode)
         self.addHumidifierController(model, airloop)
     
-    def addHeatRecovToModel(self, model, airloop, heatRecovery, recoveryEffectiveness, econLockout=False):
+    def addHeatRecovToModel(self, model, airloop, heatRecovery, recoveryEffectiveness, econLockout=False, aedgRecov=False, latentEff=None):
         # Create an air-to-air heat exchanger.
         heatEx = ops.HeatExchangerAirToAirSensibleAndLatent(model)
         #Set how the economizer interacts with the heat recovery.
@@ -609,10 +944,21 @@ class WriteOPS(object):
             heatEx.setSensibleEffectivenessat75CoolingAirFlow(recoveryEffectiveness)
             heatEx.setSensibleEffectivenessat75HeatingAirFlow(recoveryEffectiveness)
             if heatRecovery != 'Sensible':
-                heatEx.setLatentEffectivenessat100CoolingAirFlow(recoveryEffectiveness)
-                heatEx.setLatentEffectivenessat100HeatingAirFlow(recoveryEffectiveness)
-                heatEx.setLatentEffectivenessat75CoolingAirFlow(recoveryEffectiveness)
-                heatEx.setLatentEffectivenessat75HeatingAirFlow(recoveryEffectiveness)
+                if latentEff == None:
+                    heatEx.setLatentEffectivenessat100CoolingAirFlow(recoveryEffectiveness)
+                    heatEx.setLatentEffectivenessat100HeatingAirFlow(recoveryEffectiveness)
+                    heatEx.setLatentEffectivenessat75CoolingAirFlow(recoveryEffectiveness)
+                    heatEx.setLatentEffectivenessat75HeatingAirFlow(recoveryEffectiveness)
+                else:
+                    heatEx.setLatentEffectivenessat100CoolingAirFlow(latentEff)
+                    heatEx.setLatentEffectivenessat100HeatingAirFlow(latentEff)
+                    heatEx.setLatentEffectivenessat75CoolingAirFlow(latentEff)
+                    heatEx.setLatentEffectivenessat75HeatingAirFlow(latentEff)
+        if aedgRecov == True:
+            heatEx.setFrostControlType("ExhaustOnly")
+            heatEx.setThresholdTemperature(-12.2)
+            heatEx.setInitialDefrostTimeFraction(0.1670)
+            heatEx.setRateofDefrostTimeFractionIncrease(0.0240)
         # Add the heat exchanger to the model.
         outdoorNode = airloop.reliefAirNode().get()
         heatEx.addToNode(outdoorNode)
@@ -680,7 +1026,7 @@ class WriteOPS(object):
                 mixAirNode = airloop.mixedAirNode().get()
                 vvfan.addToNode(mixAirNode)
         if airDetails.coolingSupplyAirTemp != 'Default':
-            self.updateLoopSupplyTemp(airloop, model, airDetails.coolingSupplyAirTemp, "Deck_Temperature_Default", HVACCount)
+            self.updateLoopSupplyTemp(airloop, model, airDetails.coolingSupplyAirTemp, "Deck_Temperature_Default", "Deck_Temp", HVACCount)
             if waterCoolCoil == True:
                 # Change the rating on the cooling coil.
                 x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:Water"))
@@ -725,7 +1071,7 @@ class WriteOPS(object):
             if heatingDetails.heatingAvailSched != "ALWAYS ON" or heatingDetails.supplyTemperature != "Default":
                 self.updateWaterHeatingCoil(model, hc, heatingDetails.heatingAvailSched, heatingDetails.supplyTemperature)
             if heatingDetails.supplyTemperature != "Default":
-                self.updateLoopSupplyTemp(hwl, model, heatingDetails.supplyTemperature, "Hot_Water_Temperature_Default", HVACCount)
+                self.updateLoopSupplyTemp(hwl, model, heatingDetails.supplyTemperature, "Hot_Water_Temperature_Default", "Hot_Water_Temp", HVACCount)
     
     def adjustChilledWaterLoop(self, model, airloop, coolingDetails, HVACCount):
         if coolingDetails.coolingAvailSched != "ALWAYS ON" or coolingDetails.coolingCOP != "Default" or coolingDetails.supplyTemperature != "Default"  or coolingDetails.pumpMotorEfficiency != "Default":
@@ -745,7 +1091,7 @@ class WriteOPS(object):
             if coolingDetails.coolingAvailSched != "ALWAYS ON" or coolingDetails.supplyTemperature != "Default":
                 self.updateWaterCoolingCoil(model, cc, coolingDetails.coolingAvailSched, coolingDetails.supplyTemperature)
             if coolingDetails.supplyTemperature != "Default":
-                self.updateLoopSupplyTemp(cwl, model, coolingDetails.supplyTemperature, 'Chilled_Water_Temperature_Default', HVACCount)
+                self.updateLoopSupplyTemp(cwl, model, coolingDetails.supplyTemperature, 'Chilled_Water_Temperature_Default', 'Chilled_Water_Temp', HVACCount)
     
     def updateCVLoopSupplyTemp(self, airloop, model, suppTempLow, supTempHigh):
         supplyNode = airloop.supplyOutletNode()
@@ -755,15 +1101,17 @@ class WriteOPS(object):
         if supTempHigh != 'Default':
             spManager.setMaximumSupplyAirTemperature(supTempHigh)
     
-    def updateLoopSupplyTemp(self, loop, model, suppTemp, schedName, HVACCount):
+    def updateLoopSupplyTemp(self, loop, model, suppTemp, schedName, ruleSetName, HVACCount):
         #Change the cooling supply air temperature schedule.
-        suppTempRuleset = self.createConstantScheduleRuleset(schedName + str(HVACCount), 'TEMPERATURE', suppTemp, model)
+        suppTempRuleset = self.createConstantScheduleRuleset(ruleSetName + str(HVACCount), schedName + str(HVACCount), 'TEMPERATURE', suppTemp, model)
         supplyNode = loop.supplyOutletNode()
         spManager = supplyNode.setpointManagerScheduled().get()
         spManager.setSchedule(suppTempRuleset)
     
+    ### END OF FUNCTIONS FOR EDITING HVAC SYSTEMS ###
     
     
+    ### START OF FUNCTION FOR ADDING HVAC SYSTEMS TO THE MODEL ###
     def addSystemsToZones(self, model):
         # Variabe to track the number of systems.
         HVACCount = 0
@@ -917,7 +1265,7 @@ class WriteOPS(object):
                                 osPump = model.getPumpVariableSpeed(pump[1].handle()).get()
                                 self.updatePump(osPump, heatingDetails.pumpMotorEfficiency)
                         if heatingDetails.supplyTemperature != "Default":
-                            self.updateLoopSupplyTemp(hwl, model, heatingDetails.supplyTemperature, "Hot_Water_Temperature_Default", HVACCount)
+                            self.updateLoopSupplyTemp(hwl, model, heatingDetails.supplyTemperature, "Hot_Water_Temperature_Default", "Hot_Water_Temp", HVACCount)
                 
             elif systemIndex == 2:
                 # 2: PTHP, Residential
@@ -1280,9 +1628,39 @@ class WriteOPS(object):
                         hc = model.getCoilHeatingElectric(hcs[0].handle()).get()
                         self.updateElectricHeatingCoil(model, hc, heatingDetails.heatingAvailSched, heatingDetails.heatingEffOrCOP)
             
+            elif systemIndex == 11:
+                # Create the hot water plant.
+                if heatingDetails != None and heatingDetails.supplyTemperature != 'Default':
+                    suppTemp = heatingDetails.supplyTemperature
+                else:
+                    suppTemp = 67
+                hotLoopTemp = self.createConstantScheduleRuleset('Hot_Water_Temperature' + str(HVACCount), 'Hot_Water_Temperature_Default' + str(HVACCount), 'TEMPERATURE', suppTemp, model)
+                hwl = self.createHotWaterPlant(model, hotLoopTemp, heatingDetails, HVACCount)
+                # Create the chilled water plant.
+                if coolingDetails != None and coolingDetails.supplyTemperature != 'Default':
+                    suppTemp = coolingDetails.supplyTemperature
+                else:
+                    suppTemp = 6.7
+                coolLoopTemp = self.createConstantScheduleRuleset('Chilled_Water_Temperature' + str(HVACCount), 'Chilled_Water_Temperature_Default' + str(HVACCount), 'TEMPERATURE', suppTemp, model)
+                cwl = self.createChilledWaterPlant(model, coolLoopTemp, coolingDetails, HVACCount, "AirCooled")
+                # Create air loop.
+                if airDetails!= None and airDetails.heatingSupplyAirTemp != 'Default':
+                    suppTemp = airDetails.heatingSupplyAirTemp
+                elif airDetails!= None and airDetails.coolingSupplyAirTemp != 'Default':
+                    suppTemp = airDetails.coolingSupplyAirTemp
+                else:
+                    suppTemp = 20
+                airLoopTemp = self.createConstantScheduleRuleset('DOAS_Temperature_Setpoint' + str(HVACCount), 'DOAS_Temperature_Setpoint_Default' + str(HVACCount), 'TEMPERATURE', suppTemp, model)
+                airLoop = self.createDOASAirLoop(model, thermalZoneVector, airLoopTemp, airDetails, heatingDetails, coolingDetails, HVACCount, hwl, cwl)
+                # Add the fain coil units.
+                equipList = ['FanCoil']
+                self.createZoneEquip(model, thermalZoneVector, equipList, hwl, cwl)
+            
             else:
                 msg = "HVAC system index " + str(systemIndex) +  " is not implemented yet!"
                 ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+    
+    ### END OF FUNCTION FOR ADDING HVAC SYSTEMS TO THE MODEL ###
     
     
     def addThermostat(self, HBZone, OSThermalZone, space, model):
