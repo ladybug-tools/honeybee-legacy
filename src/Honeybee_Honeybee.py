@@ -7560,14 +7560,14 @@ class hb_hvacProperties(object):
         0: {'FanTotEff': False, 'FanMotEff': False, 'FanPres': False, 'FanPlace': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
         1: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'HeatSupTemp' : True, 'CoolSupTemp' : False, 'Econ' : False, 'HeatRecov' : False},
         2: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Econ' : False, 'HeatRecov' : False},
-        3: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Econ' : True, 'HeatRecov' : True},
-        4: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Econ' : True, 'HeatRecov' : True},
+        3: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        4: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
         5: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'HeatSupTemp' : True, 'CoolSupTemp' : False, 'Econ' : True, 'HeatRecov' : True},
         6: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Econ' : True, 'HeatRecov' : True},
         7: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
         8: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'HeatSupTemp' : False, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        9: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Econ' : True, 'HeatRecov' : True},
-        10: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Econ' : True, 'HeatRecov' : True}
+        9: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        10: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True}
         }
         
         self.heatCapabilities = {
