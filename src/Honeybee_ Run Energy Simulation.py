@@ -62,7 +62,7 @@ Provided by Honeybee 0.0.59
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.59\nMAY_02_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAY_08_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -198,9 +198,14 @@ class WriteIDF(object):
                 checked, glzCoordinates= self.checkCoordinates(glzCoordinates)
                 
                 #Check shading objects.
-                if childSrf.shadingControlName == []: shdCntrl = ''
-                else: shdCntrl = childSrf.shadingControlName[0]
-                
+                if childSrf.shadingControlName == []:
+                    shdCntrl = ''
+                else:
+                    try:
+                        shdCntrl = childSrf.shadingControlName[0]
+                    except IndexError:
+                        shdCntrl = ''
+                        
                 #Check for frame objects.
                 if childSrf.construction in sc.sticky["honeybee_ExtraConstrProps"].keys():
                     childSrf.frameName = sc.sticky["honeybee_ExtraConstrProps"][childSrf.construction]['Name']
