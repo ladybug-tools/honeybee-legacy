@@ -743,10 +743,6 @@ class WriteOPS(object):
         # Add airside economizer if requested
         if airDetails != None and airDetails.airsideEconomizer != 'Default':
             self.adjustAirSideEcon(airloopPrimary, airDetails)
-            if airDetails.airsideEconomizer == 'NoEconomizer':
-                econLockout = True
-        else:
-            self.addDefaultAirsideEcon(airloopPrimary, False)
         
         # add erv to outdoor air system either based on user input or add the default AEDG erv.
         if airDetails != None and airDetails.heatRecovery != 'Default' and airDetails.heatRecovery != 'None':
