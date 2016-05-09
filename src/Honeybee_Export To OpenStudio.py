@@ -1672,6 +1672,13 @@ class WriteOPS(object):
                         self.updateElectricHeatingCoil(model, hc, heatingDetails.heatingAvailSched, heatingDetails.heatingEffOrCOP)
             
             elif systemIndex == 11:
+                # Check to see if there is humidity control on any of the zones.
+                for zone in hbZones:
+                    if zone.humidityMax != '':
+                        dehumidTrigger = True
+                    if zone.humidityMin != '':
+                        humidTrigger = True
+                
                 # Create the hot water plant.
                 if heatingDetails != None and heatingDetails.supplyTemperature != 'Default':
                     suppTemp = heatingDetails.supplyTemperature
@@ -1701,6 +1708,13 @@ class WriteOPS(object):
                     suppTemp = 20
                 airLoopTemp = self.createConstantScheduleRuleset('DOAS_Temperature_Setpoint' + str(HVACCount), 'DOAS_Temperature_Setpoint_Default' + str(HVACCount), 'TEMPERATURE', suppTemp, model)
                 airLoop = self.createDOASAirLoop(model, thermalZoneVector, airLoopTemp, airDetails, heatingDetails, coolingDetails, HVACCount, hwl, cwl)
+                # If there is a maximum humidity assigned to the zone, set the cooling coil to dehumidify the air.
+                if dehumidTrigger == True:
+                    self.addChilledWaterDehumid(model, airLoop)
+                # If there is a minimum humidity assigned to the zone, add in an electric humidifier to humidify the air.
+                if humidTrigger == True:
+                    self.addElectricHumidifier(model, airLoop)
+                
                 # Add the fain coil units.
                 equipList = ['FanCoil']
                 self.createZoneEquip(model, thermalZoneVector, equipList, hwl, cwl)
