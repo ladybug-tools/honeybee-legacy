@@ -62,11 +62,11 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.59\nMAY_08_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAY_09_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nMAY_08_2016
+#compatibleHBVersion = VER 0.0.56\nMAY_09_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
@@ -467,9 +467,9 @@ class WriteOPS(object):
     These ruby versions of these functions are used for many of the 
     Advanced Energy Design Guideline (AEDG) measures that have been released by NREL.
     """
-    def createDefaultAEDGPump(self, model, pEfficiency):
+    def createDefaultAEDGPump(self, model, pEfficiency, pressRise=119563):
         pump = ops.PumpVariableSpeed(model)
-        pump.setRatedPumpHead(119563) #Pa
+        pump.setRatedPumpHead(pressRise) #Pa
         pump.setMotorEfficiency(pEfficiency)
         pump.setCoefficient1ofthePartLoadPerformanceCurve(0)
         pump.setCoefficient2ofthePartLoadPerformanceCurve(0.0216)
@@ -494,6 +494,94 @@ class WriteOPS(object):
             fan.setMotorEfficiency(0.9)
         fan.setMotorInAirstreamFraction(1.0)
         return fan
+    
+    def createDefaultAEDGWaterChiller(self, model, coolingDetails):
+        # create clgCapFuncTempCurve
+        clgCapFuncTempCurve = ops.CurveBiquadratic(model)
+        clgCapFuncTempCurve.setCoefficient1Constant(1.07E+00)
+        clgCapFuncTempCurve.setCoefficient2x(4.29E-02)
+        clgCapFuncTempCurve.setCoefficient3xPOW2(4.17E-04)
+        clgCapFuncTempCurve.setCoefficient4y(-8.10E-03)
+        clgCapFuncTempCurve.setCoefficient5yPOW2(-4.02E-05)
+        clgCapFuncTempCurve.setCoefficient6xTIMESY(-3.86E-04)
+        clgCapFuncTempCurve.setMinimumValueofx(0)
+        clgCapFuncTempCurve.setMaximumValueofx(20)
+        clgCapFuncTempCurve.setMinimumValueofy(0)
+        clgCapFuncTempCurve.setMaximumValueofy(50)
+        # create eirFuncTempCurve
+        eirFuncTempCurve = ops.CurveBiquadratic(model)
+        eirFuncTempCurve.setCoefficient1Constant(4.68E-01)
+        eirFuncTempCurve.setCoefficient2x(-1.38E-02)
+        eirFuncTempCurve.setCoefficient3xPOW2(6.98E-04)
+        eirFuncTempCurve.setCoefficient4y(1.09E-02)
+        eirFuncTempCurve.setCoefficient5yPOW2(4.62E-04)
+        eirFuncTempCurve.setCoefficient6xTIMESY(-6.82E-04)
+        eirFuncTempCurve.setMinimumValueofx(0)
+        eirFuncTempCurve.setMaximumValueofx(20)
+        eirFuncTempCurve.setMinimumValueofy(0)
+        eirFuncTempCurve.setMaximumValueofy(50)
+        # create eirFuncPlrCurve
+        eirFuncPlrCurve = ops.CurveQuadratic(model)
+        eirFuncPlrCurve.setCoefficient1Constant(1.41E-01)
+        eirFuncPlrCurve.setCoefficient2x(6.55E-01)
+        eirFuncPlrCurve.setCoefficient3xPOW2(2.03E-01)
+        eirFuncPlrCurve.setMinimumValueofx(0)
+        eirFuncPlrCurve.setMaximumValueofx(1.2)
+        # construct chiller
+        chiller = ops.ChillerElectricEIR(model,clgCapFuncTempCurve,eirFuncTempCurve,eirFuncPlrCurve)
+        if coolingDetails != None and coolingDetails.coolingCOP != 'Default':
+            chiller.setReferenceCOP(coolingDetails.coolingCOP)
+        else:
+            chiller.setReferenceCOP(6.1)
+        if coolingDetails != None and coolingDetails.supplyTemperature != 'Default':
+            chiller.setReferenceLeavingChilledWaterTemperature(coolingDetails.supplyTemperature)
+        chiller.setCondenserType("WaterCooled")
+        chiller.setChillerFlowMode("ConstantFlow")
+        return chiller
+    
+    def createDefaultAEDGAirChiller(self, model, coolingDetails):
+        # create clgCapFuncTempCurve
+        clgCapFuncTempCurve = ops.CurveBiquadratic(model)
+        clgCapFuncTempCurve.setCoefficient1Constant(1.05E+00)
+        clgCapFuncTempCurve.setCoefficient2x(3.36E-02)
+        clgCapFuncTempCurve.setCoefficient3xPOW2(2.15E-04)
+        clgCapFuncTempCurve.setCoefficient4y(-5.18E-03)
+        clgCapFuncTempCurve.setCoefficient5yPOW2(-4.42E-05)
+        clgCapFuncTempCurve.setCoefficient6xTIMESY(-2.15E-04)
+        clgCapFuncTempCurve.setMinimumValueofx(0)
+        clgCapFuncTempCurve.setMaximumValueofx(20)
+        clgCapFuncTempCurve.setMinimumValueofy(0)
+        clgCapFuncTempCurve.setMaximumValueofy(50)
+        # create eirFuncTempCurve
+        eirFuncTempCurve = ops.CurveBiquadratic(model)
+        eirFuncTempCurve.setCoefficient1Constant(5.83E-01)
+        eirFuncTempCurve.setCoefficient2x(-4.04E-03)
+        eirFuncTempCurve.setCoefficient3xPOW2(4.68E-04)
+        eirFuncTempCurve.setCoefficient4y(-2.24E-04)
+        eirFuncTempCurve.setCoefficient5yPOW2(4.81E-04)
+        eirFuncTempCurve.setCoefficient6xTIMESY(-6.82E-04)
+        eirFuncTempCurve.setMinimumValueofx(0)
+        eirFuncTempCurve.setMaximumValueofx(20)
+        eirFuncTempCurve.setMinimumValueofy(0)
+        eirFuncTempCurve.setMaximumValueofy(50)
+        # create eirFuncPlrCurve
+        eirFuncPlrCurve = ops.CurveQuadratic(model)
+        eirFuncPlrCurve.setCoefficient1Constant(4.19E-02)
+        eirFuncPlrCurve.setCoefficient2x(6.25E-01)
+        eirFuncPlrCurve.setCoefficient3xPOW2(3.23E-01)
+        eirFuncPlrCurve.setMinimumValueofx(0)
+        eirFuncPlrCurve.setMaximumValueofx(1.2)
+        # construct chiller
+        chiller = ops.ChillerElectricEIR(model,clgCapFuncTempCurve,eirFuncTempCurve,eirFuncPlrCurve)
+        if coolingDetails != None and coolingDetails.coolingCOP != 'Default':
+            chiller.setReferenceCOP(coolingDetails.coolingCOP)
+        else:
+            chiller.setReferenceCOP(2.93)
+        if coolingDetails != None and coolingDetails.supplyTemperature != 'Default':
+            chiller.setReferenceLeavingChilledWaterTemperature(coolingDetails.supplyTemperature)
+        chiller.setCondenserType("AirCooled")
+        chiller.setChillerFlowMode("ConstantFlow")
+        return chiller
     
     def createHotWaterPlant(self, model, hotWaterSetpointSchedule, heatingDetails, HVACCount):
         hotWaterPlant = ops.PlantLoop(model)
@@ -558,90 +646,9 @@ class WriteOPS(object):
         pump = self.createDefaultAEDGPump(model, pEfficiency)
         # create a chiller
         if chillerType == "WaterCooled":
-            # create clgCapFuncTempCurve
-            clgCapFuncTempCurve = ops.CurveBiquadratic(model)
-            clgCapFuncTempCurve.setCoefficient1Constant(1.07E+00)
-            clgCapFuncTempCurve.setCoefficient2x(4.29E-02)
-            clgCapFuncTempCurve.setCoefficient3xPOW2(4.17E-04)
-            clgCapFuncTempCurve.setCoefficient4y(-8.10E-03)
-            clgCapFuncTempCurve.setCoefficient5yPOW2(-4.02E-05)
-            clgCapFuncTempCurve.setCoefficient6xTIMESY(-3.86E-04)
-            clgCapFuncTempCurve.setMinimumValueofx(0)
-            clgCapFuncTempCurve.setMaximumValueofx(20)
-            clgCapFuncTempCurve.setMinimumValueofy(0)
-            clgCapFuncTempCurve.setMaximumValueofy(50)
-            # create eirFuncTempCurve
-            eirFuncTempCurve = ops.CurveBiquadratic(model)
-            eirFuncTempCurve.setCoefficient1Constant(4.68E-01)
-            eirFuncTempCurve.setCoefficient2x(-1.38E-02)
-            eirFuncTempCurve.setCoefficient3xPOW2(6.98E-04)
-            eirFuncTempCurve.setCoefficient4y(1.09E-02)
-            eirFuncTempCurve.setCoefficient5yPOW2(4.62E-04)
-            eirFuncTempCurve.setCoefficient6xTIMESY(-6.82E-04)
-            eirFuncTempCurve.setMinimumValueofx(0)
-            eirFuncTempCurve.setMaximumValueofx(20)
-            eirFuncTempCurve.setMinimumValueofy(0)
-            eirFuncTempCurve.setMaximumValueofy(50)
-            # create eirFuncPlrCurve
-            eirFuncPlrCurve = ops.CurveQuadratic(model)
-            eirFuncPlrCurve.setCoefficient1Constant(1.41E-01)
-            eirFuncPlrCurve.setCoefficient2x(6.55E-01)
-            eirFuncPlrCurve.setCoefficient3xPOW2(2.03E-01)
-            eirFuncPlrCurve.setMinimumValueofx(0)
-            eirFuncPlrCurve.setMaximumValueofx(1.2)
-            # construct chiller
-            chiller = ops.ChillerElectricEIR(model,clgCapFuncTempCurve,eirFuncTempCurve,eirFuncPlrCurve)
-            if coolingDetails != None and coolingDetails.coolingCOP != 'Default':
-                chiller.setReferenceCOP(coolingCOP)
-            else:
-                chiller.setReferenceCOP(6.1)
-            if coolingDetails != None and coolingDetails.supplyTemperature != 'Default':
-                chiller.setReferenceLeavingChilledWaterTemperature(supplyTemperature)
-            chiller.setCondenserType("WaterCooled")
-            chiller.setChillerFlowMode("ConstantFlow")
+            chiller = self.createDefaultAEDGWaterChiller(model, coolingDetails)
         elif chillerType == "AirCooled":
-            # create clgCapFuncTempCurve
-            clgCapFuncTempCurve = ops.CurveBiquadratic(model)
-            clgCapFuncTempCurve.setCoefficient1Constant(1.05E+00)
-            clgCapFuncTempCurve.setCoefficient2x(3.36E-02)
-            clgCapFuncTempCurve.setCoefficient3xPOW2(2.15E-04)
-            clgCapFuncTempCurve.setCoefficient4y(-5.18E-03)
-            clgCapFuncTempCurve.setCoefficient5yPOW2(-4.42E-05)
-            clgCapFuncTempCurve.setCoefficient6xTIMESY(-2.15E-04)
-            clgCapFuncTempCurve.setMinimumValueofx(0)
-            clgCapFuncTempCurve.setMaximumValueofx(20)
-            clgCapFuncTempCurve.setMinimumValueofy(0)
-            clgCapFuncTempCurve.setMaximumValueofy(50)
-            # create eirFuncTempCurve
-            eirFuncTempCurve = ops.CurveBiquadratic(model)
-            eirFuncTempCurve.setCoefficient1Constant(5.83E-01)
-            eirFuncTempCurve.setCoefficient2x(-4.04E-03)
-            eirFuncTempCurve.setCoefficient3xPOW2(4.68E-04)
-            eirFuncTempCurve.setCoefficient4y(-2.24E-04)
-            eirFuncTempCurve.setCoefficient5yPOW2(4.81E-04)
-            eirFuncTempCurve.setCoefficient6xTIMESY(-6.82E-04)
-            eirFuncTempCurve.setMinimumValueofx(0)
-            eirFuncTempCurve.setMaximumValueofx(20)
-            eirFuncTempCurve.setMinimumValueofy(0)
-            eirFuncTempCurve.setMaximumValueofy(50)
-            # create eirFuncPlrCurve
-            eirFuncPlrCurve = ops.CurveQuadratic(model)
-            eirFuncPlrCurve.setCoefficient1Constant(4.19E-02)
-            eirFuncPlrCurve.setCoefficient2x(6.25E-01)
-            eirFuncPlrCurve.setCoefficient3xPOW2(3.23E-01)
-            eirFuncPlrCurve.setMinimumValueofx(0)
-            eirFuncPlrCurve.setMaximumValueofx(1.2)
-            # construct chiller
-            chiller = ops.ChillerElectricEIR(model,clgCapFuncTempCurve,eirFuncTempCurve,eirFuncPlrCurve)
-            if coolingDetails != None and coolingDetails.coolingCOP != 'Default':
-                chiller.setReferenceCOP(coolingCOP)
-            else:
-                chiller.setReferenceCOP(2.93)
-            if coolingDetails != None and coolingDetails.supplyTemperature != 'Default':
-                chiller.setReferenceLeavingChilledWaterTemperature(supplyTemperature)
-            chiller.setCondenserType("AirCooled")
-            chiller.setChillerFlowMode("ConstantFlow")
-        
+            chiller = self.createDefaultAEDGAirChiller(model, coolingDetails)
         # create a scheduled setpoint manager
         setpointManagerScheduled = ops.SetpointManagerScheduled(model, chilledWaterSetpointSchedule)
         # create pipes
@@ -665,6 +672,46 @@ class WriteOPS(object):
         # pass back chilled water plant
         return chilleWaterPlant
     
+    def createCondenser(self, model, chillerWaterPlant, HVACCount):
+        # create condenser loop for water-cooled chiller(s)
+        condenserLoop = ops.PlantLoop(model)
+        condenserLoop.setName("AEDG Condenser Loop"  + str(HVACCount))
+        condenserLoop.setMaximumLoopTemperature(80)
+        condenserLoop.setMinimumLoopTemperature(5)
+        loopSizing = condenserLoop.sizingPlant()
+        loopSizing.setLoopType("Condenser")
+        loopSizing.setDesignLoopExitTemperature(29.4)
+        loopSizing.setLoopDesignTemperatureDifference(5.6)
+        # create a pump
+        pump = self.createDefaultAEDGPump(model, 0.9, pressRise=134508)
+        # create a cooling tower
+        tower = ops.CoolingTowerVariableSpeed(model)
+        # create pipes
+        pipeSupplyBypass = ops.PipeAdiabatic(model)
+        pipeSupplyOutlet = ops.PipeAdiabatic(model)
+        pipeDemandBypass = ops.PipeAdiabatic(model)
+        pipeDemandInlet = ops.PipeAdiabatic(model)
+        pipeDemandOutlet = ops.PipeAdiabatic(model)
+        # create a setpoint manager
+        setpointManagerFollowOA = ops.SetpointManagerFollowOutdoorAirTemperature(model)
+        setpointManagerFollowOA.setOffsetTemperatureDifference(0)
+        setpointManagerFollowOA.setMaximumSetpointTemperature(80)
+        setpointManagerFollowOA.setMinimumSetpointTemperature(5)
+        # connect components to plant loop
+        # supply side components
+        condenserLoop.addSupplyBranchForComponent(tower)
+        condenserLoop.addSupplyBranchForComponent(pipeSupplyBypass)
+        pump.addToNode(condenserLoop.supplyInletNode())
+        pipeSupplyOutlet.addToNode(condenserLoop.supplyOutletNode())
+        setpointManagerFollowOA.addToNode(condenserLoop.supplyOutletNode())
+        # demand side components
+        chillervec = chillerWaterPlant.supplyComponents(ops.IddObjectType("OS:Chiller:Electric:EIR"))
+        chiller = model.getChillerElectricEIR(chillervec[0].handle()).get()
+        condenserLoop.addDemandBranchForComponent(chiller)
+        condenserLoop.addDemandBranchForComponent(pipeDemandBypass)
+        pipeDemandInlet.addToNode(condenserLoop.demandInletNode())
+        pipeDemandOutlet.addToNode(condenserLoop.demandOutletNode())
+        return condenserLoop
     
     def createDOASAirLoop(self, model, thermalZones, setpointSchedule, airDetails, heatingDetails, coolingDetails, HVACCount, hotWaterPlant=None, chilledWaterPlant=None, terminalOption=None):
         airloopPrimary = ops.AirLoopHVAC(model)
@@ -1637,8 +1684,14 @@ class WriteOPS(object):
                     suppTemp = coolingDetails.supplyTemperature
                 else:
                     suppTemp = 6.7
+                if coolingDetails != None and coolingDetails.chillerType != 'Default':
+                    chillType = coolingDetails.chillerType
+                else:
+                    chillType = "WaterCooled"
                 coolLoopTemp = self.createConstantScheduleRuleset('Chilled_Water_Temperature' + str(HVACCount), 'Chilled_Water_Temperature_Default' + str(HVACCount), 'TEMPERATURE', suppTemp, model)
-                cwl = self.createChilledWaterPlant(model, coolLoopTemp, coolingDetails, HVACCount, "AirCooled")
+                cwl = self.createChilledWaterPlant(model, coolLoopTemp, coolingDetails, HVACCount, chillType)
+                if chillType == "WaterCooled":
+                    cndwl = self.createCondenser(model, cwl, HVACCount)
                 # Create air loop.
                 if airDetails!= None and airDetails.heatingSupplyAirTemp != 'Default':
                     suppTemp = airDetails.heatingSupplyAirTemp

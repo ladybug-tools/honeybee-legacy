@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.59\nMAY_08_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAY_09_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -7589,18 +7589,18 @@ class hb_hvacProperties(object):
         }
         
         self.coolCapabilities = {
-        0: {'COP' : False, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
-        1: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
-        2: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
-        3: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
-        4: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
-        5: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
-        6: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
-        7: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
-        8: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
-        9: {'COP' : False, 'Avail' : False, 'SupTemp' : False, 'PumpEff' : False},
-        10: {'COP' : False, 'Avail' : False, 'SupTemp' : False, 'PumpEff' : False},
-        11: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True}
+        0: {'COP' : False, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : False},
+        1: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : False},
+        2: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : False},
+        3: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : False},
+        4: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : False},
+        5: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : False},
+        6: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : False},
+        7: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : False},
+        8: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : False},
+        9: {'COP' : False, 'Avail' : False, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : False},
+        10: {'COP' : False, 'Avail' : False, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : False},
+        11: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : True}
         }
     
     @staticmethod
@@ -7916,10 +7916,17 @@ class hb_heatingDetail(object):
 
 
 class hb_coolingDetail(object):
-    def __init__(self, coolingAvailSched=None, coolingCOP=None, supplyTemperature=None, pumpMotorEfficiency=None):
+    def __init__(self, coolingAvailSched=None, coolingCOP=None, supplyTemperature=None, pumpMotorEfficiency=None, chillerType=None):
         
         self.areInputsChecked = False
         self.sysProps = hb_hvacProperties()
+        
+        self.chillerTypeDict = {
+        0: 'WaterCooled',
+        1: 'AirCooled',
+        'WaterCooled': 'WaterCooled',
+        'AirCooled': 'AirCooled',
+        }
         
         if coolingAvailSched:
             self.coolingAvailSched = coolingAvailSched
@@ -7937,6 +7944,10 @@ class hb_coolingDetail(object):
             self.pumpMotorEfficiency = float(pumpMotorEfficiency)
         else:
             self.pumpMotorEfficiency = "Default"
+        if chillerType != None:
+            self.chillerType = self.chillerTypeDict[chillerType]
+        else:
+            self.chillerType = "Default"
     
     @classmethod
     def fromTextStr(cls, textStr):
@@ -7955,7 +7966,7 @@ class hb_coolingDetail(object):
                     paramList.append(None)
         
         if success == True:
-            coolDetailObj = cls(paramList[0], paramList[1], paramList[2], paramList[3])
+            coolDetailObj = cls(paramList[0], paramList[1], paramList[2], paramList[3], paramList[4])
             coolDetailObj.areInputsChecked = True
             return coolDetailObj
         else:
@@ -7990,6 +8001,8 @@ class hb_coolingDetail(object):
             errors.append(self.sysProps.generateWarning(sysType, 'COOLING SYSTEM SUPPLY TEMPERATURE', 'coolingDetails'))
         if self.pumpMotorEfficiency != 'Default' and coolCapabilities['PumpEff'] == False:
             errors.append(self.sysProps.generateWarning(sysType, 'COOLING SYSTEM PUMP MOTOR EFFICIENCY', 'coolingDetails'))
+        if self.chillerType != 'Default' and coolCapabilities['ChillType'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'COOLING SYSTEM CHILLER TPYE', 'coolingDetails'))
         
         return errors
     
@@ -8003,7 +8016,8 @@ class hb_coolingDetail(object):
             '  Cooling Availability Schedule: ' + str(self.coolingAvailSched) + '\n' + \
             '  Cooling System COP: ' + str(self.coolingCOP) + '\n' + \
             '  Cooling System Supply Temperature: ' + str(self.supplyTemperature) + '\n' + \
-            '  Cooling Hystem Pump Motor Efficiency: ' + str(self.pumpMotorEfficiency)
+            '  Cooling System Pump Motor Efficiency: ' + str(self.pumpMotorEfficiency) + '\n' + \
+            '  Cooling System Chiller Type: ' + str(self.chillerType)
             
             return True, textStr
         else:
