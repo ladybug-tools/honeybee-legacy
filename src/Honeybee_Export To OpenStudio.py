@@ -804,6 +804,14 @@ class WriteOPS(object):
             # make an air terminal for the zone
             if terminalOption == "VAV":
                 airTerminal = ops.AirTerminalSingleDuctVAVNoReheat(model, model.alwaysOnDiscreteSchedule())
+            elif terminalOption == "ChilledBeam":
+                # create cooling coil
+                coolingCoil = ops.CoilCoolingCooledBeam(model)
+                chilledWaterPlant.addDemandBranchForComponent(coolingCoil)
+                airTerminal = ops.AirTerminalSingleDuctConstantVolumeCooledBeam(model, model.alwaysOnDiscreteSchedule(), coolingCoil)
+                if coolingDetails != None and coolingDetails.coolingAvailSched != 'ALWAYS ON':
+                     coolAvailSch = self.getOSSchedule(coolingDetails.coolingAvailSched, model)
+                     airTerminal.setAvailabilitySchedule(coolAvailSch)
             else:
                 airTerminal = ops.AirTerminalSingleDuctUncontrolled(model, model.alwaysOnDiscreteSchedule())
             
@@ -813,8 +821,8 @@ class WriteOPS(object):
         return airloopPrimary
     
     def createZoneEquip(self, model, thermalZones, equipList, hotWaterPlant=None, chilledWaterPlant=None):
-        if 'FanCoil' in equipList:
-            for zone in thermalZones:
+        for zone in thermalZones:
+            if 'FanCoil' in equipList:
                 # create fan coil
                 # create fan
                 fan = ops.FanOnOff(model, model.alwaysOnDiscreteSchedule())
@@ -836,6 +844,12 @@ class WriteOPS(object):
                 fanCoil.setMaximumOutdoorAirFlowRate(0)                                                          
                 # add fan coil to thermal zone
                 fanCoil.addToThermalZone(zone)
+            elif "Baseboard" in equipList:
+                # create baseboard heater add add to thermal zone and hot water loop
+                baseboardCoil = ops.CoilHeatingWaterBaseboard(model)
+                baseboardHeater = ops.ZoneHVACBaseboardConvectiveWater(model, model.alwaysOnDiscreteSchedule(), baseboardCoil)
+                baseboardHeater.addToThermalZone(zone)          
+                hotWaterPlant.addDemandBranchForComponent(baseboardCoil)
     
     ### END OF FUNCTIONS FOR CREATING HVAC SYSTEMS FROM SCRATCH ###
     
@@ -1671,7 +1685,7 @@ class WriteOPS(object):
                         hc = model.getCoilHeatingElectric(hcs[0].handle()).get()
                         self.updateElectricHeatingCoil(model, hc, heatingDetails.heatingAvailSched, heatingDetails.heatingEffOrCOP)
             
-            elif systemIndex == 11:
+            elif systemIndex == 11 or systemIndex == 12:
                 # Check to see if there is humidity control on any of the zones.
                 for zone in hbZones:
                     if zone.humidityMax != '':
@@ -1707,7 +1721,10 @@ class WriteOPS(object):
                 else:
                     suppTemp = 20
                 airLoopTemp = self.createConstantScheduleRuleset('DOAS_Temperature_Setpoint' + str(HVACCount), 'DOAS_Temperature_Setpoint_Default' + str(HVACCount), 'TEMPERATURE', suppTemp, model)
-                airLoop = self.createDOASAirLoop(model, thermalZoneVector, airLoopTemp, airDetails, heatingDetails, coolingDetails, HVACCount, hwl, cwl)
+                if systemIndex == 11:
+                    airLoop = self.createDOASAirLoop(model, thermalZoneVector, airLoopTemp, airDetails, heatingDetails, coolingDetails, HVACCount, hwl, cwl)
+                elif systemIndex == 12:
+                    airLoop = self.createDOASAirLoop(model, thermalZoneVector, airLoopTemp, airDetails, heatingDetails, coolingDetails, HVACCount, hwl, cwl, "ChilledBeam")
                 # If there is a maximum humidity assigned to the zone, set the cooling coil to dehumidify the air.
                 if dehumidTrigger == True:
                     self.addChilledWaterDehumid(model, airLoop)
@@ -1715,9 +1732,14 @@ class WriteOPS(object):
                 if humidTrigger == True:
                     self.addElectricHumidifier(model, airLoop)
                 
-                # Add the fain coil units.
-                equipList = ['FanCoil']
-                self.createZoneEquip(model, thermalZoneVector, equipList, hwl, cwl)
+                if systemIndex == 11:
+                    # Add the fain coil units.
+                    equipList = ['FanCoil']
+                    self.createZoneEquip(model, thermalZoneVector, equipList, hwl, cwl)
+                elif systemIndex == 12:
+                    #Add the baseboard heating.
+                    equipList = ['Baseboard']
+                    self.createZoneEquip(model, thermalZoneVector, equipList, hwl, cwl)
             
             else:
                 msg = "HVAC system index " + str(systemIndex) +  " is not implemented yet!"
