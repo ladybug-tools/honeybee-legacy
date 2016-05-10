@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.59
 """
 ghenv.Component.Name = "Honeybee_Load OpenStudio Measure"
 ghenv.Component.NickName = 'importOSMeasure'
-ghenv.Component.Message = 'VER 0.0.59\nAPR_29_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAY_10_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"
@@ -209,7 +209,7 @@ def cleanInputNames():
 def cleanFirstInput():
     ghenv.Component.Params.Input[0].NickName = "."
     ghenv.Component.Params.Input[0].Name = "."
-    ghenv.Component.Params.Input[0].RemoveAllSources()    
+    # ghenv.Component.Params.Input[0].RemoveAllSources()    
 
 def updateComponentDescription(xmlFile):
     # get name of measure and description
@@ -247,8 +247,8 @@ class OpenStudioMeasure:
         return "OpenStudio " + self.name
 
 
-if _OSMeasure:
-    
+if ghenv.Component.Params.Input.Count==1 and _OSMeasure:
+    # first time loading
     xmlFile = os.path.join(_OSMeasure, "measure.xml")
     if not os.path.isfile(xmlFile): raise Exception("Can't find measure at " + xmlFile)
     
@@ -296,5 +296,10 @@ else:
         ghenv.Component.Description = OSMeasure.description
         pprint(OSMeasure.args)
     except Exception , e:
-        print "Couldn't load the measure!\n%s" % str(e)
-        pass
+        msg = "Couldn't load the measure!\n%s" % str(e)
+            
+        if ghenv.Component.Params.Input.Count!=1:
+            msg += "\nTry to reload the measure with a fresh component."
+            raise Exception(msg)
+        
+        print msg
