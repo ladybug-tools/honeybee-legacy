@@ -41,7 +41,6 @@ Provided by Honeybee 0.0.59
 import Rhino as rc
 import scriptcontext as sc
 import os
-import sys
 import System
 import Grasshopper.Kernel as gh
 import uuid
@@ -52,7 +51,7 @@ import decimal
 
 ghenv.Component.Name = 'Honeybee_Write THERM File'
 ghenv.Component.NickName = 'writeTHERM'
-ghenv.Component.Message = 'VER 0.0.59\nMAR_22_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAY_12_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -68,13 +67,16 @@ tol = sc.doc.ModelAbsoluteTolerance
 
 
 def checkTheInputs():
-    #Check the filename.
+    # Import Polygon class.
+    hb_thermPolygon = sc.sticky["honeybee_ThermPolygon"]
+    
+    # Check the filename.
     xmlFileName = 'unnamed'
     if fileName_ != None:
         if fileName_.upper().endswith('.THMX'): xmlFileName = fileName_.upper().split('.THMX')[0]
         else: xmlFileName = fileName_
     
-    #If there is a workingDir, make sure that it exists and, if not, try to make it.
+    # If there is a workingDir, make sure that it exists and, if not, try to make it.
     workingDir = None
     if workingDir_ != None:
         if not os.path.exists(workingDir_):
@@ -98,7 +100,7 @@ def checkTheInputs():
     
     if not workingDir.endswith('\\'): workingDir = workingDir + '\\'
     
-    #Call the polygons from the hive.
+    # Call the polygons from the hive.
     hb_hive = sc.sticky["honeybee_Hive"]()
     try:
         thermPolygons = hb_hive.callFromHoneybeeHive(_polygons)
@@ -109,7 +111,7 @@ def checkTheInputs():
         ghenv.Component.AddRuntimeMessage(w, warning)
         return -1
     
-    #Make sure that the connected objects are of the right type.
+    # Make sure that the connected objects are of the right type.
     checkData = True
     for polygon in thermPolygons:
         try:
@@ -135,7 +137,8 @@ def checkTheInputs():
         ghenv.Component.AddRuntimeMessage(w, warning)
         return -1
     
-    #Make sure that all of the geometry is in the same plane.
+    
+    # Make sure that all of the geometry is in the same plane.
     basePlaneNormal = rc.Geometry.Vector3d(thermPolygons[0].normalVector)
     if basePlaneNormal.Z < 0: basePlaneNormal.Reverse()
     
@@ -144,7 +147,7 @@ def checkTheInputs():
         allPolygonGeo.append(polygon.geometry)
     joinedPolygons = rc.Geometry.Brep.JoinBreps(allPolygonGeo, sc.doc.ModelAbsoluteTolerance)
     
-    #Establish the reference plane for the THERM scene.
+    # Establish the reference plane for the THERM scene.
     refrencePlane = None
     allGeometryBB = joinedPolygons[0].GetBoundingBox(rc.Geometry.Plane.WorldXY)
     if abs(basePlaneNormal.X) < tol and abs(basePlaneNormal.Y) < tol and abs(basePlaneNormal.Z - 1) < tol: basePlaneOrigin = rc.Geometry.BoundingBox.Corner(allGeometryBB, True, False, False)
@@ -152,13 +155,13 @@ def checkTheInputs():
     thermFileOrigin = rc.Geometry.BoundingBox.Corner(allGeometryBB, True, True, True)
     basePlane = rc.Geometry.Plane(basePlaneOrigin, basePlaneNormal)
     
-    #If the plane is not in the worldXY, rotate it so that the THERM y-axis and Rhino z-axis are aligned.
+    # If the plane is not in the worldXY, rotate it so that the THERM y-axis and Rhino z-axis are aligned.
     basePlaneNormal.Unitize()
     if abs(basePlaneNormal.X) < tol and abs(basePlaneNormal.Y) < tol and abs(basePlaneNormal.Z - 1) < tol:
         basePlaneNormal = rc.Geometry.Vector3d.ZAxis
         basePlane = rc.Geometry.Plane(basePlane.Origin, rc.Geometry.Vector3d.XAxis, rc.Geometry.Vector3d.YAxis)
     else:
-        #Calculate the angle between the geometry plane an the projection of the Rhino Z-Axis into that plane.
+        # Calculate the angle between the geometry plane an the projection of the Rhino Z-Axis into that plane.
         rhinoZAxis = rc.Geometry.Vector3d(0,0,1)
         planeProject = rc.Geometry.Transform.PlanarProjection(basePlane)
         rhinoZAxis.Transform(planeProject)
@@ -168,24 +171,78 @@ def checkTheInputs():
         planeRotation = rc.Geometry.Transform.Rotation(-rotationAngle, basePlaneNormal, basePlane.Origin)
         basePlane.Transform(planeRotation)
     
-    #If the plane X-Axis is negative, flip the X and Zaxis.
+    # If the plane X-Axis is negative, flip the X and Zaxis.
     if basePlane.XAxis.X < -tol:
         basePlaneNormal.Reverse()
         newXAxis = rc.Geometry.Vector3d(basePlane.XAxis)
         newXAxis.Reverse()
         basePlane = rc.Geometry.Plane(basePlane.Origin, newXAxis, basePlane.YAxis)
     
-    #Caclulate a new origin that is based on the bouding box in the new plane.
+    # Caclulate a new origin that is based on the bouding box in the new plane.
     newAllGeometryBB = joinedPolygons[0].GetBoundingBox(basePlane)
     newBasePlaneOrigin = rc.Geometry.BoundingBox.Corner(newAllGeometryBB, True, False, False)
     changeBTrans = rc.Geometry.Transform.ChangeBasis(basePlane, rc.Geometry.Plane.WorldXY)
     newBasePlaneOrigin.Transform(changeBTrans)
     basePlane = rc.Geometry.Plane(newBasePlaneOrigin, basePlane.XAxis, basePlane.YAxis)
     
+    # Check to see if any of the therm polygons have holes in them and need to be split into multiple geometries.
+    # If so, split them and create new polygon objects.
+    def splitWithPlane(splitPlane, geometry):
+        allSplitGeo = []
+        allSplitGeo.extend(geometry.Trim(splitPlane, sc.doc.ModelAbsoluteTolerance))
+        splitPlane.Flip()
+        allSplitGeo.extend(geometry.Trim(splitPlane, sc.doc.ModelAbsoluteTolerance))
+        return allSplitGeo
     
-    #Check the polygon geometry
+    newThermPolygons = []
     for polygon in thermPolygons:
-        #Check if the surface is in the same plane as the other geometry.
+        if polygon.splitNeeded == True:
+            outerMostCurve = polygon.polylineGeo[0]
+            innerCurves = polygon.polylineGeo[1:]
+            splitPlanes = []
+            for inCurve in innerCurves:
+                vert1 = inCurve.PointAtStart
+                vert2Param = outerMostCurve.ClosestPoint(vert1)[1]
+                vert2 = outerMostCurve.PointAt(vert2Param)
+                planeX = rc.Geometry.Vector3d(vert2.X-vert1.X, vert2.Y-vert1.Y, vert2.Z-vert1.Z)
+                splitPlane = rc.Geometry.Plane(vert1, planeX, basePlane.ZAxis)
+                splitPlanes.append(splitPlane)
+            
+            finalSplitGeo = []
+            allSplit = False
+            badPolygons = [polygon.geometry]
+            for plane in splitPlanes:
+                if allSplit == False:
+                    allSplitGeo = []
+                    for geo2Split in badPolygons:
+                        allSplitGeo.extend(splitWithPlane(plane, geo2Split))
+                    goodPolygons = []
+                    badPolygons = []
+                    for geo in allSplitGeo:
+                        pB = geo.Edges
+                        allB = rc.Geometry.PolylineCurve.JoinCurves(pB, sc.doc.ModelAbsoluteTolerance)
+                        if len(allB) == 1:
+                            goodPolygons.append(geo)
+                        else:
+                            badPolygons.append(geo)
+                    if len(goodPolygons) == len(allSplitGeo):
+                        allSplit = True
+                    finalSplitGeo.extend(goodPolygons)
+            
+            # Turn the split geometries into thermPolygons
+            for splitGeo in finalSplitGeo:
+                guid = str(uuid.uuid4())
+                polyName = "".join(guid.split("-")[:-1])
+                newPolygon = hb_thermPolygon(splitGeo, polygon.material, polyName, polygon.plane, None)
+                newThermPolygons.append(newPolygon)
+        else:
+            newThermPolygons.append(polygon)
+    thermPolygons = newThermPolygons
+    
+    
+    # Check the polygon geometry
+    for polygon in thermPolygons:
+        # Check if the surface is in the same plane as the other geometry.
         if abs(polygon.normalVector.X - basePlaneNormal.X) < tol and abs(polygon.normalVector.Y - basePlaneNormal.Y) < tol and abs(polygon.normalVector.Z - basePlaneNormal.Z) < tol: pass
         else:
             polyNormalRev = rc.Geometry.Vector3d(polygon.normalVector)
@@ -199,17 +256,17 @@ def checkTheInputs():
                 warning = "The geometry for polygon with material " + polygon.material + " is not in the same plane as the other connected geometry."
                 print warning
                 ghenv.Component.AddRuntimeMessage(w, warning)
-        #Check to be sure that the polyline geomtry is clockwise in the base plane.
+        # Check to be sure that the polyline geomtry is clockwise in the base plane.
         if str(polygon.polylineGeo.ClosedCurveOrientation(basePlane)) == 'CounterClockwise':
             polygon.polylineGeo.Reverse()
-        #Remake the list of vertices so that we are sure they are oriented clockwise.
+        # Remake the list of vertices so that we are sure they are oriented clockwise.
         polygon.vertices = []
         for segment in polygon.polylineGeo.DuplicateSegments():
             polygon.vertices.append(segment.PointAtStart)
     
-    #Check the BC geometry
+    # Check the BC geometry
     for boundary in thermBCs:
-        #Check if the surface is in the same plane as the other geometry.
+        # Check if the surface is in the same plane as the other geometry.
         if boundary.geometry.SpanCount == 1: boundary.normalVector = basePlaneNormal
         elif abs(boundary.normalVector.X - basePlaneNormal.X) < tol and abs(boundary.normalVector.Y - basePlaneNormal.Y) < tol and abs(boundary.normalVector.Z - basePlaneNormal.Z) < tol:pass
         else:
@@ -227,24 +284,24 @@ def checkTheInputs():
     if checkData == False:
         return -1
     
-    #Make sure that the Therm polygons form a single polysurface.
+    # Make sure that the Therm polygons form a single polysurface.
     allPolygonGeo = []
     for polygon in thermPolygons:
         allPolygonGeo.append(polygon.geometry)
     joinedPolygons = rc.Geometry.Brep.JoinBreps(allPolygonGeo, sc.doc.ModelAbsoluteTolerance)
     if len(joinedPolygons) != 1:
-        warning = "Geometry connected to _polygons does not form a single polysurface when joined and thus will cause THERM to crash."
+        warning = "Geometry connected to _polygons does not form a single polysurface and THERM does not like this. \n" + \
+        "A thermFile will still be written but you will have to finish making the geometry in THERM."
         print warning
         ghenv.Component.AddRuntimeMessage(w, warning)
-        return -1
     
-    #Make sure that the polysurface does not have any holes (only one set of naked edges).
+    # Make sure that the polysurface does not have any holes (only one set of naked edges).
     polygonBoundaries = []
     polygonBoundariesEdges = joinedPolygons[0].Edges
     for edge in polygonBoundariesEdges:
         if str(edge.Valence) == 'Naked': polygonBoundaries.append(edge.ToNurbsCurve())
-    #The DuplicateNakedEdgeCurves method does not work on everyone's machine and so I am using the code above for the time being.
-    #polygonBoundaries = joinedPolygons[0].DuplicateNakedEdgeCurves(True, True)
+    # The DuplicateNakedEdgeCurves method does not work on everyone's machine and so I am using the code above for the time being.
+    # polygonBoundaries = joinedPolygons[0].DuplicateNakedEdgeCurves(True, True)
     allBoundary = rc.Geometry.PolylineCurve.JoinCurves(polygonBoundaries, sc.doc.ModelAbsoluteTolerance)
     if len(allBoundary) != 1:
         boundLengths = []
@@ -255,13 +312,13 @@ def checkTheInputs():
         print warning
         ghenv.Component.AddRuntimeMessage(w, warning)
     else:
-        #Check to be sure the curve is facing counter-clockwise.
+        # Check to be sure the curve is facing counter-clockwise.
         encircling = allBoundary[0]
     if str(encircling.ClosedCurveOrientation(basePlane)) == 'CounterClockwise':
         encircling.Reverse()
     polygonBoundaries = encircling.DuplicateSegments()
     
-    #Get the centroid of all geometry
+    # Get the centroid of all geometry
     allGeoCentroid = rc.Geometry.AreaMassProperties.Compute(joinedPolygons[0]).Centroid
     
     return workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, polygonBoundaries, thermFileOrigin, allGeoCentroid

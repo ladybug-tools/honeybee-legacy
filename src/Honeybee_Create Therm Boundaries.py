@@ -42,20 +42,15 @@ Provided by Honeybee 0.0.59
         thermBoundary: A polyline with the specified boudary condition properties, to be plugged into the "boundaries" input of the "Write Therm File" component.
 """
 
-import rhinoscriptsyntax as rs
 import Rhino as rc
 import scriptcontext as sc
-import os
-import sys
-import System
 import Grasshopper.Kernel as gh
 import uuid
-import math
 import decimal
 
 ghenv.Component.Name = 'Honeybee_Create Therm Boundaries'
 ghenv.Component.NickName = 'createThermBoundaries'
-ghenv.Component.Message = 'VER 0.0.59\nMAR_20_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAY_12_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"

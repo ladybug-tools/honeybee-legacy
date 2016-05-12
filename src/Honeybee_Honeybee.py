@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.59\nMAY_09_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAY_12_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -6984,6 +6984,7 @@ class thermPolygon(object):
         self.objectType = "ThermPolygon"
         self.hasChild = False
         self.name = srfName
+        self.splitNeeded = False
         self.warning = None
         
         #Check if the material exists in the THERM Library and, if not, add it.
@@ -7006,7 +7007,11 @@ class thermPolygon(object):
                 rc.Geometry.Curve.ToPolyline(0,0,0.1,0,0,sc.doc.ModelAbsoluteTolerance,0,0,True)
                 self.segments.append(seg)
         #Build a new Polygon from the segments.
-        self.polylineGeo = rc.Geometry.Curve.JoinCurves(self.segments, sc.doc.ModelAbsoluteTolerance)[0]
+        self.polylineGeo = rc.Geometry.Curve.JoinCurves(self.segments, sc.doc.ModelAbsoluteTolerance)
+        if len(self.polylineGeo) > 1:
+            self.splitNeeded = True
+        elif len(self.polylineGeo) == 1:
+            self.polylineGeo = self.polylineGeo[0]
         
         #Build surface geometry and extract the vertices.
         self.geometry = rc.Geometry.Brep.CreatePlanarBreps(self.polylineGeo)[0]

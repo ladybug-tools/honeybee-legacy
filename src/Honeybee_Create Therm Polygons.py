@@ -34,20 +34,15 @@ Provided by Honeybee 0.0.59
         thermPolygon: A polygon representing material properties
 """
 
-import rhinoscriptsyntax as rs
 import Rhino as rc
 import scriptcontext as sc
-import os
-import sys
-import System
 import Grasshopper.Kernel as gh
 import uuid
-import math
 import decimal
 
 ghenv.Component.Name = 'Honeybee_Create Therm Polygons'
 ghenv.Component.NickName = 'createThermPolygons'
-ghenv.Component.Message = 'VER 0.0.59\nMAR_24_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAY_12_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -122,20 +117,7 @@ def main(geometry, material, RGBColor):
     
     #If the geometry was not recognized, give a warning.
     if geometryAccepted == False:
-        warning = "The connected geometry was not recgnized as a polyline, surface, brep/polysurface, or mesh."
-        print warning
-        w = gh.GH_RuntimeMessageLevel.Warning
-        ghenv.Component.AddRuntimeMessage(w, warning)
-        return -1
-    
-    #Make sure that the polygon does not have any holes (only one set of naked edges).
-    polygonBoundaries = []
-    polygonBoundariesEdges = geometry.Edges
-    for edge in polygonBoundariesEdges:
-        if str(edge.Valence) == 'Naked': polygonBoundaries.append(edge.ToNurbsCurve())
-    allBoundary = rc.Geometry.PolylineCurve.JoinCurves(polygonBoundaries, sc.doc.ModelAbsoluteTolerance)
-    if len(allBoundary) != 1:
-        warning = "_geomtry does not have a single boundary (there are holes in the polygon). \n Try breaking the polygon up into two or more polygons such that there is only one boundary."
+        warning = "The connected geometry was not recognized as a polyline, surface, brep/polysurface, or mesh."
         print warning
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, warning)
