@@ -51,7 +51,7 @@ import decimal
 
 ghenv.Component.Name = 'Honeybee_Write THERM File'
 ghenv.Component.NickName = 'writeTHERM'
-ghenv.Component.Message = 'VER 0.0.59\nMAY_12_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAY_13_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -603,7 +603,10 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
                 curveParameters = pLine.DivideByCount(10, True)
                 for param in curveParameters: segmentVertices.append(pLine.PointAt(param))
             segmentVerticesCopy = copy.deepcopy(segmentVertices)
-            heatFlowDirect = calcBestFitVector(segmentVerticesCopy, basePlane)
+            try:
+                heatFlowDirect = calcBestFitVector(segmentVerticesCopy, basePlane)
+            except:
+                heatFlowDirect = rc.Geometry.Vector3d.XAxis
             heatFlowDirect.Rotate(math.radians(90), basePlane.Normal)
             #Compute the area centriod of the polylines and use the relationship between this area centriod and that of all geometry to determine whether heat flow needs to be flipped.
             xVals = []; yVals = []; zVals = []
@@ -611,7 +614,10 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
                 xVals.append(pt.X)
                 yVals.append(pt.Y)
                 zVals.append(pt.Z)
-            boundCentroid = rc.Geometry.Point3d(sum(xVals)/len(xVals), sum(yVals)/len(xVals), sum(zVals)/len(xVals))
+            try:
+                boundCentroid = rc.Geometry.Point3d(sum(xVals)/len(xVals), sum(yVals)/len(xVals), sum(zVals)/len(xVals))
+            except:
+                boundCentroid = rc.Geometry.Point3d.Origin
             roughHeatFlowDirect = rc.Geometry.Point3d.Subtract(allGeoCentroid, boundCentroid)
             if rc.Geometry.Vector3d.VectorAngle(heatFlowDirect, roughHeatFlowDirect) > 90: heatFlowDirect.Reverse()
             #Turn the heat flow direction into a dimensionless value for a linear interoplation.
