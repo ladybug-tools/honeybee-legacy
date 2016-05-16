@@ -58,7 +58,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.59\nAPR_15_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAY_16_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -427,11 +427,12 @@ def createMesh(brep, gridSize):
 def constructNewMesh(finalFaceBreps):
     finalMesh = rc.Geometry.Mesh()
     for brepCt, brep in enumerate(finalFaceBreps):
-        if brep.Vertices.Count == 4:
-            facePt1 = rc.Geometry.Point3d(brep.Vertices[0].Location)
-            facePt2 = rc.Geometry.Point3d(brep.Vertices[1].Location)
-            facePt3 = rc.Geometry.Point3d(brep.Vertices[2].Location)
-            facePt4 = rc.Geometry.Point3d(brep.Vertices[3].Location)
+        brepVerts = brep.DuplicateVertices()
+        if len(brepVerts) == 4:
+            facePt1 = rc.Geometry.Point3d(brepVerts[0])
+            facePt2 = rc.Geometry.Point3d(brepVerts[1])
+            facePt3 = rc.Geometry.Point3d(brepVerts[2])
+            facePt4 = rc.Geometry.Point3d(brepVerts[3])
             
             meshFacePts = [facePt1, facePt2, facePt3, facePt4]
             mesh = rc.Geometry.Mesh()
@@ -441,9 +442,9 @@ def constructNewMesh(finalFaceBreps):
             mesh.Faces.AddFace(0, 1, 2, 3)
             finalMesh.Append(mesh)
         else:
-            facePt1 = rc.Geometry.Point3d(brep.Vertices[0].Location)
-            facePt2 = rc.Geometry.Point3d(brep.Vertices[1].Location)
-            facePt3 = rc.Geometry.Point3d(brep.Vertices[2].Location)
+            facePt1 = rc.Geometry.Point3d(brepVerts[0])
+            facePt2 = rc.Geometry.Point3d(brepVerts[1])
+            facePt3 = rc.Geometry.Point3d(brepVerts[2])
             
             meshFacePts = [facePt1, facePt2, facePt3]
             mesh = rc.Geometry.Mesh()
