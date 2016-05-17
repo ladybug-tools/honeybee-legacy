@@ -49,7 +49,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Visualize Microclimate Map"
 ghenv.Component.NickName = 'VisualizeMicroclimate'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAY_16_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -297,9 +297,10 @@ def main(pointValues, viewFactorMesh, dataType, lb_preparation, lb_visualization
     lowB, highB, numSeg, customColors, legendBasePoint, legendScale, legendFont, legendFontSize, legendBold, decimalPlaces, removeLessThan = lb_preparation.readLegendParameters(legendPar, False)
     
     #Read the data type and assign default values for mesh types.
-    if dataType == 'Degrees From Target' or dataType == 'Predicted Mean Vote' or dataType == 'Degrees From Neutral UTCI':
+    if dataType == 'Degrees From Target' or dataType == 'Predicted Mean Vote' or dataType == 'Degrees From Neutral UTCI' or dataType == 'PET Category':
         pointValuesFinal = pointValues
         if dataType == 'Degrees From Target' or dataType == 'Degrees From Neutral UTCI': legendTitle = 'C'
+        elif dataType == 'PET Category': legendTitle = 'PET Category'
         else: legendTitle = 'PMV'
         if dataType == 'Degrees From Target': dataType = dataType + ' Temperature'
         if len(legendPar_) == 0:
@@ -313,6 +314,10 @@ def main(pointValues, viewFactorMesh, dataType, lb_preparation, lb_visualization
                 numSeg = 12
                 lowB = -32
                 highB = 12
+            elif dataType == 'PET Category':
+                numSeg = 11
+                lowB = -2
+                highB = 2
             else:
                 numSeg = 11
                 lowB = -1
