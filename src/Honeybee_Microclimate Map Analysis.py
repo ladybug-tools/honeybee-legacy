@@ -305,6 +305,7 @@ def calculatePointMRT(srfTempDict, testPtsViewFactor, hour, originalHour, outdoo
                     pointMRT = pointMRT+weightedSrfTemp
                 weightedSrfTemp = outdoorNonSrfViewFac[ptCount]*prevailingOutdoorTemp[originalHour]
                 pointMRT = pointMRT+weightedSrfTemp
+                pointMRT = pointMRT / (sum(pointViewFactor) + outdoorNonSrfViewFac[ptCount])
                 pointMRTValues[zoneCount].append(round(pointMRT, 3))
     
     return pointMRTValues
