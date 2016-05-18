@@ -58,7 +58,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.59\nMAY_16_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAY_18_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -1306,10 +1306,10 @@ def parallel_skyProjection(zoneOpaqueMesh, skyViewVecs, pointList, zoneWindowMes
     
     return pointIntList, skyBlockedList, skyBlockWindowNameCount
 
-def checkOutdoorViewFac(outdoorTestPtViewFactor):
+def checkOutdoorViewFac(outdoorTestPtViewFactor, testPtSkyView):
     outdoorNonSrfViewFac = []
-    for viewFac in outdoorTestPtViewFactor:
-        outdoorNonSrfViewFac.append(1-sum(viewFac))
+    for ptCount, viewFac in enumerate(outdoorTestPtViewFactor):
+        outdoorNonSrfViewFac.append(1-sum(viewFac)-(testPtSkyView[ptCount]/2))
     return outdoorNonSrfViewFac
 
 
@@ -1579,7 +1579,7 @@ if checkData == True and _runIt == True and geoCheck == True and buildMesh == Tr
     outdoorNonSrfViewFac = []
     if sectionMethod != 0 and includeOutdoor == True:
         outdoorIsThere = True
-        outdoorNonSrfViewFac = checkOutdoorViewFac(testPtViewFactor[-1])
+        outdoorNonSrfViewFac = checkOutdoorViewFac(testPtViewFactor[-1], testPtSkyView[-1])
     else: outdoorIsThere = False
     
     finalFloorRefList = computeFloorReflect(testPtsInit, testPtViewFactor, zoneSrfTypes, flrRefList)
