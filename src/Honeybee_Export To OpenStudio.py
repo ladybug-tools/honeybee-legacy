@@ -45,6 +45,7 @@ Provided by Honeybee 0.0.59
         _HBZones: The HBZones that you wish to write into an OSM file and/or run through EnergyPlus.  These can be from any of the components that output HBZones.
         HBContext_: Optional HBContext geometry from the "Honeybee_EP Context Surfaces." component.
         simulationOutputs_: A list of the outputs that you would like EnergyPlus to write into the result CSV file.  This can be any set of any outputs that you would like from EnergyPlus, writen as a list of text that will be written into the IDF.  It is recommended that, if you are not expereinced with writing EnergyPlus outputs, you should use the "Honeybee_Write EP Result Parameters" component to request certain types of common outputs. 
+        additionalStrings_: THIS OPTION IS JUST FOR ADVANCED USERS OF ENERGYPLUS.  You can input additional text strings here that you would like written into the IDF.  The strings input here should be complete EnergyPlus objects that are correctly formatted.  You can input as many objects as you like in a list.  This input can be used to write objects into the IDF that are not currently supported by Honeybee.
         +++++++++++++++: ...
         _writeOSM: Set to "True" to have the component take your HBZones and other inputs and write them into an OSM file.  The file path of the resulting OSM file will appear in the osmFileAddress output of this component.  Note that only setting this to "True" and not setting the output below to "Tru"e will not automatically run the file through EnergyPlus for you.
         runSimulation_: Set to "True" to have the component run your OSM file through EnergyPlus once it has finished writing it.  This will ensure that a CSV result file appears in the resultFileAddress output.
@@ -62,7 +63,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.59\nMAY_09_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAY_20_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -2465,7 +2466,12 @@ class RunOPS(object):
         
         workspace.save(idfFilePath, overwrite = True)
         
-        ####Code added by chriswmackey to add natural ventilation parameters into the OpenStudio Model 
+        """
+        Code added by chriswmackey to add the following capabilities that do not yet exist in OS:
+        Simple Natural Ventilation
+        CSV Schedules
+        Additional IDF Strings
+        """
         self.writeNonOSFeatures(idfFilePath, self.HBZones, workingDir)
         
         
@@ -2484,7 +2490,7 @@ class RunOPS(object):
     
     
     def writeNonOSFeatures(self, idfFilePath, HBZones, workingDir):
-        #Grab the lines of the exiting IDF.
+        #Go through the lines of the exiting IDF and find and references to CSV schedules.
         wrongLineTrigger = True
         fi = open(str(idfFilePath),'r')
         fi.seek(0)
@@ -2519,6 +2525,7 @@ class RunOPS(object):
             print schedule
             lines.append(otherFeatureClass.createCSVSchedString(schedule))
         
+        # Write in any requested natural ventilation objects.
         natVentStrings = []
         for zone in HBZones:
             if zone.natVent == True:
@@ -2532,8 +2539,27 @@ class RunOPS(object):
             for line in natVentStrings:
                 lines.append(line)
         
+        # Write in a request for the surface names in the .eio file.
         lines.append('\nOutput:Surfaces:List,\n')
         lines.append('\t' + 'Details;                 !- Report Type' + '\n')
+        
+        # Write any additional strings.
+        if additionalStrings_ != []:
+            lines.append("\n")
+            for string in additionalStrings_:
+                if ":" in string and not '!' in string:
+                    lines.append("\n")
+                    lines.append("\n")
+                    lines.append(string)
+                elif "!" not in string:
+                    lines.append("\n")
+                    lines.append("\n")
+                    lines.append(string)
+                    lines.append("\n")
+                else:
+                    lines.append(string)
+                    lines.append("\n")
+            lines.append("\n")
         
         fiw = open(str(idfFilePath),'w')
         for line in lines:
