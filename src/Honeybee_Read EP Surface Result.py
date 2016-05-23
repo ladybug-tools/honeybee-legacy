@@ -46,7 +46,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Read EP Surface Result"
 ghenv.Component.NickName = 'readEPSrfResult'
-ghenv.Component.Message = 'VER 0.0.59\nAPR_23_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAY_23_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -528,7 +528,7 @@ if _resultFileAddress and gotZoneData == True and gotSrfData == True:
                                     srfPieceDataList[1][path[columnCount][0]][path[columnCount][1]].append(float(column))
                                 else:
                                     srfPieceDataList[1][path[columnCount][0]][path[columnCount][1]][lineCount-1] = \
-                                        (srfPieceDataList[0][path[columnCount][0]][path[columnCount][1]][lineCount-1] + float(column))/2
+                                        (srfPieceDataList[1][path[columnCount][0]][path[columnCount][1]][lineCount-1] + float(column))/2
                         elif key[columnCount] == 3:
                             if duplicate == False: opaqueEnergyFlow.Add((float(column)/3600000)/srfArea, p)
                             else:
