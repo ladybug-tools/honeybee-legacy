@@ -60,7 +60,7 @@ import decimal
 
 ghenv.Component.Name = 'Honeybee_Import WINDOW Glz System'
 ghenv.Component.NickName = 'importWINDOW'
-ghenv.Component.Message = 'VER 0.0.59\nMAR_22_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAY_24_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -282,14 +282,14 @@ def main(windowGlzSysReport, glzPlane, sightLineToGlz, spacerHeight, edgeOfGlass
     for thickness in glzSysThicknesses:
         if glassPane == False:
             glassPane = True
-            materialLine = rc.Geometry.LineCurve(rc.Geometry.Point3d(XCoord,spacerHeight, 0), rc.Geometry.Point3d(XCoord+thickness,spacerHeight, 0))
+            materialLine = rc.Geometry.LineCurve(rc.Geometry.Point3d(XCoord,spacerHeight, 0), rc.Geometry.Point3d(XCoord+thickness*conversionFactor,spacerHeight, 0))
             materialSrf = rc.Geometry.Surface.CreateExtrusion(materialLine, gasExtrusionVec)
         else:
             glassPane = False
-            materialLine = rc.Geometry.LineCurve(rc.Geometry.Point3d(XCoord,0,0), rc.Geometry.Point3d(XCoord+thickness,0,0))
+            materialLine = rc.Geometry.LineCurve(rc.Geometry.Point3d(XCoord,0,0), rc.Geometry.Point3d(XCoord+thickness*conversionFactor,0,0))
             materialSrf = rc.Geometry.Surface.CreateExtrusion(materialLine, extrusionVec)
         initWindowGeos.append(rc.Geometry.Brep.CreateFromSurface(materialSrf))
-        XCoord += thickness
+        XCoord += thickness*conversionFactor
     
     #If a spacer material is requested, add in the extra polygons for it.
     initSpacerGeos = []
@@ -299,11 +299,11 @@ def main(windowGlzSysReport, glzPlane, sightLineToGlz, spacerHeight, edgeOfGlass
         for thickness in glzSysThicknesses:
             if glassPane == False:
                 glassPane = True
-                materialLine = rc.Geometry.LineCurve(rc.Geometry.Point3d(newXCoord,0,0), rc.Geometry.Point3d(newXCoord+thickness,0,0))
+                materialLine = rc.Geometry.LineCurve(rc.Geometry.Point3d(newXCoord,0,0), rc.Geometry.Point3d(newXCoord+thickness*conversionFactor,0,0))
                 materialSrf = rc.Geometry.Surface.CreateExtrusion(materialLine, rc.Geometry.Vector3d(0,spacerHeight,0))
                 initSpacerGeos.append(rc.Geometry.Brep.CreateFromSurface(materialSrf))
             else: glassPane = False
-            newXCoord += thickness
+            newXCoord += thickness*conversionFactor
     
     #Generate the boundary condition geometries.
     outdoorBCGeo = rc.Geometry.PolylineCurve([rc.Geometry.Point3d.Origin, rc.Geometry.Point3d(0,glzSystemHeight,0)])
