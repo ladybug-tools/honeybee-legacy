@@ -60,7 +60,7 @@ import decimal
 
 ghenv.Component.Name = 'Honeybee_Import WINDOW Glz System'
 ghenv.Component.NickName = 'importWINDOW'
-ghenv.Component.Message = 'VER 0.0.59\nMAY_24_2016'
+ghenv.Component.Message = 'VER 0.0.59\nMAY_25_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -213,6 +213,7 @@ def main(windowGlzSysReport, glzPlane, sightLineToGlz, spacerHeight, edgeOfGlass
     envConditTrigger1 = False
     envConditTrigger2 = False
     gasTrigger = False
+    IPTrigger = False
     
     try:
         #Open the file and begin extracting the relevant bits of information.
@@ -246,9 +247,15 @@ def main(windowGlzSysReport, glzPlane, sightLineToGlz, spacerHeight, edgeOfGlass
                     glzSysKEffs.append(float(line[73:].strip()))
                     glzSysEmiss.append(0.9)
                     gasTrigger = False
+            elif '(F)' in line and envConditTrigger1 == True:
+                IPTrigger = True
             elif 'Uvalue' in line and envConditTrigger1 == True:
-                outdoorProps.append(float(line[7:16].strip()))
-                indoorProps.append(float(line[16:23].strip()))
+                if IPTrigger:
+                    outdoorProps.append((float(line[7:16].strip())-32) * 5 / 9)
+                    indoorProps.append((float(line[16:23].strip())-32) * 5 / 9)
+                else:
+                    outdoorProps.append(float(line[7:16].strip()))
+                    indoorProps.append(float(line[16:23].strip()))
                 #Compute an outdoor film coefficient from the wind speed.
                 windspeed = float(line[23:29].strip())
                 if windspeed < 3.4: outdoorProps.append(22.7)
