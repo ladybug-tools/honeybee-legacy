@@ -80,12 +80,12 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_PET Analysis Recipe"
 ghenv.Component.NickName = 'PETComfRecipe'
-ghenv.Component.Message = 'VER 0.0.59\nMAY_16_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUN_08_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
-#compatibleLBVersion = VER 0.0.59\nAPR_12_2016
+#compatibleLBVersion = VER 0.0.59\nJUN_07_2016
 try: ghenv.Component.AdditionalHelpFromDocStrings = "6"
 except: pass
 
@@ -538,6 +538,7 @@ def checkTheInputs():
             directNormalRadiation = weatherData[5]
             diffuseHorizontalRadiation = weatherData[6]
             globalHorizontalRadiation = weatherData[7]
+            horizInfraredRadiation = weatherData[12]
             outDryBulbTemp = weatherData[0]
             outRelHumid = weatherData[2]
             outWindSpeed = weatherData[3]
@@ -552,6 +553,7 @@ def checkTheInputs():
             directSolarRad = directNormalRadiation[7:]
             diffSolarRad = diffuseHorizontalRadiation[7:]
             globHorizRad = globalHorizontalRadiation[7:]
+            horizInfraredRadiation = horizInfraredRadiation[7:]
             locList = location.split('\n')
             for line in locList:
                 if "Latitude" in line: latitude = float(line.split(',')[0])
@@ -728,7 +730,7 @@ def checkTheInputs():
             checkData = True
         else: return -1
         
-        return "PET", srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winStatusNumbers, cloA, zoneFloorReflectivity, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, analysisPeriod, northAngle, bodyCharacteristics, climate
+        return "PET", srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winStatusNumbers, cloA, zoneFloorReflectivity, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, analysisPeriod, northAngle, bodyCharacteristics, climate, horizInfraredRadiation
     else:
         return -1
 
