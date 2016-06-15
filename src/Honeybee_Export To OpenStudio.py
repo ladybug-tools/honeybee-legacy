@@ -480,17 +480,17 @@ class WriteOPS(object):
     
     def createDefaultAEDGFan(self, model, airDetails):
         fan = ops.FanConstantVolume(model, model.alwaysOnDiscreteSchedule())
-        if airDetails != None and airDetails.totalEfficiency != 'Default': 
-            fan.setFanEfficiency(totalEfficiency)
+        if airDetails != None and airDetails.fanTotalEfficiency != 'Default': 
+            fan.setFanEfficiency(airDetails.fanTotalEfficiency)
         else:
             fan.setFanEfficiency(0.6)
-        if airDetails != None and airDetails.pressureRise != 'Default': 
-            fan.setPressureRise(pressureRise)
+        if airDetails != None and airDetails.fanPressureRise != 'Default': 
+            fan.setPressureRise(airDetails.fanPressureRise)
         else:
             fan.setPressureRise(500) #Pa
         fan.autosizeMaximumFlowRate()
-        if airDetails != None and airDetails.motorEfficiency != 'Default':
-            fan.setMotorEfficiency(motorEfficiency)
+        if airDetails != None and airDetails.fanMotorEfficiency != 'Default':
+            fan.setMotorEfficiency(airDetails.fanMotorEfficiency)
         else:
             fan.setMotorEfficiency(0.9)
         fan.setMotorInAirstreamFraction(1.0)
