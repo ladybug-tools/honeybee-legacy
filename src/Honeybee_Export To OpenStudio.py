@@ -533,7 +533,7 @@ class WriteOPS(object):
         if coolingDetails != None and coolingDetails.coolingCOP != 'Default':
             chiller.setReferenceCOP(coolingDetails.coolingCOP)
         else:
-            chiller.setReferenceCOP(6.1)
+            chiller.setReferenceCOP(5.5)
         if coolingDetails != None and coolingDetails.supplyTemperature != 'Default':
             chiller.setReferenceLeavingChilledWaterTemperature(coolingDetails.supplyTemperature)
         chiller.setCondenserType("WaterCooled")
