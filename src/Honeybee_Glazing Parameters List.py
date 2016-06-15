@@ -62,7 +62,7 @@ Provided by Honeybee 0.0.59
 """
 ghenv.Component.Name = "Honeybee_Glazing Parameters List"
 ghenv.Component.NickName = 'glzParamList'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUN_13_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -78,7 +78,11 @@ import scriptcontext as sc
 def checkParam(parameter):
     if parameter != None:
         if isinstance(parameter, (bool)): newParam = parameter
-        else: newParam = float(parameter)
+        else:
+            try:
+                newParam = float(parameter)
+            except:
+                newParam = parameter
     else: newParam = None
     return newParam
 
