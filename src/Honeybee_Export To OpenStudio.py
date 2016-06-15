@@ -63,7 +63,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.59\nMAY_20_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUN_20_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -1916,7 +1916,7 @@ class WriteOPS(object):
         ventilation.setOutdoorAirFlowperFloorArea(zone.ventilationPerArea)
         if zone.ventilationSched != '':
             ventSch = self.getOSSchedule(zone.ventilationSched,model)
-            ventilation.setOutdoorAirFlowRateFractionSchedule(zone.ventilationSched)
+            ventilation.setOutdoorAirFlowRateFractionSchedule(ventSch)
         space.setDesignSpecificationOutdoorAir(ventilation)
         return space
     
