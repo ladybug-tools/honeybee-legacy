@@ -51,7 +51,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Glazing based on ratio"
 ghenv.Component.NickName = 'glazingCreator'
-ghenv.Component.Message = 'VER 0.0.59\nMAR_30_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUN_15_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -732,10 +732,14 @@ def createGlazingCurved(baseSrf, glzRatio, planar):
         def fn(offDist):
             return (targetArea - OffsetCurveOnSurface(border, face, offDist, normalvector, planar)[1])
         
-        offsetDist = secant(glzO_l, glzO_r, fn, eps)
-        if offsetDist == 'NaN':
+        try:
+            offsetDist = secant(glzO_l, glzO_r, fn, eps)
+        except System.DivideByZeroException:
             offsetDist = bisect(glzO_l, glzO_r, fn, eps, 0)
-    
+        else:
+            if offsetDist == 'NaN':
+                offsetDist = bisect(glzO_l, glzO_r, fn, eps, 0)
+                
         succ, glzArea, glzCurve, splittedSrfs = OffsetCurveOnSurface(border, face, offsetDist, normalvector, planar)
     
     if succ:
