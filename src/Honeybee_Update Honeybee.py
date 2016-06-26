@@ -294,9 +294,8 @@ if _updateThisFile or _updateAllUObjects:
         print msg
         try:
             updateLogEXELocation=os.path.join(sc.sticky["Honeybee_DefaultFolder"], "honeybeeSrc\honeybee-master\HoneybeeCSharp.exe")
-            subprocess.Popen([updateLogEXELocation])
+            os.system(updateLogEXELocation)
         except:
             print "But there is no update logs available now!"
 else:
     print " "
-
