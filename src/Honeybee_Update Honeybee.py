@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Update Honeybee"
 ghenv.Component.NickName = 'updateHoneybee'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUN_21_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | Developers"
@@ -292,6 +292,11 @@ if _updateThisFile or _updateAllUObjects:
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
     else:
         print msg
+        try:
+            updateLogEXELocation=os.path.join(sc.sticky["Honeybee_DefaultFolder"], "honeybeeSrc\honeybee-master\HoneybeeCSharp.exe")
+            subprocess.Popen([updateLogEXELocation])
+        except:
+            print "But there is no update logs available now!"
 else:
     print " "
 

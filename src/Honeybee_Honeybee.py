@@ -8130,7 +8130,7 @@ if checkIn.letItFly:
         sc.sticky["honeybee_folders"]["DSLibPath"] = hb_DSLibPath
     
         # supported versions for EnergyPlus
-        EPVersions = ["V8-4-0","V8-3-0", "V8-2-10", "V8-2-9", "V8-2-8", "V8-2-7", "V8-2-6", \
+        EPVersions = ["V8-5-0","V8-4-0","V8-3-0", "V8-2-10", "V8-2-9", "V8-2-8", "V8-2-7", "V8-2-6", \
                       "V8-2-5", "V8-2-4", "V8-2-3", "V8-2-2", "V8-2-1", "V8-2-0", \
                       "V8-1-5", "V8-1-4", "V8-1-3", "V8-1-2", "V8-1-1", "V8-1-0"]
                       
