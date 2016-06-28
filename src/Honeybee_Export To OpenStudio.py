@@ -1458,6 +1458,10 @@ class WriteOPS(object):
                     if hbZones[zoneCount].recirculatedAirPerArea != 0:
                         recicTrigger = True
                         self.sizeAirTerminalForRecirc(model, hbZones[zoneCount], vavBox, zoneTotAir)
+                    elif recicTrigger == True:
+                        vavBox.setZoneMinimumAirFlowMethod('Constant')
+                        vavBox.autosizeMaximumAirFlowRate()
+                        vavBox.resetMinimumAirFlowFractionSchedule()
                     if hbZones[zoneCount].humidityMin != '':
                         humidTrigger = True
                     self.adjustWaterReheatCoil(model, vavBox, airDetails, heatingDetails)
@@ -1504,6 +1508,10 @@ class WriteOPS(object):
                     if hbZones[zoneCount].recirculatedAirPerArea != 0:
                         recicTrigger = True
                         self.sizeAirTerminalForRecirc(model, hbZones[zoneCount], vavBox, zoneTotAir)
+                    elif recicTrigger == True:
+                        vavBox.setZoneMinimumAirFlowMethod('Constant')
+                        vavBox.autosizeMaximumAirFlowRate()
+                        vavBox.resetMinimumAirFlowFractionSchedule()
                     if hbZones[zoneCount].humidityMin != '':
                         humidTrigger = True
                     self.adjustElectricReheatCoil(model, vavBox, heatingDetails)
@@ -1554,6 +1562,10 @@ class WriteOPS(object):
                     if hbZones[zoneCount].recirculatedAirPerArea != 0:
                         recicTrigger = True
                         self.sizeAirTerminalForRecirc(model, hbZones[zoneCount], vavBox, zoneTotAir)
+                    elif recicTrigger == True:
+                        vavBox.setZoneMinimumAirFlowMethod('Constant')
+                        vavBox.autosizeMaximumAirFlowRate()
+                        vavBox.resetMinimumAirFlowFractionSchedule()
                     #Check for any humidity setpoints.
                     if hbZones[zoneCount].humidityMax != '':
                         dehumidTrigger = True
@@ -1602,6 +1614,10 @@ class WriteOPS(object):
                     if hbZones[zoneCount].recirculatedAirPerArea != 0:
                         recicTrigger = True
                         self.sizeAirTerminalForRecirc(model, hbZones[zoneCount], vavBox, zoneTotAir)
+                    elif recicTrigger == True:
+                        vavBox.setZoneMinimumAirFlowMethod('Constant')
+                        vavBox.autosizeMaximumAirFlowRate()
+                        vavBox.resetMinimumAirFlowFractionSchedule()
                     if hbZones[zoneCount].humidityMax != '':
                         dehumidTrigger = True
                     if hbZones[zoneCount].humidityMin != '':
