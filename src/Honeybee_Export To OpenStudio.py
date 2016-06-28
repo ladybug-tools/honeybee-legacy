@@ -63,7 +63,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.59\nJUN_20_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUN_28_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -942,15 +942,22 @@ class WriteOPS(object):
         system.setSupplyAirFlowRateWhenNoCoolingorHeatingisNeeded(totalZoneFlow)
         fan.setMaximumFlowRate(totalZoneFlow)
     
-    def sizeAirTerminalForRecirc(self, vavBox, zoneTotAir):
-        vavBox.setMaximumAirFlowRate(4*zoneTotAir)
-        vavBox.setConstantMinimumAirFlowFraction(0.25)
+    def sizeAirTerminalForRecirc(self, model, HBZone, vavBox, zoneTotAir):
+        if HBZone.ventilationSched != '':
+            vavBox.setZoneMinimumAirFlowMethod('Scheduled')
+            vavBox.setMaximumAirFlowRate(zoneTotAir)
+            minVentSch = self.getOSSchedule(HBZone.ventilationSched,model)
+            vavBox.setMinimumAirFlowFractionSchedule(minVentSch)
+        else:
+            vavBox.setZoneMinimumAirFlowMethod('FixedFlowRate')
+            vavBox.setFixedMinimumAirFlowRate(zoneTotAir)
+            vavBox.setMaximumAirFlowRate(2*zoneTotAir)
     
     def sizeVAVFanForRecirc(self, model, airloop, recircAirFlowRates):
         fullHVACAirFlow = sum(recircAirFlowRates)
         x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:VariableVolume"))
         vvfan = model.getFanVariableVolume(x[0].handle()).get()
-        vvfan.setMaximumFlowRate(fullHVACAirFlow*4)
+        vvfan.setMaximumFlowRate(fullHVACAirFlow*2)
     
     def addDehumidController(self, model, airloop):
         # Add a humidity set point controller into the air loop.
@@ -1450,7 +1457,7 @@ class WriteOPS(object):
                     vavBox = model.getAirTerminalSingleDuctVAVReheat(x[zoneCount].handle()).get()
                     if hbZones[zoneCount].recirculatedAirPerArea != 0:
                         recicTrigger = True
-                        self.sizeAirTerminalForRecirc(vavBox, zoneTotAir)
+                        self.sizeAirTerminalForRecirc(model, hbZones[zoneCount], vavBox, zoneTotAir)
                     if hbZones[zoneCount].humidityMin != '':
                         humidTrigger = True
                     self.adjustWaterReheatCoil(model, vavBox, airDetails, heatingDetails)
@@ -1496,7 +1503,7 @@ class WriteOPS(object):
                     vavBox = model.getAirTerminalSingleDuctParallelPIUReheat(x[zoneCount].handle()).get()
                     if hbZones[zoneCount].recirculatedAirPerArea != 0:
                         recicTrigger = True
-                        self.sizeAirTerminalForRecirc(vavBox, zoneTotAir)
+                        self.sizeAirTerminalForRecirc(model, hbZones[zoneCount], vavBox, zoneTotAir)
                     if hbZones[zoneCount].humidityMin != '':
                         humidTrigger = True
                     self.adjustElectricReheatCoil(model, vavBox, heatingDetails)
@@ -1546,7 +1553,8 @@ class WriteOPS(object):
                     vavBox = model.getAirTerminalSingleDuctVAVReheat(x[zoneCount].handle()).get()
                     if hbZones[zoneCount].recirculatedAirPerArea != 0:
                         recicTrigger = True
-                        self.sizeAirTerminalForRecirc(vavBox, zoneTotAir)
+                        self.sizeAirTerminalForRecirc(model, hbZones[zoneCount], vavBox, zoneTotAir)
+                    #Check for any humidity setpoints.
                     if hbZones[zoneCount].humidityMax != '':
                         dehumidTrigger = True
                     if hbZones[zoneCount].humidityMin != '':
@@ -1593,7 +1601,7 @@ class WriteOPS(object):
                     vavBox = model.getAirTerminalSingleDuctParallelPIUReheat(x[zoneCount].handle()).get()
                     if hbZones[zoneCount].recirculatedAirPerArea != 0:
                         recicTrigger = True
-                        self.sizeAirTerminalForRecirc(vavBox, zoneTotAir)
+                        self.sizeAirTerminalForRecirc(model, hbZones[zoneCount], vavBox, zoneTotAir)
                     if hbZones[zoneCount].humidityMax != '':
                         dehumidTrigger = True
                     if hbZones[zoneCount].humidityMin != '':
