@@ -283,16 +283,31 @@ def main(windowGlzSysReport, glzPlane, spacerMaterial, thermDefault, unitConvert
     gasExtrusionVec = rc.Geometry.Vector3d(0,glzSystemHeight+sightLineToGlz-spacerHeight,0)
     XCoord = 0
     glassPane = True
-    for thickness in glzSysThicknesses:
+    for count, thickness in enumerate(glzSysThicknesses):
         if glassPane == False:
             glassPane = True
             materialLine = rc.Geometry.LineCurve(rc.Geometry.Point3d(XCoord,spacerHeight, 0), rc.Geometry.Point3d(XCoord+thickness*conversionFactor,spacerHeight, 0))
             materialSrf = rc.Geometry.Surface.CreateExtrusion(materialLine, gasExtrusionVec)
+            materialBrep = rc.Geometry.Brep.CreateFromSurface(materialSrf)
         else:
             glassPane = False
             materialLine = rc.Geometry.LineCurve(rc.Geometry.Point3d(XCoord,0,0), rc.Geometry.Point3d(XCoord+thickness*conversionFactor,0,0))
             materialSrf = rc.Geometry.Surface.CreateExtrusion(materialLine, extrusionVec)
-        initWindowGeos.append(rc.Geometry.Brep.CreateFromSurface(materialSrf))
+            materialBrep = rc.Geometry.Brep.CreateFromSurface(materialSrf)
+            if count == len(glzSysThicknesses)-1:
+                #Add in extra point for the change in BC.
+                srfVertsInit = materialBrep.DuplicateVertices()
+                kinkPointBottom = rc.Geometry.Point3d(XCoord+thickness*conversionFactor, sightLineToGlz, 0)
+                kinkPointTop = rc.Geometry.Point3d(XCoord+thickness*conversionFactor, sightLineToGlz+edgeOfGlassDim, 0)
+                srfVerts = []
+                for pt in srfVertsInit: srfVerts.append(pt)
+                srfVerts.insert(3,kinkPointBottom)
+                srfVerts.insert(3,kinkPointTop)
+                pLine = rc.Geometry.PolylineCurve(srfVerts)
+                joinLine = rc.Geometry.LineCurve(srfVerts[-1], srfVerts[0])
+                joinedCurve = rc.Geometry.Curve.JoinCurves([pLine,joinLine])[0]
+                materialBrep = rc.Geometry.Brep.CreatePlanarBreps(joinedCurve)[0]
+        initWindowGeos.append(materialBrep)
         XCoord += thickness*conversionFactor
     
     #If a spacer material is requested, add in the extra polygons for it.
