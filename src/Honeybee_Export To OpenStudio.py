@@ -171,11 +171,8 @@ class WriteOPS(object):
         simControl.setSolarDistribution(solarDist)
     
     def setShadowCalculation(self, model):
-        
         calcMethod, freq, maxFigure = self.simParameters[1]
-        
         shadowCalculation = ops.Model.getShadowCalculation(model)
-        
         shadowCalculation.setMaximumFiguresInShadowOverlapCalculations(int(maxFigure))
         shadowCalculation.setSkyDiffuseModelingAlgorithm(calcMethod)
         shadowCalculation.setCalculationFrequency(int(freq))
@@ -184,7 +181,28 @@ class WriteOPS(object):
         timestepInput = self.simParameters[0]
         timestep = ops.Model.getTimestep(model)
         timestep.setNumberOfTimestepsPerHour(int(timestepInput))
-
+    
+    def setStartDayOfWeek(self, model):
+        # The ability to set the start day of week currently breaks OpenStudio's way of assigning schedules.
+        # As a result, this feature is not being used now.
+        startDOW = self.simParameters[8]
+        yearDesc = ops.OpenStudioModelSimulation.getYearDescription(model)
+        yds = model.getObjectsByType(ops.IddObjectType("OS:YearDescription"))
+        yds[0].setString(2, startDOW)
+    
+    def setTerrain(self, model):
+        terrain = self.simParameters[5]
+        site = ops.Model.getSite(model)
+        site.setTerrain(terrain)
+    
+    def setGroundTemps(self, model):
+        # The .get() method is broken now.  Hopefully OS team fixes it soon.
+        grndTemps = self.simParameters[6]
+        site = ops.Model.getSite(model)
+        #opsGrndTemps = site.siteGroundTemperatureBuildingSurface().get()
+        #for count, temp in enumerate(grndTemps):
+        #    opsGrndTemps.setTemperatureByMonth(count+1, temp)
+    
     def setRunningPeriod(self, runningPeriod, model):
         # get the days from numbers
         stMonth, stDay, stHour, endMonth, endDay, endHour = self.lb_preparation.readRunPeriod(runningPeriod, True)
@@ -195,7 +213,7 @@ class WriteOPS(object):
         runPeriod.setBeginMonth(stMonth)
         runPeriod.setEndDayOfMonth(endDay)
         runPeriod.setEndMonth(endMonth)
-        
+    
     def setNorth(self, north, model):
         northAngle, northVector = self.lb_preparation.angle2north(north)
         building = ops.Model.getBuilding(model)
@@ -2461,11 +2479,35 @@ class EPFeaturesNotInOS(object):
                 '\t' + str(zone.natVentMaxOutdoorTemp[natVentCount])  + ',     !- Maximum Outdoor Temperature\n' + \
                 '\t' + ',     !- Maximum Outdoor Temperature Shcedule Name\n' + \
                 '\t' + '40' + ';                        !- Maximum Wind Speed\n'
+    
+    def EPHoliday(self, date, count):
+        
+        return '\nRunPeriodControl:SpecialDays,\n' + \
+                '\t' + 'Holiday' + str(count) + ',  !- Name\n' + \
+                '\t' + date.split(' ' )[0] + '/' + date.split(' ')[1] + ',  !- Date\n' + \
+                '\t' + '1' + ',  !- Duration\n' + \
+                '\t' + 'Holiday' + ';  !- Special Day Type\n'
+    
+    def EPGroundTemp(self, grndTemps):
+        
+        return "\nSite:GroundTemperature:BuildingSurface,\n" + \
+            '\t' + str(grndTemps[0]) + ',    !Jan Ground Temperature (C)\n' + \
+            '\t' + str(grndTemps[1]) + ',    !Feb Ground Temperature (C)\n' + \
+            '\t' + str(grndTemps[2]) + ',    !Mar Ground Temperature (C)\n' + \
+            '\t' + str(grndTemps[3]) + ',    !Apr Ground Temperature (C)\n' + \
+            '\t' + str(grndTemps[4]) + ',    !May Ground Temperature (C)\n' + \
+            '\t' + str(grndTemps[5]) + ',    !Jun Ground Temperature (C)\n' + \
+            '\t' + str(grndTemps[6]) + ',    !Jul Ground Temperature (C)\n' + \
+            '\t' + str(grndTemps[7]) + ',    !Aug Ground Temperature (C)\n' + \
+            '\t' + str(grndTemps[8]) + ',    !Sep Ground Temperature (C)\n' + \
+            '\t' + str(grndTemps[9]) + ',    !Oct Ground Temperature (C)\n' + \
+            '\t' + str(grndTemps[10]) + ',    !Nov Ground Temperature (C)\n' + \
+            '\t' +  str(grndTemps[11]) + ';   !Dec Ground Temperature (C)\n'
 
 
 
 class RunOPS(object):
-    def __init__(self, model, weatherFilePath, HBZones, csvSchedules, \
+    def __init__(self, model, weatherFilePath, HBZones, simParameters, csvSchedules, \
             csvScheduleCount, additionalcsvSchedules, openStudioLibFolder):
         self.weatherFile = weatherFilePath # just for batch file as an alternate solution
         self.openStudioDir = "/".join(openStudioLibFolder.split("/")[:3]) + "/share/openstudio"
@@ -2475,6 +2517,7 @@ class RunOPS(object):
         self.iddFile = ops.Path(self.EPFolder + "\Energy+.idd")
         self.model = model
         self.HBZones = HBZones
+        self.simParameters = simParameters
         self.csvSchedules = csvSchedules
         self.csvScheduleCount = csvScheduleCount
         self.additionalcsvSchedules = additionalcsvSchedules
@@ -2517,24 +2560,13 @@ class RunOPS(object):
         CSV Schedules
         Additional IDF Strings
         """
-        self.writeNonOSFeatures(idfFilePath, self.HBZones, workingDir)
-        
-        
-        """
-        CHarriman added code to always add monthly reports to idf for ease of use in SQL
-        on Nov 8 2014
-        """
-        #Monthly code added based on
-        #git site:https://github.com/NREL/OpenStudio/blob/develop/openstudiocore/src/runmanager/lib/EnergyPlusPreProcessJob.cpp#L202
-        makeMonthly = True
-        if makeMonthly:
-            self.writeIDFWithMonthly(idfFilePath)
+        self.writeNonOSFeatures(idfFilePath, self.HBZones, self.simParameters, workingDir)
         
         
         return idfFolder, idfFilePath
     
     
-    def writeNonOSFeatures(self, idfFilePath, HBZones, workingDir):
+    def writeNonOSFeatures(self, idfFilePath, HBZones, simParameters, workingDir):
         #Go through the lines of the exiting IDF and find and references to CSV schedules.
         wrongLineTrigger = True
         fi = open(str(idfFilePath),'r')
@@ -2569,6 +2601,27 @@ class RunOPS(object):
         for schedule in self.additionalcsvSchedules:
             print schedule
             lines.append(otherFeatureClass.createCSVSchedString(schedule))
+        
+        # If a start day of the week is specified, change it.
+        if simParameters[8] != None:
+            counter = 0
+            swapTrigger = False
+            for lCount, line in enumerate(lines):
+                if 'RunPeriod,' in line:
+                    swapTrigger = True
+                if swapTrigger == True:
+                    counter += 1
+                if counter == 7:
+                    lines[lCount] = simParameters[8] + ',\n'
+        
+        # Write in any Holidays.
+        if simParameters[7] != []:
+            for count, hol in enumerate(simParameters[7]):
+                lines.append(otherFeatureClass.EPHoliday(hol, count))
+        
+        # Write in any ground temperatures.
+        if simParameters[6] != []:
+            lines.append(otherFeatureClass.EPGroundTemp(simParameters[6]))
         
         # Write in any requested natural ventilation objects.
         natVentStrings = []
@@ -2606,254 +2659,6 @@ class RunOPS(object):
                     lines.append("\n")
             lines.append("\n")
         
-        fiw = open(str(idfFilePath),'w')
-        for line in lines:
-            fiw.write(line)
-        fiw.close()
-    
-    
-    def writeIDFWithMonthly(self, idfFilePath):
-        fi = open(str(idfFilePath),'r')
-        fi.seek(0)
-        prepare=False
-        count = 0
-        lines=[]
-        for line in fi:
-            if line.strip() != 'Output:SQLite,':
-                if (prepare):
-                    count+=1;
-                    if (count==2):
-                        lines.append("\n")
-                        lines.append("Output:Table:Monthly," + "\n")
-                        lines.append("    Building Energy Performance - Electricity,  !- Name"+ "\n")
-                        lines.append("    2,                       !- Digits After Decimal"+ "\n")
-                        lines.append("    InteriorLights:Electricity,  !- Variable or Meter 1 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 1"+ "\n")
-                        lines.append("    ExteriorLights:Electricity,  !- Variable or Meter 2 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 2"+ "\n")
-                        lines.append("    InteriorEquipment:Electricity,  !- Variable or Meter 3 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 3"+ "\n")
-                        lines.append("    ExteriorEquipment:Electricity,  !- Variable or Meter 4 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 4"+ "\n")
-                        lines.append("    Fans:Electricity,        !- Variable or Meter 5 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 5"+ "\n")
-                        lines.append("    Pumps:Electricity,       !- Variable or Meter 6 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 6"+ "\n")
-                        lines.append("    Heating:Electricity,     !- Variable or Meter 7 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 7"+ "\n")
-                        lines.append("    Cooling:Electricity,     !- Variable or Meter 8 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 8"+ "\n")
-                        lines.append("    HeatRejection:Electricity,  !- Variable or Meter 9 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 9"+ "\n")
-                        lines.append("    Humidifier:Electricity,  !- Variable or Meter 10 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 10"+ "\n")
-                        lines.append("    HeatRecovery:Electricity,!- Variable or Meter 11 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 11"+ "\n")
-                        lines.append("    WaterSystems:Electricity,!- Variable or Meter 12 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 12"+ "\n")
-                        lines.append("    Cogeneration:Electricity,!- Variable or Meter 13 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 13"+ "\n")
-                        lines.append("    Refrigeration:Electricity,!- Variable or Meter 14 Name"+ "\n")
-                        lines.append("    SumOrAverage;            !- Aggregation Type for Variable or Meter 14"+ "\n")
-                        lines.append("\n")
-                        lines.append("Output:Table:Monthly,"+ "\n")
-                        lines.append("  Building Energy Performance - Natural Gas,  !- Name"+ "\n")
-                        lines.append("    2,                       !- Digits After Decimal"+ "\n")
-                        lines.append("    InteriorEquipment:Gas,   !- Variable or Meter 1 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 1"+ "\n")
-                        lines.append("    ExteriorEquipment:Gas,   !- Variable or Meter 2 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 2"+ "\n")
-                        lines.append("    Heating:Gas,             !- Variable or Meter 3 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 3"+ "\n")
-                        lines.append("    Cooling:Gas,             !- Variable or Meter 4 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 4"+ "\n")
-                        lines.append("    WaterSystems:Gas,        !- Variable or Meter 5 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 5"+ "\n")
-                        lines.append("    Cogeneration:Gas,        !- Variable or Meter 6 Name"+ "\n")
-                        lines.append("    SumOrAverage;            !- Aggregation Type for Variable or Meter 6"+ "\n")
-                        lines.append("\n")
-                        lines.append("Output:Table:Monthly,"+ "\n")
-                        lines.append("  Building Energy Performance - District Heating,  !- Name"+ "\n")
-                        lines.append("    2,                       !- Digits After Decimal"+ "\n")
-                        lines.append("    InteriorLights:DistrictHeating,  !- Variable or Meter 1 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 1"+ "\n")
-                        lines.append("    ExteriorLights:DistrictHeating,  !- Variable or Meter 2 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 2"+ "\n")
-                        lines.append("    InteriorEquipment:DistrictHeating,  !- Variable or Meter 3 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 3"+ "\n")
-                        lines.append("    ExteriorEquipment:DistrictHeating,  !- Variable or Meter 4 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 4"+ "\n")
-                        lines.append("    Fans:DistrictHeating,        !- Variable or Meter 5 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 5"+ "\n")
-                        lines.append("    Pumps:DistrictHeating,       !- Variable or Meter 6 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 6"+ "\n")
-                        lines.append("    Heating:DistrictHeating,     !- Variable or Meter 7 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 7"+ "\n")
-                        lines.append("    Cooling:DistrictHeating,     !- Variable or Meter 8 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 8"+ "\n")
-                        lines.append("    HeatRejection:DistrictHeating,  !- Variable or Meter 9 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 9"+ "\n")
-                        lines.append("    Humidifier:DistrictHeating,  !- Variable or Meter 10 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 10"+ "\n")
-                        lines.append("    HeatRecovery:DistrictHeating,!- Variable or Meter 11 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 11"+ "\n")
-                        lines.append("    WaterSystems:DistrictHeating,!- Variable or Meter 12 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 12"+ "\n")
-                        lines.append("    Cogeneration:DistrictHeating,!- Variable or Meter 13 Name"+ "\n")
-                        lines.append("    SumOrAverage;            !- Aggregation Type for Variable or Meter 13"+ "\n")
-                        lines.append("\n")
-                        lines.append("Output:Table:Monthly,"+ "\n")
-                        lines.append("  Building Energy Performance - District Cooling,  !- Name"+ "\n")
-                        lines.append("    2,                       !- Digits After Decimal"+ "\n")
-                        lines.append("    InteriorLights:DistrictCooling,  !- Variable or Meter 1 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 1"+ "\n")
-                        lines.append("    ExteriorLights:DistrictCooling,  !- Variable or Meter 2 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 2"+ "\n")
-                        lines.append("    InteriorEquipment:DistrictCooling,  !- Variable or Meter 3 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 3"+ "\n")
-                        lines.append("    ExteriorEquipment:DistrictCooling,  !- Variable or Meter 4 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 4"+ "\n")
-                        lines.append("    Fans:DistrictCooling,        !- Variable or Meter 5 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 5"+ "\n")
-                        lines.append("    Pumps:DistrictCooling,       !- Variable or Meter 6 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 6"+ "\n")
-                        lines.append("    Heating:DistrictCooling,     !- Variable or Meter 7 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 7"+ "\n")
-                        lines.append("    Cooling:DistrictCooling,     !- Variable or Meter 8 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 8"+ "\n")
-                        lines.append("    HeatRejection:DistrictCooling,  !- Variable or Meter 9 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 9"+ "\n")
-                        lines.append("    Humidifier:DistrictCooling,  !- Variable or Meter 10 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 10"+ "\n")
-                        lines.append("    HeatRecovery:DistrictCooling,!- Variable or Meter 11 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 11"+ "\n")
-                        lines.append("    WaterSystems:DistrictCooling,!- Variable or Meter 12 Name"+ "\n")
-                        lines.append("    SumOrAverage,            !- Aggregation Type for Variable or Meter 12"+ "\n")
-                        lines.append("    Cogeneration:DistrictCooling,!- Variable or Meter 13 Name"+ "\n")
-                        lines.append("    SumOrAverage;            !- Aggregation Type for Variable or Meter 13"+ "\n")
-                        lines.append("\n")
-                        lines.append("Output:Table:Monthly,"+ "\n")
-                        lines.append("  Building Energy Performance - Electricity Peak Demand,  !- Name"+ "\n")
-                        lines.append("    2,                       !- Digits After Decimal"+ "\n")
-                        lines.append("    Electricity:Facility,  !- Variable or Meter 1 Name"+ "\n")
-                        lines.append("    Maximum,            !- Aggregation Type for Variable or Meter 1"+ "\n")
-                        lines.append("    InteriorLights:Electricity,  !- Variable or Meter 1 Name"+ "\n")
-                        lines.append("    ValueWhenMaximumOrMinimum,            !- Aggregation Type for Variable or Meter 1"+ "\n")
-                        lines.append("    ExteriorLights:Electricity,  !- Variable or Meter 2 Name"+ "\n")
-                        lines.append("    ValueWhenMaximumOrMinimum,            !- Aggregation Type for Variable or Meter 2"+ "\n")
-                        lines.append("    InteriorEquipment:Electricity,  !- Variable or Meter 3 Name"+ "\n")
-                        lines.append("    ValueWhenMaximumOrMinimum,            !- Aggregation Type for Variable or Meter 3"+ "\n")
-                        lines.append("    ExteriorEquipment:Electricity,  !- Variable or Meter 4 Name"+ "\n")
-                        lines.append("    ValueWhenMaximumOrMinimum,            !- Aggregation Type for Variable or Meter 4"+ "\n")
-                        lines.append("    Fans:Electricity,        !- Variable or Meter 5 Name"+ "\n")
-                        lines.append("    ValueWhenMaximumOrMinimum,            !- Aggregation Type for Variable or Meter 5"+ "\n")
-                        lines.append("    Pumps:Electricity,       !- Variable or Meter 6 Name"+ "\n")
-                        lines.append("    ValueWhenMaximumOrMinimum,            !- Aggregation Type for Variable or Meter 6"+ "\n")
-                        lines.append("    Heating:Electricity,     !- Variable or Meter 7 Name"+ "\n")
-                        lines.append("    ValueWhenMaximumOrMinimum,            !- Aggregation Type for Variable or Meter 7"+ "\n")
-                        lines.append("    Cooling:Electricity,     !- Variable or Meter 8 Name"+ "\n")
-                        lines.append("    ValueWhenMaximumOrMinimum,            !- Aggregation Type for Variable or Meter 8"+ "\n")
-                        lines.append("    HeatRejection:Electricity,  !- Variable or Meter 9 Name"+ "\n")
-                        lines.append("    ValueWhenMaximumOrMinimum,            !- Aggregation Type for Variable or Meter 9"+ "\n")
-                        lines.append("    Humidifier:Electricity,  !- Variable or Meter 10 Name"+ "\n")
-                        lines.append("    ValueWhenMaximumOrMinimum,            !- Aggregation Type for Variable or Meter 10"+ "\n")
-                        lines.append("    HeatRecovery:Electricity,!- Variable or Meter 11 Name"+ "\n")
-                        lines.append("    ValueWhenMaximumOrMinimum,            !- Aggregation Type for Variable or Meter 11"+ "\n")
-                        lines.append("    WaterSystems:Electricity,!- Variable or Meter 12 Name"+ "\n")
-                        lines.append("    ValueWhenMaximumOrMinimum,            !- Aggregation Type for Variable or Meter 12"+ "\n")
-                        lines.append("    Cogeneration:Electricity,!- Variable or Meter 13 Name"+ "\n")
-                        lines.append("    ValueWhenMaximumOrMinimum;            !- Aggregation Type for Variable or Meter 13"+ "\n")
-                        lines.append("Output:Table:Monthly,"+"\n")
-                        lines.append("  Building Energy Performance - Natural Gas Peak Demand,  !- Name"+"\n")
-                        lines.append("    2,                       !- Digits After Decimal"+"\n")
-                        lines.append("    Gas:Facility,  !- Variable or Meter 1 Name"+"\n")
-                        lines.append("    Maximum,            !- Aggregation Type for Variable or Meter 1"+"\n")
-                        lines.append("    InteriorEquipment:Gas,   !- Variable or Meter 1 Name"+"\n")
-                        lines.append("    ValueWhenMaximumOrMinimum,            !- Aggregation Type for Variable or Meter 1"+"\n")
-                        lines.append("    ExteriorEquipment:Gas,   !- Variable or Meter 2 Name"+"\n")
-                        lines.append("    ValueWhenMaximumOrMinimum,            !- Aggregation Type for Variable or Meter 2"+"\n")
-                        lines.append("    Heating:Gas,             !- Variable or Meter 3 Name"+"\n")
-                        lines.append("    ValueWhenMaximumOrMinimum,            !- Aggregation Type for Variable or Meter 3"+"\n")
-                        lines.append("    Cooling:Gas,             !- Variable or Meter 4 Name"+"\n")
-                        lines.append("    ValueWhenMaximumOrMinimum,            !- Aggregation Type for Variable or Meter 4"+"\n")
-                        lines.append("    WaterSystems:Gas,        !- Variable or Meter 5 Name"+"\n")
-                        lines.append("    ValueWhenMaximumOrMinimum,            !- Aggregation Type for Variable or Meter 5"+"\n")
-                        lines.append("    Cogeneration:Gas,        !- Variable or Meter 6 Name"+"\n")
-                        lines.append("    ValueWhenMaximumOrMinimum;            !- Aggregation Type for Variable or Meter 6"+"\n")
-                        lines.append("\n")
-                        lines.append("Output:Table:Monthly,"+"\n")
-                        lines.append("  Building Energy Performance - District Heating Peak Demand,  !- Name"+"\n")
-                        lines.append("    2,                       !- Digits After Decimal"+"\n")
-                        lines.append("    DistrictHeating:Facility,  !- Variable or Meter 1 Name"+"\n")
-                        lines.append("    Maximum,            !- Aggregation Type for Variable or Meter 1"+"\n")
-                        lines.append("    InteriorLights:DistrictHeating,  !- Variable or Meter 1 Name"+"\n")
-                        lines.append("    ValueWhenMaximumOrMinimum,            !- Aggregation Type for Variable or Meter 1"+"\n")
-                        lines.append("    ExteriorLights:DistrictHeating,  !- Variable or Meter 2 Name"+"\n")
-                        lines.append("    ValueWhenMaximumOrMinimum,            !- Aggregation Type for Variable or Meter 2"+"\n")
-                        lines.append("    InteriorEquipment:DistrictHeating,  !- Variable or Meter 3 Name"+"\n")
-                        lines.append("    ValueWhenMaximumOrMinimum,            !- Aggregation Type for Variable or Meter 3"+"\n")
-                        lines.append("    ExteriorEquipment:DistrictHeating,  !- Variable or Meter 4 Name"+"\n")
-                        lines.append("    ValueWhenMaximumOrMinimum,            !- Aggregation Type for Variable or Meter 4"+"\n")
-                        lines.append("    Fans:DistrictHeating,        !- Variable or Meter 5 Name"+"\n")
-                        lines.append("    ValueWhenMaximumOrMinimum,            !- Aggregation Type for Variable or Meter 5"+"\n")
-                        lines.append("    Pumps:DistrictHeating,       !- Variable or Meter 6 Name"+"\n")
-                        lines.append("    ValueWhenMaximumOrMinimum,            !- Aggregation Type for Variable or Meter 6"+"\n")
-                        lines.append("    Heating:DistrictHeating,     !- Variable or Meter 7 Name"+"\n")
-                        lines.append("    ValueWhenMaximumOrMinimum,            !- Aggregation Type for Variable or Meter 7"+"\n")
-                        lines.append("    Cooling:DistrictHeating,     !- Variable or Meter 8 Name"+"\n")
-                        lines.append("    ValueWhenMaximumOrMinimum,            !- Aggregation Type for Variable or Meter 8"+"\n")
-                        lines.append("    HeatRejection:DistrictHeating,  !- Variable or Meter 9 Name"+"\n")
-                        lines.append("    ValueWhenMaximumOrMinimum,            !- Aggregation Type for Variable or Meter 9"+"\n")
-                        lines.append("    Humidifier:DistrictHeating,  !- Variable or Meter 10 Name"+"\n")
-                        lines.append("    ValueWhenMaximumOrMinimum,            !- Aggregation Type for Variable or Meter 10"+"\n")
-                        lines.append("    HeatRecovery:DistrictHeating,!- Variable or Meter 11 Name"+"\n")
-                        lines.append("    ValueWhenMaximumOrMinimum,            !- Aggregation Type for Variable or Meter 11"+"\n")
-                        lines.append("    WaterSystems:DistrictHeating,!- Variable or Meter 12 Name"+"\n")
-                        lines.append("    ValueWhenMaximumOrMinimum,            !- Aggregation Type for Variable or Meter 12"+"\n")
-                        lines.append("    Cogeneration:DistrictHeating,!- Variable or Meter 13 Name"+"\n")
-                        lines.append("    ValueWhenMaximumOrMinimum;            !- Aggregation Type for Variable or Meter 13"+"\n")
-                        lines.append("\n")
-                        lines.append("Output:Table:Monthly,"+"\n")
-                        lines.append("  Building Energy Performance - District Cooling Peak Demand,  !- Name"+"\n")
-                        lines.append("    2,                       !- Digits After Decimal"+"\n")
-                        lines.append("    DistrictCooling:Facility,  !- Variable or Meter 1 Name"+"\n")
-                        lines.append("    Maximum,            !- Aggregation Type for Variable or Meter 1"+"\n")
-                        lines.append("    InteriorLights:DistrictCooling,  !- Variable or Meter 1 Name"+"\n")
-                        lines.append("    ValueWhenMaximumOrMinimum,            !- Aggregation Type for Variable or Meter 1"+"\n")
-                        lines.append("    ExteriorLights:DistrictCooling,  !- Variable or Meter 2 Name"+"\n")
-                        lines.append("    ValueWhenMaximumOrMinimum,            !- Aggregation Type for Variable or Meter 2"+"\n")
-                        lines.append("    InteriorEquipment:DistrictCooling,  !- Variable or Meter 3 Name"+"\n")
-                        lines.append("    ValueWhenMaximumOrMinimum,            !- Aggregation Type for Variable or Meter 3"+"\n")
-                        lines.append("    ExteriorEquipment:DistrictCooling,  !- Variable or Meter 4 Name"+"\n")
-                        lines.append("    ValueWhenMaximumOrMinimum,            !- Aggregation Type for Variable or Meter 4"+"\n")
-                        lines.append("    Fans:DistrictCooling,        !- Variable or Meter 5 Name"+"\n")
-                        lines.append("    ValueWhenMaximumOrMinimum,            !- Aggregation Type for Variable or Meter 5"+"\n")
-                        lines.append("    Pumps:DistrictCooling,       !- Variable or Meter 6 Name"+"\n")
-                        lines.append("    ValueWhenMaximumOrMinimum,            !- Aggregation Type for Variable or Meter 6"+"\n")
-                        lines.append("    Heating:DistrictCooling,     !- Variable or Meter 7 Name"+"\n")
-                        lines.append("    ValueWhenMaximumOrMinimum,            !- Aggregation Type for Variable or Meter 7"+"\n")
-                        lines.append("    Cooling:DistrictCooling,     !- Variable or Meter 8 Name"+"\n")
-                        lines.append("    ValueWhenMaximumOrMinimum,            !- Aggregation Type for Variable or Meter 8"+"\n")
-                        lines.append("    HeatRejection:DistrictCooling,  !- Variable or Meter 9 Name"+"\n")
-                        lines.append("    ValueWhenMaximumOrMinimum,            !- Aggregation Type for Variable or Meter 9"+"\n")
-                        lines.append("    Humidifier:DistrictCooling,  !- Variable or Meter 10 Name"+"\n")
-                        lines.append("    ValueWhenMaximumOrMinimum,            !- Aggregation Type for Variable or Meter 10"+"\n")
-                        lines.append("    HeatRecovery:DistrictCooling,!- Variable or Meter 11 Name"+"\n")
-                        lines.append("    ValueWhenMaximumOrMinimum,            !- Aggregation Type for Variable or Meter 11"+"\n")
-                        lines.append("    WaterSystems:DistrictCooling,!- Variable or Meter 12 Name"+"\n")
-                        lines.append("    ValueWhenMaximumOrMinimum,            !- Aggregation Type for Variable or Meter 12"+"\n")
-                        lines.append("    Cogeneration:DistrictCooling,!- Variable or Meter 13 Name"+"\n")
-                        lines.append("    ValueWhenMaximumOrMinimum;            !- Aggregation Type for Variable or Meter 13"+"\n")
-                        lines.append("\n")
-                    else:
-                        lines.append(line)
-                else: 
-                    lines.append(line)
-            else:
-                prepare=True;
-                lines.append(line)
-        
-        fi.close()
         fiw = open(str(idfFilePath),'w')
         for line in lines:
             fiw.write(line)
@@ -3036,6 +2841,12 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     # set north
     hb_writeOPS.setNorth(north, model)
     
+    # set terrain.
+    hb_writeOPS.setTerrain(model)
+    
+    # set ground temperatures.
+    hb_writeOPS.setGroundTemps(model)
+    
     # set timestep
     hb_writeOPS.setTimestep(model)
     
@@ -3175,7 +2986,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     
     
     if runIt:
-        hb_runOPS = RunOPS(model, epwWeatherFile, HBZones, csvSchedules, \
+        hb_runOPS = RunOPS(model, epwWeatherFile, HBZones, hb_writeOPS.simParameters, csvSchedules, \
             csvScheduleCount, additionalcsvSchedules, openStudioLibFolder)
             
         idfFile, resultFile = hb_runOPS.runAnalysis(fname, useRunManager = False)

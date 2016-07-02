@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.59\nMAY_12_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_02_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -3515,37 +3515,29 @@ class hb_EnergySimulatioParameters(object):
     
     def readEPParams(self, EPParameters):
         
-        if EPParameters == [] or len(EPParameters)!=15:
+        if EPParameters == [] or len(EPParameters)!=17:
             timestep = 6
-            
             shadowPar = ["AverageOverDaysInFrequency", 30, 3000]
-            
             solarDistribution = "FullInteriorAndExteriorWithReflections"
-            
             simulationControl = [True, True, True, False, True, 25, 6]
-            
             ddyFile = None
-            
             terrain = 'City'
-            
             grndTemps = []
+            holidays = []
+            startDay = None
         
         else:
             timestep = int(EPParameters[0])
-            
             shadowPar = EPParameters[1:4]
-            
             solarDistribution = EPParameters[4]
-            
             simulationControl = EPParameters[5:12]
-            
             ddyFile = EPParameters[12]
-            
             terrain = EPParameters[13]
-            
             grndTemps = EPParameters[14]
+            holidays = EPParameters[15]
+            startDay = EPParameters[16]
         
-        return timestep, shadowPar, solarDistribution, simulationControl, ddyFile, terrain, grndTemps
+        return timestep, shadowPar, solarDistribution, simulationControl, ddyFile, terrain, grndTemps, holidays, startDay
 
 class EPMaterialAux(object):
     
@@ -8130,7 +8122,7 @@ if checkIn.letItFly:
         sc.sticky["honeybee_folders"]["DSLibPath"] = hb_DSLibPath
     
         # supported versions for EnergyPlus
-        EPVersions = ["V8-5-0","V8-4-0","V8-3-0", "V8-2-10", "V8-2-9", "V8-2-8", "V8-2-7", "V8-2-6", \
+        EPVersions = ["V8-5-0", "V8-4-0","V8-3-0", "V8-2-10", "V8-2-9", "V8-2-8", "V8-2-7", "V8-2-6", \
                       "V8-2-5", "V8-2-4", "V8-2-3", "V8-2-2", "V8-2-1", "V8-2-0", \
                       "V8-1-5", "V8-1-4", "V8-1-3", "V8-1-2", "V8-1-1", "V8-1-0"]
                       
