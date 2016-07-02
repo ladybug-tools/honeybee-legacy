@@ -63,7 +63,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.59\nJUN_28_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_07_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -1905,7 +1905,28 @@ class WriteOPS(object):
         #people.setPeopleDefinition(peopleDefinition)
         people.setSpace(space)
         
+        
+    def setInternalMassDefinition(self, zone, space, model):
+        
+        for srfNum,srfArea in enumerate(zone.internalMassSrfAreas):
+            
+            # Create internal mass definition
+            internalMassDefinition = ops.InternalMassDefinition(model)
+            
+            internalMassDefinition.setName(zone.internalMassNames[srfNum]+"_Definition")
+            internalMassDefinition.setConstruction(self.getOSConstruction(zone.internalMassConstructions[srfNum],model))
+           
+            internalMassDefinition.setSurfaceArea(float(srfArea))
+            
+            # Create actual internal mass by using the definition above
+            
+            internalMass = ops.InternalMass(internalMassDefinition)
+            
+            internalMass.setName(zone.internalMassNames[srfNum])
+            internalMass.setSpace(space)
+            
     def setLightingDefinition(self, zone, space, model):
+        
         lightsDefinition = ops.LightsDefinition(model)
         lightsDefinition.setName(zone.name + "_LightsDefinition")
         if zone.daylightThreshold != "":
@@ -3074,6 +3095,14 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         
         #Keep the thermal zones in a dictionary for later.
         hb_writeOPS.thermalZonesDict[zone.name] = thermalZone
+        
+        #If there are internal masses assigned to the zone, write them
+                
+        if len(zone.internalMassNames) > 0:
+            
+            for massCount, massName in enumerate(zone.internalMassNames):
+                
+               hb_writeOPS.setInternalMassDefinition(zone, space, model)
         
         if zone.isConditioned:
             # add HVAC system
