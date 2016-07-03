@@ -38,10 +38,10 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Get Zone EnergyPlus Schedules"
 ghenv.Component.NickName = 'getHBZoneEPSchedules'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_03_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "07 | Energy | Schedule"
+ghenv.Component.SubCategory = "05 | Energy | Building Program"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
