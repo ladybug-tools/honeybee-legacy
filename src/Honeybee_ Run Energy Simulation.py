@@ -62,7 +62,7 @@ Provided by Honeybee 0.0.59
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.59\nMAY_08_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_03_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -1429,7 +1429,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     idfFile.write(hb_writeIDF.EPVersion(sc.sticky["honeybee_folders"]["EPVersion"]))
     
     # Read simulation parameters
-    timestep, shadowPar, solarDistribution, simulationControl, ddyFile, terrain, grndTemps = hb_EPPar.readEPParams(EPParameters)
+    timestep, shadowPar, solarDistribution, simulationControl, ddyFile, terrain, grndTemps, holidays, startDayOfWeek = hb_EPPar.readEPParams(EPParameters)
     try:
         maxWarmUpDays = simulationControl[5]
         minWarmUpDays = simulationControl[6]
