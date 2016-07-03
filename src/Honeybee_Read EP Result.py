@@ -43,7 +43,7 @@ Provided by Honeybee 0.0.59
         peopleGains: The internal heat gains in each zone resulting from people (kWh).
         totalSolarGain: The total solar gain in each zone(kWh).
         infiltrationEnergy: The heat loss (negative) or heat gain (positive) in each zone resulting from infiltration (kWh).
-        outdoorAirEnergy: The heat loss (negative) or heat gain (positive) in each zone resulting from the outdoor air coming through the HVAC System (kWh).
+        mechVentilationEnergy: The heat loss (negative) or heat gain (positive) in each zone resulting from the outdoor air coming through the HVAC System (kWh).
         natVentEnergy: The heat loss (negative) or heat gain (positive) in each zone resulting from natural ventilation (kWh).
         operativeTemperature: The mean operative temperature of each zone (degrees Celcius).
         airTemperature: The mean air temperature of each zone (degrees Celcius).
@@ -56,7 +56,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.59\nMAY_06_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_03_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -172,7 +172,7 @@ pumpElectric = DataTree[Object]()
 peopleGains = DataTree[Object]()
 totalSolarGain = DataTree[Object]()
 infiltrationEnergy = DataTree[Object]()
-outdoorAirEnergy = DataTree[Object]()
+mechVentilationEnergy = DataTree[Object]()
 natVentEnergy = DataTree[Object]()
 operativeTemperature = DataTree[Object]()
 airTemperature = DataTree[Object]()
@@ -388,13 +388,13 @@ if _resultFileAddress and gotData == True and csvExists == True:
                         makeHeader(totalSolarGain, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Total Solar Gain", energyUnit, True)
                         dataTypeList[9] = True
                     
-                    elif 'Zone Ventilation Total Heat Loss Energy ' in column:
+                    elif 'Zone Ventilation Sensible Heat Loss Energy ' in column:
                         key.append(6)
                         zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
                         makeHeader(natVentEnergy, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Natural Ventilation Energy", energyUnit, True)
                         dataTypeList[12] = True
                     
-                    elif 'Zone Ventilation Total Heat Gain Energy' in column:
+                    elif 'Zone Ventilation Sensible Heat Gain Energy' in column:
                         key.append(7)
                         zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
                     
@@ -663,9 +663,9 @@ if dataTypeList[2] == True and dataTypeList[3] == True:
             if zoneHeatingEnergy != testTracker and zoneCoolingEnergy != testTracker:
                 for listCount, list in enumerate(zoneHeatingEnergy):
                     try:
-                        makeHeader(outdoorAirEnergy, listCount, list[0], list[1], "Outdoor Air Energy", energyUnit, True)
+                        makeHeader(mechVentilationEnergy, listCount, list[0], list[1], "Mechanical Ventilation Energy", energyUnit, True)
                         for numCount, num in enumerate(list[2:]):
-                            outdoorAirEnergy.Add((num/3600000) - (zoneCoolingEnergy[listCount][2:][numCount]/3600000) - heatingPyList[heatCoolTracker][7:][numCount] + coolingPyList[heatCoolTracker][7:][numCount], GH_Path(listCount))
+                            mechVentilationEnergy.Add((num/3600000) - (zoneCoolingEnergy[listCount][2:][numCount]/3600000) - heatingPyList[heatCoolTracker][7:][numCount] + coolingPyList[heatCoolTracker][7:][numCount], GH_Path(listCount))
                         heatCoolTracker += 1
                     except: pass
                 dataTypeList[11] = True
@@ -732,7 +732,7 @@ outputsDict = {
 8: ["peopleGains", "The internal heat gains in each zone resulting from people (kWh)."],
 9: ["totalSolarGain", "The total solar gain in each zone(kWh)."],
 10: ["infiltrationEnergy", "The heat loss (negative) or heat gain (positive) in each zone resulting from infiltration (kWh)."],
-11: ["outdoorAirEnergy", "The heat loss (negative) or heat gain (positive) in each zone resulting from the outdoor air coming through the HVAC System (kWh)."],
+11: ["mechVentilationEnergy", "The heat loss (negative) or heat gain (positive) in each zone resulting from the outdoor air coming through the HVAC System (kWh)."],
 12: ["natVentEnergy", "The heat loss (negative) or heat gain (positive) in each zone resulting from natural ventilation (kWh)."],
 13: ["operativeTemperature", "The mean operative temperature of each zone (degrees Celcius)."],
 14: ["airTemperature", "The mean air temperature of each zone (degrees Celcius)."],

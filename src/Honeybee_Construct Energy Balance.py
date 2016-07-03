@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.59
         peopleGains_: The people gains from the "Honeybee_Read EP Result" component.
         totalSolarGain_: The total solar gain from the "Honeybee_Read EP Result" component.
         infiltrationEnergy_: The infiltration heat loss (negative) or heat gain (positive) from the "Honeybee_Read EP Result" component.
-        outdoorAirEnergy_: The outdoor air heat loss (negative) or heat gain (positive) from the "Honeybee_Read EP Result" component.
+        mechVentilationEnergy_: The outdoor air heat loss (negative) or heat gain (positive) from the "Honeybee_Read EP Result" component.
         natVentEnergy_: The natural ventilation heat loss (negative) or heat gain (positive) from the "Honeybee_Read EP Result" component.
         surfaceEnergyFlow_: The surface heat loss (negative) or heat gain (positive) from the "Honeybee_Read EP Surface Result" component.
     Returns:
@@ -50,7 +50,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Construct Energy Balance"
 ghenv.Component.NickName = 'energyBalance'
-ghenv.Component.Message = 'VER 0.0.59\nFEB_21_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_03_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -131,7 +131,11 @@ def checkCreateDataTree(dataTree, dataName, dataType):
             simStep = str(header[4])
             headUnitCheck = []
             headPeriodCheck = []
+            nonIdealAir = False
             for head in dataHeaders:
+                if dataType == 'Heating' or dataType == 'Cooling':
+                    if 'Chiller' in head[2] or 'Coil' in head[2] or 'Boiler' in head[2]:
+                        nonIdealAir = True
                 if dataType in head[2]:
                     headUnitCheck.append(1)
                 if head[3] == headerUnits and str(head[4]) == simStep and head[5] == headerStart and head[6] == headerEnd:
@@ -151,6 +155,12 @@ def checkCreateDataTree(dataTree, dataName, dataType):
             else:
                 dataCheck4 = False
                 warning = "Not all of the connected " + dataName + " data is for the correct data type."
+                print warning
+                ghenv.Component.AddRuntimeMessage(w, warning)
+            
+            if nonIdealAir == True:
+                dataCheck4 = False
+                warning = "The HVAC system of the connected data is not Ideal Air.\n An ideal air system is necessary to reconstruct the zone-level energy balance."
                 print warning
                 ghenv.Component.AddRuntimeMessage(w, warning)
             
@@ -282,7 +292,7 @@ def main(HBZones, heatingLoad, solarLoad, lightingLoad, equipLoad, peopleLoad, s
     checkData4, equipUnits, equipHeaders, equipNumbers, equipAnalysisPeriod = checkCreateDataTree(equipLoad, "electricEquip_", "Equipment")
     checkData5, peopleUnits, peopleHeaders, peopleNumbers, peopleAnalysisPeriod = checkCreateDataTree(peopleLoad, "peopleGains_", "People")
     checkData6, infiltrationUnits, infiltrationHeaders, infiltrationNumbers, infiltrationAnalysisPeriod = checkCreateDataTree(infiltrationEnergy, "infiltrationEnergy_", "Infiltration")
-    checkData7, outdoorAirUnits, outdoorAirHeaders, outdoorAirNumbers, outdoorAirAnalysisPeriod = checkCreateDataTree(outdoorAirEnergy, "outdoorAirEnergy_", "Outdoor Air")
+    checkData7, outdoorAirUnits, outdoorAirHeaders, outdoorAirNumbers, outdoorAirAnalysisPeriod = checkCreateDataTree(outdoorAirEnergy, "mechVentilationEnergy_", "Mechanical Ventilation")
     checkData8, natVentUnits, natVentHeaders, natVentNumbers, natVentAnalysisPeriod = checkCreateDataTree(natVentEnergy, "natVentEnergy_", "Natural Ventilation")
     checkData9, coolingUnits, coolingHeaders, coolingNumbers, coolingAnalysisPeriod = checkCreateDataTree(coolingLoad, "cooling", "Cooling")
     checkData10, surfaceUnits, surfaceHeaders, surfaceNumbers, surfaceAnalysisPeriod = checkCreateDataTree(surfaceEnergyFlow, "surfaceEnergyFlow_", "Surface Energy")
@@ -337,7 +347,7 @@ def main(HBZones, heatingLoad, solarLoad, lightingLoad, equipLoad, peopleLoad, s
         if len(equipNumbers) > 0: equipHeader = equipHeaders[0][:2] + ['Equipment'] + [equipUnits] + [equipHeaders[0][4]] + equipAnalysisPeriod
         if len(peopleNumbers) > 0: peopleHeader = peopleHeaders[0][:2] + ['People'] + [peopleUnits] + [peopleHeaders[0][4]] + peopleAnalysisPeriod
         if len(infiltrationNumbers) > 0: infiltrationHeader = infiltrationHeaders[0][:2] + ['Infiltration'] + [infiltrationUnits] + [infiltrationHeaders[0][4]] + infiltrationAnalysisPeriod
-        if len(outdoorAirNumbers) > 0: outdoorAirHeader = outdoorAirHeaders[0][:2] + ['Outdoor Air'] + [outdoorAirUnits] + [outdoorAirHeaders[0][4]] + outdoorAirAnalysisPeriod
+        if len(outdoorAirNumbers) > 0: outdoorAirHeader = outdoorAirHeaders[0][:2] + ['Mechanical Ventilation'] + [outdoorAirUnits] + [outdoorAirHeaders[0][4]] + outdoorAirAnalysisPeriod
         if len(natVentNumbers) > 0: natVentHeader = natVentHeaders[0][:2] + ['Natural Ventilation'] + [natVentUnits] + [natVentHeaders[0][4]] + natVentAnalysisPeriod
         if len(coolingNumbers) > 0: coolingHeader = coolingHeaders[0][:2] + ['Cooling'] + [coolingUnits] + [coolingHeaders[0][4]] + coolingAnalysisPeriod
         if len(opaqueEnergyFlow) > 0: opaqueHeader = surfaceHeaders[0][:2] + ['Opaque Conduction'] + [surfaceUnits] + [surfaceHeaders[0][4]] + surfaceAnalysisPeriod
@@ -432,8 +442,8 @@ else:
 
 
 if initCheck == True and _HBZones != []:
-    if heating_.BranchCount > 0 or totalSolarGain_.BranchCount > 0 or  electricLight_.BranchCount > 0 or  electricEquip_.BranchCount > 0 or  peopleGains_.BranchCount > 0 or  surfaceEnergyFlow_.BranchCount > 0 or infiltrationEnergy_.BranchCount > 0 or outdoorAirEnergy_.BranchCount > 0 or natVentEnergy_.BranchCount > 0 or cooling_.BranchCount > 0:
-        result = main(_HBZones, heating_, totalSolarGain_, electricLight_, electricEquip_, peopleGains_, surfaceEnergyFlow_, infiltrationEnergy_, outdoorAirEnergy_, natVentEnergy_, cooling_)
+    if heating_.BranchCount > 0 or totalSolarGain_.BranchCount > 0 or  electricLight_.BranchCount > 0 or  electricEquip_.BranchCount > 0 or  peopleGains_.BranchCount > 0 or  surfaceEnergyFlow_.BranchCount > 0 or infiltrationEnergy_.BranchCount > 0 or mechVentilationEnergy_.BranchCount > 0 or natVentEnergy_.BranchCount > 0 or cooling_.BranchCount > 0:
+        result = main(_HBZones, heating_, totalSolarGain_, electricLight_, electricEquip_, peopleGains_, surfaceEnergyFlow_, infiltrationEnergy_, mechVentilationEnergy_, natVentEnergy_, cooling_)
         
         if result != -1:
             modelEnergyBalanceInit, energyBalWithStorageInit, flrNormEBalInit, flrNormEBalWStorageInit = result
