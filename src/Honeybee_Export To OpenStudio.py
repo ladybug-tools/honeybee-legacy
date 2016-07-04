@@ -49,6 +49,7 @@ Provided by Honeybee 0.0.59
         +++++++++++++++: ...
         _writeOSM: Set to "True" to have the component take your HBZones and other inputs and write them into an OSM file.  The file path of the resulting OSM file will appear in the osmFileAddress output of this component.  Note that only setting this to "True" and not setting the output below to "Tru"e will not automatically run the file through EnergyPlus for you.
         runSimulation_: Set to "True" to have the component run your OSM file through EnergyPlus once it has finished writing it.  This will ensure that a CSV result file appears in the resultFileAddress output.
+        openOpenStudio_: Set to "True" to open the OSM file in the OpenStudio interface.  This is useful if you want to visualize the HVAC system in OpenStudio, you want to edit the HVAC further in OpenStudio, or just want to run the simulation from OpenStudio instead of Rhino/GH.  Note that, for this to work, you must have .osm files associated with the OpenStudio application.
         fileName_: Optional text which will be used to name your OSM, IDF and result files.  Change this to aviod over-writing results of previous energy simulations.
         workingDir_: An optional working directory to a folder on your system, into which your OSM, IDF and result files will be written.  NOTE THAT DIRECTORIES INPUT HERE SHOULD NOT HAVE ANY SPACES OR UNDERSCORES IN THE FILE PATH.
     Returns:
@@ -2807,7 +2808,7 @@ class RunOPS(object):
         return fullPath + "Zsz.csv",fullPath+".sql",fullPath+".csv"
 
 
-def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameters, simulationOutputs, runIt, workingDir = "C:\ladybug", fileName = "openStudioModel.osm"):
+def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameters, simulationOutputs, runIt, openOpenStudio, workingDir = "C:\ladybug", fileName = "openStudioModel.osm"):
     
     # import the classes
     w = gh.GH_RuntimeMessageLevel.Warning
@@ -3035,6 +3036,8 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     workingDir, fileName = os.path.split(fname)
     projectName = (".").join(fileName.split(".")[:-1])
     
+    if openOpenStudio:
+        os.startfile(fname)
     
     if runIt:
         hb_runOPS = RunOPS(model, epwWeatherFile, HBZones, hb_writeOPS.simParameters, csvSchedules, \
@@ -3067,7 +3070,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
 if _HBZones and _HBZones[0]!=None and _epwWeatherFile and _writeOSM and openStudioIsReady:
     results = main(_HBZones, HBContext_, north_, _epwWeatherFile,
                   _analysisPeriod_, _energySimPar_, simulationOutputs_,
-                  runSimulation_, workingDir_, fileName_)
+                  runSimulation_, openOpenStudio_, workingDir_, fileName_)
     if results!=-1:
         osmFileAddress, idfFileAddress, resultsFiles, studyFolder = results
         try:
