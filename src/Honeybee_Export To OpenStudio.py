@@ -499,16 +499,26 @@ class WriteOPS(object):
         pump.setCoefficient4ofthePartLoadPerformanceCurve(1.0095)
         return pump
     
-    def createDefaultAEDGFan(self, model, airDetails):
-        fan = ops.FanConstantVolume(model, model.alwaysOnDiscreteSchedule())
+    def createDefaultAEDGFan(self, fanType, model, airDetails):
+        if fanType == 'CV':
+            fan = ops.FanConstantVolume(model, model.alwaysOnDiscreteSchedule())
+        elif fanType == 'VV':
+            fan = ops.FanVariableVolume(model, model.alwaysOnDiscreteSchedule())
+        
         if airDetails != None and airDetails.fanTotalEfficiency != 'Default': 
             fan.setFanEfficiency(airDetails.fanTotalEfficiency)
         else:
-            fan.setFanEfficiency(0.6)
+            if fanType == 'CV':
+                fan.setFanEfficiency(0.6)
+            else:
+                fan.setFanEfficiency(0.69)
         if airDetails != None and airDetails.fanPressureRise != 'Default': 
             fan.setPressureRise(airDetails.fanPressureRise)
         else:
-            fan.setPressureRise(500) #Pa
+            if fanType == 'CV':
+                fan.setPressureRise(500) #Pa
+            else:
+                fan.setPressureRise(1125) #Pa
         fan.autosizeMaximumFlowRate()
         if airDetails != None and airDetails.fanMotorEfficiency != 'Default':
             fan.setMotorEfficiency(airDetails.fanMotorEfficiency)
@@ -759,7 +769,7 @@ class WriteOPS(object):
         
         # constant speed fan
         sizingSystem.setMinimumSystemAirFlowRatio(1.0) #DCV
-        fan = self.createDefaultAEDGFan(model, airDetails)
+        fan = self.createDefaultAEDGFan('CV', model, airDetails)
         airLoopComps.append(fan)
         # create heating coil
         heatingCoil = ops.CoilHeatingWater(model, model.alwaysOnDiscreteSchedule())
@@ -980,6 +990,12 @@ class WriteOPS(object):
         vvfan = model.getFanVariableVolume(x[0].handle()).get()
         vvfan.setMaximumFlowRate(fullHVACAirFlow*2)
     
+    def applyVentilationSched(self, model, HBZone, vavBox, zoneTotAir):
+        vavBox.setZoneMinimumAirFlowMethod('Scheduled')
+        vavBox.setMaximumAirFlowRate(zoneTotAir)
+        minVentSch = self.getOSSchedule(HBZone.ventilationSched,model)
+        vavBox.setMinimumAirFlowFractionSchedule(minVentSch)
+    
     def addDehumidController(self, model, airloop):
         # Add a humidity set point controller into the air loop.
         humidController = ops.SetpointManagerMultiZoneHumidityMaximum(model)
@@ -1061,6 +1077,14 @@ class WriteOPS(object):
         oasys = airloop.airLoopHVACOutdoorAirSystem()
         oactrl = oasys.get().getControllerOutdoorAir()
         oactrl.setEconomizerControlType(airDetails.airsideEconomizer)
+    
+    def swapCVFanForVV(self, model, airloop, airDetails):
+        x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:ConstantVolume"))
+        cvfan = model.getFanConstantVolume(x[0].handle()).get()
+        cvfan.remove()
+        vvFan = self.createDefaultAEDGFan('VV', model, airDetails)
+        supplyAirNode = airloop.supplyOutletNode()
+        vvFan.addToNode(supplyAirNode)
     
     def adjustCVAirLoop(self, model, airloop, airDetails):
         econLockout = False
@@ -1485,6 +1509,11 @@ class WriteOPS(object):
                         vavBox.resetMinimumAirFlowFractionSchedule()
                     if hbZones[zoneCount].humidityMin != '':
                         humidTrigger = True
+                    
+                    # If there are any ventilation schedules specified, then set the VAV Box to follow them.
+                    if hbZones[zoneCount].ventilationSched != '':
+                        self.applyVentilationSched(model, hbZones[zoneCount], vavBox, zoneTotAir)
+                    
                     self.adjustWaterReheatCoil(model, vavBox, airDetails, heatingDetails)
                 
                 #If there is recirculated air, we also have to hard size the fan to ensure that enough air can get through the system.
@@ -1533,6 +1562,11 @@ class WriteOPS(object):
                         vavBox.setZoneMinimumAirFlowMethod('Constant')
                         vavBox.autosizeMaximumAirFlowRate()
                         vavBox.resetMinimumAirFlowFractionSchedule()
+                    
+                    # If there are any ventilation schedules specified, then set the VAV Box to follow them.
+                    if hbZones[zoneCount].ventilationSched != '':
+                        self.applyVentilationSched(model, hbZones[zoneCount], vavBox, zoneTotAir)
+                    
                     if hbZones[zoneCount].humidityMin != '':
                         humidTrigger = True
                     self.adjustElectricReheatCoil(model, vavBox, heatingDetails)
@@ -1587,6 +1621,11 @@ class WriteOPS(object):
                         vavBox.setZoneMinimumAirFlowMethod('Constant')
                         vavBox.autosizeMaximumAirFlowRate()
                         vavBox.resetMinimumAirFlowFractionSchedule()
+                    
+                    # If there are any ventilation schedules specified, then set the VAV Box to follow them.
+                    if hbZones[zoneCount].ventilationSched != '':
+                        self.applyVentilationSched(model, hbZones[zoneCount], vavBox, zoneTotAir)
+                    
                     #Check for any humidity setpoints.
                     if hbZones[zoneCount].humidityMax != '':
                         dehumidTrigger = True
@@ -1639,6 +1678,11 @@ class WriteOPS(object):
                         vavBox.setZoneMinimumAirFlowMethod('Constant')
                         vavBox.autosizeMaximumAirFlowRate()
                         vavBox.resetMinimumAirFlowFractionSchedule()
+                    
+                    # If there are any ventilation schedules specified, then set the VAV Box to follow them.
+                    if hbZones[zoneCount].ventilationSched != '':
+                        self.applyVentilationSched(model, hbZones[zoneCount], vavBox, zoneTotAir)
+                    
                     if hbZones[zoneCount].humidityMax != '':
                         dehumidTrigger = True
                     if hbZones[zoneCount].humidityMin != '':
