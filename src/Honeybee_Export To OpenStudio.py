@@ -253,12 +253,15 @@ class WriteOPS(object):
         model.addObjects(selectedDesignDays)
         
     def isConstructionInLib(self, constructionName):
-        return constructionName in self.constructionList.keys()
+        return constructionName in self.constructionList
     
     def addConstructionToLib(self, constructionName, construction):
         self.constructionList[constructionName] = construction
     
     def getConstructionFromLib(self, constructionName, model):
+#        if self.isConstructionInLib(constructionName):
+#              return self.constructionList[constructionName]
+  
         return self.getOSConstruction(constructionName.upper(), model)
     
     def isMaterialInLib(self, materialName):
@@ -2204,12 +2207,12 @@ class WriteOPS(object):
             if surface.EPConstruction == None:
                 construction = self.getConstructionFromLib(surface.construction, model)
             elif not self.isConstructionInLib(surface.EPConstruction):
-                construction = self.getOSConstruction(surface.construction, model)
+                construction = self.getOSConstruction(surface.EPConstruction, model)
                 # keep track of constructions
                 self.addConstructionToLib(surface.EPConstruction, construction)
             else:
                 construction = self.getConstructionFromLib(surface.EPConstruction, model)
-            
+
             thisSurface.setConstruction(construction)
             thisSurface.setOutsideBoundaryCondition(surface.BC.capitalize())
             if surface.BC.capitalize()!= "ADIABATIC":
@@ -2295,8 +2298,11 @@ class WriteOPS(object):
             adjacentSurfaceName, OSSurface = self.adjacentSurfacesDict[surfaceName]
             try:
                 adjacentOSSurface = self.adjacentSurfacesDict[adjacentSurfaceName][1]
-                try: OSSurface.setAdjacentSurface(adjacentOSSurface)
-                except: OSSurface.setAdjacentSubSurface(adjacentOSSurface)
+                
+                try:
+                    OSSurface.setAdjacentSurface(adjacentOSSurface)
+                except:
+                    OSSurface.setAdjacentSubSurface(adjacentOSSurface)
             except:
                 warning = "Adjacent surface " + adjacentSurfaceName + " was not found."
                 print warning
@@ -2956,6 +2962,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     
     # this should be done once for the whole model
     hb_writeOPS.setAdjacentSurfaces()
+    
     
     # add systems
     hb_writeOPS.addSystemsToZones(model)
