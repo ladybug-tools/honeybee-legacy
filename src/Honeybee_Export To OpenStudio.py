@@ -199,19 +199,20 @@ class WriteOPS(object):
     
     def setGroundTemps(self, model):
         grndTemps = self.simParameters[6]
-        opsGrndTemps = model.getSiteGroundTemperatureBuildingSurface()
-        opsGrndTemps.setJanuaryGroundTemperature(grndTemps[0])
-        opsGrndTemps.setFebruaryGroundTemperature(grndTemps[1])
-        opsGrndTemps.setMarchGroundTemperature(grndTemps[2])
-        opsGrndTemps.setAprilGroundTemperature(grndTemps[3])
-        opsGrndTemps.setMayGroundTemperature(grndTemps[4])
-        opsGrndTemps.setJuneGroundTemperature(grndTemps[5])
-        opsGrndTemps.setJulyGroundTemperature(grndTemps[6])
-        opsGrndTemps.setAugustGroundTemperature(grndTemps[7])
-        opsGrndTemps.setSeptemberGroundTemperature(grndTemps[8])
-        opsGrndTemps.setOctoberGroundTemperature(grndTemps[9])
-        opsGrndTemps.setNovemberGroundTemperature(grndTemps[10])
-        opsGrndTemps.setDecemberGroundTemperature(grndTemps[11])
+        if grndTemps != []:
+            opsGrndTemps = model.getSiteGroundTemperatureBuildingSurface()
+            opsGrndTemps.setJanuaryGroundTemperature(grndTemps[0])
+            opsGrndTemps.setFebruaryGroundTemperature(grndTemps[1])
+            opsGrndTemps.setMarchGroundTemperature(grndTemps[2])
+            opsGrndTemps.setAprilGroundTemperature(grndTemps[3])
+            opsGrndTemps.setMayGroundTemperature(grndTemps[4])
+            opsGrndTemps.setJuneGroundTemperature(grndTemps[5])
+            opsGrndTemps.setJulyGroundTemperature(grndTemps[6])
+            opsGrndTemps.setAugustGroundTemperature(grndTemps[7])
+            opsGrndTemps.setSeptemberGroundTemperature(grndTemps[8])
+            opsGrndTemps.setOctoberGroundTemperature(grndTemps[9])
+            opsGrndTemps.setNovemberGroundTemperature(grndTemps[10])
+            opsGrndTemps.setDecemberGroundTemperature(grndTemps[11])
     
     def setRunningPeriod(self, runningPeriod, model):
         # get the days from numbers
