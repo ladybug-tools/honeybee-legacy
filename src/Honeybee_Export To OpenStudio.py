@@ -851,7 +851,7 @@ class WriteOPS(object):
         pipeDemandOutlet.addToNode(condenserLoop.demandOutletNode())
         return condenserLoop
     
-    def setDemandVent(self, airTerminal, zone, hbZone):
+    def setDemandVent(self, model, airTerminal, zone, hbZone):
         space = zone.spaces()[0]
         oaReq = space.designSpecificationOutdoorAir().get()
         maxAir = self.getZoneTotalAir(hbZone)
@@ -900,6 +900,8 @@ class WriteOPS(object):
         # constant or variable speed fan
         sizingSystem.setMinimumSystemAirFlowRatio(1.0) #DCV
         if airDetails != None and airDetails.fanControl == 'Variable Volume':
+            fan = self.createDefaultAEDGFan('VV', model, airDetails)
+        elif airDetails != None and airDetails.airsideEconomizer != 'Default' and airDetails.airsideEconomizer != 'NoEconomizer':
             fan = self.createDefaultAEDGFan('VV', model, airDetails)
         elif ventSchedTrigger == True or recircTrigger == True:
             fan = self.createDefaultAEDGFan('VV', model, airDetails)
@@ -990,7 +992,9 @@ class WriteOPS(object):
                     self.setOutdoorAirReq(airTerminal, zone)
                 elif airDetails != None and airDetails.fanControl == 'Variable Volume':
                     airTerminal = ops.AirTerminalSingleDuctVAVNoReheat(model, model.alwaysOnDiscreteSchedule())
-                    self.setDemandVent(airTerminal, zone, hbZones[zCount])
+                    self.setDemandVent(model, airTerminal, zone, hbZones[zCount])
+                elif airDetails != None and airDetails.airsideEconomizer != 'Default' and airDetails.airsideEconomizer != 'NoEconomizer':
+                    airTerminal = ops.AirTerminalSingleDuctVAVNoReheat(model, model.alwaysOnDiscreteSchedule())
                 elif hbZones[zCount].recirculatedAirPerArea == 0:
                     airTerminal = ops.AirTerminalSingleDuctUncontrolled(model, model.alwaysOnDiscreteSchedule())
                 else:
