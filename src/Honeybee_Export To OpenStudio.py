@@ -971,9 +971,10 @@ class WriteOPS(object):
         # add thermal zones to airloop.
         recircAirFlowRates = []
         for zCount, zone in enumerate(thermalZones):
+            zoneTotAir = self.getZoneTotalAir(hbZones[zCount])
+            recircAirFlowRates.append(zoneTotAir)
             # make an air terminal for the zone
             airTerminal = None
-            recircAirFlowRates = []
             if terminalOption == "ChilledBeam":
                 # create cooling coil
                 coolingCoil = ops.CoilCoolingCooledBeam(model)
@@ -984,8 +985,6 @@ class WriteOPS(object):
                      coolAvailSch = self.getOSSchedule(coolingDetails.coolingAvailSched, model)
                      airTerminal.setAvailabilitySchedule(coolAvailSch)
             else:
-                zoneTotAir = self.getZoneTotalAir(hbZones[zCount])
-                recircAirFlowRates.append(zoneTotAir)
                 if ventSchedTrigger == True:
                     airTerminal = ops.AirTerminalSingleDuctVAVNoReheat(model, model.alwaysOnDiscreteSchedule())
                     self.setOutdoorAirReq(airTerminal, zone)
@@ -998,10 +997,15 @@ class WriteOPS(object):
                     airTerminal = ops.AirTerminalSingleDuctVAVNoReheat(model, model.alwaysOnDiscreteSchedule())
             if hbZones[zCount].recirculatedAirPerArea != 0 and terminalOption != "ChilledBeam":
                 self.sizeAirTerminalForRecirc(model, hbZones[zCount], airTerminal, zoneTotAir)
+            elif hbZones[zCount].recirculatedAirPerArea != 0:
+                airTerminal.setSupplyAirVolumetricFlowRate(zoneTotAir)
             elif recicTrigger == True:
-                airTerminal.setZoneMinimumAirFlowInputMethod('Constant')
-                airTerminal.autosizeMaximumAirFlowRate()
-                airTerminal.resetMinimumAirFlowFractionSchedule()
+                try:
+                    airTerminal.setZoneMinimumAirFlowInputMethod('Constant')
+                    airTerminal.autosizeMaximumAirFlowRate()
+                    airTerminal.resetMinimumAirFlowFractionSchedule()
+                except:
+                    airTerminal.autosizeSupplyAirVolumetricFlowRate()
             
             # attach new terminal to the zone and to the airloop
             airloopPrimary.addBranchForZone(zone, airTerminal.to_StraightComponent())

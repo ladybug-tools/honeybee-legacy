@@ -7554,7 +7554,7 @@ class hb_hvacProperties(object):
         9: {'recirc' : False, 'humidCntrl' : True, 'dehumidCntrl' : False},
         10: {'recirc' : False, 'humidCntrl' : True, 'dehumidCntrl' : False},
         11: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True},
-        12: {'recirc' : False, 'humidCntrl' : True, 'dehumidCntrl' : True}
+        12: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True}
         }
         
         self.airCapabilities = {
