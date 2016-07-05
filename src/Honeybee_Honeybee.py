@@ -7542,19 +7542,19 @@ class hb_hvacProperties(object):
         # Dictionaries that state which features can be changed for each of the different systems.
         # It is used to give warnings to the user if they set a parameter that does not exist on the assigned HVAC system.
         self.thresholdCapabilities = {
-        0: {'recirc' : False, 'humidCntrl' : True, 'dehumidCntrl' : True},
-        1: {'recirc' : True, 'humidCntrl' : False, 'dehumidCntrl' : False},
-        2: {'recirc' : True, 'humidCntrl' : False, 'dehumidCntrl' : False},
-        3: {'recirc' : False, 'humidCntrl' : True, 'dehumidCntrl' : False},
-        4: {'recirc' : False, 'humidCntrl' : True, 'dehumidCntrl' : False},
-        5: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : False},
-        6: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : False},
-        7: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True},
-        8: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True},
-        9: {'recirc' : False, 'humidCntrl' : True, 'dehumidCntrl' : False},
-        10: {'recirc' : False, 'humidCntrl' : True, 'dehumidCntrl' : False},
-        11: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True},
-        12: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True}
+        0: {'recirc' : False, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
+        1: {'recirc' : True, 'humidCntrl' : False, 'dehumidCntrl' : False, 'ventSched' : False},
+        2: {'recirc' : True, 'humidCntrl' : False, 'dehumidCntrl' : False, 'ventSched' : False},
+        3: {'recirc' : False, 'humidCntrl' : True, 'dehumidCntrl' : False, 'ventSched' : False},
+        4: {'recirc' : False, 'humidCntrl' : True, 'dehumidCntrl' : False, 'ventSched' : False},
+        5: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : False, 'ventSched' : True},
+        6: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : False, 'ventSched' : True},
+        7: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
+        8: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
+        9: {'recirc' : False, 'humidCntrl' : True, 'dehumidCntrl' : False, 'ventSched' : False},
+        10: {'recirc' : False, 'humidCntrl' : True, 'dehumidCntrl' : False, 'ventSched' : False},
+        11: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
+        12: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : False}
         }
         
         self.airCapabilities = {

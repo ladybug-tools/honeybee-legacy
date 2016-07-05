@@ -44,7 +44,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_OpenStudio Systems"
 ghenv.Component.NickName = 'OSHVACSystems'
-ghenv.Component.Message = 'VER 0.0.59\nMAY_06_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | HVACSystems"
@@ -106,6 +106,12 @@ def main(HBZones, HVACIndex, hb_hvacProperties, hb_airDetail, hb_heatingDetail, 
                 if zone.humidityMin != '':
                     warning = "HVAC system " + hb_hvacProperties.sysDict[HVACIndex] + " does not support \n" + \
                     "HUMIDIFICATION but a minimum humidity threshold has been assigned to the HBZones."
+                    print warning
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+            if hvacCapabil['ventSched'] == False:
+                if zone.ventilationSched != '':
+                    warning = "HVAC system " + hb_hvacProperties.sysDict[HVACIndex] + " does not support \n" + \
+                    "VENTILATION SCHEDULES but a ventilation schedule has been assigned to the HBZones."
                     print warning
                     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
             
