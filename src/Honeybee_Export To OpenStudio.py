@@ -890,15 +890,18 @@ class WriteOPS(object):
         
         # Check if there are any ventilation schedules on the zones.
         ventSchedTrigger = False
+        recircTrigger = False
         for zone in hbZones:
             if zone.ventilationSched != '':
                 ventSchedTrigger = True
+            if zone.recirculatedAirPerArea != 0:
+                recircTrigger = True
         
         # constant or variable speed fan
         sizingSystem.setMinimumSystemAirFlowRatio(1.0) #DCV
         if airDetails != None and airDetails.fanControl == 'Variable Volume':
             fan = self.createDefaultAEDGFan('VV', model, airDetails)
-        elif terminalOption == 'VAV' or ventSchedTrigger == True:
+        elif ventSchedTrigger == True or recircTrigger == True:
             fan = self.createDefaultAEDGFan('VV', model, airDetails)
         else:
             fan = self.createDefaultAEDGFan('CV', model, airDetails)
@@ -965,13 +968,13 @@ class WriteOPS(object):
         # add setpoint manager to supply equipment outlet node
         setpointManager.addToNode(airloopPrimary.supplyOutletNode())
         
-        # add thermal zones to airloop
+        # add thermal zones to airloop.
+        recircAirFlowRates = []
         for zCount, zone in enumerate(thermalZones):
             # make an air terminal for the zone
-            if terminalOption == "VAV":
-                airTerminal = ops.AirTerminalSingleDuctVAVNoReheat(model, model.alwaysOnDiscreteSchedule())
-                self.setOutdoorAirReq(airTerminal, zone)
-            elif terminalOption == "ChilledBeam":
+            airTerminal = None
+            recircAirFlowRates = []
+            if terminalOption == "ChilledBeam":
                 # create cooling coil
                 coolingCoil = ops.CoilCoolingCooledBeam(model)
                 chilledWaterPlant.addDemandBranchForComponent(coolingCoil)
@@ -981,17 +984,31 @@ class WriteOPS(object):
                      coolAvailSch = self.getOSSchedule(coolingDetails.coolingAvailSched, model)
                      airTerminal.setAvailabilitySchedule(coolAvailSch)
             else:
+                zoneTotAir = self.getZoneTotalAir(hbZones[zCount])
+                recircAirFlowRates.append(zoneTotAir)
                 if ventSchedTrigger == True:
                     airTerminal = ops.AirTerminalSingleDuctVAVNoReheat(model, model.alwaysOnDiscreteSchedule())
                     self.setOutdoorAirReq(airTerminal, zone)
                 elif airDetails != None and airDetails.fanControl == 'Variable Volume':
                     airTerminal = ops.AirTerminalSingleDuctVAVNoReheat(model, model.alwaysOnDiscreteSchedule())
                     self.setDemandVent(airTerminal, zone, hbZones[zCount])
-                else:
+                elif hbZones[zCount].recirculatedAirPerArea == 0:
                     airTerminal = ops.AirTerminalSingleDuctUncontrolled(model, model.alwaysOnDiscreteSchedule())
+                else:
+                    airTerminal = ops.AirTerminalSingleDuctVAVNoReheat(model, model.alwaysOnDiscreteSchedule())
+            if hbZones[zCount].recirculatedAirPerArea != 0 and terminalOption != "ChilledBeam":
+                self.sizeAirTerminalForRecirc(model, hbZones[zCount], airTerminal, zoneTotAir)
+            elif recicTrigger == True:
+                airTerminal.setZoneMinimumAirFlowInputMethod('Constant')
+                airTerminal.autosizeMaximumAirFlowRate()
+                airTerminal.resetMinimumAirFlowFractionSchedule()
             
             # attach new terminal to the zone and to the airloop
             airloopPrimary.addBranchForZone(zone, airTerminal.to_StraightComponent())
+        
+        # Size fan for recirc if needed.
+        if recircTrigger == True:
+            self.sizeVAVFanForRecirc(model, airloopPrimary, recircAirFlowRates)
         
         return airloopPrimary
     
@@ -1123,12 +1140,18 @@ class WriteOPS(object):
     
     def sizeAirTerminalForRecirc(self, model, HBZone, vavBox, zoneTotAir):
         if HBZone.ventilationSched != '':
-            vavBox.setZoneMinimumAirFlowMethod('Scheduled')
+            try:
+                vavBox.setZoneMinimumAirFlowMethod('Scheduled')
+            except:
+                vavBox.setZoneMinimumAirFlowInputMethod('Scheduled')
             vavBox.setMaximumAirFlowRate(zoneTotAir)
             minVentSch = self.getOSSchedule(HBZone.ventilationSched,model)
             vavBox.setMinimumAirFlowFractionSchedule(minVentSch)
         else:
-            vavBox.setZoneMinimumAirFlowMethod('FixedFlowRate')
+            try:
+                vavBox.setZoneMinimumAirFlowMethod('FixedFlowRate')
+            except:
+                vavBox.setZoneMinimumAirFlowInputMethod('FixedFlowRate')
             vavBox.setFixedMinimumAirFlowRate(zoneTotAir)
             vavBox.setMaximumAirFlowRate(2*zoneTotAir)
     
@@ -1426,30 +1449,27 @@ class WriteOPS(object):
                         zoneIdealAir.setOutdoorAirEconomizerType('DifferentialEnthalpy')
                     else:
                         zoneIdealAir.setOutdoorAirEconomizerType('DifferentialDryBulb')
-                    zoneIdealAir.setDemandControlledVentilationType('OccupancySchedule')
+                    zoneIdealAir.setCoolingLimit('LimitFlowRate')
+                    zoneIdealAir.autosizeMaximumCoolingAirFlowRate()
                     
                     # Set the airDetails.
                     if airDetails != None:
                         if airDetails.HVACAvailabiltySched != 'ALWAYS ON':
                             hvacAvailSch = self.getOSSchedule(airDetails.HVACAvailabiltySched,model)
                             zoneIdealAir.setAvailabilitySchedule(hvacAvailSch)
+                        if airDetails.fanControl == 'Variable Volume':
+                            zoneIdealAir.setDemandControlledVentilationType('OccupancySchedule')
                         if airDetails.heatingSupplyAirTemp != 'Default':
                             zoneIdealAir.setMaximumHeatingSupplyAirTemperature(airDetails.heatingSupplyAirTemp)
                         if airDetails.coolingSupplyAirTemp != 'Default':
                             zoneIdealAir.setMinimumCoolingSupplyAirTemperature(airDetails.coolingSupplyAirTemp)
                         if airDetails.airsideEconomizer != 'Default':
                             zoneIdealAir.setOutdoorAirEconomizerType(airDetails.airsideEconomizer)
-                            if airDetails.airsideEconomizer != 'NoEconomizer':
-                                zoneIdealAir.setCoolingLimit('LimitFlowRate')
-                                zoneIdealAir.autosizeMaximumCoolingAirFlowRate()
                         if airDetails.heatRecovery != 'Default':
                             zoneIdealAir.setHeatRecoveryType(airDetails.heatRecovery)
                         if airDetails.recoveryEffectiveness != 'Default':
                             zoneIdealAir.setSensibleHeatRecoveryEffectiveness(airDetails.recoveryEffectiveness)
                             zoneIdealAir.setLatentHeatRecoveryEffectiveness(airDetails.recoveryEffectiveness)
-                    else:
-                        zoneIdealAir.setCoolingLimit('LimitFlowRate')
-                        zoneIdealAir.autosizeMaximumCoolingAirFlowRate()
                     
                     # Set the heatingDetails.
                     if heatingDetails != None:

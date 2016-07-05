@@ -7553,12 +7553,12 @@ class hb_hvacProperties(object):
         8: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True},
         9: {'recirc' : False, 'humidCntrl' : True, 'dehumidCntrl' : False},
         10: {'recirc' : False, 'humidCntrl' : True, 'dehumidCntrl' : False},
-        11: {'recirc' : False, 'humidCntrl' : True, 'dehumidCntrl' : True},
+        11: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True},
         12: {'recirc' : False, 'humidCntrl' : True, 'dehumidCntrl' : True}
         }
         
         self.airCapabilities = {
-        0: {'FanTotEff': False, 'FanMotEff': False, 'FanPres': False, 'FanPlace': False, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        0: {'FanTotEff': False, 'FanMotEff': False, 'FanPres': False, 'FanPlace': False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
         1: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : False, 'Econ' : False, 'HeatRecov' : False},
         2: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'FanCntrl': False, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Econ' : False, 'HeatRecov' : False},
         3: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
