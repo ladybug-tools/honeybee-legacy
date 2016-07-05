@@ -999,7 +999,7 @@ class WriteOPS(object):
                 self.sizeAirTerminalForRecirc(model, hbZones[zCount], airTerminal, zoneTotAir)
             elif hbZones[zCount].recirculatedAirPerArea != 0:
                 airTerminal.setSupplyAirVolumetricFlowRate(zoneTotAir)
-            elif recicTrigger == True:
+            elif recircTrigger == True:
                 try:
                     airTerminal.setZoneMinimumAirFlowInputMethod('Constant')
                     airTerminal.autosizeMaximumAirFlowRate()
