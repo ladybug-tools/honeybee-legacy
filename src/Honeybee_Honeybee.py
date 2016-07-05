@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_02_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -7558,19 +7558,19 @@ class hb_hvacProperties(object):
         }
         
         self.airCapabilities = {
-        0: {'FanTotEff': False, 'FanMotEff': False, 'FanPres': False, 'FanPlace': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        1: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'HeatSupTemp' : True, 'CoolSupTemp' : False, 'Econ' : False, 'HeatRecov' : False},
-        2: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Econ' : False, 'HeatRecov' : False},
-        3: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        4: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        5: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        6: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'HeatSupTemp' : False, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        7: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        8: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'HeatSupTemp' : False, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        9: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        10: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        11: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        12: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True}
+        0: {'FanTotEff': False, 'FanMotEff': False, 'FanPres': False, 'FanPlace': False, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        1: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : False, 'Econ' : False, 'HeatRecov' : False},
+        2: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'FanCntrl': False, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Econ' : False, 'HeatRecov' : False},
+        3: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        4: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        5: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        6: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'FanCntrl': False, 'HeatSupTemp' : False, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        7: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        8: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'FanCntrl': False, 'HeatSupTemp' : False, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        9: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        10: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        11: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        12: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True}
         }
         
         self.heatCapabilities = {
@@ -7629,7 +7629,7 @@ class hb_hvacProperties(object):
 
 class hb_airDetail(object):
     def __init__(self, HVACAvailabiltySched=None, fanTotalEfficiency=None, fanMotorEfficiency=None, fanPressureRise=None, \
-        fanPlacement=None, heatingSupplyAirTemp=None, coolingSupplyAirTemp=None, airsideEconomizer=None, heatRecovery=None, recoveryEffectiveness=None):
+        fanPlacement=None, fanControl = None, heatingSupplyAirTemp=None, coolingSupplyAirTemp=None, airsideEconomizer=None, heatRecovery=None, recoveryEffectiveness=None):
         
         self.areInputsChecked = False
         self.sysProps = hb_hvacProperties()
@@ -7658,6 +7658,13 @@ class hb_airDetail(object):
         False: 'Blow Through',
         'Draw Through': 'Draw Through',
         'Blow Through': 'Blow Through'
+        }
+        
+        self.fanControlDict = {
+        True: 'Variable Volume',
+        False: 'Constant Volume',
+        'Variable Volume': 'Variable Volume',
+        'Constant Volume': 'Constant Volume'
         }
         
         self.heatRecovDict = {
@@ -7689,6 +7696,10 @@ class hb_airDetail(object):
             self.fanPlacement = self.fanPlaceDict[fanPlacement]
         else:
             self.fanPlacement = "Default"
+        if fanControl != None:
+            self.fanControl = self.fanControlDict[fanControl]
+        else:
+            self.fanControl = "Default"
         if heatingSupplyAirTemp:
             self.heatingSupplyAirTemp = float(heatingSupplyAirTemp)
         else:
@@ -7712,6 +7723,7 @@ class hb_airDetail(object):
             self.recoveryEffectiveness = float(recoveryEffectiveness)
         else:
             self.recoveryEffectiveness = "Default"
+    
     
     @classmethod
     def fromTextStr(cls, textStr):
@@ -7781,6 +7793,8 @@ class hb_airDetail(object):
             errors.append(self.sysProps.generateWarning(sysType, 'FAN PRESSURE RISE', 'airDetails'))
         if self.fanPlacement != 'Default' and hvacCapabilities['FanPlace'] == False:
             errors.append(self.sysProps.generateWarning(sysType, 'FAN PLACEMENT', 'airDetails'))
+        if self.fanControl != 'Default' and hvacCapabilities['FanCntrl'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'DEMAND CONTROLLED VENTILATION', 'airDetails'))
         if self.heatingSupplyAirTemp != 'Default' and hvacCapabilities['HeatSupTemp'] == False:
             errors.append(self.sysProps.generateWarning(sysType, 'HEATING SUPPLY AIR TEMPERATURE', 'airDetails'))
         if self.coolingSupplyAirTemp != 'Default' and hvacCapabilities['CoolSupTemp'] == False:
@@ -7811,6 +7825,7 @@ class hb_airDetail(object):
             '  Fan Motor Efficiency: ' + str(self.fanMotorEfficiency) + '\n' + \
             '  Fan Pressure Rise: ' + str(self.fanPressureRise) + '\n' + \
             '  Fan Placement: ' + str(self.fanPlacement) + '\n' + \
+            '  Demand Controlled Ventilation: ' + str(self.fanControl) + '\n' + \
             '  Heating Supply Air Temperature: ' + str(self.heatingSupplyAirTemp) + '\n' + \
             '  Cooling Supply Air Temperature: ' + str(self.coolingSupplyAirTemp) + '\n' + \
             '  Airside Economizer Method: ' + str(self.airsideEconomizer) + '\n' + \

@@ -35,6 +35,9 @@ Provided by Honeybee 0.0.59
         _fanPlacement_: A boolean value that represents the placement of the fan in relation to cooling or heating coils.  The default is set to True to draw through.  Choose from the following options:
             True = Draw Through (the fan comes after the coils such that air is drawn by the fan across the heating/cooling coils).
             False = Blow Through (the fan comes before the coils such that air is blown through the heating/cooling coils).
+        demandControlledVent_: A boolean value that represents whether system can vary its speed and the volume of air to match occupancy.  The default is False for all systems.  Choose from the following options:
+            True = Demand Controlled Varialbe Minimum Air (the system can vary the volume of air to match occupancy).
+            False = Constant Volume Minimum Air (the fan has only one miniumum flow rate when it is on).
         _heatingSupplyAirTemp_: A number representing the target temperature of the supply air when the system is in heating mode.  For large systems, this is the rated outlet air temperature of the heating coil.  Default for a VAV system is 35C.
         _coolingSupplyAirTemp_: A number representing the target temperature of the supply air when the system is in cooling mode.  For large systems, this is the rated outlet air temperature of the cooling coil.  Default is typically around 12C, which is the coldest temperature before supply air can cause clear thermal discomfort issues.
         airsideEconomizer_: An integer or boolean value (0/1) that sets the economizer on the HVAC system.  The default is set to "True" or "1" to include a Differential Dry Bulb air side economizer or "2" for a Differential Enthalpy economizer if the zone has humidity control.  Choose from the following options:
@@ -58,7 +61,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_OpenStudio Air Details"
 ghenv.Component.NickName = 'AirDetails'
-ghenv.Component.Message = 'VER 0.0.59\nMAY_07_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | HVACSystems"
@@ -75,7 +78,7 @@ w = gh.GH_RuntimeMessageLevel.Warning
 
 def main(hb_airDetail):
     myAirDetails = hb_airDetail(_HVACAvailabiltySched_, _fanTotalEfficiency_, _fanMotorEfficiency_, \
-    _fanPressureRise_, _fanPlacement_, _heatingSupplyAirTemp_, _coolingSupplyAirTemp_, \
+    _fanPressureRise_, _fanPlacement_, demandControlledVent_, _heatingSupplyAirTemp_, _coolingSupplyAirTemp_, \
     airsideEconomizer_, heatRecovery_, recoveryEffectiveness_)
     
     success, airDetails = myAirDetails.class2Str()
