@@ -198,12 +198,20 @@ class WriteOPS(object):
         site.setTerrain(terrain)
     
     def setGroundTemps(self, model):
-        # The .get() method is broken now.  Hopefully OS team fixes it soon.
         grndTemps = self.simParameters[6]
-        site = ops.Model.getSite(model)
-        #opsGrndTemps = site.siteGroundTemperatureBuildingSurface().get()
-        #for count, temp in enumerate(grndTemps):
-        #    opsGrndTemps.setTemperatureByMonth(count+1, temp)
+        opsGrndTemps = model.getSiteGroundTemperatureBuildingSurface()
+        opsGrndTemps.setJanuaryGroundTemperature(grndTemps[0])
+        opsGrndTemps.setFebruaryGroundTemperature(grndTemps[1])
+        opsGrndTemps.setMarchGroundTemperature(grndTemps[2])
+        opsGrndTemps.setAprilGroundTemperature(grndTemps[3])
+        opsGrndTemps.setMayGroundTemperature(grndTemps[4])
+        opsGrndTemps.setJuneGroundTemperature(grndTemps[5])
+        opsGrndTemps.setJulyGroundTemperature(grndTemps[6])
+        opsGrndTemps.setAugustGroundTemperature(grndTemps[7])
+        opsGrndTemps.setSeptemberGroundTemperature(grndTemps[8])
+        opsGrndTemps.setOctoberGroundTemperature(grndTemps[9])
+        opsGrndTemps.setNovemberGroundTemperature(grndTemps[10])
+        opsGrndTemps.setDecemberGroundTemperature(grndTemps[11])
     
     def setRunningPeriod(self, runningPeriod, model):
         # get the days from numbers
@@ -2804,22 +2812,6 @@ class EPFeaturesNotInOS(object):
                 '\t' + date.split(' ' )[0] + '/' + date.split(' ')[1] + ',  !- Date\n' + \
                 '\t' + '1' + ',  !- Duration\n' + \
                 '\t' + 'Holiday' + ';  !- Special Day Type\n'
-    
-    def EPGroundTemp(self, grndTemps):
-        
-        return "\nSite:GroundTemperature:BuildingSurface,\n" + \
-            '\t' + str(grndTemps[0]) + ',    !Jan Ground Temperature (C)\n' + \
-            '\t' + str(grndTemps[1]) + ',    !Feb Ground Temperature (C)\n' + \
-            '\t' + str(grndTemps[2]) + ',    !Mar Ground Temperature (C)\n' + \
-            '\t' + str(grndTemps[3]) + ',    !Apr Ground Temperature (C)\n' + \
-            '\t' + str(grndTemps[4]) + ',    !May Ground Temperature (C)\n' + \
-            '\t' + str(grndTemps[5]) + ',    !Jun Ground Temperature (C)\n' + \
-            '\t' + str(grndTemps[6]) + ',    !Jul Ground Temperature (C)\n' + \
-            '\t' + str(grndTemps[7]) + ',    !Aug Ground Temperature (C)\n' + \
-            '\t' + str(grndTemps[8]) + ',    !Sep Ground Temperature (C)\n' + \
-            '\t' + str(grndTemps[9]) + ',    !Oct Ground Temperature (C)\n' + \
-            '\t' + str(grndTemps[10]) + ',    !Nov Ground Temperature (C)\n' + \
-            '\t' +  str(grndTemps[11]) + ';   !Dec Ground Temperature (C)\n'
 
 
 
@@ -2935,10 +2927,6 @@ class RunOPS(object):
         if simParameters[7] != []:
             for count, hol in enumerate(simParameters[7]):
                 lines.append(otherFeatureClass.EPHoliday(hol, count))
-        
-        # Write in any ground temperatures.
-        if simParameters[6] != []:
-            lines.append(otherFeatureClass.EPGroundTemp(simParameters[6]))
         
         # Write in any requested natural ventilation objects.
         natVentStrings = []
