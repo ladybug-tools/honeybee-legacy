@@ -78,7 +78,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Window Shade Generator"
 ghenv.Component.NickName = 'EPWindowShades'
-ghenv.Component.Message = 'VER 0.0.59\nAPR_11_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_06_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -1011,7 +1011,7 @@ def createEPBlindControl(blindCntrlName, shadeMaterial, schedule, EPinteriorOrEx
     #Check the setpoint and shading control.
     setPoint = ''
     setPoint2 = ''
-    if shadeCntrlType_ != 0:
+    if shadeCntrlType_ != 0 and shadeCntrlType_ != None:
         schedCntrlType = shdCntrlDict[shadeCntrlType_]
         setPoint = str(shadeSetpoint_[0])
         if shadeCntrlType_ >= 13: setPoint2 = str(shadeSetpoint_[1])
