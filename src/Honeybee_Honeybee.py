@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_05_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_06_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -7537,7 +7537,8 @@ class hb_hvacProperties(object):
         10:'WARM AIR FURNACE - ELECTRIC',
         11:'FAN COIL UNITS + DOAS',
         12:'ACTIVE CHILLED BEAMS + DOAS',
-        13:'RADIANT FLOORS + DOAS'
+        13:'RADIANT FLOORS + DOAS',
+        14:'VRF + DOAS'
         }
         
         # Dictionaries that state which features can be changed for each of the different systems.
@@ -7556,7 +7557,8 @@ class hb_hvacProperties(object):
         10: {'recirc' : False, 'humidCntrl' : True, 'dehumidCntrl' : False, 'ventSched' : False},
         11: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
         12: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : False},
-        13: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True}
+        13: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
+        14: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True}
         }
         
         self.airCapabilities = {
@@ -7572,8 +7574,9 @@ class hb_hvacProperties(object):
         9: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
         10: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
         11: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        12: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        13: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True}
+        12: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        13: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        14: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True}
         }
         
         self.heatCapabilities = {
@@ -7590,7 +7593,8 @@ class hb_hvacProperties(object):
         10: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
         11: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
         12: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
-        13: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True}
+        13: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
+        14: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False}
         }
         
         self.coolCapabilities = {
@@ -7607,7 +7611,8 @@ class hb_hvacProperties(object):
         10: {'COP' : False, 'Avail' : False, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : False},
         11: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : True},
         12: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : True},
-        13: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : True}
+        13: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : True},
+        14: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : True}
         }
     
     @staticmethod
