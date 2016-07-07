@@ -68,7 +68,7 @@ Provided by Ladybug 0.0.62
 
 ghenv.Component.Name = "Honeybee_Annual Schedule"
 ghenv.Component.NickName = 'AnnualSchedule'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_05_2015'
+ghenv.Component.Message = 'VER 0.0.62\nJUL_07_2015'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "07 | Energy | Schedule"
@@ -515,5 +515,5 @@ else:
 if initCheck == True and _generateValues == True:
     result = main(_sun, _mon, _tue, _wed, _thu, _fri, _sat, holiday_, _generateValues, epwFileForHol_, startDayOfWeek_, overwriteHolidays_, _scheduleName_, _schedTypeLimits_)
     if result != -1:
-        schedule, holidays, scheduleValues, schedIDFText, weekSchdeule = result
+        schedule, holidays, scheduleValues, schedIDFText, weekSchedule = result
         print '\nscheduleValues generated!'
