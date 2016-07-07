@@ -45,7 +45,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Read EP HVAC Result"
 ghenv.Component.NickName = 'readEP_HVAC_Result'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_07_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -61,6 +61,7 @@ from Grasshopper.Kernel.Data import GH_Path
 import scriptcontext as sc
 import copy
 import os
+import re
 
 #Read the location and the analysis period info from the eio file, if there is one.
 #Also try to read the floor areas from this file to be used in EUI calculations.
@@ -147,10 +148,12 @@ supplyAirTemp = DataTree[Object]()
 supplyAirHumidity = DataTree[Object]()
 earthTubeCooling = DataTree[Object]()
 earthTubeHeating = DataTree[Object]()
-
+unmetCoolingHoursData = "..."
+unmetHeatingHoursData = "..."
 
 #Make a list to keep track of what outputs are in the result file.
-dataTypeList = [False, False, False, False, False, False, False, False, False]
+dataTypeList = [False, False, False, False, False, False, False, False, False, False ,False]
+
 parseSuccess = False
 centralSys = False
 
@@ -162,7 +165,6 @@ def makeHeader(list, path, zoneName, timestep, name, units, normable):
     else: list.Add("Floor Normalized " + name + " for" + zoneName, GH_Path(path))
     if normByFlr == False or normable == False: list.Add(units, GH_Path(path))
     else: list.Add(units+"/m2", GH_Path(path))
-    list.Add(timestep, GH_Path(path))
     list.Add(start, GH_Path(path))
     list.Add(end, GH_Path(path))
 
@@ -188,6 +190,7 @@ def checkCentralSys(sysInt, sysType):
 # PARSE THE RESULT FILE.
 if _resultFileAddress and gotData == True:
     #try:
+        
     result = open(_resultFileAddress, 'r')
     
     for lineCount, line in enumerate(result):
@@ -197,6 +200,7 @@ if _resultFileAddress and gotData == True:
             for columnCount, column in enumerate(line.split(',')):
                 if 'Zone Ideal Loads Supply Air Sensible Cooling Energy' in column:
                     key.append(0)
+                    
                     zoneName = checkZone(" " + column.split(':')[0].split(' IDEAL LOADS AIR SYSTEM')[0])
                     makeHeader(sensibleCooling, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Sensible Cooling Energy", "kWh", True)
                     dataTypeList[0] = True
@@ -299,8 +303,6 @@ if _resultFileAddress and gotData == True:
                     key.append(-1)
                     path.append(-1)
                 
-            #print key
-            #print path
         else:
             for columnCount, column in enumerate(line.split(',')):
                 p = GH_Path(int(path[columnCount]))
@@ -327,7 +329,75 @@ if _resultFileAddress and gotData == True:
                     earthTubeHeating.Add((float(column)/3600000)/flrArea, p)
                 
     result.close()
+   
     parseSuccess = True
+    
+    # Extract unmet hours from Building Summary - Only works for Open Studio Simulation as the inTable.html is only created for OpenStudio
+    
+    try:
+        
+        # Try to open the html file
+    
+        # Take results path and open the file inTable.html - The building summary 
+        
+        resultsPath = _resultFileAddress.split("\\") 
+        
+        resultsPath[-1] = "inTable.html"
+    
+        simulationSummaryPath = "\\".join(resultsPath)
+        
+        simulationSummary = open(simulationSummaryPath, 'r')
+        
+        for lineCount, line in enumerate(simulationSummary):
+            
+            if line.find("Time Setpoint Not Met During Occupied Heating") != -1:
+                
+                occupiedHeatingLine = lineCount + 1
+                
+            if line.find("Time Setpoint Not Met During Occupied Cooling") != -1:
+                
+                occupiedCoolingLine = lineCount + 1
+                
+            try:
+                if lineCount == occupiedHeatingLine:
+                    
+                    # Use regular expression to isolate the number - http://stackoverflow.com/questions/18177285/extract-floats-from-a-string-using-regular-expression
+                    # Should work on both floats and decimals
+                    
+                    unmetHeatingHoursData = float(re.findall("[+-]?[0-9.]+",line)[0])
+                    dataTypeList[9] = True
+                    
+                if lineCount == occupiedCoolingLine:
+                    
+                    # Use regular expression to isolate the number - http://stackoverflow.com/questions/18177285/extract-floats-from-a-string-using-regular-expression
+                    # Should work on both floats and decimals
+                    
+                    unmetCoolingHoursData = float(re.findall("[+-]?[0-9.]+",line)[0])
+                    dataTypeList[10] = True
+                    
+            except:
+                
+                pass
+                
+        simulationSummary.close()
+        
+    except:
+        
+        warning = 'The Annual Building Utility Performance Summary was not output by your simulation or if it was it is not named inTable.html which is what OpenStudio names it by default \n'+ \
+        'for this reason unmetHeating and unmetCooling hours will not be able to be read by this component.'
+        
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+    
+    # Assign data to unmet cooling and heating hours
+    
+    unmetCoolingHours = ["key:location/dataType/units/frequency/startsAt/endsAt",str(location),"Unmet Cooling Hours for Entire Facility","Hours","RunPeriod",str(start),str(end),unmetCoolingHoursData]
+    unmetHeatingHours = ["key:location/dataType/units/frequency/startsAt/endsAt",str(location),"Unmet Cooling Hours for Entire Facility","Hours","RunPeriod",str(start),str(end),unmetHeatingHoursData]
+
+    
+    #and gotData == True:
+    #try:
+    #result = open(_resultFileAddress, 'r')
+    
     #except:
     #    try: result.close()
     #    except: pass
@@ -341,9 +411,8 @@ if _resultFileAddress and gotData == True:
     #    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warn)
 
 
-
-
 #If some of the component outputs are not in the result csv file, blot the variable out of the component.
+
 
 outputsDict = {
      
@@ -355,12 +424,15 @@ outputsDict = {
 5: ["supplyAirTemp", "The mean air temperature of the supply air for each zone (degrees Celcius)."],
 6: ["supplyAirHumidity", "The relative humidity of the supply air for each zone (%)."],
 7: ["earthTubeCooling", "The sensible energy removed by an earth tube system for each zone in kWh."],
-8: ["earthTubeHeating", "The sensible energy added by an earth tube system for each zone in kWh."]
+8: ["earthTubeHeating", "The sensible energy added by an earth tube system for each zone in kWh."],
+9: ["unmetCoolingHours", "The total unmet cooling hours not met by the HVAC system for the entire Facility."],
+10:["unmetHeatingHours", "The total unmet heating hours not met by the HVAC system for the entire Facility."]
 }
 
 
 if _resultFileAddress and parseSuccess == True:
-    for output in range(9):
+    for output in range(11):
+        
         if dataTypeList[output] == False:
             ghenv.Component.Params.Output[output].NickName = "."
             ghenv.Component.Params.Output[output].Name = "."
@@ -370,7 +442,7 @@ if _resultFileAddress and parseSuccess == True:
             ghenv.Component.Params.Output[output].Name = outputsDict[output][0]
             ghenv.Component.Params.Output[output].Description = outputsDict[output][1]
 else:
-    for output in range(9):
+    for output in range(11):
         ghenv.Component.Params.Output[output].NickName = outputsDict[output][0]
         ghenv.Component.Params.Output[output].Name = outputsDict[output][0]
         ghenv.Component.Params.Output[output].Description = outputsDict[output][1]

@@ -22,10 +22,8 @@
 
 """
 Use this component to add a custom glazing surface to a HBSurface or HBZone.
-
 -
 Provided by Honeybee 0.0.59
-
     Args:
         _HBObj: A HBZone or HBSurface to which you would like to add a customized glazing surface.
         _childSurfaces: A surface or list of surfaces that represent the custom window(s) that you would like to add.  Note that these surfaces should be co-planar to the connected HBSurface or one of the surfaces of the connected HBZones.
@@ -48,7 +46,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_addHBGlz'
 ghenv.Component.NickName = 'addHBGlz'
-ghenv.Component.Message = 'VER 0.0.59\nJUN_19_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_06_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -123,6 +121,8 @@ def main(HBObject, childSurfaces, childSurfacesName, EPConstructions, RADMateria
                             print warningMsg
                             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
                             return -1
+                        
+                    print RADMaterials
                         
                     if len(RADMaterials)!= 0:
                         
@@ -209,6 +209,7 @@ def main(HBObject, childSurfaces, childSurfacesName, EPConstructions, RADMateria
         if HBObject.objectType == "HBZone":
             # add window for each surface
             for HBSurface in HBObject.surfaces:
+                
                 addPotentialChildSurface(HBSurface)
         else:
             # add window to the HBSurface
@@ -234,6 +235,7 @@ if _HBObj!=None and len(_childSurfaces) and _childSurfaces[0]!=None:
     tolerance_ = sc.doc.ModelAbsoluteTolerance
     
     childSrfRADMaterials = []
+    childSrfEPConstructions = []
     
     for objNum,obj in enumerate(_childSurfaces):
         
@@ -250,51 +252,71 @@ if _HBObj!=None and len(_childSurfaces) and _childSurfaces[0]!=None:
             
             # Build a list of the radMaterials for the _childSurfaces
                     
-            if HBobj.objectType == "HBZone":
+            if HBobj.objectType != "HBSurface":
                 
-                warn = "If you connect a HBsurface to _childSurfaces and not just geometry the type of that HBsurface must be a window"
+                warn = "Only HBSurfaces assigned as windows can be connected to _childSurfaces, you have not connected a HBSurface/s!"
                 w = gh.GH_RuntimeMessageLevel.Warning
                 ghenv.Component.AddRuntimeMessage(w, warn)
-                
+                 
             
-            if HBobj.type != 5:
+            elif HBobj.type != 5:
                 
-                warn = "If you connect a HBsurface to _childSurfaces and not just geometry the type of that HBsurface must be a window"
+                warn = "You have connected a HBSurface to _childSurfaces but this HBSurface is not a window! Only windows can be connected to _childSurfaces"
                 w = gh.GH_RuntimeMessageLevel.Warning
                 ghenv.Component.AddRuntimeMessage(w, warn)
             
             else:
                 # The obj is a existing Honeybee fenestration surface
                 
-                childSrfRADMaterials.append(HBobj.RadMaterial)
-            
-            
+                if len(RADMaterials_)== 0:
+                    
+                    # Use existing material
+                    
+                    if HBobj.RadMaterial != None:
+                    
+                        childSrfRADMaterials.append(HBobj.RadMaterial)
+                        
+                    else:
+                        
+                        pass
+                
+                else:
+                    
+                    # Use materials assigned at RADMaterials_
+                    
+                    childSrfRADMaterials = RADMaterials_
+                    
+                    
+                if len(EPConstructions_)== 0:
+                    
+                    # Use existing material
+                    
+                    if HBobj.EPConstruction != None:
+                    
+                        childSrfEPConstructions.append(HBobj.EPConstruction)
+                        
+                    else:
+                        
+                        pass
+               
+                else:
+                    
+                    # Use materials assigned at EPConstructions_
+                    
+                    childSrfEPConstructions = EPConstructions_
+                    
+        
+                
         except KeyError:
             
-            # Not a Honeybee object and is just geometry, a Rad Material must be assigned to it
+            # Not a Honeybee object and is just geometry assign materials specified in RADMaterials_
+
+            childSrfRADMaterials = RADMaterials_
             
-            if len(RADMaterials_)!= 0:
-        
-                try:
-                    
-                    RADMaterial = RADMaterials_[objNum]
-                    
-                except:
-                    
-                    RADMaterial = RADMaterials_[0]
-                
-                childSrfRADMaterials.append(RADMaterial)
-                
-            else:
-                
-                # No Rad materials assigned and is not already a honeybee window just assign None as was the case previously
-                
-                childSrfRADMaterials.append(None)
+            childSrfEPConstructions = EPConstructions_
             
-        
-    results = main(_HBObj, _childSurfaces, childSurfacesName_, EPConstructions_, childSrfRADMaterials, tolerance_)
+
+    results = main(_HBObj, _childSurfaces, childSurfacesName_, childSrfEPConstructions, childSrfRADMaterials, tolerance_)
 
     if results != -1:
         HBObjWGLZ = results
-        
-    
