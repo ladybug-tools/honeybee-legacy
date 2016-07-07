@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_06_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_07_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -385,6 +385,7 @@ class PrepareTemplateEPLibFiles(object):
         if not sc.sticky.has_key("honeybee_windowMaterialLib"): sc.sticky ["honeybee_windowMaterialLib"] = {}
         if not sc.sticky.has_key("honeybee_ScheduleLib"): sc.sticky["honeybee_ScheduleLib"] = {}
         if not sc.sticky.has_key("honeybee_ScheduleTypeLimitsLib"): sc.sticky["honeybee_ScheduleTypeLimitsLib"] = {}
+        if not sc.sticky.has_key("honeybee_WinodowPropLib"): sc.sticky["honeybee_WinodowPropLib"] = {}
         if not sc.sticky.has_key("honeybee_thermMaterialLib"): sc.sticky["honeybee_thermMaterialLib"] = {}
         
         self.downloadTemplate = downloadTemplate
@@ -402,6 +403,7 @@ class PrepareTemplateEPLibFiles(object):
         sc.sticky ["honeybee_windowMaterialLib"] = {}
         sc.sticky["honeybee_ScheduleLib"] = {}
         sc.sticky["honeybee_ScheduleTypeLimitsLib"] = {}
+        sc.sticky["honeybee_WinodowPropLib"] = {}
     
     def cleanThermLib(self):
         sc.sticky["honeybee_thermMaterialLib"] = {}
@@ -670,8 +672,6 @@ class HB_GetEPLibraries:
         
         with open(epFilePath, "r") as epFile:
             return self.getEnergyPlusObjectsFromString("".join(epFile.readlines()))
-    
-    
     
     def getThermObjectsFromFile(self, matFile):
         if not os.path.isfile(matFile):
@@ -2454,7 +2454,7 @@ class hb_WriteRAD(object):
             # glazingStr
             fullStr = fullStr + self.getsurfaceStr(surface.childSrfs[0], glzCount, glzCoorList)
         return fullStr
-            
+
 class hb_WriteRADAUX(object):
     
     def __init__(self):
@@ -3126,7 +3126,7 @@ class hb_WriteRADAUX(object):
             return True
         else:
             return False
-        
+
 class hb_WriteDS(object):
     
     def isSensor(self, testPt, sensors):
@@ -3407,7 +3407,6 @@ class hb_WriteDS(object):
                 'direct_sunlight_file ' + projectName  + '_' + `cpuCount` + '.dir\n' + \
                 'thermal_simulation ' + projectName  + '_' + `cpuCount` + '_intgain.csv\n'
 
-
 class hb_ReadAnnualResultsAux(object):
     
     def sortIllFiles(self, illFilesTemp):
@@ -3510,7 +3509,7 @@ class hb_ReadAnnualResultsAux(object):
                     illFiles.AddRange(fileList, p)
         
         return illFiles
-    
+
 class hb_EnergySimulatioParameters(object):
     
     def readEPParams(self, EPParameters):
@@ -3566,7 +3565,12 @@ class EPMaterialAux(object):
             thickness = float(materialObj[3][0])
             conductivity = float(materialObj[13][0])
             UValueSI = conductivity/thickness
-            
+        
+        elif materialType.lower() == "windowmaterial:blind":
+            UValueSI = 0
+        elif materialType.lower() == "windowmaterial:shade":
+            UValueSI = 0
+        
         elif materialType.lower() == "material:nomass":
             # Material:NoMass is defined by R-Value and not U-Value
             UValueSI = 1 / float(materialObj[2][0])
@@ -3806,6 +3810,8 @@ class EPMaterialAux(object):
             objectData = sc.sticky ["honeybee_materialLib"][objectName]
         elif objectName in sc.sticky ["honeybee_constructionLib"].keys():
             objectData = sc.sticky ["honeybee_constructionLib"][objectName]
+        elif objectData in sc.sticky["honeybee_WinodowPropLib"].keys():
+            objectData = sc.sticky["honeybee_WinodowPropLib"][objectName]
         
         if objectData!=None:
             numberOfLayers = len(objectData.keys())
@@ -3984,6 +3990,9 @@ class EPObjectsAux(object):
     def isScheduleTypeLimits(self, scheduleName):
         return scheduleName.upper() in sc.sticky["honeybee_ScheduleTypeLimitsLib"].keys()
     
+    def isWindowProperty(self, winPropName):
+        return winPropName.upper() in sc.sticky["honeybee_WinodowPropLib"].keys()
+    
     def customizeEPObject(self, EPObjectName, indexes, inValues):
         hb_EPScheduleAUX = EPScheduleAux()
         hb_EPMaterialAUX = EPMaterialAux()
@@ -4047,7 +4056,7 @@ class EPObjectsAux(object):
     
     def getObjectKey(self, EPObject):
         
-        EPKeys = ["Material", "WindowMaterial", "Construction", "ScheduleTypeLimits", "Schedule"]
+        EPKeys = ["Material", "WindowMaterial", "Construction", "ScheduleTypeLimits", "Schedule", "WindowProperty"]
         
         # check if it is a full string
         for key in EPKeys:
@@ -4066,7 +4075,8 @@ class EPObjectsAux(object):
                        "Material" : "honeybee_materialLib",
                        "WindowMaterial" : "honeybee_windowMaterialLib",
                        "Schedule": "honeybee_ScheduleLib",
-                       "ScheduleTypeLimits" : "honeybee_ScheduleTypeLimitsLib"
+                       "ScheduleTypeLimits" : "honeybee_ScheduleTypeLimitsLib",
+                       "WindowProperty" : "honeybee_WinodowPropLib"
                        }
         
         # find construction/material name
@@ -4084,7 +4094,7 @@ class EPObjectsAux(object):
         sc.sticky[HBLibrarieNames[key]][name] = {}
         
         lines = EPObject.split("\n")
-
+        
         # store the data into the dictionary
         for lineCount, line in enumerate(lines):
             
@@ -4121,7 +4131,9 @@ class EPObjectsAux(object):
             objectData = sc.sticky ["honeybee_ScheduleLib"][objectName]
         elif objectName in sc.sticky["honeybee_ScheduleTypeLimitsLib"].keys():
             objectData = sc.sticky ["honeybee_ScheduleTypeLimitsLib"][objectName]
-
+        elif objectName in sc.sticky["honeybee_WinodowPropLib"].keys():
+            objectData = sc.sticky["honeybee_WinodowPropLib"][objectName]
+        
         return objectData
     
     def getEPObjectsStr(self, objectName):
@@ -4146,7 +4158,7 @@ class EPObjectsAux(object):
                 else:
                     objectStr =  objectStr + "  " + str(objectData[layer][0]) + ";   !- " +  objectData[layer][1] + "\n\n"
             return objectStr
-            
+    
     def duplicateEPObjectWarning(self, objectName, newMaterialString):
         returnYN = {'YES': True, 'NO': False}
         buttons = System.Windows.Forms.MessageBoxButtons.YesNo
@@ -4193,7 +4205,6 @@ class EPObjectsAux(object):
             print warningMsg
             component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
             return
-    
 
 class ReadEPSchedules(object):
     
@@ -6663,9 +6674,9 @@ class hb_EPFenSurface(hb_EPSurface):
             parentZone: class of the zone that this surface belongs to"""
         hb_EPSurface.__init__(self, surface, srfNumber, srfName, parentSurface, surafceType)
         
-        self.shadeMaterial = []
-        self.shadingControl = []
         self.shadingSchName = []
+        self.shadingControlName = []
+        self.shadeMaterialName = []
         
         if not self.isPlanar:
             try:
@@ -6676,7 +6687,7 @@ class hb_EPFenSurface(hb_EPSurface):
 
         # calculate punchedWall
         self.parent.punchedGeometry = punchedWall
-        self.shadingControlName = []
+        
         self.frameName = ''
         self.Multiplier = 1
         self.BCObject = self.outdoorBCObject()

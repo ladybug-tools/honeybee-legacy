@@ -150,6 +150,7 @@ class WriteOPS(object):
         self.constructionList = sc.sticky ["honeybee_constructionLib"]
         self.materialList = {}
         self.scheduleList = {}
+        self.shdCntrlList = {}
         self.bldgTypes = {}
         self.levels = {}
         self.HVACSystemDict = {}
@@ -158,6 +159,8 @@ class WriteOPS(object):
         
         self.csvSchedules = []
         self.csvScheduleCount = 0
+        self.shadeCntrlToReplace = []
+        self.replaceShdCntrl = False
     
     def setSimulationControls(self, model):
         solarDist = self.simParameters[2]
@@ -292,6 +295,15 @@ class WriteOPS(object):
     
     def getScheduleFromLib(self, scheduleName):
         return self.scheduleList[scheduleName]
+    
+    def isShdCntrlInLib(self, shdCntrlName):
+        return shdCntrlName in self.shdCntrlList.keys()
+    
+    def addShdCntrlToLib(self, shdCntrlName, shdCntrl):
+        self.shdCntrlList[shdCntrlName] = shdCntrl
+        
+    def getShdCntrlFromLib(self, shdCntrlName):
+        return self.shdCntrlList[shdCntrlName]
     
     def createOSScheduleTypeLimitsFromValues(self, model, lowerLimit, upperLimit, numericType, unitType):
         typeLimit = ops.ScheduleTypeLimits(model)
@@ -443,7 +455,7 @@ class WriteOPS(object):
             schedule.addScheduleWeek(endDate, ScheduleWeek)
             
         return schedule
-        
+    
     def getOSSchedule(self, schName, model):
         csvSched = False
         if schName.lower().endswith(".csv"):
@@ -486,6 +498,66 @@ class WriteOPS(object):
             return OSSchedule
         else:
             return self.getScheduleFromLib(schName)
+    
+    def getOSShdCntrl(self, shdCntrlName, model):
+        values = self.hb_EPObjectsAux.getEPObjectDataByName(shdCntrlName)
+        
+        if not self.isShdCntrlInLib(shdCntrlName):
+            # Make the shade control obect.
+            if values[2][0] != '':
+                # Iniitalize for construction (for switchable glazing).
+                constrName = values[2][0]
+                if not self.isConstructionInLib(constrName):
+                    OSConstruction = self.getOSConstruction(constrName, model)
+                    self.addConstructionToLib(constrName, OSConstruction)
+                else:
+                    OSConstruction = self.getConstructionFromLib(constrName, model)
+                OSShdCntrl = ops.ShadingControl(OSConstruction)
+            else:
+                # Iniitalize for material (for blinds and shades).
+                materialName = values[8][0]
+                if not self.isMaterialInLib(materialName):
+                    OSMaterial = self.getOSMaterial(materialName, model)
+                    self.addMaterialToLib(materialName, OSMaterial)
+                else:
+                    OSMaterial = self.getMaterialFromLib(materialName)
+                
+                OSShdCntrl = ops.ShadingControl(OSMaterial)
+            
+            # Shading Type
+            if values[1][0] != '':
+                OSShdCntrl.setShadingType(values[1][0])
+            
+            # Shading Control Type.
+            if values[3][0] != '':
+                ### Openstudio currently does not support any shading control other than OnIfHighSolarOnWindow.
+                # As such, there is a workaround above for now.
+                if values[3][0] == 'OnIfHighSolarOnWindow':
+                    OSShdCntrl.setShadingControlType(str(values[3][0]))
+                else:
+                    self.replaceShdCntrl = True
+            self.shadeCntrlToReplace.append([shdCntrlName, OSShdCntrl.name()])
+            
+            # Shading Schedule.
+            if values[4][0] != '':
+                osSched = self.getOSSchedule(values[4][0], model)
+                OSShdCntrl.setSchedule(osSched)
+            
+            # Shading setpoint.
+            if values[5][0] != '':
+                OSShdCntrl.setSetpoint(float(values[5][0]))
+            
+            # Openstudio also does not support a second setpoint.  This code really doen't do anything for now.
+            try:
+                setP2 = float(values[11][0])
+                OSShdCntrl.setDouble(12, setP2)
+            except:
+                pass
+            
+            self.addShdCntrlToLib(shdCntrlName, OSShdCntrl)
+            return OSShdCntrl
+        else:
+            return self.getShdCntrlFromLib(shdCntrlName)
     
     def assignThermalZone(self, zone, space, model):
         thermalZone = ops.ThermalZone(model)
@@ -2363,7 +2435,76 @@ class WriteOPS(object):
         """
         airGap = ops.AirGap(model, float(values[0]))
         return airGap
+    
+    def createOSBlind(self, HBMaterialName, values, model):
+        """
+        WindowMaterial:Blind
+        [Slat Orientation, Slat Width {m}, Slat Separation {m}, Slat Thickness {m}, Slat Angle {deg}, Slat Conductivity {W/m-K},
+        Slat Beam Solar Transmittance, Front Side Slat Beam Solar Reflectance, Back Side Slat Beam Solar Reflectance,
+        Slat Diffuse Solar Transmittance, Front Side Slat Diffuse Solar Reflectance, Back Side Slat Diffuse Solar Reflectance,
+        Slat Beam Visible Transmittance, Front Side Slat Beam Visible Reflectance, Back Side Slat Beam Visible Reflectance,
+        Slat Diffuse Visible Transmittance, Front Side Slat Diffuse Visible Reflectance, Back Side Slat Diffuse Visible Reflectance,
+        Slat Infrared Hemispherical Transmittance, Front Side Slat Infrared Hemispherical Emissivity, Back Side Slat Infrared Hemispherical Emissivity,
+        Blind to Glass Distance {m}, Blind Top Opening Multiplier, Blind Bottom Opening Multiplier, Blind Left Side Opening Multiplier
+        Blind Right Side Opening Multiplier, Minimum Slat Angle {deg}, Maximum Slat Angle {deg}]
         
+        """
+        windowBlindMaterial = ops.Blind(model)
+        windowBlindMaterial.setName(HBMaterialName)
+        windowBlindMaterial.setSlatOrientation(values[0])
+        windowBlindMaterial.setSlatWidth(float(values[1]))
+        windowBlindMaterial.setSlatSeparation(float(values[2]))
+        windowBlindMaterial.setSlatThickness(float(values[3]))
+        windowBlindMaterial.setSlatAngle(float(values[4]))
+        windowBlindMaterial.setSlatConductivity(float(values[5]))
+        windowBlindMaterial.setSlatBeamSolarTransmittance(float(values[6]))
+        windowBlindMaterial.setFrontSideSlatBeamSolarReflectance(float(values[7]))
+        windowBlindMaterial.setBackSideSlatBeamSolarReflectance(float(values[8]))
+        windowBlindMaterial.setSlatDiffuseSolarTransmittance(float(values[9]))
+        windowBlindMaterial.setFrontSideSlatDiffuseSolarReflectance(float(values[10]))
+        windowBlindMaterial.setBackSideSlatDiffuseSolarReflectance(float(values[11]))
+        windowBlindMaterial.setSlatBeamVisibleTransmittance(float(values[12]))
+        windowBlindMaterial.setSlatDiffuseVisibleTransmittance(float(values[15]))
+        windowBlindMaterial.setFrontSideSlatInfraredHemisphericalEmissivity(float(values[19]))
+        windowBlindMaterial.setBackSideSlatInfraredHemisphericalEmissivity(float(values[20]))
+        windowBlindMaterial.setBlindtoGlassDistance(float(values[21]))
+        windowBlindMaterial.setBlindTopOpeningMultiplier(float(values[22]))
+        windowBlindMaterial.setBlindBottomOpeningMultiplier(float(values[23]))
+        windowBlindMaterial.setBlindLeftSideOpeningMultiplier(float(values[24]))
+        windowBlindMaterial.setBlindRightSideOpeningMultiplier(float(values[25]))
+        windowBlindMaterial.setMaximumSlatAngle(float(values[27]))
+        
+        return windowBlindMaterial
+    
+    def createOSShade(self, HBMaterialName, values, model):
+        """
+        WindowMaterial:Shade
+        [Solar Transmittance, Solar Reflectance, Visible Transmittance, Visible Reflectance, 
+        Infrared Hemispherical Emissivity, Infrared Transmittance, Thickness {m},Conductivity {W/m-K},
+        Shade to Glass Distance {m}, Top Opening Multiplier, ottom Opening Multiplier, Left Side Opening Multiplier,
+        Right Side Opening Multiplier, Airflow Permeability]
+        
+        """
+        windowShadeMaterial = ops.Shade(model)
+        windowShadeMaterial.setName(HBMaterialName)
+        
+        windowShadeMaterial.setSolarTransmittance(float(values[0]))
+        windowShadeMaterial.setSolarReflectance(float(values[1]))
+        windowShadeMaterial.setVisibleTransmittance(float(values[2]))
+        windowShadeMaterial.setVisibleReflectance(float(values[3]))
+        windowShadeMaterial.setThermalHemisphericalEmissivity(float(values[4]))
+        windowShadeMaterial.setThermalTransmittance(float(values[5]))
+        windowShadeMaterial.setThickness(float(values[6]))
+        windowShadeMaterial.setConductivity(float(values[7]))
+        windowShadeMaterial.setShadetoGlassDistance(float(values[8]))
+        windowShadeMaterial.setTopOpeningMultiplier(float(values[9]))
+        windowShadeMaterial.setBottomOpeningMultiplier(float(values[10]))
+        windowShadeMaterial.setLeftSideOpeningMultiplier(float(values[11]))
+        windowShadeMaterial.setRightSideOpeningMultiplier(float(values[12]))
+        windowShadeMaterial.setAirflowPermeability(float(values[13]))
+        
+        return windowShadeMaterial
+    
     def getOSMaterial(self, HBMaterialName, model):
         values, comments, UVSI, UVIP = self.hb_EPMaterialAUX.decomposeMaterial(HBMaterialName, ghenv.Component)
         
@@ -2385,6 +2526,13 @@ class WriteOPS(object):
         
         elif values[0].lower() == "material:airgap":
             return self.createOSAirGap(HBMaterialName, values[1:], model)
+        
+        elif values[0].lower() == "windowmaterial:blind":
+            return self.createOSBlind(HBMaterialName, values[1:], model)
+        
+        elif values[0].lower() == "windowmaterial:shade":
+            return self.createOSShade(HBMaterialName, values[1:], model)
+        
         else:
             print "This type of material hasn't been implemented yet!"
             print values[0]
@@ -2523,6 +2671,14 @@ class WriteOPS(object):
             glazing.setSubSurfaceType(childSrf.srfType[childSrf.type])
             glazing.setConstruction(construction)
             
+            # Set any shading control objects.
+            
+            #try:
+            shdCntrlName = childSrf.shadingControlName[0]
+            opsSdhCntrl = self.getOSShdCntrl(shdCntrlName, model)
+            glazing.setShadingControl(opsSdhCntrl)
+            #except: pass
+            
             # Boundary condition object
             #setAdjacentSurface(self: Surface, surface: Surface)
             if surface.BC.lower() == "surface" and surface.BCObject.name.strip()!="":
@@ -2618,7 +2774,9 @@ class WriteOPS(object):
                 except Exception, e:
                     print  e
                     pass
-        return self.csvSchedules, self.csvScheduleCount
+    
+    def getObjToReplace(self):
+        return self.csvSchedules, self.csvScheduleCount, self.shadeCntrlToReplace, self.replaceShdCntrl
 
 class EPFeaturesNotInOS(object):
     def __init__(self, workingDir):
@@ -2763,8 +2921,8 @@ class EPFeaturesNotInOS(object):
 
 
 class RunOPS(object):
-    def __init__(self, model, weatherFilePath, HBZones, simParameters, csvSchedules, \
-            csvScheduleCount, additionalcsvSchedules, openStudioLibFolder):
+    def __init__(self, model, weatherFilePath, HBZones, simParameters, openStudioLibFolder, csvSchedules, \
+            csvScheduleCount, additionalcsvSchedules, shadeCntrlToReplace, replaceShdCntrl):
         self.weatherFile = weatherFilePath # just for batch file as an alternate solution
         self.openStudioDir = "/".join(openStudioLibFolder.split("/")[:3]) + "/share/openstudio"
         self.EPFolder = self.getEPFolder()
@@ -2777,6 +2935,9 @@ class RunOPS(object):
         self.csvSchedules = csvSchedules
         self.csvScheduleCount = csvScheduleCount
         self.additionalcsvSchedules = additionalcsvSchedules
+        self.shadeCntrlToReplace = shadeCntrlToReplace
+        self.replaceShdCntrl = replaceShdCntrl
+        self.hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
     
     def getEPFolder(self):
         fList = os.listdir(self.openStudioDir)
@@ -2874,6 +3035,29 @@ class RunOPS(object):
         if simParameters[7] != []:
             for count, hol in enumerate(simParameters[7]):
                 lines.append(otherFeatureClass.EPHoliday(hol, count))
+        
+        # Replace any incorrect shading control objects.
+        if self.replaceShdCntrl == True:
+            # Remove shading control objects from the file.
+            newLines = []
+            winPropTrigger = False
+            for line in lines:
+                if 'WindowProperty:ShadingControl,' in line:
+                    winPropTrigger = True
+                elif winPropTrigger == True and ';' in line:
+                    winPropTrigger = False
+                elif winPropTrigger == True: pass
+                else:
+                    newLines.append(line)
+            lines = newLines
+            
+            for shdCntrlItem in self.shadeCntrlToReplace:
+                # Add correct shading control objects to file.
+                shdCntrlName = shdCntrlItem[0]
+                shdCntrlStr = self.hb_EPObjectsAux.getEPObjectsStr(shdCntrlName)
+                shdCntrlStrList = shdCntrlStr.split(shdCntrlName)
+                shdCntrlStr = shdCntrlStrList[0] + str(shdCntrlItem[1]) + shdCntrlStrList[1]
+                lines.append(shdCntrlStr)
         
         # Write in any requested natural ventilation objects.
         natVentStrings = []
@@ -3225,10 +3409,10 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     
     # outputs
     if simulationOutputs:
-        csvSchedules, csvScheduleCount = hb_writeOPS.setOutputs(simulationOutputs, model)
-    else:
-        csvSchedules = []
-        csvScheduleCount = 0
+         hb_writeOPS.setOutputs(simulationOutputs, model)
+    
+    # Get the objects in the file that we need to replace.
+    csvSchedules, csvScheduleCount, shadeCntrlToReplace, replaceShdCntrl = hb_writeOPS.getObjToReplace()
     
     #save the model
     model.save(ops.Path(fname), True)
@@ -3241,8 +3425,8 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         os.startfile(fname)
     
     if runIt:
-        hb_runOPS = RunOPS(model, epwWeatherFile, HBZones, hb_writeOPS.simParameters, csvSchedules, \
-            csvScheduleCount, additionalcsvSchedules, openStudioLibFolder)
+        hb_runOPS = RunOPS(model, epwWeatherFile, HBZones, hb_writeOPS.simParameters, openStudioLibFolder, csvSchedules, \
+            csvScheduleCount, additionalcsvSchedules, shadeCntrlToReplace, replaceShdCntrl)
             
         idfFile, resultFile = hb_runOPS.runAnalysis(fname, useRunManager = False)
         

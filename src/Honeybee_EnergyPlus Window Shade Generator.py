@@ -63,7 +63,8 @@ Provided by Honeybee 0.0.59
         horOrVertical_: Set to "True" to generate horizontal shades or "False" to generate vertical shades. You can also input lists of horOrVertical_ input, which will assign different orientations based on cardinal direction.
         shdAngle_: A number between -90 and 90 that represents an angle in degrees to rotate the shades.  The default is set to "0" for no rotation.  If you have vertical shades, use this to rotate them towards the South by a certain value in degrees.  If applied to windows facing East or West, tilting the shades like this will let in more winter sun than summer sun.  If you have horizontal shades, use this input to angle shades downward.  You can also put in lists of angles to assign different shade angles to different cardinal directions.
         north_: Input a vector to be used as a true North direction or a number between 0 and 360 that represents the degrees off from the y-axis to make North.  The default North direction is set to the Y-axis (0 degrees).
-        _runIt: Set boolean to "True" to run the component and generate shades.
+        _runIt: Set boolean to "True" to run the component and visualize shade geometry.
+        writeEPObjs_: Set boolean to "True" to generate EP Objectes that have shades and shade control assigned to them.
         zoneData1_: Optional EnergyPlus simulation data for connected HBZones_ that will be aligned with the generated windows.  Use this to align data like heating load, cooling load or beam gain for a shade benefit simulation with the generated shades.
     Returns:
         readMe!: ...
@@ -73,12 +74,16 @@ Provided by Honeybee 0.0.59
         windowBreps: Breps representing each window surfaces that are being shaded.  These can be plugged into a shade benefit evaulation as each window is its own branch of a grasshopper data tree.
         shadeBreps: Breps representing each shade geometry.  These can be plugged into a shade benefit evaulation as each window is its own branch of a grasshopper data tree.  Alternatively, they can be plugged into an EnergyPlus simulation with the "Honeybee_EP Context Surfaces" component.
         ---------------: ...
+        shadeMatName: The name of the shade material that has been assigned to the EPObjects.  This can be used to create EP constructions with the shade in between panes of glass.
+        shadeMatIDFStr: Text strings that represent the shade material that has been assigned to the EP Objects.
+        shadeCntrlIDFStr: Text strings that represent the shade control object that has been assigned to the EP Objects.
+        ---------------: ...
         zoneData1Tree: Data trees of the zoneData1_, which align with the branches for each window above.
 """
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Window Shade Generator"
 ghenv.Component.NickName = 'EPWindowShades'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_06_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_07_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -124,7 +129,8 @@ inputsDict = {
 11: ["horOrVertical_", "Set to 'True' to generate horizontal shades or 'False' to generate vertical shades. You can also input lists of horOrVertical_ input, which will assign different orientations based on cardinal direction."],
 12: ["shdAngle_", "A number between -90 and 90 that represents an angle in degrees to rotate the shades.  The default is set to '0' for no rotation.  If you have vertical shades, use this to rotate them towards the South by a certain value in degrees.  If applied to windows facing East or West, tilting the shades like this will let in more winter sun than summer sun.  If you have horizontal shades, use this input to angle shades downward.  You can also put in lists of angles to assign different shade angles to different cardinal directions."],
 13: ["north_", "Input a vector to be used as a true North direction or a number between 0 and 360 that represents the degrees off from the y-axis to make North.  The default North direction is set to the Y-axis (0 degrees)."],
-14: ["_runIt", "Set boolean to 'True' to run the component and generate shades."]
+14: ["_runIt", "Set boolean to 'True' to run the component and generate shades."],
+15: ['writeEPObjs_', 'Set boolean to "True" to generate EP Objectes that have shades and shade control assigned to them.']
 }
 
 outputsDict = {
@@ -135,14 +141,18 @@ outputsDict = {
 3: ["---------------", "..."],
 4: ["windowBreps", "Breps representing each window surfaces that are being shaded.  These can be plugged into a shade benefit evaulation as each window is its own branch of a grasshopper data tree."],
 5: ["shadeBreps", "Breps representing each shade geometry.  These can be plugged into a shade benefit evaulation as each window is its own branch of a grasshopper data tree.  If you use the HBObjects above, there is no need to use this output (it is purely visual).  However, if no HBObjects are produced, these can be plugged into an EnergyPlus simulation with the 'Honeybee_EP Context Surfaces' component."],
-6: ["---------------", ""]
+6: ["---------------", "..."],
+7: ["shadeMatName", "The name of the shade material that has been assigned to the EPObjects.  This can be used to create EP constructions with the shade in between panes of glass."],
+8: ["shadeMatIDFStr", "Text strings that represent the shade material that has been assigned to the EP Objects."],
+9: ["shadeCntrlIDFStr", "Text strings that represent the shade control object that has been assigned to the EP Objects."],
+10: ["---------------", "..."]
 }
 
 
 def setComponentInputs(shadeType):
     numInputs = ghenv.Component.Params.Input.Count
     for input in range(numInputs):
-        if input <= 14:
+        if input <= 15:
             if shadeType == 1 and input <=12 and input >= 9:
                 ghenv.Component.Params.Input[input].NickName = "___________"
                 ghenv.Component.Params.Input[input].Name = "."
@@ -160,19 +170,19 @@ def setComponentInputs(shadeType):
                 ghenv.Component.Params.Input[input].Name = inputsDict[input][0]
                 ghenv.Component.Params.Input[input].Description = inputsDict[input][1]
         else:
-            inputName = 'zoneData' + str(input-14) +'_'
+            inputName = 'zoneData' + str(input-15) +'_'
             ghenv.Component.Params.Input[input].NickName = inputName
             ghenv.Component.Params.Input[input].Name = inputName
             ghenv.Component.Params.Input[input].Description = 'Optional EnergyPlus simulation data for connected HBZones_ that will be aligned with the generated windows.  Use this to align data like heating load, cooling load or beam gain for a shade benefit simulation with the generated shades.'
     
     numOutputs = ghenv.Component.Params.Output.Count
     for output in range(numOutputs):
-        if output <= 6:
+        if output <= 10:
             ghenv.Component.Params.Output[output].NickName = outputsDict[output][0]
             ghenv.Component.Params.Output[output].Name = outputsDict[output][0]
             ghenv.Component.Params.Output[output].Description = outputsDict[output][1]
         else:
-            outputName = 'zoneData' + str(output-6) +'Tree'
+            outputName = 'zoneData' + str(output-10) +'Tree'
             ghenv.Component.Params.Output[output].NickName = outputName
             ghenv.Component.Params.Output[output].Name = outputName
             ghenv.Component.Params.Output[output].Description = 'Data trees of ' + outputName + ', which align with the branches for each window above.'
@@ -181,24 +191,24 @@ def setComponentInputs(shadeType):
 def restoreComponentInputs():
     numInputs = ghenv.Component.Params.Input.Count
     for input in range(numInputs):
-        if input <= 14:
+        if input <= 15:
             ghenv.Component.Params.Input[input].NickName = inputsDict[input][0]
             ghenv.Component.Params.Input[input].Name = inputsDict[input][0]
             ghenv.Component.Params.Input[input].Description = inputsDict[input][1]
         else:
-            inputName = 'zoneData' + str(input-14) +'_'
+            inputName = 'zoneData' + str(input-15) +'_'
             ghenv.Component.Params.Input[input].NickName = inputName
             ghenv.Component.Params.Input[input].Name = inputName
             ghenv.Component.Params.Input[input].Access = gh.GH_ParamAccess.tree
     
     numOutputs = ghenv.Component.Params.Output.Count
     for output in range(numOutputs):
-        if output <= 6:
+        if output <= 10:
             ghenv.Component.Params.Output[output].NickName = outputsDict[output][0]
             ghenv.Component.Params.Output[output].Name = outputsDict[output][0]
             ghenv.Component.Params.Output[output].Description = outputsDict[output][1]
         else:
-            outputName = 'zoneData' + str(output-6) +'Tree'
+            outputName = 'zoneData' + str(output-10) +'Tree'
             ghenv.Component.Params.Output[output].NickName = outputName
             ghenv.Component.Params.Output[output].Name = outputName
             ghenv.Component.Params.Output[output].Description = 'Data trees of ' + outputName + ', which align with the branches for each window above.'
@@ -272,7 +282,7 @@ def checkAllInputs(zoneNames, windowNames, windowSrfs, isZone):
     
     allData = []
     numInputs = ghenv.Component.Params.Input.Count
-    for input in range(numInputs-15):
+    for input in range(numInputs-16):
         varStr = 'zoneData' + str(input+1) +'_'
         theVar = eval(varStr)
         try: allData.append(makePyTree(theVar))
@@ -357,6 +367,10 @@ def checkBlindInputs(zoneNames, windowNames, windowSrfs, isZone):
         checkData2 = False
         print "You must provide a depth for the shades."
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, "You must provide a depth for the shades.")
+    if _numOfShds == [] and _distBetween == []:
+        checkData2 = False
+        print "You must provide a _numbOfShds or a _distBetween."
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, "You must provide a _numOfShds or a _distBetween.")
     
     #Check if there is a shades material connected and, if not, set a default.
     checkData5 = True
@@ -760,6 +774,7 @@ def makeBlind(_glzSrf, depth, numShds, distBtwn):
                     normalVectorPerp.Rotate((shdAngle*0.01745329), planeVec)
     else:
         shdAngle = 0
+        if horOrVertical == None: horOrVertical = True
     
     #Make EP versions of some of the outputs.
     EPshdAngleInint = angleFromNorm+shdAngle
@@ -850,7 +865,10 @@ def makeShade(_glzSrf):
     interiorOrExter = getValueBasedOnOrientation(interiorOrExter_, normalVector)
     
     #If multiple distToGlass_ inputs are given, use it to split up the glazing by cardinal direction and assign different distToGlass_ to different directions.
-    distToGlass = float(getValueBasedOnOrientation(distToGlass_, normalVector))
+    try:
+        distToGlass = float(getValueBasedOnOrientation(distToGlass_, normalVector))
+    except:
+        distToGlass = None
     if distToGlass == None: distToGlass = 0.2
     
     #Generate the shade geometry based on the offset distance.
@@ -902,7 +920,7 @@ shdCntrlDict = {
 
 def createEPBlindMat(shadeMaterial, EPSlatOrient, depth, shadingHeight, EPshdAngle, distToGlass, name):
     EPBlindMat = "WindowMaterial:Blind,\n" + \
-        '\t' + shadeMaterial[0] + "_" + name + ',           !- Name\n' + \
+        '\t' + name + ',           !- Name\n' + \
         '\t' + EPSlatOrient + ',              !- Slat Orientation\n' + \
         '\t' + str(depth) + ',                     !- Slat Width {m}\n' + \
         '\t' + str(shadingHeight) +',                     !- Slat Separation {m}\n' + \
@@ -941,7 +959,7 @@ def createEPShadeMat(shadeMaterial, airPerm, distToGlass, name):
     emissivity = (1-airPerm)*shadeMaterial[3]
     
     EPShadeMat = "WindowMaterial:Shade,\n" + \
-        '\t' + shadeMaterial[0] + "_" + name + ",                        !- Name\n" + \
+        '\t' + name + ",                        !- Name\n" + \
         '\t' + str(shadeMaterial[2]) + ",                        !- Solar Transmittance {dimensionless}\n" + \
         '\t' + str(shadeMaterial[1]) + ",                        !- Solar Reflectance {dimensionless}\n" + \
         '\t' + str(shadeMaterial[2]) + ",                        !- Visible Transmittance {dimensionless}\n" + \
@@ -960,8 +978,8 @@ def createEPShadeMat(shadeMaterial, airPerm, distToGlass, name):
     return EPShadeMat
 
 def createEPWindowMat(shadeMaterial, name):
-    EPWindowConstr ='WindowMaterial:Glazing,\n' + \
-        '\t' + shadeMaterial[0] + "_" + name + ',    !Name\n' + \
+    EPWindowMat ='WindowMaterial:Glazing,\n' + \
+        '\t' + name + ',    !Name\n' + \
         '\t' + 'SpectralAverage,    !Optical Data Type\n' + \
         '\t' + ',    !Window Glass Spectral Data Set Name\n' + \
         '\t' + str(shadeMaterial[4]) + ',    !Thickness {m}\n' + \
@@ -977,25 +995,27 @@ def createEPWindowMat(shadeMaterial, name):
         '\t' + str(shadeMaterial[5]) + ',    !Conductivity {W/m-K}\n' + \
         '\t' + '1,    !Dirt Collection Factor for Solar and Visible Transmittance\n' + \
         '\t' + 'No;    !Solar Diffusing\n' + \
-        '\n' + \
-        'Construction,\n' + \
-        '\t' + shadeMaterial[0] + "_" + name + ',    !- Name\n' + \
-        '\t' + shadeMaterial[0] + "_" + name + ';    !- Layer 1\n'
+        '\n'
+    
+    EPWindowConstr = 'Construction,\n' + \
+        '\t' + name + ',    !- Name\n' + \
+        '\t' + name + ';    !- Layer 1\n'+ \
+        '\n'
     
     
-    return EPWindowConstr
+    return EPWindowMat, EPWindowConstr
 
-def createEPBlindControl(blindCntrlName, shadeMaterial, schedule, EPinteriorOrExter, name):
+def createEPBlindControlName(shadeMaterial, schedule, EPinteriorOrExter):
     #Check if we are working with swtichable glazing, in which case, we need to specify the window construction instead of a shadeMaterial.
     shadeConstr = ''
-    shadeName = shadeMaterial[0] + "_" + name
+    shadeName = shadeMaterial
     if shadeType_ == 2:
         shadeConstr = copy.copy(shadeName)
         shadeName = ''
     
     #Check the schedule
     if schedule == 'ALWAYS ON':
-        schedCntrlType = 'ALWAYS ON'
+        schedCntrlType = ''
         schedCntrl = 'No'
         schedName = ''
     elif schedule.upper().endswith('CSV'):
@@ -1016,6 +1036,11 @@ def createEPBlindControl(blindCntrlName, shadeMaterial, schedule, EPinteriorOrEx
         setPoint = str(shadeSetpoint_[0])
         if shadeCntrlType_ >= 13: setPoint2 = str(shadeSetpoint_[1])
     
+    EPBlindControlName = 'ShadeCntrl'+ '-' + EPinteriorOrExter+ '-' + shadeConstr+ '-' + schedCntrlType+ '-' +  schedName + '-' + setPoint+ '-' + schedCntrl+ '-' + shadeName+ '-' + setPoint2
+    
+    return EPBlindControlName, EPinteriorOrExter, shadeConstr, schedCntrlType, schedName, setPoint, schedCntrl, shadeName, setPoint2
+
+def createEPBlindCntrlStr(blindCntrlName, EPinteriorOrExter, shadeConstr, schedCntrlType, schedName, setPoint, schedCntrl, shadeName, setPoint2):
     EPBlindControl = 'WindowProperty:ShadingControl,\n' + \
         '\t' + blindCntrlName +',            !- Name\n' + \
         '\t' + EPinteriorOrExter + ',           !- Shading Type\n' + \
@@ -1038,7 +1063,6 @@ def createEPBlindControl(blindCntrlName, shadeMaterial, schedule, EPinteriorOrEx
     return EPBlindControl
 
 
-
 #### HERE IS THE MAIN FUNCTION.
 def main():
     if _HBObjects != [] and sc.sticky.has_key('honeybee_release') == True and sc.sticky.has_key('ladybug_release') == True:
@@ -1047,6 +1071,9 @@ def main():
         hb_EPSrf = sc.sticky["honeybee_EPSurface"]
         hb_EPFenSurface = sc.sticky["honeybee_EPFenSurface"]
         hb_hive = sc.sticky["honeybee_Hive"]()
+        hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
+        EPWindowMaterials = sc.sticky ["honeybee_windowMaterialLib"].keys()
+        EPWindowProperties = sc.sticky["honeybee_WinodowPropLib"].keys()
         
         #Make the lists that will be filled up
         zoneNames = []
@@ -1055,6 +1082,7 @@ def main():
         windowObjects = []
         isZoneList = []
         assignEPCheck = True
+        checkData = False
         HBObjWShades = []
         EPSlatOrientList = []
         depthList = []
@@ -1063,7 +1091,12 @@ def main():
         distToGlassList = []
         EPinteriorOrExterList = []
         shadings = []
+        compShadeMats = []
+        compShadeMatsStr = []
+        compShadeCntrls = []
+        compShadeCntrlsStr = []
         ModifiedHBZones = []
+        blindMatNames = []
         
         #Call the objects from the hive.
         HBZoneObjects = hb_hive.callFromHoneybeeHive(_HBObjects)
@@ -1149,17 +1182,18 @@ def main():
                     if assignEPCheckInit == False: assignEPCheck = False
                 
                 #Create the EnergyPlus shades material and assign it to the windows with shades.
-                if assignEPCheck == True:
+                if assignEPCheck == True and writeEPObjs_ == True:
                     for count, windowObj in enumerate(windowObjects):
-                        blindCntrlName = 'BlindCntrl' + str(len(windowObj.shadingControlName)+1) + 'For_' + windowObj.name
-                        windowObj.shadeMaterial.append(createEPBlindMat(shadeMaterial, EPSlatOrientList[count], depthList[count], shadingHeightList[count], EPshdAngleList[count], distToGlassList[count], windowObj.name))
-                        windowObj.shadingControl.append(createEPBlindControl(blindCntrlName, shadeMaterial, schedule, EPinteriorOrExterList[count], windowObj.name))
-                        windowObj.shadingControlName.append(blindCntrlName)
-                        windowObj.shadingSchName.append(schedule)
-                    
-                    ModifiedHBZones  = hb_hive.addToHoneybeeHive(HBZoneObjects, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
-            
-            return checkData, windowSrfsInit, shadings, alignedDataTree, ModifiedHBZones
+                        blindMatName = shadeMaterial[0] + '-' + str(EPSlatOrientList[count]) + '-' + str(depthList[count]) + '-' + str(shadingHeightList[count]) + '-' + str(EPshdAngleList[count])+ '-' + str(distToGlassList[count])
+                        blindMatNames.append(blindMatName)
+                        if blindMatName.upper() not in EPWindowMaterials and blindMatName.upper() not in compShadeMats:
+                            blindMatStr = createEPBlindMat(shadeMaterial, EPSlatOrientList[count], depthList[count], shadingHeightList[count], EPshdAngleList[count], distToGlassList[count], blindMatName)
+                            added, name = hb_EPObjectsAux.addEPObjectToLib(blindMatStr, True)
+                            compShadeMats.append(blindMatName.upper())
+                            compShadeMatsStr.append(blindMatStr)
+                        elif blindMatName.upper() not in compShadeMats:
+                            compShadeMats.append(blindMatName.upper())
+                            compShadeMatsStr.append(hb_EPObjectsAux.getEPObjectsStr(blindMatName))
         
         elif shadeType_ == 1:
             #Check the inputs and make sure that we have everything that we need to generate the shades.  Set defaults on things that are not connected.
@@ -1176,19 +1210,20 @@ def main():
                     distToGlassList.append(distToGlass)
                     EPinteriorOrExterList.append(EPinteriorOrExter)
                     if assignEPCheckInit == False: assignEPCheck = False
-            
-            #Create the EnergyPlus shades material and assign it to the windows with shades.
-                if assignEPCheck == True:
+                
+                #Create the EnergyPlus shades material and assign it to the windows with shades.
+                if assignEPCheck == True and writeEPObjs_ == True:
                     for count, windowObj in enumerate(windowObjects):
-                        blindCntrlName = 'BlindCntrl' + str(len(windowObj.shadingControlName)+1) + 'For_' + windowObj.name
-                        windowObj.shadeMaterial.append(createEPShadeMat(shadeMaterial, depthList[count], distToGlassList[count], windowObj.name))
-                        windowObj.shadingControl.append(createEPBlindControl(blindCntrlName, shadeMaterial, schedule, EPinteriorOrExterList[count], windowObj.name))
-                        windowObj.shadingControlName.append(blindCntrlName)
-                        windowObj.shadingSchName.append(schedule)
-                    
-                    ModifiedHBZones  = hb_hive.addToHoneybeeHive(HBZoneObjects, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
-            
-            return checkData, windowSrfsInit, shadings, alignedDataTree, ModifiedHBZones
+                        blindMatName = shadeMaterial[0] + '-' + str(depthList[count]) + '-' + str(distToGlassList[count])
+                        blindMatNames.append(blindMatName)
+                        if blindMatName.upper() not in EPWindowMaterials and blindMatName.upper() not in compShadeMats:
+                            blindMatStr = createEPShadeMat(shadeMaterial, depthList[count], distToGlassList[count], blindMatName)
+                            added, name = hb_EPObjectsAux.addEPObjectToLib(blindMatStr, True)
+                            compShadeMats.append(blindMatName.upper())
+                            compShadeMatsStr.append(blindMatStr)
+                        elif blindMatName.upper() not in compShadeMats:
+                            compShadeMats.append(blindMatName.upper())
+                            compShadeMatsStr.append(hb_EPObjectsAux.getEPObjectsStr(blindMatName))
         
         elif shadeType_ == 2:
             #Check the inputs and make sure that we have everything that we need to generate the shades.  Set defaults on things that are not connected.
@@ -1196,19 +1231,45 @@ def main():
                 checkData, windowNames, windowSrfsInit, alignedDataTree, windowMaterial, schedule = checkWindowInputs(zoneNames, windowNames, windowSrfs, isZone)
             else: checkData == False
             
-            if checkData == True:
+            if checkData == True and writeEPObjs_ == True:
                 #Create the EnergyPlus shades material and assign it to the windows with shades.
                 for count, windowObj in enumerate(windowObjects):
-                    blindCntrlName = 'BlindCntrl' + str(len(windowObj.shadingControlName)+1) + 'For_' + windowObj.name
-                    windowObj.shadeMaterial.append(createEPWindowMat(windowMaterial, windowObj.name))
-                    windowObj.shadingControl.append(createEPBlindControl(blindCntrlName, windowMaterial, schedule, 'SwitchableGlazing', windowObj.name))
-                    windowObj.shadingControlName.append(blindCntrlName)
-                    windowObj.shadingSchName.append(schedule)
+                    blindMatName = windowMaterial[0]
+                    blindMatNames.append('')
+                    if blindMatName.upper() not in EPWindowMaterials and blindMatName.upper() not in compShadeMats:
+                        blindMatStr, blindMatConstr = createEPWindowMat(windowMaterial, blindMatName)
+                        added, name = hb_EPObjectsAux.addEPObjectToLib(blindMatStr, True)
+                        added, name = hb_EPObjectsAux.addEPObjectToLib(blindMatConstr, True)
+                        compShadeMats.append(blindMatName.upper())
+                        compShadeMatsStr.append(blindMatStr)
+                    elif blindMatName.upper() not in compShadeMats:
+                        compShadeMats.append(blindMatName.upper())
+                        compShadeMatsStr.append(hb_EPObjectsAux.getEPObjectsStr(blindMatName))
+        
+        if checkData == True and assignEPCheck == True and writeEPObjs_ == True:
+            for count, windowObj in enumerate(windowObjects):
+                if shadeType_ == 2:
+                    blindCntrlName, EPinteriorOrExter, shadeConstr, schedCntrlType, schedName, setPoint, schedCntrl, shadeName, setPoint2 = createEPBlindControlName(windowMaterial[0], schedule, 'SwitchableGlazing')
+                else:
+                    blindCntrlName, EPinteriorOrExter, shadeConstr, schedCntrlType, schedName, setPoint, schedCntrl, shadeName, setPoint2 = createEPBlindControlName(blindMatNames[count], schedule, EPinteriorOrExterList[count])
+                if blindCntrlName.upper() not in EPWindowProperties and blindCntrlName.upper() not in compShadeCntrls:
+                    blindCntrlStr = createEPBlindCntrlStr(blindCntrlName, EPinteriorOrExter, shadeConstr, schedCntrlType, schedName, setPoint, schedCntrl, shadeName, setPoint2)
+                    added, name = hb_EPObjectsAux.addEPObjectToLib(blindCntrlStr, True)
+                    compShadeCntrls.append(blindCntrlName.upper())
+                    compShadeCntrlsStr.append(blindCntrlStr)
+                elif blindCntrlName.upper() not in compShadeCntrls:
+                    compShadeCntrls.append(blindCntrlName.upper())
+                    compShadeCntrlsStr.append(hb_EPObjectsAux.getEPObjectsStr(blindCntrlName))
+                
+                windowObj.shadingControlName.append(blindCntrlName)
+                windowObj.shadingSchName.append(schedule)
+                windowObj.shadeMaterialName.append(blindMatName)
+                
                 
                 ModifiedHBZones  = hb_hive.addToHoneybeeHive(HBZoneObjects, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
-            
-            return checkData, windowSrfsInit, shadings, alignedDataTree, ModifiedHBZones
         
+        if checkData == True:
+            return checkData, windowSrfsInit, shadings, alignedDataTree, ModifiedHBZones, compShadeMats, compShadeMatsStr, compShadeCntrlsStr
         else:
             return -1
     else:
@@ -1228,8 +1289,8 @@ else:
 checkData = False
 if _HBObjects != [] and _runIt == True:
     result = main()
-    if result != -1:
-        checkData, windowSrfsInit, shadings, alignedDataTree, HBObjWShades = result
+    if result != -1 and result != None:
+        checkData, windowSrfsInit, shadings, alignedDataTree, HBObjWShades, shadeMatName, shadeMatIDFStr, shadeCntrlIDFStr = result
 
 
 #Unpack the data trees.

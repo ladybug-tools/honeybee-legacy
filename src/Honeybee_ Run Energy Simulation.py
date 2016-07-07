@@ -62,7 +62,7 @@ Provided by Honeybee 0.0.59
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_03_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_07_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -198,14 +198,14 @@ class WriteIDF(object):
                 checked, glzCoordinates= self.checkCoordinates(glzCoordinates)
                 
                 #Check shading objects.
-                if childSrf.shadingControlName == []:
-                    shdCntrl = ''
-                else:
-                    try:
-                        shdCntrl = childSrf.shadingControlName[0]
-                    except IndexError:
-                        shdCntrl = ''
-                        
+                #if childSrf.shadingControlName == []:
+                shdCntrl = ''
+                #else:
+                #    try:
+                #        shdCntrl = childSrf.shadingControlName[0]
+                #    except IndexError:
+                #        shdCntrl = ''
+                
                 #Check for frame objects.
                 if childSrf.construction in sc.sticky["honeybee_ExtraConstrProps"].keys():
                     childSrf.frameName = sc.sticky["honeybee_ExtraConstrProps"][childSrf.construction]['Name']
@@ -1622,21 +1622,21 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                     if not childSrf.construction.upper() in EPConstructionsCollection:
                             EPConstructionsCollection.append(childSrf.construction.upper())
                     # Check if there is any shading for the window.
-                    
-                    if childSrf.shadeMaterial != [] and childSrf.shadingControl != []:
-                        for shadingCount, windowShading in enumerate(childSrf.shadeMaterial):
-                            
-                            try:
-                                if windowShading.split('\n')[1].split(',')[0] not in alreadyThereList:
-                                    idfFile.write(windowShading)
-                                    idfFile.write(childSrf.shadingControl[shadingCount])
-                                    
-                                    if childSrf.shadingSchName[shadingCount] != 'ALWAYS ON':
-                                        print childSrf.shadingSchName
-                                        EPScheduleCollection.append(childSrf.shadingSchName[shadingCount].upper())
-                                    
-                                    alreadyThereList.append(windowShading.split('\n')[1].split(',')[0])
-                            except: pass
+                    # DISABLED AFTER AN UPDATE FOR OPENSTUDIO.
+                    #if childSrf.shadeMaterial != [] and childSrf.shadingControl != []:
+                    #    for shadingCount, windowShading in enumerate(childSrf.shadeMaterial):
+                    #        
+                    #        try:
+                    #            if windowShading.split('\n')[1].split(',')[0] not in alreadyThereList:
+                    #                idfFile.write(windowShading)
+                    #                idfFile.write(childSrf.shadingControl[shadingCount])
+                    #                
+                    #                if childSrf.shadingSchName[shadingCount] != 'ALWAYS ON':
+                    #                    print childSrf.shadingSchName
+                    #                    EPScheduleCollection.append(childSrf.shadingSchName[shadingCount].upper())
+                    #                
+                    #                alreadyThereList.append(windowShading.split('\n')[1].split(',')[0])
+                    #        except: pass
                 
                 # write the glazing strings
                 idfFile.write(hb_writeIDF.EPFenSurface(srf))

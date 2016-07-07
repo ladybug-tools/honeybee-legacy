@@ -43,7 +43,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Shade Material"
 ghenv.Component.NickName = 'EPShadeMat'
-ghenv.Component.Message = 'VER 0.0.59\nAPR_05_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_07_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
@@ -52,13 +52,11 @@ ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
 
+import uuid
 import Grasshopper.Kernel as gh
 w = gh.GH_RuntimeMessageLevel.Warning
 
 def setDefaults():
-    if materialName_ == None: materialName = "DefaultBlindsMaterial"
-    else: materialName = materialName_
-    
     checkData1 = True
     if reflectance_ == None: reflectance = 0.65
     else:
@@ -110,6 +108,8 @@ def setDefaults():
     if checkData1 == True and checkData2 == True and checkData3 == True and checkData4 == True: checkData = True
     else: checkData = False
     
+    if materialName_ == None: materialName = "ShadeMaterial"+ '-'+str(reflectance)+ '-' +str(transmittance)+ '-' +str(emissivity)+ '-' +str(thickness)+ '-' +str(conductivity)
+    else: materialName = materialName_
     
     return checkData, materialName, reflectance, transmittance, emissivity, thickness, conductivity
 
