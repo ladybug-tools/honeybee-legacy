@@ -1597,7 +1597,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
             # check if there is an energyPlus material
             
             # Add surface to a list so that zone surfaces can be checked against honeybee generator PV surfaces
-            WriteIDF.zonesurfaces.append(srf.ID)
+            WriteIDF.zonesurfaces.append(srf.name)
 
             if srf.EPConstruction != None:
                 srf.construction = srf.EPConstruction
@@ -1667,7 +1667,9 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         hb_hivegen = sc.sticky["honeybee_generationHive"]()
         
         HBsystemgenerators = hb_hivegen.callFromHoneybeeHive(HBGenerators_)
-
+    
+        # Generation objects use "always on" schedule
+        EPScheduleCollection.append('ALWAYS ON')
         
         # This code here is used to extractingruntime periods if outputs are specified externally
         # If the function returns and exception that means that external outputs are not specified.
@@ -1748,7 +1750,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
             
         # CHECK that HBgenerator names are unique for this simulation - Otherwise E+ will crash
                 
-        for HBsystemcount,HBsystemgenerator in enumerate(HBsystemgenerators):
+        for HBsystemcount, HBsystemgenerator in enumerate(HBsystemgenerators):
             
             # Append to HBgeneratoroutputs as if we append to simulationOutputs the original default outputs will never run
             
@@ -1809,22 +1811,19 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                 # CHECK
                 # If PV surfaces are part of a zone make sure that, that zone is connected to _HBZones
                 # that is the PV surfaces are contained in HBsystemgenerator.HBzonesurfaces
-                    
-                PVsurfaceinzones = []
                 
                 for surface in HBsystemgenerator.HBzonesurfaces:
-    
-                    PVsurfaceinzones.append(surface.ID in WriteIDF.zonesurfaces)
-                    
-                if all(x== True for x in PVsurfaceinzones) != True:
-                    warn  = "It has been detected that there are PV generators attached to sufaces of a Honeybee zone\n"+\
-                    " However this Honeybee zone has not been connected to the _HBZones input on this component\n"+\
-                    " Please connect it to run the EnergyPlus simulation!"
-                    print warn 
-                    ghenv.Component.AddRuntimeMessage(w, warn )
-                    
-                    return -1
-                
+
+                    if  not surface.name in WriteIDF.zonesurfaces:
+                        
+                        warn  = "It has been detected that there are PV generators attached to sufaces of a Honeybee zone\n"+\
+                        " However this Honeybee zone has not been connected to the _HBZones input on this component\n"+\
+                        " Please connect it to run the EnergyPlus simulation!"
+                        print warn 
+                        ghenv.Component.AddRuntimeMessage(w, warn)
+                        
+                        return -1
+
                 if HBsystemgenerator.simulationinverter != None:
                     
                     if HBsystemgenerator.battery != None:
