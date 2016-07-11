@@ -50,7 +50,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Construct Energy Balance"
 ghenv.Component.NickName = 'energyBalance'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_03_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_10_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -362,12 +362,12 @@ def main(HBZones, heatingLoad, solarLoad, lightingLoad, equipLoad, peopleLoad, s
         if len(solarNumbers) > 0:
             modelEnergyBalance.append(solarHeader + solarNumbers)
             modelEnergyBalanceNum.append(solarNumbers)
-        if len(lightingNumbers) > 0:
-            modelEnergyBalance.append(lightingHeader + lightingNumbers)
-            modelEnergyBalanceNum.append(lightingNumbers)
         if len(equipNumbers) > 0:
             modelEnergyBalance.append(equipHeader + equipNumbers)
             modelEnergyBalanceNum.append(equipNumbers)
+        if len(lightingNumbers) > 0:
+            modelEnergyBalance.append(lightingHeader + lightingNumbers)
+            modelEnergyBalanceNum.append(lightingNumbers)
         if len(peopleNumbers) > 0:
             modelEnergyBalance.append(peopleHeader + peopleNumbers)
             modelEnergyBalanceNum.append(peopleNumbers)
