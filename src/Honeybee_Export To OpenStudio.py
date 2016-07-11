@@ -64,7 +64,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_07_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_10_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -2672,12 +2672,11 @@ class WriteOPS(object):
             glazing.setConstruction(construction)
             
             # Set any shading control objects.
-            
-            #try:
-            shdCntrlName = childSrf.shadingControlName[0]
-            opsSdhCntrl = self.getOSShdCntrl(shdCntrlName, model)
-            glazing.setShadingControl(opsSdhCntrl)
-            #except: pass
+            try:
+                shdCntrlName = childSrf.shadingControlName[0]
+                opsSdhCntrl = self.getOSShdCntrl(shdCntrlName, model)
+                glazing.setShadingControl(opsSdhCntrl)
+            except: pass
             
             # Boundary condition object
             #setAdjacentSurface(self: Surface, surface: Surface)
