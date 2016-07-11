@@ -40,7 +40,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Set EP Zone Interior Construction"
 ghenv.Component.NickName = 'setEPZoneIntCnstr'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_10_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
@@ -125,7 +125,7 @@ def main(HBZone, wallEPCnst, windowEPCnst, flrEPCnst, cielConstr):
                     if srf.BC.lower() == "surface":
                         hb_EPObjectsAux.assignEPConstruction(srf.BCObject, wallEPCnst, ghenv.Component)
                         checkAirWalls(wallEPCnst, srf)
-                elif srf.type == 3 and cielConstr!=None:
+                elif (srf.type == 3 and cielConstr!=None) or (srf.type == 1 and srf.BC.lower() == "adiabatic" and cielConstr!=None):
                     hb_EPObjectsAux.assignEPConstruction(srf, cielConstr, ghenv.Component)
                     if srf.BC.lower() == "surface":
                         hb_EPObjectsAux.assignEPConstruction(srf.BCObject, cielConstr, ghenv.Component)
