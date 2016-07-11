@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_07_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_10_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -3567,9 +3567,9 @@ class EPMaterialAux(object):
             UValueSI = conductivity/thickness
         
         elif materialType.lower() == "windowmaterial:blind":
-            UValueSI = 0
+            UValueSI = 2.407
         elif materialType.lower() == "windowmaterial:shade":
-            UValueSI = 0
+            UValueSI = 2.407
         
         elif materialType.lower() == "material:nomass":
             # Material:NoMass is defined by R-Value and not U-Value
