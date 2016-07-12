@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_10_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_12_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -5489,8 +5489,7 @@ class hb_reEvaluateHBZones(object):
         newFenSrf.shadingControlName = baseChildSurface.shadingControlName
         newFenSrf.frameName = baseChildSurface.frameName
         newFenSrf.Multiplier = baseChildSurface.Multiplier
-        newFenSrf.shadeMaterial = baseChildSurface.shadeMaterial
-        newFenSrf.shadingControl = baseChildSurface.shadingControl
+        newFenSrf.shadeMaterialName = baseChildSurface.shadeMaterialName
         newFenSrf.shadingSchName = baseChildSurface.shadingSchName
         
         # Will be overwritten later if needed
