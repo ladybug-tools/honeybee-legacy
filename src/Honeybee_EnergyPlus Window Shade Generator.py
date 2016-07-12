@@ -83,7 +83,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Window Shade Generator"
 ghenv.Component.NickName = 'EPWindowShades'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_10_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_12_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -430,10 +430,14 @@ def checkWindowInputs(zoneNames, windowNames, windowSrfs, isZone):
     #Check if there is a shades material connected and, if not, set a default.
     checkData5 = True
     if shadeMaterial_ == None:
-        print "No shade material has been connected. A material will be used that represents a single pane of electrochromic glazing in an 'on' state: \n 0.3 solar reflectance, 0.2 transmittance, 0.84 emittance, 3 mm thickness, 0.9 W/mK conductivity."
-        shadeMaterial = ['DEFAULTWINDOWMATERIAL', 0.3, 0.05, 0.9, 0.003, 0.1]
+        print "No shades material has been connected. A material will be used that represents typical electrochromic glazing: \n 0.93 solar reflectance (or 0.07 SHGC), 0.01 visible transmittance, and a U-Value equal to the current glazing."
+        shadeMaterial = ['DEFAULTELECTROCHROMIC', 0.93, 0.01, 0.9, 'currentGlz', 'currentGlz']
     else:
-        try: shadeMaterial = deconstructBlindMaterial(shadeMaterial_)
+        try:
+            shadeMaterial = deconstructBlindMaterial(shadeMaterial_)
+            if shadeMaterial[4] == 0.00025 and shadeMaterial[5] == 221:
+                shadeMaterial[4] = 'currentGlz'
+                shadeMaterial[5] = 'currentGlz'
         except:
             checkData5 = False
             warning = 'Blinds material is not a valid shades material from the "Honeybee_EnergyPlus Shade Material" component.'
@@ -977,24 +981,12 @@ def createEPShadeMat(shadeMaterial, airPerm, distToGlass, name):
     
     return EPShadeMat
 
-def createEPWindowMat(shadeMaterial, name):
-    EPWindowMat ='WindowMaterial:Glazing,\n' + \
+def createEPWindowMat(shadeMaterial, name, winUValue):
+    EPWindowMat ='WindowMaterial:SimpleGlazingSystem,\n' + \
         '\t' + name + ',    !Name\n' + \
-        '\t' + 'SpectralAverage,    !Optical Data Type\n' + \
-        '\t' + ',    !Window Glass Spectral Data Set Name\n' + \
-        '\t' + str(shadeMaterial[4]) + ',    !Thickness {m}\n' + \
-        '\t' + str(shadeMaterial[2]) + ',    !Solar Transmittance at Normal Incidence\n' + \
-        '\t' + str(shadeMaterial[1]) + ',    !Front Side Solar Reflectance at Normal Incidence\n' + \
-        '\t' + str(shadeMaterial[1]) + ',    !Back Side Solar Reflectance at Normal Incidence\n' + \
-        '\t' + str(shadeMaterial[2]) + ',    !Visible Transmittance at Normal Incidence\n' + \
-        '\t' + str(shadeMaterial[1]) + ',    !Front Side Visible Reflectance at Normal Incidence\n' + \
-        '\t' + str(shadeMaterial[1]) + ',    !Back Side Visible Reflectance at Normal Incidence\n' + \
-        '\t' + '0' + ',    !Infrared Transmittance at Normal Incidence\n' + \
-        '\t' + str(shadeMaterial[3]) + ',    !Front Side Infrared Hemispherical Emissivity\n' + \
-        '\t' + str(shadeMaterial[3]) + ',    !Back Side Infrared Hemispherical Emissivity\n' + \
-        '\t' + str(shadeMaterial[5]) + ',    !Conductivity {W/m-K}\n' + \
-        '\t' + '1,    !Dirt Collection Factor for Solar and Visible Transmittance\n' + \
-        '\t' + 'No;    !Solar Diffusing\n' + \
+        '\t' + str(winUValue) + ',    !U Value\n' + \
+        '\t' + str(1-shadeMaterial[1]) + ',    !Solar Heat Gain Coeff\n' + \
+        '\t' + str(shadeMaterial[2]) + ';    !Visible Transmittance\n' + \
         '\n'
     
     EPWindowConstr = 'Construction,\n' + \
@@ -1073,6 +1065,7 @@ def main():
         hb_EPFenSurface = sc.sticky["honeybee_EPFenSurface"]
         hb_hive = sc.sticky["honeybee_Hive"]()
         hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
+        hb_EPMaterialAUX = sc.sticky["honeybee_EPMaterialAUX"]()
         EPWindowMaterials = sc.sticky ["honeybee_windowMaterialLib"].keys()
         EPWindowProperties = sc.sticky["honeybee_WinodowPropLib"].keys()
         
@@ -1235,10 +1228,15 @@ def main():
             if checkData == True and writeEPObjs_ == True:
                 #Create the EnergyPlus shades material and assign it to the windows with shades.
                 for count, windowObj in enumerate(windowObjects):
-                    blindMatName = windowMaterial[0]
+                    if windowMaterial[4] == 'currentGlz':
+                        materials, comments, winUval, UValue_IP = hb_EPMaterialAUX.decomposeEPCnstr(windowObj.EPConstruction.upper())
+                        blindMatName = windowMaterial[0] + '-' + str(round(winUval*100000)/100000)
+                    else:
+                        winUval = round((windowMaterial[5]/windowMaterial[4])*100000)/100000
+                        blindMatName = windowMaterial[0] + '-' + str(winUval)
                     blindMatNames.append('')
                     if blindMatName.upper() not in EPWindowMaterials and blindMatName.upper() not in compShadeMats:
-                        blindMatStr, blindMatConstr = createEPWindowMat(windowMaterial, blindMatName)
+                        blindMatStr, blindMatConstr = createEPWindowMat(windowMaterial, blindMatName, winUval)
                         added, name = hb_EPObjectsAux.addEPObjectToLib(blindMatStr, True)
                         added, name = hb_EPObjectsAux.addEPObjectToLib(blindMatConstr, True)
                         compShadeMats.append(blindMatName.upper())
