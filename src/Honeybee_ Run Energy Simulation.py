@@ -62,7 +62,7 @@ Provided by Honeybee 0.0.59
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_07_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_13_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -339,8 +339,8 @@ class WriteIDF(object):
                     '\t' + zone.outdoorAirReq + ',          !- Outdoor Air Method\n' + \
                     '\t' + `zone.ventilationPerPerson` + ', !- Outdoor Air Flow per Person {m3/s-person}\n' + \
                     '\t' + `zone.ventilationPerArea` + ',          !- Outdoor Air Flow per Zone Floor Area {m3/s-m2}\n' + \
-                    '\t' + ', !- Outdoor Air Flow per Zone {m3/s}\n' + \
-                    '\t' + ', !- Outdoor Air Flow Air Changes per Hour {1/hr}\n' + \
+                    '\t' + '0, !- Outdoor Air Flow per Zone {m3/s}\n' + \
+                    '\t' + '0, !- Outdoor Air Flow Air Changes per Hour {1/hr}\n' + \
                     '\t' + scheduleObjectName + '; !- Outdoor Air Flow Rate Fraction Schedule Name\n'
         else:
             return "\n"
@@ -348,9 +348,9 @@ class WriteIDF(object):
     def EPIdealAirSystem(self, zone, thermostatName):
         if zone.isConditioned:
             #Supply air controls.
-            if zone.coolSupplyAirTemp == "": coolSupply = "13"
+            if zone.coolSupplyAirTemp == "": coolSupply = "14"
             else: coolSupply = zone.coolSupplyAirTemp
-            if zone.heatSupplyAirTemp == "": heatSupply = "50"
+            if zone.heatSupplyAirTemp == "": heatSupply = "40"
             else: heatSupply = zone.heatSupplyAirTemp
             if zone.coolingCapacity == "": coolLimit = "NoLimit"
             else: coolLimit = 'LimitCapacity'
@@ -402,7 +402,7 @@ class WriteIDF(object):
                 '\t' + ',  !- Outdoor Air Flow Rate Per Floor Zone Area\n' + \
                 '\t' + ',  !- Outdoor Air Flow Rate Per Zone\n' + \
                 '\t' + zone.name + 'OutdoorAirCntrl' + ',  !- Design Specification Outdoor Air Object Name\n' + \
-                '\t' + 'OccupancySchedule' + ',  !- Demand Controlled Ventilation Type\n' + \
+                '\t' + '' + ',  !- Demand Controlled Ventilation Type\n' + \
                 '\t' + zone.airSideEconomizer + ',  !- Outdoor Air Economizer Type\n' + \
                 '\t' + zone.heatRecovery + ',  !- Heat Recovery Type\n' + \
                 '\t' + zone.heatRecoveryEffectiveness + ',  !- Sensible Heat Recovery Effectiveness\n' + \
@@ -472,30 +472,34 @@ class WriteIDF(object):
     def EPTimestep(self, timestep = 6):
         return '\nTimestep, ' + `timestep` + ';\n'
     
+    def EPSizingFactor(self):
+        return '\nSizing:Parameters,\n' + \
+            '\t1.25,     !- Heating Sizing Factor\n' + \
+            '\t1.15;     !- Cooling Sizing Factor\n'
+    
     def EPShadowCalculation(self, calculationMethod = "AverageOverDaysInFrequency", frequency = 6, maximumFigures = 1500):
         return '\nShadowCalculation,\n' + \
                '\t' + calculationMethod + ',        !- Calculation Method\n' + \
                '\t' + str(frequency) + ',        !- Calculation Frequency\n' + \
                '\t' + str(maximumFigures) + ';    !- Maximum Figures in Shadow Overlap Calculation\n'
 
-    def EPProgramControl(self, numT = 10):
+    def EPProgramControl(self, numT = 1):
         return '\nProgramControl,\n' + \
                '\t' + `numT` + '; !- Number of Threads AllowedNumber\n'
     
     def EPBuilding(self, name= 'honeybeeBldg', north = 0, terrain = 'City',
-                    loadConvergenceTol = 0.04, tempConvergenceTol = 0.4,
-                    solarDis = 'FullInteriorAndExteriorWithReflections', maxWarmUpDays = 25,
-                    minWarmUpDays = 6):
+                    solarDis = 'FullInteriorAndExteriorWithReflections', maxWarmUpDays = '',
+                    minWarmUpDays = ''):
                     # 'FullInteriorAndExterior'
         return '\nBuilding,\n' + \
                 '\t' + name + ', !- Name\n' + \
                 '\t' + `north` + ', !- North Axis {deg}\n' + \
                 '\t' + terrain + ', !- Terrain\n' + \
-                '\t' + `loadConvergenceTol` + ', !- Loads Convergence Tolerance Value\n' + \
-                '\t' + `tempConvergenceTol` + ', !- Temperature Convergence Tolerance Value {deltaC}\n' + \
+                '\t' + ', !- Loads Convergence Tolerance Value\n' + \
+                '\t' + ', !- Temperature Convergence Tolerance Value {deltaC}\n' + \
                 '\t' + solarDis + ', !- Solar Distribution or maybe FullExterior\n' + \
-                '\t' + `maxWarmUpDays` + ', !- Maximum Number of Warmup Days\n' + \
-                '\t' + `minWarmUpDays` + '; !- Minimum Number of Warmup Days\n'
+                '\t' + maxWarmUpDays + ', !- Maximum Number of Warmup Days\n' + \
+                '\t' + minWarmUpDays + '; !- Minimum Number of Warmup Days\n'
     
     def EPHeatBalanceAlgorithm(self, algorithm = 'ConductionTransferFunction'):
         return '\nHeatBalanceAlgorithm, ' + algorithm + ';\n'
@@ -540,7 +544,9 @@ class WriteIDF(object):
         return '\nGlobalGeometryRules,\n' + \
                 '\t' + stVertexPos + ',         !- Starting Vertex Position\n' + \
                 '\t' + direction + ',        !- Vertex Entry Direction\n' + \
-                '\t' + coordinateSystem + ';                !- Coordinate System\n'
+                '\t' + coordinateSystem + ',                !- Coordinate System\n' + \
+                '\t' + 'Relative' + ',                !- Daylighting Ref Point Coordinate System\n' + \
+                '\t' + 'Relative' + ';                !- Rectangular Surface Coordinate System\n'
 
     def EPZoneInfiltration(self, zone, zoneListName = None):
         """ Methods: 
@@ -807,7 +813,7 @@ class WriteIDF(object):
             activityScheduleName = self.fileBasedSchedules[activityScheduleName.upper()]
         
         fractionRadiant = 0.3
-        sensibleHeatFraction = 'autocalculate'
+        sensibleHeatFraction = ''
         
         """
         Methods:
@@ -1431,11 +1437,11 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     # Read simulation parameters
     timestep, shadowPar, solarDistribution, simulationControl, ddyFile, terrain, grndTemps, holidays, startDayOfWeek = hb_EPPar.readEPParams(EPParameters)
     try:
-        maxWarmUpDays = simulationControl[5]
-        minWarmUpDays = simulationControl[6]
+        maxWarmUpDays = str(simulationControl[5])
+        minWarmUpDays = str(simulationControl[6])
     except:
-        maxWarmUpDays =25
-        minWarmUpDays = 6
+        maxWarmUpDays =''
+        minWarmUpDays = ''
     
     # Timestep,6;
     idfFile.write(hb_writeIDF.EPTimestep(timestep))
@@ -1447,15 +1453,17 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     idfFile.write(hb_writeIDF.EPProgramControl())
     
     # Building
-    EPBuilding = hb_writeIDF.EPBuilding(idfFileName, math.degrees(northAngle), terrain, 0.04, 0.4, solarDistribution, maxWarmUpDays, minWarmUpDays)
-                    
+    EPBuilding = hb_writeIDF.EPBuilding(idfFileName, math.degrees(northAngle), terrain, solarDistribution, maxWarmUpDays, minWarmUpDays)
     idfFile.write(EPBuilding)
     
+    # Sizing Factor
+    idfFile.write(hb_writeIDF.EPSizingFactor())
+    
     # HeatBalanceAlgorithm
-    idfFile.write(hb_writeIDF.EPHeatBalanceAlgorithm())
+    #idfFile.write(hb_writeIDF.EPHeatBalanceAlgorithm())
     
     # SurfaceConvectionAlgorithm
-    idfFile.write(hb_writeIDF.EPSurfaceConvectionAlgorithm())
+    #idfFile.write(hb_writeIDF.EPSurfaceConvectionAlgorithm())
     
     # Location
     idfFile.write(hb_writeIDF.EPSiteLocation(epwFileAddress))

@@ -64,7 +64,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_10_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_13_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -186,6 +186,28 @@ class WriteOPS(object):
         timestepInput = self.simParameters[0]
         timestep = ops.Model.getTimestep(model)
         timestep.setNumberOfTimestepsPerHour(int(timestepInput))
+    
+    def setSite(self, epwFilePath, model):
+        # Read the site from the EPW file.
+        epwfile = open(epwFilePath,"r")
+        headline = epwfile.readline()
+        csheadline = headline.split(',')
+        locName = csheadline[1]+'\t'+csheadline[3]
+        lat = float(csheadline[-4])
+        lngt = float(csheadline[-3])
+        timeZone = float(csheadline[-2])
+        elev = float(csheadline[-1][:-1])
+        epwfile.close()
+        
+        # Get the OpenStudio Model Site.
+        site = ops.Model.getSite(model)
+        
+        # Set the properties of the site.
+        site.setName(locName)
+        site.setLatitude(lat)
+        site.setLongitude(lngt)
+        site.setTimeZone(timeZone)
+        site.setElevation(elev)
     
     def setStartDayOfWeek(self, model):
         # The ability to set the start day of week currently breaks OpenStudio's way of assigning schedules.
@@ -2293,7 +2315,7 @@ class WriteOPS(object):
             lightsDefinition.setLightingLevel(int(zone.daylightThreshold))
         else:
             lightsDefinition.setDesignLevelCalculationMethod("Watts/Area", zone.getFloorArea(), space.numberOfPeople())
-            lightsDefinition.setWattsperSpaceFloorArea(int(zone.lightingDensityPerArea))
+            lightsDefinition.setWattsperSpaceFloorArea(float(zone.lightingDensityPerArea))
 
         lights = ops.Lights(lightsDefinition)
         lights.setName(zone.name + "_LightsObject")
@@ -3284,6 +3306,9 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     
     # set timestep
     hb_writeOPS.setTimestep(model)
+    
+    # set site.
+    hb_writeOPS.setSite(epwWeatherFile, model)
     
     # set simulation control
     hb_writeOPS.setSimulationControls(model)
