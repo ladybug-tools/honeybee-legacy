@@ -50,7 +50,7 @@ import decimal
 
 ghenv.Component.Name = 'Honeybee_Create Therm Boundaries'
 ghenv.Component.NickName = 'createThermBoundaries'
-ghenv.Component.Message = 'VER 0.0.59\nMAY_12_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_12_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -122,8 +122,22 @@ def main(boundaryCurve, temperature, filmCoefficient, crvName, emissivity, uFact
     
     return thermBoundary
 
+#Ladybug check.
+if not sc.sticky.has_key('ladybug_release') == True:
+    initCheck = False
+    print "You should first let Ladybug fly..."
+    ghenv.Component.AddRuntimeMessage(w, "You should first let Ladybug fly...")
+else:
+    try:
+        if not sc.sticky['ladybug_release'].isCompatible(ghenv.Component): initCheck = False
+    except:
+        initCheck = False
+        warning = "You need a newer version of Ladybug to use this compoent." + \
+        "Use updateLadybug component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Ladybug_Ladybug component " + \
+        "into canvas and try again."
+        ghenv.Component.AddRuntimeMessage(w, warning)
 #Honeybee check.
-initCheck = True
 if not sc.sticky.has_key('honeybee_release') == True:
     initCheck = False
     print "You should first let Honeybee fly..."
