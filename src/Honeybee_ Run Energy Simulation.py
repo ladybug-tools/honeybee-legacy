@@ -5,7 +5,6 @@
 # This file is part of Honeybee.
 # 
 # Copyright (c) 2013-2016, Mostapha Sadeghipour Roudsari and Chris Mackey <Sadeghipour@gmail.com and Chris@MackeyArchitecture.com> 
-# Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
 # or (at your option) any later version. 
@@ -62,7 +61,7 @@ Provided by Honeybee 0.0.59
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_13_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_14_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -444,7 +443,7 @@ class WriteIDF(object):
         '\t' + str(grndTemps[10]) + ',    !Nov Ground Temperature (C)\n' + \
         '\t' +  str(grndTemps[11]) + ';   !Dec Ground Temperature (C)\n'
         return grndString
-
+    
     def EPSizingPeriod(self, weatherFilePeriod):
         sizingString = "\nSizingPeriod:WeatherFileConditionType,\n" + \
             '\t' + 'ExtremeSizing'+ weatherFilePeriod + ',\n' + \
@@ -1316,7 +1315,7 @@ sc.sticky["honeybee_RunIDF"] = RunIDF
 def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext,
          simulationOutputs, writeIdf, runEnergyPlus, workingDir, idfFileName,
          meshSettings):
-             
+    
     # import the classes
     w = gh.GH_RuntimeMessageLevel.Warning
     
@@ -1459,57 +1458,68 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     # Sizing Factor
     idfFile.write(hb_writeIDF.EPSizingFactor())
     
-    # HeatBalanceAlgorithm
+    # HeatBalanceAlgorithm - We will just take the default for now
     #idfFile.write(hb_writeIDF.EPHeatBalanceAlgorithm())
     
-    # SurfaceConvectionAlgorithm
+    # SurfaceConvectionAlgorithm - We will just take the default for now
     #idfFile.write(hb_writeIDF.EPSurfaceConvectionAlgorithm())
     
     # Location
     idfFile.write(hb_writeIDF.EPSiteLocation(epwFileAddress))
     
-    #Ground Temperatures.
-    if grndTemps == []:
-        groundtemp = lb_preparation.groundTempData(_epwFile,[]);
-        groundtempNum = groundtemp[1][7:]
-        for temp in groundtempNum:
-            if temp < 18: grndTemps.append(18)
-            elif temp < 24: grndTemps.append(temp)
-            else: grndTemps.append(24)
-    
     if grndTemps != []:
         idfFile.write(hb_writeIDF.EPGroundTemp(grndTemps))
     
     # SizingPeriod
-    #Check if there are sizing periods in the EPW file.
-    dbTemp = []
-    sizeWDesignWeeks = True
-    epwfile = open(_epwFile,"r")
-    lnum = 1 # line number
-    for line in epwfile:
-        if lnum == 2:
-            extremePeriods = line.split(',')
-            if len(extremePeriods) < 3: sizeWDesignWeeks = False
-        if lnum > 8:
-            dbTemp.append(float(line.split(',')[6]))
-        lnum += 1
+    # Check if there is a DDY file to pull design days from.
+    if ddyFile != None: pass
+    else: ddyFile = epwFileAddress.replace(".epw", ".ddy", 1)
     
-    if sizeWDesignWeeks == True:
-        idfFile.write(hb_writeIDF.EPSizingPeriod('WinterExtreme'))
-        idfFile.write(hb_writeIDF.EPSizingPeriod('SummerExtreme'))
-    else:
-        # figure out a sizing period from the extreme temperatures in the weather file
-        HOYs = range(8760)
-        dbTemp, HOYs = zip(*sorted(zip(dbTemp, HOYs)))
-        HOYMax = HOYs[-1]
-        HOYMin = HOYs[0]
-        d, monthMax, t = lb_preparation.hour2Date(HOYMax+1, True)
-        d, monthMin, t = lb_preparation.hour2Date(HOYMin+1, True)
-        if monthMax != monthMin:
-            idfFile.write(hb_writeIDF.EPSizingPeriodMonth(monthMax+1))
-            idfFile.write(hb_writeIDF.EPSizingPeriodMonth(monthMin+1))
+    try:
+        ddyfile = open(ddyFile,"r")
+        designDayLines = ['\n']
+        correctDayTrigger = False
+        for line in ddyfile:
+            if correctDayTrigger == True:
+                designDayLines.append(line)
+                if (';' in line and '!- Clearness' in line) or (';' in line and '!- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance' in line):
+                    designDayLines.append('\n')
+                    correctDayTrigger = False
+            elif '.4%' in line or '99.6%' in line:
+                correctDayTrigger = True
+        ddyfile.close()
+        for line in designDayLines:
+            idfFile.write(line)
+    except:
+        # If there are no design days, check if there are sizing periods in the EPW file.
+        dbTemp = []
+        sizeWDesignWeeks = True
+        epwfile = open(epwFileAddress,"r")
+        lnum = 1 # line number
+        for line in epwfile:
+            if lnum == 2:
+                extremePeriods = line.split(',')
+                if len(extremePeriods) < 3: sizeWDesignWeeks = False
+            if lnum > 8:
+                dbTemp.append(float(line.split(',')[6]))
+            lnum += 1
+        
+        if sizeWDesignWeeks == True:
+            idfFile.write(hb_writeIDF.EPSizingPeriod('WinterExtreme'))
+            idfFile.write(hb_writeIDF.EPSizingPeriod('SummerExtreme'))
         else:
-            idfFile.write(hb_writeIDF.EPSizingPeriodMonth(monthMin))
+            # as a last resprt, figure out a sizing period from the extreme temperatures in the weather file.
+            HOYs = range(8760)
+            dbTemp, HOYs = zip(*sorted(zip(dbTemp, HOYs)))
+            HOYMax = HOYs[-1]
+            HOYMin = HOYs[0]
+            d, monthMax, t = lb_preparation.hour2Date(HOYMax+1, True)
+            d, monthMin, t = lb_preparation.hour2Date(HOYMin+1, True)
+            if monthMax != monthMin:
+                idfFile.write(hb_writeIDF.EPSizingPeriodMonth(monthMax+1))
+                idfFile.write(hb_writeIDF.EPSizingPeriodMonth(monthMin+1))
+            else:
+                idfFile.write(hb_writeIDF.EPSizingPeriodMonth(monthMin))
     
     # simulationControl
     idfFile.write(hb_writeIDF.EPSimulationControl(*simulationControl[0:5]))
@@ -1630,7 +1640,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                     if not childSrf.construction.upper() in EPConstructionsCollection:
                             EPConstructionsCollection.append(childSrf.construction.upper())
                     # Check if there is any shading for the window.
-                    # DISABLED AFTER AN UPDATE FOR OPENSTUDIO.
+                    # DISABLED WINDOW SHADE OBJECTS AFTER AN UPDATE FOR OPENSTUDIO.
                     #if childSrf.shadeMaterial != [] and childSrf.shadingControl != []:
                     #    for shadingCount, windowShading in enumerate(childSrf.shadeMaterial):
                     #        
@@ -2058,15 +2068,6 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     
     
     for key, zones in ZoneCollectionBasedOnSchAndLoads.items():
-        
-        # removed for now as apparently openstudio import idf does not like lists!
-        #if len(zones) > 1:
-        #    listCount += 1 
-        #    # create a zone list
-        #    listName = "_".join([zones[0].bldgProgram, zones[0].zoneProgram, str(listCount)])
-        #    
-        #    idfFile.write(hb_writeIDF.EPZoneListStr(listName, zones))
-        
         
         for zone in zones:
             #zone = zones[0]

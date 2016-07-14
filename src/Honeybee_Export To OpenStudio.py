@@ -64,7 +64,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_13_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_14_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -213,6 +213,9 @@ class WriteOPS(object):
         # The ability to set the start day of week currently breaks OpenStudio's way of assigning schedules.
         # As a result, this feature is not being used now.
         startDOW = self.simParameters[8]
+        if startDOW == None:
+            startDOW = "UseWeatherFile"
+        
         yearDesc = ops.OpenStudioModelSimulation.getYearDescription(model)
         yds = model.getObjectsByType(ops.IddObjectType("OS:YearDescription"))
         yds[0].setString(2, startDOW)
@@ -2768,7 +2771,7 @@ class WriteOPS(object):
         outputMeter.setMeterFileOnly(False)
         outputMeter.setName(name.strip())
         outputMeter.setReportingFrequency(freq.strip())
-        
+    
     def setOutputs(self, simulationOutputs, model):
         if simulationOutputs == []:
             return
@@ -2968,7 +2971,7 @@ class RunOPS(object):
                 return fullpath
             else:
                 raise Exception("Failed to find EnergyPlus folder at %s." % self.openStudioDir)
-                
+    
     def osmToidf(self, workingDir, projectName, osmPath):
         # create a new folder to run the analysis
         projectFolder =os.path.join(workingDir, projectName)
@@ -3041,16 +3044,19 @@ class RunOPS(object):
             lines.append(otherFeatureClass.createCSVSchedString(schedule))
         
         # If a start day of the week is specified, change it.
-        if simParameters[8] != None:
-            counter = 0
-            swapTrigger = False
-            for lCount, line in enumerate(lines):
-                if 'RunPeriod,' in line:
-                    swapTrigger = True
-                if swapTrigger == True:
-                    counter += 1
-                if counter == 7:
+        
+        counter = 0
+        swapTrigger = False
+        for lCount, line in enumerate(lines):
+            if 'RunPeriod,' in line:
+                swapTrigger = True
+            if swapTrigger == True:
+                counter += 1
+            if counter == 7:
+                if simParameters[8] != None:
                     lines[lCount] = simParameters[8] + ',\n'
+                else:
+                    lines[lCount] = "UseWeatherFile" + ',\n'
         
         # Write in any Holidays.
         if simParameters[7] != []:
@@ -3318,6 +3324,9 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     
     # add design DAY
     hb_writeOPS.addDesignDays(model)
+    
+    # set start day of week.
+    #hb_writeOPS.setStartDayOfWeek(model)
     
     # call Honeybee objects from the hive
     HBZones = hb_hive.callFromHoneybeeHive(HBZones)
