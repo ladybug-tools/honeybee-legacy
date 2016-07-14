@@ -381,8 +381,8 @@ class WriteIDF(object):
                 '\t' + scheduleObjectName + ',  !- Availability Schedule Name\n' + \
                 '\t' + heatSupply + ',  !- Heating Supply Air Temp {C}\n' + \
                 '\t' + coolSupply + ',  !- Cooling Supply Air Temp {C}\n' + \
-                '\t' + ',  !- Max Heating Supply Air Humidity Ratio {kg-H2O/kg-air}\n' + \
-                '\t' + ',  !- Min Cooling Supply Air Humidity Ratio {kg-H2O/kg-air}\n' + \
+                '\t' + '0.008,  !- Max Heating Supply Air Humidity Ratio {kg-H2O/kg-air}\n' + \
+                '\t' + '0.0085,  !- Min Cooling Supply Air Humidity Ratio {kg-H2O/kg-air}\n' + \
                 '\t' + heatLimit + ',  !- Heating Limit\n' + \
                 '\t' + ',  !- Maximum Heating Air Flow Rate {m3/s}\n' + \
                 '\t' + zone.heatingCapacity + ',  !- Maximum Sensible Heat Capacity\n' + \
@@ -406,6 +406,37 @@ class WriteIDF(object):
                 '\t' + zone.heatRecovery + ',  !- Heat Recovery Type\n' + \
                 '\t' + zone.heatRecoveryEffectiveness + ',  !- Sensible Heat Recovery Effectiveness\n' + \
                 '\t' + ';  !- Latent Heat Recovery Effectiveness\n'
+        else:
+            return "\n"
+    
+    def IdealAirZoneSizing(self, zone, coolSupplyTemp = 14, heatingSupplyTemp = 40):
+        if zone.isConditioned:
+            zoneSizeStr = "\nSizing:Zone,\n" + \
+                '\t' +  zone.name + ',      !- Zone or ZoneList Name\n' + \
+                '\t' + 'SupplyAirTemperature,     !- Zone Cooling Design Supply Air Temperature Input Method\n' + \
+                '\t' + str(coolSupplyTemp) + ',       !- Zone Cooling Design Supply Air Temperature {C}\n' + \
+                '\t' + '11.11,                                  !- Zone Cooling Design Supply Air Temperature Difference {deltaC}\n' + \
+                '\t' + 'SupplyAirTemperature,                   !- Zone Heating Design Supply Air Temperature Input Method\n' + \
+                '\t' + str(heatingSupplyTemp) + ',           !- Zone Heating Design Supply Air Temperature {C}\n' + \
+                '\t' + '11.11,                                  !- Zone Heating Design Supply Air Temperature Difference {deltaC}\n' + \
+                '\t' + '0.0085,                                 !- Zone Cooling Design Supply Air Humidity Ratio {kgWater/kgDryAir}\n' + \
+                '\t' + '0.008,                                  !- Zone Heating Design Supply Air Humidity Ratio {kgWater/kgDryAir}\n' + \
+                '\t' + zone.name + 'OutdoorAirCntrl' + ',        !- Design Specification Outdoor Air Object Name\n' + \
+                '\t' + ',                                       !- Zone Heating Sizing Factor\n' + \
+                '\t' + ',                                       !- Zone Cooling Sizing Factor\n' + \
+                '\t' + 'DesignDay,                              !- Cooling Design Air Flow Method\n' + \
+                '\t' + '0,                                      !- Cooling Design Air Flow Rate {m3/s}\n' + \
+                '\t' + '0.000762,                               !- Cooling Minimum Air Flow per Zone Floor Area {m3/s-m2}\n' + \
+                '\t' + '0,                                      !- Cooling Minimum Air Flow {m3/s}\n' + \
+                '\t' + '0,                                      !- Cooling Minimum Air Flow Fraction\n' + \
+                '\t' + 'DesignDay,                              !- Heating Design Air Flow Method\n' + \
+                '\t' + '0,                                      !- Heating Design Air Flow Rate {m3/s}\n' + \
+                '\t' + '0.002032,                               !- Heating Maximum Air Flow per Zone Floor Area {m3/s-m2}\n' + \
+                '\t' + '0.1415762,                              !- Heating Maximum Air Flow {m3/s}\n' + \
+                '\t' + '0.3,                                    !- Heating Maximum Air Flow Fraction\n' + \
+                '\t' + ',       !- Design Specification Zone Air Distribution Object Name\n' + \
+                '\t' + 'No;                                     !- Account for Dedicated Outdoor Air System\n'
+            return zoneSizeStr
         else:
             return "\n"
     
@@ -2071,7 +2102,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         
         for zone in zones:
             #zone = zones[0]
-            if zone.HVACSystem[-1]!=None:
+            if zone.HVACSystem[-1] != None:
                 warning = "An HVAC system is applied to " + zone.name + \
                           ".\n" + \
                           "EnergyPlus component will replace this HVAC system with an Ideal Air Loads system.\n" + \
@@ -2085,7 +2116,6 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                 HAVCTemplateName = listName + "_HVAC"
                 for zone in zones:
                     idfFile.write(hb_writeIDF.EPIdealAirSystem(zone, HAVCTemplateName))
-                
             else:
                 HAVCTemplateName = zone.name + "_HVAC"
                 idfFile.write(hb_writeIDF.EPIdealAirSystem(zone, HAVCTemplateName))
@@ -2096,6 +2126,8 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
             #Outdoor Air Controller.
             idfFile.write(hb_writeIDF.EPOutdoorAir(zone))
             
+            # Zone Sizing.
+            #idfFile.write(hb_writeIDF.IdealAirZoneSizing(zone))
             
             #   LOADS - INTERNAL LOADS + PLUG LOADS
             if zone.equipmentSchedule != None:
