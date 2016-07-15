@@ -147,7 +147,7 @@ class WriteOPS(object):
         if not self.ddyFile.lower().endswith(".ddy"):
             raise ValueError("%s is not a valid ddy file. Use energySimPar to define the path to .ddy file"%self.ddyFile)
         
-        self.constructionList = sc.sticky ["honeybee_constructionLib"]
+        self.constructionList = {}
         self.materialList = {}
         self.scheduleList = {}
         self.shdCntrlList = {}
@@ -297,11 +297,8 @@ class WriteOPS(object):
     def addConstructionToLib(self, constructionName, construction):
         self.constructionList[constructionName] = construction
     
-    def getConstructionFromLib(self, constructionName, model):
-#        if self.isConstructionInLib(constructionName):
-#              return self.constructionList[constructionName]
-  
-        return self.getOSConstruction(constructionName.upper(), model)
+    def getConstructionFromLib(self, constructionName):
+        return self.constructionList[constructionName]
     
     def isMaterialInLib(self, materialName):
         return materialName in self.materialList.keys()
@@ -536,7 +533,7 @@ class WriteOPS(object):
                     OSConstruction = self.getOSConstruction(constrName, model)
                     self.addConstructionToLib(constrName, OSConstruction)
                 else:
-                    OSConstruction = self.getConstructionFromLib(constrName, model)
+                    OSConstruction = self.getConstructionFromLib(constrName)
                 OSShdCntrl = ops.ShadingControl(OSConstruction)
             else:
                 # Iniitalize for material (for blinds and shades).
@@ -2298,8 +2295,14 @@ class WriteOPS(object):
             internalMassDefinition = ops.InternalMassDefinition(model)
             
             internalMassDefinition.setName(zone.internalMassNames[srfNum]+"_Definition")
-            internalMassDefinition.setConstruction(self.getOSConstruction(zone.internalMassConstructions[srfNum],model))
-           
+            
+            if self.isConstructionInLib(zone.internalMassConstructions[srfNum]):
+                construction = self.getConstructionFromLib(zone.internalMassConstructions[srfNum])
+            else:
+                construction = self.getOSConstruction(zone.internalMassConstructions[srfNum],model)
+                self.addConstructionToLib(zone.internalMassConstructions[srfNum], construction)
+            internalMassDefinition.setConstruction(construction)
+            
             internalMassDefinition.setSurfaceArea(float(srfArea))
             
             # Create actual internal mass by using the definition above
@@ -2643,15 +2646,16 @@ class WriteOPS(object):
             thisSurface.setSurfaceType(srfType);
             
             # create construction
-            if surface.EPConstruction == None:
-                construction = self.getConstructionFromLib(surface.construction, model)
-            elif not self.isConstructionInLib(surface.EPConstruction):
-                construction = self.getOSConstruction(surface.EPConstruction, model)
-                # keep track of constructions
+            
+            if self.isConstructionInLib(surface.EPConstruction):
+                construction = self.getConstructionFromLib(surface.EPConstruction)
+            elif surface.EPConstruction == None:
+                construction = self.getOSConstruction(surface.construction, model)
                 self.addConstructionToLib(surface.EPConstruction, construction)
             else:
-                construction = self.getConstructionFromLib(surface.EPConstruction, model)
-
+                construction = self.getOSConstruction(surface.EPConstruction, model)
+                self.addConstructionToLib(surface.EPConstruction, construction)
+            
             thisSurface.setConstruction(construction)
             thisSurface.setOutsideBoundaryCondition(surface.BC.capitalize())
             if surface.BC.capitalize()!= "ADIABATIC":
@@ -2683,12 +2687,12 @@ class WriteOPS(object):
                 windowPointVectors.Add(ops.Point3d(pt.X,pt.Y,pt.Z))
 
             # create construction
-            if not self.isConstructionInLib(childSrf.EPConstruction):
+            if self.isConstructionInLib(childSrf.EPConstruction):
+                construction = self.getConstructionFromLib(childSrf.EPConstruction)
+            else:
                 construction = self.getOSConstruction(childSrf.EPConstruction, model)
                 # keep track of constructions
                 self.addConstructionToLib(childSrf.EPConstruction, construction)
-            else:
-                construction = self.getConstructionFromLib(childSrf.EPConstruction, model)
             
             glazing = ops.SubSurface(windowPointVectors, model)
             glazing.setName(childSrf.name)
