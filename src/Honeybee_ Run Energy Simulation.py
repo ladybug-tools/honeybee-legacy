@@ -14,7 +14,6 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
 # GNU General Public License for more details.
 # 
-# You should have received a copy of the GNU General Public License
 # 
 # @license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
 
@@ -61,7 +60,7 @@ Provided by Honeybee 0.0.59
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_14_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_16_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -1505,7 +1504,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     # Check if there is a DDY file to pull design days from.
     if ddyFile != None: pass
     else: ddyFile = epwFileAddress.replace(".epw", ".ddy", 1)
-    
+    usedDDY = False
     try:
         ddyfile = open(ddyFile,"r")
         designDayLines = ['\n']
@@ -1519,9 +1518,12 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
             elif '.4%' in line or '99.6%' in line:
                 correctDayTrigger = True
         ddyfile.close()
-        for line in designDayLines:
-            idfFile.write(line)
-    except:
+        if designDayLines != ['\n']:
+            for line in designDayLines:
+                idfFile.write(line)
+            usedDDY = True
+    except:pass
+    if usedDDY == False:
         # If there are no design days, check if there are sizing periods in the EPW file.
         dbTemp = []
         sizeWDesignWeeks = True

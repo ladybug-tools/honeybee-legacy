@@ -64,7 +64,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_14_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_16_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -138,14 +138,6 @@ class WriteOPS(object):
         
         if self.simParameters[4] != None: self.ddyFile = self.simParameters[4]
         else: self.ddyFile = weatherFilePath.replace(".epw", ".ddy", 1)
-        
-        # check ddy file to be available
-        if not os.path.isfile(self.ddyFile):
-            raise ValueError("Can't find %s. Use energySimPar to define the path to .ddy file"%self.ddyFile)
-        
-        # check ddy file to be available
-        if not self.ddyFile.lower().endswith(".ddy"):
-            raise ValueError("%s is not a valid ddy file. Use energySimPar to define the path to .ddy file"%self.ddyFile)
         
         self.constructionList = {}
         self.materialList = {}
@@ -277,20 +269,29 @@ class WriteOPS(object):
         return space
     
     def addDesignDays(self, model):
+        # check ddy file to be available
         ddyFile = self.ddyFile
-        ddyPath = ops.Path(ddyFile)
-        ddyIdf = ops.IdfFile.load(ddyPath, ops.IddFileType("EnergyPlus"))
-        ddyWorkSpcae = ops.Workspace(ddyIdf.get())
-        reverseTranslator = ops.EnergyPlusReverseTranslator()
-        ddyModel = reverseTranslator.translateWorkspace(ddyWorkSpcae)
-        designDayVector = ddyModel.getDesignDays()
-        selectedDesignDays = ops.WorkspaceObjectVector()
-        for dday in designDayVector:
-            if dday.name().get().find(".4%")> -1 or dday.name().get().find("99.6%") > -1:
-                selectedDesignDays.Add(dday)
-                
-        model.addObjects(selectedDesignDays)
+        ddFound = False
         
+        if not os.path.isfile(ddyFile):
+            print "Can't find %s. Use energySimPar to define the path to .ddy file"%self.ddyFile
+            print "Weather file design peirods will be used instead."
+        else:
+            ddyPath = ops.Path(ddyFile)
+            ddyIdf = ops.IdfFile.load(ddyPath, ops.IddFileType("EnergyPlus"))
+            ddyWorkSpcae = ops.Workspace(ddyIdf.get())
+            reverseTranslator = ops.EnergyPlusReverseTranslator()
+            ddyModel = reverseTranslator.translateWorkspace(ddyWorkSpcae)
+            designDayVector = ddyModel.getDesignDays()
+            selectedDesignDays = ops.WorkspaceObjectVector()
+            for dday in designDayVector:
+                if dday.name().get().find(".4%")> -1 or dday.name().get().find("99.6%") > -1:
+                    selectedDesignDays.Add(dday)
+                    ddFound = True
+            model.addObjects(selectedDesignDays)
+        
+        return ddFound
+    
     def isConstructionInLib(self, constructionName):
         return constructionName in self.constructionList
     
@@ -2945,12 +2946,101 @@ class EPFeaturesNotInOS(object):
                 '\t' + date.split(' ' )[0] + '/' + date.split(' ')[1] + ',  !- Date\n' + \
                 '\t' + '1' + ',  !- Duration\n' + \
                 '\t' + 'Holiday' + ';  !- Special Day Type\n'
+    
+    def zoneSizing(self, zone, coolSupplyTemp = 14, heatingSupplyTemp = 40):
+        if zone.isConditioned:
+            zoneSizeStr = "\nSizing:Zone,\n" + \
+                '\t' +  zone.name + ',      !- Zone or ZoneList Name\n' + \
+                '\t' + 'SupplyAirTemperature,     !- Zone Cooling Design Supply Air Temperature Input Method\n' + \
+                '\t' + str(coolSupplyTemp) + ',       !- Zone Cooling Design Supply Air Temperature {C}\n' + \
+                '\t' + '11.11,                                  !- Zone Cooling Design Supply Air Temperature Difference {deltaC}\n' + \
+                '\t' + 'SupplyAirTemperature,                   !- Zone Heating Design Supply Air Temperature Input Method\n' + \
+                '\t' + str(heatingSupplyTemp) + ',           !- Zone Heating Design Supply Air Temperature {C}\n' + \
+                '\t' + '11.11,                                  !- Zone Heating Design Supply Air Temperature Difference {deltaC}\n' + \
+                '\t' + '0.0085,                                 !- Zone Cooling Design Supply Air Humidity Ratio {kgWater/kgDryAir}\n' + \
+                '\t' + '0.008,                                  !- Zone Heating Design Supply Air Humidity Ratio {kgWater/kgDryAir}\n' + \
+                '\t' + zone.name + '_DSOA' + ',        !- Design Specification Outdoor Air Object Name\n' + \
+                '\t' + ',                                       !- Zone Heating Sizing Factor\n' + \
+                '\t' + ',                                       !- Zone Cooling Sizing Factor\n' + \
+                '\t' + 'DesignDay,                              !- Cooling Design Air Flow Method\n' + \
+                '\t' + '0,                                      !- Cooling Design Air Flow Rate {m3/s}\n' + \
+                '\t' + '0.000762,                               !- Cooling Minimum Air Flow per Zone Floor Area {m3/s-m2}\n' + \
+                '\t' + '0,                                      !- Cooling Minimum Air Flow {m3/s}\n' + \
+                '\t' + '0,                                      !- Cooling Minimum Air Flow Fraction\n' + \
+                '\t' + 'DesignDay,                              !- Heating Design Air Flow Method\n' + \
+                '\t' + '0,                                      !- Heating Design Air Flow Rate {m3/s}\n' + \
+                '\t' + '0.002032,                               !- Heating Maximum Air Flow per Zone Floor Area {m3/s-m2}\n' + \
+                '\t' + '0.1415762,                              !- Heating Maximum Air Flow {m3/s}\n' + \
+                '\t' + '0.3,                                    !- Heating Maximum Air Flow Fraction\n' + \
+                '\t' + ',       !- Design Specification Zone Air Distribution Object Name\n' + \
+                '\t' + 'No;                                     !- Account for Dedicated Outdoor Air System\n'
+            return zoneSizeStr
+        else:
+            return "\n"
+    
+    def EPSizingPeriod(self, weatherFilePeriod):
+        sizingString = "\nSizingPeriod:WeatherFileConditionType,\n" + \
+            '\t' + 'ExtremeSizing'+ weatherFilePeriod + ',\n' + \
+            '\t' + weatherFilePeriod + ',    !Period Selection\n' + \
+            '\t' + 'Monday' + ',   !Day of Week for Start Day\n' + \
+            '\t' + 'Yes' + ', !Use Weather File Daylight Davings Period\n' + \
+            '\t' + 'Yes' + ';   !Use WeatherFile Rain and Snow Indicators\n'
+        return sizingString
+    
+    def EPSizingPeriodMonth(self, designMonth):
+        sizingString = "\nSizingPeriod:WeatherFileDays,\n" + \
+            '\t' + 'ExtremeSizing'+ str(designMonth) + ',\n' + \
+            '\t' + str(designMonth) + ',    !Begin Month\n' + \
+            '\t' + '1' + ',   !Begin Day of Month\n' + \
+            '\t' + str(designMonth) + ', !End Month\n' + \
+            '\t' + '28' + ', !End Day of Month\n' + \
+            '\t' + '' + ', !Day of Week\n' + \
+            '\t' + '' + ', !Use WeatherFile Daylight Savings Period\n' + \
+            '\t' + '' + ';   !Use WeatherFile Rain and Snow Indicators\n'
+        return sizingString
+    
+    def addDesignPeriod(self, HBZones, epwWeatherFile, lb_preparation):
+        # If there are no design days, check if there are sizing periods in the EPW file.
+        lines = []
+        dbTemp = []
+        sizeWDesignWeeks = True
+        epwfile = open(epwWeatherFile,"r")
+        lnum = 1 # line number
+        for line in epwfile:
+            if lnum == 2:
+                extremePeriods = line.split(',')
+                if len(extremePeriods) < 3: sizeWDesignWeeks = False
+            if lnum > 8:
+                dbTemp.append(float(line.split(',')[6]))
+            lnum += 1
+        
+        if sizeWDesignWeeks == True:
+            lines.append(self.EPSizingPeriod('WinterExtreme'))
+            lines.append(self.EPSizingPeriod('SummerExtreme'))
+        else:
+            # as a last resprt, figure out a sizing period from the extreme temperatures in the weather file.
+            HOYs = range(8760)
+            dbTemp, HOYs = zip(*sorted(zip(dbTemp, HOYs)))
+            HOYMax = HOYs[-1]
+            HOYMin = HOYs[0]
+            d, monthMax, t = lb_preparation.hour2Date(HOYMax+1, True)
+            d, monthMin, t = lb_preparation.hour2Date(HOYMin+1, True)
+            if monthMax != monthMin:
+                lines.append(self.EPSizingPeriodMonth(monthMax+1))
+                lines.append(self.EPSizingPeriodMonth(monthMin+1))
+            else:
+                lines.append(self.EPSizingPeriodMonth(monthMin))
+        
+        for zone in HBZones:
+            lines.append(self.zoneSizing(zone))
+        
+        return lines
 
 
 
 class RunOPS(object):
     def __init__(self, model, weatherFilePath, HBZones, simParameters, openStudioLibFolder, csvSchedules, \
-            csvScheduleCount, additionalcsvSchedules, shadeCntrlToReplace, replaceShdCntrl):
+            csvScheduleCount, additionalcsvSchedules, shadeCntrlToReplace, replaceShdCntrl, ddyFound):
         self.weatherFile = weatherFilePath # just for batch file as an alternate solution
         self.openStudioDir = "/".join(openStudioLibFolder.split("/")[:3]) + "/share/openstudio"
         self.EPFolder = self.getEPFolder()
@@ -2963,9 +3053,11 @@ class RunOPS(object):
         self.csvSchedules = csvSchedules
         self.csvScheduleCount = csvScheduleCount
         self.additionalcsvSchedules = additionalcsvSchedules
+        self.ddyFound = ddyFound
         self.shadeCntrlToReplace = shadeCntrlToReplace
         self.replaceShdCntrl = replaceShdCntrl
         self.hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
+        self.lb_preparation = sc.sticky["ladybug_Preparation"]()
     
     def getEPFolder(self):
         fList = os.listdir(self.openStudioDir)
@@ -3044,11 +3136,9 @@ class RunOPS(object):
         for schedule in self.csvSchedules:
             lines.append(otherFeatureClass.createCSVSchedString(schedule))
         for schedule in self.additionalcsvSchedules:
-            print schedule
             lines.append(otherFeatureClass.createCSVSchedString(schedule))
         
         # If a start day of the week is specified, change it.
-        
         counter = 0
         swapTrigger = False
         for lCount, line in enumerate(lines):
@@ -3066,6 +3156,11 @@ class RunOPS(object):
         if simParameters[7] != []:
             for count, hol in enumerate(simParameters[7]):
                 lines.append(otherFeatureClass.EPHoliday(hol, count))
+        
+        # If there was no ddy file to write in, add a custom sizing period.
+        if not self.ddyFound:
+            addLines = otherFeatureClass.addDesignPeriod(HBZones, self.weatherFile, self.lb_preparation)
+            lines.extend(addLines)
         
         # Replace any incorrect shading control objects.
         if self.replaceShdCntrl == True:
@@ -3327,7 +3422,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     hb_writeOPS.setShadowCalculation(model)
     
     # add design DAY
-    hb_writeOPS.addDesignDays(model)
+    ddyFound = hb_writeOPS.addDesignDays(model)
     
     # set start day of week.
     #hb_writeOPS.setStartDayOfWeek(model)
@@ -3463,7 +3558,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     
     if runIt:
         hb_runOPS = RunOPS(model, epwWeatherFile, HBZones, hb_writeOPS.simParameters, openStudioLibFolder, csvSchedules, \
-            csvScheduleCount, additionalcsvSchedules, shadeCntrlToReplace, replaceShdCntrl)
+            csvScheduleCount, additionalcsvSchedules, shadeCntrlToReplace, replaceShdCntrl, ddyFound)
             
         idfFile, resultFile = hb_runOPS.runAnalysis(fname, useRunManager = False)
         
