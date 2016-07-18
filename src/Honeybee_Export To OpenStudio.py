@@ -64,7 +64,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_16_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_18_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -203,7 +203,8 @@ class WriteOPS(object):
     
     def setStartDayOfWeek(self, model):
         # The ability to set the start day of week currently breaks OpenStudio's way of assigning schedules.
-        # As a result, this feature is not being used now.
+        # As a result, this feature of OpenStudio SDK is not being used now.
+        # Instead, any specified start day of the year is assigned in the IDF after export.
         startDOW = self.simParameters[8]
         if startDOW == None:
             startDOW = "UseWeatherFile"
@@ -211,6 +212,16 @@ class WriteOPS(object):
         yearDesc = ops.OpenStudioModelSimulation.getYearDescription(model)
         yds = model.getObjectsByType(ops.IddObjectType("OS:YearDescription"))
         yds[0].setString(2, startDOW)
+    
+    def setHolidays(self, model):
+        # Even though holidays are built into OpenStudio SDK and written into the OSM,
+        # it seems like they are not yet written into the IDF.
+        # as a result, there is an additional function to add the holidays into the IDF later in this component.
+        if self.simParameters[7] != []:
+            for count, hol in enumerate(self.simParameters[7]):
+                holiday = ops.RunPeriodControlSpecialDays(hol, model)
+                holiday.setDuration(1)
+                holiday.setSpecialDayType("Holiday")
     
     def setTerrain(self, model):
         terrain = self.simParameters[5]
@@ -274,8 +285,8 @@ class WriteOPS(object):
         ddFound = False
         
         if not os.path.isfile(ddyFile):
-            print "Can't find %s. Use energySimPar to define the path to .ddy file"%self.ddyFile
-            print "Weather file design peirods will be used instead."
+            print "Can't find %s."
+            print "Extreme values from the weather file design will be used instead."
         else:
             ddyPath = ops.Path(ddyFile)
             ddyIdf = ops.IdfFile.load(ddyPath, ops.IddFileType("EnergyPlus"))
@@ -291,6 +302,94 @@ class WriteOPS(object):
             model.addObjects(selectedDesignDays)
         
         return ddFound
+    
+    def writeDDObjStr(self, ddName, designType, month, day, dbTemp, dbTempRange, wbTemp, humidConditType, pressure, windSpeed, windDir, ashraeSkyModel):
+        ddStr =  '! ' + ddName + '\n' + \
+            'SizingPeriod:DesignDay,\n' + \
+            '\t' + ddName + ' 99.6%,     !- Name\n' + \
+            '\t' + str(month) + ',      !- Month\n' + \
+            '\t' + str(day) + ',      !- Day of Month\n' + \
+            '\t' + designType + ',!- Day Type\n' + \
+            '\t' + str(dbTemp) + ',      !- Maximum Dry-Bulb Temperature {C}\n' + \
+            '\t' + str(dbTempRange) + ',      !- Daily Dry-Bulb Temperature Range {C}\n' + \
+            '\t' + 'DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type\n' + \
+            '\t' + ',      !- Dry-Bulb Temperature Range Modifier Schedule Name\n' + \
+            '\t' + humidConditType + ',      !- Humidity Condition Type\n' + \
+            '\t' + str(wbTemp) + ',      !- Wetbulb at Maximum Dry-Bulb {C}\n' + \
+            '\t' + ',      !- Humidity Indicating Day Schedule Name\n' + \
+            '\t' + ',      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}\n' + \
+            '\t' + ',      !- Enthalpy at Maximum Dry-Bulb {J/kg}\n' + \
+            '\t' + ',      !- Daily Wet-Bulb Temperature Range {deltaC}\n' + \
+            '\t' + str(pressure) + ',      !- Barometric Pressure {Pa}\n' + \
+            '\t' + str(windSpeed) + ',      !- Wind Speed {m/s} design conditions vs. traditional 6.71 m/s (15 mph)\n' + \
+            '\t' + str(windDir) + ',      !- Wind Direction {Degrees; N=0, S=180}\n' + \
+            '\t' + 'No,      !- Rain {Yes/No}\n' + \
+            '\t' + 'No,      !- Snow on ground {Yes/No}\n' + \
+            '\t' + 'No,      !- Daylight Savings Time Indicator\n' + \
+            '\t' + ashraeSkyModel + ', !- Solar Model Indicator\n' + \
+            '\t' + ',      !- Beam Solar Day Schedule Name\n' + \
+            '\t' + ',      !- Diffuse Solar Day Schedule Name\n'
+        if ashraeSkyModel == 'ASHRAEClearSky':
+            ddStr = ddStr + \
+            '\t' + ',      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)\n' + \
+            '\t' + ',      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)\n' + \
+            '\t' + '0' + ';      !- Clearness {0.0 to 1.1}\n' + '\n'
+        else:
+            ddStr = ddStr + \
+            '\t' + '0.5,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)\n' + \
+            '\t' + '2.0;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)\n'
+        
+        return ddStr
+    
+    def writeDDYFile(self, epwWeatherFile, lb_preparation):
+        # Find the most extreme values in the epw.
+        weatherData = lb_preparation.epwDataReader(epwWeatherFile)
+        dryBulbTemperature, dewPointTemperature, relativeHumidity, windSpeed, \
+        windDirection, directNormalRadiation, diffuseHorizontalRadiation, globalHorizontalRadiation, \
+        directNormalIlluminance, diffuseHorizontalIlluminance, globalHorizontalIlluminance, totalSkyCover, \
+        horizontalInfraredRadiation, barometricPressure, modelYear = weatherData
+        
+        sortedDB = dryBulbTemperature[7:]
+        sortedDB.sort()
+        minDB = sortedDB[35]
+        maxDB = sortedDB[-35]
+        dpNumbers = dewPointTemperature[7:]
+        sortedDP = dewPointTemperature[7:]
+        sortedDP.sort()
+        minDP = sortedDP[35]
+        maxDP = sortedDP[-35]
+        
+        # Assemble a list of design condition strings to write into the ddy file.
+        ddStrs = []
+        minDBFound = False
+        maxDBFound = False
+        minDPFouund = False
+        maxDPFound = False
+        # Start with extreme dry bulb.
+        for count, temp in enumerate(dryBulbTemperature[7:]):
+            if temp == minDB and minDBFound == False:
+                d, m, t = lb_preparation.hour2Date(count, True)
+                ddStrs.append(self.writeDDObjStr('Dry Bulb Temperature Winter Design Day', 'WinterDesignDay', m+1, d, temp, 0, dewPointTemperature[count], 'Wetbulb', barometricPressure[count], windSpeed[count], windDirection[count], 'ASHRAEClearSky'))
+                minDBFound = True
+            elif temp == maxDB and maxDBFound == False:
+                d, m, t = lb_preparation.hour2Date(count, True)
+                ddStrs.append(self.writeDDObjStr('Dry Bulb Temperature Summer Design Day', 'SummerDesignDay', m+1, d, temp, 0, dewPointTemperature[count], 'Wetbulb', barometricPressure[count], windSpeed[count], windDirection[count], 'ASHRAETau'))
+                maxDBFound = True
+            elif dpNumbers[count] == maxDP and minDPFouund == False:
+                d, m, t = lb_preparation.hour2Date(count, True)
+                ddStrs.append(self.writeDDObjStr('Dehumidification Summer Design Day', 'SummerDesignDay', m+1, d, temp, 0, dewPointTemperature[count], 'Wetbulb', barometricPressure[count], windSpeed[count], windDirection[count], 'ASHRAETau'))
+                minDPFouund = True
+            elif dpNumbers[count] == minDP and maxDPFound == False:
+                d, m, t = lb_preparation.hour2Date(count, True)
+                ddStrs.append(self.writeDDObjStr('Humidification Winter Design Day', 'WinterDesignDay', m+1, d, temp, 0, dewPointTemperature[count], 'Wetbulb', barometricPressure[count], windSpeed[count], windDirection[count], 'ASHRAEClearSky'))
+                maxDPFound = True
+        
+        # Write the design day objects into a .ddy file.
+        print self.ddyFile
+        ddyFile = open(self.ddyFile, "w")
+        for sizingObj in ddStrs:
+            ddyFile.write(sizingObj)
+        ddyFile.close()
     
     def isConstructionInLib(self, constructionName):
         return constructionName in self.constructionList
@@ -2673,8 +2772,8 @@ class WriteOPS(object):
                 self.adjacentSurfacesDict[surface.name] = [surface.BCObject.name, thisSurface]
             
             return thisSurface
-
-            
+    
+    
     def OPSFenSurface (self, surface, openStudioParentSrf, model):
         
         for childSrf in surface.childSrfs:
@@ -2946,95 +3045,6 @@ class EPFeaturesNotInOS(object):
                 '\t' + date.split(' ' )[0] + '/' + date.split(' ')[1] + ',  !- Date\n' + \
                 '\t' + '1' + ',  !- Duration\n' + \
                 '\t' + 'Holiday' + ';  !- Special Day Type\n'
-    
-    def zoneSizing(self, zone, coolSupplyTemp = 14, heatingSupplyTemp = 40):
-        if zone.isConditioned:
-            zoneSizeStr = "\nSizing:Zone,\n" + \
-                '\t' +  zone.name + ',      !- Zone or ZoneList Name\n' + \
-                '\t' + 'SupplyAirTemperature,     !- Zone Cooling Design Supply Air Temperature Input Method\n' + \
-                '\t' + str(coolSupplyTemp) + ',       !- Zone Cooling Design Supply Air Temperature {C}\n' + \
-                '\t' + '11.11,                                  !- Zone Cooling Design Supply Air Temperature Difference {deltaC}\n' + \
-                '\t' + 'SupplyAirTemperature,                   !- Zone Heating Design Supply Air Temperature Input Method\n' + \
-                '\t' + str(heatingSupplyTemp) + ',           !- Zone Heating Design Supply Air Temperature {C}\n' + \
-                '\t' + '11.11,                                  !- Zone Heating Design Supply Air Temperature Difference {deltaC}\n' + \
-                '\t' + '0.0085,                                 !- Zone Cooling Design Supply Air Humidity Ratio {kgWater/kgDryAir}\n' + \
-                '\t' + '0.008,                                  !- Zone Heating Design Supply Air Humidity Ratio {kgWater/kgDryAir}\n' + \
-                '\t' + zone.name + '_DSOA' + ',        !- Design Specification Outdoor Air Object Name\n' + \
-                '\t' + ',                                       !- Zone Heating Sizing Factor\n' + \
-                '\t' + ',                                       !- Zone Cooling Sizing Factor\n' + \
-                '\t' + 'DesignDay,                              !- Cooling Design Air Flow Method\n' + \
-                '\t' + '0,                                      !- Cooling Design Air Flow Rate {m3/s}\n' + \
-                '\t' + '0.000762,                               !- Cooling Minimum Air Flow per Zone Floor Area {m3/s-m2}\n' + \
-                '\t' + '0,                                      !- Cooling Minimum Air Flow {m3/s}\n' + \
-                '\t' + '0,                                      !- Cooling Minimum Air Flow Fraction\n' + \
-                '\t' + 'DesignDay,                              !- Heating Design Air Flow Method\n' + \
-                '\t' + '0,                                      !- Heating Design Air Flow Rate {m3/s}\n' + \
-                '\t' + '0.002032,                               !- Heating Maximum Air Flow per Zone Floor Area {m3/s-m2}\n' + \
-                '\t' + '0.1415762,                              !- Heating Maximum Air Flow {m3/s}\n' + \
-                '\t' + '0.3,                                    !- Heating Maximum Air Flow Fraction\n' + \
-                '\t' + ',       !- Design Specification Zone Air Distribution Object Name\n' + \
-                '\t' + 'No;                                     !- Account for Dedicated Outdoor Air System\n'
-            return zoneSizeStr
-        else:
-            return "\n"
-    
-    def EPSizingPeriod(self, weatherFilePeriod):
-        sizingString = "\nSizingPeriod:WeatherFileConditionType,\n" + \
-            '\t' + 'ExtremeSizing'+ weatherFilePeriod + ',\n' + \
-            '\t' + weatherFilePeriod + ',    !Period Selection\n' + \
-            '\t' + 'Monday' + ',   !Day of Week for Start Day\n' + \
-            '\t' + 'Yes' + ', !Use Weather File Daylight Davings Period\n' + \
-            '\t' + 'Yes' + ';   !Use WeatherFile Rain and Snow Indicators\n'
-        return sizingString
-    
-    def EPSizingPeriodMonth(self, designMonth):
-        sizingString = "\nSizingPeriod:WeatherFileDays,\n" + \
-            '\t' + 'ExtremeSizing'+ str(designMonth) + ',\n' + \
-            '\t' + str(designMonth) + ',    !Begin Month\n' + \
-            '\t' + '1' + ',   !Begin Day of Month\n' + \
-            '\t' + str(designMonth) + ', !End Month\n' + \
-            '\t' + '28' + ', !End Day of Month\n' + \
-            '\t' + '' + ', !Day of Week\n' + \
-            '\t' + '' + ', !Use WeatherFile Daylight Savings Period\n' + \
-            '\t' + '' + ';   !Use WeatherFile Rain and Snow Indicators\n'
-        return sizingString
-    
-    def addDesignPeriod(self, HBZones, epwWeatherFile, lb_preparation):
-        # If there are no design days, check if there are sizing periods in the EPW file.
-        lines = []
-        dbTemp = []
-        sizeWDesignWeeks = True
-        epwfile = open(epwWeatherFile,"r")
-        lnum = 1 # line number
-        for line in epwfile:
-            if lnum == 2:
-                extremePeriods = line.split(',')
-                if len(extremePeriods) < 3: sizeWDesignWeeks = False
-            if lnum > 8:
-                dbTemp.append(float(line.split(',')[6]))
-            lnum += 1
-        
-        if sizeWDesignWeeks == True:
-            lines.append(self.EPSizingPeriod('WinterExtreme'))
-            lines.append(self.EPSizingPeriod('SummerExtreme'))
-        else:
-            # as a last resprt, figure out a sizing period from the extreme temperatures in the weather file.
-            HOYs = range(8760)
-            dbTemp, HOYs = zip(*sorted(zip(dbTemp, HOYs)))
-            HOYMax = HOYs[-1]
-            HOYMin = HOYs[0]
-            d, monthMax, t = lb_preparation.hour2Date(HOYMax+1, True)
-            d, monthMin, t = lb_preparation.hour2Date(HOYMin+1, True)
-            if monthMax != monthMin:
-                lines.append(self.EPSizingPeriodMonth(monthMax+1))
-                lines.append(self.EPSizingPeriodMonth(monthMin+1))
-            else:
-                lines.append(self.EPSizingPeriodMonth(monthMin))
-        
-        for zone in HBZones:
-            lines.append(self.zoneSizing(zone))
-        
-        return lines
 
 
 
@@ -3156,11 +3166,6 @@ class RunOPS(object):
         if simParameters[7] != []:
             for count, hol in enumerate(simParameters[7]):
                 lines.append(otherFeatureClass.EPHoliday(hol, count))
-        
-        # If there was no ddy file to write in, add a custom sizing period.
-        if not self.ddyFound:
-            addLines = otherFeatureClass.addDesignPeriod(HBZones, self.weatherFile, self.lb_preparation)
-            lines.extend(addLines)
         
         # Replace any incorrect shading control objects.
         if self.replaceShdCntrl == True:
@@ -3400,8 +3405,20 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     #set runningPeriod
     hb_writeOPS.setRunningPeriod(analysisPeriod, model)
     
+    # set timestep
+    hb_writeOPS.setTimestep(model)
+    
+    # set holidays
+    hb_writeOPS.setHolidays(model)
+    
+    # set start day of week.
+    #hb_writeOPS.setStartDayOfWeek(model)
+    
     # set north
     hb_writeOPS.setNorth(north, model)
+    
+    # set site.
+    hb_writeOPS.setSite(epwWeatherFile, model)
     
     # set terrain.
     hb_writeOPS.setTerrain(model)
@@ -3409,23 +3426,18 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     # set ground temperatures.
     hb_writeOPS.setGroundTemps(model)
     
-    # set timestep
-    hb_writeOPS.setTimestep(model)
-    
-    # set site.
-    hb_writeOPS.setSite(epwWeatherFile, model)
-    
     # set simulation control
     hb_writeOPS.setSimulationControls(model)
     
     # set shadow calculation parameters
     hb_writeOPS.setShadowCalculation(model)
     
-    # add design DAY
+    # add design days
     ddyFound = hb_writeOPS.addDesignDays(model)
-    
-    # set start day of week.
-    #hb_writeOPS.setStartDayOfWeek(model)
+    if ddyFound == False:
+        # Create a ddy file from the information in the EPW.
+        hb_writeOPS.writeDDYFile(epwWeatherFile, lb_preparation)
+        hb_writeOPS.addDesignDays(model)
     
     # call Honeybee objects from the hive
     HBZones = hb_hive.callFromHoneybeeHive(HBZones)
