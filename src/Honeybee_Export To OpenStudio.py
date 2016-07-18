@@ -2729,7 +2729,6 @@ class WriteOPS(object):
           
             # generate OpenStudio points
             pointVectors = ops.Point3dVector();
-            
             for pt in coordinates:
                 # add the points to an openStudio list
                 pointVectors.Add(ops.Point3d(pt.X,pt.Y,pt.Z))
@@ -2737,6 +2736,7 @@ class WriteOPS(object):
             # create surface
             thisSurface = ops.Surface(pointVectors, model);
             thisSurface.setName(surface.name);
+            thisSurface.setNumberofVertices(len(coordinates));
             thisSurface.setSpace(space);
             thisSurface.setSurfaceType(surface.srfType[surface.type]);
             srfType = surface.srfType[int(surface.type)].lower().capitalize()
