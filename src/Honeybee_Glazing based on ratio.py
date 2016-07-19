@@ -51,7 +51,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Glazing based on ratio"
 ghenv.Component.NickName = 'glazingCreator'
-ghenv.Component.Message = 'VER 0.0.59\nJUN_15_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_15_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -269,6 +269,7 @@ def createGlazingForRect(rectBrep, glazingRatio, windowHeight, sillHeight, break
         rectTopCurve = getTopBottomCurves(rectBrep)[2]
         maxAreaBreakUp = (rectBtmCurve.GetLength() * 0.98) * winHeight
         
+        
         #Find the maximum acceptable area for setting the glazing at the sill height.
         heightClosestPt = rc.Geometry.Curve.PointAt(rectTopCurve, rc.Geometry.LineCurve.ClosestPoint(rectTopCurve, rectBtmCurve.PointAtEnd)[1])
         rectHeight = rc.Geometry.Point3d.DistanceTo(heightClosestPt, rectBtmCurve.PointAtEnd)
@@ -285,6 +286,7 @@ def createGlazingForRect(rectBrep, glazingRatio, windowHeight, sillHeight, break
         
         #Find the window geometry in the case that the target area is below that of the maximum acceptable area for breaking up the window into smaller, taller windows.
         if targetArea < maxAreaBreakUp:
+            
             #Divide up the rectangle into points on the bottom.
             rectBtmCurveLength = rectBtmCurve.GetLength()
             if rectBtmCurveLength > (distBreakup/2):
@@ -366,15 +368,16 @@ def createGlazingForRect(rectBrep, glazingRatio, windowHeight, sillHeight, break
             rectWinBreps=[]
             for srf in finalWinSrfs:
                 rectWinBreps.append(rc.Geometry.Surface.ToBrep(srf))
-        
-        
+
         #Find the window geometry in the case that the target area is above that of the maximum acceptable area for breaking up the window in which case we have to make one big window.
         if targetArea > maxAreaBreakUp:
+            
             #Move the bottom curve of the window to the appropriate sill height.
             sillUnitVec = rectHeightVec
             sillUnitVec.Unitize()
             
             rectBtmCurveLength = rectBtmCurve.GetLength()
+            
             maxSillHeight = (rectHeight*0.99) - (targetArea / (rectBtmCurveLength * 0.98))
             
             if silHeightFinal < maxSillHeight:
@@ -392,7 +395,7 @@ def createGlazingForRect(rectBrep, glazingRatio, windowHeight, sillHeight, break
             
             transformMatrixScale = rc.Geometry.Transform.Scale(lineCentPt, 0.98)
             winStartLine.Transform(transformMatrixScale)
-            
+
             #Find the maximum acceptable area for splitting the glazing vertically.
             maxSplitVert = rectHeight - silHeightFinal - (targetArea / (rectBtmCurveLength * 0.98)) - (0.02*rectHeight)
             #If the splitVertDist is beyond the maximum acceptable, set it to this maximum.
@@ -401,6 +404,7 @@ def createGlazingForRect(rectBrep, glazingRatio, windowHeight, sillHeight, break
             
             if splitVertDist != 0:
                 #Extrude the line to create the window
+                
                 extruUnitVec = rectHeightVec
                 extruUnitVec.Unitize()
                 extruVec = rc.Geometry.Vector3d.Multiply(extruUnitVec, (targetArea / (rectBtmCurveLength * 0.98))/2)
@@ -411,6 +415,15 @@ def createGlazingForRect(rectBrep, glazingRatio, windowHeight, sillHeight, break
                 finalWinSrf2 = rc.Geometry.Surface.CreateExtrusion(winStartLine.ToNurbsCurve(), extruVec)
                 rectWinBreps = [rc.Geometry.Surface.ToBrep(finalWinSrf1), rc.Geometry.Surface.ToBrep(finalWinSrf2)]
             else:
+                 
+                # 
+                if (sc.doc.ModelAbsoluteTolerance > 0.01* rectBtmCurveLength):
+                    
+                    warning = "Your model tolerance is too high and for this reason the base surface is being split into two \n" + \
+                    "instead of making a window in the base surface! Lower your model tolerance or decrease your glazing ratio to fix this issue"
+                    w = gh.GH_RuntimeMessageLevel.Warning
+                    ghenv.Component.AddRuntimeMessage(w, warning)
+                    
                 #Extrude the line to create the window
                 extruUnitVec = rectHeightVec
                 extruUnitVec.Unitize()
