@@ -64,7 +64,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_18_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_19_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -2819,7 +2819,7 @@ class WriteOPS(object):
         shadingGroup = ops.ShadingSurfaceGroup(model)
         
         for surfaceCount, surface in enumerate(shdSurfaces):
-            coordinates = surface.extractPoints()
+            coordinates = surface.extractPoints(1, False, None, 'UpperLeftCorner')
             if type(coordinates[0])is not list and type(coordinates[0]) is not tuple:
                 coordinates = [coordinates]
             

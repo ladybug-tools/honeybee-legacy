@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_13_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_19_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -6033,7 +6033,7 @@ class hb_EPSurface(object):
         return False
 
     
-    def extractPoints(self, method = 1, triangulate = False, meshPar = None):
+    def extractPoints(self, method = 1, triangulate = False, meshPar = None, firstVertex = 'LowerLeftCorner'):
         # if not self.meshedFace.IsValid:
         # meshed surface will be generated regardless
         # to make sure it won't fail for surfaces with multiple openings
@@ -6098,7 +6098,7 @@ class hb_EPSurface(object):
             self.Type = self.getTypeByNormalAngle()
         
         ## find UpperRightCorner point
-        ## I'm changin this to find the LowerLeftCorner point
+        ## I'm changing this to find the LowerLeftCorner point
         ## instead as it is how gbXML needs it
         
         # check the plane
@@ -6131,18 +6131,31 @@ class hb_EPSurface(object):
         
         # find UpperRightCorner point (x>0 and max y)
         firstPtIndex = None
-        #for ptIndex, pt in enumerate(remPts):
-        #    if pt.X > 0 and pt.Y > 0 and firstPtIndex == None:
-        #        firstPtIndex = ptIndex #this could be the point
-        #    elif pt.X > 0 and pt.Y > 0:
-        #        if pt.Y > remPts[firstPtIndex].Y: firstPtIndex = ptIndex
         
-        for ptIndex, pt in enumerate(remPts):
-            if pt.X < 0 and pt.Y < 0 and firstPtIndex == None:
-                firstPtIndex = ptIndex #this could be the point
-            elif pt.X < 0 and pt.Y < 0:
-                if pt.Y < remPts[firstPtIndex].Y: firstPtIndex = ptIndex
-        
+        if firstVertex == 'LowerLeftCorner':
+            for ptIndex, pt in enumerate(remPts):
+                if pt.X < 0 and pt.Y < 0 and firstPtIndex == None:
+                    firstPtIndex = ptIndex #this could be the point
+                elif pt.X < 0 and pt.Y < 0:
+                    if pt.Y < remPts[firstPtIndex].Y: firstPtIndex = ptIndex
+        elif firstVertex == 'UpperLeftCorner':
+            for ptIndex, pt in enumerate(remPts):
+                if pt.X < 0 and pt.Y > 0 and firstPtIndex == None:
+                    firstPtIndex = ptIndex #this could be the point
+                elif pt.X < 0 and pt.Y > 0:
+                    if pt.Y > remPts[firstPtIndex].Y: firstPtIndex = ptIndex
+        elif firstVertex == 'UpperRightCorner':
+            for ptIndex, pt in enumerate(remPts):
+                if pt.X > 0 and pt.Y > 0 and firstPtIndex == None:
+                    firstPtIndex = ptIndex #this could be the point
+                elif pt.X > 0 and pt.Y > 0:
+                    if pt.Y > remPts[firstPtIndex].Y: firstPtIndex = ptIndex
+        elif firstVertex == 'LowerRightCorner':
+            for ptIndex, pt in enumerate(remPts):
+                if pt.X > 0 and pt.Y < 0 and firstPtIndex == None:
+                    firstPtIndex = ptIndex #this could be the point
+                elif pt.X > 0 and pt.Y < 0:
+                    if pt.Y < remPts[firstPtIndex].Y: firstPtIndex = ptIndex
         
         if firstPtIndex!=None and firstPtIndex!=0:
             pointsSorted = pointsSorted[firstPtIndex:] + pointsSorted[:firstPtIndex]
