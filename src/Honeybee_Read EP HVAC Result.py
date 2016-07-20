@@ -198,8 +198,6 @@ if _resultFileAddress and gotData == True:
             key = []; path = []
             for columnCount, column in enumerate(line.split(',')):
                 
-                print column
-                
                 if 'Zone Ideal Loads Supply Air Sensible Cooling Energy' in column:
                     key.append(0)
                     
