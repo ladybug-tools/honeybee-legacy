@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.59
             3 = "FullExteriorWithReflections" - The simulation will perform the solar calculation in a manner that accounts for both direct sun and the light bouncing off outdoor surrounding context.  For the inside of the building, all beam solar radiation entering the zone is assumed to fall on the floor. A simple window view factor calculation will be used to distribute incoming diffuse solar energy between interior surfaces.
             4 = "FullInteriorAndExteriorWithReflections" - The simulation will perform the solar calculation in a manner that accounts for light bounces that happen both outside and inside the zones.  This is the most accurate method and is the one assigned by default.  Note that, if you use this method, EnergyPlus will give Severe warnings if your zones have concave geometry (or are "L"-shaped).  Such geometries mess up this solar distribution calculation and it is recommeded that you either break up your zones in this case or not use this solar distribution method.
         holidays_: A list of numbers, each between 1 and 365, that represent the days of the year on which a holiday occurs.  This can be the holiday output from the "Honeybee_Annual Schedule" component.
-        startDayOfWeek: An integer that represents the day of the week for the first day of the year. The default is set to 2 - "monday".
+        startDayOfWeek_: An integer that represents the day of the week for the first day of the year. The default is set to 2 - "monday".
             -
             Choose one of the following:
             1) sun
@@ -59,7 +59,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Energy Simulation Par"
 ghenv.Component.NickName = 'EnergySimPar'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_02_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_19_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
