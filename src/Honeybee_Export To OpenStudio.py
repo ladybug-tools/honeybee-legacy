@@ -64,7 +64,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_19_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_20_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -3545,13 +3545,32 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     for zoneCount, zone in enumerate(HBZones):
         if zone.mixAir == True: hb_writeOPS.setAirMixing(zone, model)
     
+    defaultOutputs = ['Output:Variable,*Zone Ideal Loads Supply Air Total Cooling Energy,monthly;','Output:Variable,*,Zone Ideal Loads Supply Air Total Heating Energy, monthly;','Output:Variable,*,Zone Lights Electric Energy,monthly;','Output:Variable,*,Zone Electric Equipment Electric Energy, monthly;']
+        # Set user outputs
     
+    if simulationOutputs:
+
+        outputs = defaultOutputs + simulationOutputs
+    
+    else:
+       
+       outputs = defaultOutputs
+       
+    hb_writeOPS.setOutputs(outputs, model)
+      
+    # Get the objects in the file that we need to replace.
+    csvSchedules, csvScheduleCount, shadeCntrlToReplace, replaceShdCntrl = hb_writeOPS.getObjToReplace()
+      
     # add shading surfaces if any
     if HBContext!=[] and HBContext[0]!=None:
         shdingSurfcaes = hb_hive.callFromHoneybeeHive(HBContext)
         hb_writeOPS.OPSShdSurface(shdingSurfcaes, model)
     
     # outputs
+    
+    
+    
+    
     if simulationOutputs:
          hb_writeOPS.setOutputs(simulationOutputs, model)
     
