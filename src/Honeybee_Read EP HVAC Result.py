@@ -45,7 +45,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Read EP HVAC Result"
 ghenv.Component.NickName = 'readEP_HVAC_Result'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_20_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -145,12 +145,14 @@ latentHeating = DataTree[Object]()
 supplyVolFlow = DataTree[Object]()
 supplyAirTemp = DataTree[Object]()
 supplyAirHumidity = DataTree[Object]()
+unmetHoursCooling = DataTree[Object]()
+unmetHoursHeating = DataTree[Object]()
 earthTubeCooling = DataTree[Object]()
 earthTubeHeating = DataTree[Object]()
 
 
 #Make a list to keep track of what outputs are in the result file.
-dataTypeList = [False, False, False, False, False, False, False, False, False]
+dataTypeList = [False, False, False, False, False, False, False, False, False,False,False]
 parseSuccess = False
 centralSys = False
 
@@ -195,13 +197,16 @@ if _resultFileAddress and gotData == True:
             #ANALYZE THE FILE HEADING
             key = []; path = []
             for columnCount, column in enumerate(line.split(',')):
+                
                 if 'Zone Ideal Loads Supply Air Sensible Cooling Energy' in column:
                     key.append(0)
+                    
                     zoneName = checkZone(" " + column.split(':')[0].split(' IDEAL LOADS AIR SYSTEM')[0])
                     makeHeader(sensibleCooling, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Sensible Cooling Energy", "kWh", True)
                     dataTypeList[0] = True
                 
                 elif 'Zone Ideal Loads Supply Air Latent Cooling Energy' in column:
+                    
                     key.append(1)
                     zoneName = checkZone(" " + column.split(':')[0].split(' IDEAL LOADS AIR SYSTEM')[0])
                     makeHeader(latentCooling, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Latent Cooling Energy", "kWh", True)
@@ -209,7 +214,9 @@ if _resultFileAddress and gotData == True:
                 
                 elif 'Zone Ideal Loads Supply Air Sensible Heating Energy' in column:
                     key.append(2)
+                    
                     zoneName = checkZone(" " + column.split(':')[0].split(' IDEAL LOADS AIR SYSTEM')[0])
+                    
                     makeHeader(sensibleHeating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Sensible Heating Energy", "kWh", True)
                     dataTypeList[2] = True
                 
@@ -283,24 +290,34 @@ if _resultFileAddress and gotData == True:
                                 key.append(-1)
                                 path.append(-1)
                 
-                elif 'Earth Tube Zone Sensible Cooling Energy' in column:
+                elif 'Zone Cooling Setpoint Not Met Time' in column:
                     key.append(7)
                     zoneName = checkZone(" " + column.split(':')[0])
-                    makeHeader(earthTubeCooling, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Earth Tube Cooling Energy", "kWh", True)
+                    makeHeader(unmetHoursCooling, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Unmet Cooling hours", "unmet hour", True)
                     dataTypeList[7] = True
                 
-                elif 'Earth Tube Zone Sensible Heating Energy' in column:
+                elif 'Zone Heating Setpoint Not Met Time' in column:
                     key.append(8)
                     zoneName = checkZone(" " + column.split(':')[0])
-                    makeHeader(earthTubeHeating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Earth Tube Heating Energy", "kWh", True)
+                    makeHeader(unmetHoursHeating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Unmet Heating hours", "unmet hour", True)
                     dataTypeList[8] = True
+                    
+                elif 'Earth Tube Zone Sensible Cooling Energy' in column:
+                    key.append(9)
+                    zoneName = checkZone(" " + column.split(':')[0])
+                    makeHeader(earthTubeCooling, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Earth Tube Cooling Energy", "kWh", True)
+                    dataTypeList[9] = True
+                
+                elif 'Earth Tube Zone Sensible Heating Energy' in column:
+                    key.append(10)
+                    zoneName = checkZone(" " + column.split(':')[0])
+                    makeHeader(earthTubeHeating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Earth Tube Heating Energy", "kWh", True)
+                    dataTypeList[10] = True
                 
                 else:
                     key.append(-1)
                     path.append(-1)
                 
-            #print key
-            #print path
         else:
             for columnCount, column in enumerate(line.split(',')):
                 p = GH_Path(int(path[columnCount]))
@@ -321,9 +338,17 @@ if _resultFileAddress and gotData == True:
                     supplyAirTemp.Add(float(column), p)
                 elif key[columnCount] == 6:
                     supplyAirHumidity.Add(float(column), p)
+                    
                 elif key[columnCount] == 7:
-                    earthTubeCooling.Add((float(column)/3600000)/flrArea, p)
+                    unmetHoursCooling.Add(float(column),p)
+                    
                 elif key[columnCount] == 8:
+                    unmetHoursHeating.Add(float(column),p)
+                
+                elif key[columnCount] == 9:
+                    
+                    earthTubeCooling.Add((float(column)/3600000)/flrArea, p)
+                elif key[columnCount] == 10:
                     earthTubeHeating.Add((float(column)/3600000)/flrArea, p)
                 
     result.close()
@@ -354,13 +379,15 @@ outputsDict = {
 4: ["supplyVolFlow", "The mass of supply air flowing into each zone in kg/s."],
 5: ["supplyAirTemp", "The mean air temperature of the supply air for each zone (degrees Celcius)."],
 6: ["supplyAirHumidity", "The relative humidity of the supply air for each zone (%)."],
-7: ["earthTubeCooling", "The sensible energy removed by an earth tube system for each zone in kWh."],
-8: ["earthTubeHeating", "The sensible energy added by an earth tube system for each zone in kWh."]
+7: ["unmetHoursCooling", "Time Zone Cooling Setpoint Not Met Time"],
+8: ["unmetHoursHeating", "Time Zone Heating Setpoint Not Met Time"],
+9: ["earthTubeCooling", "The sensible energy removed by an earth tube system for each zone in kWh."],
+10: ["earthTubeHeating", "The sensible energy added by an earth tube system for each zone in kWh."]
 }
 
 
 if _resultFileAddress and parseSuccess == True:
-    for output in range(9):
+    for output in range(11):
         if dataTypeList[output] == False:
             ghenv.Component.Params.Output[output].NickName = "."
             ghenv.Component.Params.Output[output].Name = "."
@@ -370,7 +397,7 @@ if _resultFileAddress and parseSuccess == True:
             ghenv.Component.Params.Output[output].Name = outputsDict[output][0]
             ghenv.Component.Params.Output[output].Description = outputsDict[output][1]
 else:
-    for output in range(9):
+    for output in range(11):
         ghenv.Component.Params.Output[output].NickName = outputsDict[output][0]
         ghenv.Component.Params.Output[output].Name = outputsDict[output][0]
         ghenv.Component.Params.Output[output].Description = outputsDict[output][1]

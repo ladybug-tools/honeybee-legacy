@@ -51,7 +51,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Glazing based on ratio"
 ghenv.Component.NickName = 'glazingCreator'
-ghenv.Component.Message = 'VER 0.0.59\nJUN_15_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUN_20_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -411,6 +411,14 @@ def createGlazingForRect(rectBrep, glazingRatio, windowHeight, sillHeight, break
                 finalWinSrf2 = rc.Geometry.Surface.CreateExtrusion(winStartLine.ToNurbsCurve(), extruVec)
                 rectWinBreps = [rc.Geometry.Surface.ToBrep(finalWinSrf1), rc.Geometry.Surface.ToBrep(finalWinSrf2)]
             else:
+                
+                if (sc.doc.ModelAbsoluteTolerance > 0.01* rectBtmCurveLength):
+                    
+                    warning = "Your model tolerance is too high and for this reason the base surface is being split into two \n" + \
+                    "instead of making a window in the base surface! Lower your model tolerance or decrease your glazing ratio to fix this issue"
+                    w = gh.GH_RuntimeMessageLevel.Warning
+                    ghenv.Component.AddRuntimeMessage(w, warning)
+                
                 #Extrude the line to create the window
                 extruUnitVec = rectHeightVec
                 extruUnitVec.Unitize()
