@@ -64,7 +64,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_21_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_23_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -2717,7 +2717,7 @@ class WriteOPS(object):
         else:
             print "One of the surfaces has less than 3 identical coordinates and is removed."
             return False,[]
-            
+    
     def opsZoneSurface (self, surface, model, space):
         # collect Honeybee surfaces for nonplanar cases
         # this is just for OpenStudio and not energyplus
@@ -3442,7 +3442,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     # call Honeybee objects from the hive
     HBZones = hb_hive.callFromHoneybeeHive(HBZones)
     
-    reEvaluate = hb_reEvaluateHBZones(HBZones, None)
+    reEvaluate = hb_reEvaluateHBZones(HBZones, None, "UpperLeftCorner")
     reEvaluate.evaluateZones()
     
     # generate stories

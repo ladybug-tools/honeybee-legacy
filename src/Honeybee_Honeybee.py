@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_19_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_23_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -5335,7 +5335,7 @@ class hb_reEvaluateHBZones(object):
     to user to get them fixed.
     """
     
-    def __init__(self, inHBZones, meshingParameters):
+    def __init__(self, inHBZones, meshingParameters, pointOrient = "LowerLeftCorner"):
         # import the classes
         self.hb_EPZone = sc.sticky["honeybee_EPZone"]
         self.hb_EPSrf = sc.sticky["honeybee_EPSurface"]
@@ -5356,6 +5356,7 @@ class hb_reEvaluateHBZones(object):
         self.modifiedGlzSrfsNames = []
         self.adjcGlzSrfCollection = []
         self.adjcSrfCollection = {} #collect adjacent surfaces for nonplanar surfaces
+        self.pointOrient = pointOrient
     
     def checkSrfNameDuplication(self, surface):
         if surface.name in self.srfNames:
@@ -5520,7 +5521,7 @@ class hb_reEvaluateHBZones(object):
         
         return insetPts
             
-    def checkChildSurfaces(self, surface):
+    def checkChildSurfaces(self, surface, pointOrient = 'LowerLeftCorner'):
         
         def isRectangle(ptList):
             vector1 = rc.Geometry.Vector3d(ptList[0] - ptList[1])
@@ -5551,7 +5552,7 @@ class hb_reEvaluateHBZones(object):
             return False
         
         # get glaing coordinates- coordinates will be returned as lists of lists
-        glzCoordinates = surface.extractGlzPoints()
+        glzCoordinates = surface.extractGlzPoints(False, 2, pointOrient)
         
         # make sure order is right
         for coorList in glzCoordinates:
@@ -5711,8 +5712,7 @@ class hb_reEvaluateHBZones(object):
                 if hasattr(surface, 'punchedGeometry'):
                     surface.geometry = surface.punchedGeometry
             
-            coordinatesL = surface.extractPoints()
-                
+            coordinatesL = surface.extractPoints(1, False, None, self.pointOrient)
         else:
             coordinatesL = surface.coordinates
         
@@ -5722,7 +5722,7 @@ class hb_reEvaluateHBZones(object):
             surface.coordinates = coordinatesL
             self.modifiedSrfsNames.append(surface.name)
             if  not surface.isChild and surface.hasChild:
-                self.checkChildSurfaces(surface)
+                self.checkChildSurfaces(surface, self.pointOrient)
                 
             return surface
             
@@ -5763,7 +5763,7 @@ class hb_reEvaluateHBZones(object):
             # nonplanar surface
             if  not surface.isChild and surface.hasChild:
                 
-                glzPSurfaces = self.checkChildSurfaces(surface)
+                glzPSurfaces = self.checkChildSurfaces(surface, self.pointOrient)
                 
                 if glzPSurfaces != None:
                     newSurfaces += glzPSurfaces
@@ -6175,10 +6175,10 @@ class hb_EPSurface(object):
         else:
             return True
     
-    def extractGlzPoints(self, RAD = False, method = 2):
+    def extractGlzPoints(self, RAD = False, method = 2, firstVertex = 'LowerLeftCorner'):
         glzCoordinatesList = []
         for glzSrf in self.childSrfs:
-            sortedPoints = glzSrf.extractPoints()
+            sortedPoints = glzSrf.extractPoints(1, False, None, firstVertex)
             # check numOfPoints
             if len(sortedPoints) < 4 or (self.isPlanar and RAD==True):
                 glzCoordinatesList.append(sortedPoints) #triangle
