@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_23_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_24_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -337,7 +337,6 @@ class hb_findFolders():
         self.RADPath, self.RADFile = self.which('rad.exe')
         self.EPPath, self.EPFile = self.which('EnergyPlus.exe')
         self.DSPath, self.DSFile = self.which('gen_dc.exe')
-        
     
     def which(self, program):
         """
@@ -8168,46 +8167,69 @@ if checkIn.letItFly:
         sc.sticky["honeybee_folders"]["DSPath"] = folders.DSPath
         sc.sticky["honeybee_folders"]["DSCorePath"] = hb_DSCore
         sc.sticky["honeybee_folders"]["DSLibPath"] = hb_DSLibPath
-    
+        
         # supported versions for EnergyPlus
         EPVersions = ["V8-5-0", "V8-4-0","V8-3-0", "V8-2-10", "V8-2-9", "V8-2-8", "V8-2-7", "V8-2-6", \
                       "V8-2-5", "V8-2-4", "V8-2-3", "V8-2-2", "V8-2-1", "V8-2-0", \
                       "V8-1-5", "V8-1-4", "V8-1-3", "V8-1-2", "V8-1-1", "V8-1-0"]
-                      
-        
+        EPVersion = ''
         if folders.EPPath != None:
             # Honeybee has already found EnergyPlus make sure it's an acceptable version
             EPVersion = os.path.split(folders.EPPath)[-1].split("EnergyPlus")[-1]
-            
             if EPVersion not in EPVersions:
                 #Not an acceptable version so remove it from the path
                 folders.EPPath = None
-            
         if folders.EPPath == None:
-            for EPVersion in EPVersions:
-                if os.path.isdir("C:\EnergyPlus" + EPVersion + "\\"):
-                    folders.EPPath = "C:\EnergyPlus" + EPVersion + "\\"
-
-                    break
-            
-            if folders.EPPath == None:
-                # give a warning to the user
-                
-                msg= "Honeybee cannot find a compatible EnergyPlus folder on your system.\n" + \
-                     "Make sure you have EnergyPlus installed on your system.\n" + \
-                     "You won't be able to run energy simulations without EnergyPlus.\n" +\
-                     "Honeybee supports following versions:\n"
-                
-                versions = ", ".join(EPVersions)
-                
-                msg += versions
-                
-                ghenv.Component.AddRuntimeMessage(w, msg)
-                
-            
+            for EPVers in EPVersions:
+                if os.path.isdir("C:\EnergyPlus" + EPVers + "\\"):
+                    folders.EPPath = "C:\EnergyPlus" + EPVers + "\\"
+                    EPVersion = EPVers
+        
+        # check for OpenStudio Folder.
+        openStudioLibFolder = None
+        QtFolder = None
+        installedOPS = [f for f in os.listdir("C:\\Program Files") if f.startswith("OpenStudio")]
+        installedOPS = sorted(installedOPS, key = lambda x: int("".join(x.split(" ")[-1].split("."))), reverse = True)
+        if len(installedOPS) != 0:
+            openStudioLibFolder = "C:/Program Files/%s/CSharp/openstudio/"%installedOPS[0]
+            QtFolder = "C:/Program Files/%s/Ruby/openstudio/"%installedOPS[0]
+            for EPVers in EPVersions:
+                versStr = EPVers.replace('V', '-')
+                if os.path.isdir("C:/Program Files/%s/share/openstudio/"%installedOPS[0] + "EnergyPlus" + versStr + "/"):
+                    folders.EPPath = "C:/Program Files/%s/share/openstudio/"%installedOPS[0] + "EnergyPlus" + versStr
+                    EPVersion = EPVers
+            if os.path.isdir(openStudioLibFolder) and os.path.isfile(os.path.join(openStudioLibFolder, "openStudio.dll")):
+                # openstudio is there and we are good to go.
+                # add folders to path.
+                if not openStudioLibFolder in os.environ['PATH'] or QtFolder not in os.environ['PATH']:
+                    os.environ['PATH'] = ";".join([openStudioLibFolder, QtFolder, os.environ['PATH']])
+            else:
+                openStudioLibFolder = None
+                QtFolder = None
+        if openStudioLibFolder == None or QtFolder == None:
+            msg1 = "Honeybee cannot find OpenStudio on your system.\n" + \
+                "You wont be able to use the Export to OpenStudio component.\n" + \
+                "Download the latest OpenStudio for Windows from:\n"
+            msg2 = "https://www.openstudio.net/downloads"
+            print msg1
+            print msg2
+            ghenv.Component.AddRuntimeMessage(w, msg1)
+            ghenv.Component.AddRuntimeMessage(w, msg2)
+        
+        if folders.EPPath == None:
+            # give a warning to the user
+            msg= "Honeybee cannot find an EnergyPlus folder on your system.\n" + \
+                 "You wont be able to use the Run Energy Simulation component.\n" + \
+                 "Honeybee supports following versions of EnergyPlus:\n"
+            versions = ", ".join(EPVersions)
+            msg += versions
+            print msg
+        
+        sc.sticky["honeybee_folders"]["OSLibPath"] = openStudioLibFolder
+        sc.sticky["honeybee_folders"]["OSQtPath"] = QtFolder
         sc.sticky["honeybee_folders"]["EPPath"] = folders.EPPath  
-
         sc.sticky["honeybee_folders"]["EPVersion"] = EPVersion.replace("-", ".")[1:]
+        
         
         # initiate an empty library in case this is the first time honeybee is flying in this document
         # otherwise it has been already created/
@@ -8216,9 +8238,7 @@ if checkIn.letItFly:
         
         # set up radiance materials
         RADMaterialAux = RADMaterialAux(True, sc.sticky["honeybee_RADMaterialLib"], sc.sticky["Honeybee_DefaultFolder"])
-        
         sc.sticky["honeybee_RADMaterialAUX"] = RADMaterialAux
-        
         
         # Download EP libraries
         templateFilesPrep = PrepareTemplateEPLibFiles(downloadTemplate)
@@ -8254,8 +8274,8 @@ if checkIn.letItFly:
         else:
             print msg
             ghenv.Component.AddRuntimeMessage(w, msg)
-            
-            
+        
+        
         sc.sticky["honeybee_Hive"] = hb_Hive
         sc.sticky["honeybee_generationHive"] = generationhb_hive
         sc.sticky["honeybee_GetEPLibs"] = HB_GetEPLibraries

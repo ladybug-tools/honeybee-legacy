@@ -68,7 +68,7 @@ ghenv.Component.Message = 'VER 0.0.59\nJUL_24_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nMAY_09_2016
+#compatibleHBVersion = VER 0.0.56\nJUL_24_2016
 #compatibleLBVersion = VER 0.0.59\nJUL_24_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
@@ -89,39 +89,29 @@ import subprocess
 rc.Runtime.HostUtils.DisplayOleAlerts(False)
 
 if sc.sticky.has_key('honeybee_release'):
-    
-    installedOPS = [f for f in os.listdir("C:\\Program Files") if f.startswith("OpenStudio")]
-    installedOPS = sorted(installedOPS, key = lambda x: int("".join(x.split(" ")[-1].split("."))), reverse = True)
-    
-    if len(installedOPS) != 0:
-        openStudioLibFolder = "C:/Program Files/%s/CSharp/openstudio/"%installedOPS[0]
-        QtFolder = "C:/Program Files/%s/Ruby/openstudio/"%installedOPS[0]
-    else:
-        openStudioLibFolder = ""
-        QtFolder = ""
-
-    if os.path.isdir(openStudioLibFolder) and os.path.isfile(os.path.join(openStudioLibFolder, "openStudio.dll")):
+    if sc.sticky["honeybee_folders"]["OSLibPath"] != None:
         # openstudio is there
-        # add both folders to path to avoid PINVOKE exception
-        if not openStudioLibFolder in os.environ['PATH'] or QtFolder not in os.environ['PATH']:
-            os.environ['PATH'] = ";".join([openStudioLibFolder, QtFolder, os.environ['PATH']])
-        
+        openStudioLibFolder = sc.sticky["honeybee_folders"]["OSLibPath"]
         openStudioIsReady = True
         import clr
         clr.AddReferenceToFileAndPath(openStudioLibFolder+"\\openStudio.dll")
-    
+        
         import sys
         if openStudioLibFolder not in sys.path:
             sys.path.append(openStudioLibFolder)
-    
+        
         import OpenStudio as ops
     else:
         openStudioIsReady = False
         # let the user know that they need to download OpenStudio libraries
-        msg = "Cannot find OpenStudio libraries at " + openStudioLibFolder + \
-              "\nYou need to download and install OpenStudio to be able to use this component."
-              
-        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+        msg1 = "You do not have OpenStudio installed on Your System.\n" + \
+            "You wont be able to use this component until you install it.\n" + \
+            "Download the latest OpenStudio for Windows from:\n"
+        msg2 = "https://www.openstudio.net/downloads"
+        print msg1
+        print msg2
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg1)
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg2)
 else:
     openStudioIsReady = False
 
@@ -3376,7 +3366,6 @@ class RunOPS(object):
         if not workingDir.EndsWith('\\'): workingDir = workingDir + '\\'
         
         fullPath = workingDir + shIdfFileName
-        
         folderName = workingDir.replace( (workingDrive + '\\'), '')
         batchStr = workingDrive + '\ncd\\' +  folderName + '\n"' + EPDirectory + \
                 '\\Epl-run" ' + fullPath + ' ' + fullPath + ' idf ' + epwFileAddress + ' EP N nolimit N N 0 Y'
