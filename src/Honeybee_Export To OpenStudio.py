@@ -3546,9 +3546,26 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         if zone.mixAir == True: hb_writeOPS.setAirMixing(zone, model)
     
     # outputs
-    defaultOutputs = ['Output:Variable,*Zone Ideal Loads Supply Air Total Cooling Energy,monthly;','Output:Variable,*,Zone Ideal Loads Supply Air Total Heating Energy, monthly;','Output:Variable,*,Zone Lights Electric Energy,monthly;','Output:Variable,*,Zone Electric Equipment Electric Energy, monthly;']
+    defaultOutputs = ['Output:Variable,*,Zone Ideal Loads Supply Air Total Cooling Energy, hourly;',\
+        'Output:Variable,*,Cooling Coil Electric Energy, hourly;',\
+        'Output:Variable,*,Chiller Electric Energy, hourly;',\
+        'Output:Variable,*,Zone Ideal Loads Supply Air Total Heating Energy, hourly;',\
+        'Output:Variable,*,Boiler Heating Energy, hourly;',\
+        'Output:Variable,*,Heating Coil Total Heating Energy, hourly;',\
+        'Output:Variable,*,Heating Coil Gas Energy, hourly;',\
+        'Output:Variable,*,Heating Coil Electric Energy, hourly;',\
+        'Output:Variable,*,Humidifier Electric Energy, hourly;',\
+        'Output:Variable,*,Fan Electric Energy, hourly;',\
+        'Output:Variable,*,Zone Ventilation Fan Electric Energy, hourly;',\
+        'Output:Variable,*,Zone Lights Electric Energy, hourly;',\
+        'Output:Variable,*,Zone Electric Equipment Electric Energy, hourly;',\
+        'Output:Variable,*,Pump Electric Energy, hourly;',\
+        'Output:Variable,*,Zone VRF Air Terminal Cooling Electric Energy, hourly;',\
+        'Output:Variable,*,Zone VRF Air Terminal Heating Electric Energy, hourly;',\
+        'Output:Variable,*,VRF Heat Pump Cooling Electric Energy, hourly;',\
+        'Output:Variable,*,VRF Heat Pump Heating Electric Energy, hourly;']
     if simulationOutputs:
-        outputs = defaultOutputs + simulationOutputs
+        outputs = simulationOutputs
     else:
        outputs = defaultOutputs
     hb_writeOPS.setOutputs(outputs, model)
