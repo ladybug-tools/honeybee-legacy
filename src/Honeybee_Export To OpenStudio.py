@@ -48,7 +48,7 @@ Provided by Honeybee 0.0.59
         additionalStrings_: THIS OPTION IS JUST FOR ADVANCED USERS OF ENERGYPLUS.  You can input additional text strings here that you would like written into the IDF.  The strings input here should be complete EnergyPlus objects that are correctly formatted.  You can input as many objects as you like in a list.  This input can be used to write objects into the IDF that are not currently supported by Honeybee.
         +++++++++++++++: ...
         _writeOSM: Set to "True" to have the component take your HBZones and other inputs and write them into an OSM file.  The file path of the resulting OSM file will appear in the osmFileAddress output of this component.  Note that only setting this to "True" and not setting the output below to "Tru"e will not automatically run the file through EnergyPlus for you.
-        runSimulation_: Set to "True" to have the component run your OSM file through EnergyPlus once it has finished writing it.  This will ensure that a CSV result file appears in the resultFileAddress output.
+        runSimulation_: Set to "True" to have the component generate an IDF file from the OSM file and run the IDF through through EnergyPlus.  Set to "False" to not run the file.  You can also connect a "2" integer to the input to run the file through EnergyPlus in the background (without the command line popup window).  The default is set to "False" to not run the model through EnergyPlus.
         openOpenStudio_: Set to "True" to open the OSM file in the OpenStudio interface.  This is useful if you want to visualize the HVAC system in OpenStudio, you want to edit the HVAC further in OpenStudio, or just want to run the simulation from OpenStudio instead of Rhino/GH.  Note that, for this to work, you must have .osm files associated with the OpenStudio application.
         fileName_: Optional text which will be used to name your OSM, IDF and result files.  Change this to aviod over-writing results of previous energy simulations.
         workingDir_: An optional working directory to a folder on your system, into which your OSM, IDF and result files will be written.  NOTE THAT DIRECTORIES INPUT HERE SHOULD NOT HAVE ANY SPACES OR UNDERSCORES IN THE FILE PATH.
@@ -84,6 +84,7 @@ from pprint import pprint
 import shutil
 import copy
 import math
+import subprocess
 
 rc.Runtime.HostUtils.DisplayOleAlerts(False)
 
@@ -3299,7 +3300,7 @@ class RunOPS(object):
         fiw.close()
     
     
-    def runAnalysis(self, osmFile, useRunManager = False):
+    def runAnalysis(self, osmFile, runEnergyPlus, useRunManager = False):
         
         # Preparation
         workingDir, fileName = os.path.split(osmFile)
@@ -3312,8 +3313,7 @@ class RunOPS(object):
         print 'OSM > IDF: ' + str(idfPath)
         
         if not useRunManager:
-            
-            resultFile = self.writeBatchFile(idfFolder, "ModelToIdf\\in.idf", self.weatherFile)
+            resultFile = self.writeBatchFile(idfFolder, "ModelToIdf\\in.idf", self.weatherFile, runEnergyPlus > 1)
             return os.path.join(idfFolder, "ModelToIdf", "in.idf"), resultFile
         
         outputPath = ops.Path(idfFolder)
@@ -3364,7 +3364,7 @@ class RunOPS(object):
              rm.Dispose() # in case anything goes wrong it closes the rm
              print `e`
     
-    def writeBatchFile(self, workingDir, idfFileName, epwFileAddress):
+    def writeBatchFile(self, workingDir, idfFileName, epwFileAddress, runInBackground = False):
         """
         This is here as an alternate until I can get RunManager to work
         """
@@ -3387,8 +3387,20 @@ class RunOPS(object):
         batchfile.close()
         
         #execute the batch file
-        os.system(batchFileAddress)
+        if runInBackground:		
+            self.runCmd(batchFileAddress)		
+        else:		
+            os.system(batchFileAddress)
+        
+        
         return fullPath + "Zsz.csv",fullPath+".sql",fullPath+".csv"
+    
+    def runCmd(self, batchFileAddress, shellKey = True):
+        batchFileAddress.replace("\\", "/")		
+        p = subprocess.Popen(["cmd /c ", batchFileAddress], shell=shellKey, stdout=subprocess.PIPE, stderr=subprocess.PIPE)		
+        out, err = p.communicate()		
+        # p.kill()		
+        #return out, err
 
 
 def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameters, simulationOutputs, runIt, openOpenStudio, workingDir = "C:\ladybug", fileName = "openStudioModel.osm"):
@@ -3657,11 +3669,11 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     if openOpenStudio:
         os.startfile(fname)
     
-    if runIt:
+    if runIt > 0:
         hb_runOPS = RunOPS(model, epwWeatherFile, HBZones, hb_writeOPS.simParameters, openStudioLibFolder, csvSchedules, \
             csvScheduleCount, additionalcsvSchedules, shadeCntrlToReplace, replaceShdCntrl)
         
-        idfFile, resultFile = hb_runOPS.runAnalysis(fname, useRunManager = False)
+        idfFile, resultFile = hb_runOPS.runAnalysis(fname, runIt, useRunManager = False)
         
         try:
             errorFileFullName = idfFile.replace('.idf', '.err')

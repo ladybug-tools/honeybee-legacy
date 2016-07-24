@@ -27,7 +27,7 @@ Provided by Honeybee 0.0.59
     
     Args:
         _studyFolder: Path to base study folder. It can be a single simulation folder or a folder containing subfolders produced by parametric simulations
-        _studyType: Input for Honeybee EnergyPlus study type
+        _studyType: Input for Honeybee EnergyPlus study type:
                     1 > Energy Plus
                     2 > OpenStudio
         refresh_: Refresh
@@ -44,7 +44,7 @@ Provided by Honeybee 0.0.59
 """
 ghenv.Component.Name = "Honeybee_Lookup EnergyPlus Folder"
 ghenv.Component.NickName = 'LookupFolder_EnergyPlus'
-ghenv.Component.Message = 'VER 0.0.59\nFEB_15_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_24_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -93,7 +93,7 @@ def main(studyFolder, subFoldersOS):
         for fileName in fileNames:
             if fileName.lower().endswith(".idf"):
                 idfFiles.append(os.path.join(studyFolder, fileName))
-            elif fileName.lower().endswith(".csv") and not fileName.endswith("sz.csv") and "SCH" not in fileName:
+            elif fileName.lower().endswith(".csv") and not fileName.endswith("sz.csv") and "SCH" not in fileName and not fileName.endswith("inTable.csv"):
                 #print fileName, studyFolder
                 resultFileAddress.append(os.path.join(studyFolder, fileName))
             elif fileName.lower().endswith(".csv") and not fileName.endswith("sz.csv") and "SCH" in fileName:
@@ -120,23 +120,21 @@ def main(studyFolder, subFoldersOS):
                 osmFiles.append(os.path.join(studyFolder, fileName))
         for fileName in fileNamesOS:
             if fileName.lower().endswith(".idf"):
-                idfFiles.append(os.path.join(studyFolder, fileName))
-            elif fileName.lower().endswith(".csv") and not fileName.endswith("sz.csv") and "SCH" not in fileName:
-                #print fileName, studyFolder
-                resultFileAddress.append(os.path.join(studyFolder, fileName))
+                idfFiles.append(os.path.join(subFoldersOS, fileName))
+            elif fileName.lower().endswith(".csv") and not fileName.endswith("sz.csv") and "SCH" not in fileName and not fileName.endswith("inTable.csv"):
+                resultFileAddress.append(os.path.join(subFoldersOS, fileName))
             elif fileName.lower().endswith(".csv") and not fileName.endswith("sz.csv") and "SCH" in fileName:
-                #print fileName, studyFolder
-                scheduleCsvFiles.append(os.path.join(studyFolder, fileName))
+                scheduleCsvFiles.append(os.path.join(subFoldersOS, fileName))
             elif fileName.lower().endswith(".rdd"):
-                rddFiles.append(os.path.join(studyFolder, fileName))
+                rddFiles.append(os.path.join(subFoldersOS, fileName))
             elif fileName.lower().endswith(".err"):
-                errFiles.append(os.path.join(studyFolder, fileName))
+                errFiles.append(os.path.join(subFoldersOS, fileName))
             elif fileName.lower().endswith(".eio"):
-                eioFiles.append(os.path.join(studyFolder, fileName))
+                eioFiles.append(os.path.join(subFoldersOS, fileName))
             elif fileName.lower().endswith(".eso"):
-                esoFiles.append(os.path.join(studyFolder, fileName))
+                esoFiles.append(os.path.join(subFoldersOS, fileName))
             elif fileName.lower().endswith(".sql"):
-                sqlFiles.append(os.path.join(studyFolder, fileName))
+                sqlFiles.append(os.path.join(subFoldersOS, fileName))
         
     return msg, [idfFiles, resultFileAddress, scheduleCsvFiles, rddFiles, errFiles, eioFiles, esoFiles, sqlFiles, osmFiles]
     
@@ -190,54 +188,50 @@ else:
 
 if _studyFolder!=None and os.path.isdir(_studyFolder) and initCheck == True:    
     # check if the type is provided
-    if _studyType!=None:
-        try:
-    #####
-            dirNames = os.listdir(_studyFolder)
-            dirNames.sort()
-            for dirName in dirNames: 
-                ##print 'dirName1: ', dirName
-                if dirName == studyTypes[_studyType]:# Check if the inputFolder has a "EnergyPlus" directory. if so use this only inputFolder
-                    subFolders.append(os.path.join(_studyFolder, dirName))
-                    print 'Found it ... found it in 1'
-                    break
-            else:
-                for dirName in dirNames: # This is the name for EACH case
-                    if os.path.isdir(os.path.join(_studyFolder, dirName, studyTypes[_studyType])):
-                        ##aa = os.path.join(_studyFolder, dirName, studyTypes[_studyType])   ####
-                        subFolders.append(os.path.join(_studyFolder, dirName, studyTypes[_studyType]))
-                        ##print 'Found it ... found it in 2\t', aa    # This is the FOR block where files are found
-                        
-            ################################################################
-            ### Now find the directories and files relevant to studyType ###
-            ################################################################
-            for studyTypeName in subFolders:
-                studyFolder = studyTypeName
-                if _studyType == 1: # EnergyPlus
-                    subFoldersOS = "None"
-                elif _studyType == 2: # OpenStudio
-                    dirOSNames = os.listdir(studyFolder)
-                    dirOSNames.sort()
-                    for dirOSName in dirOSNames: 
-                        if os.path.isdir(os.path.join(studyFolder, dirOSName, "ModelToIdf")):
-                            subFoldersOS = os.path.join(studyFolder, dirOSName, "ModelToIdf")
-
-                res = main(studyFolder, subFoldersOS)
-                
-                if res != -1:
-                    msg, results = res
+    if _studyType == None:
+        _studyType = 2
+    try:
+#####
+        dirNames = os.listdir(_studyFolder)
+        dirNames.sort()
+        for dirName in dirNames: 
+            ##print 'dirName1: ', dirName
+            if dirName == studyTypes[_studyType]:# Check if the inputFolder has a "EnergyPlus" directory. if so use this only inputFolder
+                subFolders.append(os.path.join(_studyFolder, dirName))
+                print 'Found it ... found it in 1'
+                break
+        else:
+            for dirName in dirNames: # This is the name for EACH case
+                if os.path.isdir(os.path.join(_studyFolder, dirName, studyTypes[_studyType])):
+                    ##aa = os.path.join(_studyFolder, dirName, studyTypes[_studyType])   ####
+                    subFolders.append(os.path.join(_studyFolder, dirName, studyTypes[_studyType]))
+                    ##print 'Found it ... found it in 2\t', aa    # This is the FOR block where files are found
                     
-                    if msg!=str.Empty:
-                        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
-                    else:
-                        idfFiles, resultFileAddress, scheduleCsvFiles, rddFiles, errFiles, eioFiles, esoFiles, sqlFiles, osmFiles = results
-    #####
-        except:
-            #warning = "Study type is not valid! Folder will be set to studyFolder"
-            warning = "Please provide a valid studyType! See hint"
-            w = gh.GH_RuntimeMessageLevel.Warning
-            ghenv.Component.AddRuntimeMessage(w, warning)
-    else:       #No StudyType provided
-        print 'No StudyType provided'
-        warning = "Please provide a studyType! See hint"
+        ################################################################
+        ### Now find the directories and files relevant to studyType ###
+        ################################################################
+        for studyTypeName in subFolders:
+            studyFolder = studyTypeName
+            if _studyType == 1: # EnergyPlus
+                subFoldersOS = "None"
+            elif _studyType == 2: # OpenStudio
+                dirOSNames = os.listdir(studyFolder)
+                dirOSNames.sort()
+                for dirOSName in dirOSNames: 
+                    if os.path.isdir(os.path.join(studyFolder, dirOSName, "ModelToIdf")):
+                        subFoldersOS = os.path.join(studyFolder, dirOSName, "ModelToIdf")
+            
+            res = main(studyFolder, subFoldersOS)
+            
+            if res != -1:
+                msg, results = res
+                
+                if msg!=str.Empty:
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                else:
+                    idfFiles, resultFileAddress, scheduleCsvFiles, rddFiles, errFiles, eioFiles, esoFiles, sqlFiles, osmFiles = results
+    except:
+        #warning = "Study type is not valid! Folder will be set to studyFolder"
+        warning = "Please provide a valid studyType! See hint"
+        w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, warning)
