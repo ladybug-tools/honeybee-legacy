@@ -3,7 +3,7 @@
 #
 # This file is part of Honeybee.
 #
-# Copyright (c) 2015-2017, Sarith Subramaniam <sarith@sarith.in>
+# Copyright (c) 2015-2017, Sarith Subramaniam <sarith@sarith.in> and Chris Mackey <Chris@MackeyArchitecture.com> 
 # Honeybee is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published
 # by the Free Software Foundation; either version 3 of the License,
@@ -21,21 +21,25 @@
 
 
 """
-Locate a file/directory in windows explorer.
-If a file-path is provided then the directory containing the file is opened.
-If a folder-path is provided then the folder containing that folder is opened.
+Ues this component to Open a file/directory in windows explorer.
+This is particularly useful for understanding where the results of Energy/Daylight simulations are located on your system.
+
 -
 Args:
-    _destination: File path or Directory path
+    _filePath: Either a File path or a Directory path that you want to open in Explorer.
+        If a file-path is provided then the directory containing the file is opened.
+        If a folder-path is provided then the folder containing that folder is opened.
 """
-ghenv.Component.Name = "Honeybee_FileExplorer"
+
+ghenv.Component.Name = "Honeybee_OpenFileDirectory"
 ghenv.Component.NickName = 'fileExplorer'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_24_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "13 | WIP"
-try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
+ghenv.Component.SubCategory = "00 | Honeybee"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
+
 import Grasshopper.Kernel as gh
 import os
 import subprocess
@@ -46,8 +50,12 @@ def main(location):
             location = location.replace('"',"") #Just in case the user enters a hardcoded path.
             location = location.strip() #Remove all the whitespaces.
             assert os.path.exists(location) #Check if the path exists at all or else throw an assertion error.
-            foldername = os.path.dirname(location)
-            subprocess.Popen('explorer.exe '+foldername)
+            if os.path.isdir(location):
+                foldername = location
+            else:
+                foldername = os.path.dirname(location)
+            subprocess.Popen('explorer.exe ' + foldername)
+            print "Success!"
         except AssertionError:
             raise Exception("The specified path %s does not exist.\nPlease check for white-spaces or other characters in your path name."%location)
         except:
@@ -55,4 +63,8 @@ def main(location):
     else:
         raise Exception("Connect a file path to destination input!")
 
-main(_destination)
+if _filePath:
+    main(_filePath)
+else:
+    msg = "Input _filePath failed to collect data."
+    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
