@@ -60,12 +60,12 @@ Provided by Honeybee 0.0.59
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_16_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_24_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nMAR_14_2016
-#compatibleLBVersion = VER 0.0.59\nFEB_01_2015
+#compatibleLBVersion = VER 0.0.59\nJUL_24_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
 
@@ -164,7 +164,180 @@ class WriteIDF(object):
         
         else:
             return "\n"
-            
+    
+    def extractDDYObjs(self, ddyFile):
+        ddyfile = open(ddyFile,"r")
+        designDayLines = ['\n']
+        correctDayTrigger = False
+        for line in ddyfile:
+            if correctDayTrigger == True:
+                designDayLines.append(line)
+                if (';' in line and '!- Clearness' in line) or (';' in line and '!- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance' in line):
+                    designDayLines.append('\n')
+                    correctDayTrigger = False
+            elif '.4%' in line or '99.6%' in line:
+                correctDayTrigger = True
+        ddyfile.close()
+        return designDayLines
+    
+    def writeDDObjStr(self, ddName, designType, month, day, dbTemp, dbTempRange, wbTemp, enth, humidConditType, pressure, windSpeed, windDir, ashraeSkyClearness):
+        ddStr =  '! ' + ddName + '\n' + \
+            'SizingPeriod:DesignDay,\n' + \
+            '\t' + ddName + ',     !- Name\n' + \
+            '\t' + str(month) + ',      !- Month\n' + \
+            '\t' + str(day) + ',      !- Day of Month\n' + \
+            '\t' + designType + ',!- Day Type\n' + \
+            '\t' + str(dbTemp) + ',      !- Maximum Dry-Bulb Temperature {C}\n' + \
+            '\t' + str(dbTempRange) + ',      !- Daily Dry-Bulb Temperature Range {C}\n' + \
+            '\t' + 'DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type\n' + \
+            '\t' + ',      !- Dry-Bulb Temperature Range Modifier Schedule Name\n' + \
+            '\t' + humidConditType + ',      !- Humidity Condition Type\n' + \
+            '\t' + str(wbTemp) + ',      !- Wetbulb or Dewpoint at Maximum Dry-Bulb {C}\n' + \
+            '\t' + ',      !- Humidity Indicating Day Schedule Name\n' + \
+            '\t' + ',      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}\n' + \
+            '\t' + str(enth) + ',      !- Enthalpy at Maximum Dry-Bulb {J/kg}\n' + \
+            '\t' + ',      !- Daily Wet-Bulb Temperature Range {deltaC}\n' + \
+            '\t' + str(pressure) + ',      !- Barometric Pressure {Pa}\n' + \
+            '\t' + str(windSpeed) + ',      !- Wind Speed {m/s} design conditions vs. traditional 6.71 m/s (15 mph)\n' + \
+            '\t' + str(windDir) + ',      !- Wind Direction {Degrees; N=0, S=180}\n' + \
+            '\t' + 'No,      !- Rain {Yes/No}\n' + \
+            '\t' + 'No,      !- Snow on ground {Yes/No}\n' + \
+            '\t' + 'No,      !- Daylight Savings Time Indicator\n' + \
+            '\t' + 'ASHRAEClearSky' + ', !- Solar Model Indicator\n' + \
+            '\t' + ',      !- Beam Solar Day Schedule Name\n' + \
+            '\t' + ',      !- Diffuse Solar Day Schedule Name\n' + \
+            '\t' + ',      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)\n' + \
+            '\t' + ',      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)\n' + \
+            '\t' + str(ashraeSkyClearness) + ';      !- Clearness {0.0 to 1.1}\n' + '\n'
+        
+        return ddStr
+    
+    def createDdyFromEPW(self, epwFileAddress, workingDir, lb_preparation, lb_comfortModels):
+        # Extract the relevant data from the EPW.
+        # We need the following: dbTemp, dewPoint, rH, windSpeed, windDir, windDir, wetBulb, enthalpy
+        dbTemp = []
+        dewPoint = []
+        rH = []
+        windSpeed = []
+        windDir = []
+        barPress = []
+        wetBulb = []
+        epwfile = open(epwFileAddress,"r")
+        for count, line in enumerate(epwfile):
+            if count > 7:
+                dbTemp.append(float(line.split(',')[6]))
+                dewPoint.append(float(line.split(',')[7]))
+                rH.append(float(line.split(',')[8]))
+                barPress.append(float(line.split(',')[9]))
+                windSpeed.append(float(line.split(',')[21]))
+                windDir.append(float(line.split(',')[20]))
+        epwfile.close()
+        hR, enthalpy, pP, sP = lb_comfortModels.calcHumidRatio(dbTemp, rH, barPress)
+        for i, tem in enumerate(dbTemp):
+            wetBulb.append(lb_comfortModels.findWetBulb(tem, rH[i], barPress[i]))
+        
+        # Find the conditions for the most extreme hours in the epw.  These are the 7 extreme conditions we need:
+            # 1 - Winnter Design Day - Min Dry Bulb (Sensible Heating)
+            # 2 - Winter Design Day - Min Dew Point (Humidification)
+            # 3 - Winter Design Day = Max Wind Speed when temperature is less than 1 standard deviation of annual mean.
+            # 4 - Summer Design Day - Max Dry Bulb (Sensible Cooling)
+            # 5 - Summer Design Day - Max Wet Bulb (Dehumidification)
+            # 6 - Summer Design Day - Max Dew Point (Dehumidification)
+            # 7 - Summer Design Day - Max Enthalpy (Dehumidification)
+        sortedDB, corrWB = zip(*sorted(zip(dbTemp, wetBulb)))
+        minDB = sortedDB[34] # Design Condition 1
+        WBforMinDB = corrWB[34]
+        maxDB = sortedDB[-35] # Design Condition 4
+        WBforMaxDB = corrWB[-35]
+        sortedDP, corrDB = zip(*sorted(zip(dewPoint, dbTemp)))
+        minDP = sortedDP[34] # Design Condition 2
+        DBforMinDP = corrDB[34]
+        maxDP = sortedDP[-35] # Design Condition 6
+        DBforMaxDP = corrDB[-35]
+        sortedWB, corresDB = zip(*sorted(zip(wetBulb, dbTemp)))
+        maxWB = sortedWB[-35] # Design Condition 5
+        DBforMaxWB = corresDB[-35]
+        sortedEnth, correspondDB = zip(*sorted(zip(enthalpy, dbTemp)))
+        maxEnth = int(sortedEnth[-35] * 1000) # Design Condition 7
+        DBforMaxEnth = correspondDB[-35]
+        
+        coldStdDevTemp = sortedDB[1384]
+        hotStdDevTemp = sortedDB[-1385]
+        winSpBelowTemp = []
+        windDirBelowTemp = []
+        winSpAboveTemp = []
+        windDirAboveTemp = []
+        for i, tem in enumerate(dbTemp):
+            if tem < coldStdDevTemp:
+                winSpBelowTemp.append(windSpeed[i])
+                windDirBelowTemp.append(windDir[i])
+            elif tem > hotStdDevTemp:
+                winSpAboveTemp.append(windSpeed[i])
+                windDirAboveTemp.append(windDir[i])
+        winSpBelowTemp.sort()
+        coldMonWind = winSpBelowTemp[922]
+        coldMonWinDir = int(sum(windDirBelowTemp)/len(windDirBelowTemp))
+        maxWind = winSpBelowTemp[-5] # Design Condition 3
+        winSpAboveTemp.sort()
+        hotMonWind = winSpAboveTemp[922]
+        hotMonWinDir = int(sum(windDirAboveTemp)/len(windDirAboveTemp))
+        
+        # Calculate a few other required values from the epw data.
+        # Like average annual pressure and coldest/hottest month.
+        # and average wind speed/direction during these months.
+        avgEpwParPress = int(sum(barPress)/len(barPress))
+        
+        def binAndAvgByMonth(dataSet):
+            avgMonthData = []
+            binnedMonthData = []
+            for mon in range(12):
+                binnedMonthData.append([])
+            for i, x in enumerate(dataSet):
+                d, m, t = lb_preparation.hour2Date(i, True)
+                binnedMonthData[m].append(x)
+            for dataList in binnedMonthData:
+                avgMonthData.append(sum(dataList)/len(dataList))
+            return avgMonthData, binnedMonthData
+        
+        def partitionList(l, n):
+            for i in range(0, len(l), n):
+                yield l[i:i+n]
+        
+        avgMonTemps, binMonTemps = binAndAvgByMonth(dbTemp)
+        monNums = range(12)
+        avgMonTempsSort, monNumsSort = zip(*sorted(zip(avgMonTemps, monNums)))
+        coldMonth = monNumsSort[0]
+        hotMonth = monNumsSort[-1]
+        allHotMonthTemps = binMonTemps[hotMonth]
+        dayHotMonTemps = partitionList(allHotMonthTemps, 24)
+        dailyTempDiff = []
+        for day in dayHotMonTemps:
+            day.sort()
+            dailyTempDiff.append(day[-1]-day[0])
+        hotDayDBTempRange = (int((sum(dailyTempDiff)/len(dailyTempDiff))*100))/100
+        
+        
+        # Assemble a list of design condition strings to write into the ddy file.
+        ddStrs = []
+        ddStrs.append(self.writeDDObjStr('Ann Htg 99.6% Condns DB', 'WinterDesignDay', coldMonth+1, 21, minDB, 0, minDB, '', 'Wetbulb', avgEpwParPress, coldMonWind, coldMonWinDir, 0))
+        ddStrs.append(self.writeDDObjStr('Ann Hum_n 99.6% Condns DP=>MCDB', 'WinterDesignDay', coldMonth+1, 21, DBforMinDP, 0, minDP, '', 'Dewpoint', avgEpwParPress, coldMonWind, coldMonWinDir, 0))
+        ddStrs.append(self.writeDDObjStr('Ann Htg Wind 99.6% Condns WS=>MCDB', 'WinterDesignDay', coldMonth+1, 21, coldStdDevTemp, 0, coldStdDevTemp, '', 'Wetbulb', avgEpwParPress, maxWind, coldMonWinDir, 0))
+        
+        ddStrs.append(self.writeDDObjStr('Ann Clg .4% Condns DB=>MWB', 'SummerDesignDay', hotMonth+1, 21, maxDB, hotDayDBTempRange, WBforMaxDB, '', 'Wetbulb', avgEpwParPress, hotMonWind, hotMonWinDir, 1.2))
+        ddStrs.append(self.writeDDObjStr('Ann Clg .4% Condns WB=>MDB', 'SummerDesignDay', hotMonth+1, 21, DBforMaxWB, hotDayDBTempRange, maxWB, '', 'Wetbulb', avgEpwParPress, hotMonWind, hotMonWinDir, 1.2))
+        ddStrs.append(self.writeDDObjStr('Ann Clg .4% Condns DP=>MDB', 'SummerDesignDay', hotMonth+1, 21, DBforMaxDP, hotDayDBTempRange, maxDP, '', 'Dewpoint', avgEpwParPress, hotMonWind, hotMonWinDir, 1.2))
+        ddStrs.append(self.writeDDObjStr('Ann Clg .4% Condns Enth=>MDB', 'SummerDesignDay', hotMonth+1, 21, DBforMaxEnth, hotDayDBTempRange, '', maxEnth, 'Enthalpy', avgEpwParPress, hotMonWind, hotMonWinDir, 1.2))
+        
+        # Write the design day objects into a .ddy file.
+        epwFileName = epwFileAddress.split('\\')[-1].split('.')[0]
+        ddyfile = workingDir + '\\' + epwFileName + '.ddy'
+        ddyFile = open(ddyfile, "w")
+        for sizingObj in ddStrs:
+            ddyFile.write(sizingObj)
+        ddyFile.close()
+        
+        return ddyfile
+    
     def checkCoordinates(self, coordinates):
         # check if coordinates are so close or duplicated
         # this is a place holder for now I just return true
@@ -1413,6 +1586,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         
     
     lb_preparation = sc.sticky["ladybug_Preparation"]()
+    lb_comfortModels = sc.sticky["ladybug_ComfortModels"]()
     hb_reEvaluateHBZones= sc.sticky["honeybee_reEvaluateHBZones"]
     hb_hive = sc.sticky["honeybee_Hive"]()
     hb_EPScheduleAUX = sc.sticky["honeybee_EPScheduleAUX"]()
@@ -1505,54 +1679,25 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     if ddyFile != None: pass
     else: ddyFile = epwFileAddress.replace(".epw", ".ddy", 1)
     usedDDY = False
+    
     try:
-        ddyfile = open(ddyFile,"r")
-        designDayLines = ['\n']
-        correctDayTrigger = False
-        for line in ddyfile:
-            if correctDayTrigger == True:
-                designDayLines.append(line)
-                if (';' in line and '!- Clearness' in line) or (';' in line and '!- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance' in line):
-                    designDayLines.append('\n')
-                    correctDayTrigger = False
-            elif '.4%' in line or '99.6%' in line:
-                correctDayTrigger = True
-        ddyfile.close()
+        designDayLines = hb_writeIDF.extractDDYObjs(ddyFile)
         if designDayLines != ['\n']:
             for line in designDayLines:
                 idfFile.write(line)
             usedDDY = True
-    except:pass
+    except:
+        print "Can't find ddy file next to the EPW."
+        print "Extreme values from the weather file design will be used instead."
+    
     if usedDDY == False:
-        # If there are no design days, check if there are sizing periods in the EPW file.
-        dbTemp = []
-        sizeWDesignWeeks = True
-        epwfile = open(epwFileAddress,"r")
-        lnum = 1 # line number
-        for line in epwfile:
-            if lnum == 2:
-                extremePeriods = line.split(',')
-                if len(extremePeriods) < 3: sizeWDesignWeeks = False
-            if lnum > 8:
-                dbTemp.append(float(line.split(',')[6]))
-            lnum += 1
-        
-        if sizeWDesignWeeks == True:
-            idfFile.write(hb_writeIDF.EPSizingPeriod('WinterExtreme'))
-            idfFile.write(hb_writeIDF.EPSizingPeriod('SummerExtreme'))
-        else:
-            # as a last resprt, figure out a sizing period from the extreme temperatures in the weather file.
-            HOYs = range(8760)
-            dbTemp, HOYs = zip(*sorted(zip(dbTemp, HOYs)))
-            HOYMax = HOYs[-1]
-            HOYMin = HOYs[0]
-            d, monthMax, t = lb_preparation.hour2Date(HOYMax+1, True)
-            d, monthMin, t = lb_preparation.hour2Date(HOYMin+1, True)
-            if monthMax != monthMin:
-                idfFile.write(hb_writeIDF.EPSizingPeriodMonth(monthMax+1))
-                idfFile.write(hb_writeIDF.EPSizingPeriodMonth(monthMin+1))
-            else:
-                idfFile.write(hb_writeIDF.EPSizingPeriodMonth(monthMin))
+        # If there are no design days, analyze the EPW file and produce design day objects.
+        ddyFile = hb_writeIDF.createDdyFromEPW(epwFileAddress, workingDir, lb_preparation, lb_comfortModels)
+        designDayLines = hb_writeIDF.extractDDYObjs(ddyFile)
+        if designDayLines != ['\n']:
+            for line in designDayLines:
+                idfFile.write(line)
+            usedDDY = True
     
     # simulationControl
     idfFile.write(hb_writeIDF.EPSimulationControl(*simulationControl[0:5]))
@@ -2103,12 +2248,11 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     for key, zones in ZoneCollectionBasedOnSchAndLoads.items():
         
         for zone in zones:
-            #zone = zones[0]
-            if zone.HVACSystem[-1] != None:
+            if zone.HVACSystem[1] > 1:
                 warning = "An HVAC system is applied to " + zone.name + \
                           ".\n" + \
-                          "EnergyPlus component will replace this HVAC system with an Ideal Air Loads system.\n" + \
-                          " To model advanced HVAC systems use OpenStudio component."
+                          "This component will replace this HVAC system with an Ideal Air Loads system.\n" + \
+                          "To model advanced HVAC systems use the Export to OpenStudio component."
                 w = gh.GH_RuntimeMessageLevel.Warning
                 ghenv.Component.AddRuntimeMessage(w, warning)
                 print warning
