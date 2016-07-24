@@ -56,7 +56,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_06_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_23_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -511,8 +511,7 @@ if _resultFileAddress and gotData == True and csvExists == True:
                         systemAirGain[int(path[-1])].append(zoneName)
                         systemAirGain[int(path[-1])].append(column.split('(')[-1].split(')')[0])
                     
-                    elif 'Zone' in column and not "Earth Tube" in column or "Pump Electric Energy" in column:
-                        print column
+                    elif 'Zone' in column and not "Setpoint Not Met Time" in column or "Pump Electric Energy" in column:
                         if not "System" in column and not "SYSTEM" in column and not "ZONEHVAC" in column:
                             zoneName = checkZoneOther(dataIndex, (" " + ":".join(column.split(":")[:-1])))
                         elif 'IDEAL LOADS' in column and not "Supply Air Sensible" in column and not "Supply Air Latent" in column:

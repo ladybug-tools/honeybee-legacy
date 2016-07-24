@@ -46,7 +46,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Generate EP Output"
 ghenv.Component.NickName = 'EPOutput'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_06_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_23_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -123,8 +123,8 @@ def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, zoneHVACMetrics,
         simulationOutputs.append("Output:Variable,*,System Node Standard Density Volume Flow Rate, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,System Node Temperature, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,System Node Relative Humidity, " + timePeriod)
-        simulationOutputs.append("Output:Variable,*,Earth Tube Zone Sensible Cooling Energy, "+ timePeriod)
-        simulationOutputs.append("Output:Variable,*,Earth Tube Zone Sensible Heating Energy, "+ timePeriod)
+        simulationOutputs.append("Output:Variable,*,Zone Cooling Setpoint Not Met Time, "+ timePeriod)
+        simulationOutputs.append("Output:Variable,*,Zone Heating Setpoint Not Met Time, "+ timePeriod)
     
     if surfaceTempAnalysis == True:
         simulationOutputs.append("Output:Variable,*,Surface Outside Face Temperature, " + timePeriod)
