@@ -30,73 +30,59 @@ Provided by Ladybug 0.0.45
     Args:
         _osmFilePath: A file path of the an OpemStdio file
         _epwFileAddress: Address to epw weather file.
-        runIt_: Set to 'True' to run the simulation.
+        _runIt: Set to 'True' to run the simulation.  You can also connect a 2 to run the simulation in the background.
     Returns:
         report: Report!
         resultFileAddress: The address of the EnergyPlus result file.
+        studyFolder: The directory in which the simulation has been run.  Connect this to the 'Honeybee_Lookup EnergyPlus' folder to bring many of the files in this directory into Grasshopper.
 """
 
 ghenv.Component.Name = "Honeybee_Re-run OSM"
 ghenv.Component.NickName = 'Re-Run OSM'
-ghenv.Component.Message = 'VER 0.0.59\nMAY_02_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_24_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "13 | WIP"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+ghenv.Component.SubCategory = "09 | Energy | Energy"
+#compatibleHBVersion = VER 0.0.56\nJUL_24_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "0"
 
 
 import os
 import scriptcontext as sc
+import shutil
+import Grasshopper.Kernel as gh
 import time
+import subprocess
 
 
-if sc.sticky.has_key('honeybee_release'):
+def checkTheInputs(osmFileName, epwWeatherFile):
+    w = gh.GH_RuntimeMessageLevel.Warning
+    if not os.path.isfile(epwWeatherFile):
+        msg = "EPW weather file does not exist in the specified location!"
+        print msg
+        ghenv.Component.AddRuntimeMessage(w, msg)
+        return -1
+    if not epwWeatherFile.lower().endswith('.epw'):
+        msg = "EPW weather file is not a valid epw!"
+        print msg
+        ghenv.Component.AddRuntimeMessage(w, msg)
+        return -1
     
-    installedOPS = [f for f in os.listdir("C:\\Program Files") if f.startswith("OpenStudio")]
-    installedOPS = sorted(installedOPS, key = lambda x: int("".join(x.split(" ")[-1].split("."))), reverse = True)
+    if not os.path.isfile(osmFileName):
+        msg = "OSM file does not exist in the specified location!"
+        print msg
+        ghenv.Component.AddRuntimeMessage(w, msg)
+        return -1
+    if not osmFileName.lower().endswith('.osm'):
+        msg = "OSM file is not a valid OSM!"
+        print msg
+        ghenv.Component.AddRuntimeMessage(w, msg)
+        return -1
     
-    if len(installedOPS) != 0:
-        openStudioFolder = "C:/Program Files/%s/"%installedOPS[0]
-        openStudioLibFolder = "C:/Program Files/%s/CSharp/openstudio/"%installedOPS[0]
-        QtFolder = "C:/Program Files/%s/Ruby/openstudio/"%installedOPS[0]
-    else:
-        openStudioFolder = ""
-        openStudioLibFolder = ""
-        QtFolder = ""
+    return True
 
-    if os.path.isdir(openStudioLibFolder) and os.path.isfile(os.path.join(openStudioLibFolder, "openStudio.dll")):
-        # openstudio is there
-        # add both folders to path to avoid PINVOKE exception
-        if not openStudioLibFolder in os.environ['PATH'] or QtFolder not in os.environ['PATH']:
-            os.environ['PATH'] = ";".join([openStudioLibFolder, QtFolder, os.environ['PATH']])
-        
-        openStudioIsReady = True
-        import clr
-        clr.AddReferenceToFileAndPath(openStudioLibFolder+"\\openStudio.dll")
-    
-        import sys
-        if openStudioLibFolder not in sys.path:
-            sys.path.append(openStudioLibFolder)
-    
-        import OpenStudio
-    else:
-        openStudioIsReady = False
-        # let the user know that they need to download OpenStudio libraries
-        msg = "Cannot find OpenStudio libraries at " + openStudioLibFolder + \
-              "\nYou need to download and install OpenStudio to be able to use this component."
-              
-        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
-else:
-    openStudioIsReady = False
-
-
-def writeBatchFile(EPFolder, workingDir, idfFileName, epwFileAddress):
-    """
-    This is here as an alternate until I can get RunManager to work
-    """
-    EPDirectory = str(EPFolder)
+def writeBatchFile(workingDir, idfFileName, epwFileAddress, EPDirectory, runInBackground = False):
     workingDrive = workingDir[:2]
     if idfFileName.EndsWith('.idf'):  shIdfFileName = idfFileName.replace('.idf', '')
     else: shIdfFileName = idfFileName
@@ -104,90 +90,154 @@ def writeBatchFile(EPFolder, workingDir, idfFileName, epwFileAddress):
     if not workingDir.EndsWith('\\'): workingDir = workingDir + '\\'
     
     fullPath = workingDir + shIdfFileName
-    
     folderName = workingDir.replace( (workingDrive + '\\'), '')
     batchStr = workingDrive + '\ncd\\' +  folderName + '\n"' + EPDirectory + \
             '\\Epl-run" ' + fullPath + ' ' + fullPath + ' idf ' + epwFileAddress + ' EP N nolimit N N 0 Y'
+
     batchFileAddress = fullPath +'.bat'
     batchfile = open(batchFileAddress, 'w')
     batchfile.write(batchStr)
     batchfile.close()
     
     #execute the batch file
-    os.system(batchFileAddress)
+    if runInBackground:		
+        runCmd(batchFileAddress)		
+    else:
+        os.system(batchFileAddress)
     
     return fullPath + ".csv"
 
+def runCmd(batchFileAddress, shellKey = True):
+    batchFileAddress.replace("\\", "/")
+    p = subprocess.Popen(["cmd /c ", batchFileAddress], shell=shellKey, stdout=subprocess.PIPE, stderr=subprocess.PIPE)		
+    out, err = p.communicate()
 
-def main(epwFile, osmFile):
-    # check inputs
-    if not os.path.isfile(epwFile) or not epwFile.lower().endswith(".epw"):
-        raise Exception("Can't find epw file")
+def getEPFolder(osmDirect):
+    EPDirect = osmDirect + '/share/openstudio/'
+    fList = os.listdir(EPDirect)
+    for f in fList:
+        fullpath = os.path.join(EPDirect, f)
+        if os.path.isdir(fullpath) and f.startswith("EnergyPlus"):
+            return fullpath
+        else:
+            raise Exception("Failed to find EnergyPlus folder at %s." % EPDirect)
+
+def osmToidf(workingDir, projectName, osmPath):
+    # create a new folder to run the analysis
+    projectFolder =os.path.join(workingDir, projectName)
     
-    if not os.path.isfile(osmFile) or not osmFile.lower().endswith(".osm"):
-        raise Exception("Can't find OpenStudio file")
+    try: os.mkdir(projectFolder)
+    except: pass
     
-    workingDir = os.path.split(osmFile)[0]
+    idfFolder = os.path.join(projectFolder)
+    idfFilePath = ops.Path(os.path.join(projectFolder, "ModelToIdf", "in.idf"))
     
-    rmDBPath = OpenStudio.Path(workingDir + '/runmanager.db')
-    osmPath = OpenStudio.Path(osmFile)
-    epwPath = OpenStudio.Path(epwFile)
-    epPath = OpenStudio.Path(openStudioFolder + r'\share\openstudio\EnergyPlus-8-5-0')
-    radPath = OpenStudio.Path('c:\radince\bin')
-    rubyPath = OpenStudio.Path(openStudioFolder + r'\ruby-install\ruby\bin')
-    outDir = OpenStudio.Path(workingDir) # I need to have extra check here to make sure name is valid
+    # load the test model
+    model = ops.Model().load(ops.Path(osmPath)).get()
+    forwardTranslator = ops.EnergyPlusForwardTranslator()
+    workspace = forwardTranslator.translateModel(model)
     
-    wf = OpenStudio.Workflow()
+    # remove the current object
+    tableStyleObjects = workspace.getObjectsByType(ops.IddObjectType("OutputControl_Table_Style"))
+    for obj in tableStyleObjects: obj.remove()
     
-    # add energyplus jobs
-    wf.addJob(OpenStudio.JobType("ModelToIdf"))
-    wf.addJob(OpenStudio.JobType("EnergyPlus"))
+    tableStyle = ops.IdfObject(ops.IddObjectType("OutputControl_Table_Style"))
+    tableStyle.setString(0, "CommaAndHTML")
+    workspace.addObject(tableStyle)
     
-    # turn the workflow definition into a specific instance
-    jobtree = wf.create(outDir, osmPath, epwPath)
+    workspace.save(idfFilePath, overwrite = True)
+    
+    return idfFolder, idfFilePath
+
+def main(epwFile, osmFile, runEnergyPlus, openStudioLibFolder):
+    # Preparation
+    workingDir, fileName = os.path.split(osmFile)
+    projectName = (".").join(fileName.split(".")[:-1])
+    osmPath = ops.Path(osmFile)
+    
+    # create idf - I separated this job as putting them together
+    # was making EnergyPlus to crash
+    idfFolder, idfPath = osmToidf(workingDir, projectName, osmPath)
+    print 'OSM > IDF: ' + str(idfPath)
+    
+    osmDirect = '/'.join(openStudioLibFolder.split('/')[:-3])
+    resultFile = writeBatchFile(idfFolder, "ModelToIdf\\in.idf", epwFile, getEPFolder(osmDirect), runEnergyPlus > 1)
+    print '...'
+    print 'RUNNING SIMULATION'
+    print '...'
     
     try:
-        # make a run manager
-        rm = OpenStudio.RunManager(rmDBPath, True, True, False, False)
-        
-        # run the job tree
-        rm.enqueue(jobtree, True)
-        rm.setPaused(False)
-        
-        # one of these two is redundant
-        # I keep this
-        while rm.workPending():
-            time.sleep(1)
-            print "Writing IDF..."
-            
-        # wait until done
-        rm.waitForFinished()              
-                    
-        jobErrors = jobtree.errors()
-        
-        print "Errors and Warnings:"
-        for msg in jobErrors.errors():
-          print msg
-        
-        if jobErrors.succeeded():
-          print "Passed!"
-        else:
-          print "Failed!"
-        
-        rm.Dispose()
-        
+        errorFileFullName = str(idfPath).replace('.idf', '.err')
+        errFile = open(errorFileFullName, 'r')
+        for line in errFile:
+            print line
+            if "**  Fatal  **" in line:
+                warning = "The simulation has failed because of this fatal error: \n" + str(line)
+                w = gh.GH_RuntimeMessageLevel.Warning
+                ghenv.Component.AddRuntimeMessage(w, warning)
+                resultFile = None
+            elif "** Severe  **" in line and 'CheckControllerListOrder' not in line:
+                comment = "The simulation has not run correctly because of this severe error: \n" + str(line)
+                c = gh.GH_RuntimeMessageLevel.Warning
+                ghenv.Component.AddRuntimeMessage(c, comment)
+        errFile.close()
     except:
-        rm.Dispose()
+        pass
     
-    projectFolder = os.path.normpath(workingDir + '\\' + "\\0-UserScript")
-    modifiedOsmFilePath = os.path.normpath(projectFolder + "\\eplusin.osm")
-    modifiedIdfFilePath = workingDir + "in.idf"
-    resultsFileAddress = writeBatchFile(epPath, workingDir, "\\ModelToIdf\\in.idf", epwFile)
-    
-    
-    return projectFolder, modifiedIdfFilePath, resultsFileAddress
+    return workingDir, os.path.join(idfFolder, "ModelToIdf", "in.idf"), resultFile
 
 
+#Honeybee check.
+initCheck = True
+if not sc.sticky.has_key('honeybee_release') == True:
+    initCheck = False
+    print "You should first let Honeybee fly..."
+    ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee fly...")
+else:
+    try:
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): initCheck = False
+        if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): initCheck = False
+        hb_hvacProperties = sc.sticky['honeybee_hvacProperties']()
+        hb_airDetail = sc.sticky["honeybee_hvacAirDetails"]
+        hb_heatingDetail = sc.sticky["honeybee_hvacHeatingDetails"]
+        hb_coolingDetail = sc.sticky["honeybee_hvacCoolingDetails"]
+    except:
+        initCheck = False
+        warning = "You need a newer version of Honeybee to use this compoent." + \
+        "Use updateHoneybee component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+        "into canvas and try again."
+        ghenv.Component.AddRuntimeMessage(w, warning)
 
-if openStudioIsReady and _runIt and _epwFileAddress and _osmFilePath:
-    projectFolder, IdfFilePath, resultFileAddress = main(_epwFileAddress, _osmFilePath)
+if sc.sticky.has_key('honeybee_release'):
+    if sc.sticky["honeybee_folders"]["OSLibPath"] != None:
+        # openstudio is there
+        openStudioLibFolder = sc.sticky["honeybee_folders"]["OSLibPath"]
+        openStudioIsReady = True
+        import clr
+        clr.AddReferenceToFileAndPath(openStudioLibFolder+"\\openStudio.dll")
+        
+        import sys
+        if openStudioLibFolder not in sys.path:
+            sys.path.append(openStudioLibFolder)
+        
+        import OpenStudio as ops
+    else:
+        openStudioIsReady = False
+        # let the user know that they need to download OpenStudio libraries
+        msg1 = "You do not have OpenStudio installed on Your System.\n" + \
+            "You wont be able to use this component until you install it.\n" + \
+            "Download the latest OpenStudio for Windows from:\n"
+        msg2 = "https://www.openstudio.net/downloads"
+        print msg1
+        print msg2
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg1)
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg2)
+else:
+    openStudioIsReady = False
+
+
+if openStudioIsReady and initCheck == True and openStudioIsReady == True and _runIt > 0 and _epwFileAddress and _osmFilePath:
+    fileCheck = checkTheInputs(_osmFilePath, _epwFileAddress)
+    if fileCheck != -1:
+        studyFolder, idfFilePath, resultFileAddress = main(_epwFileAddress, _osmFilePath, _runIt, openStudioLibFolder)

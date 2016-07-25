@@ -22,18 +22,15 @@
 
 
 """
-This is a component for running a previoulsy-generated .idf file through EnergyPlus with a different weather file.
+This is a component for running a previoulsy-generated .idf file through EnergyPlus.
 
 -
 Provided by Ladybug 0.0.45
     
     Args:
-        _workingDir: The working directory of the energyPlus idf.
-        _idfFileName: Name of the idf file (e.g. sample1.idf).
+        _idfFilePath: Name of the idf file (e.g. sample1.idf).
         _epwFileAddress: Address to epw weather file.
-        _EPDirectory: [Optional] where EnergyPlus is installed on your system
-        _writeIt: Set to true to create the new folder with batch file
-        runIt_: Set to 'True' to run the simulation.
+        runIt_: Set to 'True' to run the simulation.  You can also connect a 2 to run the simulation in the background.
     Returns:
         report: Report!
         resultFileAddress: The address of the EnergyPlus result file.
@@ -41,134 +38,162 @@ Provided by Ladybug 0.0.45
 
 ghenv.Component.Name = "Honeybee_Re-run IDF"
 ghenv.Component.NickName = 'Re-Run IDF'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_24_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.56\nJUL_24_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "0"
 
 
+import scriptcontext as sc
 import os
 import shutil
 import Grasshopper.Kernel as gh
 import time
+import subprocess
 
-def checkTheInputs(EPDirectory,idfFileName):
-    
-    if os.path.exists(EPDirectory) == False:
-        
-        warning = "This component could not find the directory for EnergyPlus which is " + str(EPDirectory) +"\n"+\
-        "to fix this error specify the correct directory in the input EPDirectory"
-        
-        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
-        
+def checkTheInputs(idfFileName, epwWeatherFile):
+    w = gh.GH_RuntimeMessageLevel.Warning
+    if not os.path.isfile(epwWeatherFile):
+        msg = "EPW weather file does not exist in the specified location!"
+        print msg
+        ghenv.Component.AddRuntimeMessage(w, msg)
         return -1
+    if not epwWeatherFile.lower().endswith('.epw'):
+        msg = "EPW weather file is not a valid epw!"
+        print msg
+        ghenv.Component.AddRuntimeMessage(w, msg)
+        return -1
+    
+    if not os.path.isfile(idfFileName):
+        msg = "IDF file does not exist in the specified location!"
+        print msg
+        ghenv.Component.AddRuntimeMessage(w, msg)
+        return -1
+    if not idfFileName.lower().endswith('.idf'):
+        msg = "IDF file is not a valid IDF!"
+        print msg
+        ghenv.Component.AddRuntimeMessage(w, msg)
+        return -1
+    if len(idfFileName.split('//')) == 2:
+        msg = "IDF file cannot be in the root of the C:\ drive. \n Please move it into a directory."
+        print msg
+        ghenv.Component.AddRuntimeMessage(w, msg)
+        return -1
+    
+    # make sure EnergyPlus folder is found
+    EPPath = sc.sticky["honeybee_folders"]["EPPath"]
+    
+    if EPPath == None:
+        # give a warning to the user
+        msg= "Honeybee cannot find a compatible EnergyPlus folder on your system.\n" + \
+             "Make sure you have EnergyPlus installed on your system.\n" + \
+             "You won't be able to run energy simulations without EnergyPlus.\n" +\
+             "Check Honeybee_Honeybee component for more information."
+        print msg
+        ghenv.Component.AddRuntimeMessage(w, msg)
+        return -1
+    else:
+        return EPPath
 
-def writeBatchFile(workingDir, idfFileName, epwFileAddress, EPDirectory = 'C:\\EnergyPlusV8-3-0'):
+def writeBatchFile(workingDir, idfFilePath, epwFileAddress, EPDirectory):
+    idfFileName = idfFilePath.split('\\')[-1]
+    newIDFPath = "\\".join(idfFilePath.split('\\')[:-2])
+    newIDFPath = newIDFPath + idfFileName
+    shutil.copy(idfFilePath, newIDFPath)
+    
     workingDrive = workingDir[:2]
     
-    # shorten idf file name
-    if idfFileName.endswith('.idf'):  shIdfFileName = idfFileName.replace('.idf', '')
+    if idfFileName.EndsWith('.idf'):  shIdfFileName = idfFileName.replace('.idf', '')
     else: shIdfFileName = idfFileName
-    shIdfFileName = os.path.split(shIdfFileName)[-1]
     
-    #create a new folder for each idf file
-    workingDir += '\\' + shIdfFileName
-    workingDir = os.path.normpath(workingDir)
-    if not os.path.isdir(workingDir): os.mkdir(workingDir)
+    if not workingDir.EndsWith('\\'): workingDir = workingDir + '\\'
     
-    # copy idf file to folder
-    shutil.copyfile(idfFileName, workingDir + "\\" + shIdfFileName + ".idf")
+    fullPath = workingDir + shIdfFileName
+    folderName = workingDir.replace((workingDrive + '\\'), '')
+    folderName = "\\".join(folderName.split('\\')[:-2])
     
-    # copy weather file to folder
-    epwFileName = os.path.split(epwFileAddress)[-1]
-    shutil.copyfile(epwFileAddress, workingDir + "\\" + epwFileName)
+    batchStr = workingDrive + '\ncd\\' +  folderName + '\n"' + EPDirectory + \
+                '\\Epl-run" ' + fullPath + ' ' + fullPath + ' idf ' + epwFileAddress + ' EP N nolimit N N 0 Y'
     
-    # create full path
-    fullPath = workingDir + "\\" + shIdfFileName
-    
-    folderName = workingDir.replace( (workingDrive + '\\'), '')
-    
-    batchStr = workingDrive + '\ncd\\' +  folderName + '\n' + EPDirectory + \
-            '\\Epl-run ' + fullPath + ' ' + fullPath + ' idf ' + epwFileName + ' EP N nolimit N N 0 Y'
-    
-    batchFileAddress = fullPath +'.bat'
+    batchFileAddress = fullPath + '.bat'
     batchfile = open(batchFileAddress, 'w')
     batchfile.write(batchStr)
     batchfile.close()
-    return batchFileAddress
-        
-        
-def runBatchFile(batchFileAddress):
+    
+    return batchFileAddress, newIDFPath, idfFileName
+
+def runCmd(batchFileAddress, shellKey = True):
+    batchFileAddress.replace("\\", "/")		
+    p = subprocess.Popen(["cmd /c ", batchFileAddress], shell=shellKey, stdout=subprocess.PIPE, stderr=subprocess.PIPE)		
+    out, err = p.communicate()
+
+def runBatchFile(batchFileAddress, runInBackground):
     #execute the batch file
-    os.system(batchFileAddress)
+    if runInBackground > 1:		
+        runCmd(batchFileAddress)		
+    else:
+        os.system(batchFileAddress)
 
 
 
-
-
-
-#Check to make sure that a working directory has been connected.
-if str(_workingDir) != 'None' and len(list(str(_workingDir))) > 3:
-    if str(_workingDir).endswith("/") or str(_workingDir).endswith('\\'): pass
-    else: _workingDir = _workingDir + "\\"
-    checkdata1 = True
+#Honeybee check.
+initCheck = True
+if not sc.sticky.has_key('honeybee_release') == True:
+    initCheck = False
+    print "You should first let Honeybee fly..."
+    ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee fly...")
 else:
-    checkdata1 = False
-    print 'Please connect a valid working directory.'
-
-#Check to make sure that an idf file address has been connected.
-if str(_idfFileName) != 'None' and len(list(str(_idfFileName))) > 1:
-    checkdata2 = True
-else:
-    checkdata2 = False
-    print 'Please connect a valid idf file name.'
-
-#Check to make sure that an epw file address has been connected.
-if str(_epwFileAddress) != 'None' and len(list(str(_epwFileAddress))) > 1:
-    checkdata3 = True
-else:
-    checkdata3 = False
-    print 'Please connect a valid epw file address.'
-
-#Check to see if runIT has been set to 'True'.
-if runIt_ or _writeIt:
-    checkdata4 = True
-else:
-    checkdata4 = False
-    print 'Set runIt_ or writeIt to True to begin the simulation.'
-
-#Check if all conditions are satisfied.
-if checkdata1 and checkdata2 and checkdata3 and checkdata4:
-    checkdata = True
-else:
-    checkdata =  False
+    try:
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): initCheck = False
+        if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): initCheck = False
+        hb_hvacProperties = sc.sticky['honeybee_hvacProperties']()
+        hb_airDetail = sc.sticky["honeybee_hvacAirDetails"]
+        hb_heatingDetail = sc.sticky["honeybee_hvacHeatingDetails"]
+        hb_coolingDetail = sc.sticky["honeybee_hvacCoolingDetails"]
+    except:
+        initCheck = False
+        warning = "You need a newer version of Honeybee to use this compoent." + \
+        "Use updateHoneybee component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+        "into canvas and try again."
+        ghenv.Component.AddRuntimeMessage(w, warning)
 
 
 
-
-
-if checkdata and checkTheInputs(_EPDirectory,_idfFileName) != -1:
-    batchFileAddress = writeBatchFile(_workingDir, _idfFileName, _epwFileAddress, EPDirectory = 'C:\\EnergyPlusV8-3-0')
-    print "The file is written to %s"%batchFileAddress 
-    
-    if runIt_:
-        runBatchFile(batchFileAddress)
-    
-        if _idfFileName.endswith('.idf'):  shIdfFileName = _idfFileName.replace('.idf', '')
-        else: shIdfFileName = _idfFileName
-        resultFileAddress = str(_workingDir) + str(shIdfFileName) + '.csv'
-
-        time = time.localtime(time.time())
+if initCheck and _runIt > 0:
+    epPath = checkTheInputs(_idfFilePath, _epwFileAddress)
+    if epPath != -1:
+        workingDir = "\\".join(_idfFilePath.split('\\')[:-1])
+        batchFileAddress, newIDFPath, idfFileName = writeBatchFile(workingDir, _idfFilePath, _epwFileAddress, epPath)
+        print "The file is written to %s"%batchFileAddress 
+        runBatchFile(batchFileAddress, _runIt)
+        os.remove(newIDFPath)
         
-        day = time[2]
-        month = time[1]
-        hour = time[3]
-        minute = time[4]
+        print '...'
+        print 'RUNNING SIMULATION'
+        print '...'
         
-        if len(str(minute)) == 1:
-            minute = '0'+str(minute)
-
-        print 'EnergyPlus file '+ str(shIdfFileName)+'.idf ' + 're-run successful at '+ str(hour) +':' + str(minute) + ' on '+str(day)+'/'+ str(month) + '!'
+        try:
+            errorFileFullName = (str(workingDir)+ '\\' +str(idfFileName)).replace('.idf', '.err')
+            errFile = open(errorFileFullName, 'r')
+            for line in errFile:
+                print line
+                if "**  Fatal  **" in line:
+                    warning = "The simulation has failed because of this fatal error: \n" + str(line)
+                    w = gh.GH_RuntimeMessageLevel.Warning
+                    ghenv.Component.AddRuntimeMessage(w, warning)
+                    resultFile = None
+                elif "** Severe  **" in line and 'CheckControllerListOrder' not in line:
+                    comment = "The simulation has not run correctly because of this severe error: \n" + str(line)
+                    c = gh.GH_RuntimeMessageLevel.Warning
+                    ghenv.Component.AddRuntimeMessage(c, comment)
+            errFile.close()
+        except:
+            pass
+        
+        shIdfFileName = idfFileName.replace('.idf', '')
+        resultFileAddress = str(workingDir) + '\\' + str(shIdfFileName) + '.csv'
+        print 'EnergyPlus file '+ str(shIdfFileName)+'.idf ' + 're-run successful!'
