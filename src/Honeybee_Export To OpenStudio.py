@@ -2515,18 +2515,23 @@ class WriteOPS(object):
         # values = ['Roughness', 'Thickness {m}', 'Conductivity {W/m-K}', 'Density {kg/m3}', 'Specific Heat {J/kg-K}', 'Thermal Absorptance', 'Solar Absorptance', 'Visible Absorptance']
         material = ops.StandardOpaqueMaterial(model)
         material.setName(HBMaterialName)
-        
         roughness = values[0]
-        numericalProperties = map(float, values[1:])
         
         material.setRoughness(roughness)
-        material.setThickness(numericalProperties[0])
-        material.setConductivity(numericalProperties[1])
-        material.setDensity(numericalProperties[2])
-        material.setSpecificHeat(numericalProperties[3])
-        material.setThermalAbsorptance(numericalProperties[4])
-        material.setSolarAbsorptance(numericalProperties[5])
-        material.setVisibleAbsorptance(numericalProperties[6])
+        if values[1] != '':
+            material.setThickness(float(values[1]))
+        if values[2] != '':
+            material.setConductivity(float(values[2]))
+        if values[3] != '':
+            material.setDensity(float(values[3]))
+        if values[4] != '':
+            material.setSpecificHeat(float(values[4]))
+        if values[5] != '':
+            material.setThermalAbsorptance(float(values[5]))
+        if values[6] != '':
+            material.setSolarAbsorptance(float(values[6]))
+        if values[7] != '':
+            material.setVisibleAbsorptance(float(values[7]))
         
         return material
     
