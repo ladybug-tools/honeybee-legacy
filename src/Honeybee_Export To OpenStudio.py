@@ -64,7 +64,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_24_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_25_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -85,6 +85,7 @@ import shutil
 import copy
 import math
 import subprocess
+import operator
 
 rc.Runtime.HostUtils.DisplayOleAlerts(False)
 
@@ -1648,9 +1649,9 @@ class WriteOPS(object):
     def addSystemsToZones(self, model):
         # Variabe to track the number of systems.
         HVACCount = 0
-        for HAVCGroupID in self.HVACSystemDict.keys():
+        for osHVAC in (sorted(self.HVACSystemDict.values(), key=operator.attrgetter('count'))):
             # HAVC system index for this group and thermal zones.
-            systemIndex, thermalZones, hbZones, airDetails, heatingDetails, coolingDetails = self.HVACSystemDict[HAVCGroupID]
+            HAVCGroupID, systemIndex, thermalZones, hbZones, airDetails, heatingDetails, coolingDetails = osHVAC.getData()
             # Put thermal zones into a vector and create a list of the thermal zone handles to help identify the zones that are a part of the HVAC system.
             thermalZoneVector = ops.ThermalZoneVector(thermalZones)
             thermalZoneHandles = []
@@ -2970,6 +2971,20 @@ class WriteOPS(object):
     def getObjToReplace(self):
         return self.csvSchedules, self.csvScheduleCount, self.shadeCntrlToReplace, self.replaceShdCntrl
 
+class HoneybeeHVAC(object):
+    def __init__(self, ID, systemIndex, thermalZones, hbZones, airDetails, heatingDetails, coolingDetails, count):
+        self.ID = ID
+        self.systemIndex = systemIndex
+        self.thermalZones = thermalZones
+        self.hbZones = hbZones
+        self.airDetails = airDetails
+        self.heatingDetails = heatingDetails
+        self.coolingDetails = coolingDetails
+        self.count = count
+    
+    def getData(self):
+        return [self.ID, self.systemIndex, self.thermalZones, self.hbZones, self.airDetails, self.heatingDetails, self.coolingDetails]
+
 class EPFeaturesNotInOS(object):
     def __init__(self, workingDir):
         self.fileBasedSchedules = {}
@@ -3572,11 +3587,11 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
             if HAVCGroupID!= -1:
                 if HAVCGroupID not in hb_writeOPS.HVACSystemDict.keys():
                     # add place holder for lists
-                    hb_writeOPS.HVACSystemDict[HAVCGroupID] = [zone.HVACSystem.Index, [], [], zone.HVACSystem.airDetails, zone.HVACSystem.heatingDetails, zone.HVACSystem.coolingDetails]
+                    hb_writeOPS.HVACSystemDict[HAVCGroupID] = HoneybeeHVAC(HAVCGroupID, zone.HVACSystem.Index, [], [], zone.HVACSystem.airDetails, zone.HVACSystem.heatingDetails, zone.HVACSystem.coolingDetails, zoneCount)
             
             # collect the information for systems here, such as the zones in each system and the recirculation specifcations for each zone.
-            hb_writeOPS.HVACSystemDict[HAVCGroupID][1].append(thermalZone)
-            hb_writeOPS.HVACSystemDict[HAVCGroupID][2].append(zone)
+            hb_writeOPS.HVACSystemDict[HAVCGroupID].thermalZones.append(thermalZone)
+            hb_writeOPS.HVACSystemDict[HAVCGroupID].hbZones.append(zone)
             
             # add thermostat
             hb_writeOPS.addThermostat(zone, thermalZone, space, model)
