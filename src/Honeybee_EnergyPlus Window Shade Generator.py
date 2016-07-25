@@ -83,7 +83,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Window Shade Generator"
 ghenv.Component.NickName = 'EPWindowShades'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_12_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_24_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -254,7 +254,7 @@ def checkAllInputs(zoneNames, windowNames, windowSrfs, isZone):
     else:
         schedule= shadeSchedule_.upper()
         HBScheduleList = sc.sticky["honeybee_ScheduleLib"].keys()
-
+        
         if schedule!=None and not schedule.lower().endswith(".csv") and schedule not in HBScheduleList:
             msg = "Cannot find " + schedule + " in Honeybee schedule library."
             print msg
@@ -1011,8 +1011,7 @@ def createEPBlindControlName(shadeMaterial, schedule, EPinteriorOrExter):
         schedCntrl = 'No'
         schedName = ''
     elif schedule.upper().endswith('CSV'):
-        schedFileName = os.path.basename(schedule)
-        schedName = "_".join(schedFileName.split(".")[:-1])
+        schedName = schedule
         schedCntrlType = 'OnIfScheduleAllows'
         schedCntrl = 'Yes'
     else:
