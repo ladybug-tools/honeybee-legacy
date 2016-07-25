@@ -27,7 +27,7 @@ Provided by Honeybee 0.0.59
     
     Args:
         _studyFolder: Path to base study folder. It can be a single simulation folder or a folder containing subfolders produced by parametric simulations
-        _studyType: Input for Honeybee EnergyPlus study type:
+        studyType_: Input for Honeybee EnergyPlus study type:
                     1 > Energy Plus
                     2 > OpenStudio
         refresh_: Refresh
@@ -188,23 +188,23 @@ else:
 
 if _studyFolder!=None and os.path.isdir(_studyFolder) and initCheck == True:    
     # check if the type is provided
-    if _studyType == None:
-        _studyType = 2
+    if studyType_ == None:
+        studyType_ = 2
     try:
 #####
         dirNames = os.listdir(_studyFolder)
         dirNames.sort()
         for dirName in dirNames: 
             ##print 'dirName1: ', dirName
-            if dirName == studyTypes[_studyType]:# Check if the inputFolder has a "EnergyPlus" directory. if so use this only inputFolder
+            if dirName == studyTypes[studyType_]:# Check if the inputFolder has a "EnergyPlus" directory. if so use this only inputFolder
                 subFolders.append(os.path.join(_studyFolder, dirName))
                 print 'Found it ... found it in 1'
                 break
         else:
             for dirName in dirNames: # This is the name for EACH case
-                if os.path.isdir(os.path.join(_studyFolder, dirName, studyTypes[_studyType])):
-                    ##aa = os.path.join(_studyFolder, dirName, studyTypes[_studyType])   ####
-                    subFolders.append(os.path.join(_studyFolder, dirName, studyTypes[_studyType]))
+                if os.path.isdir(os.path.join(_studyFolder, dirName, studyTypes[studyType_])):
+                    ##aa = os.path.join(_studyFolder, dirName, studyTypes[studyType_])   ####
+                    subFolders.append(os.path.join(_studyFolder, dirName, studyTypes[studyType_]))
                     ##print 'Found it ... found it in 2\t', aa    # This is the FOR block where files are found
                     
         ################################################################
@@ -212,9 +212,9 @@ if _studyFolder!=None and os.path.isdir(_studyFolder) and initCheck == True:
         ################################################################
         for studyTypeName in subFolders:
             studyFolder = studyTypeName
-            if _studyType == 1: # EnergyPlus
+            if studyType_ == 1: # EnergyPlus
                 subFoldersOS = "None"
-            elif _studyType == 2: # OpenStudio
+            elif studyType_ == 2: # OpenStudio
                 dirOSNames = os.listdir(studyFolder)
                 dirOSNames.sort()
                 for dirOSName in dirOSNames: 

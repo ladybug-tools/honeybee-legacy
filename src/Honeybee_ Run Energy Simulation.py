@@ -64,7 +64,7 @@ ghenv.Component.Message = 'VER 0.0.59\nJUL_24_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nMAR_14_2016
+#compatibleHBVersion = VER 0.0.56\nJUL_24_2016
 #compatibleLBVersion = VER 0.0.59\nJUL_24_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
@@ -1484,10 +1484,9 @@ class RunIDF(object):
         if not workingDir.EndsWith('\\'): workingDir = workingDir + '\\'
         
         fullPath = workingDir + shIdfFileName
-        
         folderName = workingDir.replace( (workingDrive + '\\'), '')
-        batchStr = workingDrive + '\ncd\\' +  folderName + '\n' + EPDirectory + \
-                '\Epl-run ' + fullPath + ' ' + fullPath + ' idf "' + epwFileAddress + '" EP N nolimit N N 0 Y'
+        batchStr = workingDrive + '\ncd\\' +  folderName + '\n"' + EPDirectory + \
+                '\\Epl-run" ' + fullPath + ' ' + fullPath + ' idf ' + epwFileAddress + ' EP N nolimit N N 0 Y'
         
         batchFileAddress = fullPath +'.bat'
         batchfile = open(batchFileAddress, 'w')
@@ -1503,12 +1502,7 @@ class RunIDF(object):
     def runCmd(self, batchFileAddress, shellKey = True):
         batchFileAddress.replace("\\", "/")		
         p = subprocess.Popen(["cmd /c ", batchFileAddress], shell=shellKey, stdout=subprocess.PIPE, stderr=subprocess.PIPE)		
-        out, err = p.communicate()		
-        # p.kill()		
-        #return out, err
-
-    def readResults(self):
-        pass
+        out, err = p.communicate()
 
 
 sc.sticky["honeybee_WriteIDF"] = WriteIDF
@@ -2368,7 +2362,6 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         resultFileFullName = idfFileFullName.replace('.idf', '.csv')
         studyFolder = originalWorkingDir
         try:
-            print workingDir + '\eplusout.csv'
             test = open(workingDir + '\eplusout.csv', 'r')
             test.close()
             resultFileFullName = workingDir + '\eplusout.csv'

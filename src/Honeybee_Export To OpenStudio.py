@@ -3376,24 +3376,20 @@ class RunOPS(object):
         batchfile.close()
         
         #execute the batch file
-        if runInBackground:		
-            self.runCmd(batchFileAddress)		
-        else:		
+        if runInBackground:
+            self.runCmd(batchFileAddress)
+        else:
             os.system(batchFileAddress)
-        
         
         return fullPath + "Zsz.csv",fullPath+".sql",fullPath+".csv"
     
     def runCmd(self, batchFileAddress, shellKey = True):
-        batchFileAddress.replace("\\", "/")		
+        batchFileAddress.replace("\\", "/")
         p = subprocess.Popen(["cmd /c ", batchFileAddress], shell=shellKey, stdout=subprocess.PIPE, stderr=subprocess.PIPE)		
-        out, err = p.communicate()		
-        # p.kill()		
-        #return out, err
+        out, err = p.communicate()
 
 
 def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameters, simulationOutputs, runIt, openOpenStudio, workingDir = "C:\ladybug", fileName = "openStudioModel.osm"):
-    
     # check the release
     w = gh.GH_RuntimeMessageLevel.Warning
     
@@ -3401,7 +3397,6 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         print "You should first let both Ladybug and Honeybee to fly..."
         ghenv.Component.AddRuntimeMessage(w, "You should first let both Ladybug and Honeybee to fly...")
         return -1
-    
     
     units = sc.doc.ModelUnitSystem
     if `units` != 'Rhino.UnitSystem.Meters':
