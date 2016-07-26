@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_24_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_25_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -4846,14 +4846,6 @@ class EPZone(object):
         
         #Air System Properties.
         self.recirculatedAirPerArea = 0
-        self.outdoorAirReq = "Sum"
-        self.coolSupplyAirTemp= ""
-        self.heatSupplyAirTemp= ""
-        self.coolingCapacity= ""
-        self.heatingCapacity= ""
-        self.airSideEconomizer= 'DifferentialDryBulb'
-        self.heatRecovery= ""
-        self.heatRecoveryEffectiveness= ""
         self.ventilationSched = ""
         
         if zoneBrep != None:
@@ -7774,7 +7766,7 @@ class hb_airDetail(object):
                     paramList.append(None)
         
         if success == True:
-            airDetailObj = cls(paramList[0], paramList[1], paramList[2], paramList[3], paramList[4], paramList[5], paramList[6], paramList[7], paramList[8], paramList[9])
+            airDetailObj = cls(paramList[0], paramList[1], paramList[2], paramList[3], paramList[4], paramList[5], paramList[6], paramList[7], paramList[8], paramList[9], paramList[10])
             airDetailObj.areInputsChecked = True
             return airDetailObj
         else:

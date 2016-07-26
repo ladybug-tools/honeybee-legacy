@@ -421,20 +421,16 @@ class WriteIDF(object):
         if scheduleName.lower().endswith(".csv"):
             # find filebased schedule name
             scheduleName = self.fileBasedSchedules[scheduleName.upper()]
-
         fullString = ''
-
         for count, coordinates in enumerate(coordinatesList):
             
             if surface.containsPVgen == None:
                 # Assign surface name here if containsPVgen surface name was assigned in PVgen component
                 surface.name = surface.name + '_' + `count`
-
             str_1 = '\nShading:Building:Detailed,\n' + \
                     '\t' + surface.name + ',\t!- Name\n' + \
                     '\t' + scheduleName + ',\t!- Transmittance Schedule Name\n' + \
                     '\t' + `len(coordinates)` + ',\t!- Number of Vertices\n'    
-
             str_2 = '\t';
             for ptCount, pt in enumerate(coordinates):
                 if ptCount < len (coordinates) - 1:
@@ -443,7 +439,6 @@ class WriteIDF(object):
                     str_2 = str_2 + `pt.X` + ',\n\t' + `pt.Y` + ',\n\t' + `pt.Z` + ';\n\n'
             
             fullString = fullString + str_1 + str_2
-
         return fullString
     
     def EPInternalMass(self, zone, massName, srfArea, constructionName):
@@ -492,20 +487,17 @@ class WriteIDF(object):
     
     def EPOutdoorAir(self, zone):
         if zone.isConditioned:
-            #ventilationSched = zone.ventilationSched         
-            
-            #if ventilationSched.lower().endswith(".csv"):
-            #    # find filebased schedule name
-            #    ventilationSched = self.fileBasedSchedules[ventilationSched.upper()]
-            
             if zone.ventilationSched != "":
-                scheduleFileName = os.path.basename(zone.ventilationSched)
-                scheduleObjectName = "_".join(scheduleFileName.split(".")[:-1])
+                if zone.ventilationSched.upper().endswith('.CSV'):
+                    scheduleFileName = os.path.basename(zone.ventilationSched)
+                    scheduleObjectName = "_".join(scheduleFileName.split(".")[:-1])
+                else:
+                    scheduleObjectName = zone.ventilationSched
             else: scheduleObjectName = ""
             
             return '\nDesignSpecification:OutdoorAir,\n' + \
                     '\t' + zone.name + 'OutdoorAirCntrl' + ',                    !- Name\n' + \
-                    '\t' + zone.outdoorAirReq + ',          !- Outdoor Air Method\n' + \
+                    '\t' + 'Sum' + ',          !- Outdoor Air Method\n' + \
                     '\t' + `zone.ventilationPerPerson` + ', !- Outdoor Air Flow per Person {m3/s-person}\n' + \
                     '\t' + `zone.ventilationPerArea` + ',          !- Outdoor Air Flow per Zone Floor Area {m3/s-m2}\n' + \
                     '\t' + '0, !- Outdoor Air Flow per Zone {m3/s}\n' + \
@@ -516,34 +508,66 @@ class WriteIDF(object):
     
     def EPIdealAirSystem(self, zone, thermostatName):
         if zone.isConditioned:
-            #Supply air controls.
-            if zone.coolSupplyAirTemp == "": coolSupply = "14"
-            else: coolSupply = zone.coolSupplyAirTemp
-            if zone.heatSupplyAirTemp == "": heatSupply = "40"
-            else: heatSupply = zone.heatSupplyAirTemp
-            if zone.coolingCapacity == "": coolLimit = "NoLimit"
-            else: coolLimit = 'LimitCapacity'
-            if zone.heatingCapacity == "": heatLimit = "NoLimit"
-            else: heatLimit = 'LimitCapacity'
-            scheduleObjectName = ""
-            
+            #Set the dehumidifcation / humidification based on the presence/absence of a zone humidistat.
+            dehumidTrigger = False
             #Humidity Control
-            if zone.humidityMax != "": dehumidCntrl = "Humidistat"
+            if zone.humidityMax != "":
+                dehumidCntrl = "Humidistat"
+                dehumidTrigger = True
             else: dehumidCntrl = "None"
             if zone.humidityMin != "": humidCntrl = "Humidistat"
             else: humidCntrl = "None"
             
-            #Airside Economizer
-            if zone.airSideEconomizer == 'DifferentialDryBulb' or zone.airSideEconomizer == 'DifferentialEnthalpy':
-                if coolLimit == "NoLimit" or coolLimit == "LimitFlowRate": coolLimit = 'LimitFlowRate'
-                else: coolLimit = 'LimitFlowRateAndCapacity'
-                maxAirFlowRate = 'autosize'
-            else: maxAirFlowRate = ''
+            # Set an airside economizer and demand controlled ventilation by default.
+            if dehumidTrigger is True:
+                airSideEconomizer = 'DifferentialEnthalpy'
+            else:
+                airSideEconomizer = 'DifferentialDryBulb'
+            coolLimit = 'LimitFlowRate'
+            maxAirFlowRate = 'autosize'
             
-            #Heat Recovery
-            if zone.heatRecovery == 'Sensible' and zone.heatRecoveryEffectiveness == '':
-                zone.heatRecoveryEffectiveness = "0.7"
+            # Set the airDetails.
+            scheduleObjectName = ""
+            demanVent = ""
+            coolSupply = ""
+            heatSupply = "40"
+            heatRecovery = ''
+            sensRecovEffectiveness = ''
+            latRecovEffectiveness = ''
+            airDetails = zone.HVACSystem.airDetails
+            if airDetails != None:
+                if airDetails.HVACAvailabiltySched != 'ALWAYS ON':
+                    scheduleObjectName = airDetails.HVACAvailabiltySched
+                if airDetails.fanControl == 'Variable Volume':
+                    demanVent = 'OccupancySchedule'
+                if airDetails.heatingSupplyAirTemp != 'Default':
+                    heatSupply = str(airDetails.heatingSupplyAirTemp)
+                if airDetails.coolingSupplyAirTemp != 'Default':
+                    coolSupply = str(airDetails.coolingSupplyAirTemp)
+                if airDetails.airsideEconomizer != 'Default':
+                    airSideEconomizer =  airDetails.airsideEconomizer
+                if airDetails.heatRecovery != 'Default':
+                    heatRecovery = airDetails.heatRecovery
+                if airDetails.recoveryEffectiveness != 'Default':
+                    if heatRecovery == 'Sensible':
+                        sensRecovEffectiveness = str(airDetails.recoveryEffectiveness)
+                    elif heatRecovery == 'Enthalpy':
+                        sensRecovEffectiveness = str(airDetails.recoveryEffectiveness)
+                        latRecovEffectiveness = str(airDetails.recoveryEffectiveness)
             
+            # Set the heatingDetails.
+            heatAvailSch = ''
+            heatingDetails = zone.HVACSystem.heatingDetails
+            if heatingDetails != None:
+                if heatingDetails.heatingAvailSched != 'ALWAYS ON':
+                    heatAvailSch = heatingDetails.heatingAvailSched
+            
+            # Set the coolingDetails.
+            coolAvailSch = ''
+            coolingDetails = zone.HVACSystem.coolingDetails
+            if coolingDetails != None:
+                if coolingDetails.coolingAvailSched != 'ALWAYS ON':
+                    coolAvailSch = coolingDetails.coolingAvailSched
             
             return '\nHVACTemplate:Zone:IdealLoadsAirSystem,\n' + \
                 '\t' + zone.name + ',\t!- Zone Name\n' + \
@@ -553,14 +577,14 @@ class WriteIDF(object):
                 '\t' + coolSupply + ',  !- Cooling Supply Air Temp {C}\n' + \
                 '\t' + '0.008,  !- Max Heating Supply Air Humidity Ratio {kg-H2O/kg-air}\n' + \
                 '\t' + '0.0085,  !- Min Cooling Supply Air Humidity Ratio {kg-H2O/kg-air}\n' + \
-                '\t' + heatLimit + ',  !- Heating Limit\n' + \
+                '\t' + ',  !- Heating Limit\n' + \
                 '\t' + ',  !- Maximum Heating Air Flow Rate {m3/s}\n' + \
-                '\t' + zone.heatingCapacity + ',  !- Maximum Sensible Heat Capacity\n' + \
+                '\t' + ',  !- Maximum Sensible Heat Capacity\n' + \
                 '\t' + coolLimit + ',  !- Cooling Limit\n' + \
                 '\t' + maxAirFlowRate + ',  !- Maximum Cooling Air Flow Rate {m3/s}\n' + \
-                '\t' + zone.coolingCapacity + ',  !- Maximum Total Cooling Capacity\n' + \
-                '\t' + ',  !- Heating Availability Schedule\n' + \
-                '\t' + ',  !- Cooling Availability Schedule\n' + \
+                '\t' + ',  !- Maximum Total Cooling Capacity\n' + \
+                '\t' + heatAvailSch + ',  !- Heating Availability Schedule\n' + \
+                '\t' + coolAvailSch + ',  !- Cooling Availability Schedule\n' + \
                 '\t' + dehumidCntrl + ',  !- Dehumidification Control Type\n' + \
                 '\t' + ',  !- Cooling Sensible Heat Ratio\n' + \
                 '\t' + str(zone.humidityMax) + ',  !- Dehumidification Setpoint\n' + \
@@ -571,11 +595,11 @@ class WriteIDF(object):
                 '\t' + ',  !- Outdoor Air Flow Rate Per Floor Zone Area\n' + \
                 '\t' + ',  !- Outdoor Air Flow Rate Per Zone\n' + \
                 '\t' + zone.name + 'OutdoorAirCntrl' + ',  !- Design Specification Outdoor Air Object Name\n' + \
-                '\t' + '' + ',  !- Demand Controlled Ventilation Type\n' + \
-                '\t' + zone.airSideEconomizer + ',  !- Outdoor Air Economizer Type\n' + \
-                '\t' + zone.heatRecovery + ',  !- Heat Recovery Type\n' + \
-                '\t' + zone.heatRecoveryEffectiveness + ',  !- Sensible Heat Recovery Effectiveness\n' + \
-                '\t' + ';  !- Latent Heat Recovery Effectiveness\n'
+                '\t' + demanVent + ',  !- Demand Controlled Ventilation Type\n' + \
+                '\t' + airSideEconomizer + ',  !- Outdoor Air Economizer Type\n' + \
+                '\t' + heatRecovery + ',  !- Heat Recovery Type\n' + \
+                '\t' + sensRecovEffectiveness + ',  !- Sensible Heat Recovery Effectiveness\n' + \
+                '\t' + latRecovEffectiveness + ';  !- Latent Heat Recovery Effectiveness\n'
         else:
             return "\n"
     
@@ -1167,14 +1191,12 @@ class WriteIDF(object):
             scheduleData = sc.sticky ["honeybee_ScheduleLib"][scheduleName]
         elif scheduleName in sc.sticky ["honeybee_ScheduleTypeLimitsLib"].keys():
             scheduleData = sc.sticky["honeybee_ScheduleTypeLimitsLib"][scheduleName]
-    
+        
         if scheduleData!=None:
             numberOfLayers = len(scheduleData.keys())
             scheduleStr = scheduleData[0] + ",\n"
-            
             if numberOfLayers == 1:
                 return scheduleStr  + "  " +  scheduleName + ";   !- name\n\n"
-            
             # add the name
             scheduleStr =  scheduleStr  + "  " +  scheduleName + ",   !- name\n"
             
@@ -2117,26 +2139,36 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     print "[6 of 8] Writing schedules..."
     
     #Check if schedules need to be written for air mixing or natural ventilation.
-    needToWriteMixSched = False
+    needToWriteAlwaysSched = False
     for key, zones in ZoneCollectionBasedOnSchAndLoads.items():
         for zone in zones:
             if zone.natVent == True:
                 for schedule in zone.natVentSchedule:
                     if schedule != None:
                         if schedule.upper() not in EPScheduleCollection: EPScheduleCollection.append(schedule)
-                    else: needToWriteMixSched = True
+                    else: needToWriteAlwaysSched = True
             if zone.mixAir == True:
                 for schedule in zone.mixAirFlowSched:
                     if schedule != None:
                         if schedule.upper() not in EPScheduleCollection: EPScheduleCollection.append(schedule)
-                    else: needToWriteMixSched = True
+                    else: needToWriteAlwaysSched = True
             if zone.earthtube == True:
                 if zone.ETschedule.upper() not in EPScheduleCollection:
                     EPScheduleCollection.append(zone.ETschedule)
-                    
-        if needToWriteMixSched == True and 'ALWAYS ON' not in EPScheduleCollection: EPScheduleCollection.append('ALWAYS ON')
-                    
-                    
+            if zone.isConditioned:
+                needToWriteAlwaysSched = True
+                if zone.HVACSystem.airDetails != None:
+                    if zone.HVACSystem.airDetails.HVACAvailabiltySched != 'ALWAYS ON':
+                        EPScheduleCollection.append(zone.HVACSystem.airDetails.HVACAvailabiltySched)
+                if zone.HVACSystem.heatingDetails != None:
+                    if zone.HVACSystem.heatingDetails.heatingAvailSched != 'ALWAYS ON':
+                        EPScheduleCollection.append(zone.HVACSystem.heatingDetails.heatingAvailSched)
+                if zone.HVACSystem.coolingDetails != None:
+                    if zone.HVACSystem.coolingDetails.coolingAvailSched != 'ALWAYS ON':
+                        EPScheduleCollection.append(zone.HVACSystem.coolingDetails.coolingAvailSched)
+        if needToWriteAlwaysSched == True and 'ALWAYS ON' not in EPScheduleCollection: EPScheduleCollection.append('ALWAYS ON')
+    
+    
     # Write Schedules
     for schedule in EPScheduleCollection:
         scheduleValues, comments = hb_EPScheduleAUX.getScheduleDataByName(schedule, ghenv.Component)
@@ -2150,7 +2182,6 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
             pass
             
         elif scheduleValues!=None:
-
             idfFile.write(hb_writeIDF.EPSCHStr(schedule))
             
             if scheduleValues[0].lower() == "schedule:year":
@@ -2199,20 +2230,17 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
             #Outdoor Air Controller.
             idfFile.write(hb_writeIDF.EPOutdoorAir(zone))
             
-            # Zone Sizing.
-            #idfFile.write(hb_writeIDF.IdealAirZoneSizing(zone))
-            
             #   LOADS - INTERNAL LOADS + PLUG LOADS
             if zone.equipmentSchedule != None:
                 idfFile.write(hb_writeIDF.EPZoneElectricEquipment(zone, listName))
-        
+            
             #   PEOPLE
             if zone.occupancySchedule != None:
                 idfFile.write(hb_writeIDF.EPZonePeople(zone, listName))
-        
+            
             #   LIGHTs
             idfFile.write(hb_writeIDF.EPZoneLights(zone, listName))
-        
+            
             #   INFILTRATION
             idfFile.write(hb_writeIDF.EPZoneInfiltration(zone, listName))
             
