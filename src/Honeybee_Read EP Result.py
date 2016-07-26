@@ -32,8 +32,8 @@ Provided by Honeybee 0.0.59
         _resultFileAddress: The result file address that comes out of the WriteIDF component.
         normByFloorArea_: Set to 'True' to normalize all zone energy data by floor area (note that the resulting units will be kWh/m2 as EnergyPlus runs in the metric system).  The default is set to "False."
     Returns:
-        totalThermalEnergy: The total thermal energy used by each zone in kWh.  This includes cooling and heating.
-        thermalEnergyBalance: The thermal energy used by each zone in kWh.  Heating values are positive while cooling values are negative.
+        totalThermalLoad: The total thermal energy used by each zone in kWh.  This includes cooling and heating.
+        thermalLoadBalance: The thermal energy used by each zone in kWh.  Heating values are positive while cooling values are negative.
         cooling: The cooling energy needed in kWh. For Ideal Air loads, this is the sum of sensible and latent heat that must be removed from each zone.  For distributed OpenStudio systems like Packaged Terminal Heat Pumps (PTHP), this will be electric energy for each zone. For central OpenStudio systems, this ouput will be a single list for the whole building.
         heating: The heating energy needed in kWh. For Ideal Air loads, this is the sum of sensible heat that must be added to each zone.  For distributed OpenStudio Systems like Packaged Terminal Heat Pumps (PTHP), this will be electric energy for each zone. For central OpenStudio systems, this ouput will be a single list for the whole building.
         electricLight: The electric lighting energy needed for each zone in kWh.
@@ -56,7 +56,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_25_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_26_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -161,8 +161,8 @@ otherZDatFlrNormList = []
 otherZDatFlrCount = 0
 
 # Make data tree objects for all of the outputs.
-totalThermalEnergy = DataTree[Object]()
-thermalEnergyBalance = DataTree[Object]()
+totalThermalLoad = DataTree[Object]()
+thermalLoadBalance = DataTree[Object]()
 cooling = DataTree[Object]()
 heating = DataTree[Object]()
 electricLight = DataTree[Object]()
@@ -213,6 +213,8 @@ parseSuccess = False
 
 #If the energy values are set to be normalized, make the units in kWh/m2.
 energyUnit = "kWh"
+idealAirTrigger = False
+
 
 #Make a function to add headers.
 def makeHeader(list, path, zoneName, timestep, name, units, normable):
@@ -302,49 +304,73 @@ if _resultFileAddress and gotData == True and csvExists == True:
                         key.append(0)
                         if 'Zone Ideal Loads Supply Air Total Cooling Energy' in column and 'ZONE HVAC' in column:
                             zoneName = checkZoneSys(" " + (":".join(column.split(":")[:-1])).split('ZONE HVAC IDEAL LOADS AIR SYSTEM ')[-1])
+                            idealAirTrigger = True
                         elif 'IDEAL LOADS AIR SYSTEM' in column:
                             zoneName = checkZone(" " + ":".join(column.split(":")[:-1]).split(' IDEAL LOADS AIR SYSTEM')[0])
+                            idealAirTrigger = True
                         elif 'COIL COOLING DX SINGLE SPEED' in column:
                             zoneName = checkSys(" " + ":".join(column.split(":")[:-1]).split('COIL COOLING DX SINGLE SPEED ')[-1], 'DX Cooling Coil')
+                            idealAirTrigger = False
                         elif 'COIL COOLING DX TWO SPEED' in column:
                             zoneName = checkSys(" " + ":".join(column.split(":")[:-1]).split('COIL COOLING DX TWO SPEED ')[-1], 'DX Cooling Coil')
+                            idealAirTrigger = False
                         elif 'ZONE HVAC TERMINAL UNIT VARIABLE REFRIGERANT FLOW' in column:
                             zoneName = checkZoneSys(" " + ":".join(column.split(":")[:-1]).split('ZONE HVAC TERMINAL UNIT VARIABLE REFRIGERANT FLOW ')[-1])
+                            idealAirTrigger = False
                         elif 'VRF HEAT PUMP -' in column:
                             zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('VRF HEAT PUMP - ')[-1], 5)
+                            idealAirTrigger = False
                         elif 'Chiller Electric Energy' in column:
                             zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('CHILLER ELECTRIC EIR ')[-1], 0)
+                            idealAirTrigger = False
                         else: zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
-                        makeHeader(cooling, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Cooling Energy", energyUnit, True)
+                        if idealAirTrigger == True:
+                            makeHeader(cooling, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Cooling Load", energyUnit, True)
+                        else:
+                            makeHeader(cooling, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Cooling Electric Energy", energyUnit, True)
                         dataTypeList[2] = True
                     
                     elif 'Zone Ideal Loads Supply Air Total Heating Energy' in column  or 'Boiler Heating Energy' in column or 'Heating Coil Total Heating Energy' in column or 'Heating Coil Gas Energy' in column or 'Heating Coil Electric Energy' in column or 'Humidifier Electric Energy' in column or 'Zone VRF Air Terminal Heating Electric Energy' in column or 'VRF Heat Pump Heating Electric Energy' in column:
                         notFound = False
                         if 'Zone Ideal Loads Supply Air Total Heating Energy' in column and 'ZONE HVAC' in column:
                             zoneName = checkZoneSys(" " + (":".join(column.split(":")[:-1])).split('ZONE HVAC IDEAL LOADS AIR SYSTEM ')[-1])
+                            idealAirTrigger = True
                         elif 'IDEAL LOADS AIR SYSTEM' in column:
                             zoneName = checkZone(" " + ":".join(column.split(":")[:-1]).split(' IDEAL LOADS AIR SYSTEM')[0])
+                            idealAirTrigger = True
                         elif 'COIL HEATING DX SINGLE SPEED' in column:
                             zoneName = checkZoneSys(" " + ":".join(column.split(":")[:-1]).split('COIL HEATING DX SINGLE SPEED ')[-1])
+                            idealAirTrigger = 2
                         elif 'COIL HEATING GAS' in column and not 'Heating Coil Electric Energy' in column:
                             zoneName = checkSys(" " + ":".join(column.split(":")[:-1]).split('COIL HEATING GAS ')[-1], 'Gas Coil')
+                            idealAirTrigger = False
                         elif 'COIL HEATING ELECTRIC' in column:
                             zoneName = checkSys(" " + ":".join(column.split(":")[:-1]).split('COIL HEATING ELECTRIC ')[-1], 'Electric Coil')
+                            idealAirTrigger = 2
                         elif 'ZONE HVAC TERMINAL UNIT VARIABLE REFRIGERANT FLOW' in column and not 'Heating Coil Total Heating Energy' in column:
                             zoneName = checkZoneSys(" " + ":".join(column.split(":")[:-1]).split('ZONE HVAC TERMINAL UNIT VARIABLE REFRIGERANT FLOW ')[-1])
+                            idealAirTrigger = 2
                         elif 'VRF HEAT PUMP -' in column:
                             zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('VRF HEAT PUMP - ')[-1], 5)
+                            idealAirTrigger = 2
                         elif 'Boiler Heating Energy' in column:
                             zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('BOILER HOT WATER ')[-1], 1)
+                            idealAirTrigger = False
                         elif 'HUMIDIFIER STEAM ELECTRIC' in column:
                             zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('HUMIDIFIER STEAM ELECTRIC ')[-1], 4)
+                            idealAirTrigger = 2
                         else:
                             notFound = True
                             key.append(-1)
                             path.append(-1)
                         if notFound == False:
                             try:
-                                makeHeader(heating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Heating Energy", energyUnit, True)
+                                if idealAirTrigger == True:
+                                    makeHeader(heating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Heating Load", energyUnit, True)
+                                elif idealAirTrigger == False:
+                                    makeHeader(heating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Heating Fuel Energy", energyUnit, True)
+                                else:
+                                    makeHeader(heating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Heating Electric Energy", energyUnit, True)
                                 dataTypeList[3] = True
                                 key.append(1)
                             except:
@@ -660,20 +686,20 @@ def createPyList(ghTree):
 
 #If we have both heating and cooling data, generate a list for total thermal energy and the thermal energy balance.
 heatingPyList = None
-if dataTypeList[2] == True and dataTypeList[3] == True:
+if dataTypeList[2] == True and dataTypeList[3] == True and idealAirTrigger == True:
     coolingPyList = createPyList(cooling)
     heatingPyList = createPyList(heating)
     if len(coolingPyList) == len(heatingPyList):
         if len(coolingPyList) > 0 and len(heatingPyList) > 0:
             for listCount, list in enumerate(coolingPyList):
-                makeHeader(totalThermalEnergy, listCount, list[2].split(' for')[-1], list[4].split('(')[-1].split(')')[0], "Total Thermal Energy", energyUnit, True)
+                makeHeader(totalThermalLoad, listCount, list[2].split(' for')[-1], list[4].split('(')[-1].split(')')[0], "Total Thermal Load", energyUnit, True)
                 for numCount, num in enumerate(list[7:]):
-                    totalThermalEnergy.Add((num + heatingPyList[listCount][7:][numCount]), GH_Path(listCount))
+                    totalThermalLoad.Add((num + heatingPyList[listCount][7:][numCount]), GH_Path(listCount))
                 dataTypeList[0] = True
                 
-                makeHeader(thermalEnergyBalance, listCount, list[2].split(' for')[-1], list[4].split('(')[-1].split(')')[0], "Thermal Energy Balance", energyUnit, True)
+                makeHeader(thermalLoadBalance, listCount, list[2].split(' for')[-1], list[4].split('(')[-1].split(')')[0], "Thermal Load Balance", energyUnit, True)
                 for numCount, num in enumerate(list[7:]):
-                    thermalEnergyBalance.Add((heatingPyList[listCount][7:][numCount] - num), GH_Path(listCount))
+                    thermalLoadBalance.Add((heatingPyList[listCount][7:][numCount] - num), GH_Path(listCount))
                 dataTypeList[1] = True
             
             #If we have the cooling/heating coil energy and the heat energy added/removed from the zone, compute the portion of the energy balance that the outdoor air is responsible for.
@@ -739,8 +765,8 @@ if infiltrationFlow != testTracker:
 #If some of the component outputs are not in the result csv file, blot the variable out of the component.
 outputsDict = {
      
-0: ["totalThermalEnergy", "The total thermal energy used by each zone in kWh.  This includes cooling and heating."],
-1: ["thermalEnergyBalance", "The thermal energy used by each zone in kWh.  Heating values are positive while cooling values are negative."],
+0: ["totalThermalLoad", "The total thermal energy used by each zone in kWh.  This includes cooling and heating."],
+1: ["thermalLoadBalance", "The thermal energy used by each zone in kWh.  Heating values are positive while cooling values are negative. This is useful for computing balance points."],
 2: ["cooling", "The cooling energy needed in kWh. For Ideal Air loads, this is the sum of sensible and latent heat that must be removed from each zone.  For distributed OpenStudio systems like Packaged Terminal Heat Pumps (PTHP), this will be electric energy for each zone. For central OpenStudio systems, this ouput will be a single list of chiller electric energy for the whole building."],
 3: ["heating", "The heating energy needed in kWh. For Ideal Air loads, this is the sum of sensible and latent heat that must be removed from each zone.  For distributed OpenStudio systems like Packaged Terminal Heat Pumps (PTHP), this will be electric energy for each zone.  For central OpenStudio systems, this ouput will be a single list of boiler heat energy for the whole building."],
 4: ["electricLight", "The electric lighting energy needed for each zone in kWh."],

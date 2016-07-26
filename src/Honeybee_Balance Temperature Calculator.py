@@ -30,7 +30,7 @@ This component works by taking the average combined heating/cooling values for e
 Provided by Honeybee 0.0.59
     
     Args:
-        _zoneThermalEnergyBal: The output "thermalEnergyBalance" from the "Honeybee_Read EP Result" component.  This can be for a single zone if you select out one branch of this thermalEnergyBalance output or it can be for the whole simulated building if you connect the whole output.  Note that, in order to use this component correclty, you must run either a simulation with either an hourly or daily timestep.
+        _thermalLoadBal: The output "thermalEnergyBalance" from the "Honeybee_Read EP Result" component.  This can be for a single zone if you select out one branch of this thermalEnergyBalance output or it can be for the whole simulated building if you connect the whole output.  Note that, in order to use this component correclty, you must run either a simulation with either an hourly or daily timestep.
         _outdoorAirTemp: The "dryBulbTemperature" output from the "Ladybug_Import epw" component.
         numDaysToAverage_: An optional number of days with a low thermal energy load that will be averaged together to yield the balance point.  This is done to help avoid anomalies introduced by variations between weekday and weekend shcedules.  The default is set to 10 but you may want to drop this down if there is little variation between weekday and weekend schedule or you might increase this number is there is a high variation.
     Returns:
@@ -65,7 +65,7 @@ def checktheInputs(lb_preparation):
             pyList.append(branchval)
         return pyList
     
-    energyBalPyList = createPyList(_zoneThermalEnergyBal)
+    energyBalPyList = createPyList(_thermalLoadBal)
     
     #Check to be sure that all of the thermal energy balance data is correct, that it is the right timestep, and get the analysis period.
     checkData1 = True
@@ -75,24 +75,24 @@ def checktheInputs(lb_preparation):
     
     for branch in energyBalPyList:
         if len(branch) > 0:
-            if 'Thermal Energy Balance' in branch[2]: pass
+            if 'Thermal Load Balance' in branch[2]: pass
             else:
                 checkData1 = False
-                warning = 'Connected zoneThermalEnergyBal is not valid data from the "Honeybee_Read EP Result" component.  Connected data must have a header on it.'
+                warning = 'Connected _thermaLoadBal is not valid data from the "Honeybee_Read EP Result" component.'
                 print warning
                 ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
             if checkData1 == True:
                 if branch[4] == 'Hourly' or branch[4] == 'Daily': timeStep = branch[4]
                 else:
                     checkData1 = False
-                    warning = 'Connected zoneThermalEnergyBal must be for a daily or an hourly timestep.'
+                    warning = 'Connected _thermaLoadBal must be for a daily or an hourly timestep.'
                     print warning
                     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
                 analysisPeriod = [branch[5], branch[6]]
                 energyBalNumList.append(branch[7:])
         else:
             checkData1 = False
-            warning = 'One of the zoneThermalEnergyBal branches is empty.'
+            warning = 'One of the _thermaLoadBal branches is empty.'
             print warning
             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
     
@@ -199,7 +199,7 @@ else:
 
 
 checkData = False
-if _zoneThermalEnergyBal.BranchCount > 0 and _outdoorAirTemp != [] and initCheck == True:
+if _thermalLoadBal.BranchCount > 0 and _outdoorAirTemp != [] and initCheck == True:
     checkData, dailyEnergyBalance, dailyOutdoorTemps, numOfDays = checktheInputs(lb_preparation)
 
 if checkData == True:
