@@ -64,7 +64,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_25_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_26_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -2658,6 +2658,10 @@ class WriteOPS(object):
         windowBlindMaterial.setBackSideSlatDiffuseSolarReflectance(float(values[11]))
         windowBlindMaterial.setSlatBeamVisibleTransmittance(float(values[12]))
         windowBlindMaterial.setSlatDiffuseVisibleTransmittance(float(values[15]))
+        windowBlindMaterial.setFrontSideSlatBeamVisibleReflectance(float(values[7]))
+        windowBlindMaterial.setBackSideSlatBeamVisibleReflectance(float(values[7]))
+        windowBlindMaterial.setFrontSideSlatDiffuseVisibleReflectance(float(values[7]))
+        windowBlindMaterial.setBackSideSlatDiffuseVisibleReflectance(float(values[7]))
         windowBlindMaterial.setFrontSideSlatInfraredHemisphericalEmissivity(float(values[19]))
         windowBlindMaterial.setBackSideSlatInfraredHemisphericalEmissivity(float(values[20]))
         windowBlindMaterial.setBlindtoGlassDistance(float(values[21]))
@@ -3084,10 +3088,12 @@ class EPFeaturesNotInOS(object):
                 '\t' + '40' + ';                        !- Maximum Wind Speed\n'
     
     def EPNatVentFan(self, zone, natVentCount):
-        if zone.natVentSchedule[natVentCount] == None: natVentSched = 'ALWAYS ON'
-        else:
+        if zone.natVentSchedule[natVentCount] == None:
+            natVentSched = 'ALWAYS ON'
+        elif zone.natVentSchedule[natVentCount].upper().endswith('CSV'):
             natVentSchedFileName = os.path.basename(zone.natVentSchedule[natVentCount])
             natVentSched = "_".join(natVentSchedFileName.split(".")[:-1])
+        else: natVentSched = zone.natVentSchedule[natVentCount]
         
         return '\nZoneVentilation:DesignFlowRate,\n' + \
                 '\t' + zone.name + 'NatVent' + str(natVentCount) + ',  !- Name\n' + \
@@ -3205,7 +3211,10 @@ class RunOPS(object):
             elif 'CSV' in line or 'csv' in line:
                 for columnCount, column in enumerate(line.split('.')):
                     if columnCount == 0:
-                        origName = column + '.csv'
+                        if 'CSV' in line:
+                            origName = column + '.CSV'
+                        else:
+                            origName = column + '.csv'
                         newName = column
                 newName = '  ' + newName.split('\\')[-1]
                 if origName not in foundCSVSchedules:
@@ -3263,7 +3272,15 @@ class RunOPS(object):
             for shdCntrlItem in self.shadeCntrlToReplace:
                 # Add correct shading control objects to file.
                 shdCntrlName = shdCntrlItem[0]
-                shdCntrlStr = self.hb_EPObjectsAux.getEPObjectsStr(shdCntrlName)
+                values = self.hb_EPObjectsAux.getEPObjectDataByName(shdCntrlName)
+                if not values[4][0].endswith('.CSV'):
+                    shdCntrlStr = self.hb_EPObjectsAux.getEPObjectsStr(shdCntrlName)
+                else:
+                    newSchedName = os.path.basename(values[4][0]).replace('.CSV', '')
+                    initStr = self.hb_EPObjectsAux.getEPObjectsStr(shdCntrlName)
+                    shdCntrlStr = initStr.replace(values[4][0], newSchedName)
+                    shdCntrlName = shdCntrlName.replace(values[4][0], newSchedName)
+                
                 shdCntrlStrList = shdCntrlStr.split(shdCntrlName)
                 shdCntrlStr = shdCntrlStrList[0] + str(shdCntrlItem[1]) + shdCntrlStrList[1]
                 lines.append(shdCntrlStr)
