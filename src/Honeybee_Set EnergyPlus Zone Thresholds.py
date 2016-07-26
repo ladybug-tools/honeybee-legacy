@@ -34,17 +34,21 @@ Provided by Honeybee 0.0.59
         heatingSetback_: A number or list of numbers that represent the thermostat heating setback in degrees Celcius.  The heating setback is the indoor temperature that the space will be kept at when it is unoccipied.  Note that not all building types have a setback.  This can be either a single number to be applied to all connected zones or a list of numbers for each different zone.
         maxHumidity_: A number or list of numbers that represent the maximum relative humidity allowed by a humidistat in %.  The HVAC will dehumidify the zone air  if the relative humidity goes above this threshold.  The default is set to 'no limit' or no humidistat. This can be either a single number to be applied to all connected zones or a list of numbers for each different zone.
         minHumidity_ : A number or list of numbers that represent the minimum relative humidity allowed by a humidistat in %.  The HVAC will humidify the zone air if the relative humidity goes below this threshold.  The default is set to 'no limit' or no humidistat. This can be either a single number to be applied to all connected zones or a list of numbers for each different zone.
+        outdoorAirReq_: An integer or text string value that changes the outdoor air requirement of the zone (the default is set to "0 - Sum").  Choose from the following options:
+            0 - Sum - The outdoor air coming through the mechnical system will be the sum of the specified flow/m2 of zone floor area and the flow/person.  This is the default and is the usual recommendation of ASHRAE.
+            1 - Maximum - The outdoor air coming through the mechnical system will be either the specified flow/m2 of zone floor area or the flow/person (depending on which is larger at a given hour).   Choosing this option effectively implies that there is a demand-controlled ventilation system set up in the zone.
+            2 - None - No outdoor air will come through the mechanical system and the heating/cooling will be applied only through re-circulation of indoor air.  Be careful as this option might not bring enough fresh air to occupants if the zone's infiltration is very low.
     Returns:
         HBZones: HBZones with thresolds set.
 """
 
 ghenv.Component.Name = "Honeybee_Set EnergyPlus Zone Thresholds"
 ghenv.Component.NickName = 'setEPZoneThresholds'
-ghenv.Component.Message = 'VER 0.0.59\nMAR_01_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_26_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
-#compatibleHBVersion = VER 0.0.56\nFEB_18_2015
+#compatibleHBVersion = VER 0.0.56\nJUL_26_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
@@ -61,9 +65,6 @@ def checkTheInputs():
         for count in range(calcLength):
             dupData.append(data[0])
         return dupData
-    
-    if len(daylightThreshold_) == 1: daylightThreshold = duplicateData(daylightThreshold_, len(_HBZones))
-    else: daylightThreshold = daylightThreshold_
     
     if len(coolingSetback_) == 1: coolingSetback = duplicateData(coolingSetback_, len(_HBZones))
     else: coolingSetback = coolingSetback_
@@ -83,7 +84,25 @@ def checkTheInputs():
     if len(minHumidity_) == 1: minHumidity = duplicateData(minHumidity_, len(_HBZones))
     else: minHumidity = minHumidity_
     
-    return daylightThreshold, coolingSetPt, coolingSetback, heatingSetPt, heatingSetback, maxHumidity, minHumidity
+    if len(outdoorAirReq_) == 1: outdoorAirReq = duplicateData(outdoorAirReq_, len(_HBZones))
+    else: outdoorAirReq = outdoorAirReq_
+    
+    outdoorAirReqFinal = []
+    checkData = True
+    for outAirReq in outdoorAirReq:
+        if outAirReq == "0" or outAirReq == "1" or outAirReq == "2" or outAirReq.upper() == "NONE" or outAirReq.upper() == "MAXIMUM" or outAirReq == "SUM":
+            if outAirReq == "0": outdoorAirReqFinal.append("Sum")
+            elif outAirReq == "1": outdoorAirReqFinal.append("Maximum")
+            elif outAirReq == "2": outdoorAirReqFinal.append("None")
+            else: outdoorAirReqFinal.append(outAirReq)
+        else:
+            checkData = False
+            msg = "Invalid outdoorAirReq_ input."
+            print msg
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+    outdoorAirReq = outdoorAirReqFinal
+    
+    return coolingSetPt, coolingSetback, heatingSetPt, heatingSetback, maxHumidity, minHumidity, outdoorAirReq
 
 def updateSetPoints(schName, setPt, setBk):
     """
@@ -199,7 +218,7 @@ def updateSetPoints(schName, setPt, setBk):
     
     return name
 
-def main(HBZones, daylightThreshold, coolingSetPt, heatingSetPt, coolingSetback, heatingSetback, maxHumidity, minHumidity):
+def main(HBZones, coolingSetPt, heatingSetPt, coolingSetback, heatingSetback, maxHumidity, minHumidity, outdoorAirReq):
     
     # check for Honeybee
     if not sc.sticky.has_key('honeybee_release'):
@@ -225,11 +244,6 @@ def main(HBZones, daylightThreshold, coolingSetPt, heatingSetPt, coolingSetback,
     
     # assign the values
     for zoneCount, zone in enumerate(HBZonesFromHive):
-        try:
-            zone.daylightThreshold = str(daylightThreshold[zoneCount])
-            print "Daylight threshold for " + zone.name + " is set to: " + zone.daylightThreshold
-            
-        except: pass
         
         try:
             zone.coolingSetPt = str(coolingSetPt[zoneCount])
@@ -260,14 +274,15 @@ def main(HBZones, daylightThreshold, coolingSetPt, heatingSetPt, coolingSetback,
         
         try:
             zone.humidityMax = str(maxHumidity[zoneCount])
-            # print "Heating setpoint for " + zone.name + " is set to: " + zone.humidityMax
         except: pass
         
         try:
             zone.humidityMin = str(minHumidity[zoneCount])
-            # print "Heating setpoint for " + zone.name + " is set to: " + zone.minHumidity
         except: pass
         
+        try:
+            zone.outdoorAirReq = outdoorAirReq[zoneCount]
+        except: pass
         
     # send the zones back to the hive
     HBZones  = hb_hive.addToHoneybeeHive(HBZonesFromHive, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
@@ -276,14 +291,11 @@ def main(HBZones, daylightThreshold, coolingSetPt, heatingSetPt, coolingSetback,
 
 
 if _HBZones:
+    coolingSetPt, coolingSetback, heatingSetPt, \
+    heatingSetback, maxHumidity, minHumidity, outdoorAirReq = checkTheInputs()
     
-    daylightThreshold_ = []
-    
-    daylightThreshold, coolingSetPt, coolingSetback, heatingSetPt, \
-    heatingSetback, maxHumidity, minHumidity = checkTheInputs()
-    
-    zones = main(_HBZones, daylightThreshold, coolingSetPt, heatingSetPt, \
-                   coolingSetback, heatingSetback, maxHumidity, minHumidity)
+    zones = main(_HBZones, coolingSetPt, heatingSetPt, \
+                   coolingSetback, heatingSetback, maxHumidity, minHumidity, outdoorAirReq)
     
     if zones!=-1:
         HBZones = zones

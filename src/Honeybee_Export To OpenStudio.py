@@ -2476,13 +2476,9 @@ class WriteOPS(object):
         
         lightsDefinition = ops.LightsDefinition(model)
         lightsDefinition.setName(zone.name + "_LightsDefinition")
-        if zone.daylightThreshold != "":
-            lightsDefinition.setDesignLevelCalculationMethod('LightingLevel', zone.getFloorArea(), space.numberOfPeople())
-            lightsDefinition.setLightingLevel(int(zone.daylightThreshold))
-        else:
-            lightsDefinition.setDesignLevelCalculationMethod("Watts/Area", zone.getFloorArea(), space.numberOfPeople())
-            lightsDefinition.setWattsperSpaceFloorArea(float(zone.lightingDensityPerArea))
-
+        lightsDefinition.setDesignLevelCalculationMethod("Watts/Area", zone.getFloorArea(), space.numberOfPeople())
+        lightsDefinition.setWattsperSpaceFloorArea(float(zone.lightingDensityPerArea))
+        
         lights = ops.Lights(lightsDefinition)
         lights.setName(zone.name + "_LightsObject")
         lights.setSchedule(self.getOSSchedule(zone.lightingSchedule, model))
@@ -2503,7 +2499,7 @@ class WriteOPS(object):
     def setDesignSpecificationOutdoorAir(self, zone, space, model):
         ventilation = ops.DesignSpecificationOutdoorAir(model)
         ventilation.setName(zone.name + "_DSOA")
-        ventilation.setOutdoorAirMethod("Sum")
+        ventilation.setOutdoorAirMethod(zone.outdoorAirReq)
         ventilation.setOutdoorAirFlowperPerson(zone.ventilationPerPerson)
         ventilation.setOutdoorAirFlowperFloorArea(zone.ventilationPerArea)
         if zone.ventilationSched != '':
@@ -3590,11 +3586,8 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         hb_writeOPS.thermalZonesDict[zone.name] = thermalZone
         
         #If there are internal masses assigned to the zone, write them
-                
         if len(zone.internalMassNames) > 0:
-            
             for massCount, massName in enumerate(zone.internalMassNames):
-                
                hb_writeOPS.setInternalMassDefinition(zone, space, model)
         
         if zone.isConditioned:

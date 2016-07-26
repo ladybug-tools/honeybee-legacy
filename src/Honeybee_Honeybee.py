@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_25_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_26_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -4836,13 +4836,13 @@ class EPZone(object):
         self.surfaces = []
         
         #Zone Thresholds
-        self.daylightThreshold = ""
         self.coolingSetPt= ""
         self.heatingSetPt= ""
         self.coolingSetback= ""
         self.heatingSetback= ""
         self.humidityMax= ""
         self.humidityMin= ""
+        self.outdoorAirReq = "Sum"
         
         #Air System Properties.
         self.recirculatedAirPerArea = 0

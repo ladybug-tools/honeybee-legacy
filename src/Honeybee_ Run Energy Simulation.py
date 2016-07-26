@@ -507,7 +507,7 @@ class WriteIDF(object):
             
             return '\nDesignSpecification:OutdoorAir,\n' + \
                     '\t' + zone.name + 'OutdoorAirCntrl' + ',                    !- Name\n' + \
-                    '\t' + 'Sum' + ',          !- Outdoor Air Method\n' + \
+                    '\t' + zone.outdoorAirReq + ',          !- Outdoor Air Method\n' + \
                     '\t' + `zone.ventilationPerPerson` + ', !- Outdoor Air Flow per Person {m3/s-person}\n' + \
                     '\t' + `zone.ventilationPerArea` + ',          !- Outdoor Air Flow per Zone Floor Area {m3/s-m2}\n' + \
                     '\t' + '0, !- Outdoor Air Flow per Zone {m3/s}\n' + \
@@ -990,12 +990,8 @@ class WriteIDF(object):
             # find filebased schedule name
             scheduleName = self.fileBasedSchedules[scheduleName.upper()]
         
-        if zone.daylightThreshold != "":
-            method = 2
-            lightingLevel = str(zone.daylightThreshold)
-        else:
-            method = 0
-            lightingLevel = ""
+        method = 0
+        lightingLevel = ""
         """
         Methods:
             0: Watts/Area => Watts per Zone Floor Area -- enter the number to apply.  Value * Floor Area = Equipment Level
