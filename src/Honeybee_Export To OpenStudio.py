@@ -2807,7 +2807,7 @@ class WriteOPS(object):
             srfType = surface.srfType[int(surface.type)].lower().capitalize()
             if srfType.upper().Contains("ROOF") or srfType.upper().Contains("CEILING"):
                 srfType = "RoofCeiling" # This is an OpenStudio type that will be converted as a roof or ceiling in idf file
-                
+            
             thisSurface.setSurfaceType(srfType);
             
             # create construction
@@ -2850,7 +2850,7 @@ class WriteOPS(object):
             for pt in coordinates:
                 # add the points to an openStudio list
                 windowPointVectors.Add(ops.Point3d(pt.X,pt.Y,pt.Z))
-
+            
             # create construction
             if self.isConstructionInLib(childSrf.EPConstruction):
                 construction = self.getConstructionFromLib(childSrf.EPConstruction)

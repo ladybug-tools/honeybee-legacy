@@ -60,7 +60,7 @@ Provided by Honeybee 0.0.59
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_24_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_25_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | Energy"
@@ -359,7 +359,7 @@ class WriteIDF(object):
         else:
             print "One of the surfaces has less than 3 identical coordinates and is removed."
             return False,[]
-                        
+    
     def EPFenSurface (self, surface):
         glzStr = ""
         try:
@@ -368,14 +368,12 @@ class WriteIDF(object):
                 glzCoordinates = childSrf.coordinates
                 checked, glzCoordinates= self.checkCoordinates(glzCoordinates)
                 
-                #Check shading objects.
-                #if childSrf.shadingControlName == []:
-                shdCntrl = ''
-                #else:
-                #    try:
-                #        shdCntrl = childSrf.shadingControlName[0]
-                #    except IndexError:
-                #        shdCntrl = ''
+                # Set any shading control objects.
+                
+                try:
+                    shdCntrl = childSrf.shadingControlName[0]
+                except:
+                    shdCntrl = ''
                 
                 #Check for frame objects.
                 if childSrf.construction in sc.sticky["honeybee_ExtraConstrProps"].keys():
@@ -414,11 +412,11 @@ class WriteIDF(object):
             
         return glzStr
         
-
+    
     def EPShdSurface (self, surface):
         coordinatesList = surface.extractPoints()
         if type(coordinatesList[0])is not list and type(coordinatesList[0]) is not tuple: coordinatesList = [coordinatesList]
-
+        
         scheduleName = surface.TransmittanceSCH
         if scheduleName.lower().endswith(".csv"):
             # find filebased schedule name
@@ -1057,7 +1055,7 @@ class WriteIDF(object):
             materialData = sc.sticky ["honeybee_windowMaterialLib"][materialName]
         elif materialName in sc.sticky ["honeybee_materialLib"].keys():
             materialData = sc.sticky ["honeybee_materialLib"][materialName]
-            
+        
         if materialData!=None:
             numberOfLayers = len(materialData.keys())
             materialStr = materialData[0] + ",\n"
@@ -1069,6 +1067,7 @@ class WriteIDF(object):
                     materialStr =  materialStr + "  " + str(materialData[layer][0]) + ",   !- " +  materialData[layer][1] + "\n"
                 else:
                     materialStr =  materialStr + "  " + str(materialData[layer][0]) + ";   !- " +  materialData[layer][1] + "\n\n"
+            
             return materialStr
         else:
             warning = "Failed to find " + materialName + " in library."
@@ -1195,15 +1194,10 @@ class WriteIDF(object):
         '\t' + 'regular;                 !- Key Field' + '\n'
         
     def EarthTube(self,zone):
-        
         if zone.ETschedule.upper().endswith('CSV'):
-            
             # For custom schedule
-            
             scheduleFileName = os.path.basename(zone.ETschedule)
-
             scheduleObjectName = "_".join(scheduleFileName.split(".")[:-1]).upper()
-            
             earthTubeSched = scheduleObjectName
            
         else: earthTubeSched = zone.ETschedule
@@ -1585,6 +1579,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     hb_hive = sc.sticky["honeybee_Hive"]()
     hb_EPScheduleAUX = sc.sticky["honeybee_EPScheduleAUX"]()
     hb_EPPar = sc.sticky["honeybee_EPParameters"]()
+    hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
     
     northAngle, northVector = lb_preparation.angle2north(north)
     stMonth, stDay, stHour, endMonth, endDay, endHour = lb_preparation.readRunPeriod(analysisPeriod, True)
@@ -1712,7 +1707,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     EPConstructionsCollection = []
     EPMaterialCollection = []
     EPScheduleCollection = []
-    
+    shdCntrlCollection = []
     
     # Shading Surfaces
     if HBContext and HBContext[0]!=None:
@@ -1782,13 +1777,13 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         for schedule in schedules.values():
             if schedule != "" and schedule.upper() not in EPScheduleCollection:
                 EPScheduleCollection.append(schedule.upper())
-                
+        
         for srf in zone.surfaces:
             # check if there is an energyPlus material
             
             # Add surface to a list so that zone surfaces can be checked against honeybee generator PV surfaces
             WriteIDF.zonesurfaces.append(srf.name)
-
+            
             if srf.EPConstruction != None:
                 srf.construction = srf.EPConstruction
             # else try to find the material based on bldg type and climate zone
@@ -1798,7 +1793,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
             
             # Surfaces
             idfFile.write(hb_writeIDF.EPZoneSurface(srf))
-            alreadyThereList = []
+            
             if srf.hasChild:
                 # check the construction
                 # this should be moved inside the function later
@@ -1811,26 +1806,33 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                     # the surface will use the default construction
                     if not childSrf.construction.upper() in EPConstructionsCollection:
                             EPConstructionsCollection.append(childSrf.construction.upper())
+                    
                     # Check if there is any shading for the window.
-                    # DISABLED WINDOW SHADE OBJECTS AFTER AN UPDATE FOR OPENSTUDIO.
-                    #if childSrf.shadeMaterial != [] and childSrf.shadingControl != []:
-                    #    for shadingCount, windowShading in enumerate(childSrf.shadeMaterial):
-                    #        
-                    #        try:
-                    #            if windowShading.split('\n')[1].split(',')[0] not in alreadyThereList:
-                    #                idfFile.write(windowShading)
-                    #                idfFile.write(childSrf.shadingControl[shadingCount])
-                    #                
-                    #                if childSrf.shadingSchName[shadingCount] != 'ALWAYS ON':
-                    #                    print childSrf.shadingSchName
-                    #                    EPScheduleCollection.append(childSrf.shadingSchName[shadingCount].upper())
-                    #                
-                    #                alreadyThereList.append(windowShading.split('\n')[1].split(',')[0])
-                    #        except: pass
+                    if childSrf.shadingControlName != []:
+                        for shadingCount, windowShading in enumerate(childSrf.shadingControlName):
+                            try:
+                                if windowShading not in shdCntrlCollection:
+                                    idfFile.write(hb_EPObjectsAux.getEPObjectsStr(windowShading))
+                                    values = hb_EPObjectsAux.getEPObjectDataByName(windowShading)
+                                    if values[2][0] != '':
+                                        # Iniitalize for construction (for switchable glazing).
+                                        constrName = values[2][0]
+                                        if constrName not in EPConstructionsCollection:
+                                            EPConstructionsCollection.append(constrName)
+                                    else:
+                                        # Iniitalize for material (for blinds and shades).
+                                        materialName = values[8][0]
+                                        if materialName not in EPMaterialCollection:
+                                            EPMaterialCollection.append(materialName)
+                                    
+                                    if values[4][0] != '' and values[4][0] not in EPScheduleCollection:
+                                        EPScheduleCollection.append(values[4][0].upper())
+                                    
+                                    shdCntrlCollection.append(windowShading)
+                            except: pass
                 
                 # write the glazing strings
                 idfFile.write(hb_writeIDF.EPFenSurface(srf))
-                # else: idfFile.write(hb_writeIDF.EPNonPlanarFenSurface(srf))
         
         #If there are internal masses assigned to the zone, write them into the IDF.
         if len(zone.internalMassNames) > 0:
@@ -1841,7 +1843,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                 
                 #Write the internal mass into the IDF
                 idfFile.write(hb_writeIDF.EPInternalMass(zone, massName, zone.internalMassSrfAreas[massCount], zone.internalMassConstructions[massCount]))
-        
+    
     ########### Generators - Electric load center ###########
     
     # This section was created by Anton Szilasi 
@@ -1853,11 +1855,8 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     HBgeneratoroutputs = []
     
     if HBGenerators_ != []:
-
         hb_hivegen = sc.sticky["honeybee_generationHive"]()
-        
         HBsystemgenerators = hb_hivegen.callFromHoneybeeHive(HBGenerators_)
-    
         # Generation objects use "always on" schedule
         EPScheduleCollection.append('ALWAYS ON')
         
@@ -1872,140 +1871,87 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                 return HBgeneratortimeperiod
             except:
                 pass
-                
+        
         # Extract the timestep from the incoming component simulationOutputs if its being used
         HBgeneratortimeperiod = extracttimeperiod(simulationOutputs)
-  
         if simulationOutputs_ == []:
-            
             HBgeneratoroutputs.append("Output:Variable,*,Facility Net Purchased Electric Energy, hourly;")
-            
             HBgeneratoroutputs.append("Output:Variable,*,Facility Total Electric Demand Power, hourly;")
-
             HBgeneratortimeperiod = 'hourly'
-                
         if simulationOutputs_ != []:
-                
             if (not any('Output:Variable,*,Facility Total Electric Demand Power' in s for s in simulationOutputs)) and (not any('Output:Variable,*,Facility Net Purchased Electric Power' in s for s in simulationOutputs)):
                 # These are the default inputs if the user does not specify their own using the component
                 # simulationOutputs, the default timestep is therefore hourly 
                 # the component Ladybug monthly bar chart needs hourly in order to run
-                
                 simulationOutputs.append("Output:Variable,*,Facility Net Purchased Electric Energy, hourly;")
-                
                 simulationOutputs.append("Output:Variable,*,Facility Total Electric Demand Power, hourly;")
-
                 HBgeneratortimeperiod = 'hourly'
-                
-                
         # CHECK that HBgenerator names are unique for each HB generator
-        
         HBgenerators = []
-        
         for HBgenerator in HBsystemgenerators:
-            
             HBgenerators.extend([generator.name for generator in HBgenerator.windgenerators])
-            
             HBgenerators.extend([generator.name for generator in HBgenerator.PVgenerators])
-            
         if len(HBgenerators) != len(set(HBgenerators)):
-            
             duplicateHBgenerators =  [item for item, count in collections.Counter([item for item in HBgenerators]).items() if count > 1]
-            
             for HBgenerator in duplicateHBgenerators:
-                
                 warn = " Duplicate Honeybee generator (A PV or wind generator) name, named : " + HBgenerator +" detected!"+ "\n"+\
                 "Please ensure that all PV and wind generators have unique names for EnergyPlus to run!"+ "\n"+\
                 "This error usually occurs when several PVgen components are connected to one EnergyPlus simulation, and default names " + "\n"+\
                 "have been assigned in each component. Fix this issue by inputing unique names to the input _name_ on the PVgen component."
-                
                 ghenv.Component.AddRuntimeMessage(w, warn )
-                
             return -1
         
         # CHECK that the HBsystemgenerator_name is unique for this simulation - Otherwise E+ will crash
-            
         if len(set([HBsystemgenerator.name for HBsystemgenerator in HBsystemgenerators])) != len(HBsystemgenerators):
-            
             duplicateHBsystemgenerators = [HBsystemgenerator for HBsystemgenerator, count in collections.Counter([HBsystemgenerator.name for HBsystemgenerator in HBsystemgenerators]).items() if count > 1]
-            
             for HBsystemgenerator in duplicateHBsystemgenerators:
-                
                 warn = " Duplicate Honeybee generation system name, named: " + HBsystemgenerator +" detected!"+ "\n"+\
                 "Please ensure that all Honeybee generation systems have unique names for EnergyPlus to run!"
-                
                 ghenv.Component.AddRuntimeMessage(w, warn )
-                
             return -1
             
         # CHECK that HBgenerator names are unique for this simulation - Otherwise E+ will crash
-                
         for HBsystemcount, HBsystemgenerator in enumerate(HBsystemgenerators):
-            
             # Append to HBgeneratoroutputs as if we append to simulationOutputs the original default outputs will never run
-            
             if simulationOutputs_ == []:
-                
                 # For this HBsystemgenerator write the output so that the produced electric energy is reported.
                 HBgeneratoroutputs.append("Output:Variable,"+str(HBsystemgenerator.name)+":DISTRIBUTIONSYSTEM,Electric Load Center Produced Electric Energy,"+ HBgeneratortimeperiod +";")
-
-            
             if simulationOutputs_ != []:
-
                 # If there are output variables in simulationOutputs original default outputs will not run anyhow
                 # so we can append to simulationOutputs without affecting default outputs
                 
                 # For this HBsystemgenerator write the output so that the produced electric energy is reported.
                 simulationOutputs.append("Output:Variable,"+str(HBsystemgenerator.name)+":DISTRIBUTIONSYSTEM,Electric Load Center Produced Electric Energy,"+ HBgeneratortimeperiod +";")
-                
-                        
+            
             # Define the name for the list of generators and to use in generator's list name in ElectricLoadCenter:Distribution
             if HBsystemgenerator.name == None:
                 # This shouldn't happen as Honeybee generation system has a check on it 
                 # which doesnt allow for no names to be specified.
-                
                 HBsystemgenerator_name = "generatorsystem" + str(HBsystemcount)
-                
             else:
-    
                 HBsystemgenerator_name = str(HBsystemgenerator.name)
-            
-            
             # Write one ElectricLoadCenter:Generators for each HBsystemgenerator
-            
             idfFile.write(hb_writeIDF.writegeneratlorlist(HBsystemgenerator_name,HBsystemgenerator.PVgenerators+HBsystemgenerator.windgenerators+HBsystemgenerator.fuelgenerators)) # The writegeneratlorlist only takes 'generators' as an input so add all the different generator lists together 
-            
             # Determine the type of system and write one ElectricLoadCenter:Distribution for each HBsystemgenerator
-            
             distribution_name = str(HBsystemgenerator_name) + ':Distributionsystem' 
-
             # Add a header to the financial data so that its clear financial data is from this system
             
             WriteIDF.financialdata.append('Honeybee system generator '+str(HBsystemgenerator.name))
-            
             # Add the Honeybee generation systems' annual operation and maintenance costs
-            
             WriteIDF.financialdata.append('Honeybee system annual maintenance cost - '+str(HBsystemgenerator.maintenance_cost))
             
             # Determine whether it is a PV, Wind or fuel generator system
-            
             if HBsystemgenerator.PVgenerators != []:
-                
                 # Add to a list to conduct checks on consistency of context surfaces later
-                
                 WriteIDF.checksurfaceduplicate.extend(HBsystemgenerator.contextsurfaces) 
-                
                 # Write the Honeybee context sufaces
                 writeHBcontext(HBsystemgenerator.contextsurfaces)
                 
                 # CHECK
                 # If PV surfaces are part of a zone make sure that, that zone is connected to _HBZones
                 # that is the PV surfaces are contained in HBsystemgenerator.HBzonesurfaces
-                
                 for surface in HBsystemgenerator.HBzonesurfaces:
-
                     if  not surface.name in WriteIDF.zonesurfaces:
-                        
                         warn  = "It has been detected that there are PV generators attached to sufaces of a Honeybee zone\n"+\
                         " However this Honeybee zone has not been connected to the _HBZones input on this component\n"+\
                         " Please connect it to run the EnergyPlus simulation!"
@@ -2013,18 +1959,14 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                         ghenv.Component.AddRuntimeMessage(w, warn)
                         
                         return -1
-
                 if HBsystemgenerator.simulationinverter != None:
                     
                     if HBsystemgenerator.battery != None:
                         
                         # HBsystem contains a inverter and is a DC system AND has storage
-  
                         WriteIDF.financialdata.append('Battery cost - ' +str(HBsystemgenerator.battery.cost_) +' replacement time = '+ str(HBsystemgenerator.battery.replacementtime)+ ' years')
-
                         # Although multiple inverters may exist in HBsystemgenerator.simulationinverter 
                         # in the Honeybee generation system it has been checked that they are all the same
-
                         WriteIDF.financialdata.append('Inverter cost - '+ str(HBsystemgenerator.simulationinverter[0].cost_)+ ' replacement time = '+ str(HBsystemgenerator.simulationinverter[0].replacementtime)+ ' years') 
                         
                         operationscheme = 'Baseload'
@@ -2102,11 +2044,9 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                         
                         # Write HBsystemgenerator ElectricLoadCenter:Distribution
                         idfFile.write(hb_writeIDF.writeloadcenterdistribution(distribution_name,HBsystemgenerator_name,operationscheme,demandlimit,trackschedule,trackmeterschedule,busstype,inverterobject,None)) 
-                        
                         # CHECK for duplicate inverters - These can cause EnergyPlus to crash
                         # Append inverter ID to checkbatteryduplicate to check for duplicate inverter 
                         WriteIDF.checkinverterduplicate.append(inverterobject.ID)
-                
                         # If the inverter ID occurs twice in the list WriteIDF.checkinverterduplicate it is a duplicate
                         if WriteIDF.checkinverterduplicate.count(inverterobject.ID) == 2:
                             warning  = 'Duplicate inverter detected! please make sure that each Honeybee PV generator has its own inverter \n'+ \
@@ -2115,9 +2055,8 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                             ghenv.Component.AddRuntimeMessage(w, warning)
                             print warning 
                             return -1 
-                            
+            
             elif HBsystemgenerator.windgenerators != []:
-                
                 operationscheme = 'Baseload'
                 busstype = 'AlternatingCurrent'
                 demandlimit = ''
@@ -2128,40 +2067,35 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                 
                 # Write HBsystemgenerator wind generators
                 for windgenerator in HBsystemgenerator.windgenerators:
-                    
                     idfFile.write(hb_writeIDF.wind_generator(windgenerator))
                     WriteIDF.financialdata.append('Wind turbine cost - '+str(windgenerator.cost_)) 
-                    
                 # Write HBsystemgenerator ElectricLoadCenter:Distribution
                 idfFile.write(hb_writeIDF.writeloadcenterdistribution(distribution_name,HBsystemgenerator_name,operationscheme,demandlimit,trackschedule,trackmeterschedule,busstype,inverterobject,elecstorageobject))
-                
-               
             elif HBsystemgenerator.fuelgenerators != []: # XXX 14/04/2015 not yet implemented so always equal to []
-                
                 busstype = 'AlternatingCurrent'
             
         # CHECK for duplicate HBcontext surfaces this could happen if the user connects context surfaces to both HBContext_ and a HB generator system
         HBcontextsurfaces = set()
-        
         for HBcontextsurface in WriteIDF.checksurfaceduplicate:
             HBcontextsurfaces.add(HBcontextsurface.ID)
-            
         if len(HBcontextsurfaces) != len(WriteIDF.checksurfaceduplicate):
-            
             print "Duplicate HBcontext surfaces detected! Don't connect HBcontext surfaces to both PVgen component and run E+ component HBContext_ input!"
             ghenv.Component.AddRuntimeMessage(w, "Duplicate HBcontext surfaces detected! Don't connect HBcontext surfaces to both PVgen component and run E+ component HBContext_ input!")
-            
             return -1
             
         # Write the financial data to the IDF file
         for data in hb_writeIDF.writegeneration_system_financialdata(WriteIDF.financialdata):
-            
             idfFile.write(data)
-            
         idfFile.write('\n')
-            
+    
     ################ Construction #####################
     print "[5 of 8] Writing materials and constructions..."
+    
+    # Write any materials that are outside constructions.
+    for mat in EPMaterialCollection:
+        materialStr = hb_writeIDF.EPMaterialStr(mat.upper())
+        if materialStr:
+            idfFile.write(materialStr)
     
     # Write constructions
     for cnstr in EPConstructionsCollection:
@@ -2178,7 +2112,6 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                     if materialStr:
                         idfFile.write(materialStr)
                         EPMaterialCollection.append(mat.upper())
-        
     
     ################ BODYII #####################
     print "[6 of 8] Writing schedules..."
