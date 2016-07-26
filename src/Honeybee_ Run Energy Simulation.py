@@ -60,7 +60,7 @@ Provided by Honeybee 0.0.59
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_25_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_26_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -372,6 +372,16 @@ class WriteIDF(object):
                 
                 try:
                     shdCntrl = childSrf.shadingControlName[0]
+                    if '.CSV' in shdCntrl:
+                        newSchStrList = []
+                        schedStrList = shdCntrl.split('-')
+                        for item in schedStrList:
+                            if '.CSV' in item:
+                                newItem = os.path.basename(item).replace('.CSV', '')
+                                newSchStrList.append(newItem)
+                            else:
+                                newSchStrList.append(item)
+                        shdCntrl = '-'.join(newSchStrList)
                 except:
                     shdCntrl = ''
                 
@@ -1834,8 +1844,15 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                         for shadingCount, windowShading in enumerate(childSrf.shadingControlName):
                             try:
                                 if windowShading not in shdCntrlCollection:
-                                    idfFile.write(hb_EPObjectsAux.getEPObjectsStr(windowShading))
                                     values = hb_EPObjectsAux.getEPObjectDataByName(windowShading)
+                                    if not values[4][0].endswith('.CSV'):
+                                        idfFile.write(hb_EPObjectsAux.getEPObjectsStr(windowShading))
+                                    else:
+                                        newSchedName = os.path.basename(values[4][0]).replace('.CSV', '')
+                                        initStr = hb_EPObjectsAux.getEPObjectsStr(windowShading)
+                                        finStr = initStr.replace(values[4][0], newSchedName)
+                                        idfFile.write(finStr)
+                                    
                                     if values[2][0] != '':
                                         # Iniitalize for construction (for switchable glazing).
                                         constrName = values[2][0]
