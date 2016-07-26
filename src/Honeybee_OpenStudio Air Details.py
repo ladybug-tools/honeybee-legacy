@@ -64,7 +64,7 @@ ghenv.Component.NickName = 'AirDetails'
 ghenv.Component.Message = 'VER 0.0.59\nJUL_25_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "10 | Energy | HVACSystems"
+ghenv.Component.SubCategory = "09 | Energy | HVACSystems"
 #compatibleHBVersion = VER 0.0.56\nJUL_25_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 

@@ -44,10 +44,10 @@ import Grasshopper.Kernel as gh
 
 ghenv.Component.Name = "Honeybee_OpenStudio Cooling Details"
 ghenv.Component.NickName = 'CoolingDetails'
-ghenv.Component.Message = 'VER 0.0.59\nMAY_09_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_25_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "10 | Energy | HVACSystems"
+ghenv.Component.SubCategory = "09 | Energy | HVACSystems"
 #compatibleHBVersion = VER 0.0.56\nMAY_09_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 

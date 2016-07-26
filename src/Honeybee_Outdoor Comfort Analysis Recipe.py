@@ -64,10 +64,10 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Outdoor Comfort Analysis Recipe"
 ghenv.Component.NickName = 'OutdoorComfRecipe'
-ghenv.Component.Message = 'VER 0.0.59\nJUN_08_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_25_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "09 | Energy | Energy"
+ghenv.Component.SubCategory = "10 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
 #compatibleLBVersion = VER 0.0.59\nJUN_07_2016
 try: ghenv.Component.AdditionalHelpFromDocStrings = "6"

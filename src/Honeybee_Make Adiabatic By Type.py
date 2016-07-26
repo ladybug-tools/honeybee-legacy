@@ -47,10 +47,10 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Make Adiabatic By Type"
 ghenv.Component.NickName = 'makeAdiabaticByType'
-ghenv.Component.Message = 'VER 0.0.59\nFEB_19_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_25_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "09 | Energy | Energy"
+ghenv.Component.SubCategory = "10 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
