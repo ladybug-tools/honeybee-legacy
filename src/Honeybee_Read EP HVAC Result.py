@@ -45,7 +45,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Read EP HVAC Result"
 ghenv.Component.NickName = 'readEP_HVAC_Result'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_25_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_26_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -304,13 +304,13 @@ if _resultFileAddress and gotData == True:
                     elif 'Zone Cooling Setpoint Not Met Time' in column:
                         key.append(7)
                         zoneName = checkZone(" " + column.split(':')[0])
-                        makeHeader(unmetHoursCooling, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Unmet Cooling hours", "unmet hour", True)
+                        makeHeader(unmetHoursCooling, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Unmet Cooling hours", "hours", True)
                         dataTypeList[7] = True
                     
                     elif 'Zone Heating Setpoint Not Met Time' in column:
                         key.append(8)
                         zoneName = checkZone(" " + column.split(':')[0])
-                        makeHeader(unmetHoursHeating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Unmet Heating hours", "unmet hour", True)
+                        makeHeader(unmetHoursHeating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Unmet Heating hours", "hours", True)
                         dataTypeList[8] = True
                     
                     else:

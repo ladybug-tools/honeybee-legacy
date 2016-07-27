@@ -130,11 +130,8 @@ class WriteIDF(object):
             return zoneStr + '\t1;\t!- Type\n'
             
     def EPZoneSurface (self, surface):
-        
         coordinates = surface.coordinates
-        
         checked, coordinates= self.checkCoordinates(coordinates)
-        
         if int(surface.type) == 4: surface.type = 0
         
         if checked:
@@ -706,10 +703,10 @@ class WriteIDF(object):
     def EPTimestep(self, timestep = 6):
         return '\nTimestep, ' + `timestep` + ';\n'
     
-    def EPSizingFactor(self):
+    def EPSizingFactor(self, heatSizFac, coolSizFac):
         return '\nSizing:Parameters,\n' + \
-            '\t1.25,     !- Heating Sizing Factor\n' + \
-            '\t1.15;     !- Cooling Sizing Factor\n'
+            '\t'+ str(heatSizFac) + ',     !- Heating Sizing Factor\n' + \
+            '\t'+ str(coolSizFac) + ';     !- Cooling Sizing Factor\n'
     
     def EPShadowCalculation(self, calculationMethod = "AverageOverDaysInFrequency", frequency = 6, maximumFigures = 1500):
         return '\nShadowCalculation,\n' + \
@@ -759,7 +756,9 @@ class WriteIDF(object):
                 '\t' + booleanToText[runForSizing] + ',  !- Run Simulation for Sizing Periods\n' + \
                 '\t' + booleanToText[runForWeather] + '; !- Run Simulation for Weather File Run Periods\n'
     
-    def EPRunPeriod(self, name = 'annualRun', stDay = 1, stMonth = 1, endDay = 31, endMonth = 12):
+    def EPRunPeriod(self, name = 'annualRun', stDay = 1, stMonth = 1, endDay = 31, endMonth = 12, startDayOfWeek = 'UseWeatherFile'):
+        if startDayOfWeek == None:
+            startDayOfWeek = 'UseWeatherFile'
         
         return '\nRunPeriod,\n' + \
                '\t' + name + ',    !- Name\n' + \
@@ -767,13 +766,21 @@ class WriteIDF(object):
                '\t' + `stDay` + ',    !- Begin Day of Month\n' + \
                '\t' + `endMonth` + ', !- End Month\n' + \
                '\t' + `endDay` + ',   !- End Day of Month\n' + \
-               '\t' + 'UseWeatherFile,   !- Day of Week for Start Day\n' + \
+               '\t' + startDayOfWeek + ',   !- Day of Week for Start Day\n' + \
                '\t' + 'Yes,              !- Use Weather File Holidays and Special Days\n' + \
                '\t' + 'Yes,              !- Use Weather File Daylight Saving Period\n' + \
                '\t' + 'No,               !- Apply Weekend Holiday Rule\n' + \
                '\t' + 'Yes,              !- Use Weather File Rain Indicators\n' + \
                '\t' + 'Yes;              !- Use Weather File Snow Indicators\n'
-
+    
+    def EPHoliday(self, date, count):
+        
+        return '\nRunPeriodControl:SpecialDays,\n' + \
+                '\t' + 'Holiday' + str(count) + ',  !- Name\n' + \
+                '\t' + date.split(' ' )[0] + '/' + date.split(' ')[1] + ',  !- Date\n' + \
+                '\t' + '1' + ',  !- Duration\n' + \
+                '\t' + 'Holiday' + ';  !- Special Day Type\n'
+    
     def EPGeometryRules(self, stVertexPos = 'LowerLeftCorner', direction = 'CounterClockWise', coordinateSystem = 'Relative'):
         return '\nGlobalGeometryRules,\n' + \
                 '\t' + stVertexPos + ',         !- Starting Vertex Position\n' + \
@@ -1655,7 +1662,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     idfFile.write(hb_writeIDF.EPVersion(sc.sticky["honeybee_folders"]["EPVersion"]))
     
     # Read simulation parameters
-    timestep, shadowPar, solarDistribution, simulationControl, ddyFile, terrain, grndTemps, holidays, startDayOfWeek = hb_EPPar.readEPParams(EPParameters)
+    timestep, shadowPar, solarDistribution, simulationControl, ddyFile, terrain, grndTemps, holidays, startDayOfWeek, heatSizFac, coolSizFac = hb_EPPar.readEPParams(EPParameters)
     try:
         maxWarmUpDays = str(simulationControl[5])
         minWarmUpDays = str(simulationControl[6])
@@ -1677,7 +1684,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     idfFile.write(EPBuilding)
     
     # Sizing Factor
-    idfFile.write(hb_writeIDF.EPSizingFactor())
+    idfFile.write(hb_writeIDF.EPSizingFactor(heatSizFac, coolSizFac))
     
     # HeatBalanceAlgorithm - We will just take the default for now
     #idfFile.write(hb_writeIDF.EPHeatBalanceAlgorithm())
@@ -1720,7 +1727,12 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     idfFile.write(hb_writeIDF.EPSimulationControl(*simulationControl[0:5]))
     
     # runningPeriod
-    idfFile.write(hb_writeIDF.EPRunPeriod('customRun', stDay, stMonth, endDay, endMonth))
+    idfFile.write(hb_writeIDF.EPRunPeriod('customRun', stDay, stMonth, endDay, endMonth, startDayOfWeek))
+    
+    # holidays
+    if holidays != []:
+        for count, hol in enumerate(holidays):
+            idfFile.write(hb_writeIDF.EPHoliday(hol, count))
     
     # for now I write all the type limits but it can be cleaner
     scheduleTypeLimits = set([key.upper() for key in sc.sticky["honeybee_ScheduleTypeLimitsLib"].keys()])

@@ -3513,7 +3513,7 @@ class hb_EnergySimulatioParameters(object):
     
     def readEPParams(self, EPParameters):
         
-        if EPParameters == [] or len(EPParameters)!=17:
+        if EPParameters == []:
             timestep = 6
             shadowPar = ["AverageOverDaysInFrequency", 30, 3000]
             solarDistribution = "FullInteriorAndExteriorWithReflections"
@@ -3523,6 +3523,8 @@ class hb_EnergySimulatioParameters(object):
             grndTemps = []
             holidays = []
             startDay = None
+            heatSizing = 1.15
+            coolSizing = 1.25
         
         else:
             timestep = int(EPParameters[0])
@@ -3534,8 +3536,10 @@ class hb_EnergySimulatioParameters(object):
             grndTemps = EPParameters[14]
             holidays = EPParameters[15]
             startDay = EPParameters[16]
+            heatSizing = EPParameters[17]
+            coolSizing = EPParameters[18]
         
-        return timestep, shadowPar, solarDistribution, simulationControl, ddyFile, terrain, grndTemps, holidays, startDay
+        return timestep, shadowPar, solarDistribution, simulationControl, ddyFile, terrain, grndTemps, holidays, startDay, heatSizing, coolSizing
 
 class EPMaterialAux(object):
     

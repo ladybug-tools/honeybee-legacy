@@ -47,6 +47,8 @@ Provided by Honeybee 0.0.59
             7) sat
         simulationControls_: An optional set of simulation controls from the "Honeybee_Simulation Control" component.
         ddyFile_: An optional file path to a .ddy file on your system.  This ddy file will be used to size the HVAC system before running the simulation.
+        heatingSizingFactor_: An optional number that represents the 'saftey factor' to which the heating system will be sized.  A sizing factor of 1 means that the system is sized to perfectly meet the design day conditions.  The default is set to 1.15 as it is usually appropriate to oversize the system slightly to ensure that there are no unmet hours.  Specifying a factor here that is below 1.25 can result in more hours that do not neet the heating setpoint.
+        coolingSizingFactor_: An optional number that represents the 'saftey factor' to which the cooling system will be sized.  A sizing factor of 1 means that the system is sized to perfectly meet the design day conditions.  The default is set to 1.25 as it is usually appropriate to oversize the system slightly to ensure that there are no unmet hours.  Specifying a factor here that is below 1.25 can result in more hours that do not neet the heating setpoint.
         terrain_: An optional integer or text string to set the surrouning terrain of the building, which will be used to determine how wind speed around the building changes with height.  If no value is input here, the default is set to "City."  Choose from the following options:
             0 = City: large city centres, 50% of buildings above 21m over a distance of at least 2000m upwind.
             1 = Suburbs: suburbs, wooded areas.
@@ -59,7 +61,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Energy Simulation Par"
 ghenv.Component.NickName = 'EnergySimPar'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_25_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_26_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -69,7 +71,7 @@ try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
 except: pass
 
 
-def main(timestep, shadowCalcPar, solarDistribution, simulationControls, ddyFile, terrain, monthlyGrndTemps, holidays, startDayOfWeek):
+def main(timestep, shadowCalcPar, solarDistribution, simulationControls, ddyFile, terrain, monthlyGrndTemps, holidays, startDayOfWeek, heatingSizingFactor, coolingSizingFactor):
     solarDist = {
                 "0" : "MinimalShadowing",
                 "1" : "FullExterior",
@@ -114,7 +116,7 @@ def main(timestep, shadowCalcPar, solarDistribution, simulationControls, ddyFile
         terrain = terrainDict[terrain]
     
     if (monthlyGrndTemps == [] or len(monthlyGrndTemps) == 12) and (startDayOfWeek == None or (startDayOfWeek < 8 and startDayOfWeek > 0)):
-        return [timestep] + shadowCalcPar + [solarDistribution] + simulationControls + [ddyFile] + [terrain] + [monthlyGrndTemps] + [holidays]  + [daysOfWeek[startDayOfWeek]]
+        return [timestep] + shadowCalcPar + [solarDistribution] + simulationControls + [ddyFile] + [terrain] + [monthlyGrndTemps] + [holidays]  + [daysOfWeek[startDayOfWeek]] + [heatingSizingFactor] + [coolingSizingFactor]
     else:
         if monthlyGrndTemps != [] and len(monthlyGrndTemps) != 12:
             warning = 'monthlyGrndTemps_ must either be left blank or contain 12 values representing the average ground temperature for each month.'
@@ -124,8 +126,6 @@ def main(timestep, shadowCalcPar, solarDistribution, simulationControls, ddyFile
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
         return None
 
-energySimPar = main(timestep_,
-                   shadowCalcPar_,
-                   solarDistribution_,
-                   simulationControls_,
-                   ddyFile_, terrain_, monthlyGrndTemps_, holidays_, startDayOfWeek_)
+energySimPar = main(timestep_, shadowCalcPar_, solarDistribution_, simulationControls_,
+                   ddyFile_, terrain_, monthlyGrndTemps_, holidays_, startDayOfWeek_,
+                   heatingSizingFactor_, coolingSizingFactor_)

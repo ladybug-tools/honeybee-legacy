@@ -271,6 +271,13 @@ class WriteOPS(object):
         space.setBuildingStory(self.levels[floorH])
         return space
     
+    def setSizingFactors(self, model):
+        heatSizFac = self.simParameters[9]
+        coolSizFac = self.simParameters[10]
+        sizParams = ops.Model.getSizingParameters(model)
+        sizParams.setHeatingSizingFactor(heatSizFac)
+        sizParams.setCoolingSizingFactor(coolSizFac)
+    
     def addDesignDays(self, model):
         # check ddy file to be available
         ddyFile = self.ddyFile
@@ -3529,6 +3536,9 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     
     # set shadow calculation parameters
     hb_writeOPS.setShadowCalculation(model)
+    
+    # set hvac suzung factor
+    hb_writeOPS.setSizingFactors(model)
     
     # add design days
     ddyFound = hb_writeOPS.addDesignDays(model)
