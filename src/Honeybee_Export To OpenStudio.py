@@ -64,7 +64,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_27_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -275,8 +275,14 @@ class WriteOPS(object):
         heatSizFac = self.simParameters[9]
         coolSizFac = self.simParameters[10]
         sizParams = ops.Model.getSizingParameters(model)
-        sizParams.setHeatingSizingFactor(heatSizFac)
-        sizParams.setCoolingSizingFactor(coolSizFac)
+        try:
+            sizParams.setHeatingSizingFactor(heatSizFac)
+        except:
+            pass
+        try:
+            sizParams.setCoolingSizingFactor(coolSizFac)
+        except:
+            pass
     
     def addDesignDays(self, model):
         # check ddy file to be available
