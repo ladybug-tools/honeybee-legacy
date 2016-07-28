@@ -68,7 +68,7 @@ Provided by Ladybug 0.0.62
 
 ghenv.Component.Name = "Honeybee_Annual Schedule"
 ghenv.Component.NickName = 'AnnualSchedule'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_07_2015'
+ghenv.Component.Message = 'VER 0.0.62\nJUL_27_2015'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "07 | Energy | Schedule"
@@ -374,10 +374,7 @@ def main(sun, mon, tue, wed, thu, fri, sat, holiday, runIt, epwFile, weekStartWi
             for item in country_selected:
                 print item+1
     #third condition: if holiday_ is on and epw and/or overwrite are off
-    if holiday and (not overwriteHolidays and not epwFile):
-        warning = "You have connected a holiday_ schedule but not an epwFileForHol_ or overwriteHolidays_. \nAs a result, the component doesn't know when the holidays happen and so no holidays are written."
-        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
-    elif epwFile and not holiday:
+    if epwFile and not holiday:
         warning = "You have connected an epwFileForHol_ but not a holiday_ schedule. \nAs a result, the component doesn't know what happens on the holidays and so no holidays are written."
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
     elif overwriteHolidays and not holiday:
