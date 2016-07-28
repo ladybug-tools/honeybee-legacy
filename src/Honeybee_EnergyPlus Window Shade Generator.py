@@ -738,7 +738,7 @@ def makeBlind(_glzSrf, depth, numShds, distBtwn):
     intCrvs =[]
     for plane in planes:
         try: intCrvs.append(rc.Geometry.Brep.CreateContourCurves(_glzSrf, plane)[0])
-        except: print "One intersection failed."
+        except: pass
     
     if normalVector != rc.Geometry.Vector3d.ZAxis: normalVectorPerp = rc.Geometry.Vector3d(normalVector.X, normalVector.Y, 0)
     else: normalVectorPerp = rc.Geometry.Vector3d(0, 0, normalVector.Z)
