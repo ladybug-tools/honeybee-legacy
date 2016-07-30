@@ -20,7 +20,7 @@
 
 
 """
-Use this component to set the parameters of a HVAC cooling system that has been assigned with the "Honeybee_OpenStudio Systems" component.
+Use this component to set the parameters of a HVAC cooling system that has been assigned with the "Honeybee_HVAC Systems" component.
 _
 Not all of the inputs on this component are assignable features of all HVAC systems.  However, most HVAC systems have these features and, if you assign a parameter that is not usable by a certain HVAC system, the "Honeybee_OpenStudio Systems" component will give you a warning to let you know.
 -
@@ -35,16 +35,16 @@ Provided by Honeybee 0.0.59
             0 = Water Cooled - The chiller will be cooled using a condenser water loop with cooling tower and will use a higher default COP.
             1 = Air Cooled - The chiller will reject heat directly to the air and will have a lower default COP.
     Returns:
-        coolingDetail: A description of the cooling system features, which can be plugged into "Honeybee_OpenStudio Systems" component.
+        coolingDetails: A description of the cooling system features, which can be plugged into "Honeybee_HVAC Systems" component.
 """
 
 import scriptcontext as sc
 import Grasshopper.Kernel as gh
 
 
-ghenv.Component.Name = "Honeybee_OpenStudio Cooling Details"
+ghenv.Component.Name = "Honeybee_HVAC Cooling Details"
 ghenv.Component.NickName = 'CoolingDetails'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_25_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_30_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | HVACSystems"

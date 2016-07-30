@@ -28,23 +28,23 @@ Provided by Honeybee 0.0.59
 
     Args:
         _HBZones: The HBZones for which you want to change/adjust the HVAC system.
-        _HVACSystems: A HVAC system template from the "Honeybee_OpenStudioHVACSystemsList" component.  ASHRAE recommends using the following baseline systems for different building types and fuel sources:
+        _HVACSystems: A HVAC system template from the "Honeybee_HVACSystemsList" component.  ASHRAE recommends using the following baseline systems for different building types and fuel sources:
             BUILDING TYPE               FOSSIL FUEL/HYBRID/PURCHASED HEAT           ELECTRIC ONLY
             Residential                        1: PTAC | Residential                                                  2: PTHP | Residential
             Non-Res 3 Floors             3: Packaged Single Zone - AC                                   4: Packaged Single Zone - HP
             Non-Res 4-5 Floors          5: Packaged VAV w/ Reheat                                       6: Packaged VAV w/ PFP Boxes
             Non-Res >5 Floors           7: VAV w/ Reheat                                                        8: VAV w/ PFP Boxes
             Heated Only Sotrage         9: Warm Air Furnace - Gas Fired                              10: Warm Air Furnace - Electric
-        _airDetails_: Parameters from the "Honeybee_OpenStudio Air Details" component. Use these to define the features of the ventilation component (or air side) of the HVAC system.
-        _heatingDetails_: Parameters from the "Honeybee_OpenStudio Heating Details" component.  Use these to define the features of the heating plant (or hot water side) of the HVAC system.
-        _coolingDetails_: Parameters from the "Honeybee_OpenStudio Cooling Details" component.  Use these to define the features of the cooling plant (or chilled water side) of the HVAC system.
+        _airDetails_: Parameters from the "Honeybee_HVAC Air Details" component. Use these to define the features of the ventilation component (or air side) of the HVAC system.
+        _heatingDetails_: Parameters from the "Honeybee_HVAC Heating Details" component.  Use these to define the features of the heating plant (or hot water side) of the HVAC system.
+        _coolingDetails_: Parameters from the "Honeybee_HVAC Cooling Details" component.  Use these to define the features of the cooling plant (or chilled water side) of the HVAC system.
     Returns:
         HBZones: HBZones that have been modified to have the assigned _HVACSystems.
 """
 
-ghenv.Component.Name = "Honeybee_OpenStudio Systems"
-ghenv.Component.NickName = 'OSHVACSystems'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_25_2016'
+ghenv.Component.Name = "Honeybee_Assign HVAC System"
+ghenv.Component.NickName = 'HVACSystem'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_30_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | HVACSystems"
