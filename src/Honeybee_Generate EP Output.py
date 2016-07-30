@@ -36,8 +36,6 @@ Provided by Honeybee 0.0.59
         surfaceTempAnalysis_: Set to "True" to have EnergyPlus solve for the interior and exterior surface temperatures of the individual surfaces of each zone.
         surfaceEnergyAnalysis_: Set to "True" to have EnergyPlus solve for the gains and losses through the individual surfaces of each zone.
         glazingSolarAnalysis_: Set to "True" to have EnergyPlus solve for the transmitted beam, diffuse, and total solar gain through the individual window surfaces of each zone.  These outputs are needed for Energy Shade Benefit Analysis.
-        HBgeneration_: Set to "True" to have EnergyPlus solve for variables related to HB generation objects like solar panels, wind turbines, batteries, etc.
-        ____________________: ...
         timestep_: Specify a timestep by inputing the words 'hourly', 'daily', 'monthly' or 'annual'.  The default is set to hourly.
     Returns:
         report: Report!
@@ -46,7 +44,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Generate EP Output"
 ghenv.Component.NickName = 'EPOutput'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_30_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -138,17 +136,6 @@ def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, zoneHVACMetrics,
         simulationOutputs.append("Output:Variable,*,Surface Window Transmitted Beam Solar Radiation Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Surface Window Transmitted Diffuse Solar Radiation Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Surface Window Transmitted Solar Radiation Energy, " + timePeriod)
-    
-    if HBgeneration_ == True:
-        simulationOutputs.append("Output:Variable,*,Facility Total Electric Demand Power, "+ timePeriod)
-        simulationOutputs.append("Output:Variable,*,Facility Net Purchased Electric Energy, "+ timePeriod)
-        
-        # Facility Total Electric Demand Power - This is the total of the whole Building and HVAC electric demands.
-        
-        # Facility Net Purchased Electric Power - These outputs are the net electricity purchased in both Power and Energy units. This value can be either positive or negative. Positive values are defined as electricity purchased from the utility. Negative values are defined as surplus electricity fed back into the grid.
-        
-        # Electric Load Center Produced Electric Energy [J]
-        # These outputs are the sum of electrical energy and power produced by the generators attached to a particular load center. The keywords for these reports are the unique names of ElectricLoadCenter:Distribution objects.
     
     return simulationOutputs
 
