@@ -45,7 +45,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Therm Material"
 ghenv.Component.NickName = 'ThermMaterial'
-ghenv.Component.Message = 'VER 0.0.59\nMAR_24_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAUG_01_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -74,6 +74,9 @@ def main(materialName, conductivity, absorptivity, emissivity, cavityModel, RGBC
         RGBColor = ('#%02X%02X%02X' % (r(),r(),r()))
     else:
         RGBColor = System.Drawing.ColorTranslator.ToHtml(RGBColor)
+        if not RGBColor.startswith('#'):
+            color = System.Drawing.Color.FromName(RGBColor)
+            RGBColor = System.String.Format("#{0:X2}{1:X2}{2:X2}", color.R, color.G, color.B)
     
     #Make the string.
     if type == 0:

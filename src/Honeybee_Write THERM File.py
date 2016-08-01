@@ -51,7 +51,7 @@ import decimal
 
 ghenv.Component.Name = 'Honeybee_Write THERM File'
 ghenv.Component.NickName = 'writeTHERM'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_06_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAUG_01_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -447,6 +447,9 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
                 matFromLib = copy.deepcopy(thermMatLib[polygon.material])
                 matFromLib["Name"] = matFromLib["Name"].title()
                 correctFormatCol = str(System.Drawing.ColorTranslator.ToHtml(matFromLib["RGBColor"]))
+                if not correctFormatCol.startswith('#'):
+                    color = System.Drawing.Color.FromName(matFromLib["RGBColor"])
+                    correctFormatCol = System.String.Format("#{0:X2}{1:X2}{2:X2}", color.R, color.G, color.B)
                 matFromLib["RGBColor"] = '0x' + correctFormatCol.split('#')[-1]
                 matFromLib["Name"] = checkAbbreviations(matFromLib["Name"])
                 #Check for frame cavity materials.
