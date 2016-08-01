@@ -57,7 +57,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Microclimate Map Analysis"
 ghenv.Component.NickName = 'MicroclimateMap'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_25_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAUG_01_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -598,14 +598,6 @@ def createSrfDict(zoneSrfNames, nameKey, datakey, srfHeaders, srfNumbers):
             if srfDict[path][nameKey].upper() == srfName:
                 srfDict[path][datakey] = srfNumbers[listCount]
                 foundIt = True
-            elif srfDict[path][nameKey].upper() in srfName and "GLZ" in srfDict[path][nameKey].upper():
-                srfDict[path][datakey] = srfNumbers[listCount]
-                foundIt = True
-            elif srfName.split('_')[0] in srfDict[path][nameKey].upper() and "GLZ" in srfDict[path][nameKey].upper():
-                try:
-                    srfDict[path][datakey] = srfNumbers[listCount]
-                    foundIt = True
-                except: pass
         if foundIt == False:
             print "Surface temperature for Surface: " + srfName + " not found in the EP results."
     
