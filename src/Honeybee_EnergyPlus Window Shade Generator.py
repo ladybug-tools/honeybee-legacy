@@ -17,7 +17,6 @@
 # 
 # You should have received a copy of the GNU General Public License
 # along with Honeybee; If not, see <http://www.gnu.org/licenses/>.
-# 
 # @license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
 
 
@@ -83,7 +82,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Window Shade Generator"
 ghenv.Component.NickName = 'EPWindowShades'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_25_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAUG_01_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -814,9 +813,14 @@ def makeBlind(_glzSrf, depth, numShds, distBtwn):
     for shdSrf in shadingSurfaces:
         shdSrf.Transform(shadesTransform)
     
+    # Check the EPshdAngle.
+    if EPshdAngle == 0.0: EPshdAngle = 1.0
+    elif EPshdAngle == 180.0: EPshdAngle = 179.0
+    
     #Get the EnergyPlus distance to glass.
     assignEPCheckInit = True
     EPDistToGlass = distToGlass + (depth)*(0.5)*math.sin(math.radians(EPshdAngle))
+    if EPDistToGlass < (depth)*(0.5): EPDistToGlass = (depth)*(0.5)
     if EPDistToGlass < 0.01: EPDistToGlass = 0.01
     elif EPDistToGlass > 1:
         assignEPCheckInit = False
