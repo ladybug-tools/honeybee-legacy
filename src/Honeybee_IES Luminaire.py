@@ -53,20 +53,19 @@ In case the customLamp_ option is being used, the lumen depreciation factor of t
     Args:
         _iesFilePath: Specify the file path for .ies photometry file.
         _luminaireZone: List of (3-d coordinate, Aiming Angle) combinations that are generated through the IES Luminaire Array component.
-        _lightLossFactor_: Optional value for light loss factor. Default is 1.0
-        _candelaMultiplier_: Assign a scaling value for the candela tables. This value gets multiplied by the _lightLossFactor_ value.
+        _lightLossFactor_: An optional number that will be multiplied by the luminosity of the light.  This can be used to account for different light bulb luminosities or light loss from additional fixture obstructions around the light. The default is set to 1.0.
+        _candelaMultiplier_: Assign a scaling value for the candela tables. This value gets multiplied by the _lightLossFactor_ value. Default is set to 1.0.
         _customLumName_: Specify a custom name for the luminaire. This input should only be used in case the manufacturer hasn't provided a value for [LUMCAT] in the photometric data.
         _drawLuminaireWeb_: Draw a geometric representation of the candela distribution of the luminaire on the Rhino viewport. If set to True then geometry normalized to unit dimensions will be drawn. If a number is provided, then geometry will be drawn and scaled to that value.
         _drawLuminaireAxes_: Draw the C0-G0 axes of the luminaire on the Rhino viewport. If set to True then axes normalized to 1.5 times the unit dimensions will be drawn. If a number is provided, then geometry will be drawn and scaled to that value.
         _drawLuminairePoly_: Draw the polygon, circle or box representing the luminous opening of the luminaire on the Rhino viewport. If set to True then geometry normalized to unit dimensions will be drawn. If a number is provided, then geometry will be drawn and scaled to that value.
-        _luminaireID: Custom name for the luminaire rad file. The default name is the same as the name of the IES file.
         _radDir_: Custom location for the luminaire rad file. The default location is inside the Ladybug folder on your system.
         customLamp_: Specify a custom lamp using the IES Custom Lamp component
         extendLumAxesToPt_: Specify a point to which the luminaire axes should be extended to. Please note that if the aiming of the luminaire is very far way from this point then some abnormal results might be seen.
         _writeRad: Set to True to create the file for electric lighting simulation.
 
     Returns:
-        luminaire3dWeb: The geometry created in the Rhino viewport for visualizing the luminaire. Can be used for generating previews.
+        luminaireGeo: The geometry created in the Rhino viewport for visualizing the luminaire. Can be used for generating previews.
         luminaireDetails: A description of the luminaire generated after parsing the IES file.
         luminaireList: List of luminaires and their locations and mounting angles.
         elecLightingData: Details about the luminaire, locations and lamps used in the simulation. Connect this output to the _elecLightingData input of the Honeybee_IES Project component.
@@ -83,7 +82,7 @@ from __future__ import division
 
 ghenv.Component.Name = "Honeybee_IES Luminaire"
 ghenv.Component.NickName = 'iesLuminaire'
-ghenv.Component.Message = 'VER 0.0.59\nMar_03_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAUG_02_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"
 
@@ -103,6 +102,7 @@ import sys
 import time
 import shutil
 import datetime
+import uuid
 
 w = gh.GH_RuntimeMessageLevel.Warning
 
@@ -182,21 +182,43 @@ class Luminaire:
            #Check the luminous dimensions. Throw an exception if they aren't round or rectangular.
            width,length,height = self.width,self.length,self.height
            luminousDim = ''
-           if width > 0 and length > 0 and round(height,2) == 0:
+           if round(width,2) == 0 and round(length,2) == 0 and round(height,2) == 0:
+               luminousDim = "{0},{1},{2}.\n(The luminous opening is a point source. The IES data might be for a lamp)".format(width,length,height) 
+           elif width > 0 and length > 0 and round(height,2) == 0:
                luminousDim = "{},{},{}.\nThe luminous opening is rectangular.".format(width,length,height) 
-           elif width <0 and round(length,2)==0 and round(height,2)==0:
-               luminousDim = "{0},{1},{2}.\n(The luminous opening is circular. {3} is the diameter of the luminous opening)".format(width,length,height,abs(width)) 
            elif width > 0 and length > 0 and height> 0:
                luminousDim = "{0},{1},{2}.\n(The luminous opening is rectangular with luminous sides.)".format(width,length,height) 
-               
-           elif int(width) == 0 and int(length) == 0 and int(height) == 0:
-               luminousDim = "{0},{1},{2}.\n(The luminous opening is a point source. The IES data might be for a lamp)".format(width,length,height) 
-               self.width = -0.01
+           elif width <0 and length < 0 and round(length,2) == round(width,2) and round(height,2)==0:
+               luminousDim = "{0},{1},{2}.\n(The luminous opening is circular. {3} is the diameter of the luminous opening)".format(width,length,height,abs(width)) 
+           elif width <0 and length < 0 and round(length,2) != round(width,2) and round(height,2)==0:
+               luminousDim = "{0},{1},{2}.\n(The luminous opening is elliptical. {3} and {4} are the major/minor axes of the luminous opening)".format(width,length,height,abs(width),abs(length)) 
+           elif width <0 and length < 0 and height > 0 and round(length,2) == round(width,2):
+               luminousDim = "{0},{1},{2}.\n(The luminous opening is a vertical cylinder. {3} is the diameter and {4} is the height of the luminous opening)".format(width,length,height,abs(width),abs(height)) 
+           elif width <0 and length < 0 and height > 0 and round(length,2) != round(width,2):
+               luminousDim = "{0},{1},{2}.\n(The luminous opening is a vertical elliptcal cylinder. {3} and {4} are the major/minor axes and {5} is the height of the luminous opening)".format(width,length,height,abs(width),abs(length),abs(height)) 
+           elif width <0 and length < 0 and height < 0 and round(length,2) == round(width,2) and round(width,2) == round(height,2):
+               luminousDim = "{0},{1},{2}.\n(The luminous opening is a sphere. {3} is the diameter)".format(width,length,height,abs(width))
+           elif width <0 and length < 0 and height < 0:
+               luminousDim = "{0},{1},{2}.\n(The luminous opening is an ellipsoid. {3} , {4} and {5} are the width, length and height)".format(width,length,height,abs(width),abs(length),abs(height)) 
+           elif width < 0 and length > 0 and height < 0 and round(width,2) == round(height,2):
+               luminousDim = "{0},{1},{2}.\n(The luminous opening is a horizontal cylinder. {3} is the diameter and {4} is the length of the luminous opening)".format(width,length,height,abs(width),abs(height))
+           elif width < 0 and length > 0 and height < 0 and round(width,2) != round(height,2):
+               luminousDim = "{0},{1},{2}.\n(The luminous opening is a horizontal elliptical cylinder. {3} and {4} are the major/minor axes and {5} is the length of the luminous opening)".format(width,length,height,abs(width),abs(height),abs(length)) 
+           elif width > 0 and length < 0 and height < 0 and round(length,2) == round(height,2):
+               luminousDim = "{0},{1},{2}.\n(The luminous opening is a horizontal cylinder. {3} is the diameter and {4} is the length of the luminous opening)".format(width,length,height,abs(length),abs(width))
+           elif width > 0 and length < 0 and height < 0 and round(length,2) != round(height,2):
+               luminousDim = "{0},{1},{2}.\n(The luminous opening is a horizontal elliptical cylinder. {3} and {4} are the major/minor axes and {5} is the length of the luminous opening)".format(width,length,height,abs(length),abs(height),abs(width)) 
+           elif width < 0 and round(length) == 0 and height < 0 and round(width,2) == round(height,2):
+               luminousDim = "{0},{1},{2}.\n(The luminous opening is a vertical circle. {3} is the diameter of the luminous opening)".format(width,length,height,abs(width))
+           elif width < 0 and round(length) == 0 and height < 0 and round(width,2) != round(height,2):
+               luminousDim = "{0},{1},{2}.\n(The luminous opening is a vertical ellipse. {3} and {4} are the major/minor axes of the luminous opening)".format(width,length,height,abs(width),abs(height)) 
            else:
-                
-               raise Exception("The luminous dimensions for the specfied luminaire are ({},{},{}). This format, which is neither rectangular nor circular, is not supported currently".format(width,length,height))                
-
-
+               luminousDim = "{0},{1},{2}.\n(The luminous opening is unidentified)".format(width,length,height) 
+               warning = "The luminous dimensions for the specfied luminaire are ({0},{1},{2}). These are not recognized.\n" \
+               "This component will still run but it will not be able to draw the light geometry in the Rhino scene".format(width,length,height)
+               ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+               raise Exception("The luminous dimensions for the specfied luminaire are ({},{},{}). This format, which is neither rectangular nor circular, is not supported currently".format(width,length,height))
+           
            #Check if optional comments exist in the IES file. Add them to the string if they do exist.   
            lumstring = """"""
            if self.lumCat:
@@ -247,8 +269,6 @@ class electricLightingData:
         return "Honeybee.electricLightingData"
 
 
-
-
 #Parse IES file, Instantiate luminaire class.            
 def makeLum(fileName,_customLumName_):
     """
@@ -256,8 +276,6 @@ def makeLum(fileName,_customLumName_):
         1. Function for parsing the IES file.
         2. Keywords are parsed first, followed by the photometric data.
     """
-
-
     #Initiate the dictionary to store 
     
     lumData = dict.fromkeys(('lumCat','lumMan','lumDes','lampCat','lampDes','iesType'),'Not specified in file.')
@@ -271,16 +289,12 @@ def makeLum(fileName,_customLumName_):
     else:
         fileName = "\n".join(fileName)
     
-
-    
     #If the actual contents of the ies file are provided instead of the 
     try:
         with open(fileName) as iesData:
             iesData = iesData.readlines()
     except (SystemError,ValueError):
         iesData = fileName.split("\n")
-
-    
     
     for idx,lines in enumerate(iesData):
         lineSplit = lines.split()
@@ -330,10 +344,8 @@ def makeLum(fileName,_customLumName_):
             iesFile = iesFile.read()   #Read ies file.
     except (SystemError,ValueError):
         iesFile = fileName
-#    print(iesFile)
     iesFile = iesFile.replace(',',' ') #If commas exist, replace them with spaces so that splitting is easier.
     iesFile = iesFile.split()
-     
     
      
     #Test for tilt angles. If present inlcude them in the IES definition.
@@ -359,8 +371,6 @@ def makeLum(fileName,_customLumName_):
     lumData.update({'numLamps':numLamps,'lumLamp':lumLamp,'candMul':candMul})
     
     
-
-
     numVertAng = int(iesData[3])
     numHorzAng = int(iesData[4])
     photType = int(iesData[5])
@@ -402,25 +412,83 @@ def createLumPoly(Luminaire):
     fileUnit = {1:0.304,2:1}[Luminaire.unitType]
     width,length,height = fileUnit*Luminaire.width,fileUnit*Luminaire.length,fileUnit*Luminaire.height
     
-    normVector = rc.Geometry.Vector3d(0,0,1)
-    xyPlane = rc.Geometry.Plane(rc.Geometry.Point3d(0,0,0),normVector)
-    point3d = rc.Geometry.Point3d(0,0,0)
+    xyPlane = rc.Geometry.Plane.WorldXY
+    point3d = rc.Geometry.Point3d.Origin
+    LumPoly = point3d
     
-    #If width > 0, it implies that this is a rectangle, else draw a circle
-    if width>0 and round(height,2)==0:
+    # Iplies that the luminous opening is a point.
+    if round(width,2) == 0 and round(length,2) == 0 and round(height,2) == 0:
+        pass
+    # Implies that luminous opening is rectangular
+    elif width > 0 and length > 0 and round(height,2) == 0:
         cornerA = rc.Geometry.Point3d(-length/2,-width/2,0)
         cornerB = rc.Geometry.Point3d(length/2,width/2,0)
-        LumPoly = rc.Geometry.Rectangle3d(xyPlane,cornerA,cornerB)
-    #Implies that the luminous opening is a circle.    
-    elif width<0:
-        LumPoly = rc.Geometry.Circle(xyPlane,point3d,abs(-width/2))
-    
-    #Implies that luminous opening is rectangular with luminous sides.
-    elif round(height,2)>0:
+        lumRect = rc.Geometry.Rectangle3d(xyPlane,cornerA,cornerB).ToNurbsCurve()
+        LumPoly = rc.Geometry.Brep.CreatePlanarBreps([lumRect])[0]
+    # Implies that luminous opening is rectangular with luminous sides.
+    elif width > 0 and length > 0 and height> 0:
         yInterval = rc.Geometry.Interval(-width/2,width/2)
         xInterval = rc.Geometry.Interval(-length/2,length/2)
         zInterval = rc.Geometry.Interval(-height/2,height/2)
         LumPoly = rc.Geometry.Box(xyPlane,xInterval,yInterval,zInterval)
+    # Implies that the luminous opening is a circle.    
+    elif width <0 and length < 0 and round(length,2) == round(width,2) and round(height,2)==0:
+        LumCirc = rc.Geometry.Circle(xyPlane,point3d,abs(-width/2)).ToNurbsCurve()
+        LumPoly = rc.Geometry.Brep.CreatePlanarBreps([LumCirc])[0]
+    # Implies that the luminous opening is an ellipse. 
+    elif width <0 and length < 0 and round(length,2) != round(width,2) and round(height,2)==0:
+        LumEllip = rc.Geometry.Ellipse(xyPlane,abs(-width/2),abs(-length/2)).ToNurbsCurve()
+        LumPoly = rc.Geometry.Brep.CreatePlanarBreps([LumEllip])[0]
+    # Implies the luminous opening is a vertical cylinder.
+    elif width <0 and length < 0 and height > 0 and round(length,2) == round(width,2):
+        LumCirc = rc.Geometry.Circle(xyPlane,point3d,abs(-width/2))
+        LumPoly = rc.Geometry.Cylinder(LumCirc, height).ToBrep(True, True)
+    # Implies the luminous opening is a vertical elliptcal cylinder.
+    elif width <0 and length < 0 and height > 0 and round(length,2) != round(width,2):
+        LumCirc = rc.Geometry.Circle(xyPlane,point3d,1)
+        LumPoly = rc.Geometry.Cylinder(LumCirc, 1).ToNurbsSurface()
+        transf = rc.Geometry.Transform.Scale(xyPlane,abs(width/2),abs(length/2),abs(height))
+        LumPoly.Transform(transf)
+        LumPoly = LumPoly.ToBrep().CapPlanarHoles(sc.doc.ModelAbsoluteTolerance)
+    elif width <0 and length < 0 and height < 0 and round(length,2) == round(width,2) and round(width,2) == round(height,2):
+        LumPoly = rc.Geometry.Sphere(rc.Geometry.Point3d(0,0,abs(width/2)),abs(width/2))
+    # Implies the luminous opening is an ellipsoid.
+    elif width <0 and length < 0 and height < 0:
+        LumPoly = rc.Geometry.Sphere(rc.Geometry.Point3d(0,0,abs(width/2)),1).ToNurbsSurface()
+        transf = rc.Geometry.Transform.Scale(rc.Geometry.Plane(rc.Geometry.Point3d(0,0,abs(width/2)),rc.Geometry.Vector3d.ZAxis),abs(width/2),abs(length/2),abs(height/2))
+        LumPoly.Transform(transf)
+    # Implies the luminous opening is a horizontal cylinder.
+    elif width < 0 and length > 0 and height < 0 and round(width,2) == round(height,2):
+        LumCirc = rc.Geometry.Circle(rc.Geometry.Plane.WorldYZ,rc.Geometry.Point3d((-length/2),0,abs(-width/2)),abs(-width/2))
+        LumPoly = rc.Geometry.Cylinder(LumCirc, length).ToBrep(True, True)
+    # Implies the luminous opening is a horizontal elliptical cylinder.
+    elif width < 0 and length > 0 and height < 0 and round(width,2) != round(height,2):
+        centPt = rc.Geometry.Point3d((height/2),0,abs(height/2))
+        LumCirc = rc.Geometry.Circle(rc.Geometry.Plane.WorldYZ,centPt,1)
+        LumPoly = rc.Geometry.Cylinder(LumCirc, 1).ToNurbsSurface()
+        transf = rc.Geometry.Transform.Scale(rc.Geometry.Plane(centPt,rc.Geometry.Vector3d.ZAxis),abs(length),abs(width/2),abs(height/2))
+        LumPoly.Transform(transf)
+        LumPoly = LumPoly.ToBrep().CapPlanarHoles(sc.doc.ModelAbsoluteTolerance)
+    # Implies the luminous opening is a horizontal cylinder.
+    elif width > 0 and length < 0 and height < 0 and round(length,2) == round(height,2):
+        LumCirc = rc.Geometry.Circle(rc.Geometry.Plane.WorldZX,rc.Geometry.Point3d(0,(-width/2),abs(-length/2)),abs(-length/2))
+        LumPoly = rc.Geometry.Cylinder(LumCirc, width).ToBrep(True, True)
+    # Implies the luminous opening is a horizontal elliptical cylinder.
+    elif width > 0 and length < 0 and height < 0 and round(length,2) != round(height,2):
+        centPt = rc.Geometry.Point3d(0,(-width/2),abs(height/2))
+        LumCirc = rc.Geometry.Circle(rc.Geometry.Plane.WorldZX,centPt,1)
+        LumPoly = rc.Geometry.Cylinder(LumCirc, 1).ToNurbsSurface()
+        transf = rc.Geometry.Transform.Scale(rc.Geometry.Plane(centPt,rc.Geometry.Vector3d.ZAxis),abs(length/2),abs(width),abs(height/2))
+        LumPoly.Transform(transf)
+        LumPoly = LumPoly.ToBrep().CapPlanarHoles(sc.doc.ModelAbsoluteTolerance)
+    # Implies the luminous opening is a vertical circle.
+    elif width < 0 and round(length) == 0 and height < 0 and round(width,2) == round(height,2):
+        LumCirc = rc.Geometry.Circle(rc.Geometry.Plane.WorldYZ,point3d,abs(width/2)).ToNurbsCurve()
+        LumPoly = rc.Geometry.Brep.CreatePlanarBreps([LumCirc])[0]
+    # Implies the luminous opening is a vertical ellipse.
+    elif width < 0 and round(length) == 0 and height < 0 and round(width,2) != round(height,2):
+        LumCirc = rc.Geometry.Ellipse(rc.Geometry.Plane.WorldYZ,abs(width/2),abs(height/2)).ToNurbsCurve()
+    
     return LumPoly
 
 
@@ -593,7 +661,7 @@ def fixIesFile(originalPathName,_radDir_):
     return fileNameFullFixed
 
 #If all the input requirements are satisfied then, proceed by drawing the luminaires inside Rhino.
-if _iesFilePath and _luminaireID and _luminaireZone and checkLadybug and checkHoneybee:
+if _iesFilePath and _luminaireZone and checkLadybug and checkHoneybee:
         
         
     if len(_iesFilePath)==1:
@@ -607,6 +675,7 @@ if _iesFilePath and _luminaireID and _luminaireZone and checkLadybug and checkHo
             originalIesFileName = filenameonly
     
     #Store original values for later use.
+    _luminaireID = str(uuid.uuid4())
     _luminaireIdSpecified = _luminaireID
     _iesFilePathSpecified = _iesFilePath
     
@@ -667,7 +736,7 @@ if _iesFilePath and _luminaireID and _luminaireZone and checkLadybug and checkHo
     
     #Iterate through the list of luminaires and generate luminaire geometry inside Rhino for each luminaire.
     #Record the luminaire coordinates and rotation info for each luminaire.
-    luminaire3dWeb = []
+    luminaireGeo = []
     luminaireList = []
     for idx,lumArr in enumerate(_luminaireZone):
             for index,values in enumerate(lumArr.points):
@@ -695,7 +764,7 @@ if _iesFilePath and _luminaireID and _luminaireZone and checkLadybug and checkHo
                         _drawLuminairePoly_ = 1
                     else:
                         _drawLuminairePoly_ = abs(_drawLuminairePoly_)
-                    luminaire3dWeb.append(transformGeometry(luminairePolygon,Spin,Tilt,Rotate,Location,_drawLuminairePoly_))
+                    luminaireGeo.append(transformGeometry(luminairePolygon,Spin,Tilt,Rotate,Location,_drawLuminairePoly_))
                 
                 if _drawLuminaireWeb_:
                     for surfaces in luminaireWeb:
@@ -703,7 +772,7 @@ if _iesFilePath and _luminaireID and _luminaireZone and checkLadybug and checkHo
                             _drawLuminaireWeb_ = 1
                         else:
                             _drawLuminaireWeb_ = abs(_drawLuminaireWeb_)
-                        luminaire3dWeb.append(transformGeometry(surfaces,Spin,Tilt,Rotate,Location,_drawLuminaireWeb_))
+                        luminaireGeo.append(transformGeometry(surfaces,Spin,Tilt,Rotate,Location,_drawLuminaireWeb_))
     
                 if _drawLuminaireAxes_ is None:
                     _drawLuminaireAxes_ = True
@@ -717,7 +786,7 @@ if _iesFilePath and _luminaireID and _luminaireZone and checkLadybug and checkHo
                         else:
                             _drawLuminaireAxes_ = abs(_drawLuminaireAxes_)
     
-                        luminaire3dWeb.append(transformGeometry(axs,Spin,Tilt,Rotate,Location,_drawLuminaireAxes_))
+                        luminaireGeo.append(transformGeometry(axs,Spin,Tilt,Rotate,Location,_drawLuminaireAxes_))
                 
                 if extendLumAxesToPt_:
                     vertAimingLine = rc.Geometry.Line(rc.Geometry.Point3d(0,0,0),rc.Geometry.Point3d(0,0,-1))
@@ -733,7 +802,7 @@ if _iesFilePath and _luminaireID and _luminaireZone and checkLadybug and checkHo
                     endPoint = rc.Geometry.Point3d(x3,y3,z3)
                     vertAimingLine = rc.Geometry.Line(startPoint,endPoint)
     
-                    luminaire3dWeb.append(vertAimingLine)
+                    luminaireGeo.append(vertAimingLine)
     
     luminaireList = "\n".join(luminaireList)
 
@@ -849,10 +918,6 @@ if _iesFilePath and _luminaireID and _luminaireZone and checkLadybug and checkHo
             
 elif not _iesFilePath:
     ghenv.Component.AddRuntimeMessage(w, "_iesFilePath is a required input. Please specify the filepath for an IES file.")
-
-elif not _luminaireID:
-    ghenv.Component.AddRuntimeMessage(w, "_luminaireID is a required input. Please specify an ID for the luminaire. The ID can be any number, letter, word or a combination of these.")
-    
 elif not _luminaireZone:
     ghenv.Component.AddRuntimeMessage(w, "_luminaireZone is a required input. Please connect the output of the IES Luminaire Array component to this module.")
-    
+
