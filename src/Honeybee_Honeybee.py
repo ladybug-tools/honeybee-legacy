@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAUG_03_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -7002,7 +7002,8 @@ class thermPolygon(object):
         elif material.upper() in sc.sticky["honeybee_thermMaterialLib"].keys():
             if RGBColor == None: RGBColor = sc.sticky["honeybee_thermMaterialLib"][material.upper()]["RGBColor"]
             elif sc.sticky["honeybee_thermMaterialLib"][material.upper()]["RGBColor"] == RGBColor: pass
-            else: material = self.makeThermMatCopy(material, material+str(RGBColor), RGBColor)
+            else:
+                material = self.makeThermMatCopy(material, material+str(RGBColor), RGBColor)
         else:
             self.warning = 'Failed to find material ' + material + ' in either the therm maerial, EP Material, or EP Window Material libraries.'
             material = None
@@ -7041,7 +7042,7 @@ class thermPolygon(object):
         sc.sticky["honeybee_thermMaterialLib"][materialName] = {}
         
         #Create the material with values from the original material.
-        sc.sticky["honeybee_thermMaterialLib"][materialName]["Name"] = sc.sticky["honeybee_thermMaterialLib"][orgigMat]["Name"]
+        sc.sticky["honeybee_thermMaterialLib"][materialName]["Name"] = materialName
         sc.sticky["honeybee_thermMaterialLib"][materialName]["Type"] = sc.sticky["honeybee_thermMaterialLib"][orgigMat]["Type"]
         sc.sticky["honeybee_thermMaterialLib"][materialName]["Conductivity"] = sc.sticky["honeybee_thermMaterialLib"][orgigMat]["Conductivity"]
         sc.sticky["honeybee_thermMaterialLib"][materialName]["Absorptivity"] = sc.sticky["honeybee_thermMaterialLib"][orgigMat]["Absorptivity"]
@@ -7061,7 +7062,11 @@ class thermPolygon(object):
         sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] = None
         sc.sticky["honeybee_thermMaterialLib"][material]["Absorptivity"] = 0.5
         sc.sticky["honeybee_thermMaterialLib"][material]["Emissivity"] = 0.9
-        if RGBColor != None: sc.sticky["honeybee_thermMaterialLib"][material]["RGBColor"] = RGBColor
+        if RGBColor != None:
+            if not RGBColor.startswith('#'):
+                color = System.Drawing.Color.FromName(RGBColor)
+                RGBColor = System.String.Format("#{0:X2}{1:X2}{2:X2}", color.R, color.G, color.B)
+            sc.sticky["honeybee_thermMaterialLib"][material]["RGBColor"] = RGBColor.replace('#','0x')
         else:
             r = lambda: random.randint(0,255)
             randColor = ('#%02X%02X%02X' % (r(),r(),r()))
@@ -7105,7 +7110,12 @@ class thermBC(object):
         self.BCProperties['H'] = str(filmCoeff)
         self.BCProperties['HeatFlux'] = "0.000000"
         self.BCProperties['Temperature'] = str(temperature)
-        if RGBColor != None: self.BCProperties['RGBColor'] = str(System.Drawing.ColorTranslator.ToHtml(RGBColor))
+        if RGBColor != None:
+            bColor = str(System.Drawing.ColorTranslator.ToHtml(RGBColor))
+            if not bColor.startswith('#'):
+                color = System.Drawing.Color.FromName(bColor)
+                bColor = System.String.Format("#{0:X2}{1:X2}{2:X2}", color.R, color.G, color.B)
+            self.BCProperties['RGBColor'] = bColor.replace('#','0x')
         else: self.BCProperties['RGBColor'] = '0x80FFFF'
         if radTemp == None: self.BCProperties['Tr'] = str(temperature)
         else: self.BCProperties['Tr'] = str(radTemp)
