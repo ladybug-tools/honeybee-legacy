@@ -94,15 +94,17 @@ So, color fidelity metrics such as CRI cannot be considered in these calculation
 from __future__ import division
 import Grasshopper.Kernel as gh
 import math
-
+import scriptcontext as sc
 
 ghenv.Component.Name = "Honeybee_IES Custom Lamp"
 ghenv.Component.NickName = 'iesCustomLamp'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAUG_02_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "13 | WIP"
-try: ghenv.Component.AdditionalHelpFromDocStrings = "6"
+ghenv.Component.SubCategory = "02 | Daylight | Light Source"
+#compatibleHBVersion = VER 0.0.56\nJUL_01_2016
+#compatibleLBVersion = VER 0.0.59\nJUL_01_2016
+try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
 except: pass
 
 
@@ -576,9 +578,17 @@ if _lampName:
 
             customLamp = customLampData(lampData)
 
-            
-                            
-else:
-    msg = "_lampName is a required input. Please specify a name for the custom lamp."
-    ghenv.Component.AddRuntimeMessage(w, msg)
+
+if sc.sticky.has_key('honeybee_release'):
+    
+    try:
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): pass
+        if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): pass
+    except:
+        warning = "You need a newer version of Honeybee to use this compoent." + \
+        "Use updateHoneybee component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+        "into canvas and try again."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
 

@@ -40,19 +40,35 @@ import operator as op
 import sys
 import copy
 import os
+import scriptcontext as sc
 
 
 ghenv.Component.Name = "Honeybee_IES Project"
 ghenv.Component.NickName = 'iesProject'
-ghenv.Component.Message = 'VER 0.0.59\nFeb_15_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAUG_02_2016'
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "13 | WIP"
-
-try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
+ghenv.Component.SubCategory = "02 | Daylight | Light Source"
+#compatibleHBVersion = VER 0.0.56\nJUL_01_2016
+#compatibleLBVersion = VER 0.0.59\nJUL_01_2016
+try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
 except: pass
 
 #lambda for formatting numbers for display:
 numFrm = lambda x: "{:.2f}".format(round(x,2))
+
+
+if sc.sticky.has_key('honeybee_release'):
+    
+    try:
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): pass
+        if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): pass
+    except:
+        warning = "You need a newer version of Honeybee to use this compoent." + \
+        "Use updateHoneybee component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+        "into canvas and try again."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
 
 
 

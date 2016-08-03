@@ -84,9 +84,10 @@ ghenv.Component.Name = "Honeybee_IES Luminaire"
 ghenv.Component.NickName = 'iesLuminaire'
 ghenv.Component.Message = 'VER 0.0.59\nAUG_02_2016'
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "13 | WIP"
-
-try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
+ghenv.Component.SubCategory = "02 | Daylight | Light Source"
+#compatibleHBVersion = VER 0.0.56\nJUL_01_2016
+#compatibleLBVersion = VER 0.0.59\nJUL_01_2016
+try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
 except: pass
 
 
@@ -106,13 +107,17 @@ import uuid
 
 w = gh.GH_RuntimeMessageLevel.Warning
 
+
 checkLadybug = sc.sticky.has_key('ladybug_release') 
 checkHoneybee = sc.sticky.has_key('honeybee_release')
 
 if not checkLadybug or not checkHoneybee:
         print ("You should first let both Ladybug and Honeybee to fly...")
         ghenv.Component.AddRuntimeMessage(w, "You should first let both Ladybug and Honeybee to fly...")
-else:       
+else:
+    try:
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): pass
+    except: pass
     radBin = sc.sticky['honeybee_folders']['RADPath']
     radLib = sc.sticky['honeybee_folders']['RADLibPath']
 
