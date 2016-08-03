@@ -64,7 +64,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_27_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAUG_03_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -670,7 +670,6 @@ class WriteOPS(object):
             
             scheduleTypeLimitsName = values[1]
             if not self.isScheduleInLib(scheduleTypeLimitsName):
-                #print 'here ' + scheduleTypeLimitsName
                 OSScheduleTypeLimits = self.createOSScheduleTypeLimits(values[1], model)
                 self.addScheduleToLib(scheduleTypeLimitsName, OSScheduleTypeLimits)
         
@@ -3001,6 +3000,7 @@ class HoneybeeHVAC(object):
 class EPFeaturesNotInOS(object):
     def __init__(self, workingDir):
         self.fileBasedSchedules = {}
+        self.schedTypLims = []
         self.workingDir = workingDir
     
     def createCSVSchedString(self, scheduleName):
@@ -3056,15 +3056,22 @@ class EPFeaturesNotInOS(object):
         
         # scheduleStr writes the section Schedule:File in the EnergyPlus file
         # for custom schedules.
-        scheduleStr = schTypeLimitStr + \
-                      "Schedule:File,\n" + \
-                      scheduleObjectName + ",\t!- Name\n" + \
-                      schTypeLimitName + ",\t!- Schedule Type Limits Name\n" + \
-                      scheduleNewAddress + ",\t!- File Name\n" + \
-                      "5,\t!- Column Number\n" + \
-                      "4,\t!- Rows To Skip\n" + \
-                      str(int(numOfHours)) + ",\t!- Hours of Data\n" + \
-                      "Comma;\t!- Column Separator\n"
+        if schTypeLimitName in self.schedTypLims:
+            scheduleStr = ''
+        else:
+            scheduleStr = schTypeLimitStr
+        
+        scheduleStr = scheduleStr + \
+            "Schedule:File,\n" + \
+            scheduleObjectName + ",\t!- Name\n" + \
+            schTypeLimitName + ",\t!- Schedule Type Limits Name\n" + \
+            scheduleNewAddress + ",\t!- File Name\n" + \
+            "5,\t!- Column Number\n" + \
+            "4,\t!- Rows To Skip\n" + \
+            str(int(numOfHours)) + ",\t!- Hours of Data\n" + \
+            "Comma;\t!- Column Separator\n"
+        
+        self.schedTypLims.append(schTypeLimitName)
         
         return scheduleStr
     
