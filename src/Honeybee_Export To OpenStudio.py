@@ -64,7 +64,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.59\nAUG_03_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAUG_05_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -3225,14 +3225,8 @@ class RunOPS(object):
                 lines.append(line)
                 wrongLineTrigger = True
             elif 'CSV' in line or 'csv' in line:
-                for columnCount, column in enumerate(line.split('.')):
-                    if columnCount == 0:
-                        if 'CSV' in line:
-                            origName = column + '.CSV'
-                        else:
-                            origName = column + '.csv'
-                        newName = column
-                newName = '  ' + newName.split('\\')[-1]
+                origName = line.split(',')[0]
+                newName = origName.split('\\')[-1].split('.')[0]
                 if origName not in foundCSVSchedules:
                     foundCSVSchedules.append(origName)
                 if wrongLineTrigger ==True: lines.append(line)
