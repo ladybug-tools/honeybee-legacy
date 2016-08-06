@@ -30,7 +30,11 @@ Provided by Ladybug 0.0.45
     Args:
         _osmFilePath: A file path of the an OpemStdio file
         _epwFileAddress: Address to epw weather file.
-        _runIt: Set to 'True' to run the simulation.  You can also connect a 2 to run the simulation in the background.
+        _runIt: Set to "True" to have the component generate an IDF file from the OSM file and run the IDF through through EnergyPlus.  Set to "False" to not run the file (this is the default).  You can also connect an integer for the following options:
+            0 = Do Not Run OSM and IDF thrrough EnergyPlus
+            1 = Run the OSM and IDF through EnergyPlus with a command prompt window that displays the progress of the simulation
+            2 = Run the OSM and IDF through EnergyPlus in the background (without the command line popup window).
+            3 = Generate an IDF from the OSM file but do not run it through EnergyPlus
     Returns:
         report: Report!
         resultFileAddress: The address of the EnergyPlus result file.
@@ -39,7 +43,7 @@ Provided by Ladybug 0.0.45
 
 ghenv.Component.Name = "Honeybee_Re-run OSM"
 ghenv.Component.NickName = 'Re-Run OSM'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_25_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAUG_06_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -160,29 +164,32 @@ def main(epwFile, osmFile, runEnergyPlus, openStudioLibFolder):
     idfFolder, idfPath = osmToidf(workingDir, projectName, osmPath)
     print 'OSM > IDF: ' + str(idfPath)
     
-    osmDirect = '/'.join(openStudioLibFolder.split('/')[:-3])
-    resultFile = writeBatchFile(idfFolder, "ModelToIdf\\in.idf", epwFile, getEPFolder(osmDirect), runEnergyPlus > 1)
-    print '...'
-    print 'RUNNING SIMULATION'
-    print '...'
-    
-    try:
-        errorFileFullName = str(idfPath).replace('.idf', '.err')
-        errFile = open(errorFileFullName, 'r')
-        for line in errFile:
-            print line
-            if "**  Fatal  **" in line:
-                warning = "The simulation has failed because of this fatal error: \n" + str(line)
-                w = gh.GH_RuntimeMessageLevel.Warning
-                ghenv.Component.AddRuntimeMessage(w, warning)
-                resultFile = None
-            elif "** Severe  **" in line and 'CheckControllerListOrder' not in line:
-                comment = "The simulation has not run correctly because of this severe error: \n" + str(line)
-                c = gh.GH_RuntimeMessageLevel.Warning
-                ghenv.Component.AddRuntimeMessage(c, comment)
-        errFile.close()
-    except:
-        pass
+    if runEnergyPlus < 3:
+        osmDirect = '/'.join(openStudioLibFolder.split('/')[:-3])
+        resultFile = writeBatchFile(idfFolder, "ModelToIdf\\in.idf", epwFile, getEPFolder(osmDirect), runEnergyPlus > 1)
+        print '...'
+        print 'RUNNING SIMULATION'
+        print '...'
+        
+        try:
+            errorFileFullName = str(idfPath).replace('.idf', '.err')
+            errFile = open(errorFileFullName, 'r')
+            for line in errFile:
+                print line
+                if "**  Fatal  **" in line:
+                    warning = "The simulation has failed because of this fatal error: \n" + str(line)
+                    w = gh.GH_RuntimeMessageLevel.Warning
+                    ghenv.Component.AddRuntimeMessage(w, warning)
+                    resultFile = None
+                elif "** Severe  **" in line and 'CheckControllerListOrder' not in line:
+                    comment = "The simulation has not run correctly because of this severe error: \n" + str(line)
+                    c = gh.GH_RuntimeMessageLevel.Warning
+                    ghenv.Component.AddRuntimeMessage(c, comment)
+            errFile.close()
+        except:
+            pass
+    else:
+        resultFile = None
     
     return workingDir, os.path.join(idfFolder, "ModelToIdf", "in.idf"), resultFile
 
@@ -240,4 +247,4 @@ else:
 if openStudioIsReady and initCheck == True and openStudioIsReady == True and _runIt > 0 and _epwFileAddress and _osmFilePath:
     fileCheck = checkTheInputs(_osmFilePath, _epwFileAddress)
     if fileCheck != -1:
-        studyFolder, idfFilePath, resultFileAddress = main(_epwFileAddress, _osmFilePath, _runIt, openStudioLibFolder)
+        studyFolder, idfFileAddress, resultFileAddress = main(_epwFileAddress, _osmFilePath, _runIt, openStudioLibFolder)
