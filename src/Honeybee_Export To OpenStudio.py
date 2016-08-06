@@ -47,8 +47,12 @@ Provided by Honeybee 0.0.59
         simulationOutputs_: A list of the outputs that you would like EnergyPlus to write into the result CSV file.  This can be any set of any outputs that you would like from EnergyPlus, writen as a list of text that will be written into the IDF.  It is recommended that, if you are not expereinced with writing EnergyPlus outputs, you should use the "Honeybee_Write EP Result Parameters" component to request certain types of common outputs. 
         additionalStrings_: THIS OPTION IS JUST FOR ADVANCED USERS OF ENERGYPLUS.  You can input additional text strings here that you would like written into the IDF.  The strings input here should be complete EnergyPlus objects that are correctly formatted.  You can input as many objects as you like in a list.  This input can be used to write objects into the IDF that are not currently supported by Honeybee.
         +++++++++++++++: ...
-        _writeOSM: Set to "True" to have the component take your HBZones and other inputs and write them into an OSM file.  The file path of the resulting OSM file will appear in the osmFileAddress output of this component.  Note that only setting this to "True" and not setting the output below to "Tru"e will not automatically run the file through EnergyPlus for you.
-        runSimulation_: Set to "True" to have the component generate an IDF file from the OSM file and run the IDF through through EnergyPlus.  Set to "False" to not run the file.  You can also connect a "2" integer to the input to run the file through EnergyPlus in the background (without the command line popup window).  The default is set to "False" to not run the model through EnergyPlus.
+        _writeOSM: Set to "True" to have the component take your HBZones and other inputs and write them into an OSM file.  Note that only setting this to "True" and not setting the output below to "True" will not automatically run the file through EnergyPlus for you.
+        runSimulation_: Set to "True" to have the component generate an IDF file from the OSM file and run the IDF through through EnergyPlus.  Set to "False" to not run the file (this is the default).  You can also connect an integer for the following options:
+            0 = Do Not Run OSM and IDF thrrough EnergyPlus
+            1 = Run the OSM and IDF through EnergyPlus with a command prompt window that displays the progress of the simulation
+            2 = Run the OSM and IDF through EnergyPlus in the background (without the command line popup window).
+            3 = Generate an IDF from the OSM file but do not run it through EnergyPlus
         openOpenStudio_: Set to "True" to open the OSM file in the OpenStudio interface.  This is useful if you want to visualize the HVAC system in OpenStudio, you want to edit the HVAC further in OpenStudio, or just want to run the simulation from OpenStudio instead of Rhino/GH.  Note that, for this to work, you must have .osm files associated with the OpenStudio application.
         fileName_: Optional text which will be used to name your OSM, IDF and result files.  Change this to aviod over-writing results of previous energy simulations.
         workingDir_: An optional working directory to a folder on your system, into which your OSM, IDF and result files will be written.  NOTE THAT DIRECTORIES INPUT HERE SHOULD NOT HAVE ANY SPACES OR UNDERSCORES IN THE FILE PATH.
@@ -64,7 +68,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.59\nAUG_05_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAUG_06_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -3349,57 +3353,60 @@ class RunOPS(object):
         idfFolder, idfPath = self.osmToidf(workingDir, projectName, osmPath)
         print 'OSM > IDF: ' + str(idfPath)
         
-        if not useRunManager:
-            resultFile = self.writeBatchFile(idfFolder, "ModelToIdf\\in.idf", self.weatherFile, runEnergyPlus > 1)
-            return os.path.join(idfFolder, "ModelToIdf", "in.idf"), resultFile
-        
-        outputPath = ops.Path(idfFolder)
-        
-        rmDBPath = ops.Path(os.path.join(idfFolder, projectName + ".db"))
-        try:
-            rm = ops.RunManager(rmDBPath, True, True, False, False)
+        if runEnergyPlus < 3:
+            if not useRunManager:
+                resultFile = self.writeBatchFile(idfFolder, "ModelToIdf\\in.idf", self.weatherFile, runEnergyPlus > 1)
+                return os.path.join(idfFolder, "ModelToIdf", "in.idf"), resultFile
             
-            # set up tool info to pass to run manager
-            energyPlusTool = ops.ToolInfo(self.EPPath)
-            toolInfo = ops.Tools()
-            toolInfo.append(energyPlusTool)
+            outputPath = ops.Path(idfFolder)
             
-            # get manager configration options
-            configOptions = rm.getConfigOptions()
-            
-            EPRunJob = ops.JobFactory.createEnergyPlusJob(energyPlusTool, self.iddFile, idfPath,
-                                               self.epwFile, outputPath)
-            
-            # put in queue and let it go
-            rm.enqueue(EPRunJob, True)
-            rm.setPaused(False)
-            
-            # This make Rhino and NOT Grasshopper to crash
-            # I should send this as a discussion later
-            #rm.showStatusDialog()
-            
-            while rm.workPending():
-                time.sleep(1)
-                print "Running simulation..."
-            #    print "Process Event:" + str(ops.Application.instance().processEvents())
-            jobErrors = EPRunJob.errors()
-            #    print jobErrors.succeeded()
-            
-            # print "Process: " + str(ops.Application.instance().processEvents())
-            print "Errors and Warnings:"
-            for msg in list(jobErrors.errors()):
-                print msg
+            rmDBPath = ops.Path(os.path.join(idfFolder, projectName + ".db"))
+            try:
+                rm = ops.RunManager(rmDBPath, True, True, False, False)
                 
-            rm.Dispose() # don't remove this as Rhino will crash if you don't dispose run manager
-            
-            if jobErrors.succeeded():
-                return os.path.join(idfFolder, "ModelToIdf", "in.idf"), idfFolder + "\\EnergyPlus\\epluszsz.csv"
-            else:
-                return None, None
+                # set up tool info to pass to run manager
+                energyPlusTool = ops.ToolInfo(self.EPPath)
+                toolInfo = ops.Tools()
+                toolInfo.append(energyPlusTool)
                 
-        except Exception, e:
-             rm.Dispose() # in case anything goes wrong it closes the rm
-             print `e`
+                # get manager configration options
+                configOptions = rm.getConfigOptions()
+                
+                EPRunJob = ops.JobFactory.createEnergyPlusJob(energyPlusTool, self.iddFile, idfPath,
+                                                   self.epwFile, outputPath)
+                
+                # put in queue and let it go
+                rm.enqueue(EPRunJob, True)
+                rm.setPaused(False)
+                
+                # This make Rhino and NOT Grasshopper to crash
+                # I should send this as a discussion later
+                #rm.showStatusDialog()
+                
+                while rm.workPending():
+                    time.sleep(1)
+                    print "Running simulation..."
+                #    print "Process Event:" + str(ops.Application.instance().processEvents())
+                jobErrors = EPRunJob.errors()
+                #    print jobErrors.succeeded()
+                
+                # print "Process: " + str(ops.Application.instance().processEvents())
+                print "Errors and Warnings:"
+                for msg in list(jobErrors.errors()):
+                    print msg
+                    
+                rm.Dispose() # don't remove this as Rhino will crash if you don't dispose run manager
+                
+                if jobErrors.succeeded():
+                    return os.path.join(idfFolder, "ModelToIdf", "in.idf"), idfFolder + "\\EnergyPlus\\epluszsz.csv"
+                else:
+                    return None, None
+                    
+            except Exception, e:
+                 rm.Dispose() # in case anything goes wrong it closes the rm
+                 print `e`
+        else:
+            return os.path.join(idfFolder, "ModelToIdf", "in.idf"), None
     
     def writeBatchFile(self, workingDir, idfFileName, epwFileAddress, runInBackground = False):
         """
@@ -3705,24 +3712,24 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
             csvScheduleCount, additionalcsvSchedules, shadeCntrlToReplace, replaceShdCntrl)
         
         idfFile, resultFile = hb_runOPS.runAnalysis(fname, runIt, useRunManager = False)
-        
-        try:
-            errorFileFullName = idfFile.replace('.idf', '.err')
-            errFile = open(errorFileFullName, 'r')
-            for line in errFile:
-                print line
-                if "**  Fatal  **" in line:
-                    warning = "The simulation has failed because of this fatal error: \n" + str(line)
-                    w = gh.GH_RuntimeMessageLevel.Warning
-                    ghenv.Component.AddRuntimeMessage(w, warning)
-                    resultFile = None
-                elif "** Severe  **" in line and 'CheckControllerListOrder' not in line:
-                    comment = "The simulation has not run correctly because of this severe error: \n" + str(line)
-                    c = gh.GH_RuntimeMessageLevel.Warning
-                    ghenv.Component.AddRuntimeMessage(c, comment)
-            errFile.close()
-        except:
-            pass
+        if runIt < 3:
+            try:
+                errorFileFullName = idfFile.replace('.idf', '.err')
+                errFile = open(errorFileFullName, 'r')
+                for line in errFile:
+                    print line
+                    if "**  Fatal  **" in line:
+                        warning = "The simulation has failed because of this fatal error: \n" + str(line)
+                        w = gh.GH_RuntimeMessageLevel.Warning
+                        ghenv.Component.AddRuntimeMessage(w, warning)
+                        resultFile = None
+                    elif "** Severe  **" in line and 'CheckControllerListOrder' not in line:
+                        comment = "The simulation has not run correctly because of this severe error: \n" + str(line)
+                        c = gh.GH_RuntimeMessageLevel.Warning
+                        ghenv.Component.AddRuntimeMessage(c, comment)
+                errFile.close()
+            except:
+                pass
         
         return fname, idfFile, resultFile, originalWorkDir
         
