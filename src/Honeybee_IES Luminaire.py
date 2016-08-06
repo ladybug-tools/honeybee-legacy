@@ -82,7 +82,7 @@ from __future__ import division
 
 ghenv.Component.Name = "Honeybee_IES Luminaire"
 ghenv.Component.NickName = 'iesLuminaire'
-ghenv.Component.Message = 'VER 0.0.59\nAUG_02_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAUG_06_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "02 | Daylight | Light Source"
 #compatibleHBVersion = VER 0.0.56\nJUL_01_2016
@@ -680,7 +680,10 @@ if _iesFilePath and _luminaireZone and checkLadybug and checkHoneybee:
             originalIesFileName = filenameonly
     
     #Store original values for later use.
-    _luminaireID = str(uuid.uuid4())
+    if not _customLumName_:
+        _luminaireID = str(uuid.uuid4())
+    else:
+        _luminaireID = _customLumName_
     _luminaireIdSpecified = _luminaireID
     _iesFilePathSpecified = _iesFilePath
     
