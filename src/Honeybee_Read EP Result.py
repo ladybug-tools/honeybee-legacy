@@ -30,7 +30,6 @@ Provided by Honeybee 0.0.59
     
     Args:
         _resultFileAddress: The result file address that comes out of the WriteIDF component.
-        normByFloorArea_: Set to 'True' to normalize all zone energy data by floor area (note that the resulting units will be kWh/m2 as EnergyPlus runs in the metric system).  The default is set to "False."
     Returns:
         totalThermalLoad: The total thermal energy used by each zone in kWh.  This includes cooling and heating.
         thermalLoadBalance: The thermal energy used by each zone in kWh.  Heating values are positive while cooling values are negative.
@@ -56,7 +55,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAUG_06_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -145,20 +144,6 @@ if _resultFileAddress and csvExists == True:
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
 else: pass
 
-#If no value is connected for normByFloorArea_, don't normalize the results.
-if normByFloorArea_ == None:
-    normByFlr = False
-else:
-    normByFlr = normByFloorArea_
-
-# If the user has selected to normalize the results, make sure that we were able to pull the floor areas from the results file.
-if normByFlr == True and floorAreaList != []:
-    normByFlr == True
-elif normByFlr == True:
-    normByFlr == False
-else: pass
-otherZDatFlrNormList = []
-otherZDatFlrCount = 0
 
 # Make data tree objects for all of the outputs.
 totalThermalLoad = DataTree[Object]()
@@ -220,10 +205,8 @@ idealAirTrigger = False
 def makeHeader(list, path, zoneName, timestep, name, units, normable):
     list.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(path))
     list.Add(location, GH_Path(path))
-    if normByFlr == False or normable == False: list.Add(name + " for" + zoneName, GH_Path(path))
-    else: list.Add("Floor Normalized " + name + " for" + zoneName, GH_Path(path))
-    if normByFlr == False or normable == False: list.Add(units, GH_Path(path))
-    else: list.Add(units+"/m2", GH_Path(path))
+    list.Add(name + " for" + zoneName, GH_Path(path))
+    list.Add(units, GH_Path(path))
     list.Add(timestep, GH_Path(path))
     list.Add(start, GH_Path(path))
     list.Add(end, GH_Path(path))
@@ -232,13 +215,12 @@ def makeHeaderAlt(list, path, zoneName, timestep, name, units, normable):
     thePath = GH_Path(int(path[0]), int(path[1]))
     list.Add("key:location/dataType/units/frequency/startsAt/endsAt", thePath)
     list.Add(location, thePath)
-    if normByFlr == False or normable == False: list.Add(name + " for" + zoneName, thePath)
-    else: list.Add("Floor Normalized " + name + " for" + zoneName, thePath)
-    if normByFlr == False or normable == False: list.Add(units, thePath)
-    else: list.Add(units+"/m2", thePath)
+    list.Add(name + " for" + zoneName, thePath)
+    list.Add(units, thePath)
     list.Add(timestep, thePath)
     list.Add(start, thePath)
     list.Add(end, thePath)
+
 
 #Make a function to check the zone name.
 def checkZone(csvName):
@@ -284,6 +266,11 @@ def checkZoneOther(dataIndex, csvName):
             path.append([count, dataIndex[count]])
             dataIndex[count] += 1
     return zoneName
+
+otherCount = 0
+def checkOther(name, otherCount):
+    path.append([len(zoneNameList)+1,otherCount])
+    return ' Site'
 
 dataIndex = []
 for name in zoneNameList:
@@ -368,9 +355,9 @@ if _resultFileAddress and gotData == True and csvExists == True:
                                 if idealAirTrigger == True:
                                     makeHeader(heating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Heating Load", energyUnit, True)
                                 elif idealAirTrigger == False:
-                                    makeHeader(heating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Heating Fuel Energy", energyUnit, True)
+                                    makeHeader(heating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Heating Fuel Energy", energyUnit, False)
                                 else:
-                                    makeHeader(heating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Heating Electric Energy", energyUnit, True)
+                                    makeHeader(heating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Heating Electric Energy", energyUnit, False)
                                 dataTypeList[3] = True
                                 key.append(1)
                             except:
@@ -393,22 +380,22 @@ if _resultFileAddress and gotData == True and csvExists == True:
                         key.append(15)
                         if 'FAN CONSTANT VOLUME' in column:
                             zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('FAN CONSTANT VOLUME ')[-1], 2)
-                            makeHeader(fanElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Fan Electric Energy", energyUnit, True)
+                            makeHeader(fanElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Fan Electric Energy", energyUnit, False)
                         elif 'FAN VARIABLE VOLUME' in column:
                             zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('FAN VARIABLE VOLUME ')[-1], 2)
-                            makeHeader(fanElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Fan Electric Energy", energyUnit, True)
+                            makeHeader(fanElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Fan Electric Energy", energyUnit, False)
                         elif 'FAN ON OFF' in column:
                             zoneName = checkZoneSys(" " + ":".join(column.split(":")[:-1]).split('FAN ON OFF ')[-1])
-                            makeHeader(fanElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Fan Electric Energy", energyUnit, True)
+                            makeHeader(fanElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Fan Electric Energy", energyUnit, False)
                         elif 'ZONE HVAC TERMINAL UNIT VARIABLE REFRIGERANT FLOW'  in column:
                             zoneName = checkZoneSys(" " + ":".join(column.split(" FAN:")[:-1]).split('ZONE HVAC TERMINAL UNIT VARIABLE REFRIGERANT FLOW ')[-1])
-                            makeHeader(fanElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Fan Electric Energy", energyUnit, True)
+                            makeHeader(fanElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Fan Electric Energy", energyUnit, False)
                         elif 'Zone Ventilation Fan Electric Energy' in column:
                             zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
-                            makeHeader(fanElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Fan Electric Energy", energyUnit, True)
+                            makeHeader(fanElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Fan Electric Energy", energyUnit, False)
                         elif 'Earth Tube Fan Electric Energy' in column:
                             zoneName = checkZoneOther(dataIndex, " " + ":".join(column.split(":")[:-1]))
-                            makeHeaderAlt(fanElectric, path[columnCount], zoneName, column.split('(')[-1].split(')')[0], "Earth Tube Fan Electric Energy", energyUnit, True)
+                            makeHeaderAlt(fanElectric, path[columnCount], zoneName, column.split('(')[-1].split(')')[0], "Earth Tube Fan Electric Energy", energyUnit, False)
                         dataTypeList[6] = True
                     
                     elif 'Pump Electric Energy' in column:
@@ -537,8 +524,11 @@ if _resultFileAddress and gotData == True and csvExists == True:
                         systemAirGain[int(path[-1])].append(zoneName)
                         systemAirGain[int(path[-1])].append(column.split('(')[-1].split(')')[0])
                     
-                    elif 'Zone' in column and not "Setpoint Not Met Time" in column or "Pump Electric Energy" in column:
-                        if not "System" in column and not "SYSTEM" in column and not "ZONEHVAC" in column:
+                    elif ('Zone' in column or 'Site' in column) and not "Setpoint Not Met Time" in column or "Pump Electric Energy" in column:
+                        if "Site" in column:
+                            zoneName = checkOther(column, otherCount)
+                            otherCount += 1
+                        elif not "System" in column and not "SYSTEM" in column and not "ZONEHVAC" in column:
                             zoneName = checkZoneOther(dataIndex, (" " + ":".join(column.split(":")[:-1])))
                         elif 'IDEAL LOADS' in column and not "Supply Air Sensible" in column and not "Supply Air Latent" in column:
                             zoneName = checkZoneOther(dataIndex, (" " + column.split(" IDEAL LOADS")[0]))
@@ -549,7 +539,6 @@ if _resultFileAddress and gotData == True and csvExists == True:
                             otherDataName = column.split(':')[-1].split(' [')[0].upper()
                             if "ENERGY" in otherDataName or "GAIN" in otherDataName or "MASS" in otherDataName or "VOLUME" in otherDataName or "Loss" in otherDataName: normalizble = True
                             else: normalizble = False
-                            otherZDatFlrNormList.append(normalizble)
                             makeHeaderAlt(otherZoneData, path[columnCount], zoneName, column.split('(')[-1].split(')')[0], column.split(':')[-1].split(' [')[0], column.split('[')[-1].split(']')[0], normalizble)
                             dataTypeList[19] = True
                         else:
@@ -567,33 +556,26 @@ if _resultFileAddress and gotData == True and csvExists == True:
                     else:
                         p = GH_Path(int(path[columnCount][0]), int(path[columnCount][1]))
                     
-                    if normByFlr == True:
-                        try: flrArea = floorAreaList[int(path[columnCount])]
-                        except:
-                            try: flrArea = floorAreaList[int(path[columnCount][0])]
-                            except: flrArea = sum(floorAreaList)
-                    else: flrArea = 1
-                    
                     if key[columnCount] == 0:
-                        try: cooling.Add((float(column)/3600000)/flrArea, p)
+                        try: cooling.Add((float(column)/3600000), p)
                         except: dataTypeList[2] = False
                     elif key[columnCount] == 1:
-                        try: heating.Add((float(column)/3600000)/flrArea, p)
+                        try: heating.Add((float(column)/3600000), p)
                         except: dataTypeList[3] = False
                     elif key[columnCount] == 2:
-                        try: electricLight.Add((float(column)/3600000)/flrArea, p)
+                        try: electricLight.Add((float(column)/3600000), p)
                         except: dataTypeList[4] = False
                     elif key[columnCount] == 3:
-                        try: electricEquip.Add((float(column)/3600000)/flrArea, p)
+                        try: electricEquip.Add((float(column)/3600000), p)
                         except: dataTypeList[5] = False
                     elif key[columnCount] == 4:
-                        try: peopleGains.Add((float(column)/3600000)/flrArea, p)
+                        try: peopleGains.Add((float(column)/3600000), p)
                         except: dataTypeList[6] = False
                     elif key[columnCount] == 5:
-                        try: totalSolarGain.Add((float(column)/3600000)/flrArea, p)
+                        try: totalSolarGain.Add((float(column)/3600000), p)
                         except: dataTypeList[7] = False
                     elif key[columnCount] == 6:
-                        try: natVentEnergy.Add((((float(column))*(-1)/3600000) + ((float( line.split(',')[columnCount+1] ))/3600000))/flrArea, p)
+                        try: natVentEnergy.Add((((float(column))*(-1)/3600000) + ((float( line.split(',')[columnCount+1] ))/3600000)), p)
                         except: dataTypeList[11] = False
                     elif key[columnCount] == 7:
                         pass
@@ -604,7 +586,7 @@ if _resultFileAddress and gotData == True and csvExists == True:
                         try: zoneCoolingEnergy[int(path[columnCount])].append(float(column))
                         except: pass
                     elif key[columnCount] == 8:
-                        try: infiltrationEnergy.Add((((float(column))*(-1)/3600000) + ((float( line.split(',')[columnCount+1] ))/3600000))/flrArea, p)
+                        try: infiltrationEnergy.Add((((float(column))*(-1)/3600000) + ((float( line.split(',')[columnCount+1] ))/3600000)), p)
                         except: dataTypeList[9] = False
                     elif key[columnCount] == 9:
                         pass
@@ -622,18 +604,13 @@ if _resultFileAddress and gotData == True and csvExists == True:
                         except: dataTypeList[15] = False
                     elif key[columnCount] == 14:
                         try:
-                            if otherZDatFlrNormList[otherZDatFlrCount] == False:
-                                otherZoneData.Add(float(column), p)
-                            else:
-                                otherZoneData.Add(float(column)/flrArea, p)
-                            if otherZDatFlrCount != len(otherZDatFlrNormList)-1: otherZDatFlrCount += 1
-                            else: otherZDatFlrCount
+                            otherZoneData.Add(float(column), p)
                         except: pass
                     elif key[columnCount] == 15:
-                        try: fanElectric.Add((float(column)/3600000)/flrArea, p)
+                        try: fanElectric.Add((float(column)/3600000), p)
                         except: pass
                     elif key[columnCount] == 25:
-                        try: pumpElectric.Add((float(column)/3600000)/flrArea, p)
+                        try: pumpElectric.Add((float(column)/3600000), p)
                         except: pass
                     elif key[columnCount] == 16:
                         try: natVentFlow[int(path[columnCount])].append(float(column))

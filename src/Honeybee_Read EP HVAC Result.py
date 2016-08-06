@@ -30,7 +30,6 @@ Provided by Honeybee 0.0.59
     
     Args:
         _resultFileAddress: The result file address that comes out of the WriteIDF component.
-        normByFloorArea_: Set to 'True' to normalize all zone energy data by floor area (note that the resulting units will be kWh/m2 as EnergyPlus runs in the metric system). The default is set to "False."
     Returns:
         sensibleCooling: The sensible energy removed by the ideal air cooling system for each zone in kWh.
         latentCooling: The latent energy removed by the ideal air cooling system for each zone in kWh.
@@ -45,7 +44,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Read EP HVAC Result"
 ghenv.Component.NickName = 'readEP_HVAC_Result'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAUG_06_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -124,19 +123,6 @@ if _resultFileAddress:
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
 else: pass
 
-#If no value is connected for normByFloorArea_, don't normalize the results.
-if normByFloorArea_ == None:
-    normByFlr = False
-else:
-    normByFlr = normByFloorArea_
-
-# If the user has selected to normalize the results, make sure that we were able to pull the floor areas from the results file.
-if normByFlr == True and floorAreaList != []:
-    normByFlr == True
-elif normByFlr == True:
-    normByFlr == False
-else: pass
-
 # Make data tree objects for all of the outputs.
 sensibleCooling = DataTree[Object]()
 latentCooling = DataTree[Object]()
@@ -158,10 +144,8 @@ centralSys = False
 def makeHeader(list, path, zoneName, timestep, name, units, normable):
     list.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(path))
     list.Add(location, GH_Path(path))
-    if normByFlr == False or normable == False: list.Add(name + " for" + zoneName, GH_Path(path))
-    else: list.Add("Floor Normalized " + name + " for" + zoneName, GH_Path(path))
-    if normByFlr == False or normable == False: list.Add(units, GH_Path(path))
-    else: list.Add(units+"/m2", GH_Path(path))
+    list.Add(name + " for" + zoneName, GH_Path(path))
+    list.Add(units, GH_Path(path))
     list.Add(timestep, GH_Path(path))
     list.Add(start, GH_Path(path))
     list.Add(end, GH_Path(path))
@@ -320,19 +304,17 @@ if _resultFileAddress and gotData == True:
             else:
                 for columnCount, column in enumerate(line.split(',')):
                     p = GH_Path(int(path[columnCount]))
-                    if normByFlr == True: flrArea = floorAreaList[int(path[columnCount])]
-                    else: flrArea = 1
                     
                     if key[columnCount] == 0:
-                        sensibleCooling.Add((float(column)/3600000)/flrArea, p)
+                        sensibleCooling.Add((float(column)/3600000), p)
                     elif key[columnCount] == 1:
-                        latentCooling.Add((float(column)/3600000)/flrArea, p)
+                        latentCooling.Add((float(column)/3600000), p)
                     elif key[columnCount] == 2:
-                        sensibleHeating.Add((float(column)/3600000)/flrArea, p)
+                        sensibleHeating.Add((float(column)/3600000), p)
                     elif key[columnCount] == 3:
-                        latentHeating.Add((float(column)/3600000)/flrArea, p)
+                        latentHeating.Add((float(column)/3600000), p)
                     elif key[columnCount] == 4:
-                        supplyVolFlow.Add((float(column))/flrArea, p)
+                        supplyVolFlow.Add((float(column)), p)
                     elif key[columnCount] == 5:
                         supplyAirTemp.Add(float(column), p)
                     elif key[columnCount] == 6:
