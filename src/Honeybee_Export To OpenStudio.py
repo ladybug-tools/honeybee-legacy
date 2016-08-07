@@ -61,6 +61,7 @@ Provided by Honeybee 0.0.59
         osmFileAddress: The file path of the OSM file that has been generated on your machine.
         idfFileAddress: The file path of the IDF file that has been generated on your machine. This only happens when you set "runSimulation_" to "True."
         resultFileAddress: The file path of the CSV result file that has been generated on your machine.  This only happens when you set "runSimulation_" to "True."
+        rddFileAddress: The file path of the Result Data Dictionary (.rdd) file that is generated after running the file through EnergyPlus.  This file contains all possible outputs that can be requested from the EnergyPlus model.  Use the "Honeybee_Read Result Dictionary" to see what outputs can be requested.
         sqlFileAddress: The file path of the SQL result file that has been generated on your machine. This only happens when you set "runSimulation_" to "True."
         meterFileAddress: The file path of the building's meter result file that has been generated on your machine. This only happens when you set "runSimulation_" to "True."
         studyFolder: The directory in which the simulation has been run.  Connect this to the 'Honeybee_Lookup EnergyPlus' folder to bring many of the files in this directory into Grasshopper.
@@ -3435,7 +3436,7 @@ class RunOPS(object):
         else:
             os.system(batchFileAddress)
         
-        return fullPath + "Zsz.csv",fullPath+".sql",fullPath+".csv"
+        return fullPath + "Zsz.csv",fullPath+".sql",fullPath+".csv", fullPath+".rdd"
     
     def runCmd(self, batchFileAddress, shellKey = True):
         batchFileAddress.replace("\\", "/")
@@ -3742,6 +3743,7 @@ if _HBZones and _HBZones[0]!=None and _epwWeatherFile and _writeOSM and openStud
     if results!=-1:
         osmFileAddress, idfFileAddress, resultsFiles, studyFolder = results
         try:
+            rddFileAddress = resultsFiles[3]
             resultsFileAddress = resultsFiles[2]
             sqlFileAddress = resultsFiles[1]
             meterFileAddress = resultsFiles[0]
