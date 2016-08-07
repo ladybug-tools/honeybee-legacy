@@ -40,7 +40,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Label Zones"
 ghenv.Component.NickName = 'LabelZones'
-ghenv.Component.Message = 'VER 0.0.59\nFEB_21_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAUG_06_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -106,6 +106,7 @@ def setDefaults():
 
 def main(hb_zones, basePts, textSize, font, attribute):
     lb_visualization = sc.sticky["ladybug_ResultVisualization"]()
+    hb_hvac = sc.sticky["honeybee_hvacProperties"]()
     
     #Make lists to be filled.
     zoneProperties =[]
@@ -123,7 +124,9 @@ def main(hb_zones, basePts, textSize, font, attribute):
                 theProp = "%.3f"%HZone.getFloorArea()
             elif attribute == "zoneVolume":
                 theProp = "%.3f"%HZone.getZoneVolume()
-                
+        if attribute == "HVACSystem":
+            theProp = hb_hvac.sysDict[theProp[1]]
+        
         if theProp == "":
             theProp = "Not Assigned"
         zoneProperties.append(str(theProp))
