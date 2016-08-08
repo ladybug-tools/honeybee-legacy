@@ -1002,12 +1002,12 @@ def createEPWindowMat(shadeMaterial, name, winUValue):
     
     return EPWindowMat, EPWindowConstr
 
-def createEPBlindControlName(shadeMaterial, schedule, EPinteriorOrExter):
+def createEPBlindControlName(shadeMaterial, schedule, EPinteriorOrExter, winConstrName = None):
     #Check if we are working with swtichable glazing, in which case, we need to specify the window construction instead of a shadeMaterial.
     shadeConstr = ''
     shadeName = shadeMaterial
     if shadeType_ == 2:
-        shadeConstr = copy.copy(shadeName)
+        shadeConstr = copy.copy(winConstrName)
         shadeName = ''
     
     #Check the schedule
@@ -1246,17 +1246,14 @@ def main():
         if checkData == True and assignEPCheck == True and writeEPObjs_ == True:
             for count, windowObj in enumerate(windowObjects):
                 if shadeType_ == 2:
-                    blindCntrlName, EPinteriorOrExter, shadeConstr, schedCntrlType, schedName, setPoint, schedCntrl, shadeName, setPoint2 = createEPBlindControlName(windowMaterial[0], schedule, 'SwitchableGlazing')
+                    blindCntrlName, EPinteriorOrExter, shadeConstr, schedCntrlType, schedName, setPoint, schedCntrl, shadeName, setPoint2 = createEPBlindControlName(windowMaterial[0], schedule, 'SwitchableGlazing', blindMatName)
                 else:
                     blindCntrlName, EPinteriorOrExter, shadeConstr, schedCntrlType, schedName, setPoint, schedCntrl, shadeName, setPoint2 = createEPBlindControlName(blindMatNames[count], schedule, EPinteriorOrExterList[count])
-                if blindCntrlName.upper() not in EPWindowProperties and blindCntrlName.upper() not in compShadeCntrls:
+                if blindCntrlName.upper() not in compShadeCntrls:
                     blindCntrlStr = createEPBlindCntrlStr(blindCntrlName, EPinteriorOrExter, shadeConstr, schedCntrlType, schedName, setPoint, schedCntrl, shadeName, setPoint2)
                     added, name = hb_EPObjectsAux.addEPObjectToLib(blindCntrlStr, True)
                     compShadeCntrls.append(blindCntrlName.upper())
                     compShadeCntrlsStr.append(blindCntrlStr)
-                elif blindCntrlName.upper() not in compShadeCntrls:
-                    compShadeCntrls.append(blindCntrlName.upper())
-                    compShadeCntrlsStr.append(hb_EPObjectsAux.getEPObjectsStr(blindCntrlName))
                 
                 windowObj.shadingControlName.append(blindCntrlName)
                 windowObj.shadingSchName.append(schedule)
