@@ -82,7 +82,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Window Shade Generator"
 ghenv.Component.NickName = 'EPWindowShades'
-ghenv.Component.Message = 'VER 0.0.59\nAUG_01_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAUG_07_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -986,6 +986,7 @@ def createEPShadeMat(shadeMaterial, airPerm, distToGlass, name):
     return EPShadeMat
 
 def createEPWindowMat(shadeMaterial, name, winUValue):
+    
     EPWindowMat ='WindowMaterial:SimpleGlazingSystem,\n' + \
         '\t' + name + ',    !Name\n' + \
         '\t' + str(winUValue) + ',    !U Value\n' + \
@@ -1186,14 +1187,11 @@ def main():
                     for count, windowObj in enumerate(windowObjects):
                         blindMatName = shadeMaterial[0] + '-' + str(EPSlatOrientList[count]) + '-' + str(depthList[count]) + '-' + str(shadingHeightList[count]) + '-' + str(EPshdAngleList[count])+ '-' + str(distToGlassList[count])
                         blindMatNames.append(blindMatName)
-                        if blindMatName.upper() not in EPWindowMaterials and blindMatName.upper() not in compShadeMats:
+                        if blindMatName.upper() not in compShadeMats:
                             blindMatStr = createEPBlindMat(shadeMaterial, EPSlatOrientList[count], depthList[count], shadingHeightList[count], EPshdAngleList[count], distToGlassList[count], blindMatName)
                             added, name = hb_EPObjectsAux.addEPObjectToLib(blindMatStr, True)
                             compShadeMats.append(blindMatName.upper())
                             compShadeMatsStr.append(blindMatStr)
-                        elif blindMatName.upper() not in compShadeMats:
-                            compShadeMats.append(blindMatName.upper())
-                            compShadeMatsStr.append(hb_EPObjectsAux.getEPObjectsStr(blindMatName))
         
         elif shadeType_ == 1:
             #Check the inputs and make sure that we have everything that we need to generate the shades.  Set defaults on things that are not connected.
@@ -1216,14 +1214,11 @@ def main():
                     for count, windowObj in enumerate(windowObjects):
                         blindMatName = shadeMaterial[0] + '-' + str(depthList[count]) + '-' + str(distToGlassList[count])
                         blindMatNames.append(blindMatName)
-                        if blindMatName.upper() not in EPWindowMaterials and blindMatName.upper() not in compShadeMats:
+                        if blindMatName.upper() not in compShadeMats:
                             blindMatStr = createEPShadeMat(shadeMaterial, depthList[count], distToGlassList[count], blindMatName)
                             added, name = hb_EPObjectsAux.addEPObjectToLib(blindMatStr, True)
                             compShadeMats.append(blindMatName.upper())
                             compShadeMatsStr.append(blindMatStr)
-                        elif blindMatName.upper() not in compShadeMats:
-                            compShadeMats.append(blindMatName.upper())
-                            compShadeMatsStr.append(hb_EPObjectsAux.getEPObjectsStr(blindMatName))
         
         elif shadeType_ == 2:
             #Check the inputs and make sure that we have everything that we need to generate the shades.  Set defaults on things that are not connected.
@@ -1241,15 +1236,12 @@ def main():
                         winUval = round((windowMaterial[5]/windowMaterial[4])*100000)/100000
                         blindMatName = windowMaterial[0] + '-' + str(winUval)
                     blindMatNames.append('')
-                    if blindMatName.upper() not in EPWindowMaterials and blindMatName.upper() not in compShadeMats:
+                    if blindMatName.upper() not in compShadeMats:
                         blindMatStr, blindMatConstr = createEPWindowMat(windowMaterial, blindMatName, winUval)
                         added, name = hb_EPObjectsAux.addEPObjectToLib(blindMatStr, True)
                         added, name = hb_EPObjectsAux.addEPObjectToLib(blindMatConstr, True)
                         compShadeMats.append(blindMatName.upper())
                         compShadeMatsStr.append(blindMatStr)
-                    elif blindMatName.upper() not in compShadeMats:
-                        compShadeMats.append(blindMatName.upper())
-                        compShadeMatsStr.append(hb_EPObjectsAux.getEPObjectsStr(blindMatName))
         
         if checkData == True and assignEPCheck == True and writeEPObjs_ == True:
             for count, windowObj in enumerate(windowObjects):
