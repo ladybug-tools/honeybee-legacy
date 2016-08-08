@@ -53,7 +53,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Color Zones by EP Result"
 ghenv.Component.NickName = 'ColorZones'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_25_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAUG_08_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -211,6 +211,7 @@ def checkTheInputs():
             normable = False
             total = True
         elif "Energy" in dataType: normable = True
+        elif "Load" in dataType: normable = True
         elif "Gain" in dataType: normable = True
         elif "Loss" in dataType: normable = True
         elif "Temperature" in dataType: normable = False
