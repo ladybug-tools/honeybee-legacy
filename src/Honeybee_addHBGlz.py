@@ -22,10 +22,8 @@
 
 """
 Use this component to add a custom glazing surface to a HBSurface or HBZone.
-
 -
 Provided by Honeybee 0.0.59
-
     Args:
         _HBObj: A HBZone or HBSurface to which you would like to add a customized glazing surface.
         _childSurfaces: A surface or list of surfaces that represent the custom window(s) that you would like to add.  Note that these surfaces should be co-planar to the connected HBSurface or one of the surfaces of the connected HBZones.
@@ -48,7 +46,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_addHBGlz'
 ghenv.Component.NickName = 'addHBGlz'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_04_2016'
+ghenv.Component.Message = 'VER 0.0.59\nJUL_14_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -57,99 +55,103 @@ ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
 except: pass
 
+
 def main(HBObject, childSurfaces, childSurfacesName, EPConstructions, RADMaterials, tolerance):
 
     def addPotentialChildSurface(HBSurface):
         
-        glzCount = 0
-        for srfCount, srf in enumerate(childSurfaces):
-            # check if the surface is located on the base surface
-            if HBSurface.isPossibleChild(srf, tolerance):
-                # if yes then create the child surface
-                guid = str(uuid.uuid4())
-                try:
-                    name = childSurfacesName[srfCount]
-                except:
-                   name = HBSurface.name + "_glz_" + str(glzCount) + "_" + "".join(guid.split("-")[:-1])
-
-                number = guid.split("-")[-1]
-                glzCount += 1
-                HBFenSrf = hb_EPFenSurface(srf, number, name, HBSurface, 5)
-                
-                # check normal direction
-                if not rc.Geometry.Vector3d.VectorAngle(HBFenSrf.normalVector, HBFenSrf.parent.normalVector)<sc.doc.ModelAngleToleranceRadians:
-                    HBFenSrf.geometry.Flip()
-                    HBFenSrf.normalVector.Reverse()
-                
-                if len(EPConstructions)!=0:
-                    
+            # Child surfaces are not Honeybee surfaces
+            
+            glzCount = 0
+            for srfCount, srf in enumerate(childSurfaces):
+                # check if the surface is located on the base surface
+                if HBSurface.isPossibleChild(srf, tolerance):
+                    # if yes then create the child surface
+                    guid = str(uuid.uuid4())
                     try:
-                        EPConstruction = EPConstructions[srfCount]
+                        name = childSurfacesName[srfCount]
                     except:
-                        EPConstruction = EPConstructions[0]
+                       name = HBSurface.name + "_glz_" + str(glzCount) + "_" + "".join(guid.split("-")[:-1])
+    
+                    number = guid.split("-")[-1]
+                    glzCount += 1
+                    HBFenSrf = hb_EPFenSurface(srf, number, name, HBSurface, 5)
                     
-                    if EPConstruction == None: continue
+                    # check normal direction
+                    if not rc.Geometry.Vector3d.VectorAngle(HBFenSrf.normalVector, HBFenSrf.parent.normalVector)<sc.doc.ModelAngleToleranceRadians:
+                        HBFenSrf.geometry.Flip()
+                        HBFenSrf.normalVector.Reverse()
+                    
+                    if len(EPConstructions)!=0:
                         
-                    # if it is just the name of the material make sure it is already defined
-                    if len(EPConstruction.split("\n")) == 1:
-                        # if the material is not in the library add it to the library
-                        if not hb_EPObjectsAux.isEPConstruction(EPConstruction):
-                            warningMsg = "Can't find " + EPConstruction + " in EP Construction Library.\n" + \
-                                        "Add the construction to the library and try again."
-                            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
-                            return 
-                    else:
-                        # it is a full string.
-                        if EPConstruction.startswith('WindowMaterial:'):
-                            warningMsg = "Your window construction, " + EPConstruction.split('\n')[1].split(',')[0] + ", is a window material and not a full window construction.\n" + \
-                                        "Pass this window material through a 'Honeybee_EnergyPlus Construction' component cand connect the construction to this one."
-                            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
-                            return 
-                        added, EPConstruction = hb_EPObjectsAux.addEPObjectToLib(EPConstruction, overwrite = True)
+                        try:
+                            EPConstruction = EPConstructions[srfCount]
+                        except:
+                            EPConstruction = EPConstructions[0]
                         
-                        if not added:
-                            msg = EPConstruction + " is not added to the project library!"
-                            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
-                            print msg
-                            return 
-                    
-                    try:
-                        HBFenSrf.setEPConstruction(EPConstruction)
-                    except:
-                        warningMsg = "You are using an old version of Honeybee_Honeybee! Update your files and try again."
-                        print warningMsg
-                        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
-                        return -1
-                    
-                
-                
-                if len(RADMaterials)!= 0:
-                    
-                    try:
-                        RADMaterial = RADMaterials[srfCount]
-                    except:
-                        RADMaterial = RADMaterials[0]
-                    
-                    if RADMaterial == None: continue
-                    
-                    if len(RADMaterial.strip().split(" ")) == 1:
-                        if not hb_RADMaterialAUX.isMatrialExistInLibrary(RADMaterial):
-                            warningMsg = "Can't find " + RADMaterial + " in RAD Material Library.\n" + \
-                                "Add the material to the library and try again."
+                        if EPConstruction == None: continue
+                            
+                        # if it is just the name of the material make sure it is already defined
+                        if len(EPConstruction.split("\n")) == 1:
+                            # if the material is not in the library add it to the library
+                            if not hb_EPObjectsAux.isEPConstruction(EPConstruction):
+                                warningMsg = "Can't find " + EPConstruction + " in EP Construction Library.\n" + \
+                                            "Add the construction to the library and try again."
+                                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
+                                return 
+                        else:
+                            # it is a full string.
+                            if EPConstruction.startswith('WindowMaterial:'):
+                                warningMsg = "Your window construction, " + EPConstruction.split('\n')[1].split(',')[0] + ", is a window material and not a full window construction.\n" + \
+                                            "Pass this window material through a 'Honeybee_EnergyPlus Construction' component cand connect the construction to this one."
+                                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
+                                return 
+                            added, EPConstruction = hb_EPObjectsAux.addEPObjectToLib(EPConstruction, overwrite = True)
+                            
+                            if not added:
+                                msg = EPConstruction + " is not added to the project library!"
+                                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                                print msg
+                                return 
+                        
+                        try:
+                            HBFenSrf.setEPConstruction(EPConstruction)
+                        except:
+                            warningMsg = "You are using an old version of Honeybee_Honeybee! Update your files and try again."
+                            print warningMsg
+                            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
+                            return -1
+                        
+                    if len(RADMaterials)!= 0:
+                        
+                        try:
+                            RADMaterial = RADMaterials[srfCount]
+                        except:
+                            
+                            # Only one Rad material
+                            
+                            RADMaterial = RADMaterials[0]
+                        
+                        if RADMaterial == None: continue
+                        
+                        if len(RADMaterial.strip().split(" ")) == 1:
+                            if not hb_RADMaterialAUX.isMatrialExistInLibrary(RADMaterial):
+                                warningMsg = "Can't find " + RADMaterial + " in RAD Material Library.\n" + \
+                                    "Add the material to the library and try again."
+                                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
+                                return
+                        
+                        addedToLib, HBFenSrf.RadMaterial = hb_RADMaterialAUX.analyseRadMaterials(RADMaterial, True)
+                        materialType = hb_RADMaterialAUX.getRADMaterialType(HBFenSrf.RadMaterial)
+                        if materialType == 'plastic':
+                            warningMsg = HBFenSrf.RadMaterial + " is not a typical glass material. Are you sure you selected the right material?"
                             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
                             return
-                    
-                    addedToLib, HBFenSrf.RadMaterial = hb_RADMaterialAUX.analyseRadMaterials(RADMaterial, True)
-                    materialType = hb_RADMaterialAUX.getRADMaterialType(HBFenSrf.RadMaterial)
-                    if materialType == 'plastic':
-                        warningMsg = HBFenSrf.RadMaterial + " is not a typical glass material. Are you sure you selected the right material?"
-                        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
-                        return
+        
+                    # add it to the base surface
+                    HBSurface.addChildSrf(HBFenSrf)
+                    HBSurface.calculatePunchedSurface()
     
-                # add it to the base surface
-                HBSurface.addChildSrf(HBFenSrf)
-                HBSurface.calculatePunchedSurface()
-
 
     # import the classes
     if sc.sticky.has_key('honeybee_release'):
@@ -205,6 +207,7 @@ def main(HBObject, childSurfaces, childSurfacesName, EPConstructions, RADMateria
         if HBObject.objectType == "HBZone":
             # add window for each surface
             for HBSurface in HBObject.surfaces:
+                
                 addPotentialChildSurface(HBSurface)
         else:
             # add window to the HBSurface
@@ -221,12 +224,101 @@ def main(HBObject, childSurfaces, childSurfacesName, EPConstructions, RADMateria
         ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee fly...")
         return -1
 
+
 if _HBObj!=None and len(_childSurfaces) and _childSurfaces[0]!=None:
     
-    # if tolerance_==None:
-    tolerance_ = sc.doc.ModelAbsoluteTolerance
-        
-    results = main(_HBObj, _childSurfaces, childSurfacesName_, EPConstructions_, RADMaterials_, tolerance_)
+    hb_hive = sc.sticky["honeybee_Hive"]()
     
+    tolerance_ = sc.doc.ModelAbsoluteTolerance
+    
+    def checkForWindowMaterials(_childSurfaces):
+        
+        """ Checks to see if there are existing window materials if so it will use the existing window materials"""
+        
+        childSrfRADMaterials = []
+        
+        childSrfEPConstructions = []
+        
+        for objNum,obj in enumerate(_childSurfaces):
+        
+            # Create a list from this one object to work with HB hive
+            objlist = [obj]
+            
+            # Check if this obj is a Honeybee fenestration surface or not
+            
+            try: 
+                
+                # Is a Honeybee object
+                
+                HBobj = hb_hive.callFromHoneybeeHive(objlist)[0]
+                
+                # Build a list of the radMaterials for the _childSurfaces
+                        
+                if HBobj.objectType != "HBSurface":
+                    
+                    warn = "Only HBSurfaces assigned as windows can be connected to _childSurfaces, you have not connected a HBSurface/s!"
+                    w = gh.GH_RuntimeMessageLevel.Warning
+                    ghenv.Component.AddRuntimeMessage(w, warn)
+                     
+                elif HBobj.type != 5:
+                    
+                    warn = "You have connected a HBSurface to _childSurfaces but this HBSurface is not a window! Only windows can be connected to _childSurfaces"
+                    w = gh.GH_RuntimeMessageLevel.Warning
+                    ghenv.Component.AddRuntimeMessage(w, warn)
+                
+                else:
+                    # The obj is a existing Honeybee fenestration surface
+                    
+                    if len(RADMaterials_)== 0:
+                        
+                        # Use existing material
+                        
+                        if HBobj.RadMaterial != None:
+                        
+                            childSrfRADMaterials.append(HBobj.RadMaterial)
+                            
+                        else:
+                            
+                            pass
+    
+                    else:
+                        
+                        # Use materials assigned at RADMaterials_
+                        
+                        childSrfRADMaterials = RADMaterials_
+                        
+                        
+                    if len(EPConstructions_)== 0:
+                        
+                        # Use existing material
+                        
+                        if HBobj.EPConstruction != None:
+                        
+                            childSrfEPConstructions.append(HBobj.EPConstruction)
+                            
+                        else:
+                            
+                            pass
+                    else:
+                        
+                        # Use materials assigned at EPConstructions_
+                        
+                        childSrfEPConstructions = EPConstructions_
+                        
+            except KeyError:
+                
+                # Not a Honeybee object and is just geometry assign materials specified in RADMaterials_
+    
+                childSrfRADMaterials = RADMaterials_
+                
+                childSrfEPConstructions = EPConstructions_
+                
+        return childSrfRADMaterials,childSrfEPConstructions
+                
+                
+    childSrfRADMaterials,childSrfEPConstructions = checkForWindowMaterials(_childSurfaces)
+    
+    results = main(_HBObj, _childSurfaces, childSurfacesName_, childSrfEPConstructions, childSrfRADMaterials, tolerance_)
+
     if results != -1:
         HBObjWGLZ = results
