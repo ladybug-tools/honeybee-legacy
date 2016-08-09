@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.59\nAUG_07_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAUG_09_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -4862,9 +4862,6 @@ class EPZone(object):
                 planarTrigger = self.checkZoneNormalsDir()
             except Exception, e:
                 print 'Checking normal directions failed:\n' + `e`
-        MP3D = rc.Geometry.AreaMassProperties.Compute(self.geometry)
-        self.cenPt = MP3D.Centroid
-        MP3D.Dispose()
         
         # Zone Program
         self.bldgProgram = program[0]
