@@ -32,6 +32,7 @@ Provided by Honeybee 0.0.59
         heating_: The heating load from the "Honeybee_Read EP Result" component.
         electricLight_: The electric lighting load from the "Honeybee_Read EP Result" component.
         electricEquip_: The electric equipment load from the "Honeybee_Read EP Result" component.
+        fanElectric_: The electric fan load from the "Honeybee_Read EP Result" component.
         peopleGains_: The people gains from the "Honeybee_Read EP Result" component.
         totalSolarGain_: The total solar gain from the "Honeybee_Read EP Result" component.
         infiltrationEnergy_: The infiltration heat loss (negative) or heat gain (positive) from the "Honeybee_Read EP Result" component.
@@ -50,7 +51,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Construct Energy Balance"
 ghenv.Component.NickName = 'energyBalance'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_25_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAUG_09_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -276,7 +277,7 @@ def sumAllLists(tree):
     return summedList
 
 
-def main(HBZones, heatingLoad, solarLoad, lightingLoad, equipLoad, peopleLoad, surfaceEnergyFlow, infiltrationEnergy, outdoorAirEnergy, natVentEnergy, coolingLoad):
+def main(HBZones, heatingLoad, solarLoad, lightingLoad, equipLoad, fanElectric, peopleLoad, surfaceEnergyFlow, infiltrationEnergy, outdoorAirEnergy, natVentEnergy, coolingLoad):
     #Get the zone floor area.
     hb_hive = sc.sticky["honeybee_Hive"]()
     flrAreas = []
@@ -296,8 +297,9 @@ def main(HBZones, heatingLoad, solarLoad, lightingLoad, equipLoad, peopleLoad, s
     checkData8, natVentUnits, natVentHeaders, natVentNumbers, natVentAnalysisPeriod = checkCreateDataTree(natVentEnergy, "natVentEnergy_", "Natural Ventilation")
     checkData9, coolingUnits, coolingHeaders, coolingNumbers, coolingAnalysisPeriod = checkCreateDataTree(coolingLoad, "cooling", "Cooling")
     checkData10, surfaceUnits, surfaceHeaders, surfaceNumbers, surfaceAnalysisPeriod = checkCreateDataTree(surfaceEnergyFlow, "surfaceEnergyFlow_", "Surface Energy")
+    checkData11, fanUnits, fanHeaders, fanNumbers, fanAnalysisPeriod = checkCreateDataTree(fanElectric, "fanElectric_", "Fan Electric")
     
-    if checkData1 == True and checkData2 == True and checkData3 == True and checkData4 == True and checkData5 == True and checkData6 == True and checkData7 == True and checkData8 == True and checkData9 == True  and checkData10 == True:
+    if checkData1 == True and checkData2 == True and checkData3 == True and checkData4 == True and checkData5 == True and checkData6 == True and checkData7 == True and checkData8 == True and checkData9 == True  and checkData10 == True and checkData11 == True:
         #Get the names of the surfaces from the HBZones.
         wall, window, skylight, roof, exposedFloor, groundFloor, undergroundWall = getSrfNames(HBZones)
         
@@ -323,6 +325,7 @@ def main(HBZones, heatingLoad, solarLoad, lightingLoad, equipLoad, peopleLoad, s
         if len(solarNumbers) > 0: solarNumbers = sumAllLists(solarNumbers)
         if len(lightingNumbers) > 0: lightingNumbers = sumAllLists(lightingNumbers)
         if len(equipNumbers) > 0: equipNumbers = sumAllLists(equipNumbers)
+        if len(fanNumbers) > 0: fanNumbers = sumAllLists(fanNumbers)
         if len(peopleNumbers) > 0: peopleNumbers = sumAllLists(peopleNumbers)
         if len(infiltrationNumbers) > 0: infiltrationNumbers = sumAllLists(infiltrationNumbers)
         if len(outdoorAirNumbers) > 0: outdoorAirNumbers = sumAllLists(outdoorAirNumbers)
@@ -345,6 +348,7 @@ def main(HBZones, heatingLoad, solarLoad, lightingLoad, equipLoad, peopleLoad, s
         if len(solarNumbers) > 0: solarHeader = solarHeaders[0][:2] + ['Solar'] + [solarUnits] + [solarHeaders[0][4]] + solarAnalysisPeriod
         if len(lightingNumbers) > 0: lightingHeader = lightingHeaders[0][:2] + ['Lighting'] + [lightingUnits] + [lightingHeaders[0][4]] + lightingAnalysisPeriod
         if len(equipNumbers) > 0: equipHeader = equipHeaders[0][:2] + ['Equipment'] + [equipUnits] + [equipHeaders[0][4]] + equipAnalysisPeriod
+        if len(fanNumbers) > 0: fanHeader = fanHeaders[0][:2] + ['Fan Electric'] + [fanUnits] + [fanHeaders[0][4]] + fanAnalysisPeriod
         if len(peopleNumbers) > 0: peopleHeader = peopleHeaders[0][:2] + ['People'] + [peopleUnits] + [peopleHeaders[0][4]] + peopleAnalysisPeriod
         if len(infiltrationNumbers) > 0: infiltrationHeader = infiltrationHeaders[0][:2] + ['Infiltration'] + [infiltrationUnits] + [infiltrationHeaders[0][4]] + infiltrationAnalysisPeriod
         if len(outdoorAirNumbers) > 0: outdoorAirHeader = outdoorAirHeaders[0][:2] + ['Mechanical Ventilation'] + [outdoorAirUnits] + [outdoorAirHeaders[0][4]] + outdoorAirAnalysisPeriod
@@ -365,6 +369,9 @@ def main(HBZones, heatingLoad, solarLoad, lightingLoad, equipLoad, peopleLoad, s
         if len(equipNumbers) > 0:
             modelEnergyBalance.append(equipHeader + equipNumbers)
             modelEnergyBalanceNum.append(equipNumbers)
+        if len(fanNumbers) > 0:
+            modelEnergyBalance.append(fanHeader + fanNumbers)
+            modelEnergyBalanceNum.append(fanNumbers)
         if len(lightingNumbers) > 0:
             modelEnergyBalance.append(lightingHeader + lightingNumbers)
             modelEnergyBalanceNum.append(lightingNumbers)
@@ -442,8 +449,8 @@ else:
 
 
 if initCheck == True and _HBZones != []:
-    if heating_.BranchCount > 0 or totalSolarGain_.BranchCount > 0 or  electricLight_.BranchCount > 0 or  electricEquip_.BranchCount > 0 or  peopleGains_.BranchCount > 0 or  surfaceEnergyFlow_.BranchCount > 0 or infiltrationEnergy_.BranchCount > 0 or mechVentilationEnergy_.BranchCount > 0 or natVentEnergy_.BranchCount > 0 or cooling_.BranchCount > 0:
-        result = main(_HBZones, heating_, totalSolarGain_, electricLight_, electricEquip_, peopleGains_, surfaceEnergyFlow_, infiltrationEnergy_, mechVentilationEnergy_, natVentEnergy_, cooling_)
+    if heating_.BranchCount > 0 or totalSolarGain_.BranchCount > 0 or  electricLight_.BranchCount > 0 or  electricEquip_.BranchCount > 0 or  peopleGains_.BranchCount > 0 or  surfaceEnergyFlow_.BranchCount > 0 or infiltrationEnergy_.BranchCount > 0 or mechVentilationEnergy_.BranchCount > 0 or natVentEnergy_.BranchCount > 0 or cooling_.BranchCount > 0 or fanElectric_.BranchCount > 0:
+        result = main(_HBZones, heating_, totalSolarGain_, electricLight_, electricEquip_, fanElectric_, peopleGains_, surfaceEnergyFlow_, infiltrationEnergy_, mechVentilationEnergy_, natVentEnergy_, cooling_)
         
         if result != -1:
             modelEnergyBalanceInit, energyBalWithStorageInit, flrNormEBalInit, flrNormEBalWStorageInit = result
