@@ -70,7 +70,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Set EP Air Flow"
 ghenv.Component.NickName = 'setEPNatVent'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.59\nAUG_09_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
@@ -164,7 +164,7 @@ def checkNatVentMethod():
             elif input == 11:
                 ghenv.Component.Params.Input[input].NickName = "fanEfficiency_"
                 ghenv.Component.Params.Input[input].Name = "fanEfficiency_"
-                ghenv.Component.Params.Input[input].Description = "A number between 0 and 1 that represents the efficiency of the fan.  This will effect the energy use of the fan in the results.  The default is set to 0.9 but this can be as low as 0.7 in some cases."
+                ghenv.Component.Params.Input[input].Description = "A number between 0 and 1 that represents the efficiency of the fan.  It is the ratio of the power delivered to the fluid to the electrical input power. It is the product of the motor efficiency and the impeller efficiency.  The default is set to 0.7 but this can be lower for smaller fans and higher for industrial grade fans."
             elif input == 12:
                 ghenv.Component.Params.Input[input].NickName = "fanPressureRise_"
                 ghenv.Component.Params.Input[input].Name = "fanPressureRise_"
@@ -601,7 +601,7 @@ def main(HBZones, natVentMethod, interZoneFlow, interZoneFlowSched, minIndoorTem
                 readMe.append(HBZone.name + " has an outdoor fan flow rate of " + str(round(fanFlowRate[zoneCount], 1)) + " m3/s.")
                 
                 #Assign the fan efficiency.
-                if fanEfficiency == []: fanEff = "0.9"
+                if fanEfficiency == []: fanEff = "0.7"
                 else: fanEff = str(fanEfficiency[zoneCount])
                 HBZone.FanEfficiency.append(fanEff)
                 
