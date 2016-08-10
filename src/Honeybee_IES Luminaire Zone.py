@@ -49,7 +49,7 @@
 
 ghenv.Component.Name = "Honeybee_IES Luminaire Zone"
 ghenv.Component.NickName = 'iesLuminaireZone'
-ghenv.Component.Message = 'VER 0.0.59\nAUG_02_2016'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "02 | Daylight | Light Source"
 #compatibleHBVersion = VER 0.0.56\nJUL_01_2016

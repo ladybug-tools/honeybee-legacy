@@ -27,7 +27,7 @@ Use this component to dump Honeybee objects to a file on your system.
 You can use load Honeybee objects to load the file to Grasshopper.
 WARNING: The component is WIP and it doesn't package schedules and materials
 -
-Provided by Honeybee 0.0.59
+Provided by Honeybee 0.0.60
 
     Args:
         _HBObjects: A list of Honeybee objects
@@ -39,7 +39,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Dump Honeybee Objects"
 ghenv.Component.NickName = 'dumpHBObjects'
-ghenv.Component.Message = 'VER 0.0.59\nAPR_18_2016'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"

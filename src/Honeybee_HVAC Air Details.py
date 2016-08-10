@@ -25,7 +25,7 @@ Use this component to set the parameters of a HVAC ventilation system (or air si
 _
 Not all of the inputs on this component are assignable features of all HVAC systems.  However, most HVAC systems have these features and, if you assign a parameter that is not usable by a certain HVAC system, the "Honeybee_Assign HVAC System" component will give you a warning to let you know.
 -
-Provided by Honeybee 0.0.59
+Provided by Honeybee 0.0.60
 
     Args:
         _HVACAvailabiltySched_: A text string representing the HVAC availability that you want to use.  This can be either a shcedule from the schedule libirary or a CSV file path to a CSV schedule you created with the "Honeybee_Create CSV Schedule" component.
@@ -61,7 +61,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_HVAC Air Details"
 ghenv.Component.NickName = 'AirDetails'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_30_2016'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | HVACSystems"

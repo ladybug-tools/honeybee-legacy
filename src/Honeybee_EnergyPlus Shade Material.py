@@ -28,7 +28,7 @@ In order to apply the material to a window shade and adjust geometric characteri
 _
 Note that the material characteristics here can refer to either blind slats, roller shades, perforated exterior metal screens, or the properties of electrochromic glazing in an "on" state.
 -
-Provided by Honeybee 0.0.59
+Provided by Honeybee 0.0.60
     
     Args:
         materialName_: An optional name for the shade material.
@@ -43,7 +43,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Shade Material"
 ghenv.Component.NickName = 'EPShadeMat'
-ghenv.Component.Message = 'VER 0.0.59\nJUL_07_2016'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"

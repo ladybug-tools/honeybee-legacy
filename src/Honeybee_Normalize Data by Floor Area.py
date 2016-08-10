@@ -23,7 +23,7 @@
 """
 This component takes data that has been output from a simulation and normalizes the results by the floor area of the HBZones.
 -
-Provided by Honeybee 0.0.59
+Provided by Honeybee 0.0.60
     
     Args:
         _simData: Results from one of the Read Result components.
@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Normalize Data by Floor Area"
 ghenv.Component.NickName = 'flrNorm'
-ghenv.Component.Message = 'VER 0.0.59\nAUG_08_2016'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
