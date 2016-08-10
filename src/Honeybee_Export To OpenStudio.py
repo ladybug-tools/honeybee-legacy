@@ -2449,9 +2449,11 @@ class WriteOPS(object):
     def setPeopleDefinition(self, zone, space, model):
         peopleDefinition = ops.PeopleDefinition(model)
         peopleDefinition.setName(zone.name + "_PeopleDefinition")
-        peopleDefinition.setNumberofPeople(zone.numOfPeoplePerArea * zone.getFloorArea())
-        peopleDefinition.setNumberOfPeopleCalculationMethod("People/Area", zone.getFloorArea())
-        peopleDefinition.setPeopleperSpaceFloorArea(zone.numOfPeoplePerArea) #space.peoplePerFloorArea())
+        flrArea = zone.getFloorArea()
+        if flrArea != 0:
+            peopleDefinition.setNumberofPeople(zone.numOfPeoplePerArea * flrArea)
+            peopleDefinition.setNumberOfPeopleCalculationMethod("People/Area", flrArea)
+            peopleDefinition.setPeopleperSpaceFloorArea(zone.numOfPeoplePerArea) #space.peoplePerFloorArea())
         #peopleDefinition.setFractionRadiant
         #peopleDefinition.setSensibleHeatFraction
         
@@ -2493,7 +2495,9 @@ class WriteOPS(object):
         
         lightsDefinition = ops.LightsDefinition(model)
         lightsDefinition.setName(zone.name + "_LightsDefinition")
-        lightsDefinition.setDesignLevelCalculationMethod("Watts/Area", zone.getFloorArea(), space.numberOfPeople())
+        flrArea = zone.getFloorArea()
+        if flrArea != 0:
+            lightsDefinition.setDesignLevelCalculationMethod("Watts/Area", flrArea, space.numberOfPeople())
         lightsDefinition.setWattsperSpaceFloorArea(float(zone.lightingDensityPerArea))
         
         lights = ops.Lights(lightsDefinition)
@@ -2504,7 +2508,9 @@ class WriteOPS(object):
     def setEquipmentDefinition(self, zone, space, model):
         electricDefinition = ops.ElectricEquipmentDefinition(model)
         electricDefinition.setName(zone.name + "_ElectricEquipmentDefinition")
-        electricDefinition.setDesignLevelCalculationMethod("Watts/Area", zone.getFloorArea(), space.numberOfPeople())
+        flrArea = zone.getFloorArea()
+        if flrArea != 0:
+            electricDefinition.setDesignLevelCalculationMethod("Watts/Area", flrArea, space.numberOfPeople())
         electricDefinition.setWattsperSpaceFloorArea(zone.equipmentLoadPerArea)
         
         electricEqipment = ops.ElectricEquipment(electricDefinition)
