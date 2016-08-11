@@ -420,7 +420,8 @@ def main(sun, mon, tue, wed, thu, fri, sat, holiday, runIt, epwFile, weekStartWi
     daySchName = None
     weekSchedName = None
     yearSchedName = None
-    dsySchedCollection = []
+    daySchedCollection = []
+    daySchNameCollect = []
     schedIDFStrs = []
     daySchedNames = []
     
@@ -448,12 +449,19 @@ def main(sun, mon, tue, wed, thu, fri, sat, holiday, runIt, epwFile, weekStartWi
         
         # Write out text strings for the daily schedules
         for dCount, daySch in enumerate([sun, mon, tue, wed, thu, fri, sat, holiday]):
-            if daySch not in dsySchedCollection and daySch != []:
-                dsySchedCollection.append(daySch)
+            if daySch not in daySchedCollection and daySch != []:
+                daySchedCollection.append(daySch)
                 schedIDFStrs.append(IFDstrFromDayVals(daySch, schedName, daySchedDict[dCount], schTypeLims))
                 daySchName = schedName + ' Day Schedule - ' + daySchedDict[dCount]
+                daySchNameCollect.append(daySchName)
             elif daySch == []:
                 daySchName = schedName + ' Day Schedule - ' + 'Sun'
+                daySchNameCollect.append(daySchName)
+            else:
+                for count, sch in enumerate(daySchedCollection):
+                    if daySch == sch:
+                        schNum = count
+                daySchName = daySchNameCollect[schNum]
             daySchedNames.append(daySchName)
         
         # Write out text strings for the weekly values.
