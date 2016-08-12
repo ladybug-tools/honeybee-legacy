@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_12_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -1290,7 +1290,7 @@ class DLAnalysisRecipe:
         if self.simulationType == 1:
             # make sure the sky is either gencum or gendaylit
             # edit in case of gendaylit
-            self.radSkyFile = self.skyFile.split(".")[0] + "_radAnalysis.sky"
+            self.radSkyFile = '.'.join(self.skyFile.split("."))[:-1] + "_radAnalysis.sky"
             skyOut = open(self.radSkyFile, "w")
             genDaylit = False
             with open(self.skyFile, "r") as skyIn:
