@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_12_2016'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_26_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -3523,8 +3523,8 @@ class hb_EnergySimulatioParameters(object):
             grndTemps = []
             holidays = []
             startDay = None
-            heatSizing = 1.15
-            coolSizing = 1.25
+            heatSizing = 1.25
+            coolSizing = 1.15
         
         else:
             timestep = int(EPParameters[0])
