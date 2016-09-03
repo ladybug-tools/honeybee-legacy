@@ -55,7 +55,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nSEP_03_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -243,6 +243,10 @@ def checkSys(sysInt, sysType):
     path.append(int(sysInt)-1+len(zoneNameList))
     return zoneName
 
+customCount = 0
+def checkCustomName(customInt):
+    path.append(len(zoneNameList)+len(zoneNameList)+len(zoneNameList)+int(customInt))
+
 def checkCentralSys(sysInt, sysType):
     if sysType == 0: zoneName = " Chiller " + str(sysInt)
     elif sysType == 1: zoneName = " Boiler " + str(sysInt)
@@ -287,8 +291,9 @@ if _resultFileAddress and gotData == True and csvExists == True:
                 #ANALYZE THE FILE HEADING
                 key = []; path = []
                 for columnCount, column in enumerate(line.split(',')):
+                    
                     if 'Zone Ideal Loads Supply Air Total Cooling Energy' in column or 'Chiller Electric Energy' in column or 'Cooling Coil Electric Energy' in column or 'Zone VRF Air Terminal Cooling Electric Energy' in column or 'VRF Heat Pump Cooling Electric Energy' in column:
-                        key.append(0)
+                        
                         if 'Zone Ideal Loads Supply Air Total Cooling Energy' in column and 'ZONE HVAC' in column:
                             zoneName = checkZoneSys(" " + (":".join(column.split(":")[:-1])).split('ZONE HVAC IDEAL LOADS AIR SYSTEM ')[-1])
                             idealAirTrigger = True
@@ -310,12 +315,20 @@ if _resultFileAddress and gotData == True and csvExists == True:
                         elif 'Chiller Electric Energy' in column:
                             zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('CHILLER ELECTRIC EIR ')[-1], 0)
                             idealAirTrigger = False
-                        else: zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
-                        if idealAirTrigger == True:
-                            makeHeader(cooling, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Cooling Load", energyUnit, True)
                         else:
-                            makeHeader(cooling, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Cooling Electric Energy", energyUnit, True)
-                        dataTypeList[2] = True
+                            zoneName = " " +column.split(":")[0]
+                            checkCustomName(customCount)
+                            customCount+=1
+                        
+                        try:
+                            if idealAirTrigger == True:
+                                makeHeader(cooling, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Cooling Load", energyUnit, True)
+                            else:
+                                makeHeader(cooling, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Cooling Electric Energy", energyUnit, True)
+                            dataTypeList[2] = True
+                            key.append(0)
+                        except:
+                            key.append(-1)
                     
                     elif 'Zone Ideal Loads Supply Air Total Heating Energy' in column  or 'Boiler Heating Energy' in column or 'Heating Coil Total Heating Energy' in column or 'Heating Coil Gas Energy' in column or 'Heating Coil Electric Energy' in column or 'Humidifier Electric Energy' in column or 'Zone VRF Air Terminal Heating Electric Energy' in column or 'VRF Heat Pump Heating Electric Energy' in column:
                         notFound = False
@@ -347,22 +360,21 @@ if _resultFileAddress and gotData == True and csvExists == True:
                             zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('HUMIDIFIER STEAM ELECTRIC ')[-1], 4)
                             idealAirTrigger = 2
                         else:
-                            notFound = True
+                            zoneName = " " +column.split(":")[0]
+                            checkCustomName(customCount)
+                            customCount+=1
+                        
+                        try:
+                            if idealAirTrigger == True:
+                                makeHeader(heating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Heating Load", energyUnit, True)
+                            elif idealAirTrigger == False:
+                                makeHeader(heating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Heating Fuel Energy", energyUnit, False)
+                            else:
+                                makeHeader(heating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Heating Electric Energy", energyUnit, False)
+                            dataTypeList[3] = True
+                            key.append(1)
+                        except:
                             key.append(-1)
-                            path.append(-1)
-                        if notFound == False:
-                            try:
-                                if idealAirTrigger == True:
-                                    makeHeader(heating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Heating Load", energyUnit, True)
-                                elif idealAirTrigger == False:
-                                    makeHeader(heating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Heating Fuel Energy", energyUnit, False)
-                                else:
-                                    makeHeader(heating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Heating Electric Energy", energyUnit, False)
-                                dataTypeList[3] = True
-                                key.append(1)
-                            except:
-                                key.append(-1)
-                                path.append(-1)
                     
                     elif 'Zone Lights Electric Energy' in column:
                         key.append(2)
@@ -396,6 +408,11 @@ if _resultFileAddress and gotData == True and csvExists == True:
                         elif 'Earth Tube Fan Electric Energy' in column:
                             zoneName = checkZoneOther(dataIndex, " " + ":".join(column.split(":")[:-1]))
                             makeHeaderAlt(fanElectric, path[columnCount], zoneName, column.split('(')[-1].split(')')[0], "Earth Tube Fan Electric Energy", energyUnit, False)
+                        else:
+                            zoneName = " " +column.split(":")[0]
+                            checkCustomName(customCount)
+                            customCount+=1
+                            makeHeader(fanElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Fan Electric Energy", energyUnit, False)
                         dataTypeList[6] = True
                     
                     elif 'Pump Electric Energy' in column:
@@ -405,6 +422,11 @@ if _resultFileAddress and gotData == True and csvExists == True:
                             makeHeader(pumpElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Pump Electric Energy", energyUnit, True)
                         elif 'PUMP VARIABLE SPEED' in column:
                             zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('PUMP VARIABLE SPEED ')[-1], 3)
+                            makeHeader(pumpElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Pump Electric Energy", energyUnit, True)
+                        else:
+                            zoneName = " " + column.split(":")[0]
+                            checkCustomName(customCount)
+                            customCount+=1
                             makeHeader(pumpElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Pump Electric Energy", energyUnit, True)
                         dataTypeList[7] = True
                     
@@ -548,6 +570,7 @@ if _resultFileAddress and gotData == True and csvExists == True:
                     else:
                         key.append(-1)
                         path.append(-1)
+            
             else:
                 for columnCount, column in enumerate(line.split(',')):
                     if key[columnCount] != 14:
