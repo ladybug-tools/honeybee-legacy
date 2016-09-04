@@ -82,7 +82,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Window Shade Generator"
 ghenv.Component.NickName = 'EPWindowShades'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nSEP_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -116,7 +116,7 @@ inputsDict = {
     
 0: ["_HBObjects", "The HBZones or HBSurfaces out of any of the HB components that generate or alter zones."],
 1: ["shadeType_", "An integer to specify the type of shade that you wish to assign to the windows.  The default is set to 0 = blinds.  Choose from the following options: \n  0 = Blinds - typical venetian blinds that can be either on the interior or exterior of the glass. \n  1 = Shades - either a fabric roller shade or a perforated metal screen that diffuses the light evenly. \n  2 = Electrochromic Glazing - represents electrochromic glazing that can be switched on to reflect the material state of the shadeMaterial_."],
-2: ["shadeMaterial_", "An optional shade material from the 'Honeybee_EnergyPlus Shade Material' component.  If no material is connected here, the component will automatically assign a material depending on the shade type above.  The default blinds material has 0.65 solar reflectance, 0 transmittance, 0.9 emittance, 0.25 mm thickness, 221 W/mK conductivity."],
+2: ["shadeMaterial_", "An optional shade material from the 'Honeybee_EnergyPlus Shade Material' component.  The default blinds or shade material has 0.65 solar reflectance, 0 transmittance, 0.9 emittance, 0.25 mm thickness, 221 W/mK conductivity."],
 3: ["shadeSchedule_", "An optional schedule to raise and lower the shades.  If no value is connected here, the shades will assume the 'ALWAYS ON' shcedule."],
 4: ["shadeCntrlType_", "An integer represeting the parameter that controls whether the shades are on (down) or off (up).  The default is set to 0 = OnIfScheduleAllows.  If no schedule is connected, the shades are assumed to always be down.  Choose from the following options: \n  0 = OnIfScheduleAllows - Shading is on if the schedule value is non-zero and is AlwaysOn if no schedule is connected. \n  1 = OnIfHighSolarOnWindow - Shading is on if beam plus diffuse solar radiation incident on the window exceeds SetPoint (W/m2) below and schedule, if specified, allows shading. \n  2 = OnIfHighHorizontalSolar - Shading is on if total (beam plus diffuse) horizontal solar irradiance exceeds SetPoint (W/m2) below and schedule, if specified, allows shading. \n  3 = OnIfHighOutdoorAirTemperature - Shading is on if outside air temperature exceeds SetPoint (C) below and schedule, if specified, allows shading. \n  4 = OnIfHighZoneAirTemperature - Shading is on if zone air temperature in the previous timestep exceeds SetPoint (C) below and schedule, if specified, allows shading. \n  5 = OnIfHighZoneCooling - Shading is on if zone cooling rate in the previous timestep exceeds SetPoint (W) below and schedule, if specified, allows shading. \n  6 = OnNightIfLowOutdoorTempAndOffDay - Shading is on at night if the outside air temperature is less than SetPoint (C) below and schedule, if specified, allows shading. Shading is off during the day. \n  7 = OnNightIfLowInsideTempAndOffDay - Shading is on at night if the zone air temperature in the previous timestep is less than SetPoint (C) below and schedule, if specified, allows shading. Shading is off during the day. \n  8 = OnNightIfHeatingAndOffDay - Shading is on at night if the zone heating rate in the previous timestep exceeds SetPoint (W) below and schedule, if specified, allows shading. Shading is off during the day. \n  9 = OnNightIfLowOutdoorTempAndOnDayIfCooling - Shading is on at night if the outside air temperature is less than SetPoint (C) below. Shading is on during the day if the zone cooling rate in the previous timestep is non-zero. Night and day shading is subject to schedule, if specified. \n  10 = OnNightIfHeatingAndOnDayIfCooling: Shading is on at night if the zone heating rate in the previous timestep exceeds SetPoint (W) below. Shading is on during the day if the zone cooling rate in the previous timestep is non-zero. Night and day shading is subject to schedule, if specified. \n  11 = OffNightAndOnDayIfCoolingAndHighSolarOnWindow: Shading is off at night. Shading is on during the day if the solar radiation incident on the window exceeds SetPoint (W/m2) below and if the zone cooling rate in the previous timestep is non-zero. Daytime shading is subject to schedule, if specified. \n  12 = OnNightAndOnDayIfCoolingAndHighSolarOnWindow: Shading is on at night. Shading is on during the day if the solar radiation incident on the window exceeds SetPoint (W/m2) below and if the zone cooling rate in the previous timestep is non-zero. Day and night shading is subject to schedule, if specified. (This Shading Control Type is the same as the previous one, except the shading is on at night rather than off.) \n  13 = OnIfHighOutdoorAirTempAndHighSolarOnWindow: Shading is on if the outside air temperature exceeds the Setpoint (C) and if if the solar radiation incident on the window exceeds SetPoint 2 (W/m2).  Note that this option requires you to connect two values to the shadeSetpoint_ input below. \n  14 = OnIfHighOutdoorAirTempAndHighHorizontalSolar: Shading is on if the outside air temperature exceeds the Setpoint (C) and if if the horizontal solar radiation exceeds SetPoint 2 (W/m2).  Note that this option requires you to connect two values to the shadeSetpoint_ input below."],
 5: ["shadeSetpoint_", "A number that corresponds to the shadeCntrlType_ specified above.  This can be a value in (W/m2), (C) or (W) depending upon the control type."],
@@ -160,6 +160,10 @@ def setComponentInputs(shadeType):
                 ghenv.Component.Params.Input[input].NickName = "airPermeability_"
                 ghenv.Component.Params.Input[input].Name = "airPermeability_"
                 ghenv.Component.Params.Input[input].Description = "An optional number between 0 and 1 to set the air permeability of the shade.  For example, use this to account for perforations in outdoor metal screens where air can circulate through.  The default is set to have 0 permeability."
+            elif shadeType == 2 and input == 2:
+                ghenv.Component.Params.Input[input].NickName = "shadeMaterial_"
+                ghenv.Component.Params.Input[input].Name = "shadeMaterial_"
+                ghenv.Component.Params.Input[input].Description = "An optional EP Construction that represents the Electrochromic Glazing in the shaded state.  If no construction is connected here, the component will automatically generate an EnergyPlus construction based on the existing assigned window construciton and will change the SHGC to 0.07 and VT to 0.01."
             elif shadeType == 2 and input <=12 and input >= 6:
                 ghenv.Component.Params.Input[input].NickName = "____________"
                 ghenv.Component.Params.Input[input].Name = "."
@@ -425,21 +429,46 @@ def checkShadesInputs(zoneNames, windowNames, windowSrfs, isZone):
     
     return checkData, windowNamesFinal, windowBrepsFinal, alignedDataTree, shadeMaterial, schedule
 
-def checkWindowInputs(zoneNames, windowNames, windowSrfs, isZone):
+def checkWindowInputs(zoneNames, windowNames, windowSrfs, isZone, shadeMaterial, hb_EPObjectsAux):
     #Check if there is a shades material connected and, if not, set a default.
     checkData5 = True
-    if shadeMaterial_ == None:
-        print "No shades material has been connected. A material will be used that represents typical electrochromic glazing: \n 0.93 solar reflectance (or 0.07 SHGC), 0.01 visible transmittance, and a U-Value equal to the current glazing."
-        shadeMaterial = ['DEFAULTELECTROCHROMIC', 0.93, 0.01, 0.9, 'currentGlz', 'currentGlz']
+    if shadeMaterial == None:
+        print "No shade material has been connected. A material will be used that represents typical electrochromic glazing: \n 0.07 SHGC, 0.01 visible transmittance, and a U-Value equal to the current glazing."
+        shadeMaterial = 'DEFAULTELECTROCHROMIC'
     else:
         try:
-            shadeMaterial = deconstructBlindMaterial(shadeMaterial_)
-            if shadeMaterial[4] == 0.00025 and shadeMaterial[5] == 221:
-                shadeMaterial[4] = 'currentGlz'
-                shadeMaterial[5] = 'currentGlz'
+            # if it is just the name of the material make sure it is already defined
+            if len(shadeMaterial.split("\n")) == 1:
+                # if the material is not in the library add it to the library
+                if not hb_EPObjectsAux.isEPConstruction(shadeMaterial):
+                    warningMsg = "Can't find " + shadeMaterial + " in EP Construction Library.\n" + \
+                                "Add the construction to the library and try again."
+                    print warningMsg
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
+                    checkData5 = False
+            else:
+                # it is a full string
+                if "CONSTRUCTION" in shadeMaterial.upper():
+                    added, shadeMaterial = hb_EPObjectsAux.addEPObjectToLib(shadeMaterial, overwrite = True)
+                    
+                    if not added:
+                        msg = name + " is not added to the project library!"
+                        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                        print msg
+                        checkData5 = False
+                elif "MATERIAL" in shadeMaterial.upper():
+                    msg = "Your connected shadeMaterial_ is just a material and not a full construction. \n For electrochromic glazing, you must assign a full window construction here."
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                    print msg
+                    checkData5 = False
+                else:
+                    msg = "Your connected shadeMaterial_ is not a valid construction."
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                    print msg
+                    checkData5 = False
         except:
             checkData5 = False
-            warning = 'Blinds material is not a valid shades material from the "Honeybee_EnergyPlus Shade Material" component.'
+            warning = 'Connected shadeMaterial_ is not a valid EP window construction.'
             print warning
             ghenv.Component.AddRuntimeMessage(w, warning)
     
@@ -905,7 +934,6 @@ def makeShade(_glzSrf):
     return shadingSurfaces, airPermea, EPDistToGlass, EPinteriorOrExter, assignEPCheckInit
 
 
-
 #### HERE ARE THE FUNCTIONS THAT CREATE THE ENERGYPLUS OBJECTS.
 shdCntrlDict = {
 0: 'OnIfScheduleAllows',
@@ -990,8 +1018,8 @@ def createEPWindowMat(shadeMaterial, name, winUValue):
     EPWindowMat ='WindowMaterial:SimpleGlazingSystem,\n' + \
         '\t' + name + ',    !Name\n' + \
         '\t' + str(winUValue) + ',    !U Value\n' + \
-        '\t' + str(1-shadeMaterial[1]) + ',    !Solar Heat Gain Coeff\n' + \
-        '\t' + str(shadeMaterial[2]) + ';    !Visible Transmittance\n' + \
+        '\t' + '0.07' + ',    !Solar Heat Gain Coeff\n' + \
+        '\t' + '0.01' + ';    !Visible Transmittance\n' + \
         '\n'
     
     EPWindowConstr = 'Construction,\n' + \
@@ -1223,30 +1251,37 @@ def main():
         elif shadeType_ == 2:
             #Check the inputs and make sure that we have everything that we need to generate the shades.  Set defaults on things that are not connected.
             if checkSameType == True:
-                checkData, windowNames, windowSrfsInit, alignedDataTree, windowMaterial, schedule = checkWindowInputs(zoneNames, windowNames, windowSrfs, isZone)
+                checkData, windowNames, windowSrfsInit, alignedDataTree, windowMaterial, schedule = checkWindowInputs(zoneNames, windowNames, windowSrfs, isZone, shadeMaterial_, hb_EPObjectsAux)
             else: checkData == False
             
             if checkData == True and writeEPObjs_ == True:
                 #Create the EnergyPlus shades material and assign it to the windows with shades.
                 for count, windowObj in enumerate(windowObjects):
-                    if windowMaterial[4] == 'currentGlz':
+                    if windowMaterial == 'DEFAULTELECTROCHROMIC':
                         materials, comments, winUval, UValue_IP = hb_EPMaterialAUX.decomposeEPCnstr(windowObj.EPConstruction.upper())
-                        blindMatName = windowMaterial[0] + '-' + str(round(winUval*100000)/100000)
+                        blindMatName = windowMaterial + '-' + str(round(winUval*100000)/100000)
                     else:
-                        winUval = round((windowMaterial[5]/windowMaterial[4])*100000)/100000
-                        blindMatName = windowMaterial[0] + '-' + str(winUval)
+                        blindMatName = windowMaterial
+                    
                     blindMatNames.append('')
                     if blindMatName.upper() not in compShadeMats:
-                        blindMatStr, blindMatConstr = createEPWindowMat(windowMaterial, blindMatName, winUval)
-                        added, name = hb_EPObjectsAux.addEPObjectToLib(blindMatStr, True)
-                        added, name = hb_EPObjectsAux.addEPObjectToLib(blindMatConstr, True)
+                        if windowMaterial == 'DEFAULTELECTROCHROMIC':
+                            blindMatStr, blindMatConstr = createEPWindowMat(windowMaterial, blindMatName, winUval)
+                            added, name = hb_EPObjectsAux.addEPObjectToLib(blindMatStr, True)
+                            added, name = hb_EPObjectsAux.addEPObjectToLib(blindMatConstr, True)
+                            compShadeMatsStr.append(blindMatConstr)
+                        else:
+                            materials, comments, winUval, UValue_IP = hb_EPMaterialAUX.decomposeEPCnstr(windowMaterial.upper())
+                            blindMatStr = 'Construction,\n'
+                            for mcount, mat in enumerate(materials):
+                                blindMatStr = blindMatStr + mat + comments[mcount] +'\n'
                         compShadeMats.append(blindMatName.upper())
                         compShadeMatsStr.append(blindMatStr)
         
         if checkData == True and assignEPCheck == True and writeEPObjs_ == True:
             for count, windowObj in enumerate(windowObjects):
                 if shadeType_ == 2:
-                    blindCntrlName, EPinteriorOrExter, shadeConstr, schedCntrlType, schedName, setPoint, schedCntrl, shadeName, setPoint2 = createEPBlindControlName(windowMaterial[0], schedule, 'SwitchableGlazing', blindMatName)
+                    blindCntrlName, EPinteriorOrExter, shadeConstr, schedCntrlType, schedName, setPoint, schedCntrl, shadeName, setPoint2 = createEPBlindControlName(windowMaterial, schedule, 'SwitchableGlazing', blindMatName)
                 else:
                     blindCntrlName, EPinteriorOrExter, shadeConstr, schedCntrlType, schedName, setPoint, schedCntrl, shadeName, setPoint2 = createEPBlindControlName(blindMatNames[count], schedule, EPinteriorOrExterList[count])
                 if blindCntrlName.upper() not in compShadeCntrls:
