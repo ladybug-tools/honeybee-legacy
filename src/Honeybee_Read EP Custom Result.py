@@ -122,14 +122,7 @@ if _resultFileAddress and csvExists == True:
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
 else: pass
 
-# If anyone has connected the full name of the output, let's format the keyword correcly for them.
-keywords = []
-for word in _keywords:
-    if word.startswith('Output:Variable,*,'):
-        theWord = word.split('Output:Variable,*,')[-1].split(',')[0]
-        keywords.append(theWord)
-    else:
-        keywords.append(word)
+
 
 
 # Make data tree objects for all of the outputs.
@@ -148,7 +141,17 @@ def makeHeader(resultList, path, timestep, name, units):
 
 # PARSE THE RESULT FILE.
 if hbCheck and _resultFileAddress and _keywords and _resultFileAddress != None:
+    # Call the class that searches.
     hb_EPMaterialAUX = sc.sticky["honeybee_EPMaterialAUX"]()
+    # If anyone has connected the full name of the output, let's format the keyword correcly for them.
+    keywords = []
+    for word in _keywords:
+        if word.startswith('Output:Variable,*,'):
+            theWord = word.split('Output:Variable,*,')[-1].split(',')[0]
+            keywords.append(theWord)
+        else:
+            keywords.append(word)
+    
     try:
         result = open(_resultFileAddress, 'r')
         
