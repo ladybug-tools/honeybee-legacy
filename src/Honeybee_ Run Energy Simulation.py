@@ -60,7 +60,7 @@ Provided by Honeybee 0.0.60
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nSEP_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -383,8 +383,8 @@ class WriteIDF(object):
                     shdCntrl = ''
                 
                 #Check for frame objects.
-                if childSrf.construction in sc.sticky["honeybee_ExtraConstrProps"].keys():
-                    childSrf.frameName = sc.sticky["honeybee_ExtraConstrProps"][childSrf.construction]['Name']
+                #if childSrf.construction in sc.sticky["honeybee_ExtraConstrProps"].keys():
+                #    childSrf.frameName = sc.sticky["honeybee_ExtraConstrProps"][childSrf.construction]['Name']
                 
                 if checked:
                     str_1 = '\nFenestrationSurface:Detailed,\n' + \
