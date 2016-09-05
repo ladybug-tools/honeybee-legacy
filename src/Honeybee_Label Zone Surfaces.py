@@ -277,7 +277,7 @@ else:
         ghenv.Component.AddRuntimeMessage(w, warning)
 
 
-if initCheck== True and _HBObjects != [] and initCheck == True:
+if initCheck== True and _HBObjects != [] and _HBObjects[0] != None and initCheck == True:
     copyHBZoneData()
     hb_zoneData = sc.sticky["Honeybee_LabelSrfData"]
     

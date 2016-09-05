@@ -321,7 +321,7 @@ def main(HBZones, coolingSetPt, heatingSetPt, coolingSetback, heatingSetback, ma
     return HBZones
 
 
-if _HBZones:
+if _HBZones and _HBZones[0] != None:
     coolingSetPt, coolingSetback, heatingSetPt, \
     heatingSetback, maxHumidity, minHumidity, outdoorAirReq, \
     daylightIllumSetPt, daylightCntrlPt, daylightCntrlFract = checkTheInputs()
