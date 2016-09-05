@@ -318,11 +318,11 @@ def check_DGP_comfort_Range(DGP):
     DGP = float(DGP)
     if (DGP) < 0.35:
         return "Imperceptible Glare"
-    elif DGP > 0.35 and DGP < 0.40:
+    elif DGP >= 0.35 and DGP < 0.40:
         return "Perceptible Glare"
-    elif DGP > 0.40 and DGP < 0.45:
+    elif DGP >= 0.40 and DGP < 0.45:
         return "Disturbing Glare"
-    elif DGP > 0.45:
+    elif DGP >= 0.45:
         return "Intolerable Glare"
 
 
