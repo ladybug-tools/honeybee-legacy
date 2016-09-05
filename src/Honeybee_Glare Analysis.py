@@ -307,6 +307,24 @@ def main(HDRImagePath, taskPosition, taskPositionAngle):
         return notes, glareCheckImage, totalGlareResultDict, None, None
 
 
+def check_DGP_comfort_Range(DGP):
+    """
+    This function takes in DGP values and return comfort ranges.
+    :param : DGP : DGP value as a String
+    :return : comfort range as a String
+    """
+    
+    DGP = float(DGP)
+    if (DGP) < 0.35:
+        return "Imperceptible Glare"
+    elif DGP > 0.35 and DGP < 0.40:
+        return "Perceptible Glare"
+    elif DGP > 0.40 and DGP < 0.45:
+        return "Disturbing Glare"
+    elif DGP > 0.45:
+        return "Intolerable Glare"
+
+
 if _HDRImagePath and _runIt:
     result = main(_HDRImagePath, taskPositionUV_, taskPositionAngle_)
     
@@ -315,9 +333,11 @@ if _HDRImagePath and _runIt:
         
         if taskPGlareResultDict!=None:
             DGP = taskPGlareResultDict['dgp']
+            DGP_Comfort_Range = check_DGP_comfort_Range(DGP)
             DGI = taskPGlareResultDict['dgi']
         else:
             DGP = totalGlareResultDict['dgp']
+            DGP_Comfort_Range = check_DGP_comfort_Range(DGP)
             DGI = totalGlareResultDict['dgi']
 else:
     readMe = "Provide a valid HDR Image and set _runIt to True."
