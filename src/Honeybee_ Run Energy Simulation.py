@@ -64,7 +64,7 @@ ghenv.Component.Message = 'VER 0.0.60\nSEP_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nJUL_24_2016
+#compatibleHBVersion = VER 0.0.56\nSEP_04_2016
 #compatibleLBVersion = VER 0.0.59\nJUL_24_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
@@ -2231,11 +2231,20 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     for key, zones in ZoneCollectionBasedOnSchAndLoads.items():
         
         for zone in zones:
+            if zone.daylightCntrlFract != 0:
+                warning = "Daylighting controls have been applied to " + zone.name + \
+                          ".\n" + \
+                          "This component does not model daylighting controls.\n" + \
+                          "To model daylight controls, use the Export to OpenStudio component."
+                w = gh.GH_RuntimeMessageLevel.Warning
+                ghenv.Component.AddRuntimeMessage(w, warning)
+                print warning
+            
             if zone.HVACSystem[1] > 1:
                 warning = "An HVAC system is applied to " + zone.name + \
                           ".\n" + \
                           "This component will replace this HVAC system with an Ideal Air Loads system.\n" + \
-                          "To model advanced HVAC systems use the Export to OpenStudio component."
+                          "To model advanced HVAC systems, use the Export to OpenStudio component."
                 w = gh.GH_RuntimeMessageLevel.Warning
                 ghenv.Component.AddRuntimeMessage(w, warning)
                 print warning

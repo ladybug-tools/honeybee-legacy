@@ -68,11 +68,11 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_27_2016'
+ghenv.Component.Message = 'VER 0.0.60\nSEP_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nJUL_24_2016
+#compatibleHBVersion = VER 0.0.56\nSEP_04_2016
 #compatibleLBVersion = VER 0.0.59\nJUL_24_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
@@ -2397,6 +2397,19 @@ class WriteOPS(object):
         
         OSThermalZone.setZoneControlHumidistat(humidistat)
     
+    def addDaylightCntrl(self, HBZone, OSThermalZone, space, model):
+        zoneDayLCntrl = ops.DaylightingControl(model)
+        zoneDayLCntrl.setSpace(space)
+        zoneDayLCntrl.setIlluminanceSetpoint(HBZone.illumSetPt)
+        zoneDayLCntrl.setMaximumAllowableDiscomfortGlareIndex(HBZone.GlareDiscomIndex)
+        if HBZone.illumCntrlSensorPt == None:
+            HBZone.atuoPositionDaylightSensor()
+        zoneDayLCntrl.setPositionXCoordinate(HBZone.illumCntrlSensorPt.X)
+        zoneDayLCntrl.setPositionYCoordinate(HBZone.illumCntrlSensorPt.Y)
+        zoneDayLCntrl.setPositionZCoordinate(HBZone.illumCntrlSensorPt.Z)
+        OSThermalZone.setPrimaryDaylightingControl(zoneDayLCntrl)
+        OSThermalZone.setFractionofZoneControlledbyPrimaryDaylightingControl(HBZone.daylightCntrlFract)
+    
     def setupNameAndType(self, zone, space, model):
         space.setName(zone.name)
         
@@ -3639,6 +3652,10 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
             # add humidistat if specified
             if zone.humidityMax != "" or zone.humidityMin != "":
                 hb_writeOPS.addHumidistat(zone, thermalZone, space, model)
+            
+            # add daylighting controls
+            if zone.daylightCntrlFract != 0:
+                hb_writeOPS.addDaylightCntrl(zone, thermalZone, space, model)
         
         # write the surfaces
         for HBSrf in zone.surfaces:
@@ -3661,7 +3678,6 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     
     # this should be done once for the whole model
     hb_writeOPS.setAdjacentSurfaces()
-    
     
     # add systems
     hb_writeOPS.addSystemsToZones(model)

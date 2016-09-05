@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_26_2016'
+ghenv.Component.Message = 'VER 0.0.60\nSEP_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -4807,14 +4807,14 @@ class EPZone(object):
         self.hasNonPlanarSrf = False
         self.hasInternalEdge = False
         
-        #Air Mixing with Adjacent Zones
+        # Air Mixing with Adjacent Zones
         self.mixAir = False
         self.mixAirZoneList = []
         self.mixAirFlowList = []
         self.mixAirFlowRate = 0.0963
         self.mixAirFlowSched = []
         
-        #Natural Ventilation Properties
+        # Natural Ventilation Properties
         self.natVent = False
         self.natVentType = []
         self.natVentMinIndoorTemp = []
@@ -4831,15 +4831,15 @@ class EPZone(object):
         self.FanEfficiency = []
         self.FanPressure = []
         
-        #Zone Internal Masses (or Furniture)
+        # Zone Internal Masses (or Furniture)
         self.internalMassNames = []
         self.internalMassSrfAreas = []
         self.internalMassConstructions = []
         
-        #Zone Surfaces
+        # Zone Surfaces
         self.surfaces = []
         
-        #Zone Thresholds
+        # Zone Thresholds
         self.coolingSetPt= ""
         self.heatingSetPt= ""
         self.coolingSetback= ""
@@ -4848,7 +4848,14 @@ class EPZone(object):
         self.humidityMin= ""
         self.outdoorAirReq = "Sum"
         
-        #Air System Properties.
+        # Daylight Thresholds
+        self.daylightCntrlFract = 0
+        self.illumSetPt = 100000
+        self.illumCntrlSensorPt = None
+        self.glareView = 0
+        self.GlareDiscomIndex = 22
+        
+        # Air System Properties.
         self.recirculatedAirPerArea = 0
         self.ventilationSched = ""
         
@@ -4892,7 +4899,13 @@ class EPZone(object):
     
     def resetID(self):
         self.ID = str(uuid.uuid4())
-        
+    
+    def atuoPositionDaylightSensor(self):
+        zoneCentPt = rc.Geometry.VolumeMassProperties.Compute(self.geometry).Centroid
+        zoneBB = rc.Geometry.Brep.GetBoundingBox(self.geometry, rc.Geometry.Plane.WorldXY)
+        zOfPt = zoneBB.Min.Z + 0.8
+        self.illumCntrlSensorPt = rc.Geometry.Point3d(zoneCentPt.X, zoneCentPt.Y, zOfPt)
+    
     def transform(self, transform, clearSurfacesBC = True, flip = False):
         self.name += "_t"
         self.geometry.Transform(transform)
