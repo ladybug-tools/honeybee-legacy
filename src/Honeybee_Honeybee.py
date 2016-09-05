@@ -5812,6 +5812,9 @@ class hb_EPSurface(object):
         self.srfTypeByUser = False
         self.srfBCByUser = False
         
+        # Special attribute for shading control on inidivdual windows that influences the zone properties
+        self.shdCntrlZoneInstructs = []
+        
         # PV - A Honeybee surface can hold one PV generator
         
         self.PVgenlist = []
@@ -6696,9 +6699,11 @@ class hb_EPFenSurface(hb_EPSurface):
             parentZone: class of the zone that this surface belongs to"""
         hb_EPSurface.__init__(self, surface, srfNumber, srfName, parentSurface, surafceType)
         
+        # Special inputs for shading control.
         self.shadingSchName = []
         self.shadingControlName = []
         self.shadeMaterialName = []
+        
         
         if not self.isPlanar:
             try:
