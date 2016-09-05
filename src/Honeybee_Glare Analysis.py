@@ -40,7 +40,8 @@ Provided by Honeybee 0.0.60
     Returns:
         readMe: ...
         glareCheckImage: Path to HDR image of the glare study
-        DGP: Daylight glare probability. Imperceptible Glare [0.35 > DGP], Perceptible Glare [0.4 > DGP >= 0.35], Disturbing Glare [0.45 > DGP >= 0.4], Intolerable Glare [DGP >= 0.45]
+        DGP: Daylight glare probability. 
+        DGP_Comfort_Range: Comfort Ranges. Imperceptible Glare [0.35 > DGP], Perceptible Glare [0.4 > DGP >= 0.35], Disturbing Glare [0.45 > DGP >= 0.4], Intolerable Glare [DGP >= 0.45] 
         DGI: Daylight glare index
         imageWithTaskArea: Path to HDR image with task area marked with blue circle
 
@@ -305,6 +306,24 @@ def main(HDRImagePath, taskPosition, taskPositionAngle):
         
     else:
         return notes, glareCheckImage, totalGlareResultDict, None, None
+        
+    
+def check_DGP_comfort_Range(DGP):
+    """
+    This function takes in DGP values and return comfort ranges.
+    :param : DGP : DGP value as a String
+    :return : comfort range as a String
+    """
+    
+    DGP = float(DGP)
+    if (DGP) < 0.35:
+        return "Imperceptible Glare"
+    elif DGP > 0.35 and DGP < 0.40:
+        return "Perceptible Glare"
+    elif DGP > 0.40 and DGP < 0.45:
+        return "Disturbing Glare"
+    elif DGP > 0.45:
+        return "Intolerable Glare"
 
 
 if _HDRImagePath and _runIt:
@@ -315,9 +334,11 @@ if _HDRImagePath and _runIt:
         
         if taskPGlareResultDict!=None:
             DGP = taskPGlareResultDict['dgp']
+            DGP_Comfort_Range = check_DGP_comfort_Range(DGP)
             DGI = taskPGlareResultDict['dgi']
         else:
             DGP = totalGlareResultDict['dgp']
+            DGP_Comfort_Range = check_DGP_comfort_Range(DGP)
             DGI = totalGlareResultDict['dgi']
 else:
     readMe = "Provide a valid HDR Image and set _runIt to True."
