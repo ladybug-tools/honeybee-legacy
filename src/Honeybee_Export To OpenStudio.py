@@ -2402,6 +2402,7 @@ class WriteOPS(object):
         zoneDayLCntrl.setSpace(space)
         zoneDayLCntrl.setIlluminanceSetpoint(HBZone.illumSetPt)
         zoneDayLCntrl.setMaximumAllowableDiscomfortGlareIndex(HBZone.GlareDiscomIndex)
+        zoneDayLCntrl.setThetaRotationAroundYAxis(-math.radians(HBZone.glareView))
         if HBZone.illumCntrlSensorPt == None:
             HBZone.atuoPositionDaylightSensor()
         zoneDayLCntrl.setPositionXCoordinate(HBZone.illumCntrlSensorPt.X)
