@@ -68,7 +68,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.60\nSEP_04_2016'
+ghenv.Component.Message = 'VER 0.0.60\nSEP_06_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -2376,7 +2376,6 @@ class WriteOPS(object):
         except:
             humidTypeLimits = self.humidTypeLimits = self.createOSScheduleTypeLimitsFromValues(model, 0, 100, 'CONTINUOUS', 'Percent')
         
-        
         if HBZone.humidityMax != "":
             values = ["schedule:constant", humidTypeLimits, float(HBZone.humidityMax)]
             maxHumidSched = self.createConstantOSSchedule("maxHumidity" + str(space.name()), values, model)
@@ -2449,36 +2448,45 @@ class WriteOPS(object):
         # I'm not sure how default schedule will be useful
         # if I have to create separate definitions for people, light, equipments and infiltration!
         defSchedule = ops.DefaultScheduleSet(model)
-        
         defSchedule.setName(zone.name + "_DefaultScheduleSet")
-        defSchedule.setElectricEquipmentSchedule(self.getOSSchedule(zone.equipmentSchedule, model))
-        defSchedule.setHoursofOperationSchedule(self.getOSSchedule(zone.occupancySchedule, model))
         defSchedule.setInfiltrationSchedule(self.getOSSchedule(zone.infiltrationSchedule, model))
         defSchedule.setLightingSchedule(self.getOSSchedule(zone.lightingSchedule, model))
-        defSchedule.setPeopleActivityLevelSchedule(self.getOSSchedule(zone.occupancyActivitySch, model))
+        # Not all default zone types have people, or equipment.
+        try:
+            defSchedule.setElectricEquipmentSchedule(self.getOSSchedule(zone.equipmentSchedule, model))
+        except:
+            pass
+        try:
+            defSchedule.setHoursofOperationSchedule(self.getOSSchedule(zone.occupancySchedule, model))
+        except:
+            pass
+        try:
+            defSchedule.setPeopleActivityLevelSchedule(self.getOSSchedule(zone.occupancyActivitySch, model))
+        except:
+            pass
         space.setDefaultScheduleSet(defSchedule)
         return space
         
     def setPeopleDefinition(self, zone, space, model):
-        peopleDefinition = ops.PeopleDefinition(model)
-        peopleDefinition.setName(zone.name + "_PeopleDefinition")
-        flrArea = zone.getFloorArea()
-        if flrArea != 0:
-            peopleDefinition.setNumberofPeople(zone.numOfPeoplePerArea * flrArea)
-            peopleDefinition.setNumberOfPeopleCalculationMethod("People/Area", flrArea)
-            peopleDefinition.setPeopleperSpaceFloorArea(zone.numOfPeoplePerArea) #space.peoplePerFloorArea())
-        #peopleDefinition.setFractionRadiant
-        #peopleDefinition.setSensibleHeatFraction
-        
-        # This was so confusing to find people and people definition as two different objects
-        people = ops.People(peopleDefinition)
-        people.setName(zone.name + "_PeopleObject")
-        people.setActivityLevelSchedule(self.getOSSchedule(zone.occupancyActivitySch, model))
-        people.setNumberofPeopleSchedule(self.getOSSchedule(zone.occupancySchedule, model))
-        #people.setPeopleDefinition(peopleDefinition)
-        people.setSpace(space)
-        
-        
+        if zone.numOfPeoplePerArea != 0:
+            peopleDefinition = ops.PeopleDefinition(model)
+            peopleDefinition.setName(zone.name + "_PeopleDefinition")
+            flrArea = zone.getFloorArea()
+            if flrArea != 0:
+                peopleDefinition.setNumberofPeople(zone.numOfPeoplePerArea * flrArea)
+                peopleDefinition.setNumberOfPeopleCalculationMethod("People/Area", flrArea)
+                peopleDefinition.setPeopleperSpaceFloorArea(zone.numOfPeoplePerArea) #space.peoplePerFloorArea())
+            #peopleDefinition.setFractionRadiant
+            #peopleDefinition.setSensibleHeatFraction
+            
+            # This was so confusing to find people and people definition as two different objects
+            people = ops.People(peopleDefinition)
+            people.setName(zone.name + "_PeopleObject")
+            people.setActivityLevelSchedule(self.getOSSchedule(zone.occupancyActivitySch, model))
+            people.setNumberofPeopleSchedule(self.getOSSchedule(zone.occupancySchedule, model))
+            #people.setPeopleDefinition(peopleDefinition)
+            people.setSpace(space)
+     
     def setInternalMassDefinition(self, zone, space, model):
         
         for srfNum,srfArea in enumerate(zone.internalMassSrfAreas):
@@ -2519,18 +2527,19 @@ class WriteOPS(object):
         lights.setSpace(space)
         
     def setEquipmentDefinition(self, zone, space, model):
-        electricDefinition = ops.ElectricEquipmentDefinition(model)
-        electricDefinition.setName(zone.name + "_ElectricEquipmentDefinition")
-        flrArea = zone.getFloorArea()
-        if flrArea != 0:
-            electricDefinition.setDesignLevelCalculationMethod("Watts/Area", flrArea, space.numberOfPeople())
-        electricDefinition.setWattsperSpaceFloorArea(zone.equipmentLoadPerArea)
-        
-        electricEqipment = ops.ElectricEquipment(electricDefinition)
-        electricEqipment.setName(zone.name + "_ElectricEquipmentObject")
-        electricEqipment.setSchedule(self.getOSSchedule(zone.equipmentSchedule, model))
-        electricEqipment.setEndUseSubcategory('ElectricEquipment')
-        electricEqipment.setSpace(space)
+        if zone.equipmentLoadPerArea != 0:
+            electricDefinition = ops.ElectricEquipmentDefinition(model)
+            electricDefinition.setName(zone.name + "_ElectricEquipmentDefinition")
+            flrArea = zone.getFloorArea()
+            if flrArea != 0:
+                electricDefinition.setDesignLevelCalculationMethod("Watts/Area", flrArea, space.numberOfPeople())
+            electricDefinition.setWattsperSpaceFloorArea(zone.equipmentLoadPerArea)
+            
+            electricEqipment = ops.ElectricEquipment(electricDefinition)
+            electricEqipment.setName(zone.name + "_ElectricEquipmentObject")
+            electricEqipment.setSchedule(self.getOSSchedule(zone.equipmentSchedule, model))
+            electricEqipment.setEndUseSubcategory('ElectricEquipment')
+            electricEqipment.setSpace(space)
         
     def setDesignSpecificationOutdoorAir(self, zone, space, model):
         ventilation = ops.DesignSpecificationOutdoorAir(model)
