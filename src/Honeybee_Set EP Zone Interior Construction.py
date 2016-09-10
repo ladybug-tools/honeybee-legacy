@@ -40,7 +40,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Set EP Zone Interior Construction"
 ghenv.Component.NickName = 'setEPZoneIntCnstr'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nSEP_10_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
@@ -122,18 +122,27 @@ def main(HBZone, wallEPCnst, windowEPCnst, flrEPCnst, cielConstr):
                                 updateZoneMixing(childSrf, srf.parent, srf.BCObject.parent)
                 if srf.type == 0 and wallEPCnst!=None:
                     hb_EPObjectsAux.assignEPConstruction(srf, wallEPCnst, ghenv.Component)
-                    if srf.BC.lower() == "surface":
-                        hb_EPObjectsAux.assignEPConstruction(srf.BCObject, wallEPCnst, ghenv.Component)
+                    if srf.BC.lower() == "surface" or srf.BC.lower() == "adiabatic":
+                        if srf.BC.lower() == "surface":
+                            hb_EPObjectsAux.assignEPConstruction(srf.BCObject, wallEPCnst, ghenv.Component)
+                        else:
+                            hb_EPObjectsAux.assignEPConstruction(srf, wallEPCnst, ghenv.Component)
                         checkAirWalls(wallEPCnst, srf)
                 elif (srf.type == 3 and cielConstr!=None) or (srf.type == 1 and srf.BC.lower() == "adiabatic" and cielConstr!=None):
                     hb_EPObjectsAux.assignEPConstruction(srf, cielConstr, ghenv.Component)
-                    if srf.BC.lower() == "surface":
-                        hb_EPObjectsAux.assignEPConstruction(srf.BCObject, cielConstr, ghenv.Component)
+                    if srf.BC.lower() == "surface" or srf.BC.lower() == "adiabatic":
+                        if srf.BC.lower() == "surface":
+                            hb_EPObjectsAux.assignEPConstruction(srf.BCObject, cielConstr, ghenv.Component)
+                        else:
+                            hb_EPObjectsAux.assignEPConstruction(srf, cielConstr, ghenv.Component)
                         checkAirWalls(cielConstr, srf)
                 elif (srf.type == 2 or srf.type == 3) and flrEPCnst!=None:
                     hb_EPObjectsAux.assignEPConstruction(srf, flrEPCnst, ghenv.Component)
-                    if srf.BC.lower() == "surface":
-                        hb_EPObjectsAux.assignEPConstruction(srf.BCObject, flrEPCnst, ghenv.Component)
+                    if srf.BC.lower() == "surface" or srf.BC.lower() == "adiabatic":
+                        if srf.BC.lower() == "surface":
+                            hb_EPObjectsAux.assignEPConstruction(srf.BCObject, flrEPCnst, ghenv.Component)
+                        else:
+                            hb_EPObjectsAux.assignEPConstruction(srf, flrEPCnst, ghenv.Component)
                         checkAirWalls(flrEPCnst, srf)
         
         # add zones to dictionary
