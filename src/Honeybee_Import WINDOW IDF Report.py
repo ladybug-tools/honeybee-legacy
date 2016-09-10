@@ -35,11 +35,11 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = 'Honeybee_Import WINDOW IDF Report'
 ghenv.Component.NickName = 'importWINDOWidf'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_27_2016'
+ghenv.Component.Message = 'VER 0.0.60\nSEP_09_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
-#compatibleHBVersion = VER 0.0.56\nJAN_21_2016
+#compatibleHBVersion = VER 0.0.56\nSEP_09_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
@@ -70,11 +70,15 @@ def main(windowIDFReport):
     materialTrigger = False
     materialStr = ''
     
-    additionalProps = ''
-    additionalPropsTrigger = False
+    spectralPropTrigger = False
+    spectralPropStr = ''
+    
+    framePropsTrigger = False
+    frameProps = ''
     
     constrName = None
-    addPropsName = None
+    spectPropsName = None
+    framePropsName = None
     
     textFile = open(windowIDFReport, 'r')
     for lineCount, line in enumerate(textFile):
@@ -86,20 +90,30 @@ def main(windowIDFReport):
             materialTrigger = False
             if materialStr != '': EPObjs.append(materialStr)
             materialStr = ''
-            dditionalPropsTrigger = False
+            spectralPropTrigger = False
+            if spectralPropStr != '': EPObjs.append(spectralPropStr)
+            spectralPropStr = ''
         elif '!- Glazing System name' in line:
             constrName = line.split(',')[0].upper()
             materialStr = materialStr + line
         elif materialTrigger == True:
             materialStr = materialStr + line
-        elif 'WindowProperty:FrameAndDivider' in line:
-            additionalPropsTrigger = True
-            additionalProps = additionalProps + line
-        elif '!- User Supplied Frame/Divider Name' in line:
-            addPropsName = line.split(',')[0].upper()
-            additionalProps = additionalProps + line
-        elif additionalPropsTrigger == True:
-            additionalProps = additionalProps + line
+        elif 'MaterialProperty:GlazingSpectralData' in line:
+            spectralPropTrigger = True
+            spectralPropStr = spectralPropStr + line
+        elif spectralPropTrigger == True:
+            spectralPropStr = spectralPropStr + line
+        
+        # Adding the Frame Data is Currently not Supported.
+        # Chris should add this capability soon.
+        #elif 'WindowProperty:FrameAndDivider' in line:
+        #    framePropsTrigger = True
+        #    frameProps = frameProps + line
+        #elif '!- User Supplied Frame/Divider Name' in line:
+        #    framePropsName = line.split(',')[0].upper()
+        #    frameProps = frameProps + line
+        #elif framePropsTrigger == True:
+        #    frameProps = frameProps + line
     textFile.close()
     
     #Add the materials and construction to the HBHive.
@@ -111,12 +125,6 @@ def main(windowIDFReport):
             return -1
         else: print name + " is has been added to the project library!"
     
-    #Add any additional properties to the extraProps dictionary.
-    if constrName != None:
-        additionalProps = additionalProps + '\n'
-        extraProps[constrName] = {}
-        extraProps[constrName]['Name'] = addPropsName
-        extraProps[constrName]['Properties'] = additionalProps
     
     return constrName
 
