@@ -4,7 +4,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2015, Chris Mackey <Chris@MackeyArchitecture.com> 
+# Copyright (c) 2013-2016, Chris Mackey <Chris@MackeyArchitecture.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -25,7 +25,7 @@
 Use this component runs an annual comfort assessment off of EnergyPlus results and write all values into csv files.
 The results in these files can be used for creating indoor comfort maps.
 -
-Provided by Honeybee 0.0.58
+Provided by Honeybee 0.0.60
     
     Args:
         _comfAnalysisRecipe: A comfort analysis recipe out of one of the comfort recipe component.
@@ -57,11 +57,12 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Microclimate Map Analysis"
 ghenv.Component.NickName = 'MicroclimateMap'
-ghenv.Component.Message = 'VER 0.0.58\nDEC_16_2015'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "09 | Energy | Energy"
+ghenv.Component.SubCategory = "10 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
-#compatibleLBVersion = VER 0.0.59\nJUL_06_2015
+#compatibleLBVersion = VER 0.0.59\nJUN_07_2016
 try: ghenv.Component.AdditionalHelpFromDocStrings = "6"
 except: pass
 
@@ -134,6 +135,23 @@ outputsDictUTCI = {
 12: ["DegFromNeutralResult", "A csv file address containing the degrees from the neutral UTCI value of 20 C indicating the distance that a certain point is from the neutral temperature for every hour of the analysis."]
 }
 
+outputsDictPET = {
+    
+0: ["readMe!", "..."],
+1: ["===============", "..."],
+2: ["radTempMtx", "A python matrix containing MRT data for every hour of the analysis to be plugged into the 'Honeybee_Visualize Annual Comfort Results' component."],
+3: ["airTempMtx", "A python matrix containing air temperature data for every hour of the analysis to be plugged into the 'Honeybee_Visualize Annual Comfort Results' component."],
+4: ["PET_Mtx", "A python matrix containing physiological equivalent temperature (PET) data for every hour of the analysis to be plugged into the 'Honeybee_Visualize Annual Comfort Results' component."],
+5: ["PET_ComfMtx", "A python matrix containing PET comfort data for every hour of the analysis to be plugged into the 'Honeybee_Visualize Annual Comfort Results' component."],
+6: ["PET_CategoryMtx", "A python matrix containing the categories of PET. These are either: -4 = Very Cold, -3 = Cold, -2 = Cool, -1 = Slightly Cool, 0 = Comfortable, 1 = Slightly Warm, 2 = Warm, 3 = Hot, 4 = Very Hot"],
+7: ["===============", "..."],
+8: ["radTempResult", "A csv file address containing the radiant temperature resultsfor each point for every hour of the analysis."],
+9: ["airTempResult", "A csv file address containing the air temperature results for each point for every hour of the analysis."],
+10: ["PET_Result", "A csv file address containing physiological equivalent temperature (PET) results for each point for every hour of the analysis."],
+11: ["PETComfResult", "A csv file address containing the a series of 0's and 1's indicating whether a certain point is comfortable for every hour of the analysis."],
+12: ["PETCategoryResult", "A csv file address containing the categories of PET.   These are either: -4 = Very Cold, -3 = Cold, -2 = Cool, -1 = Slightly Cool, 0 = Comfortable, 1 = Slightly Warm, 2 = Warm, 3 = Hot, 4 = Very Hot"]
+}
+
 
 def setDefaults(lb_defaultFolder, lb_preparation):
     #Set a default fileName.
@@ -167,7 +185,7 @@ def setDefaults(lb_defaultFolder, lb_preparation):
                 ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
             if checkData1 == True:
                 d, m, t = lb_preparation.hour2Date(HOYs[0], True)
-                analysisPeriod = [(m, d, t), (m, d, t)]
+                analysisPeriod = [(m+1, d, t), (m+1, d, t)]
         except:
             try:
                 HOYs, months, days = lb_preparation.getHOYsBasedOnPeriod(analysisPeriodOrHOY_, 1)
@@ -210,6 +228,10 @@ def manageOutput(comfortModel):
             ghenv.Component.Params.Output[input].NickName = outputsDictUTCI[input][0]
             ghenv.Component.Params.Output[input].Name = outputsDictUTCI[input][0]
             ghenv.Component.Params.Output[input].Description = outputsDictUTCI[input][1]
+        elif comfortModel == "PET":
+            ghenv.Component.Params.Output[input].NickName = outputsDictPET[input][0]
+            ghenv.Component.Params.Output[input].Name = outputsDictPET[input][0]
+            ghenv.Component.Params.Output[input].Description = outputsDictPET[input][1]
         else:
             ghenv.Component.Params.Output[input].NickName = outputsDictAdapt[input][0]
             ghenv.Component.Params.Output[input].Name = outputsDictAdapt[input][0]
@@ -283,8 +305,8 @@ def calculatePointMRT(srfTempDict, testPtsViewFactor, hour, originalHour, outdoo
                     pointMRT = pointMRT+weightedSrfTemp
                 weightedSrfTemp = outdoorNonSrfViewFac[ptCount]*prevailingOutdoorTemp[originalHour]
                 pointMRT = pointMRT+weightedSrfTemp
+                pointMRT = pointMRT / (sum(pointViewFactor) + outdoorNonSrfViewFac[ptCount])
                 pointMRTValues[zoneCount].append(round(pointMRT, 3))
-    
     
     return pointMRTValues
 
@@ -312,8 +334,13 @@ def computeHourShadeDrawing(hour, testPtSkyView, testPtBlockedVec, winShdDict, t
     
     return newTestPtSkyView, newTestPtBlockedVec
 
+def computeSkyTemp(La):
+    # formula by Man-ENvironment heat EXchange model (MENEX_2005)
+    skyTemp = (((La) / (0.95*5.667*(10**(-8))))**(0.25)) - 273
+    
+    return skyTemp
 
-def calculateSolarAdjustedMRT(pointMRTValues, stepOfSimulation, originalHour, diffSolarRad, directSolarRad, globHorizRadList, count, sunVecInfo, testPtSkyView, testPtBlockedVec, winTrans, cloA, floorR, skyPatchMeshes, zoneHasWindows, outdoorClac, lb_comfortModels):
+def calculateSolarAdjustedMRT(pointMRTValues, stepOfSimulation, originalHour, diffSolarRad, directSolarRad, globHorizRadList, count, sunVecInfo, testPtSkyView, testPtBlockedVec, winTrans, cloA, floorR, skyPatchMeshes, zoneHasWindows, outdoorClac, outHorizInfrared, lb_comfortModels):
     #Pull out the correct sun vector.
     sunVec = sunVecInfo[0][count]
     altitude = sunVecInfo[1][count]
@@ -339,6 +366,7 @@ def calculateSolarAdjustedMRT(pointMRTValues, stepOfSimulation, originalHour, di
     diffRad = diffSolarRad[originalHour-1]
     dirNormRad = directSolarRad[originalHour-1]
     globHorizRad = globHorizRadList[originalHour-1]
+    outdoorHorizInfrared = outHorizInfrared[originalHour-1]
     
     #Define the Altitide and Azimuth as the SolarCal function understands it.
     azFinal = azimuth
@@ -360,6 +388,10 @@ def calculateSolarAdjustedMRT(pointMRTValues, stepOfSimulation, originalHour, di
     
     #Define a good guess of a radiative heat transfer coefficient.
     radTransCoeff = 6.012
+    
+    # If outdoor conditions are requested, then compute the sky temperature.
+    if outdoorClac == True:
+        skyTemp = computeSkyTemp(outdoorHorizInfrared)
     
     #Compute the solar adjusted temperature for each point.
     solarAdjustedPointMRTValues = []
@@ -385,11 +417,13 @@ def calculateSolarAdjustedMRT(pointMRTValues, stepOfSimulation, originalHour, di
                     
                     if outdoorClac == False or zoneCount != len(pointMRTValues)-1:
                         hourERF = ((0.5*fracEff*testPtSkyView[zoneCount][pointCount]*(diffRad + (globHorizRadFinal*floorR[zoneCount][pointCount]))+ (fracEff*ProjAreaFac*dirRadFinal))*winTrans[originalHour-1])*(cloA/0.95)
+                        mrtDelt = (hourERF/(fracEff*radTransCoeff))
+                        hourMRT = mrtDelt + pointMRT
                     else:
                         hourERF = ((0.5*fracEff*testPtSkyView[zoneCount][pointCount]*(diffRad + (globHorizRadFinal*floorR[zoneCount][pointCount]))+ (fracEff*ProjAreaFac*dirRadFinal)))*(cloA/0.95)
-                    #Calculate the MRT delta, the solar adjusted MRT, and the solar adjusted operative temperature.
-                    mrtDelt = (hourERF/(fracEff*radTransCoeff))
-                    hourMRT = mrtDelt + pointMRT
+                        mrtDelt = (hourERF/(fracEff*radTransCoeff))
+                        hourMRT = mrtDelt + (skyTemp*(testPtSkyView[zoneCount][pointCount]/2) + pointMRT*(1-(testPtSkyView[zoneCount][pointCount]/2)))
+                    
                     solarAdjustedPointMRTValues[zoneCount].append(round(hourMRT, 3))
             else:
                 solarAdjustedPointMRTValues.append([])
@@ -470,7 +504,8 @@ def warpByHeight(pointAirTempValues, ptHeightWeights, flowVolValues, heatGainVal
         if archimedesNumbers[zoneCount] < 59 and archimedesNumbers[zoneCount] != 0:
             #Linear stratification profile.
             dimInterfHeights.append(0)
-            dimensionlessTempDelta = 0.58 - (0.14 * math.log10(archiNumWinScale[zoneCount]))
+            try: dimensionlessTempDelta = 0.58 - (0.14 * math.log10(archiNumWinScale[zoneCount]))
+            except: dimensionlessTempDelta = 0.58
             dimTempDeltas.append(dimensionlessTempDelta)
             cielTemps.append((dimensionlessTempDelta/2)*tempChanges[zoneCount])
         elif archimedesNumbers[zoneCount] != 0:
@@ -563,14 +598,6 @@ def createSrfDict(zoneSrfNames, nameKey, datakey, srfHeaders, srfNumbers):
             if srfDict[path][nameKey].upper() == srfName:
                 srfDict[path][datakey] = srfNumbers[listCount]
                 foundIt = True
-            elif srfDict[path][nameKey].upper() in srfName and "GLZ" in srfDict[path][nameKey].upper():
-                srfDict[path][datakey] = srfNumbers[listCount]
-                foundIt = True
-            elif srfName.split('_')[0] in srfDict[path][nameKey].upper() and "GLZ" in srfDict[path][nameKey].upper():
-                try:
-                    srfDict[path][datakey] = srfNumbers[listCount]
-                    foundIt = True
-                except: pass
         if foundIt == False:
             print "Surface temperature for Surface: " + srfName + " not found in the EP results."
     
@@ -704,7 +731,7 @@ def computeGroupedRoomProperties(testPtZoneWeights, testPtZoneNames, zoneInletIn
     return adjacentList, adjacentNameList, groupedInletArea, groupedZoneHeights, groupedGlzHeights, groupedWinCeilDiffs, groupedTotalVol
 
 
-def mainAdapt(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, zoneSrfNames, testPtsViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, prevailingOutdoorTemp, ASHRAEorEN, comfClass, avgMonthOrRunMean, levelOfConditioning, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, dataAnalysisPeriod, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, northAngle, lb_preparation, lb_sunpath, lb_comfortModels, lb_wind):
+def mainAdapt(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, zoneSrfNames, testPtsViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, prevailingOutdoorTemp, ASHRAEorEN, comfClass, avgMonthOrRunMean, levelOfConditioning, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, dataAnalysisPeriod, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, outHorizInfrared, northAngle, lb_preparation, lb_sunpath, lb_comfortModels, lb_wind):
     #Set up matrices to be filled.
     radTempMtx = ['Radiant Temperature;' + str(analysisPeriod[0]) + ";" + str(analysisPeriod[1])]
     airTempMtx = ['Air Temperature;' + str(analysisPeriod[0]) + ";" + str(analysisPeriod[1])]
@@ -854,11 +881,11 @@ def mainAdapt(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataN
                 #Compute the radiant temperature.
                 pointMRTValues = calculatePointMRT(srfTempDict, testPtsViewFactor, hour-1, originalHour-1, outdoorClac, outSrfTempDict, outdoorNonSrfViewFac, prevailingOutdoorTemp)
                 if sum(zoneHasWindows) != 0:
-                    if allWindowShadesSame == True: pointMRTValues = calculateSolarAdjustedMRT(pointMRTValues, hour, originalHour, diffSolarRad, directSolarRad, globHorizRad, count, sunVecInfo, testPtSkyView, testPtBlockedVec, winTrans, cloA, floorR, skyPatchMeshes, zoneHasWindows, outdoorClac, lb_comfortModels)
+                    if allWindowShadesSame == True: pointMRTValues = calculateSolarAdjustedMRT(pointMRTValues, hour, originalHour, diffSolarRad, directSolarRad, globHorizRad, count, sunVecInfo, testPtSkyView, testPtBlockedVec, winTrans, cloA, floorR, skyPatchMeshes, zoneHasWindows, outdoorClac, outHorizInfrared, lb_comfortModels)
                     else:
                         #To factor in the effect of blocked sunlight, I have to re-make the testPtSkyView and the testPtBlockedVec to reflect the conditions for the given hour.
                         hourTestPtSkyView, hourTestPtBlockedVec = computeHourShadeDrawing(hour, testPtSkyView, testPtBlockedVec, winShdDict, testPtBlockName, outdoorClac)
-                        pointMRTValues = calculateSolarAdjustedMRT(pointMRTValues, hour, originalHour, diffSolarRad, directSolarRad, globHorizRad, count, sunVecInfo, hourTestPtSkyView, hourTestPtBlockedVec, neutralWinTransList, cloA, floorR, skyPatchMeshes, zoneHasWindows, outdoorClac, lb_comfortModels)
+                        pointMRTValues = calculateSolarAdjustedMRT(pointMRTValues, hour, originalHour, diffSolarRad, directSolarRad, globHorizRad, count, sunVecInfo, hourTestPtSkyView, hourTestPtBlockedVec, neutralWinTransList, cloA, floorR, skyPatchMeshes, zoneHasWindows, outdoorClac, outHorizInfrared, lb_comfortModels)
                 pointMRTValues = lb_preparation.flattenList(pointMRTValues)
                 radTempMtx[count+1] = pointMRTValues
                 
@@ -876,26 +903,25 @@ def mainAdapt(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataN
                 
                 #Compute the wind speed.
                 pointWindSpeedValues = []
-                if outdoorClac == True:
-                    for pointListCount, pointList in enumerate(testPtsViewFactor):
-                        if pointListCount != len(testPtsViewFactor)-1:
-                            for val in pointList:
-                                windFlowVal = flowVolValues[pointListCount]/projectedAreas[pointListCount]
-                                if allWindSpeedsSame == True: windFlowVal = windFlowVal + winSpeedNumbers[originalHour-1]
-                                else:
-                                    windFlowVal = windFlowVal + winSpeedNumbers[pointListCount][originalHour-1]
-                                pointWindSpeedValues.append(windFlowVal)
-                        else:
-                            for valCount, val in enumerate(pointList):
-                                ptWindSpeed = lb_wind.calcWindSpeedBasedOnHeight(outWindSpeed[originalHour-1], outdoorPtHeightWeights[valCount], d, a, 270, 0.14)
-                                pointWindSpeedValues.append(ptWindSpeed)
-                else:
-                    for pointListCount, pointList in enumerate(testPtsViewFactor):
+                for pointListCount, pointList in enumerate(testPtsViewFactor):
+                    if outdoorClac == False or pointListCount != len(testPtsViewFactor)-1:
                         for val in pointList:
-                            windFlowVal = flowVolValues[pointListCount]/projectedAreas[pointListCount]
-                            if allWindSpeedsSame == True: windFlowVal = windFlowVal + winSpeedNumbers[originalHour-1]
-                            else: windFlowVal = windFlowVal + winSpeedNumbers[pointListCount][originalHour-1]
-                            pointWindSpeedValues.append(windFlowVal)
+                            try:
+                                if allWindSpeedsSame == 1: pointWindSpeedValues.append(winSpeedNumbers[originalHour-1])
+                                elif allWindSpeedsSame == 0: pointWindSpeedValues.append(winSpeedNumbers[pointListCount][originalHour-1])
+                                elif allWindSpeedsSame == -1: pointWindSpeedValues = winSpeedNumbers[originalHour-1]
+                            except:
+                                windFlowVal = flowVolValues[pointListCount]/projectedAreas[pointListCount]
+                                pointWindSpeedValues.append(windFlowVal)
+                    else:
+                        for valCount, val in enumerate(pointList):
+                            try:
+                                if allWindSpeedsSame == 1: pointWindSpeedValues.append(winSpeedNumbers[originalHour-1])
+                                elif allWindSpeedsSame == 0: pointWindSpeedValues.append(winSpeedNumbers[pointListCount][originalHour-1])
+                                elif allWindSpeedsSame == -1: pointWindSpeedValues = winSpeedNumbers[originalHour-1]
+                            except:
+                                windFlowVal = lb_wind.powerLawWind(outWindSpeed[originalHour-1], outdoorPtHeightWeights[valCount], d, a, 270, 0.14)
+                                pointWindSpeedValues.append(windFlowVal)
                 
                 #Compute the adaptive comfort and deg from target.
                 adaptComfPointValues = []
@@ -930,7 +956,7 @@ def mainAdapt(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataN
         else:
             return -1
 
-def mainPMV(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, clothingLevel, metabolicRate, zoneSrfNames, testPtsViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, PPDComfortThresh, humidRatioUp, humidRatioLow, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, dataAnalysisPeriod, lb_preparation, lb_sunpath, lb_comfortModels, lb_wind):
+def mainPMV(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, clothingLevel, metabolicRate, zoneSrfNames, testPtsViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, PPDComfortThresh, humidRatioUp, humidRatioLow, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, dataAnalysisPeriod, northAngle, horizInfraredRadiation, lb_preparation, lb_sunpath, lb_comfortModels, lb_wind):
     #Set up matrices to be filled.
     radTempMtx = ['Radiant Temperature;' + str(analysisPeriod[0]) + ";" + str(analysisPeriod[1])]
     airTempMtx = ['Air Temperature;' + str(analysisPeriod[0]) + ";" + str(analysisPeriod[1])]
@@ -997,7 +1023,7 @@ def mainPMV(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNum
                 skyPatchMeshes.append(rc.Geometry.Mesh.CreateFromBrep(patch, rc.Geometry.MeshingParameters.Coarse)[0])
             
             #Initiate the sun vector calculator.
-            lb_sunpath.initTheClass(float(latitude), 0.0, rc.Geometry.Point3d.Origin, 100, float(longitude), float(timeZone))
+            lb_sunpath.initTheClass(float(latitude), northAngle, rc.Geometry.Point3d.Origin, 100, float(longitude), float(timeZone))
             
             #Calculate the altitude and azimuth of the different hours.
             sunVecs = []
@@ -1051,11 +1077,11 @@ def mainPMV(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNum
                 #Compute the radiant temperature.
                 pointMRTValues = calculatePointMRT(srfTempDict, testPtsViewFactor, hour-1, originalHour-1, outdoorClac, outSrfTempDict, outdoorNonSrfViewFac, outDryBulbTemp)
                 if sum(zoneHasWindows) != 0:
-                    if allWindowShadesSame == True: pointMRTValues = calculateSolarAdjustedMRT(pointMRTValues, hour, originalHour, diffSolarRad, directSolarRad, globHorizRad, count, sunVecInfo, testPtSkyView, testPtBlockedVec, winTrans, cloA, floorR, skyPatchMeshes, zoneHasWindows, outdoorClac, lb_comfortModels)
+                    if allWindowShadesSame == True: pointMRTValues = calculateSolarAdjustedMRT(pointMRTValues, hour, originalHour, diffSolarRad, directSolarRad, globHorizRad, count, sunVecInfo, testPtSkyView, testPtBlockedVec, winTrans, cloA, floorR, skyPatchMeshes, zoneHasWindows, outdoorClac, horizInfraredRadiation, lb_comfortModels)
                     else:
                         #To factor in the effect of blocked sunlight, I have to re-make the testPtSkyView and the testPtBlockedVec to reflect the conditions for the given hour.
                         hourTestPtSkyView, hourTestPtBlockedVec = computeHourShadeDrawing(hour, testPtSkyView, testPtBlockedVec, winShdDict, testPtBlockName, outdoorClac)
-                        pointMRTValues = calculateSolarAdjustedMRT(pointMRTValues, hour, originalHour, diffSolarRad, directSolarRad, globHorizRad, count, sunVecInfo, hourTestPtSkyView, hourTestPtBlockedVec, neutralWinTransList, cloA, floorR, skyPatchMeshes, zoneHasWindows, outdoorClac, lb_comfortModels)
+                        pointMRTValues = calculateSolarAdjustedMRT(pointMRTValues, hour, originalHour, diffSolarRad, directSolarRad, globHorizRad, count, sunVecInfo, hourTestPtSkyView, hourTestPtBlockedVec, neutralWinTransList, cloA, floorR, skyPatchMeshes, zoneHasWindows, outdoorClac, horizInfraredRadiation, lb_comfortModels)
                 pointMRTValues = lb_preparation.flattenList(pointMRTValues)
                 radTempMtx[count+1] = pointMRTValues
                 
@@ -1071,26 +1097,25 @@ def mainPMV(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNum
                 
                 #Compute the wind speed.
                 pointWindSpeedValues = []
-                if outdoorClac == True:
-                    for pointListCount, pointList in enumerate(testPtsViewFactor):
-                        if pointListCount != len(testPtsViewFactor)-1:
-                            for val in pointList:
-                                windFlowVal = flowVolValues[pointListCount]/projectedAreas[pointListCount]
-                                if allWindSpeedsSame == True: windFlowVal = windFlowVal + winSpeedNumbers[originalHour-1]
-                                else:
-                                    windFlowVal = windFlowVal + winSpeedNumbers[pointListCount][originalHour-1]
-                                pointWindSpeedValues.append(windFlowVal)
-                        else:
-                            for valCount, val in enumerate(pointList):
-                                ptWindSpeed = lb_wind.calcWindSpeedBasedOnHeight(outWindSpeed[originalHour-1], outdoorPtHeightWeights[valCount], d, a, 270, 0.14)
-                                pointWindSpeedValues.append(ptWindSpeed)
-                else:
-                    for pointListCount, pointList in enumerate(testPtsViewFactor):
+                for pointListCount, pointList in enumerate(testPtsViewFactor):
+                    if outdoorClac == False or pointListCount != len(testPtsViewFactor)-1:
                         for val in pointList:
-                            windFlowVal = flowVolValues[pointListCount]/projectedAreas[pointListCount]
-                            if allWindSpeedsSame == True: windFlowVal = windFlowVal + winSpeedNumbers[originalHour-1]
-                            else: windFlowVal = windFlowVal + winSpeedNumbers[pointListCount][originalHour-1]
-                            pointWindSpeedValues.append(windFlowVal)
+                            try:
+                                if allWindSpeedsSame == 1: pointWindSpeedValues.append(winSpeedNumbers[originalHour-1])
+                                elif allWindSpeedsSame == 0: pointWindSpeedValues.append(winSpeedNumbers[pointListCount][originalHour-1])
+                                elif allWindSpeedsSame == -1: pointWindSpeedValues = winSpeedNumbers[originalHour-1]
+                            except:
+                                windFlowVal = flowVolValues[pointListCount]/projectedAreas[pointListCount]
+                                pointWindSpeedValues.append(windFlowVal)
+                    else:
+                        for valCount, val in enumerate(pointList):
+                            try:
+                                if allWindSpeedsSame == 1: pointWindSpeedValues.append(winSpeedNumbers[originalHour-1])
+                                elif allWindSpeedsSame == 0: pointWindSpeedValues.append(winSpeedNumbers[pointListCount][originalHour-1])
+                                elif allWindSpeedsSame == -1: pointWindSpeedValues = winSpeedNumbers[originalHour-1]
+                            except:
+                                windFlowVal = lb_wind.powerLawWind(outWindSpeed[originalHour-1], outdoorPtHeightWeights[valCount], d, a, 270, 0.14)
+                                pointWindSpeedValues.append(windFlowVal)
                 
                 #Compute the SET and PMV comfort.
                 setPointValues = []
@@ -1138,7 +1163,7 @@ def mainPMV(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNum
         else:
             return -1
 
-def mainUTCI(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, zoneSrfNames, testPtsViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, dataAnalysisPeriod, lb_preparation, lb_sunpath, lb_comfortModels, lb_wind):
+def mainUTCI(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, zoneSrfNames, testPtsViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, dataAnalysisPeriod, northAngle, horizInfraredRadiation, lb_preparation, lb_sunpath, lb_comfortModels, lb_wind):
     #Set up matrices to be filled.
     radTempMtx = ['Radiant Temperature;' + str(analysisPeriod[0]) + ";" + str(analysisPeriod[1])]
     airTempMtx = ['Air Temperature;' + str(analysisPeriod[0]) + ";" + str(analysisPeriod[1])]
@@ -1181,11 +1206,6 @@ def mainUTCI(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNu
         outRelHumid = outRelHumid[7:]
         outWindSpeed = outWindSpeed[7:]
         
-        #Change the outdoor point heights to be for 10 meters above in order to correctly account for wind speeds.
-        newOutdoorPtHeightWeights = []
-        for height in outdoorPtHeightWeights:
-            newOutdoorPtHeightWeights.append(height+10)
-        
         #Make a dictionary that will relate the zoneSrfNames to the srfTempValues.
         try: srfTempDict = createSrfDict(zoneSrfNames, "srfName", "srfTemp", srfTempHeaders, srfTempNumbers)
         except: srfTempDict = {}
@@ -1210,7 +1230,7 @@ def mainUTCI(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNu
                 skyPatchMeshes.append(rc.Geometry.Mesh.CreateFromBrep(patch, rc.Geometry.MeshingParameters.Coarse)[0])
             
             #Initiate the sun vector calculator.
-            lb_sunpath.initTheClass(float(latitude), 0.0, rc.Geometry.Point3d.Origin, 100, float(longitude), float(timeZone))
+            lb_sunpath.initTheClass(float(latitude), northAngle, rc.Geometry.Point3d.Origin, 100, float(longitude), float(timeZone))
             
             #Calculate the altitude and azimuth of the different hours.
             sunVecs = []
@@ -1266,11 +1286,11 @@ def mainUTCI(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNu
                 #Compute the radiant temperature.
                 pointMRTValues = calculatePointMRT(srfTempDict, testPtsViewFactor, hour-1, originalHour-1, outdoorClac, outSrfTempDict, outdoorNonSrfViewFac, outDryBulbTemp)
                 if sum(zoneHasWindows) != 0:
-                    if allWindowShadesSame == True: pointMRTValues = calculateSolarAdjustedMRT(pointMRTValues, hour, originalHour, diffSolarRad, directSolarRad, globHorizRad, count, sunVecInfo, testPtSkyView, testPtBlockedVec, winTrans, cloA, floorR, skyPatchMeshes, zoneHasWindows, outdoorClac, lb_comfortModels)
+                    if allWindowShadesSame == True: pointMRTValues = calculateSolarAdjustedMRT(pointMRTValues, hour, originalHour, diffSolarRad, directSolarRad, globHorizRad, count, sunVecInfo, testPtSkyView, testPtBlockedVec, winTrans, cloA, floorR, skyPatchMeshes, zoneHasWindows, outdoorClac, horizInfraredRadiation, lb_comfortModels)
                     else:
                         #To factor in the effect of blocked sunlight, I have to re-make the testPtSkyView and the testPtBlockedVec to reflect the conditions for the given hour.
                         hourTestPtSkyView, hourTestPtBlockedVec = computeHourShadeDrawing(hour, testPtSkyView, testPtBlockedVec, winShdDict, testPtBlockName, outdoorClac)
-                        pointMRTValues = calculateSolarAdjustedMRT(pointMRTValues, hour, originalHour, diffSolarRad, directSolarRad, globHorizRad, count, sunVecInfo, hourTestPtSkyView, hourTestPtBlockedVec, neutralWinTransList, cloA, floorR, skyPatchMeshes, zoneHasWindows, outdoorClac, lb_comfortModels)
+                        pointMRTValues = calculateSolarAdjustedMRT(pointMRTValues, hour, originalHour, diffSolarRad, directSolarRad, globHorizRad, count, sunVecInfo, hourTestPtSkyView, hourTestPtBlockedVec, neutralWinTransList, cloA, floorR, skyPatchMeshes, zoneHasWindows, outdoorClac, horizInfraredRadiation, lb_comfortModels)
                 pointMRTValues = lb_preparation.flattenList(pointMRTValues)
                 radTempMtx[count+1] = pointMRTValues
                 
@@ -1286,28 +1306,27 @@ def mainUTCI(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNu
                 
                 #Compute the wind speed.
                 pointWindSpeedValues = []
-                if outdoorClac == True:
-                    for pointListCount, pointList in enumerate(testPtsViewFactor):
-                        if pointListCount != len(testPtsViewFactor)-1:
-                            for val in pointList:
-                                windFlowVal = flowVolValues[pointListCount]/projectedAreas[pointListCount]
-                                if allWindSpeedsSame == True: windFlowVal = windFlowVal + winSpeedNumbers[originalHour-1]
-                                else:
-                                    windFlowVal = windFlowVal + winSpeedNumbers[pointListCount][originalHour-1]
-                                pointWindSpeedValues.append(windFlowVal)
-                        else:
-                            for valCount, val in enumerate(pointList):
-                                ptWindSpeed = lb_wind.calcWindSpeedBasedOnHeight(outWindSpeed[originalHour-1], newOutdoorPtHeightWeights[valCount], d, a, 270, 0.14)
-                                pointWindSpeedValues.append(ptWindSpeed)
-                else:
-                    for pointListCount, pointList in enumerate(testPtsViewFactor):
+                for pointListCount, pointList in enumerate(testPtsViewFactor):
+                    if outdoorClac == False or pointListCount != len(testPtsViewFactor)-1:
                         for val in pointList:
-                            windFlowVal = flowVolValues[pointListCount]/projectedAreas[pointListCount]
-                            if allWindSpeedsSame == True: windFlowVal = windFlowVal + winSpeedNumbers[originalHour-1]
-                            else: windFlowVal = windFlowVal + winSpeedNumbers[pointListCount][originalHour-1]
-                            pointWindSpeedValues.append(windFlowVal)
+                            try:
+                                if allWindSpeedsSame == 1: pointWindSpeedValues.append(winSpeedNumbers[originalHour-1])
+                                elif allWindSpeedsSame == 0: pointWindSpeedValues.append(winSpeedNumbers[pointListCount][originalHour-1])
+                                elif allWindSpeedsSame == -1: pointWindSpeedValues = winSpeedNumbers[originalHour-1]
+                            except:
+                                windFlowVal = flowVolValues[pointListCount]/projectedAreas[pointListCount]
+                                pointWindSpeedValues.append(windFlowVal)
+                    else:
+                        for valCount, val in enumerate(pointList):
+                            try:
+                                if allWindSpeedsSame == 1: pointWindSpeedValues.append(winSpeedNumbers[originalHour-1])
+                                elif allWindSpeedsSame == 0: pointWindSpeedValues.append(winSpeedNumbers[pointListCount][originalHour-1])
+                                elif allWindSpeedsSame == -1: pointWindSpeedValues = winSpeedNumbers[originalHour-1]
+                            except:
+                                windFlowVal = lb_wind.powerLawWind(outWindSpeed[originalHour-1], outdoorPtHeightWeights[valCount], d, a, 270, 0.14)
+                                pointWindSpeedValues.append(windFlowVal)
                 
-                #Compute the SET and PMV comfort.
+                #Compute the UTCI and comfort.
                 utciPointValues = []
                 outdoorComfPointValues = []
                 degNeutralPointValues = []
@@ -1339,6 +1358,210 @@ def mainUTCI(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNu
         
         if calcCancelled == False:
             return radTempMtx, airTempMtx, UTCI_Mtx, OutdoorComfMtx, DegFromNeutralMtx
+        else:
+            return -1
+
+def mainPET(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, zoneSrfNames, testPtsViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, dataAnalysisPeriod, northAngle, bodyCharacteristics, climate, horizInfraredRadiation, lb_preparation, lb_sunpath, lb_comfortModels, lb_wind):
+    #Set up matrices to be filled.
+    radTempMtx = ['Radiant Temperature;' + str(analysisPeriod[0]) + ";" + str(analysisPeriod[1])]
+    airTempMtx = ['Air Temperature;' + str(analysisPeriod[0]) + ";" + str(analysisPeriod[1])]
+    PET_Mtx = ['Physiological Equivalent Temperature;' + str(analysisPeriod[0]) + ";" + str(analysisPeriod[1])]
+    PET_ComfMtx = ['PET Thermal Comfort Percent;' + str(analysisPeriod[0]) + ";" + str(analysisPeriod[1])]
+    PET_CategoryMtx = ['PET Category;' + str(analysisPeriod[0]) + ";" + str(analysisPeriod[1])]
+    
+    #Check the data anlysis period and subtract the start day from each of the HOYs.
+    originalHOYs = []
+    if dataAnalysisPeriod != [(1,1,1),(12,31,24)]:
+        FinalHOYs, mon, days = lb_preparation.getHOYsBasedOnPeriod(dataAnalysisPeriod, 1)
+        for hCount, hour in enumerate(HOYs):
+            originalHOYs.append(hour)
+            if hour - FinalHOYs[0] >= 0: HOYs[hCount] = hour - FinalHOYs[0]
+            else: HOYs[hCount] = hour - FinalHOYs[0] + 8760
+    else: FinalHOYs = originalHOYs = HOYs
+    
+    #Check to be sure that the requested analysis period and the analysis period of the connected data align.
+    periodsAlign = True
+    hrStart = originalHOYs[0]
+    hrEnd = originalHOYs[-1]
+    if hrStart in FinalHOYs and hrEnd in FinalHOYs: pass
+    else: periodsAlign = False
+    if periodsAlign == False:
+        warning = 'The analysis period of the energy simulation data and the analysisPeriodOrHOY_ plugged into this component do not align.'
+        print warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+        return -1
+    else:
+        #Create placeholders for all of the hours.
+        for hour in HOYs:
+            radTempMtx.append(0)
+            airTempMtx.append(0)
+            PET_Mtx.append(0)
+            PET_ComfMtx.append(0)
+            PET_CategoryMtx.append(0)
+        
+        #Make sure that the EPW Data does not include headers.
+        outDryBulbTemp = outDryBulbTemp[7:]
+        outRelHumid = outRelHumid[7:]
+        outWindSpeed = outWindSpeed[7:]
+        
+        #Make a dictionary that will relate the zoneSrfNames to the srfTempValues.
+        try: srfTempDict = createSrfDict(zoneSrfNames, "srfName", "srfTemp", srfTempHeaders, srfTempNumbers)
+        except: srfTempDict = {}
+        
+        #Make a dictionary for outdoor srfNames and temperatures.
+        if outdoorClac == True: outSrfTempDict = createSrfDict(zoneSrfNames, "srfName", "srfTemp", outSrfTempHeaders, outSrfTempNumbers)
+        else: outSrfTempDict = {}
+        
+        #If there are different shade statuses for the different windows, make a neutral winTrans list for this case.
+        neutralWinTransList = []
+        winShdDict = {}
+        if allWindowShadesSame == False:
+            for hr in range(8760): neutralWinTransList.append(1)
+            winShdDict = createShdDict(winStatusHeaders, winTrans, zoneWindowTransmiss, zoneWindowNames)
+        
+        #Make sure that there are windows in the model and a good reason to generate solar outputs.
+        if sum(zoneHasWindows) != 0:
+            #Create a meshed sky dome to assist with direct sunlight falling on occupants.
+            skyPatches = lb_preparation.generateSkyGeo(rc.Geometry.Point3d.Origin, numSkyPatchDivs, .5)
+            skyPatchMeshes = []
+            for patch in skyPatches:
+                skyPatchMeshes.append(rc.Geometry.Mesh.CreateFromBrep(patch, rc.Geometry.MeshingParameters.Coarse)[0])
+            
+            #Initiate the sun vector calculator.
+            lb_sunpath.initTheClass(float(latitude), northAngle, rc.Geometry.Point3d.Origin, 100, float(longitude), float(timeZone))
+            
+            #Calculate the altitude and azimuth of the different hours.
+            sunVecs = []
+            altitudes = []
+            azimuths = []
+            for hour in originalHOYs:
+                d, m, t = lb_preparation.hour2Date(hour, True)
+                lb_sunpath.solInitOutput(m+1, d, t)
+                altitude = math.degrees(lb_sunpath.solAlt)
+                azimuth = math.degrees(lb_sunpath.solAz)
+                if altitude > 0:
+                    sunVec = lb_sunpath.sunReverseVectorCalc()
+                else: sunVec = None
+                sunVecs.append(sunVec)
+                altitudes.append(altitude)
+                azimuths.append(azimuth)
+            sunVecInfo = [sunVecs, altitudes, azimuths]
+        
+        #Make a dictionary that will relate the testPtZoneNames to the air temperatures.
+        try: airTempDict = createZoneDict(testPtZoneNames, "zoneName", "airTemp", airTempDataHeaders, airTempDataNumbers)
+        except: airTempDict = {}
+        try: relHumidDict = createZoneDict(testPtZoneNames, "zoneName", "airTemp", relHumidDataHeaders, relHumidDataNumbers)
+        except: relHumidDict = {}
+        
+        #Compute grouped zone properties for air stratification purposes.
+        adjacentList, adjacentNameList, groupedInletArea, groupedZoneHeights, groupedGlzHeights, groupedWinCeilDiffs, groupedZoneVols = computeGroupedRoomProperties(testPtZoneWeights, testPtZoneNames, zoneInletInfo, inletHeightOverride)
+        
+        #Compute a generalizable "projected area" to estimate the zone's starting wind speed.
+        #Note that this projection should ideally be done perpendicularly to the direction of air flow but, since we don't really know the direction of air flow in the zone, we will compute it generally over the whole volume.
+        projectedAreas = []
+        for zoneVol in groupedZoneVols:
+            projLen = math.pow(zoneVol, 1/3)
+            projArea = projLen*projLen
+            projectedAreas.append(projArea)
+        
+        #Run through every hour of the analysis to fill up the matrices.
+        calcCancelled = False
+        try:
+            def climateMapPET(count):
+                #Ability to cancel with Esc
+                if gh.GH_Document.IsEscapeKeyDown(): assert False
+                
+                # Get the hour.
+                hour = HOYs[count]
+                originalHour = originalHOYs[count]
+                
+                #Select out the relevant air and surface temperatures.
+                flowVolValues = []
+                heatGainValues = []
+                for zoneVal in flowVolDataNumbers: flowVolValues.append(zoneVal[hour-1])
+                for zoneVal in heatGainDataNumbers: heatGainValues.append(zoneVal[hour-1])
+                
+                #Compute the radiant temperature.
+                pointMRTValues = calculatePointMRT(srfTempDict, testPtsViewFactor, hour-1, originalHour-1, outdoorClac, outSrfTempDict, outdoorNonSrfViewFac, outDryBulbTemp)
+                if sum(zoneHasWindows) != 0:
+                    if allWindowShadesSame == True: pointMRTValues = calculateSolarAdjustedMRT(pointMRTValues, hour, originalHour, diffSolarRad, directSolarRad, globHorizRad, count, sunVecInfo, testPtSkyView, testPtBlockedVec, winTrans, cloA, floorR, skyPatchMeshes, zoneHasWindows, outdoorClac, horizInfraredRadiation, lb_comfortModels)
+                    else:
+                        #To factor in the effect of blocked sunlight, I have to re-make the testPtSkyView and the testPtBlockedVec to reflect the conditions for the given hour.
+                        hourTestPtSkyView, hourTestPtBlockedVec = computeHourShadeDrawing(hour, testPtSkyView, testPtBlockedVec, winShdDict, testPtBlockName, outdoorClac)
+                        pointMRTValues = calculateSolarAdjustedMRT(pointMRTValues, hour, originalHour, diffSolarRad, directSolarRad, globHorizRad, count, sunVecInfo, hourTestPtSkyView, hourTestPtBlockedVec, neutralWinTransList, cloA, floorR, skyPatchMeshes, zoneHasWindows, outdoorClac, horizInfraredRadiation, lb_comfortModels)
+                pointMRTValues = lb_preparation.flattenList(pointMRTValues)
+                radTempMtx[count+1] = pointMRTValues
+                
+                #Compute the air temperature.
+                pointAirTempValues = getAirPointValue(airTempDict, testPtZoneWeights, testPtsViewFactor, hour-1, originalHour-1, outdoorClac, outDryBulbTemp)
+                if mixedAirOverride[hour-1] == 0: pointAirTempValues = warpByHeight(pointAirTempValues, ptHeightWeights, flowVolValues, heatGainValues, adjacentList, adjacentNameList, groupedInletArea, groupedZoneHeights, groupedGlzHeights, groupedWinCeilDiffs, outdoorClac, outDryBulbTemp)
+                pointAirTempValues = lb_preparation.flattenList(pointAirTempValues)
+                airTempMtx[count+1] = pointAirTempValues
+                
+                #Compute the relative humidity.
+                pointRelHumidValues = getAirPointValue(relHumidDict, testPtZoneWeights, testPtsViewFactor, hour-1, originalHour-1, outdoorClac, outRelHumid)
+                pointRelHumidValues = lb_preparation.flattenList(pointRelHumidValues)
+                
+                #Compute the wind speed.
+                pointWindSpeedValues = []
+                for pointListCount, pointList in enumerate(testPtsViewFactor):
+                    if outdoorClac == False or pointListCount != len(testPtsViewFactor)-1:
+                        for val in pointList:
+                            try:
+                                if allWindSpeedsSame == 1: pointWindSpeedValues.append(winSpeedNumbers[originalHour-1])
+                                elif allWindSpeedsSame == 0: pointWindSpeedValues.append(winSpeedNumbers[pointListCount][originalHour-1])
+                                elif allWindSpeedsSame == -1: pointWindSpeedValues = winSpeedNumbers[originalHour-1]
+                            except:
+                                windFlowVal = flowVolValues[pointListCount]/projectedAreas[pointListCount]
+                                pointWindSpeedValues.append(windFlowVal)
+                    else:
+                        for valCount, val in enumerate(pointList):
+                            try:
+                                if allWindSpeedsSame == 1: pointWindSpeedValues.append(winSpeedNumbers[originalHour-1])
+                                elif allWindSpeedsSame == 0: pointWindSpeedValues.append(winSpeedNumbers[pointListCount][originalHour-1])
+                                elif allWindSpeedsSame == -1: pointWindSpeedValues = winSpeedNumbers[originalHour-1]
+                            except:
+                                windFlowVal = lb_wind.powerLawWind(outWindSpeed[originalHour-1], outdoorPtHeightWeights[valCount], d, a, 270, 0.14)
+                                pointWindSpeedValues.append(windFlowVal)
+                
+                #Compute the UTCI and comfort.
+                petPointValues = []
+                petComfPointValues = []
+                petCategoryValues = []
+                
+                for ptCount, airTemp in enumerate(pointAirTempValues):
+                    petObj = lb_comfortModels.physiologicalEquivalentTemperature(airTemp, pointMRTValues[ptCount], pointRelHumidValues[ptCount], pointWindSpeedValues[ptCount], bodyCharacteristics['age'], bodyCharacteristics['sex'], bodyCharacteristics['heightM'], bodyCharacteristics['weight'], bodyCharacteristics['bodyPosition'], bodyCharacteristics['Mmets'], bodyCharacteristics['Icl'][originalHour])
+                    respiration = petObj.inkoerp()
+                    coreTemperature, radiationBalance, convection, waterVaporDiffusion = petObj.berech()
+                    petObj.pet()
+                    skinTemperature, totalHeatLoss, skinSweating, internalHeat, sweatEvaporation, PET = petObj.tsk, petObj.wsum, petObj.wetsk, petObj.h, petObj.esw, petObj.tx
+                    effectPET, comfortablePET = petObj.thermalCategories(climate)
+                    
+                    petPointValues.append(PET)
+                    petComfPointValues.append(comfortablePET)
+                    petCategoryValues.append(effectPET)
+                
+                PET_Mtx[count+1] = petPointValues
+                PET_ComfMtx[count+1] = petComfPointValues
+                PET_CategoryMtx[count+1] = petCategoryValues
+            
+            #Run through every hour of the analysis to fill up the matrices.
+            if parallel_ == True and len(HOYs) != 1:
+                tasks.Parallel.ForEach(range(len(HOYs)), climateMapPET)
+            else:
+                for hour in range(len(HOYs)):
+                    #Ability to cancel with Esc
+                    if gh.GH_Document.IsEscapeKeyDown(): assert False
+                    climateMapPET(hour)
+        except:
+            print "The calculation has been terminated by the user!"
+            e = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(e, "The calculation has been terminated by the user!")
+            calcCancelled = True
+        
+        
+        if calcCancelled == False:
+            return radTempMtx, airTempMtx, PET_Mtx, PET_ComfMtx, PET_CategoryMtx
         else:
             return -1
 
@@ -1617,6 +1840,97 @@ def writeCSVUTCI(lb_preparation, directory, fileName, radTempMtx, airTempMtx, UT
     
     return radTempResult, airTempResult, UTCI_Result, OutdoorComfResult, DegFromNeutralResult
 
+def writeCSVPET(lb_preparation, directory, fileName, radTempMtx, airTempMtx, PET_Mtx, PET_ComfMtx, PET_CategoryMtx):
+    #Find out the number of values in each hour.
+    valLen = len(radTempMtx[-1])-1
+    
+    #Set up a working directory.
+    workingDir = lb_preparation.makeWorkingDir(os.path.join(directory)) 
+    
+    #Create a csv Files.
+    radTempFile = fileName + "RadiantTemp.csv"
+    airTempFile = fileName + "AirTemp.csv"
+    PETFile = fileName + "PET.csv"
+    PETComfFile = fileName + "PETComf.csv"
+    PETCategoryFile = fileName + "PETCategory.csv"
+    
+    #Write the radiant temperature result file.
+    if writeResultFile_ != 2:
+        radTempResult = os.path.join(workingDir, radTempFile)
+        radCSVfile = open(radTempResult, 'wb')
+        for lineCount, line in enumerate(radTempMtx):
+            lineStr = ''
+            if lineCount != 0:
+                for valCt, val in enumerate(line):
+                    if valCt != valLen: lineStr = lineStr + str(val) + ','
+                    else: lineStr = lineStr + str(val) + "\n"
+                radCSVfile.write(lineStr)
+            else: radCSVfile.write(line + "\n")
+        radCSVfile.close()
+    else:
+        radTempResult = None
+    
+    #Write the air temperature result file.
+    if writeResultFile_ != 2:
+        airTempResult = os.path.join(workingDir, airTempFile)
+        airCSVfile = open(airTempResult, 'wb')
+        for lineCount, line in enumerate(airTempMtx):
+            lineStr = ''
+            if lineCount != 0:
+                for valCt, val in enumerate(line):
+                    if valCt != valLen: lineStr = lineStr + str(val) + ','
+                    else: lineStr = lineStr + str(val) + "\n"
+                airCSVfile.write(lineStr)
+            else: airCSVfile.write(line + "\n")
+        airCSVfile.close()
+    else:
+        airTempResult = None
+    
+    #Write the operative temperature result file.
+    if writeResultFile_ != 2:
+        PET_Result = os.path.join(workingDir, PETFile)
+        opCSVfile = open(PET_Result, 'wb')
+        for lineCount, line in enumerate(PET_Mtx):
+            lineStr = ''
+            if lineCount != 0:
+                for valCt, val in enumerate(line):
+                    if valCt != valLen: lineStr = lineStr + str(val) + ','
+                    else: lineStr = lineStr + str(val) + "\n"
+                opCSVfile.write(lineStr)
+            else: opCSVfile.write(line + "\n")
+        opCSVfile.close()
+    else:
+        PET_Result = None
+    
+    #Write the adaptive comfort result file.
+    PET_ComfResult = os.path.join(workingDir, PETComfFile)
+    comfCSVfile = open(PET_ComfResult, 'wb')
+    for lineCount, line in enumerate(PETComfMtx):
+        lineStr = ''
+        if lineCount != 0:
+            for valCt, val in enumerate(line):
+                if valCt != valLen: lineStr = lineStr + str(val) + ','
+                else: lineStr = lineStr + str(val) + "\n"
+            comfCSVfile.write(lineStr)
+        else: comfCSVfile.write(line + "\n")
+    comfCSVfile.close()
+    
+    #Write the deg from target result file.
+    PET_CategoryResult = os.path.join(workingDir, PETCategoryFile)
+    degCSVfile = open(PET_CategoryResult, 'wb')
+    for lineCount, line in enumerate(PETCategoryMtx):
+        lineStr = ''
+        if lineCount != 0:
+            for valCt, val in enumerate(line):
+                if valCt != valLen: lineStr = lineStr + str(val) + ','
+                else: lineStr = lineStr + str(val) + "\n"
+            degCSVfile.write(lineStr)
+        else: degCSVfile.write(line + "\n")
+    degCSVfile.close()
+    
+    
+    return radTempResult, airTempResult, PET_Result, PET_ComfResult, PET_CategoryResult
+
 
 #Import the classes, check the inputs, and generate default values for grid size if the user has given none.
 checkLB = True
@@ -1638,14 +1952,17 @@ else:
 recipeRecognized = False
 comfortModel = None
 if len(_comfAnalysisRecipe) > 0:
-    if len(_comfAnalysisRecipe) == 53 and _comfAnalysisRecipe[0] == "Adaptive":
-        comfortModel, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, prevailingOutdoorTemp, ASHRAEorEN, comfClass, avgMonthOrRunMean, levelOfConditioning, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, dataAnalysisPeriod, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, northAngle = _comfAnalysisRecipe
+    if len(_comfAnalysisRecipe) == 54 and _comfAnalysisRecipe[0] == "Adaptive":
+        comfortModel, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, prevailingOutdoorTemp, ASHRAEorEN, comfClass, avgMonthOrRunMean, levelOfConditioning, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, dataAnalysisPeriod, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, horizInfraredRadiation, northAngle = _comfAnalysisRecipe
         recipeRecognized = True
-    elif len(_comfAnalysisRecipe) == 56 and _comfAnalysisRecipe[0] == "PMV":
-        comfortModel, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, clothingLevel, metabolicRate, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, PPDComfortThresh, humidRatioUp, humidRatioLow, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, dataAnalysisPeriod = _comfAnalysisRecipe
+    elif len(_comfAnalysisRecipe) == 58 and _comfAnalysisRecipe[0] == "PMV":
+        comfortModel, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, clothingLevel, metabolicRate, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, PPDComfortThresh, humidRatioUp, humidRatioLow, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, dataAnalysisPeriod, northAngle, horizInfraredRadiation = _comfAnalysisRecipe
         recipeRecognized = True
-    elif len(_comfAnalysisRecipe) == 51 and _comfAnalysisRecipe[0] == "UTCI":
-        comfortModel, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, dataAnalysisPeriod = _comfAnalysisRecipe
+    elif len(_comfAnalysisRecipe) == 53 and _comfAnalysisRecipe[0] == "UTCI":
+        comfortModel, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, dataAnalysisPeriod, northAngle, horizInfraredRadiation = _comfAnalysisRecipe
+        recipeRecognized = True
+    elif len(_comfAnalysisRecipe) == 55 and _comfAnalysisRecipe[0] == "PET":
+        comfortModel, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, dataAnalysisPeriod, northAngle, bodyCharacteristics, climate, horizInfraredRadiation = _comfAnalysisRecipe
         recipeRecognized = True
     else:
         warning = 'Comfort recipe not recognized.'
@@ -1662,20 +1979,26 @@ if recipeRecognized == True and checkLB == True:
 
 if checkData == True and _runIt == True:
     if comfortModel == "Adaptive":
-        result = mainAdapt(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, prevailingOutdoorTemp, ASHRAEorEN, comfClass, avgMonthOrRunMean, levelOfConditioning, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, dataAnalysisPeriod, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, northAngle, lb_preparation, lb_sunpath, lb_comfortModels, lb_wind)
+        result = mainAdapt(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, prevailingOutdoorTemp, ASHRAEorEN, comfClass, avgMonthOrRunMean, levelOfConditioning, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, dataAnalysisPeriod, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, horizInfraredRadiation, northAngle, lb_preparation, lb_sunpath, lb_comfortModels, lb_wind)
         if result != -1:
             radTempMtx, airTempMtx, operativeTempMtx, adaptComfMtx, degFromTargetMtx = result
             if writeResultFile_ != 0:
                 radTempResult, airTempResult, operativeTempResult, adaptComfResult, degFromTargetResult = writeCSVAdapt(lb_preparation, directory, fileName, radTempMtx, airTempMtx, operativeTempMtx, adaptComfMtx, degFromTargetMtx)
     elif comfortModel == "PMV":
-        result = mainPMV(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, clothingLevel, metabolicRate, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, PPDComfortThresh, humidRatioUp, humidRatioLow, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, dataAnalysisPeriod, lb_preparation, lb_sunpath, lb_comfortModels, lb_wind)
+        result = mainPMV(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, clothingLevel, metabolicRate, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, PPDComfortThresh, humidRatioUp, humidRatioLow, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, dataAnalysisPeriod, northAngle, horizInfraredRadiation, lb_preparation, lb_sunpath, lb_comfortModels, lb_wind)
         if result != -1:
             radTempMtx, airTempMtx, SET_Mtx, PMVComfMtx, PMV_Mtx = result
             if writeResultFile_ != 0:
                 radTempResult, airTempResult, SET_Result, PMVComfResult, PMV_Result = writeCSVPMV(lb_preparation, directory, fileName, radTempMtx, airTempMtx, SET_Mtx, PMVComfMtx, PMV_Mtx)
     elif comfortModel == "UTCI":
-        result = mainUTCI(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, dataAnalysisPeriod, lb_preparation, lb_sunpath, lb_comfortModels, lb_wind)
+        result = mainUTCI(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, dataAnalysisPeriod, northAngle, horizInfraredRadiation, lb_preparation, lb_sunpath, lb_comfortModels, lb_wind)
         if result != -1:
             radTempMtx, airTempMtx, UTCI_Mtx, OutdoorComfMtx, DegFromNeutralMtx = result
             if writeResultFile_ != 0:
                 radTempResult, airTempResult, UTCI_Result, OutdoorComfResult, DegFromNeutralResult = writeCSVUTCI(lb_preparation, directory, fileName, radTempMtx, airTempMtx, UTCI_Mtx, OutdoorComfMtx, DegFromNeutralMtx)
+    elif comfortModel == "PET":
+        result = mainPET(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, dataAnalysisPeriod, northAngle, bodyCharacteristics, climate, horizInfraredRadiation, lb_preparation, lb_sunpath, lb_comfortModels, lb_wind)
+        if result != -1:
+            radTempMtx, airTempMtx, PET_Mtx, PET_ComfMtx, PET_CategoryMtx = result
+            if writeResultFile_ != 0:
+                radTempResult, airTempResult, PET_Result, PET_ComfResult, PET_CategoryResult = writeCSVPET(lb_preparation, directory, fileName, radTempMtx, airTempMtx, PET_Mtx, PET_ComfMtx, PET_CategoryMtx)

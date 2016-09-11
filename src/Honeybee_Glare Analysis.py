@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2015, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
+# Copyright (c) 2013-2016, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -30,7 +30,7 @@ Check this link for more information about glare analysis. Thanks to Christoph R
 http://web.mit.edu/tito_/www/Projects/Glare/GlareRecommendationsForPractice.html
 
 -
-Provided by Honeybee 0.0.58
+Provided by Honeybee 0.0.60
     
     Args:
         _HDRImagePath: Path to an HDR image file
@@ -40,15 +40,17 @@ Provided by Honeybee 0.0.58
     Returns:
         readMe: ...
         glareCheckImage: Path to HDR image of the glare study
-        DGP: Daylight glare probability. Imperceptible Glare [0.35 > DGP], Perceptible Glare [0.4 > DGP >= 0.35], Disturbing Glare [0.45 > DGP >= 0.4], Intolerable Glare [DGP >= 0.45]
+        DGP: Daylight glare probability. 
         DGI: Daylight glare index
+        glareComfortRange: Comfort Ranges. Imperceptible Glare [0.35 > DGP], Perceptible Glare [0.4 > DGP >= 0.35], Disturbing Glare [0.45 > DGP >= 0.4], Intolerable Glare [DGP >= 0.45] 
         imageWithTaskArea: Path to HDR image with task area marked with blue circle
 
 """
 
 ghenv.Component.Name = "Honeybee_Glare Analysis"
 ghenv.Component.NickName = 'glareAnalysis'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -87,13 +89,32 @@ def readGlareResults(glareRes):
         resultDict[key.strip()] = values[keyCount].strip()
     
     return resultDict, possibleNotice
+    
 
+def DGPComfortRange(DGP):
+    """
+    This a helper function that takes in DGP values and return comfort ranges.
+    :param : DGP : DGP value as a String
+    :return : comfort range as a String
+    """
+    DGP = float(DGP)
+    if (DGP) < 0.35:
+        return "Imperceptible Glare"
+    elif DGP >= 0.35 and DGP < 0.40:
+        return "Perceptible Glare"
+    elif DGP >= 0.40 and DGP < 0.45:
+        return "Disturbing Glare"
+    elif DGP >= 0.45:
+        return "Intolerable Glare"
+        
+        
 def main(HDRImagePath, taskPosition, taskPositionAngle):
     # import the classes
     if sc.sticky.has_key('honeybee_release'):
 
         try:
             if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+            if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): return -1
         except:
             warning = "You need a newer version of Honeybee to use this compoent." + \
             " Use updateHoneybee component to update userObjects.\n" + \
@@ -251,9 +272,9 @@ def main(HDRImagePath, taskPosition, taskPositionAngle):
     DGP = totalGlareResultDict['dgp']
     DGI = totalGlareResultDict['dgi']
     
-    textHeight = x / 25
-    if textHeight < 10: textHeight = 10
-    addNumbersLine = "/c " + hb_RADPath + r"\psign -h " + str(textHeight) + " -cb 0 0 0 -cf 1 1 1 DGP=" + str(DGP) + " | " + \
+    textHeight = x / 28
+    if textHeight < 8: textHeight = 8
+    addNumbersLine = "/c " + hb_RADPath + r"\psign -h " + str(textHeight) + " -cb 0 0 0 -cf 1 1 1 DGP=" + str(DGP) +" This view has "+ str(DGPComfortRange(DGP))+ " | " + \
                      hb_RADPath + r"\pcompos " + glareNoTextImage + " 0 0 - " + str(textHeight/2) + " " + str(y) + " > " + glareCheckImage
     
     runCmdAndGetTheResults(addNumbersLine)
@@ -292,7 +313,7 @@ def main(HDRImagePath, taskPosition, taskPositionAngle):
         DGP = taskPGlareResultDict['dgp']
         DGI = taskPGlareResultDict['dgi']
         
-        addNumbersTLine = "/c " + hb_RADPath + r"\psign -h " + str(textHeight) + " -cb 0 0 0 -cf 1 1 1 DGP=" + str(DGP) + " | " + \
+        addNumbersTLine = "/c " + hb_RADPath + r"\psign -h " + str(textHeight) + " -cb 0 0 0 -cf 1 1 1 DGP=" + str(DGP) + " This view has " + str(DGPComfortRange(DGP))+ " | "+ \
                      hb_RADPath + r"\pcompos " + glareTaskPNoText + " 0 0 - " + str(textHeight/2) + " " + str(y) + " > " + glareTaskPCheckImage
     
         runCmdAndGetTheResults(addNumbersTLine)
@@ -303,8 +324,8 @@ def main(HDRImagePath, taskPosition, taskPositionAngle):
         
     else:
         return notes, glareCheckImage, totalGlareResultDict, None, None
-
-
+        
+        
 if _HDRImagePath and _runIt:
     result = main(_HDRImagePath, taskPositionUV_, taskPositionAngle_)
     
@@ -313,10 +334,14 @@ if _HDRImagePath and _runIt:
         
         if taskPGlareResultDict!=None:
             DGP = taskPGlareResultDict['dgp']
+            glareComfortRange = DGPComfortRange(DGP)
             DGI = taskPGlareResultDict['dgi']
         else:
             DGP = totalGlareResultDict['dgp']
+            glareComfortRange = DGPComfortRange(DGP)
             DGI = totalGlareResultDict['dgi']
 else:
     readMe = "Provide a valid HDR Image and set _runIt to True."
     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning,readMe)
+    
+

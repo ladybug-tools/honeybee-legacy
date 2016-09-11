@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2015, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
+# Copyright (c) 2013-2016, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -23,7 +23,7 @@
 """
 Genrate Test Points for all Floor Surfaces in Honeybee Zone
 -
-Provided by Honeybee 0.0.58
+Provided by Honeybee 0.0.60
     
     Args:
         _HBZone: HBZone; Test points will be generated for every floor surface inside zone
@@ -40,7 +40,8 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Generate Zone Test Points"
 ghenv.Component.NickName = 'genHBZoneTestPts'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -138,7 +139,8 @@ def getTestPts(inputMesh, movingDis, moveTestMesh= False, parallel = True):
             # find surfaces based on first normal in srfNormals - It is a simplification we can write a better function for this later
             for meshCount, mesh in enumerate(inputMesh):
                 vector = srfNormals[meshCount][0]
-                mesh.Translate(vector.X, vector.Y, vector.Z)
+                movingVec = rc.Geometry.Vector3f.Multiply(movingDis,vector)
+                mesh.Translate(movingVec.X, movingVec.Y, movingVec.Z)
                 
         return flattenList(testPoint), flattenList(srfNormals), flattenList(meshSrfArea), inputMesh
 

@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2015, Chris Mackey <Chris@MackeyArchitecture.com> 
+# Copyright (c) 2013-2016, Chris Mackey <Chris@MackeyArchitecture.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -24,7 +24,7 @@
 This component accepst the outputs of the "Read EP Result" and the "Read EP Surface Result" components and outputs a data tree with all of the building-wide energy balance terms.  This can then be plugged into the "Ladybug_3D Chart" or "Ladybug_Monthly Bar Chart" to give a visualization of the energy balance of the whole model.
 
 -
-Provided by Honeybee 0.0.58
+Provided by Honeybee 0.0.60
     
     Args:
         _HBZones: The HBZones out of any of the HB components that generate or alter zones.  Note that these should ideally be the zones that are fed into the Run Energy Simulation component.  Zones read back into Grasshopper from the Import idf component will not align correctly with the EP Result data.
@@ -32,10 +32,11 @@ Provided by Honeybee 0.0.58
         heating_: The heating load from the "Honeybee_Read EP Result" component.
         electricLight_: The electric lighting load from the "Honeybee_Read EP Result" component.
         electricEquip_: The electric equipment load from the "Honeybee_Read EP Result" component.
+        fanElectric_: The electric fan load from the "Honeybee_Read EP Result" component.
         peopleGains_: The people gains from the "Honeybee_Read EP Result" component.
         totalSolarGain_: The total solar gain from the "Honeybee_Read EP Result" component.
         infiltrationEnergy_: The infiltration heat loss (negative) or heat gain (positive) from the "Honeybee_Read EP Result" component.
-        outdoorAirEnergy_: The outdoor air heat loss (negative) or heat gain (positive) from the "Honeybee_Read EP Result" component.
+        mechVentilationEnergy_: The outdoor air heat loss (negative) or heat gain (positive) from the "Honeybee_Read EP Result" component.
         natVentEnergy_: The natural ventilation heat loss (negative) or heat gain (positive) from the "Honeybee_Read EP Result" component.
         surfaceEnergyFlow_: The surface heat loss (negative) or heat gain (positive) from the "Honeybee_Read EP Surface Result" component.
     Returns:
@@ -50,12 +51,13 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Construct Energy Balance"
 ghenv.Component.NickName = 'energyBalance'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nMAY_02_2015
+ghenv.Component.SubCategory = "10 | Energy | Energy"
+#compatibleHBVersion = VER 0.0.56\nFEB_21_2016
 #compatibleLBVersion = VER 0.0.59\nAPR_04_2015
-ghenv.Component.AdditionalHelpFromDocStrings = "0"
+ghenv.Component.AdditionalHelpFromDocStrings = "5"
 
 
 from System import Object
@@ -130,7 +132,11 @@ def checkCreateDataTree(dataTree, dataName, dataType):
             simStep = str(header[4])
             headUnitCheck = []
             headPeriodCheck = []
+            nonIdealAir = False
             for head in dataHeaders:
+                if dataType == 'Heating' or dataType == 'Cooling':
+                    if 'Chiller' in head[2] or 'Coil' in head[2] or 'Boiler' in head[2]:
+                        nonIdealAir = True
                 if dataType in head[2]:
                     headUnitCheck.append(1)
                 if head[3] == headerUnits and str(head[4]) == simStep and head[5] == headerStart and head[6] == headerEnd:
@@ -150,6 +156,12 @@ def checkCreateDataTree(dataTree, dataName, dataType):
             else:
                 dataCheck4 = False
                 warning = "Not all of the connected " + dataName + " data is for the correct data type."
+                print warning
+                ghenv.Component.AddRuntimeMessage(w, warning)
+            
+            if nonIdealAir == True:
+                dataCheck4 = False
+                warning = "The HVAC system of the connected data is not Ideal Air.\n An ideal air system is necessary to reconstruct the zone-level energy balance."
                 print warning
                 ghenv.Component.AddRuntimeMessage(w, warning)
             
@@ -191,7 +203,7 @@ def getSrfNames(HBZones):
         # call the objects from the lib
         hb_hive = sc.sticky["honeybee_Hive"]()
         
-        zone = hb_hive.callFromHoneybeeHive([zone])[0]
+        zone = hb_hive.visualizeFromHoneybeeHive([zone])[0]
         
         for srf in zone.surfaces:
             if srf.BC.upper() == "OUTDOORS" or srf.BC.upper() == "GROUND":
@@ -265,12 +277,12 @@ def sumAllLists(tree):
     return summedList
 
 
-def main(HBZones, heatingLoad, solarLoad, lightingLoad, equipLoad, peopleLoad, surfaceEnergyFlow, infiltrationEnergy, outdoorAirEnergy, natVentEnergy, coolingLoad):
+def main(HBZones, heatingLoad, solarLoad, lightingLoad, equipLoad, fanElectric, peopleLoad, surfaceEnergyFlow, infiltrationEnergy, outdoorAirEnergy, natVentEnergy, coolingLoad):
     #Get the zone floor area.
     hb_hive = sc.sticky["honeybee_Hive"]()
     flrAreas = []
     for Hzone in HBZones:
-        zone = hb_hive.callFromHoneybeeHive([Hzone])[0]
+        zone = hb_hive.visualizeFromHoneybeeHive([Hzone])[0]
         flrAreas.append(zone.getFloorArea())
     totalFlrArea = sum(flrAreas)
     
@@ -281,12 +293,13 @@ def main(HBZones, heatingLoad, solarLoad, lightingLoad, equipLoad, peopleLoad, s
     checkData4, equipUnits, equipHeaders, equipNumbers, equipAnalysisPeriod = checkCreateDataTree(equipLoad, "electricEquip_", "Equipment")
     checkData5, peopleUnits, peopleHeaders, peopleNumbers, peopleAnalysisPeriod = checkCreateDataTree(peopleLoad, "peopleGains_", "People")
     checkData6, infiltrationUnits, infiltrationHeaders, infiltrationNumbers, infiltrationAnalysisPeriod = checkCreateDataTree(infiltrationEnergy, "infiltrationEnergy_", "Infiltration")
-    checkData7, outdoorAirUnits, outdoorAirHeaders, outdoorAirNumbers, outdoorAirAnalysisPeriod = checkCreateDataTree(outdoorAirEnergy, "outdoorAirEnergy_", "Outdoor Air")
+    checkData7, outdoorAirUnits, outdoorAirHeaders, outdoorAirNumbers, outdoorAirAnalysisPeriod = checkCreateDataTree(outdoorAirEnergy, "mechVentilationEnergy_", "Mechanical Ventilation")
     checkData8, natVentUnits, natVentHeaders, natVentNumbers, natVentAnalysisPeriod = checkCreateDataTree(natVentEnergy, "natVentEnergy_", "Natural Ventilation")
     checkData9, coolingUnits, coolingHeaders, coolingNumbers, coolingAnalysisPeriod = checkCreateDataTree(coolingLoad, "cooling", "Cooling")
     checkData10, surfaceUnits, surfaceHeaders, surfaceNumbers, surfaceAnalysisPeriod = checkCreateDataTree(surfaceEnergyFlow, "surfaceEnergyFlow_", "Surface Energy")
+    checkData11, fanUnits, fanHeaders, fanNumbers, fanAnalysisPeriod = checkCreateDataTree(fanElectric, "fanElectric_", "Fan Electric")
     
-    if checkData1 == True and checkData2 == True and checkData3 == True and checkData4 == True and checkData5 == True and checkData6 == True and checkData7 == True and checkData8 == True and checkData9 == True  and checkData10 == True:
+    if checkData1 == True and checkData2 == True and checkData3 == True and checkData4 == True and checkData5 == True and checkData6 == True and checkData7 == True and checkData8 == True and checkData9 == True  and checkData10 == True and checkData11 == True:
         #Get the names of the surfaces from the HBZones.
         wall, window, skylight, roof, exposedFloor, groundFloor, undergroundWall = getSrfNames(HBZones)
         
@@ -312,6 +325,7 @@ def main(HBZones, heatingLoad, solarLoad, lightingLoad, equipLoad, peopleLoad, s
         if len(solarNumbers) > 0: solarNumbers = sumAllLists(solarNumbers)
         if len(lightingNumbers) > 0: lightingNumbers = sumAllLists(lightingNumbers)
         if len(equipNumbers) > 0: equipNumbers = sumAllLists(equipNumbers)
+        if len(fanNumbers) > 0: fanNumbers = sumAllLists(fanNumbers)
         if len(peopleNumbers) > 0: peopleNumbers = sumAllLists(peopleNumbers)
         if len(infiltrationNumbers) > 0: infiltrationNumbers = sumAllLists(infiltrationNumbers)
         if len(outdoorAirNumbers) > 0: outdoorAirNumbers = sumAllLists(outdoorAirNumbers)
@@ -334,9 +348,10 @@ def main(HBZones, heatingLoad, solarLoad, lightingLoad, equipLoad, peopleLoad, s
         if len(solarNumbers) > 0: solarHeader = solarHeaders[0][:2] + ['Solar'] + [solarUnits] + [solarHeaders[0][4]] + solarAnalysisPeriod
         if len(lightingNumbers) > 0: lightingHeader = lightingHeaders[0][:2] + ['Lighting'] + [lightingUnits] + [lightingHeaders[0][4]] + lightingAnalysisPeriod
         if len(equipNumbers) > 0: equipHeader = equipHeaders[0][:2] + ['Equipment'] + [equipUnits] + [equipHeaders[0][4]] + equipAnalysisPeriod
+        if len(fanNumbers) > 0: fanHeader = fanHeaders[0][:2] + ['Fan Electric'] + [fanUnits] + [fanHeaders[0][4]] + fanAnalysisPeriod
         if len(peopleNumbers) > 0: peopleHeader = peopleHeaders[0][:2] + ['People'] + [peopleUnits] + [peopleHeaders[0][4]] + peopleAnalysisPeriod
         if len(infiltrationNumbers) > 0: infiltrationHeader = infiltrationHeaders[0][:2] + ['Infiltration'] + [infiltrationUnits] + [infiltrationHeaders[0][4]] + infiltrationAnalysisPeriod
-        if len(outdoorAirNumbers) > 0: outdoorAirHeader = outdoorAirHeaders[0][:2] + ['Outdoor Air'] + [outdoorAirUnits] + [outdoorAirHeaders[0][4]] + outdoorAirAnalysisPeriod
+        if len(outdoorAirNumbers) > 0: outdoorAirHeader = outdoorAirHeaders[0][:2] + ['Mechanical Ventilation'] + [outdoorAirUnits] + [outdoorAirHeaders[0][4]] + outdoorAirAnalysisPeriod
         if len(natVentNumbers) > 0: natVentHeader = natVentHeaders[0][:2] + ['Natural Ventilation'] + [natVentUnits] + [natVentHeaders[0][4]] + natVentAnalysisPeriod
         if len(coolingNumbers) > 0: coolingHeader = coolingHeaders[0][:2] + ['Cooling'] + [coolingUnits] + [coolingHeaders[0][4]] + coolingAnalysisPeriod
         if len(opaqueEnergyFlow) > 0: opaqueHeader = surfaceHeaders[0][:2] + ['Opaque Conduction'] + [surfaceUnits] + [surfaceHeaders[0][4]] + surfaceAnalysisPeriod
@@ -351,12 +366,15 @@ def main(HBZones, heatingLoad, solarLoad, lightingLoad, equipLoad, peopleLoad, s
         if len(solarNumbers) > 0:
             modelEnergyBalance.append(solarHeader + solarNumbers)
             modelEnergyBalanceNum.append(solarNumbers)
-        if len(lightingNumbers) > 0:
-            modelEnergyBalance.append(lightingHeader + lightingNumbers)
-            modelEnergyBalanceNum.append(lightingNumbers)
         if len(equipNumbers) > 0:
             modelEnergyBalance.append(equipHeader + equipNumbers)
             modelEnergyBalanceNum.append(equipNumbers)
+        if len(fanNumbers) > 0:
+            modelEnergyBalance.append(fanHeader + fanNumbers)
+            modelEnergyBalanceNum.append(fanNumbers)
+        if len(lightingNumbers) > 0:
+            modelEnergyBalance.append(lightingHeader + lightingNumbers)
+            modelEnergyBalanceNum.append(lightingNumbers)
         if len(peopleNumbers) > 0:
             modelEnergyBalance.append(peopleHeader + peopleNumbers)
             modelEnergyBalanceNum.append(peopleNumbers)
@@ -410,17 +428,29 @@ def main(HBZones, heatingLoad, solarLoad, lightingLoad, equipLoad, peopleLoad, s
     else: return -1
 
 
-hbCheck = True
-if sc.sticky.has_key('honeybee_release') == False:
-    hbCheck = False
-    print "You should first let Honeybee  fly..."
+#Honeybee check.
+initCheck = True
+if not sc.sticky.has_key('honeybee_release') == True:
+    initCheck = False
+    print "You should first let Honeybee fly..."
     ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee fly...")
+else:
+    try:
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): initCheck = False
+        if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): initCheck = False
+    except:
+        initCheck = False
+        warning = "You need a newer version of Honeybee to use this compoent." + \
+        "Use updateHoneybee component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+        "into canvas and try again."
+        ghenv.Component.AddRuntimeMessage(w, warning)
 
 
 
-if hbCheck == True and _HBZones != []:
-    if heating_.BranchCount > 0 or totalSolarGain_.BranchCount > 0 or  electricLight_.BranchCount > 0 or  electricEquip_.BranchCount > 0 or  peopleGains_.BranchCount > 0 or  surfaceEnergyFlow_.BranchCount > 0 or infiltrationEnergy_.BranchCount > 0 or outdoorAirEnergy_.BranchCount > 0 or natVentEnergy_.BranchCount > 0 or cooling_.BranchCount > 0:
-        result = main(_HBZones, heating_, totalSolarGain_, electricLight_, electricEquip_, peopleGains_, surfaceEnergyFlow_, infiltrationEnergy_, outdoorAirEnergy_, natVentEnergy_, cooling_)
+if initCheck == True and _HBZones != []:
+    if heating_.BranchCount > 0 or totalSolarGain_.BranchCount > 0 or  electricLight_.BranchCount > 0 or  electricEquip_.BranchCount > 0 or  peopleGains_.BranchCount > 0 or  surfaceEnergyFlow_.BranchCount > 0 or infiltrationEnergy_.BranchCount > 0 or mechVentilationEnergy_.BranchCount > 0 or natVentEnergy_.BranchCount > 0 or cooling_.BranchCount > 0 or fanElectric_.BranchCount > 0:
+        result = main(_HBZones, heating_, totalSolarGain_, electricLight_, electricEquip_, fanElectric_, peopleGains_, surfaceEnergyFlow_, infiltrationEnergy_, mechVentilationEnergy_, natVentEnergy_, cooling_)
         
         if result != -1:
             modelEnergyBalanceInit, energyBalWithStorageInit, flrNormEBalInit, flrNormEBalWStorageInit = result

@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2015, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
+# Copyright (c) 2013-2016, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -24,7 +24,7 @@
     Create an HBZone from HB Surfaces
     
 -
-Provided by Honeybee 0.0.58
+Provided by Honeybee 0.0.60
 
     Args:
         _name_: The name of the zone as a string
@@ -48,10 +48,11 @@ import math
 
 ghenv.Component.Name = 'Honeybee_createHBZones'
 ghenv.Component.NickName = 'createHBZones'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.60\nSEP_04_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.56\nSEP_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
 except: pass
@@ -65,6 +66,7 @@ def main(zoneName,  HBZoneProgram, HBSurfaces, isConditioned):
 
         try:
             if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+            if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): return -1
         except:
             warning = "You need a newer version of Honeybee to use this compoent." + \
             "Use updateHoneybee component to update userObjects.\n" + \
@@ -105,6 +107,11 @@ def main(zoneName,  HBZoneProgram, HBSurfaces, isConditioned):
     
     for hbSrf in HBSurfaces:
         HBZone.addSrf(hbSrf)
+        if hbSrf.shdCntrlZoneInstructs != []:
+            HBZone.daylightCntrlFract = 1
+            HBZone.illumSetPt = hbSrf.shdCntrlZoneInstructs[0]
+            HBZone.GlareDiscomIndex = hbSrf.shdCntrlZoneInstructs[1]
+            HBZone.glareView = hbSrf.shdCntrlZoneInstructs[2]
     
     # create the zone from the surfaces
     HBZone.createZoneFromSurfaces()

@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2015, Anton Szilasi - Icon by Djordje Spasic <ajszilas@gmail.com> 
+# Copyright (c) 2013-2016, Anton Szilasi - Icon by Djordje Spasic <ajszilas@gmail.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -22,7 +22,7 @@
 
 
 """
-Provided by Honeybee 0.0.58
+Provided by Honeybee 0.0.60
 
 Use this component to add EnergyPlus simple inverters to a Energy Plus simulation.
 
@@ -31,7 +31,7 @@ Find out more information about Energy Plus simple inverters here:
 http://bigladdersoftware.com/epx/docs/8-2/input-output-reference/group-electric-load-center.html#electricloadcenterinvertersimple
 
 -
-Provided by Honeybee 0.0.58
+Provided by Honeybee 0.0.60
 
     Args:
         
@@ -47,9 +47,10 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_simple_Inverter"
 ghenv.Component.NickName = 'simple_Inverter'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "12 | WIP" #"06 | Honeybee"
+ghenv.Component.SubCategory = "13 | WIP" #"06 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3" #"0"
@@ -74,6 +75,7 @@ def checktheinputs(_inverterName,_inverterEfficiency_,_inverterCost,inverter_zon
 
     try:
         if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+        if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): return -1
     except:
         
         warning = "You need a newer version of Honeybee to use this compoent." + \

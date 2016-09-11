@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2015, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
+# Copyright (c) 2013-2016, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -23,7 +23,7 @@
 """
 Genrate a Uniform CIE Sky Based on Illuminace Value
 -
-Provided by Honeybee 0.0.58
+Provided by Honeybee 0.0.60
     
     Args:
         _illuminanceValue : Desired value for horizontal sky illuminance in Lux
@@ -34,9 +34,10 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Generate Sky With Certain Illuminance level"
 ghenv.Component.NickName = 'genSkyIlluminanceLevel'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "02 | Daylight | Sky"
+ghenv.Component.SubCategory = "02 | Daylight | Light Source"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
@@ -87,6 +88,7 @@ def main(illuminanceValue):
 
     try:
         if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+        if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): return -1
     except:
         warning = "You need a newer version of Honeybee to use this compoent." + \
         "Use updateHoneybee component to update userObjects.\n" + \

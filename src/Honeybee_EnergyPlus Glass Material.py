@@ -4,7 +4,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2015, Chris Mackey <Chris@MackeyArchitecture.com> 
+# Copyright (c) 2013-2016, Chris Mackey <Chris@MackeyArchitecture.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -26,7 +26,7 @@ Use this component to create a custom material for glass, which can be plugged i
 _
 It is important to note that this component creates a material that represents a single pane of glass, which can be combined with the "Honeybee_EnergyPlus Window Air Gap" to make multi-pane windows.  If you have specifications for a whole window element and not individual panes of glass and gas, you are better-off using the "Honeybee_EnergyPlus Window Material" component
 -
-Provided by Honeybee 0.0.58
+Provided by Honeybee 0.0.60
     
     Args:
         _name: A text name for your glass material.
@@ -35,7 +35,8 @@ Provided by Honeybee 0.0.58
         solarReflectance_: A number between 0 and 1 that represents the reflectance of solar radiation off the glass at normal incidence.  The default is set to 0.075, which is typical for clear glass without a low-e coating.
         visibleTransmittance_: A number between 0 and 1 that represents the transmittance of only visible light through the glass at normal incidence.  This is usally very close to the solarTransmittance_ for non-low-e-coated glass but can differ if the glass has a low-e coating. The default is set to 0.898, which is typical for clear glass without a low-e coating.
         visibleReflectance_: A number between 0 and 1 that represents the reflectance of only visible light off the glass at normal incidence.  This is usally very close to the solarReflectance_ for non-low-e-coated glass but can differ if the glass has a low-e coating. The default is set to 0.081, which is typical for clear glass without a low-e coating.
-        emissivity_:  A number between 0 and 1 that represents the infrared hemispherical emissivity of the glass.  This number is usually pretty high for non-low-e-coated glass but can be significantly lower for low-e coated glass.  The default is set to 0.84, which is typical for clear glass without a low-e coating.
+        frontEmissivity_:  A number between 0 and 1 that represents the infrared hemispherical emissivity of the front (outdoor-facing) side of the glass.  This number is usually pretty high for non-low-e-coated glass but can be significantly lower for low-e coated glass.  The default is set to 0.84, which is typical for clear glass without a low-e coating.
+        backEmissivity_:  A number between 0 and 1 that represents the infrared hemispherical emissivity of the back (indoor-facing) side of the glass.  This number is usually pretty high for non-low-e-coated glass but can be significantly lower for low-e coated glass.  The default is set to 0.84, which is typical for clear glass without a low-e coating.
         conductivity_:  A number representing the conductivity of the glass in W/m-K. The default is set to 0.9, which is typical for clear glass without a low-e coating.
     Returns:
         EPMaterial: A glass material that can be plugged into the "Honeybee_EnergyPlus Construction" component.
@@ -44,7 +45,8 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Glass Material"
 ghenv.Component.NickName = 'EPGlassMat'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -85,7 +87,8 @@ def setDefaults():
     solRef = checkBtwZeroAndOne(solarReflectance_, 0.075, "solarReflectance_")
     visTrans = checkBtwZeroAndOne(visibleTransmittance_, 0.898, "visibleTransmittance_")
     visRef = checkBtwZeroAndOne(visibleReflectance_, 0.081, "visibleReflectance_")
-    emissivity = checkBtwZeroAndOne(emissivity_, 0.84, "emissivity_")
+    fEmissivity = checkBtwZeroAndOne(frontEmissivity_, 0.84, "frontEmissivity_")
+    bEmissivity = checkBtwZeroAndOne(backEmissivity_, 0.84, "backEmissivity_")
     
     #Check to make sure that reflectance + tansmittance does not exceed 1.
     checkData3 = True
@@ -113,10 +116,10 @@ def setDefaults():
     else: checkData = False
     
     
-    return checkData, materialName, thickness, solTrans, solRef, visTrans, visRef, emissivity, conductivity
+    return checkData, materialName, thickness, solTrans, solRef, visTrans, visRef, fEmissivity, bEmissivity, conductivity
 
 
-def main(name, thickness, solTrans, solRef, visTrans, visRef, emissivity, conductivity):
+def main(name, thickness, solTrans, solRef, visTrans, visRef, fEmissivity, bEmissivity, conductivity):
     
     opticalDataType = "SpectralAverage"
     spectralDataSetName = ""
@@ -126,7 +129,7 @@ def main(name, thickness, solTrans, solRef, visTrans, visRef, emissivity, conduc
     dirtCorrection = 1
     solarDiffusing = "No"
     
-    values = [name.upper(), opticalDataType, spectralDataSetName, thickness, solTrans, solRef, backSolarRef, visTrans, visRef, backVisRef, infraredTrans, emissivity, emissivity, conductivity, dirtCorrection, solarDiffusing]
+    values = [name.upper(), opticalDataType, spectralDataSetName, thickness, solTrans, solRef, backSolarRef, visTrans, visRef, backVisRef, infraredTrans, fEmissivity, bEmissivity, conductivity, dirtCorrection, solarDiffusing]
     comments = ["Name", "Optical Data Type", "Window Glass Spectral Data Set Name", "Thickness {m}", "Solar Transmittance at Normal Incidence", "Front Side Solar Reflectance at Normal Incidence", "Back Side Solar Reflectance at Normal Incidence", "Visible Transmittance at Normal Incidence", "Front Side Visible Reflectance at Normal Incidence", "Back Side Visible Reflectance at Normal Incidence", "Infrared Transmittance at Normal Incidence", "Front Side Infrared Hemispherical Emissivity", "Back Side Infrared Hemispherical Emissivity", "Conductivity {W/m-K}", "Dirt Collection Factor for Solar and Visible Transmittance", "Solar Diffusing"]
     
     materialStr = "WindowMaterial:Glazing,\n"
@@ -140,6 +143,6 @@ def main(name, thickness, solTrans, solRef, visTrans, visRef, emissivity, conduc
     return materialStr
     
 
-checkData, materialName, thickness, solTrans, solRef, visTrans, visRef, emissivity, conductivity = setDefaults()
+checkData, materialName, thickness, solTrans, solRef, visTrans, visRef, fEmissivity, bEmissivity, conductivity = setDefaults()
 if checkData == True:
-    EPMaterial = main(materialName, thickness, solTrans, solRef, visTrans, visRef, emissivity, conductivity)
+    EPMaterial = main(materialName, thickness, solTrans, solRef, visTrans, visRef, fEmissivity, bEmissivity, conductivity)

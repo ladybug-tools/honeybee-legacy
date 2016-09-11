@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2015, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
+# Copyright (c) 2013-2016, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -23,7 +23,7 @@
 """
 This component [removes | updates] Honeybee components from [grasshopper | a source folder]
 -
-Provided by Honeybee 0.0.58
+Provided by Honeybee 0.0.60
 
     Args:
         sourceDirectory_: Optional address to a folder that contains Honeybee updated userObjects. If None the component will download the latest version from GitHUB.
@@ -35,9 +35,10 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Update Honeybee"
 ghenv.Component.NickName = 'updateHoneybee'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "11 | Developers"
+ghenv.Component.SubCategory = "12 | Developers"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -118,11 +119,21 @@ def downloadSourceAndUnzip(lb_preparation):
     return userObjectsFolder
 
 def getAllTheComponents(onlyGHPython = True):
+    
     components = []
     
     document = ghenv.Component.OnPingDocument()
     
-    for component in document.Objects:
+    objects = list(document.Objects)
+    
+    # check if there is any cluster and collect the objects inside clusters
+    for obj in objects:
+        if type(obj) == gh.Special.GH_Cluster:
+            clusterDoc = obj.Document("")
+            for clusterObj in  clusterDoc.Objects:
+                objects.append(clusterObj)
+    
+    for component in objects:
         if onlyGHPython and type(component)!= type(ghenv.Component):
             pass
         else:
@@ -198,8 +209,13 @@ def updateTheComponent(component, newUOFolder, lb_preparation):
     isNewer, newCode = isNewerVersion(newUO, component)
     # replace the code inside the component with userObject code
     if isNewer:
-        component.Code = newCode
-        component.ExpireSolution(True)
+        if component.CodeInputParam == None:
+            component.Code = newCode
+            component.ExpireSolution(True)
+        else:
+            warning = "Failed to update %s. Remove code input from the component and try again!"%component.Name
+            print warning
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
     
 
 def main(sourceDirectory, updateThisFile, updateAllUObjects):
@@ -216,17 +232,6 @@ def main(sourceDirectory, updateThisFile, updateAllUObjects):
     
     destinationDirectory = folders.ClusterFolders[0]
 
-    if updateThisFile:
-        # find all the userObjects
-        ghComps = getAllTheComponents()
-        
-        # for each of them check and see if there is a userObject with the same name is available
-        for ghComp in ghComps:
-            if ghComp.Name != "Honeybee_Update Honeybee":
-                updateTheComponent(ghComp, userObjectsFolder, lb_preparation)
-        
-        return "Done!", True
-        
     # copy files from source to destination
     if updateAllUObjects:
         if not userObjectsFolder  or not os.path.exists(userObjectsFolder ):
@@ -267,6 +272,17 @@ def main(sourceDirectory, updateThisFile, updateAllUObjects):
             shutil.copy2(srcFullPath, dstFullPath)
         
         return "Done!" , True
+    
+    if updateThisFile:
+        # find all the userObjects
+        ghComps = getAllTheComponents()
+        
+        # for each of them check and see if there is a userObject with the same name is available
+        for ghComp in ghComps:
+            if ghComp.Name != "Honeybee_Update Honeybee":
+                updateTheComponent(ghComp, userObjectsFolder, lb_preparation)
+        
+        return "Done!", True
 
 if _updateThisFile or _updateAllUObjects:
     
@@ -276,6 +292,13 @@ if _updateThisFile or _updateAllUObjects:
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
     else:
         print msg
+        try:
+            updateLogEXELocation = os.path.join(sc.sticky["Honeybee_DefaultFolder"], "honeybeeSrc\honeybee-master\UpdateLogs.md")
+            textFile = open(updateLogEXELocation, 'r')
+            for line in textFile:
+                print line
+        except:
+            print "There is no update log available now!"
 else:
     print " "
-
+    

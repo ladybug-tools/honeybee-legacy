@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2015, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
+# Copyright (c) 2013-2016, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -25,7 +25,7 @@ Use this component to take any list of closed breps and turn them into Honeybee 
 _
 This includes constructions of the surfaces, boundary condtions of all of the surfaces (ie ground, exterior, etc), schedules+ loads for occupancy/internal electronics, and settings for an HVAC system if isContitioned_ is set to True.
 -
-Provided by Honeybee 0.0.58
+Provided by Honeybee 0.0.60
 
     Args:
         _zoneMasses: A list of closed breps or a  single closed brep that represents the geometry of the zone(s) that will be output from this component.
@@ -53,10 +53,11 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_Masses2Zones'
 ghenv.Component.NickName = 'Mass2Zone'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.56\nFEB_24_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
 except: pass
@@ -77,6 +78,7 @@ def main(maximumRoofAngle, zoneMasses, zoneNames, zonePrograms, isConditioned):
     
     try:
         if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+        if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): return -1
     except:
         warning = "You need a newer version of Honeybee to use this compoent." + \
         "Use updateHoneybee component to update userObjects.\n" + \
@@ -141,9 +143,10 @@ def main(maximumRoofAngle, zoneMasses, zoneNames, zonePrograms, isConditioned):
     # create zones out of masses
     for zoneKey, zone in enumerate(zoneMasses):
         # zone name
-        try: zoneName = zoneNames[zoneKey].strip().replace(" ","_")
-        except: zoneName = "zone_" + str(zoneKey)
-        # str(uuid.uuid4())
+        try: zoneName = zoneNames[zoneKey].strip().replace(" ","_").replace(":","-")
+        except:
+            zoneName = "zone_" + str(sc.sticky["hBZoneCount"])
+            sc.sticky["hBZoneCount"] += 1
         
         # zone programs
         try: thisZoneProgram = zonePrograms[zoneKey].split("::")

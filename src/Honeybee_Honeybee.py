@@ -4,7 +4,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2015, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
+# Copyright (c) 2013-2016, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -36,7 +36,7 @@ along with Honeybee; If not, see <http://www.gnu.org/licenses/>.
 Source code is available at: https://github.com/mostaphaRoudsari/Honeybee
 
 -
-Provided by Honeybee 0.0.58
+Provided by Honeybee 0.0.60
     
     Args:
         defaultFolder_: Optional input for Honeybee default folder.
@@ -47,13 +47,16 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.58\nJAN_04_2016'
+ghenv.Component.Message = 'VER 0.0.60\nSEP_09_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
 
 
+import sys
+sys.path = sorted(sys.path, key=lambda p: p.find("Python27"))
 
 import rhinoscriptsyntax as rs
 import Rhino as rc
@@ -64,7 +67,6 @@ from Grasshopper import DataTree
 from Grasshopper.Kernel.Data import GH_Path
 import math
 import shutil
-import sys
 import os
 import System.Threading.Tasks as tasks
 import System
@@ -79,6 +81,7 @@ import subprocess
 import uuid
 import re
 import random
+from collections import namedtuple
 
 PI = math.pi
 
@@ -131,10 +134,10 @@ class CheckIn():
                 sc.sticky["Honeybee_DefaultFolder"] = "c:\\ladybug\\"
             else:
                 # let's use the user folder
-                username = os.getenv("USERNAME")
+                appdata = os.getenv("APPDATA")
                 # make sure username doesn't have space
-                if (" " in username):
-                    msg = "User name on this system: " + username + " has white space." + \
+                if (" " in appdata):
+                    msg = "User name on this system: " + appdata + " has white space." + \
                           " Default fodelr cannot be set.\nUse defaultFolder_ to set the path to another folder and try again!" + \
                           "\nHoneybee failed to fly! :("
                     print msg
@@ -143,7 +146,7 @@ class CheckIn():
                     self.letItFly = False
                     return
                 
-                sc.sticky["Honeybee_DefaultFolder"] = os.path.join("C:\\Users\\", username, "AppData\\Roaming\\Ladybug\\")
+                sc.sticky["Honeybee_DefaultFolder"] = os.path.join(appdata, "Ladybug\\")
                 
         self.updateCategoryIcon()
     
@@ -182,7 +185,7 @@ class CheckIn():
         # print int(availableVersion.replace(".", "")), int(currentVersion.replace(".", ""))
         return int(availableVersion.replace(".", "")) > int(currentVersion.replace(".", ""))
     
-    def checkForUpdates(self, LB= True, HB= True, OpenStudio = True, template = True):
+    def checkForUpdates(self, LB= True, HB= True, OpenStudio = True, template = True, therm = True):
         
         url = "https://github.com/mostaphaRoudsari/ladybug/raw/master/resources/versions.txt"
         versionFile = os.path.join(sc.sticky["Honeybee_DefaultFolder"], "versions.txt")
@@ -190,7 +193,8 @@ class CheckIn():
         client.DownloadFile(url, versionFile)
         with open("c:/ladybug/versions.txt", "r")as vf:
             versions= eval("\n".join(vf.readlines()))
-            
+        honeybeeDefaultFolder = sc.sticky["Honeybee_DefaultFolder"]
+        
         if LB:
             ladybugVersion = versions['Ladybug']
             currentLadybugVersion = self.getComponentVersion() # I assume that this function will be called inside Ladybug_ladybug Component
@@ -229,9 +233,28 @@ class CheckIn():
                 sc.sticky["isNewerOSAvailable"] = True
             else:
                 sc.sticky["isNewerOSAvailable"] = False
-                
+        
+        if therm:
+            thermFile = os.path.join(honeybeeDefaultFolder, 'thermMaterial.csv')
+            # check file doesn't exist then it should be downloaded
+            isNewerThermAvailable = False
+            if not os.path.isfile(thermFile):
+                isNewerThermAvailable = True
+            else:
+                # find the version
+                try:
+                    with open(thermFile) as tempFile:
+                        currentThermVersion = eval(tempFile.readline().split("!")[-1].strip())["version"]
+                except: isNewerThermAvailable = True
+            
+            # finally if the file exist and already has a version, compare the versions
+            thermVersion = versions['THERM']
+            if isNewerThermAvailable or self.isNewerVersionAvailable(currentThermVersion, thermVersion):
+                sc.sticky["isNewerTHERMAvailable"] = True
+            else:
+                sc.sticky["isNewerTHERMAvailable"] = False
+        
         if template:
-            honeybeeDefaultFolder = sc.sticky["Honeybee_DefaultFolder"]
             templateFile = os.path.join(honeybeeDefaultFolder, 'OpenStudioMasterTemplate.idf')
             
             # check file doesn't exist then it should be downloaded
@@ -248,7 +271,6 @@ class CheckIn():
             # finally if the file exist and already has a version, compare the versions
             templateVersion = versions['Template']
             return self.isNewerVersionAvailable(currentTemplateVersion, templateVersion)
-        
 
 class versionCheck(object):
     
@@ -315,7 +337,6 @@ class hb_findFolders():
         self.RADPath, self.RADFile = self.which('rad.exe')
         self.EPPath, self.EPFile = self.which('EnergyPlus.exe')
         self.DSPath, self.DSFile = self.which('gen_dc.exe')
-        
     
     def which(self, program):
         """
@@ -363,6 +384,8 @@ class PrepareTemplateEPLibFiles(object):
         if not sc.sticky.has_key("honeybee_windowMaterialLib"): sc.sticky ["honeybee_windowMaterialLib"] = {}
         if not sc.sticky.has_key("honeybee_ScheduleLib"): sc.sticky["honeybee_ScheduleLib"] = {}
         if not sc.sticky.has_key("honeybee_ScheduleTypeLimitsLib"): sc.sticky["honeybee_ScheduleTypeLimitsLib"] = {}
+        if not sc.sticky.has_key("honeybee_WinodowPropLib"): sc.sticky["honeybee_WinodowPropLib"] = {}
+        if not sc.sticky.has_key("honeybee_SpectralDataLib"): sc.sticky["honeybee_SpectralDataLib"] = {}
         if not sc.sticky.has_key("honeybee_thermMaterialLib"): sc.sticky["honeybee_thermMaterialLib"] = {}
         
         self.downloadTemplate = downloadTemplate
@@ -380,6 +403,8 @@ class PrepareTemplateEPLibFiles(object):
         sc.sticky ["honeybee_windowMaterialLib"] = {}
         sc.sticky["honeybee_ScheduleLib"] = {}
         sc.sticky["honeybee_ScheduleTypeLimitsLib"] = {}
+        sc.sticky["honeybee_WinodowPropLib"] = {}
+        sc.sticky["honeybee_SpectralDataLib"] = {}
     
     def cleanThermLib(self):
         sc.sticky["honeybee_thermMaterialLib"] = {}
@@ -424,7 +449,7 @@ class PrepareTemplateEPLibFiles(object):
             return -1
         else:
             libFilePaths = [os.path.join(workingDir, 'OpenStudioMasterTemplate.idf')]
-            
+        
         # download openstudio standards
         if not os.path.isfile(workingDir + '\OpenStudio_Standards.json'):
             try:
@@ -468,7 +493,7 @@ class PrepareTemplateEPLibFiles(object):
             libFilePaths.append(customEPLib)
         
         #download THERM template file.
-        if self.downloadTemplate or not os.path.isfile(thermTemplateFile):
+        if sc.sticky.has_key("isNewerTHERMAvailable") and sc.sticky["isNewerTHERMAvailable"] or not os.path.isfile(thermTemplateFile):
             # create a backup from users library
             try: shutil.copyfile(thermTemplateFile, thermBckupfile)
             except: pass
@@ -580,7 +605,7 @@ class HB_GetEPLibraries:
             values = lines[2:]
             # it's a two line object such as Any Number scheduleTypeLimit
             if values == []:
-                name = lines[1].split(";")[0].strip() # name is the last input
+                name = lines[1].split(";")[0].strip().upper() # name is the last input
                 
             if shortKey in self.libraries:
                 self.libraries[shortKey][name] = dict() # create an empty dictonary
@@ -649,15 +674,13 @@ class HB_GetEPLibraries:
         with open(epFilePath, "r") as epFile:
             return self.getEnergyPlusObjectsFromString("".join(epFile.readlines()))
     
-    
-    
     def getThermObjectsFromFile(self, matFile):
         if not os.path.isfile(matFile):
             raise ValueError("Can't find %s."%matFile)
         
         with open(matFile, "r") as mFile:
             for rowCount, row in enumerate(mFile):
-                if rowCount != 0:
+                if rowCount > 1:
                     try:
                         matPropLine = row.split(',')
                         matNameLine = row.split('"')
@@ -1269,7 +1292,7 @@ class DLAnalysisRecipe:
         if self.simulationType == 1:
             # make sure the sky is either gencum or gendaylit
             # edit in case of gendaylit
-            self.radSkyFile = self.skyFile.split(".")[0] + "_radAnalysis.sky"
+            self.radSkyFile = '.'.join(self.skyFile.split("."))[:-1] + "_radAnalysis.sky"
             skyOut = open(self.radSkyFile, "w")
             genDaylit = False
             with open(self.skyFile, "r") as skyIn:
@@ -1338,13 +1361,14 @@ class hb_MSHToRAD(object):
             self.matName = "radMaterial"
             
             if radMaterial != None:
+                radMaterial = RADMaterialAux.getRadianceObjectsFromString(radMaterial)[0]
+                
                 try:
-                    self.matName = radMaterial.split("\n")[0].split(" ")[2]
-                except: # Exception, e:
-                    # print `e`
-                    # not a standard radiance material
-                    pass
-            
+                    self.matName = radMaterial.split("\n")[0].split(" ")[-1].rstrip()
+                    assert self.matName != ""
+                except:
+                    raise Exception("Failed to import %s. Double check the material definition."%radMaterial)
+                
         self.RADMaterial = radMaterial
         
     def meshToObj(self):
@@ -1942,7 +1966,7 @@ class hb_WriteRAD(object):
             
             initBatchFile = open(initBatchFileName, "w")
             initBatchFile.write(pathStr)
-            initBatchStr =  'C:\n' + \
+            initBatchStr =  os.path.splitdrive(self.hb_DSPath)[0] + '\n' + \
                             'CD ' + self.hb_DSPath + '\n' + \
                             'epw2wea  ' + subWorkingDir + "\\" + self.lb_preparation.removeBlankLight(locName) + '.epw ' + subWorkingDir + "\\" +  self.lb_preparation.removeBlankLight(locName) + '.wea\n' + \
                             ':: 1. Generate Daysim version of Radiance Files\n' + \
@@ -2063,7 +2087,7 @@ class hb_WriteRAD(object):
             pathStr = "SET RAYPATH=.;" + self.hb_RADLibPath + "\nPATH=" + self.hb_RADPath + ";$PATH\n"
             batchFile.write(pathStr)
             
-            batchFile.write("c:\n")
+            batchFile.write(os.path.splitdrive(subWorkingDir)[0]  + "\n")
             batchFile.write("cd " + subWorkingDir + "\n")
             
             # write OCT file
@@ -2112,7 +2136,7 @@ class hb_WriteRAD(object):
                 batchFile = open(batchFileName, "w")
                 # write path files
                 batchFile.write(pathStr)
-                batchFile.write("c:\n")
+                batchFile.write(os.path.splitdrive(subWorkingDir)[0] + "\n")
                 batchFile.write("cd " + subWorkingDir + "\n")
                 
                 # calculate vs and vl for thi cpu
@@ -2151,7 +2175,7 @@ class hb_WriteRAD(object):
                     
                     # write path files
                     pcompFile.write(pathStr)
-                    pcompFile.write("c:\n")
+                    pcompFile.write(os.path.splitdrive(subWorkingDir)[0] + "\n")
                     pcompFile.write("cd " + subWorkingDir + "\n")
                     
                     for mergedName, pieces in HDRPieces.items():
@@ -2180,7 +2204,7 @@ class hb_WriteRAD(object):
                 batchFile = open(batchFileName, "w")
                 # write path files
                 batchFile.write(pathStr)
-                batchFile.write("c:\n")
+                batchFile.write(os.path.splitdrive(subWorkingDir)[0] + "\n")
                 batchFile.write("cd " + subWorkingDir + "\n")
                 
                 # 3.4. add rtrace lin
@@ -2431,7 +2455,7 @@ class hb_WriteRAD(object):
             # glazingStr
             fullStr = fullStr + self.getsurfaceStr(surface.childSrfs[0], glzCount, glzCoorList)
         return fullStr
-            
+
 class hb_WriteRADAUX(object):
     
     def __init__(self):
@@ -2827,8 +2851,9 @@ class hb_WriteRADAUX(object):
             elif sc.doc.Views.ActiveView.ActiveViewport.IsParallelProjection: cameraType = 2
         
         # paralell view sizes
-        viewHSizeP = int(sc.doc.Views.ActiveView.ActiveViewport.Size.Width)
-        viewVSizeP = int(sc.doc.Views.ActiveView.ActiveViewport.Size.Height)
+        viewRect = sc.doc.Views.ActiveView.ActiveViewport.GetNearRect()
+        viewHSizeP =  int(viewRect[0].DistanceTo(viewRect[1]))
+        viewVSizeP =  int(viewRect[0].DistanceTo(viewRect[2]))
         
         # read image size
         viewHSize = int(sc.doc.Views.ActiveView.ActiveViewport.Size.Width)
@@ -3102,7 +3127,7 @@ class hb_WriteRADAUX(object):
             return True
         else:
             return False
-        
+
 class hb_WriteDS(object):
     
     def isSensor(self, testPt, sensors):
@@ -3383,7 +3408,6 @@ class hb_WriteDS(object):
                 'direct_sunlight_file ' + projectName  + '_' + `cpuCount` + '.dir\n' + \
                 'thermal_simulation ' + projectName  + '_' + `cpuCount` + '_intgain.csv\n'
 
-
 class hb_ReadAnnualResultsAux(object):
     
     def sortIllFiles(self, illFilesTemp):
@@ -3486,42 +3510,38 @@ class hb_ReadAnnualResultsAux(object):
                     illFiles.AddRange(fileList, p)
         
         return illFiles
-    
+
 class hb_EnergySimulatioParameters(object):
     
     def readEPParams(self, EPParameters):
         
-        if EPParameters == [] or len(EPParameters)!=15:
+        if EPParameters == []:
             timestep = 6
-            
             shadowPar = ["AverageOverDaysInFrequency", 30, 3000]
-            
             solarDistribution = "FullInteriorAndExteriorWithReflections"
-            
-            simulationControl = [True, True, True, False, True, 25, 6]
-            
+            simulationControl = [True, True, True, False, True, '', '']
             ddyFile = None
-            
             terrain = 'City'
-            
             grndTemps = []
+            holidays = []
+            startDay = None
+            heatSizing = 1.25
+            coolSizing = 1.15
         
         else:
             timestep = int(EPParameters[0])
-            
             shadowPar = EPParameters[1:4]
-            
             solarDistribution = EPParameters[4]
-            
             simulationControl = EPParameters[5:12]
-            
             ddyFile = EPParameters[12]
-            
             terrain = EPParameters[13]
-            
             grndTemps = EPParameters[14]
+            holidays = EPParameters[15]
+            startDay = EPParameters[16]
+            heatSizing = EPParameters[17]
+            coolSizing = EPParameters[18]
         
-        return timestep, shadowPar, solarDistribution, simulationControl, ddyFile, terrain, grndTemps
+        return timestep, shadowPar, solarDistribution, simulationControl, ddyFile, terrain, grndTemps, holidays, startDay, heatSizing, coolSizing
 
 class EPMaterialAux(object):
     
@@ -3550,7 +3570,12 @@ class EPMaterialAux(object):
             thickness = float(materialObj[3][0])
             conductivity = float(materialObj[13][0])
             UValueSI = conductivity/thickness
-            
+        
+        elif materialType.lower() == "windowmaterial:blind":
+            UValueSI = 2.407
+        elif materialType.lower() == "windowmaterial:shade":
+            UValueSI = 2.407
+        
         elif materialType.lower() == "material:nomass":
             # Material:NoMass is defined by R-Value and not U-Value
             UValueSI = 1 / float(materialObj[2][0])
@@ -3570,10 +3595,19 @@ class EPMaterialAux(object):
         
         elif materialType.lower() == "windowmaterial:gas":
             thickness = float(materialObj[2][0])
+            #All of these materials are taken from LBNL WINDOW 7.4 Gas Library assuming a 1 cm-thick gap.
             if materialObj[1][0].lower() == "air":
-                # conductivity = 0.1603675
-                # considering ('0.18' for 'Thermal Resistance {m2-K/W}')
-                UValueSI = 5.55555555556
+                # conductivity = 0.02407 {W/m-K}
+                UValueSI = 2.407
+            elif materialObj[1][0].lower() == "argon":
+                # conductivity = 0.016348 {W/m-K}
+                UValueSI = 1.6348
+            elif materialObj[1][0].lower() == "krypton":
+                # conductivity = 0.008663 {W/m-K}
+                UValueSI = 0.8663
+            elif materialObj[1][0].lower() == "xenon":
+                # conductivity = 0.005160 {W/m-K}
+                UValueSI = 0.516
             else:
                 warningMsg = "Honeybee can't calculate the UValue for " + materialObj[1][0] + ".\n" + \
                     "Let us know if you think it is really neccesary and we will add it to the list. :)"
@@ -3583,8 +3617,9 @@ class EPMaterialAux(object):
                     
                     print materialObj
         else:
-            warningMsg = "Honeybee currently doesn't support U-Value calculation for " + materialType + ".\n" +\
-                "Let us know if you think it is really neccesary and we will add it to the list. :)"
+            warningMsg = "Honeybee currently can't calculate U-Values for " + materialType + ".\n" +\
+                "Your Honeybee EnergyPlus simulations will still run fine with this material and this is only a Honeybee interface limitation." + ".\n" +\
+                "Let us know if you think HB should calcualte this material type and we will add it to the list. :)"
             if GHComponent!=None:
                 w = gh.GH_RuntimeMessageLevel.Warning
                 GHComponent.AddRuntimeMessage(w, warningMsg)
@@ -3780,6 +3815,10 @@ class EPMaterialAux(object):
             objectData = sc.sticky ["honeybee_materialLib"][objectName]
         elif objectName in sc.sticky ["honeybee_constructionLib"].keys():
             objectData = sc.sticky ["honeybee_constructionLib"][objectName]
+        elif objectData in sc.sticky["honeybee_WinodowPropLib"].keys():
+            objectData = sc.sticky["honeybee_WinodowPropLib"][objectName]
+        elif objectName in sc.sticky["honeybee_SpectralDataLib"].keys():
+            objectData = sc.sticky["honeybee_SpectralDataLib"][objectName]
         
         if objectData!=None:
             numberOfLayers = len(objectData.keys())
@@ -3958,6 +3997,12 @@ class EPObjectsAux(object):
     def isScheduleTypeLimits(self, scheduleName):
         return scheduleName.upper() in sc.sticky["honeybee_ScheduleTypeLimitsLib"].keys()
     
+    def isWindowProperty(self, winPropName):
+        return winPropName.upper() in sc.sticky["honeybee_WinodowPropLib"].keys()
+    
+    def isSpectralData(self, spectName):
+        return spectName.upper() in sc.sticky["honeybee_SpectralDataLib"].keys()
+    
     def customizeEPObject(self, EPObjectName, indexes, inValues):
         hb_EPScheduleAUX = EPScheduleAux()
         hb_EPMaterialAUX = EPMaterialAux()
@@ -4021,7 +4066,7 @@ class EPObjectsAux(object):
     
     def getObjectKey(self, EPObject):
         
-        EPKeys = ["Material", "WindowMaterial", "Construction", "ScheduleTypeLimits", "Schedule"]
+        EPKeys = ["Material", "WindowMaterial", "Construction", "ScheduleTypeLimits", "Schedule", "WindowProperty"]
         
         # check if it is a full string
         for key in EPKeys:
@@ -4040,7 +4085,9 @@ class EPObjectsAux(object):
                        "Material" : "honeybee_materialLib",
                        "WindowMaterial" : "honeybee_windowMaterialLib",
                        "Schedule": "honeybee_ScheduleLib",
-                       "ScheduleTypeLimits" : "honeybee_ScheduleTypeLimitsLib"
+                       "ScheduleTypeLimits" : "honeybee_ScheduleTypeLimitsLib",
+                       "WindowProperty" : "honeybee_WinodowPropLib",
+                       "MaterialProperty:GlazingSpectralData" : "honeybee_SpectralDataLib"
                        }
         
         # find construction/material name
@@ -4058,7 +4105,7 @@ class EPObjectsAux(object):
         sc.sticky[HBLibrarieNames[key]][name] = {}
         
         lines = EPObject.split("\n")
-
+        
         # store the data into the dictionary
         for lineCount, line in enumerate(lines):
             
@@ -4095,7 +4142,11 @@ class EPObjectsAux(object):
             objectData = sc.sticky ["honeybee_ScheduleLib"][objectName]
         elif objectName in sc.sticky["honeybee_ScheduleTypeLimitsLib"].keys():
             objectData = sc.sticky ["honeybee_ScheduleTypeLimitsLib"][objectName]
-
+        elif objectName in sc.sticky["honeybee_WinodowPropLib"].keys():
+            objectData = sc.sticky["honeybee_WinodowPropLib"][objectName]
+        elif objectName in sc.sticky["honeybee_SpectralDataLib"].keys():
+            objectData = sc.sticky["honeybee_SpectralDataLib"][objectName]
+        
         return objectData
     
     def getEPObjectsStr(self, objectName):
@@ -4120,7 +4171,7 @@ class EPObjectsAux(object):
                 else:
                     objectStr =  objectStr + "  " + str(objectData[layer][0]) + ";   !- " +  objectData[layer][1] + "\n\n"
             return objectStr
-            
+    
     def duplicateEPObjectWarning(self, objectName, newMaterialString):
         returnYN = {'YES': True, 'NO': False}
         buttons = System.Windows.Forms.MessageBoxButtons.YesNo
@@ -4167,7 +4218,6 @@ class EPObjectsAux(object):
             print warningMsg
             component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
             return
-    
 
 class ReadEPSchedules(object):
     
@@ -4181,6 +4231,7 @@ class ReadEPSchedules(object):
         self.startHOY = 1
         self.endHOY = 24
         self.unit = "unknown"
+        self.comapctKeywords = ['Weekdays', 'Weekends', 'Alldays', 'AllOtherDays', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
     
     def getScheduleTypeLimitsData(self, schName):
         
@@ -4293,6 +4344,91 @@ class ReadEPSchedules(object):
         return scheduleConstant
     
     
+    def getCompactEPScheduleValues(self, schName):
+        
+        if schName == None: schName = self.schName
+        
+        values, comments = self.hb_EPScheduleAUX.getScheduleDataByName(schName.upper(), ghenv.Component)
+        typeLimitName = values[1]
+        lowerLimit, upperLimit, numericType, unitType = \
+                self.getScheduleTypeLimitsData(typeLimitName)
+        
+        #Separate out the different periods.
+        totalValues = []
+        periodValues = []
+        headerDone = False
+        for val in values:
+            newPeriod = False
+            for word in self.comapctKeywords:
+                if word in val: newPeriod = True
+            if newPeriod == True:
+                if headerDone == True:
+                    totalValues.append(periodValues)
+                periodValues = [val]
+                headerDone = True
+            elif headerDone == True:
+                periodValues.append(val)
+        totalValues.append(periodValues)
+        
+        #For each day period, construct a day schedule.
+        dayType = []
+        dayValues = []
+        for dayVals in totalValues:
+            dayType.append(dayVals[0].title().split('For: ')[-1])
+            numberOfDaySch = int((len(dayVals) - 1) /2)
+            
+            hourlyValues = range(24)
+            startHour = 0
+            for i in range(numberOfDaySch):
+                value = float(dayVals[2 * i + 2])
+                untilTime = map(int, dayVals[2 * i + 1].split(":")[1:])
+                endHour = int(untilTime[0] +  untilTime[1]/60)
+                for hour in range(startHour, endHour):
+                    hourlyValues[hour] = value
+                
+                startHour = endHour
+            dayValues.append(hourlyValues)
+        
+        #Construct a week schedule from the day schedules.
+        #Map the dayTypes to the days of the week.
+        ['Weekdays', 'Weekends', 'Alldays', 'AllOtherDays', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+        weekVals = [-1, -1, -1, -1, -1, -1, -1]
+        for typeCount, type in enumerate(dayType):
+            if type == 'Alldays':
+                for count, val in enumerate(weekVals):
+                    weekVals[count] = typeCount
+            elif type == 'Weekdays':
+                for count, val in enumerate(weekVals):
+                    if count < 6 and count != 0: weekVals[count] = typeCount
+            elif type == 'Weekends':
+                weekVals[0] = typeCount
+                weekVals[-1] = typeCount
+            elif type == 'Sunday': weekVals[0] = typeCount
+            elif type == 'Monday': weekVals[1] = typeCount
+            elif type == 'Tuesday': weekVals[2] = typeCount
+            elif type == 'Wednesday': weekVals[3] = typeCount
+            elif type == 'Thursday': weekVals[4] = typeCount
+            elif type == 'Friday': weekVals[5] = typeCount
+            elif type == 'Saturday': weekVals[6] = typeCount
+            elif type == 'Allotherdays':
+                for count, val in enumerate(weekVals):
+                    if val == -1: weekVals[count] = typeCount
+        
+        #Turn the week schedule into a year schedule.
+        hourlyValues = []
+        dayVals = []
+        dayofWeek = -1
+        for day in range(365):
+            if dayofWeek == 6: dayofWeek = 0
+            else: dayofWeek += 1
+            dayVals.append(weekVals[dayofWeek])
+        for day in dayVals:
+            hourlyValues.extend(dayValues[day])
+        
+        print hourlyValues
+        return hourlyValues
+    
+    
     def getYearlyEPScheduleValues(self, schName = None):
         # place holder for 365 days
         hourlyValues = range(365)
@@ -4322,6 +4458,7 @@ class ReadEPSchedules(object):
             
         return hourlyValues
     
+    
     def getScheduleValues(self, schName = None):
         if schName == None:
             schName = self.schName
@@ -4342,6 +4479,8 @@ class ReadEPSchedules(object):
                 hourlyValues = self.getWeeklyEPScheduleValues(schName)
             elif scheduleType == "schedule:constant":
                 hourlyValues = self.getConstantEPScheduleValues(schName)
+            elif scheduleType == "schedule:compact":
+                hourlyValues = self.getCompactEPScheduleValues(schName)
             else:
                 print "Honeybee doesn't support " + scheduleType + " currently." + \
                       "Email us the type and we will try to add it to Honeybee."
@@ -4440,340 +4579,6 @@ class materialLibrary(object):
                    1: 'OFFICE_SCH',
                    2: 'RESIDENTIAL_SCH',
                    3: 'HOTEL_SCH'}
-
-class scheduleLibrary(object):
-    
-    # schedule library should be updated to functions
-    # so it can be used to generate schedueles
-    def __init__(self):
-        
-        self.ScheduleTypeLimits = '\n' + \
-        'ScheduleTypeLimits,\n' + \
-        '\tFraction,                !- Name\n' + \
-        '\t0,                       !- Lower Limit Value\n' + \
-        '\t1,                       !- Upper Limit Value\n' + \
-        '\tCONTINUOUS;              !- Numeric Type\n' + \
-        '\n' + \
-        'ScheduleTypeLimits,\n' + \
-        '\tOn/Off,                  !- Name\n' + \
-        '\t0,                       !- Lower Limit Value\n' + \
-        '\t1,                       !- Upper Limit Value\n' + \
-        '\tDISCRETE;                !- Numeric Type\n' + \
-        '\n' + \
-        'ScheduleTypeLimits,\n' + \
-        '\tTemperature,             !- Name\n' + \
-        '\t-60,                     !- Lower Limit Value\n' + \
-        '\t200,                     !- Upper Limit Value\n' + \
-        '\tCONTINUOUS;              !- Numeric Type\n' + \
-        '\n' + \
-        'ScheduleTypeLimits,\n' + \
-        '\tControl Type,            !- Name\n' + \
-        '\t0,                       !- Lower Limit Value\n' + \
-        '\t4,                       !- Upper Limit Value\n' + \
-        '\tDISCRETE;                !- Numeric Type\n' + \
-        '\n' + \
-        'ScheduleTypeLimits,\n' + \
-        '\tAny Number;              !- Name\n'
-        
-        self.largeOfficeEquipmentSchedule = '\n' + \
-            'Schedule:Compact,\n' + \
-            '\tLarge Office_BLDG_EQUIP_SCH,  !- Name\n' + \
-            '\tFraction,                !- Schedule Type Limits Name\n' + \
-            '\tThrough: 12/31,          !- Field 1\n' + \
-            '\tFor: Weekdays,           !- Field 2\n' + \
-            '\tUntil: 08:00,            !- Field 3\n' + \
-            '\t0.40,                    !- Field 4\n' + \
-            '\tUntil: 12:00,            !- Field 5\n' + \
-            '\t0.90,                    !- Field 6\n' + \
-            '\tUntil: 13:00,            !- Field 7\n' + \
-            '\t0.80,                    !- Field 8\n' + \
-            '\tUntil: 17:00,            !- Field 9\n' + \
-            '\t0.90,                    !- Field 10\n' + \
-            '\tUntil: 18:00,            !- Field 11\n' + \
-            '\t0.80,                    !- Field 12\n' + \
-            '\tUntil: 20:00,            !- Field 13\n' + \
-            '\t0.60,                    !- Field 14\n' + \
-            '\tUntil: 22:00,            !- Field 15\n' + \
-            '\t0.50,                    !- Field 16\n' + \
-            '\tUntil: 24:00,            !- Field 17\n' + \
-            '\t0.40,                    !- Field 18\n' + \
-            '\tFor: Saturday,           !- Field 19\n' + \
-            '\tUntil: 06:00,            !- Field 20\n' + \
-            '\t0.30,                    !- Field 21\n' + \
-            '\tUntil: 08:00,            !- Field 22\n' + \
-            '\t0.4,                     !- Field 23\n' + \
-            '\tUntil: 14:00,            !- Field 24\n' + \
-            '\t0.5,                     !- Field 25\n' + \
-            '\tUntil: 17:00,            !- Field 26\n' + \
-            '\t0.35,                    !- Field 27\n' + \
-            '\tUntil: 24:00,            !- Field 28\n' + \
-            '\t0.30,                    !- Field 29\n' + \
-            '\tFor: SummerDesignDay,    !- Field 30\n' + \
-            '\tUntil: 24:00,            !- Field 31\n' + \
-            '\t1.0,                     !- Field 32\n' + \
-            '\tFor: WinterDesignDay,    !- Field 33\n' + \
-            '\tUntil: 24:00,            !- Field 34\n' + \
-            '\t0.0,                     !- Field 35\n' + \
-            '\tFor: AllOtherDays,       !- Field 36\n' + \
-            '\tUntil: 24:00,            !- Field 37\n' + \
-            '\t0.30;                    !- Field 38\n'
-        
-        self.largeOfficeElevatorsSchedule = '\n' + \
-            'Schedule:Compact,\n' + \
-            '\tLarge Office_BLDG_ELEVATORS,  !- Name\n' + \
-            '\tFraction,                !- Schedule Type Limits Name\n' + \
-            '\tThrough: 12/31,          !- Field 1\n' + \
-            '\tFor: AllDays,            !- Field 2\n' + \
-            '\tUntil: 04:00,            !- Field 3\n' + \
-            '\t0.05,                    !- Field 4\n' + \
-            '\tUntil: 05:00,            !- Field 5\n' + \
-            '\t0.10,                    !- Field 6\n' + \
-            '\tUntil: 06:00,            !- Field 7\n' + \
-            '\t0.20,                    !- Field 8\n' + \
-            '\tUntil: 07:00,            !- Field 9\n' + \
-            '\t0.40,                    !- Field 10\n' + \
-            '\tUntil: 09:00,            !- Field 11\n' + \
-            '\t0.50,                    !- Field 12\n' + \
-            '\tUntil: 10:00,            !- Field 13\n' + \
-            '\t0.35,                    !- Field 14\n' + \
-            '\tUntil: 16:00,            !- Field 15\n' + \
-            '\t0.15,                    !- Field 16\n' + \
-            '\tUntil: 17:00,            !- Field 17\n' + \
-            '\t0.35,                    !- Field 18\n' + \
-            '\tUntil: 19:00,            !- Field 19\n' + \
-            '\t0.50,                    !- Field 20\n' + \
-            '\tUntil: 21:00,            !- Field 21\n' + \
-            '\t0.40,                    !- Field 22\n' + \
-            '\tUntil: 22:00,            !- Field 23\n' + \
-            '\t0.30,                    !- Field 24\n' + \
-            '\tUntil: 23:00,            !- Field 25\n' + \
-            '\t0.20,                    !- Field 26\n' + \
-            '\tUntil: 24:00,            !- Field 27\n' + \
-            '\t0.10;                    !- Field 28\n'
-            
-        self.largeOfficeOccupancySchedule = '\n' + \
-            'Schedule:Compact,\n' + \
-            '\tLarge Office_BLDG_OCC_SCH,  !- Name\n' + \
-            '\tFraction,                !- Schedule Type Limits Name\n' + \
-            '\tThrough: 12/31,          !- Field 1\n' + \
-            '\tFor: SummerDesignDay,    !- Field 2\n' + \
-            '\tUntil: 06:00,            !- Field 3\n' + \
-            '\t0.0,                     !- Field 4\n' + \
-            '\tUntil: 22:00,            !- Field 5\n' + \
-            '\t1.0,                     !- Field 6\n' + \
-            '\tUntil: 24:00,            !- Field 7\n' + \
-            '\t0.05,                    !- Field 8\n' + \
-            '\tFor: Weekdays,           !- Field 9\n' + \
-            '\tUntil: 06:00,            !- Field 10\n' + \
-            '\t0.0,                     !- Field 11\n' + \
-            '\tUntil: 07:00,            !- Field 12\n' + \
-            '\t0.1,                     !- Field 13\n' + \
-            '\tUntil: 08:00,            !- Field 14\n' + \
-            '\t0.2,                     !- Field 15\n' + \
-            '\tUntil: 12:00,            !- Field 16\n' + \
-            '\t0.95,                    !- Field 17\n' + \
-            '\tUntil: 13:00,            !- Field 18\n' + \
-            '\t0.5,                     !- Field 19\n' + \
-            '\tUntil: 17:00,            !- Field 20\n' + \
-            '\t0.95,                    !- Field 21\n' + \
-            '\tUntil: 18:00,            !- Field 22\n' + \
-            '\t0.7,                     !- Field 23\n' + \
-            '\tUntil: 20:00,            !- Field 24\n' + \
-            '\t0.4,                     !- Field 25\n' + \
-            '\tUntil: 22:00,            !- Field 26\n' + \
-            '\t0.1,                     !- Field 27\n' + \
-            '\tUntil: 24:00,            !- Field 28\n' + \
-            '\t0.05,                    !- Field 29\n' + \
-            '\tFor: Saturday,           !- Field 30\n' + \
-            '\tUntil: 06:00,            !- Field 31\n' + \
-            '\t0.0,                     !- Field 32\n' + \
-            '\tUntil: 08:00,            !- Field 33\n' + \
-            '\t0.1,                     !- Field 34\n' + \
-            '\tUntil: 14:00,            !- Field 35\n' + \
-            '\t0.5,                     !- Field 36\n' + \
-            '\tUntil: 17:00,            !- Field 37\n' + \
-            '\t0.1,                     !- Field 38\n' + \
-            '\tUntil: 24:00,            !- Field 39\n' + \
-            '\t0.0,                     !- Field 40\n' + \
-            '\tFor: AllOtherDays,       !- Field 41\n' + \
-            '\tUntil: 24:00,            !- Field 42\n' + \
-            '\t0.0;                     !- Field 43\n'
-            
-        self.largeOfficeWorkEffSchedule = '\n' + \
-            'Schedule:Compact,\n' + \
-            '\tLarge Office_WORK_EFF_SCH,  !- Name\n' + \
-            '\tOn/Off,                  !- Schedule Type Limits Name\n' + \
-            '\tThrough: 12/31,          !- Field 1\n' + \
-            '\tFor: AllDays,            !- Field 2\n' + \
-            '\tUntil: 24:00,            !- Field 3\n' + \
-            '\t0.0;                     !- Field 4\n'
-            
-        self.largeOfficeInfiltrationSchedule = '\n' + \
-            'Schedule:Compact,\n' + \
-            '\tLarge Office_INFIL_QUARTER_ON_SCH,  !- Name\n' + \
-            '\tFraction,                !- Schedule Type Limits Name\n' + \
-            '\tThrough: 12/31,          !- Field 1\n' + \
-            '\tFor: Weekdays SummerDesignDay,  !- Field 2\n' + \
-            '\tUntil: 06:00,            !- Field 3\n' + \
-            '\t1.0,                     !- Field 4\n' + \
-            '\tUntil: 22:00,            !- Field 5\n' + \
-            '\t0.25,                    !- Field 6\n' + \
-            '\tUntil: 24:00,            !- Field 7\n' + \
-            '\t1.0,                     !- Field 8\n' + \
-            '\tFor: Saturday WinterDesignDay,  !- Field 9\n' + \
-            '\tUntil: 06:00,            !- Field 10\n' + \
-            '\t1.0,                     !- Field 11\n' + \
-            '\tUntil: 18:00,            !- Field 12\n' + \
-            '\t0.25,                    !- Field 13\n' + \
-            '\tUntil: 24:00,            !- Field 14\n' + \
-            '\t1.0,                     !- Field 15\n' + \
-            '\tFor: Sunday Holidays AllOtherDays,  !- Field 16\n' + \
-            '\tUntil: 24:00,            !- Field 17\n' + \
-            '\t1.0;                     !- Field 18\n'
-            
-        self.largeOfficeClothingSchedule = '\n' + \
-            'Schedule:Compact,\n' + \
-            '\tLarge Office_CLOTHING_SCH,  !- Name\n' + \
-            '\tFraction,                !- Schedule Type Limits Name\n' + \
-            '\tThrough: 04/30,          !- Field 1\n' + \
-            '\tFor: AllDays,            !- Field 2\n' + \
-            '\tUntil: 24:00,            !- Field 3\n' + \
-            '\t1.0,                     !- Field 4\n' + \
-            '\tThrough: 09/30,          !- Field 5\n' + \
-            '\tFor: AllDays,            !- Field 6\n' + \
-            '\tUntil: 24:00,            !- Field 7\n' + \
-            '\t0.5,                     !- Field 8\n' + \
-            '\tThrough: 12/31,          !- Field 9\n' + \
-            '\tFor: AllDays,            !- Field 10\n' + \
-            '\tUntil: 24:00,            !- Field 11\n' + \
-            '\t1.0;                     !- Field 12\n'
-            
-        self.alwaysOffSchedule = '\n' + \
-            'Schedule:Compact,\n' + \
-            '\tAlways_Off,              !- Name\n' + \
-            '\tOn/Off,                  !- Schedule Type Limits Name\n' + \
-            '\tThrough: 12/31,          !- Field 1\n' + \
-            '\tFor: AllDays,            !- Field 2\n' + \
-            '\tUntil: 24:00,            !- Field 3\n' + \
-            '\t0;                       !- Field 4\n'
-            
-        self.largeOfficeHeatingSetPtSchedule = '\n' + \
-            'Schedule:Compact,\n' + \
-            '\tLarge Office_HTGSETP_SCH,!- Name\n' + \
-            '\tTemperature,             !- Schedule Type Limits Name\n' + \
-            '\tThrough: 12/31,          !- Field 1\n' + \
-            '\tFor: Weekdays,           !- Field 2\n' + \
-            '\tUntil: 06:00,            !- Field 3\n' + \
-            '\t15.6,                    !- Field 4\n' + \
-            '\tUntil: 22:00,            !- Field 5\n' + \
-            '\t21.0,                    !- Field 6\n' + \
-            '\tUntil: 24:00,            !- Field 7\n' + \
-            '\t15.6,                    !- Field 8\n' + \
-            '\tFor SummerDesignDay,     !- Field 9\n' + \
-            '\tUntil: 24:00,            !- Field 10\n' + \
-            '\t15.6,                    !- Field 11\n' + \
-            '\tFor: Saturday,           !- Field 12\n' + \
-            '\tUntil: 06:00,            !- Field 13\n' + \
-            '\t15.6,                    !- Field 14\n' + \
-            '\tUntil: 18:00,            !- Field 15\n' + \
-            '\t21.0,                    !- Field 16\n' + \
-            '\tUntil: 24:00,            !- Field 17\n' + \
-            '\t15.6,                    !- Field 18\n' + \
-            '\tFor: WinterDesignDay,    !- Field 19\n' + \
-            '\tUntil: 24:00,            !- Field 20\n' + \
-            '\t21.0,                    !- Field 21\n' + \
-            '\tFor: AllOtherDays,       !- Field 22\n' + \
-            '\tUntil: 24:00,            !- Field 23\n' + \
-            '\t15.6;                    !- Field 24\n'
-            
-        self.largeOfficeCoolingSetPtSchedule = '\n' + \
-            'Schedule:Compact,\n' + \
-            '\tLarge Office_CLGSETP_SCH,!- Name\n' + \
-            '\tTemperature,             !- Schedule Type Limits Name\n' + \
-            '\tThrough: 12/31,          !- Field 1\n' + \
-            '\tFor: Weekdays SummerDesignDay,  !- Field 2\n' + \
-            '\tUntil: 06:00,            !- Field 3\n' + \
-            '\t26.7,                    !- Field 4\n' + \
-            '\tUntil: 22:00,            !- Field 5\n' + \
-            '\t24.0,                    !- Field 6\n' + \
-            '\tUntil: 24:00,            !- Field 7\n' + \
-            '\t26.7,                    !- Field 8\n' + \
-            '\tFor: Saturday,           !- Field 9\n' + \
-            '\tUntil: 06:00,            !- Field 10\n' + \
-            '\t26.7,                    !- Field 11\n' + \
-            '\tUntil: 18:00,            !- Field 12\n' + \
-            '\t24.0,                    !- Field 13\n' + \
-            '\tUntil: 24:00,            !- Field 14\n' + \
-            '\t26.7,                    !- Field 15\n' + \
-            '\tFor WinterDesignDay,     !- Field 16\n' + \
-            '\tUntil: 24:00,            !- Field 17\n' + \
-            '\t26.7,                    !- Field 18\n' + \
-            '\tFor: AllOtherDays,       !- Field 19\n' + \
-            '\tUntil: 24:00,            !- Field 20\n' + \
-            '\t26.7;                    !- Field 21\n'
-        
-        self.largeOfficeActivitySchedule = '\n' + \
-            'Schedule:Compact,\n' + \
-            '\tLarge Office_ACTIVITY_SCH,  !- Name\n' + \
-            '\tAny Number,              !- Schedule Type Limits Name\n' + \
-            '\tThrough: 12/31,          !- Field 1\n' + \
-            '\tFor: AllDays,            !- Field 2\n' + \
-            '\tUntil: 24:00,            !- Field 3\n' + \
-            '\t120;                     !- Field 4\n'
-        
-        self.alwaysOnSchedule = '\n' + \
-            'Schedule:Compact,\n' + \
-            '\tAlways_On,               !- Name\n' + \
-            '\tOn/Off,                  !- Schedule Type Limits Name\n' + \
-            '\tThrough: 12/31,          !- Field 1\n' + \
-            '\tFor: AllDays,            !- Field 2\n' + \
-            '\tUntil: 24:00,            !- Field 3\n' + \
-            '\t1;                       !- Field 4\n'
-        
-        self.largeOfficeLightingSchedule = '\n' + \
-            'Schedule:Compact,\n' + \
-            '\tLarge Office_BLDG_LIGHT_SCH,  !- Name\n' + \
-            '\tFraction,                !- Schedule Type Limits Name\n' + \
-            '\tThrough: 12/31,          !- Field 1\n' + \
-            '\tFor: Weekdays,           !- Field 2\n' + \
-            '\tUntil: 05:00,            !- Field 3\n' + \
-            '\t0.05,                    !- Field 4\n' + \
-            '\tUntil: 07:00,            !- Field 5\n' + \
-            '\t0.1,                     !- Field 6\n' + \
-            '\tUntil: 08:00,            !- Field 7\n' + \
-            '\t0.3,                     !- Field 8\n' + \
-            '\tUntil: 17:00,            !- Field 9\n' + \
-            '\t0.9,                     !- Field 10\n' + \
-            '\tUntil: 18:00,            !- Field 11\n' + \
-            '\t0.7,                     !- Field 12\n' + \
-            '\tUntil: 20:00,            !- Field 13\n' + \
-            '\t0.5,                     !- Field 14\n' + \
-            '\tUntil: 22:00,            !- Field 15\n' + \
-            '\t0.3,                     !- Field 16\n' + \
-            '\tUntil: 23:00,            !- Field 17\n' + \
-            '\t0.1,                     !- Field 18\n' + \
-            '\tUntil: 24:00,            !- Field 19\n' + \
-            '\t0.05,                    !- Field 20\n' + \
-            '\tFor: Saturday,           !- Field 21\n' + \
-            '\tUntil: 06:00,            !- Field 22\n' + \
-            '\t0.05,                    !- Field 23\n' + \
-            '\tUntil: 08:00,            !- Field 24\n' + \
-            '\t0.1,                     !- Field 25\n' + \
-            '\tUntil: 14:00,            !- Field 26\n' + \
-            '\t0.5,                     !- Field 27\n' + \
-            '\tUntil: 17:00,            !- Field 28\n' + \
-            '\t0.15,                    !- Field 29\n' + \
-            '\tUntil: 24:00,            !- Field 30\n' + \
-            '\t0.05,                    !- Field 31\n' + \
-            '\tFor: SummerDesignDay,    !- Field 32\n' + \
-            '\tUntil: 24:00,            !- Field 33\n' + \
-            '\t1.0,                     !- Field 34\n' + \
-            '\tFor: WinterDesignDay,    !- Field 35\n' + \
-            '\tUntil: 24:00,            !- Field 36\n' + \
-            '\t0.0,                     !- Field 37\n' + \
-            '\tFor: AllOtherDays,       !- Field 38\n' + \
-            '\tUntil: 24:00,            !- Field 39\n' + \
-            '\t0.05;                    !- Field 40\n'
 
 class BuildingProgramsLib(object):
     def __init__(self):
@@ -5007,18 +4812,19 @@ class EPZone(object):
         self.geometry = zoneBrep
         
         self.num = zoneID
+        self.ID = str(uuid.uuid4())
         self.name = zoneName
         self.hasNonPlanarSrf = False
         self.hasInternalEdge = False
         
-        #Air Mixing with Adjacent Zones
+        # Air Mixing with Adjacent Zones
         self.mixAir = False
         self.mixAirZoneList = []
         self.mixAirFlowList = []
         self.mixAirFlowRate = 0.0963
         self.mixAirFlowSched = []
         
-        #Natural Ventilation Properties
+        # Natural Ventilation Properties
         self.natVent = False
         self.natVentType = []
         self.natVentMinIndoorTemp = []
@@ -5035,34 +4841,35 @@ class EPZone(object):
         self.FanEfficiency = []
         self.FanPressure = []
         
-        #Zone Internal Masses (or Furniture)
+        # Zone Internal Masses (or Furniture)
         self.internalMassNames = []
         self.internalMassSrfAreas = []
         self.internalMassConstructions = []
         
-        #Zone Surfaces
+        # Zone Surfaces
         self.surfaces = []
         
-        #Zone Thresholds
-        self.daylightThreshold = ""
+        # Zone Thresholds
         self.coolingSetPt= ""
         self.heatingSetPt= ""
         self.coolingSetback= ""
         self.heatingSetback= ""
-        
-        #Air System Properties.
-        self.recirculatedAirPerArea = 0
+        self.humidityMax= ""
+        self.humidityMin= ""
         self.outdoorAirReq = "Sum"
-        self.useVAVTemplate = False
-        self.coolSupplyAirTemp= ""
-        self.heatSupplyAirTemp= ""
-        self.coolingCapacity= ""
-        self.heatingCapacity= ""
-        self.airSideEconomizer= 'DifferentialDryBulb'
-        self.heatRecovery= ""
-        self.heatRecoveryEffectiveness= ""
-        self.HVACAvailabilitySched = "ALWAYS ON"
         
+        # Daylight Thresholds
+        self.daylightCntrlFract = 0
+        self.illumSetPt = 100000
+        self.illumCntrlSensorPt = None
+        self.glareView = 0
+        self.GlareDiscomIndex = 22
+        
+        # Air System Properties.
+        self.recirculatedAirPerArea = 0
+        self.ventilationSched = ""
+        
+        # Geomtry Properties.
         if zoneBrep != None:
             self.isClosed = self.geometry.IsSolid
         else:
@@ -5073,6 +4880,7 @@ class EPZone(object):
             except Exception, e:
                 print 'Checking normal directions failed:\n' + `e`
         
+        # Zone Program
         self.bldgProgram = program[0]
         self.zoneProgram = program[1]
         
@@ -5081,8 +4889,10 @@ class EPZone(object):
         # assign loads
         self.assignLoadsBasedOnProgram()
         
-        if isConditioned: self.HVACSystem = ["GroupI", 0, None, None] # assign ideal loads as default
-        else: self.HVACSystem = ["NoHVAC", -1, None, None] # no system        
+        # Assign a default HVAC System.
+        HVACSystem = namedtuple('HVACSystem', 'GroupID Index airDetails heatingDetails coolingDetails')
+        if isConditioned: self.HVACSystem = HVACSystem(GroupID="GroupI", Index=0, airDetails=None, heatingDetails=None, coolingDetails=None) # assign ideal loads as default
+        else: self.HVACSystem = HVACSystem(GroupID="NoHVAC", Index=-1, airDetails=None, heatingDetails=None, coolingDetails=None)# no system
         
         self.isConditioned = isConditioned
         self.isThisTheTopZone = False
@@ -5096,6 +4906,15 @@ class EPZone(object):
         
         # XXX self.PVgenlist = []
     
+    
+    def resetID(self):
+        self.ID = str(uuid.uuid4())
+    
+    def atuoPositionDaylightSensor(self):
+        zoneCentPt = rc.Geometry.VolumeMassProperties.Compute(self.geometry).Centroid
+        zoneBB = rc.Geometry.Brep.GetBoundingBox(self.geometry, rc.Geometry.Plane.WorldXY)
+        zOfPt = zoneBB.Min.Z + 0.8
+        self.illumCntrlSensorPt = rc.Geometry.Point3d(zoneCentPt.X, zoneCentPt.Y, zOfPt)
     
     def transform(self, transform, clearSurfacesBC = True, flip = False):
         self.name += "_t"
@@ -5176,7 +4995,7 @@ class EPZone(object):
             "lightingSchedule: " + str(self.lightingSchedule) + "\n" + \
             "equipmentSchedule: " + str(self.equipmentSchedule) + "\n" + \
             "infiltrationSchedule: " + str(self.infiltrationSchedule)+ "\n" + \
-            "HVACAvailabilitySched: " + str(self.HVACAvailabilitySched) + "."
+            "ventilationSchedule: " + str(self.ventilationSched)+ "."
             
             return report
         
@@ -5188,7 +5007,7 @@ class EPZone(object):
                             "lightingSchedule" : str(self.lightingSchedule),
                             "equipmentSchedule" : str(self.equipmentSchedule),
                             "infiltrationSchedule" : str(self.infiltrationSchedule),
-                            "HVACAvailabilitySched" : str(self.HVACAvailabilitySched)}
+                            "ventilationSched: " : str(self.ventilationSched)}
             
             return scheduleDict
 
@@ -5491,6 +5310,13 @@ class EPZone(object):
     def getZoneVolume(self):
         return self.geometry.GetVolume()
     
+    def getExposedArea(self):
+        totalExpArea = 0
+        for HBSrf in self.surfaces:
+            if HBSrf.BC.lower() == "outdoors":
+                totalExpArea += HBSrf.getTotalArea()
+        return totalExpArea
+    
     def getFloorZLevel(self):
         # useful for gbXML export
         minZ = float("inf")
@@ -5529,7 +5355,7 @@ class hb_reEvaluateHBZones(object):
     to user to get them fixed.
     """
     
-    def __init__(self, inHBZones, meshingParameters):
+    def __init__(self, inHBZones, meshingParameters, pointOrient = "LowerLeftCorner"):
         # import the classes
         self.hb_EPZone = sc.sticky["honeybee_EPZone"]
         self.hb_EPSrf = sc.sticky["honeybee_EPSurface"]
@@ -5550,6 +5376,7 @@ class hb_reEvaluateHBZones(object):
         self.modifiedGlzSrfsNames = []
         self.adjcGlzSrfCollection = []
         self.adjcSrfCollection = {} #collect adjacent surfaces for nonplanar surfaces
+        self.pointOrient = pointOrient
     
     def checkSrfNameDuplication(self, surface):
         if surface.name in self.srfNames:
@@ -5560,7 +5387,7 @@ class hb_reEvaluateHBZones(object):
                 
             surface.name = name
             print warning + " Name is changed to: " + surface.name
-            
+                
         self.srfNames.append(surface.name)            
         
         if not surface.isChild and surface.hasChild:
@@ -5613,6 +5440,7 @@ class hb_reEvaluateHBZones(object):
             modifiedSurfaces = []
             for surface in HBZone.surfaces:
                 srfs = self.checkZoneSurface(surface)
+                
                 try: modifiedSurfaces.extend(srfs)
                 except: modifiedSurfaces.append(srfs)
             
@@ -5682,8 +5510,7 @@ class hb_reEvaluateHBZones(object):
         newFenSrf.shadingControlName = baseChildSurface.shadingControlName
         newFenSrf.frameName = baseChildSurface.frameName
         newFenSrf.Multiplier = baseChildSurface.Multiplier
-        newFenSrf.shadeMaterial = baseChildSurface.shadeMaterial
-        newFenSrf.shadingControl = baseChildSurface.shadingControl
+        newFenSrf.shadeMaterialName = baseChildSurface.shadeMaterialName
         newFenSrf.shadingSchName = baseChildSurface.shadingSchName
         
         # Will be overwritten later if needed
@@ -5714,7 +5541,7 @@ class hb_reEvaluateHBZones(object):
         
         return insetPts
             
-    def checkChildSurfaces(self, surface):
+    def checkChildSurfaces(self, surface, pointOrient = 'LowerLeftCorner'):
         
         def isRectangle(ptList):
             vector1 = rc.Geometry.Vector3d(ptList[0] - ptList[1])
@@ -5745,7 +5572,7 @@ class hb_reEvaluateHBZones(object):
             return False
         
         # get glaing coordinates- coordinates will be returned as lists of lists
-        glzCoordinates = surface.extractGlzPoints()
+        glzCoordinates = surface.extractGlzPoints(False, 2, pointOrient)
         
         # make sure order is right
         for coorList in glzCoordinates:
@@ -5773,7 +5600,7 @@ class hb_reEvaluateHBZones(object):
                     else:
                         # multiple non-rectangle rectangle window
                         # this naming should be fixed and be based on original surface
-                        glzSurfaceName = surface.name + "_glz_" + `count`
+                        glzSurfaceName = child.name + "_glzP_" + `count`
                     
                     # create glazing surface
                     HBGlzSrf = self.createSubGlzSurfaceFromBaseSrf(child, surface, glzSurfaceName, count, coordinates)
@@ -5781,18 +5608,24 @@ class hb_reEvaluateHBZones(object):
                     # create adjacent glazingin case needed
                     if surface.BC.upper() == 'SURFACE':
                         # add glazing to adjacent surface
+                        adjcSrf = surface.BCObject
+                        
+                        #This well-intentioned check was stopping good geomtry from being run through EnergyPlus.  It has thus been disabled. - Chris Mackey
+                        #assert len(surface.childSrfs) != len(adjcSrf.childSrfs), \
+                        #    "Adjacent surfaces %s and %s do not have the same number of galzings.\n"%(surface.name, adjcSrf.name) + \
+                        #    "Check your energy model and try again."
+                        
+                        # add glazing to adjacent surface
                         if count == 0:
                             adjcSrf = surface.BCObject
                             childSrfsNames = []
                             for childSurface in adjcSrf.childSrfs:  childSrfsNames.append(childSurface.name)
                             adjcSrf.childSrfs = []
                         
-                        # add glazing to adjacent surface
-                        adjcSrf = surface.BCObject
                         if len(surface.childSrfs) == len(glzCoordinates):
                             glzAdjcSrfName = childSrfsNames[count]
                         else:
-                            glzAdjcSrfName = adjcSrf.name + "_glz_" + `count`
+                            glzAdjcSrfName = childSrfsNames[count] + "_glzP_" + `count`
                             
                         adjcGlzPt = glzCoordinates[1:]
                         adjcGlzPt.reverse()
@@ -5826,6 +5659,11 @@ class hb_reEvaluateHBZones(object):
             
                 
             for count, glzCoordinate in enumerate(glzCoordinates):
+                try:
+                    baseGlazingName = surface.childSrfs[count].name
+                except:
+                    baseGlazingName = surface.childSrfs[0].name
+                    
                 # check if the points are recetangle
                 if len(glzCoordinate) == 3 or isRectangle(glzCoordinate):
                     insetGlzCoordinates = [glzCoordinate]
@@ -5851,7 +5689,7 @@ class hb_reEvaluateHBZones(object):
                     insetPts = self.getInsetGlazingCoordinates(insetGlzCoordinate)
 
                     # create new window and go for it
-                    glzSurfaceName = newSurface.name + "_glz_" + `count`
+                    glzSurfaceName = baseGlazingName + "_glzP_" + `count`
                     
                     HBGlzSrf = self.createSubGlzSurfaceFromBaseSrf(baseChildSrf, newSurface, glzSurfaceName, count, insetPts)
                     
@@ -5859,11 +5697,17 @@ class hb_reEvaluateHBZones(object):
                         # add glazing to adjacent surface
                         if count == 0:
                             adjcSrf = newSurface.BCObject
+                            try:
+                                adjBaseGlazingName = adjcSrf.childSrfs[count]
+                            except:
+                                adjBaseGlazingName = adjcSrf.childSrfs[0]
+                            
                             adjcSrf.childSrfs = []
                         
                         # add glazing to adjacent surface
                         adjcSrf = newSurface.BCObject
-                        glzAdjcSrfName = adjcSrf.name + "_glz_" + `count`
+                        
+                        glzAdjcSrfName = adjBaseGlazingName + "_glzP_" + `count`
                             
                         adjcGlzPt = insetPts[1:]
                         adjcGlzPt.reverse()
@@ -5884,7 +5728,11 @@ class hb_reEvaluateHBZones(object):
         
     def checkZoneSurface(self, surface):
         if not hasattr(surface, 'coordinates'):
-            coordinatesL = surface.extractPoints()
+            if not surface.isPlanar:
+                if hasattr(surface, 'punchedGeometry'):
+                    surface.geometry = surface.punchedGeometry
+            
+            coordinatesL = surface.extractPoints(1, False, None, self.pointOrient)
         else:
             coordinatesL = surface.coordinates
         
@@ -5894,7 +5742,7 @@ class hb_reEvaluateHBZones(object):
             surface.coordinates = coordinatesL
             self.modifiedSrfsNames.append(surface.name)
             if  not surface.isChild and surface.hasChild:
-                self.checkChildSurfaces(surface)
+                self.checkChildSurfaces(surface, self.pointOrient)
                 
             return surface
             
@@ -5935,7 +5783,7 @@ class hb_reEvaluateHBZones(object):
             # nonplanar surface
             if  not surface.isChild and surface.hasChild:
                 
-                glzPSurfaces = self.checkChildSurfaces(surface)
+                glzPSurfaces = self.checkChildSurfaces(surface, self.pointOrient)
                 
                 if glzPSurfaces != None:
                     newSurfaces += glzPSurfaces
@@ -5973,6 +5821,9 @@ class hb_EPSurface(object):
         # define if type and BC is defined by user and should be kept
         self.srfTypeByUser = False
         self.srfBCByUser = False
+        
+        # Special attribute for shading control on inidivdual windows that influences the zone properties
+        self.shdCntrlZoneInstructs = []
         
         # PV - A Honeybee surface can hold one PV generator
         
@@ -6094,7 +5945,10 @@ class hb_EPSurface(object):
             # I can remove default constructions at some point
             self.construction = self.cnstrSet[int(self.type)]
             self.EPConstruction = self.construction
-            
+    
+    def resetID(self):
+        self.ID = str(uuid.uuid4())
+        
     def checkPlanarity(self):
         # planarity tolerance should change for different 
         return self.geometry.Faces[0].IsPlanar(1e-3)
@@ -6202,7 +6056,7 @@ class hb_EPSurface(object):
         return False
 
     
-    def extractPoints(self, method = 1, triangulate = False, meshPar = None):
+    def extractPoints(self, method = 1, triangulate = False, meshPar = None, firstVertex = 'LowerLeftCorner'):
         # if not self.meshedFace.IsValid:
         # meshed surface will be generated regardless
         # to make sure it won't fail for surfaces with multiple openings
@@ -6212,7 +6066,7 @@ class hb_EPSurface(object):
                 meshPar.SimplePlanes = True
             else:
                 meshPar = rc.Geometry.MeshingParameters.Smooth
-                
+        
         self.meshedFace = rc.Geometry.Mesh.CreateFromBrep(self.geometry, meshPar)[0]
         
         if self.meshedFace.IsValid or self.hasInternalEdge:
@@ -6267,7 +6121,7 @@ class hb_EPSurface(object):
             self.Type = self.getTypeByNormalAngle()
         
         ## find UpperRightCorner point
-        ## I'm changin this to find the LowerLeftCorner point
+        ## I'm changing this to find the LowerLeftCorner point
         ## instead as it is how gbXML needs it
         
         # check the plane
@@ -6300,18 +6154,31 @@ class hb_EPSurface(object):
         
         # find UpperRightCorner point (x>0 and max y)
         firstPtIndex = None
-        #for ptIndex, pt in enumerate(remPts):
-        #    if pt.X > 0 and pt.Y > 0 and firstPtIndex == None:
-        #        firstPtIndex = ptIndex #this could be the point
-        #    elif pt.X > 0 and pt.Y > 0:
-        #        if pt.Y > remPts[firstPtIndex].Y: firstPtIndex = ptIndex
         
-        for ptIndex, pt in enumerate(remPts):
-            if pt.X < 0 and pt.Y < 0 and firstPtIndex == None:
-                firstPtIndex = ptIndex #this could be the point
-            elif pt.X < 0 and pt.Y < 0:
-                if pt.Y < remPts[firstPtIndex].Y: firstPtIndex = ptIndex
-        
+        if firstVertex == 'LowerLeftCorner':
+            for ptIndex, pt in enumerate(remPts):
+                if pt.X < 0 and pt.Y < 0 and firstPtIndex == None:
+                    firstPtIndex = ptIndex #this could be the point
+                elif pt.X < 0 and pt.Y < 0:
+                    if pt.Y < remPts[firstPtIndex].Y: firstPtIndex = ptIndex
+        elif firstVertex == 'UpperLeftCorner':
+            for ptIndex, pt in enumerate(remPts):
+                if pt.X < 0 and pt.Y > 0 and firstPtIndex == None:
+                    firstPtIndex = ptIndex #this could be the point
+                elif pt.X < 0 and pt.Y > 0:
+                    if pt.Y > remPts[firstPtIndex].Y: firstPtIndex = ptIndex
+        elif firstVertex == 'UpperRightCorner':
+            for ptIndex, pt in enumerate(remPts):
+                if pt.X > 0 and pt.Y > 0 and firstPtIndex == None:
+                    firstPtIndex = ptIndex #this could be the point
+                elif pt.X > 0 and pt.Y > 0:
+                    if pt.Y > remPts[firstPtIndex].Y: firstPtIndex = ptIndex
+        elif firstVertex == 'LowerRightCorner':
+            for ptIndex, pt in enumerate(remPts):
+                if pt.X > 0 and pt.Y < 0 and firstPtIndex == None:
+                    firstPtIndex = ptIndex #this could be the point
+                elif pt.X > 0 and pt.Y < 0:
+                    if pt.Y < remPts[firstPtIndex].Y: firstPtIndex = ptIndex
         
         if firstPtIndex!=None and firstPtIndex!=0:
             pointsSorted = pointsSorted[firstPtIndex:] + pointsSorted[:firstPtIndex]
@@ -6331,10 +6198,10 @@ class hb_EPSurface(object):
         else:
             return True
     
-    def extractGlzPoints(self, RAD = False, method = 2):
+    def extractGlzPoints(self, RAD = False, method = 2, firstVertex = 'LowerLeftCorner'):
         glzCoordinatesList = []
         for glzSrf in self.childSrfs:
-            sortedPoints = glzSrf.extractPoints()
+            sortedPoints = glzSrf.extractPoints(1, False, None, firstVertex)
             # check numOfPoints
             if len(sortedPoints) < 4 or (self.isPlanar and RAD==True):
                 glzCoordinatesList.append(sortedPoints) #triangle
@@ -6842,9 +6709,11 @@ class hb_EPFenSurface(hb_EPSurface):
             parentZone: class of the zone that this surface belongs to"""
         hb_EPSurface.__init__(self, surface, srfNumber, srfName, parentSurface, surafceType)
         
-        self.shadeMaterial = []
-        self.shadingControl = []
+        # Special inputs for shading control.
         self.shadingSchName = []
+        self.shadingControlName = []
+        self.shadeMaterialName = []
+        
         
         if not self.isPlanar:
             try:
@@ -6855,7 +6724,7 @@ class hb_EPFenSurface(hb_EPSurface):
 
         # calculate punchedWall
         self.parent.punchedGeometry = punchedWall
-        self.shadingControlName = []
+        
         self.frameName = ''
         self.Multiplier = 1
         self.BCObject = self.outdoorBCObject()
@@ -6883,7 +6752,7 @@ class HB_generatorsystem(object):
         self.PVgenerators = PVgenerators # Category includes Generator:Photovoltaic
         self.fuelgenerators = fuelgenerators # Category includes Generators:Mircoturbine,Generator:Combustion Turbine,Generator:InternalCombustionEngine
 
-        
+
 class Wind_gen(object):
     
     def __init__(self,name_,rotortype,powercontrol,rotor_speed,rotor_diameter,overall_height,number_of_blades,power_output,rated_wind_speed,cut_in_windspeed,cut_out_windspeed,overall_turbine_n,max_tip_speed_ratio,max_power_coefficient,local_av_windspeed,height_local_metrological_station,turbine_cost,powercoefficients):
@@ -6918,9 +6787,8 @@ class Wind_gen(object):
             self.max_power_coefficient = ''
         else: 
             self.max_power_coefficient = max_power_coefficient
-        
-        
-        
+
+
 class PV_gen(object):
     
     # XXX possible generator types
@@ -6934,16 +6802,17 @@ class PV_gen(object):
     Generator:WindTurbine
     """
     
-    def __init__(self,_name,surfacename_,_integrationmode,No_parallel,No_series,costper_module,powerout,namePVperform,SA_solarcells,cell_n,performance_type = "PhotovoltaicPerformance:Simple"):
+    def __init__(self,_name,surfacename_,_integrationmode,No_parallel,No_series,costper_module,powerout,namePVperformobject,SA_solarcells,cell_n,sandia):
         
         self.name = _name
         self.surfacename = surfacename_
         self.type = 'Generator:Photovoltaic'
-        self.performancetype = performance_type
-        self.performancename =  namePVperform # One Photovoltaic performance object is made for each PV object so names are the same
+        
         self.integrationmode = _integrationmode
         self.NOparallel = No_parallel
         self.NOseries = No_series
+        
+        self.namePVperformobject =  namePVperformobject # One Photovoltaic performance object is made for each PV object so names are the same
         
         # Cost and power out of the Generator is the cost and power of each module by the number of modules in each generator
         # number in series by number in parallel.
@@ -6953,16 +6822,37 @@ class PV_gen(object):
         
         self.inverter = None # Define the inverter for this PV generator all PVgenerations being used in the same - run energy simulation must have the same inverter
     
-        self.PV_performance(namePVperform,SA_solarcells,cell_n)
-        
-    def PV_performance(self,namePVperformobject,SA_solarcells = 0.5 ,cell_n = 0.12,cell_efficiencyinputmode = "Fixed", schedule_ = "always on"):
+        if sandia == []:
+            
+            self.mode = 'simple'
+            self.performancetype = 'PhotovoltaicPerformance:Simple'
+            
+            # Use PhotovoltaicPerformance:Simple, call the method below.
+            
+            self.PV_performanceSimple(namePVperformobject,SA_solarcells,cell_n)
+            
+        if sandia != []:
+            
+            # Use PhotovoltaicPerformance:Sandia,
+            
+            self.mode = 'sandia'
+            self.performancetype = 'PhotovoltaicPerformance:Sandia'
+            
+            self.PV_performanceSandia(sandia,namePVperformobject)
+            
+    def PV_performanceSimple(self,namePVperformobject,SA_solarcells,cell_n,cell_efficiencyinputmode = "Fixed", schedule_ = "always on"):
     
         self.namePVperformobject = namePVperformobject
         self.surfaceareacells = SA_solarcells
         self.cellefficiencyinputmode = cell_efficiencyinputmode
         self.efficiency = cell_n
         self.schedule = schedule_
-    
+        
+        
+    def PV_performanceSandia(self,sandia,namePVperformobject):
+        
+        self.sandia = sandia
+
 class PVinverter(object):
     
     def __init__(self,inverter_name,inverter_cost,inverter_zone,inverter_n,replacement_time):
@@ -7080,7 +6970,53 @@ class thermDefaults(object):
         self.adiabaticBCProperties['ConstantTemperatureFlag'] = "0"
         self.adiabaticBCProperties['EmisModifier'] = "1.000000"
         
-        #Set some default U-Factor Tags
+        #Set some default Boundary Conditions for air cavity surfaces
+        self.frameCavityBCProperties = {}
+        self.frameCavityBCProperties['Name'] = 'Frame Cavity Surface'
+        self.frameCavityBCProperties['Type'] = "7"
+        self.frameCavityBCProperties['H'] = '0.000000'
+        self.frameCavityBCProperties['HeatFlux'] = "0.000000"
+        self.frameCavityBCProperties['Temperature'] = '0.000000'
+        self.frameCavityBCProperties['RGBColor'] = '0xFF0000'
+        self.frameCavityBCProperties['Tr'] = '0.000000'
+        self.frameCavityBCProperties['Hr'] = '0.000000'
+        self.frameCavityBCProperties['Ei'] = "1.000000" 
+        self.frameCavityBCProperties['Viewfactor'] = "1.000000"
+        self.frameCavityBCProperties['RadiationModel'] = "0"
+        self.frameCavityBCProperties['ConvectionFlag'] = "0"
+        self.frameCavityBCProperties['FluxFlag'] = "1"
+        self.frameCavityBCProperties['RadiationFlag'] = "0"
+        self.frameCavityBCProperties['ConstantTemperatureFlag'] = "0"
+        self.frameCavityBCProperties['EmisModifier'] = "1.000000"
+    
+    def addThermMatToLib(self, materialString):
+        #Parse the string.
+        materialName = materialString.split('Material Name=')[-1].split(' Type=')[0].upper()
+        type = int(materialString.split('Type=')[-1].split(' ')[0])
+        conductivity = float(materialString.split('Conductivity=')[-1].split(' ')[0])
+        absorptivity = float(materialString.split('Absorptivity=')[-1].split(' ')[0])
+        emissivity = float(materialString.split('Emissivity=')[-1].split(' ')[0])
+        try:
+            RGBColor = System.Drawing.ColorTranslator.FromHtml(materialString.split('RGBColor=')[-1].split('/>')[0])
+        except:
+            RGBColor = System.Drawing.ColorTranslator.FromHtml(materialString.split('RGBColor=')[-1].split(' ')[0])
+            CavityModel = int(materialString.split('CavityModel=')[-1].split('/>')[0])
+        
+        #Make a sub-dictionary for the material.
+        sc.sticky["honeybee_thermMaterialLib"][materialName] = {}
+        
+        #Create the material with values from the original material.
+        sc.sticky["honeybee_thermMaterialLib"][materialName]["Name"] = materialName
+        sc.sticky["honeybee_thermMaterialLib"][materialName]["Type"] = type
+        sc.sticky["honeybee_thermMaterialLib"][materialName]["Conductivity"] = conductivity
+        sc.sticky["honeybee_thermMaterialLib"][materialName]["Absorptivity"] = absorptivity
+        sc.sticky["honeybee_thermMaterialLib"][materialName]["Emissivity"] = emissivity
+        sc.sticky["honeybee_thermMaterialLib"][materialName]["RGBColor"] = RGBColor
+        try:
+            sc.sticky["honeybee_thermMaterialLib"][materialName]["CavityModel"] = CavityModel
+        except: pass
+        
+        return materialName
 
 class thermPolygon(object):
     def __init__(self, surfaceGeo, material, srfName, plane, RGBColor):
@@ -7088,6 +7024,7 @@ class thermPolygon(object):
         self.objectType = "ThermPolygon"
         self.hasChild = False
         self.name = srfName
+        self.splitNeeded = False
         self.warning = None
         
         #Check if the material exists in the THERM Library and, if not, add it.
@@ -7095,10 +7032,11 @@ class thermPolygon(object):
         elif material.upper() in sc.sticky["honeybee_thermMaterialLib"].keys():
             if RGBColor == None: RGBColor = sc.sticky["honeybee_thermMaterialLib"][material.upper()]["RGBColor"]
             elif sc.sticky["honeybee_thermMaterialLib"][material.upper()]["RGBColor"] == RGBColor: pass
-            else: material = self.makeThermMatCopy(material, material+str(RGBColor), RGBColor)
+            else:
+                material = self.makeThermMatCopy(material, material+str(RGBColor), RGBColor)
         else:
+            self.warning = 'Failed to find material ' + material + ' in either the therm maerial, EP Material, or EP Window Material libraries.'
             material = None
-            self.warning = 'Failed to fins material in either the therm maerial, EP Material, or EP Window Material libraries.'
         self.material = material
         
         #Extract the segments of the polyline and make sure none of them are curved.
@@ -7110,7 +7048,11 @@ class thermPolygon(object):
                 rc.Geometry.Curve.ToPolyline(0,0,0.1,0,0,sc.doc.ModelAbsoluteTolerance,0,0,True)
                 self.segments.append(seg)
         #Build a new Polygon from the segments.
-        self.polylineGeo = rc.Geometry.Curve.JoinCurves(self.segments, sc.doc.ModelAbsoluteTolerance)[0]
+        self.polylineGeo = rc.Geometry.Curve.JoinCurves(self.segments, sc.doc.ModelAbsoluteTolerance)
+        if len(self.polylineGeo) > 1:
+            self.splitNeeded = True
+        elif len(self.polylineGeo) == 1:
+            self.polylineGeo = self.polylineGeo[0]
         
         #Build surface geometry and extract the vertices.
         self.geometry = rc.Geometry.Brep.CreatePlanarBreps(self.polylineGeo)[0]
@@ -7130,7 +7072,7 @@ class thermPolygon(object):
         sc.sticky["honeybee_thermMaterialLib"][materialName] = {}
         
         #Create the material with values from the original material.
-        sc.sticky["honeybee_thermMaterialLib"][materialName]["Name"] = sc.sticky["honeybee_thermMaterialLib"][orgigMat]["Name"]
+        sc.sticky["honeybee_thermMaterialLib"][materialName]["Name"] = materialName
         sc.sticky["honeybee_thermMaterialLib"][materialName]["Type"] = sc.sticky["honeybee_thermMaterialLib"][orgigMat]["Type"]
         sc.sticky["honeybee_thermMaterialLib"][materialName]["Conductivity"] = sc.sticky["honeybee_thermMaterialLib"][orgigMat]["Conductivity"]
         sc.sticky["honeybee_thermMaterialLib"][materialName]["Absorptivity"] = sc.sticky["honeybee_thermMaterialLib"][orgigMat]["Absorptivity"]
@@ -7150,7 +7092,11 @@ class thermPolygon(object):
         sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] = None
         sc.sticky["honeybee_thermMaterialLib"][material]["Absorptivity"] = 0.5
         sc.sticky["honeybee_thermMaterialLib"][material]["Emissivity"] = 0.9
-        if RGBColor != None: sc.sticky["honeybee_thermMaterialLib"][material]["RGBColor"] = RGBColor
+        if RGBColor != None:
+            if not RGBColor.startswith('#'):
+                color = System.Drawing.Color.FromName(RGBColor)
+                RGBColor = System.String.Format("#{0:X2}{1:X2}{2:X2}", color.R, color.G, color.B)
+            sc.sticky["honeybee_thermMaterialLib"][material]["RGBColor"] = RGBColor.replace('#','0x')
         else:
             r = lambda: random.randint(0,255)
             randColor = ('#%02X%02X%02X' % (r(),r(),r()))
@@ -7161,14 +7107,14 @@ class thermPolygon(object):
         values, comments, UValueSI, UValueIP = hb_EPMaterialAUX.decomposeMaterial(material)
         
         for count, comment in enumerate(comments):
-            if "CONDUCTIVITY" in comment.upper(): sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] = float(values[count])*0.58
+            if "CONDUCTIVITY" in comment.upper(): sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] = float(values[count])
             if "EMISSIVITY" in comment.upper(): sc.sticky["honeybee_thermMaterialLib"][material]["Emissivity"] = float(values[count])
         
         #If there is no conductivity found, it might be an air material, in which case we set the value.
         if values[0] == "WindowMaterial:Gas":
             sc.sticky["honeybee_thermMaterialLib"][material]["Type"] = 1
-            sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] = 0.435449 * 0.58
-            sc.sticky["honeybee_thermMaterialLib"][material]["CavityModel"] = 5
+            sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] = 0.435449
+            sc.sticky["honeybee_thermMaterialLib"][material]["CavityModel"] = 4
         elif sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] == None:
             #This is a no-mass material and we are not going to be able to figure out a conductivity. The best we can do is give a warning.
             if values[0] == "WindowMaterial:SimpleGlazingSystem": sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] = float(values[2])*0.01
@@ -7181,7 +7127,7 @@ class thermPolygon(object):
         return material
 
 class thermBC(object):
-    def __init__(self, lineGeo, BCName, temperature, filmCoeff, plane, radTemp, radTransCoeff, RGBColor, uFactorTag):
+    def __init__(self, lineGeo, BCName, temperature, filmCoeff, plane, radTemp, radTransCoeff, RGBColor, uFactorTag, emissOverride):
         #Set the name and object type.
         self.objectType = "ThermBC"
         self.hasChild = False
@@ -7194,7 +7140,12 @@ class thermBC(object):
         self.BCProperties['H'] = str(filmCoeff)
         self.BCProperties['HeatFlux'] = "0.000000"
         self.BCProperties['Temperature'] = str(temperature)
-        if RGBColor != None: self.BCProperties['RGBColor'] = str(System.Drawing.ColorTranslator.ToHtml(RGBColor))
+        if RGBColor != None:
+            bColor = str(System.Drawing.ColorTranslator.ToHtml(RGBColor))
+            if not bColor.startswith('#'):
+                color = System.Drawing.Color.FromName(bColor)
+                bColor = System.String.Format("#{0:X2}{1:X2}{2:X2}", color.R, color.G, color.B)
+            self.BCProperties['RGBColor'] = bColor.replace('#','0x')
         else: self.BCProperties['RGBColor'] = '0x80FFFF'
         if radTemp == None: self.BCProperties['Tr'] = str(temperature)
         else: self.BCProperties['Tr'] = str(radTemp)
@@ -7235,6 +7186,8 @@ class thermBC(object):
         self.uFactorTag = None
         if uFactorTag != None: self.uFactorTag = uFactorTag
         
+        #Set any emissivity over-rides.
+        self.emissivityOverride = emissOverride
         
         return self.geometry
 
@@ -7388,7 +7341,12 @@ class hb_Hive(object):
         childGeometries = []
         
         for HBObject in HBObjects:
-            key = GHComponentID + HBObject.name
+            try:
+                HBObject.resetID()
+                key = HBObject.ID
+            except:
+                #HB object is generated by an older version of Honeybee
+                key = GHComponentID + HBObject.name
             
             sc.sticky['HBHive'][key] = HBObject
             
@@ -7433,8 +7391,8 @@ class hb_Hive(object):
                     geometry = geo.Duplicate()
                 geometry.UserDictionary.Set('HBID', key)
                 geometries.append(geometry)
-            except Exception, e:
-                print "Reached the maximum array size for UserDictionary: " + `e`
+            except Exception as e:
+                print `e`
                     
         # return geometry with the ID
         return geometries
@@ -7442,7 +7400,6 @@ class hb_Hive(object):
     def callFromHoneybeeHive(self, geometryList):
         HBObjects = []
         for geometry in geometryList:
-            
             key = geometry.UserDictionary['HBID']
             if sc.sticky['HBHive'].has_key(key):
                 HBObject = sc.sticky['HBHive'][key]
@@ -7471,6 +7428,13 @@ class hb_Hive(object):
                     "This can cause strange behaviour!"
                     HBObjects.append(sc.sticky['HBHive'][key])
                 
+        return HBObjects
+    
+    def visualizeFromHoneybeeHive(self, geometryList):
+        HBObjects = []
+        for geometry in geometryList:
+            key = geometry.UserDictionary['HBID']
+            if sc.sticky['HBHive'].has_key(key): HBObjects.append(sc.sticky['HBHive'][key])
         return HBObjects
 
 class hb_RADParameters(object):
@@ -7611,249 +7575,541 @@ class SerializeObjects(object):
         with open(self.filePath, 'rb') as inf:
             self.data = pickle.load(inf)
 
-class hb_hwBoilerParams(object):
-    def __init__(self):
-        self.hwBoilerDict = {
-        'name':'honeybeeHotWaterBoiler',
-        'fueltype':1,
-        'nominalCapacity':'Autosize',
-        'sizingFactor':1.25,
-        'nominalEfficiency':0.80,
-        'designOutletTemperature':80,
-        'designWaterFlowRate':'Autosize',
-        'minPartLoad':0.15,
-        'maxPartLoadRatio':1.1,
-        'optimumPartLoadRatio':0.50,
-        'outletTempMaximum':95,
-        'boilerFlowMode':'NotModulated',
-        'parasiticElectricLoad':0,
-        'curveTemperatureVariable':'LeavingBoiler',
-        'Curves':None
-        }
 
-class hb_availManagerParams(object):
+class hb_hvacProperties(object):
     def __init__(self):
-        self.manListDict= {
-        'name':'honeybee default AvailabilityManagerList',
-        'type':'NightCycle',
-        'scheduleName':'ALWAYS ON',
-        'controlType':'CycleOnAny'
+        
+        # A dictionary that contains all of the names of the HVAC systems that correspond to the integer IDs.
+        self.sysDict = {
+        -1:'THERMOSTAT/HUMIDISTAT ONLY',
+        0:'IDEAL AIR LOADS',
+        1:'PACKAGED TERMINAL AIR CONDITIONING',
+        2:'PACKAGED TERMINAL HEAT PUMP',
+        3:'PACKAGED SINGLE ZONE - AC',
+        4:'PACKAGED SINGLE ZONE - HP',
+        5:'PACKAGED VAV WITH REHEAT',
+        6:'PACKAGED VAV WITH PARALLEL FAN POWERED BOXES',
+        7:'VARIABLE AIR VOLUME WITH REHEAT',
+        8:'VARIABLE AIR VOLUME WITH PARALLEL FAN POWERED BOXES',
+        9:'WARM AIR FURNACE - GAS FIRED',
+        10:'WARM AIR FURNACE - ELECTRIC',
+        11:'FAN COIL UNITS + DOAS',
+        12:'ACTIVE CHILLED BEAMS + DOAS',
+        13:'RADIANT FLOORS + DOAS',
+        14:'VRF + DOAS'
         }
+        
+        # Dictionaries that state which features can be changed for each of the different systems.
+        # It is used to give warnings to the user if they set a parameter that does not exist on the assigned HVAC system.
+        self.thresholdCapabilities = {
+        0: {'recirc' : False, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
+        1: {'recirc' : True, 'humidCntrl' : False, 'dehumidCntrl' : False, 'ventSched' : False},
+        2: {'recirc' : True, 'humidCntrl' : False, 'dehumidCntrl' : False, 'ventSched' : False},
+        3: {'recirc' : False, 'humidCntrl' : True, 'dehumidCntrl' : False, 'ventSched' : False},
+        4: {'recirc' : False, 'humidCntrl' : True, 'dehumidCntrl' : False, 'ventSched' : False},
+        5: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : False, 'ventSched' : True},
+        6: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : False, 'ventSched' : True},
+        7: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
+        8: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
+        9: {'recirc' : False, 'humidCntrl' : True, 'dehumidCntrl' : False, 'ventSched' : False},
+        10: {'recirc' : False, 'humidCntrl' : True, 'dehumidCntrl' : False, 'ventSched' : False},
+        11: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
+        12: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : False},
+        13: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
+        14: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True}
+        }
+        
+        self.airCapabilities = {
+        0: {'FanTotEff': False, 'FanMotEff': False, 'FanPres': False, 'FanPlace': False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        1: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : False, 'Econ' : False, 'HeatRecov' : False},
+        2: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'FanCntrl': False, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Econ' : False, 'HeatRecov' : False},
+        3: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        4: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        5: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        6: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'FanCntrl': False, 'HeatSupTemp' : False, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        7: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        8: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'FanCntrl': False, 'HeatSupTemp' : False, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        9: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        10: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        11: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        12: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        13: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        14: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True}
+        }
+        
+        self.heatCapabilities = {
+        0: {'COP' : False, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
+        1: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
+        2: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
+        3: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
+        4: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
+        5: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
+        6: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
+        7: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
+        8: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
+        9: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
+        10: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
+        11: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
+        12: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
+        13: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
+        14: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False}
+        }
+        
+        self.coolCapabilities = {
+        0: {'COP' : False, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : False},
+        1: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : False},
+        2: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : False},
+        3: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : False},
+        4: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : False},
+        5: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : False},
+        6: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : False},
+        7: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : False},
+        8: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : False},
+        9: {'COP' : False, 'Avail' : False, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : False},
+        10: {'COP' : False, 'Avail' : False, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : False},
+        11: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : True},
+        12: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : True},
+        13: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : True},
+        14: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : True}
+        }
+    
+    @staticmethod
+    def generateWarning(sysType, varType, detailType):
+        msg = 'The HVAC system type, ' + sysType + ' does not support the assigning of \n' + varType + \
+        ' but one has been assigned in the ' + detailType +'.'
+        return msg
+    
+    @staticmethod
+    def checkSchedule(schedule):
+        error = None
+        schedule= schedule.upper()
+        
+        if schedule!=None and not schedule.lower().endswith(".csv") and schedule not in sc.sticky["honeybee_ScheduleLib"].keys():
+            error = "Cannot find " + schedule + " in Honeybee schedule library."
+            return False, error
+        elif schedule!=None and schedule.lower().endswith(".csv"):
+            # check if csv file is existed
+            if not os.path.isfile(schedule):
+                error = "Cannot find the shchedule file: " + schedule
+                return False, error
+        return True, error
 
-class hb_chillerEIRParams(object):
-    def __init__(self):
-        self.chillerDict= {
-            'name':'honeybee Default Chiller',
-            'rCapacity':'Autosize',
-            'rCOP':5.5,
-            'rLeavingChWt':6.667,
-            'rEnteringCWT':29.44,
-            'rChWFlowRate':'Autosize',
-            'rCWFlowRate':'Autosize',
-            'minPartLoadRatio':0.1,
-            'maxPartLoadRatio':1.0,
-            'optimumPartLoadRatio':1.0,
-            'minUnloadingRatio':0.2,
-            'condenserType':0,
-            'condenserFanPowerRatio':None,
-            'fracOfCompressorPowerRej':1.0,
-            'chillerFlowMode':0,
-            'sizingFactor':1.15,
-            'Curves':None
-            }
+
+class hb_airDetail(object):
+    def __init__(self, HVACAvailabiltySched=None, fanTotalEfficiency=None, fanMotorEfficiency=None, fanPressureRise=None, \
+        fanPlacement=None, fanControl = None, heatingSupplyAirTemp=None, coolingSupplyAirTemp=None, airsideEconomizer=None, heatRecovery=None, recoveryEffectiveness=None):
+        
+        self.areInputsChecked = False
+        self.sysProps = hb_hvacProperties()
+        
+        self.economizerCntrlDict = {
+        0:'NoEconomizer',
+        1:'DifferentialDryBulb',
+        2:'DifferentialEnthalpy',
+        3:'FixedDryBulb',
+        4:'FixedEnthalpy',
+        5:'ElectronicEnthalpy',
+        6:'FixedDewpointandDryBulb',
+        7:'DifferentialDryBulbandEnthalpy',
+        'NoEconomizer': 'NoEconomizer',
+        'DifferentialDryBulb':'DifferentialDryBulb',
+        'DifferentialEnthalpy':'DifferentialEnthalpy',
+        'FixedDryBulb':'FixedDryBulb',
+        'FixedEnthalpy':'FixedEnthalpy',
+        'ElectronicEnthalpy':'ElectronicEnthalpy',
+        'FixedDewpointandDryBulb':'FixedDewpointandDryBulb',
+        'DifferentialDryBulbandEnthalpy':'DifferentialDryBulbandEnthalpy'
+        }
+        
+        self.fanPlaceDict = {
+        True: 'Draw Through',
+        False: 'Blow Through',
+        'Draw Through': 'Draw Through',
+        'Blow Through': 'Blow Through'
+        }
+        
+        self.fanControlDict = {
+        True: 'Variable Volume',
+        False: 'Constant Volume',
+        'Variable Volume': 'Variable Volume',
+        'Constant Volume': 'Constant Volume'
+        }
+        
+        self.heatRecovDict = {
+        0: 'None',
+        1: 'Sensible',
+        2: 'Enthalpy',
+        'None': 'None',
+        'Sensible': 'Sensible',
+        'Enthalpy': 'Enthalpy'
+        }
+        
+        if HVACAvailabiltySched:
+            self.HVACAvailabiltySched = HVACAvailabiltySched
+        else:
+            self.HVACAvailabiltySched = "ALWAYS ON"
+        if fanTotalEfficiency:
+            self.fanTotalEfficiency = float(fanTotalEfficiency)
+        else:
+            self.fanTotalEfficiency = "Default"
+        if fanMotorEfficiency:
+            self.fanMotorEfficiency = float(fanMotorEfficiency)
+        else:
+            self.fanMotorEfficiency = "Default"
+        if fanPressureRise:
+            self.fanPressureRise = float(fanPressureRise)
+        else:
+            self.fanPressureRise = "Default"
+        if fanPlacement != None:
+            self.fanPlacement = self.fanPlaceDict[fanPlacement]
+        else:
+            self.fanPlacement = "Default"
+        if fanControl != None:
+            self.fanControl = self.fanControlDict[fanControl]
+        else:
+            self.fanControl = "Default"
+        if heatingSupplyAirTemp:
+            self.heatingSupplyAirTemp = float(heatingSupplyAirTemp)
+        else:
+            self.heatingSupplyAirTemp = "Default"
+        if coolingSupplyAirTemp:
+            self.coolingSupplyAirTemp = float(coolingSupplyAirTemp)
+        else:
+            self.coolingSupplyAirTemp = "Default"
+        if airsideEconomizer != None:
+            try:
+                self.airsideEconomizer = int(airsideEconomizer)
+            except:
+                self.airsideEconomizer = self.economizerCntrlDict[airsideEconomizer]
+        else:
+            self.airsideEconomizer = "Default"
+        if heatRecovery != None:
+            self.heatRecovery = self.heatRecovDict[heatRecovery]
+        else:
+            self.heatRecovery = "Default"
+        if recoveryEffectiveness:
+            self.recoveryEffectiveness = float(recoveryEffectiveness)
+        else:
+            self.recoveryEffectiveness = "Default"
+    
+    
+    @classmethod
+    def fromTextStr(cls, textStr):
+        paramList = []
+        success = True
+        
+        for count, line in enumerate(textStr.split('\n')):
+            if count == 0:
+                if 'AIR DETAILS' not in line.upper():
+                    success = False
+            else:
+                param = line.split(': ')[-1]
+                if param.upper() != 'DEFAULT':
+                    paramList.append(param)
+                else:
+                    paramList.append(None)
+        
+        if success == True:
+            airDetailObj = cls(paramList[0], paramList[1], paramList[2], paramList[3], paramList[4], paramList[5], paramList[6], paramList[7], paramList[8], paramList[9], paramList[10])
+            airDetailObj.areInputsChecked = True
+            return airDetailObj
+        else:
+            return None
+    
+    def checkInputVariables(self):
+        errors = []
+        success = True
+        
+        if self.HVACAvailabiltySched != "ALWAYS ON":
+            success, error = self.sysProps.checkSchedule(self.HVACAvailabiltySched)
+            if success is False:
+                errors.append(error)
+        if self.fanTotalEfficiency != "Default":
+            if self.fanTotalEfficiency > 1 or self.fanTotalEfficiency < 0:
+                success = False
+                errors.append("Fan Total Efficiency must be betweeon 0 and 1.")
+        if self.fanMotorEfficiency != "Default":
+            if self.fanMotorEfficiency > 1 or self.fanMotorEfficiency < 0:
+                success = False
+                errors.append("Fan Motor Efficiency must be betweeon 0 and 1.")
+        if self.airsideEconomizer != "Default":
+            if self.airsideEconomizer > 7 or self.airsideEconomizer < 0:
+                success = False
+                errors.append("Air Side Economizer not a valid control type.")
+            else:
+                self.airsideEconomizer = self.economizerCntrlDict[self.airsideEconomizer]
+        if self.recoveryEffectiveness != 'Default':
+            if self.heatRecovery == 'Default' or self.heatRecovery == 'None':
+                success = False
+                errors.append("Heat recovery effectivness specified without setting heatRecovery to True.")
+            if self.recoveryEffectiveness > 1 or self.recoveryEffectiveness < 0:
+                success = False
+                errors.append("Heat Recovery Effeictiveness must be between 0 and 1.")
+        
+        return success, errors
+    
+    def checkSysCompatability(self, sysInt):
+        errors = []
+        sysType = self.sysProps.sysDict[sysInt]
+        hvacCapabilities = self.sysProps.airCapabilities[sysInt]
+        
+        if self.fanTotalEfficiency != 'Default' and hvacCapabilities['FanTotEff'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'FAN TOTAL EFFICIENCY', 'airDetails'))
+        if self.fanMotorEfficiency != 'Default' and hvacCapabilities['FanMotEff'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'FAN MOTOR EFFICIENCY', 'airDetails'))
+        if self.fanPressureRise != 'Default' and hvacCapabilities['FanPres'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'FAN PRESSURE RISE', 'airDetails'))
+        if self.fanPlacement != 'Default' and hvacCapabilities['FanPlace'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'FAN PLACEMENT', 'airDetails'))
+        if self.fanControl != 'Default' and hvacCapabilities['FanCntrl'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'DEMAND CONTROLLED VENTILATION', 'airDetails'))
+        if self.heatingSupplyAirTemp != 'Default' and hvacCapabilities['HeatSupTemp'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'HEATING SUPPLY AIR TEMPERATURE', 'airDetails'))
+        if self.coolingSupplyAirTemp != 'Default' and hvacCapabilities['CoolSupTemp'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'COOLING SUPPLY AIR TEMPERATURE', 'airDetails'))
+        if self.airsideEconomizer != 'Default' and hvacCapabilities['Econ'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'AN AIRSIDE ECONOMIZER', 'airDetails'))
+        if sysInt == 0:
+            if self.airsideEconomizer == 'Default' or self.airsideEconomizer == 'NoEconomizer' or self.airsideEconomizer == 'DifferentialDryBulb' or self.airsideEconomizer == 'DifferentialEnthalpy':
+                pass
+            else:
+                errors.append('Airside economizer type ' + self.airsideEconomizer + ' is not supported for IDEAL AIR LOADS SYSTEMS.')
+        if self.heatRecovery != 'Default' and hvacCapabilities['HeatRecov'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'A HEAT RECOVERY SYSTEM', 'airDetails'))
+        if self.recoveryEffectiveness != 'Default' and hvacCapabilities['HeatRecov'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'HEAT RECOVERY EFFECTIVENESS', 'airDetails'))
+        
+        return errors
+    
+    def class2Str(self):
+        allGood = True
+        if not self.areInputsChecked:
+            allGood, errors = self.checkInputVariables()
+        
+        if allGood:
+            textStr = 'Air Details\n' + \
+            '  Availability Schedule: ' + str(self.HVACAvailabiltySched) + '\n'  + \
+            '  Fan Total Efficiency: ' + str(self.fanTotalEfficiency) + '\n' + \
+            '  Fan Motor Efficiency: ' + str(self.fanMotorEfficiency) + '\n' + \
+            '  Fan Pressure Rise: ' + str(self.fanPressureRise) + '\n' + \
+            '  Fan Placement: ' + str(self.fanPlacement) + '\n' + \
+            '  Demand Controlled Ventilation: ' + str(self.fanControl) + '\n' + \
+            '  Heating Supply Air Temperature: ' + str(self.heatingSupplyAirTemp) + '\n' + \
+            '  Cooling Supply Air Temperature: ' + str(self.coolingSupplyAirTemp) + '\n' + \
+            '  Airside Economizer Method: ' + str(self.airsideEconomizer) + '\n' + \
+            '  Heat Recovery: ' + str(self.heatRecovery) + '\n' + \
+            '  Heat Recovery Effectiveness: ' + str(self.recoveryEffectiveness)
             
-class hb_coolingTowerParams(object):
-    def __init__(self):
-        self.coolTowerDict= {
-            'name':'honeybee default cooling tower',
-            'speedControl':'OneSpeed',
-            'inputMethod':'NominalCapacity',
-            'modelType':'CoolToolsCrossFlow',
-            'designWB':25.5556,
-            'designRange':5.5556,
-            'designApproach':3.8889,
-            'sizingFactor':1.15,
-            'nominalCapacity':'Autosized',
-            'designWaterFlowRate':'Autosized',
-            'airflowAtHighSpeed':'Autosized',
-            'fanPowerAtHighSpeed':'Autosized',
-            'lowSpeedCapacity':'Autosized',
-            'airflowAtLowSpeed':'Autosized',
-            'fanPowerAtLowSpeed':'Autosized',
-            'freeConvectionCapacity':'Autosized',
-            'airflowInFreeConvection':'Autosized',
-            'basinHeaterCapacity':0,
-            'basinHeaterSetpoint':2,
-            'basinHeaterSchedule':None,
-            'numberOfCells':1,
-            'cellControl':'NotNeeded',
-            'cellMinWaterFlowFraction':0.33,
-            'cellMaxWaterFlowFraction':2.5,
-            'fanPowerRatioFlowRatioCurve':None
-        }
+            return True, textStr
+        else:
+            return False, errors
 
-class hb_airsideEconoParams(object):
-    def __init__(self):
-        self.airEconoDict = {
-        'name':'honeybeeDefaultEconomizer',
-        'econoControl':'FixedDryBulb',
-        'controlAction':'Modulate Flow',
-        'maxAirFlowRate':'Autosize',
-        'minAirFlowRate':'Autosize',
-        'minLimitType':'Proportional Minimum',
-        'minOutdoorAirSchedule':None,
-        'minOutdoorAirFracSchedule':None,
-        'maxOutdoorAirFracSchedule':None,
-        'maxLimitDewpoint':None,
-        'sensedMin':12,
-        'sensedMax':22,
-        'DXLockoutMethod':None,
-        'timeOfDaySch':None,
-        'mvCtrl':None,
-        'availManagerList':None
-        }
 
-class hb_constVolFanParams(object):
-    def __init__(self):
-        self.cvFanDict = {
-        'name':'honeybeeConstVolFan',
-        'type':0,
-        'fanEfficiency':0.6,
-        'pressureRise':892.9,
-        'maxFlowRate':'Autosize',
-        'motorEfficiency':0.825,
-        'airStreamHeatPct':100.0
-        }
+class hb_heatingDetail(object):
+    def __init__(self, heatingAvailSched=None, heatingEffOrCOP=None, supplyTemperature=None, pumpMotorEfficiency=None):
+        
+        self.areInputsChecked = False
+        self.sysProps = hb_hvacProperties()
+        
+        if heatingAvailSched:
+            self.heatingAvailSched = heatingAvailSched
+        else:
+            self.heatingAvailSched = "ALWAYS ON"
+        if heatingEffOrCOP != None:
+            self.heatingEffOrCOP = float(heatingEffOrCOP)
+        else:
+            self.heatingEffOrCOP = "Default"
+        if supplyTemperature != None:
+            self.supplyTemperature = float(supplyTemperature)
+        else:
+            self.supplyTemperature = "Default"
+        if pumpMotorEfficiency != None:
+            self.pumpMotorEfficiency = float(pumpMotorEfficiency)
+        else:
+            self.pumpMotorEfficiency = "Default"
+    
+    @classmethod
+    def fromTextStr(cls, textStr):
+        paramList = []
+        success = True
+        
+        for count, line in enumerate(textStr.split('\n')):
+            if count == 0:
+                if 'HEATING DETAILS' not in line.upper():
+                    success = False
+            else:
+                param = line.split(': ')[-1]
+                if param.upper() != 'DEFAULT':
+                    paramList.append(param)
+                else:
+                    paramList.append(None)
+        
+        if success == True:
+            heatDetailObj = cls(paramList[0], paramList[1], paramList[2], paramList[3])
+            heatDetailObj.areInputsChecked = True
+            return heatDetailObj
+        else:
+            return None
+    
+    def checkInputVariables(self):
+        errors = []
+        success = True
+        
+        if self.heatingAvailSched != "ALWAYS ON":
+            success, error = self.sysProps.checkSchedule(self.heatingAvailSched)
+            if success is False:
+                errors.append(error)
+        if self.pumpMotorEfficiency != "Default":
+            if self.pumpMotorEfficiency > 1 or self.pumpMotorEfficiency < 0:
+                success = False
+                errors.append("Pump Motor Efficiency must be betweeon 0 and 1.")
+        
+        return success, errors
+    
+    def checkSysCompatability(self, sysInt):
+        errors = []
+        
+        sysType = self.sysProps.sysDict[sysInt]
+        heatCapabilities = self.sysProps.heatCapabilities[sysInt]
+        
+        if self.heatingAvailSched != 'ALWAYS ON' and heatCapabilities['Avail'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'HEATING AVAILABILITY SCHEDULE', 'heatingDetails'))
+        if self.heatingEffOrCOP != 'Default' and heatCapabilities['COP'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'HEATING SYSTEM EFFICIENCY OR COP', 'heatingDetails'))
+        if self.supplyTemperature != 'Default' and heatCapabilities['SupTemp'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'HEATING SYSTEM SUPPLY TEMPERATURE', 'heatingDetails'))
+        if self.pumpMotorEfficiency != 'Default' and heatCapabilities['PumpEff'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'HEATING SYSTEM PUMP MOTOR EFFICIENCY', 'heatingDetails'))
+        
+        return errors
+    
+    def class2Str(self):
+        allGood = True
+        if not self.areInputsChecked:
+            allGood, errors = self.checkInputVariables()
+        
+        if allGood:
+            textStr = 'Heating Details\n' + \
+            '  Heating Availability Schedule: ' + str(self.heatingAvailSched) + '\n' + \
+            '  Heating System Efficiency or COP: ' + str(self.heatingEffOrCOP) + '\n' + \
+            '  Heating System Supply Temperature: ' + str(self.supplyTemperature) + '\n' + \
+            '  Heating Hystem Pump Motor Efficiency: ' + str(self.pumpMotorEfficiency)
+            
+            return True, textStr
+        else:
+            return False, errors
 
-class hb_varVolFanParams(object):
-    def __init__(self):
-        self.vvFanDict = {
-        'name':'honeybeeVarVolFan',
-        'type':1,
-        'fanEfficiency':0.6045,
-        'pressureRise':500,
-        'maxFlowRate':'Autosize',
-        'motorEfficiency':0.93,
-        'airStreamHeatPct':100.0,
-        'minFlowFrac':0,
-        'fanPowerCoefficient1':0.04076,
-        'fanPowerCoefficient2':0.08804,
-        'fanPowerCoefficient3':-0.07292,
-        'fanPowerCoefficient4':0.94373,
-        'fanPowerCoefficient5':0.00000
+
+class hb_coolingDetail(object):
+    def __init__(self, coolingAvailSched=None, coolingCOP=None, supplyTemperature=None, pumpMotorEfficiency=None, chillerType=None):
+        
+        self.areInputsChecked = False
+        self.sysProps = hb_hvacProperties()
+        
+        self.chillerTypeDict = {
+        0: 'WaterCooled',
+        1: 'AirCooled',
+        'WaterCooled': 'WaterCooled',
+        'AirCooled': 'AirCooled',
         }
         
-class hb_AirHandlerParams(object):
-    def __init__(self):
-        self.airHandlerDict = {
-        'availSch':None,
-        'fanPlacement':'DrawThrough',
-        'constVolSupplyFanDef':hb_constVolFanParams,
-        'varVolSupplyFanDef':hb_varVolFanParams,
-        'airsideEconomizer':hb_airsideEconoParams,
-        'coolingCoil': None,
-        'heatingCoil': None,
-        'evaporativeCondenser': None,
-        'availabilityManagerList':None
-        }
-
-class hb_2xDXCoilParams(object):
-    def __init__(self):
-        self.twoSpeedDXDict = {
-        'name':'honeybee Default 2 Speed DX Coil',
-        'availSch':'OpenStudio Default',
-        'ratedHighSpeedAirflowRate':'Autosize',
-        'ratedHighSpeedTotalCooling':'Autosize',
-        'ratedHighSpeedSHR':'Autosize',
-        'ratedHighSpeedCOP':3.0,
-        'ratedLowSpeedAirflowRate':'Autosize',
-        'ratedLowSpeedTotalCooling':'Autosize',
-        'ratedLowSpeedSHR':'Autosize',
-        'ratedLowSpeedCOP':3.0,
-        'condenserType':'AirCooled',
-        'evaporativeCondenserDesc':None,
-        'Curves':None
-        }
+        if coolingAvailSched:
+            self.coolingAvailSched = coolingAvailSched
+        else:
+            self.coolingAvailSched = "ALWAYS ON"
+        if coolingCOP != None:
+            self.coolingCOP = float(coolingCOP)
+        else:
+            self.coolingCOP = "Default"
+        if supplyTemperature != None:
+            self.supplyTemperature = float(supplyTemperature)
+        else:
+            self.supplyTemperature = "Default"
+        if pumpMotorEfficiency != None:
+            self.pumpMotorEfficiency = float(pumpMotorEfficiency)
+        else:
+            self.pumpMotorEfficiency = "Default"
+        if chillerType != None:
+            self.chillerType = self.chillerTypeDict[chillerType]
+        else:
+            self.chillerType = "Default"
+    
+    @classmethod
+    def fromTextStr(cls, textStr):
+        paramList = []
+        success = True
         
-class hb_2xDXHeatingCoilParams(object):
-    def __init__(self):
-        self.twoSpeedDXDict = {
-        'name':'honeybee Default 2 Speed DX Heating Coil',
-        'availSch':'OpenStudio Default',
-        'ratedHighSpeedAirflowRate':'Autosize',
-        'ratedHighSpeedTotalHeating':'Autosize',
-        'ratedHighSpeedCOP':4.0,
-        'ratedLowSpeedAirflowRate':'Autosize',
-        'ratedLowSpeedTotalCooling':'Autosize',
-        'ratedLowSpeedCOP':5.0,
-        'minOutdoorDryBulb':-8,
-        'outdoorDBDefrostEnabled': 5,
-        'outdoorDBCrankcase':10,
-        'crankcaseCapacity': 0,
-        'defrostStrategy':'reverse-cycle',
-        'defrostControl':'timed',
-        'resistiveDefrostCap':0,
-        'Curves': None
-        }
-
-class hb_1xDXCoilParams(object):
-    def __init__(self):
-        self.oneSpeedDXDict = {
-        'name':'honeybee Default 1 Speed DX Coil',
-        'availSch':'OpenStudio Default',
-        'ratedAirflowRate':'Autosize',
-        'ratedTotalCooling':'Autosize',
-        'ratedSHR':'Autosize',
-        'ratedCOP':3.0,
-        'condenserType':'Air Cooled',
-        'evaporativeCondenserDesc':None,
-        'Curves':None
-        }
-
-class hb_1xDXHeatingCoilParams(object):
-    def __init__(self):
-        self.oneSpeedDXDict = {
-        'name':'honeybee Default 1 speed DX Heating Coil',
-        'availSch':'OpenStudio Default',
-        'ratedAirflowRate':'Autosize',
-        'ratedTotalHeating':'Autosize',
-        'ratedCOP':3.0,
-        'minOutdoorDryBulb': -8,
-        'outdoorDBDefrostEnabled': 5,
-        'outdoorDBCrankcase':10,
-        'crankcaseCapacity': 0,
-        'defrostStrategy':'reverse-cycle',
-        'defrostControl':'timed',
-        'resistiveDefrostCap':0,
-        'Curves': None
-        }
+        for count, line in enumerate(textStr.split('\n')):
+            if count == 0:
+                if 'COOLING DETAILS' not in line.upper():
+                    success = False
+            else:
+                param = line.split(': ')[-1]
+                if param.upper() != 'DEFAULT':
+                    paramList.append(param)
+                else:
+                    paramList.append(None)
         
-class hb_lspeedEvapCondParams(object):
-    def __init__(self):
-            self.lspeedevapCond = {
-            'name':'honeybee default 1 speed DX condenser',
-            'serviceType':0,
-            'evapEffectiveness':0.9,
-            'evapCondAirflowRate':'Autosize',
-            'evapPumpPower':'Autosize',
-            'storageTank':None,
-            'curves':None
-            }
+        if success == True:
+            coolDetailObj = cls(paramList[0], paramList[1], paramList[2], paramList[3], paramList[4])
+            coolDetailObj.areInputsChecked = True
+            return coolDetailObj
+        else:
+            return None
+    
+    def checkInputVariables(self):
+        errors = []
+        success = True
+        
+        if self.coolingAvailSched != "ALWAYS ON":
+            success, error = self.sysProps.checkSchedule(self.coolingAvailSched)
+            if success is False:
+                errors.append(error)
+        if self.pumpMotorEfficiency != "Default":
+            if self.pumpMotorEfficiency > 1 or self.pumpMotorEfficiency < 0:
+                success = False
+                errors.append("Pump Motor Efficiency must be betweeon 0 and 1.")
+        
+        return success, errors
+    
+    def checkSysCompatability(self, sysInt):
+        errors = []
+        
+        sysType = self.sysProps.sysDict[sysInt]
+        coolCapabilities = self.sysProps.coolCapabilities[sysInt]
+        
+        if self.coolingAvailSched != 'ALWAYS ON' and coolCapabilities['Avail'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'COOLING AVAILABILITY SCHEDULE', 'coolingDetails'))
+        if self.coolingCOP != 'Default' and coolCapabilities['COP'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'COOLING SYSTEM COP', 'coolingDetails'))
+        if self.supplyTemperature != 'Default' and coolCapabilities['SupTemp'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'COOLING SYSTEM SUPPLY TEMPERATURE', 'coolingDetails'))
+        if self.pumpMotorEfficiency != 'Default' and coolCapabilities['PumpEff'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'COOLING SYSTEM PUMP MOTOR EFFICIENCY', 'coolingDetails'))
+        if self.chillerType != 'Default' and coolCapabilities['ChillType'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'COOLING SYSTEM CHILLER TPYE', 'coolingDetails'))
+        
+        return errors
+    
+    def class2Str(self):
+        allGood = True
+        if not self.areInputsChecked:
+            allGood, errors = self.checkInputVariables()
+        
+        if allGood:
+            textStr = 'Cooling Details\n' + \
+            '  Cooling Availability Schedule: ' + str(self.coolingAvailSched) + '\n' + \
+            '  Cooling System COP: ' + str(self.coolingCOP) + '\n' + \
+            '  Cooling System Supply Temperature: ' + str(self.supplyTemperature) + '\n' + \
+            '  Cooling System Pump Motor Efficiency: ' + str(self.pumpMotorEfficiency) + '\n' + \
+            '  Cooling System Chiller Type: ' + str(self.chillerType)
+            
+            return True, textStr
+        else:
+            return False, errors
 
-class hb_hspeedEvapCondParams(object):
-    def __init__(self):
-        self.hspeedevapCond = {
-        'name':'honeybee default 1 speed DX condenser',
-        'serviceType':0,
-        'evapEffectiveness':0.9,
-        'evapCondAirflowRate':'Autosize',
-        'evapPumpPower':'Autosize',
-        'hiEvapEffectiveness':0.9,
-        'hiEvapCondAirflowRate':'Autosize',
-        'hiEvapPumpPower':'Autosize',
-        'storageTank':None,
-        'curves':None
-        }
+
+
 
 
 
@@ -7869,7 +8125,7 @@ def checkGHPythonVersion(target = "0.6.0.3"):
     else: return True
 
 try:
-    downloadTemplate = checkIn.checkForUpdates(LB= False, HB= True, OpenStudio = True, template = True)
+    downloadTemplate = checkIn.checkForUpdates(LB= False, HB= True, OpenStudio = True, template = True, therm = True)
 except:
     # no internet connection
     downloadTemplate = False
@@ -7947,46 +8203,69 @@ if checkIn.letItFly:
         sc.sticky["honeybee_folders"]["DSPath"] = folders.DSPath
         sc.sticky["honeybee_folders"]["DSCorePath"] = hb_DSCore
         sc.sticky["honeybee_folders"]["DSLibPath"] = hb_DSLibPath
-    
+        
         # supported versions for EnergyPlus
-        EPVersions = ["V8-3-0", "V8-2-10", "V8-2-9", "V8-2-8", "V8-2-7", "V8-2-6", \
+        EPVersions = ["V8-5-0", "V8-4-0","V8-3-0", "V8-2-10", "V8-2-9", "V8-2-8", "V8-2-7", "V8-2-6", \
                       "V8-2-5", "V8-2-4", "V8-2-3", "V8-2-2", "V8-2-1", "V8-2-0", \
                       "V8-1-5", "V8-1-4", "V8-1-3", "V8-1-2", "V8-1-1", "V8-1-0"]
-                      
-        
+        EPVersion = ''
         if folders.EPPath != None:
             # Honeybee has already found EnergyPlus make sure it's an acceptable version
             EPVersion = os.path.split(folders.EPPath)[-1].split("EnergyPlus")[-1]
-            
             if EPVersion not in EPVersions:
                 #Not an acceptable version so remove it from the path
                 folders.EPPath = None
-            
         if folders.EPPath == None:
-            for EPVersion in EPVersions:
-                if os.path.isdir("C:\EnergyPlus" + EPVersion + "\\"):
-                    folders.EPPath = "C:\EnergyPlus" + EPVersion + "\\"
-
-                    break
-            
-            if folders.EPPath == None:
-                # give a warning to the user
-                
-                msg= "Honeybee cannot find a compatible EnergyPlus folder on your system.\n" + \
-                     "Make sure you have EnergyPlus installed on your system.\n" + \
-                     "You won't be able to run energy simulations without EnergyPlus.\n" +\
-                     "Honeybee supports following versions:\n"
-                
-                versions = ", ".join(EPVersions)
-                
-                msg += versions
-                
-                ghenv.Component.AddRuntimeMessage(w, msg)
-                
-            
+            for EPVers in EPVersions:
+                if os.path.isdir("C:\EnergyPlus" + EPVers + "\\"):
+                    folders.EPPath = "C:\EnergyPlus" + EPVers + "\\"
+                    EPVersion = EPVers
+        
+        # check for OpenStudio Folder.
+        openStudioLibFolder = None
+        QtFolder = None
+        installedOPS = [f for f in os.listdir("C:\\Program Files") if f.startswith("OpenStudio")]
+        installedOPS = sorted(installedOPS, key = lambda x: int("".join(x.split(" ")[-1].split("."))), reverse = True)
+        if len(installedOPS) != 0:
+            openStudioLibFolder = "C:/Program Files/%s/CSharp/openstudio/"%installedOPS[0]
+            QtFolder = "C:/Program Files/%s/Ruby/openstudio/"%installedOPS[0]
+            for EPVers in EPVersions:
+                versStr = EPVers.replace('V', '-')
+                if os.path.isdir("C:/Program Files/%s/share/openstudio/"%installedOPS[0] + "EnergyPlus" + versStr + "/"):
+                    folders.EPPath = "C:/Program Files/%s/share/openstudio/"%installedOPS[0] + "EnergyPlus" + versStr
+                    EPVersion = EPVers
+            if os.path.isdir(openStudioLibFolder) and os.path.isfile(os.path.join(openStudioLibFolder, "openStudio.dll")):
+                # openstudio is there and we are good to go.
+                # add folders to path.
+                if not openStudioLibFolder in os.environ['PATH'] or QtFolder not in os.environ['PATH']:
+                    os.environ['PATH'] = ";".join([openStudioLibFolder, QtFolder, os.environ['PATH']])
+            else:
+                openStudioLibFolder = None
+                QtFolder = None
+        if openStudioLibFolder == None or QtFolder == None:
+            msg1 = "Honeybee cannot find OpenStudio on your system.\n" + \
+                "You wont be able to use the Export to OpenStudio component.\n" + \
+                "Download the latest OpenStudio for Windows from:\n"
+            msg2 = "https://www.openstudio.net/downloads"
+            print msg1
+            print msg2
+            ghenv.Component.AddRuntimeMessage(w, msg1)
+            ghenv.Component.AddRuntimeMessage(w, msg2)
+        
+        if folders.EPPath == None:
+            # give a warning to the user
+            msg= "Honeybee cannot find an EnergyPlus folder on your system.\n" + \
+                 "You wont be able to use the Run Energy Simulation component.\n" + \
+                 "Honeybee supports following versions of EnergyPlus:\n"
+            versions = ", ".join(EPVersions)
+            msg += versions
+            print msg
+        
+        sc.sticky["honeybee_folders"]["OSLibPath"] = openStudioLibFolder
+        sc.sticky["honeybee_folders"]["OSQtPath"] = QtFolder
         sc.sticky["honeybee_folders"]["EPPath"] = folders.EPPath  
-
         sc.sticky["honeybee_folders"]["EPVersion"] = EPVersion.replace("-", ".")[1:]
+        
         
         # initiate an empty library in case this is the first time honeybee is flying in this document
         # otherwise it has been already created/
@@ -7995,9 +8274,7 @@ if checkIn.letItFly:
         
         # set up radiance materials
         RADMaterialAux = RADMaterialAux(True, sc.sticky["honeybee_RADMaterialLib"], sc.sticky["Honeybee_DefaultFolder"])
-        
         sc.sticky["honeybee_RADMaterialAUX"] = RADMaterialAux
-        
         
         # Download EP libraries
         templateFilesPrep = PrepareTemplateEPLibFiles(downloadTemplate)
@@ -8033,13 +8310,12 @@ if checkIn.letItFly:
         else:
             print msg
             ghenv.Component.AddRuntimeMessage(w, msg)
-            
-            
+        
+        
         sc.sticky["honeybee_Hive"] = hb_Hive
         sc.sticky["honeybee_generationHive"] = generationhb_hive
         sc.sticky["honeybee_GetEPLibs"] = HB_GetEPLibraries
         sc.sticky["honeybee_DefaultMaterialLib"] = materialLibrary
-        sc.sticky["honeybee_DefaultScheduleLib"] = scheduleLibrary
         sc.sticky["honeybee_DefaultSurfaceLib"] = EPSurfaceLib
         sc.sticky["honeybee_EPMaterialAUX"] = EPMaterialAux
         sc.sticky["honeybee_EPScheduleAUX"] = EPScheduleAux
@@ -8048,6 +8324,7 @@ if checkIn.letItFly:
         sc.sticky["honeybee_BuildingProgramsLib"] = BuildingProgramsLib
         sc.sticky["honeybee_EPTypes"] = EPTypes()
         sc.sticky["honeybee_EPZone"] = EPZone
+        sc.sticky["honeybee_ExtraConstrProps"] = {}
         sc.sticky["honeybee_ThermPolygon"] = thermPolygon
         sc.sticky["honeybee_ThermBC"] = thermBC
         sc.sticky["honeybee_ThermDefault"] = thermDefaults
@@ -8057,21 +8334,12 @@ if checkIn.letItFly:
         sc.sticky["wind_generator"] = Wind_gen
         sc.sticky["simple_battery"] = simple_battery
         sc.sticky["thermBCCount"] = 1
+        sc.sticky["hBZoneCount"] = 0
         sc.sticky["honeybee_reEvaluateHBZones"] = hb_reEvaluateHBZones
-        sc.sticky["honeybee_AirsideEconomizerParams"] = hb_airsideEconoParams
-        sc.sticky["honeybee_constantVolumeFanParams"] = hb_constVolFanParams
-        sc.sticky["honeybee_variableVolumeFanParams"] = hb_varVolFanParams
-        sc.sticky["honeybee_AirHandlerParams"] = hb_AirHandlerParams
-        sc.sticky["honeybee_2xDXCoilParams"] = hb_2xDXCoilParams
-        sc.sticky["honeybee_2xDXHeatingCoilParams"] = hb_2xDXHeatingCoilParams
-        sc.sticky["honeybee_1xDXCoilParams"] = hb_1xDXCoilParams
-        sc.sticky["honeybee_1xDXHeatingCoilParams"] = hb_1xDXHeatingCoilParams
-        sc.sticky["honeybee_lspeedevapcondParams"] = hb_lspeedEvapCondParams
-        sc.sticky["honeybee_hspeedevapcondParams"] = hb_hspeedEvapCondParams
-        sc.sticky["honeybee_hwBoilerParams"] = hb_hwBoilerParams
-        sc.sticky["honeybee_chillerEIRParams"] = hb_chillerEIRParams
-        sc.sticky["honeybee_coolingTowerParams"] = hb_coolingTowerParams
-        sc.sticky["honeybee_availManagerList"] = hb_availManagerParams
+        sc.sticky["honeybee_hvacProperties"] = hb_hvacProperties
+        sc.sticky["honeybee_hvacAirDetails"] = hb_airDetail
+        sc.sticky["honeybee_hvacHeatingDetails"] = hb_heatingDetail
+        sc.sticky["honeybee_hvacCoolingDetails"] = hb_coolingDetail
         sc.sticky["honeybee_EPSurface"] = hb_EPSurface
         sc.sticky["honeybee_EPShdSurface"] = hb_EPShdSurface
         sc.sticky["honeybee_EPZoneSurface"] = hb_EPZoneSurface
@@ -8097,3 +8365,9 @@ if checkIn.letItFly:
                                                  
         # done! sharing the happiness.
         print "Hooohooho...Flying!!\nVviiiiiiizzz..."
+        
+        # push honeybee component to back
+        ghenv.Component.OnPingDocument().SelectAll()
+        ghenv.Component.Attributes.Selected = False
+        ghenv.Component.OnPingDocument().BringSelectionToTop()
+        ghenv.Component.OnPingDocument().DeselectAll()

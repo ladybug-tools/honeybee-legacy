@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2015, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
+# Copyright (c) 2013-2016, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -24,7 +24,7 @@
 Use this component to make certain surface types of a zone adiabatic.
 
 -
-Provided by Honeybee 0.0.58
+Provided by Honeybee 0.0.60
 
     Args:
         _HBZones: HBZones for which some surface types will be turned to adiabatic.
@@ -47,9 +47,10 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Make Adiabatic By Type"
 ghenv.Component.NickName = 'makeAdiabaticByType'
-ghenv.Component.Message = 'VER 0.0.58\nDEC_16_2015'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "09 | Energy | Energy"
+ghenv.Component.SubCategory = "10 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -71,6 +72,7 @@ def main(HBZones):
 
     try:
         if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return
+        if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): return -1
     except:
         warning = "You need a newer version of Honeybee to use this compoent." + \
         " Use updateHoneybee component to update userObjects.\n" + \
@@ -108,7 +110,8 @@ def main(HBZones):
     #See if the wall properties are being specified based on orientation.
     angles = []
     if len(walls_) == 0: pass
-    elif len(walls_) == 1: types.append(0)
+    elif len(walls_) == 1:
+        if walls_[0] != False: types.append(0)
     else:
         types.append(0)
         initAngles = rs.frange(0, 360, 360/len(walls_))
@@ -119,7 +122,7 @@ def main(HBZones):
     for HBO in HBObjectsFromHive:
         
         for HBS in HBO.surfaces:
-            if HBS.BC != 'Surface':
+            if HBS.BC.title() != 'Surface':
                 if HBS.type in types:
                     if HBS.type == 0 and len(walls_) > 1:
                         for angleCount in range(len(angles)-1):

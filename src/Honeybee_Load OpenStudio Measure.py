@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2015, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
+# Copyright (c) 2013-2016, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -26,7 +26,7 @@ Read more about OpenStudio measures here: http://nrel.github.io/OpenStudio-user-
 You can download several measures from here: https://bcl.nrel.gov/nrel/types/measure
 
 -
-Provided by Honeybee 0.0.58
+Provided by Honeybee 0.0.60
 
     Args:
         _OSMeasure: Path to measure directory [NOT THE FILE]. This input will be removed once measure is loaded
@@ -35,9 +35,10 @@ Provided by Honeybee 0.0.58
 """
 ghenv.Component.Name = "Honeybee_Load OpenStudio Measure"
 ghenv.Component.NickName = 'importOSMeasure'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "12 | WIP"
+ghenv.Component.SubCategory = "13 | WIP"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -47,6 +48,45 @@ import os
 import Grasshopper.Kernel as gh
 import scriptcontext as sc
 from pprint import pprint
+
+if sc.sticky.has_key('honeybee_release'):
+    
+    installedOPS = [f for f in os.listdir("C:\\Program Files") if f.startswith("OpenStudio")]
+    installedOPS = sorted(installedOPS, key = lambda x: int("".join(x.split(" ")[-1].split("."))), reverse = True)
+    
+    if len(installedOPS) != 0:
+        openStudioFolder = "C:/Program Files/%s/"%installedOPS[0]
+        openStudioLibFolder = "C:/Program Files/%s/CSharp/openstudio/"%installedOPS[0]
+        QtFolder = "C:/Program Files/%s/Ruby/openstudio/"%installedOPS[0]
+    else:
+        openStudioFolder = ""
+        openStudioLibFolder = ""
+        QtFolder = ""
+    
+    if os.path.isdir(openStudioLibFolder) and os.path.isfile(os.path.join(openStudioLibFolder, "openStudio.dll")):
+        # openstudio is there
+        # add both folders to path to avoid PINVOKE exception
+        if not openStudioLibFolder in os.environ['PATH'] or QtFolder not in os.environ['PATH']:
+            os.environ['PATH'] = ";".join([openStudioLibFolder, QtFolder, os.environ['PATH']])
+        
+        openStudioIsReady = True
+        import clr
+        clr.AddReferenceToFileAndPath(openStudioLibFolder+"\\openStudio.dll")
+    
+        import sys
+        if openStudioLibFolder not in sys.path:
+            sys.path.append(openStudioLibFolder)
+    
+        import OpenStudio
+    else:
+        openStudioIsReady = False
+        # let the user know that they need to download OpenStudio libraries
+        msg = "Cannot find OpenStudio libraries at " + openStudioLibFolder + \
+              "\nYou need to download and install OpenStudio to be able to use this component."
+              
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+else:
+    openStudioIsReady = False
 
 class OPSChoice:
     
@@ -110,7 +150,9 @@ class OPSMeasureArg:
     
     def update_value(self, userInput):
         #currently everything is string
-        if str(userInput).lower() not in self.validChoices:
+        if len(self.validChoices) == 0:
+            self.userInput = userInput
+        elif str(userInput).lower() not in self.validChoices:
             #give warning
             msg = str(userInput) + " is not a valid input for " + self.display_name + ".\nValid inputs are: " + str(self.choices)
             give_warning(msg)
@@ -167,7 +209,7 @@ def cleanInputNames():
 def cleanFirstInput():
     ghenv.Component.Params.Input[0].NickName = "."
     ghenv.Component.Params.Input[0].Name = "."
-    ghenv.Component.Params.Input[0].RemoveAllSources()    
+    # ghenv.Component.Params.Input[0].RemoveAllSources()    
 
 def updateComponentDescription(xmlFile):
     # get name of measure and description
@@ -205,11 +247,21 @@ class OpenStudioMeasure:
         return "OpenStudio " + self.name
 
 
-if _OSMeasure:
-
+if ghenv.Component.Params.Input.Count==1 and _OSMeasure:
+    # first time loading
     xmlFile = os.path.join(_OSMeasure, "measure.xml")
     if not os.path.isfile(xmlFile): raise Exception("Can't find measure at " + xmlFile)
     
+    measure = OpenStudio.BCLMeasure(OpenStudio.Path(_OSMeasure))
+
+    if measure.arguments().Count == 0:
+        print "https://youtu.be/S4wvL7_DJBM"
+        msg = "Failed to load measure arguments. You need to regenerate measure.xml file." + \
+            "\nCheck this disucssion to know how to do that using OpenStudio application." + \
+            "\nhttps://unmethours.com/question/16955/openstudiobclmeasurearguments-returns-an-empty-vector/" + \
+            "\n\nCheck read me for the link to the YouTube video that shows you how to fix this."
+        raise Exception(msg)
+        
     # load arguments
     args = get_measureArgs(xmlFile)
     
@@ -244,5 +296,10 @@ else:
         ghenv.Component.Description = OSMeasure.description
         pprint(OSMeasure.args)
     except Exception , e:
-        print "Couldn't load the measure!"
-        pass
+        msg = "Couldn't load the measure!\n%s" % str(e)
+            
+        if ghenv.Component.Params.Input.Count!=1:
+            msg += "\nTry to reload the measure with a fresh component."
+            raise Exception(msg)
+        
+        print msg

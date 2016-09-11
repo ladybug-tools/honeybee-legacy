@@ -4,7 +4,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2015, Chris Mackey and Abraham Yezioro <Chris@MackeyArchitecture.com, ayez@ar.technion.ac.il> 
+# Copyright (c) 2013-2016, Chris Mackey and Abraham Yezioro <Chris@MackeyArchitecture.com, ayez@ar.technion.ac.il> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -26,7 +26,7 @@ Use this component to account for air films in the U-Value and R-Value of any de
 Note that EnergyPlus has its own means of calculating the effects of air films on either side of a construction but, here, we provide an apporximate method based on an input surfaceType_.
 
 -
-Provided by Honeybee 0.0.58
+Provided by Honeybee 0.0.60
     
     Args:
         _uValue_SI: The U-Value_SI out of either the "Honeybee_Decompose EP Construction" or the "Honeybee_Decompose EP Material."
@@ -44,7 +44,8 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_R-Value With Air Films"
 ghenv.Component.NickName = 'RValueAirFilms'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -65,6 +66,7 @@ def main(_uValue_SI, surfaceType_):
 
     try:
         if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+        if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): return -1
     except:
         warning = "You need a newer version of Honeybee to use this compoent." + \
         " Use updateHoneybee component to update userObjects.\n" + \
@@ -88,7 +90,7 @@ def main(_uValue_SI, surfaceType_):
             RValue_SI = 1/_uValue_SI
             newRValue_SI = RValue_SI + addedR
             newUValue_SI = 1/newRValue_SI
-            newRValue_IP = RValue_SI * 5.678263337
+            newRValue_IP = newRValue_SI * 5.678263337
             newUValue_IP = 1/newRValue_IP
             
             return newUValue_SI, newUValue_IP, newRValue_SI, newRValue_IP

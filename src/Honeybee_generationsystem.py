@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2015, Anton Szilasi - Icon by Djordje Spasic <ajszilas@gmail.com> 
+# Copyright (c) 2013-2016, Anton Szilasi - Icon by Djordje Spasic <ajszilas@gmail.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -25,7 +25,7 @@
 Use this component to create a Honeybee generator system.
 
 -
-Provided by Honeybee 0.0.58
+Provided by Honeybee 0.0.60
 
     Args:
         _GeneratorSystemName: The name of this Honeybee generation system please make it unique!
@@ -40,9 +40,10 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_generationsystem"
 ghenv.Component.NickName = 'generationsystem'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "12 | WIP" #"06 | Honeybee"
+ghenv.Component.SubCategory = "13 | WIP" #"06 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3" #"0"
@@ -88,6 +89,7 @@ def checktheinputs(_GeneratorSystemName,PVHBSurfaces_,HBGenerationObjects_,_Main
 
     try:
         if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+        if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): return -1
     except:
         
         warning = "You need a newer version of Honeybee to use this compoent." + \

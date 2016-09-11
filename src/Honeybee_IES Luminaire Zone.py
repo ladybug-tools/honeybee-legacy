@@ -23,36 +23,38 @@
 """
     This component is to be used for specifying the location of luminaires for electric lighting simulations.
     -
-    For external lighting applications the best option would be to use the aimPoint_ option to specify where all the luminaires should be aimed to.
+    For external lighting applications the best option would be to use the aimingPoint_ option to specify where all the luminaires should be aimed to.
     In case luminaires are being aimed by specifying spin, tilt and orientation angles, the following conventions apply:
         1. _spin_ : specifies the rotation of a luminaire about its G0 axis.
         2. _tilt_: species the rotation of a luminaire around the Y axis.
         3. _orientation_: specifies the rotation of a luminaire around the Z axis.
     The recommended sequence of applying rotations is tilt,orientation and spin. 
     _
-    The rotation conventions followed in this component adhere to the IES LM-63-2002 and were tested against indoor lighting simulations with AGI32 software.
+    The aiming conventions followed in this component are based on the IES LM-63-2002 and were tested against indoor lighting simulations with AGI32 software.
 
 
     Args:
-        _ptsList: List of points/3d coordinates where the luminaire are to be located.
-        _spin_: Luminaire spin angle. 
-        _tilt_: Luminaire tilt angle.
-        _orientation_: Luminaire rotation angle.
-        aimingPoint_: Location at which the photometric axis of each luminaire should be aimed.
-        customLamp_: Specify a custom lamp using the IES Custom Lamp component
+        _ptsList: List of points/3d coordinates where the luminaires are to be located.
+        _spin_: A number represeting the luminaire spin angle in degrees.  This can also be a list of spin angles that match the _ptsList.
+        _tilt_: A number represeting the luminaire tilt angle in degrees.  This can also be a list of tilt angles that match the _ptsList.
+        _orientation_: A number represeting the luminaire rotation angle in degrees.  This can also be a list of orientation angles that match the _ptsList.
+        aimingPoint_: A point represeting the location at which the photometric axis of the luminaires should be aimed. This can also be a list of points that match the _ptsList.
+        customLamp_: A custom lamp definition from the "Honeybee_IES Custom Lamp" component.
     Returns:
         luminaireZone: List of coordinates and rotation angles for luminaires
+        locations: List of luminaire coordinates alone. This output can be used for previewing luminaire locations.
 """
 
 
 
 ghenv.Component.Name = "Honeybee_IES Luminaire Zone"
 ghenv.Component.NickName = 'iesLuminaireZone'
-ghenv.Component.Message = 'VER 0.0.58\nJan_02_2016'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "12 | WIP"
-
-try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
+ghenv.Component.SubCategory = "02 | Daylight | Light Source"
+#compatibleHBVersion = VER 0.0.56\nJUL_01_2016
+#compatibleLBVersion = VER 0.0.59\nJUL_01_2016
+try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
 except: pass
 
 import Grasshopper.Kernel as gh
@@ -62,48 +64,77 @@ import math
 import sys
 
 
+class lumZone:
+    def __init__(self, points, lamp):
+        self.points = points
+        self.lamp = lamp
+    
+    def __repr__(self):
+        return "Honeybee.luminaireZone"
 
 #Lambda function for setting default values.
 setdefault = lambda var,defval:var if var else defval
 
 #Set default values
-_tilt_,_spin_,_orientation_ = map(lambda x: setdefault(x,0.0),(_tilt_,_spin_,_orientation_))
+_tilt_,_spin_,_orientation_ = map(lambda x: setdefault(x,[0.0]),(_tilt_,_spin_,_orientation_))
 
 luminaireArray= []
-
+locations = []
 if _ptsList:
-    try:
-        for pt in _ptsList:
-            if aimingPoint_:
-                #Vector between luminaire location and aiming location
-                ptVector = rc.Geometry.Vector3d(aimingPoint_-pt)
-                
-                #normalize the vector
-                unitizeVector = rc.Geometry.Vector3d.Unitize(ptVector)
-
-                #Create C0 and G0 vectors. c0 along x axis and g0 along negative Z.
-                c0Vector = rc.Geometry.Vector3d(1,0,0)
-                g0Vector = rc.Geometry.Vector3d(0,0,-1)
-                 
-                angleG0 =  360-math.degrees(rc.Geometry.Vector3d.VectorAngle(ptVector,g0Vector))
-                
-                #A hacky solution for when there is no aiming to be done.
-                try:
-                    angleC0 = 360 - math.degrees(rc.Geometry.Vector3d.VectorAngle(ptVector,c0Vector,rc.Geometry.Plane(0,0,1,-1)))
-                except OverflowError: 
-                    angleC0 = 0
+    for ptCount, pt in enumerate(_ptsList):
+        try:
+            spin = _spin_[ptCount]
+        except IndexError:
+            spin = _spin_[0]
+        try:
+            tilt = _tilt_[ptCount]
+        except IndexError:
+            tilt = _tilt_[0]
+        try:
+            orientation = _orientation_[ptCount]
+        except IndexError:
+            orientation = _orientation_[0]
+        
+        
+        if aimingPoint_:
+            #Vector between luminaire location and aiming location
+            ptVector = rc.Geometry.Vector3d(aimingPoint_-pt)
+            
+            #normalize the vector
+            unitizeVector = rc.Geometry.Vector3d.Unitize(ptVector)
+            
+            #Create C0 and G0 vectors. c0 along x axis and g0 along negative Z.
+            c0Vector = rc.Geometry.Vector3d(1,0,0)
+            g0Vector = rc.Geometry.Vector3d(0,0,-1)
+             
+            angleG0 =  360-math.degrees(rc.Geometry.Vector3d.VectorAngle(ptVector,g0Vector))
+            
+            #A hacky solution for when there is no aiming to be done.
+            try:
+                angleC0 = 360 - math.degrees(rc.Geometry.Vector3d.VectorAngle(ptVector,c0Vector,rc.Geometry.Plane(0,0,1,-1)))
+            except OverflowError: 
+                angleC0 = 0
+            
+            spinAngle,tiltAngle,orientationAngle = 0+spin,angleG0+tilt,angleC0+orientation
+            
+            luminaireArray.append((pt,(spinAngle,tiltAngle,orientationAngle)))
+            print("Location(x,y,z):({0},{1},{2}). Aiming Angles(degrees): Spin:{3}, Tilt:{4}, Rotation:{5}".format(pt[0],pt[1],pt[2],spinAngle,tiltAngle,orientationAngle))
+        else:
+            print("Location(x,y,z):({0},{1},{2}). Aiming Angles(degrees): Spin:{3}, Tilt:{4}, Rotation:{5}".format(pt[0],pt[1],pt[2],spin,tilt,orientation))
+            luminaireArray.append((pt,(spin,-tilt,orientation)))
     
-                spinAngle,tiltAngle,orientationAngle = 0+_spin_,angleG0+_tilt_,angleC0+_orientation_
+    luminaireZone = lumZone(luminaireArray,customLamp_)
 
-                luminaireArray.append((pt,(spinAngle,tiltAngle,orientationAngle)))
-                print("Location(x,y,z):({0},{1},{2}). Aiming Angles(degrees): Spin:{3}, Tilt:{4}, Rotation:{5}".format(pt[0],pt[1],pt[2],spinAngle,tiltAngle,orientationAngle))
-            else:    
 
-                luminaireArray.append((pt,(_spin_,-_tilt_,_orientation_)))
-
+if sc.sticky.has_key('honeybee_release'):
+    
+    try:
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): pass
+        if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): pass
     except:
-        print(sys.exc_info())
-    luminaireZone = [{'points':luminaireArray,'lamp':customLamp_}]
-else:
-    w = gh.GH_RuntimeMessageLevel.Warning
-    ghenv.Component.AddRuntimeMessage(w, "At least one 3dpoint is required as input in _ptsList for this component to work.")
+        warning = "You need a newer version of Honeybee to use this compoent." + \
+        "Use updateHoneybee component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+        "into canvas and try again."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)

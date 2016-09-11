@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2015, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
+# Copyright (c) 2013-2016, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -23,7 +23,7 @@
 """
 Decompose zone surfaces by boundary condition
 -
-Provided by Honeybee 0.0.58
+Provided by Honeybee 0.0.60
 
     Args:
         _HBZone: Honeybee Zone
@@ -36,10 +36,11 @@ Provided by Honeybee 0.0.58
 """
 ghenv.Component.Name = "Honeybee_Decompose Based On Boundary Condition"
 ghenv.Component.NickName = 'decomposeByBC'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.56\nFEB_21_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
 except: pass
@@ -59,6 +60,7 @@ def main(HBZone):
 
     try:
         if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+        if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): return -1
     except:
         warning = "You need a newer version of Honeybee to use this compoent." + \
         "Use updateHoneybee component to update userObjects.\n" + \
@@ -76,7 +78,7 @@ def main(HBZone):
     # call the objects from the lib
     hb_hive = sc.sticky["honeybee_Hive"]()
 
-    zone = hb_hive.callFromHoneybeeHive([HBZone])[0]
+    zone = hb_hive.visualizeFromHoneybeeHive([HBZone])[0]
 
     for srf in zone.surfaces:
         if srf.BC.lower() == "outdoors":

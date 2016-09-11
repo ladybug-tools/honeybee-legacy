@@ -94,16 +94,28 @@ So, color fidelity metrics such as CRI cannot be considered in these calculation
 from __future__ import division
 import Grasshopper.Kernel as gh
 import math
-
+import scriptcontext as sc
 
 ghenv.Component.Name = "Honeybee_IES Custom Lamp"
 ghenv.Component.NickName = 'iesCustomLamp'
-ghenv.Component.Message = 'VER 0.0.58\nJAN_02_2016'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "12 | WIP"
-try: ghenv.Component.AdditionalHelpFromDocStrings = "6"
+ghenv.Component.SubCategory = "02 | Daylight | Light Source"
+#compatibleHBVersion = VER 0.0.56\nJUL_01_2016
+#compatibleLBVersion = VER 0.0.59\nJUL_01_2016
+try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
 except: pass
 
+
+
+class customLampData:
+    
+    def __init__(self,lamp):
+        self.lamp = lamp
+    
+    def __repr__(self):
+        return "Honeybee.customLamp"
 
 
 lampNames = {'clear metal halide':(.396,.39,.8),'cool white deluxe':(.376,.368,.85),'deluxe cool white':(.376,.368,.85),
@@ -280,7 +292,7 @@ c1 = 3.7417749E-16
 c2 = 1.4388E-2
 exp = math.e
 wavelengths = {wavelength:wavelength*(10**-9) for wavelength in range(360,831)}
-cctLow = False #Set this true if the chromaticity coordinates are below 1666.
+
 def calcXY1931(CT):
     """
         Calculate 1931 x,y coordinates from color temperature
@@ -549,7 +561,7 @@ if _lampName:
                     duvVal = lampData['whiteLamp']['Duv']
                     if cctVal == "NA":
                         lampDetails += "The specified color chromaticity coordinates does not lie within +/- 0.02 Duv.\n"
-                        lampDetails += "Therefore CCT and Duv for this lamp have not been calculated.\n"
+                        lampDetails += "Results from CCT and Duv calculations will only be displayed if the Duv is within +/- 0.02 Duv.\n"
                     else:            
                         lampDetails += "Correlated Color Temperature (CCT) = {:.2f}\n".format(float(lampData['whiteLamp']['CCT']))
                         lampDetails += "Duv = {:.6f}\n".format(float(duvVal))
@@ -563,12 +575,20 @@ if _lampName:
                 lampDetails += "u',v' CIE 1976 Chromaticity Coordinates = ({:.4f},{:.4f})\n\n".format(lampData['whiteLamp']["u'"],lampData['whiteLamp']["v'"])
                 
                 lampDetails += "Lumen Depreciation Factor = {:.3f}".format(_deprFactor_)
-            
-            customLamp = [lampData]
-            #print(inputData)
-            
-                            
-else:
-    msg = "_lampName is a required input. Please specify a name for the custom lamp."
-    ghenv.Component.AddRuntimeMessage(w, msg)
+
+            customLamp = customLampData(lampData)
+
+
+if sc.sticky.has_key('honeybee_release'):
+    
+    try:
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): pass
+        if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): pass
+    except:
+        warning = "You need a newer version of Honeybee to use this compoent." + \
+        "Use updateHoneybee component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+        "into canvas and try again."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
 

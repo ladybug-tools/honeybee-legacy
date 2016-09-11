@@ -4,7 +4,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2015, Chris Mackey <Chris@MackeyArchitecture.com> 
+# Copyright (c) 2013-2016, Chris Mackey <Chris@MackeyArchitecture.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -28,7 +28,7 @@ In order to apply the material to a window shade and adjust geometric characteri
 _
 Note that the material characteristics here can refer to either blind slats, roller shades, perforated exterior metal screens, or the properties of electrochromic glazing in an "on" state.
 -
-Provided by Honeybee 0.0.58
+Provided by Honeybee 0.0.60
     
     Args:
         materialName_: An optional name for the shade material.
@@ -43,7 +43,8 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Shade Material"
 ghenv.Component.NickName = 'EPShadeMat'
-ghenv.Component.Message = 'VER 0.0.58\nDEC_28_2015'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -51,13 +52,11 @@ ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
 
+import uuid
 import Grasshopper.Kernel as gh
 w = gh.GH_RuntimeMessageLevel.Warning
 
 def setDefaults():
-    if materialName_ == None: materialName = "DefaultBlindsMaterial"
-    else: materialName = materialName_
-    
     checkData1 = True
     if reflectance_ == None: reflectance = 0.65
     else:
@@ -91,6 +90,14 @@ def setDefaults():
             print warning
             ghenv.Component.AddRuntimeMessage(w, warning)
     
+    checkData4 = True
+    if (reflectance + transmittance) > 0.99: #!< 1:
+        checkData4 = False
+        warning = "reflectance_ + transmittance_ must be lower than 1."
+        print warning
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+    
+    
     if thickness_ == None: thickness = 0.00025
     else: thickness = thickness_
     
@@ -98,9 +105,11 @@ def setDefaults():
     else: conductivity = conductivity_
     
     
-    if checkData1 == True and checkData2 == True and checkData3 == True: checkData = True
+    if checkData1 == True and checkData2 == True and checkData3 == True and checkData4 == True: checkData = True
     else: checkData = False
     
+    if materialName_ == None: materialName = "ShadeMaterial"+ '-'+str(reflectance)+ '-' +str(transmittance)+ '-' +str(emissivity)+ '-' +str(thickness)+ '-' +str(conductivity)
+    else: materialName = materialName_
     
     return checkData, materialName, reflectance, transmittance, emissivity, thickness, conductivity
 

@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2015, Chris Mackey <Chris@MackeyArchitecture.com> 
+# Copyright (c) 2013-2016, Chris Mackey <Chris@MackeyArchitecture.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -26,7 +26,7 @@ Use this component to edit the airlfow between your zones and set up natural ven
     2 - Cross Ventilation - ventilation driven by the pressure difference across two sides of a building.
     3 - Chimney Ventilation - ventilation driven by a stack that is attached to a zone or group of zones.
 _
-The component can model "multi-zone" natural ventilation so long as there are no major vertical differences in height over multiple zones and the user understands that "mixing objects" of constant air flow are used to dsitribute cool incoming air between zones that are connected by an air wall.  As such, this method is not meant to model atriums or any method relying on inter-zone bouyancy-driven flow.
+The component can model "multi-zone" natural ventilation so long as there are no major vertical differences in height over multiple zones and the user understands that "mixing objects" of constant air flow are used to dsitribute cool incoming air between zones that are connected by an air wall.  As such, this method is not meant to model atriums or any method relying on inter-zone buoyancy-driven flow.
 _
 The ventilation can be either fan-driven (using a constant flow rate) or natural by using an area of operable window to compute an esimated airflow for the zone.
 _
@@ -35,7 +35,7 @@ Ventilation Wind = Cw * Opening Area * Schedule * WindSpd
 Ventilation Stack = Cd * Opening Area * Schedule * SQRT(2*g*DH*(|(Tzone-Todb)|/Tzone)) 
 Total Ventilation = SQRT((Ventilation Wind)^2 + (Ventilation Stack)^2)
 -
-Provided by Honeybee 0.0.58
+Provided by Honeybee 0.0.60
 
     Args:
         _HBZones: The HBZones out of any of the HB components that generate or alter zones.
@@ -57,10 +57,10 @@ Provided by Honeybee 0.0.58
         fractionOfGlzHeightOperable_: A number or list of numbers between 0.0 and 1.0 that represents the fraction of the distance from the bottom of the zones windows to the top that are operable.  By default, it will be assumed that this is 1.0 assuming sliding windows that slide horizontally.
         windDischargeCoeff_: A number between 0.0 and 1.0 that will be multipled by the area of the window to account for the angle of the wind from the direction that the window faces.  This is the 'Cw' variable in the equation given in this component's description.  If no value is input here, it is autocalculated based on the angle of the cardinal direction from North and the hourly wind direction.  More often than not, you want to use this autocalculate feature.  Set to 0 to completely discount wind from the natural ventilation calculation.
         stackDischargeCoeff_: A number between 0.0 and 1.0 that will be multipled by the area of the window to account for additional friction from window geometry, insect screens, etc.  This is the 'Cd' variable in the equation of this component's description.  If left blank, this variable will be autocalculated by the following equation - Cd = 0.4 + 0.0045*|(Tzone-Toutdoor).  Some common values for this coefficient include the following:
-            0.65 - For bouyancy with TWO windows of different heights, each of wehich have NO insect screens.
-            0.45 - For bouyancy with TWO windows of different heights, each of wehich HAVE insect screens.
-            0.25 - For bouyancy with ONE window with NO insect screen.
-            0.17 - For bouyancy with ONE window WITH an insect screen.
+            0.65 - For buoyancy with TWO windows of different heights, each of which have NO insect screens.  In this case, window area should be just the area of ONE of the two window openings.
+            0.45 - For buoyancy with TWO windows of different heights, each of which HAVE insect screens. In this case, window area should be just the area of ONE of the two window openings.
+            0.25 - For buoyancy with ONE window with NO insect screen. In this case, window area should be the whole opening.
+            0.17 - For buoyancy with ONE window WITH an insect screen. In this case, window area should be the whole opening.
             0.0 - Completely discounts stack ventilation from the natural ventilation calculation and only accounts for wind.
         _windowAngle2North: A number between 0 and 360 that sets the angle in degrees counting from the North clockwise to the opening direction.  The Effective Angle is 0 if the opening outward normal faces North, 90 if faces East, 180 if faces South, and 270 if faces West.
     Returns:
@@ -70,7 +70,8 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Set EP Air Flow"
 ghenv.Component.NickName = 'setEPNatVent'
-ghenv.Component.Message = 'VER 0.0.58\nDEC_17_2015'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_18_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
 #compatibleHBVersion = VER 0.0.56\nMAR_16_2015
@@ -102,7 +103,7 @@ inputsDict = {
 10: ["fractionOfGlzAreaOperable_", "A number or list of numbers between 0.0 and 1.0 that represents the fraction of the window area that is operable.  By default, it will be assumed that this is 0.5 assuming sliding windows that slide horizontally."],
 11: ["fractionOfGlzHeightOperable_", "A number or list of numbers between 0.0 and 1.0 that represents the fraction of the distance from the bottom of the zones windows to the top that are operable.  By default, it will be assumed that this is 1.0 assuming sliding windows that slide horizontally."],
 12: ["windDischargeCoeff_", "A number between 0.0 and 1.0 that will be multipled by the area of the window to account for the angle at which the wind hits the window.  This is the 'Cw' variable in the equation given in this component's description.  If no value is input here, it is autocalculated based on the angle of the cardinal direction from North and the hourly wind direction.  More often than not, you want to use this autocalculate feature.  Set to 0 to completely discount wind from the natural ventilation calculation."],
-13: ["stackDischargeCoeff_", "A number between 0.0 and 1.0 that will be multipled by the area of the window to account for additional friction from window geometry, insect screens, etc.  This is the 'Cd' variable in the equation of this component's description.  If left blank, this variable will be autocalculated by the following equation - Cd = 0.4 + 0.0045*|(Tzone-Toutdoor).  Some common values for this coefficient include the following: \n 0.65 - For bouyancy with TWO windows of different heights, each of wehich have NO insect screens. \n 0.45 - For bouyancy with TWO windows of different heights, each of wehich HAVE insect screens. \n 0.25 - For bouyancy with ONE window with NO insect screen. \n 0.17 - For bouyancy with ONE window WITH an insect screen. \n 0.0 - Completely discounts stack ventilation from the natural ventilation calculation and only accounts for wind."],
+13: ["stackDischargeCoeff_", "A number between 0.0 and 1.0 that will be multipled by the area of the window to account for additional friction from window geometry, insect screens, etc.  This is the 'Cd' variable in the equation of this component's description.  If left blank, this variable will be autocalculated by the following equation - Cd = 0.4 + 0.0045*|(Tzone-Toutdoor).  Some common values for this coefficient include the following: \n 0.65 - For buoyancy with TWO windows of different heights, each of wehich have NO insect screens. \n 0.45 - For buoyancy with TWO windows of different heights, each of wehich HAVE insect screens. \n 0.25 - For buoyancy with ONE window with NO insect screen. \n 0.17 - For buoyancy with ONE window WITH an insect screen. \n 0.0 - Completely discounts stack ventilation from the natural ventilation calculation and only accounts for wind."],
 14: ["_windowAngle2North", "A number between 0 and 360 that sets the angle in degrees from North counting clockwise to the direction the window faces.  An angle of 0 denotes that the opening faces North, 90 denotes East, 180 denotes South, and 270 denotes West."]
 }
 
@@ -145,7 +146,7 @@ def checkNatVentMethod():
             elif input == 11:
                 ghenv.Component.Params.Input[input].NickName = "_inletOutletHeight"
                 ghenv.Component.Params.Input[input].Name = "_inletOutletHeight"
-                ghenv.Component.Params.Input[input].Description = "A number representing the height between the inlet and outlet of the custom ventilation object in meters.  This is needed for the bouyancy calculation.  Note that this heght should be from the midpoint of the height of the inlet to the midpoint of the height of the outlet."
+                ghenv.Component.Params.Input[input].Description = "A number representing the height between the inlet and outlet of the custom ventilation object in meters.  This is needed for the buoyancy calculation.  Note that this heght should be from the midpoint of the height of the inlet to the midpoint of the height of the outlet."
             else:
                 ghenv.Component.Params.Input[input].NickName = inputsDict[input][0]
                 ghenv.Component.Params.Input[input].Name = inputsDict[input][0]
@@ -163,7 +164,7 @@ def checkNatVentMethod():
             elif input == 11:
                 ghenv.Component.Params.Input[input].NickName = "fanEfficiency_"
                 ghenv.Component.Params.Input[input].Name = "fanEfficiency_"
-                ghenv.Component.Params.Input[input].Description = "A number between 0 and 1 that represents the efficiency of the fan.  This will effect the energy use of the fan in the results.  The default is set to 0.9 but this can be as low as 0.7 in some cases."
+                ghenv.Component.Params.Input[input].Description = "A number between 0 and 1 that represents the efficiency of the fan.  It is the ratio of the power delivered to the fluid to the electrical input power. It is the product of the motor efficiency and the impeller efficiency.  The default is set to 0.7 but this can be lower for smaller fans and higher for industrial grade fans."
             elif input == 12:
                 ghenv.Component.Params.Input[input].NickName = "fanPressureRise_"
                 ghenv.Component.Params.Input[input].Name = "fanPressureRise_"
@@ -348,6 +349,7 @@ def main(HBZones, natVentMethod, interZoneFlow, interZoneFlowSched, minIndoorTem
 
     try:
         if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+        if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): return -1
     except:
         warning = "You need a newer version of Honeybee to use this compoent." + \
         " Use updateHoneybee component to update userObjects.\n" + \
@@ -495,7 +497,7 @@ def main(HBZones, natVentMethod, interZoneFlow, interZoneFlowSched, minIndoorTem
                         else: fractHeight = fractionOfHeight[zoneCount]
                         effectiveHeight = fractHeight*glzHeights[glzCount]
                         HBZone.windowHeightDiff.append(str(effectiveHeight))
-                        readMe.append(HBZone.name + " has a glazed height of " + str(round(glzHeights[glzCount], 1)) + " m and " + str(round(effectiveHeight, 1)) + " m of it can be used for bouyancy-driven flow.")
+                        readMe.append(HBZone.name + " has a glazed height of " + str(round(glzHeights[glzCount], 1)) + " m and " + str(round(effectiveHeight, 1)) + " m of it can be used for buoyancy-driven flow.")
                         
                         #Assign the angles to north of the windows.
                         dischargeTaken = False
@@ -599,7 +601,7 @@ def main(HBZones, natVentMethod, interZoneFlow, interZoneFlowSched, minIndoorTem
                 readMe.append(HBZone.name + " has an outdoor fan flow rate of " + str(round(fanFlowRate[zoneCount], 1)) + " m3/s.")
                 
                 #Assign the fan efficiency.
-                if fanEfficiency == []: fanEff = "0.9"
+                if fanEfficiency == []: fanEff = "0.7"
                 else: fanEff = str(fanEfficiency[zoneCount])
                 HBZone.FanEfficiency.append(fanEff)
                 

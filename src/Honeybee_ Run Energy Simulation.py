@@ -4,8 +4,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2015, Mostapha Sadeghipour Roudsari and Chris Mackey <Sadeghipour@gmail.com and Chris@MackeyArchitecture.com> 
-# Honeybee is free software; you can redistribute it and/or modify 
+# Copyright (c) 2013-2016, Mostapha Sadeghipour Roudsari and Chris Mackey <Sadeghipour@gmail.com and Chris@MackeyArchitecture.com> 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
 # or (at your option) any later version. 
@@ -15,7 +14,6 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
 # GNU General Public License for more details.
 # 
-# You should have received a copy of the GNU General Public License
 # 
 # @license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
 
@@ -25,7 +23,7 @@ Use this component to export HBZones into an IDF file, and run them through Ener
 _
 The component outputs the report from the simulation, the file path of the IDF file, and the CSV result file from the EnergyPlus run.
 -
-Provided by Honeybee 0.0.58
+Provided by Honeybee 0.0.60
     Args:
         north_: Input a vector to be used as a true North direction for the energy simulation or a number between 0 and 360 that represents the degrees off from the y-axis to make North.  The default North direction is set to the Y-axis (0 degrees).
         _epwFile: An .epw file path on your system as a text string.
@@ -58,14 +56,16 @@ Provided by Honeybee 0.0.58
         report: Check here to see a report of the EnergyPlus run, including errors.
         idfFileAddress: The file path of the IDF file that has been generated on your machine.
         resultFileAddress: The file path of the CSV result file that has been generated on your machine.  This only happens when you set "runEnergyPlus_" to "True."
+        studyFolder: The directory in which the simulation has been run.  Connect this to the 'Honeybee_Lookup EnergyPlus' folder to bring many of the files in this directory into Grasshopper.
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.58\nJAN_02_2016'
+ghenv.Component.Message = 'VER 0.0.60\nSEP_04_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nDEC_28_2015
-#compatibleLBVersion = VER 0.0.59\nFEB_01_2015
+ghenv.Component.SubCategory = "10 | Energy | Energy"
+#compatibleHBVersion = VER 0.0.56\nSEP_04_2016
+#compatibleLBVersion = VER 0.0.59\nJUL_24_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
 
@@ -79,12 +79,12 @@ import math
 import shutil
 import collections
 import subprocess
+import copy
 
 rc.Runtime.HostUtils.DisplayOleAlerts(False)
 
 
 class WriteIDF(object):
-    
     # Add all HBcontext surfaces from both HBContext_ and HB generator here so that if user connects the same
     # HBcontext surfaces to both HB generator and HBcontext duplicate surfaces will be detected and an error thrown.
     
@@ -130,11 +130,8 @@ class WriteIDF(object):
             return zoneStr + '\t1;\t!- Type\n'
             
     def EPZoneSurface (self, surface):
-        
         coordinates = surface.coordinates
-        
         checked, coordinates= self.checkCoordinates(coordinates)
-        
         if int(surface.type) == 4: surface.type = 0
         
         if checked:
@@ -164,7 +161,180 @@ class WriteIDF(object):
         
         else:
             return "\n"
-            
+    
+    def extractDDYObjs(self, ddyFile):
+        ddyfile = open(ddyFile,"r")
+        designDayLines = ['\n']
+        correctDayTrigger = False
+        for line in ddyfile:
+            if correctDayTrigger == True:
+                designDayLines.append(line)
+                if (';' in line and '!- Clearness' in line) or (';' in line and '!- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance' in line):
+                    designDayLines.append('\n')
+                    correctDayTrigger = False
+            elif '.4%' in line or '99.6%' in line:
+                correctDayTrigger = True
+        ddyfile.close()
+        return designDayLines
+    
+    def writeDDObjStr(self, ddName, designType, month, day, dbTemp, dbTempRange, wbTemp, enth, humidConditType, pressure, windSpeed, windDir, ashraeSkyClearness):
+        ddStr =  '! ' + ddName + '\n' + \
+            'SizingPeriod:DesignDay,\n' + \
+            '\t' + ddName + ',     !- Name\n' + \
+            '\t' + str(month) + ',      !- Month\n' + \
+            '\t' + str(day) + ',      !- Day of Month\n' + \
+            '\t' + designType + ',!- Day Type\n' + \
+            '\t' + str(dbTemp) + ',      !- Maximum Dry-Bulb Temperature {C}\n' + \
+            '\t' + str(dbTempRange) + ',      !- Daily Dry-Bulb Temperature Range {C}\n' + \
+            '\t' + 'DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type\n' + \
+            '\t' + ',      !- Dry-Bulb Temperature Range Modifier Schedule Name\n' + \
+            '\t' + humidConditType + ',      !- Humidity Condition Type\n' + \
+            '\t' + str(wbTemp) + ',      !- Wetbulb or Dewpoint at Maximum Dry-Bulb {C}\n' + \
+            '\t' + ',      !- Humidity Indicating Day Schedule Name\n' + \
+            '\t' + ',      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}\n' + \
+            '\t' + str(enth) + ',      !- Enthalpy at Maximum Dry-Bulb {J/kg}\n' + \
+            '\t' + ',      !- Daily Wet-Bulb Temperature Range {deltaC}\n' + \
+            '\t' + str(pressure) + ',      !- Barometric Pressure {Pa}\n' + \
+            '\t' + str(windSpeed) + ',      !- Wind Speed {m/s} design conditions vs. traditional 6.71 m/s (15 mph)\n' + \
+            '\t' + str(windDir) + ',      !- Wind Direction {Degrees; N=0, S=180}\n' + \
+            '\t' + 'No,      !- Rain {Yes/No}\n' + \
+            '\t' + 'No,      !- Snow on ground {Yes/No}\n' + \
+            '\t' + 'No,      !- Daylight Savings Time Indicator\n' + \
+            '\t' + 'ASHRAEClearSky' + ', !- Solar Model Indicator\n' + \
+            '\t' + ',      !- Beam Solar Day Schedule Name\n' + \
+            '\t' + ',      !- Diffuse Solar Day Schedule Name\n' + \
+            '\t' + ',      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)\n' + \
+            '\t' + ',      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)\n' + \
+            '\t' + str(ashraeSkyClearness) + ';      !- Clearness {0.0 to 1.1}\n' + '\n'
+        
+        return ddStr
+    
+    def createDdyFromEPW(self, epwFileAddress, workingDir, lb_preparation, lb_comfortModels):
+        # Extract the relevant data from the EPW.
+        # We need the following: dbTemp, dewPoint, rH, windSpeed, windDir, windDir, wetBulb, enthalpy
+        dbTemp = []
+        dewPoint = []
+        rH = []
+        windSpeed = []
+        windDir = []
+        barPress = []
+        wetBulb = []
+        epwfile = open(epwFileAddress,"r")
+        for count, line in enumerate(epwfile):
+            if count > 7:
+                dbTemp.append(float(line.split(',')[6]))
+                dewPoint.append(float(line.split(',')[7]))
+                rH.append(float(line.split(',')[8]))
+                barPress.append(float(line.split(',')[9]))
+                windSpeed.append(float(line.split(',')[21]))
+                windDir.append(float(line.split(',')[20]))
+        epwfile.close()
+        hR, enthalpy, pP, sP = lb_comfortModels.calcHumidRatio(dbTemp, rH, barPress)
+        for i, tem in enumerate(dbTemp):
+            wetBulb.append(lb_comfortModels.findWetBulb(tem, rH[i], barPress[i]))
+        
+        # Find the conditions for the most extreme hours in the epw.  These are the 7 extreme conditions we need:
+            # 1 - Winnter Design Day - Min Dry Bulb (Sensible Heating)
+            # 2 - Winter Design Day - Min Dew Point (Humidification)
+            # 3 - Winter Design Day = Max Wind Speed when temperature is less than 1 standard deviation of annual mean.
+            # 4 - Summer Design Day - Max Dry Bulb (Sensible Cooling)
+            # 5 - Summer Design Day - Max Wet Bulb (Dehumidification)
+            # 6 - Summer Design Day - Max Dew Point (Dehumidification)
+            # 7 - Summer Design Day - Max Enthalpy (Dehumidification)
+        sortedDB, corrWB = zip(*sorted(zip(dbTemp, wetBulb)))
+        minDB = sortedDB[34] # Design Condition 1
+        WBforMinDB = corrWB[34]
+        maxDB = sortedDB[-35] # Design Condition 4
+        WBforMaxDB = corrWB[-35]
+        sortedDP, corrDB = zip(*sorted(zip(dewPoint, dbTemp)))
+        minDP = sortedDP[34] # Design Condition 2
+        DBforMinDP = corrDB[34]
+        maxDP = sortedDP[-35] # Design Condition 6
+        DBforMaxDP = corrDB[-35]
+        sortedWB, corresDB = zip(*sorted(zip(wetBulb, dbTemp)))
+        maxWB = sortedWB[-35] # Design Condition 5
+        DBforMaxWB = corresDB[-35]
+        sortedEnth, correspondDB = zip(*sorted(zip(enthalpy, dbTemp)))
+        maxEnth = int(sortedEnth[-35] * 1000) # Design Condition 7
+        DBforMaxEnth = correspondDB[-35]
+        
+        coldStdDevTemp = sortedDB[1384]
+        hotStdDevTemp = sortedDB[-1385]
+        winSpBelowTemp = []
+        windDirBelowTemp = []
+        winSpAboveTemp = []
+        windDirAboveTemp = []
+        for i, tem in enumerate(dbTemp):
+            if tem < coldStdDevTemp:
+                winSpBelowTemp.append(windSpeed[i])
+                windDirBelowTemp.append(windDir[i])
+            elif tem > hotStdDevTemp:
+                winSpAboveTemp.append(windSpeed[i])
+                windDirAboveTemp.append(windDir[i])
+        winSpBelowTemp.sort()
+        coldMonWind = winSpBelowTemp[922]
+        coldMonWinDir = int(sum(windDirBelowTemp)/len(windDirBelowTemp))
+        maxWind = winSpBelowTemp[-5] # Design Condition 3
+        winSpAboveTemp.sort()
+        hotMonWind = winSpAboveTemp[922]
+        hotMonWinDir = int(sum(windDirAboveTemp)/len(windDirAboveTemp))
+        
+        # Calculate a few other required values from the epw data.
+        # Like average annual pressure and coldest/hottest month.
+        # and average wind speed/direction during these months.
+        avgEpwParPress = int(sum(barPress)/len(barPress))
+        
+        def binAndAvgByMonth(dataSet):
+            avgMonthData = []
+            binnedMonthData = []
+            for mon in range(12):
+                binnedMonthData.append([])
+            for i, x in enumerate(dataSet):
+                d, m, t = lb_preparation.hour2Date(i, True)
+                binnedMonthData[m].append(x)
+            for dataList in binnedMonthData:
+                avgMonthData.append(sum(dataList)/len(dataList))
+            return avgMonthData, binnedMonthData
+        
+        def partitionList(l, n):
+            for i in range(0, len(l), n):
+                yield l[i:i+n]
+        
+        avgMonTemps, binMonTemps = binAndAvgByMonth(dbTemp)
+        monNums = range(12)
+        avgMonTempsSort, monNumsSort = zip(*sorted(zip(avgMonTemps, monNums)))
+        coldMonth = monNumsSort[0]
+        hotMonth = monNumsSort[-1]
+        allHotMonthTemps = binMonTemps[hotMonth]
+        dayHotMonTemps = partitionList(allHotMonthTemps, 24)
+        dailyTempDiff = []
+        for day in dayHotMonTemps:
+            day.sort()
+            dailyTempDiff.append(day[-1]-day[0])
+        hotDayDBTempRange = (int((sum(dailyTempDiff)/len(dailyTempDiff))*100))/100
+        
+        
+        # Assemble a list of design condition strings to write into the ddy file.
+        ddStrs = []
+        ddStrs.append(self.writeDDObjStr('Ann Htg 99.6% Condns DB', 'WinterDesignDay', coldMonth+1, 21, minDB, 0, minDB, '', 'Wetbulb', avgEpwParPress, coldMonWind, coldMonWinDir, 0))
+        ddStrs.append(self.writeDDObjStr('Ann Hum_n 99.6% Condns DP=>MCDB', 'WinterDesignDay', coldMonth+1, 21, DBforMinDP, 0, minDP, '', 'Dewpoint', avgEpwParPress, coldMonWind, coldMonWinDir, 0))
+        ddStrs.append(self.writeDDObjStr('Ann Htg Wind 99.6% Condns WS=>MCDB', 'WinterDesignDay', coldMonth+1, 21, coldStdDevTemp, 0, coldStdDevTemp, '', 'Wetbulb', avgEpwParPress, maxWind, coldMonWinDir, 0))
+        
+        ddStrs.append(self.writeDDObjStr('Ann Clg .4% Condns DB=>MWB', 'SummerDesignDay', hotMonth+1, 21, maxDB, hotDayDBTempRange, WBforMaxDB, '', 'Wetbulb', avgEpwParPress, hotMonWind, hotMonWinDir, 1.2))
+        ddStrs.append(self.writeDDObjStr('Ann Clg .4% Condns WB=>MDB', 'SummerDesignDay', hotMonth+1, 21, DBforMaxWB, hotDayDBTempRange, maxWB, '', 'Wetbulb', avgEpwParPress, hotMonWind, hotMonWinDir, 1.2))
+        ddStrs.append(self.writeDDObjStr('Ann Clg .4% Condns DP=>MDB', 'SummerDesignDay', hotMonth+1, 21, DBforMaxDP, hotDayDBTempRange, maxDP, '', 'Dewpoint', avgEpwParPress, hotMonWind, hotMonWinDir, 1.2))
+        ddStrs.append(self.writeDDObjStr('Ann Clg .4% Condns Enth=>MDB', 'SummerDesignDay', hotMonth+1, 21, DBforMaxEnth, hotDayDBTempRange, '', maxEnth, 'Enthalpy', avgEpwParPress, hotMonWind, hotMonWinDir, 1.2))
+        
+        # Write the design day objects into a .ddy file.
+        epwFileName = epwFileAddress.split('\\')[-1].split('.')[0]
+        ddyfile = workingDir + '\\' + epwFileName + '.ddy'
+        ddyFile = open(ddyfile, "w")
+        for sizingObj in ddStrs:
+            ddyFile.write(sizingObj)
+        ddyFile.close()
+        
+        return ddyfile
+    
     def checkCoordinates(self, coordinates):
         # check if coordinates are so close or duplicated
         # this is a place holder for now I just return true
@@ -186,7 +356,7 @@ class WriteIDF(object):
         else:
             print "One of the surfaces has less than 3 identical coordinates and is removed."
             return False,[]
-                        
+    
     def EPFenSurface (self, surface):
         glzStr = ""
         try:
@@ -195,9 +365,26 @@ class WriteIDF(object):
                 glzCoordinates = childSrf.coordinates
                 checked, glzCoordinates= self.checkCoordinates(glzCoordinates)
                 
-                #Check shading objects.
-                if childSrf.shadingControlName == []: shdCntrl = ''
-                else: shdCntrl = childSrf.shadingControlName[0]
+                # Set any shading control objects.
+                
+                try:
+                    shdCntrl = childSrf.shadingControlName[0]
+                    if '.CSV' in shdCntrl:
+                        newSchStrList = []
+                        schedStrList = shdCntrl.split('-')
+                        for item in schedStrList:
+                            if '.CSV' in item:
+                                newItem = os.path.basename(item).replace('.CSV', '')
+                                newSchStrList.append(newItem)
+                            else:
+                                newSchStrList.append(item)
+                        shdCntrl = '-'.join(newSchStrList)
+                except:
+                    shdCntrl = ''
+                
+                #Check for frame objects.
+                #if childSrf.construction in sc.sticky["honeybee_ExtraConstrProps"].keys():
+                #    childSrf.frameName = sc.sticky["honeybee_ExtraConstrProps"][childSrf.construction]['Name']
                 
                 if checked:
                     str_1 = '\nFenestrationSurface:Detailed,\n' + \
@@ -232,29 +419,25 @@ class WriteIDF(object):
             
         return glzStr
         
-
+    
     def EPShdSurface (self, surface):
         coordinatesList = surface.extractPoints()
         if type(coordinatesList[0])is not list and type(coordinatesList[0]) is not tuple: coordinatesList = [coordinatesList]
-
+        
         scheduleName = surface.TransmittanceSCH
         if scheduleName.lower().endswith(".csv"):
             # find filebased schedule name
             scheduleName = self.fileBasedSchedules[scheduleName.upper()]
-
         fullString = ''
-
         for count, coordinates in enumerate(coordinatesList):
             
             if surface.containsPVgen == None:
                 # Assign surface name here if containsPVgen surface name was assigned in PVgen component
                 surface.name = surface.name + '_' + `count`
-
             str_1 = '\nShading:Building:Detailed,\n' + \
                     '\t' + surface.name + ',\t!- Name\n' + \
                     '\t' + scheduleName + ',\t!- Transmittance Schedule Name\n' + \
                     '\t' + `len(coordinates)` + ',\t!- Number of Vertices\n'    
-
             str_2 = '\t';
             for ptCount, pt in enumerate(coordinates):
                 if ptCount < len (coordinates) - 1:
@@ -263,7 +446,6 @@ class WriteIDF(object):
                     str_2 = str_2 + `pt.X` + ',\n\t' + `pt.Y` + ',\n\t' + `pt.Z` + ';\n\n'
             
             fullString = fullString + str_1 + str_2
-
         return fullString
     
     def EPInternalMass(self, zone, massName, srfArea, constructionName):
@@ -309,36 +491,90 @@ class WriteIDF(object):
                     '\t' + `zone.coolingSetPt` + '; !- Constant Cooling Setpoint {C}\n'
         else:
             return "\n"
-            
-    def EPIdealAirSystem(self, zone, thermostatName):
+    
+    def EPOutdoorAir(self, zone):
         if zone.isConditioned:
-            
-            if zone.coolSupplyAirTemp == "": coolSupply = "13"
-            else: coolSupply = zone.coolSupplyAirTemp
-            if zone.heatSupplyAirTemp == "": heatSupply = "50"
-            else: heatSupply = zone.heatSupplyAirTemp
-            if zone.coolingCapacity == "": coolLimit = "NoLimit"
-            else: coolLimit = 'LimitCapacity'
-            if zone.heatingCapacity == "": heatLimit = "NoLimit"
-            else: heatLimit = 'LimitCapacity'
-            if zone.HVACAvailabilitySched != "ALWAYS ON":
-                scheduleFileName = os.path.basename(zone.HVACAvailabilitySched)
-                scheduleObjectName = "_".join(scheduleFileName.split(".")[:-1])
+            if zone.ventilationSched != "":
+                if zone.ventilationSched.upper().endswith('.CSV'):
+                    scheduleFileName = os.path.basename(zone.ventilationSched)
+                    scheduleObjectName = "_".join(scheduleFileName.split(".")[:-1])
+                else:
+                    scheduleObjectName = zone.ventilationSched
             else: scheduleObjectName = ""
             
+            return '\nDesignSpecification:OutdoorAir,\n' + \
+                    '\t' + zone.name + 'OutdoorAirCntrl' + ',                    !- Name\n' + \
+                    '\t' + zone.outdoorAirReq + ',          !- Outdoor Air Method\n' + \
+                    '\t' + `zone.ventilationPerPerson` + ', !- Outdoor Air Flow per Person {m3/s-person}\n' + \
+                    '\t' + `zone.ventilationPerArea` + ',          !- Outdoor Air Flow per Zone Floor Area {m3/s-m2}\n' + \
+                    '\t' + '0, !- Outdoor Air Flow per Zone {m3/s}\n' + \
+                    '\t' + '0, !- Outdoor Air Flow Air Changes per Hour {1/hr}\n' + \
+                    '\t' + scheduleObjectName + '; !- Outdoor Air Flow Rate Fraction Schedule Name\n'
+        else:
+            return "\n"
+    
+    def EPIdealAirSystem(self, zone, thermostatName):
+        if zone.isConditioned:
+            #Set the dehumidifcation / humidification based on the presence/absence of a zone humidistat.
+            dehumidTrigger = False
+            #Humidity Control
+            if zone.humidityMax != "":
+                dehumidCntrl = "Humidistat"
+                dehumidTrigger = True
+            else: dehumidCntrl = "None"
+            if zone.humidityMin != "": humidCntrl = "Humidistat"
+            else: humidCntrl = "None"
             
-            if zone.airSideEconomizer == 'DifferentialDryBulb':
-                if coolLimit == "NoLimit" or coolLimit == "LimitFlowRate": coolLimit = 'LimitFlowRate'
-                else: coolLimit = 'LimitFlowRateAndCapacity'
-                maxAirFlowRate = 'autosize'
-            else: maxAirFlowRate = ''
+            # Set an airside economizer and demand controlled ventilation by default.
+            if dehumidTrigger is True:
+                airSideEconomizer = 'DifferentialEnthalpy'
+            else:
+                airSideEconomizer = 'DifferentialDryBulb'
+            coolLimit = 'LimitFlowRate'
+            maxAirFlowRate = 'autosize'
             
-            if zone.heatRecovery == 'Sensible' and zone.heatRecoveryEffectiveness == '':
-                zone.heatRecoveryEffectiveness = "0.7"
+            # Set the airDetails.
+            scheduleObjectName = ""
+            demanVent = ""
+            coolSupply = ""
+            heatSupply = "40"
+            heatRecovery = ''
+            sensRecovEffectiveness = ''
+            latRecovEffectiveness = ''
+            airDetails = zone.HVACSystem.airDetails
+            if airDetails != None:
+                if airDetails.HVACAvailabiltySched != 'ALWAYS ON':
+                    scheduleObjectName = airDetails.HVACAvailabiltySched
+                if airDetails.fanControl == 'Variable Volume':
+                    demanVent = 'OccupancySchedule'
+                if airDetails.heatingSupplyAirTemp != 'Default':
+                    heatSupply = str(airDetails.heatingSupplyAirTemp)
+                if airDetails.coolingSupplyAirTemp != 'Default':
+                    coolSupply = str(airDetails.coolingSupplyAirTemp)
+                if airDetails.airsideEconomizer != 'Default':
+                    airSideEconomizer =  airDetails.airsideEconomizer
+                if airDetails.heatRecovery != 'Default':
+                    heatRecovery = airDetails.heatRecovery
+                if airDetails.recoveryEffectiveness != 'Default':
+                    if heatRecovery == 'Sensible':
+                        sensRecovEffectiveness = str(airDetails.recoveryEffectiveness)
+                    elif heatRecovery == 'Enthalpy':
+                        sensRecovEffectiveness = str(airDetails.recoveryEffectiveness)
+                        latRecovEffectiveness = str(airDetails.recoveryEffectiveness)
             
-            flowPerPerson =  str(zone.ventilationPerPerson)
-            flowPerZoneArea = str(zone.ventilationPerArea)
+            # Set the heatingDetails.
+            heatAvailSch = ''
+            heatingDetails = zone.HVACSystem.heatingDetails
+            if heatingDetails != None:
+                if heatingDetails.heatingAvailSched != 'ALWAYS ON':
+                    heatAvailSch = heatingDetails.heatingAvailSched
             
+            # Set the coolingDetails.
+            coolAvailSch = ''
+            coolingDetails = zone.HVACSystem.coolingDetails
+            if coolingDetails != None:
+                if coolingDetails.coolingAvailSched != 'ALWAYS ON':
+                    coolAvailSch = coolingDetails.coolingAvailSched
             
             return '\nHVACTemplate:Zone:IdealLoadsAirSystem,\n' + \
                 '\t' + zone.name + ',\t!- Zone Name\n' + \
@@ -346,31 +582,62 @@ class WriteIDF(object):
                 '\t' + scheduleObjectName + ',  !- Availability Schedule Name\n' + \
                 '\t' + heatSupply + ',  !- Heating Supply Air Temp {C}\n' + \
                 '\t' + coolSupply + ',  !- Cooling Supply Air Temp {C}\n' + \
-                '\t' + ',  !- Max Heating Supply Air Humidity Ratio {kg-H2O/kg-air}\n' + \
-                '\t' + ',  !- Min Cooling Supply Air Humidity Ratio {kg-H2O/kg-air}\n' + \
-                '\t' + heatLimit + ',  !- Heating Limit\n' + \
+                '\t' + '0.008,  !- Max Heating Supply Air Humidity Ratio {kg-H2O/kg-air}\n' + \
+                '\t' + '0.0085,  !- Min Cooling Supply Air Humidity Ratio {kg-H2O/kg-air}\n' + \
+                '\t' + ',  !- Heating Limit\n' + \
                 '\t' + ',  !- Maximum Heating Air Flow Rate {m3/s}\n' + \
-                '\t' + zone.heatingCapacity + ',  !- Maximum Sensible Heat Capacity\n' + \
+                '\t' + ',  !- Maximum Sensible Heat Capacity\n' + \
                 '\t' + coolLimit + ',  !- Cooling Limit\n' + \
                 '\t' + maxAirFlowRate + ',  !- Maximum Cooling Air Flow Rate {m3/s}\n' + \
-                '\t' + zone.coolingCapacity + ',  !- Maximum Total Cooling Capacity\n' + \
-                '\t' + ',  !- Heating Availability Schedule\n' + \
-                '\t' + ',  !- Cooling Availability Schedule\n' + \
-                '\t' + '' + ',  !- Dehumidification Control Type\n' + \
+                '\t' + ',  !- Maximum Total Cooling Capacity\n' + \
+                '\t' + heatAvailSch + ',  !- Heating Availability Schedule\n' + \
+                '\t' + coolAvailSch + ',  !- Cooling Availability Schedule\n' + \
+                '\t' + dehumidCntrl + ',  !- Dehumidification Control Type\n' + \
                 '\t' + ',  !- Cooling Sensible Heat Ratio\n' + \
-                '\t' + '' + ',  !- Dehumidification Setpoint\n' + \
-                '\t' + 'None' + ',  !- Humidification Control Type\n' + \
-                '\t' + '' + ',  !- Humidification Setpoint\n' + \
-                '\t' + zone.outdoorAirReq + ',  !- Outdoor Air Method\n' + \
-                '\t' + flowPerPerson + ',  !- Outdoor Air Flow Rate Per Person\n' + \
-                '\t' + flowPerZoneArea + ',  !- Outdoor Air Flow Rate Per Floor Zone Area\n' + \
+                '\t' + str(zone.humidityMax) + ',  !- Dehumidification Setpoint\n' + \
+                '\t' + humidCntrl + ',  !- Humidification Control Type\n' + \
+                '\t' + str(zone.humidityMin) + ',  !- Humidification Setpoint\n' + \
+                '\t' + 'DetailedSpecification' + ',  !- Outdoor Air Method\n' + \
+                '\t' + ',  !- Outdoor Air Flow Rate Per Person\n' + \
+                '\t' + ',  !- Outdoor Air Flow Rate Per Floor Zone Area\n' + \
                 '\t' + ',  !- Outdoor Air Flow Rate Per Zone\n' + \
-                '\t' + '' + ',  !- Design Specification Outdoor Air Object Name\n' + \
-                '\t' + 'OccupancySchedule' + ',  !- Demand Controlled Ventilation Type\n' + \
-                '\t' + zone.airSideEconomizer + ',  !- Outdoor Air Economizer Type\n' + \
-                '\t' + zone.heatRecovery + ',  !- Heat Recovery Type\n' + \
-                '\t' + zone.heatRecoveryEffectiveness + ',  !- Sensible Heat Recovery Effectiveness\n' + \
-                '\t' + ';  !- Latent Heat Recovery Effectiveness\n'
+                '\t' + zone.name + 'OutdoorAirCntrl' + ',  !- Design Specification Outdoor Air Object Name\n' + \
+                '\t' + demanVent + ',  !- Demand Controlled Ventilation Type\n' + \
+                '\t' + airSideEconomizer + ',  !- Outdoor Air Economizer Type\n' + \
+                '\t' + heatRecovery + ',  !- Heat Recovery Type\n' + \
+                '\t' + sensRecovEffectiveness + ',  !- Sensible Heat Recovery Effectiveness\n' + \
+                '\t' + latRecovEffectiveness + ';  !- Latent Heat Recovery Effectiveness\n'
+        else:
+            return "\n"
+    
+    def IdealAirZoneSizing(self, zone, coolSupplyTemp = 14, heatingSupplyTemp = 40):
+        if zone.isConditioned:
+            zoneSizeStr = "\nSizing:Zone,\n" + \
+                '\t' +  zone.name + ',      !- Zone or ZoneList Name\n' + \
+                '\t' + 'SupplyAirTemperature,     !- Zone Cooling Design Supply Air Temperature Input Method\n' + \
+                '\t' + str(coolSupplyTemp) + ',       !- Zone Cooling Design Supply Air Temperature {C}\n' + \
+                '\t' + '11.11,                                  !- Zone Cooling Design Supply Air Temperature Difference {deltaC}\n' + \
+                '\t' + 'SupplyAirTemperature,                   !- Zone Heating Design Supply Air Temperature Input Method\n' + \
+                '\t' + str(heatingSupplyTemp) + ',           !- Zone Heating Design Supply Air Temperature {C}\n' + \
+                '\t' + '11.11,                                  !- Zone Heating Design Supply Air Temperature Difference {deltaC}\n' + \
+                '\t' + '0.0085,                                 !- Zone Cooling Design Supply Air Humidity Ratio {kgWater/kgDryAir}\n' + \
+                '\t' + '0.008,                                  !- Zone Heating Design Supply Air Humidity Ratio {kgWater/kgDryAir}\n' + \
+                '\t' + zone.name + 'OutdoorAirCntrl' + ',        !- Design Specification Outdoor Air Object Name\n' + \
+                '\t' + ',                                       !- Zone Heating Sizing Factor\n' + \
+                '\t' + ',                                       !- Zone Cooling Sizing Factor\n' + \
+                '\t' + 'DesignDay,                              !- Cooling Design Air Flow Method\n' + \
+                '\t' + '0,                                      !- Cooling Design Air Flow Rate {m3/s}\n' + \
+                '\t' + '0.000762,                               !- Cooling Minimum Air Flow per Zone Floor Area {m3/s-m2}\n' + \
+                '\t' + '0,                                      !- Cooling Minimum Air Flow {m3/s}\n' + \
+                '\t' + '0,                                      !- Cooling Minimum Air Flow Fraction\n' + \
+                '\t' + 'DesignDay,                              !- Heating Design Air Flow Method\n' + \
+                '\t' + '0,                                      !- Heating Design Air Flow Rate {m3/s}\n' + \
+                '\t' + '0.002032,                               !- Heating Maximum Air Flow per Zone Floor Area {m3/s-m2}\n' + \
+                '\t' + '0.1415762,                              !- Heating Maximum Air Flow {m3/s}\n' + \
+                '\t' + '0.3,                                    !- Heating Maximum Air Flow Fraction\n' + \
+                '\t' + ',       !- Design Specification Zone Air Distribution Object Name\n' + \
+                '\t' + 'No;                                     !- Account for Dedicated Outdoor Air System\n'
+            return zoneSizeStr
         else:
             return "\n"
     
@@ -408,7 +675,7 @@ class WriteIDF(object):
         '\t' + str(grndTemps[10]) + ',    !Nov Ground Temperature (C)\n' + \
         '\t' +  str(grndTemps[11]) + ';   !Dec Ground Temperature (C)\n'
         return grndString
-
+    
     def EPSizingPeriod(self, weatherFilePeriod):
         sizingString = "\nSizingPeriod:WeatherFileConditionType,\n" + \
             '\t' + 'ExtremeSizing'+ weatherFilePeriod + ',\n' + \
@@ -436,30 +703,34 @@ class WriteIDF(object):
     def EPTimestep(self, timestep = 6):
         return '\nTimestep, ' + `timestep` + ';\n'
     
+    def EPSizingFactor(self, heatSizFac, coolSizFac):
+        return '\nSizing:Parameters,\n' + \
+            '\t'+ str(heatSizFac) + ',     !- Heating Sizing Factor\n' + \
+            '\t'+ str(coolSizFac) + ';     !- Cooling Sizing Factor\n'
+    
     def EPShadowCalculation(self, calculationMethod = "AverageOverDaysInFrequency", frequency = 6, maximumFigures = 1500):
         return '\nShadowCalculation,\n' + \
                '\t' + calculationMethod + ',        !- Calculation Method\n' + \
                '\t' + str(frequency) + ',        !- Calculation Frequency\n' + \
                '\t' + str(maximumFigures) + ';    !- Maximum Figures in Shadow Overlap Calculation\n'
 
-    def EPProgramControl(self, numT = 10):
+    def EPProgramControl(self, numT = 1):
         return '\nProgramControl,\n' + \
                '\t' + `numT` + '; !- Number of Threads AllowedNumber\n'
     
     def EPBuilding(self, name= 'honeybeeBldg', north = 0, terrain = 'City',
-                    loadConvergenceTol = 0.04, tempConvergenceTol = 0.4,
-                    solarDis = 'FullInteriorAndExteriorWithReflections', maxWarmUpDays = 25,
-                    minWarmUpDays = 6):
+                    solarDis = 'FullInteriorAndExteriorWithReflections', maxWarmUpDays = '',
+                    minWarmUpDays = ''):
                     # 'FullInteriorAndExterior'
         return '\nBuilding,\n' + \
                 '\t' + name + ', !- Name\n' + \
                 '\t' + `north` + ', !- North Axis {deg}\n' + \
                 '\t' + terrain + ', !- Terrain\n' + \
-                '\t' + `loadConvergenceTol` + ', !- Loads Convergence Tolerance Value\n' + \
-                '\t' + `tempConvergenceTol` + ', !- Temperature Convergence Tolerance Value {deltaC}\n' + \
+                '\t' + ', !- Loads Convergence Tolerance Value\n' + \
+                '\t' + ', !- Temperature Convergence Tolerance Value {deltaC}\n' + \
                 '\t' + solarDis + ', !- Solar Distribution or maybe FullExterior\n' + \
-                '\t' + `maxWarmUpDays` + ', !- Maximum Number of Warmup Days\n' + \
-                '\t' + `minWarmUpDays` + '; !- Minimum Number of Warmup Days\n'
+                '\t' + maxWarmUpDays + ', !- Maximum Number of Warmup Days\n' + \
+                '\t' + minWarmUpDays + '; !- Minimum Number of Warmup Days\n'
     
     def EPHeatBalanceAlgorithm(self, algorithm = 'ConductionTransferFunction'):
         return '\nHeatBalanceAlgorithm, ' + algorithm + ';\n'
@@ -485,7 +756,9 @@ class WriteIDF(object):
                 '\t' + booleanToText[runForSizing] + ',  !- Run Simulation for Sizing Periods\n' + \
                 '\t' + booleanToText[runForWeather] + '; !- Run Simulation for Weather File Run Periods\n'
     
-    def EPRunPeriod(self, name = 'annualRun', stDay = 1, stMonth = 1, endDay = 31, endMonth = 12):
+    def EPRunPeriod(self, name = 'annualRun', stDay = 1, stMonth = 1, endDay = 31, endMonth = 12, startDayOfWeek = 'UseWeatherFile'):
+        if startDayOfWeek == None:
+            startDayOfWeek = 'UseWeatherFile'
         
         return '\nRunPeriod,\n' + \
                '\t' + name + ',    !- Name\n' + \
@@ -493,18 +766,28 @@ class WriteIDF(object):
                '\t' + `stDay` + ',    !- Begin Day of Month\n' + \
                '\t' + `endMonth` + ', !- End Month\n' + \
                '\t' + `endDay` + ',   !- End Day of Month\n' + \
-               '\t' + 'UseWeatherFile,   !- Day of Week for Start Day\n' + \
+               '\t' + startDayOfWeek + ',   !- Day of Week for Start Day\n' + \
                '\t' + 'Yes,              !- Use Weather File Holidays and Special Days\n' + \
                '\t' + 'Yes,              !- Use Weather File Daylight Saving Period\n' + \
                '\t' + 'No,               !- Apply Weekend Holiday Rule\n' + \
                '\t' + 'Yes,              !- Use Weather File Rain Indicators\n' + \
                '\t' + 'Yes;              !- Use Weather File Snow Indicators\n'
-
+    
+    def EPHoliday(self, date, count):
+        
+        return '\nRunPeriodControl:SpecialDays,\n' + \
+                '\t' + 'Holiday' + str(count) + ',  !- Name\n' + \
+                '\t' + date.split(' ' )[0] + '/' + date.split(' ')[1] + ',  !- Date\n' + \
+                '\t' + '1' + ',  !- Duration\n' + \
+                '\t' + 'Holiday' + ';  !- Special Day Type\n'
+    
     def EPGeometryRules(self, stVertexPos = 'LowerLeftCorner', direction = 'CounterClockWise', coordinateSystem = 'Relative'):
         return '\nGlobalGeometryRules,\n' + \
                 '\t' + stVertexPos + ',         !- Starting Vertex Position\n' + \
                 '\t' + direction + ',        !- Vertex Entry Direction\n' + \
-                '\t' + coordinateSystem + ';                !- Coordinate System\n'
+                '\t' + coordinateSystem + ',                !- Coordinate System\n' + \
+                '\t' + 'Relative' + ',                !- Daylighting Ref Point Coordinate System\n' + \
+                '\t' + 'Relative' + ';                !- Rectangular Surface Coordinate System\n'
 
     def EPZoneInfiltration(self, zone, zoneListName = None):
         """ Methods: 
@@ -714,12 +997,8 @@ class WriteIDF(object):
             # find filebased schedule name
             scheduleName = self.fileBasedSchedules[scheduleName.upper()]
         
-        if zone.daylightThreshold != "":
-            method = 2
-            lightingLevel = str(zone.daylightThreshold)
-        else:
-            method = 0
-            lightingLevel = ""
+        method = 0
+        lightingLevel = ""
         """
         Methods:
             0: Watts/Area => Watts per Zone Floor Area -- enter the number to apply.  Value * Floor Area = Equipment Level
@@ -771,7 +1050,7 @@ class WriteIDF(object):
             activityScheduleName = self.fileBasedSchedules[activityScheduleName.upper()]
         
         fractionRadiant = 0.3
-        sensibleHeatFraction = 'autocalculate'
+        sensibleHeatFraction = ''
         
         """
         Methods:
@@ -813,7 +1092,7 @@ class WriteIDF(object):
             materialData = sc.sticky ["honeybee_windowMaterialLib"][materialName]
         elif materialName in sc.sticky ["honeybee_materialLib"].keys():
             materialData = sc.sticky ["honeybee_materialLib"][materialName]
-            
+        
         if materialData!=None:
             numberOfLayers = len(materialData.keys())
             materialStr = materialData[0] + ",\n"
@@ -825,6 +1104,7 @@ class WriteIDF(object):
                     materialStr =  materialStr + "  " + str(materialData[layer][0]) + ",   !- " +  materialData[layer][1] + "\n"
                 else:
                     materialStr =  materialStr + "  " + str(materialData[layer][0]) + ";   !- " +  materialData[layer][1] + "\n\n"
+            
             return materialStr
         else:
             warning = "Failed to find " + materialName + " in library."
@@ -924,11 +1204,12 @@ class WriteIDF(object):
             scheduleData = sc.sticky ["honeybee_ScheduleLib"][scheduleName]
         elif scheduleName in sc.sticky ["honeybee_ScheduleTypeLimitsLib"].keys():
             scheduleData = sc.sticky["honeybee_ScheduleTypeLimitsLib"][scheduleName]
-    
+        
         if scheduleData!=None:
             numberOfLayers = len(scheduleData.keys())
             scheduleStr = scheduleData[0] + ",\n"
-            
+            if numberOfLayers == 1:
+                return scheduleStr  + "  " +  scheduleName + ";   !- name\n\n"
             # add the name
             scheduleStr =  scheduleStr  + "  " +  scheduleName + ",   !- name\n"
             
@@ -948,15 +1229,10 @@ class WriteIDF(object):
         '\t' + 'regular;                 !- Key Field' + '\n'
         
     def EarthTube(self,zone):
-        
         if zone.ETschedule.upper().endswith('CSV'):
-            
             # For custom schedule
-            
             scheduleFileName = os.path.basename(zone.ETschedule)
-
             scheduleObjectName = "_".join(scheduleFileName.split(".")[:-1]).upper()
-            
             earthTubeSched = scheduleObjectName
            
         else: earthTubeSched = zone.ETschedule
@@ -991,7 +1267,7 @@ class WriteIDF(object):
             '\t' + str(PVgen.name) + ',\t!- Name\n' + \
             '\t' + str(PVgen.surfacename) + ',\t!- Surface Name\n'+\
             '\t' + str(PVgen.performancetype) + ',\t!- Photovoltaic Performance Object Type\n'+\
-            '\t' + str(PVgen.performancename) + ',\t!- Module Performance Name\n'+\
+            '\t' + str(PVgen.namePVperformobject) + ',\t!- Module Performance Name\n'+\
             '\t' + str(PVgen.integrationmode) + ',\t!- Heat Transfer Integration Mode\n'+\
             '\t' + str(PVgen.NOparallel) + ',\t!- Number of Series Strings in Parallel {dimensionless}\n'+\
             '\t' + str(PVgen.NOseries) + ';\t!- Number of Modules in Series {dimensionless}\n'
@@ -999,12 +1275,24 @@ class WriteIDF(object):
     
     def write_PVgenperformanceobject(self,PVgen):
         
-        return '\nPhotovoltaicPerformance:Simple,\n' + \
-            '\t' + str(PVgen.namePVperformobject) + ',\t!- Name\n' + \
-            '\t' + str(PVgen.surfaceareacells) + ',\t!- Fraction of Surface Area with Active Solar Cells {dimensionless}\n'+\
-            '\t' + str(PVgen.cellefficiencyinputmode) + ',\t!- Conversion Efficiency Input Mode\n'+\
-            '\t' + str(PVgen.efficiency) + ',\t!- Value for Cell Efficiency if Fixed\n'+\
-            '\t' + str(PVgen.schedule) + ';\t!- Efficiency Schedule Name\n'
+        if PVgen.mode == 'simple':
+            
+            return '\nPhotovoltaicPerformance:Simple,\n' + \
+                '\t' + str(PVgen.namePVperformobject) + ',\t!- Name\n' + \
+                '\t' + str(PVgen.surfaceareacells) + ',\t!- Fraction of Surface Area with Active Solar Cells {dimensionless}\n'+\
+                '\t' + str(PVgen.cellefficiencyinputmode) + ',\t!- Conversion Efficiency Input Mode\n'+\
+                '\t' + str(PVgen.efficiency) + ',\t!- Value for Cell Efficiency if Fixed\n'+\
+                '\t' + str(PVgen.schedule) + ';\t!- Efficiency Schedule Name\n'
+                
+        if PVgen.mode == 'sandia':
+            
+            # Replace name in sandia with name of the PV surface.
+            for count,line in enumerate(PVgen.sandia):
+                if "         !- Name" in line:
+                
+                    PVgen.sandia[count] = PVgen.namePVperformobject+',         !- Name'
+                    
+            return '\n'.join(PVgen.sandia)
             
     def simple_inverter(self,inverter):
         
@@ -1225,10 +1513,9 @@ class RunIDF(object):
         if not workingDir.EndsWith('\\'): workingDir = workingDir + '\\'
         
         fullPath = workingDir + shIdfFileName
-        
         folderName = workingDir.replace( (workingDrive + '\\'), '')
-        batchStr = workingDrive + '\ncd\\' +  folderName + '\n' + EPDirectory + \
-                '\Epl-run ' + fullPath + ' ' + fullPath + ' idf "' + epwFileAddress + '" EP N nolimit N N 0 Y'
+        batchStr = workingDrive + '\ncd\\' +  folderName + '\n"' + EPDirectory + \
+                '\\Epl-run" ' + fullPath + ' ' + fullPath + ' idf ' + epwFileAddress + ' EP N nolimit N N 0 Y'
         
         batchFileAddress = fullPath +'.bat'
         batchfile = open(batchFileAddress, 'w')
@@ -1244,12 +1531,7 @@ class RunIDF(object):
     def runCmd(self, batchFileAddress, shellKey = True):
         batchFileAddress.replace("\\", "/")		
         p = subprocess.Popen(["cmd /c ", batchFileAddress], shell=shellKey, stdout=subprocess.PIPE, stderr=subprocess.PIPE)		
-        out, err = p.communicate()		
-        # p.kill()		
-        #return out, err
-
-    def readResults(self):
-        pass
+        out, err = p.communicate()
 
 
 sc.sticky["honeybee_WriteIDF"] = WriteIDF
@@ -1259,7 +1541,7 @@ sc.sticky["honeybee_RunIDF"] = RunIDF
 def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext,
          simulationOutputs, writeIdf, runEnergyPlus, workingDir, idfFileName,
          meshSettings):
-             
+    
     # import the classes
     w = gh.GH_RuntimeMessageLevel.Warning
     
@@ -1276,6 +1558,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     
     try:
         if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+        if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): return -1
     except:
         warning = "You need a newer version of Honeybee to use this compoent." + \
         " Use updateHoneybee component to update userObjects.\n" + \
@@ -1326,11 +1609,12 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         
     
     lb_preparation = sc.sticky["ladybug_Preparation"]()
-    hb_scheduleLib = sc.sticky["honeybee_DefaultScheduleLib"]()
+    lb_comfortModels = sc.sticky["ladybug_ComfortModels"]()
     hb_reEvaluateHBZones= sc.sticky["honeybee_reEvaluateHBZones"]
     hb_hive = sc.sticky["honeybee_Hive"]()
     hb_EPScheduleAUX = sc.sticky["honeybee_EPScheduleAUX"]()
     hb_EPPar = sc.sticky["honeybee_EPParameters"]()
+    hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
     
     northAngle, northVector = lb_preparation.angle2north(north)
     stMonth, stDay, stHour, endMonth, endDay, endHour = lb_preparation.readRunPeriod(analysisPeriod, True)
@@ -1344,8 +1628,12 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     elif idfFileName[-3:] != 'idf': idfFileName = idfFileName + '.idf'
     
     # make working directory
-    if workingDir: workingDir = lb_preparation.removeBlankLight(workingDir)
-    else: workingDir = "c:\\ladybug"
+    if workingDir:
+        workingDir = lb_preparation.removeBlankLight(workingDir)
+        originalWorkingDir = copy.copy(workingDir)
+    else:
+        workingDir = "c:\\ladybug"
+        originalWorkingDir = os.path.join("c:\\ladybug", idfFileName.split(".idf")[0])
     
     workingDir = os.path.join(workingDir, idfFileName.split(".idf")[0], "EnergyPlus")
     
@@ -1374,13 +1662,13 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     idfFile.write(hb_writeIDF.EPVersion(sc.sticky["honeybee_folders"]["EPVersion"]))
     
     # Read simulation parameters
-    timestep, shadowPar, solarDistribution, simulationControl, ddyFile, terrain, grndTemps = hb_EPPar.readEPParams(EPParameters)
+    timestep, shadowPar, solarDistribution, simulationControl, ddyFile, terrain, grndTemps, holidays, startDayOfWeek, heatSizFac, coolSizFac = hb_EPPar.readEPParams(EPParameters)
     try:
-        maxWarmUpDays = simulationControl[5]
-        minWarmUpDays = simulationControl[6]
+        maxWarmUpDays = str(simulationControl[5])
+        minWarmUpDays = str(simulationControl[6])
     except:
-        maxWarmUpDays =25
-        minWarmUpDays = 6
+        maxWarmUpDays =''
+        minWarmUpDays = ''
     
     # Timestep,6;
     idfFile.write(hb_writeIDF.EPTimestep(timestep))
@@ -1392,70 +1680,63 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     idfFile.write(hb_writeIDF.EPProgramControl())
     
     # Building
-    EPBuilding = hb_writeIDF.EPBuilding(idfFileName, math.degrees(northAngle), terrain, 0.04, 0.4, solarDistribution, maxWarmUpDays, minWarmUpDays)
-                    
+    EPBuilding = hb_writeIDF.EPBuilding(idfFileName, math.degrees(northAngle), terrain, solarDistribution, maxWarmUpDays, minWarmUpDays)
     idfFile.write(EPBuilding)
     
-    # HeatBalanceAlgorithm
-    idfFile.write(hb_writeIDF.EPHeatBalanceAlgorithm())
+    # Sizing Factor
+    idfFile.write(hb_writeIDF.EPSizingFactor(heatSizFac, coolSizFac))
     
-    # SurfaceConvectionAlgorithm
-    idfFile.write(hb_writeIDF.EPSurfaceConvectionAlgorithm())
+    # HeatBalanceAlgorithm - We will just take the default for now
+    #idfFile.write(hb_writeIDF.EPHeatBalanceAlgorithm())
+    
+    # SurfaceConvectionAlgorithm - We will just take the default for now
+    #idfFile.write(hb_writeIDF.EPSurfaceConvectionAlgorithm())
     
     # Location
     idfFile.write(hb_writeIDF.EPSiteLocation(epwFileAddress))
-    
-    #Ground Temperatures.
-    if grndTemps == []:
-        groundtemp = lb_preparation.groundTempData(_epwFile,[]);
-        groundtempNum = groundtemp[1][7:]
-        for temp in groundtempNum:
-            if temp < 18: grndTemps.append(18)
-            elif temp < 24: grndTemps.append(temp)
-            else: grndTemps.append(24)
     
     if grndTemps != []:
         idfFile.write(hb_writeIDF.EPGroundTemp(grndTemps))
     
     # SizingPeriod
-    #Check if there are sizing periods in the EPW file.
-    dbTemp = []
-    sizeWDesignWeeks = True
-    epwfile = open(_epwFile,"r")
-    lnum = 1 # line number
-    for line in epwfile:
-        if lnum == 2:
-            extremePeriods = line.split(',')
-            if len(extremePeriods) < 3: sizeWDesignWeeks = False
-        if lnum > 8:
-            dbTemp.append(float(line.split(',')[6]))
-        lnum += 1
+    # Check if there is a DDY file to pull design days from.
+    if ddyFile != None: pass
+    else: ddyFile = epwFileAddress.replace(".epw", ".ddy", 1)
+    usedDDY = False
     
-    if sizeWDesignWeeks == True:
-        idfFile.write(hb_writeIDF.EPSizingPeriod('WinterExtreme'))
-        idfFile.write(hb_writeIDF.EPSizingPeriod('SummerExtreme'))
-    else:
-        # figure out a sizing period from the extreme temperatures in the weather file
-        HOYs = range(8760)
-        dbTemp, HOYs = zip(*sorted(zip(dbTemp, HOYs)))
-        HOYMax = HOYs[-1]
-        HOYMin = HOYs[0]
-        d, monthMax, t = lb_preparation.hour2Date(HOYMax+1, True)
-        d, monthMin, t = lb_preparation.hour2Date(HOYMin+1, True)
-        if monthMax != monthMin:
-            idfFile.write(hb_writeIDF.EPSizingPeriodMonth(monthMax+1))
-            idfFile.write(hb_writeIDF.EPSizingPeriodMonth(monthMin+1))
-        else:
-            idfFile.write(hb_writeIDF.EPSizingPeriodMonth(monthMin))
+    try:
+        designDayLines = hb_writeIDF.extractDDYObjs(ddyFile)
+        if designDayLines != ['\n']:
+            for line in designDayLines:
+                idfFile.write(line)
+            usedDDY = True
+    except:
+        print "Can't find ddy file next to the EPW."
+        print "Extreme values from the weather file design will be used instead."
+    
+    if usedDDY == False:
+        # If there are no design days, analyze the EPW file and produce design day objects.
+        ddyFile = hb_writeIDF.createDdyFromEPW(epwFileAddress, workingDir, lb_preparation, lb_comfortModels)
+        designDayLines = hb_writeIDF.extractDDYObjs(ddyFile)
+        if designDayLines != ['\n']:
+            for line in designDayLines:
+                idfFile.write(line)
+            usedDDY = True
     
     # simulationControl
     idfFile.write(hb_writeIDF.EPSimulationControl(*simulationControl[0:5]))
     
     # runningPeriod
-    idfFile.write(hb_writeIDF.EPRunPeriod('customRun', stDay, stMonth, endDay, endMonth))
+    idfFile.write(hb_writeIDF.EPRunPeriod('customRun', stDay, stMonth, endDay, endMonth, startDayOfWeek))
+    
+    # holidays
+    if holidays != []:
+        for count, hol in enumerate(holidays):
+            idfFile.write(hb_writeIDF.EPHoliday(hol, count))
     
     # for now I write all the type limits but it can be cleaner
-    scheduleTypeLimits = sc.sticky["honeybee_ScheduleTypeLimitsLib"].keys()
+    scheduleTypeLimits = set([key.upper() for key in sc.sticky["honeybee_ScheduleTypeLimitsLib"].keys()])
+    
     for scheduleTypeLimit in scheduleTypeLimits:
         try: idfFile.write(hb_writeIDF.EPSCHStr(scheduleTypeLimit))
         except: pass
@@ -1466,7 +1747,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     EPConstructionsCollection = []
     EPMaterialCollection = []
     EPScheduleCollection = []
-    
+    shdCntrlCollection = []
     
     # Shading Surfaces
     if HBContext and HBContext[0]!=None:
@@ -1536,13 +1817,13 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         for schedule in schedules.values():
             if schedule != "" and schedule.upper() not in EPScheduleCollection:
                 EPScheduleCollection.append(schedule.upper())
-                
+        
         for srf in zone.surfaces:
             # check if there is an energyPlus material
             
             # Add surface to a list so that zone surfaces can be checked against honeybee generator PV surfaces
-            WriteIDF.zonesurfaces.append(srf.ID)
-
+            WriteIDF.zonesurfaces.append(srf.name)
+            
             if srf.EPConstruction != None:
                 srf.construction = srf.EPConstruction
             # else try to find the material based on bldg type and climate zone
@@ -1552,7 +1833,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
             
             # Surfaces
             idfFile.write(hb_writeIDF.EPZoneSurface(srf))
-            alreadyThereList = []
+            
             if srf.hasChild:
                 # check the construction
                 # this should be moved inside the function later
@@ -1565,26 +1846,40 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                     # the surface will use the default construction
                     if not childSrf.construction.upper() in EPConstructionsCollection:
                             EPConstructionsCollection.append(childSrf.construction.upper())
-                    # Check if there is any shading for the window.
                     
-                    if childSrf.shadeMaterial != [] and childSrf.shadingControl != []:
-                        for shadingCount, windowShading in enumerate(childSrf.shadeMaterial):
-                            
+                    # Check if there is any shading for the window.
+                    if childSrf.shadingControlName != []:
+                        for shadingCount, windowShading in enumerate(childSrf.shadingControlName):
                             try:
-                                if windowShading.split('\n')[1].split(',')[0] not in alreadyThereList:
-                                    idfFile.write(windowShading)
-                                    idfFile.write(childSrf.shadingControl[shadingCount])
+                                if windowShading not in shdCntrlCollection:
+                                    values = hb_EPObjectsAux.getEPObjectDataByName(windowShading)
+                                    if not values[4][0].endswith('.CSV'):
+                                        idfFile.write(hb_EPObjectsAux.getEPObjectsStr(windowShading))
+                                    else:
+                                        newSchedName = os.path.basename(values[4][0]).replace('.CSV', '')
+                                        initStr = hb_EPObjectsAux.getEPObjectsStr(windowShading)
+                                        finStr = initStr.replace(values[4][0], newSchedName)
+                                        idfFile.write(finStr)
                                     
-                                    if childSrf.shadingSchName[shadingCount] != 'ALWAYS ON':
-                                        print childSrf.shadingSchName
-                                        EPScheduleCollection.append(childSrf.shadingSchName[shadingCount].upper())
+                                    if values[2][0] != '':
+                                        # Iniitalize for construction (for switchable glazing).
+                                        constrName = values[2][0]
+                                        if constrName not in EPConstructionsCollection:
+                                            EPConstructionsCollection.append(constrName)
+                                    else:
+                                        # Iniitalize for material (for blinds and shades).
+                                        materialName = values[8][0]
+                                        if materialName not in EPMaterialCollection:
+                                            EPMaterialCollection.append(materialName)
                                     
-                                    alreadyThereList.append(windowShading.split('\n')[1].split(',')[0])
+                                    if values[4][0] != '' and values[4][0] not in EPScheduleCollection:
+                                        EPScheduleCollection.append(values[4][0].upper())
+                                    
+                                    shdCntrlCollection.append(windowShading)
                             except: pass
                 
                 # write the glazing strings
                 idfFile.write(hb_writeIDF.EPFenSurface(srf))
-                # else: idfFile.write(hb_writeIDF.EPNonPlanarFenSurface(srf))
         
         #If there are internal masses assigned to the zone, write them into the IDF.
         if len(zone.internalMassNames) > 0:
@@ -1595,7 +1890,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                 
                 #Write the internal mass into the IDF
                 idfFile.write(hb_writeIDF.EPInternalMass(zone, massName, zone.internalMassSrfAreas[massCount], zone.internalMassConstructions[massCount]))
-        
+    
     ########### Generators - Electric load center ###########
     
     # This section was created by Anton Szilasi 
@@ -1607,11 +1902,10 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     HBgeneratoroutputs = []
     
     if HBGenerators_ != []:
-
         hb_hivegen = sc.sticky["honeybee_generationHive"]()
-        
         HBsystemgenerators = hb_hivegen.callFromHoneybeeHive(HBGenerators_)
-
+        # Generation objects use "always on" schedule
+        EPScheduleCollection.append('ALWAYS ON')
         
         # This code here is used to extractingruntime periods if outputs are specified externally
         # If the function returns and exception that means that external outputs are not specified.
@@ -1624,162 +1918,102 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                 return HBgeneratortimeperiod
             except:
                 pass
-                
+        
         # Extract the timestep from the incoming component simulationOutputs if its being used
         HBgeneratortimeperiod = extracttimeperiod(simulationOutputs)
-  
         if simulationOutputs_ == []:
-            
             HBgeneratoroutputs.append("Output:Variable,*,Facility Net Purchased Electric Energy, hourly;")
-            
             HBgeneratoroutputs.append("Output:Variable,*,Facility Total Electric Demand Power, hourly;")
-
             HBgeneratortimeperiod = 'hourly'
-                
         if simulationOutputs_ != []:
-                
             if (not any('Output:Variable,*,Facility Total Electric Demand Power' in s for s in simulationOutputs)) and (not any('Output:Variable,*,Facility Net Purchased Electric Power' in s for s in simulationOutputs)):
                 # These are the default inputs if the user does not specify their own using the component
                 # simulationOutputs, the default timestep is therefore hourly 
                 # the component Ladybug monthly bar chart needs hourly in order to run
-                
                 simulationOutputs.append("Output:Variable,*,Facility Net Purchased Electric Energy, hourly;")
-                
                 simulationOutputs.append("Output:Variable,*,Facility Total Electric Demand Power, hourly;")
-
                 HBgeneratortimeperiod = 'hourly'
-                
-                
         # CHECK that HBgenerator names are unique for each HB generator
-        
         HBgenerators = []
-        
         for HBgenerator in HBsystemgenerators:
-            
             HBgenerators.extend([generator.name for generator in HBgenerator.windgenerators])
-            
             HBgenerators.extend([generator.name for generator in HBgenerator.PVgenerators])
-            
         if len(HBgenerators) != len(set(HBgenerators)):
-            
             duplicateHBgenerators =  [item for item, count in collections.Counter([item for item in HBgenerators]).items() if count > 1]
-            
             for HBgenerator in duplicateHBgenerators:
-                
                 warn = " Duplicate Honeybee generator (A PV or wind generator) name, named : " + HBgenerator +" detected!"+ "\n"+\
                 "Please ensure that all PV and wind generators have unique names for EnergyPlus to run!"+ "\n"+\
                 "This error usually occurs when several PVgen components are connected to one EnergyPlus simulation, and default names " + "\n"+\
                 "have been assigned in each component. Fix this issue by inputing unique names to the input _name_ on the PVgen component."
-                
                 ghenv.Component.AddRuntimeMessage(w, warn )
-                
             return -1
         
         # CHECK that the HBsystemgenerator_name is unique for this simulation - Otherwise E+ will crash
-            
         if len(set([HBsystemgenerator.name for HBsystemgenerator in HBsystemgenerators])) != len(HBsystemgenerators):
-            
             duplicateHBsystemgenerators = [HBsystemgenerator for HBsystemgenerator, count in collections.Counter([HBsystemgenerator.name for HBsystemgenerator in HBsystemgenerators]).items() if count > 1]
-            
             for HBsystemgenerator in duplicateHBsystemgenerators:
-                
                 warn = " Duplicate Honeybee generation system name, named: " + HBsystemgenerator +" detected!"+ "\n"+\
                 "Please ensure that all Honeybee generation systems have unique names for EnergyPlus to run!"
-                
                 ghenv.Component.AddRuntimeMessage(w, warn )
-                
             return -1
             
         # CHECK that HBgenerator names are unique for this simulation - Otherwise E+ will crash
-                
-        for HBsystemcount,HBsystemgenerator in enumerate(HBsystemgenerators):
-            
+        for HBsystemcount, HBsystemgenerator in enumerate(HBsystemgenerators):
             # Append to HBgeneratoroutputs as if we append to simulationOutputs the original default outputs will never run
-            
             if simulationOutputs_ == []:
-                
                 # For this HBsystemgenerator write the output so that the produced electric energy is reported.
                 HBgeneratoroutputs.append("Output:Variable,"+str(HBsystemgenerator.name)+":DISTRIBUTIONSYSTEM,Electric Load Center Produced Electric Energy,"+ HBgeneratortimeperiod +";")
-
-            
             if simulationOutputs_ != []:
-
                 # If there are output variables in simulationOutputs original default outputs will not run anyhow
                 # so we can append to simulationOutputs without affecting default outputs
                 
                 # For this HBsystemgenerator write the output so that the produced electric energy is reported.
                 simulationOutputs.append("Output:Variable,"+str(HBsystemgenerator.name)+":DISTRIBUTIONSYSTEM,Electric Load Center Produced Electric Energy,"+ HBgeneratortimeperiod +";")
-                
-                        
+            
             # Define the name for the list of generators and to use in generator's list name in ElectricLoadCenter:Distribution
             if HBsystemgenerator.name == None:
                 # This shouldn't happen as Honeybee generation system has a check on it 
                 # which doesnt allow for no names to be specified.
-                
                 HBsystemgenerator_name = "generatorsystem" + str(HBsystemcount)
-                
             else:
-    
                 HBsystemgenerator_name = str(HBsystemgenerator.name)
-            
-            
             # Write one ElectricLoadCenter:Generators for each HBsystemgenerator
-            
             idfFile.write(hb_writeIDF.writegeneratlorlist(HBsystemgenerator_name,HBsystemgenerator.PVgenerators+HBsystemgenerator.windgenerators+HBsystemgenerator.fuelgenerators)) # The writegeneratlorlist only takes 'generators' as an input so add all the different generator lists together 
-            
             # Determine the type of system and write one ElectricLoadCenter:Distribution for each HBsystemgenerator
-            
             distribution_name = str(HBsystemgenerator_name) + ':Distributionsystem' 
-
             # Add a header to the financial data so that its clear financial data is from this system
             
             WriteIDF.financialdata.append('Honeybee system generator '+str(HBsystemgenerator.name))
-            
             # Add the Honeybee generation systems' annual operation and maintenance costs
-            
             WriteIDF.financialdata.append('Honeybee system annual maintenance cost - '+str(HBsystemgenerator.maintenance_cost))
             
             # Determine whether it is a PV, Wind or fuel generator system
-            
             if HBsystemgenerator.PVgenerators != []:
-                
                 # Add to a list to conduct checks on consistency of context surfaces later
-                
                 WriteIDF.checksurfaceduplicate.extend(HBsystemgenerator.contextsurfaces) 
-                
                 # Write the Honeybee context sufaces
                 writeHBcontext(HBsystemgenerator.contextsurfaces)
                 
                 # CHECK
                 # If PV surfaces are part of a zone make sure that, that zone is connected to _HBZones
                 # that is the PV surfaces are contained in HBsystemgenerator.HBzonesurfaces
-                    
-                PVsurfaceinzones = []
-                
                 for surface in HBsystemgenerator.HBzonesurfaces:
-    
-                    PVsurfaceinzones.append(surface.ID in WriteIDF.zonesurfaces)
-                    
-                if all(x== True for x in PVsurfaceinzones) != True:
-                    warn  = "It has been detected that there are PV generators attached to sufaces of a Honeybee zone\n"+\
-                    " However this Honeybee zone has not been connected to the _HBZones input on this component\n"+\
-                    " Please connect it to run the EnergyPlus simulation!"
-                    print warn 
-                    ghenv.Component.AddRuntimeMessage(w, warn )
-                    
-                    return -1
-                
+                    if  not surface.name in WriteIDF.zonesurfaces:
+                        warn  = "It has been detected that there are PV generators attached to sufaces of a Honeybee zone\n"+\
+                        " However this Honeybee zone has not been connected to the _HBZones input on this component\n"+\
+                        " Please connect it to run the EnergyPlus simulation!"
+                        print warn 
+                        ghenv.Component.AddRuntimeMessage(w, warn)
+                        
+                        return -1
                 if HBsystemgenerator.simulationinverter != None:
                     
                     if HBsystemgenerator.battery != None:
                         
                         # HBsystem contains a inverter and is a DC system AND has storage
-  
                         WriteIDF.financialdata.append('Battery cost - ' +str(HBsystemgenerator.battery.cost_) +' replacement time = '+ str(HBsystemgenerator.battery.replacementtime)+ ' years')
-
                         # Although multiple inverters may exist in HBsystemgenerator.simulationinverter 
                         # in the Honeybee generation system it has been checked that they are all the same
-
                         WriteIDF.financialdata.append('Inverter cost - '+ str(HBsystemgenerator.simulationinverter[0].cost_)+ ' replacement time = '+ str(HBsystemgenerator.simulationinverter[0].replacementtime)+ ' years') 
                         
                         operationscheme = 'Baseload'
@@ -1857,11 +2091,9 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                         
                         # Write HBsystemgenerator ElectricLoadCenter:Distribution
                         idfFile.write(hb_writeIDF.writeloadcenterdistribution(distribution_name,HBsystemgenerator_name,operationscheme,demandlimit,trackschedule,trackmeterschedule,busstype,inverterobject,None)) 
-                        
                         # CHECK for duplicate inverters - These can cause EnergyPlus to crash
                         # Append inverter ID to checkbatteryduplicate to check for duplicate inverter 
                         WriteIDF.checkinverterduplicate.append(inverterobject.ID)
-                
                         # If the inverter ID occurs twice in the list WriteIDF.checkinverterduplicate it is a duplicate
                         if WriteIDF.checkinverterduplicate.count(inverterobject.ID) == 2:
                             warning  = 'Duplicate inverter detected! please make sure that each Honeybee PV generator has its own inverter \n'+ \
@@ -1870,9 +2102,8 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                             ghenv.Component.AddRuntimeMessage(w, warning)
                             print warning 
                             return -1 
-                            
+            
             elif HBsystemgenerator.windgenerators != []:
-                
                 operationscheme = 'Baseload'
                 busstype = 'AlternatingCurrent'
                 demandlimit = ''
@@ -1883,83 +2114,86 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                 
                 # Write HBsystemgenerator wind generators
                 for windgenerator in HBsystemgenerator.windgenerators:
-                    
                     idfFile.write(hb_writeIDF.wind_generator(windgenerator))
                     WriteIDF.financialdata.append('Wind turbine cost - '+str(windgenerator.cost_)) 
-                    
                 # Write HBsystemgenerator ElectricLoadCenter:Distribution
                 idfFile.write(hb_writeIDF.writeloadcenterdistribution(distribution_name,HBsystemgenerator_name,operationscheme,demandlimit,trackschedule,trackmeterschedule,busstype,inverterobject,elecstorageobject))
-                
-               
             elif HBsystemgenerator.fuelgenerators != []: # XXX 14/04/2015 not yet implemented so always equal to []
-                
                 busstype = 'AlternatingCurrent'
             
         # CHECK for duplicate HBcontext surfaces this could happen if the user connects context surfaces to both HBContext_ and a HB generator system
         HBcontextsurfaces = set()
-        
         for HBcontextsurface in WriteIDF.checksurfaceduplicate:
             HBcontextsurfaces.add(HBcontextsurface.ID)
-            
         if len(HBcontextsurfaces) != len(WriteIDF.checksurfaceduplicate):
-            
             print "Duplicate HBcontext surfaces detected! Don't connect HBcontext surfaces to both PVgen component and run E+ component HBContext_ input!"
             ghenv.Component.AddRuntimeMessage(w, "Duplicate HBcontext surfaces detected! Don't connect HBcontext surfaces to both PVgen component and run E+ component HBContext_ input!")
-            
             return -1
             
         # Write the financial data to the IDF file
         for data in hb_writeIDF.writegeneration_system_financialdata(WriteIDF.financialdata):
-            
             idfFile.write(data)
-            
         idfFile.write('\n')
-            
+    
     ################ Construction #####################
     print "[5 of 8] Writing materials and constructions..."
+    
+    # Write any materials that are outside constructions.
+    for mat in EPMaterialCollection:
+        materialStr = hb_writeIDF.EPMaterialStr(mat.upper())
+        if materialStr:
+            idfFile.write(materialStr)
     
     # Write constructions
     for cnstr in EPConstructionsCollection:
         constructionStr, materials = hb_writeIDF.EPConstructionStr(cnstr)
         if constructionStr:
             idfFile.write(constructionStr)
-        
+            #Check for any additional properties.
+            if cnstr in sc.sticky["honeybee_ExtraConstrProps"].keys():
+                idfFile.write(sc.sticky["honeybee_ExtraConstrProps"][cnstr]['Properties'])
+            #Check for materials.
             for mat in materials:
                 if not mat.upper() in EPMaterialCollection:
                     materialStr = hb_writeIDF.EPMaterialStr(mat.upper())
                     if materialStr:
                         idfFile.write(materialStr)
                         EPMaterialCollection.append(mat.upper())
-        
     
     ################ BODYII #####################
     print "[6 of 8] Writing schedules..."
     
     #Check if schedules need to be written for air mixing or natural ventilation.
-    needToWriteMixSched = False
+    needToWriteAlwaysSched = False
     for key, zones in ZoneCollectionBasedOnSchAndLoads.items():
         for zone in zones:
             if zone.natVent == True:
                 for schedule in zone.natVentSchedule:
                     if schedule != None:
                         if schedule.upper() not in EPScheduleCollection: EPScheduleCollection.append(schedule)
-                    else: needToWriteMixSched = True
-
+                    else: needToWriteAlwaysSched = True
             if zone.mixAir == True:
                 for schedule in zone.mixAirFlowSched:
                     if schedule != None:
                         if schedule.upper() not in EPScheduleCollection: EPScheduleCollection.append(schedule)
-                    else: needToWriteMixSched = True
-                    
+                    else: needToWriteAlwaysSched = True
             if zone.earthtube == True:
-                
                 if zone.ETschedule.upper() not in EPScheduleCollection:
-                    
                     EPScheduleCollection.append(zone.ETschedule)
-                    
-        if needToWriteMixSched == True and 'ALWAYS ON' not in EPScheduleCollection: EPScheduleCollection.append('ALWAYS ON')
-                    
-                    
+            if zone.isConditioned:
+                needToWriteAlwaysSched = True
+                if zone.HVACSystem.airDetails != None:
+                    if zone.HVACSystem.airDetails.HVACAvailabiltySched != 'ALWAYS ON':
+                        EPScheduleCollection.append(zone.HVACSystem.airDetails.HVACAvailabiltySched)
+                if zone.HVACSystem.heatingDetails != None:
+                    if zone.HVACSystem.heatingDetails.heatingAvailSched != 'ALWAYS ON':
+                        EPScheduleCollection.append(zone.HVACSystem.heatingDetails.heatingAvailSched)
+                if zone.HVACSystem.coolingDetails != None:
+                    if zone.HVACSystem.coolingDetails.coolingAvailSched != 'ALWAYS ON':
+                        EPScheduleCollection.append(zone.HVACSystem.coolingDetails.coolingAvailSched)
+        if needToWriteAlwaysSched == True and 'ALWAYS ON' not in EPScheduleCollection: EPScheduleCollection.append('ALWAYS ON')
+    
+    
     # Write Schedules
     for schedule in EPScheduleCollection:
         scheduleValues, comments = hb_EPScheduleAUX.getScheduleDataByName(schedule, ghenv.Component)
@@ -1973,7 +2207,6 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
             pass
             
         elif scheduleValues!=None:
-
             idfFile.write(hb_writeIDF.EPSCHStr(schedule))
             
             if scheduleValues[0].lower() == "schedule:year":
@@ -1997,22 +2230,21 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     
     for key, zones in ZoneCollectionBasedOnSchAndLoads.items():
         
-        # removed for now as apparently openstudio import idf does not like lists!
-        #if len(zones) > 1:
-        #    listCount += 1 
-        #    # create a zone list
-        #    listName = "_".join([zones[0].bldgProgram, zones[0].zoneProgram, str(listCount)])
-        #    
-        #    idfFile.write(hb_writeIDF.EPZoneListStr(listName, zones))
-        
-        
         for zone in zones:
-            #zone = zones[0]
-            if zone.HVACSystem[-1]!=None:
+            if zone.daylightCntrlFract != 0:
+                warning = "Daylighting controls have been applied to " + zone.name + \
+                          ".\n" + \
+                          "This component does not model daylighting controls.\n" + \
+                          "To model daylight controls, use the Export to OpenStudio component."
+                w = gh.GH_RuntimeMessageLevel.Warning
+                ghenv.Component.AddRuntimeMessage(w, warning)
+                print warning
+            
+            if zone.HVACSystem[1] > 1:
                 warning = "An HVAC system is applied to " + zone.name + \
                           ".\n" + \
-                          "EnergyPlus component will replace this HVAC system with an Ideal Air Loads system.\n" + \
-                          " To model advanced HVAC systems use OpenStudio component."
+                          "This component will replace this HVAC system with an Ideal Air Loads system.\n" + \
+                          "To model advanced HVAC systems, use the Export to OpenStudio component."
                 w = gh.GH_RuntimeMessageLevel.Warning
                 ghenv.Component.AddRuntimeMessage(w, warning)
                 print warning
@@ -2022,7 +2254,6 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                 HAVCTemplateName = listName + "_HVAC"
                 for zone in zones:
                     idfFile.write(hb_writeIDF.EPIdealAirSystem(zone, HAVCTemplateName))
-                
             else:
                 HAVCTemplateName = zone.name + "_HVAC"
                 idfFile.write(hb_writeIDF.EPIdealAirSystem(zone, HAVCTemplateName))
@@ -2030,18 +2261,20 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
             #Thermostat
             idfFile.write(hb_writeIDF.EPHVACTemplate(HAVCTemplateName, zone))
             
+            #Outdoor Air Controller.
+            idfFile.write(hb_writeIDF.EPOutdoorAir(zone))
             
             #   LOADS - INTERNAL LOADS + PLUG LOADS
             if zone.equipmentSchedule != None:
                 idfFile.write(hb_writeIDF.EPZoneElectricEquipment(zone, listName))
-        
+            
             #   PEOPLE
             if zone.occupancySchedule != None:
                 idfFile.write(hb_writeIDF.EPZonePeople(zone, listName))
-        
+            
             #   LIGHTs
             idfFile.write(hb_writeIDF.EPZoneLights(zone, listName))
-        
+            
             #   INFILTRATION
             idfFile.write(hb_writeIDF.EPZoneInfiltration(zone, listName))
             
@@ -2051,9 +2284,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                     idfFile.write(hb_writeIDF.EPZoneAirMixing(zone, zoneMixName, zone.mixAirFlowList[mixZoneCount], mixZoneCount))
             
             # EARTH TUBE
-            
             if zone.earthtube == True:
-                
                 idfFile.write(hb_writeIDF.EarthTube(zone))
             
             #   SIMPLE NATURAL VENTILATION
@@ -2068,7 +2299,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     if additionalStrings_ != []:
         idfFile.write("\n")
         for string in additionalStrings_:
-            if ":" in string:
+            if ":" in string and not '!' in string:
                 idfFile.write("\n")
                 idfFile.write("\n")
                 idfFile.write(string)
@@ -2118,13 +2349,14 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     
     ######################## RUN ENERGYPLUS SIMULATION #######################
     resultFileFullName = None
+    studyFolder = None
     if runEnergyPlus:
         print "Analysis is running!..."
         # write the batch file
         hb_runIDF.writeBatchFile(workingDir, idfFileName, epwFileAddress, sc.sticky["honeybee_folders"]["EPPath"], runEnergyPlus > 1)
         resultFileFullName = idfFileFullName.replace('.idf', '.csv')
+        studyFolder = originalWorkingDir
         try:
-            print workingDir + '\eplusout.csv'
             test = open(workingDir + '\eplusout.csv', 'r')
             test.close()
             resultFileFullName = workingDir + '\eplusout.csv'
@@ -2134,8 +2366,8 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     else:
         print "Set runEnergyPlus to True!"
         
-    return idfFileFullName, resultFileFullName 
-        
+    return idfFileFullName, resultFileFullName, studyFolder
+
 
 if _writeIdf == True and _epwFile and _HBZones and _HBZones[0]!=None:
     
@@ -2143,7 +2375,7 @@ if _writeIdf == True and _epwFile and _HBZones and _HBZones[0]!=None:
                   HBContext_, simulationOutputs_, _writeIdf, runEnergyPlus_,
                   _workingDir_, _idfFileName_, meshSettings_)
     if result!= -1:
-        idfFileAddress, resultFileAddress = result
+        idfFileAddress, resultFileAddress, studyFolder = result
         if runEnergyPlus_:
             try:
                 errorFileFullName = idfFileAddress.replace('.idf', '.err')

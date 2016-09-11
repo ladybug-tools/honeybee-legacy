@@ -27,7 +27,7 @@ Useful links
 ========================================
 [Honeybee group page on Grasshopper](http://www.grasshopper3d.com/group/ladybug)
 
-[Facebook page](https://www.facebook.com/LadyBugforGrasshopper)
+[Facebook page](https://www.facebook.com/LadybugAnalysisTools)
 
 [Honeybee on Twitter](https://www.twitter.com/ladybug_tool)
 

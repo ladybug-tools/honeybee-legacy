@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2015, Chris Mackey <Chris@MackeyArchitecture.com> 
+# Copyright (c) 2013-2016, Chris Mackey <Chris@MackeyArchitecture.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -34,7 +34,7 @@ Therefore, it is usually customary to break up a building depending on the areas
 This includes breaking up the building into floors (since each floor can have a different microclimate) and breanking up each floor into a core zone and perimeter zones (since each side of the buidling gets a different amount of solar gains and losses/gains through the envelope).
 This component helps break up building masses in such a manner.
 -
-Provided by Honeybee 0.0.58
+Provided by Honeybee 0.0.60
 
     Args:
         _bldgMasses: A Closed brep or list of closed breps representing a building massing.
@@ -49,7 +49,8 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = 'Honeybee_SplitBuildingMass'
 ghenv.Component.NickName = 'SplitMass'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -164,7 +165,8 @@ def getFloorCrvs(buildingMass, floorHeights, maxHeights):
         elif len(crvList) == 1 and count == 0:
             cntrCrvs.append([crvList[0]])
         elif len(crvList) == 1 and count != 0:
-            cntrCrvs[0].append(crvList[0])
+            try: cntrCrvs[0].append(crvList[0])
+            except: cntrCrvs.append([crvList[0]])
         else: pass
         
         if crvList != []:
@@ -344,15 +346,15 @@ def getFloorCrvs(buildingMass, floorHeights, maxHeights):
         
         #Match the curve seams in order to ensure proper zone splitting later.
         if len(contourCrvs)!= 0:
-            crvCentPt = rc.Geometry.AreaMassProperties.Compute(contourCrvs[0]).Centroid
+            crvCentPt = rc.Geometry.AreaMassProperties.Compute(contourCrvs[-1]).Centroid
             # get a point from the center of the contour curve to a seam in order to adjust the seam of all other curves.
             curveLengths = []
             for curve in contourCrvs:
                 curveLengths.append(curve.GetLength())
             curveLengths.sort()
             longestCurveLength = curveLengths[-1]
-            factor = ((longestCurveLength)/(contourCrvs[0].PointAtStart.X - crvCentPt.X))*2
-            seamVectorPt = rc.Geometry.Vector3d((contourCrvs[0].PointAtStart.X - crvCentPt.X)*factor, (contourCrvs[0].PointAtStart.Y - crvCentPt.Y)*factor, 0)
+            factor = ((longestCurveLength)/(contourCrvs[-1].PointAtStart.X - crvCentPt.X))*2
+            seamVectorPt = rc.Geometry.Vector3d((contourCrvs[-1].PointAtStart.X - crvCentPt.X)*factor, (contourCrvs[-1].PointAtStart.Y - crvCentPt.Y)*factor, 0)
             
             # Try to adjust the seam of the curves.
             crvAdjust = []

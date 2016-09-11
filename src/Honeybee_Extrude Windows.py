@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2015, Sarith Subramaniam <sarith@sarith.in> 
+# Copyright (c) 2013-2016, Sarith Subramaniam <sarith@sarith.in> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -25,7 +25,7 @@
 Extrude pseudo walls from window polygons. This component has only been tested with rectangular windows.
 
 -
-Provided by Honeybee 0.0.58
+Provided by Honeybee 0.0.60
     
 
     Args:
@@ -40,9 +40,10 @@ from __future__ import print_function
 
 ghenv.Component.Name = "Honeybee_Extrude Windows"
 ghenv.Component.NickName = 'extrudeWindows'
-ghenv.Component.Message = 'VER 0.0.58\nDEC_22_2015'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "12 | WIP"
+ghenv.Component.SubCategory = "13 | WIP"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -52,6 +53,7 @@ except: pass
 import Rhino as rc
 import scriptcontext as sc
 import Grasshopper.Kernel as gh
+
 
 if _thickness and _glazings is not None:
 
@@ -66,18 +68,19 @@ if _thickness and _glazings is not None:
     GlazingWalls =[]
     tol = sc.doc.ModelAbsoluteTolerance
     
-    for glid,glazing in enumerate(_glazings):
-        
-        #Extract surface normal of the glazing, scale the surface normal to the size specified by the _thickness variable
+    for glid, glazing in enumerate(_glazings):
+        # Extract surface normal of the glazing, scale the surface normal to the size specified by the _thickness variable
+        glazing = glazing.Faces[0]
         centroid = rc.Geometry.AreaMassProperties.Compute(glazing).Centroid
-        closestPoint = rc.Geometry.Surface.ClosestPoint(glazing,centroid)[1:]
-        surfNormal = rc.Geometry.Surface.NormalAt(glazing,*closestPoint)
+        closestPoint = glazing.ClosestPoint(centroid)[1:]
+        surfNormal = glazing.NormalAt(*closestPoint)
         surfNormalScaled = surfNormal*_thickness[glid]
-        
+
 
         #Use the scaled vector to loft to create individual glazing walls.
         glazingBrep = rc.Geometry.Brep.CreateFromSurface(glazing)
         edges = rc.Geometry.Brep.DuplicateEdgeCurves(glazingBrep)
+        
 
         for segment in edges:
             segmentCopy = segment.DuplicateCurve()

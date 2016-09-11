@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2015, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
+# Copyright (c) 2013-2016, Chris Mackey <Chris@MackeyArchitecture.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -27,7 +27,7 @@ This component requires you to know a lot of the characteristics of the material
 _
 If you are not able to find all of the necessary material characteristcs and your desired material is relatively light, it might be easier for you to use a "Honeybee_EnergyPlus NoMass Opaque Material."
 -
-Provided by Honeybee 0.0.58
+Provided by Honeybee 0.0.60
     
     Args:
         _thermMaterial: The name of a Therm material from the ThermMaterials output from the from the "Call from EP Construction Library" component.
@@ -42,12 +42,13 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Therm Material to EnergyPlus Material"
 ghenv.Component.NickName = 'ThermMat2EPMat'
-ghenv.Component.Message = 'VER 0.0.58\nJAN_02_2016'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "12 | WIP"
+ghenv.Component.SubCategory = "11 | THERM"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
-try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
 
 import Grasshopper.Kernel as gh
@@ -59,7 +60,9 @@ def checkInputs():
     #Get the material from the THERM Library.
     ThermMaterials = sc.sticky["honeybee_thermMaterialLib"].keys()
     thermMaterial = None
-    if not _thermMaterial.upper() in ThermMaterials:
+    if _thermMaterial.startswith("<Material"):
+        thermMaterial = addThermMatToLib(_thermMaterial)
+    elif not _thermMaterial.upper() in ThermMaterials:
         warning = "Cannot find _thermMaterial in THERM Material library."
         ghenv.Component.AddRuntimeMessage(w, warning)
         return -1
@@ -74,10 +77,32 @@ def checkInputs():
     return thermMaterial
 
 
+def addThermMatToLib(materialString):
+    #Parse the string.
+    materialName = materialString.split('Name=')[-1].split(' ')[0].replace('_', ' ').upper()
+    type = int(materialString.split('Type=')[-1].split(' ')[0])
+    conductivity = float(materialString.split('Conductivity=')[-1].split(' ')[0])
+    absorptivity = float(materialString.split('Absorptivity=')[-1].split(' ')[0])
+    emissivity = float(materialString.split('Emissivity=')[-1].split(' ')[0])
+    RGBColor = System.Drawing.ColorTranslator.FromHtml(materialString.split('RGBColor=')[-1].split('/>')[0])
+    
+    #Make a sub-dictionary for the material.
+    sc.sticky["honeybee_thermMaterialLib"][materialName] = {}
+    
+    #Create the material with values from the original material.
+    sc.sticky["honeybee_thermMaterialLib"][materialName]["Name"] = materialName
+    sc.sticky["honeybee_thermMaterialLib"][materialName]["Type"] = type
+    sc.sticky["honeybee_thermMaterialLib"][materialName]["Conductivity"] = conductivity
+    sc.sticky["honeybee_thermMaterialLib"][materialName]["Absorptivity"] = absorptivity
+    sc.sticky["honeybee_thermMaterialLib"][materialName]["Emissivity"] = emissivity
+    sc.sticky["honeybee_thermMaterialLib"][materialName]["RGBColor"] = RGBColor
+    
+    return materialName
+
 def main(thermMaterial, roughness, thickness, density, specificHeat):
     
-    name = thermMaterial['Name']
-    conductivity = float(thermMaterial['Conductivity'])*1.73
+    name = thermMaterial['Name'].replace(',', '')
+    conductivity = float(thermMaterial['Conductivity'])
     thermAbsp = thermMaterial['Emissivity']
     solAbsp = thermMaterial['Absorptivity']
     visAbsp = thermMaterial['Absorptivity']

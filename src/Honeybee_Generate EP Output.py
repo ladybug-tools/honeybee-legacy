@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2015, Mostapha Sadeghipour Roudsari and Chris Mackey <Sadeghipour@gmail.com and chris@mackeyarchitecture.com> 
+# Copyright (c) 2013-2016, Mostapha Sadeghipour Roudsari and Chris Mackey <Sadeghipour@gmail.com and chris@mackeyarchitecture.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -21,11 +21,12 @@
 
 
 """
-This component helps select simulation outputs that can be hooked into the WriteIDF component.  Outputs are taken from here:
-http://apps1.eere.energy.gov/buildings/energyplus/pdfs/inputoutputreference.pdf
-
+This component helps select simulation outputs that can be hooked into the "Honyebee_Export to OpenStudio" component.  Outputs are taken from here:
+http://bigladdersoftware.com/epx/docs/8-3/input-output-reference/
+_
+You can also use the "Honeybee_Read Result Dictionary" component after running a simulation to get a list of all possible outputs that you can request from a given simulation.
 -
-Provided by Honeybee 0.0.58
+Provided by Honeybee 0.0.60
     
     Args:
         zoneEnergyUse_: Set to "True" to have EnergyPlus solve for basic building energy use such as heating, cooling, electricity for lights and electricity for plug loads for each zone.
@@ -36,19 +37,18 @@ Provided by Honeybee 0.0.58
         surfaceTempAnalysis_: Set to "True" to have EnergyPlus solve for the interior and exterior surface temperatures of the individual surfaces of each zone.
         surfaceEnergyAnalysis_: Set to "True" to have EnergyPlus solve for the gains and losses through the individual surfaces of each zone.
         glazingSolarAnalysis_: Set to "True" to have EnergyPlus solve for the transmitted beam, diffuse, and total solar gain through the individual window surfaces of each zone.  These outputs are needed for Energy Shade Benefit Analysis.
-        HBgeneration_: Set to "True" to have EnergyPlus solve for variables related to HB generation objects like solar panels, wind turbines, batteries, etc.
-        ____________________: ...
         timestep_: Specify a timestep by inputing the words 'hourly', 'daily', 'monthly' or 'annual'.  The default is set to hourly.
     Returns:
         report: Report!
-        simulationOutputs: EnergyPlus code that should be plugged into the "simulationOutputs" parameter of the "writeIDF" component.
+        simulationOutputs: EnergyPlus code that should be plugged into the "simulationOutputs" parameter of the "Honeybee_Export to OpenStudio" component.
 """
 
 ghenv.Component.Name = "Honeybee_Generate EP Output"
 ghenv.Component.NickName = 'EPOutput'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_20_2015'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_28_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "09 | Energy | Energy"
+ghenv.Component.SubCategory = "10 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "3"
@@ -69,17 +69,24 @@ def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, zoneHVACMetrics,
     
     if zoneEnergyUse == True:
         simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Supply Air Total Cooling Energy, " + timePeriod)
-        simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Supply Air Total Heating Energy, " + timePeriod)
-        simulationOutputs.append("Output:Variable,*,Zone Packaged Terminal Heat Pump Total Cooling Energy, " + timePeriod)
-        simulationOutputs.append("Output:Variable,*,Zone Packaged Terminal Heat Pump Total Heating Energy, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Cooling Coil Electric Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Chiller Electric Energy, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Supply Air Total Heating Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Boiler Heating Energy, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Heating Coil Total Heating Energy, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Heating Coil Gas Energy, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Heating Coil Electric Energy, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Humidifier Electric Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Fan Electric Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Ventilation Fan Electric Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Lights Electric Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Electric Equipment Electric Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Earth Tube Fan Electric Energy, "+ timePeriod)
         simulationOutputs.append("Output:Variable,*,Pump Electric Energy, "+ timePeriod)
+        simulationOutputs.append("Output:Variable,*,Zone VRF Air Terminal Cooling Electric Energy, "+ timePeriod)
+        simulationOutputs.append("Output:Variable,*,Zone VRF Air Terminal Heating Electric Energy, "+ timePeriod)
+        simulationOutputs.append("Output:Variable,*,VRF Heat Pump Cooling Electric Energy, "+ timePeriod)
+        simulationOutputs.append("Output:Variable,*,VRF Heat Pump Heating Electric Energy, "+ timePeriod)
     
     if zoneGainsAndLosses == True:
         simulationOutputs.append("Output:Variable,*,Zone Windows Total Transmitted Solar Radiation Energy, " + timePeriod)
@@ -88,8 +95,8 @@ def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, zoneHVACMetrics,
         simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Zone Total Cooling Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Infiltration Total Heat Loss Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Infiltration Total Heat Gain Energy, " + timePeriod)
-        simulationOutputs.append("Output:Variable,*,Zone Ventilation Total Heat Loss Energy, " + timePeriod)
-        simulationOutputs.append("Output:Variable,*,Zone Ventilation Total Heat Gain Energy, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Zone Ventilation Sensible Heat Loss Energy, " + timePeriod)
+        simulationOutputs.append("Output:Variable,*,Zone Ventilation Sensible Heat Gain Energy, " + timePeriod)
     
     if zoneComfortMetrics == True:
         simulationOutputs.append("Output:Variable,*,Zone Operative Temperature, " + timePeriod)
@@ -101,7 +108,6 @@ def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, zoneHVACMetrics,
         simulationOutputs.append("Output:Variable,*,Zone Ventilation Standard Density Volume Flow Rate, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Infiltration Standard Density Volume Flow Rate, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Mechanical Ventilation Standard Density Volume Flow Rate, " + timePeriod)
-        simulationOutputs.append("Output:Variable,*,Earth Tube Air Flow Volume, "+ timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Air Heat Balance Internal Convective Heat Gain Rate, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Air Heat Balance Surface Convection Rate, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Air Heat Balance System Air Transfer Rate, " + timePeriod)
@@ -115,8 +121,8 @@ def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, zoneHVACMetrics,
         simulationOutputs.append("Output:Variable,*,System Node Standard Density Volume Flow Rate, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,System Node Temperature, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,System Node Relative Humidity, " + timePeriod)
-        simulationOutputs.append("Output:Variable,*,Earth Tube Zone Sensible Cooling Energy, "+ timePeriod)
-        simulationOutputs.append("Output:Variable,*,Earth Tube Zone Sensible Heating Energy, "+ timePeriod)
+        simulationOutputs.append("Output:Variable,*,Zone Cooling Setpoint Not Met Time, "+ timePeriod)
+        simulationOutputs.append("Output:Variable,*,Zone Heating Setpoint Not Met Time, "+ timePeriod)
     
     if surfaceTempAnalysis == True:
         simulationOutputs.append("Output:Variable,*,Surface Outside Face Temperature, " + timePeriod)
@@ -131,17 +137,6 @@ def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, zoneHVACMetrics,
         simulationOutputs.append("Output:Variable,*,Surface Window Transmitted Beam Solar Radiation Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Surface Window Transmitted Diffuse Solar Radiation Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Surface Window Transmitted Solar Radiation Energy, " + timePeriod)
-    
-    if HBgeneration_ == True:
-        simulationOutputs.append("Output:Variable,*,Facility Total Electric Demand Power, "+ timePeriod)
-        simulationOutputs.append("Output:Variable,*,Facility Net Purchased Electric Energy, "+ timePeriod)
-        
-        # Facility Total Electric Demand Power - This is the total of the whole Building and HVAC electric demands.
-        
-        # Facility Net Purchased Electric Power - These outputs are the net electricity purchased in both Power and Energy units. This value can be either positive or negative. Positive values are defined as electricity purchased from the utility. Negative values are defined as surplus electricity fed back into the grid.
-        
-        # Electric Load Center Produced Electric Energy [J]
-        # These outputs are the sum of electrical energy and power produced by the generators attached to a particular load center. The keywords for these reports are the unique names of ElectricLoadCenter:Distribution objects.
     
     return simulationOutputs
 

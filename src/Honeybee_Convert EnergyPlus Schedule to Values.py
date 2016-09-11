@@ -4,7 +4,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2015, Chris Mackey and Mostapha Sadeghipour Roudsari <Chris@MackeyArchitecture.com and Sadeghipour@gmail.com> 
+# Copyright (c) 2013-2016, Chris Mackey and Mostapha Sadeghipour Roudsari <Chris@MackeyArchitecture.com and Sadeghipour@gmail.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -35,7 +35,8 @@ Provided by Ladybug 0.0.57
 
 ghenv.Component.Name = "Honeybee_Convert EnergyPlus Schedule to Values"
 ghenv.Component.NickName = 'convertEPSCHValues'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "07 | Energy | Schedule"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
@@ -58,6 +59,7 @@ def main(schName, startDayOfTheWeek):
     
     try:
         if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+        if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): return -1
     except:
         warning = "You need a newer version of Honeybee to use this compoent." + \
         " Use updateHoneybee component to update userObjects.\n" + \
@@ -90,17 +92,21 @@ def main(schName, startDayOfTheWeek):
             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
         else:
             result = open(schName, 'r')
+            lineCount = 0
             for lineCount, line in enumerate(result):
                 readSchedules.schType = 'schedule:year'
                 readSchedules.startHOY = 1
                 readSchedules.endHOY = 8760
-                if lineCount == 0: readSchedules.unit = line.split(',')[-2].split(' ')[-1].upper()
-                elif lineCount == 1: readSchedules.schName = line.split('; ')[-1].split(':')[0]
-                elif lineCount < 4: pass
+                if 'Daysim' in line: pass
                 else:
-                    for columnCount, column in enumerate(line.split(',')):
-                        if columnCount == 4:
-                            values.append(float(column))
+                    if lineCount == 0:readSchedules.unit = line.split(',')[-2].split(' ')[-1].upper()
+                    elif lineCount == 1: readSchedules.schName = line.split('; ')[-1].split(':')[0]
+                    elif lineCount < 4: pass
+                    else:
+                        for columnCount, column in enumerate(line.split(',')):
+                            if columnCount == 4:
+                                values.append(float(column))
+                    lineCount += 1
             dataGotten = True
     else:
         HBScheduleList = sc.sticky["honeybee_ScheduleLib"].keys()

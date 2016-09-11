@@ -12,9 +12,10 @@ Constructions, schedules and systems will be neglected
 """
 ghenv.Component.Name = "Honeybee_Import idf"
 ghenv.Component.NickName = 'importIdf'
-ghenv.Component.Message = 'VER 0.0.58\nDEC_13_2015'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "09 | Energy | Energy"
+ghenv.Component.SubCategory = "10 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nDEC_13_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "4"
@@ -53,14 +54,15 @@ def createEPObject(idfFile, resultDict, key, type = None):
             nameKey = line.split("!")[0].strip()[:-1].strip()
             if nameKey in resultDict[key].keys():
                 # this means the object is already in the library
-                warning = "The " + key + ": " + nameKey + " is already existed in the libaray.\n" + \
+                warning = "The " + key + ": " + nameKey + " already exists in the libaray.\n" + \
                           "You need to rename the " + key + "."
                 print warning
                 break
             else:
                 # add the material to the library
                 resultDict[key][nameKey] = {}
-                if type!=None: resultDict[key][nameKey][0] = type
+                if type!=None:
+                    resultDict[key][nameKey][0] = type
                 
         else:
             objValues = line.split("!")[0].strip().split(",")
@@ -73,6 +75,54 @@ def createEPObject(idfFile, resultDict, key, type = None):
                     if objCount == 0 or len(objValue.strip())!=0: # get rid of empty items
                         #print objValue
                         if objCount!=0:inLine+=1
+                        resultDict[key][nameKey][objKey + inLine] = objValue, objDescription
+                elif objValue.endswith(";"):
+                    if objCount!=0: inLine+=1
+                    resultDict[key][nameKey][objKey + inLine] = objValue[:-1], objDescription
+                    
+                    return resultDict
+
+def createEPObjectDB(idfFile, resultDict, key, type = None, nameKey = None):
+    if key=="Zone,": key = "EPZONES"
+    
+    # This function creates a dictionary from EPObjects
+    if key not in resultDict.keys():
+        # create an empty dictionary for the key
+        resultDict[key] = {}
+    
+    if nameKey in resultDict[key].keys():
+        # this means the object is already in the library
+        warning = "The " + key + ": " + nameKey + " is already existed in the libaray.\n" + \
+                  "You need to rename the " + key + "."
+        print warning
+    else:
+        # add the material to the library
+        resultDict[key][nameKey] = {}
+        if type!=None: resultDict[key][nameKey][0] = type
+    
+    # store the data into the dictionary
+    inLine = 0
+    recounter = 0
+    for lineCount, line in enumerate(idfFile):
+        if line.strip().startswith("!"):
+            recounter -= 1
+            continue
+        else:
+            objValues = line.split("!")[0].strip().split(",")
+            
+            try: objDescription = line.split("!")[1].strip()
+            except:  objDescription = ""
+            objKey = lineCount + recounter #+ '_' + line.split("!-")[1].strip()
+            if objKey == 0:
+                recounter += 1
+                objKey += 1
+            for objCount, objValue in enumerate(objValues):
+                if not objValue.endswith(";"):
+                    if objCount == 0 or len(objValue.strip())!=0: # get rid of empty items
+                        #print objValue
+                        if objCount!=0:
+                            inLine+=1
+                            if lineCount == 1: recounter +=1
                         resultDict[key][nameKey][objKey + inLine] = objValue, objDescription
                 elif objValue.endswith(";"):
                     if objCount!=0: inLine+=1
@@ -103,6 +153,7 @@ def main(idfFile, importEPObjects = False):
 
         try:
             if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+            if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): return -1
         except:
             warning = "You need a newer version of Honeybee to use this compoent." + \
             " Use updateHoneybee component to update userObjects.\n" + \
@@ -168,8 +219,13 @@ def main(idfFile, importEPObjects = False):
         for line in inf:
             for key in EPKeys:
                 if line.strip().ToUpper().startswith(key.ToUpper()):
-                    objType = line.strip()[:-1]
-                    idfFileDict = createEPObject(inf, idfFileDict, key, objType)
+                    objTypeInit = line.strip()[:-1].split(',')
+                    objType = objTypeInit[0] + ','
+                    if (len(objTypeInit) == 2 and '!' in objTypeInit[1]) or (len(objTypeInit) == 1):
+                        idfFileDict = createEPObject(inf, idfFileDict, key, objType)
+                    else:
+                        objName = objTypeInit[1].strip()
+                        idfFileDict = createEPObjectDB(inf, idfFileDict, key, objType, objName)
     
     outputs = {"Material" : [],
             "WindowMaterial" : [],
@@ -212,111 +268,124 @@ def main(idfFile, importEPObjects = False):
             pts = []
             
             # find moving vector based on parent zone
-            movingVector = HBZones[parentZone.lower()][1]
             
-            for coordinate in range(10, numOfKeys, 3):
-                x = idfFileDict["BuildingSurface:Detailed"][surfaceName][coordinate][0]
-                y = idfFileDict["BuildingSurface:Detailed"][surfaceName][coordinate + 1][0]
-                z = idfFileDict["BuildingSurface:Detailed"][surfaceName][coordinate + 2][0]
-                pts.append(rc.Geometry.Point3d.Add(rc.Geometry.Point3d(float(x), float(y), float(z)), movingVector))
+            movingVector = HBZones[parentZone.lower()][1]
+            try:
+                for coordinate in range(10, numOfKeys, 3):
+                    x = idfFileDict["BuildingSurface:Detailed"][surfaceName][coordinate][0]
+                    y = idfFileDict["BuildingSurface:Detailed"][surfaceName][coordinate + 1][0]
+                    z = idfFileDict["BuildingSurface:Detailed"][surfaceName][coordinate + 2][0]
+                    pts.append(rc.Geometry.Point3d.Add(rc.Geometry.Point3d(float(x), float(y), float(z)), movingVector))
+            except:
+                for coordinate in range(9, numOfKeys, 3):
+                    x = idfFileDict["BuildingSurface:Detailed"][surfaceName][coordinate][0]
+                    y = idfFileDict["BuildingSurface:Detailed"][surfaceName][coordinate + 1][0]
+                    z = idfFileDict["BuildingSurface:Detailed"][surfaceName][coordinate + 2][0]
+                    pts.append(rc.Geometry.Point3d.Add(rc.Geometry.Point3d(float(x), float(y), float(z)), movingVector))
             pts.append(pts[0])
             polyline = rc.Geometry.Polyline(pts).ToNurbsCurve()
-            geometry = rc.Geometry.Brep.CreatePlanarBreps(polyline)[0]
-            #create the surface
-            thisEPSrf = hb_EPZoneSurface(geometry, 1, surfaceName)
-            #, parentZone, srfTypeDict[srfType.ToUpper()])
-            
-            #print parentZone
-            
-            #assign properties
-            thisEPSrf.parent = HBZones[parentZone.lower()][0]
-            thisEPSrf.type = srfTypeDict[srfType.ToUpper()]
-            thisEPSrf.construction = thisEPSrf.cnstrSet[thisEPSrf.type]
-            thisEPSrf.EPConstruction = EPConstruction
-            thisEPSrf.setBC(srfBC, isUserInput= True)
-            thisEPSrf.BCObject = BCObject
-            thisEPSrf.sunExposure = sunExposure
-            thisEPSrf.windExposure = windExposure
-            thisEPSrf.groundViewFactor = viewFactor
-            thisEPSrf.numOfVertices = numOfVertices
-            
-            # change type of surface if BC is set to ground
-            if srfBC.lower()== "ground":
-                thisEPSrf.setType(int(thisEPSrf.type) + 0.5, isUserInput= True)
-            
-            
-            if srfBC.lower()== "ground" or srfBC.lower()== "adiabatic":
-                thisEPSrf.setSunExposure('NoSun')
-                thisEPSrf.setWindExposure('NoWind')
-            
-            if srfBC.lower()== "outdoors" or srfBC.lower()== "ground":
-                thisEPSrf.setBCObjectToOutdoors()
-            
-            # add surface to the zone
-            HBZones[parentZone.lower()][0].addSrf(thisEPSrf)
-            # add to surfaces dictionary
-            HBSurfaces[surfaceName] = thisEPSrf
-            
+            try:
+                geometry = rc.Geometry.Brep.CreatePlanarBreps(polyline)[0]
+                #create the surface
+                thisEPSrf = hb_EPZoneSurface(geometry, 1, surfaceName)
+                #, parentZone, srfTypeDict[srfType.ToUpper()])
+                
+                #print parentZone
+                
+                #assign properties
+                thisEPSrf.parent = HBZones[parentZone.lower()][0]
+                thisEPSrf.type = srfTypeDict[srfType.ToUpper()]
+                thisEPSrf.construction = thisEPSrf.cnstrSet[thisEPSrf.type]
+                thisEPSrf.EPConstruction = EPConstruction
+                thisEPSrf.setBC(srfBC, isUserInput= True)
+                thisEPSrf.BCObject = BCObject
+                thisEPSrf.sunExposure = sunExposure
+                thisEPSrf.windExposure = windExposure
+                thisEPSrf.groundViewFactor = viewFactor
+                thisEPSrf.numOfVertices = numOfVertices
+                
+                # change type of surface if BC is set to ground
+                if srfBC.lower()== "ground":
+                    thisEPSrf.setType(int(thisEPSrf.type) + 0.5, isUserInput= True)
+                
+                
+                if srfBC.lower()== "ground" or srfBC.lower()== "adiabatic":
+                    thisEPSrf.setSunExposure('NoSun')
+                    thisEPSrf.setWindExposure('NoWind')
+                
+                if srfBC.lower()== "outdoors" or srfBC.lower()== "ground":
+                    thisEPSrf.setBCObjectToOutdoors()
+                
+                # add surface to the zone
+                HBZones[parentZone.lower()][0].addSrf(thisEPSrf)
+                # add to surfaces dictionary
+                HBSurfaces[surfaceName] = thisEPSrf
+            except:
+                print "failed to build EP Srf"
+    
     HBFenSurfaces = {}
     if idfFileDict.has_key("FenestrationSurface:Detailed"):
         # add child surfaces
         for surfaceName in idfFileDict["FenestrationSurface:Detailed"]: #["BuildingSurface:Detailed"]:
-            srfType = idfFileDict["FenestrationSurface:Detailed"][surfaceName][1][0]
-            EPConstruction = idfFileDict["FenestrationSurface:Detailed"][surfaceName][2][0]
-            parentSrf = idfFileDict["FenestrationSurface:Detailed"][surfaceName][3][0]
-            BCObject = idfFileDict["FenestrationSurface:Detailed"][surfaceName][4][0]
-            viewFactor = idfFileDict["FenestrationSurface:Detailed"][surfaceName][5][0]
-            shadingControlName = idfFileDict["FenestrationSurface:Detailed"][surfaceName][6][0]
-            frameName = idfFileDict["FenestrationSurface:Detailed"][surfaceName][7][0]
-            multiplier = idfFileDict["FenestrationSurface:Detailed"][surfaceName][8][0]
-            numOfVertices = idfFileDict["FenestrationSurface:Detailed"][surfaceName][9][0]
-            numOfKeys = len(idfFileDict["FenestrationSurface:Detailed"][surfaceName].keys())
-            
-            pts = []
-            
-            
-            # let the user know that we don't support shading control right now and we are sorry
-            if shadingControlName.strip()!="":
-                msg = "Currently Honeybee doesn't support importing shading controls!" +\
-                      "\nSorry and it will be added soon!"
-                w = gh.GH_RuntimeMessageLevel.Warning
-                ghenv.Component.AddRuntimeMessage(w, msg)
+            try:
+                srfType = idfFileDict["FenestrationSurface:Detailed"][surfaceName][1][0]
+                EPConstruction = idfFileDict["FenestrationSurface:Detailed"][surfaceName][2][0]
+                parentSrf = idfFileDict["FenestrationSurface:Detailed"][surfaceName][3][0]
+                BCObject = idfFileDict["FenestrationSurface:Detailed"][surfaceName][4][0]
+                viewFactor = idfFileDict["FenestrationSurface:Detailed"][surfaceName][5][0]
+                shadingControlName = idfFileDict["FenestrationSurface:Detailed"][surfaceName][6][0]
+                frameName = idfFileDict["FenestrationSurface:Detailed"][surfaceName][7][0]
+                multiplier = idfFileDict["FenestrationSurface:Detailed"][surfaceName][8][0]
+                numOfVertices = idfFileDict["FenestrationSurface:Detailed"][surfaceName][9][0]
+                numOfKeys = len(idfFileDict["FenestrationSurface:Detailed"][surfaceName].keys())
                 
-                shadingControlName = ""
-            
-            
-            # find moving vector based on parent zone
-            movingVector = HBZones[HBSurfaces[parentSrf].parent.name.lower()][1]
-            
-            for coordinate in range(10, numOfKeys, 3):
-                x = idfFileDict["FenestrationSurface:Detailed"][surfaceName][coordinate][0]
-                y = idfFileDict["FenestrationSurface:Detailed"][surfaceName][coordinate + 1][0]
-                z = idfFileDict["FenestrationSurface:Detailed"][surfaceName][coordinate + 2][0]
-                pts.append(rc.Geometry.Point3d.Add(rc.Geometry.Point3d(float(x), float(y), float(z)), movingVector))
+                pts = []
                 
-            pts.append(pts[0])
-            polyline = rc.Geometry.Polyline(pts).ToNurbsCurve()
-            geometry = rc.Geometry.Brep.CreatePlanarBreps(polyline)[0]
-            
-            #create the surface
-            thisEPFenSrf = hb_EPFenSurface(geometry, 1, surfaceName, HBSurfaces[parentSrf], 5)
-            
-            #assign properties
-            thisEPFenSrf.parent = HBSurfaces[parentSrf]
-            thisEPFenSrf.construction = thisEPFenSrf.cnstrSet[thisEPFenSrf.type]
-            thisEPFenSrf.EPConstruction = EPConstruction
-            thisEPFenSrf.BCObject = BCObject
-            thisEPFenSrf.shadingControlName = shadingControlName
-            thisEPFenSrf.frameName = frameName
-            thisEPFenSrf.multiplier = multiplier
-            thisEPFenSrf.groundViewFactor = viewFactor
-            thisEPFenSrf.numOfVertices = numOfVertices
-            
-            if thisEPFenSrf.parent.BC.lower()== "outdoors":
-                thisEPFenSrf.setBCObjectToOutdoors()
                 
-            # add the child surface to the surface
-            HBSurfaces[parentSrf].addChildSrf(thisEPFenSrf)
+                # let the user know that we don't support shading control right now and we are sorry
+                if shadingControlName.strip()!="":
+                    msg = "Currently Honeybee doesn't support importing shading controls!" +\
+                          "\nSorry and it will be added soon!"
+                    w = gh.GH_RuntimeMessageLevel.Warning
+                    ghenv.Component.AddRuntimeMessage(w, msg)
+                    
+                    shadingControlName = ""
+                
+                
+                # find moving vector based on parent zone
+                movingVector = HBZones[HBSurfaces[parentSrf].parent.name.lower()][1]
+                
+                for coordinate in range(10, numOfKeys, 3):
+                    x = idfFileDict["FenestrationSurface:Detailed"][surfaceName][coordinate][0]
+                    y = idfFileDict["FenestrationSurface:Detailed"][surfaceName][coordinate + 1][0]
+                    z = idfFileDict["FenestrationSurface:Detailed"][surfaceName][coordinate + 2][0]
+                    pts.append(rc.Geometry.Point3d.Add(rc.Geometry.Point3d(float(x), float(y), float(z)), movingVector))
+                    
+                pts.append(pts[0])
+                polyline = rc.Geometry.Polyline(pts).ToNurbsCurve()
+                geometry = rc.Geometry.Brep.CreatePlanarBreps(polyline)[0]
+                
+                #create the surface
+                thisEPFenSrf = hb_EPFenSurface(geometry, 1, surfaceName, HBSurfaces[parentSrf], 5)
+                
+                #assign properties
+                thisEPFenSrf.parent = HBSurfaces[parentSrf]
+                thisEPFenSrf.construction = thisEPFenSrf.cnstrSet[thisEPFenSrf.type]
+                thisEPFenSrf.EPConstruction = EPConstruction
+                thisEPFenSrf.BCObject = BCObject
+                thisEPFenSrf.shadingControlName = shadingControlName
+                thisEPFenSrf.frameName = frameName
+                thisEPFenSrf.multiplier = multiplier
+                thisEPFenSrf.groundViewFactor = viewFactor
+                thisEPFenSrf.numOfVertices = numOfVertices
+                
+                if thisEPFenSrf.parent.BC.lower()== "outdoors":
+                    thisEPFenSrf.setBCObjectToOutdoors()
+                    
+                # add the child surface to the surface
+                HBSurfaces[parentSrf].addChildSrf(thisEPFenSrf)
+            except:
+                print "failed to build fen srf"
     
     winPts = []
     if idfFileDict.has_key("Window,"):
@@ -421,7 +490,10 @@ def main(idfFile, importEPObjects = False):
         # replace BCObjects with HBObjects
         for HBS in HBZone.surfaces:
             if HBS.BC.lower() == "surface":
-                HBS.BCObject = HBSurfaces[HBS.BCObject]
+                try:
+                    HBS.BCObject = HBSurfaces[HBS.BCObject]
+                except:
+                    pass
         
         zonesList.append(HBZone)
         

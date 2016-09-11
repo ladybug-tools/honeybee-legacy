@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2015, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
+# Copyright (c) 2013-2016, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -27,7 +27,7 @@ You can download several measures from here: https://bcl.nrel.gov/nrel/types/mea
 
 Many thanks to NREL team for their support during the process. See (https://github.com/mostaphaRoudsari/Honeybee/issues/214) and (https://github.com/mostaphaRoudsari/Honeybee/issues/290)for just two examples!
 -
-Provided by Honeybee 0.0.58
+Provided by Honeybee 0.0.60
 
     Args:
         _osmFilePath: A file path of the an OpemStdio file
@@ -43,9 +43,10 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Apply OpenStudio Measure"
 ghenv.Component.NickName = 'applyOSMeasure'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_07_2015'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "12 | WIP"
+ghenv.Component.SubCategory = "13 | WIP"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
@@ -53,23 +54,50 @@ except: pass
 
 import os
 import scriptcontext as sc
-
-#openStudioLibFolder = "C:\\Users\\" + os.getenv("USERNAME") + "\\Dropbox\\ladybug\\honeybee\\openStudio\\CSharp64bits"
-openStudioFolder = r"C:\\Program Files\\OpenStudio 1.9.2\\"
-openStudioLibFolder = openStudioFolder + r"\CSharp\openstudio"
-
-# openstudio is there
-# I need to add a function to check the version and compare with available version
-openStudioIsReady = True
-import clr
-clr.AddReferenceToFileAndPath(openStudioLibFolder+"\\openStudio.dll")
-
-import sys
-if openStudioLibFolder not in sys.path:
-    sys.path.append(openStudioLibFolder)
-
-import OpenStudio
 import time
+from distutils.dir_util import copy_tree
+
+# I need to add a central function to check the version and compare with available version.
+if sc.sticky.has_key('honeybee_release'):
+    
+    installedOPS = [f for f in os.listdir("C:\\Program Files") if f.startswith("OpenStudio")]
+    installedOPS = sorted(installedOPS, key = lambda x: int("".join(x.split(" ")[-1].split("."))), reverse = True)
+    
+    if len(installedOPS) != 0:
+        openStudioFolder = "C:/Program Files/%s/"%installedOPS[0]
+        openStudioLibFolder = "C:/Program Files/%s/CSharp/openstudio/"%installedOPS[0]
+        QtFolder = "C:/Program Files/%s/Ruby/openstudio/"%installedOPS[0]
+    else:
+        openStudioFolder = ""
+        openStudioLibFolder = ""
+        QtFolder = ""
+    
+    if os.path.isdir(openStudioLibFolder) and os.path.isfile(os.path.join(openStudioLibFolder, "openStudio.dll")):
+        # openstudio is there
+        # add both folders to path to avoid PINVOKE exception
+        if not openStudioLibFolder in os.environ['PATH'] or QtFolder not in os.environ['PATH']:
+            os.environ['PATH'] = ";".join([openStudioLibFolder, QtFolder, os.environ['PATH']])
+        
+        openStudioIsReady = True
+        import clr
+        clr.AddReferenceToFileAndPath(openStudioLibFolder+"\\openStudio.dll")
+    
+        import sys
+        if openStudioLibFolder not in sys.path:
+            sys.path.append(openStudioLibFolder)
+    
+        import OpenStudio
+    else:
+        openStudioIsReady = False
+        # let the user know that they need to download OpenStudio libraries
+        msg = "Cannot find OpenStudio libraries at " + openStudioLibFolder + \
+              "\nYou need to download and install OpenStudio to be able to use this component."
+              
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+else:
+    openStudioIsReady = False
+
+
 
 def createOSArgument(arg):
     
@@ -82,19 +110,47 @@ def createOSArgument(arg):
     elif arg.type == 'Boolean':
         argument = OpenStudio.OSArgument.makeBoolArgument(arg.name, arg.required, arg.model_dependent)
     
+    elif arg.type == 'Double':
+        argument = OpenStudio.OSArgument.makeDoubleArgument(arg.name, arg.required, arg.model_dependent)
     else:
-        raise Exception("%s is not Implemented")%arg.type
+        raise Exception("%s is not Implemented" % arg.type)
     
     argument.setDisplayName(arg.display_name)
     argument.setDefaultValue(arg.default_value) #I'm not sure if this is neccessary
     argument.setDescription(arg.description)
-    if arg.type != 'Boolean':
-        argument.setValue(str(arg.userInput))
-    else:
-        argument.setValue(arg.userInput)
+    
+    if arg.userInput is not None:
+        if arg.type == 'Double':
+            argument.setValue(float(arg.userInput))    
+        elif arg.type != 'Boolean':
+            argument.setValue(str(arg.userInput))
+        else:
+            argument.setValue(bool(arg.userInput))
     
     return argument
 
+def getEPFolder(openStudioDir):
+    fullDir = openStudioDir + "/share/openstudio"
+    fList = os.listdir(fullDir)
+    for f in fList:
+        fullpath = os.path.join(fullDir, f)
+        if os.path.isdir(fullpath) and f.startswith("EnergyPlus"):
+            return fullpath
+    
+    raise Exception("Failed to find EnergyPlus folder at %s." % openStudioDir)
+
+def copyRubyFolder(openStudioDir):
+    """OpenStudio has a bug and looks for ruby files under CSharp folder and not
+    under OpenStudio folder. This function copy files under CSharp folder if it
+    hasn't been copied."""
+    if not os.path.isdir(openStudioDir + "/CSharp/Ruby"):
+        try:
+            copy_tree(openStudioDir + "/Ruby", openStudioDir + "/CSharp/Ruby")
+        except Exception as e:
+            msg = "Failed to copy %s folder to %s. Please copy the folder manually" \
+            " and try again" % (openStudioDir + "/Ruby", openStudioDir + "/CSharp/Ruby")
+            raise IOError(msg)
+            
 def main(epwFile, OSMeasure, osmFile):
     
     # check inputs
@@ -115,10 +171,12 @@ def main(epwFile, OSMeasure, osmFile):
     rmDBPath = OpenStudio.Path(workingDir + '/runmanager.db')
     osmPath = OpenStudio.Path(osmFile)
     epwPath = OpenStudio.Path(epwFile)
-    epPath = OpenStudio.Path(openStudioFolder + r'\share\openstudio\EnergyPlusV8-3-0')
+    epPath = OpenStudio.Path(getEPFolder(openStudioFolder))
     radPath = OpenStudio.Path('c:\radince\bin') #openStudioFolder + r'\share\openstudio\Radiance\bin')
     rubyPath = OpenStudio.Path(openStudioFolder + r'\ruby-install\ruby\bin')
     outDir = OpenStudio.Path(workingDir + '\\' + OSMeasure.name.replace(" ", "_")) # I need to have extra check here to make sure name is valid
+    
+    copyRubyFolder(openStudioFolder)
     
     wf = OpenStudio.Workflow()
     
@@ -173,27 +231,25 @@ def main(epwFile, OSMeasure, osmFile):
         jobErrors = jobtree.errors()
         
         print "Errors and Warnings:"
-        for msg in jobErrors.errors():
-          print msg
+        print "\n".join(jobErrors.errors())
         
         if jobErrors.succeeded():
           print "Passed!"
         else:
           print "Failed!"
-        
         rm.Dispose()
         
-    except:
+    except Exception as e:
+        print str(e)
+    finally:
         rm.Dispose()
     
     projectFolder = os.path.normpath(workingDir + '\\' + OSMeasure.name.replace(" ", "_") + "\\0-UserScript")
-    modifiedOsmFilePath = os.path.normpath(projectFolder + "\\eplusin.osm")
-    modifiedIdfFilePath = "" # I need to add exapnd idf to workflow to get these two
-    resultsFileAddress = ""
     
-    return projectFolder, modifiedIdfFilePath, modifiedOsmFilePath, resultsFileAddress
+    return projectFolder
 
 
-if _runIt and _epwWeatherFile and _OSMeasure and _osmFilePath:
-    
-    projectFolder, modifiedIdfFilePath, modifiedOsmFilePath, resultsFileAddress = main(_epwWeatherFile, _OSMeasure, _osmFilePath)
+if openStudioIsReady and _runIt and _epwWeatherFile and _OSMeasure and _osmFilePath:
+    projectFolder = main(_epwWeatherFile, _OSMeasure, _osmFilePath)
+    if projectFolder is not None:
+        outputFiles = os.listdir(projectFolder)

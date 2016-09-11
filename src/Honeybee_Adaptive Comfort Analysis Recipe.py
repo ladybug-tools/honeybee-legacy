@@ -4,7 +4,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2015, Chris Mackey <Chris@MackeyArchitecture.com> 
+# Copyright (c) 2013-2016, Chris Mackey <Chris@MackeyArchitecture.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -24,13 +24,12 @@
 """
 Use this component to assemble an adaptive comfort recipe for the "Honeybee_Annual Indoor Comfort Analysis" component.
 -
-Provided by Honeybee 0.0.58
+Provided by Honeybee 0.0.60
     
     Args:
         _viewFactorMesh: The data tree of view factor meshes that comes out of the  "Honeybee_Indoor View Factor Calculator".
         _viewFactorInfo: The python list that comes out of the  "Honeybee_Indoor View Factor Calculator".
         _epwFile: The epw file that was used to run the EnergyPlus model.  This will be used to generate sun vectors and get radiation data for estimating the temperature delta for sun falling on occupants.
-        north_: Input a vector to be used as a true North direction for the comfort analysis or a number between 0 and 360 that represents the degrees off from the y-axis to make North.  The default North direction is set to the Y-axis (0 degrees).
         ===============: ...
         _srfIndoorTemp: A list surfaceIndoorTemp data out of the "Honeybee_Read EP Surface Result" component.
         srfOutdoorTemp_: A list surfaceOutdoorTemp data out of the "Honeybee_Read EP Surface Result" component.
@@ -43,25 +42,33 @@ Provided by Honeybee 0.0.58
         inletHeightOverride_: An optional list of float values that match the data tree of view factor meshes and represent the height, in meters, from the bottom of the view factor mesh to the window inlet height.  This will override the default value used in the air stratification calculation, which sets the inlet height in the bottom half of the average glazing height.
         windowShadeTransmiss_: A decimal value between 0 and 1 that represents the transmissivity of the shades on the windows of a zone (1 is no shade and 0 is fully shaded).  This input can also be a list of 8760 values between 0 and 1 that represents a list of hourly window shade transmissivities to be applied to all windows of the model. Finally and most importantly, this can be the 'windowTransmissivity' output of the 'Read EP Surface Result' component for an energy model that has been run with window shades.  This final option ensures that the energy model and the confort map results are always aligned although it is the most computationally expensive of the options.  The default is set to 0, which assumes no additional shading to windows.
         clothingAbsorptivity_: An optional decimal value between 0 and 1 that represents the fraction of solar radiation absorbed by the human body. The default is set to 0.7 for (average/brown) skin and average clothing.  You may want to increase this value for darker skin or darker clothing.
-        additionalWindSpeed_: An additional value of indoor wind speed in m/s to be added to the base speed computed from the zone volume and hourly flow volume.  Use this input to account for objects like ceiling fans that might increase the interior wind speed felt by the occupants while not affecting the total flow volume into the zone much. This input can also be a list of 8760 additional wind speed values that represent the hours of the year when wind speed is increased.  Lastly, this input can be a data tree of values with branches that are each 8760 values long and correspond to the branches of the input viewFactorMesh_.  This last option enables you to specify different wind speeds for different continuous air volumes.
-        outdoorTerrain_: An interger from 0 to 3 that sets the terrain class associated with the wind speed used in outdoor wind calculations. Interger values represent the following terrain classes:
-            0 = Urban: large city centres, 50% of buildings above 21m over a distance of at least 2000m upwind.
+        windSpeed_: A value in m/s to set the wind speed of the comfort calculation. Use this input to account for objects like ceiling fans that might increase the interior wind speed or input custom wind speed values from a CFD simulation.
+            _
+            This input can also be a list of 8760 additional wind speed values that represent the hours of the year.
+            Alternatively, this input can be a data tree of values with branches that are each 8760 values long and correspond to the branches of the input viewFactorMesh_.
+            This can also be a data tree of values with one branch for each point in the input viewFactorMesh_.
+            Finally, this input can be the file path to a .csv file that is organized with 8760 values in each column and a number of columns that correspond to the number of test points.  This last option is recommended if trying to synchronize CFD results with the microclimate maps.
+            _
+            If no value is input here, the comfort map components will compute a minimum indoor air speed from the zone volume and hourly flow volume and will use the EPW wind speed for outdoor conditions.
+        outdoorTerrain_: An interger or text string that sets the terrain class associated with the wind speed used in outdoor wind calculations. Interger values represent the following terrain classes:
+            0 = City: large city centres, 50% of buildings above 21m over a distance of at least 2000m upwind.
             1 = Suburban: suburbs, wooded areas.
             2 = Country: open, with scattered objects generally less than 10m high.
             3 = Water: Flat, unobstructed areas exposed to wind flowing over a large water body (no more than 500m inland).
+        north_: Input a vector to be used as a true North direction for the comfort analysis or a number between 0 and 360 that represents the degrees off from the y-axis to make North.  The default North direction is set to the Y-axis (0 degrees).
     Returns:
         readMe!: ...
-        ===============: ...
         comfRecipe: An analysis recipe for the "Honeybee_Annual Indoor Comfort Analysis" component.
 """
 
 ghenv.Component.Name = "Honeybee_Adaptive Comfort Analysis Recipe"
 ghenv.Component.NickName = 'AdaptComfRecipe'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_13_2015'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "09 | Energy | Energy"
+ghenv.Component.SubCategory = "10 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
-#compatibleLBVersion = VER 0.0.59\nJUL_06_2015
+#compatibleLBVersion = VER 0.0.59\nJUN_07_2016
 try: ghenv.Component.AdditionalHelpFromDocStrings = "6"
 except: pass
 
@@ -297,16 +304,40 @@ def checkTheInputs():
             shdHeader = ['key:location/dataType/units/frequency/startsAt/endsAt', 'Location', 'Surface Window System Solar Transmittance for ' + srfName + ': Window', 'Fraction', 'Hourly', analysisPeriod[0], analysisPeriod[1]]
             winStatusHeaders.append(shdHeader)
     
-    #Check the additionalWindSpeed_.
+    #Check the windSpeed_.
     checkData31 = True
     winSpeedNumbers = []
     pathCheck = 0
-    allWindSpeedsSame = True
-    if additionalWindSpeed_.BranchCount == 1:
+    allWindSpeedsSame = 1
+    if windSpeed_.BranchCount == 1:
         additionalWindSpeed = []
-        for windValue in additionalWindSpeed_.Branch(0):
+        for windValue in windSpeed_.Branch(0):
             additionalWindSpeed.append(windValue)
-        if len(additionalWindSpeed) == 8760:
+        if len(additionalWindSpeed) == 1:
+            try:
+                for count in range(8760):
+                    winSpeedNumbers.append(float(additionalWindSpeed[0]))
+            except:
+                try:
+                    if additionalWindSpeed[0].upper().endswith('.CSV'):
+                        allWindSpeedsSame = -1
+                        result = open(additionalWindSpeed[0], 'r')
+                        for lineCount, line in enumerate(result):
+                            winSpeedNumbers.append([])
+                            for column in line.split(','):
+                                winSpeedNumbers[lineCount].append(float(column))
+                        result.close()
+                    else:
+                        checkData31 = False
+                        warning = 'windSpeed_ values not recognized.'
+                        print warning
+                        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+                except:
+                    checkData31 = False
+                    warning = 'windSpeed_ values not recognized.'
+                    print warning
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+        elif len(additionalWindSpeed) == 8760:
             allGood = True
             for winSp in additionalWindSpeed:
                 windFloat = float(winSp)
@@ -314,61 +345,62 @@ def checkTheInputs():
                 else: allGood = False
             if allGood == False:
                 checkData31 = False
-                warning = 'additionalWindSpeed_ must be a value greater than 0.'
-                print warning
-                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
-        elif len(additionalWindSpeed) == 1:
-            if float(additionalWindSpeed[0]) >= 0.0:
-                for count in range(8760):
-                    winSpeedNumbers.append(float(additionalWindSpeed[0]))
-            else:
-                checkData31 = False
-                warning = 'additionalWindSpeed_ must be a value greater than 0.'
+                warning = 'windSpeed_ must be a value greater than 0.'
                 print warning
                 ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
         else:
             checkData31 = False
-            warning = 'additionalWindSpeed_ must be either a list of 8760 values that correspond to hourly changing wind speeds over the year or a single constant value for the whole year.'
+            warning = 'windSpeed_ must be either a list of 8760 values that correspond to hourly changing wind speeds over the year or a single constant value for the whole year.'
             print warning
             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
-    elif additionalWindSpeed_.BranchCount > 1:
-        allWindSpeedsSame = False
-        treePaths = additionalWindSpeed_.Paths
-        for path in treePaths:
-            i = path.Indices[0]
-            if i == pathCheck:
-                branchList = additionalWindSpeed_.Branch(path)
+    elif windSpeed_.BranchCount > 1:
+        
+        if windSpeed_.BranchCount == testPtNum:
+            #Wind speed values for each point in the analysis.
+            allWindSpeedsSame = -1
+            winSpeedNumInit = []
+            for i in range(windSpeed_.BranchCount):
+                branchList = windSpeed_.Branch(i)
                 dataVal = []
                 for item in branchList:
-                    dataVal.append(item)
-                winSpeedNumbers.append(dataVal)
-                pathCheck += 1
-            else:
-                while pathCheck < i:
-                    winSpeedNumbers.append([])
-                    pathCheck += 1
+                    dataVal.append(float(item))
+                winSpeedNumInit.append(dataVal)
+            winSpeedNumbers = zip(*winSpeedNumInit)
+            
+        elif windSpeed_.BranchCount == _viewFactorMesh.BranchCount:
+            #Wind speed for each zone in the analysis.
+            allWindSpeedsSame = 0
+            treePaths = windSpeed_.Paths
+            for path in treePaths:
+                i = path.Indices[0]
                 if i == pathCheck:
-                    branchList = additionalWindSpeed_.Branch(path)
+                    branchList = windSpeed_.Branch(path)
                     dataVal = []
                     for item in branchList:
-                        dataVal.append(item)
+                        dataVal.append(float(item))
                     winSpeedNumbers.append(dataVal)
                     pathCheck += 1
-        if len(winSpeedNumbers) < finalCheck:
-            while len(winSpeedNumbers) < finalCheck:
-                winSpeedNumbers.append([])
-        for winCount, winList in enumerate(winSpeedNumbers):
-            if len(winList) != 0 and winCount != len(winSpeedNumbers) - 1: pass
-            elif winCount == len(winSpeedNumbers) - 1: pass
-            else:
-                checkData31 = False
-                warning = 'additionalWindSpeed_ data tree is not formatted correctly.  Try simplifying the tree paths before connecting it.'
-                print warning
-                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+                else:
+                    while pathCheck < i:
+                        winSpeedNumbers.append([])
+                        pathCheck += 1
+                    if i == pathCheck:
+                        branchList = windSpeed_.Branch(path)
+                        dataVal = []
+                        for item in branchList:
+                            dataVal.append(float(item))
+                        winSpeedNumbers.append(dataVal)
+                        pathCheck += 1
+            if len(winSpeedNumbers) < finalCheck:
+                while len(winSpeedNumbers) < finalCheck:
+                    winSpeedNumbers.append([])
+        else:
+            checkData31 = False
+            warning = 'windSpeed_ data tree branches do not match those of the viewFactorMesh or the number of testPts.'
+            print warning
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
     else:
-        for count in range(8760):
-            winSpeedNumbers.append(0)
-        print 'No value found for additionalWindSpeed_.  No additional value for wind speed will be added.'
+        print 'No value found for windSpeed_. The components will use an indoor wind speed from the air flow volume or outdoor EPW wind speed.'
     
     #Check to be sure that the units of flowVol and heat gain are correct.
     checkData9 = True
@@ -419,6 +451,7 @@ def checkTheInputs():
         globalHorizontalRadiation = weatherData[7]
         dryBulbTemp = weatherData[0]
         outWindSpeed = weatherData[3]
+        outHorizInfrared = weatherData[12]
     
     #Separate out the _dirNormRad, the diffuse Horizontal rad, and the location  data.
     directSolarRad = []
@@ -431,6 +464,7 @@ def checkTheInputs():
         directSolarRad = directNormalRadiation[7:]
         diffSolarRad = diffuseHorizontalRadiation[7:]
         globHorizRad = globalHorizontalRadiation[7:]
+        outHorizInfrared = outHorizInfrared[7:]
         prevailingOutdoorTemp = dryBulbTemp
         locList = location.split('\n')
         for line in locList:
@@ -513,12 +547,12 @@ def checkTheInputs():
     
     
     #Check the outdoor terrain.
-    # Evaluate the terrain type to get the right roughness length.
-    checkData29, terrainType, gradientHeightDiv, d, a, yValues, yAxisMaxRhinoHeight, nArrows, printMsg = lb_wind.terrain(outdoorTerrain_)
-    print printMsg
+    checkData29, terrainType, d, a = lb_wind.readTerrainType(outdoorTerrain_)
     if checkData29 == False:
-        w = gh.GH_RuntimeMessageLevel.Warning
-        ghenv.Component.AddRuntimeMessage(w, printMsg)
+        warning = "Invalid input for terrainType_."
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+    else:
+        print "Terrain set to " + terrainType + "."
     
     #Check the inletHeightOverride_.
     inletHeightOverride = []
@@ -575,9 +609,10 @@ def checkTheInputs():
     #Do a final check of everything.
     if checkData1 == True and checkData2 == True and checkData3 == True and checkData4 == True and checkData5 == True and checkData7 == True and checkData8 == True and checkData9 == True and checkData10 == True and checkData11 == True and checkData12 == True and checkData13 == True and checkData14 == True and checkData15 == True and checkData16 == True and checkData21 == True and checkData22 == True and checkData23 == True and checkData24 == True and checkData25 == True and checkData26 == True and checkData27 == True and checkData28 == True and checkData29 == True and checkData30 == True and checkData31 == True:
         checkData = True
-    else: checkData = False
+    else:
+        return -1
     
-    return checkData, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winStatusNumbers, cloA, zoneFloorReflectivity, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, prevailingOutdoorTemp, ASHRAEorEN, comfClass, avgMonthOrRunMean, levelOfConditioning, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, analysisPeriod, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, northAngle
+    return "Adaptive", srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winStatusNumbers, cloA, zoneFloorReflectivity, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, prevailingOutdoorTemp, ASHRAEorEN, comfClass, avgMonthOrRunMean, levelOfConditioning, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, analysisPeriod, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, outHorizInfrared, northAngle
 
 
 
@@ -596,7 +631,6 @@ else:
 checkData = False
 if _viewFactorMesh.BranchCount > 0 and len(_viewFactorInfo) > 0 and _epwFile != None and _srfIndoorTemp.BranchCount > 0 and _zoneAirTemp.BranchCount > 0  and _zoneAirFlowVol.BranchCount > 0 and _zoneAirHeatGain.BranchCount > 0 and initCheck == True:
     if _viewFactorInfo[0] != None:
-        checkData, srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, prevailingOutdoorTemp, ASHRAEorEN, comfClass, avgMonthOrRunMean, levelOfConditioning, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, analysisPeriod, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, northAngle = checkTheInputs()
-
-if checkData == True:
-    comfRecipe = ["Adaptive", srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winTrans, cloA, floorR, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, prevailingOutdoorTemp, ASHRAEorEN, comfClass, avgMonthOrRunMean, levelOfConditioning, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, analysisPeriod, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, northAngle]
+        recipe = checkTheInputs()
+        if recipe != -1:
+            comfRecipe = recipe

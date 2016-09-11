@@ -4,7 +4,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2015, Chris Mackey <Chris@MackeyArchitecture.com> 
+# Copyright (c) 2013-2016, Chris Mackey <Chris@MackeyArchitecture.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -24,7 +24,7 @@
 """
 Use this component to produce a colored mesh from a comfResultsMtx.
 -
-Provided by Honeybee 0.0.58
+Provided by Honeybee 0.0.60
     
     Args:
         _comfResultsMtx: Any matrix output from the 'Honeybee_Microclimate Map Analysis' component, the 'Honeybee_Thermal Comfort Autonomy Analysis' component, or the 'Honeybee_Read Microclimate Matrix' component.
@@ -49,9 +49,10 @@ Provided by Honeybee 0.0.58
 
 ghenv.Component.Name = "Honeybee_Visualize Microclimate Map"
 ghenv.Component.NickName = 'VisualizeMicroclimate'
-ghenv.Component.Message = 'VER 0.0.58\nNOV_20_2015'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "09 | Energy | Energy"
+ghenv.Component.SubCategory = "10 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
 #compatibleLBVersion = VER 0.0.59\nNOV_20_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "6"
@@ -296,9 +297,10 @@ def main(pointValues, viewFactorMesh, dataType, lb_preparation, lb_visualization
     lowB, highB, numSeg, customColors, legendBasePoint, legendScale, legendFont, legendFontSize, legendBold, decimalPlaces, removeLessThan = lb_preparation.readLegendParameters(legendPar, False)
     
     #Read the data type and assign default values for mesh types.
-    if dataType == 'Degrees From Target' or dataType == 'Predicted Mean Vote' or dataType == 'Degrees From Neutral UTCI':
+    if dataType == 'Degrees From Target' or dataType == 'Predicted Mean Vote' or dataType == 'Degrees From Neutral UTCI' or dataType == 'PET Category':
         pointValuesFinal = pointValues
         if dataType == 'Degrees From Target' or dataType == 'Degrees From Neutral UTCI': legendTitle = 'C'
+        elif dataType == 'PET Category': legendTitle = 'PET Category'
         else: legendTitle = 'PMV'
         if dataType == 'Degrees From Target': dataType = dataType + ' Temperature'
         if len(legendPar_) == 0:
@@ -312,6 +314,10 @@ def main(pointValues, viewFactorMesh, dataType, lb_preparation, lb_visualization
                 numSeg = 12
                 lowB = -32
                 highB = 12
+            elif dataType == 'PET Category':
+                numSeg = 11
+                lowB = -2
+                highB = 2
             else:
                 numSeg = 11
                 lowB = -1
@@ -401,7 +407,7 @@ def main(pointValues, viewFactorMesh, dataType, lb_preparation, lb_visualization
     
     #If there is an analysis period, format the text for it in the legend title.
     try:
-        if len(analysisPeriod_) == 0 or annualData == False:
+        if len(analysisPeriod_) == 0 and annualData == False:
             startMonth = analysisPeriod[0][0]
             endMonth = analysisPeriod[1][0]
             startDay = analysisPeriod[0][1]
