@@ -60,11 +60,11 @@ Provided by Honeybee 0.0.60
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.60\nSEP_04_2016'
+ghenv.Component.Message = 'VER 0.0.60\nSEP_18_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nSEP_04_2016
+#compatibleHBVersion = VER 0.0.56\nSEP_17_2016
 #compatibleLBVersion = VER 0.0.59\nJUL_24_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
@@ -381,10 +381,6 @@ class WriteIDF(object):
                         shdCntrl = '-'.join(newSchStrList)
                 except:
                     shdCntrl = ''
-                
-                #Check for frame objects.
-                #if childSrf.construction in sc.sticky["honeybee_ExtraConstrProps"].keys():
-                #    childSrf.frameName = sc.sticky["honeybee_ExtraConstrProps"][childSrf.construction]['Name']
                 
                 if checked:
                     str_1 = '\nFenestrationSurface:Detailed,\n' + \
@@ -2149,9 +2145,6 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         constructionStr, materials = hb_writeIDF.EPConstructionStr(cnstr)
         if constructionStr:
             idfFile.write(constructionStr)
-            #Check for any additional properties.
-            if cnstr in sc.sticky["honeybee_ExtraConstrProps"].keys():
-                idfFile.write(sc.sticky["honeybee_ExtraConstrProps"][cnstr]['Properties'])
             #Check for materials.
             for mat in materials:
                 if not mat.upper() in EPMaterialCollection:
