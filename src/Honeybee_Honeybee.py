@@ -384,7 +384,7 @@ class PrepareTemplateEPLibFiles(object):
         if not sc.sticky.has_key("honeybee_windowMaterialLib"): sc.sticky ["honeybee_windowMaterialLib"] = {}
         if not sc.sticky.has_key("honeybee_ScheduleLib"): sc.sticky["honeybee_ScheduleLib"] = {}
         if not sc.sticky.has_key("honeybee_ScheduleTypeLimitsLib"): sc.sticky["honeybee_ScheduleTypeLimitsLib"] = {}
-        if not sc.sticky.has_key("honeybee_WinodowPropLib"): sc.sticky["honeybee_WinodowPropLib"] = {}
+        if not sc.sticky.has_key("honeybee_WindowPropLib"): sc.sticky["honeybee_WindowPropLib"] = {}
         if not sc.sticky.has_key("honeybee_SpectralDataLib"): sc.sticky["honeybee_SpectralDataLib"] = {}
         if not sc.sticky.has_key("honeybee_thermMaterialLib"): sc.sticky["honeybee_thermMaterialLib"] = {}
         
@@ -403,7 +403,7 @@ class PrepareTemplateEPLibFiles(object):
         sc.sticky ["honeybee_windowMaterialLib"] = {}
         sc.sticky["honeybee_ScheduleLib"] = {}
         sc.sticky["honeybee_ScheduleTypeLimitsLib"] = {}
-        sc.sticky["honeybee_WinodowPropLib"] = {}
+        sc.sticky["honeybee_WindowPropLib"] = {}
         sc.sticky["honeybee_SpectralDataLib"] = {}
     
     def cleanThermLib(self):
@@ -537,7 +537,9 @@ class HB_GetEPLibraries:
             "Construction": {},
             "Schedule" : {},
             "ScheduleTypeLimits": {},
-            "ThermMaterial": {}
+            "ThermMaterial": {},
+            "WindowProperty": {},
+            "MaterialProperty": {}
             }
     
     def getEPMaterials(self):
@@ -548,6 +550,12 @@ class HB_GetEPLibraries:
     
     def getEPWindowMaterial(self):
         return self.libraries["WindowMaterial"]
+    
+    def getEPWindowProp(self):
+        return self.libraries["WindowProperty"]
+    
+    def getEPSpectralData(self):
+        return self.libraries["MaterialProperty"]
     
     def getEPSchedule(self):
         return self.libraries["Schedule"]
@@ -563,7 +571,7 @@ class HB_GetEPLibraries:
             raise Exception("Can't find EP library! at %s"%EPfile)
         
         if isMatFile == False:
-            print "Loading EP materials, constructions and schedules from %s"%EPfile
+            print "Loading EP materials, constructions, schedules and material properties from %s"%EPfile
             EPObjects = self.getEnergyPlusObjectsFromFile(EPfile)
             self.loadEPConstructionsMaterialsAndSchedules(EPObjects, cleanCurrentLib)
         else:
@@ -580,7 +588,9 @@ class HB_GetEPLibraries:
             "Construction": {},
             "Schedule" : {},
             "ScheduleTypeLimits": {},
-            "ThermMaterial": {}
+            "ThermMaterial": {},
+            "WindowProperty": {},
+            "MaterialProperty": {}
             }
             
     # TODO: Support parsing for files with no next line
@@ -599,8 +609,12 @@ class HB_GetEPLibraries:
                 
             if len(lines) < 2: continue
             
-            key = lines[0].split(",")[0].strip()
+            if lines[0].split(",")[0].strip().isupper():
+                key = lines[0].split(",")[0].strip().title()
+            else:
+                key = lines[0].split(",")[0].strip()
             shortKey = key.split(":")[0]
+            
             name = lines[1].split(",")[0].strip().upper()
             values = lines[2:]
             # it's a two line object such as Any Number scheduleTypeLimit
@@ -629,6 +643,8 @@ class HB_GetEPLibraries:
         print "%s EPConstructions are loaded available in Honeybee library"%str(len(self.libraries["Construction"]))
         print "%s EPMaterials are now loaded in Honeybee library"%str(len(self.libraries["Material"]))
         print "%s EPWindowMaterial are loaded in Honeybee library"%str(len(self.libraries["WindowMaterial"]))
+        print "%s EPShadingControl are loaded in Honeybee library"%str(len(self.libraries["WindowProperty"]))
+        print "%s EPMaterialProperty are loaded in Honeybee library"%str(len(self.libraries["MaterialProperty"]))
         print "%s schedules are loaded available in Honeybee library"%str(len(self.libraries["Schedule"]))
         print "%s schedule type limits are now loaded in Honeybee library"%str(len(self.libraries["ScheduleTypeLimits"]))
         print "%s THERM materials are now loaded in Honeybee library"%str(len(self.libraries["ThermMaterial"]))
@@ -648,13 +664,15 @@ class HB_GetEPLibraries:
         Returns:
             A list of strings. Each string represents a differnt Rdiance Object
         """
-        rawEPObjects = re.findall(r'(.[^;]*;.[^\n]*)', epFileString + "\n",re.MULTILINE)
+        
+        #rawEPObjects = re.findall(r'(.[^;]*;.[^\n]*)', epFileString + "\n",re.MULTILINE)
+        rawEPObjects = re.findall(r'(.[^;]*;)', epFileString + "\n",re.MULTILINE)
         
         return rawEPObjects
     
     def getEnergyPlusObjectsFromFile(self, epFilePath):
         """
-        Parse EnergyPlus file and return a list of radiance objects as separate strings
+        Parse EnergyPlus file and return a list of objects as separate strings
         
         TODO: Create a class for each EnergyPlus object and return Python objects
         instead of strings
@@ -3838,8 +3856,8 @@ class EPMaterialAux(object):
             objectData = sc.sticky ["honeybee_materialLib"][objectName]
         elif objectName in sc.sticky ["honeybee_constructionLib"].keys():
             objectData = sc.sticky ["honeybee_constructionLib"][objectName]
-        elif objectData in sc.sticky["honeybee_WinodowPropLib"].keys():
-            objectData = sc.sticky["honeybee_WinodowPropLib"][objectName]
+        elif objectData in sc.sticky["honeybee_WindowPropLib"].keys():
+            objectData = sc.sticky["honeybee_WindowPropLib"][objectName]
         elif objectName in sc.sticky["honeybee_SpectralDataLib"].keys():
             objectData = sc.sticky["honeybee_SpectralDataLib"][objectName]
         
@@ -4021,7 +4039,7 @@ class EPObjectsAux(object):
         return scheduleName.upper() in sc.sticky["honeybee_ScheduleTypeLimitsLib"].keys()
     
     def isWindowProperty(self, winPropName):
-        return winPropName.upper() in sc.sticky["honeybee_WinodowPropLib"].keys()
+        return winPropName.upper() in sc.sticky["honeybee_WindowPropLib"].keys()
     
     def isSpectralData(self, spectName):
         return spectName.upper() in sc.sticky["honeybee_SpectralDataLib"].keys()
@@ -4037,7 +4055,6 @@ class EPObjectsAux(object):
             values, comments = hb_EPScheduleAUX.getScheduleTypeLimitsDataByName(EPObjectName.upper())
         elif self.isEPConstruction(EPObjectName):
             values, comments, uSI, uIP = hb_EPMaterialAUX.decomposeEPCnstr(EPObjectName.upper())
-        
         elif self.isEPMaterial(EPObjectName):
             values, comments, uSI, uIP = hb_EPMaterialAUX.decomposeMaterial(EPObjectName.upper())
         else:
@@ -4089,7 +4106,7 @@ class EPObjectsAux(object):
     
     def getObjectKey(self, EPObject):
         
-        EPKeys = ["Material", "WindowMaterial", "Construction", "ScheduleTypeLimits", "Schedule", "WindowProperty"]
+        EPKeys = ["Material", "WindowMaterial", "Construction", "ScheduleTypeLimits", "Schedule", "WindowProperty", "MaterialProperty:GlazingSpectralData"]
         
         # check if it is a full string
         for key in EPKeys:
@@ -4109,7 +4126,7 @@ class EPObjectsAux(object):
                        "WindowMaterial" : "honeybee_windowMaterialLib",
                        "Schedule": "honeybee_ScheduleLib",
                        "ScheduleTypeLimits" : "honeybee_ScheduleTypeLimitsLib",
-                       "WindowProperty" : "honeybee_WinodowPropLib",
+                       "WindowProperty" : "honeybee_WindowPropLib",
                        "MaterialProperty:GlazingSpectralData" : "honeybee_SpectralDataLib"
                        }
         
@@ -4165,8 +4182,8 @@ class EPObjectsAux(object):
             objectData = sc.sticky ["honeybee_ScheduleLib"][objectName]
         elif objectName in sc.sticky["honeybee_ScheduleTypeLimitsLib"].keys():
             objectData = sc.sticky ["honeybee_ScheduleTypeLimitsLib"][objectName]
-        elif objectName in sc.sticky["honeybee_WinodowPropLib"].keys():
-            objectData = sc.sticky["honeybee_WinodowPropLib"][objectName]
+        elif objectName in sc.sticky["honeybee_WindowPropLib"].keys():
+            objectData = sc.sticky["honeybee_WindowPropLib"][objectName]
         elif objectName in sc.sticky["honeybee_SpectralDataLib"].keys():
             objectData = sc.sticky["honeybee_SpectralDataLib"][objectName]
         
@@ -8327,6 +8344,8 @@ if checkIn.letItFly:
                 sc.sticky["honeybee_ScheduleLib"].update(EPLibs.getEPSchedule())
                 sc.sticky["honeybee_ScheduleTypeLimitsLib"].update(EPLibs.getEPScheduleTypeLimits())
                 sc.sticky["honeybee_thermMaterialLib"].update(EPLibs.getTHERMMaterials())
+                sc.sticky["honeybee_WindowPropLib"].update(EPLibs.getEPWindowProp())
+                sc.sticky["honeybee_SpectralDataLib"].update(EPLibs.getEPSpectralData())
             except:
                 print msg
                 ghenv.Component.AddRuntimeMessage(w, msg)
@@ -8347,7 +8366,6 @@ if checkIn.letItFly:
         sc.sticky["honeybee_BuildingProgramsLib"] = BuildingProgramsLib
         sc.sticky["honeybee_EPTypes"] = EPTypes()
         sc.sticky["honeybee_EPZone"] = EPZone
-        sc.sticky["honeybee_ExtraConstrProps"] = {}
         sc.sticky["honeybee_ThermPolygon"] = thermPolygon
         sc.sticky["honeybee_ThermBC"] = thermBC
         sc.sticky["honeybee_ThermDefault"] = thermDefaults

@@ -84,11 +84,11 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Window Shade Generator"
 ghenv.Component.NickName = 'EPWindowShades'
-ghenv.Component.Message = 'VER 0.0.60\nSEP_04_2016'
+ghenv.Component.Message = 'VER 0.0.60\nSEP_17_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nJUL_25_2015
+#compatibleHBVersion = VER 0.0.56\nSEP_17_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
 except: pass
@@ -1122,7 +1122,7 @@ def main():
         hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
         hb_EPMaterialAUX = sc.sticky["honeybee_EPMaterialAUX"]()
         EPWindowMaterials = sc.sticky ["honeybee_windowMaterialLib"].keys()
-        EPWindowProperties = sc.sticky["honeybee_WinodowPropLib"].keys()
+        EPWindowProperties = sc.sticky["honeybee_WindowPropLib"].keys()
         
         #Make the lists that will be filled up
         zoneNames = []

@@ -35,13 +35,13 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = 'Honeybee_Import WINDOW IDF Report'
 ghenv.Component.NickName = 'importWINDOWidf'
-ghenv.Component.Message = 'VER 0.0.60\nSEP_09_2016'
+ghenv.Component.Message = 'VER 0.0.60\nSEP_17_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
 #compatibleHBVersion = VER 0.0.56\nSEP_09_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
-try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
 except: pass
 
 
@@ -63,7 +63,6 @@ def main(windowIDFReport):
     
     # import the classes
     hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
-    extraProps = sc.sticky["honeybee_ExtraConstrProps"]
     
     #Open the IDF and extract all of the information
     EPObjs = []
