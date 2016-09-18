@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.60\nSEP_09_2016'
+ghenv.Component.Message = 'VER 0.0.60\nSEP_17_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -3560,6 +3560,14 @@ class EPMaterialAux(object):
                                         "CBECSBEFORE1980" : "CBECS Before-1980"}
     
     def calcEPMaterialUValue(self, materialObj, GHComponent = None):
+        # Dictionary of typical U-Values for different gases.
+        # All of these materials are taken from LBNL WINDOW 7.4 Gas Library assuming a 1 cm-thick gap.
+        gasUVal = {
+        "air": 2.407,
+        "argon": 1.6348,
+        "krypton": 0.8663,
+        "xenon": 0.516
+        }
         
         materialType = materialObj[0]
         
@@ -3587,35 +3595,51 @@ class EPMaterialAux(object):
         
         elif materialType.lower() == "material:airgap":
             UValueSI = 1 / float(materialObj[1][0])
-            #print materialObj
-            #print UValueSI
-        
-        elif materialType.lower() == "material:airgap":
-            UValueSI = 1 / float(materialObj[1][0])
         
         elif materialType.lower() == "windowmaterial:gas":
             thickness = float(materialObj[2][0])
-            #All of these materials are taken from LBNL WINDOW 7.4 Gas Library assuming a 1 cm-thick gap.
-            if materialObj[1][0].lower() == "air":
-                # conductivity = 0.02407 {W/m-K}
-                UValueSI = 2.407
-            elif materialObj[1][0].lower() == "argon":
-                # conductivity = 0.016348 {W/m-K}
-                UValueSI = 1.6348
-            elif materialObj[1][0].lower() == "krypton":
-                # conductivity = 0.008663 {W/m-K}
-                UValueSI = 0.8663
-            elif materialObj[1][0].lower() == "xenon":
-                # conductivity = 0.005160 {W/m-K}
-                UValueSI = 0.516
-            else:
+            if thickness > 0.05:
+                warningMsg = "The thickness of your gas layer is beyond that typically seen in windows." + "\n" + \
+                "The U-Value calculated here might be fairly different from what E+ will use."
+                if GHComponent!=None:
+                    w = gh.GH_RuntimeMessageLevel.Warning
+                    GHComponent.AddRuntimeMessage(w, warningMsg)
+            try:
+                UValueSI = gasUVal[materialObj[1][0].lower()]
+            except:
+                UValueSI = -1
                 warningMsg = "Honeybee can't calculate the UValue for " + materialObj[1][0] + ".\n" + \
                     "Let us know if you think it is really neccesary and we will add it to the list. :)"
                 if GHComponent!=None:
                     w = gh.GH_RuntimeMessageLevel.Warning
                     GHComponent.AddRuntimeMessage(w, warningMsg)
-                    
-                    print materialObj
+        
+        elif materialType.lower() == "windowmaterial:gasmixture":
+            thickness = float(materialObj[1][0])
+            if thickness > 0.05:
+                warningMsg = "The thickness of your gas layer is beyond that typically seen in windows." + "\n" + \
+                "The U-Value calculated here might be fairly different from what E+ will use."
+                if GHComponent!=None:
+                    w = gh.GH_RuntimeMessageLevel.Warning
+                    GHComponent.AddRuntimeMessage(w, warningMsg)
+            try:
+                UValueSI = 0
+                gas = 0
+                gasPercent = 0
+                for gasCount in range(3, len(materialObj)):
+                    if (gasCount % 2 == 0):
+                        gasPercent = float(materialObj[gasCount][0])
+                        UValueSI = UValueSI + (gas*gasPercent)
+                    else:
+                        gas = float(gasUVal[materialObj[gasCount][0].lower()])
+            except:
+                UValueSI = -1
+                warningMsg = "Honeybee can't calculate the UValue for " + materialObj[1][0] + ".\n" + \
+                    "Let us know if you think it is really neccesary and we will add it to the list. :)"
+                if GHComponent!=None:
+                    w = gh.GH_RuntimeMessageLevel.Warning
+                    GHComponent.AddRuntimeMessage(w, warningMsg)
+        
         else:
             warningMsg = "Honeybee currently can't calculate U-Values for " + materialType + ".\n" +\
                 "Your Honeybee EnergyPlus simulations will still run fine with this material and this is only a Honeybee interface limitation." + ".\n" +\
@@ -3623,7 +3647,6 @@ class EPMaterialAux(object):
             if GHComponent!=None:
                 w = gh.GH_RuntimeMessageLevel.Warning
                 GHComponent.AddRuntimeMessage(w, warningMsg)
-        
             # http://bigladdersoftware.com/epx/docs/8-0/input-output-reference/page-010.html
             UValueSI = -1
         

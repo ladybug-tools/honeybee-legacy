@@ -68,7 +68,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.60\nSEP_09_2016'
+ghenv.Component.Message = 'VER 0.0.60\nSEP_17_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -2427,7 +2427,7 @@ class WriteOPS(object):
         space.setSpaceType(spaceType)
         
         return space
-
+    
     def setInfiltration(self, zone, space, model):
         # infiltration
         infiltration = ops.SpaceInfiltrationDesignFlowRate(model)
@@ -2673,7 +2673,30 @@ class WriteOPS(object):
         windowGasMaterial.setThickness(float(values[1]))
         
         return windowGasMaterial
+    
+    def createOSWindowGasMixtureMaterial(self, HBMaterialName, values, model):
+        """
+        WindowMaterial:Gas
+        ['Thickness {m}', 'Number of Gases', 'Gas 1 Type', 'Gas 1 Fraction', 'Gas 2 Type', 'Gas 2 Fraction']
+        """
+        windowGasMixMaterial = ops.GasMixture(model)
+        windowGasMixMaterial.setName(HBMaterialName)
+        windowGasMixMaterial.setThickness(float(values[0]))
+        numOfGas = int(values[1])
+        windowGasMixMaterial.setNumberofGasesinMixture(numOfGas)
+        windowGasMixMaterial.setGas1Type(values[2])
+        windowGasMixMaterial.setGas1Fraction(float(values[3]))
+        windowGasMixMaterial.setGas2Type(values[4])
+        windowGasMixMaterial.setGas2Fraction(float(values[5]))
+        if numOfGas > 2:
+            windowGasMixMaterial.setGas3Type(values[6])
+            windowGasMixMaterial.setGas3Fraction(float(values[7]))
+        if numOfGas > 3:
+            windowGasMixMaterial.setGas4Type(values[8])
+            windowGasMixMaterial.setGas4Fraction(float(values[9]))
         
+        return windowGasMixMaterial
+    
     def createOSAirGap(self, HBMaterialName, values, model):
         """
         Material:AirGap
@@ -2770,7 +2793,10 @@ class WriteOPS(object):
         
         elif values[0].lower() == "windowmaterial:gas":
             return self.createOSWindowGasMaterial(HBMaterialName, values[1:], model)
-            
+        
+        elif values[0].lower() == "windowmaterial:gasmixture":
+            return self.createOSWindowGasMixtureMaterial(HBMaterialName, values[1:], model)
+        
         elif values[0].lower() == "material:nomass":
             return self.createOSNoMassMaterial(HBMaterialName, values[1:], model)
         
@@ -2784,10 +2810,9 @@ class WriteOPS(object):
             return self.createOSShade(HBMaterialName, values[1:], model)
         
         else:
-            print "This type of material hasn't been implemented yet!"
-            print values[0]
-            print values
-            print comments
+            warning =  "The material type " + values[0] + " hasn't been implemented yet!"
+            print warning
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
         
     def getOSConstruction(self, HBConstructionlName, model):
         
