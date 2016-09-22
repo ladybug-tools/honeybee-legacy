@@ -460,10 +460,10 @@ def main(sun, mon, tue, wed, thu, fri, sat, holiday, hdd, cdd, runIt, epwFile, w
                 daySchName = schedName + ' Day Schedule - ' + daySchedDict[dCount]
                 daySchNameCollect.append(daySchName)
             elif daySch == [] and dCount == 8:
-                daySchName = schedName + ' Day Schedule - ' + 'Mon'
+                daySchName = daySchNameCollect[1]
                 daySchNameCollect.append(daySchName)
             elif daySch == []:
-                daySchName = schedName + ' Day Schedule - ' + 'Sun'
+                daySchName = daySchNameCollect[0]
                 daySchNameCollect.append(daySchName)
             else:
                 for count, sch in enumerate(daySchedCollection):
