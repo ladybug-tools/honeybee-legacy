@@ -40,7 +40,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Label Zones"
 ghenv.Component.NickName = 'LabelZones'
-ghenv.Component.Message = 'VER 0.0.60\nSEP_17_2016'
+ghenv.Component.Message = 'VER 0.0.60\nSEP_25_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -149,6 +149,7 @@ def main(hb_zones, basePts, textSize, font, attribute):
             if pointText == 'None':
                 hb_zones[count].atuoPositionDaylightSensor()
                 sensPt = hb_zones[count].illumCntrlSensorPt
+                hb_zones[count].illumCntrlSensorPt = None
             else:
                 ptCoordList = pointText.split(',')
                 sensPt = rc.Geometry.Point3d(float(ptCoordList[0]),float(ptCoordList[1]),float(ptCoordList[2]))
