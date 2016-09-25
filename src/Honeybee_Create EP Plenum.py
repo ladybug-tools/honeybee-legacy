@@ -27,14 +27,14 @@ Provided by Honeybee 0.0.60
 
     Args:
         _HBZones: HBZones that you want to turn into plenum zones.
-        
+        conditioned_: Set to 'True' if the plenum is active or is conditioned and set to 'False' to have the plenum be unconditioned.  The default is set to 'False' to have the zones unconditioned.
     Returns:
         HBZPlenumZones: HBZones that have had their loads dropped to 0 to be reflective of plenum zones.
 """
 
 ghenv.Component.Name = "Honeybee_Create EP Plenum"
 ghenv.Component.NickName = 'createEPPlenum'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nSEP_25_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
@@ -93,7 +93,12 @@ def main(HBZones):
         HBZone.ventilationPerArea = 0
         HBZone.ventilationPerPerson = 0
         
-        # This is for EP component to the area won't be included in the total area
+        if conditioned_ == True:
+            HBZone.isConditioned = True
+        else:
+            HBZone.isConditioned = False
+        
+        # This is for EP component so that the area won't be included in the total area
         HBZone.isPlenum = True
         
     HBZones  = hb_hive.addToHoneybeeHive(HBObjectsFromHive, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
