@@ -64,7 +64,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Thermal Autonomy Analysis"
 ghenv.Component.NickName = 'ThermalAutonomy'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nSEP_26_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -426,7 +426,7 @@ def main(viewFactorMesh, analysisPeriod, totEnergyHeaders, totEnergyNumbers, zon
         TA_Mtx.append(0)
         OverHeatedMtx.append(0)
         UnderHeatedMtx.append(0)
-    
+   
     #Match the totalEnergy values to the HBZones.
     totEnergyNumbersMatched = []
     for name in zoneNames:
@@ -514,11 +514,11 @@ def main(viewFactorMesh, analysisPeriod, totEnergyHeaders, totEnergyNumbers, zon
         UnderHeatedMtx[count+1] = UnderHeated
     
     #Run through every hour of the analysis to fill up the matrices.
-    if parallel_ == True and len(occupancySchList[0]) != 1:
-        tasks.Parallel.ForEach(range(len(occupancySchList[0])), calcComf)
-    else:
-        for hour in range(len(occupancySchList[0])):
-            calcComf(hour)
+    #if parallel_ == True and len(occupancySchList[0]) != 1:
+    #    tasks.Parallel.ForEach(range(len(occupancySchList[0])), calcComf)
+    #else:
+    for hour in range(len(occupancySchList[0])):
+        calcComf(hour)
     
     # Add the total occupied hours to the matrix (to be used to help calculate comfort autonomy).
     occTCP_Mtx.append(occHrsNum)
