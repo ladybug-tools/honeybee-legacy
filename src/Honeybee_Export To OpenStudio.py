@@ -68,7 +68,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.60\nSEP_17_2016'
+ghenv.Component.Message = 'VER 0.0.60\nSEP_26_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -1042,7 +1042,7 @@ class WriteOPS(object):
         oaReq = space.designSpecificationOutdoorAir()
         airTerminal.setControlForOutdoorAir(oaReq)
     
-    def createDOASAirLoop(self, model, thermalZones, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotWaterPlant=None, chilledWaterPlant=None, terminalOption=None, heatRecovOverride = False):
+    def createPrimaryAirLoop(self, airType, model, thermalZones, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotWaterPlant=None, chilledWaterPlant=None, terminalOption=None, heatRecovOverride = False):
         airloopPrimary = ops.AirLoopHVAC(model)
         airloopPrimary.setName("DOAS Air Loop HVAC" + str(HVACCount))
         # modify system sizing properties
@@ -1051,9 +1051,14 @@ class WriteOPS(object):
         sizingSystem.setCentralCoolingDesignSupplyAirTemperature(12.8)
         sizingSystem.setCentralHeatingDesignSupplyAirTemperature(40) #ML OS default is 16.7
         # load specification
-        sizingSystem.setTypeofLoadtoSizeOn("VentilationRequirement") #DOAS
-        sizingSystem.setAllOutdoorAirinCooling(True) #DOAS
-        sizingSystem.setAllOutdoorAirinHeating(True) #DOAS
+        if airType == 'DOAS':
+            sizingSystem.setTypeofLoadtoSizeOn("VentilationRequirement") #DOAS
+            sizingSystem.setAllOutdoorAirinCooling(True) #DOAS
+            sizingSystem.setAllOutdoorAirinHeating(True) #DOAS
+        else:
+            sizingSystem.setTypeofLoadtoSizeOn("Sensible") #VAV
+            sizingSystem.setAllOutdoorAirinCooling(False) #VAV
+            sizingSystem.setAllOutdoorAirinHeating(False) #VAV
         
         airLoopComps = []
         # set availability schedule
@@ -1074,7 +1079,9 @@ class WriteOPS(object):
         
         # constant or variable speed fan
         sizingSystem.setMinimumSystemAirFlowRatio(1.0) #DCV
-        if airDetails != None and airDetails.fanControl == 'Variable Volume':
+        if airType == 'VAV':
+            fan = self.createDefaultAEDGFan('VV', model, airDetails)
+        elif airDetails != None and airDetails.fanControl == 'Variable Volume':
             fan = self.createDefaultAEDGFan('VV', model, airDetails)
         elif airDetails != None and airDetails.airsideEconomizer != 'Default' and airDetails.airsideEconomizer != 'NoEconomizer':
             fan = self.createDefaultAEDGFan('VV', model, airDetails)
@@ -1122,14 +1129,27 @@ class WriteOPS(object):
         
         # create scheduled setpoint manager for airloop
         # DOAS or VAV for cooling and not ventilation
-        if airDetails!= None and airDetails.heatingSupplyAirTemp != 'Default':
-            suppTemp = airDetails.heatingSupplyAirTemp
-        elif airDetails!= None and airDetails.coolingSupplyAirTemp != 'Default':
-            suppTemp = airDetails.coolingSupplyAirTemp
+        if airType == 'VAV':
+            setpointManager = ops.SetpointManagerOutdoorAirReset(model)
+            setpointManager.setOutdoorLowTemperature(14.4)
+            setpointManager.setOutdoorHighTemperature(21.1)
+            if airDetails!= None and airDetails.heatingSupplyAirTemp != 'Default':
+                setpointManager.setOutdoorLowTemperature(airDetails.heatingSupplyAirTemp)
+            else:
+                setpointManager.setOutdoorLowTemperature(15.6)
+            if airDetails!= None and airDetails.coolingSupplyAirTemp != 'Default':
+                setpointManager.setSetpointatOutdoorHighTemperature(airDetails.coolingSupplyAirTemp)
+            else:
+                setpointManager.setSetpointatOutdoorHighTemperature(12.8)
         else:
-            suppTemp = 20
-        setpointSchedule = self.createConstantScheduleRuleset('DOAS_Temperature_Setpoint' + str(HVACCount), 'DOAS_Temperature_Setpoint_Default' + str(HVACCount), 'TEMPERATURE', suppTemp, model)
-        setpointManager = ops.SetpointManagerScheduled(model, setpointSchedule)
+            if airDetails!= None and airDetails.heatingSupplyAirTemp != 'Default':
+                suppTemp = airDetails.heatingSupplyAirTemp
+            elif airDetails!= None and airDetails.coolingSupplyAirTemp != 'Default':
+                suppTemp = airDetails.coolingSupplyAirTemp
+            else:
+                suppTemp = 20
+            setpointSchedule = self.createConstantScheduleRuleset('DOAS_Temperature_Setpoint' + str(HVACCount), 'DOAS_Temperature_Setpoint_Default' + str(HVACCount), 'TEMPERATURE', suppTemp, model)
+            setpointManager = ops.SetpointManagerScheduled(model, setpointSchedule)
         
         # connect components to airloop
         # find the supply inlet node of the airloop
@@ -1177,6 +1197,8 @@ class WriteOPS(object):
                 if ventSchedTrigger == True:
                     airTerminal = ops.AirTerminalSingleDuctVAVNoReheat(model, model.alwaysOnDiscreteSchedule())
                     self.setOutdoorAirReq(airTerminal, zone)
+                elif airType == 'VAV':
+                    airTerminal = ops.AirTerminalSingleDuctVAVNoReheat(model, model.alwaysOnDiscreteSchedule())
                 elif airDetails != None and airDetails.fanControl == 'Variable Volume':
                     airTerminal = ops.AirTerminalSingleDuctVAVNoReheat(model, model.alwaysOnDiscreteSchedule())
                 elif airDetails != None and airDetails.airsideEconomizer != 'Default' and airDetails.airsideEconomizer != 'NoEconomizer':
@@ -2209,7 +2231,7 @@ class WriteOPS(object):
                         hc = model.getCoilHeatingElectric(hcs[0].handle()).get()
                         self.updateElectricHeatingCoil(model, hc, heatingDetails.heatingAvailSched, heatingDetails.heatingEffOrCOP)
             
-            elif systemIndex == 11 or systemIndex == 12 or systemIndex == 13:
+            elif systemIndex == 11 or systemIndex == 12 or systemIndex == 13 or systemIndex == 15:
                 # Check to see if there is humidity control on any of the zones.
                 for zone in hbZones:
                     if zone.humidityMax != '':
@@ -2221,7 +2243,7 @@ class WriteOPS(object):
                 if heatingDetails != None and heatingDetails.supplyTemperature != 'Default':
                     suppTemp = heatingDetails.supplyTemperature
                 else:
-                    if systemIndex == 13:
+                    if systemIndex == 13 or systemIndex == 15:
                         suppTemp = 45
                     else:
                         suppTemp = 67
@@ -2236,7 +2258,7 @@ class WriteOPS(object):
                 if coolingDetails != None and coolingDetails.supplyTemperature != 'Default':
                     suppTemp = coolingDetails.supplyTemperature
                 else:
-                    if systemIndex == 13:
+                    if systemIndex == 13 or systemIndex == 15:
                         suppTemp = 15
                     else:
                         suppTemp = 6.7
@@ -2255,18 +2277,21 @@ class WriteOPS(object):
                 
                 # Create air loop.
                 if systemIndex == 11:
-                    airLoop = self.createDOASAirLoop(model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hwl, cwl)
+                    airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hwl, cwl)
                 elif systemIndex == 12:
-                    airLoop = self.createDOASAirLoop(model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hwl, cwl, "ChilledBeam")
-                elif systemIndex == 13:
+                    airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hwl, cwl, "ChilledBeam")
+                elif systemIndex == 13 or systemIndex == 15:
                     hotterLoopTemp = self.createConstantScheduleRuleset('Hot_Water_Temperature' + str(HVACCount), 'Hot_Water_Temperature_Default' + str(HVACCount), 'TEMPERATURE', 67, model)
                     hotwl = self.createHotWaterPlant(model, hotterLoopTemp, heatingDetails, HVACCount)
-                    if dehumidTrigger == True:
-                        coolerLoopTemp = self.createConstantScheduleRuleset('Chilled_Water_Temperature' + str(HVACCount), 'Chilled_Water_Temperature_Default' + str(HVACCount), 'TEMPERATURE', 6.7, model)
-                        coolwl = self.createChilledWaterPlant(model, coolerLoopTemp, coolingDetails, HVACCount, chillType)
-                        airLoop = self.createDOASAirLoop(model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotwl, coolwl)
+                    if systemIndex == 13:
+                        if dehumidTrigger == True:
+                            coolerLoopTemp = self.createConstantScheduleRuleset('Chilled_Water_Temperature' + str(HVACCount), 'Chilled_Water_Temperature_Default' + str(HVACCount), 'TEMPERATURE', 6.7, model)
+                            coolwl = self.createChilledWaterPlant(model, coolerLoopTemp, coolingDetails, HVACCount, chillType)
+                            airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotwl, coolwl)
+                        else:
+                            airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotwl, None)
                     else:
-                        airLoop = self.createDOASAirLoop(model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotwl, None)
+                        airLoop = self.createPrimaryAirLoop('VAV', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotwl, cwl)
                 
                 # If there is a maximum humidity assigned to the zone, set the cooling coil to dehumidify the air.
                 if dehumidTrigger == True:
@@ -2283,7 +2308,7 @@ class WriteOPS(object):
                     #Add the baseboard heating.
                     equipList = ['Baseboard']
                     self.createZoneEquip(model, thermalZoneVector, hbZones, equipList, hwl, cwl)
-                elif systemIndex == 13:
+                elif systemIndex == 13 or systemIndex == 15:
                     #Add the radiant floors.
                     equipList = ['RadiantFloor']
                     self.createZoneEquip(model, thermalZoneVector, hbZones, equipList, hwl, cwl)
@@ -2312,7 +2337,7 @@ class WriteOPS(object):
                         cndwl = self.createCondenser(model, cwl, HVACCount)
                 
                 #Make a DOAS air loop.
-                airLoop = self.createDOASAirLoop(model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hwl, cwl, None, True)
+                airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hwl, cwl, None, True)
                 
                 # If there is a maximum humidity assigned to the zone, set the cooling coil to dehumidify the air.
                 if dehumidTrigger == True:
