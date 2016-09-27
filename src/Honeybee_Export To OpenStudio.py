@@ -68,7 +68,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.60\nSEP_26_2016'
+ghenv.Component.Message = 'VER 0.0.60\nSEP_27_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -1044,7 +1044,10 @@ class WriteOPS(object):
     
     def createPrimaryAirLoop(self, airType, model, thermalZones, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotWaterPlant=None, chilledWaterPlant=None, terminalOption=None, heatRecovOverride = False):
         airloopPrimary = ops.AirLoopHVAC(model)
-        airloopPrimary.setName("DOAS Air Loop HVAC" + str(HVACCount))
+        if airType == 'DOAS':
+            airloopPrimary.setName("DOAS Air Loop HVAC" + str(HVACCount))
+        else:
+            airloopPrimary.setName("VAV Air Loop HVAC" + str(HVACCount))
         # modify system sizing properties
         sizingSystem = airloopPrimary.sizingSystem()
         # set central heating and cooling temperatures for sizing
@@ -1123,6 +1126,8 @@ class WriteOPS(object):
         controllerOA.autosizeMinimumOutdoorAirFlowRate()
         controllerOA.autosizeMaximumOutdoorAirFlowRate()
         controllerOA.setHeatRecoveryBypassControlType("BypassWhenOAFlowGreaterThanMinimum")
+        if airType == 'VAV':
+            controllerOA.setEconomizerControlType('DifferentialEnthalpy')
         # create outdoor air system
         systemOA = ops.AirLoopHVACOutdoorAirSystem(model, controllerOA)
         airLoopComps.append(systemOA)
@@ -1134,9 +1139,9 @@ class WriteOPS(object):
             setpointManager.setOutdoorLowTemperature(14.4)
             setpointManager.setOutdoorHighTemperature(21.1)
             if airDetails!= None and airDetails.heatingSupplyAirTemp != 'Default':
-                setpointManager.setOutdoorLowTemperature(airDetails.heatingSupplyAirTemp)
+                setpointManager.setSetpointatOutdoorLowTemperature(airDetails.heatingSupplyAirTemp)
             else:
-                setpointManager.setOutdoorLowTemperature(15.6)
+                setpointManager.setSetpointatOutdoorLowTemperature(15.6)
             if airDetails!= None and airDetails.coolingSupplyAirTemp != 'Default':
                 setpointManager.setSetpointatOutdoorHighTemperature(airDetails.coolingSupplyAirTemp)
             else:
@@ -1276,7 +1281,7 @@ class WriteOPS(object):
             vrfAirConditioner.addTerminal(vrfTerminalUnit)
     
     
-    def createZoneEquip(self, model, thermalZones, hbZones, equipList, hotWaterPlant=None, chilledWaterPlant=None):
+    def createZoneEquip(self, model, thermalZones, hbZones, equipList, hotWaterPlant=None, chilledWaterPlant=None, heatOnly=False):
         radiantFloor = None
         if 'RadiantFloor' in equipList:
             # create radiant floor construction and substitute for existing floor (interior or exterior) constructions
@@ -1336,6 +1341,8 @@ class WriteOPS(object):
                 coolSetPtSch = self.getOSSchedule(hbZones[zoneCount].coolingSetPtSchedule, model)
                 coolingCoil.setCoolingControlTemperatureSchedule(coolSetPtSch)
                 chilledWaterPlant.addDemandBranchForComponent(coolingCoil)
+                if heatOnly == True:
+                    coolingCoil.setMaximumColdWaterFlow(0)
                 # create the hydronic system
                 lowTempRadiant = ops.ZoneHVACLowTempRadiantVarFlow(model, model.alwaysOnDiscreteSchedule(), heatingCoil, coolingCoil)
                 lowTempRadiant.setRadiantSurfaceType("Floors")
@@ -2258,7 +2265,7 @@ class WriteOPS(object):
                 if coolingDetails != None and coolingDetails.supplyTemperature != 'Default':
                     suppTemp = coolingDetails.supplyTemperature
                 else:
-                    if systemIndex == 13 or systemIndex == 15:
+                    if systemIndex == 13:
                         suppTemp = 15
                     else:
                         suppTemp = 6.7
@@ -2311,7 +2318,10 @@ class WriteOPS(object):
                 elif systemIndex == 13 or systemIndex == 15:
                     #Add the radiant floors.
                     equipList = ['RadiantFloor']
-                    self.createZoneEquip(model, thermalZoneVector, hbZones, equipList, hwl, cwl)
+                    if systemIndex == 13:
+                        self.createZoneEquip(model, thermalZoneVector, hbZones, equipList, hwl, cwl)
+                    elif systemIndex == 15:
+                        self.createZoneEquip(model, thermalZoneVector, hbZones, equipList, hwl, cwl, True)
             
             elif systemIndex == 14:
                 # Check to see if there is humidity control on any of the zones.
