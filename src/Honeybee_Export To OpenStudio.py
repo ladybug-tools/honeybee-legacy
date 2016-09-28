@@ -68,7 +68,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.60\nSEP_27_2016'
+ghenv.Component.Message = 'VER 0.0.60\nSEP_28_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -2524,30 +2524,23 @@ class WriteOPS(object):
             people.setSpace(space)
      
     def setInternalMassDefinition(self, zone, space, model):
-        
         for srfNum,srfArea in enumerate(zone.internalMassSrfAreas):
-            
             # Create internal mass definition
             internalMassDefinition = ops.InternalMassDefinition(model)
-            
             internalMassDefinition.setName(zone.internalMassNames[srfNum]+"_Definition")
-            
             if self.isConstructionInLib(zone.internalMassConstructions[srfNum]):
                 construction = self.getConstructionFromLib(zone.internalMassConstructions[srfNum])
             else:
                 construction = self.getOSConstruction(zone.internalMassConstructions[srfNum],model)
                 self.addConstructionToLib(zone.internalMassConstructions[srfNum], construction)
             internalMassDefinition.setConstruction(construction)
-            
             internalMassDefinition.setSurfaceArea(float(srfArea))
             
             # Create actual internal mass by using the definition above
-            
             internalMass = ops.InternalMass(internalMassDefinition)
-            
             internalMass.setName(zone.internalMassNames[srfNum])
             internalMass.setSpace(space)
-            
+    
     def setLightingDefinition(self, zone, space, model):
         
         lightsDefinition = ops.LightsDefinition(model)
@@ -2578,15 +2571,16 @@ class WriteOPS(object):
             electricEqipment.setSpace(space)
         
     def setDesignSpecificationOutdoorAir(self, zone, space, model):
-        ventilation = ops.DesignSpecificationOutdoorAir(model)
-        ventilation.setName(zone.name + "_DSOA")
-        ventilation.setOutdoorAirMethod(zone.outdoorAirReq)
-        ventilation.setOutdoorAirFlowperPerson(zone.ventilationPerPerson)
-        ventilation.setOutdoorAirFlowperFloorArea(zone.ventilationPerArea)
-        if zone.ventilationSched != '':
-            ventSch = self.getOSSchedule(zone.ventilationSched,model)
-            ventilation.setOutdoorAirFlowRateFractionSchedule(ventSch)
-        space.setDesignSpecificationOutdoorAir(ventilation)
+        if zone.outdoorAirReq != 'None':
+            ventilation = ops.DesignSpecificationOutdoorAir(model)
+            ventilation.setName(zone.name + "_DSOA")
+            ventilation.setOutdoorAirMethod(zone.outdoorAirReq)
+            ventilation.setOutdoorAirFlowperPerson(zone.ventilationPerPerson)
+            ventilation.setOutdoorAirFlowperFloorArea(zone.ventilationPerArea)
+            if zone.ventilationSched != '':
+                ventSch = self.getOSSchedule(zone.ventilationSched,model)
+                ventilation.setOutdoorAirFlowRateFractionSchedule(ventSch)
+            space.setDesignSpecificationOutdoorAir(ventilation)
         return space
     
     def createOSStanadardOpaqueMaterial(self, HBMaterialName, values, model):
