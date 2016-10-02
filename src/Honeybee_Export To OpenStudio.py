@@ -68,7 +68,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.60\nSEP_28_2016'
+ghenv.Component.Message = 'VER 0.0.60\nOCT_01_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -2637,7 +2637,6 @@ class WriteOPS(object):
         standardGlazing = ops.StandardGlazing(model)
         standardGlazing.setName(HBMaterialName)
         standardGlazing.setOpticalDataType(values[0])
-        standardGlazing.setWindowGlassSpectralDataSetName(values[1])
         standardGlazing.setThickness(float(values[2]))
         try:
             # Glass material is defined by average values of transmittance and reflectance.
