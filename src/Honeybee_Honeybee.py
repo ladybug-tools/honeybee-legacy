@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.60\nSEP_26_2016'
+ghenv.Component.Message = 'VER 0.0.60\nOCT_01_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -597,7 +597,6 @@ class HB_GetEPLibraries:
     # TODO: Check if keys can be case insensitive
     # TODO: Create EPObjects and not dictionaries
     def loadEPConstructionsMaterialsAndSchedules(self, EPObjectsString, cleanCurrentLib = True):
-        
         if cleanCurrentLib: self.cleanHBLibs()
         
         for EPObjectStr in EPObjectsString:
@@ -606,37 +605,57 @@ class HB_GetEPLibraries:
             for line in rawLines:
                 if line.strip() == '' or line.startswith('!'): continue
                 lines.append(line)
-                
-            if len(lines) < 2: continue
             
-            if lines[0].split(",")[0].strip().isupper():
-                key = lines[0].split(",")[0].strip().title()
-            else:
-                key = lines[0].split(",")[0].strip()
-            shortKey = key.split(":")[0]
-            
-            name = lines[1].split(",")[0].strip().upper()
-            values = lines[2:]
-            # it's a two line object such as Any Number scheduleTypeLimit
-            if values == []:
-                name = lines[1].split(";")[0].strip().upper() # name is the last input
-                
-            if shortKey in self.libraries:
+            if lines[0].startswith('MaterialProperty:GlazingSpectralData'):
+                key = 'MaterialProperty:GlazingSpectralData'
+                shortKey = 'MaterialProperty'
+                name = lines[1].split(",")[0].strip().upper()
                 self.libraries[shortKey][name] = dict() # create an empty dictonary
                 self.libraries[shortKey][name][0] = key
+                # store the data into the dictionary
+                for lineCount, line in enumerate(lines):
+                    objValue = line.split("!")[0].strip()
+                    try: objDescription = line.split("!")[1].strip()
+                    except:  objDescription = ""
+                    if lineCount == 0:
+                        self.libraries[shortKey][name][lineCount] = objValue[:-1]
+                    elif lineCount == 1:
+                        pass # name is already there as the key
+                    elif objValue.endswith(","):
+                        self.libraries[shortKey][name][lineCount-1] = objValue[:-1], objDescription
+                    elif objValue.endswith(";"):
+                        self.libraries[shortKey][name][lineCount-1] = objValue[:-1], objDescription
+            else:
+                if len(lines) < 2: continue
                 
-                count = 1
-                delimiter = ","
-                for value in values:
-                    if not len(value.strip()): continue #pass empty lines
-                    if count==len(values): delimiter = ";"
-                    v = value.split(delimiter)[0].strip() # find the  value
-                    if value.find("!")!= -1:
-                        c = value.split("!")[-1].rstrip() # find the  value
-                    else:
-                        c = ""
-                    self.libraries[shortKey][name][count] = v, c
-                    count += 1
+                if lines[0].split(",")[0].strip().isupper():
+                    key = lines[0].split(",")[0].strip().title()
+                else:
+                    key = lines[0].split(",")[0].strip()
+                shortKey = key.split(":")[0]
+                
+                name = lines[1].split(",")[0].strip().upper()
+                values = lines[2:]
+                # it's a two line object such as Any Number scheduleTypeLimit
+                if values == []:
+                    name = lines[1].split(";")[0].strip().upper() # name is the last input
+                    
+                if shortKey in self.libraries:
+                    self.libraries[shortKey][name] = dict() # create an empty dictonary
+                    self.libraries[shortKey][name][0] = key
+                    
+                    count = 1
+                    delimiter = ","
+                    for value in values:
+                        if not len(value.strip()): continue #pass empty lines
+                        if count==len(values): delimiter = ";"
+                        v = value.split(delimiter)[0].strip() # find the  value
+                        if value.find("!")!= -1:
+                            c = value.split("!")[-1].rstrip() # find the  value
+                        else:
+                            c = ""
+                        self.libraries[shortKey][name][count] = v, c
+                        count += 1
     
     def report(self): 
         # Report findings
