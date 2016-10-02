@@ -58,7 +58,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nOCT_02_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -538,7 +538,6 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
         
         return finalBrep
     
-    
     #If interior walls have ben removed, see which surfaces are adjacent and re-make the lists fo zones.
     if removeInt == True:
         #Make a function to remove duplicates from a list.
@@ -699,6 +698,9 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
         windowSrfTransmiss = newWindowSrfTransmiss
         srfIntWindowAdjNumList = newSrfIntWindowAdjNumList
         zoneFloorReflect = newZoneFloorReflect
+    else:
+        for brep in zoneBreps:
+            zoneBrepsNonSolid.append([brep])
     
     #Make sure that the zone volumes are closed.
     for brepCount, brep in enumerate(zoneBreps):
