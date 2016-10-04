@@ -49,7 +49,7 @@
 
 ghenv.Component.Name = "Honeybee_IES Luminaire Zone"
 ghenv.Component.NickName = 'iesLuminaireZone'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nOCT_03_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "02 | Daylight | Light Source"
 #compatibleHBVersion = VER 0.0.56\nJUL_01_2016
@@ -98,7 +98,10 @@ if _ptsList:
         
         if aimingPoint_:
             #Vector between luminaire location and aiming location
-            ptVector = rc.Geometry.Vector3d(aimingPoint_-pt)
+            try:
+                ptVector = rc.Geometry.Vector3d(aimingPoint_[ptCount]-pt)
+            except:
+                ptVector = rc.Geometry.Vector3d(aimingPoint_[0]-pt)
             
             #normalize the vector
             unitizeVector = rc.Geometry.Vector3d.Unitize(ptVector)
