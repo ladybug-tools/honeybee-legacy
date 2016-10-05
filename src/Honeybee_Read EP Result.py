@@ -55,7 +55,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.60\nSEP_11_2016'
+ghenv.Component.Message = 'VER 0.0.60\nOCT_05_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -199,7 +199,7 @@ parseSuccess = False
 #If the energy values are set to be normalized, make the units in kWh/m2.
 energyUnit = "kWh"
 idealAirTrigger = False
-
+centTrigger = False
 
 #Make a function to add headers.
 def makeHeader(list, path, zoneName, timestep, name, units, normable):
@@ -391,10 +391,14 @@ if _resultFileAddress and gotData == True and csvExists == True:
                     elif 'Fan Electric Energy' in column:
                         key.append(15)
                         if 'FAN CONSTANT VOLUME' in column:
+                            centTrigger = True
                             zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('FAN CONSTANT VOLUME ')[-1], 2)
                             makeHeader(fanElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Fan Electric Energy", energyUnit, False)
                         elif 'FAN VARIABLE VOLUME' in column:
-                            zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('FAN VARIABLE VOLUME ')[-1], 2)
+                            fanNum = int(":".join(column.split(":")[:-1]).split('FAN VARIABLE VOLUME ')[-1])
+                            if centTrigger == True:
+                                fanNum = fanNum+len(zoneNameList)
+                            zoneName = checkCentralSys(" " + str(fanNum), 2)
                             makeHeader(fanElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Fan Electric Energy", energyUnit, False)
                         elif 'FAN ON OFF' in column:
                             zoneName = checkZoneSys(" " + ":".join(column.split(":")[:-1]).split('FAN ON OFF ')[-1])
