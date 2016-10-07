@@ -68,7 +68,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.60\nOCT_01_2016'
+ghenv.Component.Message = 'VER 0.0.60\nOCT_06_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -2922,11 +2922,13 @@ class WriteOPS(object):
             
             # create construction
             
-            if self.isConstructionInLib(surface.EPConstruction):
+            if self.isConstructionInLib(surface.EPConstruction) and surface.EPConstruction != None:
                 construction = self.getConstructionFromLib(surface.EPConstruction)
+            elif self.isConstructionInLib(surface.construction) and surface.EPConstruction == None:
+                construction = self.getConstructionFromLib(surface.construction)
             elif surface.EPConstruction == None:
                 construction = self.getOSConstruction(surface.construction, model)
-                self.addConstructionToLib(surface.EPConstruction, construction)
+                self.addConstructionToLib(surface.construction, construction)
             else:
                 construction = self.getOSConstruction(surface.EPConstruction, model)
                 self.addConstructionToLib(surface.EPConstruction, construction)
