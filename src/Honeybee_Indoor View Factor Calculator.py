@@ -58,7 +58,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.60\nOCT_02_2016'
+ghenv.Component.Message = 'VER 0.0.60\nOCT_08_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -167,7 +167,10 @@ def copyHBZoneData():
                     for layer in windowLayers:
                         propNumbers = hb_EPMaterialAUX.decomposeMaterial(layer.upper(), ghenv.Component)[0]
                         if 'WindowMaterial:Glazing' in propNumbers[0]:
-                            winTrans = winTrans*float(propNumbers[4])
+                            try:
+                                winTrans = winTrans*float(propNumbers[4])
+                            except:
+                                winTrans = 0.4
                         elif 'WindowMaterial:SimpleGlazingSystem' in propNumbers[0]:
                             winTrans = winTrans*float(propNumbers[2])
                     windowSrfTransmiss[zoneCount].append(winTrans)
