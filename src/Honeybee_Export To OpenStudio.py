@@ -68,7 +68,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.60\nOCT_06_2016'
+ghenv.Component.Message = 'VER 0.0.60\nOCT_08_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -139,6 +139,7 @@ class WriteOPS(object):
         self.materialList = {}
         self.scheduleList = {}
         self.shdCntrlList = {}
+        self.frameObjList = {}
         self.bldgTypes = {}
         self.levels = {}
         self.HVACSystemDict = {}
@@ -505,6 +506,15 @@ class WriteOPS(object):
     def getShdCntrlFromLib(self, shdCntrlName):
         return self.shdCntrlList[shdCntrlName]
     
+    def isFrameObjInLib(self, frameObjName):
+        return frameObjName in self.frameObjList.keys()
+    
+    def addFrameObjToLib(self, frameObjName, frameObj):
+        self.frameObjList[frameObjName] = frameObj
+        
+    def getFrameObjFromLib(self, frameObjName):
+        return self.frameObjList[frameObjName]
+    
     def createOSScheduleTypeLimitsFromValues(self, model, lowerLimit, upperLimit, numericType, unitType):
         typeLimit = ops.ScheduleTypeLimits(model)
         try: typeLimit.setLowerLimitValue(float(lowerLimit))
@@ -698,11 +708,28 @@ class WriteOPS(object):
         else:
             return self.getScheduleFromLib(schName)
     
+    def getOSFrameObj(self, frameObjName, model):
+        if not self.isFrameObjInLib(frameObjName):
+            values = sc.sticky["honeybee_WindowPropLib"][frameObjName]
+            
+            OSFrameObj = ops.WindowPropertyFrameAndDivider(model)
+            OSFrameObj.setFrameWidth(float(values[1][0]))
+            OSFrameObj.setFrameConductance(float(values[4][0]))
+            OSFrameObj.setRatioOfFrameEdgeGlassConductanceToCenterOfGlassConductance(float(values[5][0]))
+            OSFrameObj.setFrameSolarAbsorptance(float(values[6][0]))
+            OSFrameObj.setFrameVisibleAbsorptance(float(values[7][0]))
+            OSFrameObj.setFrameThermalHemisphericalEmissivity(float(values[8][0]))
+            
+            self.addFrameObjToLib(frameObjName, OSFrameObj)
+            return OSFrameObj
+        else:
+            return self.getFrameObjFromLib(frameObjName)
+    
     def getOSShdCntrl(self, shdCntrlName, model):
-        values = self.hb_EPObjectsAux.getEPObjectDataByName(shdCntrlName)
-        
         if not self.isShdCntrlInLib(shdCntrlName):
             # Make the shade control obect.
+            values = self.hb_EPObjectsAux.getEPObjectDataByName(shdCntrlName)
+            
             if values[2][0] != '':
                 # Iniitalize for construction (for switchable glazing).
                 constrName = values[2][0]
@@ -2976,6 +3003,14 @@ class WriteOPS(object):
             glazing.setSurface(openStudioParentSrf)
             glazing.setSubSurfaceType(childSrf.srfType[childSrf.type])
             glazing.setConstruction(construction)
+            
+            # Check if there are any frame objects associated with the window.
+            try:
+                frameProps = sc.sticky["honeybee_WindowPropLib"][childSrf.EPConstruction]
+                opsFrameObj = self.getOSFrameObj(childSrf.EPConstruction, model)
+                glazing.setWindowPropertyFrameAndDivider(opsFrameObj)
+            except:
+                pass
             
             # Set any shading control objects.
             try:

@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = 'Honeybee_Import WINDOW IDF Report'
 ghenv.Component.NickName = 'importWINDOWidf'
-ghenv.Component.Message = 'VER 0.0.60\nSEP_17_2016'
+ghenv.Component.Message = 'VER 0.0.60\nOCT_08_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -92,6 +92,9 @@ def main(windowIDFReport):
             spectralPropTrigger = False
             if spectralPropStr != '': EPObjs.append(spectralPropStr)
             spectralPropStr = ''
+            framePropsTrigger = False
+            if frameProps != '': EPObjs.append(frameProps)
+            frameProps = ''
         elif '!- Glazing System name' in line:
             constrName = line.split(',')[0].upper()
             materialStr = materialStr + line
@@ -102,17 +105,15 @@ def main(windowIDFReport):
             spectralPropStr = spectralPropStr + line
         elif spectralPropTrigger == True:
             spectralPropStr = spectralPropStr + line
-        
-        # Adding the Frame Data is Currently not Supported.
-        # Chris should add this capability soon.
-        #elif 'WindowProperty:FrameAndDivider' in line:
-        #    framePropsTrigger = True
-        #    frameProps = frameProps + line
-        #elif '!- User Supplied Frame/Divider Name' in line:
-        #    framePropsName = line.split(',')[0].upper()
-        #    frameProps = frameProps + line
-        #elif framePropsTrigger == True:
-        #    frameProps = frameProps + line
+        elif 'WindowProperty:FrameAndDivider' in line:
+            framePropsTrigger = True
+            frameProps = frameProps + line
+        elif '!- User Supplied Frame/Divider Name' in line:
+            # Overwrite the frame name to be associated with the WINDOW construction.
+            framePropsName = constrName
+            frameProps = frameProps + constrName + ',!- User Supplied Frame/Divider Name\n'
+        elif framePropsTrigger == True:
+            frameProps = frameProps + line
     textFile.close()
     
     #Add the materials and construction to the HBHive.
@@ -124,6 +125,12 @@ def main(windowIDFReport):
             return -1
         else: print name + " is has been added to the project library!"
     
+    # In case no frames were found, make sure any frames bearing the name of the construction are removed.
+    if framePropsName == None:
+        try:
+            del sc.sticky["honeybee_WindowPropLib"][constrName]
+        except:
+            pass
     
     return constrName
 
