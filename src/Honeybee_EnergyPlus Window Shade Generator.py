@@ -544,14 +544,21 @@ def getValueBasedOnOrientation(valueList, normalVector):
     return value
 
 def analyzeGlz(glzSrf, distBetween, numOfShds, horOrVertical, lb_visualization, normalVector):
+    # Helper function to check if number is near zero
+    def helper_is_near_zero(num2chk, eps=1e-6):
+        return abs(num2chk) < eps
+ 
     # find the bounding box
     bbox = glzSrf.GetBoundingBox(True)
+    # Add default shading Height and numOfShd
+    shadingHeight = 0.
+    if numOfShds == None: numOfShd, numOfShds = 0., 0.
+    if distBetween == None: distBetween = 0.
+    
     if horOrVertical == None:
         horOrVertical = True
-    if numOfShds == None and distBetween == None:
-        numOfShds = 1
     
-    if numOfShds == 0 or distBetween == 0:
+    if helper_is_near_zero(numOfShds) and helper_is_near_zero(distBetween):
         sortedPlanes = []
     
     elif horOrVertical == True:
@@ -582,6 +589,13 @@ def analyzeGlz(glzSrf, distBetween, numOfShds, horOrVertical, lb_visualization, 
                 if shadingRemainder == 0:
                     shadingRemainder = shadingHeight
         else:
+            
+            #For debugging
+            print '---'
+            print 'distbtwn', distBetween
+            print 'numOfShd', numOfShd
+            print '---'
+            
             try:
                 numOfShd = int(numOfShds)
                 shadingHeight = glzHeight/numOfShd
@@ -631,6 +645,7 @@ def analyzeGlz(glzSrf, distBetween, numOfShds, horOrVertical, lb_visualization, 
             maxXPt = rc.Geometry.Point3d(maxXPt.X, maxXPt.Y, maxXPt.Z - sc.doc.ModelAbsoluteTolerance)
             glzWidth = minXPt.DistanceTo(maxXPt)
             
+            # Find number of shadings 
             try:
                 numOfShd = int(numOfShds)
                 shadingHeight = glzWidth/numOfShd
@@ -640,6 +655,7 @@ def analyzeGlz(glzSrf, distBetween, numOfShds, horOrVertical, lb_visualization, 
                 shadingRemainder = (((glzWidth/distBetween) - math.floor(glzWidth/distBetween))*distBetween)
                 if shadingRemainder == 0:
                     shadingRemainder = shadingHeight
+            
             
             planeOrigins = []
             planes = []
@@ -695,6 +711,7 @@ def analyzeGlz(glzSrf, distBetween, numOfShds, horOrVertical, lb_visualization, 
             
             #glazing distance
             glzHeight = minXYPt.DistanceTo(maxXYPt)
+           
             
             # find number of shadings
             try:
@@ -707,12 +724,26 @@ def analyzeGlz(glzSrf, distBetween, numOfShds, horOrVertical, lb_visualization, 
                 if shadingRemainder == 0:
                     shadingRemainder = shadingHeight
             
+            
             # find shading base planes
             planeOrigins = []
             planes = []
             
             pointCurve = rc.Geometry.Curve.CreateControlPointCurve([maxXYPt, minXYPt])
             divisionParams = pointCurve.DivideByLength(shadingHeight, True)
+            
+            # If number of shades = 0 or the distance between fins is the window length divisionParams == None
+            if divisionParams == None:
+                divisionParams = [0.0]
+                
+            #For debugging
+            print '---'
+            print 'distbtwn', distBetween
+            print 'divParams', divisionParams
+            print 'numOfShd', numOfShd
+            print '---'
+            
+            
             divisionPoints = []
             for param in divisionParams:
                 divisionPoints.append(pointCurve.PointAt(param))
@@ -867,6 +898,7 @@ def makeBlind(_glzSrf, depth, numShds, distBtwn):
     #Get the EnergyPlus distance to glass.
     assignEPCheckInit = True
     EPDistToGlass = distToGlass + (depth)*(0.5)*math.sin(math.radians(EPshdAngle))
+  
     if EPDistToGlass < (depth)*(0.5): EPDistToGlass = (depth)*(0.5)
     if EPDistToGlass < 0.01: EPDistToGlass = 0.01
     elif EPDistToGlass > 1:
