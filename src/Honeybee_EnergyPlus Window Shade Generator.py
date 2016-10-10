@@ -1,4 +1,4 @@
-# This component creates shades for Honeybee Zones
+﻿# This component creates shades for Honeybee Zones
 #
 # Honeybee: A Plugin for Environmental Analysis (GPL) started by Mostapha Sadeghipour Roudsari
 # 
@@ -589,13 +589,7 @@ def analyzeGlz(glzSrf, distBetween, numOfShds, horOrVertical, lb_visualization, 
                 if shadingRemainder == 0:
                     shadingRemainder = shadingHeight
         else:
-            
-            #For debugging
-            print '---'
-            print 'distbtwn', distBetween
-            print 'numOfShd', numOfShd
-            print '---'
-            
+
             try:
                 numOfShd = int(numOfShds)
                 shadingHeight = glzHeight/numOfShd
@@ -735,15 +729,7 @@ def analyzeGlz(glzSrf, distBetween, numOfShds, horOrVertical, lb_visualization, 
             # If number of shades = 0 or the distance between fins is the window length divisionParams == None
             if divisionParams == None:
                 divisionParams = [0.0]
-                
-            #For debugging
-            print '---'
-            print 'distbtwn', distBetween
-            print 'divParams', divisionParams
-            print 'numOfShd', numOfShd
-            print '---'
-            
-            
+
             divisionPoints = []
             for param in divisionParams:
                 divisionPoints.append(pointCurve.PointAt(param))
