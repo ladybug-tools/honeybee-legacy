@@ -60,7 +60,7 @@ Provided by Honeybee 0.0.60
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.60\nSEP_18_2016'
+ghenv.Component.Message = 'VER 0.0.60\nOCT_16_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -709,10 +709,6 @@ class WriteIDF(object):
                '\t' + calculationMethod + ',        !- Calculation Method\n' + \
                '\t' + str(frequency) + ',        !- Calculation Frequency\n' + \
                '\t' + str(maximumFigures) + ';    !- Maximum Figures in Shadow Overlap Calculation\n'
-
-    def EPProgramControl(self, numT = 1):
-        return '\nProgramControl,\n' + \
-               '\t' + `numT` + '; !- Number of Threads AllowedNumber\n'
     
     def EPBuilding(self, name= 'honeybeeBldg', north = 0, terrain = 'City',
                     solarDis = 'FullInteriorAndExteriorWithReflections', maxWarmUpDays = '',
@@ -1671,9 +1667,6 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     
     # ShadowCalculation
     idfFile.write(hb_writeIDF.EPShadowCalculation(*shadowPar))
-    
-    # NumThread
-    idfFile.write(hb_writeIDF.EPProgramControl())
     
     # Building
     EPBuilding = hb_writeIDF.EPBuilding(idfFileName, math.degrees(northAngle), terrain, solarDistribution, maxWarmUpDays, minWarmUpDays)
