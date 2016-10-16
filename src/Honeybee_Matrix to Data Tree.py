@@ -45,12 +45,16 @@ from Grasshopper import DataTree
 from Grasshopper.Kernel.Data import GH_Path
 
 comfResultsTree = DataTree[Object]()
+cullLast = False
 
 if _comfResultsMtx != [] and _comfResultsMtx[0] != None:
     try:
         for bCount, dataList in enumerate(_comfResultsMtx):
             p = GH_Path(bCount-1)
             if bCount == 0:
+                if "Over-Heated Percent" in dataList or "Under-Heated Percent" in dataList or "Occupied Thermal Comfort Percent" in dataList or "Thermal Autonomy" in dataList:
+                    cullLast = True
+            elif cullLast == True and bCount == len(_comfResultsMtx)-1:
                 pass
             else:
                 for item in dataList:
