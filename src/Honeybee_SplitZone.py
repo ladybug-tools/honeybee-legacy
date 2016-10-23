@@ -9,7 +9,7 @@ import rhinoscriptsyntax as rs
 tolerance = sc.doc.ModelAbsoluteTolerance
 
 def checkTheInputs():
-    if len(_bldgMasses) != 0 and _bldgMasses[0]!=None :
+    if len(_bldgMasses) != 0 and _bldgMasses[0] != None:
         #Check for guid
         for i,b in enumerate(_bldgMasses):
             if type(b)==type(rs.AddPoint(0,0,0)):
@@ -26,7 +26,7 @@ def checkTheInputs():
                 ghenv.Component.AddRuntimeMessage(w, warning)
         if sum(brepSolid) == len(_bldgMasses):
             checkData1 = True
-        
+            
     else:
         checkData1 = False
         print "Connect closed solid building masses to split them up into zones."
@@ -596,28 +596,340 @@ def splitPerimZones(mass, zoneDepth, floorCrvList, topInc, totalNurbsList):
     else: pass
     
     #If the top floor has not been included in the analysis above, append on the top floor mass.
-    if topInc[0] == False:
-        finalZones.append([mass[-1]])
-    else: pass
+    #if topInc[0] == False:
+    #    finalZones.append([mass[-1]])
+    #else: pass
     
     return finalZones    
-def main(_bldgMasses, perimeterZoneDepth_, tmp_data):  
-    #If the user had specified a perimeter zone depth, offset the floor curves to get perimeter and core.
-    #Input: mass, perimDepth, floorCrvs[count], topInc[count], nurbsList[count]
-    #Output: Nested list of splitZones for each level
-    splitZones = []
-    floorCrvs, topInc, nurbsList = tmp_data[0],tmp_data[1],tmp_data[2]
-    if perimeterZoneDepth_ != []:
-        #temporary comment until you can implement tree2nestedlst
-        #for count, mass in enumerate(_bldgMasses):
-        splitZones.append(splitPerimZones(_bldgMasses, perimeterZoneDepth_, floorCrvs[0], topInc[0], nurbsList[0]))
-    return splitZones    
+#Redundant fuction temporary
+def getFloorCrvs(buildingMass, floorHeights, maxHeights):
+    #Draw a bounding box around the mass and use the lowest Z point to set the base point.
+    massBB = buildingMass.GetBoundingBox(rc.Geometry.Plane.WorldXY)
+    minZ = massBB.Min.Z
+    
+    basePoint = rc.Geometry.Point3d.Origin
+    cntrCrvs = []; splitters = []
+    bbox = buildingMass.GetBoundingBox(True)
+    for count, h in enumerate(floorHeights):
+        crvList = []
+        floorBasePt = rc.Geometry.Point3d.Add(basePoint, rc.Geometry.Vector3d(0,0,h + minZ))
+        sectionPlane = rc.Geometry.Plane(floorBasePt, rc.Geometry.Vector3d.ZAxis)
+        crvList = rc.Geometry.Brep.CreateContourCurves(buildingMass, sectionPlane)
+        
+        #If the crvList cointains multiple curves, this probably means that it's a courtyard building.  Order the curves from greatest area to least area and create different lists of curves for the interior and exterior.
+        if len(crvList) > 1 and count == 0:
+            areaList = []
+            for curve in crvList:
+                try: areaList.append(rc.Geometry.AreaMassProperties.Compute(curve).Area)
+                except: areaList.append(0.0)
+            crvList = [x for (y,x) in sorted(zip(areaList, crvList))]
+            crvList.reverse()
+            for curve in crvList:
+                cntrCrvs.append([curve])
+        elif len(crvList) > 1 and count != 0:
+            areaList = []
+            for curve in crvList:
+                try: areaList.append(rc.Geometry.AreaMassProperties.Compute(curve).Area)
+                except: areaList.append(0.0)
+            crvList = [x for (y,x) in sorted(zip(areaList, crvList))]
+            crvList.reverse()
+            for crvCount, curve in enumerate(crvList):
+                try: cntrCrvs[crvCount].append(curve)
+                except: pass
+        elif len(crvList) == 1 and count == 0:
+            cntrCrvs.append([crvList[0]])
+        elif len(crvList) == 1 and count != 0:
+            try: cntrCrvs[0].append(crvList[0])
+            except: cntrCrvs.append([crvList[0]])
+        else: pass
+        
+        if crvList != []:
+            # This part is based on one of David Rutten's script
+            bool, extU, extV = sectionPlane.ExtendThroughBox(bbox)
+            # extend the plane for good measure
+            extU.T0 -= 1.0
+            extU.T1 += 1.0
+            extV.T0 -= 1.0
+            extV.T1 += 1.0
+            splitters.append(rc.Geometry.PlaneSurface(sectionPlane, extU, extV))
+    
+    finalCrvsList = []
+    finaltopIncList = []
+    finalNurbsList = []
+    
+    for courtyrdCount, contourCrvs in enumerate(cntrCrvs):
+        
+        #Check if the operation has generated a single nurbs curve for a floor (like a circle) and, if so, segment it.
+        goodContourCrvs = []
+        nurbsList = []
+        for curve in contourCrvs:
+            try:
+                segCount = curve.SegmentCount
+                goodContourCrvs.append(curve)
+                nurbsList.append(False)
+            except:
+                #If the curve has failed the operation above, then it is a single NURBS Curve.  Test to see if offsetting it will generate segments and, if not, it should be segemented into a polycurve.
+                curveLength = curve.GetLength()
+                divisionParams = curve.DivideByLength((curveLength/4), False)[0:3]
+                splitCurve = curve.Split(divisionParams)
+                newCrv = rc.Geometry.PolyCurve()
+                for segment in splitCurve:
+                    newCrv.Append(segment)
+                goodContourCrvs.append(newCrv)
+                nurbsList.append(True)
+        contourCrvs = goodContourCrvs
+        
+        #Check if any of the generated curves have no area and, if so, discount them from the list. Make a note if the curves are at the top, which happens a lot with gabled roofs.  This can be corrected later.
+        newContourCrvs = []
+        problemIndices = []
+        problem = False
+        for crvCount, crv in enumerate(contourCrvs):
+            if crv.SegmentCount == 2:
+                segments = crv.DuplicateSegments()
+                if segments[0].IsLinear and segments[1].IsLinear:
+                    problem = True
+                    problemIndices.append(crvCount)
+                else: newContourCrvs.append(crv)
+            else: newContourCrvs.append(crv)
+        if problem == True:
+            if problemIndices[-1] == len(contourCrvs)-1: topProblem = True
+            else: topProblem = False
+        else: topProblem = False
+        contourCrvs = newContourCrvs
+        
+        #Check to see if the top floor is shorter than 2 meters and, if so, discount it.
+        units = sc.doc.ModelUnitSystem
+        #Define a default max height for a floor based on the model units and typical building dimensions.
+        if `units` == 'Rhino.UnitSystem.Meters':
+            maxHeight = 2
+        elif `units` == 'Rhino.UnitSystem.Centimeters':
+            maxHeight = 200
+        elif `units` == 'Rhino.UnitSystem.Millimeters':
+            maxHeight = 2000
+        elif `units` == 'Rhino.UnitSystem.Feet':
+            maxHeight = 6
+        elif `units` == 'Rhino.UnitSystem.Inches':
+            maxHeight = 72
+        else:
+            warning = "What model units are you using? Use either meters, centimeters, millimeters, feet or inches"
+            print warning
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+        
+        lastFloorHeight = (maxHeights)  - floorHeights[-1]
+        
+        if lastFloorHeight == 0.0: lastFloorInc = True
+        else:
+            if lastFloorHeight < maxHeight:
+                lastFloorInc = False
+            else: lastFloorInc = True
+        
+        #Check to see if the top surface is horizontal + planar and, if so, include it in the curve process below.
+        if lastFloorInc == True:
+            #First find the top surface
+            massSurfaces = []
+            faceLen = buildingMass.Faces.Count
+            for surfaceCount in range(faceLen):
+                massSurfaces.append(buildingMass.DuplicateSubBrep([surfaceCount]))
+            srfAvgZValue = []
+            for brep in massSurfaces:
+                vertices = brep.DuplicateVertices()
+                zValues = []
+                for vertex in vertices:
+                    zValues.append(vertex.Z)
+                zAvg = (sum(zValues))/(len(zValues))
+                srfAvgZValue.append(zAvg)
+            maxIndex = max(enumerate(srfAvgZValue),key=lambda x: x[1])[0]
+            topSurface = massSurfaces[maxIndex]
+            
+            #Check the Z-Values of the vertices to see if they are equal and check for planarity
+            topZValues = []
+            for vertex in topSurface.DuplicateVertices():
+                topZValues.append(vertex.Z)
+            refZ = topZValues[0]
+            zCheckList = []
+            for Z in topZValues:
+                if Z < refZ + tolerance and Z > refZ - tolerance:
+                    zCheckList.append(1)
+                else:pass
+            if sum(zCheckList) == len(topZValues): tophoriz = True
+            else: tophoriz = False
+            topPlanar = topSurface.Surfaces[0].IsPlanar()
+            #If it's both horizontal and planar, take the boundary curve and include it in the rest of the process.
+            if tophoriz == True and topPlanar == True:
+                topInc = True
+                edgeCurves = rc.Geometry.Curve.JoinCurves(topSurface.DuplicateEdgeCurves())
+                #If the building is a courtyard one, select out the curve with the same area order.
+                if len(edgeCurves) > 1:
+                    areaList = []
+                    for curve in edgeCurves:
+                        try: areaList.append(rc.Geometry.AreaMassProperties.Compute(curve).Area)
+                        except: areaList.append(0.0)
+                    edgeCurvesSorted = [x for (y,x) in sorted(zip(areaList, edgeCurves))]
+                    edgeCurves = [edgeCurvesSorted[courtyrdCount]]
+                else: pass
+                
+                isNurbCurve = []
+                for count, curve in enumerate(edgeCurves):
+                    try:
+                        segCount = edgeCurves.SegmentCount
+                        isNurbCurve.append(False)
+                    except:
+                        isNurbCurve.append(True)
+                        curveLength = curve.GetLength()
+                        divisionParams = curve.DivideByLength((curveLength/4), False)[0:3]
+                        splitCurve = curve.Split(divisionParams)
+                        newCrv = rc.Geometry.PolyCurve()
+                        for segment in splitCurve:
+                            newCrv.Append(segment)
+                        edgeCurves[count] = newCrv
+                    for curve in edgeCurves:
+                        contourCrvs.append(curve)
+                    for bool in isNurbCurve:
+                        nurbsList.append(bool)
+            else:
+                topInc = False
+        else:
+            if lastFloorHeight < maxHeight:
+                topInc = True
+            else: topInc = False
+        
+        if topProblem == True:
+            topInc = False
+        else: pass
+        
+        # Match the curve directions.
+        if len(contourCrvs)!= 0:
+            refCrv = contourCrvs[0]
+            crvDir = []
+            for crv in contourCrvs:
+                crvDir.append(rc.Geometry.Curve.DoDirectionsMatch(refCrv, crv))
+            for count, dir in enumerate(crvDir):
+                if dir == True:
+                    contourCrvs[count].Reverse()
+        
+        #Check if there are any curved segments in the polycurve and if so, make a note of it
+        curveSegmentList = []
+        for curve in contourCrvs:
+            curved = False
+            for segment in curve.DuplicateSegments():
+                if segment.IsLinear(): pass
+                else: curved = True
+            curveSegmentList.append(curved)
+        
+        
+        #Match the curve seams in order to ensure proper zone splitting later.
+        if len(contourCrvs)!= 0:
+            crvCentPt = rc.Geometry.AreaMassProperties.Compute(contourCrvs[-1]).Centroid
+            # get a point from the center of the contour curve to a seam in order to adjust the seam of all other curves.
+            curveLengths = []
+            for curve in contourCrvs:
+                curveLengths.append(curve.GetLength())
+            curveLengths.sort()
+            longestCurveLength = curveLengths[-1]
+            factor = ((longestCurveLength)/(contourCrvs[-1].PointAtStart.X - crvCentPt.X))*2
+            seamVectorPt = rc.Geometry.Vector3d((contourCrvs[-1].PointAtStart.X - crvCentPt.X)*factor, (contourCrvs[-1].PointAtStart.Y - crvCentPt.Y)*factor, 0)
+            
+            # Try to adjust the seam of the curves.
+            crvAdjust = []
+            try:
+                for nurbCount, curve in enumerate(contourCrvs):
+                    if curve.IsClosed:
+                        if nurbsList[nurbCount] == False and curveSegmentList[nurbCount] == False:
+                            curveParameter = curve.ClosestPoint(rc.Geometry.Intersect.Intersection.CurveCurve(curve, rc.Geometry.Line(rc.Geometry.AreaMassProperties.Compute(curve).Centroid, seamVectorPt).ToNurbsCurve(), sc.doc.ModelAbsoluteTolerance, sc.doc.ModelAbsoluteTolerance)[0].PointA)[1]
+                            curveParameterRound = round(curveParameter)
+                            curveParameterTol = round(curveParameter, (len(list(str(sc.doc.ModelAbsoluteTolerance)))-2))
+                            if curveParameterRound + sc.doc.ModelAbsoluteTolerance > curveParameter and curveParameterRound - sc.doc.ModelAbsoluteTolerance < curveParameter:
+                                curve.ChangeClosedCurveSeam(curveParameterRound)
+                                crvAdjust.append(curve)
+                            else:
+                                curve.ChangeClosedCurveSeam(curveParameter)
+                                if curve.IsClosed == True:
+                                    crvAdjust.append(curve)
+                                else:
+                                    curve.ChangeClosedCurveSeam(curveParameter+sc.doc.ModelAbsoluteTolerance)
+                                    if curve.IsClosed == True:
+                                        crvAdjust.append(curve)
+                                    else:
+                                        curve.ChangeClosedCurveSeam(curveParameter-sc.doc.ModelAbsoluteTolerance)
+                                        if curve.IsClosed == True:
+                                            crvAdjust.append(curve)
+                                        else:
+                                            curve.ChangeClosedCurveSeam(curveParameter)
+                                            curve.MakeClosed(sc.doc.ModelAbsoluteTolerance)
+                                            crvAdjust.append(curve)
+                        else:
+                            crvAdjust.append(curve)
+                    else:
+                        crvAdjust.append(curve)
+                        warning = 'The top or bottom of your mass geometry is composed of multiple surfaces and this is causing the algorithm to mess up.\n  If you re-make your top and/or bottom of your mass to be a single surface, this component should work.'
+                        print warning
+                        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+            except: crvAdjust = contourCrvs
+        
+        #Simplify the contour curves to ensure that they do not mess up the next few steps.
+        for curve in crvAdjust:
+            curve.Simplify(rc.Geometry.CurveSimplifyOptions.All, tolerance, sc.doc.ModelAngleToleranceRadians)
+        
+        #Append the results to the list.
+        finalCrvsList.append(crvAdjust)
+        finaltopIncList.append(topInc)
+        finalNurbsList.append(nurbsList)
+    
+    return splitters, finalCrvsList, finaltopIncList, finalNurbsList, lastFloorInc
+def main(mass, perimeterZoneDepth_):  
+    debug = sc.sticky['debug']
+    #Import the Ladybug Classes.
+    if sc.sticky.has_key('ladybug_release')and sc.sticky.has_key('honeybee_release'):
+        lb_preparation = sc.sticky["ladybug_Preparation"]()
+        lb_visualization = sc.sticky["ladybug_ResultVisualization"]()
+        
+        #If the user had specified a perimeter zone depth, offset the floor curves to get perimeter and core.
+        #Input: mass, perimDepth, floorCrvs[count], topInc[count], nurbsList[count]
+        #Output: Nested list of splitZones for each level
+        
+        #Function to get floorCrvs, topInc(?), nurbsList
+        #Not sure how many of these we really need
+        splitFloors = []
+        floorCrvs = []
+        topInc = []
+        nurbsList = []
+        for item in mass:
+            bbBox = item.GetBoundingBox(rc.Geometry.Plane.WorldXY)
+            maxHeights = bbBox.Max.Z
+            minHeights = bbBox.Min.Z
+            splitters, flrCrvs, topIncl, nurbL, lastInclud = getFloorCrvs(item, [0, maxHeights-minHeights], maxHeights)
+            
+            floorCrvs.append(flrCrvs)
+            topInc.append(topIncl)
+            nurbsList.append(nurbL)
+            splitFloors.append(item)
+            
+        #need to fix this
+        #floorCrvs = [floorCrvs]*len(splitFloors)
+        #Generate perimeter/core zone
+        splitZones = []
+        if perimeterZoneDepth_ != []:
+            for count, mass in enumerate(splitFloors):
+                print 'floor_int' 
+                print floorCrvs[count]
+                for f in floorCrvs[count]:
+                    debug.extend(f)
+                spz = splitPerimZones(mass, perimeterZoneDepth_, floorCrvs[count], topInc[count], nurbsList[count])
+                splitZones.append(spz)
+        return splitZones
+    else:
+        print "You should first let both Ladybug and Honeybee to fly..."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, "You should first let both Ladybug and Honeybee to fly...")
+        return -1    
 
 checkData = False
 if _runIt == True:
     checkData = checkTheInputs()
 if checkData == True:
-    splitBldgMassesLists = main(_bldgMasses, perimeterZoneDepth_, tmp_data)
+    sc.sticky['debug'] = []
+    splitBldgMassesLists = main(_bldgMasses, perimeterZoneDepth_)
     if splitBldgMassesLists!= -1:
         splitBldgMasses = DataTree[Object]()
     
@@ -655,4 +967,4 @@ if checkData == True:
             except:
                 splitBldgMasses.Add(mass, p)
                 #names.Add(str(i) + "_" + str(j), p)
-            
+    debug = sc.sticky['debug']

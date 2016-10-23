@@ -403,9 +403,9 @@ def splitFloorHeights(bldgMasses, bldgsFlr2FlrHeights, lb_preparation, lb_visual
         analysisMesh, initialMasses = lb_preparation.cleanAndCoerceList(bldgMasses)
         
         splitZones = []
-        floorCurves = []
-        topIncluded = []
-        nurbsCurveList = []
+        floorCurves = []#
+        topIncluded = []#
+        nurbsCurveList = []#
         lastFloorInclud = []
         for bldgCount, mass in enumerate(initialMasses):
             # 0- split the mass vertically [well, it is actually horizontally! so confusing...]
@@ -495,11 +495,9 @@ def main(mass, floorHeights):
                 splitZones.append(mass)
             else:
                 splitZones.append(mass[:-1])
-        #temp until I can figure out a better way
-        tmp_data = floorCrvs, topInc, nurbsList
         
         #return list of list of each floor zones
-        return splitZones, tmp_data
+        return splitZones
     else:
         print "You should first let both Ladybug and Honeybee to fly..."
         w = gh.GH_RuntimeMessageLevel.Warning
@@ -510,7 +508,7 @@ checkData = False
 if _runIt == True:
     checkData = checkTheInputs()
 if checkData == True:
-    splitBldgMassesLists, tmp_data = main(_bldgMasses, bldgsFlr2FloorHeights_)
+    splitBldgMassesLists = main(_bldgMasses, bldgsFlr2FloorHeights_)
     if splitBldgMassesLists!= -1:
         splitBldgMasses = DataTree[Object]()
         names = DataTree[Object]()
