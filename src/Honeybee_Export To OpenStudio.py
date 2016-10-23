@@ -68,7 +68,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.60\nOCT_08_2016'
+ghenv.Component.Message = 'VER 0.0.60\nOCT_23_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -2500,8 +2500,8 @@ class WriteOPS(object):
     def setAirMixing(self, zone, model):
         # air mixing from air walls
         targetZone = self.thermalZonesDict[zone.name]
-        zoneMixing = ops.ZoneMixing(targetZone)
         for mixZoneCount, zoneMixName in enumerate(zone.mixAirZoneList):
+            zoneMixing = ops.ZoneMixing(targetZone)
             sourceZone = self.thermalZonesDict[zoneMixName]
             zoneMixing.setSourceZone(sourceZone)
             zoneMixing.setDesignFlowRate(zone.mixAirFlowList[mixZoneCount])
