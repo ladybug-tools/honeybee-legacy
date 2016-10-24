@@ -596,9 +596,9 @@ def splitPerimZones(mass, zoneDepth, floorCrvList, topInc, totalNurbsList):
     else: pass
     
     #If the top floor has not been included in the analysis above, append on the top floor mass.
-    #if topInc[0] == False:
-    #    finalZones.append([mass[-1]])
-    #else: pass
+    if topInc[0] == False:
+        finalZones.append([mass[-1]])
+    else: pass
     
     return finalZones    
 #Redundant fuction temporary
@@ -884,13 +884,8 @@ def main(mass, perimeterZoneDepth_):
         lb_preparation = sc.sticky["ladybug_Preparation"]()
         lb_visualization = sc.sticky["ladybug_ResultVisualization"]()
         
-        #If the user had specified a perimeter zone depth, offset the floor curves to get perimeter and core.
-        #Input: mass, perimDepth, floorCrvs[count], topInc[count], nurbsList[count]
-        #Output: Nested list of splitZones for each level
-        
-        #Function to get floorCrvs, topInc(?), nurbsList
-        #Not sure how many of these we really need
-        splitFloors = []
+        #multiply and list mass to work with splitPerimZones function
+        splitFloors = map(lambda n:[n],mass)
         floorCrvs = []
         topInc = []
         nurbsList = []
@@ -898,25 +893,20 @@ def main(mass, perimeterZoneDepth_):
             bbBox = item.GetBoundingBox(rc.Geometry.Plane.WorldXY)
             maxHeights = bbBox.Max.Z
             minHeights = bbBox.Min.Z
+            #Function to get floorCrvs, topInc(?), nurbsList
+            #Not sure how many of these we really need
             splitters, flrCrvs, topIncl, nurbL, lastInclud = getFloorCrvs(item, [0, maxHeights-minHeights], maxHeights)
             
             floorCrvs.append(flrCrvs)
             topInc.append(topIncl)
             nurbsList.append(nurbL)
-            splitFloors.append(item)
             
-        #need to fix this
-        #floorCrvs = [floorCrvs]*len(splitFloors)
         #Generate perimeter/core zone
         splitZones = []
         if perimeterZoneDepth_ != []:
             for count, mass in enumerate(splitFloors):
-                print 'floor_int' 
-                print floorCrvs[count]
-                for f in floorCrvs[count]:
-                    debug.extend(f)
-                spz = splitPerimZones(mass, perimeterZoneDepth_, floorCrvs[count], topInc[count], nurbsList[count])
-                splitZones.append(spz)
+                splitzone = splitPerimZones(mass, perimeterZoneDepth_, floorCrvs[count], topInc[count], nurbsList[count])
+                splitZones.append(splitzone)
         return splitZones
     else:
         print "You should first let both Ladybug and Honeybee to fly..."
@@ -962,9 +952,6 @@ if checkData == True:
             
             try:
                 splitBldgMasses.AddRange(mass, p)
-                #zoneNames = [str(i) + "_" + str(m) for m in range(len(mass))]
-                #names.AddRange(zoneNames, p)
             except:
                 splitBldgMasses.Add(mass, p)
-                #names.Add(str(i) + "_" + str(j), p)
     debug = sc.sticky['debug']
