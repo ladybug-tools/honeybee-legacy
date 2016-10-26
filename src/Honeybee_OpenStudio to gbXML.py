@@ -22,7 +22,7 @@
 
 """
 Use this component to export OpenStudio model to gbXML file.
-_
+-
 Provided by Honeybee 0.0.60
     
     Args:
@@ -76,15 +76,15 @@ else:
 
 if openStudioIsReady and _export and _filepath and _model:
     
-    filepath = filepath.replace('\\\\', '/').replace('\\', '/')
+    _filepath = _filepath.replace('\\\\', '/').replace('\\', '/')
     translator = ops.GbXMLForwardTranslator()
-    model.getFacility()
-    result = translator.modelToGbXML(model, ops.Path(os.path.normpath(filepath)))
+    _model.getFacility()
+    result = translator.modelToGbXML(_model, ops.Path(os.path.normpath(_filepath)))
     errors = translator.errors()
     warnings = translator.warnings()
     if ''.join(errors):
         raise Exception('\n'.join(errors))
     for warn in warnings:
         print warn
-    print 'File exported to: {}'.format(os.path.normpath(filepath))
+    print 'File exported to: {}'.format(os.path.normpath(_filepath))
     success = True
