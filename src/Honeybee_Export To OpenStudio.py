@@ -68,11 +68,11 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.60\nSEP_04_2016'
+ghenv.Component.Message = 'VER 0.0.60\nSEP_09_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nSEP_04_2016
+#compatibleHBVersion = VER 0.0.56\nSEP_09_2016
 #compatibleLBVersion = VER 0.0.59\nJUL_24_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
@@ -149,6 +149,7 @@ class WriteOPS(object):
         self.csvScheduleCount = 0
         self.shadeCntrlToReplace = []
         self.replaceShdCntrl = False
+        self.windowSpectralDatasets = {}
     
     def setSimulationControls(self, model):
         solarDist = self.simParameters[2]
@@ -2376,7 +2377,6 @@ class WriteOPS(object):
         except:
             humidTypeLimits = self.humidTypeLimits = self.createOSScheduleTypeLimitsFromValues(model, 0, 100, 'CONTINUOUS', 'Percent')
         
-        
         if HBZone.humidityMax != "":
             values = ["schedule:constant", humidTypeLimits, float(HBZone.humidityMax)]
             maxHumidSched = self.createConstantOSSchedule("maxHumidity" + str(space.name()), values, model)
@@ -2449,36 +2449,45 @@ class WriteOPS(object):
         # I'm not sure how default schedule will be useful
         # if I have to create separate definitions for people, light, equipments and infiltration!
         defSchedule = ops.DefaultScheduleSet(model)
-        
         defSchedule.setName(zone.name + "_DefaultScheduleSet")
-        defSchedule.setElectricEquipmentSchedule(self.getOSSchedule(zone.equipmentSchedule, model))
-        defSchedule.setHoursofOperationSchedule(self.getOSSchedule(zone.occupancySchedule, model))
         defSchedule.setInfiltrationSchedule(self.getOSSchedule(zone.infiltrationSchedule, model))
         defSchedule.setLightingSchedule(self.getOSSchedule(zone.lightingSchedule, model))
-        defSchedule.setPeopleActivityLevelSchedule(self.getOSSchedule(zone.occupancyActivitySch, model))
+        # Not all default zone types have people, or equipment.
+        try:
+            defSchedule.setElectricEquipmentSchedule(self.getOSSchedule(zone.equipmentSchedule, model))
+        except:
+            pass
+        try:
+            defSchedule.setHoursofOperationSchedule(self.getOSSchedule(zone.occupancySchedule, model))
+        except:
+            pass
+        try:
+            defSchedule.setPeopleActivityLevelSchedule(self.getOSSchedule(zone.occupancyActivitySch, model))
+        except:
+            pass
         space.setDefaultScheduleSet(defSchedule)
         return space
         
     def setPeopleDefinition(self, zone, space, model):
-        peopleDefinition = ops.PeopleDefinition(model)
-        peopleDefinition.setName(zone.name + "_PeopleDefinition")
-        flrArea = zone.getFloorArea()
-        if flrArea != 0:
-            peopleDefinition.setNumberofPeople(zone.numOfPeoplePerArea * flrArea)
-            peopleDefinition.setNumberOfPeopleCalculationMethod("People/Area", flrArea)
-            peopleDefinition.setPeopleperSpaceFloorArea(zone.numOfPeoplePerArea) #space.peoplePerFloorArea())
-        #peopleDefinition.setFractionRadiant
-        #peopleDefinition.setSensibleHeatFraction
-        
-        # This was so confusing to find people and people definition as two different objects
-        people = ops.People(peopleDefinition)
-        people.setName(zone.name + "_PeopleObject")
-        people.setActivityLevelSchedule(self.getOSSchedule(zone.occupancyActivitySch, model))
-        people.setNumberofPeopleSchedule(self.getOSSchedule(zone.occupancySchedule, model))
-        #people.setPeopleDefinition(peopleDefinition)
-        people.setSpace(space)
-        
-        
+        if zone.numOfPeoplePerArea != 0:
+            peopleDefinition = ops.PeopleDefinition(model)
+            peopleDefinition.setName(zone.name + "_PeopleDefinition")
+            flrArea = zone.getFloorArea()
+            if flrArea != 0:
+                peopleDefinition.setNumberofPeople(zone.numOfPeoplePerArea * flrArea)
+                peopleDefinition.setNumberOfPeopleCalculationMethod("People/Area", flrArea)
+                peopleDefinition.setPeopleperSpaceFloorArea(zone.numOfPeoplePerArea) #space.peoplePerFloorArea())
+            #peopleDefinition.setFractionRadiant
+            #peopleDefinition.setSensibleHeatFraction
+            
+            # This was so confusing to find people and people definition as two different objects
+            people = ops.People(peopleDefinition)
+            people.setName(zone.name + "_PeopleObject")
+            people.setActivityLevelSchedule(self.getOSSchedule(zone.occupancyActivitySch, model))
+            people.setNumberofPeopleSchedule(self.getOSSchedule(zone.occupancySchedule, model))
+            #people.setPeopleDefinition(peopleDefinition)
+            people.setSpace(space)
+     
     def setInternalMassDefinition(self, zone, space, model):
         
         for srfNum,srfArea in enumerate(zone.internalMassSrfAreas):
@@ -2519,18 +2528,19 @@ class WriteOPS(object):
         lights.setSpace(space)
         
     def setEquipmentDefinition(self, zone, space, model):
-        electricDefinition = ops.ElectricEquipmentDefinition(model)
-        electricDefinition.setName(zone.name + "_ElectricEquipmentDefinition")
-        flrArea = zone.getFloorArea()
-        if flrArea != 0:
-            electricDefinition.setDesignLevelCalculationMethod("Watts/Area", flrArea, space.numberOfPeople())
-        electricDefinition.setWattsperSpaceFloorArea(zone.equipmentLoadPerArea)
-        
-        electricEqipment = ops.ElectricEquipment(electricDefinition)
-        electricEqipment.setName(zone.name + "_ElectricEquipmentObject")
-        electricEqipment.setSchedule(self.getOSSchedule(zone.equipmentSchedule, model))
-        electricEqipment.setEndUseSubcategory('ElectricEquipment')
-        electricEqipment.setSpace(space)
+        if zone.equipmentLoadPerArea != 0:
+            electricDefinition = ops.ElectricEquipmentDefinition(model)
+            electricDefinition.setName(zone.name + "_ElectricEquipmentDefinition")
+            flrArea = zone.getFloorArea()
+            if flrArea != 0:
+                electricDefinition.setDesignLevelCalculationMethod("Watts/Area", flrArea, space.numberOfPeople())
+            electricDefinition.setWattsperSpaceFloorArea(zone.equipmentLoadPerArea)
+            
+            electricEqipment = ops.ElectricEquipment(electricDefinition)
+            electricEqipment.setName(zone.name + "_ElectricEquipmentObject")
+            electricEqipment.setSchedule(self.getOSSchedule(zone.equipmentSchedule, model))
+            electricEqipment.setEndUseSubcategory('ElectricEquipment')
+            electricEqipment.setSpace(space)
         
     def setDesignSpecificationOutdoorAir(self, zone, space, model):
         ventilation = ops.DesignSpecificationOutdoorAir(model)
@@ -2600,18 +2610,28 @@ class WriteOPS(object):
         standardGlazing.setOpticalDataType(values[0])
         standardGlazing.setWindowGlassSpectralDataSetName(values[1])
         standardGlazing.setThickness(float(values[2]))
-        standardGlazing.setSolarTransmittanceatNormalIncidence(float(values[3]))
-        standardGlazing.setFrontSideSolarReflectanceatNormalIncidence(float(values[4]))
-        standardGlazing.setBackSideSolarReflectanceatNormalIncidence(float(values[5]))
-        standardGlazing.setVisibleTransmittanceatNormalIncidence(float(values[6]))
-        standardGlazing.setFrontSideVisibleReflectanceatNormalIncidence(float(values[7]))
-        standardGlazing.setBackSideVisibleReflectanceatNormalIncidence(float(values[8]))
+        try:
+            # Glass material is defined by average values of transmittance and reflectance.
+            standardGlazing.setSolarTransmittanceatNormalIncidence(float(values[3]))
+            standardGlazing.setFrontSideSolarReflectanceatNormalIncidence(float(values[4]))
+            standardGlazing.setBackSideSolarReflectanceatNormalIncidence(float(values[5]))
+            standardGlazing.setVisibleTransmittanceatNormalIncidence(float(values[6]))
+            standardGlazing.setFrontSideVisibleReflectanceatNormalIncidence(float(values[7]))
+            standardGlazing.setBackSideVisibleReflectanceatNormalIncidence(float(values[8]))
+        except:
+            # Glass material is defined by detailed spectral data.
+            self.windowSpectralDatasets[HBMaterialName] = values[1]
+            # Ah, OpenStudio. You put this in your SDK but don't wirte it into the IDF.
+            # I'll leave it here until you support it.
+            standardGlazing.setWindowGlassSpectralDataSetName(values[1])
+        
         standardGlazing.setInfraredTransmittanceatNormalIncidence(float(values[9]))
         standardGlazing.setFrontSideInfraredHemisphericalEmissivity(float(values[10]))
         standardGlazing.setBackSideInfraredHemisphericalEmissivity(float(values[11]))
         standardGlazing.setConductivity(float(values[12]))
         try: standardGlazing.setDirtCorrectionFactorforSolarandVisibleTransmittance(float(values[13]))
         except: pass
+        
         """
         try:
             if values[14].lower() == "no":
@@ -2621,6 +2641,7 @@ class WriteOPS(object):
         except Exception, e:
             pass
         """
+        
         return standardGlazing
     
     def createOSNoMassMaterial(self, HBMaterialName, values, model):
@@ -3005,7 +3026,7 @@ class WriteOPS(object):
                     pass
     
     def getObjToReplace(self):
-        return self.csvSchedules, self.csvScheduleCount, self.shadeCntrlToReplace, self.replaceShdCntrl
+        return self.csvSchedules, self.csvScheduleCount, self.shadeCntrlToReplace, self.replaceShdCntrl, self.windowSpectralDatasets
 
 class HoneybeeHVAC(object):
     def __init__(self, ID, systemIndex, thermalZones, hbZones, airDetails, heatingDetails, coolingDetails, count):
@@ -3175,7 +3196,7 @@ class EPFeaturesNotInOS(object):
 
 class RunOPS(object):
     def __init__(self, model, weatherFilePath, HBZones, simParameters, openStudioLibFolder, csvSchedules, \
-            csvScheduleCount, additionalcsvSchedules, shadeCntrlToReplace, replaceShdCntrl):
+            csvScheduleCount, additionalcsvSchedules, shadeCntrlToReplace, replaceShdCntrl, windowSpectralData):
         self.weatherFile = weatherFilePath # just for batch file as an alternate solution
         self.openStudioDir = "/".join(openStudioLibFolder.split("/")[:3]) + "/share/openstudio"
         self.EPFolder = self.getEPFolder()
@@ -3190,6 +3211,7 @@ class RunOPS(object):
         self.additionalcsvSchedules = additionalcsvSchedules
         self.shadeCntrlToReplace = shadeCntrlToReplace
         self.replaceShdCntrl = replaceShdCntrl
+        self.windowSpectralData = windowSpectralData
         self.hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
         self.lb_preparation = sc.sticky["ladybug_Preparation"]()
     
@@ -3238,7 +3260,7 @@ class RunOPS(object):
     
     
     def writeNonOSFeatures(self, idfFilePath, HBZones, simParameters, workingDir):
-        #Go through the lines of the exiting IDF and find and references to CSV schedules.
+        # Go through the lines of the exiting IDF and find and references to CSV schedules.
         wrongLineTrigger = True
         fi = open(str(idfFilePath),'r')
         fi.seek(0)
@@ -3320,6 +3342,7 @@ class RunOPS(object):
                 lines.append(shdCntrlStr)
         
         # Write in any requested natural ventilation objects.
+        # Find any natural ventilation objects on the Zones.
         natVentStrings = []
         for zone in HBZones:
             if zone.natVent == True:
@@ -3328,10 +3351,28 @@ class RunOPS(object):
                         natVentStrings.append(otherFeatureClass.EPNatVentSimple(zone, natVentCount))
                     elif natVentObj == 3:
                         natVentStrings.append(otherFeatureClass.EPNatVentFan(zone, natVentCount))
-        
+        # Write the natural ventilation objects into the IDF.
         if len(natVentStrings) > 0:
             for line in natVentStrings:
                 lines.append(line)
+        
+        # Write in any window spectral data.
+        if self.windowSpectralData != {}:
+            # First, I have to write in the name of the spectral data on the glass materials.
+            glazTrigger = False
+            matName = None
+            for lcount, line in enumerate(lines):
+                if 'WindowMaterial:Glazing' in line:
+                    glazTrigger = True
+                elif line == '\n':
+                    glazTrigger = False
+                elif glazTrigger == True and '!- Name' in line:
+                    matName = line.split(',')[0].strip()
+                elif glazTrigger == True and '!- Window Glass Spectral Data Set Name' in line:
+                    lines[lcount] = '  ' + self.windowSpectralData[matName] + ',     !- Window Glass Spectral Data Set Name\n'
+            for matName in self.windowSpectralData.keys():
+                spectDatStr = self.hb_EPObjectsAux.getEPObjectsStr(self.windowSpectralData[matName])
+                lines.append(spectDatStr)
         
         # Write in a request for the surface names in the .eio file.
         lines.append('\nOutput:Surfaces:List,\n')
@@ -3717,8 +3758,8 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         shdingSurfcaes = hb_hive.callFromHoneybeeHive(HBContext)
         hb_writeOPS.OPSShdSurface(shdingSurfcaes, model)
     
-    # Get the objects in the file that we need to replace.
-    csvSchedules, csvScheduleCount, shadeCntrlToReplace, replaceShdCntrl = hb_writeOPS.getObjToReplace()
+    # Get the objects in the file that we need to replace or add because OpenStudio does not support them.
+    csvSchedules, csvScheduleCount, shadeCntrlToReplace, replaceShdCntrl, windowSpectralData = hb_writeOPS.getObjToReplace()
     
     #save the model
     model.save(ops.Path(fname), True)
@@ -3732,7 +3773,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     
     if runIt > 0:
         hb_runOPS = RunOPS(model, epwWeatherFile, HBZones, hb_writeOPS.simParameters, openStudioLibFolder, csvSchedules, \
-            csvScheduleCount, additionalcsvSchedules, shadeCntrlToReplace, replaceShdCntrl)
+            csvScheduleCount, additionalcsvSchedules, shadeCntrlToReplace, replaceShdCntrl, windowSpectralData)
         
         idfFile, resultFile = hb_runOPS.runAnalysis(fname, runIt, useRunManager = False)
         if runIt < 3:

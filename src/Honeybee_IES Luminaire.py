@@ -82,7 +82,7 @@ from __future__ import division
 
 ghenv.Component.Name = "Honeybee_IES Luminaire"
 ghenv.Component.NickName = 'iesLuminaire'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nSEP_11_2016'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "02 | Daylight | Light Source"
 #compatibleHBVersion = VER 0.0.56\nJUL_01_2016
@@ -248,13 +248,17 @@ class Luminaire:
                         "Units Type: {2}\n"+
                         "Luminous Dimensions(width,length,height): {4}\n\n"+
                         "Number of Vertical Angles:{0.numVertAng}\n"+
-                        "Vertical Angle limits:{0.arrVertAng[0]},{0.arrVertAng[-1]}\n\n"+
+                        "Vertical Angle limits:{vMin},{vMax}\n\n"+
                         "Number of Horizontal Angles: {0.numHorzAng}\n"+
-                        "Horizontal Angle limits: {0.arrHorzAng[0]},{0.arrHorzAng[-1]}\n\n"+
+                        "Horizontal Angle limits: {hMin},{hMax}\n\n"+
                         "Input Watts:   {0.inpWatts}\n"+
                         "Ballast Factor: {0.balFact}\n")
-                                    
-           lumstring = lumstring.format(self,photometryType,unitsType,lumens,luminousDim)
+           
+           vertMin,vertMax = self.arrVertAng[0],self.arrVertAng[-1]
+           horzMin,horzMax = self.arrHorzAng[0],self.arrHorzAng[-1]
+           lumstring = lumstring.format(self,photometryType,unitsType,lumens,luminousDim,
+                                        vMin=vertMin,vMax=vertMax,
+                                        hMin=horzMin,hMax=horzMax)
 
            return lumstring
            
@@ -816,7 +820,7 @@ if _iesFilePath and _luminaireZone and checkLadybug and checkHoneybee:
 
     if _writeRad:  
         if len(_iesFilePath)==1:
-            _iesFilePath = filePath
+            _iesFilePath = _iesFilePath[0]
             if not os.path.exists(_iesFilePath):
                 newIesFile = os.path.join(dirpath,filenamefull+".ies")
                 with open(newIesFile,'w') as iesFileWrite:

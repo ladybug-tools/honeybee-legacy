@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.60\nSEP_04_2016'
+ghenv.Component.Message = 'VER 0.0.60\nSEP_09_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -385,6 +385,7 @@ class PrepareTemplateEPLibFiles(object):
         if not sc.sticky.has_key("honeybee_ScheduleLib"): sc.sticky["honeybee_ScheduleLib"] = {}
         if not sc.sticky.has_key("honeybee_ScheduleTypeLimitsLib"): sc.sticky["honeybee_ScheduleTypeLimitsLib"] = {}
         if not sc.sticky.has_key("honeybee_WinodowPropLib"): sc.sticky["honeybee_WinodowPropLib"] = {}
+        if not sc.sticky.has_key("honeybee_SpectralDataLib"): sc.sticky["honeybee_SpectralDataLib"] = {}
         if not sc.sticky.has_key("honeybee_thermMaterialLib"): sc.sticky["honeybee_thermMaterialLib"] = {}
         
         self.downloadTemplate = downloadTemplate
@@ -403,6 +404,7 @@ class PrepareTemplateEPLibFiles(object):
         sc.sticky["honeybee_ScheduleLib"] = {}
         sc.sticky["honeybee_ScheduleTypeLimitsLib"] = {}
         sc.sticky["honeybee_WinodowPropLib"] = {}
+        sc.sticky["honeybee_SpectralDataLib"] = {}
     
     def cleanThermLib(self):
         sc.sticky["honeybee_thermMaterialLib"] = {}
@@ -3815,6 +3817,8 @@ class EPMaterialAux(object):
             objectData = sc.sticky ["honeybee_constructionLib"][objectName]
         elif objectData in sc.sticky["honeybee_WinodowPropLib"].keys():
             objectData = sc.sticky["honeybee_WinodowPropLib"][objectName]
+        elif objectName in sc.sticky["honeybee_SpectralDataLib"].keys():
+            objectData = sc.sticky["honeybee_SpectralDataLib"][objectName]
         
         if objectData!=None:
             numberOfLayers = len(objectData.keys())
@@ -3996,6 +4000,9 @@ class EPObjectsAux(object):
     def isWindowProperty(self, winPropName):
         return winPropName.upper() in sc.sticky["honeybee_WinodowPropLib"].keys()
     
+    def isSpectralData(self, spectName):
+        return spectName.upper() in sc.sticky["honeybee_SpectralDataLib"].keys()
+    
     def customizeEPObject(self, EPObjectName, indexes, inValues):
         hb_EPScheduleAUX = EPScheduleAux()
         hb_EPMaterialAUX = EPMaterialAux()
@@ -4079,7 +4086,8 @@ class EPObjectsAux(object):
                        "WindowMaterial" : "honeybee_windowMaterialLib",
                        "Schedule": "honeybee_ScheduleLib",
                        "ScheduleTypeLimits" : "honeybee_ScheduleTypeLimitsLib",
-                       "WindowProperty" : "honeybee_WinodowPropLib"
+                       "WindowProperty" : "honeybee_WinodowPropLib",
+                       "MaterialProperty:GlazingSpectralData" : "honeybee_SpectralDataLib"
                        }
         
         # find construction/material name
@@ -4136,6 +4144,8 @@ class EPObjectsAux(object):
             objectData = sc.sticky ["honeybee_ScheduleTypeLimitsLib"][objectName]
         elif objectName in sc.sticky["honeybee_WinodowPropLib"].keys():
             objectData = sc.sticky["honeybee_WinodowPropLib"][objectName]
+        elif objectName in sc.sticky["honeybee_SpectralDataLib"].keys():
+            objectData = sc.sticky["honeybee_SpectralDataLib"][objectName]
         
         return objectData
     
