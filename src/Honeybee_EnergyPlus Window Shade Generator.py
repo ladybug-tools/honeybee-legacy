@@ -1,4 +1,4 @@
-﻿# This component creates shades for Honeybee Zones
+# This component creates shades for Honeybee Zones
 #
 # Honeybee: A Plugin for Environmental Analysis (GPL) started by Mostapha Sadeghipour Roudsari
 # 
@@ -84,7 +84,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Window Shade Generator"
 ghenv.Component.NickName = 'EPWindowShades'
-ghenv.Component.Message = 'VER 0.0.60\nSEP_17_2016'
+ghenv.Component.Message = 'VER 0.0.60\nOCT_10_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -547,7 +547,7 @@ def analyzeGlz(glzSrf, distBetween, numOfShds, horOrVertical, lb_visualization, 
     # Helper function to check if number is near zero
     def helper_is_near_zero(num2chk, eps=1e-6):
         return abs(num2chk) < eps
- 
+    
     # find the bounding box
     bbox = glzSrf.GetBoundingBox(True)
     # Add default shading Height and numOfShd

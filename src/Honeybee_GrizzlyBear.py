@@ -44,7 +44,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_GrizzlyBear"
 ghenv.Component.NickName = 'grizzlyBear'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nOCT_27_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"
@@ -1730,20 +1730,21 @@ if gbXMLIsReady and _location and _writegbXML and _workingDir:
         for schedule in uniqueSched:
             schedule = schedule.strip('.')
             scheduleValues, comments = hb_EPScheduleAUX.getScheduleDataByName(schedule, ghenv.Component)
-            if scheduleValues!=None:
-                m = re.match('(.*)(:)(.*)', scheduleValues[0])
-                if m:
-                    
-                    if m.group(3) == "Year":
-                        schct += 1
-                    elif m.group(3) == "Daily":
-                        wschct += 1
-                    elif m.group(3) == "Interval":
-                        dschct += 1
-                        
-            else:
+            if not scheduleValues:
                 logging.debug('There are no schedules in the honeybee hive.')
-                # collect all the schedule items inside the schedule
+                continue
+                
+            m = re.match('(.*)(:)(.*)', scheduleValues[0])
+            if m:
+                
+                if m.group(3) == "Year":
+                    schct += 1
+                elif m.group(3) == "Daily":
+                    wschct += 1
+                elif m.group(3) == "Interval":
+                    dschct += 1
+                    
+            # collect all the schedule items inside the schedule
             if scheduleValues[0] == "Schedule:Week:Daily":
                 for value in scheduleValues[1:]:
                     if value not in uniqueSched:
@@ -1792,7 +1793,7 @@ if gbXMLIsReady and _location and _writegbXML and _workingDir:
 
         try:
             logging.info('Creating the gbxml file')
-            filepath= _workingDir+fileName+".xml"
+            filepath= os.path.join(_workingDir, '{}.xml'.format(fileName))
             logging.info('gbxml file created.')
             print 'gbXML File Successfully Written'
             print 'Latest updates fixed Width and Height error at surface and openings'

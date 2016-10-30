@@ -64,11 +64,12 @@ Provided by Honeybee 0.0.60
         eioFileAddress:  The file path of the EIO file that has been generated on your machine.  This file contains information about the sizes of all HVAC equipment from the simulation.  This file is only generated when you set "runSimulation_" to "True."
         rddFileAddress: The file path of the Result Data Dictionary (.rdd) file that is generated after running the file through EnergyPlus.  This file contains all possible outputs that can be requested from the EnergyPlus model.  Use the "Honeybee_Read Result Dictionary" to see what outputs can be requested.
         studyFolder: The directory in which the simulation has been run.  Connect this to the 'Honeybee_Lookup EnergyPlus' folder to bring many of the files in this directory into Grasshopper.
+        model: OpenStudio model. Use this output to generate gbXML file.
 """
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.60\nOCT_08_2016'
+ghenv.Component.Message = 'VER 0.0.60\nOCT_26_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -2399,7 +2400,7 @@ class WriteOPS(object):
         time24hrs = ops.Time(0,24,0,0)
         
         # assign schedules
-        thermostat.setName("dualSetPtThermostat" + str(space.name()))
+        thermostat.setName("dualSetPtThermostat" + str(OSThermalZone.name()))
         
         heatingSetPtSchedule = self.getOSSchedule(HBZone.heatingSetPtSchedule, model)
         coolingSetPtSchedule = self.getOSSchedule(HBZone.coolingSetPtSchedule, model)
@@ -2474,7 +2475,7 @@ class WriteOPS(object):
         OSThermalZone.setFractionofZoneControlledbyPrimaryDaylightingControl(HBZone.daylightCntrlFract)
     
     def setupNameAndType(self, zone, space, model):
-        space.setName(zone.name)
+        space.setName('{}_space'.format(zone.name))
         
         # assign space type
         spaceTypeName = ":".join([zone.bldgProgram, zone.zoneProgram])
@@ -2500,8 +2501,8 @@ class WriteOPS(object):
     def setAirMixing(self, zone, model):
         # air mixing from air walls
         targetZone = self.thermalZonesDict[zone.name]
-        zoneMixing = ops.ZoneMixing(targetZone)
         for mixZoneCount, zoneMixName in enumerate(zone.mixAirZoneList):
+            zoneMixing = ops.ZoneMixing(targetZone)
             sourceZone = self.thermalZonesDict[zoneMixName]
             zoneMixing.setSourceZone(sourceZone)
             zoneMixing.setDesignFlowRate(zone.mixAirFlowList[mixZoneCount])
@@ -3885,16 +3886,16 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
             except:
                 pass
         
-        return fname, idfFile, resultFile, originalWorkDir
+        return fname, idfFile, resultFile, originalWorkDir, model
         
-    return fname, None, None, originalWorkDir
+    return fname, None, None, originalWorkDir, model
 
 if _HBZones and _HBZones[0]!=None and _epwWeatherFile and _writeOSM and openStudioIsReady:
     results = main(_HBZones, HBContext_, north_, _epwWeatherFile,
                   _analysisPeriod_, _energySimPar_, simulationOutputs_,
                   runSimulation_, openOpenStudio_, workingDir_, fileName_)
     if results!=-1:
-        osmFileAddress, idfFileAddress, resultsFiles, studyFolder = results
+        osmFileAddress, idfFileAddress, resultsFiles, studyFolder, model = results
         try:
             
             resultsFileAddress = resultsFiles[2]

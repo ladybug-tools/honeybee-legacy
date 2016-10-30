@@ -57,7 +57,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Microclimate Map Analysis"
 ghenv.Component.NickName = 'MicroclimateMap'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nOCT_23_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -1325,6 +1325,13 @@ def mainUTCI(HOYs, analysisPeriod, srfTempNumbers, srfTempHeaders, airTempDataNu
                             except:
                                 windFlowVal = lb_wind.powerLawWind(outWindSpeed[originalHour-1], outdoorPtHeightWeights[valCount], d, a, 270, 0.14)
                                 pointWindSpeedValues.append(windFlowVal)
+                
+                # The wind speeds computed above are for a height above the ground at the point of comfort evaluation.
+                # However, UTCI's polynomial approximation was written to use a meteorolical wind speed at a height above this point of evaulation (10 meters above the ground).
+                # The UTCI model assumes this meteorological wind speed is 1.5 times the speed of wind at occumant height (1.1 meters above the ground).
+                # http://www.utci.org/isb/meeting.php
+                # So we will do the same before calculating UTCI.
+                pointWindSpeedValues = [x * 1.5 for x in pointWindSpeedValues]
                 
                 #Compute the UTCI and comfort.
                 utciPointValues = []
