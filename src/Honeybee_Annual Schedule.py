@@ -71,7 +71,7 @@ Provided by Ladybug 0.0.62
 
 ghenv.Component.Name = "Honeybee_Annual Schedule"
 ghenv.Component.NickName = 'AnnualSchedule'
-ghenv.Component.Message = 'VER 0.0.60\nSEP_16_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_01_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "07 | Energy | Schedule"
@@ -460,7 +460,10 @@ def main(sun, mon, tue, wed, thu, fri, sat, holiday, hdd, cdd, runIt, epwFile, w
                 daySchName = schedName + ' Day Schedule - ' + daySchedDict[dCount]
                 daySchNameCollect.append(daySchName)
             elif daySch == [] and dCount == 8:
-                daySchName = daySchNameCollect[1]
+                try:
+                    daySchName = daySchNameCollect[1]
+                except:
+                    daySchName = daySchNameCollect[0]
                 daySchNameCollect.append(daySchName)
             elif daySch == []:
                 daySchName = daySchNameCollect[0]
