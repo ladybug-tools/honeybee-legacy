@@ -28,25 +28,25 @@ Update EP construction of zone based on type
 Provided by Honeybee 0.0.60
     
     Args:
-        _HBZone: Honeybee zone
-        wallEPConstruction_: Optional new construction for walls. This input can also accept lists of construction names and will assign different constructions based on cardinal direction, starting with north and moving counter-clockwise.
+        _HBZones: Honeybee zones
+        wallEPConstruction_: Optional new construction for walls
         windowEPConstruction_: Optional new construction for windows
         roofEPConstruction_: Optional new construction for roofs
         floorEPConstruction_: Optional new construction for floors
         expFloorEPConstruction_: Optional new construction for exposed floors
         skylightEPConstruction_: Optional new construction for skylights
     Returns:
-        modifiedHBZone:  Honeybee zone with updated constructions
+        modifiedHBZones:  Honeybee zone with updated constructions
 
 """
 
 ghenv.Component.Name = "Honeybee_Set EP Zone Construction"
 ghenv.Component.NickName = 'setEPZoneCnstr'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.56\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
@@ -56,7 +56,16 @@ import Rhino as rc
 import Grasshopper.Kernel as gh
 import rhinoscriptsyntax as rs
 
-def main(HBZone, wallEPCnst, windowEPCnst, roofEPCnst, flrEPCnst, expFlrEpCnst, \
+
+def matchLists(input, length):
+    il = len(input)
+    if il == 0:
+        return tuple(None for i in range(length))
+    else:
+        return tuple(input[i] if i < il else input[-1] for i in range(length))
+
+
+def main(HBZones, wallEPCnst, windowEPCnst, roofEPCnst, flrEPCnst, expFlrEpCnst, \
         skylightEPCnst):
             
     # Make sure Honeybee is flying
@@ -80,59 +89,52 @@ def main(HBZone, wallEPCnst, windowEPCnst, roofEPCnst, flrEPCnst, expFlrEpCnst, 
     
     # call the objects from the lib
     hb_hive = sc.sticky["honeybee_Hive"]()
-    try: HBZoneObject = hb_hive.callFromHoneybeeHive([HBZone])[0]
-    except Exception, e: HBZoneObject = None
+    HBZoneObjects = hb_hive.callFromHoneybeeHive(HBZones)
     
-    # here I should check for each construction to be in the library
     hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
+    modifiedObjects = []
+    l = len(HBZoneObjects)
+    wallEPCnst = matchLists(wallEPCnst, l)
+    windowEPCnst = matchLists(windowEPCnst, l)
+    roofEPCnst = matchLists(roofEPCnst, l)
+    flrEPCnst = matchLists(flrEPCnst, l)
+    expFlrEpCnst = matchLists(expFlrEpCnst, l)
+    skylightEPCnst = matchLists(skylightEPCnst, l)
     
     
-    #See if the wall properties are being specified based on orientation.
-    angles = []
-    if len(wallEPCnst) > 0:
-        initAngles = rs.frange(0, 360, 360/len(wallEPCnst))
-        for an in initAngles: angles.append(an-(360/(2*len(wallEPCnst))))
-        angles.append(360)
-    
-    
-    if HBZoneObject != None:
+    for count, HBZoneObject in enumerate(HBZoneObjects):
         for srf in HBZoneObject.surfaces:
             if srf.BCObject.name == "": # not internal surfaces 
-                if windowEPCnst!=None and srf.type != 1 and srf.type != 1.5 and srf.hasChild:
+                if windowEPCnst[count]!=None and srf.type != 1 and srf.type != 1.5 and srf.hasChild:
                     for childSrf in srf.childSrfs:
-                        hb_EPObjectsAux.assignEPConstruction(childSrf, windowEPCnst, ghenv.Component)
+                        hb_EPObjectsAux.assignEPConstruction(childSrf, windowEPCnst[count], ghenv.Component)
                 
                 # check for slab on grade and roofs
-                if skylightEPCnst!=None and (srf.type == 1 or srf.type == 1.5) and srf.hasChild:
+                if skylightEPCnst[count]!=None and (srf.type == 1 or srf.type == 1.5) and srf.hasChild:
                     for childSrf in srf.childSrfs:
-                        hb_EPObjectsAux.assignEPConstruction(childSrf, skylightEPCnst, ghenv.Component)
-                
-                if srf.type == 0 and len(wallEPCnst) != 0:
-                    if len(wallEPCnst) > 1:
-                        for angleCount in range(len(angles)-1):
-                            if angles[angleCount]+(0.5*sc.doc.ModelAngleToleranceDegrees) <= srf.angle2North%360 <= angles[angleCount +1]+(0.5*sc.doc.ModelAngleToleranceDegrees):
-                                hb_EPObjectsAux.assignEPConstruction(srf, wallEPCnst[angleCount%len(wallEPCnst)], ghenv.Component)
-                    else:
-                        hb_EPObjectsAux.assignEPConstruction(srf, wallEPCnst[0], ghenv.Component)
-                elif srf.type == 1 and roofEPCnst!=None:
-                    hb_EPObjectsAux.assignEPConstruction(srf, roofEPCnst, ghenv.Component)
-                elif srf.type == 2 and flrEPCnst!=None:
-                    hb_EPObjectsAux.assignEPConstruction(srf, flrEPCnst, ghenv.Component)
-                elif srf.type == 2.75 and expFlrEpCnst!=None:
-                    hb_EPObjectsAux.assignEPConstruction(srf, expFlrEpCnst, ghenv.Component)
+                        hb_EPObjectsAux.assignEPConstruction(childSrf, skylightEPCnst[count], ghenv.Component)
+                if wallEPCnst[count]!=None and srf.type == 0:
+                    hb_EPObjectsAux.assignEPConstruction(srf, wallEPCnst[count], ghenv.Component)
+                elif srf.type == 1 and roofEPCnst[count]!=None:
+                    hb_EPObjectsAux.assignEPConstruction(srf, roofEPCnst[count], ghenv.Component)
+                elif srf.type == 2 and flrEPCnst[count]!=None:
+                    hb_EPObjectsAux.assignEPConstruction(srf, flrEPCnst[count], ghenv.Component)
+                elif srf.type == 2.75 and expFlrEpCnst[count]!=None:
+                    hb_EPObjectsAux.assignEPConstruction(srf, expFlrEpCnst[count], ghenv.Component)
 
-        # add zones to dictionary
-        HBZones  = hb_hive.addToHoneybeeHive([HBZoneObject], ghenv.Component.InstanceGuid.ToString())
-        
-        #print HBZones
-        return HBZones
+
+        modifiedObjects.append(HBZoneObject)
+
+    # add zones to dictionary
+    HBZones  = hb_hive.addToHoneybeeHive(modifiedObjects, ghenv.Component)
     
-    else:
-        return -1
+    #print HBZones
+    return HBZones
 
-if _HBZone:
-    result = main(_HBZone, wallEPConstruction_, windowEPConstruction_, \
+if _HBZones:
+    result = main(_HBZones, wallEPConstruction_, windowEPConstruction_, \
         roofEPConstruction_, floorEPConstruction_, expFloorEPConstruction_, \
         skylightEPConstruction_)
     
-    if result!=-1: modifiedHBZone = result
+    if result!=-1:
+        modifiedHBZones = result

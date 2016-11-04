@@ -40,11 +40,11 @@ Provided by Honeybee 0.0.60
 """
 ghenv.Component.Name = "Honeybee_Remove Glazing"
 ghenv.Component.NickName = 'remGlz'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.56\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
@@ -154,7 +154,7 @@ def main(HBObjects, srfIndex, pattern):
         # Reassign HBO objects after they have had their surfaces removed.
         HBObjs[count] = HBO
     
-    return hb_hive.addToHoneybeeHive(HBObjs, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+    return hb_hive.addToHoneybeeHive(HBObjs, ghenv.Component)
 
 HBZones = main(_HBZones, srfIndex_, pattern_)
 

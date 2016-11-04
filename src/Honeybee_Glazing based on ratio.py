@@ -51,11 +51,11 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Glazing based on ratio"
 ghenv.Component.NickName = 'glazingCreator'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.56\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
 except: pass
@@ -1096,11 +1096,11 @@ def main(windowHeight, sillHeight, glzRatio, skyLightRatio, breakUpWindow, break
                 surface.hasChild = False
         #print HBZoneObjects
         #add zones to dictionary
-        ModifiedHBZones  = hb_hive.addToHoneybeeHive(HBZoneObjects, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+        ModifiedHBZones  = hb_hive.addToHoneybeeHive(HBZoneObjects, ghenv.Component)
         
     return zonesWithOpeningsGeometry, ModifiedHBZones
 
-if _runIt:
+if _runIt and _HBObjects and _HBObjects[0]:
     results = main(windowHeight_, sillHeight_, _glzRatio, skyLightRatio_, breakUpWindow_, breakUpDist_, splitGlzVertDist_)
     if results!= -1:
         glazingSrf, HBObjWGLZ = results

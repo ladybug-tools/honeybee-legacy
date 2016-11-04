@@ -38,11 +38,11 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Load Honeybee Objects"
 ghenv.Component.NickName = 'loadHBObjects'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"
-#compatibleHBVersion = VER 0.0.59\nFEB_12_2016
+#compatibleHBVersion = VER 0.0.59\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
@@ -155,9 +155,8 @@ def loadHBObjects(HBData):
     updateHoneybeeObjects()
     
     # return new Honeybee objects
-    return hb_hive.addToHoneybeeHive([HBObjects[id] for id in HBData["ids"]], \
-        ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
-        
+    return hb_hive.addToHoneybeeHive([HBObjects[id] for id in HBData["ids"]], ghenv.Component.InstanceGuid)
+
 
 def main(filePath, load):
     if not sc.sticky.has_key('honeybee_release'):
