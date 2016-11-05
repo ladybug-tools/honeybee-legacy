@@ -98,7 +98,7 @@ def main(HBZones, onlyWGlz):
         return -1
     
     hb_hive = sc.sticky["honeybee_Hive"]()
-    HBZonesFromHive = hb_hive.callFromHoneybeeHive(HBZones)
+    HBZonesFromHive = hb_hive.visualizeFromHoneybeeHive(HBZones)
     
     HBZones = {}
     
@@ -137,5 +137,6 @@ if _HBZones and _HBZones!=None:
             p = GH_Path(count)
             orientations.AddRange(orderedHBZones[key][0],p)
             
-            zones = hb_hive.addToHoneybeeHive(orderedHBZones[key][1], ghenv.Component)
+            zones = hb_hive.addToHoneybeeHive(orderedHBZones[key][1],
+                                              ghenv.Component, count==0)
             HBZones.AddRange(zones, p)

@@ -75,7 +75,7 @@ def main(HBZones):
         return -1
     
     hb_hive = sc.sticky["honeybee_Hive"]()
-    HBZonesFromHive = hb_hive.callFromHoneybeeHive(HBZones)
+    HBZonesFromHive = hb_hive.visualizeFromHoneybeeHive(HBZones)
     print len(HBZonesFromHive)
     interiorzones = []
     perimeterzones = []
@@ -91,7 +91,7 @@ def main(HBZones):
             interiorzones.append(zone)
     
     perims  = hb_hive.addToHoneybeeHive(perimeterzones, ghenv.Component)
-    ints = hb_hive.addToHoneybeeHive(interiorzones, ghenv.Component)
+    ints = hb_hive.addToHoneybeeHive(interiorzones, ghenv.Component, False)
     
     return perims,ints
 

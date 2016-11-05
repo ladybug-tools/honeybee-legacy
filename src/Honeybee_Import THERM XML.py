@@ -241,7 +241,7 @@ def main(thermXMLFile):
                 segPts = [seg.PointAtStart, seg.PointAtEnd]
             finalGeo = rc.Geometry.PolylineCurve(segPts)
             HBThermBC = hb_thermBC(finalGeo, BCTypes[bcCount]['Name'].title(), BCTypes[bcCount]['Temperature'], BCTypes[bcCount]['filmCoefficient'], plane, None, None, None, None, None)
-            thermBound  = hb_hive.addToHoneybeeHive([HBThermBC], ghenv.Component)
+            thermBound  = hb_hive.addToHoneybeeHive([HBThermBC], ghenv.Component, False)
             thermBCs.extend(thermBound)
             
     

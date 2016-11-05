@@ -76,7 +76,7 @@ def main(HBZones):
         return -1
     
     hb_hive = sc.sticky["honeybee_Hive"]()
-    HBZonesFromHive = hb_hive.callFromHoneybeeHive(HBZones)
+    HBZonesFromHive = hb_hive.visualizeFromHoneybeeHive(HBZones)
     
     HBZones = {}
     
@@ -108,5 +108,5 @@ if _HBZones and _HBZones!=None:
             zoneList = floorInfo[1]
             floorHeights.append(flrH)
             # item 0 is the heights
-            zones = hb_hive.addToHoneybeeHive(zoneList, ghenv.Component)
+            zones = hb_hive.addToHoneybeeHive(zoneList, ghenv.Component, count==0)
             HBZones.AddRange(zones, p)

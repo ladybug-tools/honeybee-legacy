@@ -393,9 +393,9 @@ def main(windowGlzSysReport, glzPlane, spacerMaterial, thermDefault, unitConvert
     indoorRemainThermBC = hb_thermBC(indoorRemainBCGeo, indoorProps[0].title(), indoorProps[1], indoorProps[2], plane, None, None, None, None, None)
     
     # ADD THERM BCs TO THE HIVE
-    thermOutBoundary  = hb_hive.addToHoneybeeHive([outdoorHBThermBC], ghenv.Component)
-    thermInBoundary1  = hb_hive.addToHoneybeeHive([indoorFrameThermBC], ghenv.Component)
-    thermInBoundary2  = hb_hive.addToHoneybeeHive([indoorRemainThermBC], ghenv.Component)
+    thermOutBoundary  = hb_hive.addToHoneybeeHive([outdoorHBThermBC], ghenv.Component, False)
+    thermInBoundary1  = hb_hive.addToHoneybeeHive([indoorFrameThermBC], ghenv.Component, False)
+    thermInBoundary2  = hb_hive.addToHoneybeeHive([indoorRemainThermBC], ghenv.Component, False)
     
     
     return thermPolygonsFinal, thermInBoundary1 + thermInBoundary2, thermOutBoundary, materials, indoorProps, outdoorProps

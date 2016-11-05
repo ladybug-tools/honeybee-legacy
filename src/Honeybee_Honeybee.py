@@ -7392,8 +7392,12 @@ class hb_Hive(object):
             raise Exception(msg)
     
     @staticmethod
-    def addToHoneybeeHive(HBObjects, Component):
-        """Add honeybee objects to memory so they can be passed between the components."""
+    def addToHoneybeeHive(HBObjects, Component, removeCurrent=True):
+        """Add honeybee objects to memory so they can be passed between the components.
+        
+        removeCurrent: Set false if the same component generates honeybee objects
+            multiple times in the same component, except for the first time.
+        """
         if not sc.sticky.has_key('HBHive'):
             sc.sticky['HBHive'] = {}
         
@@ -7410,7 +7414,7 @@ class hb_Hive(object):
         baseKey = '{}_{}'.format(docId, Component.InstanceGuid)
         
         # clean the dictionary if it's the first run
-        if Component.RunCount == 1:
+        if removeCurrent and Component.RunCount == 1:
             if baseKey in sc.sticky['HBHive']:
                 del(sc.sticky['HBHive'][baseKey])
             sc.sticky['HBHive'][baseKey] = {}
@@ -7421,7 +7425,7 @@ class hb_Hive(object):
             
             HBObject.resetID()
             
-            key = '{}_{}'.format(Component.RunCount, HBObject.ID)
+            key = '{}'.format(HBObject.ID)
             sc.sticky['HBHive'][baseKey][key] = HBObject
             
             # calculate punched geometry if HBobject has a child surface

@@ -73,7 +73,7 @@ def main(HBZones):
         return -1
     
     hb_hive = sc.sticky["honeybee_Hive"]()
-    HBZonesFromHive = hb_hive.callFromHoneybeeHive(HBZones)
+    HBZonesFromHive = hb_hive.visualizeFromHoneybeeHive(HBZones)
     
     conditioned = []
     unconditioned = []
@@ -84,7 +84,7 @@ def main(HBZones):
             unconditioned.append(zone)
             
     cond  = hb_hive.addToHoneybeeHive(conditioned, ghenv.Component)
-    uncond = hb_hive.addToHoneybeeHive(unconditioned, ghenv.Component)
+    uncond = hb_hive.addToHoneybeeHive(unconditioned, ghenv.Component, False)
     
     return cond, uncond
 

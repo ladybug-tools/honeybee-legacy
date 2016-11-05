@@ -501,7 +501,7 @@ def main(idfFile, importEPObjects = False):
     # add to the hive
     hb_hive = sc.sticky["honeybee_Hive"]()
     HBZones  = hb_hive.addToHoneybeeHive(zonesList, ghenv.Component)
-    shadings = hb_hive.addToHoneybeeHive(shadingList, ghenv.Component)
+    shadings = hb_hive.addToHoneybeeHive(shadingList, ghenv.Component, False)
     
     return HBZones, shadings
 
