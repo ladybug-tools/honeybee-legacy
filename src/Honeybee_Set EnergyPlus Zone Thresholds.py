@@ -68,8 +68,12 @@ import uuid
 
 def checkTheInputs():
     #If the user puts in only one value, apply that value to all of the zones.
-    def duplicateData(data, calcLength):
-        return tuple(data[0] for c in calcLength)
+    def duplicateData(input, length):
+        il = len(input)
+        if il == 0:
+            return tuple(None for i in range(length))
+        else:
+            return tuple(input[i] if i < il else input[-1] for i in range(length))
     
     if len(coolingSetback_) == 1: coolingSetback = duplicateData(coolingSetback_, len(_HBZones))
     else: coolingSetback = coolingSetback_
