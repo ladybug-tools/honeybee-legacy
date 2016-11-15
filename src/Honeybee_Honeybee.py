@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.60\nNOV_04_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_15_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -7123,9 +7123,13 @@ class thermPolygon(object):
         self.plane = plane
         self.normalVector = plane.Normal
         self.normalVector.Unitize()
-        
+        self.resetID()
         return self.geometry
-    
+        
+    def resetID(self):
+        self.ID = str(uuid.uuid4())
+        
+
     def makeThermMatCopy(self, orgigMat, materialName, RGBColor):
         #Make a sub-dictionary for the material.
         sc.sticky["honeybee_thermMaterialLib"][materialName] = {}
