@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.60\nNOV_17_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_18_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -81,7 +81,6 @@ import subprocess
 import uuid
 import re
 import random
-from collections import namedtuple
 
 PI = math.pi
 
@@ -4863,6 +4862,17 @@ class EPSurfaceLib(object):
                   4:'NoWind',
                   5:'WindExposed'}
 
+class EPHvac(object):
+    def __init__(self, GroupID="GroupI", Index=0, airDetails=None, heatingDetails=None, coolingDetails=None):
+        self.objectType = "HBHvac"
+        self.geometry = None
+        self.ID = str(uuid.uuid4())
+        self.GroupID = GroupID
+        self.Index = Index
+        self.airDetails = airDetails
+        self.heatingDetails = heatingDetails
+        self.coolingDetails = coolingDetails
+
 class EPZone(object):
     """This calss represents a honeybee zone that will be used for energy and daylighting
     simulatios"""
@@ -4952,9 +4962,8 @@ class EPZone(object):
         self.assignLoadsBasedOnProgram()
         
         # Assign a default HVAC System.
-        HVACSystem = namedtuple('HVACSystem', 'GroupID Index airDetails heatingDetails coolingDetails')
-        if isConditioned: self.HVACSystem = HVACSystem(GroupID="GroupI", Index=0, airDetails=None, heatingDetails=None, coolingDetails=None) # assign ideal loads as default
-        else: self.HVACSystem = HVACSystem(GroupID="NoHVAC", Index=-1, airDetails=None, heatingDetails=None, coolingDetails=None)# no system
+        if isConditioned: self.HVACSystem = EPHvac("GroupI", 0, None, None, None) # assign ideal loads as default
+        else: self.HVACSystem = EPHvac("NoHVAC", -1, None, None, None)# no system
         
         self.isConditioned = isConditioned
         self.isThisTheTopZone = False
@@ -6971,30 +6980,17 @@ class generationhb_hive(object):
     # A hive that only accepts Honeybee generation objects
     
     def addToHoneybeeHive(self, genObjects, GHComponentID):
-        
         if not sc.sticky.has_key('HBHivegeneration'): sc.sticky['HBHivegeneration'] = {}
-        
         generationobjectkeys = []
-        
         if isinstance(genObjects, tuple):
-            
             key = GHComponentID
-            
             sc.sticky['HBHivegeneration'][key] = genObjects
-            
             generationobjectkeys.append(key)
-            
             return generationobjectkeys
-        
         else:
-            
-            
             for genObject in genObjects:
-    
                 key = GHComponentID
-                
                 sc.sticky['HBHivegeneration'][key] = genObject
-                
                 generationobjectkeys.append(key)
      
             return generationobjectkeys
@@ -8429,6 +8425,7 @@ if checkIn.letItFly:
         sc.sticky["honeybee_BuildingProgramsLib"] = BuildingProgramsLib
         sc.sticky["honeybee_EPTypes"] = EPTypes()
         sc.sticky["honeybee_EPZone"] = EPZone
+        sc.sticky["honeybee_EPHvac"] = EPHvac
         sc.sticky["honeybee_ThermPolygon"] = thermPolygon
         sc.sticky["honeybee_ThermBC"] = thermBC
         sc.sticky["honeybee_ThermDefault"] = thermDefaults
