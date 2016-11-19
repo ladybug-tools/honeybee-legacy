@@ -34,17 +34,17 @@ Provided by Honeybee 0.0.60
         undergroundSlabEPConstruction_: Optional new construction for underground slabs
         undergroundCeilingEPConstruction_: Optional new construction for underground ceilings
     Returns:
-        modifiedHBZone:  Honeybee zone with updated constructions
+        modifiedHBZones:  Honeybee zone with updated constructions
 
 """
 
 ghenv.Component.Name = "Honeybee_Set EP Zone Underground Construction"
 ghenv.Component.NickName = 'setEPZoneUnderGroundCnstr'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.56\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
@@ -78,7 +78,15 @@ def checkAirWalls(construction, srf):
         srf.setType(4, isUserInput= True)
         updateZoneMixing(srf, srf.parent, srf.BCObject.parent)
 
-def main(HBZone, ugWallEPCnst, gFlrEPCnst, ugSlabEPCnst, ugCeilEPCnst):
+def matchLists(input, length):
+    il = len(input)
+    if il == 0:
+        return tuple(None for i in range(length))
+    else:
+        return tuple(input[i] if i < il else input[-1] for i in range(length))
+
+
+def main(HBZones, ugWallEPCnst, gFlrEPCnst, ugSlabEPCnst, ugCeilEPCnst):
     
     # Make sure Honeybee is flying
     if not sc.sticky.has_key('honeybee_release'):
@@ -101,45 +109,48 @@ def main(HBZone, ugWallEPCnst, gFlrEPCnst, ugSlabEPCnst, ugCeilEPCnst):
     
     # call the objects from the lib
     hb_hive = sc.sticky["honeybee_Hive"]()
-    try: HBZoneObject = hb_hive.callFromHoneybeeHive([HBZone])[0]
-    except Exception, e: HBZoneObject = None
+    HBZoneObjects = hb_hive.callFromHoneybeeHive(HBZones)
     
     hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
-
-    if HBZoneObject != None:
+    modifiedObjects = []
+    l = len(HBZoneObjects)
+    ugWallEPCnst = matchLists(ugWallEPCnst, l)
+    gFlrEPCnst = matchLists(gFlrEPCnst, l)
+    ugSlabEPCnst = matchLists(ugSlabEPCnst, l)
+    ugCeilEPCnst = matchLists(ugCeilEPCnst, l)
+    
+    for count, HBZoneObject in enumerate(HBZoneObjects):
         for srf in HBZoneObject.surfaces:
-            if srf.type == 0.5 and ugWallEPCnst!=None:
-                hb_EPObjectsAux.assignEPConstruction(srf, ugWallEPCnst, ghenv.Component)
+            if srf.type == 0.5 and ugWallEPCnst[count]!=None:
+                hb_EPObjectsAux.assignEPConstruction(srf, ugWallEPCnst[count], ghenv.Component)
                 if srf.BCObject.name != "":
-                    hb_EPObjectsAux.assignEPConstruction(srf.BCObject, ugWallEPCnst, ghenv.Component)
-                    checkAirWalls(ugWallEPCnst, srf)
-            elif srf.type == 2.5 and gFlrEPCnst!=None:
-                hb_EPObjectsAux.assignEPConstruction(srf, gFlrEPCnst, ghenv.Component)
+                    hb_EPObjectsAux.assignEPConstruction(srf.BCObject, ugWallEPCnst[count], ghenv.Component)
+                    checkAirWalls(ugWallEPCnst[count], srf)
+            elif srf.type == 2.5 and gFlrEPCnst[count]!=None:
+                hb_EPObjectsAux.assignEPConstruction(srf, gFlrEPCnst[count], ghenv.Component)
                 if srf.BCObject.name != "":
-                    hb_EPObjectsAux.assignEPConstruction(srf.BCObject, gFlrEPCnst, ghenv.Component)
-                    checkAirWalls(gFlrEPCnst, srf)
-            elif srf.type == 2.25 and ugSlabEPCnst!=None:
-                hb_EPObjectsAux.assignEPConstruction(srf, ugSlabEPCnst, ghenv.Component)
+                    hb_EPObjectsAux.assignEPConstruction(srf.BCObject, gFlrEPCnst[count], ghenv.Component)
+                    checkAirWalls(gFlrEPCnst[count], srf)
+            elif srf.type == 2.25 and ugSlabEPCnst[count]!=None:
+                hb_EPObjectsAux.assignEPConstruction(srf, ugSlabEPCnst[count], ghenv.Component)
                 if srf.BCObject.name != "":
-                    hb_EPObjectsAux.assignEPConstruction(srf.BCObject, ugSlabEPCnst, ghenv.Component)
-                    checkAirWalls(ugSlabEPCnst, srf)
-            elif srf.type == 1.5 and ugCeilEPCnst!=None:
-                hb_EPObjectsAux.assignEPConstruction(srf, ugCeilEPCnst, ghenv.Component)
+                    hb_EPObjectsAux.assignEPConstruction(srf.BCObject, ugSlabEPCnst[count], ghenv.Component)
+                    checkAirWalls(ugSlabEPCnst[count], srf)
+            elif srf.type == 1.5 and ugCeilEPCnst[count]!=None:
+                hb_EPObjectsAux.assignEPConstruction(srf, ugCeilEPCnst[count], ghenv.Component)
                 if srf.BCObject.name != "":
-                    hb_EPObjectsAux.assignEPConstruction(srf.BCObject, ugCeilEPCnst, ghenv.Component)
-                    checkAirWalls(ugCeilEPCnst, srf)
+                    hb_EPObjectsAux.assignEPConstruction(srf.BCObject, ugCeilEPCnst[count], ghenv.Component)
+                    checkAirWalls(ugCeilEPCnst[count], srf)
                 
-        # add zones to dictionary
-        HBZones  = hb_hive.addToHoneybeeHive([HBZoneObject], ghenv.Component.InstanceGuid.ToString())
-        
-        #print HBZones
-        return HBZones
+        modifiedObjects.append(HBZoneObject)
     
-    else:
-        return -1
+    # add zones to dictionary
+    HBZones  = hb_hive.addToHoneybeeHive(modifiedObjects, ghenv.Component)
+    return HBZones
 
-if _HBZone:
-    result = main(_HBZone, undergroundWallEPConstruction_, groundFloorEPConstruction_, \
-            undergroundSlabEPConstruction_, undergroundCeilingEPConstruction_)
+if _HBZones:
+    result = main(_HBZones, undergroundWallEPConstruction_, groundFloorEPConstruction_, \
+                  undergroundSlabEPConstruction_, undergroundCeilingEPConstruction_)
     
-    if result!=-1: modifiedHBZone = result
+    if result != -1:
+        modifiedHBZones = result

@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Normalize Data by Floor Area"
 ghenv.Component.NickName = 'flrNorm'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nSEP_25_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -93,8 +93,13 @@ def main(HBZones, simData):
     hbZoneNames = {}
     zones = hb_hive.visualizeFromHoneybeeHive(HBZones)
     for count, zone in enumerate(zones):
-        hbZoneAreas.append(zone.getFloorArea())
-        hbZoneNames[zone.name.upper()] = count
+        try:
+            if not HBZone.isPlenum:
+                hbZoneAreas.append(zone.getFloorArea())
+                hbZoneNames[zone.name.upper()] = count
+        except:
+            hbZoneAreas.append(zone.getFloorArea())
+            hbZoneNames[zone.name.upper()] = count
     totZoneArea = sum(hbZoneAreas)
     
     # Convert the data tree into python.

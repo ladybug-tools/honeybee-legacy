@@ -44,11 +44,11 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Assign HVAC System"
 ghenv.Component.NickName = 'HVACSystem'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | HVACSystems"
-#compatibleHBVersion = VER 0.0.56\nMAY_01_2016
+#compatibleHBVersion = VER 0.0.56\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
@@ -177,7 +177,7 @@ def main(HBZones, HVACIndex, hb_hvacProperties, hb_airDetail, hb_heatingDetail, 
         #Assign the HVAC System to the zone.
         zone.HVACSystem = HVACSystem(GroupID=HVACGroupID, Index=HVACIndex, airDetails=aDetail, heatingDetails=hDetail, coolingDetails=cDetail)
         
-        HBZones  = hb_hive.addToHoneybeeHive(HBZonesFromHive, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+        HBZones  = hb_hive.addToHoneybeeHive(HBZonesFromHive, ghenv.Component)
     
     return HBZones
 

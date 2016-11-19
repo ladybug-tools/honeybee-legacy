@@ -36,11 +36,11 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = 'Honeybee_Separate conditioned and unconditioned zones'
 ghenv.Component.NickName = 'conditionedUnconditioned'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.56\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
@@ -73,7 +73,7 @@ def main(HBZones):
         return -1
     
     hb_hive = sc.sticky["honeybee_Hive"]()
-    HBZonesFromHive = hb_hive.callFromHoneybeeHive(HBZones)
+    HBZonesFromHive = hb_hive.visualizeFromHoneybeeHive(HBZones)
     
     conditioned = []
     unconditioned = []
@@ -83,8 +83,8 @@ def main(HBZones):
         else:
             unconditioned.append(zone)
             
-    cond  = hb_hive.addToHoneybeeHive(conditioned, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
-    uncond = hb_hive.addToHoneybeeHive(unconditioned, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+    cond  = hb_hive.addToHoneybeeHive(conditioned, ghenv.Component)
+    uncond = hb_hive.addToHoneybeeHive(unconditioned, ghenv.Component, False)
     
     return cond, uncond
 

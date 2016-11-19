@@ -38,11 +38,11 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = 'Honeybee_PerimeterCoreZoning'
 ghenv.Component.NickName = 'PerimeterCore'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.56\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
@@ -75,7 +75,7 @@ def main(HBZones):
         return -1
     
     hb_hive = sc.sticky["honeybee_Hive"]()
-    HBZonesFromHive = hb_hive.callFromHoneybeeHive(HBZones)
+    HBZonesFromHive = hb_hive.visualizeFromHoneybeeHive(HBZones)
     print len(HBZonesFromHive)
     interiorzones = []
     perimeterzones = []
@@ -90,8 +90,8 @@ def main(HBZones):
         if zone not in perimeterzones:
             interiorzones.append(zone)
     
-    perims  = hb_hive.addToHoneybeeHive(perimeterzones, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
-    ints = hb_hive.addToHoneybeeHive(interiorzones, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+    perims  = hb_hive.addToHoneybeeHive(perimeterzones, ghenv.Component)
+    ints = hb_hive.addToHoneybeeHive(interiorzones, ghenv.Component, False)
     
     return perims,ints
 

@@ -84,11 +84,11 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Window Shade Generator"
 ghenv.Component.NickName = 'EPWindowShades'
-ghenv.Component.Message = 'VER 0.0.60\nSEP_04_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nJUL_25_2015
+#compatibleHBVersion = VER 0.0.56\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
 except: pass
@@ -96,8 +96,6 @@ except: pass
 
 from System import Object
 from System import Drawing
-from clr import AddReference
-AddReference('Grasshopper')
 import Grasshopper.Kernel as gh
 from Grasshopper import DataTree
 from Grasshopper.Kernel.Data import GH_Path
@@ -544,14 +542,21 @@ def getValueBasedOnOrientation(valueList, normalVector):
     return value
 
 def analyzeGlz(glzSrf, distBetween, numOfShds, horOrVertical, lb_visualization, normalVector):
+    # Helper function to check if number is near zero
+    def helper_is_near_zero(num2chk, eps=1e-6):
+        return abs(num2chk) < eps
+    
     # find the bounding box
     bbox = glzSrf.GetBoundingBox(True)
+    # Add default shading Height and numOfShd
+    shadingHeight = 0.
+    if numOfShds == None: numOfShd, numOfShds = 0., 0.
+    if distBetween == None: distBetween = 0.
+    
     if horOrVertical == None:
         horOrVertical = True
-    if numOfShds == None and distBetween == None:
-        numOfShds = 1
     
-    if numOfShds == 0 or distBetween == 0:
+    if helper_is_near_zero(numOfShds) and helper_is_near_zero(distBetween):
         sortedPlanes = []
     
     elif horOrVertical == True:
@@ -582,6 +587,7 @@ def analyzeGlz(glzSrf, distBetween, numOfShds, horOrVertical, lb_visualization, 
                 if shadingRemainder == 0:
                     shadingRemainder = shadingHeight
         else:
+
             try:
                 numOfShd = int(numOfShds)
                 shadingHeight = glzHeight/numOfShd
@@ -631,6 +637,7 @@ def analyzeGlz(glzSrf, distBetween, numOfShds, horOrVertical, lb_visualization, 
             maxXPt = rc.Geometry.Point3d(maxXPt.X, maxXPt.Y, maxXPt.Z - sc.doc.ModelAbsoluteTolerance)
             glzWidth = minXPt.DistanceTo(maxXPt)
             
+            # Find number of shadings 
             try:
                 numOfShd = int(numOfShds)
                 shadingHeight = glzWidth/numOfShd
@@ -640,6 +647,7 @@ def analyzeGlz(glzSrf, distBetween, numOfShds, horOrVertical, lb_visualization, 
                 shadingRemainder = (((glzWidth/distBetween) - math.floor(glzWidth/distBetween))*distBetween)
                 if shadingRemainder == 0:
                     shadingRemainder = shadingHeight
+            
             
             planeOrigins = []
             planes = []
@@ -695,6 +703,7 @@ def analyzeGlz(glzSrf, distBetween, numOfShds, horOrVertical, lb_visualization, 
             
             #glazing distance
             glzHeight = minXYPt.DistanceTo(maxXYPt)
+           
             
             # find number of shadings
             try:
@@ -707,12 +716,18 @@ def analyzeGlz(glzSrf, distBetween, numOfShds, horOrVertical, lb_visualization, 
                 if shadingRemainder == 0:
                     shadingRemainder = shadingHeight
             
+            
             # find shading base planes
             planeOrigins = []
             planes = []
             
             pointCurve = rc.Geometry.Curve.CreateControlPointCurve([maxXYPt, minXYPt])
             divisionParams = pointCurve.DivideByLength(shadingHeight, True)
+            
+            # If number of shades = 0 or the distance between fins is the window length divisionParams == None
+            if divisionParams == None:
+                divisionParams = [0.0]
+
             divisionPoints = []
             for param in divisionParams:
                 divisionPoints.append(pointCurve.PointAt(param))
@@ -867,6 +882,7 @@ def makeBlind(_glzSrf, depth, numShds, distBtwn):
     #Get the EnergyPlus distance to glass.
     assignEPCheckInit = True
     EPDistToGlass = distToGlass + (depth)*(0.5)*math.sin(math.radians(EPshdAngle))
+  
     if EPDistToGlass < (depth)*(0.5): EPDistToGlass = (depth)*(0.5)
     if EPDistToGlass < 0.01: EPDistToGlass = 0.01
     elif EPDistToGlass > 1:
@@ -1122,7 +1138,7 @@ def main():
         hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
         hb_EPMaterialAUX = sc.sticky["honeybee_EPMaterialAUX"]()
         EPWindowMaterials = sc.sticky ["honeybee_windowMaterialLib"].keys()
-        EPWindowProperties = sc.sticky["honeybee_WinodowPropLib"].keys()
+        EPWindowProperties = sc.sticky["honeybee_WindowPropLib"].keys()
         
         #Make the lists that will be filled up
         zoneNames = []
@@ -1340,7 +1356,7 @@ def main():
                             illumSetPt = 300
                         object.shdCntrlZoneInstructs = [illumSetPt,glareDiscomIndex,glareView]
             
-            ModifiedHBZones  = hb_hive.addToHoneybeeHive(HBZoneObjects, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+            ModifiedHBZones  = hb_hive.addToHoneybeeHive(HBZoneObjects, ghenv.Component)
         
         if checkData == True:
             return checkData, windowSrfsInit, shadings, alignedDataTree, ModifiedHBZones, compShadeMats, compShadeMatsStr, compShadeCntrlsStr

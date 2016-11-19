@@ -52,11 +52,11 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Set EnergyPlus Zone Thresholds"
 ghenv.Component.NickName = 'setEPZoneThresholds'
-ghenv.Component.Message = 'VER 0.0.60\nSEP_04_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
-#compatibleHBVersion = VER 0.0.56\nSEP_04_2016
+#compatibleHBVersion = VER 0.0.56\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
@@ -68,11 +68,12 @@ import uuid
 
 def checkTheInputs():
     #If the user puts in only one value, apply that value to all of the zones.
-    def duplicateData(data, calcLength):
-        dupData = []
-        for count in range(calcLength):
-            dupData.append(data[0])
-        return dupData
+    def duplicateData(input, length):
+        il = len(input)
+        if il == 0:
+            return tuple(None for i in range(length))
+        else:
+            return tuple(input[i] if i < il else input[-1] for i in range(length))
     
     if len(coolingSetback_) == 1: coolingSetback = duplicateData(coolingSetback_, len(_HBZones))
     else: coolingSetback = coolingSetback_
@@ -316,7 +317,7 @@ def main(HBZones, coolingSetPt, heatingSetPt, coolingSetback, heatingSetback, ma
             zone.illumSetPt = daylightIllumSetPt[zoneCount]
         
     # send the zones back to the hive
-    HBZones  = hb_hive.addToHoneybeeHive(HBZonesFromHive, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+    HBZones  = hb_hive.addToHoneybeeHive(HBZonesFromHive, ghenv.Component)
         
     return HBZones
 

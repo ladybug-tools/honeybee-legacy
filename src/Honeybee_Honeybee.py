@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.60\nSEP_09_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -384,7 +384,7 @@ class PrepareTemplateEPLibFiles(object):
         if not sc.sticky.has_key("honeybee_windowMaterialLib"): sc.sticky ["honeybee_windowMaterialLib"] = {}
         if not sc.sticky.has_key("honeybee_ScheduleLib"): sc.sticky["honeybee_ScheduleLib"] = {}
         if not sc.sticky.has_key("honeybee_ScheduleTypeLimitsLib"): sc.sticky["honeybee_ScheduleTypeLimitsLib"] = {}
-        if not sc.sticky.has_key("honeybee_WinodowPropLib"): sc.sticky["honeybee_WinodowPropLib"] = {}
+        if not sc.sticky.has_key("honeybee_WindowPropLib"): sc.sticky["honeybee_WindowPropLib"] = {}
         if not sc.sticky.has_key("honeybee_SpectralDataLib"): sc.sticky["honeybee_SpectralDataLib"] = {}
         if not sc.sticky.has_key("honeybee_thermMaterialLib"): sc.sticky["honeybee_thermMaterialLib"] = {}
         
@@ -403,7 +403,7 @@ class PrepareTemplateEPLibFiles(object):
         sc.sticky ["honeybee_windowMaterialLib"] = {}
         sc.sticky["honeybee_ScheduleLib"] = {}
         sc.sticky["honeybee_ScheduleTypeLimitsLib"] = {}
-        sc.sticky["honeybee_WinodowPropLib"] = {}
+        sc.sticky["honeybee_WindowPropLib"] = {}
         sc.sticky["honeybee_SpectralDataLib"] = {}
     
     def cleanThermLib(self):
@@ -537,7 +537,9 @@ class HB_GetEPLibraries:
             "Construction": {},
             "Schedule" : {},
             "ScheduleTypeLimits": {},
-            "ThermMaterial": {}
+            "ThermMaterial": {},
+            "WindowProperty": {},
+            "MaterialProperty": {}
             }
     
     def getEPMaterials(self):
@@ -548,6 +550,12 @@ class HB_GetEPLibraries:
     
     def getEPWindowMaterial(self):
         return self.libraries["WindowMaterial"]
+    
+    def getEPWindowProp(self):
+        return self.libraries["WindowProperty"]
+    
+    def getEPSpectralData(self):
+        return self.libraries["MaterialProperty"]
     
     def getEPSchedule(self):
         return self.libraries["Schedule"]
@@ -563,7 +571,7 @@ class HB_GetEPLibraries:
             raise Exception("Can't find EP library! at %s"%EPfile)
         
         if isMatFile == False:
-            print "Loading EP materials, constructions and schedules from %s"%EPfile
+            print "Loading EP materials, constructions, schedules and material properties from %s"%EPfile
             EPObjects = self.getEnergyPlusObjectsFromFile(EPfile)
             self.loadEPConstructionsMaterialsAndSchedules(EPObjects, cleanCurrentLib)
         else:
@@ -580,14 +588,15 @@ class HB_GetEPLibraries:
             "Construction": {},
             "Schedule" : {},
             "ScheduleTypeLimits": {},
-            "ThermMaterial": {}
+            "ThermMaterial": {},
+            "WindowProperty": {},
+            "MaterialProperty": {}
             }
             
     # TODO: Support parsing for files with no next line
     # TODO: Check if keys can be case insensitive
     # TODO: Create EPObjects and not dictionaries
     def loadEPConstructionsMaterialsAndSchedules(self, EPObjectsString, cleanCurrentLib = True):
-        
         if cleanCurrentLib: self.cleanHBLibs()
         
         for EPObjectStr in EPObjectsString:
@@ -596,39 +605,65 @@ class HB_GetEPLibraries:
             for line in rawLines:
                 if line.strip() == '' or line.startswith('!'): continue
                 lines.append(line)
-                
-            if len(lines) < 2: continue
             
-            key = lines[0].split(",")[0].strip()
-            shortKey = key.split(":")[0]
-            name = lines[1].split(",")[0].strip().upper()
-            values = lines[2:]
-            # it's a two line object such as Any Number scheduleTypeLimit
-            if values == []:
-                name = lines[1].split(";")[0].strip().upper() # name is the last input
-                
-            if shortKey in self.libraries:
+            if lines[0].startswith('MaterialProperty:GlazingSpectralData'):
+                key = 'MaterialProperty:GlazingSpectralData'
+                shortKey = 'MaterialProperty'
+                name = lines[1].split(",")[0].strip().upper()
                 self.libraries[shortKey][name] = dict() # create an empty dictonary
                 self.libraries[shortKey][name][0] = key
+                # store the data into the dictionary
+                for lineCount, line in enumerate(lines):
+                    objValue = line.split("!")[0].strip()
+                    try: objDescription = line.split("!")[1].strip()
+                    except:  objDescription = ""
+                    if lineCount == 0:
+                        self.libraries[shortKey][name][lineCount] = objValue[:-1]
+                    elif lineCount == 1:
+                        pass # name is already there as the key
+                    elif objValue.endswith(","):
+                        self.libraries[shortKey][name][lineCount-1] = objValue[:-1], objDescription
+                    elif objValue.endswith(";"):
+                        self.libraries[shortKey][name][lineCount-1] = objValue[:-1], objDescription
+            else:
+                if len(lines) < 2: continue
                 
-                count = 1
-                delimiter = ","
-                for value in values:
-                    if not len(value.strip()): continue #pass empty lines
-                    if count==len(values): delimiter = ";"
-                    v = value.split(delimiter)[0].strip() # find the  value
-                    if value.find("!")!= -1:
-                        c = value.split("!")[-1].rstrip() # find the  value
-                    else:
-                        c = ""
-                    self.libraries[shortKey][name][count] = v, c
-                    count += 1
+                if lines[0].split(",")[0].strip().isupper():
+                    key = lines[0].split(",")[0].strip().title()
+                else:
+                    key = lines[0].split(",")[0].strip()
+                shortKey = key.split(":")[0]
+                
+                name = lines[1].split(",")[0].strip().upper()
+                values = lines[2:]
+                # it's a two line object such as Any Number scheduleTypeLimit
+                if values == []:
+                    name = lines[1].split(";")[0].strip().upper() # name is the last input
+                    
+                if shortKey in self.libraries:
+                    self.libraries[shortKey][name] = dict() # create an empty dictonary
+                    self.libraries[shortKey][name][0] = key
+                    
+                    count = 1
+                    delimiter = ","
+                    for value in values:
+                        if not len(value.strip()): continue #pass empty lines
+                        if count==len(values): delimiter = ";"
+                        v = value.split(delimiter)[0].strip() # find the  value
+                        if value.find("!")!= -1:
+                            c = value.split("!")[-1].rstrip() # find the  value
+                        else:
+                            c = ""
+                        self.libraries[shortKey][name][count] = v, c
+                        count += 1
     
     def report(self): 
         # Report findings
         print "%s EPConstructions are loaded available in Honeybee library"%str(len(self.libraries["Construction"]))
         print "%s EPMaterials are now loaded in Honeybee library"%str(len(self.libraries["Material"]))
         print "%s EPWindowMaterial are loaded in Honeybee library"%str(len(self.libraries["WindowMaterial"]))
+        print "%s EPShadingControl are loaded in Honeybee library"%str(len(self.libraries["WindowProperty"]))
+        print "%s EPMaterialProperty are loaded in Honeybee library"%str(len(self.libraries["MaterialProperty"]))
         print "%s schedules are loaded available in Honeybee library"%str(len(self.libraries["Schedule"]))
         print "%s schedule type limits are now loaded in Honeybee library"%str(len(self.libraries["ScheduleTypeLimits"]))
         print "%s THERM materials are now loaded in Honeybee library"%str(len(self.libraries["ThermMaterial"]))
@@ -648,13 +683,15 @@ class HB_GetEPLibraries:
         Returns:
             A list of strings. Each string represents a differnt Rdiance Object
         """
-        rawEPObjects = re.findall(r'(.[^;]*;.[^\n]*)', epFileString + "\n",re.MULTILINE)
+        
+        #rawEPObjects = re.findall(r'(.[^;]*;.[^\n]*)', epFileString + "\n",re.MULTILINE)
+        rawEPObjects = re.findall(r'(.[^;]*;)', epFileString + "\n",re.MULTILINE)
         
         return rawEPObjects
     
     def getEnergyPlusObjectsFromFile(self, epFilePath):
         """
-        Parse EnergyPlus file and return a list of radiance objects as separate strings
+        Parse EnergyPlus file and return a list of objects as separate strings
         
         TODO: Create a class for each EnergyPlus object and return Python objects
         instead of strings
@@ -3560,6 +3597,14 @@ class EPMaterialAux(object):
                                         "CBECSBEFORE1980" : "CBECS Before-1980"}
     
     def calcEPMaterialUValue(self, materialObj, GHComponent = None):
+        # Dictionary of typical U-Values for different gases.
+        # All of these materials are taken from LBNL WINDOW 7.4 Gas Library assuming a 1 cm-thick gap.
+        gasUVal = {
+        "air": 2.407,
+        "argon": 1.6348,
+        "krypton": 0.8663,
+        "xenon": 0.516
+        }
         
         materialType = materialObj[0]
         
@@ -3587,35 +3632,51 @@ class EPMaterialAux(object):
         
         elif materialType.lower() == "material:airgap":
             UValueSI = 1 / float(materialObj[1][0])
-            #print materialObj
-            #print UValueSI
-        
-        elif materialType.lower() == "material:airgap":
-            UValueSI = 1 / float(materialObj[1][0])
         
         elif materialType.lower() == "windowmaterial:gas":
             thickness = float(materialObj[2][0])
-            #All of these materials are taken from LBNL WINDOW 7.4 Gas Library assuming a 1 cm-thick gap.
-            if materialObj[1][0].lower() == "air":
-                # conductivity = 0.02407 {W/m-K}
-                UValueSI = 2.407
-            elif materialObj[1][0].lower() == "argon":
-                # conductivity = 0.016348 {W/m-K}
-                UValueSI = 1.6348
-            elif materialObj[1][0].lower() == "krypton":
-                # conductivity = 0.008663 {W/m-K}
-                UValueSI = 0.8663
-            elif materialObj[1][0].lower() == "xenon":
-                # conductivity = 0.005160 {W/m-K}
-                UValueSI = 0.516
-            else:
+            if thickness > 0.05:
+                warningMsg = "The thickness of your gas layer is beyond that typically seen in windows." + "\n" + \
+                "The U-Value calculated here might be fairly different from what E+ will use."
+                if GHComponent!=None:
+                    w = gh.GH_RuntimeMessageLevel.Warning
+                    GHComponent.AddRuntimeMessage(w, warningMsg)
+            try:
+                UValueSI = gasUVal[materialObj[1][0].lower()]
+            except:
+                UValueSI = -1
                 warningMsg = "Honeybee can't calculate the UValue for " + materialObj[1][0] + ".\n" + \
                     "Let us know if you think it is really neccesary and we will add it to the list. :)"
                 if GHComponent!=None:
                     w = gh.GH_RuntimeMessageLevel.Warning
                     GHComponent.AddRuntimeMessage(w, warningMsg)
-                    
-                    print materialObj
+        
+        elif materialType.lower() == "windowmaterial:gasmixture":
+            thickness = float(materialObj[1][0])
+            if thickness > 0.05:
+                warningMsg = "The thickness of your gas layer is beyond that typically seen in windows." + "\n" + \
+                "The U-Value calculated here might be fairly different from what E+ will use."
+                if GHComponent!=None:
+                    w = gh.GH_RuntimeMessageLevel.Warning
+                    GHComponent.AddRuntimeMessage(w, warningMsg)
+            try:
+                UValueSI = 0
+                gas = 0
+                gasPercent = 0
+                for gasCount in range(3, len(materialObj)):
+                    if (gasCount % 2 == 0):
+                        gasPercent = float(materialObj[gasCount][0])
+                        UValueSI = UValueSI + (gas*gasPercent)
+                    else:
+                        gas = float(gasUVal[materialObj[gasCount][0].lower()])
+            except:
+                UValueSI = -1
+                warningMsg = "Honeybee can't calculate the UValue for " + materialObj[1][0] + ".\n" + \
+                    "Let us know if you think it is really neccesary and we will add it to the list. :)"
+                if GHComponent!=None:
+                    w = gh.GH_RuntimeMessageLevel.Warning
+                    GHComponent.AddRuntimeMessage(w, warningMsg)
+        
         else:
             warningMsg = "Honeybee currently can't calculate U-Values for " + materialType + ".\n" +\
                 "Your Honeybee EnergyPlus simulations will still run fine with this material and this is only a Honeybee interface limitation." + ".\n" +\
@@ -3623,7 +3684,6 @@ class EPMaterialAux(object):
             if GHComponent!=None:
                 w = gh.GH_RuntimeMessageLevel.Warning
                 GHComponent.AddRuntimeMessage(w, warningMsg)
-        
             # http://bigladdersoftware.com/epx/docs/8-0/input-output-reference/page-010.html
             UValueSI = -1
         
@@ -3815,8 +3875,8 @@ class EPMaterialAux(object):
             objectData = sc.sticky ["honeybee_materialLib"][objectName]
         elif objectName in sc.sticky ["honeybee_constructionLib"].keys():
             objectData = sc.sticky ["honeybee_constructionLib"][objectName]
-        elif objectData in sc.sticky["honeybee_WinodowPropLib"].keys():
-            objectData = sc.sticky["honeybee_WinodowPropLib"][objectName]
+        elif objectData in sc.sticky["honeybee_WindowPropLib"].keys():
+            objectData = sc.sticky["honeybee_WindowPropLib"][objectName]
         elif objectName in sc.sticky["honeybee_SpectralDataLib"].keys():
             objectData = sc.sticky["honeybee_SpectralDataLib"][objectName]
         
@@ -3998,7 +4058,7 @@ class EPObjectsAux(object):
         return scheduleName.upper() in sc.sticky["honeybee_ScheduleTypeLimitsLib"].keys()
     
     def isWindowProperty(self, winPropName):
-        return winPropName.upper() in sc.sticky["honeybee_WinodowPropLib"].keys()
+        return winPropName.upper() in sc.sticky["honeybee_WindowPropLib"].keys()
     
     def isSpectralData(self, spectName):
         return spectName.upper() in sc.sticky["honeybee_SpectralDataLib"].keys()
@@ -4014,7 +4074,6 @@ class EPObjectsAux(object):
             values, comments = hb_EPScheduleAUX.getScheduleTypeLimitsDataByName(EPObjectName.upper())
         elif self.isEPConstruction(EPObjectName):
             values, comments, uSI, uIP = hb_EPMaterialAUX.decomposeEPCnstr(EPObjectName.upper())
-        
         elif self.isEPMaterial(EPObjectName):
             values, comments, uSI, uIP = hb_EPMaterialAUX.decomposeMaterial(EPObjectName.upper())
         else:
@@ -4066,7 +4125,7 @@ class EPObjectsAux(object):
     
     def getObjectKey(self, EPObject):
         
-        EPKeys = ["Material", "WindowMaterial", "Construction", "ScheduleTypeLimits", "Schedule", "WindowProperty"]
+        EPKeys = ["Material", "WindowMaterial", "Construction", "ScheduleTypeLimits", "Schedule", "WindowProperty", "MaterialProperty:GlazingSpectralData"]
         
         # check if it is a full string
         for key in EPKeys:
@@ -4086,7 +4145,7 @@ class EPObjectsAux(object):
                        "WindowMaterial" : "honeybee_windowMaterialLib",
                        "Schedule": "honeybee_ScheduleLib",
                        "ScheduleTypeLimits" : "honeybee_ScheduleTypeLimitsLib",
-                       "WindowProperty" : "honeybee_WinodowPropLib",
+                       "WindowProperty" : "honeybee_WindowPropLib",
                        "MaterialProperty:GlazingSpectralData" : "honeybee_SpectralDataLib"
                        }
         
@@ -4142,8 +4201,8 @@ class EPObjectsAux(object):
             objectData = sc.sticky ["honeybee_ScheduleLib"][objectName]
         elif objectName in sc.sticky["honeybee_ScheduleTypeLimitsLib"].keys():
             objectData = sc.sticky ["honeybee_ScheduleTypeLimitsLib"][objectName]
-        elif objectName in sc.sticky["honeybee_WinodowPropLib"].keys():
-            objectData = sc.sticky["honeybee_WinodowPropLib"][objectName]
+        elif objectName in sc.sticky["honeybee_WindowPropLib"].keys():
+            objectData = sc.sticky["honeybee_WindowPropLib"][objectName]
         elif objectName in sc.sticky["honeybee_SpectralDataLib"].keys():
             objectData = sc.sticky["honeybee_SpectralDataLib"][objectName]
         
@@ -7331,78 +7390,98 @@ class hb_Hive(object):
             raise Exception(msg)
         elif bb1.Max.DistanceTo(bb2.Max) > 5 * sc.doc.ModelAbsoluteTolerance:
             raise Exception(msg)
-            
-    def addToHoneybeeHive(self, HBObjects, GHComponentID):
-        # check if the honeybeedictionary already existed
-        # if not create the dictionary
-        # eventually this should be generated as soon as they user let the bee fly
-        if not sc.sticky.has_key('HBHive'): sc.sticky['HBHive'] = {}
-        geometries = []
-        childGeometries = []
+    
+    @staticmethod
+    def addToHoneybeeHive(HBObjects, Component, removeCurrent=True):
+        """Add honeybee objects to memory so they can be passed between the components.
         
+        removeCurrent: Set false if the same component generates honeybee objects
+            multiple times in the same component, except for the first time.
+        """
+        if not sc.sticky.has_key('HBHive'):
+            sc.sticky['HBHive'] = {}
+        
+        try:
+            # get document ID
+            docId = Component.OnPingDocument().DocumentID
+        except AttributeError as e:
+            if str(e) == "'str' object has no attribute 'OnPingDocument'":
+                raise Exception('Honeybee version mismatch! Update the component.')
+            else:
+                raise Exception('Failed to add object to HoneybeeHive:\n\t{}'.format(e))
+                
+            
+        baseKey = '{}_{}'.format(docId, Component.InstanceGuid)
+        
+        # clean the dictionary if it's the first run
+        if removeCurrent and Component.RunCount == 1:
+            if baseKey in sc.sticky['HBHive']:
+                del(sc.sticky['HBHive'][baseKey])
+            sc.sticky['HBHive'][baseKey] = {}
+    
+        # create an empty dictionary for this component
+        outGeometry = []
         for HBObject in HBObjects:
-            try:
-                HBObject.resetID()
-                key = HBObject.ID
-            except:
-                #HB object is generated by an older version of Honeybee
-                key = GHComponentID + HBObject.name
             
-            sc.sticky['HBHive'][key] = HBObject
+            HBObject.resetID()
             
-            # assuming that all the HBOBjects has a geometry! I assume they do
+            key = '{}'.format(HBObject.ID)
+            sc.sticky['HBHive'][baseKey][key] = HBObject
             
+            # calculate punched geometry if HBobject has a child surface
             try:
                 if HBObject.objectType != "HBZone" and HBObject.hasChild:
+                    # Honeybee surface with openings
                     if HBObject.punchedGeometry == None:
                         HBObject.calculatePunchedSurface()
-                    geo = HBObject.punchedGeometry.Duplicate()
-                    geometry = geo.Duplicate()
-                    for childObject in HBObject.childSrfs:
-                        # for now I only return the childs as geometries and not objects
-                        # it could cause some confusion for the users that I will try to
-                        # address later
-                        childGeometries.append(childObject.geometry.Duplicate())
+                    
+                    geometries = [childObject.geometry for childObject in HBObject.childSrfs]
+                    geometries.append(HBObject.punchedGeometry)
                     # join geometries into a single surface
-                    geometry = rc.Geometry.Brep.JoinBreps([geometry] + childGeometries, sc.doc.ModelAbsoluteTolerance)[0]
+                    geometry = rc.Geometry.Brep.JoinBreps(geometries, sc.doc.ModelAbsoluteTolerance)[0]
                 
                 elif HBObject.objectType == "HBZone":
-                    geo = HBObject.geometry
-                    geometry = geo.Duplicate()
                     srfs = []
                     zoneHasChildSrf = False
                     for HBSrf in HBObject.surfaces:
                         if HBSrf.hasChild:
                             zoneHasChildSrf = True
-                            srfs.append(HBSrf.punchedGeometry.Duplicate())
+                            srfs.append(HBSrf.punchedGeometry)
                             for childObject in HBSrf.childSrfs:
-                                # for now I only return the childs as geometries and not objects
-                                # it could cause some confusion for the users that I will try to
-                                # address later
-                                srfs.append(childObject.geometry.Duplicate())
+                                srfs.append(childObject.geometry)
                         else:
-                            srfs.append(HBSrf.geometry.Duplicate())
+                            srfs.append(HBSrf.geometry)
                             
                     if zoneHasChildSrf:
                         geometry = rc.Geometry.Brep.JoinBreps(srfs, sc.doc.ModelAbsoluteTolerance)[0]
-                        
+                    else:
+                        geometry = HBObject.geometry
                 else:
-                    geo = HBObject.geometry
-                    geometry = geo.Duplicate()
-                geometry.UserDictionary.Set('HBID', key)
-                geometries.append(geometry)
+                    # if there is not child object use the geometry as it is
+                    geometry = HBObject.geometry
+                
+                # assign the key to surface
+                geometry.UserDictionary.Set('HBID', '{}#{}'.format(baseKey, key))
+                outGeometry.append(geometry)
             except Exception as e:
                 print `e`
                     
         # return geometry with the ID
-        return geometries
-        
+        return outGeometry
+    
+    
     def callFromHoneybeeHive(self, geometryList):
         HBObjects = []
         for geometry in geometryList:
-            key = geometry.UserDictionary['HBID']
-            if sc.sticky['HBHive'].has_key(key):
-                HBObject = sc.sticky['HBHive'][key]
+            hbkey = geometry.UserDictionary['HBID']
+            
+            if '#' not in hbkey:
+                raise Exception('Honeybee version mismatch! Update the input component.')
+                
+            baseKey, key = hbkey.split('#')[0], '#'.join(hbkey.split('#')[1:])
+            
+            if sc.sticky['HBHive'].has_key(baseKey):
+                HBObject = sc.sticky['HBHive'][baseKey][key]
                 
                 # make sure Honeybee object is not moved or rotated
                 self.checkifTransformed(geometry, HBObject)
@@ -7427,14 +7506,26 @@ class hb_Hive(object):
                     print "Failed to copy the object. Returning the original objects...\n" +\
                     "This can cause strange behaviour!"
                     HBObjects.append(sc.sticky['HBHive'][key])
+            else:
+                raise Exception('HoneybeeKeyMismatch: Failed to call the object from Honeybee hive.')
                 
         return HBObjects
     
     def visualizeFromHoneybeeHive(self, geometryList):
         HBObjects = []
         for geometry in geometryList:
-            key = geometry.UserDictionary['HBID']
-            if sc.sticky['HBHive'].has_key(key): HBObjects.append(sc.sticky['HBHive'][key])
+            hbkey = geometry.UserDictionary['HBID']
+            
+            if '#' not in hbkey:
+                raise Exception('Honeybee version mismatch! Update the input component.')
+                
+            baseKey, key = hbkey.split('#')[0], '#'.join(hbkey.split('#')[1:])
+            
+            if sc.sticky['HBHive'].has_key(baseKey):
+                HBObjects.append(sc.sticky['HBHive'][baseKey][key])
+            else:
+                raise Exception('HoneybeeKeyMismatch: Failed to call the object from Honeybee hive.')
+
         return HBObjects
 
 class hb_RADParameters(object):
@@ -7596,7 +7687,8 @@ class hb_hvacProperties(object):
         11:'FAN COIL UNITS + DOAS',
         12:'ACTIVE CHILLED BEAMS + DOAS',
         13:'RADIANT FLOORS + DOAS',
-        14:'VRF + DOAS'
+        14:'VRF + DOAS',
+        15:'HEATED FLOORS + VAV COOLING'
         }
         
         # Dictionaries that state which features can be changed for each of the different systems.
@@ -7616,7 +7708,8 @@ class hb_hvacProperties(object):
         11: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
         12: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : False},
         13: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
-        14: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True}
+        14: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
+        15: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True}
         }
         
         self.airCapabilities = {
@@ -7634,7 +7727,8 @@ class hb_hvacProperties(object):
         11: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
         12: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
         13: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        14: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True}
+        14: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        15: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True}
         }
         
         self.heatCapabilities = {
@@ -7652,7 +7746,8 @@ class hb_hvacProperties(object):
         11: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
         12: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
         13: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
-        14: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False}
+        14: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
+        15: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : False}
         }
         
         self.coolCapabilities = {
@@ -7670,7 +7765,8 @@ class hb_hvacProperties(object):
         11: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : True},
         12: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : True},
         13: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : True},
-        14: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : True}
+        14: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : True},
+        15: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : True}
         }
     
     @staticmethod
@@ -8205,7 +8301,7 @@ if checkIn.letItFly:
         sc.sticky["honeybee_folders"]["DSLibPath"] = hb_DSLibPath
         
         # supported versions for EnergyPlus
-        EPVersions = ["V8-5-0", "V8-4-0","V8-3-0", "V8-2-10", "V8-2-9", "V8-2-8", "V8-2-7", "V8-2-6", \
+        EPVersions = ["V8-6-0", "V8-5-0", "V8-4-0","V8-3-0", "V8-2-10", "V8-2-9", "V8-2-8", "V8-2-7", "V8-2-6", \
                       "V8-2-5", "V8-2-4", "V8-2-3", "V8-2-2", "V8-2-1", "V8-2-0", \
                       "V8-1-5", "V8-1-4", "V8-1-3", "V8-1-2", "V8-1-1", "V8-1-0"]
         EPVersion = ''
@@ -8304,6 +8400,8 @@ if checkIn.letItFly:
                 sc.sticky["honeybee_ScheduleLib"].update(EPLibs.getEPSchedule())
                 sc.sticky["honeybee_ScheduleTypeLimitsLib"].update(EPLibs.getEPScheduleTypeLimits())
                 sc.sticky["honeybee_thermMaterialLib"].update(EPLibs.getTHERMMaterials())
+                sc.sticky["honeybee_WindowPropLib"].update(EPLibs.getEPWindowProp())
+                sc.sticky["honeybee_SpectralDataLib"].update(EPLibs.getEPSpectralData())
             except:
                 print msg
                 ghenv.Component.AddRuntimeMessage(w, msg)
@@ -8324,7 +8422,6 @@ if checkIn.letItFly:
         sc.sticky["honeybee_BuildingProgramsLib"] = BuildingProgramsLib
         sc.sticky["honeybee_EPTypes"] = EPTypes()
         sc.sticky["honeybee_EPZone"] = EPZone
-        sc.sticky["honeybee_ExtraConstrProps"] = {}
         sc.sticky["honeybee_ThermPolygon"] = thermPolygon
         sc.sticky["honeybee_ThermBC"] = thermBC
         sc.sticky["honeybee_ThermDefault"] = thermDefaults

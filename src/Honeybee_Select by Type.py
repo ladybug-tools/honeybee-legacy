@@ -38,11 +38,11 @@ Provided by Honeybee 0.0.60
 """
 ghenv.Component.Name = "Honeybee_Select by Type"
 ghenv.Component.NickName = 'selByType_'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.56\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
@@ -120,7 +120,7 @@ def main(HBZones):
             except:
                 pass
                 
-    HBSurfaces = hb_hive.addToHoneybeeHive(otherHBSurfaces, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+    HBSurfaces = hb_hive.addToHoneybeeHive(otherHBSurfaces, ghenv.Component)
     
     
     return surfaces,HBSurfaces

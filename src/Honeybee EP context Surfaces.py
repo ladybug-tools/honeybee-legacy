@@ -12,11 +12,11 @@ prepare shading/context geometries
 
 ghenv.Component.Name = 'Honeybee EP context Surfaces'
 ghenv.Component.NickName = 'HB_EPContextSrf'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.57\nNOV_01_2015
+#compatibleHBVersion = VER 0.0.57\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "2"
 
@@ -163,7 +163,7 @@ def main(shdSurfaces, EPTransSchedule, meshingSettings, justBoundingBox):
                 
         # add to the hive
         hb_hive = sc.sticky["honeybee_Hive"]()
-        HBContext  = hb_hive.addToHoneybeeHive(shadingClasses, ghenv.Component.InstanceGuid.ToString())
+        HBContext  = hb_hive.addToHoneybeeHive(shadingClasses, ghenv.Component)
         return HBContext
         ################################################################################################
     else:

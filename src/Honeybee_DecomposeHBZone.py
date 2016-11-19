@@ -33,11 +33,11 @@ Provided by Honeybee 0.0.60
 """
 ghenv.Component.Name = "Honeybee_DecomposeHBZone"
 ghenv.Component.NickName = 'Decompose Honeybee Zone'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.56\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
 except: pass
@@ -70,7 +70,7 @@ def main(HBZone):
     
     HBO = hb_hive.callFromHoneybeeHive([HBZone])[0]
     
-    HBSurfaces  = hb_hive.addToHoneybeeHive(HBO.surfaces, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+    HBSurfaces  = hb_hive.addToHoneybeeHive(HBO.surfaces, ghenv.Component)
     
     return HBSurfaces
 
