@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.60\nNOV_18_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_30_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -7128,7 +7128,7 @@ class thermPolygon(object):
     
     def resetID(self):
         self.ID = str(uuid.uuid4())
-
+    
     def makeThermMatCopy(self, orgigMat, materialName, RGBColor):
         #Make a sub-dictionary for the material.
         sc.sticky["honeybee_thermMaterialLib"][materialName] = {}
@@ -7194,6 +7194,7 @@ class thermBC(object):
         self.objectType = "ThermBC"
         self.hasChild = False
         self.name = BCName
+        self.resetID()
         
         #Create a dictionary with all of the inputs for the BC properties.
         self.BCProperties = {}
@@ -7252,6 +7253,9 @@ class thermBC(object):
         self.emissivityOverride = emissOverride
         
         return self.geometry
+    
+    def resetID(self):
+        self.ID = str(uuid.uuid4())
 
 
 
