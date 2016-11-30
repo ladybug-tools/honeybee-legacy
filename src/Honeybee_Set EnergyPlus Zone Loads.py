@@ -44,7 +44,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Set EnergyPlus Zone Loads"
 ghenv.Component.NickName = 'setEPZoneLoads'
-ghenv.Component.Message = 'VER 0.0.60\nNOV_04_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_09_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
@@ -105,19 +105,19 @@ def main(HBZones, equipmentLoadPerArea, infiltrationRatePerArea, lightingDensity
         if not HBZone.isLoadsAssigned:
             HBZone.assignLoadsBasedOnProgram(ghenv.Component)
         
-        if equipmentLoadPerArea[zoneCount]:
+        if equipmentLoadPerArea[zoneCount] != None:
             HBZone.equipmentLoadPerArea = equipmentLoadPerArea[zoneCount]
-        if infiltrationRatePerArea[zoneCount]:
+        if infiltrationRatePerArea[zoneCount] != None:
             HBZone.infiltrationRatePerArea = infiltrationRatePerArea[zoneCount]
-        if lightingDensityPerArea[zoneCount]:
+        if lightingDensityPerArea[zoneCount] != None:
             HBZone.lightingDensityPerArea = lightingDensityPerArea[zoneCount]
-        if numOfPeoplePerArea[zoneCount]:
+        if numOfPeoplePerArea[zoneCount] != None:
             HBZone.numOfPeoplePerArea = numOfPeoplePerArea[zoneCount]
-        if ventilationPerArea[zoneCount]:
+        if ventilationPerArea[zoneCount] != None:
             HBZone.ventilationPerArea = ventilationPerArea[zoneCount]
-        if ventilationPerPerson[zoneCount]:
+        if ventilationPerPerson[zoneCount] != None:
             HBZone.ventilationPerPerson = ventilationPerPerson[zoneCount]
-        if recirculatedAirPerArea[zoneCount]:
+        if recirculatedAirPerArea[zoneCount] != None:
             HBZone.recirculatedAirPerArea = recirculatedAirPerArea[zoneCount]
         
         loads.append(HBZone.getCurrentLoads())
