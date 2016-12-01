@@ -57,7 +57,7 @@ import math
 
 ghenv.Component.Name = 'Honeybee_Read THERM Result'
 ghenv.Component.NickName = 'readTHERM'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nDEC_01_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -147,7 +147,7 @@ def checkTheInputs():
                         uFactors.append(uFactor)
             uFacFile.close()
         if SIorIP_ == False:
-            for count, val in enumerate(uFactors): uFactors[count] = val*0.316998331
+            for count, val in enumerate(uFactors): uFactors[count] = val/5.678
     
     #If there is an input for dataType_, check to make sure that it makes sense.
     dataType = 0
