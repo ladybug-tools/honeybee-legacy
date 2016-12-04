@@ -58,7 +58,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.60\nOCT_08_2016'
+ghenv.Component.Message = 'VER 0.0.60\nDEC_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -829,7 +829,6 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                 for srfCount, srf in enumerate(srfList):
                     zoneSrfsMesh[zoneCount].append(rc.Geometry.Mesh.CreateFromBrep(srf, srfMeshPar)[0])
             
-            
             #Generate the meshes and test points of the final surface.
             if sectionMethod == 0:
                 for brep in finalBreps:
@@ -893,13 +892,10 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                     finalMesh = constructNewMesh(finalFaceBreps)
                     
                     if len(finalTestPts) > 0:
-                        if len(MRTMeshInit[zoneCount]) > 0: MRTMeshInit[zoneCount][0].Append(finalMesh)
-                        else: MRTMeshInit[zoneCount].append(finalMesh)
+                        MRTMeshInit[zoneCount].append(finalMesh)
                         
                         MRTMeshBreps[zoneCount].extend(finalFaceBreps)
                         testPts[zoneCount].extend(finalTestPts)
-        
-        
         
         #If the user has selected to use the results for an outdoor calculation, pull out those parts of the mesh related to the outdoors using the deletedIndices list.
         if sectionMethod != 0 and includeOutdoor == True:
