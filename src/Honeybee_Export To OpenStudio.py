@@ -69,7 +69,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.60\nOCT_26_2016'
+ghenv.Component.Message = 'VER 0.0.60\nDEC_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -184,10 +184,10 @@ class WriteOPS(object):
         headline = epwfile.readline()
         csheadline = headline.split(',')
         locName = csheadline[1]+'\t'+csheadline[3]
-        lat = float(csheadline[-4])
-        lngt = float(csheadline[-3])
-        timeZone = float(csheadline[-2])
-        elev = float(csheadline[-1][:-1])
+        lat = float(csheadline[6])
+        lngt = float(csheadline[7])
+        timeZone = float(csheadline[8])
+        elev = float(csheadline[9][:-1])
         epwfile.close()
         
         # Get the OpenStudio Model Site.
