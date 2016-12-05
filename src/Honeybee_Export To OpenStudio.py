@@ -69,7 +69,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.60\nDEC_04_2016'
+ghenv.Component.Message = 'VER 0.0.60\nDEC_05_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -828,7 +828,10 @@ class WriteOPS(object):
                 fan.setPressureRise(500) #Pa
             else:
                 fan.setPressureRise(1125) #Pa
-        fan.autosizeMaximumFlowRate()
+        if airDetails != None and airDetails.airSysHardSize != 'Default':
+            fan.setMaximumFlowRate(float(airDetails.airSysHardSize))
+        else:
+            fan.autosizeMaximumFlowRate()
         if airDetails != None and airDetails.fanMotorEfficiency != 'Default':
             fan.setMotorEfficiency(airDetails.fanMotorEfficiency)
         else:
@@ -1071,16 +1074,23 @@ class WriteOPS(object):
         airTerminal.setControlForOutdoorAir(oaReq)
     
     def createPrimaryAirLoop(self, airType, model, thermalZones, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotWaterPlant=None, chilledWaterPlant=None, terminalOption=None, heatRecovOverride = False):
+        # Create the air loop.
         airloopPrimary = ops.AirLoopHVAC(model)
         if airType == 'DOAS':
             airloopPrimary.setName("DOAS Air Loop HVAC" + str(HVACCount))
         else:
             airloopPrimary.setName("VAV Air Loop HVAC" + str(HVACCount))
+        
+        # Modify hard sizing
+        if airDetails != None and airDetails.airSysHardSize != 'Default':
+            airloopPrimary.setDesignSupplyAirFlowRate(float(airDetails.airSysHardSize))
+        
         # modify system sizing properties
         sizingSystem = airloopPrimary.sizingSystem()
         # set central heating and cooling temperatures for sizing
         sizingSystem.setCentralCoolingDesignSupplyAirTemperature(12.8)
         sizingSystem.setCentralHeatingDesignSupplyAirTemperature(40) #ML OS default is 16.7
+        
         # load specification
         if airType == 'DOAS':
             sizingSystem.setTypeofLoadtoSizeOn("VentilationRequirement") #DOAS
@@ -1387,13 +1397,15 @@ class WriteOPS(object):
     ### END OF FUNCTIONS FOR CREATING HVAC SYSTEMS FROM SCRATCH ###
     
     ### START OF FUNCTIONS FOR EDITING HVAC SYSTEMS ###
-    def updateFan(self,fan,totalEfficiency,motorEfficiency,pressureRise):
+    def updateFan(self,fan,totalEfficiency,motorEfficiency,pressureRise,airSysHardSize):
         if totalEfficiency != 'Default': 
             fan.setFanEfficiency(totalEfficiency)
         if motorEfficiency != 'Default':
             fan.setMotorEfficiency(motorEfficiency)
         if pressureRise != 'Default': 
             fan.setPressureRise(pressureRise)
+        if airSysHardSize != 'Default':
+            fan.setMaximumFlowRate(float(airSysHardSize))
     
     def updatePump(self, pump, pumpMotorEfficiency):
         if pumpMotorEfficiency != 'Default':
@@ -1595,10 +1607,12 @@ class WriteOPS(object):
         if airDetails.HVACAvailabiltySched != 'ALWAYS ON':
             hvacAvailSch = self.getOSSchedule(airDetails.HVACAvailabiltySched, model)
             airloop.setAvailabilitySchedule(hvacAvailSch)
-        if airDetails.fanTotalEfficiency != "Default" or airDetails.fanMotorEfficiency != "Default" or airDetails.fanPressureRise != "Default":
+        if airDetails.fanTotalEfficiency != "Default" or airDetails.fanMotorEfficiency != "Default" or airDetails.fanPressureRise != "Default" or airDetails.airSysHardSize != "Default":
             x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:ConstantVolume"))
             cvfan = model.getFanConstantVolume(x[0].handle()).get()
-            self.updateFan(cvfan,airDetails.fanTotalEfficiency,airDetails.fanMotorEfficiency,airDetails.fanPressureRise)
+            self.updateFan(cvfan,airDetails.fanTotalEfficiency,airDetails.fanMotorEfficiency,airDetails.fanPressureRise,airDetails.airSysHardSize)
+        if airDetails.airSysHardSize != "Default":
+            airloop.setDesignSupplyAirFlowRate(float(airDetails.airSysHardSize))
         if airDetails.fanPlacement != 'Default':
             if airDetails.fanPlacement == 'Blow Through':
                 x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:ConstantVolume"))
@@ -1621,10 +1635,12 @@ class WriteOPS(object):
         if airDetails.HVACAvailabiltySched != 'ALWAYS ON':
             hvacAvailSch = self.getOSSchedule(airDetails.HVACAvailabiltySched, model)
             airloop.setAvailabilitySchedule(hvacAvailSch)
-        if airDetails.fanTotalEfficiency != "Default" or airDetails.fanMotorEfficiency != "Default" or airDetails.fanPressureRise != "Default":
+        if airDetails.fanTotalEfficiency != "Default" or airDetails.fanMotorEfficiency != "Default" or airDetails.fanPressureRise != "Default" or airDetails.airSysHardSize != "Default":
             x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:VariableVolume"))
             vvfan = model.getFanVariableVolume(x[0].handle()).get()
-            self.updateFan(vvfan,airDetails.fanTotalEfficiency,airDetails.fanMotorEfficiency,airDetails.fanPressureRise)
+            self.updateFan(vvfan,airDetails.fanTotalEfficiency,airDetails.fanMotorEfficiency,airDetails.fanPressureRise,airDetails.airSysHardSize)
+        if airDetails.airSysHardSize != "Default":
+            airloop.setDesignSupplyAirFlowRate(float(airDetails.airSysHardSize))
         if airDetails.airsideEconomizer != 'Default':
             self.adjustAirSideEcon(airloop, airDetails)
             if airDetails.airsideEconomizer == 'NoEconomizer':
@@ -1822,10 +1838,10 @@ class WriteOPS(object):
                                 ptac.setAvailabilitySchedule(hvacAvailSch)
                             if airDetails.fanPlacement != 'Default':
                                 ptac.setFanPlacement(airDetails.fanPlacement)
-                            if airDetails.fanTotalEfficiency != "Default" or airDetails.fanMotorEfficiency != "Default" or airDetails.fanPressureRise != "Default":
+                            if airDetails.fanTotalEfficiency != "Default" or airDetails.fanMotorEfficiency != "Default" or airDetails.fanPressureRise != "Default" or airDetails.airSysHardSize != "Default":
                                 sfname = ptac.supplyAirFan().name()
                                 cvfan = model.getFanConstantVolumeByName(str(sfname)).get()
-                                self.updateFan(cvfan,airDetails.fanTotalEfficiency,airDetails.fanMotorEfficiency,airDetails.fanPressureRise)
+                                self.updateFan(cvfan,airDetails.fanTotalEfficiency,airDetails.fanMotorEfficiency,airDetails.fanPressureRise,airDetails.airSysHardSize)
                         
                         #Set the heatingDetails.
                         if heatingDetails != None:
@@ -1886,10 +1902,10 @@ class WriteOPS(object):
                                 pthp.setAvailabilitySchedule(hvacAvailSch)
                             if airDetails.fanPlacement != 'Default':
                                 pthp.setFanPlacement(airDetails.fanPlacement)
-                            if airDetails.fanTotalEfficiency != "Default" or airDetails.fanMotorEfficiency != "Default" or airDetails.fanPressureRise != "Default":
+                            if airDetails.fanTotalEfficiency != "Default" or airDetails.fanMotorEfficiency != "Default" or airDetails.fanPressureRise != "Default" or airDetails.airSysHardSize != "Default":
                                 sfname = pthp.supplyAirFan().name()
                                 cvfan = model.getFanConstantVolumeByName(str(sfname)).get()
-                                self.updateFan(cvfan,airDetails.fanTotalEfficiency,airDetails.fanMotorEfficiency,airDetails.fanPressureRise)
+                                self.updateFan(cvfan,airDetails.fanTotalEfficiency,airDetails.fanMotorEfficiency,airDetails.fanPressureRise,airDetails.airSysHardSize)
                         
                         #Set the heatingDetails.
                         if heatingDetails != None:
