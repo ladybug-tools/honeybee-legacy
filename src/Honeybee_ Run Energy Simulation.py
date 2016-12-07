@@ -60,7 +60,7 @@ Provided by Honeybee 0.0.60
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.60\nOCT_16_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_22_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -2226,7 +2226,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
                 ghenv.Component.AddRuntimeMessage(w, warning)
                 print warning
             
-            if zone.HVACSystem[1] > 1:
+            if zone.HVACSystem.Index > 1:
                 warning = "An HVAC system is applied to " + zone.name + \
                           ".\n" + \
                           "This component will replace this HVAC system with an Ideal Air Loads system.\n" + \

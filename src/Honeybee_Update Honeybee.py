@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Update Honeybee"
 ghenv.Component.NickName = 'updateHoneybee'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_11_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | Developers"
@@ -65,7 +65,7 @@ def removeCurrentHB():
         print 'Removing Honeybee!'
         for fileName in fileNames:
             # check for ladybug userObjects and delete the files
-            if fileName.StartsWith('Honeybee'):
+            if fileName.StartsWith('Honeybee') and not fileName.StartsWith('HoneybeePlus'):
                 fullPath = os.path.join(folder, fileName)
                 os.remove(fullPath)
 
