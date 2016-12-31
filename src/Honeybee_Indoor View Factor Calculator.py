@@ -845,15 +845,18 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                                 faceBrep = rc.Geometry.Brep.CreateFromCornerPoints(rc.Geometry.Point3d(mesh.Vertices[face.A]), rc.Geometry.Point3d(mesh.Vertices[face.B]), rc.Geometry.Point3d(mesh.Vertices[face.C]), rc.Geometry.Point3d(mesh.Vertices[face.D]), sc.doc.ModelAbsoluteTolerance)
                             if face.IsTriangle:
                                 faceBrep = rc.Geometry.Brep.CreateFromCornerPoints(rc.Geometry.Point3d(mesh.Vertices[face.A]), rc.Geometry.Point3d(mesh.Vertices[face.B]), rc.Geometry.Point3d(mesh.Vertices[face.C]), sc.doc.ModelAbsoluteTolerance)
-                            centPt = rc.Geometry.AreaMassProperties.Compute(faceBrep).Centroid
-                            #Do a final check to be sure that the test point does not lie outside the zone and, if so, delete the mesh face, and don't append the point.
-                            if zoneBreps[zoneCount].IsPointInside(centPt, tol, False) == False:
-                                deleteIndices.append(faceCount)
-                                deleteFaceBreps.append(faceBrep)
-                                deleteTestPts.append(centPt)
-                            else:
-                                finalFaceBreps.append(faceBrep)
-                                finalTestPts.append(centPt)
+                            try:
+                                centPt = rc.Geometry.AreaMassProperties.Compute(faceBrep).Centroid
+                                #Do a final check to be sure that the test point does not lie outside the zone and, if so, delete the mesh face, and don't append the point.
+                                if zoneBreps[zoneCount].IsPointInside(centPt, tol, False) == False:
+                                    deleteIndices.append(faceCount)
+                                    deleteFaceBreps.append(faceBrep)
+                                    deleteTestPts.append(centPt)
+                                else:
+                                    finalFaceBreps.append(faceBrep)
+                                    finalTestPts.append(centPt)
+                            except:
+                                pass
                         
                         #Construct a new mesh from the breps that are inside each zone.
                         finalMesh = constructNewMesh(finalFaceBreps)
