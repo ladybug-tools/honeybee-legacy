@@ -40,6 +40,8 @@ Provided by Honeybee 0.0.60
         windowHeight_: An optional number in Rhino model units that sets the height of your windows on rectangular surfaces when the breakUpWindow_ input above is set to 'True'.  This input can also accept lists of values and will assign different window heights based on cardinal direction, starting with north and moving counter-clockwise.  Note that this input will be over-ridden at high glazing ratios. The default is set to 2 meters.
         sillHeight_: An optional number in Rhino model units that sets the distance from the floor to the bottom of your windows on rectangular surfaces when the breakUpWindow_ input above is set to 'True'.  This input can also accept lists of values and will assign different sill heights based on cardinal direction, starting with north and moving counter-clockwise.  Note that this input will be over-ridden at high glazing ratios or window heights.  The default is set to 0.8 meters (or 80 centimeters).
         splitGlzVertDist_: An optional number in Rhino model units that splits the windows on rectangular surfaces into two with a vertical distance between them equal to this input when the breakUpWindow_ input above is set to 'True'.  This input can also accept lists of values and will assign different vertical distances based on cardinal direction, starting with north and moving counter-clockwise.  Note that this input will be over-ridden at high glazing ratios, high window heights, or high sill heights.
+        EPConstructions_: A optional text string of an EnergyPlus construction name that sets the material construction of the window. This input can also accept lists of values and will assign different EPconstructions based on cardinal direction, starting with north and moving counter-clockwise.  The default will assign a generic double pane window without low-e coatings.
+        RADMaterials_: A optional text string of an Radiance glass material name that sets the material of the window. This input can also accept lists of values and will assign different RadMaterials based on cardinal direction, starting with north and moving counter-clockwise.
         _runIt: set runIt to True to generate the glazing
     Returns:
         readMe!: ...
@@ -72,6 +74,40 @@ from Grasshopper.Kernel.Data import GH_Path
 
 tol = sc.doc.ModelAbsoluteTolerance
 
+
+def checkEPConstr(EPConstruction, hb_EPObjectsAux):
+    # if it is just the name of the material make sure it is already defined
+    if len(EPConstruction.split("\n")) == 1:
+        # if the material is not in the library add it to the library
+        if not hb_EPObjectsAux.isEPConstruction(EPConstruction):
+            warningMsg = "Can't find " + EPConstruction + " in EP Construction Library.\n" + \
+                        "Add the construction to the library and try again."
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
+            return None
+    else:
+        # it is a full string.
+        if EPConstruction.startswith('WindowMaterial:'):
+            warningMsg = "Your window construction, " + EPConstruction.split('\n')[1].split(',')[0] + ", is a window material and not a full window construction.\n" + \
+                        "Pass this window material through a 'Honeybee_EnergyPlus Construction' component cand connect the construction to this one."
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
+            return None
+        added, EPConstruction = hb_EPObjectsAux.addEPObjectToLib(EPConstruction, overwrite = True)
+        
+        if not added:
+            msg = EPConstruction + " is not added to the project library!"
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+            print msg
+            return None
+    return EPConstruction
+
+def checkRADMat(RADMaterial, hb_RADMaterialAUX):
+    if len(RADMaterial.strip().split(" ")) == 1:
+        if not hb_RADMaterialAUX.isMatrialExistInLibrary(RADMaterial):
+            warningMsg = "Can't find " + RADMaterial + " in RAD Material Library.\n" + \
+                "Add the material to the library and try again."
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
+            return None
+    return RADMaterial
 
 def findGlzBasedOnRatio(baseSrf, glzRatio, windowHeight, sillHeight, breakUpWindow, breakUpDist, splitVertDist, conversionFactor, hb_GlzGeoGeneration):
     lastSuccessfulRestOfSrf = []
@@ -180,7 +216,7 @@ def giveWarning(message):
     w = gh.GH_RuntimeMessageLevel.Warning
     ghenv.Component.AddRuntimeMessage(w, message)
 
-def main(windowHeight, sillHeight, glzRatio, breakUpWindow, breakUpDist, splitGlzVertDist):
+def main(windowHeight, sillHeight, glzRatio, breakUpWindow, breakUpDist, splitGlzVertDist, EPConstructions, RADMaterials):
     # check if honeybee is flying
     # import the classes
     if sc.sticky.has_key('ladybug_release')and sc.sticky.has_key('honeybee_release'):
@@ -207,7 +243,8 @@ def main(windowHeight, sillHeight, glzRatio, breakUpWindow, breakUpDist, splitGl
             ghenv.Component.AddRuntimeMessage(w, warning)
             return -1
         
-        # don't customize this part
+        hb_RADMaterialAUX = sc.sticky["honeybee_RADMaterialAUX"]
+        hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
         hb_EPZone = sc.sticky["honeybee_EPZone"]
         hb_EPSrf = sc.sticky["honeybee_EPSurface"]
         hb_EPFenSurface = sc.sticky["honeybee_EPFenSurface"]
@@ -217,11 +254,25 @@ def main(windowHeight, sillHeight, glzRatio, breakUpWindow, breakUpDist, splitGl
         print "You should first let both Ladybug and Honeybee to fly..."
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, "You should first let both Ladybug and Honeybee to fly...")
-        return [], []
+        return -1
     
     # call the objects from the lib
     hb_hive = sc.sticky["honeybee_Hive"]()
     HBZoneObjects = hb_hive.callFromHoneybeeHive(_HBObjects)
+    
+    #Check constructions and RADMAterials.
+    for count, constr in enumerate(EPConstructions):
+        constrCheck = checkEPConstr(constr, hb_EPObjectsAux)
+        if constrCheck != None:
+            EPConstructions[count] = constrCheck
+        else:
+            return -1
+    for count, mat in enumerate(RADMaterials):
+        matCheck = checkRADMat(mat, hb_RADMaterialAUX)
+        if matCheck != None:
+            RADMaterials[count] = matCheck
+        else:
+            return -1
     
     #Get the conversion factor (for the future when HB is availble in other model units).
     conversionFactor = lb_preparation.checkUnits()
@@ -242,6 +293,8 @@ def main(windowHeight, sillHeight, glzRatio, breakUpWindow, breakUpDist, splitGl
         if len(breakUpDist) != 1 and len(breakUpDist) != 0: numOfDivisions.append(len(breakUpDist))
         if len(breakUpWindow) != 1 and len(breakUpWindow) != 0: numOfDivisions.append(len(breakUpWindow))
         if len(splitGlzVertDist) != 1 and len(splitGlzVertDist) != 0: numOfDivisions.append(len(splitGlzVertDist))
+        if len(EPConstructions) != 1 and len(EPConstructions) != 0: numOfDivisions.append(len(EPConstructions))
+        if len(RADMaterials) != 1 and len(RADMaterials) != 0: numOfDivisions.append(len(RADMaterials))
         if numOfDivisions != []:
             allValuesSame = True
             for val in numOfDivisions:
@@ -262,6 +315,8 @@ def main(windowHeight, sillHeight, glzRatio, breakUpWindow, breakUpDist, splitGl
         if len(breakUpDist) != len(glzRatio) and len(breakUpDist) != 1 and len(breakUpDist) != 0: warningList.append("The number of items in the breakUpDist list does not match the number in the glzRatio list. Please ensure that either your lists match or you put in a single breakUpDist value for all windows.")
         if len(breakUpWindow) != len(glzRatio) and len(breakUpWindow) != 1 and len(breakUpWindow) != 0: warningList.append("The number of items in the breakUpWindow list does not match the number in the glzRatio list. Please ensure that either your lists match or you put in a single breakUpWindow value for all windows.")
         if len(splitGlzVertDist) != len(glzRatio) and len(splitGlzVertDist) != 1 and len(splitGlzVertDist) != 0: warningList.append("The number of items in the splitGlzVertDist list does not match the number in the glzRatio list. Please ensure that either your lists match or you put in a single splitGlzVertDist value for all windows.")
+        if len(EPConstructions) != len(glzRatio) and len(EPConstructions) != 1 and len(EPConstructions) != 0: warningList.append("The number of items in the EPConstructions list does not match the number in the glzRatio list. Please ensure that either your lists match or you put in a single EPConstruction value for all windows.")
+        if len(RADMaterials) != len(glzRatio) and len(RADMaterials) != 1 and len(RADMaterials) != 0: warningList.append("The number of items in the RADMaterials list does not match the number in the glzRatio list. Please ensure that either your lists match or you put in a single RADMaterial value for all windows.")
         if warningList != []:
             for warning in warningList:
                 giveWarning(warning)
@@ -273,7 +328,7 @@ def main(windowHeight, sillHeight, glzRatio, breakUpWindow, breakUpDist, splitGl
         for ratio in glzRatio:
             if ratio > 0.95:
                 giveWarning("Please ensure that your glazing ratio is between 0.0 and 0.95. glazing ratios outside of this are not accepted.")
-                return None, None
+                return -1
         initAngles = rs.frange(0, 360, 360/len(glzRatio))
     else: initAngles = []
     #Set up angles if the glazing ratio is greater than 1.
@@ -321,6 +376,8 @@ def main(windowHeight, sillHeight, glzRatio, breakUpWindow, breakUpDist, splitGl
                 if len(breakUpDist) == 1: breakD = breakUpDist[0]
                 if len(breakUpWindow) == 1: breakWind = breakUpWindow[0]
                 if len(splitGlzVertDist) == 1: splitVertDist = splitGlzVertDist[0]
+                if len(EPConstructions) == 1: EPConstruct = EPConstructions[0]
+                if len(RADMaterials) == 1: RADMat = RADMaterials[0]
                 for angleCount in range(len(angles)-1):
                     if angles[angleCount]+(0.5*sc.doc.ModelAngleToleranceDegrees) <= surface.angle2North%360 <= angles[angleCount +1]+(0.5*sc.doc.ModelAngleToleranceDegrees):
                         targetPercentage = glzRatio[angleCount%len(glzRatio)]
@@ -334,6 +391,10 @@ def main(windowHeight, sillHeight, glzRatio, breakUpWindow, breakUpDist, splitGl
                             breakWind = breakUpWindow[angleCount%len(breakUpWindow)]
                         if len(splitGlzVertDist) == len(glzRatio):
                             splitVertDist = splitGlzVertDist[angleCount%len(splitGlzVertDist)]
+                        if len(EPConstructions) == len(glzRatio):
+                            EPConstruct = EPConstructions[angleCount%len(EPConstructions)]
+                        if len(RADMaterials) == len(glzRatio):
+                            RADMat = RADMaterials[angleCount%len(RADMaterials)]
                         break
                 
                 if targetPercentage!=0:
@@ -346,12 +407,24 @@ def main(windowHeight, sillHeight, glzRatio, breakUpWindow, breakUpDist, splitGl
                         if isinstance(lastSuccessfulGlzSrf, list):
                             for glzSrfCount, glzSrf in enumerate(lastSuccessfulGlzSrf):
                                 fenSrf = hb_EPFenSurface(glzSrf, surface.num, surface.name + '_glz_' + `glzSrfCount`, surface, 5, lastSuccessfulRestOfSrf)
+                                try:
+                                    fenSrf.setEPConstruction(EPConstruct)
+                                except: pass
+                                try:
+                                    addedToLib, fenSrf.RadMaterial = hb_RADMaterialAUX.analyseRadMaterials(RADMat, True)
+                                except: pass
                                 zonesWithOpeningsGeometry.append(glzSrf)
                                 surface.addChildSrf(fenSrf)
                             if lastSuccessfulRestOfSrf==[]:
                                 surface.calculatePunchedSurface()
                         else:
                             fenSrf = hb_EPFenSurface(lastSuccessfulGlzSrf, surface.num, surface.name + '_glz_0', surface, 5, lastSuccessfulRestOfSrf)
+                            try:
+                                fenSrf.setEPConstruction(EPConstruct)
+                            except: pass
+                            try:
+                                addedToLib, fenSrf.RadMaterial = hb_RADMaterialAUX.analyseRadMaterials(RADMat, True)
+                            except: pass
                             zonesWithOpeningsGeometry.append(lastSuccessfulGlzSrf)
                             surface.addChildSrf(fenSrf)
                             if lastSuccessfulRestOfSrf==[]: surface.calculatePunchedSurface()
@@ -359,9 +432,11 @@ def main(windowHeight, sillHeight, glzRatio, breakUpWindow, breakUpDist, splitGl
         #add zones to dictionary
         ModifiedHBZones  = hb_hive.addToHoneybeeHive(HBZoneObjects, ghenv.Component)
         
-    return zonesWithOpeningsGeometry, ModifiedHBZones
+        return zonesWithOpeningsGeometry, ModifiedHBZones
+    else:
+        return -1
 
 if _runIt and _HBObjects and _HBObjects[0]:
-    results = main(windowHeight_, sillHeight_, _glzRatio, breakUpWindow_, breakUpDist_, splitGlzVertDist_)
+    results = main(windowHeight_, sillHeight_, _glzRatio, breakUpWindow_, breakUpDist_, splitGlzVertDist_, EPConstructions_, RADMaterials_)
     if results!= -1:
         glazingSrf, HBObjWGLZ = results

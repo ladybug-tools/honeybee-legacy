@@ -37,6 +37,8 @@ Provided by Honeybee 0.0.60
         _skyLightRatio: If you have input a full zone or roof surface as your HBObjects, use this input to generate skylights on the roof surfaces. A single window for each surface is good for making energy simulations run fast while several distributed windows is often necessary to have accurate daylight simulations or high-resolution thermal maps. The default is set to "True" to generate multiple distributed windows.
         breakUpSkylight_: Set to "True" to generate a distributed set of multiple windows for skylights and set to "False" to generate just a single window per roof surface.
         skyLightBreakUpDist_: An optional number in Rhino model units that sets the distance between individual skylights when the breakUpSkylight_ input above is set to 'True'.  The default is set to 3 meters.
+        EPConstruction_: A optional text string of an EnergyPlus construction name that sets the material construction of the window. The default will assign a generic double pane window without low-e coatings.
+        RADMaterial_: A optional text string of an Radiance glass material name that sets the material of the window.
         _runIt: set runIt to True to generate the glazing
     Returns:
         readMe!: ...
@@ -68,6 +70,40 @@ from Grasshopper import DataTree
 from Grasshopper.Kernel.Data import GH_Path
 
 tol = sc.doc.ModelAbsoluteTolerance
+
+def checkEPConstr(EPConstruction, hb_EPObjectsAux):
+    # if it is just the name of the material make sure it is already defined
+    if len(EPConstruction.split("\n")) == 1:
+        # if the material is not in the library add it to the library
+        if not hb_EPObjectsAux.isEPConstruction(EPConstruction):
+            warningMsg = "Can't find " + EPConstruction + " in EP Construction Library.\n" + \
+                        "Add the construction to the library and try again."
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
+            return None
+    else:
+        # it is a full string.
+        if EPConstruction.startswith('WindowMaterial:'):
+            warningMsg = "Your window construction, " + EPConstruction.split('\n')[1].split(',')[0] + ", is a window material and not a full window construction.\n" + \
+                        "Pass this window material through a 'Honeybee_EnergyPlus Construction' component cand connect the construction to this one."
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
+            return None
+        added, EPConstruction = hb_EPObjectsAux.addEPObjectToLib(EPConstruction, overwrite = True)
+        
+        if not added:
+            msg = EPConstruction + " is not added to the project library!"
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+            print msg
+            return None
+    return EPConstruction
+
+def checkRADMat(RADMaterial, hb_RADMaterialAUX):
+    if len(RADMaterial.strip().split(" ")) == 1:
+        if not hb_RADMaterialAUX.isMatrialExistInLibrary(RADMaterial):
+            warningMsg = "Can't find " + RADMaterial + " in RAD Material Library.\n" + \
+                "Add the material to the library and try again."
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
+            return None
+    return RADMaterial
 
 def findGlzBasedOnRatio(baseSrf, glzRatio, breakUpWindow, breakUpDist, conversionFactor, hb_GlzGeoGeneration):
     lastSuccessfulRestOfSrf = []
@@ -143,7 +179,7 @@ def giveWarning(message):
     w = gh.GH_RuntimeMessageLevel.Warning
     ghenv.Component.AddRuntimeMessage(w, message)
 
-def main(skyLightRatio):
+def main(skyLightRatio, breakUpSkylight, skyLightBreakUpDist, EPConstruct, RADMat):
     # check if honeybee is flying
     # import the classes
     if sc.sticky.has_key('ladybug_release')and sc.sticky.has_key('honeybee_release'):
@@ -170,7 +206,8 @@ def main(skyLightRatio):
             ghenv.Component.AddRuntimeMessage(w, warning)
             return -1
         
-        # don't customize this part
+        hb_RADMaterialAUX = sc.sticky["honeybee_RADMaterialAUX"]
+        hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
         hb_EPZone = sc.sticky["honeybee_EPZone"]
         hb_EPSrf = sc.sticky["honeybee_EPSurface"]
         hb_EPFenSurface = sc.sticky["honeybee_EPFenSurface"]
@@ -185,6 +222,20 @@ def main(skyLightRatio):
     # call the objects from the lib
     hb_hive = sc.sticky["honeybee_Hive"]()
     HBZoneObjects = hb_hive.callFromHoneybeeHive(_HBObjects)
+    
+    #Check constructions and RADMAterials.
+    if EPConstruct != None:
+        constrCheck = checkEPConstr(EPConstruct, hb_EPObjectsAux)
+        if constrCheck != None:
+            EPConstruct = constrCheck
+        else:
+            return -1
+    if RADMat != None:
+        matCheck = checkRADMat(RADMat, hb_RADMaterialAUX)
+        if matCheck != None:
+            RADMat = matCheck
+        else:
+            return -1
     
     #Get the conversion factor (for the future when HB is availble in other model units).
     conversionFactor = lb_preparation.checkUnits()
@@ -217,18 +268,26 @@ def main(skyLightRatio):
                 face = surface.geometry # call surface geometry
                 
                 # This part of the code sends the parameters and surfaces to their respective methods of of galzing generation.  It is developed by Chris Mackey.
-                lastSuccessfulGlzSrf, lastSuccessfulRestOfSrf = findGlzBasedOnRatio(face, skyLightRatio, breakUpSkylight_, skyLightBreakUpDist_, conversionFactor, hb_GlzGeoGeneration)
+                lastSuccessfulGlzSrf, lastSuccessfulRestOfSrf = findGlzBasedOnRatio(face, skyLightRatio, breakUpSkylight, skyLightBreakUpDist, conversionFactor, hb_GlzGeoGeneration)
                 
                 if lastSuccessfulGlzSrf!= None:
                     if isinstance(lastSuccessfulGlzSrf, list):
                         for glzSrfCount, glzSrf in enumerate(lastSuccessfulGlzSrf):
                             fenSrf = hb_EPFenSurface(glzSrf, surface.num, surface.name + '_glz_' + `glzSrfCount`, surface, 5, lastSuccessfulRestOfSrf)
+                            if EPConstruct != None:
+                                fenSrf.setEPConstruction(EPConstruct)
+                            if RADMat != None:
+                                addedToLib, fenSrf.RadMaterial = hb_RADMaterialAUX.analyseRadMaterials(RADMat, True)
                             zonesWithOpeningsGeometry.append(glzSrf)
                             surface.addChildSrf(fenSrf)
                         if lastSuccessfulRestOfSrf==[]:
                             surface.calculatePunchedSurface()
                     else:
                         fenSrf = hb_EPFenSurface(lastSuccessfulGlzSrf, surface.num, surface.name + '_glz_0', surface, 5, lastSuccessfulRestOfSrf)
+                        if EPConstruct != None:
+                            fenSrf.setEPConstruction(EPConstruct)
+                        if RADMat != None:
+                            addedToLib, fenSrf.RadMaterial = hb_RADMaterialAUX.analyseRadMaterials(RADMat, True)
                         zonesWithOpeningsGeometry.append(lastSuccessfulGlzSrf)
                         surface.addChildSrf(fenSrf)
                         if lastSuccessfulRestOfSrf==[]: surface.calculatePunchedSurface()
@@ -239,6 +298,6 @@ def main(skyLightRatio):
     return zonesWithOpeningsGeometry, ModifiedHBZones
 
 if _runIt and _HBObjects and _HBObjects[0]:
-    results = main(_skyLightRatio)
+    results = main(_skyLightRatio, breakUpSkylight_, skyLightBreakUpDist_, EPConstruction_, RADMaterial_)
     if results!= -1:
         glazingSrf, HBObjWGLZ = results

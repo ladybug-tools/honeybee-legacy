@@ -6784,7 +6784,6 @@ class hb_EPFenSurface(hb_EPSurface):
         self.shadingControlName = []
         self.shadeMaterialName = []
         
-        
         if not self.isPlanar:
             try:
                 self.parent.parent.hasNonplanarSrf = True
