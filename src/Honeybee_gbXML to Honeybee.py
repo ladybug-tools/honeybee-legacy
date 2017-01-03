@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_gbXML to Honeybee"
 ghenv.Component.NickName = 'XMLTOHB'
-ghenv.Component.Message = 'VER 0.0.60\nDEC_29_2016'
+ghenv.Component.Message = 'VER 0.0.60\nJAN_03_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"
@@ -254,4 +254,8 @@ if openStudioIsReady and _import and _filepath:
     
     hb_hive = sc.sticky["honeybee_Hive"]()
     HBZones = hb_hive.addToHoneybeeHive(zones, ghenv.Component)
-    shadings = hb_hive.addToHoneybeeHive(shadings, ghenv.Component, False)
+    try:
+        shadings = hb_hive.addToHoneybeeHive(shadings, ghenv.Component, False)
+    except TypeError:
+        # old version of Honeybee
+        shadings = hb_hive.addToHoneybeeHive(shadings, ghenv.Component)
