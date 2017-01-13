@@ -59,21 +59,21 @@ Provided by Honeybee 0.0.60
     Returns:
         readMe!: Check here to see a report of the EnergyPlus run, including errors.
         osmFileAddress: The file path of the OSM file that has been generated on your machine.
-        idfFileAddress: The file path of the IDF file that has been generated on your machine. This only happens when you set "runSimulation_" to "True."
-        resultFileAddress: The file path of the CSV result file that has been generated on your machine.  This only happens when you set "runSimulation_" to "True."
+        idfFileAddress: The file path of the IDF file that has been generated on your machine. This file is only generated when you set "runSimulation_" to "True."
+        resultFileAddress: The file path of the CSV result file that has been generated on your machine.  This file is only generated when you set "runSimulation_" to "True."
+        eioFileAddress:  The file path of the EIO file that has been generated on your machine.  This file contains information about the sizes of all HVAC equipment from the simulation.  This file is only generated when you set "runSimulation_" to "True."
         rddFileAddress: The file path of the Result Data Dictionary (.rdd) file that is generated after running the file through EnergyPlus.  This file contains all possible outputs that can be requested from the EnergyPlus model.  Use the "Honeybee_Read Result Dictionary" to see what outputs can be requested.
-        sqlFileAddress: The file path of the SQL result file that has been generated on your machine. This only happens when you set "runSimulation_" to "True."
-        meterFileAddress: The file path of the building's meter result file that has been generated on your machine. This only happens when you set "runSimulation_" to "True."
         studyFolder: The directory in which the simulation has been run.  Connect this to the 'Honeybee_Lookup EnergyPlus' folder to bring many of the files in this directory into Grasshopper.
+        model: OpenStudio model. Use this output to generate gbXML file.
 """
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nDEC_05_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nJUL_24_2016
+#compatibleHBVersion = VER 0.0.56\nSEP_09_2016
 #compatibleLBVersion = VER 0.0.59\nJUL_24_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
@@ -140,6 +140,7 @@ class WriteOPS(object):
         self.materialList = {}
         self.scheduleList = {}
         self.shdCntrlList = {}
+        self.frameObjList = {}
         self.bldgTypes = {}
         self.levels = {}
         self.HVACSystemDict = {}
@@ -150,6 +151,7 @@ class WriteOPS(object):
         self.csvScheduleCount = 0
         self.shadeCntrlToReplace = []
         self.replaceShdCntrl = False
+        self.windowSpectralDatasets = {}
     
     def setSimulationControls(self, model):
         solarDist = self.simParameters[2]
@@ -182,10 +184,10 @@ class WriteOPS(object):
         headline = epwfile.readline()
         csheadline = headline.split(',')
         locName = csheadline[1]+'\t'+csheadline[3]
-        lat = float(csheadline[-4])
-        lngt = float(csheadline[-3])
-        timeZone = float(csheadline[-2])
-        elev = float(csheadline[-1][:-1])
+        lat = float(csheadline[6])
+        lngt = float(csheadline[7])
+        timeZone = float(csheadline[8])
+        elev = float(csheadline[9][:-1])
         epwfile.close()
         
         # Get the OpenStudio Model Site.
@@ -505,6 +507,15 @@ class WriteOPS(object):
     def getShdCntrlFromLib(self, shdCntrlName):
         return self.shdCntrlList[shdCntrlName]
     
+    def isFrameObjInLib(self, frameObjName):
+        return frameObjName in self.frameObjList.keys()
+    
+    def addFrameObjToLib(self, frameObjName, frameObj):
+        self.frameObjList[frameObjName] = frameObj
+        
+    def getFrameObjFromLib(self, frameObjName):
+        return self.frameObjList[frameObjName]
+    
     def createOSScheduleTypeLimitsFromValues(self, model, lowerLimit, upperLimit, numericType, unitType):
         typeLimit = ops.ScheduleTypeLimits(model)
         try: typeLimit.setLowerLimitValue(float(lowerLimit))
@@ -698,11 +709,28 @@ class WriteOPS(object):
         else:
             return self.getScheduleFromLib(schName)
     
+    def getOSFrameObj(self, frameObjName, model):
+        if not self.isFrameObjInLib(frameObjName):
+            values = sc.sticky["honeybee_WindowPropLib"][frameObjName]
+            
+            OSFrameObj = ops.WindowPropertyFrameAndDivider(model)
+            OSFrameObj.setFrameWidth(float(values[1][0]))
+            OSFrameObj.setFrameConductance(float(values[4][0]))
+            OSFrameObj.setRatioOfFrameEdgeGlassConductanceToCenterOfGlassConductance(float(values[5][0]))
+            OSFrameObj.setFrameSolarAbsorptance(float(values[6][0]))
+            OSFrameObj.setFrameVisibleAbsorptance(float(values[7][0]))
+            OSFrameObj.setFrameThermalHemisphericalEmissivity(float(values[8][0]))
+            
+            self.addFrameObjToLib(frameObjName, OSFrameObj)
+            return OSFrameObj
+        else:
+            return self.getFrameObjFromLib(frameObjName)
+    
     def getOSShdCntrl(self, shdCntrlName, model):
-        values = self.hb_EPObjectsAux.getEPObjectDataByName(shdCntrlName)
-        
         if not self.isShdCntrlInLib(shdCntrlName):
             # Make the shade control obect.
+            values = self.hb_EPObjectsAux.getEPObjectDataByName(shdCntrlName)
+            
             if values[2][0] != '':
                 # Iniitalize for construction (for switchable glazing).
                 constrName = values[2][0]
@@ -800,7 +828,10 @@ class WriteOPS(object):
                 fan.setPressureRise(500) #Pa
             else:
                 fan.setPressureRise(1125) #Pa
-        fan.autosizeMaximumFlowRate()
+        if airDetails != None and airDetails.airSysHardSize != 'Default':
+            fan.setMaximumFlowRate(float(airDetails.airSysHardSize))
+        else:
+            fan.autosizeMaximumFlowRate()
         if airDetails != None and airDetails.fanMotorEfficiency != 'Default':
             fan.setMotorEfficiency(airDetails.fanMotorEfficiency)
         else:
@@ -1042,18 +1073,33 @@ class WriteOPS(object):
         oaReq = space.designSpecificationOutdoorAir()
         airTerminal.setControlForOutdoorAir(oaReq)
     
-    def createDOASAirLoop(self, model, thermalZones, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotWaterPlant=None, chilledWaterPlant=None, terminalOption=None, heatRecovOverride = False):
+    def createPrimaryAirLoop(self, airType, model, thermalZones, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotWaterPlant=None, chilledWaterPlant=None, terminalOption=None, heatRecovOverride = False):
+        # Create the air loop.
         airloopPrimary = ops.AirLoopHVAC(model)
-        airloopPrimary.setName("DOAS Air Loop HVAC" + str(HVACCount))
+        if airType == 'DOAS':
+            airloopPrimary.setName("DOAS Air Loop HVAC" + str(HVACCount))
+        else:
+            airloopPrimary.setName("VAV Air Loop HVAC" + str(HVACCount))
+        
+        # Modify hard sizing
+        if airDetails != None and airDetails.airSysHardSize != 'Default':
+            airloopPrimary.setDesignSupplyAirFlowRate(float(airDetails.airSysHardSize))
+        
         # modify system sizing properties
         sizingSystem = airloopPrimary.sizingSystem()
         # set central heating and cooling temperatures for sizing
         sizingSystem.setCentralCoolingDesignSupplyAirTemperature(12.8)
         sizingSystem.setCentralHeatingDesignSupplyAirTemperature(40) #ML OS default is 16.7
+        
         # load specification
-        sizingSystem.setTypeofLoadtoSizeOn("VentilationRequirement") #DOAS
-        sizingSystem.setAllOutdoorAirinCooling(True) #DOAS
-        sizingSystem.setAllOutdoorAirinHeating(True) #DOAS
+        if airType == 'DOAS':
+            sizingSystem.setTypeofLoadtoSizeOn("VentilationRequirement") #DOAS
+            sizingSystem.setAllOutdoorAirinCooling(True) #DOAS
+            sizingSystem.setAllOutdoorAirinHeating(True) #DOAS
+        else:
+            sizingSystem.setTypeofLoadtoSizeOn("Sensible") #VAV
+            sizingSystem.setAllOutdoorAirinCooling(False) #VAV
+            sizingSystem.setAllOutdoorAirinHeating(False) #VAV
         
         airLoopComps = []
         # set availability schedule
@@ -1074,7 +1120,9 @@ class WriteOPS(object):
         
         # constant or variable speed fan
         sizingSystem.setMinimumSystemAirFlowRatio(1.0) #DCV
-        if airDetails != None and airDetails.fanControl == 'Variable Volume':
+        if airType == 'VAV':
+            fan = self.createDefaultAEDGFan('VV', model, airDetails)
+        elif airDetails != None and airDetails.fanControl == 'Variable Volume':
             fan = self.createDefaultAEDGFan('VV', model, airDetails)
         elif airDetails != None and airDetails.airsideEconomizer != 'Default' and airDetails.airsideEconomizer != 'NoEconomizer':
             fan = self.createDefaultAEDGFan('VV', model, airDetails)
@@ -1116,20 +1164,35 @@ class WriteOPS(object):
         controllerOA.autosizeMinimumOutdoorAirFlowRate()
         controllerOA.autosizeMaximumOutdoorAirFlowRate()
         controllerOA.setHeatRecoveryBypassControlType("BypassWhenOAFlowGreaterThanMinimum")
+        if airType == 'VAV':
+            controllerOA.setEconomizerControlType('DifferentialEnthalpy')
         # create outdoor air system
         systemOA = ops.AirLoopHVACOutdoorAirSystem(model, controllerOA)
         airLoopComps.append(systemOA)
         
         # create scheduled setpoint manager for airloop
         # DOAS or VAV for cooling and not ventilation
-        if airDetails!= None and airDetails.heatingSupplyAirTemp != 'Default':
-            suppTemp = airDetails.heatingSupplyAirTemp
-        elif airDetails!= None and airDetails.coolingSupplyAirTemp != 'Default':
-            suppTemp = airDetails.coolingSupplyAirTemp
+        if airType == 'VAV':
+            setpointManager = ops.SetpointManagerOutdoorAirReset(model)
+            setpointManager.setOutdoorLowTemperature(14.4)
+            setpointManager.setOutdoorHighTemperature(21.1)
+            if airDetails!= None and airDetails.heatingSupplyAirTemp != 'Default':
+                setpointManager.setSetpointatOutdoorLowTemperature(airDetails.heatingSupplyAirTemp)
+            else:
+                setpointManager.setSetpointatOutdoorLowTemperature(15.6)
+            if airDetails!= None and airDetails.coolingSupplyAirTemp != 'Default':
+                setpointManager.setSetpointatOutdoorHighTemperature(airDetails.coolingSupplyAirTemp)
+            else:
+                setpointManager.setSetpointatOutdoorHighTemperature(12.8)
         else:
-            suppTemp = 20
-        setpointSchedule = self.createConstantScheduleRuleset('DOAS_Temperature_Setpoint' + str(HVACCount), 'DOAS_Temperature_Setpoint_Default' + str(HVACCount), 'TEMPERATURE', suppTemp, model)
-        setpointManager = ops.SetpointManagerScheduled(model, setpointSchedule)
+            if airDetails!= None and airDetails.heatingSupplyAirTemp != 'Default':
+                suppTemp = airDetails.heatingSupplyAirTemp
+            elif airDetails!= None and airDetails.coolingSupplyAirTemp != 'Default':
+                suppTemp = airDetails.coolingSupplyAirTemp
+            else:
+                suppTemp = 20
+            setpointSchedule = self.createConstantScheduleRuleset('DOAS_Temperature_Setpoint' + str(HVACCount), 'DOAS_Temperature_Setpoint_Default' + str(HVACCount), 'TEMPERATURE', suppTemp, model)
+            setpointManager = ops.SetpointManagerScheduled(model, setpointSchedule)
         
         # connect components to airloop
         # find the supply inlet node of the airloop
@@ -1177,6 +1240,8 @@ class WriteOPS(object):
                 if ventSchedTrigger == True:
                     airTerminal = ops.AirTerminalSingleDuctVAVNoReheat(model, model.alwaysOnDiscreteSchedule())
                     self.setOutdoorAirReq(airTerminal, zone)
+                elif airType == 'VAV':
+                    airTerminal = ops.AirTerminalSingleDuctVAVNoReheat(model, model.alwaysOnDiscreteSchedule())
                 elif airDetails != None and airDetails.fanControl == 'Variable Volume':
                     airTerminal = ops.AirTerminalSingleDuctVAVNoReheat(model, model.alwaysOnDiscreteSchedule())
                 elif airDetails != None and airDetails.airsideEconomizer != 'Default' and airDetails.airsideEconomizer != 'NoEconomizer':
@@ -1254,7 +1319,7 @@ class WriteOPS(object):
             vrfAirConditioner.addTerminal(vrfTerminalUnit)
     
     
-    def createZoneEquip(self, model, thermalZones, hbZones, equipList, hotWaterPlant=None, chilledWaterPlant=None):
+    def createZoneEquip(self, model, thermalZones, hbZones, equipList, hotWaterPlant=None, chilledWaterPlant=None, heatOnly=False):
         radiantFloor = None
         if 'RadiantFloor' in equipList:
             # create radiant floor construction and substitute for existing floor (interior or exterior) constructions
@@ -1314,6 +1379,8 @@ class WriteOPS(object):
                 coolSetPtSch = self.getOSSchedule(hbZones[zoneCount].coolingSetPtSchedule, model)
                 coolingCoil.setCoolingControlTemperatureSchedule(coolSetPtSch)
                 chilledWaterPlant.addDemandBranchForComponent(coolingCoil)
+                if heatOnly == True:
+                    coolingCoil.setMaximumColdWaterFlow(0)
                 # create the hydronic system
                 lowTempRadiant = ops.ZoneHVACLowTempRadiantVarFlow(model, model.alwaysOnDiscreteSchedule(), heatingCoil, coolingCoil)
                 lowTempRadiant.setRadiantSurfaceType("Floors")
@@ -1330,13 +1397,15 @@ class WriteOPS(object):
     ### END OF FUNCTIONS FOR CREATING HVAC SYSTEMS FROM SCRATCH ###
     
     ### START OF FUNCTIONS FOR EDITING HVAC SYSTEMS ###
-    def updateFan(self,fan,totalEfficiency,motorEfficiency,pressureRise):
+    def updateFan(self,fan,totalEfficiency,motorEfficiency,pressureRise,airSysHardSize):
         if totalEfficiency != 'Default': 
             fan.setFanEfficiency(totalEfficiency)
         if motorEfficiency != 'Default':
             fan.setMotorEfficiency(motorEfficiency)
         if pressureRise != 'Default': 
             fan.setPressureRise(pressureRise)
+        if airSysHardSize != 'Default':
+            fan.setMaximumFlowRate(float(airSysHardSize))
     
     def updatePump(self, pump, pumpMotorEfficiency):
         if pumpMotorEfficiency != 'Default':
@@ -1538,10 +1607,12 @@ class WriteOPS(object):
         if airDetails.HVACAvailabiltySched != 'ALWAYS ON':
             hvacAvailSch = self.getOSSchedule(airDetails.HVACAvailabiltySched, model)
             airloop.setAvailabilitySchedule(hvacAvailSch)
-        if airDetails.fanTotalEfficiency != "Default" or airDetails.fanMotorEfficiency != "Default" or airDetails.fanPressureRise != "Default":
+        if airDetails.fanTotalEfficiency != "Default" or airDetails.fanMotorEfficiency != "Default" or airDetails.fanPressureRise != "Default" or airDetails.airSysHardSize != "Default":
             x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:ConstantVolume"))
             cvfan = model.getFanConstantVolume(x[0].handle()).get()
-            self.updateFan(cvfan,airDetails.fanTotalEfficiency,airDetails.fanMotorEfficiency,airDetails.fanPressureRise)
+            self.updateFan(cvfan,airDetails.fanTotalEfficiency,airDetails.fanMotorEfficiency,airDetails.fanPressureRise,airDetails.airSysHardSize)
+        if airDetails.airSysHardSize != "Default":
+            airloop.setDesignSupplyAirFlowRate(float(airDetails.airSysHardSize))
         if airDetails.fanPlacement != 'Default':
             if airDetails.fanPlacement == 'Blow Through':
                 x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:ConstantVolume"))
@@ -1564,10 +1635,12 @@ class WriteOPS(object):
         if airDetails.HVACAvailabiltySched != 'ALWAYS ON':
             hvacAvailSch = self.getOSSchedule(airDetails.HVACAvailabiltySched, model)
             airloop.setAvailabilitySchedule(hvacAvailSch)
-        if airDetails.fanTotalEfficiency != "Default" or airDetails.fanMotorEfficiency != "Default" or airDetails.fanPressureRise != "Default":
+        if airDetails.fanTotalEfficiency != "Default" or airDetails.fanMotorEfficiency != "Default" or airDetails.fanPressureRise != "Default" or airDetails.airSysHardSize != "Default":
             x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:VariableVolume"))
             vvfan = model.getFanVariableVolume(x[0].handle()).get()
-            self.updateFan(vvfan,airDetails.fanTotalEfficiency,airDetails.fanMotorEfficiency,airDetails.fanPressureRise)
+            self.updateFan(vvfan,airDetails.fanTotalEfficiency,airDetails.fanMotorEfficiency,airDetails.fanPressureRise,airDetails.airSysHardSize)
+        if airDetails.airSysHardSize != "Default":
+            airloop.setDesignSupplyAirFlowRate(float(airDetails.airSysHardSize))
         if airDetails.airsideEconomizer != 'Default':
             self.adjustAirSideEcon(airloop, airDetails)
             if airDetails.airsideEconomizer == 'NoEconomizer':
@@ -1765,10 +1838,10 @@ class WriteOPS(object):
                                 ptac.setAvailabilitySchedule(hvacAvailSch)
                             if airDetails.fanPlacement != 'Default':
                                 ptac.setFanPlacement(airDetails.fanPlacement)
-                            if airDetails.fanTotalEfficiency != "Default" or airDetails.fanMotorEfficiency != "Default" or airDetails.fanPressureRise != "Default":
+                            if airDetails.fanTotalEfficiency != "Default" or airDetails.fanMotorEfficiency != "Default" or airDetails.fanPressureRise != "Default" or airDetails.airSysHardSize != "Default":
                                 sfname = ptac.supplyAirFan().name()
                                 cvfan = model.getFanConstantVolumeByName(str(sfname)).get()
-                                self.updateFan(cvfan,airDetails.fanTotalEfficiency,airDetails.fanMotorEfficiency,airDetails.fanPressureRise)
+                                self.updateFan(cvfan,airDetails.fanTotalEfficiency,airDetails.fanMotorEfficiency,airDetails.fanPressureRise,airDetails.airSysHardSize)
                         
                         #Set the heatingDetails.
                         if heatingDetails != None:
@@ -1829,10 +1902,10 @@ class WriteOPS(object):
                                 pthp.setAvailabilitySchedule(hvacAvailSch)
                             if airDetails.fanPlacement != 'Default':
                                 pthp.setFanPlacement(airDetails.fanPlacement)
-                            if airDetails.fanTotalEfficiency != "Default" or airDetails.fanMotorEfficiency != "Default" or airDetails.fanPressureRise != "Default":
+                            if airDetails.fanTotalEfficiency != "Default" or airDetails.fanMotorEfficiency != "Default" or airDetails.fanPressureRise != "Default" or airDetails.airSysHardSize != "Default":
                                 sfname = pthp.supplyAirFan().name()
                                 cvfan = model.getFanConstantVolumeByName(str(sfname)).get()
-                                self.updateFan(cvfan,airDetails.fanTotalEfficiency,airDetails.fanMotorEfficiency,airDetails.fanPressureRise)
+                                self.updateFan(cvfan,airDetails.fanTotalEfficiency,airDetails.fanMotorEfficiency,airDetails.fanPressureRise,airDetails.airSysHardSize)
                         
                         #Set the heatingDetails.
                         if heatingDetails != None:
@@ -2209,7 +2282,7 @@ class WriteOPS(object):
                         hc = model.getCoilHeatingElectric(hcs[0].handle()).get()
                         self.updateElectricHeatingCoil(model, hc, heatingDetails.heatingAvailSched, heatingDetails.heatingEffOrCOP)
             
-            elif systemIndex == 11 or systemIndex == 12 or systemIndex == 13:
+            elif systemIndex == 11 or systemIndex == 12 or systemIndex == 13 or systemIndex == 15:
                 # Check to see if there is humidity control on any of the zones.
                 for zone in hbZones:
                     if zone.humidityMax != '':
@@ -2221,7 +2294,7 @@ class WriteOPS(object):
                 if heatingDetails != None and heatingDetails.supplyTemperature != 'Default':
                     suppTemp = heatingDetails.supplyTemperature
                 else:
-                    if systemIndex == 13:
+                    if systemIndex == 13 or systemIndex == 15:
                         suppTemp = 45
                     else:
                         suppTemp = 67
@@ -2255,18 +2328,21 @@ class WriteOPS(object):
                 
                 # Create air loop.
                 if systemIndex == 11:
-                    airLoop = self.createDOASAirLoop(model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hwl, cwl)
+                    airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hwl, cwl)
                 elif systemIndex == 12:
-                    airLoop = self.createDOASAirLoop(model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hwl, cwl, "ChilledBeam")
-                elif systemIndex == 13:
+                    airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hwl, cwl, "ChilledBeam")
+                elif systemIndex == 13 or systemIndex == 15:
                     hotterLoopTemp = self.createConstantScheduleRuleset('Hot_Water_Temperature' + str(HVACCount), 'Hot_Water_Temperature_Default' + str(HVACCount), 'TEMPERATURE', 67, model)
                     hotwl = self.createHotWaterPlant(model, hotterLoopTemp, heatingDetails, HVACCount)
-                    if dehumidTrigger == True:
-                        coolerLoopTemp = self.createConstantScheduleRuleset('Chilled_Water_Temperature' + str(HVACCount), 'Chilled_Water_Temperature_Default' + str(HVACCount), 'TEMPERATURE', 6.7, model)
-                        coolwl = self.createChilledWaterPlant(model, coolerLoopTemp, coolingDetails, HVACCount, chillType)
-                        airLoop = self.createDOASAirLoop(model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotwl, coolwl)
+                    if systemIndex == 13:
+                        if dehumidTrigger == True:
+                            coolerLoopTemp = self.createConstantScheduleRuleset('Chilled_Water_Temperature' + str(HVACCount), 'Chilled_Water_Temperature_Default' + str(HVACCount), 'TEMPERATURE', 6.7, model)
+                            coolwl = self.createChilledWaterPlant(model, coolerLoopTemp, coolingDetails, HVACCount, chillType)
+                            airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotwl, coolwl)
+                        else:
+                            airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotwl, None)
                     else:
-                        airLoop = self.createDOASAirLoop(model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotwl, None)
+                        airLoop = self.createPrimaryAirLoop('VAV', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotwl, cwl)
                 
                 # If there is a maximum humidity assigned to the zone, set the cooling coil to dehumidify the air.
                 if dehumidTrigger == True:
@@ -2283,10 +2359,13 @@ class WriteOPS(object):
                     #Add the baseboard heating.
                     equipList = ['Baseboard']
                     self.createZoneEquip(model, thermalZoneVector, hbZones, equipList, hwl, cwl)
-                elif systemIndex == 13:
+                elif systemIndex == 13 or systemIndex == 15:
                     #Add the radiant floors.
                     equipList = ['RadiantFloor']
-                    self.createZoneEquip(model, thermalZoneVector, hbZones, equipList, hwl, cwl)
+                    if systemIndex == 13:
+                        self.createZoneEquip(model, thermalZoneVector, hbZones, equipList, hwl, cwl)
+                    elif systemIndex == 15:
+                        self.createZoneEquip(model, thermalZoneVector, hbZones, equipList, hwl, cwl, True)
             
             elif systemIndex == 14:
                 # Check to see if there is humidity control on any of the zones.
@@ -2312,7 +2391,7 @@ class WriteOPS(object):
                         cndwl = self.createCondenser(model, cwl, HVACCount)
                 
                 #Make a DOAS air loop.
-                airLoop = self.createDOASAirLoop(model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hwl, cwl, None, True)
+                airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hwl, cwl, None, True)
                 
                 # If there is a maximum humidity assigned to the zone, set the cooling coil to dehumidify the air.
                 if dehumidTrigger == True:
@@ -2337,7 +2416,7 @@ class WriteOPS(object):
         time24hrs = ops.Time(0,24,0,0)
         
         # assign schedules
-        thermostat.setName("dualSetPtThermostat" + str(space.name()))
+        thermostat.setName("dualSetPtThermostat" + str(OSThermalZone.name()))
         
         heatingSetPtSchedule = self.getOSSchedule(HBZone.heatingSetPtSchedule, model)
         coolingSetPtSchedule = self.getOSSchedule(HBZone.coolingSetPtSchedule, model)
@@ -2377,7 +2456,6 @@ class WriteOPS(object):
         except:
             humidTypeLimits = self.humidTypeLimits = self.createOSScheduleTypeLimitsFromValues(model, 0, 100, 'CONTINUOUS', 'Percent')
         
-        
         if HBZone.humidityMax != "":
             values = ["schedule:constant", humidTypeLimits, float(HBZone.humidityMax)]
             maxHumidSched = self.createConstantOSSchedule("maxHumidity" + str(space.name()), values, model)
@@ -2398,8 +2476,22 @@ class WriteOPS(object):
         
         OSThermalZone.setZoneControlHumidistat(humidistat)
     
+    def addDaylightCntrl(self, HBZone, OSThermalZone, space, model):
+        zoneDayLCntrl = ops.DaylightingControl(model)
+        zoneDayLCntrl.setSpace(space)
+        zoneDayLCntrl.setIlluminanceSetpoint(HBZone.illumSetPt)
+        zoneDayLCntrl.setMaximumAllowableDiscomfortGlareIndex(HBZone.GlareDiscomIndex)
+        zoneDayLCntrl.setThetaRotationAroundYAxis(-math.radians(HBZone.glareView))
+        if HBZone.illumCntrlSensorPt == None:
+            HBZone.atuoPositionDaylightSensor()
+        zoneDayLCntrl.setPositionXCoordinate(HBZone.illumCntrlSensorPt.X)
+        zoneDayLCntrl.setPositionYCoordinate(HBZone.illumCntrlSensorPt.Y)
+        zoneDayLCntrl.setPositionZCoordinate(HBZone.illumCntrlSensorPt.Z)
+        OSThermalZone.setPrimaryDaylightingControl(zoneDayLCntrl)
+        OSThermalZone.setFractionofZoneControlledbyPrimaryDaylightingControl(HBZone.daylightCntrlFract)
+    
     def setupNameAndType(self, zone, space, model):
-        space.setName(zone.name)
+        space.setName('{}_space'.format(zone.name))
         
         # assign space type
         spaceTypeName = ":".join([zone.bldgProgram, zone.zoneProgram])
@@ -2414,7 +2506,7 @@ class WriteOPS(object):
         space.setSpaceType(spaceType)
         
         return space
-
+    
     def setInfiltration(self, zone, space, model):
         # infiltration
         infiltration = ops.SpaceInfiltrationDesignFlowRate(model)
@@ -2425,8 +2517,8 @@ class WriteOPS(object):
     def setAirMixing(self, zone, model):
         # air mixing from air walls
         targetZone = self.thermalZonesDict[zone.name]
-        zoneMixing = ops.ZoneMixing(targetZone)
         for mixZoneCount, zoneMixName in enumerate(zone.mixAirZoneList):
+            zoneMixing = ops.ZoneMixing(targetZone)
             sourceZone = self.thermalZonesDict[zoneMixName]
             zoneMixing.setSourceZone(sourceZone)
             zoneMixing.setDesignFlowRate(zone.mixAirFlowList[mixZoneCount])
@@ -2436,61 +2528,63 @@ class WriteOPS(object):
         # I'm not sure how default schedule will be useful
         # if I have to create separate definitions for people, light, equipments and infiltration!
         defSchedule = ops.DefaultScheduleSet(model)
-        
         defSchedule.setName(zone.name + "_DefaultScheduleSet")
-        defSchedule.setElectricEquipmentSchedule(self.getOSSchedule(zone.equipmentSchedule, model))
-        defSchedule.setHoursofOperationSchedule(self.getOSSchedule(zone.occupancySchedule, model))
         defSchedule.setInfiltrationSchedule(self.getOSSchedule(zone.infiltrationSchedule, model))
         defSchedule.setLightingSchedule(self.getOSSchedule(zone.lightingSchedule, model))
-        defSchedule.setPeopleActivityLevelSchedule(self.getOSSchedule(zone.occupancyActivitySch, model))
+        # Not all default zone types have people, or equipment.
+        try:
+            defSchedule.setElectricEquipmentSchedule(self.getOSSchedule(zone.equipmentSchedule, model))
+        except:
+            pass
+        try:
+            defSchedule.setHoursofOperationSchedule(self.getOSSchedule(zone.occupancySchedule, model))
+        except:
+            pass
+        try:
+            defSchedule.setPeopleActivityLevelSchedule(self.getOSSchedule(zone.occupancyActivitySch, model))
+        except:
+            pass
         space.setDefaultScheduleSet(defSchedule)
         return space
         
     def setPeopleDefinition(self, zone, space, model):
-        peopleDefinition = ops.PeopleDefinition(model)
-        peopleDefinition.setName(zone.name + "_PeopleDefinition")
-        flrArea = zone.getFloorArea()
-        if flrArea != 0:
-            peopleDefinition.setNumberofPeople(zone.numOfPeoplePerArea * flrArea)
-            peopleDefinition.setNumberOfPeopleCalculationMethod("People/Area", flrArea)
-            peopleDefinition.setPeopleperSpaceFloorArea(zone.numOfPeoplePerArea) #space.peoplePerFloorArea())
-        #peopleDefinition.setFractionRadiant
-        #peopleDefinition.setSensibleHeatFraction
-        
-        # This was so confusing to find people and people definition as two different objects
-        people = ops.People(peopleDefinition)
-        people.setName(zone.name + "_PeopleObject")
-        people.setActivityLevelSchedule(self.getOSSchedule(zone.occupancyActivitySch, model))
-        people.setNumberofPeopleSchedule(self.getOSSchedule(zone.occupancySchedule, model))
-        #people.setPeopleDefinition(peopleDefinition)
-        people.setSpace(space)
-        
-        
-    def setInternalMassDefinition(self, zone, space, model):
-        
-        for srfNum,srfArea in enumerate(zone.internalMassSrfAreas):
+        if zone.numOfPeoplePerArea != 0:
+            peopleDefinition = ops.PeopleDefinition(model)
+            peopleDefinition.setName(zone.name + "_PeopleDefinition")
+            flrArea = zone.getFloorArea()
+            if flrArea != 0:
+                peopleDefinition.setNumberofPeople(zone.numOfPeoplePerArea * flrArea)
+                peopleDefinition.setNumberOfPeopleCalculationMethod("People/Area", flrArea)
+                peopleDefinition.setPeopleperSpaceFloorArea(zone.numOfPeoplePerArea) #space.peoplePerFloorArea())
+            #peopleDefinition.setFractionRadiant
+            #peopleDefinition.setSensibleHeatFraction
             
+            # This was so confusing to find people and people definition as two different objects
+            people = ops.People(peopleDefinition)
+            people.setName(zone.name + "_PeopleObject")
+            people.setActivityLevelSchedule(self.getOSSchedule(zone.occupancyActivitySch, model))
+            people.setNumberofPeopleSchedule(self.getOSSchedule(zone.occupancySchedule, model))
+            #people.setPeopleDefinition(peopleDefinition)
+            people.setSpace(space)
+     
+    def setInternalMassDefinition(self, zone, space, model):
+        for srfNum,srfArea in enumerate(zone.internalMassSrfAreas):
             # Create internal mass definition
             internalMassDefinition = ops.InternalMassDefinition(model)
-            
             internalMassDefinition.setName(zone.internalMassNames[srfNum]+"_Definition")
-            
             if self.isConstructionInLib(zone.internalMassConstructions[srfNum]):
                 construction = self.getConstructionFromLib(zone.internalMassConstructions[srfNum])
             else:
                 construction = self.getOSConstruction(zone.internalMassConstructions[srfNum],model)
                 self.addConstructionToLib(zone.internalMassConstructions[srfNum], construction)
             internalMassDefinition.setConstruction(construction)
-            
             internalMassDefinition.setSurfaceArea(float(srfArea))
             
             # Create actual internal mass by using the definition above
-            
             internalMass = ops.InternalMass(internalMassDefinition)
-            
             internalMass.setName(zone.internalMassNames[srfNum])
             internalMass.setSpace(space)
-            
+    
     def setLightingDefinition(self, zone, space, model):
         
         lightsDefinition = ops.LightsDefinition(model)
@@ -2506,29 +2600,31 @@ class WriteOPS(object):
         lights.setSpace(space)
         
     def setEquipmentDefinition(self, zone, space, model):
-        electricDefinition = ops.ElectricEquipmentDefinition(model)
-        electricDefinition.setName(zone.name + "_ElectricEquipmentDefinition")
-        flrArea = zone.getFloorArea()
-        if flrArea != 0:
-            electricDefinition.setDesignLevelCalculationMethod("Watts/Area", flrArea, space.numberOfPeople())
-        electricDefinition.setWattsperSpaceFloorArea(zone.equipmentLoadPerArea)
-        
-        electricEqipment = ops.ElectricEquipment(electricDefinition)
-        electricEqipment.setName(zone.name + "_ElectricEquipmentObject")
-        electricEqipment.setSchedule(self.getOSSchedule(zone.equipmentSchedule, model))
-        electricEqipment.setEndUseSubcategory('ElectricEquipment')
-        electricEqipment.setSpace(space)
+        if zone.equipmentLoadPerArea != 0:
+            electricDefinition = ops.ElectricEquipmentDefinition(model)
+            electricDefinition.setName(zone.name + "_ElectricEquipmentDefinition")
+            flrArea = zone.getFloorArea()
+            if flrArea != 0:
+                electricDefinition.setDesignLevelCalculationMethod("Watts/Area", flrArea, space.numberOfPeople())
+            electricDefinition.setWattsperSpaceFloorArea(zone.equipmentLoadPerArea)
+            
+            electricEqipment = ops.ElectricEquipment(electricDefinition)
+            electricEqipment.setName(zone.name + "_ElectricEquipmentObject")
+            electricEqipment.setSchedule(self.getOSSchedule(zone.equipmentSchedule, model))
+            electricEqipment.setEndUseSubcategory('ElectricEquipment')
+            electricEqipment.setSpace(space)
         
     def setDesignSpecificationOutdoorAir(self, zone, space, model):
-        ventilation = ops.DesignSpecificationOutdoorAir(model)
-        ventilation.setName(zone.name + "_DSOA")
-        ventilation.setOutdoorAirMethod(zone.outdoorAirReq)
-        ventilation.setOutdoorAirFlowperPerson(zone.ventilationPerPerson)
-        ventilation.setOutdoorAirFlowperFloorArea(zone.ventilationPerArea)
-        if zone.ventilationSched != '':
-            ventSch = self.getOSSchedule(zone.ventilationSched,model)
-            ventilation.setOutdoorAirFlowRateFractionSchedule(ventSch)
-        space.setDesignSpecificationOutdoorAir(ventilation)
+        if zone.outdoorAirReq != 'None':
+            ventilation = ops.DesignSpecificationOutdoorAir(model)
+            ventilation.setName(zone.name + "_DSOA")
+            ventilation.setOutdoorAirMethod(zone.outdoorAirReq)
+            ventilation.setOutdoorAirFlowperPerson(zone.ventilationPerPerson)
+            ventilation.setOutdoorAirFlowperFloorArea(zone.ventilationPerArea)
+            if zone.ventilationSched != '':
+                ventSch = self.getOSSchedule(zone.ventilationSched,model)
+                ventilation.setOutdoorAirFlowRateFractionSchedule(ventSch)
+            space.setDesignSpecificationOutdoorAir(ventilation)
         return space
     
     def createOSStanadardOpaqueMaterial(self, HBMaterialName, values, model):
@@ -2585,20 +2681,29 @@ class WriteOPS(object):
         standardGlazing = ops.StandardGlazing(model)
         standardGlazing.setName(HBMaterialName)
         standardGlazing.setOpticalDataType(values[0])
-        standardGlazing.setWindowGlassSpectralDataSetName(values[1])
         standardGlazing.setThickness(float(values[2]))
-        standardGlazing.setSolarTransmittanceatNormalIncidence(float(values[3]))
-        standardGlazing.setFrontSideSolarReflectanceatNormalIncidence(float(values[4]))
-        standardGlazing.setBackSideSolarReflectanceatNormalIncidence(float(values[5]))
-        standardGlazing.setVisibleTransmittanceatNormalIncidence(float(values[6]))
-        standardGlazing.setFrontSideVisibleReflectanceatNormalIncidence(float(values[7]))
-        standardGlazing.setBackSideVisibleReflectanceatNormalIncidence(float(values[8]))
+        try:
+            # Glass material is defined by average values of transmittance and reflectance.
+            standardGlazing.setSolarTransmittanceatNormalIncidence(float(values[3]))
+            standardGlazing.setFrontSideSolarReflectanceatNormalIncidence(float(values[4]))
+            standardGlazing.setBackSideSolarReflectanceatNormalIncidence(float(values[5]))
+            standardGlazing.setVisibleTransmittanceatNormalIncidence(float(values[6]))
+            standardGlazing.setFrontSideVisibleReflectanceatNormalIncidence(float(values[7]))
+            standardGlazing.setBackSideVisibleReflectanceatNormalIncidence(float(values[8]))
+        except:
+            # Glass material is defined by detailed spectral data.
+            self.windowSpectralDatasets[HBMaterialName] = values[1]
+            # Ah, OpenStudio. You put this in your SDK but don't wirte it into the IDF.
+            # I'll leave it here until you support it.
+            standardGlazing.setWindowGlassSpectralDataSetName(values[1])
+        
         standardGlazing.setInfraredTransmittanceatNormalIncidence(float(values[9]))
         standardGlazing.setFrontSideInfraredHemisphericalEmissivity(float(values[10]))
         standardGlazing.setBackSideInfraredHemisphericalEmissivity(float(values[11]))
         standardGlazing.setConductivity(float(values[12]))
         try: standardGlazing.setDirtCorrectionFactorforSolarandVisibleTransmittance(float(values[13]))
         except: pass
+        
         """
         try:
             if values[14].lower() == "no":
@@ -2608,6 +2713,7 @@ class WriteOPS(object):
         except Exception, e:
             pass
         """
+        
         return standardGlazing
     
     def createOSNoMassMaterial(self, HBMaterialName, values, model):
@@ -2639,7 +2745,30 @@ class WriteOPS(object):
         windowGasMaterial.setThickness(float(values[1]))
         
         return windowGasMaterial
+    
+    def createOSWindowGasMixtureMaterial(self, HBMaterialName, values, model):
+        """
+        WindowMaterial:Gas
+        ['Thickness {m}', 'Number of Gases', 'Gas 1 Type', 'Gas 1 Fraction', 'Gas 2 Type', 'Gas 2 Fraction']
+        """
+        windowGasMixMaterial = ops.GasMixture(model)
+        windowGasMixMaterial.setName(HBMaterialName)
+        windowGasMixMaterial.setThickness(float(values[0]))
+        numOfGas = int(values[1])
+        windowGasMixMaterial.setNumberofGasesinMixture(numOfGas)
+        windowGasMixMaterial.setGas1Type(values[2])
+        windowGasMixMaterial.setGas1Fraction(float(values[3]))
+        windowGasMixMaterial.setGas2Type(values[4])
+        windowGasMixMaterial.setGas2Fraction(float(values[5]))
+        if numOfGas > 2:
+            windowGasMixMaterial.setGas3Type(values[6])
+            windowGasMixMaterial.setGas3Fraction(float(values[7]))
+        if numOfGas > 3:
+            windowGasMixMaterial.setGas4Type(values[8])
+            windowGasMixMaterial.setGas4Fraction(float(values[9]))
         
+        return windowGasMixMaterial
+    
     def createOSAirGap(self, HBMaterialName, values, model):
         """
         Material:AirGap
@@ -2736,7 +2865,10 @@ class WriteOPS(object):
         
         elif values[0].lower() == "windowmaterial:gas":
             return self.createOSWindowGasMaterial(HBMaterialName, values[1:], model)
-            
+        
+        elif values[0].lower() == "windowmaterial:gasmixture":
+            return self.createOSWindowGasMixtureMaterial(HBMaterialName, values[1:], model)
+        
         elif values[0].lower() == "material:nomass":
             return self.createOSNoMassMaterial(HBMaterialName, values[1:], model)
         
@@ -2750,10 +2882,9 @@ class WriteOPS(object):
             return self.createOSShade(HBMaterialName, values[1:], model)
         
         else:
-            print "This type of material hasn't been implemented yet!"
-            print values[0]
-            print values
-            print comments
+            warning =  "The material type " + values[0] + " hasn't been implemented yet!"
+            print warning
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
         
     def getOSConstruction(self, HBConstructionlName, model):
         
@@ -2835,11 +2966,13 @@ class WriteOPS(object):
             
             # create construction
             
-            if self.isConstructionInLib(surface.EPConstruction):
+            if self.isConstructionInLib(surface.EPConstruction) and surface.EPConstruction != None:
                 construction = self.getConstructionFromLib(surface.EPConstruction)
+            elif self.isConstructionInLib(surface.construction) and surface.EPConstruction == None:
+                construction = self.getConstructionFromLib(surface.construction)
             elif surface.EPConstruction == None:
                 construction = self.getOSConstruction(surface.construction, model)
-                self.addConstructionToLib(surface.EPConstruction, construction)
+                self.addConstructionToLib(surface.construction, construction)
             else:
                 construction = self.getOSConstruction(surface.EPConstruction, model)
                 self.addConstructionToLib(surface.EPConstruction, construction)
@@ -2887,6 +3020,14 @@ class WriteOPS(object):
             glazing.setSurface(openStudioParentSrf)
             glazing.setSubSurfaceType(childSrf.srfType[childSrf.type])
             glazing.setConstruction(construction)
+            
+            # Check if there are any frame objects associated with the window.
+            try:
+                frameProps = sc.sticky["honeybee_WindowPropLib"][childSrf.EPConstruction]
+                opsFrameObj = self.getOSFrameObj(childSrf.EPConstruction, model)
+                glazing.setWindowPropertyFrameAndDivider(opsFrameObj)
+            except:
+                pass
             
             # Set any shading control objects.
             try:
@@ -2992,7 +3133,7 @@ class WriteOPS(object):
                     pass
     
     def getObjToReplace(self):
-        return self.csvSchedules, self.csvScheduleCount, self.shadeCntrlToReplace, self.replaceShdCntrl
+        return self.csvSchedules, self.csvScheduleCount, self.shadeCntrlToReplace, self.replaceShdCntrl, self.windowSpectralDatasets
 
 class HoneybeeHVAC(object):
     def __init__(self, ID, systemIndex, thermalZones, hbZones, airDetails, heatingDetails, coolingDetails, count):
@@ -3162,7 +3303,7 @@ class EPFeaturesNotInOS(object):
 
 class RunOPS(object):
     def __init__(self, model, weatherFilePath, HBZones, simParameters, openStudioLibFolder, csvSchedules, \
-            csvScheduleCount, additionalcsvSchedules, shadeCntrlToReplace, replaceShdCntrl):
+            csvScheduleCount, additionalcsvSchedules, shadeCntrlToReplace, replaceShdCntrl, windowSpectralData):
         self.weatherFile = weatherFilePath # just for batch file as an alternate solution
         self.openStudioDir = "/".join(openStudioLibFolder.split("/")[:3]) + "/share/openstudio"
         self.EPFolder = self.getEPFolder()
@@ -3177,6 +3318,7 @@ class RunOPS(object):
         self.additionalcsvSchedules = additionalcsvSchedules
         self.shadeCntrlToReplace = shadeCntrlToReplace
         self.replaceShdCntrl = replaceShdCntrl
+        self.windowSpectralData = windowSpectralData
         self.hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
         self.lb_preparation = sc.sticky["ladybug_Preparation"]()
     
@@ -3225,7 +3367,7 @@ class RunOPS(object):
     
     
     def writeNonOSFeatures(self, idfFilePath, HBZones, simParameters, workingDir):
-        #Go through the lines of the exiting IDF and find and references to CSV schedules.
+        # Go through the lines of the exiting IDF and find and references to CSV schedules.
         wrongLineTrigger = True
         fi = open(str(idfFilePath),'r')
         fi.seek(0)
@@ -3307,6 +3449,7 @@ class RunOPS(object):
                 lines.append(shdCntrlStr)
         
         # Write in any requested natural ventilation objects.
+        # Find any natural ventilation objects on the Zones.
         natVentStrings = []
         for zone in HBZones:
             if zone.natVent == True:
@@ -3315,10 +3458,28 @@ class RunOPS(object):
                         natVentStrings.append(otherFeatureClass.EPNatVentSimple(zone, natVentCount))
                     elif natVentObj == 3:
                         natVentStrings.append(otherFeatureClass.EPNatVentFan(zone, natVentCount))
-        
+        # Write the natural ventilation objects into the IDF.
         if len(natVentStrings) > 0:
             for line in natVentStrings:
                 lines.append(line)
+        
+        # Write in any window spectral data.
+        if self.windowSpectralData != {}:
+            # First, I have to write in the name of the spectral data on the glass materials.
+            glazTrigger = False
+            matName = None
+            for lcount, line in enumerate(lines):
+                if 'WindowMaterial:Glazing' in line:
+                    glazTrigger = True
+                elif line == '\n':
+                    glazTrigger = False
+                elif glazTrigger == True and '!- Name' in line:
+                    matName = line.split(',')[0].strip()
+                elif glazTrigger == True and '!- Window Glass Spectral Data Set Name' in line:
+                    lines[lcount] = '  ' + self.windowSpectralData[matName] + ',     !- Window Glass Spectral Data Set Name\n'
+            for matName in self.windowSpectralData.keys():
+                spectDatStr = self.hb_EPObjectsAux.getEPObjectsStr(self.windowSpectralData[matName])
+                lines.append(spectDatStr)
         
         # Write in a request for the surface names in the .eio file.
         lines.append('\nOutput:Surfaces:List,\n')
@@ -3442,7 +3603,7 @@ class RunOPS(object):
         else:
             os.system(batchFileAddress)
         
-        return fullPath + "Zsz.csv",fullPath+".sql",fullPath+".csv", fullPath+".rdd"
+        return fullPath + "Zsz.csv",fullPath+".sql",fullPath+".csv", fullPath+".rdd", fullPath+".eio"
     
     def runCmd(self, batchFileAddress, shellKey = True):
         batchFileAddress.replace("\\", "/")
@@ -3640,6 +3801,10 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
             # add humidistat if specified
             if zone.humidityMax != "" or zone.humidityMin != "":
                 hb_writeOPS.addHumidistat(zone, thermalZone, space, model)
+            
+            # add daylighting controls
+            if zone.daylightCntrlFract != 0:
+                hb_writeOPS.addDaylightCntrl(zone, thermalZone, space, model)
         
         # write the surfaces
         for HBSrf in zone.surfaces:
@@ -3662,7 +3827,6 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     
     # this should be done once for the whole model
     hb_writeOPS.setAdjacentSurfaces()
-    
     
     # add systems
     hb_writeOPS.addSystemsToZones(model)
@@ -3701,8 +3865,8 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         shdingSurfcaes = hb_hive.callFromHoneybeeHive(HBContext)
         hb_writeOPS.OPSShdSurface(shdingSurfcaes, model)
     
-    # Get the objects in the file that we need to replace.
-    csvSchedules, csvScheduleCount, shadeCntrlToReplace, replaceShdCntrl = hb_writeOPS.getObjToReplace()
+    # Get the objects in the file that we need to replace or add because OpenStudio does not support them.
+    csvSchedules, csvScheduleCount, shadeCntrlToReplace, replaceShdCntrl, windowSpectralData = hb_writeOPS.getObjToReplace()
     
     #save the model
     model.save(ops.Path(fname), True)
@@ -3716,7 +3880,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     
     if runIt > 0:
         hb_runOPS = RunOPS(model, epwWeatherFile, HBZones, hb_writeOPS.simParameters, openStudioLibFolder, csvSchedules, \
-            csvScheduleCount, additionalcsvSchedules, shadeCntrlToReplace, replaceShdCntrl)
+            csvScheduleCount, additionalcsvSchedules, shadeCntrlToReplace, replaceShdCntrl, windowSpectralData)
         
         idfFile, resultFile = hb_runOPS.runAnalysis(fname, runIt, useRunManager = False)
         if runIt < 3:
@@ -3738,19 +3902,21 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
             except:
                 pass
         
-        return fname, idfFile, resultFile, originalWorkDir
+        return fname, idfFile, resultFile, originalWorkDir, model
         
-    return fname, None, None, originalWorkDir
+    return fname, None, None, originalWorkDir, model
 
 if _HBZones and _HBZones[0]!=None and _epwWeatherFile and _writeOSM and openStudioIsReady:
     results = main(_HBZones, HBContext_, north_, _epwWeatherFile,
                   _analysisPeriod_, _energySimPar_, simulationOutputs_,
                   runSimulation_, openOpenStudio_, workingDir_, fileName_)
     if results!=-1:
-        osmFileAddress, idfFileAddress, resultsFiles, studyFolder = results
+        osmFileAddress, idfFileAddress, resultsFiles, studyFolder, model = results
         try:
-            rddFileAddress = resultsFiles[3]
+            
             resultsFileAddress = resultsFiles[2]
+            eioFileAddress = resultsFiles[4]
+            rddFileAddress = resultsFiles[3]
             sqlFileAddress = resultsFiles[1]
             meterFileAddress = resultsFiles[0]
         except: resultsFileAddress = resultsFiles

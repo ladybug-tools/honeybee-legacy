@@ -44,11 +44,11 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Set EnergyPlus Zone Loads"
 ghenv.Component.NickName = 'setEPZoneLoads'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_09_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
-#compatibleHBVersion = VER 0.0.56\nOCT_31_2015
+#compatibleHBVersion = VER 0.0.56\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
@@ -56,8 +56,15 @@ import scriptcontext as sc
 import uuid
 import Grasshopper.Kernel as gh
 
+def duplicateData(input, length):
+    il = len(input)
+    if il == 0:
+        return tuple(None for i in range(length))
+    else:
+        return tuple(input[i] if i < il else input[-1] for i in range(length))
 
-def main(HBZones, equipmentLoadPerArea, infiltrationRatePerArea, lightingDensityPerArea, numOfPeoplePerArea, ventilationPerArea, ventilationPerPerson, recirculatedAirPerArea):
+def main(HBZones, equipmentLoadPerArea, infiltrationRatePerArea, lightingDensityPerArea,
+         numOfPeoplePerArea, ventilationPerArea, ventilationPerPerson, recirculatedAirPerArea):
     # check for Honeybee
     if not sc.sticky.has_key('honeybee_release'):
         print "You should first let Honeybee to fly..."
@@ -82,67 +89,40 @@ def main(HBZones, equipmentLoadPerArea, infiltrationRatePerArea, lightingDensity
     hb_hive = sc.sticky["honeybee_Hive"]()
     HBObjectsFromHive = hb_hive.callFromHoneybeeHive(HBZones)
     
+    length = len(HBObjectsFromHive)
+    equipmentLoadPerArea = duplicateData(equipmentLoadPerArea, length)
+    infiltrationRatePerArea = duplicateData(infiltrationRatePerArea, length) 
+    lightingDensityPerArea = duplicateData(lightingDensityPerArea, length) 
+    numOfPeoplePerArea = duplicateData(numOfPeoplePerArea, length) 
+    ventilationPerArea = duplicateData(ventilationPerArea, length) 
+    ventilationPerPerson = duplicateData(ventilationPerPerson, length) 
+    recirculatedAirPerArea = duplicateData(recirculatedAirPerArea, length) 
+    
     loads = []
     for zoneCount, HBZone in enumerate(HBObjectsFromHive):
         
         # assign the default is there is no load assigned yet
         if not HBZone.isLoadsAssigned:
             HBZone.assignLoadsBasedOnProgram(ghenv.Component)
-            
-        if equipmentLoadPerArea!=[]:
-            try:
-                if equipmentLoadPerArea[zoneCount]!= None:
-                    HBZone.equipmentLoadPerArea = equipmentLoadPerArea[zoneCount]
-            except:
-                if equipmentLoadPerArea[0]!= None:
-                    HBZone.equipmentLoadPerArea = equipmentLoadPerArea[0]
-        if infiltrationRatePerArea != []:
-            try:
-                if infiltrationRatePerArea[zoneCount]!= None:
-                    HBZone.infiltrationRatePerArea = infiltrationRatePerArea[zoneCount]
-            except:
-                if infiltrationRatePerArea[0]!= None:
-                    HBZone.infiltrationRatePerArea = infiltrationRatePerArea[0]
-        if lightingDensityPerArea != []:
-            try:
-                if lightingDensityPerArea[zoneCount]!=None:
-                    HBZone.lightingDensityPerArea = lightingDensityPerArea[zoneCount]
-            except:
-                if lightingDensityPerArea[0]!=None:
-                    HBZone.lightingDensityPerArea = lightingDensityPerArea[0]
-        if numOfPeoplePerArea != []:
-            try:
-                if numOfPeoplePerArea[zoneCount]!=None:
-                    HBZone.numOfPeoplePerArea = numOfPeoplePerArea[zoneCount]
-            except:
-                if numOfPeoplePerArea[0]!=None:
-                    HBZone.numOfPeoplePerArea = numOfPeoplePerArea[0]
-        if ventilationPerArea != []:
-            try:
-                if ventilationPerArea[zoneCount] != None:
-                    HBZone.ventilationPerArea = ventilationPerArea[zoneCount]
-            except:
-                if ventilationPerArea[0] != None:
-                    HBZone.ventilationPerArea = ventilationPerArea[0]        
-        if ventilationPerPerson != []:
-            try:
-                if ventilationPerPerson[zoneCount] != None:
-                    HBZone.ventilationPerPerson = ventilationPerPerson[zoneCount]
-            except:
-                if ventilationPerPerson[0] != None:
-                    HBZone.ventilationPerPerson = ventilationPerPerson[0]
         
-        if recirculatedAirPerArea != []:
-            try:
-                if recirculatedAirPerArea[zoneCount] != None:
-                    HBZone.recirculatedAirPerArea = recirculatedAirPerArea[zoneCount]
-            except:
-                if recirculatedAirPerArea[0] != None:
-                    HBZone.recirculatedAirPerArea = recirculatedAirPerArea[0]
+        if equipmentLoadPerArea[zoneCount] != None:
+            HBZone.equipmentLoadPerArea = equipmentLoadPerArea[zoneCount]
+        if infiltrationRatePerArea[zoneCount] != None:
+            HBZone.infiltrationRatePerArea = infiltrationRatePerArea[zoneCount]
+        if lightingDensityPerArea[zoneCount] != None:
+            HBZone.lightingDensityPerArea = lightingDensityPerArea[zoneCount]
+        if numOfPeoplePerArea[zoneCount] != None:
+            HBZone.numOfPeoplePerArea = numOfPeoplePerArea[zoneCount]
+        if ventilationPerArea[zoneCount] != None:
+            HBZone.ventilationPerArea = ventilationPerArea[zoneCount]
+        if ventilationPerPerson[zoneCount] != None:
+            HBZone.ventilationPerPerson = ventilationPerPerson[zoneCount]
+        if recirculatedAirPerArea[zoneCount] != None:
+            HBZone.recirculatedAirPerArea = recirculatedAirPerArea[zoneCount]
         
         loads.append(HBZone.getCurrentLoads())
     
-    HBZones  = hb_hive.addToHoneybeeHive(HBObjectsFromHive, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+    HBZones  = hb_hive.addToHoneybeeHive(HBObjectsFromHive, ghenv.Component)
 
     return HBZones, loads
     

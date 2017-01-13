@@ -29,15 +29,17 @@ Create RADIANCE BSDF material
 Provided by Honeybee 0.0.60
 
     Args:
-        _materialName: Name of material
-        _XMLFilePath: File path to XML 
+        _materialName: Name of material for the Radiance simulation.
+        _XMLFilePath: File path to XML that contains the BSDF information.
+        _upOrientation_: An optional vector that sets the hemisphere that the BSDF material faces.  For materials that are symmetrical about the HBSrf plane (like non-angled venitian blinds), this can be any vector that is not perfectly normal to the HBSrf. For asymmetrical materials like angled veneitan blinds, this variable should be coordinated with the direction the HBSrfs are facing.  The default is set to (0.01, 0.01, 1.00), which should hopefully not be perpendicular to any typical HBSrf.
+        thickness_: Optional parameter to set the thickness of the BSDF material.  The default is set to 0.
     Returns:
         RADMaterial: Radiance Material string
 """
 
 ghenv.Component.Name = "Honeybee_Radiance BSDF Material"
 ghenv.Component.NickName = 'radBSDFMaterial'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nOCT_01_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "01 | Daylight | Material"

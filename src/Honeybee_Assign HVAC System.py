@@ -44,11 +44,11 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Assign HVAC System"
 ghenv.Component.NickName = 'HVACSystem'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_18_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | HVACSystems"
-#compatibleHBVersion = VER 0.0.56\nMAY_01_2016
+#compatibleHBVersion = VER 0.0.56\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
@@ -56,7 +56,6 @@ except: pass
 import Grasshopper.Kernel as gh
 import scriptcontext as sc
 import uuid
-from collections import namedtuple
 
 w = gh.GH_RuntimeMessageLevel.Warning
 
@@ -64,10 +63,10 @@ w = gh.GH_RuntimeMessageLevel.Warning
 def main(HBZones, HVACIndex, hb_hvacProperties, hb_airDetail, hb_heatingDetail, hb_coolingDetail):
     # call the objects from the lib
     hb_hive = sc.sticky["honeybee_Hive"]()
+    EPHvac = sc.sticky["honeybee_EPHvac"]
     HBZonesFromHive = hb_hive.callFromHoneybeeHive(HBZones)
     
     #create a single HVAC Group ID to create a unique reference to the HVAC details imported (or none if none)
-    HVACSystem = namedtuple('HVACSystem', 'GroupID Index airDetails heatingDetails coolingDetails')
     HVACGroupID = ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4())
     
     for zoneCount, zone in enumerate(HBZonesFromHive):
@@ -175,9 +174,9 @@ def main(HBZones, HVACIndex, hb_hvacProperties, hb_airDetail, hb_heatingDetail, 
                 ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
         
         #Assign the HVAC System to the zone.
-        zone.HVACSystem = HVACSystem(GroupID=HVACGroupID, Index=HVACIndex, airDetails=aDetail, heatingDetails=hDetail, coolingDetails=cDetail)
+        zone.HVACSystem = EPHvac(HVACGroupID, HVACIndex, aDetail, hDetail, cDetail)
         
-        HBZones  = hb_hive.addToHoneybeeHive(HBZonesFromHive, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+        HBZones  = hb_hive.addToHoneybeeHive(HBZonesFromHive, ghenv.Component)
     
     return HBZones
 

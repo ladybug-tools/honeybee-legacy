@@ -49,7 +49,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = 'Honeybee_SplitBuildingMass'
 ghenv.Component.NickName = 'SplitMass'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_18_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -244,7 +244,8 @@ def getFloorCrvs(buildingMass, floorHeights, maxHeights):
         
         lastFloorHeight = (maxHeights)  - floorHeights[-1]
         
-        if lastFloorHeight == 0.0: lastFloorInc = True
+        if is_near_zero(lastFloorHeight): 
+            lastFloorInc = True
         else:
             if lastFloorHeight < maxHeight:
                 lastFloorInc = False
@@ -1030,6 +1031,8 @@ def splitPerimZones(mass, zoneDepth, floorCrvList, topInc, totalNurbsList):
     return finalZones
 
 
+def is_near_zero(num,eps=1E-10):
+    return abs(float(num)) < eps
 
 def main(mass, floorHeights, perimDepth):
     #Import the Ladybug Classes.

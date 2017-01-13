@@ -46,11 +46,11 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_Set EP Surface Construction'
 ghenv.Component.NickName = 'setEPSrfCnstr'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.56\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
@@ -132,7 +132,7 @@ def main(HBSurface, EPConstruction, childEPConstruction):
                     
         # send the HB surface back to the hive
         # add to the hive
-        HBSurface  = hb_hive.addToHoneybeeHive([HBSurface], ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+        HBSurface  = hb_hive.addToHoneybeeHive([HBSurface], ghenv.Component)
         
         return HBSurface
         

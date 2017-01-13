@@ -38,17 +38,25 @@ Provided by Honeybee 0.0.60
             0 - Sum - The outdoor air coming through the mechnical system will be the sum of the specified flow/m2 of zone floor area and the flow/person.  This is the default and is the usual recommendation of ASHRAE.
             1 - Maximum - The outdoor air coming through the mechnical system will be either the specified flow/m2 of zone floor area or the flow/person (depending on which is larger at a given hour).   Choosing this option effectively implies that there is a demand-controlled ventilation system set up in the zone.
             2 - None - No outdoor air will come through the mechanical system and the heating/cooling will be applied only through re-circulation of indoor air.  Be careful as this option might not bring enough fresh air to occupants if the zone's infiltration is very low.
+        daylightIllumSetPt_: A number of list of numbers that represent the illuminance threshold in lux beyond which electric lights will be dimmed if there is sufficent daylight.  The default has no dimming for daylight, meaning that lights will be on whenever the schedule states that they are on (regardless of daylight).  If you specify a daylightCntrlFract_ below, this component will automatically assume a setpoint of 300 lux.  Some other common setpoints are:
+            50 lux - Corridors and hallways
+            150 lux - Spaces where people are working on computer screens, which already provide their own light.
+            300 lux - Spaces where people are reading and writing on paper, such as residences and offices.
+            500 lux - Commerical or retail spaces where perception of particular objects is important.
+            1000 lux - Reserved only for spaces where lighting is critical for human safety like workshops with power tools or operating rooms in hospitals.
+        daylightCntrlPt_: A point that represents the location of a daylight senor within the zone.  If an illumance setpoint is specified above, the default is set to place the sensor in the center of the zone at 0.8 meters above the ground.
+        daylightCntrlFract_: A number between 0 and 1 that represents the fraction of the zone lights that will be dimmed when the illimance at the daylightCntrlPt_ is at the specified daylightIllumSetPt_.  The default is set to 1 when there is an illuminace threshold to dim all of the lights of the zone.  If you have a deep zone, you probably want to decrease this number so that you don't dim the lights in the back of the space to be too dark.
     Returns:
         HBZones: HBZones with thresolds set.
 """
 
 ghenv.Component.Name = "Honeybee_Set EnergyPlus Zone Thresholds"
 ghenv.Component.NickName = 'setEPZoneThresholds'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
-#compatibleHBVersion = VER 0.0.56\nJUL_26_2016
+#compatibleHBVersion = VER 0.0.56\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
@@ -60,11 +68,12 @@ import uuid
 
 def checkTheInputs():
     #If the user puts in only one value, apply that value to all of the zones.
-    def duplicateData(data, calcLength):
-        dupData = []
-        for count in range(calcLength):
-            dupData.append(data[0])
-        return dupData
+    def duplicateData(input, length):
+        il = len(input)
+        if il == 0:
+            return tuple(None for i in range(length))
+        else:
+            return tuple(input[i] if i < il else input[-1] for i in range(length))
     
     if len(coolingSetback_) == 1: coolingSetback = duplicateData(coolingSetback_, len(_HBZones))
     else: coolingSetback = coolingSetback_
@@ -87,6 +96,15 @@ def checkTheInputs():
     if len(outdoorAirReq_) == 1: outdoorAirReq = duplicateData(outdoorAirReq_, len(_HBZones))
     else: outdoorAirReq = outdoorAirReq_
     
+    if len(daylightIllumSetPt_) == 1: daylightIllumSetPt = duplicateData(daylightIllumSetPt_, len(_HBZones))
+    else: daylightIllumSetPt = daylightIllumSetPt_
+    
+    if len(daylightCntrlPt_) == 1: daylightCntrlPt = duplicateData(daylightCntrlPt_, len(_HBZones))
+    else: daylightCntrlPt = daylightCntrlPt_
+    
+    if len(daylightCntrlFract_) == 1: daylightCntrlFract = duplicateData(daylightCntrlFract_, len(_HBZones))
+    else: daylightCntrlFract = daylightCntrlFract_
+    
     outdoorAirReqFinal = []
     checkData = True
     for outAirReq in outdoorAirReq:
@@ -102,7 +120,7 @@ def checkTheInputs():
             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
     outdoorAirReq = outdoorAirReqFinal
     
-    return coolingSetPt, coolingSetback, heatingSetPt, heatingSetback, maxHumidity, minHumidity, outdoorAirReq
+    return coolingSetPt, coolingSetback, heatingSetPt, heatingSetback, maxHumidity, minHumidity, outdoorAirReq, daylightIllumSetPt, daylightCntrlPt, daylightCntrlFract
 
 def updateSetPoints(schName, setPt, setBk):
     """
@@ -218,7 +236,7 @@ def updateSetPoints(schName, setPt, setBk):
     
     return name
 
-def main(HBZones, coolingSetPt, heatingSetPt, coolingSetback, heatingSetback, maxHumidity, minHumidity, outdoorAirReq):
+def main(HBZones, coolingSetPt, heatingSetPt, coolingSetback, heatingSetback, maxHumidity, minHumidity, outdoorAirReq, daylightIllumSetPt, daylightCntrlPt, daylightCntrlFract):
     
     # check for Honeybee
     if not sc.sticky.has_key('honeybee_release'):
@@ -284,18 +302,34 @@ def main(HBZones, coolingSetPt, heatingSetPt, coolingSetback, heatingSetback, ma
             zone.outdoorAirReq = outdoorAirReq[zoneCount]
         except: pass
         
+        try:
+            zone.illumCntrlSensorPt = daylightCntrlPt[zoneCount]
+        except: pass
+        
+        if daylightIllumSetPt != [] and daylightCntrlFract == []:
+            zone.daylightCntrlFract = 1
+            zone.illumSetPt = daylightIllumSetPt[zoneCount]
+        elif daylightIllumSetPt == [] and daylightCntrlFract != []:
+            zone.daylightCntrlFract = daylightCntrlFract[zoneCount]
+            zone.illumSetPt = 300
+        elif daylightIllumSetPt != [] and daylightCntrlFract != []:
+            zone.daylightCntrlFract = daylightCntrlFract[zoneCount]
+            zone.illumSetPt = daylightIllumSetPt[zoneCount]
+        
     # send the zones back to the hive
-    HBZones  = hb_hive.addToHoneybeeHive(HBZonesFromHive, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+    HBZones  = hb_hive.addToHoneybeeHive(HBZonesFromHive, ghenv.Component)
         
     return HBZones
 
 
-if _HBZones:
+if _HBZones and _HBZones[0] != None:
     coolingSetPt, coolingSetback, heatingSetPt, \
-    heatingSetback, maxHumidity, minHumidity, outdoorAirReq = checkTheInputs()
+    heatingSetback, maxHumidity, minHumidity, outdoorAirReq, \
+    daylightIllumSetPt, daylightCntrlPt, daylightCntrlFract = checkTheInputs()
     
     zones = main(_HBZones, coolingSetPt, heatingSetPt, \
-                   coolingSetback, heatingSetback, maxHumidity, minHumidity, outdoorAirReq)
+                   coolingSetback, heatingSetback, maxHumidity, minHumidity, outdoorAirReq, \
+                   daylightIllumSetPt, daylightCntrlPt, daylightCntrlFract)
     
     if zones!=-1:
         HBZones = zones

@@ -33,8 +33,8 @@ Provided by Honeybee 0.0.60
         _HBObjects: The HBZones or HBSurfaces out of any of the HB components that generate or alter zones.
         shadeType_: An integer to specify the type of shade that you wish to assign to the windows.  The default is set to 0 = blinds.  Choose from the following options:
             0 = Blinds - typical venetian blinds that can be either on the interior or exterior of the glass.
-            1 = Shades - either a fabric roller shade or a perforated metal screen that diffuses the light evenly.
-            2 = Swtichable Glazing - represents switchable glazing like electrochromic glass that can be switched on to reflect the material state of the shadeMaterial_.
+            1 = Shades - either a fabric roller shade or a perforated metal screen that transmits light more evenly than slatted blinds.
+            2 = Swtichable Glazing - represents electrochromic glazing that can be switched on to reflect the material state of the shadeMaterial_.
         shadeMaterial_: An optional shade material from the "Honeybee_EnergyPlus Shade Material" component.  If no material is connected here, the component will automatically assign a material depending on the shade type above.  The default blinds material has 0.65 solar reflectance, 0 transmittance, 0.9 emittance, 0.25 mm thickness, 221 W/mK conductivity.
         shadeSchedule_: An optional schedule to raise and lower the shades.  If no value is connected here, the shades will assume the "ALWAYS ON" shcedule.
         shadeCntrlType_: An integer represeting the parameter that controls whether the shades are on (down) or off (up).  The default is set to 0 = OnIfScheduleAllows.  If no schedule is connected, the shades are assumed to always be down. Choose from the following options:
@@ -53,6 +53,8 @@ Provided by Honeybee 0.0.60
             12 = OnNightAndOnDayIfCoolingAndHighSolarOnWindow: Shading is on at night. Shading is on during the day if the solar radiation incident on the window exceeds SetPoint (W/m2) below and if the zone cooling rate in the previous timestep is non-zero. Day and night shading is subject to schedule, if specified. (This Shading Control Type is the same as the previous one, except the shading is on at night rather than off.)
             13 = OnIfHighOutdoorAirTempAndHighSolarOnWindow: Shading is on if the outside air temperature exceeds the Setpoint (C) and if if the solar radiation incident on the window exceeds SetPoint 2 (W/m2).  Note that this option requires you to connect two values to the shadeSetpoint_ input below.
             14 = OnIfHighOutdoorAirTempAndHighHorizontalSolar: Shading is on if the outside air temperature exceeds the Setpoint (C) and if if the horizontal solar radiation exceeds SetPoint 2 (W/m2).  Note that this option requires you to connect two values to the shadeSetpoint_ input below.
+            15 = OnIfHighGlare: Shading is on if the glare index in the zone exceeds the maximum Discomfort Glare Index (DGI) specified below.  Common maximim DGI values are 22 for Offices, 20 for Museums or Classrooms, 18 for Hospital Wards, and 16 for Art Gallereies.  In the input below, you should specify a list of 2 values that includes the DGI as a first value and a vector for the second value, which represents the direction that the occupant view is facing.  It will be assumed that the occupant is in the center of the zone by default and you can change this potition by adjusting the daylightCntrlPt_ input of the "Honeybee_Set ZoneThresholds" component.
+            16 = MeetDaylightIlluminanceSetpoint: Useable only with ShadingType = SwitchableGlazing. In this case, the transmittance of the glazing is adjusted to just meet the daylight illuminance set point assinged with the "Honeybee_Set ZoneThresholds" component.  If no setpoint is assigned with this component, this component will assume a default illuminace setpoint of 300 lux. As such, there is no need to specify a setpoint below unless you also want the EC glazing to be further dimmed when there is glare in the zone, in which case the setpoint below should be a DGI value and vector representing a view as states in option 15 (OnIfHighGlare).
         shadeSetpoint_: A number that corresponds to the shadeCntrlType_ specified above.  This can be a value in (W/m2), (C) or (W) depending upon the control type.
         interiorOrExter_: Set to "True" to generate Shades on the interior and set to "False" to generate shades on the exterior.  The default is set to "False" to generate exterior shades.
         distToGlass_: A number between 0 and 1 that represents the distance between the glass and the shades in meters.  The default is set to 0 to generate the shades immediately next to the glass.
@@ -82,11 +84,11 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Window Shade Generator"
 ghenv.Component.NickName = 'EPWindowShades'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nJUL_25_2015
+#compatibleHBVersion = VER 0.0.56\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
 except: pass
@@ -94,8 +96,6 @@ except: pass
 
 from System import Object
 from System import Drawing
-from clr import AddReference
-AddReference('Grasshopper')
 import Grasshopper.Kernel as gh
 from Grasshopper import DataTree
 from Grasshopper.Kernel.Data import GH_Path
@@ -114,12 +114,10 @@ tol = sc.doc.ModelAbsoluteTolerance
 #### HERE ARE THE FUNCTIONS THAT SET THE INPUTS/OUTPUTS OF THE COMPONENT.
 inputsDict = {
     
-0: ["_HBObjects", "The HBZones or HBSurfaces out of any of the HB components that generate or alter zones."],
-1: ["shadeType_", "An integer to specify the type of shade that you wish to assign to the windows.  The default is set to 0 = blinds.  Choose from the following options: \n  0 = Blinds - typical venetian blinds that can be either on the interior or exterior of the glass. \n  1 = Shades - either a fabric roller shade or a perforated metal screen that diffuses the light evenly. \n  2 = Electrochromic Glazing - represents electrochromic glazing that can be switched on to reflect the material state of the shadeMaterial_."],
-2: ["shadeMaterial_", "An optional shade material from the 'Honeybee_EnergyPlus Shade Material' component.  If no material is connected here, the component will automatically assign a material depending on the shade type above.  The default blinds material has 0.65 solar reflectance, 0 transmittance, 0.9 emittance, 0.25 mm thickness, 221 W/mK conductivity."],
+2: ["shadeMaterial_", "An optional shade material from the 'Honeybee_EnergyPlus Shade Material' component.  The default blinds or shade material has 0.65 solar reflectance, 0 transmittance, 0.9 emittance, 0.25 mm thickness, 221 W/mK conductivity."],
 3: ["shadeSchedule_", "An optional schedule to raise and lower the shades.  If no value is connected here, the shades will assume the 'ALWAYS ON' shcedule."],
 4: ["shadeCntrlType_", "An integer represeting the parameter that controls whether the shades are on (down) or off (up).  The default is set to 0 = OnIfScheduleAllows.  If no schedule is connected, the shades are assumed to always be down.  Choose from the following options: \n  0 = OnIfScheduleAllows - Shading is on if the schedule value is non-zero and is AlwaysOn if no schedule is connected. \n  1 = OnIfHighSolarOnWindow - Shading is on if beam plus diffuse solar radiation incident on the window exceeds SetPoint (W/m2) below and schedule, if specified, allows shading. \n  2 = OnIfHighHorizontalSolar - Shading is on if total (beam plus diffuse) horizontal solar irradiance exceeds SetPoint (W/m2) below and schedule, if specified, allows shading. \n  3 = OnIfHighOutdoorAirTemperature - Shading is on if outside air temperature exceeds SetPoint (C) below and schedule, if specified, allows shading. \n  4 = OnIfHighZoneAirTemperature - Shading is on if zone air temperature in the previous timestep exceeds SetPoint (C) below and schedule, if specified, allows shading. \n  5 = OnIfHighZoneCooling - Shading is on if zone cooling rate in the previous timestep exceeds SetPoint (W) below and schedule, if specified, allows shading. \n  6 = OnNightIfLowOutdoorTempAndOffDay - Shading is on at night if the outside air temperature is less than SetPoint (C) below and schedule, if specified, allows shading. Shading is off during the day. \n  7 = OnNightIfLowInsideTempAndOffDay - Shading is on at night if the zone air temperature in the previous timestep is less than SetPoint (C) below and schedule, if specified, allows shading. Shading is off during the day. \n  8 = OnNightIfHeatingAndOffDay - Shading is on at night if the zone heating rate in the previous timestep exceeds SetPoint (W) below and schedule, if specified, allows shading. Shading is off during the day. \n  9 = OnNightIfLowOutdoorTempAndOnDayIfCooling - Shading is on at night if the outside air temperature is less than SetPoint (C) below. Shading is on during the day if the zone cooling rate in the previous timestep is non-zero. Night and day shading is subject to schedule, if specified. \n  10 = OnNightIfHeatingAndOnDayIfCooling: Shading is on at night if the zone heating rate in the previous timestep exceeds SetPoint (W) below. Shading is on during the day if the zone cooling rate in the previous timestep is non-zero. Night and day shading is subject to schedule, if specified. \n  11 = OffNightAndOnDayIfCoolingAndHighSolarOnWindow: Shading is off at night. Shading is on during the day if the solar radiation incident on the window exceeds SetPoint (W/m2) below and if the zone cooling rate in the previous timestep is non-zero. Daytime shading is subject to schedule, if specified. \n  12 = OnNightAndOnDayIfCoolingAndHighSolarOnWindow: Shading is on at night. Shading is on during the day if the solar radiation incident on the window exceeds SetPoint (W/m2) below and if the zone cooling rate in the previous timestep is non-zero. Day and night shading is subject to schedule, if specified. (This Shading Control Type is the same as the previous one, except the shading is on at night rather than off.) \n  13 = OnIfHighOutdoorAirTempAndHighSolarOnWindow: Shading is on if the outside air temperature exceeds the Setpoint (C) and if if the solar radiation incident on the window exceeds SetPoint 2 (W/m2).  Note that this option requires you to connect two values to the shadeSetpoint_ input below. \n  14 = OnIfHighOutdoorAirTempAndHighHorizontalSolar: Shading is on if the outside air temperature exceeds the Setpoint (C) and if if the horizontal solar radiation exceeds SetPoint 2 (W/m2).  Note that this option requires you to connect two values to the shadeSetpoint_ input below."],
-5: ["shadeSetpoint_", "A number that corresponds to the shadeCntrlType_ specified above.  This can be a value in (W/m2), (C) or (W) depending upon the control type."],
+5: ["shadeSetpoint_", "A number that corresponds to the shadeCntrlType_ specified above.  This can be a value in (W/m2), (W), (C), or (DGI) depending upon the control type."],
 6: ["interiorOrExter_", "Set to 'True' to generate Shades on the interior and set to 'False' to generate shades on the exterior.  The default is set to 'False' to generate exterior shades."],
 7: ["distToGlass_", "A number between 0 and 1 that represents the distance between the glass and the shades in meters.  The default is set to 0 to generate the shades immediately next to the glass."],
 8: ["_depth", "A number representing the depth of the shade to be generated on each window.  You can also input lists of depths, which will assign different depths based on cardinal direction.  For example, inputing 4 values for depths will assign each value of the list as follows: item 0 = north depth, item 1 = west depth, item 2 = south depth, item 3 = east depth.  Lists of vectors to be shaded can also be input and shades can be joined together with the mergeVectors_ input."],
@@ -151,7 +149,9 @@ outputsDict = {
 def setComponentInputs(shadeType):
     numInputs = ghenv.Component.Params.Input.Count
     for input in range(numInputs):
-        if input <= 15:
+        if input <= 1 or input == 4:
+            pass
+        elif input <= 15:
             if shadeType == 1 and input <=12 and input >= 9:
                 ghenv.Component.Params.Input[input].NickName = "___________"
                 ghenv.Component.Params.Input[input].Name = "."
@@ -160,6 +160,10 @@ def setComponentInputs(shadeType):
                 ghenv.Component.Params.Input[input].NickName = "airPermeability_"
                 ghenv.Component.Params.Input[input].Name = "airPermeability_"
                 ghenv.Component.Params.Input[input].Description = "An optional number between 0 and 1 to set the air permeability of the shade.  For example, use this to account for perforations in outdoor metal screens where air can circulate through.  The default is set to have 0 permeability."
+            elif shadeType == 2 and input == 2:
+                ghenv.Component.Params.Input[input].NickName = "shadeMaterial_"
+                ghenv.Component.Params.Input[input].Name = "shadeMaterial_"
+                ghenv.Component.Params.Input[input].Description = "An optional EP Construction that represents the Electrochromic Glazing in the shaded state.  If no construction is connected here, the component will automatically generate an EnergyPlus construction based on the existing assigned window construciton and will change the SHGC to 0.07 and VT to 0.01."
             elif shadeType == 2 and input <=12 and input >= 6:
                 ghenv.Component.Params.Input[input].NickName = "____________"
                 ghenv.Component.Params.Input[input].Name = "."
@@ -190,7 +194,9 @@ def setComponentInputs(shadeType):
 def restoreComponentInputs():
     numInputs = ghenv.Component.Params.Input.Count
     for input in range(numInputs):
-        if input <= 15:
+        if input <= 1 or input == 4:
+            pass
+        elif input <= 15:
             ghenv.Component.Params.Input[input].NickName = inputsDict[input][0]
             ghenv.Component.Params.Input[input].Name = inputsDict[input][0]
             ghenv.Component.Params.Input[input].Description = inputsDict[input][1]
@@ -226,20 +232,34 @@ def checkAllInputs(zoneNames, windowNames, windowSrfs, isZone):
     #Check is the shadeCntrlType is acceptable.
     checkData2 = True
     if shadeCntrlType_ != None:
-        if shadeCntrlType_ < 0 or shadeCntrlType_ > 14:
+        if shadeCntrlType_ < 0 or shadeCntrlType_ > 16:
             checkData2 = False
-            print "shadeCntrlType_ must be an integer from 0 to 14."
-            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, "shadeCntrlType_ must be an integer from 0 to 14.")
+            print "shadeCntrlType_ must be an integer from 0 to 16."
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, "shadeCntrlType_ must be an integer from 0 to 16.")
         elif shadeCntrlType_ > 0 and shadeCntrlType_ < 13:
             if len(shadeSetpoint_) != 1:
                 checkData2 = False
-                warning = 'To use shadeCntrlTypes 1 through 12, you must specify a single shadeSetpoint_'
+                warning = 'To use shadeCntrlTypes 1 through 12, you must specify a single shadeSetpoint_.'
                 print warning
                 ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
-        elif shadeCntrlType_ > 12:
+        elif shadeCntrlType_ > 12 and shadeCntrlType_ < 16:
             if len(shadeSetpoint_) != 2:
                 checkData2 = False
-                warning = 'To use shadeCntrlTypes 13 and 14, you must specify two shadeSetpoint_ values'
+                warning = 'To use shadeCntrlTypes 13, 14 or 15, you must specify two shadeSetpoint_ values.'
+                print warning
+                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+        
+        if shadeCntrlType_ == 16:
+            if not shadeType_ == 2:
+                checkData2 = False
+                warning = 'The shadeCntrlType_ 16-MeetDaylightIlluminanceSetpoint can only be used when the shadeType_ is set to 2-Switchable Glazing.'
+                print warning
+                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+            elif len(shadeSetpoint_) == 2 or len(shadeSetpoint_) == 0:
+                pass
+            else:
+                checkData2 = False
+                warning = 'The shadeCntrlType_ 16-MeetDaylightIlluminanceSetpoint accepts either 2 setpoints for glare control or no setpoints.\n A default illuminace threshold of 300 is assumed and you can change this illuminace on the "Honeybee_Set ZoneThresholds" component.'
                 print warning
                 ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
     
@@ -249,7 +269,7 @@ def checkAllInputs(zoneNames, windowNames, windowSrfs, isZone):
     schedule = None
     if shadeSchedule_ == None:
         schedule = "ALWAYS ON"
-        print "No shades schedule has been connected.  It will be assumed that the shades are drawn when the setpoints are met."
+        print "No shade schedule has been connected.  It will be assumed that the shades are drawn when the setpoints are met."
     else:
         schedule= shadeSchedule_.upper()
         HBScheduleList = sc.sticky["honeybee_ScheduleLib"].keys()
@@ -425,21 +445,46 @@ def checkShadesInputs(zoneNames, windowNames, windowSrfs, isZone):
     
     return checkData, windowNamesFinal, windowBrepsFinal, alignedDataTree, shadeMaterial, schedule
 
-def checkWindowInputs(zoneNames, windowNames, windowSrfs, isZone):
+def checkWindowInputs(zoneNames, windowNames, windowSrfs, isZone, shadeMaterial, hb_EPObjectsAux):
     #Check if there is a shades material connected and, if not, set a default.
     checkData5 = True
-    if shadeMaterial_ == None:
-        print "No shades material has been connected. A material will be used that represents typical electrochromic glazing: \n 0.93 solar reflectance (or 0.07 SHGC), 0.01 visible transmittance, and a U-Value equal to the current glazing."
-        shadeMaterial = ['DEFAULTELECTROCHROMIC', 0.93, 0.01, 0.9, 'currentGlz', 'currentGlz']
+    if shadeMaterial == None:
+        print "No shade material has been connected. A material will be used that represents typical electrochromic glazing: \n 0.07 SHGC, 0.01 visible transmittance, and a U-Value equal to the current glazing."
+        shadeMaterial = 'DEFAULTELECTROCHROMIC'
     else:
         try:
-            shadeMaterial = deconstructBlindMaterial(shadeMaterial_)
-            if shadeMaterial[4] == 0.00025 and shadeMaterial[5] == 221:
-                shadeMaterial[4] = 'currentGlz'
-                shadeMaterial[5] = 'currentGlz'
+            # if it is just the name of the material make sure it is already defined
+            if len(shadeMaterial.split("\n")) == 1:
+                # if the material is not in the library add it to the library
+                if not hb_EPObjectsAux.isEPConstruction(shadeMaterial):
+                    warningMsg = "Can't find " + shadeMaterial + " in EP Construction Library.\n" + \
+                                "Add the construction to the library and try again."
+                    print warningMsg
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
+                    checkData5 = False
+            else:
+                # it is a full string
+                if "CONSTRUCTION" in shadeMaterial.upper():
+                    added, shadeMaterial = hb_EPObjectsAux.addEPObjectToLib(shadeMaterial, overwrite = True)
+                    
+                    if not added:
+                        msg = name + " is not added to the project library!"
+                        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                        print msg
+                        checkData5 = False
+                elif "MATERIAL" in shadeMaterial.upper():
+                    msg = "Your connected shadeMaterial_ is just a material and not a full construction. \n For electrochromic glazing, you must assign a full window construction here."
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                    print msg
+                    checkData5 = False
+                else:
+                    msg = "Your connected shadeMaterial_ is not a valid construction."
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                    print msg
+                    checkData5 = False
         except:
             checkData5 = False
-            warning = 'Blinds material is not a valid shades material from the "Honeybee_EnergyPlus Shade Material" component.'
+            warning = 'Connected shadeMaterial_ is not a valid EP window construction.'
             print warning
             ghenv.Component.AddRuntimeMessage(w, warning)
     
@@ -497,14 +542,21 @@ def getValueBasedOnOrientation(valueList, normalVector):
     return value
 
 def analyzeGlz(glzSrf, distBetween, numOfShds, horOrVertical, lb_visualization, normalVector):
+    # Helper function to check if number is near zero
+    def helper_is_near_zero(num2chk, eps=1e-6):
+        return abs(num2chk) < eps
+    
     # find the bounding box
     bbox = glzSrf.GetBoundingBox(True)
+    # Add default shading Height and numOfShd
+    shadingHeight = 0.
+    if numOfShds == None: numOfShd, numOfShds = 0., 0.
+    if distBetween == None: distBetween = 0.
+    
     if horOrVertical == None:
         horOrVertical = True
-    if numOfShds == None and distBetween == None:
-        numOfShds = 1
     
-    if numOfShds == 0 or distBetween == 0:
+    if helper_is_near_zero(numOfShds) and helper_is_near_zero(distBetween):
         sortedPlanes = []
     
     elif horOrVertical == True:
@@ -535,6 +587,7 @@ def analyzeGlz(glzSrf, distBetween, numOfShds, horOrVertical, lb_visualization, 
                 if shadingRemainder == 0:
                     shadingRemainder = shadingHeight
         else:
+
             try:
                 numOfShd = int(numOfShds)
                 shadingHeight = glzHeight/numOfShd
@@ -584,6 +637,7 @@ def analyzeGlz(glzSrf, distBetween, numOfShds, horOrVertical, lb_visualization, 
             maxXPt = rc.Geometry.Point3d(maxXPt.X, maxXPt.Y, maxXPt.Z - sc.doc.ModelAbsoluteTolerance)
             glzWidth = minXPt.DistanceTo(maxXPt)
             
+            # Find number of shadings 
             try:
                 numOfShd = int(numOfShds)
                 shadingHeight = glzWidth/numOfShd
@@ -593,6 +647,7 @@ def analyzeGlz(glzSrf, distBetween, numOfShds, horOrVertical, lb_visualization, 
                 shadingRemainder = (((glzWidth/distBetween) - math.floor(glzWidth/distBetween))*distBetween)
                 if shadingRemainder == 0:
                     shadingRemainder = shadingHeight
+            
             
             planeOrigins = []
             planes = []
@@ -648,6 +703,7 @@ def analyzeGlz(glzSrf, distBetween, numOfShds, horOrVertical, lb_visualization, 
             
             #glazing distance
             glzHeight = minXYPt.DistanceTo(maxXYPt)
+           
             
             # find number of shadings
             try:
@@ -660,12 +716,18 @@ def analyzeGlz(glzSrf, distBetween, numOfShds, horOrVertical, lb_visualization, 
                 if shadingRemainder == 0:
                     shadingRemainder = shadingHeight
             
+            
             # find shading base planes
             planeOrigins = []
             planes = []
             
             pointCurve = rc.Geometry.Curve.CreateControlPointCurve([maxXYPt, minXYPt])
             divisionParams = pointCurve.DivideByLength(shadingHeight, True)
+            
+            # If number of shades = 0 or the distance between fins is the window length divisionParams == None
+            if divisionParams == None:
+                divisionParams = [0.0]
+
             divisionPoints = []
             for param in divisionParams:
                 divisionPoints.append(pointCurve.PointAt(param))
@@ -820,6 +882,7 @@ def makeBlind(_glzSrf, depth, numShds, distBtwn):
     #Get the EnergyPlus distance to glass.
     assignEPCheckInit = True
     EPDistToGlass = distToGlass + (depth)*(0.5)*math.sin(math.radians(EPshdAngle))
+  
     if EPDistToGlass < (depth)*(0.5): EPDistToGlass = (depth)*(0.5)
     if EPDistToGlass < 0.01: EPDistToGlass = 0.01
     elif EPDistToGlass > 1:
@@ -905,7 +968,6 @@ def makeShade(_glzSrf):
     return shadingSurfaces, airPermea, EPDistToGlass, EPinteriorOrExter, assignEPCheckInit
 
 
-
 #### HERE ARE THE FUNCTIONS THAT CREATE THE ENERGYPLUS OBJECTS.
 shdCntrlDict = {
 0: 'OnIfScheduleAllows',
@@ -922,7 +984,9 @@ shdCntrlDict = {
 11: 'OffNightAndOnDayIfCoolingAndHighSolarOnWindow',
 12: 'OnNightAndOnDayIfCoolingAndHighSolarOnWindow',
 13: 'OnIfHighOutdoorAirTempAndHighSolarOnWindow',
-14: 'OnIfHighOutdoorAirTempAndHighHorizontalSolar'
+14: 'OnIfHighOutdoorAirTempAndHighHorizontalSolar',
+15: 'OnIfHighGlare',
+16: 'MeetDaylightIlluminanceSetpoint'
 }
 
 
@@ -990,8 +1054,8 @@ def createEPWindowMat(shadeMaterial, name, winUValue):
     EPWindowMat ='WindowMaterial:SimpleGlazingSystem,\n' + \
         '\t' + name + ',    !Name\n' + \
         '\t' + str(winUValue) + ',    !U Value\n' + \
-        '\t' + str(1-shadeMaterial[1]) + ',    !Solar Heat Gain Coeff\n' + \
-        '\t' + str(shadeMaterial[2]) + ';    !Visible Transmittance\n' + \
+        '\t' + '0.07' + ',    !Solar Heat Gain Coeff\n' + \
+        '\t' + '0.01' + ';    !Visible Transmittance\n' + \
         '\n'
     
     EPWindowConstr = 'Construction,\n' + \
@@ -1032,15 +1096,15 @@ def createEPBlindControlName(shadeMaterial, schedule, EPinteriorOrExter, winCons
     except:
         pass
     
-    if shadeCntrlType_ != 0 and shadeCntrlType_ != None:
-        setPoint = str(shadeSetpoint_[0])
-        if shadeCntrlType_ >= 13: setPoint2 = str(shadeSetpoint_[1])
+    if shadeCntrlType_ != 0 and shadeCntrlType_ != None and shadeCntrlType_ <= 14:
+        setPoint = str(float(shadeSetpoint_[0]))
+        if shadeCntrlType_ >= 13: setPoint2 = str(float(shadeSetpoint_[1]))
     
     EPBlindControlName = 'ShadeCntrl'+ '-' + EPinteriorOrExter+ '-' + shadeConstr+ '-' + schedCntrlType+ '-' +  schedName + '-' + setPoint+ '-' + schedCntrl+ '-' + shadeName+ '-' + setPoint2
     
     return EPBlindControlName, EPinteriorOrExter, shadeConstr, schedCntrlType, schedName, setPoint, schedCntrl, shadeName, setPoint2
 
-def createEPBlindCntrlStr(blindCntrlName, EPinteriorOrExter, shadeConstr, schedCntrlType, schedName, setPoint, schedCntrl, shadeName, setPoint2):
+def createEPBlindCntrlStr(blindCntrlName, EPinteriorOrExter, shadeConstr, schedCntrlType, schedName, setPoint, schedCntrl, shadeName, setPoint2, glareCntrl = 'No'):
     EPBlindControl = 'WindowProperty:ShadingControl,\n' + \
         '\t' + blindCntrlName +',            !- Name\n' + \
         '\t' + EPinteriorOrExter + ',           !- Shading Type\n' + \
@@ -1049,7 +1113,7 @@ def createEPBlindCntrlStr(blindCntrlName, EPinteriorOrExter, shadeConstr, schedC
         '\t' + schedName + ',                        !- Schedule Name\n' + \
         '\t' + setPoint+ ',                        !- Setpoint {W/m2, W or deg C}\n' + \
         '\t' + schedCntrl + ',                      !- Shading Control Is Scheduled\n' + \
-        '\t' + 'No,                      !- Glare Control Is Active\n' + \
+        '\t' + glareCntrl + ',                      !- Glare Control Is Active\n' + \
         '\t' + shadeName + ',           !- Shading Device Material Name\n' + \
         '\t' + 'FixedSlatAngle,          !- Type of Slat Angle Control for Blinds\n'
         
@@ -1074,7 +1138,7 @@ def main():
         hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
         hb_EPMaterialAUX = sc.sticky["honeybee_EPMaterialAUX"]()
         EPWindowMaterials = sc.sticky ["honeybee_windowMaterialLib"].keys()
-        EPWindowProperties = sc.sticky["honeybee_WinodowPropLib"].keys()
+        EPWindowProperties = sc.sticky["honeybee_WindowPropLib"].keys()
         
         #Make the lists that will be filled up
         zoneNames = []
@@ -1223,34 +1287,46 @@ def main():
         elif shadeType_ == 2:
             #Check the inputs and make sure that we have everything that we need to generate the shades.  Set defaults on things that are not connected.
             if checkSameType == True:
-                checkData, windowNames, windowSrfsInit, alignedDataTree, windowMaterial, schedule = checkWindowInputs(zoneNames, windowNames, windowSrfs, isZone)
+                checkData, windowNames, windowSrfsInit, alignedDataTree, windowMaterial, schedule = checkWindowInputs(zoneNames, windowNames, windowSrfs, isZone, shadeMaterial_, hb_EPObjectsAux)
             else: checkData == False
             
             if checkData == True and writeEPObjs_ == True:
                 #Create the EnergyPlus shades material and assign it to the windows with shades.
                 for count, windowObj in enumerate(windowObjects):
-                    if windowMaterial[4] == 'currentGlz':
+                    if windowMaterial == 'DEFAULTELECTROCHROMIC':
                         materials, comments, winUval, UValue_IP = hb_EPMaterialAUX.decomposeEPCnstr(windowObj.EPConstruction.upper())
-                        blindMatName = windowMaterial[0] + '-' + str(round(winUval*100000)/100000)
+                        blindMatName = windowMaterial + '-' + str(round(winUval*100000)/100000)
                     else:
-                        winUval = round((windowMaterial[5]/windowMaterial[4])*100000)/100000
-                        blindMatName = windowMaterial[0] + '-' + str(winUval)
+                        blindMatName = windowMaterial
+                    
                     blindMatNames.append('')
                     if blindMatName.upper() not in compShadeMats:
-                        blindMatStr, blindMatConstr = createEPWindowMat(windowMaterial, blindMatName, winUval)
-                        added, name = hb_EPObjectsAux.addEPObjectToLib(blindMatStr, True)
-                        added, name = hb_EPObjectsAux.addEPObjectToLib(blindMatConstr, True)
+                        if windowMaterial == 'DEFAULTELECTROCHROMIC':
+                            blindMatStr, blindMatConstr = createEPWindowMat(windowMaterial, blindMatName, winUval)
+                            added, name = hb_EPObjectsAux.addEPObjectToLib(blindMatStr, True)
+                            added, name = hb_EPObjectsAux.addEPObjectToLib(blindMatConstr, True)
+                            compShadeMatsStr.append(blindMatConstr)
+                        else:
+                            materials, comments, winUval, UValue_IP = hb_EPMaterialAUX.decomposeEPCnstr(windowMaterial.upper())
+                            blindMatStr = 'Construction,\n'
+                            for mcount, mat in enumerate(materials):
+                                blindMatStr = blindMatStr + mat + comments[mcount] +'\n'
                         compShadeMats.append(blindMatName.upper())
                         compShadeMatsStr.append(blindMatStr)
         
         if checkData == True and assignEPCheck == True and writeEPObjs_ == True:
             for count, windowObj in enumerate(windowObjects):
                 if shadeType_ == 2:
-                    blindCntrlName, EPinteriorOrExter, shadeConstr, schedCntrlType, schedName, setPoint, schedCntrl, shadeName, setPoint2 = createEPBlindControlName(windowMaterial[0], schedule, 'SwitchableGlazing', blindMatName)
+                    blindCntrlName, EPinteriorOrExter, shadeConstr, schedCntrlType, schedName, setPoint, schedCntrl, shadeName, setPoint2 = createEPBlindControlName(windowMaterial, schedule, 'SwitchableGlazing', blindMatName)
                 else:
                     blindCntrlName, EPinteriorOrExter, shadeConstr, schedCntrlType, schedName, setPoint, schedCntrl, shadeName, setPoint2 = createEPBlindControlName(blindMatNames[count], schedule, EPinteriorOrExterList[count])
                 if blindCntrlName.upper() not in compShadeCntrls:
-                    blindCntrlStr = createEPBlindCntrlStr(blindCntrlName, EPinteriorOrExter, shadeConstr, schedCntrlType, schedName, setPoint, schedCntrl, shadeName, setPoint2)
+                    glrCntrl = 'No'
+                    if schedCntrlType == 'OnIfHighGlare' or schedCntrlType == 'MeetDaylightIlluminanceSetpoint':
+                        if len(shadeSetpoint_) == 2:
+                            glrCntrl = 'Yes'
+                    blindCntrlStr = createEPBlindCntrlStr(blindCntrlName, EPinteriorOrExter, shadeConstr, schedCntrlType, schedName, setPoint, schedCntrl, shadeName, setPoint2, glrCntrl)
+                    
                     added, name = hb_EPObjectsAux.addEPObjectToLib(blindCntrlStr, True)
                     compShadeCntrls.append(blindCntrlName.upper())
                     compShadeCntrlsStr.append(blindCntrlStr)
@@ -1258,9 +1334,29 @@ def main():
                 windowObj.shadingControlName.append(blindCntrlName)
                 windowObj.shadingSchName.append(schedule)
                 windowObj.shadeMaterialName.append(blindMatName)
-                
-                
-                ModifiedHBZones  = hb_hive.addToHoneybeeHive(HBZoneObjects, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+            
+            # If glare control or illuminance control is specified, change the zone's daylighting control.
+            if schedCntrlType == 'OnIfHighGlare' or schedCntrlType == 'MeetDaylightIlluminanceSetpoint':
+                for object in HBZoneObjects:
+                    if object.objectType == "HBZone":
+                        object.daylightCntrlFract = 1
+                        if len(shadeSetpoint_) == 2:
+                            object.GlareDiscomIndex = float(shadeSetpoint_[0])
+                            object.glareView = abs(getAngle2North(shadeSetpoint_[-1]) - 360)
+                        if schedCntrlType == 'MeetDaylightIlluminanceSetpoint':
+                            object.illumSetPt = 300
+                    else:
+                        illumSetPt = 100000
+                        glareDiscomIndex = 22
+                        glareView = 0
+                        if len(shadeSetpoint_) == 2:
+                            glareDiscomIndex = float(shadeSetpoint_[0])
+                            glareView = abs(getAngle2North(shadeSetpoint_[-1]) - 360)
+                        if schedCntrlType == 'MeetDaylightIlluminanceSetpoint':
+                            illumSetPt = 300
+                        object.shdCntrlZoneInstructs = [illumSetPt,glareDiscomIndex,glareView]
+            
+            ModifiedHBZones  = hb_hive.addToHoneybeeHive(HBZoneObjects, ghenv.Component)
         
         if checkData == True:
             return checkData, windowSrfsInit, shadings, alignedDataTree, ModifiedHBZones, compShadeMats, compShadeMatsStr, compShadeCntrlsStr

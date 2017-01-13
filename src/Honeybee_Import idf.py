@@ -12,11 +12,11 @@ Constructions, schedules and systems will be neglected
 """
 ghenv.Component.Name = "Honeybee_Import idf"
 ghenv.Component.NickName = 'importIdf'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "10 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nDEC_13_2015
+ghenv.Component.SubCategory = "13 | WIP"
+#compatibleHBVersion = VER 0.0.56\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "4"
 
@@ -500,8 +500,8 @@ def main(idfFile, importEPObjects = False):
     
     # add to the hive
     hb_hive = sc.sticky["honeybee_Hive"]()
-    HBZones  = hb_hive.addToHoneybeeHive(zonesList, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
-    shadings = hb_hive.addToHoneybeeHive(shadingList, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+    HBZones  = hb_hive.addToHoneybeeHive(zonesList, ghenv.Component)
+    shadings = hb_hive.addToHoneybeeHive(shadingList, ghenv.Component, False)
     
     return HBZones, shadings
 

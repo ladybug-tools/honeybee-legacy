@@ -53,7 +53,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Color Zones by EP Result"
 ghenv.Component.NickName = 'ColorZones'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nDEC_20_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -124,6 +124,7 @@ def copyHBZoneData():
         floorGeo = []
         for srf in zone.surfaces:
             if srf.type == 2: floorGeo.append(srf.geometry)
+            elif str(srf.type) == "2.25": floorGeo.append(srf.geometry)
             elif str(srf.type) == "2.5": floorGeo.append(srf.geometry)
             elif str(srf.type) == "2.75": floorGeo.append(srf.geometry)
             else: pass

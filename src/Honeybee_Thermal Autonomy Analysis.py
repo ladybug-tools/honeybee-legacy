@@ -64,7 +64,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Thermal Autonomy Analysis"
 ghenv.Component.NickName = 'ThermalAutonomy'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nJAN_05_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -426,7 +426,7 @@ def main(viewFactorMesh, analysisPeriod, totEnergyHeaders, totEnergyNumbers, zon
         TA_Mtx.append(0)
         OverHeatedMtx.append(0)
         UnderHeatedMtx.append(0)
-    
+   
     #Match the totalEnergy values to the HBZones.
     totEnergyNumbersMatched = []
     for name in zoneNames:
@@ -482,31 +482,35 @@ def main(viewFactorMesh, analysisPeriod, totEnergyHeaders, totEnergyNumbers, zon
         OverHeated = []
         UnderHeated = []
         for pointCount, pointZone in enumerate(pointZoneList):
-            #Check to see if the point's zone is occupied.  Otheriswe, it does not count for anything.
-            if occupancySchList[pointZone][count] > occupancyThreshold:
-                occHrsNum[pointCount] += 1
-                #Check to see if the point is comfortable.
-                if _comfResultsMtx[count + 1][pointCount] > 0:
-                    occTCP.append(1)
-                    OverHeated.append(0)
-                    UnderHeated.append(0)
-                    #Check to see if the point's zone is being conditioned.
-                    if totEnergyNumbersMatched[pointZone][count] > 0: TA.append(0)
-                    else: TA.append(1)
-                else:
-                    occTCP.append(0)
-                    TA.append(0)
-                    if _degOrPMVMtx[count + 1][pointCount] > 0:
-                        OverHeated.append(1)
-                        UnderHeated.append(0)
-                    else:
+            try:
+                _comfResultsMtx[count + 1][pointCount]
+                #Check to see if the point's zone is occupied.  Otheriswe, it does not count for anything.
+                if occupancySchList[pointZone][count] > occupancyThreshold:
+                    occHrsNum[pointCount] += 1
+                    #Check to see if the point is comfortable.
+                    if _comfResultsMtx[count + 1][pointCount] > 0:
+                        occTCP.append(1)
                         OverHeated.append(0)
-                        UnderHeated.append(1)
-            else:
-                occTCP.append(0.0)
-                TA.append(0.0)
-                OverHeated.append(0.0)
-                UnderHeated.append(0.0)
+                        UnderHeated.append(0)
+                        #Check to see if the point's zone is being conditioned.
+                        if totEnergyNumbersMatched[pointZone][count] > 0: TA.append(0)
+                        else: TA.append(1)
+                    else:
+                        occTCP.append(0)
+                        TA.append(0)
+                        if _degOrPMVMtx[count + 1][pointCount] > 0:
+                            OverHeated.append(1)
+                            UnderHeated.append(0)
+                        else:
+                            OverHeated.append(0)
+                            UnderHeated.append(1)
+                else:
+                    occTCP.append(0.0)
+                    TA.append(0.0)
+                    OverHeated.append(0.0)
+                    UnderHeated.append(0.0)
+            except:
+                pass
         
         occTCP_Mtx[count+1] = occTCP
         TA_Mtx[count+1] = TA
@@ -514,11 +518,11 @@ def main(viewFactorMesh, analysisPeriod, totEnergyHeaders, totEnergyNumbers, zon
         UnderHeatedMtx[count+1] = UnderHeated
     
     #Run through every hour of the analysis to fill up the matrices.
-    if parallel_ == True and len(occupancySchList[0]) != 1:
-        tasks.Parallel.ForEach(range(len(occupancySchList[0])), calcComf)
-    else:
-        for hour in range(len(occupancySchList[0])):
-            calcComf(hour)
+    #if parallel_ == True and len(occupancySchList[0]) != 1:
+    #    tasks.Parallel.ForEach(range(len(occupancySchList[0])), calcComf)
+    #else:
+    for hour in range(len(occupancySchList[0])):
+        calcComf(hour)
     
     # Add the total occupied hours to the matrix (to be used to help calculate comfort autonomy).
     occTCP_Mtx.append(occHrsNum)

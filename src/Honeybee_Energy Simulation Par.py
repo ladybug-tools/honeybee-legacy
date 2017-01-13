@@ -47,8 +47,8 @@ Provided by Honeybee 0.0.60
             7) sat
         simulationControls_: An optional set of simulation controls from the "Honeybee_Simulation Control" component.
         ddyFile_: An optional file path to a .ddy file on your system.  This ddy file will be used to size the HVAC system before running the simulation.
-        heatingSizingFactor_: An optional number that represents the 'saftey factor' to which the heating system will be sized.  A sizing factor of 1 means that the system is sized to perfectly meet the design day conditions.  The default is set to 1.15 as it is usually appropriate to oversize the system slightly to ensure that there are no unmet hours.  Specifying a factor here that is below 1.25 can result in more hours that do not neet the heating setpoint.
-        coolingSizingFactor_: An optional number that represents the 'saftey factor' to which the cooling system will be sized.  A sizing factor of 1 means that the system is sized to perfectly meet the design day conditions.  The default is set to 1.25 as it is usually appropriate to oversize the system slightly to ensure that there are no unmet hours.  Specifying a factor here that is below 1.25 can result in more hours that do not neet the heating setpoint.
+        heatingSizingFactor_: An optional number that represents the 'saftey factor' to which the heating system will be sized.  A sizing factor of 1 means that the system is sized to perfectly meet the design day conditions.  The default is set to 1.25 as it is usually appropriate to oversize the system slightly to ensure that there are no unmet hours.  Specifying a factor here that is below 1.25 can result in more hours that do not meet the heating setpoint.
+        coolingSizingFactor_: An optional number that represents the 'saftey factor' to which the cooling system will be sized.  A sizing factor of 1 means that the system is sized to perfectly meet the design day conditions.  The default is set to 1.15 as it is usually appropriate to oversize the system slightly to ensure that there are no unmet hours.  Specifying a factor here that is below 1.15 can result in more hours that do not meet the cooling setpoint.
         terrain_: An optional integer or text string to set the surrouning terrain of the building, which will be used to determine how wind speed around the building changes with height.  If no value is input here, the default is set to "City."  Choose from the following options:
             0 = City: large city centres, 50% of buildings above 21m over a distance of at least 2000m upwind.
             1 = Suburbs: suburbs, wooded areas.
@@ -61,7 +61,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Energy Simulation Par"
 ghenv.Component.NickName = 'EnergySimPar'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_26_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -114,6 +114,11 @@ def main(timestep, shadowCalcPar, solarDistribution, simulationControls, ddyFile
         terrain = terrainDict["0"]
     else:
         terrain = terrainDict[terrain]
+    
+    if heatingSizingFactor == None:
+        heatingSizingFactor = 1.25
+    if coolingSizingFactor == None:
+        coolingSizingFactor = 1.15
     
     if (monthlyGrndTemps == [] or len(monthlyGrndTemps) == 12) and (startDayOfWeek == None or (startDayOfWeek < 8 and startDayOfWeek > 0)):
         return [timestep] + shadowCalcPar + [solarDistribution] + simulationControls + [ddyFile] + [terrain] + [monthlyGrndTemps] + [holidays]  + [daysOfWeek[startDayOfWeek]] + [heatingSizingFactor] + [coolingSizingFactor]

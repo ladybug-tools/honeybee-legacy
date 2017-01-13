@@ -35,6 +35,7 @@ Provided by Honeybee 0.0.60
         _fanPlacement_: A boolean value that represents the placement of the fan in relation to cooling or heating coils.  The default is set to True to draw through.  Choose from the following options:
             True = Draw Through (the fan comes after the coils such that air is drawn by the fan across the heating/cooling coils).
             False = Blow Through (the fan comes before the coils such that air is blown through the heating/cooling coils).
+        airSystemHardSize_: A number that represents airflow in m3/s and sets the maximum air flow through the HVAC air system including the fan and ducts.  This overrides the default autosizing of the air system is useful for evaluating strategies like larger ducts to minimize friction and decrease fan energy use.  It's particularly useful in cases of vetilation-dominated spaces like labs and hospital patient rooms.
         demandControlledVent_: A boolean value that represents whether system can vary its speed and the volume of air to match occupancy.  The default is False for all systems.  Choose from the following options:
             True = Demand Controlled Varialbe Minimum Air (the system can vary the volume of air to match occupancy).
             False = Constant Volume Minimum Air (the fan has only one miniumum flow rate when it is on).
@@ -61,7 +62,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_HVAC Air Details"
 ghenv.Component.NickName = 'AirDetails'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nDEC_05_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | HVACSystems"
@@ -78,7 +79,7 @@ w = gh.GH_RuntimeMessageLevel.Warning
 
 def main(hb_airDetail):
     myAirDetails = hb_airDetail(_HVACAvailabiltySched_, _fanTotalEfficiency_, _fanMotorEfficiency_, \
-    _fanPressureRise_, _fanPlacement_, demandControlledVent_, _heatingSupplyAirTemp_, _coolingSupplyAirTemp_, \
+    _fanPressureRise_, _fanPlacement_, airSystemHardSize_, demandControlledVent_, _heatingSupplyAirTemp_, _coolingSupplyAirTemp_, \
     airsideEconomizer_, heatRecovery_, recoveryEffectiveness_)
     
     success, airDetails = myAirDetails.class2Str()

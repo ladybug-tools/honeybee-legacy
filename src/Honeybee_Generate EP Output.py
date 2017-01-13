@@ -21,9 +21,10 @@
 
 
 """
-This component helps select simulation outputs that can be hooked into the WriteIDF component.  Outputs are taken from here:
-http://apps1.eere.energy.gov/buildings/energyplus/pdfs/inputoutputreference.pdf
-
+This component helps select simulation outputs that can be hooked into the "Honyebee_Export to OpenStudio" component.  Outputs are taken from here:
+http://bigladdersoftware.com/epx/docs/8-3/input-output-reference/
+_
+You can also use the "Honeybee_Read Result Dictionary" component after running a simulation to get a list of all possible outputs that you can request from a given simulation.
 -
 Provided by Honeybee 0.0.60
     
@@ -44,7 +45,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Generate EP Output"
 ghenv.Component.NickName = 'EPOutput'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_28_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"

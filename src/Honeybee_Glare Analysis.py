@@ -40,8 +40,9 @@ Provided by Honeybee 0.0.60
     Returns:
         readMe: ...
         glareCheckImage: Path to HDR image of the glare study
-        DGP: Daylight glare probability. Imperceptible Glare [0.35 > DGP], Perceptible Glare [0.4 > DGP >= 0.35], Disturbing Glare [0.45 > DGP >= 0.4], Intolerable Glare [DGP >= 0.45]
+        DGP: Daylight glare probability. 
         DGI: Daylight glare index
+        glareComfortRange: Comfort Ranges. Imperceptible Glare [0.35 > DGP], Perceptible Glare [0.4 > DGP >= 0.35], Disturbing Glare [0.45 > DGP >= 0.4], Intolerable Glare [DGP >= 0.45] 
         imageWithTaskArea: Path to HDR image with task area marked with blue circle
 
 """
@@ -88,7 +89,25 @@ def readGlareResults(glareRes):
         resultDict[key.strip()] = values[keyCount].strip()
     
     return resultDict, possibleNotice
+    
 
+def DGPComfortRange(DGP):
+    """
+    This a helper function that takes in DGP values and return comfort ranges.
+    :param : DGP : DGP value as a String
+    :return : comfort range as a String
+    """
+    DGP = float(DGP)
+    if (DGP) < 0.35:
+        return "Imperceptible Glare"
+    elif DGP >= 0.35 and DGP < 0.40:
+        return "Perceptible Glare"
+    elif DGP >= 0.40 and DGP < 0.45:
+        return "Disturbing Glare"
+    elif DGP >= 0.45:
+        return "Intolerable Glare"
+        
+        
 def main(HDRImagePath, taskPosition, taskPositionAngle):
     # import the classes
     if sc.sticky.has_key('honeybee_release'):
@@ -253,9 +272,9 @@ def main(HDRImagePath, taskPosition, taskPositionAngle):
     DGP = totalGlareResultDict['dgp']
     DGI = totalGlareResultDict['dgi']
     
-    textHeight = x / 25
-    if textHeight < 10: textHeight = 10
-    addNumbersLine = "/c " + hb_RADPath + r"\psign -h " + str(textHeight) + " -cb 0 0 0 -cf 1 1 1 DGP=" + str(DGP) + " | " + \
+    textHeight = x / 28
+    if textHeight < 8: textHeight = 8
+    addNumbersLine = "/c " + hb_RADPath + r"\psign -h " + str(textHeight) + " -cb 0 0 0 -cf 1 1 1 DGP=" + str(DGP) +" This view has "+ str(DGPComfortRange(DGP))+ " | " + \
                      hb_RADPath + r"\pcompos " + glareNoTextImage + " 0 0 - " + str(textHeight/2) + " " + str(y) + " > " + glareCheckImage
     
     runCmdAndGetTheResults(addNumbersLine)
@@ -294,7 +313,7 @@ def main(HDRImagePath, taskPosition, taskPositionAngle):
         DGP = taskPGlareResultDict['dgp']
         DGI = taskPGlareResultDict['dgi']
         
-        addNumbersTLine = "/c " + hb_RADPath + r"\psign -h " + str(textHeight) + " -cb 0 0 0 -cf 1 1 1 DGP=" + str(DGP) + " | " + \
+        addNumbersTLine = "/c " + hb_RADPath + r"\psign -h " + str(textHeight) + " -cb 0 0 0 -cf 1 1 1 DGP=" + str(DGP) + " This view has " + str(DGPComfortRange(DGP))+ " | "+ \
                      hb_RADPath + r"\pcompos " + glareTaskPNoText + " 0 0 - " + str(textHeight/2) + " " + str(y) + " > " + glareTaskPCheckImage
     
         runCmdAndGetTheResults(addNumbersTLine)
@@ -305,8 +324,8 @@ def main(HDRImagePath, taskPosition, taskPositionAngle):
         
     else:
         return notes, glareCheckImage, totalGlareResultDict, None, None
-
-
+        
+        
 if _HDRImagePath and _runIt:
     result = main(_HDRImagePath, taskPositionUV_, taskPositionAngle_)
     
@@ -315,10 +334,14 @@ if _HDRImagePath and _runIt:
         
         if taskPGlareResultDict!=None:
             DGP = taskPGlareResultDict['dgp']
+            glareComfortRange = DGPComfortRange(DGP)
             DGI = taskPGlareResultDict['dgi']
         else:
             DGP = totalGlareResultDict['dgp']
+            glareComfortRange = DGPComfortRange(DGP)
             DGI = totalGlareResultDict['dgi']
 else:
     readMe = "Provide a valid HDR Image and set _runIt to True."
     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning,readMe)
+    
+

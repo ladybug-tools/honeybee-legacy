@@ -33,8 +33,8 @@ Provided by Honeybee 0.0.60
     Returns:
         totalThermalLoad: The total thermal energy used by each zone in kWh.  This includes cooling and heating.
         thermalLoadBalance: The thermal energy used by each zone in kWh.  Heating values are positive while cooling values are negative.
-        cooling: The cooling energy needed in kWh. For Ideal Air loads, this is the sum of sensible and latent heat that must be removed from each zone.  For distributed OpenStudio systems like Packaged Terminal Heat Pumps (PTHP), this will be electric energy for each zone. For central OpenStudio systems, this ouput will be a single list for the whole building.
-        heating: The heating energy needed in kWh. For Ideal Air loads, this is the sum of sensible heat that must be added to each zone.  For distributed OpenStudio Systems like Packaged Terminal Heat Pumps (PTHP), this will be electric energy for each zone. For central OpenStudio systems, this ouput will be a single list for the whole building.
+        cooling: The cooling energy needed in kWh. For Ideal Air loads, this output is the sum of sensible and latent heat that must be removed from each zone.  For detailed HVAC systems (other than ideal air), this output will be electric energy needed to power each chiller/cooling coil.
+        heating: The heating energy needed in kWh. For Ideal Air loads, this is the heat that must be added to each zone.  For detailed HVAC systems (other than ideal air), this will be fuel energy or electric energy needed for each boiler/heating element.
         electricLight: The electric lighting energy needed for each zone in kWh.
         electricEquip: The electric equipment energy needed for each zone in kWh.
         fanElectric: The fan electric energy in kWh for either a natural ventilation fan or a heating or cooling system fan.  This ouput will not appear when there is no fan in the model.
@@ -55,7 +55,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nOCT_05_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -199,7 +199,7 @@ parseSuccess = False
 #If the energy values are set to be normalized, make the units in kWh/m2.
 energyUnit = "kWh"
 idealAirTrigger = False
-
+centTrigger = False
 
 #Make a function to add headers.
 def makeHeader(list, path, zoneName, timestep, name, units, normable):
@@ -242,6 +242,10 @@ def checkSys(sysInt, sysType):
     zoneName = " " + sysType + " " + str(sysInt)
     path.append(int(sysInt)-1+len(zoneNameList))
     return zoneName
+
+customCount = 0
+def checkCustomName(customInt):
+    path.append(len(zoneNameList)+len(zoneNameList)+len(zoneNameList)+int(customInt))
 
 def checkCentralSys(sysInt, sysType):
     if sysType == 0: zoneName = " Chiller " + str(sysInt)
@@ -287,8 +291,9 @@ if _resultFileAddress and gotData == True and csvExists == True:
                 #ANALYZE THE FILE HEADING
                 key = []; path = []
                 for columnCount, column in enumerate(line.split(',')):
+                    
                     if 'Zone Ideal Loads Supply Air Total Cooling Energy' in column or 'Chiller Electric Energy' in column or 'Cooling Coil Electric Energy' in column or 'Zone VRF Air Terminal Cooling Electric Energy' in column or 'VRF Heat Pump Cooling Electric Energy' in column:
-                        key.append(0)
+                        
                         if 'Zone Ideal Loads Supply Air Total Cooling Energy' in column and 'ZONE HVAC' in column:
                             zoneName = checkZoneSys(" " + (":".join(column.split(":")[:-1])).split('ZONE HVAC IDEAL LOADS AIR SYSTEM ')[-1])
                             idealAirTrigger = True
@@ -310,12 +315,20 @@ if _resultFileAddress and gotData == True and csvExists == True:
                         elif 'Chiller Electric Energy' in column:
                             zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('CHILLER ELECTRIC EIR ')[-1], 0)
                             idealAirTrigger = False
-                        else: zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
-                        if idealAirTrigger == True:
-                            makeHeader(cooling, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Cooling Load", energyUnit, True)
                         else:
-                            makeHeader(cooling, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Cooling Electric Energy", energyUnit, True)
-                        dataTypeList[2] = True
+                            zoneName = " " +column.split(":")[0]
+                            checkCustomName(customCount)
+                            customCount+=1
+                        
+                        try:
+                            if idealAirTrigger == True:
+                                makeHeader(cooling, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Cooling Load", energyUnit, True)
+                            else:
+                                makeHeader(cooling, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Cooling Electric Energy", energyUnit, True)
+                            dataTypeList[2] = True
+                            key.append(0)
+                        except:
+                            key.append(-1)
                     
                     elif 'Zone Ideal Loads Supply Air Total Heating Energy' in column  or 'Boiler Heating Energy' in column or 'Heating Coil Total Heating Energy' in column or 'Heating Coil Gas Energy' in column or 'Heating Coil Electric Energy' in column or 'Humidifier Electric Energy' in column or 'Zone VRF Air Terminal Heating Electric Energy' in column or 'VRF Heat Pump Heating Electric Energy' in column:
                         notFound = False
@@ -347,22 +360,21 @@ if _resultFileAddress and gotData == True and csvExists == True:
                             zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('HUMIDIFIER STEAM ELECTRIC ')[-1], 4)
                             idealAirTrigger = 2
                         else:
-                            notFound = True
+                            zoneName = " " +column.split(":")[0]
+                            checkCustomName(customCount)
+                            customCount+=1
+                        
+                        try:
+                            if idealAirTrigger == True:
+                                makeHeader(heating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Heating Load", energyUnit, True)
+                            elif idealAirTrigger == False:
+                                makeHeader(heating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Heating Fuel Energy", energyUnit, False)
+                            else:
+                                makeHeader(heating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Heating Electric Energy", energyUnit, False)
+                            dataTypeList[3] = True
+                            key.append(1)
+                        except:
                             key.append(-1)
-                            path.append(-1)
-                        if notFound == False:
-                            try:
-                                if idealAirTrigger == True:
-                                    makeHeader(heating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Heating Load", energyUnit, True)
-                                elif idealAirTrigger == False:
-                                    makeHeader(heating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Heating Fuel Energy", energyUnit, False)
-                                else:
-                                    makeHeader(heating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Heating Electric Energy", energyUnit, False)
-                                dataTypeList[3] = True
-                                key.append(1)
-                            except:
-                                key.append(-1)
-                                path.append(-1)
                     
                     elif 'Zone Lights Electric Energy' in column:
                         key.append(2)
@@ -379,10 +391,14 @@ if _resultFileAddress and gotData == True and csvExists == True:
                     elif 'Fan Electric Energy' in column:
                         key.append(15)
                         if 'FAN CONSTANT VOLUME' in column:
+                            centTrigger = True
                             zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('FAN CONSTANT VOLUME ')[-1], 2)
                             makeHeader(fanElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Fan Electric Energy", energyUnit, False)
                         elif 'FAN VARIABLE VOLUME' in column:
-                            zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('FAN VARIABLE VOLUME ')[-1], 2)
+                            fanNum = int(":".join(column.split(":")[:-1]).split('FAN VARIABLE VOLUME ')[-1])
+                            if centTrigger == True:
+                                fanNum = fanNum+len(zoneNameList)
+                            zoneName = checkCentralSys(" " + str(fanNum), 2)
                             makeHeader(fanElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Fan Electric Energy", energyUnit, False)
                         elif 'FAN ON OFF' in column:
                             zoneName = checkZoneSys(" " + ":".join(column.split(":")[:-1]).split('FAN ON OFF ')[-1])
@@ -396,6 +412,11 @@ if _resultFileAddress and gotData == True and csvExists == True:
                         elif 'Earth Tube Fan Electric Energy' in column:
                             zoneName = checkZoneOther(dataIndex, " " + ":".join(column.split(":")[:-1]))
                             makeHeaderAlt(fanElectric, path[columnCount], zoneName, column.split('(')[-1].split(')')[0], "Earth Tube Fan Electric Energy", energyUnit, False)
+                        else:
+                            zoneName = " " +column.split(":")[0]
+                            checkCustomName(customCount)
+                            customCount+=1
+                            makeHeader(fanElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Fan Electric Energy", energyUnit, False)
                         dataTypeList[6] = True
                     
                     elif 'Pump Electric Energy' in column:
@@ -405,6 +426,11 @@ if _resultFileAddress and gotData == True and csvExists == True:
                             makeHeader(pumpElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Pump Electric Energy", energyUnit, True)
                         elif 'PUMP VARIABLE SPEED' in column:
                             zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('PUMP VARIABLE SPEED ')[-1], 3)
+                            makeHeader(pumpElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Pump Electric Energy", energyUnit, True)
+                        else:
+                            zoneName = " " + column.split(":")[0]
+                            checkCustomName(customCount)
+                            customCount+=1
                             makeHeader(pumpElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Pump Electric Energy", energyUnit, True)
                         dataTypeList[7] = True
                     
@@ -548,6 +574,7 @@ if _resultFileAddress and gotData == True and csvExists == True:
                     else:
                         key.append(-1)
                         path.append(-1)
+            
             else:
                 for columnCount, column in enumerate(line.split(',')):
                     if key[columnCount] != 14:
@@ -744,8 +771,8 @@ outputsDict = {
      
 0: ["totalThermalLoad", "The total thermal energy used by each zone in kWh.  This includes cooling and heating."],
 1: ["thermalLoadBalance", "The thermal energy used by each zone in kWh.  Heating values are positive while cooling values are negative. This is useful for computing balance points."],
-2: ["cooling", "The cooling energy needed in kWh. For Ideal Air loads, this is the sum of sensible and latent heat that must be removed from each zone.  For distributed OpenStudio systems like Packaged Terminal Heat Pumps (PTHP), this will be electric energy for each zone. For central OpenStudio systems, this ouput will be a single list of chiller electric energy for the whole building."],
-3: ["heating", "The heating energy needed in kWh. For Ideal Air loads, this is the sum of sensible and latent heat that must be removed from each zone.  For distributed OpenStudio systems like Packaged Terminal Heat Pumps (PTHP), this will be electric energy for each zone.  For central OpenStudio systems, this ouput will be a single list of boiler heat energy for the whole building."],
+2: ["cooling", "The cooling energy needed in kWh. For Ideal Air loads, this output is the sum of sensible and latent heat that must be removed from each zone.  For detailed HVAC systems (other than ideal air), this output will be electric energy needed to power each chiller/cooling coil."],
+3: ["heating", "The heating energy needed in kWh. For Ideal Air loads, this is the heat that must be added to each zone.  For detailed HVAC systems (other than ideal air), this will be fuel energy or electric energy needed for each boiler/heating element."],
 4: ["electricLight", "The electric lighting energy needed for each zone in kWh."],
 5: ["electricEquip", "The electric equipment energy needed for each zone in kWh."],
 6: ["fanElectric", "The fan electric energy in kWh for either a natural ventilation fan or a heating or cooling system fan.  This ouput will not appear when there is no fan in the model."],

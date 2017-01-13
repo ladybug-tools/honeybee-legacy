@@ -38,11 +38,11 @@ Provided by Honeybee 0.0.60
 """
 ghenv.Component.Name = "Honeybee_Solve Adjacencies"
 ghenv.Component.NickName = 'solveAdjc'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.56\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
 except: pass
@@ -110,8 +110,9 @@ def updateAdj(surface1, surface2, altConstruction, altBC, tol):
         surface1.setEPConstruction(surface1.intCnstrSet[surface1.type])
         surface2.setEPConstruction(surface1.intCnstrSet[surface2.type])
     else:
-        surface1.setEPConstruction(altConstruction)
-        surface2.setEPConstruction(altConstruction)
+        hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
+        hb_EPObjectsAux.assignEPConstruction(surface1, altConstruction, ghenv.Component)
+        hb_EPObjectsAux.assignEPConstruction(surface2, altConstruction, ghenv.Component)
     
     # change bc
     if altBC != None:
@@ -288,7 +289,7 @@ def main(HBZones, altConstruction, altBC, tol, remCurrent):
                 #        srf.setBC(srf.srfBC[srf.type])
     
     # add zones to dictionary
-    ModifiedHBZones  = hb_hive.addToHoneybeeHive(HBZoneObjects, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+    ModifiedHBZones  = hb_hive.addToHoneybeeHive(HBZoneObjects, ghenv.Component)
     
     return ModifiedHBZones
 

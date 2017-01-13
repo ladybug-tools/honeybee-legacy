@@ -25,7 +25,11 @@ Dump Honeybee Objects
 
 Use this component to dump Honeybee objects to a file on your system.
 You can use load Honeybee objects to load the file to Grasshopper.
-WARNING: The component is WIP and it doesn't package schedules and materials
+WARNING: The component is WIP and it doesn't currently save the following properites:
+    1) custom schedules
+    2) custom materials
+    3) hvac airDetails, heatingDetails, coolingDetails
+    4) adjacencies between zones
 -
 Provided by Honeybee 0.0.60
 
@@ -35,11 +39,12 @@ Provided by Honeybee 0.0.60
         _dump: Set to True to save the objects to file
     Returns:
         readMe!: ...
+        filePath: The location of the file where the HBZones have been saved.
 """
 
 ghenv.Component.Name = "Honeybee_Dump Honeybee Objects"
 ghenv.Component.NickName = 'dumpHBObjects'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_18_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"
@@ -54,7 +59,6 @@ import scriptcontext as sc
 import Grasshopper.Kernel as gh
 import os
 from pprint import pprint
-from collections import namedtuple
 
 def dumpHBObjects(HBObjects):
     hb_hive = sc.sticky["honeybee_Hive"]()
@@ -71,12 +75,20 @@ def dumpHBObjects(HBObjects):
         surfaceIds = [srf.ID for srf in HBZone.surfaces]
         for surface in HBZone.surfaces:
             dumpHBSurface(surface)
-        
         HBZone.surfaces = surfaceIds
-        objs[HBZone.ID] = HBZone.__dict__
         
+        # dump the HVAC system.
+        hvacID = HBZone.HVACSystem.ID
+        HBZone.HVACSystem.airDetails = None
+        HBZone.HVACSystem.heatingDetails = None
+        HBZone.HVACSystem.coolingDetails = None
+        objs[hvacID] = HBZone.HVACSystem.__dict__
+        HBZone.HVACSystem = hvacID
+        
+        objs[HBZone.ID] = HBZone.__dict__
+    
     def dumpHBSurface(HBSurface):
-
+        
         # replace parent object with it's ID
         if HBSurface.parent != None:
             # make sure parent object is also in the list
@@ -97,7 +109,7 @@ def dumpHBObjects(HBObjects):
         try:
             if HBSurface.BC.lower() in ["outdoors", "ground", "adiabatic"]:
                 HBSurface.BCObject.name
-                HBSurface.BCObject = "Outdoors" #This will be replaced by Oudoor object in loading
+                HBSurface.BCObject = "Outdoors" #This will be replaced by Outdoor object in loading
         except:
             # print HBSurface.BC.lower()
             # not out outdoor BC
@@ -144,11 +156,9 @@ def main(HBObjects, filePath, dump):
     
     HBData = dumpHBObjects(HBObjects)
     
-    # pprint(HBData)
-    
     with open(filePath, "wb") as outf:
         pickle.dump(HBData, outf)
         print "Saved file to %s"%filePath
-    
+    return filePath
 
-main(_HBObjects, _filePath, _dump)
+filePath = main(_HBObjects, _filePath, _dump)

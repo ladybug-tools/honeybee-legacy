@@ -35,7 +35,9 @@ Provided by Ladybug 0.0.62
         _thu: Thursday. Connect a list of 24 values that represent the schedule value at each hour of the day..
         _fri: Friday. Connect a list of 24 values that represent the schedule value at each hour of the day.
         _sat: Saturday. Connect a list of 24 values that represent the schedule value at each hour of the day.
-        holiday_: Optional input for holidays. Connect a list of 24 values that represent the schedule value at each hour of the day.
+        holiday_: Optional input for holidays. Connect a list of 24 values that represent the schedule value at each hour of the day. If no value is input here, the schedule for Sunday will be used for all holidays.
+        coolDesignDay_: Optional input for the cooling design day that is used to size the system. Connect a list of 24 values that represent the schedule value at each hour of the day. If no value is input here, the schedule for Monday will be used for the cooling design day.
+        heatDesignDay_: Optional input for the heating design day that is used to size the system. Connect a list of 24 values that represent the schedule value at each hour of the day. If no value is input here, the schedule for Sunday will be used for the heating design day.
         ------------: ...
         epwFileForHol_: If you want to generate a list of holiday DOYs automatically connect an .epw file path on your system as a string.
         startDayOfWeek_: Set the schedule start day of the week. The default is set to "monday".
@@ -48,7 +50,8 @@ Provided by Ladybug 0.0.62
             5) thu
             6) fri
             7) sat
-            overwriteHolidays_: Connect a list of DOYs (from 1 to 365) or a list of strings (example: DEC 25).
+        
+        customHolidays_: Connect a list of DOYs (from 1 to 365) or a list of strings (example: DEC 25).
             -
             Note that this input overwrites epwFile DOYs.
         _scheduleName_: An optional name for the schedule that will be written to the memory of the document.  If no name is connected here, a uniqui ID will be generated for the schedule.
@@ -68,7 +71,7 @@ Provided by Ladybug 0.0.62
 
 ghenv.Component.Name = "Honeybee_Annual Schedule"
 ghenv.Component.NickName = 'AnnualSchedule'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_16_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_01_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "07 | Energy | Schedule"
@@ -148,8 +151,8 @@ def IFDstrForWeek(daySchedNames, schName):
         '\t' + daySchedNames[5] + ',  !- Friday Schedule:Day Name\n' + \
         '\t' + daySchedNames[6] + ',  !- Saturday Schedule:Day Name\n' + \
         '\t' + daySchedNames[7] + ',  !- Holiday Schedule:Day Name\n' + \
-        '\t' + daySchedNames[1] + ',  !- SummerDesignDay Schedule:Day Name\n' + \
-        '\t' + daySchedNames[0] + ',  !- WinterDesignDay Schedule:Day Name\n' + \
+        '\t' + daySchedNames[8] + ',  !- SummerDesignDay Schedule:Day Name\n' + \
+        '\t' + daySchedNames[9] + ',  !- WinterDesignDay Schedule:Day Name\n' + \
         '\t' + daySchedNames[0] + ',  !- CustomDay1 Schedule:Day Name\n' + \
         '\t' + daySchedNames[0] + ';  !- CustomDay2 Schedule:Day Name\n'
     
@@ -167,7 +170,7 @@ def IFDstrForYear(weekSchedName, schName, schTypeLims):
     
     return idfStr
 
-def main(sun, mon, tue, wed, thu, fri, sat, holiday, runIt, epwFile, weekStartWith, overwriteHolidays, scheduleName, schedTypeLimits):
+def main(sun, mon, tue, wed, thu, fri, sat, holiday, hdd, cdd, runIt, epwFile, weekStartWith, overwriteHolidays, scheduleName, schedTypeLimits):
     # Import the classes.
     lb_preparation = sc.sticky["ladybug_Preparation"]()
     hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
@@ -335,11 +338,11 @@ def main(sun, mon, tue, wed, thu, fri, sat, holiday, runIt, epwFile, weekStartWi
                 if overwriteHolidays is not type(int):
                     overwriteHolidays = map(int, overwriteHolidays)
             except ValueError:
-                overwriteHolidays_day = []
+                customHolidays_day = []
                 for item in overwriteHolidays:
                     day_date = fromDateToDay(item, months_dict)
-                    overwriteHolidays_day.append(day_date)
-                overwriteHolidays = overwriteHolidays_day
+                    customHolidays_day.append(day_date)
+                overwriteHolidays = customHolidays_day
                 
             country_selected = []
             for item in overwriteHolidays:
@@ -358,11 +361,11 @@ def main(sun, mon, tue, wed, thu, fri, sat, holiday, runIt, epwFile, weekStartWi
             if overwriteHolidays is not type(int):
                 overwriteHolidays = map(int, overwriteHolidays)
         except ValueError:
-            overwriteHolidays_day = []
+            customHolidays_day = []
             for item in overwriteHolidays:
                 day_date = fromDateToDay(item, months_dict)
-                overwriteHolidays_day.append(day_date)
-            overwriteHolidays = overwriteHolidays_day
+                customHolidays_day.append(day_date)
+            overwriteHolidays = customHolidays_day
         country_selected = []
         for item in overwriteHolidays:
             country_selected.append(item-1)
@@ -378,7 +381,7 @@ def main(sun, mon, tue, wed, thu, fri, sat, holiday, runIt, epwFile, weekStartWi
         warning = "You have connected an epwFileForHol_ but not a holiday_ schedule. \nAs a result, the component doesn't know what happens on the holidays and so no holidays are written."
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
     elif overwriteHolidays and not holiday:
-        warning = "You have connected an overwriteHolidays_ but not a holiday_ schedule. \nAs a result, the component doesn't know what happens on the holidays and so no holidays are written."
+        warning = "You have connected an customHolidays_ but not a holiday_ schedule. \nAs a result, the component doesn't know what happens on the holidays and so no holidays are written."
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
     
     try:
@@ -425,7 +428,7 @@ def main(sun, mon, tue, wed, thu, fri, sat, holiday, runIt, epwFile, weekStartWi
     schedIDFStrs = []
     daySchedNames = []
     
-    daySchedDict = {0:'Sun', 1:'Mon', 2:'Tue', 3:'Wed', 4:'Thu', 5:'Sat', 6:'Fri', 7:'Hol'}
+    daySchedDict = {0:'Sun', 1:'Mon', 2:'Tue', 3:'Wed', 4:'Thu', 5:'Sat', 6:'Fri', 7:'Hol', 8:'CDD', 9:'HDD'}
     if writeSchedule_:
         # Make a name for the schedule.
         if scheduleName == None:
@@ -450,14 +453,20 @@ def main(sun, mon, tue, wed, thu, fri, sat, holiday, runIt, epwFile, weekStartWi
                 schTypeLims = 'TEMPERATURE 1'
         
         # Write out text strings for the daily schedules
-        for dCount, daySch in enumerate([sun, mon, tue, wed, thu, fri, sat, holiday]):
+        for dCount, daySch in enumerate([sun, mon, tue, wed, thu, fri, sat, holiday, cdd, hdd]):
             if daySch not in daySchedCollection and daySch != []:
                 daySchedCollection.append(daySch)
                 schedIDFStrs.append(IFDstrFromDayVals(daySch, schedName, daySchedDict[dCount], schTypeLims))
                 daySchName = schedName + ' Day Schedule - ' + daySchedDict[dCount]
                 daySchNameCollect.append(daySchName)
+            elif daySch == [] and dCount == 8:
+                try:
+                    daySchName = daySchNameCollect[1]
+                except:
+                    daySchName = daySchNameCollect[0]
+                daySchNameCollect.append(daySchName)
             elif daySch == []:
-                daySchName = schedName + ' Day Schedule - ' + 'Sun'
+                daySchName = daySchNameCollect[0]
                 daySchNameCollect.append(daySchName)
             else:
                 for count, sch in enumerate(daySchedCollection):
@@ -520,7 +529,7 @@ else:
 
 #Check the data to make sure it is the correct type
 if initCheck == True and _generateValues == True:
-    result = main(_sun, _mon, _tue, _wed, _thu, _fri, _sat, holiday_, _generateValues, epwFileForHol_, startDayOfWeek_, overwriteHolidays_, _scheduleName_, _schedTypeLimits_)
+    result = main(_sun, _mon, _tue, _wed, _thu, _fri, _sat, holiday_, heatDesignDay_, coolDesignDay_, _generateValues, epwFileForHol_, startDayOfWeek_, customHolidays_, _scheduleName_, _schedTypeLimits_)
     if result != -1:
         schedule, holidays, scheduleValues, schedIDFText, weekSchedule = result
         print '\nscheduleValues generated!'

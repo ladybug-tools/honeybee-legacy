@@ -60,13 +60,13 @@ import decimal
 
 ghenv.Component.Name = 'Honeybee_Import WINDOW Glz System'
 ghenv.Component.NickName = 'importWINDOW'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
-#compatibleHBVersion = VER 0.0.56\nJAN_12_2015
+#compatibleHBVersion = VER 0.0.56\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
-try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
 
 
@@ -384,7 +384,7 @@ def main(windowGlzSysReport, glzPlane, spacerMaterial, thermDefault, unitConvert
             materials.append(spacerMaterial)
     
     #Add All THERM Polygons to the hive.
-    thermPolygonsFinal  = hb_hive.addToHoneybeeHive(thermPolygons, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+    thermPolygonsFinal  = hb_hive.addToHoneybeeHive(thermPolygons, ghenv.Component)
     
     
     #Create the THERM BCs.
@@ -393,9 +393,9 @@ def main(windowGlzSysReport, glzPlane, spacerMaterial, thermDefault, unitConvert
     indoorRemainThermBC = hb_thermBC(indoorRemainBCGeo, indoorProps[0].title(), indoorProps[1], indoorProps[2], plane, None, None, None, None, None)
     
     # ADD THERM BCs TO THE HIVE
-    thermOutBoundary  = hb_hive.addToHoneybeeHive([outdoorHBThermBC], ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
-    thermInBoundary1  = hb_hive.addToHoneybeeHive([indoorFrameThermBC], ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
-    thermInBoundary2  = hb_hive.addToHoneybeeHive([indoorRemainThermBC], ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+    thermOutBoundary  = hb_hive.addToHoneybeeHive([outdoorHBThermBC], ghenv.Component, False)
+    thermInBoundary1  = hb_hive.addToHoneybeeHive([indoorFrameThermBC], ghenv.Component, False)
+    thermInBoundary2  = hb_hive.addToHoneybeeHive([indoorRemainThermBC], ghenv.Component, False)
     
     
     return thermPolygonsFinal, thermInBoundary1 + thermInBoundary2, thermOutBoundary, materials, indoorProps, outdoorProps

@@ -46,11 +46,11 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Add Internal Mass to Zone"
 ghenv.Component.NickName = 'addInternalMass'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.56\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
 except: pass
@@ -212,7 +212,7 @@ def main(HBZones, srfAreas, EPConstruction, massNames):
             print message
     
     # send the zones back to the hive
-    HZonesFinal  = hb_hive.addToHoneybeeHive(HBZones, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+    HZonesFinal  = hb_hive.addToHoneybeeHive(HBZones, ghenv.Component)
     
     return HZonesFinal
 

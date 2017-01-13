@@ -33,7 +33,7 @@ _
 The method used by this component is based off of the Shaderade method developed by Christoph Reinhart, Jon Sargent, Jeffrey Niemasz.  This component uses Shaderade's method for evaluating shade and window geometry in terms of solar vectors.
 _
 A special thanks goes to them and their research.  A paper detailing the Shaderade method is available at:
-http://www.gsd.harvard.edu/research/gsdsquare/Publications/Shaderade_BS2011.pdf
+http://web.mit.edu/tito_/www/Publications/BS2011_Shaderade.pdf
 
 -
 Provided by Honeybee 0.0.60
@@ -70,7 +70,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Energy Shade Benefit Evaluator"
 ghenv.Component.NickName = 'EnergyShadeBenefit'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_28_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"

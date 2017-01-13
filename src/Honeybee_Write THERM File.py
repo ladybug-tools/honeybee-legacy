@@ -51,7 +51,7 @@ import decimal
 
 ghenv.Component.Name = 'Honeybee_Write THERM File'
 ghenv.Component.NickName = 'writeTHERM'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_30_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -824,7 +824,13 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
     if basePlane.Normal.Z < -0.70710678118 or basePlane.Normal.Z > 0.70710678118: CrossSectionType = 'Jamb'
     
     #CHECK THE MESH LEVEL.
-    if meshLevel_: meshLevel = str(meshLevel_)
+    if meshLevel_:
+        meshLevel = str(meshLevel_)
+        if meshLevel_ > 8:
+            meshLevel = "8"
+            warning = "Therm cannot simulate a mesh level greater than 8. It will be automatically changed to 8 for you."
+            print warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
     else: meshLevel = '6'
     
     
