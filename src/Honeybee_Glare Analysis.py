@@ -177,7 +177,6 @@ def main(HDRImagePath, taskPosition, taskPositionAngle):
             print msg
             notes += msg + "\n"
             
-            
         else:
             print msg
             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Error, msg)
@@ -195,7 +194,6 @@ def main(HDRImagePath, taskPosition, taskPositionAngle):
         taskPA = math.radians(taskPositionAngle)
         taskP = True
         
-    
     if taskP and (taskPX > 1 or taskPY > 1):
         msg = "U and V valeus for taskPositionUV should be between 0 and 1." + \
                 "%.3f"%taskPX + " and " + "%.3f"%taskPY + " are not acceptable input." + \
@@ -290,7 +288,6 @@ def main(HDRImagePath, taskPosition, taskPositionAngle):
         glareTaskPCheckImage = ".".join(HDRImagePath.split(".")[:-1]) + "_TPChkFile." + HDRImagePath.split(".")[-1]
         glareTaskPNoText = ".".join(HDRImagePath.split(".")[:-1]) + "_TPnoText." + HDRImagePath.split(".")[-1]
         
-        
         xPixle = int(taskPX * x)
         yPixle = int(taskPY * y) # 0,0 coordinate for evalglare located at top left
         taskPA = math.radians(taskPositionAngle)
@@ -327,7 +324,6 @@ def main(HDRImagePath, taskPosition, taskPositionAngle):
         
     else:
         return notes, glareCheckImage, totalGlareResultDict, None, None
-        
         
 if _HDRImagePath and _runIt:
 
