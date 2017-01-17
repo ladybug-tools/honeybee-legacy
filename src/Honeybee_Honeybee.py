@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.60\nJAN_01_2017'
+ghenv.Component.Message = 'VER 0.0.60\nJAN_17_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -4877,7 +4877,7 @@ class EPZone(object):
     """This calss represents a honeybee zone that will be used for energy and daylighting
     simulatios"""
     
-    def __init__(self, zoneBrep, zoneID, zoneName, program = [None, None], isConditioned = True):
+    def __init__(self, zoneBrep, zoneID, zoneName,standard = None,climate = None,program = [None, None], isConditioned = True):
         self.north = 0
         self.objectType = "HBZone"
         self.origin = rc.Geometry.Point3d.Origin
@@ -4952,14 +4952,19 @@ class EPZone(object):
             except Exception, e:
                 print 'Checking normal directions failed:\n' + `e`
         
-        # Zone Program
+        # Zone Program, climate zone and construction set
         self.bldgProgram = program[0]
         self.zoneProgram = program[1]
+        self.standard = standard
+        # Need a check to only have only one climate zone for entire model
+        self.climateZone = climate
         
         # assign schedules
         self.assignScheduleBasedOnProgram()
         # assign loads
         self.assignLoadsBasedOnProgram()
+        
+        self.assignConstructionsByStandardClimateZone()
         
         # Assign a default HVAC System.
         if isConditioned: self.HVACSystem = EPHvac("GroupI", 0, None, None, None) # assign ideal loads as default
@@ -5022,6 +5027,33 @@ class EPZone(object):
         
         # find all the patameters and assign them to 
         self.isSchedulesAssigned = True
+        
+    def assignConstructionsByStandardClimateZone(self, component=None):
+        
+        if self.standard == None: self.standard = '90.1-2007'
+        if self.climateZone == None: self.climateZone = 'ClimateZone 4'
+        
+        openStudioStandardLib = sc.sticky ["honeybee_OpenStudioStandardsFile"]
+        
+        try:
+            schedulesAndLoads = openStudioStandardLib['space_types']['90.1-2007']['ClimateZone 1-8'][self.bldgProgram][self.zoneProgram]
+            
+        except:
+            msg = "Either your input for bldgProgram > [" + self.bldgProgram + "] or " + \
+                  "the input for zoneProgram > [" + self.zoneProgram + "] is not valid.\n" + \
+                  "Use ListSpacePrograms component to find the available programs."
+            print msg
+            if component != None:
+                component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                
+        # Get construction set,
+        
+        constructionSet = openStudioStandardLib['construction_sets'][self.standard][self.climateZone][self.bldgProgram]
+        
+        self.constructionSetAssigned = True
+        
+        return constructionSet
+                
     
     def assignLoadsBasedOnProgram(self, component=None):
         # create an open office is the program is not assigned
