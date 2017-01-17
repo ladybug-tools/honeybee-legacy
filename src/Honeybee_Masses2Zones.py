@@ -47,6 +47,7 @@ import sys
 import System
 import Grasshopper.Kernel as gh
 import uuid
+import re
 
 
 ghenv.Component.Name = 'Honeybee_Masses2Zones'
@@ -265,7 +266,6 @@ def main(maximumRoofAngle, zoneMasses, zoneNames, zonePrograms,standard,climateZ
                 exec('materialName = ' + material)
         """
         
-        
         constructionSetDict = thisZone.assignConstructionsByStandardClimateZone().items()[0][1]
         
         for key in constructionSetDict:
@@ -285,7 +285,11 @@ def main(maximumRoofAngle, zoneMasses, zoneNames, zonePrograms,standard,climateZ
                     
                     surfaceMaterials = []
                     
-                    construction = openStudioStandardLib["constructions"][str(constructionSetDict.get(key))]
+                    constructionName = str(constructionSetDict.get(key))
+                    
+                    construction = openStudioStandardLib["constructions"][constructionName]
+                    
+                    constructionStr = "Construction,\n" + constructionName.upper() + ",    !- Name\n"
                     
                     for material in construction["materials"]:
                         
@@ -312,19 +316,27 @@ def main(maximumRoofAngle, zoneMasses, zoneNames, zonePrograms,standard,climateZ
                         
                     # Now that we have the the materials lets create the construction from these materials
                     
-                    for material in surfaceMaterials:
+                    for layerCount,material in enumerate(surfaceMaterials):
                         
-                        layerName = material.split(',')[1]
+                        added, materialName = hb_EPMaterialAUX.addEPConstructionToLib(material, overwrite = True)
                         
-                        added, materialName = hb_EPMaterialAUX.addEPConstructionToLib(materialName, overwrite = True)
+                        # Build EP construction string
                         
+                        materialName = material.split(',')[1]
                         
+                        # Make sure layerNames are clear
                         
-                    #layerName = 
-                    
+                        materialName = re.sub(r'\s+', '',materialName)
+                        
+                        if layerCount!= len(surfaceMaterials)-1:
+                            
+                            constructionStr += materialName + ",    !- Layer " + str(layerCount) + "\n"
+                        
+                        else:
+                            
+                            constructionStr += materialName + ";    !- Layer " + str(layerCount) + "\n"
+                        
                     #print surfaceMaterials[0].split(',')[1]
-                    
-                    
                     #openStudioStandardLib["constructions"][str(constructionSetDict.get(key))]["materials"][0]
 
                     if surface.hasChild and surface.BC.upper() == "SURFACE":
@@ -333,7 +345,6 @@ def main(maximumRoofAngle, zoneMasses, zoneNames, zonePrograms,standard,climateZ
                         
                         pass
 
-                    
                 if (surface.type == 1) and (key == "exterior_roof"):
                     
                     # Surfaces that are exterior roofs
