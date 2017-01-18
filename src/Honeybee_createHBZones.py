@@ -48,7 +48,7 @@ import math
 
 ghenv.Component.Name = 'Honeybee_createHBZones'
 ghenv.Component.NickName = 'createHBZones'
-ghenv.Component.Message = 'VER 0.0.60\nNOV_04_2016'
+ghenv.Component.Message = 'VER 0.0.60\nJAN_18_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -97,6 +97,13 @@ def main(zoneName,  HBZoneProgram, HBSurfaces, isConditioned):
     try: bldgProgram, zoneProgram = HBZoneProgram.split("::")
     except: bldgProgram, zoneProgram = 'Office', 'OpenOffice'
     
+    
+    try: thisStandard = convertStandardIntToString(standard)
+    except: thisStandard = '90.1-2007'
+        
+    try: thisClimateZone = convertClimateTypetoString(climateZone)
+    except: thisClimateZone = 'ClimateZone 4'
+
     # initiate the zone
     zoneID = str(uuid.uuid4())
     
@@ -121,6 +128,158 @@ def main(zoneName,  HBZoneProgram, HBSurfaces, isConditioned):
         print message
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, message)
+        
+    def convertStandardIntToString(standard):
+        
+        if standard == 0:
+            
+            return '189.1-2009'
+            
+        if standard == 1:
+            
+            return '90.1-2007'
+           
+        if standard == 2:
+            
+            return '90.1-2010'
+            
+        if standard == 3:
+            
+            return 'DOE Ref 1980-2004'
+            
+        if standard == 4:
+            
+            return 'DOE Ref 2004'
+            
+        if standard == 5:
+            
+            return 'DOE Ref Pre-1980'
+        
+        
+    def convertClimateTypetoString(climateZone):
+        
+        if standard == 0:
+            
+            return 'ClimateZone 1'
+            
+        if standard == 1:
+            
+            return 'ClimateZone 2'
+           
+        if standard == 2:
+            
+            return 'ClimateZone 3'
+            
+        if standard == 3:
+            
+            return 'ClimateZone 4'
+            
+        if standard == 4:
+            
+            return 'ClimateZone 5'
+            
+        if standard == 5:
+            
+            return 'ClimateZone 6'
+            
+        if standard == 6:
+            
+            return 'ClimateZone 7'
+            
+        if standard == 7:
+            
+            return 'ClimateZone 8'
+        
+    def assignConstructionSets(thisZone,constructionSetDict):
+    
+        """Assign a construction set from the OpenStudio standards to all the surfaces of this zone""" 
+    
+        for surface in thisZone.surfaces:
+        
+            if surface.type == 0:
+            
+                if surface.BC.upper() == "SURFACE":
+                    
+                    # This is an interior wall
+                    # Assign the internal wall construction to the internal wall
+                    
+                    hb_EPObjectsAux.assignEPConstruction(surface, str(constructionSetDict.get("interior_wall"), ghenv.Component))
+                    
+                    if surface.hasChild:
+                        
+                        for childSrf in surface.childSrfs:
+                            
+                            # Assign the construction to the internal windows 
+                            
+                            hb_EPObjectsAux.assignEPConstruction(surface, str(constructionSetDict.get("interior_fixed_window")), ghenv.Component)
+                           
+                else:
+                    
+                    # This is an exterior wall
+                    # Assign the exterior wall construction to the exterior wall
+                    
+                    hb_EPObjectsAux.assignEPConstruction(surface, str(constructionSetDict.get("exterior_wall")), ghenv.Component)
+                    
+                    if surface.hasChild:
+                        
+                        for childSrf in surface.childSrfs:
+                            
+                            hb_EPObjectsAux.assignEPConstruction(surface, str(constructionSetDict.get("exterior_fixed_window")), ghenv.Component)
+                            
+                            # Assign the construction to the exterior windows
+            
+            if surface.type == 0.5:
+                
+                # For underground walls assume that they are ground_contact_walls
+                
+                hb_EPObjectsAux.assignEPConstruction(surface, str(constructionSetDict.get("ground_contact_wall")), ghenv.Component)
+                
+            if (surface.type == 1):
+                
+                # Surfaces that are exterior roofs, Assign roof material
+                
+                hb_EPObjectsAux.assignEPConstruction(surface, str(constructionSetDict.get("exterior_roof")), ghenv.Component)
+               
+                if surface.hasChild:
+    
+                    for childSrf in surface.childSrfs:
+                        
+                        # Assign skylight materials
+                        
+                        hb_EPObjectsAux.assignEPConstruction(surface, str(constructionSetDict.get("exterior_skylight")), ghenv.Component)
+                        
+            if (surface.type == 1.5):
+                
+                # For underground ceilings
+                
+                hb_EPObjectsAux.assignEPConstruction(surface, str(constructionSetDict.get("ground_contact_ceiling")), ghenv.Component)
+               
+            if (surface.type == 2):
+                
+                # Assume that exterior_floors are OpenStudio_standards.json exterior floors
+                
+                hb_EPObjectsAux.assignEPConstruction(surface, str(constructionSetDict.get("exterior_floor")), ghenv.Component)
+                
+            if (surface.type == 2.5) or (surface.type == 2.25):
+                
+                # For underground floors and slabs
+                
+                hb_EPObjectsAux.assignEPConstruction(surface, str(constructionSetDict.get("ground_contact_floor")), ghenv.Component)
+                
+            if (surface.type == 2.75):
+                
+                # Note there appears to be no construction in OpenStudio_standards.json for exposed floors ?
+                pass
+               
+            if (surface.type == 3):
+                
+                hb_EPObjectsAux.assignEPConstruction(surface, str(constructionSetDict.get("interior_ceiling")), ghenv.Component)
+    
+    # Assign the constructions for walls, roof, slab floor etc from the OpenStudio standards
+        
+    constructionSetDict = thisZone.assignConstructionsByStandardClimateZone().items()[0][1]
+    
+    assignConstructionSets(thisZone,constructionSetDict)
     
     HBZone  = hb_hive.addToHoneybeeHive([HBZone], ghenv.Component)
     

@@ -52,7 +52,7 @@ import re
 
 ghenv.Component.Name = 'Honeybee_Masses2Zones'
 ghenv.Component.NickName = 'Mass2Zone'
-ghenv.Component.Message = 'VER 0.0.60\nJAN_17_2017'
+ghenv.Component.Message = 'VER 0.0.60\nJAN_18_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -226,125 +226,100 @@ def main(maximumRoofAngle, zoneMasses, zoneNames, zonePrograms,standard,climateZ
         
         thisZone = hb_EPZone(zone, zoneKey, zoneName,thisStandard,thisClimateZone, thisZoneProgram, isZoneConditioned)
 
-        """
-        for buildingElementsDict in thisZone.assignConstructionsByStandardClimateZone().items():
-            
-            print buildingElementsDict
-            
-            for buildingElement in buildingElementsDict:
-                
-                print buildingElement
-        """
-
         # assign surface types and construction based on type
         thisZone.decomposeZone(maximumRoofAngle)
         
-        def createOpaqueMaterial(name, roughness, thickness, conductivity, density, specificHeat, thermAbsp, solAbsp, visAbsp):
-            
-            """Create Opaque material with mass code copied from EPOpaqueMat component to create EP mass materials"""
-            values = [name.upper(), roughness, thickness, conductivity, density, specificHeat, thermAbsp, solAbsp, visAbsp]
-            comments = ["Name", "Roughness", "Thickness {m}", "Conductivity {W/m-K}", "Density {kg/m3}", "Specific Heat {J/kg-K}", "Thermal Absorptance", "Solar Absorptance", "Visible Absorptance"]
-            
-            materialStr = "Material,\n"
-            
-            for count, (value, comment) in enumerate(zip(values, comments)):
-                
-                if count!= len(values) - 1:
-                    materialStr += str(value) + ",    !" + str(comment) + "\n"
-                else:
-                    materialStr += str(value) + ";    !" + str(comment)
-                    
-            return materialStr
-                
-        def createConstruction():
-            
-            pass
+        # The constructions for walls, roof, slab floor etc from the OpenStudio standards
         
         constructionSetDict = thisZone.assignConstructionsByStandardClimateZone().items()[0][1]
         
-        for key in constructionSetDict:
+        def assignConstructionSets(thisZone,constructionSetDict):
             
-            #print str(key)+": "+ 
+            """Assign a construction set from the OpenStudio standards to all the surfaces of this zone""" 
             
             for surface in thisZone.surfaces:
-
-                if (surface.type == 0) and (key == "exterior_wall"):
-                    
-                    # Surfaces that are exterior walls
-                    
-                    #print str(constructionSetDict.get(key))
-                    
-                    # A list of all the materials required to create this surface from the 
-                    # openStudioStandardLib
-                    
-                    surfaceMaterials = []
-                    
-                    constructionName = str(constructionSetDict.get(key))
-                    
-                    construction = openStudioStandardLib["constructions"][constructionName]
-                    
-                    constructionStr = "Construction,\n" + constructionName.upper() + ",    !- Name\n"
-                    
-                    for material in construction["materials"]:
+            
+                if surface.type == 0:
+                
+                    if surface.BC.upper() == "SURFACE":
                         
-                        surfaceMaterials.append(createOpaqueMaterial(material,openStudioStandardLib["materials"][material]['roughness'],openStudioStandardLib["materials"][material]["thickness"],openStudioStandardLib["materials"][material]["conductivity"],openStudioStandardLib["materials"][material]["density"],openStudioStandardLib["materials"][material]["specific_heat"],openStudioStandardLib["materials"][material]["thermal_absorptance"],openStudioStandardLib["materials"][material]["solar_absorptance"],openStudioStandardLib["materials"][material]["visible_absorptance"]))
+                        # This is an interior wall
+                        # Assign the internal wall construction to the internal wall
                         
-                    # Now that we have the the materials lets create the construction from these materials
-                    
-                    overwrite = True
-                    
-                    for layerCount,material in enumerate(surfaceMaterials):
+                        hb_EPObjectsAux.assignEPConstruction(surface, str(constructionSetDict.get("interior_wall"), ghenv.Component))
                         
-                        added, materialName = hb_EPMaterialAUX.addEPConstructionToLib(material, overwrite = True)
-                        
-                        #print materialName
-                        
-                        added, name = hb_EPObjectsAux.addEPObjectToLib(material, overwrite)
-                        
-                        print name
-                        
-                        # Build EP construction string
-                        
-                        materialName = material.split(',')[1]
-                        
-                        # Make sure layerNames are clear
-                        
-                        materialName = re.sub(r'\s+', '',materialName)
-                        
-                        if layerCount!= len(surfaceMaterials)-1:
+                        if surface.hasChild:
                             
-                            constructionStr += materialName + ",    !- Layer " + str(layerCount) + "\n"
+                            for childSrf in surface.childSrfs:
+                                
+                                # Assign the construction to the internal windows 
+                                
+                                hb_EPObjectsAux.assignEPConstruction(surface, str(constructionSetDict.get("interior_fixed_window")), ghenv.Component)
+                               
+                    else:
                         
-                        else:
+                        # This is an exterior wall
+                        # Assign the exterior wall construction to the exterior wall
+                        
+                        hb_EPObjectsAux.assignEPConstruction(surface, str(constructionSetDict.get("exterior_wall")), ghenv.Component)
+                        
+                        if surface.hasChild:
                             
-                            constructionStr += materialName + ";    !- Layer " + str(layerCount) + "\n"
-                        
-                    added, name = hb_EPObjectsAux.addEPObjectToLib(constructionStr, overwrite)
+                            for childSrf in surface.childSrfs:
+                                
+                                hb_EPObjectsAux.assignEPConstruction(surface, str(constructionSetDict.get("exterior_fixed_window")), ghenv.Component)
+                                
+                                # Assign the construction to the exterior windows
+                
+                if surface.type == 0.5:
                     
-                    hb_EPObjectsAux.assignEPConstruction(surface, constructionStr, ghenv.Component)
+                    # For underground walls assume that they are ground_contact_walls
                     
-                    if surface.hasChild and surface.BC.upper() == "SURFACE":
-                        
-                        #Surfaces that are exterior windows
-                        
-                        pass
+                    hb_EPObjectsAux.assignEPConstruction(surface, str(constructionSetDict.get("ground_contact_wall")), ghenv.Component)
+                    
+                if (surface.type == 1):
+                    
+                    # Surfaces that are exterior roofs, Assign roof material
+                    
+                    hb_EPObjectsAux.assignEPConstruction(surface, str(constructionSetDict.get("exterior_roof")), ghenv.Component)
+                   
+                    if surface.hasChild:
+    
+                        for childSrf in surface.childSrfs:
+                            
+                            # Assign skylight materials
+                            
+                            hb_EPObjectsAux.assignEPConstruction(surface, str(constructionSetDict.get("exterior_skylight")), ghenv.Component)
+                            
+                if (surface.type == 1.5):
+                    
+                    # For underground ceilings
+                    
+                    hb_EPObjectsAux.assignEPConstruction(surface, str(constructionSetDict.get("ground_contact_ceiling")), ghenv.Component)
+                   
+                if (surface.type == 2):
+                    
+                    # Assume that exterior_floors are OpenStudio_standards.json exterior floors
+                    
+                    hb_EPObjectsAux.assignEPConstruction(surface, str(constructionSetDict.get("exterior_floor")), ghenv.Component)
+                    
+                if (surface.type == 2.5) or (surface.type == 2.25):
+                    
+                    # For underground floors and slabs
+                    
+                    hb_EPObjectsAux.assignEPConstruction(surface, str(constructionSetDict.get("ground_contact_floor")), ghenv.Component)
+                    
+                if (surface.type == 2.75):
+                    
+                    # Note there appears to be no construction in OpenStudio_standards.json for exposed floors ?
+                    pass
+                   
+                if (surface.type == 3):
+                    
+                    hb_EPObjectsAux.assignEPConstruction(surface, str(constructionSetDict.get("interior_ceiling")), ghenv.Component)
 
-                if (surface.type == 1) and (key == "exterior_roof"):
-                    
-                    # Surfaces that are exterior roofs
-                    pass
-                    #str(constructionSetDict.get(key))
-                    
-                    
-                if (surface.type == 2) and (key == "exterior_floor"):
-                    
-                    # Surfaces that exterior floors
-                    pass
-                    #str(constructionSetDict.get(key))
-                    
-                    
-        
-        
+        assignConstructionSets(thisZone,constructionSetDict)
+
         # append this zone to other zones
         HBZones.append(thisZone)
                 
