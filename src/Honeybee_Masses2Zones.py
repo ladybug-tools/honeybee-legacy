@@ -66,6 +66,7 @@ tolerance = sc.doc.ModelAbsoluteTolerance
 import math
 
 hb_EPMaterialAUX = sc.sticky["honeybee_EPMaterialAUX"]()
+hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
 openStudioStandardLib = sc.sticky ["honeybee_OpenStudioStandardsFile"]
 
 ################################################################################
@@ -255,16 +256,9 @@ def main(maximumRoofAngle, zoneMasses, zoneNames, zonePrograms,standard,climateZ
                     
             return materialStr
                 
-                
-        """
-        def createConstruction(listMaterials):
+        def createConstruction():
             
-            Creates a EP construction from a list of materials passed to it, copied from the EPConstruction component
-
-            for material in listMaterials:
-                
-                exec('materialName = ' + material)
-        """
+            pass
         
         constructionSetDict = thisZone.assignConstructionsByStandardClimateZone().items()[0][1]
         
@@ -293,32 +287,21 @@ def main(maximumRoofAngle, zoneMasses, zoneNames, zonePrograms,standard,climateZ
                     
                     for material in construction["materials"]:
                         
-                        """
-                        #print material
-                        print openStudioStandardLib["materials"][material]['roughness']
-                        
-                        print openStudioStandardLib["materials"][material]["thickness"]
-                        
-                        print openStudioStandardLib["materials"][material]["conductivity"]
-                        
-                        print openStudioStandardLib["materials"][material]["density"]
-                        
-                        print openStudioStandardLib["materials"][material]["specific_heat"]
-                        
-                        print openStudioStandardLib["materials"][material]["thermal_absorptance"]
-                        
-                        print openStudioStandardLib["materials"][material]["solar_absorptance"]
-                        
-                        print openStudioStandardLib["materials"][material]["visible_absorptance"]
-                        """
-                        
                         surfaceMaterials.append(createOpaqueMaterial(material,openStudioStandardLib["materials"][material]['roughness'],openStudioStandardLib["materials"][material]["thickness"],openStudioStandardLib["materials"][material]["conductivity"],openStudioStandardLib["materials"][material]["density"],openStudioStandardLib["materials"][material]["specific_heat"],openStudioStandardLib["materials"][material]["thermal_absorptance"],openStudioStandardLib["materials"][material]["solar_absorptance"],openStudioStandardLib["materials"][material]["visible_absorptance"]))
                         
                     # Now that we have the the materials lets create the construction from these materials
                     
+                    overwrite = True
+                    
                     for layerCount,material in enumerate(surfaceMaterials):
                         
                         added, materialName = hb_EPMaterialAUX.addEPConstructionToLib(material, overwrite = True)
+                        
+                        #print materialName
+                        
+                        added, name = hb_EPObjectsAux.addEPObjectToLib(material, overwrite)
+                        
+                        print name
                         
                         # Build EP construction string
                         
@@ -336,9 +319,10 @@ def main(maximumRoofAngle, zoneMasses, zoneNames, zonePrograms,standard,climateZ
                             
                             constructionStr += materialName + ";    !- Layer " + str(layerCount) + "\n"
                         
-                    #print surfaceMaterials[0].split(',')[1]
-                    #openStudioStandardLib["constructions"][str(constructionSetDict.get(key))]["materials"][0]
-
+                    added, name = hb_EPObjectsAux.addEPObjectToLib(constructionStr, overwrite)
+                    
+                    hb_EPObjectsAux.assignEPConstruction(surface, constructionStr, ghenv.Component)
+                    
                     if surface.hasChild and surface.BC.upper() == "SURFACE":
                         
                         #Surfaces that are exterior windows
