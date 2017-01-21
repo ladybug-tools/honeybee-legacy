@@ -193,13 +193,11 @@ def main(zoneName,  HBZoneProgram, HBSurfaces,standard,climateZone, isConditione
         
         climateZone = convertClimateTypetoString(climateZone)
         
-        print standard,climateZone,HBZone.bldgProgram
-        
         constructionSetDict = HBZone.getConstructionsByStandardClimateZone(standard,climateZone).items()[0][1]
         
         # Assign it to the zone
         
-        thisZone.assignConstructionSets(thisZone,constructionSetDict)
+        HBZone.assignConstructionSets(HBZone,constructionSetDict)
         
     HBZone = hb_hive.addToHoneybeeHive([HBZone], ghenv.Component)
     

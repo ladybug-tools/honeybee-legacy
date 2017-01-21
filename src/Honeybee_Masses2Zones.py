@@ -239,8 +239,6 @@ def main(maximumRoofAngle, zoneMasses, zoneNames, zonePrograms,standard,climateZ
         
             climateZone = convertClimateTypetoString(climateZone)
             
-            print standard,climateZone,thisZone.bldgProgram
-            
             constructionSetDict = thisZone.getConstructionsByStandardClimateZone(standard,climateZone).items()[0][1]
             
             # Assign it to the zone

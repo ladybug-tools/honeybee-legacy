@@ -5028,7 +5028,7 @@ class EPZone(object):
         
     def getConstructionsByStandardClimateZone(self,standard,climateZone,component=None):
         
-        openStudioStandardLib = sc.sticky ["honeybee_OpenStudioStandardsFile"]
+        openStudioStandardLib = sc.sticky["honeybee_OpenStudioStandardsFile"]
         
         try:
             schedulesAndLoads = openStudioStandardLib['space_types']['90.1-2007']['ClimateZone 1-8'][self.bldgProgram][self.zoneProgram]
@@ -5043,13 +5043,15 @@ class EPZone(object):
                 
         # Get construction set,
         
-        constructionSet = openStudioStandardLib['construction_sets'][self.standard][self.climateZone][self.bldgProgram]
+        constructionSet = openStudioStandardLib['construction_sets'][standard][climateZone][self.bldgProgram]
         
         return constructionSet
                 
-    def assignConstructionSets(thisZone,constructionSetDict):
+    def assignConstructionSets(self,thisZone,constructionSetDict):
             
-        """Assign a construction set from the OpenStudio standards to all the surfaces of this zone""" 
+        """Assign a construction set from the OpenStudio standards to all the surfaces of this zone"""
+        
+        hb_EPObjectsAux = EPObjectsAux()
         
         for surface in thisZone.surfaces:
         
