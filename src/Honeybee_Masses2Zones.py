@@ -52,7 +52,7 @@ import re
 
 ghenv.Component.Name = 'Honeybee_Masses2Zones'
 ghenv.Component.NickName = 'Mass2Zone'
-ghenv.Component.Message = 'VER 0.0.60\nJAN_20_2017'
+ghenv.Component.Message = 'VER 0.0.60\nJAN_21_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -65,11 +65,181 @@ except: pass
 tolerance = sc.doc.ModelAbsoluteTolerance
 import math
 
-hb_EPMaterialAUX = sc.sticky["honeybee_EPMaterialAUX"]()
-hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
-openStudioStandardLib = sc.sticky ["honeybee_OpenStudioStandardsFile"]
-
 ################################################################################
+
+
+def convertStandardIntToString(standard):
+        
+        if standard == 0:
+            
+            return '189.1-2009'
+            
+        if standard == 1:
+            
+            return '90.1-2007'
+           
+        if standard == 2:
+            
+            return '90.1-2010'
+            
+        if standard == 3:
+            
+            return 'DOE Ref 1980-2004'
+            
+        if standard == 4:
+            
+            return 'DOE Ref 2004'
+            
+        if standard == 5:
+            
+            return 'DOE Ref Pre-1980'
+            
+def convertClimateTypetoString(climateZone):
+    
+    if climateZone == 0:
+        
+        return 'ClimateZone 1'
+        
+    if climateZone == 1:
+        
+        return 'ClimateZone 2'
+        
+    if climateZone == 2:
+        
+        return 'ClimateZone 3'
+        
+    if climateZone == 3:
+        
+        return 'ClimateZone 4'
+        
+    if climateZone == 4:
+        
+        return 'ClimateZone 5'
+        
+    if climateZone == 5:
+        
+        return 'ClimateZone 6'
+        
+    if climateZone == 6:
+        
+        return 'ClimateZone 7'
+        
+    if climateZone == 7:
+        
+        return 'ClimateZone 8'
+        
+    if climateZone == 8:
+        
+        return 'Climatezone 1-2'
+        
+    if climateZone == 9:
+        
+        return 'Climatezone 1-3'
+        
+    if climateZone == 10:
+        
+        return 'Climatezone 1-5'
+        
+    if climateZone == 11:
+        
+        return 'Climatezone 1-8'
+        
+    if climateZone == 12:
+        
+        return 'Climatezone 2-7'
+        
+    if climateZone == 13:
+        
+        return 'ClimateZone 4-5'
+        
+    if climateZone == 14:
+        
+        return 'ClimateZone 5-6'
+        
+    if climateZone == 15:
+        
+        return 'ClimateZone 6-8'
+        
+    if climateZone == 16:
+        
+        return 'ClimateZone 7-8'
+        
+    if climateZone == 17:
+        
+        return 'ClimateZone 1-8'
+        
+    if climateZone == 18:
+        
+        return 'ClimateZone 2a'
+        
+    if climateZone == 19:
+        
+        return 'ClimateZone 2b'
+        
+    if climateZone == 20:
+        
+        return 'ClimateZone 3a'
+        
+    if climateZone == 21:
+        
+        return 'ClimateZone 4a'
+        
+    if climateZone == 22:
+        
+        return 'ClimateZone 5a'
+        
+    if climateZone == 23:
+        
+        return 'ClimateZone 3c'
+        
+    if climateZone == 24:
+        
+        return 'ClimateZone 4c'
+        
+    if climateZone == 25:
+        
+        return 'ClimateZone 3a-3b'
+        
+    if climateZone == 26:
+        
+        return 'ClimateZone 3b'
+        
+    if climateZone == 27:
+        
+        return 'ClimateZone 4b'
+        
+    if climateZone == 28:
+        
+        return 'ClimateZone 5b'
+        
+    if climateZone == 29:
+        
+        return 'ClimateZone 6b'
+        
+    if climateZone == 30:
+        
+        return 'ClimateZone 1-3b'
+        
+def atoi(text):
+    return int(text) if text.isdigit() else text
+
+def natural_keys(text):
+    """
+    alist.sort(key=natural_keys) sorts in human order
+    http://nedbatchelder.com/blog/200712/human_sorting.html
+    (See Toothy's implementation in the comments)
+    """
+    return [ atoi(c) for c in re.split('(\d+)', text) ]
+
+def sortClimateZones(climateZones):
+    """
+    # Code for sorting taken from http://stackoverflow.com/questions/5967500/how-to-correctly-sort-a-string-with-a-number-inside
+    # Producing human sorting or natural sorting"""
+
+    climateZones.sort(key=natural_keys)
+    
+    return climateZones
+
 
 def main(maximumRoofAngle, zoneMasses, zoneNames, zonePrograms,standard,climateZone, isConditioned):
     
@@ -96,6 +266,10 @@ def main(maximumRoofAngle, zoneMasses, zoneNames, zonePrograms,standard,climateZ
     hb_EPZone = sc.sticky["honeybee_EPZone"]
     hb_EPSrf = sc.sticky["honeybee_EPSurface"]
     hb_EPZoneSurface = sc.sticky["honeybee_EPZoneSurface"]
+    
+    hb_EPMaterialAUX = sc.sticky["honeybee_EPMaterialAUX"]()
+    hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
+    openStudioStandardLib = sc.sticky ["honeybee_OpenStudioStandardsFile"]
     
     #Have a function to duplicate data.
     def duplicateData(data, calcLength):
@@ -142,66 +316,6 @@ def main(maximumRoofAngle, zoneMasses, zoneNames, zonePrograms,standard,climateZ
     else:
         print "Zones will be assigned a zoneName based on the list of connected zoneName_ list."
     
-    def convertStandardIntToString(standard):
-        
-        if standard == 0:
-            
-            return '189.1-2009'
-            
-        if standard == 1:
-            
-            return '90.1-2007'
-           
-        if standard == 2:
-            
-            return '90.1-2010'
-            
-        if standard == 3:
-            
-            return 'DOE Ref 1980-2004'
-            
-        if standard == 4:
-            
-            return 'DOE Ref 2004'
-            
-        if standard == 5:
-            
-            return 'DOE Ref Pre-1980'
-            
-    def convertClimateTypetoString(climateZone):
-        
-        if climateZone == 0:
-            
-            return 'ClimateZone 1'
-            
-        if climateZone == 1:
-            
-            return 'ClimateZone 2'
-           
-        if climateZone == 2:
-            
-            return 'ClimateZone 3'
-            
-        if climateZone == 3:
-            
-            return 'ClimateZone 4'
-            
-        if climateZone == 4:
-            
-            return 'ClimateZone 5'
-            
-        if climateZone == 5:
-            
-            return 'ClimateZone 6'
-            
-        if climateZone == 6:
-            
-            return 'ClimateZone 7'
-            
-        if climateZone == 7:
-            
-            return 'ClimateZone 8'
-    
     HBZones = []
     # create zones out of masses
     for zoneKey, zone in enumerate(zoneMasses):
@@ -215,12 +329,6 @@ def main(maximumRoofAngle, zoneMasses, zoneNames, zonePrograms,standard,climateZ
         try: thisZoneProgram = zonePrograms[zoneKey].split("::")
         except: thisZoneProgram = 'Office', 'OpenOffice'
         
-        try: thisStandard = convertStandardIntToString(standard)
-        except: thisStandard = '90.1-2007'
-        
-        try: thisClimateZone = convertClimateTypetoString(climateZone)
-        except: thisClimateZone = 'ClimateZone 4'
-
         try: isZoneConditioned = isConditioned[zoneKey]
         except: isZoneConditioned = True
         
@@ -239,6 +347,32 @@ def main(maximumRoofAngle, zoneMasses, zoneNames, zonePrograms,standard,climateZ
         
             climateZone = convertClimateTypetoString(climateZone)
             
+            try:
+                
+                openStudioStandardLib["construction_sets"][standard][climateZone][thisZoneProgram[0]]
+    
+            except:
+            
+                availableBuildingPrograms = []
+                
+                for climate in openStudioStandardLib["construction_sets"][standard].keys():
+                    
+                    if thisZoneProgram[0] in openStudioStandardLib["construction_sets"][standard][climate].keys():
+                        
+                        availableBuildingPrograms.append(climate)
+                        
+                warning = "\n" + \
+                "The "+str(thisZoneProgram[0])+ " building program that you picked for the standard "+ str(standard)+" \n" + \
+                "is available for the following climate zones: \n" + \
+                " \n ".join(availableBuildingPrograms) +" \n" + \
+                " - Pick one of these"
+                w = gh.GH_RuntimeMessageLevel.Warning
+                ghenv.Component.AddRuntimeMessage(w, warning)
+                
+                print warning
+                
+                return -1
+            
             constructionSetDict = thisZone.getConstructionsByStandardClimateZone(standard,climateZone).items()[0][1]
             
             # Assign it to the zone
@@ -251,7 +385,6 @@ def main(maximumRoofAngle, zoneMasses, zoneNames, zonePrograms,standard,climateZ
     return HBZones
         
         ################################################################################################
-
 
 def checkInputs(standard,climateZone):
     
@@ -279,11 +412,7 @@ def checkInputs(standard,climateZone):
         
     # Need check if input in OpenStudio standard etc
         
-    else:
         
-        return
-        
-
 if _createHBZones == True and len(_zoneMasses)!=0 and _zoneMasses[0]!=None:
     
     try:  maximumRoofAngle = float(maxRoofAngle_)
@@ -296,5 +425,5 @@ if _createHBZones == True and len(_zoneMasses)!=0 and _zoneMasses[0]!=None:
         if result!=-1:
             zoneClasses = result 
             hb_hive = sc.sticky["honeybee_Hive"]()
-            HBZones  = hb_hive.addToHoneybeeHive(zoneClasses, ghenv.Component)
+            HBZones = hb_hive.addToHoneybeeHive(zoneClasses, ghenv.Component)
         

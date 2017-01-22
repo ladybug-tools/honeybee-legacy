@@ -49,7 +49,7 @@ import re
 
 ghenv.Component.Name = 'Honeybee_createHBZones'
 ghenv.Component.NickName = 'createHBZones'
-ghenv.Component.Message = 'VER 0.0.60\nJAN_20_2017'
+ghenv.Component.Message = 'VER 0.0.60\nJAN_21_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -309,58 +309,31 @@ def main(zoneName,  HBZoneProgram, HBSurfaces,standard,climateZone, isConditione
         climateZone = convertClimateTypetoString(climateZone)
         
         try:
-        
-            openStudioStandardLib["construction_sets"][standard][climateZone]
-        
-        except:
-    
-            if climateZone not in openStudioStandardLib["construction_sets"][standard].keys():
                 
-                availableClimateZones = []
-                
-                climateZones = openStudioStandardLib["construction_sets"][standard].keys()
-                
-                availableClimateZones = sortClimateZones(climateZones)
-                    
-                warning = "\n" + \
-                "The climate zone "+str(climateZone)+ " that you picked is not listed under standard "+str(standard)+" \n" + \
-                "The following climate zones are listed under " + (standard) + " \n" + \
-                " \n ".join(availableClimateZones) +" \n" + \
-                " pick one of these"
-                w = gh.GH_RuntimeMessageLevel.Warning
-                ghenv.Component.AddRuntimeMessage(w, warning)
-                
-                print warning
-                
-                return 
-        try:
-            
             openStudioStandardLib["construction_sets"][standard][climateZone][bldgProgram]
-            
+    
         except:
             
-            if bldgProgram not in openStudioStandardLib["construction_sets"][standard][climateZone].keys():
+            availableBuildingPrograms = []
+            
+            for climate in openStudioStandardLib["construction_sets"][standard].keys():
                 
-                availableBuildingPrograms = []
-                
-                for climate in openStudioStandardLib["construction_sets"][standard].keys():
+                if bldgProgram in openStudioStandardLib["construction_sets"][standard][climate].keys():
                     
-                    if bldgProgram in openStudioStandardLib["construction_sets"][standard][climate].keys():
+                    availableBuildingPrograms.append(climate)
+                    
+            warning = "\n" + \
+            "The "+str(bldgProgram)+ " building program that you picked for the standard "+ str(standard)+" \n" + \
+            "is available for the following climate zones: \n" + \
+            " \n ".join(availableBuildingPrograms) +" \n" + \
+            "- Pick one of these"
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+            
+            print warning
+            
+            return
                         
-                        availableBuildingPrograms.append(climate)
-                        
-                warning = "\n" + \
-                "The "+str(bldgProgram)+ " building program that you picked is not listed under the "+ str(climateZone)+" \n" + \
-                "For this standard "+ str(bldgProgram)+ " is listed under the following climate zones: \n" + \
-                " \n ".join(availableBuildingPrograms) +" \n" + \
-                " pick one of these"
-                w = gh.GH_RuntimeMessageLevel.Warning
-                ghenv.Component.AddRuntimeMessage(w, warning)
-                
-                print warning
-                
-                return
-        
         constructionSetDict = HBZone.getConstructionsByStandardClimateZone(standard,climateZone).items()[0][1]
         
         # Assign it to the zone
@@ -412,3 +385,4 @@ if _name != None and _HBSurfaces and _HBSurfaces[0]!=None:
         result= main(_name, zoneProgram_, _HBSurfaces,standard_,climateZone_, isConditioned_)
         
         HBZone = result
+        
