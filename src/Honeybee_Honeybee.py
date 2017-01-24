@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.60\nJAN_01_2017'
+ghenv.Component.Message = 'VER 0.0.60\nJAN_23_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -4988,7 +4988,7 @@ class EPZone(object):
         self.illumCntrlSensorPt = rc.Geometry.Point3d(zoneCentPt.X, zoneCentPt.Y, zOfPt)
     
     def transform(self, transform, clearSurfacesBC = True, flip = False):
-        self.name += "_t"
+        self.name += str(uuid.uuid4())
         self.geometry.Transform(transform)
         self.cenPt.Transform(transform)
         for surface in self.surfaces:
@@ -6452,7 +6452,7 @@ class hb_EPSurface(object):
         """Transform EPSurface using a transform object
            Transform can be any valid transform object (e.g Translate, Rotate, Mirror)
         """
-        self.name += "_t"
+        self.name += str(uuid.uuid4())
         self.geometry.Transform(transform)
         self.meshedFace.Transform(transform)
         # move center point and normal
