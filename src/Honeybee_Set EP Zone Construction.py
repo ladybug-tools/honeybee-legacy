@@ -42,7 +42,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Set EP Zone Construction"
 ghenv.Component.NickName = 'setEPZoneCnstr'
-ghenv.Component.Message = 'VER 0.0.60\nNOV_04_2016'
+ghenv.Component.Message = 'VER 0.0.60\nJAN_23_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
@@ -56,12 +56,20 @@ import Rhino as rc
 import Grasshopper.Kernel as gh
 import rhinoscriptsyntax as rs
 
+def checkConstr(constr):
+    for con in constr:
+        if con.upper().startswith("MATERIAL") or con.upper().startswith("WINDOWMATERIAL"):
+            warning = "You have connected an EP Material to this component.\n" + \
+            "You must pass this material through an EP Construction component to assign it to zones."
+            print warning
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
 
 def matchLists(input, length):
     il = len(input)
     if il == 0:
         return tuple(None for i in range(length))
     else:
+        checkConstr(input)
         return tuple(input[i] if i < il else input[-1] for i in range(length))
 
 
