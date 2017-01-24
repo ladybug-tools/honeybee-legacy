@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.60\nJAN_01_2017'
+ghenv.Component.Message = 'VER 0.0.60\nJAN_17_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -4877,7 +4877,7 @@ class EPZone(object):
     """This calss represents a honeybee zone that will be used for energy and daylighting
     simulatios"""
     
-    def __init__(self, zoneBrep, zoneID, zoneName, program = [None, None], isConditioned = True):
+    def __init__(self, zoneBrep, zoneID, zoneName,program = [None, None], isConditioned = True):
         self.north = 0
         self.objectType = "HBZone"
         self.origin = rc.Geometry.Point3d.Origin
@@ -4952,9 +4952,12 @@ class EPZone(object):
             except Exception, e:
                 print 'Checking normal directions failed:\n' + `e`
         
-        # Zone Program
+        # Zone Program, climate zone and construction set
         self.bldgProgram = program[0]
         self.zoneProgram = program[1]
+        self.standard = None
+        # Need a check to only have only one climate zone for entire model
+        self.climateZone = None
         
         # assign schedules
         self.assignScheduleBasedOnProgram()
@@ -5022,7 +5025,116 @@ class EPZone(object):
         
         # find all the patameters and assign them to 
         self.isSchedulesAssigned = True
+        
+    def getConstructionsByStandardClimateZone(self,standard,climateZone,component=None):
+        
+        openStudioStandardLib = sc.sticky["honeybee_OpenStudioStandardsFile"]
+        
+        try:
+            schedulesAndLoads = openStudioStandardLib['space_types']['90.1-2007']['ClimateZone 1-8'][self.bldgProgram][self.zoneProgram]
+            
+        except:
+            msg = "Either your input for bldgProgram > [" + self.bldgProgram + "] or " + \
+                  "the input for zoneProgram > [" + self.zoneProgram + "] is not valid.\n" + \
+                  "Use ListSpacePrograms component to find the available programs."
+            print msg
+            if component != None:
+                component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                
+        # Get construction set,
+        
+        constructionSet = openStudioStandardLib['construction_sets'][standard][climateZone][self.bldgProgram]
+        
+        return constructionSet
+                
+    def assignConstructionSets(self,thisZone,constructionSetDict):
+            
+        """Assign a construction set from the OpenStudio standards to all the surfaces of this zone"""
+        
+        hb_EPObjectsAux = EPObjectsAux()
+        
+        for surface in thisZone.surfaces:
+        
+            if surface.type == 0:
+            
+                if surface.BC.upper() == "SURFACE":
+                    
+                    # This is an interior wall
+                    # Assign the internal wall construction to the internal wall
+                    
+                    hb_EPObjectsAux.assignEPConstruction(surface, str(constructionSetDict.get("interior_wall"), ghenv.Component))
+                    
+                    if surface.hasChild:
+                        
+                        for childSrf in surface.childSrfs:
+                            
+                            # Assign the construction to the internal windows 
+                            
+                            hb_EPObjectsAux.assignEPConstruction(surface, str(constructionSetDict.get("interior_fixed_window")), ghenv.Component)
+                           
+                else:
+                    
+                    # This is an exterior wall
+                    # Assign the exterior wall construction to the exterior wall
+                    
+                    hb_EPObjectsAux.assignEPConstruction(surface, str(constructionSetDict.get("exterior_wall")), ghenv.Component)
+                    
+                    if surface.hasChild:
+                        
+                        for childSrf in surface.childSrfs:
+                            
+                            hb_EPObjectsAux.assignEPConstruction(surface, str(constructionSetDict.get("exterior_fixed_window")), ghenv.Component)
+                            
+                            # Assign the construction to the exterior windows
+            
+            if surface.type == 0.5:
+                
+                # For underground walls assume that they are ground_contact_walls
+                
+                hb_EPObjectsAux.assignEPConstruction(surface, str(constructionSetDict.get("ground_contact_wall")), ghenv.Component)
+                
+            if (surface.type == 1):
+                
+                # Surfaces that are exterior roofs, Assign roof material
+                
+                hb_EPObjectsAux.assignEPConstruction(surface, str(constructionSetDict.get("exterior_roof")), ghenv.Component)
+               
+                if surface.hasChild:
     
+                    for childSrf in surface.childSrfs:
+                        
+                        # Assign skylight materials
+                        
+                        hb_EPObjectsAux.assignEPConstruction(surface, str(constructionSetDict.get("exterior_skylight")), ghenv.Component)
+                        
+            if (surface.type == 1.5):
+                
+                # For underground ceilings
+                
+                hb_EPObjectsAux.assignEPConstruction(surface, str(constructionSetDict.get("ground_contact_ceiling")), ghenv.Component)
+               
+            if (surface.type == 2):
+                
+                # Assume that exterior_floors are OpenStudio_standards.json exterior floors
+                
+                hb_EPObjectsAux.assignEPConstruction(surface, str(constructionSetDict.get("exterior_floor")), ghenv.Component)
+                
+            if (surface.type == 2.5) or (surface.type == 2.25):
+                
+                # For underground floors and slabs
+                
+                hb_EPObjectsAux.assignEPConstruction(surface, str(constructionSetDict.get("ground_contact_floor")), ghenv.Component)
+                
+            if (surface.type == 2.75):
+                
+                # Note there appears to be no construction in OpenStudio_standards.json for exposed floors ?
+                pass
+               
+            if (surface.type == 3):
+                
+                hb_EPObjectsAux.assignEPConstruction(surface, str(constructionSetDict.get("interior_ceiling")), ghenv.Component)
+                
+        
     def assignLoadsBasedOnProgram(self, component=None):
         # create an open office is the program is not assigned
         if self.bldgProgram == None: self.bldgProgram = "Office"

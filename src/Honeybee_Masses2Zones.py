@@ -47,11 +47,12 @@ import sys
 import System
 import Grasshopper.Kernel as gh
 import uuid
+import re
 
 
 ghenv.Component.Name = 'Honeybee_Masses2Zones'
 ghenv.Component.NickName = 'Mass2Zone'
-ghenv.Component.Message = 'VER 0.0.60\nNOV_04_2016'
+ghenv.Component.Message = 'VER 0.0.60\nJAN_20_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -64,9 +65,13 @@ except: pass
 tolerance = sc.doc.ModelAbsoluteTolerance
 import math
 
+hb_EPMaterialAUX = sc.sticky["honeybee_EPMaterialAUX"]()
+hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
+openStudioStandardLib = sc.sticky ["honeybee_OpenStudioStandardsFile"]
+
 ################################################################################
 
-def main(maximumRoofAngle, zoneMasses, zoneNames, zonePrograms, isConditioned):
+def main(maximumRoofAngle, zoneMasses, zoneNames, zonePrograms,standard,climateZone, isConditioned):
     
     # check for Honeybee
     if not sc.sticky.has_key('honeybee_release'):
@@ -137,6 +142,66 @@ def main(maximumRoofAngle, zoneMasses, zoneNames, zonePrograms, isConditioned):
     else:
         print "Zones will be assigned a zoneName based on the list of connected zoneName_ list."
     
+    def convertStandardIntToString(standard):
+        
+        if standard == 0:
+            
+            return '189.1-2009'
+            
+        if standard == 1:
+            
+            return '90.1-2007'
+           
+        if standard == 2:
+            
+            return '90.1-2010'
+            
+        if standard == 3:
+            
+            return 'DOE Ref 1980-2004'
+            
+        if standard == 4:
+            
+            return 'DOE Ref 2004'
+            
+        if standard == 5:
+            
+            return 'DOE Ref Pre-1980'
+            
+    def convertClimateTypetoString(climateZone):
+        
+        if climateZone == 0:
+            
+            return 'ClimateZone 1'
+            
+        if climateZone == 1:
+            
+            return 'ClimateZone 2'
+           
+        if climateZone == 2:
+            
+            return 'ClimateZone 3'
+            
+        if climateZone == 3:
+            
+            return 'ClimateZone 4'
+            
+        if climateZone == 4:
+            
+            return 'ClimateZone 5'
+            
+        if climateZone == 5:
+            
+            return 'ClimateZone 6'
+            
+        if climateZone == 6:
+            
+            return 'ClimateZone 7'
+            
+        if climateZone == 7:
+            
+            return 'ClimateZone 8'
+    
     HBZones = []
     # create zones out of masses
     for zoneKey, zone in enumerate(zoneMasses):
@@ -149,15 +214,37 @@ def main(maximumRoofAngle, zoneMasses, zoneNames, zonePrograms, isConditioned):
         # zone programs
         try: thisZoneProgram = zonePrograms[zoneKey].split("::")
         except: thisZoneProgram = 'Office', 'OpenOffice'
+        
+        try: thisStandard = convertStandardIntToString(standard)
+        except: thisStandard = '90.1-2007'
+        
+        try: thisClimateZone = convertClimateTypetoString(climateZone)
+        except: thisClimateZone = 'ClimateZone 4'
 
         try: isZoneConditioned = isConditioned[zoneKey]
         except: isZoneConditioned = True
         
         thisZone = hb_EPZone(zone, zoneKey, zoneName, thisZoneProgram, isZoneConditioned)
-        
+
         # assign surface types and construction based on type
         thisZone.decomposeZone(maximumRoofAngle)
         
+        # Only assign construction set if both of these inputs are correct
+        
+        if (standard != None) and (climateZone != None):
+            
+            # Get the construction set from the OpenStudio standards Json
+            
+            standard = convertStandardIntToString(standard)
+        
+            climateZone = convertClimateTypetoString(climateZone)
+            
+            constructionSetDict = thisZone.getConstructionsByStandardClimateZone(standard,climateZone).items()[0][1]
+            
+            # Assign it to the zone
+            
+            thisZone.assignConstructionSets(thisZone,constructionSetDict)
+
         # append this zone to other zones
         HBZones.append(thisZone)
                 
@@ -166,15 +253,48 @@ def main(maximumRoofAngle, zoneMasses, zoneNames, zonePrograms, isConditioned):
         ################################################################################################
 
 
+def checkInputs(standard,climateZone):
+    
+    w = gh.GH_RuntimeMessageLevel.Warning
+    
+    if (standard == None) and (climateZone != None):
+        
+        warning = "If you want to assign a default construction set \n" + \
+        "you must specify BOTH the climate zone and the standard e.g ASHRAE 90.1 2007"
+        "you are seeing this message because you've only assigned one"
+        print warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+    
+        return -1
+        
+    if (standard != None) and (climateZone == None):
+        
+        warning = "If you want to assign a default construction set \n" + \
+        "you must specify BOTH the climate zone and the standard e.g ASHRAE 90.1 2007 \n" + \
+        "you are seeing this message because you've only assigned one"
+        print warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+    
+        return -1
+        
+    # Need check if input in OpenStudio standard etc
+        
+    else:
+        
+        return
+        
+
 if _createHBZones == True and len(_zoneMasses)!=0 and _zoneMasses[0]!=None:
     
     try:  maximumRoofAngle = float(maxRoofAngle_)
     except: maximumRoofAngle = 30
     
-    result= main(maximumRoofAngle, _zoneMasses, zoneNames_, zonePrograms_,isConditioned_)
+    if checkInputs(standard_,climateZone_) != -1:
     
-    if result!=-1:
-        zoneClasses = result 
-        hb_hive = sc.sticky["honeybee_Hive"]()
-        HBZones  = hb_hive.addToHoneybeeHive(zoneClasses, ghenv.Component)
-    
+        result= main(maximumRoofAngle, _zoneMasses, zoneNames_, zonePrograms_,standard_,climateZone_,isConditioned_)
+        
+        if result!=-1:
+            zoneClasses = result 
+            hb_hive = sc.sticky["honeybee_Hive"]()
+            HBZones  = hb_hive.addToHoneybeeHive(zoneClasses, ghenv.Component)
+        
