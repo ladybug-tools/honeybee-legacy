@@ -69,7 +69,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.60\nDEC_05_2016'
+ghenv.Component.Message = 'VER 0.0.60\nJAN_25_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -1260,7 +1260,10 @@ class WriteOPS(object):
                     airTerminal.autosizeMaximumAirFlowRate()
                     airTerminal.resetMinimumAirFlowFractionSchedule()
                 except:
-                    airTerminal.autosizeSupplyAirVolumetricFlowRate()
+                    try:
+                        airTerminal.autosizeSupplyAirVolumetricFlowRate()
+                    except:
+                        pass
             
             # attach new terminal to the zone and to the airloop
             airloopPrimary.addBranchForZone(zone, airTerminal.to_StraightComponent())
