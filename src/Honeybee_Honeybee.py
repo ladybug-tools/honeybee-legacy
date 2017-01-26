@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.60\nJAN_21_2017'
+ghenv.Component.Message = 'VER 0.0.60\nJAN_25_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -5030,30 +5030,54 @@ class EPZone(object):
         
         openStudioStandardLib = sc.sticky["honeybee_OpenStudioStandardsFile"]
         
+        # Make sure that all the inputs are correct
         try:
-            schedulesAndLoads = openStudioStandardLib['space_types']['90.1-2007']['ClimateZone 1-8'][self.bldgProgram][self.zoneProgram]
+            openStudioStandardLib['construction_sets'][standard]
             
-        except:
-            msg = "Either your input for bldgProgram > [" + self.bldgProgram + "] or " + \
-                  "the input for zoneProgram > [" + self.zoneProgram + "] is not valid.\n" + \
-                  "Use ListSpacePrograms component to find the available programs."
+            try:
+                # Climate Zones
+                openStudioStandardLib['construction_sets'][standard][climateZone]
+                
+                # Building program
+                try:
+                    openStudioStandardLib['construction_sets'][standard][climateZone][self.bldgProgram]
+                    
+                except KeyError:
+                
+                    msg = "Your input for bldgProgram > [" + self.bldgProgram + "] is not valid.\n" + \
+                    "Use ListBuildingPrograms component to find the available programs."
+                    print msg
+                    if component != None:
+                        component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                        
+            except KeyError:
+                
+                msg = "Your input for the climate zone > [" + climateZone + "] is not valid.\n" + \
+                "Use ListClimateZones component to find the available Climate Zones."
+                print msg
+                if component != None:
+                    component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+            
+        except KeyError:
+            msg = "Your input for standard > [" + standard + "] is not valid.\n" + \
+                  "Use ListStandards component to find the available standards"
             print msg
             if component != None:
                 component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
                 
-        # Get construction set,
+        # Get construction set, don't need try and except standard as standard, climateZone and bldgProgram has been throughly tested
         
         constructionSet = openStudioStandardLib['construction_sets'][standard][climateZone][self.bldgProgram]
         
         return constructionSet
                 
-    def assignConstructionSets(self,thisZone,constructionSetDict):
+    def assignConstructionSets(self,constructionSetDict):
             
         """Assign a construction set from the OpenStudio standards to all the surfaces of this zone"""
         
         hb_EPObjectsAux = EPObjectsAux()
         
-        for surface in thisZone.surfaces:
+        for surface in self.surfaces:
         
             if surface.type == 0:
             

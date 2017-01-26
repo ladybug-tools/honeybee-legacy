@@ -52,7 +52,7 @@ import re
 
 ghenv.Component.Name = 'Honeybee_Masses2Zones'
 ghenv.Component.NickName = 'Mass2Zone'
-ghenv.Component.Message = 'VER 0.0.60\nJAN_21_2017'
+ghenv.Component.Message = 'VER 0.0.60\nJAN_25_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -372,12 +372,12 @@ def main(maximumRoofAngle, zoneMasses, zoneNames, zonePrograms,standard,climateZ
                 print warning
                 
                 return -1
-            
+                
             constructionSetDict = thisZone.getConstructionsByStandardClimateZone(standard,climateZone).items()[0][1]
             
             # Assign it to the zone
             
-            thisZone.assignConstructionSets(thisZone,constructionSetDict)
+            thisZone.assignConstructionSets(constructionSetDict)
 
         # append this zone to other zones
         HBZones.append(thisZone)
@@ -405,6 +405,16 @@ def checkInputs(standard,climateZone):
         warning = "If you want to assign a default construction set \n" + \
         "you must specify BOTH the climate zone and the standard e.g ASHRAE 90.1 2007 \n" + \
         "you are seeing this message because you've only assigned one"
+        print warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+    
+        return -1
+        
+    if (standard != None) and (climateZone != None) and (zonePrograms_ == None):
+        
+        warning = "If you want to assign a default construction set \n" + \
+        "you must specify BOTH the climate zone and the standard e.g ASHRAE 90.1 2007 \n" + \
+        "as well as the building type through the _zoneProgram. You are seeing this message because you haven't assigned the zoneProgram"
         print warning
         ghenv.Component.AddRuntimeMessage(w, warning)
     
