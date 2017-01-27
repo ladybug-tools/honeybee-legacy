@@ -41,7 +41,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Create CSV Schedule"
 ghenv.Component.NickName = 'csvSchedule'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nJAN_26_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "07 | Energy | Schedule"
@@ -120,8 +120,7 @@ def checkTheInputs():
         
         #Check if the length of the values aligns with the analysis period and time step.
         checkData2 = True
-        if len(_values) == len(HOYS): pass
-        else:
+        if len(_values) != len(HOYS):
             checkData2 = False
             warning = "The length of the list of connected values does not align with the analysisPeriod_ and the timeStep_.  Note that the default list length for connected values is 8760 (one for each hour of the year)."
             print warning
@@ -130,13 +129,14 @@ def checkTheInputs():
         #If the values list is not for the whole year, insert 0 values for the time period that it is missing.
         csvValues = []
         counter = 0
+        sHour = set(HOYS)
         if checkData2 == True:
             for count, hour in enumerate(totalHOYS):
-                if hour == HOYS[count-counter]:
-                    csvValues.append(_values[count-counter])
+                if hour in sHour:
+                    csvValues.append(_values[counter])
+                    counter += 1
                 else:
                     csvValues.append(0.0)
-                    counter += 1
         
         #Set a default schedule name.
         if scheduleName_ == None: scheduleName = "SCHunnamedSchedule.csv"
