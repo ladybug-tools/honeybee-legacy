@@ -64,7 +64,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Thermal Autonomy Analysis"
 ghenv.Component.NickName = 'ThermalAutonomy'
-ghenv.Component.Message = 'VER 0.0.60\nJAN_05_2017'
+ghenv.Component.Message = 'VER 0.0.60\nJAN_27_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -343,7 +343,7 @@ def checkTheInputs():
     checkData2 = True
     if analysisPeriod != []: HOYs, months, days = lb_preparation.getHOYsBasedOnPeriod(analysisPeriod, 1)
     else: HOYs = []
-    if _totalThermalEnergy_.BranchCount > 0: checkData3, checkData4, totEnergyUnits, totEnergyHeaders, totEnergyNumbers, totEAnalysisPeriod = checkCreateDataTree(_totalThermalEnergy_, "_totalThermalEnergy_", "Total Thermal Energy")
+    if _totalThermalEnergy_.BranchCount > 0: checkData3, checkData4, totEnergyUnits, totEnergyHeaders, totEnergyNumbers, totEAnalysisPeriod = checkCreateDataTree(_totalThermalEnergy_, "_totalThermalEnergy_", "Total Thermal Load")
     else:
         checkData3, checkData4 = True, True
         totEAnalysisPeriod = analysisPeriod
