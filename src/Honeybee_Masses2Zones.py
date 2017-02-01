@@ -25,7 +25,7 @@ Use this component to take any list of closed breps and turn them into Honeybee 
 _
 This includes constructions of the surfaces, boundary condtions of all of the surfaces (ie ground, exterior, etc), schedules+ loads for occupancy/internal electronics, and settings for an HVAC system if isContitioned_ is set to True.
 -
-Provided by Honeybee 0.0.59
+Provided by Honeybee 0.0.60
 
     Args:
         _zoneMasses: A list of closed breps or a  single closed brep that represents the geometry of the zone(s) that will be output from this component.
@@ -45,19 +45,17 @@ import scriptcontext as sc
 import os
 import sys
 import System
-from clr import AddReference
-AddReference('Grasshopper')
 import Grasshopper.Kernel as gh
 import uuid
 
 
 ghenv.Component.Name = 'Honeybee_Masses2Zones'
 ghenv.Component.NickName = 'Mass2Zone'
-ghenv.Component.Message = 'VER 0.0.59\nFEB_24_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
-#compatibleHBVersion = VER 0.0.56\nFEB_24_2016
+#compatibleHBVersion = VER 0.0.56\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
 except: pass
@@ -178,5 +176,5 @@ if _createHBZones == True and len(_zoneMasses)!=0 and _zoneMasses[0]!=None:
     if result!=-1:
         zoneClasses = result 
         hb_hive = sc.sticky["honeybee_Hive"]()
-        HBZones  = hb_hive.addToHoneybeeHive(zoneClasses, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+        HBZones  = hb_hive.addToHoneybeeHive(zoneClasses, ghenv.Component)
     

@@ -24,7 +24,7 @@
 Use this component to import an EnergyPlus window construction from LBNL WINDOW.  This construction can then be assigned to any Honebee window for an EnergyPlus model.
 
 -
-Provided by Honeybee 0.0.59
+Provided by Honeybee 0.0.60
     
     Args:
         _windowIDFReport: A filepath to a 'EnergyPlus IDF' report exported by LBNL WINDOW.
@@ -35,13 +35,13 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = 'Honeybee_Import WINDOW IDF Report'
 ghenv.Component.NickName = 'importWINDOWidf'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.60\nOCT_08_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
-#compatibleHBVersion = VER 0.0.56\nJAN_21_2016
+#compatibleHBVersion = VER 0.0.56\nSEP_09_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
-try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
 except: pass
 
 
@@ -58,23 +58,26 @@ def main(windowIDFReport):
     if not os.path.isfile(windowIDFReport):
         warning = "Cannot find the _windowIDFReport text file. Check the location of the file on your machine."
         print warning
-        ghenv.Component.AddRuntimeMessage(e, warning)
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
         return -1
     
     # import the classes
     hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
-    extraProps = sc.sticky["honeybee_ExtraConstrProps"]
     
     #Open the IDF and extract all of the information
     EPObjs = []
     materialTrigger = False
     materialStr = ''
     
-    additionalProps = ''
-    additionalPropsTrigger = False
+    spectralPropTrigger = False
+    spectralPropStr = ''
+    
+    framePropsTrigger = False
+    frameProps = ''
     
     constrName = None
-    addPropsName = None
+    spectPropsName = None
+    framePropsName = None
     
     textFile = open(windowIDFReport, 'r')
     for lineCount, line in enumerate(textFile):
@@ -86,20 +89,31 @@ def main(windowIDFReport):
             materialTrigger = False
             if materialStr != '': EPObjs.append(materialStr)
             materialStr = ''
-            dditionalPropsTrigger = False
+            spectralPropTrigger = False
+            if spectralPropStr != '': EPObjs.append(spectralPropStr)
+            spectralPropStr = ''
+            framePropsTrigger = False
+            if frameProps != '': EPObjs.append(frameProps)
+            frameProps = ''
         elif '!- Glazing System name' in line:
             constrName = line.split(',')[0].upper()
             materialStr = materialStr + line
         elif materialTrigger == True:
             materialStr = materialStr + line
+        elif 'MaterialProperty:GlazingSpectralData' in line:
+            spectralPropTrigger = True
+            spectralPropStr = spectralPropStr + line
+        elif spectralPropTrigger == True:
+            spectralPropStr = spectralPropStr + line
         elif 'WindowProperty:FrameAndDivider' in line:
-            additionalPropsTrigger = True
-            additionalProps = additionalProps + line
+            framePropsTrigger = True
+            frameProps = frameProps + line
         elif '!- User Supplied Frame/Divider Name' in line:
-            addPropsName = line.split(',')[0].upper()
-            additionalProps = additionalProps + line
-        elif additionalPropsTrigger == True:
-            additionalProps = additionalProps + line
+            # Overwrite the frame name to be associated with the WINDOW construction.
+            framePropsName = constrName
+            frameProps = frameProps + constrName + ',!- User Supplied Frame/Divider Name\n'
+        elif framePropsTrigger == True:
+            frameProps = frameProps + line
     textFile.close()
     
     #Add the materials and construction to the HBHive.
@@ -111,12 +125,12 @@ def main(windowIDFReport):
             return -1
         else: print name + " is has been added to the project library!"
     
-    #Add any additional properties to the extraProps dictionary.
-    if constrName != None:
-        additionalProps = additionalProps + '\n'
-        extraProps[constrName] = {}
-        extraProps[constrName]['Name'] = addPropsName
-        extraProps[constrName]['Properties'] = additionalProps
+    # In case no frames were found, make sure any frames bearing the name of the construction are removed.
+    if framePropsName == None:
+        try:
+            del sc.sticky["honeybee_WindowPropLib"][constrName]
+        except:
+            pass
     
     return constrName
 
@@ -140,7 +154,7 @@ else:
         "Use updateHoneybee component to update userObjects.\n" + \
         "If you have already updated userObjects drag Honeybee_Honeybee component " + \
         "into canvas and try again."
-        ghenv.Component.AddRuntimeMessage(w, warning)
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
 
 
 #If the intital check is good, run the component.

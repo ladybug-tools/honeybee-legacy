@@ -23,7 +23,7 @@
 """
 Set schedules and loads for zones based on program 
 -
-Provided by Honeybee 0.0.59
+Provided by Honeybee 0.0.60
 
     Args:
         _HBZones: A HBZone or list of HBZones for which you want to change the program (including schedules and loads).
@@ -36,11 +36,11 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Set Loads And Schedules"
 ghenv.Component.NickName = 'SetLoadsAndSchedules'
-ghenv.Component.Message = 'VER 0.0.59\nAPR_26_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.56\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
@@ -117,7 +117,7 @@ def main(HBZones, zonePrograms):
         if HBZone.isLoadsAssigned:
             currentLoads.append(HBZone.getCurrentLoads())
     
-    HBZones  = hb_hive.addToHoneybeeHive(HBObjectsFromHive, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+    HBZones  = hb_hive.addToHoneybeeHive(HBObjectsFromHive, ghenv.Component)
     
     return currentSchedules, currentLoads, HBZones
 

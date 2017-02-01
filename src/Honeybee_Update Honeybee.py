@@ -23,7 +23,7 @@
 """
 This component [removes | updates] Honeybee components from [grasshopper | a source folder]
 -
-Provided by Honeybee 0.0.59
+Provided by Honeybee 0.0.60
 
     Args:
         sourceDirectory_: Optional address to a folder that contains Honeybee updated userObjects. If None the component will download the latest version from GitHUB.
@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Update Honeybee"
 ghenv.Component.NickName = 'updateHoneybee'
-ghenv.Component.Message = 'VER 0.0.59\nJUN_21_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_11_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | Developers"
@@ -65,7 +65,7 @@ def removeCurrentHB():
         print 'Removing Honeybee!'
         for fileName in fileNames:
             # check for ladybug userObjects and delete the files
-            if fileName.StartsWith('Honeybee'):
+            if fileName.StartsWith('Honeybee') and not fileName.StartsWith('HoneybeePlus'):
                 fullPath = os.path.join(folder, fileName)
                 os.remove(fullPath)
 
@@ -293,9 +293,12 @@ if _updateThisFile or _updateAllUObjects:
     else:
         print msg
         try:
-            updateLogEXELocation=os.path.join(sc.sticky["Honeybee_DefaultFolder"], "honeybeeSrc\honeybee-master\HoneybeeCSharp.exe")
-            os.system(updateLogEXELocation)
+            updateLogEXELocation = os.path.join(sc.sticky["Honeybee_DefaultFolder"], "honeybeeSrc\honeybee-master\UpdateLogs.md")
+            textFile = open(updateLogEXELocation, 'r')
+            for line in textFile:
+                print line
         except:
-            print "But there is no update logs available now!"
+            print "There is no update log available now!"
 else:
     print " "
+    

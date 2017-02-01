@@ -23,7 +23,7 @@
 """
 Use this component to create a THERM boundary condition.
 -
-Provided by Honeybee 0.0.59
+Provided by Honeybee 0.0.60
 
     Args:
         _boundaryCurve: A polyline or list of polylines that coincide with the thermPolygons that you plan to connect to the "Write Therm File" component.
@@ -50,11 +50,11 @@ import decimal
 
 ghenv.Component.Name = 'Honeybee_Create Therm Boundaries'
 ghenv.Component.NickName = 'createThermBoundaries'
-ghenv.Component.Message = 'VER 0.0.59\nMAY_12_2016'
+ghenv.Component.Message = 'VER 0.0.60\nJAN_15_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
-#compatibleHBVersion = VER 0.0.56\nJAN_12_2016
+#compatibleHBVersion = VER 0.0.56\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nNOV_07_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
 except: pass
@@ -118,12 +118,30 @@ def main(boundaryCurve, temperature, filmCoefficient, crvName, emissivity, uFact
     HBThermBC = hb_thermBC(boundaryCurve, crvName, temperature, filmCoefficient, boundPlane, None, None, RGBColor, uFactorTag, emissivity)
     
     # add to the hive
-    thermBoundary  = hb_hive.addToHoneybeeHive([HBThermBC], ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+    thermBoundary  = hb_hive.addToHoneybeeHive([HBThermBC], ghenv.Component)
+    
+    if uFactorTag != None:
+        print "UFactor Tag set to: " + uFactorTag
     
     return thermBoundary
 
-#Honeybee check.
+#Ladybug check.
 initCheck = True
+if not sc.sticky.has_key('ladybug_release') == True:
+    initCheck = False
+    print "You should first let Ladybug fly..."
+    ghenv.Component.AddRuntimeMessage(w, "You should first let Ladybug fly...")
+else:
+    try:
+        if not sc.sticky['ladybug_release'].isCompatible(ghenv.Component): initCheck = False
+    except:
+        initCheck = False
+        warning = "You need a newer version of Ladybug to use this compoent." + \
+        "Use updateLadybug component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Ladybug_Ladybug component " + \
+        "into canvas and try again."
+        ghenv.Component.AddRuntimeMessage(w, warning)
+#Honeybee check.
 if not sc.sticky.has_key('honeybee_release') == True:
     initCheck = False
     print "You should first let Honeybee fly..."

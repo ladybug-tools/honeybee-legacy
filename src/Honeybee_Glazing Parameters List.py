@@ -50,7 +50,7 @@ Use this component to generate lists of glazing ratios, breakUp diatance, window
 Depeding on your intended use of the numbers connected to this component, they should be plugged into the _glzRatio, breakUpWindow_, windowHeight_, sillHeight_, or splitGlzVertically_ inputs of the "Glazing based on ratio" component.
 
 -
-Provided by Honeybee 0.0.59
+Provided by Honeybee 0.0.60
 
     Args:
         _northGlzParam_: Glazing parameter for the north side of a building.
@@ -62,7 +62,7 @@ Provided by Honeybee 0.0.59
 """
 ghenv.Component.Name = "Honeybee_Glazing Parameters List"
 ghenv.Component.NickName = 'glzParamList'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -78,7 +78,11 @@ import scriptcontext as sc
 def checkParam(parameter):
     if parameter != None:
         if isinstance(parameter, (bool)): newParam = parameter
-        else: newParam = float(parameter)
+        else:
+            try:
+                newParam = float(parameter)
+            except:
+                newParam = parameter
     else: newParam = None
     return newParam
 

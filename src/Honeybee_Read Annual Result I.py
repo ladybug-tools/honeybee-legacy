@@ -24,7 +24,7 @@
 Read Annual Daylight Results I [Standard Daysim Results]
 
 -
-Provided by Honeybee 0.0.59
+Provided by Honeybee 0.0.60
 
     Args:
         _illFilesAddress: List of .ill files
@@ -46,7 +46,7 @@ Provided by Honeybee 0.0.59
 """
 ghenv.Component.Name = "Honeybee_Read Annual Result I"
 ghenv.Component.NickName = 'readAnnualResultsI'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.60\nJAN_15_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
@@ -222,7 +222,6 @@ def main(illFilesAddress, testPts, testVecs, occFiles, lightingControlGroups, SH
         "user_profile", "PNGScheduleExists" ]
     
     # I will remove this function later and just use WriteDS class
-    
     
     class genDefaultLightingControl(object):
         
@@ -871,15 +870,19 @@ def isAllNone(dataList):
         if item!=None: return False
     return True
 
-
-if _runIt and not isAllNone(_illFilesAddress) and not isAllNone(_testPoints):
+# Throwing warning if any of the mandatory input is missing
+if isAllNone(_illFilesAddress) == True or isAllNone(_testPoints) == True:
+    msg = "Major input missing. Please check"
+    w = gh.GH_RuntimeMessageLevel.Warning
+    ghenv.Component.AddRuntimeMessage(w, msg)
     
+if _runIt and not isAllNone(_illFilesAddress) and not isAllNone(_testPoints):
+   
     _testPoints.SimplifyPaths()
     lightingControlGroups_.SimplifyPaths()
     _illFilesAddress.SimplifyPaths()
     
     res = main(_illFilesAddress, _testPoints, ptsVectors_, occupancyFiles_, lightingControlGroups_, SHDGroupI_Sensors_, SHDGroupII_Sensors_, _DLAIllumThresholds_, _runIt > 1)
-    
     if res!= -1:
         msg, results = res
         

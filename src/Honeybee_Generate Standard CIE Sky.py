@@ -23,7 +23,7 @@
 """
 Genrate Standard CIE Sky
 -
-Provided by Honeybee 0.0.59
+Provided by Honeybee 0.0.60
     
     Args:
         north_: Input a vector to be used as a true North direction for the sun path or a number between 0 and 360 that represents the degrees off from the y-axis to make North.  The default North direction is set to the Y-axis (0 degrees).
@@ -39,10 +39,10 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Generate Standard CIE Sky"
 ghenv.Component.NickName = 'genStandardCIESky'
-ghenv.Component.Message = 'VER 0.0.59\nAPR_06_2016'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "02 | Daylight | Sky"
+ghenv.Component.SubCategory = "02 | Daylight | Light Source"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"

@@ -1,11 +1,9 @@
-# Created by Anton Szilasi
-# ajszilas@gmail.com
 #
 # Honeybee: A Plugin for Environmental Analysis (GPL) started by Mostapha Sadeghipour Roudsari
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2016, Abraham Yezioro <ayez@ar.technion.ac.il> 
+# Copyright (c) 2013-2016, Anton Szilasi <ajszilas@gmail.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -40,7 +38,7 @@ Where:
 For more information about the Energy Plus Earthtube please see:
 http://bigladdersoftware.com/epx/docs/8-2/input-output-reference/group-airflow.html#zoneearthtube-earth-tube
 -
-Provided by Honeybee 0.0.59
+Provided by Honeybee 0.0.60
 
     Args:
         _HBZones: The Honeybee zones to which Earthtubes will be added to. Only one earth tube will be added to each zone.
@@ -114,13 +112,13 @@ Provided by Honeybee 0.0.59
 """
 
 ghenv.Component.Name = "Honeybee_AddEarthtube"
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+ghenv.Component.SubCategory = "13 | WIP" #"08 | Energy | Set Zone Properties"
+#compatibleHBVersion = VER 0.0.56\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
-try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
 except: pass
 
 import scriptcontext as sc
@@ -575,7 +573,7 @@ def main(_HBZones,schedules_,_designFlowrates,_mincoolingTemps_,_maxheatingTemps
         
     # Add modified zones to dictionary
 
-    ModifiedHBZones = hb_hive.addToHoneybeeHive(HBObjectsFromHive, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+    ModifiedHBZones = hb_hive.addToHoneybeeHive(HBObjectsFromHive, ghenv.Component4)
     
     return ModifiedHBZones
     

@@ -33,7 +33,7 @@ Soil Conductivity - http://www.engineeringtoolbox.com/thermal-conductivity-d_429
 Soil Density - http://www.engineeringtoolbox.com/dirt-mud-densities-d_1727.html
 Soil Heat Capacity - http://www.engineeringtoolbox.com/specific-heat-capacity-d_391.html
 -
-Provided by Honeybee 0.0.59
+Provided by Honeybee 0.0.60
 
     Args:
         _HBZones: HBZones to be turned into ground zones, representative of soil.
@@ -51,11 +51,11 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Create EP Ground"
 ghenv.Component.NickName = 'createEPGround'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.56\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
@@ -180,7 +180,7 @@ def main(HBZones):
                     srf.setWindExposure('NoWind')
             
             
-        HBZones  = hb_hive.addToHoneybeeHive(HBObjectsFromHive, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+        HBZones  = hb_hive.addToHoneybeeHive(HBObjectsFromHive, ghenv.Component)
         
         return HBZones
     else:

@@ -36,7 +36,7 @@ along with Honeybee; If not, see <http://www.gnu.org/licenses/>.
 Source code is available at: https://github.com/mostaphaRoudsari/Honeybee
 
 -
-Provided by Honeybee 0.0.59
+Provided by Honeybee 0.0.60
     
     Args:
         defaultFolder_: Optional input for Honeybee default folder.
@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.59\nMAY_12_2016'
+ghenv.Component.Message = 'VER 0.0.60\nJAN_23_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -81,7 +81,6 @@ import subprocess
 import uuid
 import re
 import random
-from collections import namedtuple
 
 PI = math.pi
 
@@ -337,7 +336,6 @@ class hb_findFolders():
         self.RADPath, self.RADFile = self.which('rad.exe')
         self.EPPath, self.EPFile = self.which('EnergyPlus.exe')
         self.DSPath, self.DSFile = self.which('gen_dc.exe')
-        
     
     def which(self, program):
         """
@@ -385,6 +383,8 @@ class PrepareTemplateEPLibFiles(object):
         if not sc.sticky.has_key("honeybee_windowMaterialLib"): sc.sticky ["honeybee_windowMaterialLib"] = {}
         if not sc.sticky.has_key("honeybee_ScheduleLib"): sc.sticky["honeybee_ScheduleLib"] = {}
         if not sc.sticky.has_key("honeybee_ScheduleTypeLimitsLib"): sc.sticky["honeybee_ScheduleTypeLimitsLib"] = {}
+        if not sc.sticky.has_key("honeybee_WindowPropLib"): sc.sticky["honeybee_WindowPropLib"] = {}
+        if not sc.sticky.has_key("honeybee_SpectralDataLib"): sc.sticky["honeybee_SpectralDataLib"] = {}
         if not sc.sticky.has_key("honeybee_thermMaterialLib"): sc.sticky["honeybee_thermMaterialLib"] = {}
         
         self.downloadTemplate = downloadTemplate
@@ -402,6 +402,8 @@ class PrepareTemplateEPLibFiles(object):
         sc.sticky ["honeybee_windowMaterialLib"] = {}
         sc.sticky["honeybee_ScheduleLib"] = {}
         sc.sticky["honeybee_ScheduleTypeLimitsLib"] = {}
+        sc.sticky["honeybee_WindowPropLib"] = {}
+        sc.sticky["honeybee_SpectralDataLib"] = {}
     
     def cleanThermLib(self):
         sc.sticky["honeybee_thermMaterialLib"] = {}
@@ -534,7 +536,9 @@ class HB_GetEPLibraries:
             "Construction": {},
             "Schedule" : {},
             "ScheduleTypeLimits": {},
-            "ThermMaterial": {}
+            "ThermMaterial": {},
+            "WindowProperty": {},
+            "MaterialProperty": {}
             }
     
     def getEPMaterials(self):
@@ -545,6 +549,12 @@ class HB_GetEPLibraries:
     
     def getEPWindowMaterial(self):
         return self.libraries["WindowMaterial"]
+    
+    def getEPWindowProp(self):
+        return self.libraries["WindowProperty"]
+    
+    def getEPSpectralData(self):
+        return self.libraries["MaterialProperty"]
     
     def getEPSchedule(self):
         return self.libraries["Schedule"]
@@ -560,7 +570,7 @@ class HB_GetEPLibraries:
             raise Exception("Can't find EP library! at %s"%EPfile)
         
         if isMatFile == False:
-            print "Loading EP materials, constructions and schedules from %s"%EPfile
+            print "Loading EP materials, constructions, schedules and material properties from %s"%EPfile
             EPObjects = self.getEnergyPlusObjectsFromFile(EPfile)
             self.loadEPConstructionsMaterialsAndSchedules(EPObjects, cleanCurrentLib)
         else:
@@ -577,14 +587,15 @@ class HB_GetEPLibraries:
             "Construction": {},
             "Schedule" : {},
             "ScheduleTypeLimits": {},
-            "ThermMaterial": {}
+            "ThermMaterial": {},
+            "WindowProperty": {},
+            "MaterialProperty": {}
             }
             
     # TODO: Support parsing for files with no next line
     # TODO: Check if keys can be case insensitive
     # TODO: Create EPObjects and not dictionaries
     def loadEPConstructionsMaterialsAndSchedules(self, EPObjectsString, cleanCurrentLib = True):
-        
         if cleanCurrentLib: self.cleanHBLibs()
         
         for EPObjectStr in EPObjectsString:
@@ -593,39 +604,68 @@ class HB_GetEPLibraries:
             for line in rawLines:
                 if line.strip() == '' or line.startswith('!'): continue
                 lines.append(line)
-                
-            if len(lines) < 2: continue
             
-            key = lines[0].split(",")[0].strip()
-            shortKey = key.split(":")[0]
-            name = lines[1].split(",")[0].strip().upper()
-            values = lines[2:]
-            # it's a two line object such as Any Number scheduleTypeLimit
-            if values == []:
-                name = lines[1].split(";")[0].strip().upper() # name is the last input
-                
-            if shortKey in self.libraries:
+            if not lines:
+                continue
+            
+            if lines[0].startswith('MaterialProperty:GlazingSpectralData'):
+                key = 'MaterialProperty:GlazingSpectralData'
+                shortKey = 'MaterialProperty'
+                name = lines[1].split(",")[0].strip().upper()
                 self.libraries[shortKey][name] = dict() # create an empty dictonary
                 self.libraries[shortKey][name][0] = key
+                # store the data into the dictionary
+                for lineCount, line in enumerate(lines):
+                    objValue = line.split("!")[0].strip()
+                    try: objDescription = line.split("!")[1].strip()
+                    except:  objDescription = ""
+                    if lineCount == 0:
+                        self.libraries[shortKey][name][lineCount] = objValue[:-1]
+                    elif lineCount == 1:
+                        pass # name is already there as the key
+                    elif objValue.endswith(","):
+                        self.libraries[shortKey][name][lineCount-1] = objValue[:-1], objDescription
+                    elif objValue.endswith(";"):
+                        self.libraries[shortKey][name][lineCount-1] = objValue[:-1], objDescription
+            else:
+                if len(lines) < 2: continue
                 
-                count = 1
-                delimiter = ","
-                for value in values:
-                    if not len(value.strip()): continue #pass empty lines
-                    if count==len(values): delimiter = ";"
-                    v = value.split(delimiter)[0].strip() # find the  value
-                    if value.find("!")!= -1:
-                        c = value.split("!")[-1].rstrip() # find the  value
-                    else:
-                        c = ""
-                    self.libraries[shortKey][name][count] = v, c
-                    count += 1
+                if lines[0].split(",")[0].strip().isupper():
+                    key = lines[0].split(",")[0].strip().title()
+                else:
+                    key = lines[0].split(",")[0].strip()
+                shortKey = key.split(":")[0]
+                
+                name = lines[1].split(",")[0].strip().upper()
+                values = lines[2:]
+                # it's a two line object such as Any Number scheduleTypeLimit
+                if values == []:
+                    name = lines[1].split(";")[0].strip().upper() # name is the last input
+                    
+                if shortKey in self.libraries:
+                    self.libraries[shortKey][name] = dict() # create an empty dictonary
+                    self.libraries[shortKey][name][0] = key
+                    
+                    count = 1
+                    delimiter = ","
+                    for value in values:
+                        if not len(value.strip()): continue #pass empty lines
+                        if count==len(values): delimiter = ";"
+                        v = value.split(delimiter)[0].strip() # find the  value
+                        if value.find("!")!= -1:
+                            c = value.split("!")[-1].rstrip() # find the  value
+                        else:
+                            c = ""
+                        self.libraries[shortKey][name][count] = v, c
+                        count += 1
     
     def report(self): 
         # Report findings
         print "%s EPConstructions are loaded available in Honeybee library"%str(len(self.libraries["Construction"]))
         print "%s EPMaterials are now loaded in Honeybee library"%str(len(self.libraries["Material"]))
         print "%s EPWindowMaterial are loaded in Honeybee library"%str(len(self.libraries["WindowMaterial"]))
+        print "%s EPShadingControl are loaded in Honeybee library"%str(len(self.libraries["WindowProperty"]))
+        print "%s EPMaterialProperty are loaded in Honeybee library"%str(len(self.libraries["MaterialProperty"]))
         print "%s schedules are loaded available in Honeybee library"%str(len(self.libraries["Schedule"]))
         print "%s schedule type limits are now loaded in Honeybee library"%str(len(self.libraries["ScheduleTypeLimits"]))
         print "%s THERM materials are now loaded in Honeybee library"%str(len(self.libraries["ThermMaterial"]))
@@ -645,13 +685,15 @@ class HB_GetEPLibraries:
         Returns:
             A list of strings. Each string represents a differnt Rdiance Object
         """
-        rawEPObjects = re.findall(r'(.[^;]*;.[^\n]*)', epFileString + "\n",re.MULTILINE)
+        
+        #rawEPObjects = re.findall(r'(.[^;]*;.[^\n]*)', epFileString + "\n",re.MULTILINE)
+        rawEPObjects = re.findall(r'(.[^;]*;)', epFileString + "\n",re.MULTILINE)
         
         return rawEPObjects
     
     def getEnergyPlusObjectsFromFile(self, epFilePath):
         """
-        Parse EnergyPlus file and return a list of radiance objects as separate strings
+        Parse EnergyPlus file and return a list of objects as separate strings
         
         TODO: Create a class for each EnergyPlus object and return Python objects
         instead of strings
@@ -670,8 +712,6 @@ class HB_GetEPLibraries:
         
         with open(epFilePath, "r") as epFile:
             return self.getEnergyPlusObjectsFromString("".join(epFile.readlines()))
-    
-    
     
     def getThermObjectsFromFile(self, matFile):
         if not os.path.isfile(matFile):
@@ -1291,7 +1331,7 @@ class DLAnalysisRecipe:
         if self.simulationType == 1:
             # make sure the sky is either gencum or gendaylit
             # edit in case of gendaylit
-            self.radSkyFile = self.skyFile.split(".")[0] + "_radAnalysis.sky"
+            self.radSkyFile = '.'.join(self.skyFile.split("."))[:-1] + "_radAnalysis.sky"
             skyOut = open(self.radSkyFile, "w")
             genDaylit = False
             with open(self.skyFile, "r") as skyIn:
@@ -2454,7 +2494,7 @@ class hb_WriteRAD(object):
             # glazingStr
             fullStr = fullStr + self.getsurfaceStr(surface.childSrfs[0], glzCount, glzCoorList)
         return fullStr
-            
+
 class hb_WriteRADAUX(object):
     
     def __init__(self):
@@ -3126,7 +3166,7 @@ class hb_WriteRADAUX(object):
             return True
         else:
             return False
-        
+
 class hb_WriteDS(object):
     
     def isSensor(self, testPt, sensors):
@@ -3407,7 +3447,6 @@ class hb_WriteDS(object):
                 'direct_sunlight_file ' + projectName  + '_' + `cpuCount` + '.dir\n' + \
                 'thermal_simulation ' + projectName  + '_' + `cpuCount` + '_intgain.csv\n'
 
-
 class hb_ReadAnnualResultsAux(object):
     
     def sortIllFiles(self, illFilesTemp):
@@ -3510,42 +3549,38 @@ class hb_ReadAnnualResultsAux(object):
                     illFiles.AddRange(fileList, p)
         
         return illFiles
-    
+
 class hb_EnergySimulatioParameters(object):
     
     def readEPParams(self, EPParameters):
         
-        if EPParameters == [] or len(EPParameters)!=15:
+        if EPParameters == []:
             timestep = 6
-            
             shadowPar = ["AverageOverDaysInFrequency", 30, 3000]
-            
             solarDistribution = "FullInteriorAndExteriorWithReflections"
-            
-            simulationControl = [True, True, True, False, True, 25, 6]
-            
+            simulationControl = [True, True, True, False, True, '', '']
             ddyFile = None
-            
             terrain = 'City'
-            
             grndTemps = []
+            holidays = []
+            startDay = None
+            heatSizing = 1.25
+            coolSizing = 1.15
         
         else:
             timestep = int(EPParameters[0])
-            
             shadowPar = EPParameters[1:4]
-            
             solarDistribution = EPParameters[4]
-            
             simulationControl = EPParameters[5:12]
-            
             ddyFile = EPParameters[12]
-            
             terrain = EPParameters[13]
-            
             grndTemps = EPParameters[14]
+            holidays = EPParameters[15]
+            startDay = EPParameters[16]
+            heatSizing = EPParameters[17]
+            coolSizing = EPParameters[18]
         
-        return timestep, shadowPar, solarDistribution, simulationControl, ddyFile, terrain, grndTemps
+        return timestep, shadowPar, solarDistribution, simulationControl, ddyFile, terrain, grndTemps, holidays, startDay, heatSizing, coolSizing
 
 class EPMaterialAux(object):
     
@@ -3564,6 +3599,14 @@ class EPMaterialAux(object):
                                         "CBECSBEFORE1980" : "CBECS Before-1980"}
     
     def calcEPMaterialUValue(self, materialObj, GHComponent = None):
+        # Dictionary of typical U-Values for different gases.
+        # All of these materials are taken from LBNL WINDOW 7.4 Gas Library assuming a 1 cm-thick gap.
+        gasUVal = {
+        "air": 2.407,
+        "argon": 1.6348,
+        "krypton": 0.8663,
+        "xenon": 0.516
+        }
         
         materialType = materialObj[0]
         
@@ -3574,7 +3617,12 @@ class EPMaterialAux(object):
             thickness = float(materialObj[3][0])
             conductivity = float(materialObj[13][0])
             UValueSI = conductivity/thickness
-            
+        
+        elif materialType.lower() == "windowmaterial:blind":
+            UValueSI = 2.407
+        elif materialType.lower() == "windowmaterial:shade":
+            UValueSI = 2.407
+        
         elif materialType.lower() == "material:nomass":
             # Material:NoMass is defined by R-Value and not U-Value
             UValueSI = 1 / float(materialObj[2][0])
@@ -3586,35 +3634,51 @@ class EPMaterialAux(object):
         
         elif materialType.lower() == "material:airgap":
             UValueSI = 1 / float(materialObj[1][0])
-            #print materialObj
-            #print UValueSI
-        
-        elif materialType.lower() == "material:airgap":
-            UValueSI = 1 / float(materialObj[1][0])
         
         elif materialType.lower() == "windowmaterial:gas":
             thickness = float(materialObj[2][0])
-            #All of these materials are taken from LBNL WINDOW 7.4 Gas Library assuming a 1 cm-thick gap.
-            if materialObj[1][0].lower() == "air":
-                # conductivity = 0.02407 {W/m-K}
-                UValueSI = 2.407
-            elif materialObj[1][0].lower() == "argon":
-                # conductivity = 0.016348 {W/m-K}
-                UValueSI = 1.6348
-            elif materialObj[1][0].lower() == "krypton":
-                # conductivity = 0.008663 {W/m-K}
-                UValueSI = 0.8663
-            elif materialObj[1][0].lower() == "xenon":
-                # conductivity = 0.005160 {W/m-K}
-                UValueSI = 0.516
-            else:
+            if thickness > 0.05:
+                warningMsg = "The thickness of your gas layer is beyond that typically seen in windows." + "\n" + \
+                "The U-Value calculated here might be fairly different from what E+ will use."
+                if GHComponent!=None:
+                    w = gh.GH_RuntimeMessageLevel.Warning
+                    GHComponent.AddRuntimeMessage(w, warningMsg)
+            try:
+                UValueSI = gasUVal[materialObj[1][0].lower()]
+            except:
+                UValueSI = -1
                 warningMsg = "Honeybee can't calculate the UValue for " + materialObj[1][0] + ".\n" + \
                     "Let us know if you think it is really neccesary and we will add it to the list. :)"
                 if GHComponent!=None:
                     w = gh.GH_RuntimeMessageLevel.Warning
                     GHComponent.AddRuntimeMessage(w, warningMsg)
-                    
-                    print materialObj
+        
+        elif materialType.lower() == "windowmaterial:gasmixture":
+            thickness = float(materialObj[1][0])
+            if thickness > 0.05:
+                warningMsg = "The thickness of your gas layer is beyond that typically seen in windows." + "\n" + \
+                "The U-Value calculated here might be fairly different from what E+ will use."
+                if GHComponent!=None:
+                    w = gh.GH_RuntimeMessageLevel.Warning
+                    GHComponent.AddRuntimeMessage(w, warningMsg)
+            try:
+                UValueSI = 0
+                gas = 0
+                gasPercent = 0
+                for gasCount in range(3, len(materialObj)):
+                    if (gasCount % 2 == 0):
+                        gasPercent = float(materialObj[gasCount][0])
+                        UValueSI = UValueSI + (gas*gasPercent)
+                    else:
+                        gas = float(gasUVal[materialObj[gasCount][0].lower()])
+            except:
+                UValueSI = -1
+                warningMsg = "Honeybee can't calculate the UValue for " + materialObj[1][0] + ".\n" + \
+                    "Let us know if you think it is really neccesary and we will add it to the list. :)"
+                if GHComponent!=None:
+                    w = gh.GH_RuntimeMessageLevel.Warning
+                    GHComponent.AddRuntimeMessage(w, warningMsg)
+        
         else:
             warningMsg = "Honeybee currently can't calculate U-Values for " + materialType + ".\n" +\
                 "Your Honeybee EnergyPlus simulations will still run fine with this material and this is only a Honeybee interface limitation." + ".\n" +\
@@ -3622,7 +3686,6 @@ class EPMaterialAux(object):
             if GHComponent!=None:
                 w = gh.GH_RuntimeMessageLevel.Warning
                 GHComponent.AddRuntimeMessage(w, warningMsg)
-        
             # http://bigladdersoftware.com/epx/docs/8-0/input-output-reference/page-010.html
             UValueSI = -1
         
@@ -3814,6 +3877,10 @@ class EPMaterialAux(object):
             objectData = sc.sticky ["honeybee_materialLib"][objectName]
         elif objectName in sc.sticky ["honeybee_constructionLib"].keys():
             objectData = sc.sticky ["honeybee_constructionLib"][objectName]
+        elif objectData in sc.sticky["honeybee_WindowPropLib"].keys():
+            objectData = sc.sticky["honeybee_WindowPropLib"][objectName]
+        elif objectName in sc.sticky["honeybee_SpectralDataLib"].keys():
+            objectData = sc.sticky["honeybee_SpectralDataLib"][objectName]
         
         if objectData!=None:
             numberOfLayers = len(objectData.keys())
@@ -3992,6 +4059,12 @@ class EPObjectsAux(object):
     def isScheduleTypeLimits(self, scheduleName):
         return scheduleName.upper() in sc.sticky["honeybee_ScheduleTypeLimitsLib"].keys()
     
+    def isWindowProperty(self, winPropName):
+        return winPropName.upper() in sc.sticky["honeybee_WindowPropLib"].keys()
+    
+    def isSpectralData(self, spectName):
+        return spectName.upper() in sc.sticky["honeybee_SpectralDataLib"].keys()
+    
     def customizeEPObject(self, EPObjectName, indexes, inValues):
         hb_EPScheduleAUX = EPScheduleAux()
         hb_EPMaterialAUX = EPMaterialAux()
@@ -4003,7 +4076,6 @@ class EPObjectsAux(object):
             values, comments = hb_EPScheduleAUX.getScheduleTypeLimitsDataByName(EPObjectName.upper())
         elif self.isEPConstruction(EPObjectName):
             values, comments, uSI, uIP = hb_EPMaterialAUX.decomposeEPCnstr(EPObjectName.upper())
-        
         elif self.isEPMaterial(EPObjectName):
             values, comments, uSI, uIP = hb_EPMaterialAUX.decomposeMaterial(EPObjectName.upper())
         else:
@@ -4055,7 +4127,7 @@ class EPObjectsAux(object):
     
     def getObjectKey(self, EPObject):
         
-        EPKeys = ["Material", "WindowMaterial", "Construction", "ScheduleTypeLimits", "Schedule"]
+        EPKeys = ["Material", "WindowMaterial", "Construction", "ScheduleTypeLimits", "Schedule", "WindowProperty", "MaterialProperty:GlazingSpectralData"]
         
         # check if it is a full string
         for key in EPKeys:
@@ -4074,7 +4146,9 @@ class EPObjectsAux(object):
                        "Material" : "honeybee_materialLib",
                        "WindowMaterial" : "honeybee_windowMaterialLib",
                        "Schedule": "honeybee_ScheduleLib",
-                       "ScheduleTypeLimits" : "honeybee_ScheduleTypeLimitsLib"
+                       "ScheduleTypeLimits" : "honeybee_ScheduleTypeLimitsLib",
+                       "WindowProperty" : "honeybee_WindowPropLib",
+                       "MaterialProperty:GlazingSpectralData" : "honeybee_SpectralDataLib"
                        }
         
         # find construction/material name
@@ -4092,7 +4166,7 @@ class EPObjectsAux(object):
         sc.sticky[HBLibrarieNames[key]][name] = {}
         
         lines = EPObject.split("\n")
-
+        
         # store the data into the dictionary
         for lineCount, line in enumerate(lines):
             
@@ -4129,7 +4203,11 @@ class EPObjectsAux(object):
             objectData = sc.sticky ["honeybee_ScheduleLib"][objectName]
         elif objectName in sc.sticky["honeybee_ScheduleTypeLimitsLib"].keys():
             objectData = sc.sticky ["honeybee_ScheduleTypeLimitsLib"][objectName]
-
+        elif objectName in sc.sticky["honeybee_WindowPropLib"].keys():
+            objectData = sc.sticky["honeybee_WindowPropLib"][objectName]
+        elif objectName in sc.sticky["honeybee_SpectralDataLib"].keys():
+            objectData = sc.sticky["honeybee_SpectralDataLib"][objectName]
+        
         return objectData
     
     def getEPObjectsStr(self, objectName):
@@ -4154,7 +4232,7 @@ class EPObjectsAux(object):
                 else:
                     objectStr =  objectStr + "  " + str(objectData[layer][0]) + ";   !- " +  objectData[layer][1] + "\n\n"
             return objectStr
-            
+    
     def duplicateEPObjectWarning(self, objectName, newMaterialString):
         returnYN = {'YES': True, 'NO': False}
         buttons = System.Windows.Forms.MessageBoxButtons.YesNo
@@ -4201,7 +4279,6 @@ class EPObjectsAux(object):
             print warningMsg
             component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
             return
-    
 
 class ReadEPSchedules(object):
     
@@ -4785,6 +4862,17 @@ class EPSurfaceLib(object):
                   4:'NoWind',
                   5:'WindExposed'}
 
+class EPHvac(object):
+    def __init__(self, GroupID="GroupI", Index=0, airDetails=None, heatingDetails=None, coolingDetails=None):
+        self.objectType = "HBHvac"
+        self.geometry = None
+        self.ID = str(uuid.uuid4())
+        self.GroupID = GroupID
+        self.Index = Index
+        self.airDetails = airDetails
+        self.heatingDetails = heatingDetails
+        self.coolingDetails = coolingDetails
+
 class EPZone(object):
     """This calss represents a honeybee zone that will be used for energy and daylighting
     simulatios"""
@@ -4801,14 +4889,14 @@ class EPZone(object):
         self.hasNonPlanarSrf = False
         self.hasInternalEdge = False
         
-        #Air Mixing with Adjacent Zones
+        # Air Mixing with Adjacent Zones
         self.mixAir = False
         self.mixAirZoneList = []
         self.mixAirFlowList = []
         self.mixAirFlowRate = 0.0963
         self.mixAirFlowSched = []
         
-        #Natural Ventilation Properties
+        # Natural Ventilation Properties
         self.natVent = False
         self.natVentType = []
         self.natVentMinIndoorTemp = []
@@ -4825,35 +4913,35 @@ class EPZone(object):
         self.FanEfficiency = []
         self.FanPressure = []
         
-        #Zone Internal Masses (or Furniture)
+        # Zone Internal Masses (or Furniture)
         self.internalMassNames = []
         self.internalMassSrfAreas = []
         self.internalMassConstructions = []
         
-        #Zone Surfaces
+        # Zone Surfaces
         self.surfaces = []
         
-        #Zone Thresholds
-        self.daylightThreshold = ""
+        # Zone Thresholds
         self.coolingSetPt= ""
         self.heatingSetPt= ""
         self.coolingSetback= ""
         self.heatingSetback= ""
         self.humidityMax= ""
         self.humidityMin= ""
-        
-        #Air System Properties.
-        self.recirculatedAirPerArea = 0
         self.outdoorAirReq = "Sum"
-        self.coolSupplyAirTemp= ""
-        self.heatSupplyAirTemp= ""
-        self.coolingCapacity= ""
-        self.heatingCapacity= ""
-        self.airSideEconomizer= 'DifferentialDryBulb'
-        self.heatRecovery= ""
-        self.heatRecoveryEffectiveness= ""
+        
+        # Daylight Thresholds
+        self.daylightCntrlFract = 0
+        self.illumSetPt = 100000
+        self.illumCntrlSensorPt = None
+        self.glareView = 0
+        self.GlareDiscomIndex = 22
+        
+        # Air System Properties.
+        self.recirculatedAirPerArea = 0
         self.ventilationSched = ""
         
+        # Geomtry Properties.
         if zoneBrep != None:
             self.isClosed = self.geometry.IsSolid
         else:
@@ -4864,6 +4952,7 @@ class EPZone(object):
             except Exception, e:
                 print 'Checking normal directions failed:\n' + `e`
         
+        # Zone Program
         self.bldgProgram = program[0]
         self.zoneProgram = program[1]
         
@@ -4873,9 +4962,8 @@ class EPZone(object):
         self.assignLoadsBasedOnProgram()
         
         # Assign a default HVAC System.
-        HVACSystem = namedtuple('HVACSystem', 'GroupID Index airDetails heatingDetails coolingDetails')
-        if isConditioned: self.HVACSystem = HVACSystem(GroupID="GroupI", Index=0, airDetails=None, heatingDetails=None, coolingDetails=None) # assign ideal loads as default
-        else: self.HVACSystem = HVACSystem(GroupID="NoHVAC", Index=-1, airDetails=None, heatingDetails=None, coolingDetails=None)# no system
+        if isConditioned: self.HVACSystem = EPHvac("GroupI", 0, None, None, None) # assign ideal loads as default
+        else: self.HVACSystem = EPHvac("NoHVAC", -1, None, None, None)# no system
         
         self.isConditioned = isConditioned
         self.isThisTheTopZone = False
@@ -4892,9 +4980,15 @@ class EPZone(object):
     
     def resetID(self):
         self.ID = str(uuid.uuid4())
-        
+    
+    def atuoPositionDaylightSensor(self):
+        zoneCentPt = rc.Geometry.VolumeMassProperties.Compute(self.geometry).Centroid
+        zoneBB = rc.Geometry.Brep.GetBoundingBox(self.geometry, rc.Geometry.Plane.WorldXY)
+        zOfPt = zoneBB.Min.Z + 0.8
+        self.illumCntrlSensorPt = rc.Geometry.Point3d(zoneCentPt.X, zoneCentPt.Y, zOfPt)
+    
     def transform(self, transform, clearSurfacesBC = True, flip = False):
-        self.name += "_t"
+        self.name += str(uuid.uuid4())
         self.geometry.Transform(transform)
         self.cenPt.Transform(transform)
         for surface in self.surfaces:
@@ -5332,7 +5426,7 @@ class hb_reEvaluateHBZones(object):
     to user to get them fixed.
     """
     
-    def __init__(self, inHBZones, meshingParameters):
+    def __init__(self, inHBZones, meshingParameters, pointOrient = "LowerLeftCorner"):
         # import the classes
         self.hb_EPZone = sc.sticky["honeybee_EPZone"]
         self.hb_EPSrf = sc.sticky["honeybee_EPSurface"]
@@ -5353,6 +5447,7 @@ class hb_reEvaluateHBZones(object):
         self.modifiedGlzSrfsNames = []
         self.adjcGlzSrfCollection = []
         self.adjcSrfCollection = {} #collect adjacent surfaces for nonplanar surfaces
+        self.pointOrient = pointOrient
     
     def checkSrfNameDuplication(self, surface):
         if surface.name in self.srfNames:
@@ -5486,8 +5581,7 @@ class hb_reEvaluateHBZones(object):
         newFenSrf.shadingControlName = baseChildSurface.shadingControlName
         newFenSrf.frameName = baseChildSurface.frameName
         newFenSrf.Multiplier = baseChildSurface.Multiplier
-        newFenSrf.shadeMaterial = baseChildSurface.shadeMaterial
-        newFenSrf.shadingControl = baseChildSurface.shadingControl
+        newFenSrf.shadeMaterialName = baseChildSurface.shadeMaterialName
         newFenSrf.shadingSchName = baseChildSurface.shadingSchName
         
         # Will be overwritten later if needed
@@ -5518,7 +5612,7 @@ class hb_reEvaluateHBZones(object):
         
         return insetPts
             
-    def checkChildSurfaces(self, surface):
+    def checkChildSurfaces(self, surface, pointOrient = 'LowerLeftCorner'):
         
         def isRectangle(ptList):
             vector1 = rc.Geometry.Vector3d(ptList[0] - ptList[1])
@@ -5549,7 +5643,7 @@ class hb_reEvaluateHBZones(object):
             return False
         
         # get glaing coordinates- coordinates will be returned as lists of lists
-        glzCoordinates = surface.extractGlzPoints()
+        glzCoordinates = surface.extractGlzPoints(False, 2, pointOrient)
         
         # make sure order is right
         for coorList in glzCoordinates:
@@ -5709,8 +5803,7 @@ class hb_reEvaluateHBZones(object):
                 if hasattr(surface, 'punchedGeometry'):
                     surface.geometry = surface.punchedGeometry
             
-            coordinatesL = surface.extractPoints()
-                
+            coordinatesL = surface.extractPoints(1, False, None, self.pointOrient)
         else:
             coordinatesL = surface.coordinates
         
@@ -5720,7 +5813,7 @@ class hb_reEvaluateHBZones(object):
             surface.coordinates = coordinatesL
             self.modifiedSrfsNames.append(surface.name)
             if  not surface.isChild and surface.hasChild:
-                self.checkChildSurfaces(surface)
+                self.checkChildSurfaces(surface, self.pointOrient)
                 
             return surface
             
@@ -5761,7 +5854,7 @@ class hb_reEvaluateHBZones(object):
             # nonplanar surface
             if  not surface.isChild and surface.hasChild:
                 
-                glzPSurfaces = self.checkChildSurfaces(surface)
+                glzPSurfaces = self.checkChildSurfaces(surface, self.pointOrient)
                 
                 if glzPSurfaces != None:
                     newSurfaces += glzPSurfaces
@@ -5799,6 +5892,9 @@ class hb_EPSurface(object):
         # define if type and BC is defined by user and should be kept
         self.srfTypeByUser = False
         self.srfBCByUser = False
+        
+        # Special attribute for shading control on inidivdual windows that influences the zone properties
+        self.shdCntrlZoneInstructs = []
         
         # PV - A Honeybee surface can hold one PV generator
         
@@ -6031,7 +6127,7 @@ class hb_EPSurface(object):
         return False
 
     
-    def extractPoints(self, method = 1, triangulate = False, meshPar = None):
+    def extractPoints(self, method = 1, triangulate = False, meshPar = None, firstVertex = 'LowerLeftCorner'):
         # if not self.meshedFace.IsValid:
         # meshed surface will be generated regardless
         # to make sure it won't fail for surfaces with multiple openings
@@ -6096,7 +6192,7 @@ class hb_EPSurface(object):
             self.Type = self.getTypeByNormalAngle()
         
         ## find UpperRightCorner point
-        ## I'm changin this to find the LowerLeftCorner point
+        ## I'm changing this to find the LowerLeftCorner point
         ## instead as it is how gbXML needs it
         
         # check the plane
@@ -6129,18 +6225,31 @@ class hb_EPSurface(object):
         
         # find UpperRightCorner point (x>0 and max y)
         firstPtIndex = None
-        #for ptIndex, pt in enumerate(remPts):
-        #    if pt.X > 0 and pt.Y > 0 and firstPtIndex == None:
-        #        firstPtIndex = ptIndex #this could be the point
-        #    elif pt.X > 0 and pt.Y > 0:
-        #        if pt.Y > remPts[firstPtIndex].Y: firstPtIndex = ptIndex
         
-        for ptIndex, pt in enumerate(remPts):
-            if pt.X < 0 and pt.Y < 0 and firstPtIndex == None:
-                firstPtIndex = ptIndex #this could be the point
-            elif pt.X < 0 and pt.Y < 0:
-                if pt.Y < remPts[firstPtIndex].Y: firstPtIndex = ptIndex
-        
+        if firstVertex == 'LowerLeftCorner':
+            for ptIndex, pt in enumerate(remPts):
+                if pt.X < 0 and pt.Y < 0 and firstPtIndex == None:
+                    firstPtIndex = ptIndex #this could be the point
+                elif pt.X < 0 and pt.Y < 0:
+                    if pt.Y < remPts[firstPtIndex].Y: firstPtIndex = ptIndex
+        elif firstVertex == 'UpperLeftCorner':
+            for ptIndex, pt in enumerate(remPts):
+                if pt.X < 0 and pt.Y > 0 and firstPtIndex == None:
+                    firstPtIndex = ptIndex #this could be the point
+                elif pt.X < 0 and pt.Y > 0:
+                    if pt.Y > remPts[firstPtIndex].Y: firstPtIndex = ptIndex
+        elif firstVertex == 'UpperRightCorner':
+            for ptIndex, pt in enumerate(remPts):
+                if pt.X > 0 and pt.Y > 0 and firstPtIndex == None:
+                    firstPtIndex = ptIndex #this could be the point
+                elif pt.X > 0 and pt.Y > 0:
+                    if pt.Y > remPts[firstPtIndex].Y: firstPtIndex = ptIndex
+        elif firstVertex == 'LowerRightCorner':
+            for ptIndex, pt in enumerate(remPts):
+                if pt.X > 0 and pt.Y < 0 and firstPtIndex == None:
+                    firstPtIndex = ptIndex #this could be the point
+                elif pt.X > 0 and pt.Y < 0:
+                    if pt.Y < remPts[firstPtIndex].Y: firstPtIndex = ptIndex
         
         if firstPtIndex!=None and firstPtIndex!=0:
             pointsSorted = pointsSorted[firstPtIndex:] + pointsSorted[:firstPtIndex]
@@ -6160,10 +6269,10 @@ class hb_EPSurface(object):
         else:
             return True
     
-    def extractGlzPoints(self, RAD = False, method = 2):
+    def extractGlzPoints(self, RAD = False, method = 2, firstVertex = 'LowerLeftCorner'):
         glzCoordinatesList = []
         for glzSrf in self.childSrfs:
-            sortedPoints = glzSrf.extractPoints()
+            sortedPoints = glzSrf.extractPoints(1, False, None, firstVertex)
             # check numOfPoints
             if len(sortedPoints) < 4 or (self.isPlanar and RAD==True):
                 glzCoordinatesList.append(sortedPoints) #triangle
@@ -6343,7 +6452,7 @@ class hb_EPSurface(object):
         """Transform EPSurface using a transform object
            Transform can be any valid transform object (e.g Translate, Rotate, Mirror)
         """
-        self.name += "_t"
+        self.name += str(uuid.uuid4())
         self.geometry.Transform(transform)
         self.meshedFace.Transform(transform)
         # move center point and normal
@@ -6412,7 +6521,6 @@ class hb_EPSurface(object):
         except:
             return 'Surface name: ' + self.name + '\n' + 'Surface number: ' + str(self.num) + \
                    '\nSurface type is not assigned. Honeybee thinks this is a ' + str(self.srfType[self.getTypeByNormalAngle()]) + "."
-
 
 class hb_EPZoneSurface(hb_EPSurface):
     """..."""
@@ -6671,9 +6779,10 @@ class hb_EPFenSurface(hb_EPSurface):
             parentZone: class of the zone that this surface belongs to"""
         hb_EPSurface.__init__(self, surface, srfNumber, srfName, parentSurface, surafceType)
         
-        self.shadeMaterial = []
-        self.shadingControl = []
+        # Special inputs for shading control.
         self.shadingSchName = []
+        self.shadingControlName = []
+        self.shadeMaterialName = []
         
         if not self.isPlanar:
             try:
@@ -6684,13 +6793,730 @@ class hb_EPFenSurface(hb_EPSurface):
 
         # calculate punchedWall
         self.parent.punchedGeometry = punchedWall
-        self.shadingControlName = []
+        
         self.frameName = ''
         self.Multiplier = 1
         self.BCObject = self.outdoorBCObject()
         self.groundViewFactor = 'autocalculate'
         self.isChild = True # is it really useful?
 
+class hb_GlzGeoGeneration(object):
+    def __init__(self):
+        self.tol = sc.doc.ModelAbsoluteTolerance
+    
+    def getRestOfSurfacePlanar(self, baseSrf, glazing):
+        selfDir = baseSrf.Faces[0].NormalAt(0,0)
+        glzCrvs = []
+        for glzSrf in glazing:
+            glzEdges = glzSrf.DuplicateEdgeCurves(True)
+            jGlzCrv = rc.Geometry.Curve.JoinCurves(glzEdges)[0]
+            glzCrvs.append(jGlzCrv)
+        
+        baseEdges = baseSrf.DuplicateEdgeCurves(True)
+        
+        jBaseCrv = rc.Geometry.Curve.JoinCurves(baseEdges)
+        
+        # convert array to list
+        jBaseCrvList = []
+        for crv in jBaseCrv: jBaseCrvList.append(crv)
+        
+        try:
+            punchedGeometries = rc.Geometry.Brep.CreatePlanarBreps(glzCrvs + jBaseCrvList)
+            
+            if len(punchedGeometries)>1:
+                crvDif = rc.Geometry.Curve.CreateBooleanDifference(jBaseCrvList[0], glzCrvs)
+                punchedGeometries = rc.Geometry.Brep.CreatePlanarBreps(crvDif)
+            
+            punchedGeometryDir = punchedGeometries[0].Faces[0].NormalAt(0,0)
+            if punchedGeometryDir.X < selfDir.X + self.tol and punchedGeometryDir.X > selfDir.X - self.tol and punchedGeometryDir.Y < selfDir.Y + self.tol and punchedGeometryDir.Y > selfDir.Y - self.tol and punchedGeometryDir.Z < selfDir.Z + self.tol and punchedGeometryDir.Z > selfDir.Z - self.tol:
+                pass
+            else: punchedGeometries[0].Flip()
+            
+            return punchedGeometries[0]
+                
+        except Exception, e:
+            return []
+            print "failed to calculate opaque part of the surface:\n" + `e`
+    
+    def getTopBottomCurves(self, brep):
+        #Write a function to find if a given line is horizontal or vertical.
+        def isEdgeHorizontal(edge):
+            if edge.PointAtStart.Z < (edge.PointAtEnd.Z + sc.doc.ModelAbsoluteTolerance) and edge.PointAtStart.Z > (edge.PointAtEnd.Z - sc.doc.ModelAbsoluteTolerance):
+                return True
+            else: 
+                return False
+        
+        def isEdgeVertical(edge):
+            if edge.PointAtStart.X < (edge.PointAtEnd.X + sc.doc.ModelAbsoluteTolerance) and edge.PointAtStart.X > (edge.PointAtEnd.X - sc.doc.ModelAbsoluteTolerance) and edge.PointAtStart.Y < (edge.PointAtEnd.Y + sc.doc.ModelAbsoluteTolerance) and edge.PointAtStart.Y > (edge.PointAtEnd.Y - sc.doc.ModelAbsoluteTolerance):
+                return True
+            else:
+                return False
+        
+        # duplicate the edges of the wall
+        edges = brep.DuplicateEdgeCurves(True)
+        
+        # sort the edges based on the z of mid point of the edge and get the top and bottom edges.
+        sortedEdges = sorted(edges, key=lambda edge: edge.PointAtNormalizedLength(0.5).Z)
+        
+        btmEdge = sortedEdges[0]
+        isBtmHorizontal = isEdgeHorizontal(btmEdge)
+        
+        topEdge = sortedEdges[-1]
+        isTopHorizontal = isEdgeHorizontal(topEdge)
+        
+        #Test to see if any of the side edges are vertical and, if there are two, there may be a rectangle that we can pull out.
+        vertEdges = []
+        nonVertEdge = []
+        for edge in sortedEdges:
+            if isEdgeVertical(edge) == True:
+                vertEdges.append(edge)
+            else: nonVertEdge.append(edge)
+        if len(vertEdges) == 2:
+            are2LinesVert = True
+        else: are2LinesVert = False
+        
+        return btmEdge, isBtmHorizontal, topEdge, isTopHorizontal, vertEdges, are2LinesVert
+    
+    def getCurvePoints(self, curve):
+        exploCurve = rc.Geometry.PolyCurve.DuplicateSegments(curve)
+        individPts = []
+        for line in exploCurve:
+            individPts.append(line.PointAtStart)
+        return individPts
+    
+    def cleanCurve(self, curve):
+        #Define a function that cleans up curves by deleting out points that lie in a line and leaves the curved segments intact.  Also, have it delete out any segments that are shorter than the tolerance.
+        #First check if there are any curved segements and make a list to keep track of this
+        curveBool = False
+        exploCurve = rc.Geometry.PolyCurve.DuplicateSegments(curve)
+        for segment in exploCurve:
+            if segment.IsLinear() == False: curveBool = True
+            else: pass
+        
+        # Get the curve points.
+        curvePts = self.getCurvePoints(curve)
+        
+        if curveBool == False:
+            #Test if any of the points lie in a line and use this to generate a new list of curve segments and points.
+            newPts = []
+            newSegments = []
+            for pointCount, point in enumerate(curvePts):
+                testLine = rc.Geometry.Line(point, curvePts[pointCount-2])
+                if testLine.DistanceTo(curvePts[pointCount-1], True) > self.tol and len(newPts) == 0:
+                    newPts.append(curvePts[pointCount-1])
+                elif testLine.DistanceTo(curvePts[pointCount-1], True) > self.tol and len(newPts) != 0:
+                    newSegments.append(rc.Geometry.LineCurve(newPts[-1], curvePts[pointCount-1]))
+                    newPts.append(curvePts[pointCount-1])
+                else: pass
+            
+            #Add a segment to close the curves and join them together into one polycurve.
+            newSegments.append(rc.Geometry.LineCurve(newPts[-1], newPts[0]))
+            
+            #Shift the lists over by 1 to ensure that the order of the points and curves match the input
+            newCurvePts = newPts[1:]
+            newCurvePts.append(newPts[0])
+            newCurveSegments = newSegments[1:]
+            newCurveSegments.append(newSegments[0])
+            
+            #Join the segments together into one curve.
+            newCrv = rc.Geometry.PolyCurve()
+            for seg in newCurveSegments:
+                newCrv.Append(seg)
+            newCrv.MakeClosed(self.tol)
+        else:
+            newCrv = curve
+        
+        #return the new curve and the list of points associated with it.
+        return newCrv
+    
+    def createGlazingTri(self, triSrf, glazingRatio, scalePt):
+        #Calculate the center point if one is not provided.
+        if scalePt:
+            cenPt = scalePt
+        else:
+            cenPt = rc.Geometry.AreaMassProperties.Compute(triSrf).Centroid
+        
+        #Scale the wall geometry to get to the appropriate glazingRatio.
+        scaleFactor = glazingRatio ** .5
+        scaleT = rc.Geometry.Transform.Scale(cenPt, scaleFactor)
+        glzSrfBrep = triSrf.DuplicateBrep()
+        glzSrfBrep.Transform(scaleT)
+        glzSrf = [glzSrfBrep]
+        return glzSrf
+    
+    def createGlazingQuad(self, quadSrf, glazingRatio, scalePt):
+        #Calculate the center point if one is not provided.
+        if scalePt:
+            cenPt = scalePt
+        else:
+            cenPt = rc.Geometry.AreaMassProperties.Compute(quadSrf).Centroid
+        
+        #Check to see if the center point of the quadrilaterial is inside the quadrilateral (which means that we can just scale the quadrilateral and the result will be inside it).
+        cenPt = rc.Geometry.AreaMassProperties.Compute(quadSrf).Centroid
+        closestPt = quadSrf.ClosestPoint(cenPt)
+        if cenPt.X < (closestPt.X + sc.doc.ModelAbsoluteTolerance) and cenPt.X > (closestPt.X - sc.doc.ModelAbsoluteTolerance) and cenPt.Y < (closestPt.Y + sc.doc.ModelAbsoluteTolerance) and cenPt.Y > (closestPt.Y - sc.doc.ModelAbsoluteTolerance) and cenPt.Z < (closestPt.Z + sc.doc.ModelAbsoluteTolerance) and cenPt.Z > (closestPt.Z - sc.doc.ModelAbsoluteTolerance):
+            checkCent = True
+        else:
+            checkCent = False
+        
+        #If the polygon's center point lies within the polygon, use the typical scaling method to get the window.
+        if checkCent == True:
+            scaleFactor = glazingRatio ** .5
+            scaleT = rc.Geometry.Transform.Scale(cenPt, scaleFactor)
+            glzSrfBrep = quadSrf.DuplicateBrep()
+            glzSrfBrep.Transform(scaleT)
+            glzSrf = [glzSrfBrep]
+        #If the polygon's center point lies outside of the polygon, split the polygon into two triangles and scale each to its own center.
+        else:
+            pts = quadSrf.DuplicateVertices()
+            diagonal1 = rc.Geometry.Brep.CreateFromCornerPoints(pts[0], pts[1], pts[2], sc.doc.ModelAbsoluteTolerance)
+            diagonal2 = rc.Geometry.Brep.CreateFromCornerPoints(pts[1], pts[2], pts[3], sc.doc.ModelAbsoluteTolerance)
+            quadSrfSplit1 = rc.Geometry.Brep.Split(quadSrf, diagonal1, sc.doc.ModelAbsoluteTolerance)
+            quadSrfSplit2 = rc.Geometry.Brep.Split(quadSrf, diagonal2, sc.doc.ModelAbsoluteTolerance)
+            
+            quadSrfSplit = quadSrfSplit1 + quadSrfSplit2
+            
+            glzSrf = []
+            for brep in quadSrfSplit:
+                glzSrf.append(self.createGlazingTri(brep, glazingRatio, None)[0])
+        
+        return glzSrf
+    
+    def createGlazingOddPlanarGeo(self, baseSrf, glazingRatio):
+        #Define the meshing paramters to break down the surface in a manner that produces only trinagles and quads.
+        meshPar = rc.Geometry.MeshingParameters.Default
+        
+        #Create a mesh of the base surface.
+        windowMesh = rc.Geometry.Mesh.CreateFromBrep(baseSrf, meshPar)[0]
+        
+        #Create breps of all of the mesh faces and use them to make each window.
+        glzSrf = []
+        srfFaceList = windowMesh.Faces
+        srfVertList = windowMesh.Vertices
+        srfFaceCen = []
+        
+        for faceNum, face in enumerate(srfFaceList):
+            if face.IsQuad == True:
+                glzSrf.append(self.createGlazingQuad(rc.Geometry.Brep.CreateFromCornerPoints(srfVertList[face[0]], srfVertList[face[1]], srfVertList[face[2]], srfVertList[face[3]], sc.doc.ModelAbsoluteTolerance), glazingRatio, windowMesh.Faces.GetFaceCenter(faceNum))[0])
+            else:
+                glzSrf.append(self.createGlazingTri(rc.Geometry.Brep.CreateFromCornerPoints(srfVertList[face[0]], srfVertList[face[1]], srfVertList[face[2]], sc.doc.ModelAbsoluteTolerance), glazingRatio, windowMesh.Faces.GetFaceCenter(faceNum))[0])
+        
+        return glzSrf
+    
+    def createGlazingForRect(self, rectBrep, glazingRatio, windowHeight, sillHeight, breakUpDist, splitGlzVertDist, conversionFactor):
+        #Define a default window height, sill height, breakup distance and vertical glazing dist of windows.
+        if windowHeight != None: winHeight = windowHeight
+        else: winHeight = 2
+        winHeight = winHeight/conversionFactor
+        if sillHeight != None: silHeight = sillHeight
+        else: silHeight = 0.8
+        silHeight = silHeight/conversionFactor
+        if breakUpDist != None: distBreakup = breakUpDist
+        else: distBreakup = 2
+        distBreakup = distBreakup/conversionFactor
+        if splitGlzVertDist != None: splitVertDist = splitGlzVertDist
+        else: splitVertDist = 0
+        splitVertDist = splitVertDist/conversionFactor
+        
+        
+        if rectBrep:
+            #Calculate the target area to make the glazing.
+            targetArea = (rc.Geometry.AreaMassProperties.Compute(rectBrep).Area) * glazingRatio
+            
+            #Find the maximum acceptable area for breaking up the window into smaller, taller windows.
+            rectBtmCurve = self.getTopBottomCurves(rectBrep)[0]
+            rectTopCurve = self.getTopBottomCurves(rectBrep)[2]
+            maxAreaBreakUp = (rectBtmCurve.GetLength() * 0.98) * winHeight
+            
+            #Find the maximum acceptable area for setting the glazing at the sill height.
+            heightClosestPt = rc.Geometry.Curve.PointAt(rectTopCurve, rc.Geometry.LineCurve.ClosestPoint(rectTopCurve, rectBtmCurve.PointAtEnd)[1])
+            rectHeight = rc.Geometry.Point3d.DistanceTo(heightClosestPt, rectBtmCurve.PointAtEnd)
+            rectHeightVec = rc.Geometry.Vector3d(heightClosestPt.X - rectBtmCurve.PointAtEnd.X, heightClosestPt.Y - rectBtmCurve.PointAtEnd.Y, heightClosestPt.Z - rectBtmCurve.PointAtEnd.Z)
+            maxWinHeightSill = rectHeight - silHeight
+            
+            #If the window height given from the formulas above is greater than the height of the wall, set the window height to be just under that of the wall.
+            if winHeight > (0.98 * rectHeight): winHeightFinal = (0.98 * rectHeight)
+            else: winHeightFinal = winHeight
+            
+            #If the sill height given from the formulas above is less than 1% of the wall height, set the sill height to be 1% of the wall height.
+            if silHeight < (0.01 * rectHeight): silHeightFinal = (0.01 * rectHeight)
+            else: silHeightFinal = silHeight
+            
+            #Find the window geometry in the case that the target area is below that of the maximum acceptable area for breaking up the window into smaller, taller windows.
+            if targetArea < maxAreaBreakUp:
+                #Divide up the rectangle into points on the bottom.
+                rectBtmCurveLength = rectBtmCurve.GetLength()
+                if rectBtmCurveLength > (distBreakup/2):
+                    numDivisions = round(rectBtmCurveLength/distBreakup, 0)
+                else:
+                    numDivisions = 1
+                
+                btmDivPts = []
+                rectBtmCurve.Reverse() 
+                
+                #print numDivisions
+                for parameter in rectBtmCurve.DivideByCount(numDivisions, True):
+                    btmDivPts.append(rc.Geometry.Curve.PointAt(rectBtmCurve, parameter))
+                
+                #Connect the points to form lines to be used to generate the windows
+                winLinesStart = []
+                ptIndex = 0
+                for point in btmDivPts:
+                    if ptIndex < numDivisions:
+                        winLinesStart.append(rc.Geometry.Line(point, btmDivPts[ptIndex+1]))
+                        ptIndex += 1
+                
+                #Move the lines to the appropriate sill height.
+                sillUnitVec = rectHeightVec
+                sillUnitVec.Unitize()
+                
+                maxSillHeight = (rectHeight*0.99) - winHeightFinal
+                if silHeightFinal < maxSillHeight: sillVec = rc.Geometry.Vector3d.Multiply(silHeightFinal, sillUnitVec)
+                else: sillVec = rc.Geometry.Vector3d.Multiply(maxSillHeight, sillUnitVec)
+                
+                transformMatrix = rc.Geometry.Transform.Translation(sillVec)
+                
+                for line in winLinesStart:
+                    rc.Geometry.Line.Transform(line, transformMatrix)
+                
+                #Scale the lines to their center points based on the width that they need to be to satisfy the glazing ratio.
+                lineCentPt = []
+                for line in winLinesStart:
+                    lineCentPt.append(line.PointAt(0.5))
+                
+                winLineBaseLength = winLinesStart[0].Length
+                winLineReqLength = (targetArea / winHeightFinal) / numDivisions
+                winLineScale = winLineReqLength / winLineBaseLength
+                
+                centPtIndex = 0
+                for line in winLinesStart:
+                    transformMatrixScale = rc.Geometry.Transform.Scale(lineCentPt[centPtIndex], winLineScale)
+                    line.Transform(transformMatrixScale)
+                    centPtIndex += 1
+                
+                #Find the maximum acceptable area for splitting the glazing vertically.
+                maxSplitVert = rectHeight - silHeightFinal - winHeightFinal - (0.02*rectHeight)
+                #If the splitVertDist is beyond the maximum acceptable, set it to this maximum.
+                if splitVertDist < 0 or maxSplitVert < 0: splitVertDist = 0
+                elif splitVertDist != 0 and splitVertDist > maxSplitVert: splitVertDist = maxSplitVert
+                
+                #If there is a non-zero vertical breakup dist and the value is less than the maximum accpetable, break up the window surface verticaly.
+                if splitVertDist != 0:
+                    #Extrude the lines to create the windows
+                    extruUnitVec = rectHeightVec
+                    extruUnitVec.Unitize()
+                    extruVec = rc.Geometry.Vector3d.Multiply(extruUnitVec, (winHeightFinal/2))
+                    vertMovingVec = rc.Geometry.Vector3d.Multiply(extruUnitVec, (winHeightFinal/2)+splitVertDist)
+                    vertMovingTransform = rc.Geometry.Transform.Translation(vertMovingVec)
+                    finalWinSrfs = []
+                    for line in winLinesStart:
+                        finalWinSrfs.append(rc.Geometry.Surface.CreateExtrusion(line.ToNurbsCurve(), extruVec))
+                        line.Transform(vertMovingTransform)
+                        finalWinSrfs.append(rc.Geometry.Surface.CreateExtrusion(line.ToNurbsCurve(), extruVec))
+                else:
+                    #Extrude the lines to create the windows
+                    extruUnitVec = rectHeightVec
+                    extruUnitVec.Unitize()
+                    extruVec = rc.Geometry.Vector3d.Multiply(extruUnitVec, winHeightFinal)
+                    finalWinSrfs = []
+                    for line in winLinesStart:
+                        finalWinSrfs.append(rc.Geometry.Surface.CreateExtrusion(line.ToNurbsCurve(), extruVec))
+                
+                rectWinBreps=[]
+                for srf in finalWinSrfs:
+                    rectWinBreps.append(rc.Geometry.Surface.ToBrep(srf))
+            
+            
+            #Find the window geometry in the case that the target area is above that of the maximum acceptable area for breaking up the window in which case we have to make one big window.
+            if targetArea > maxAreaBreakUp:
+                #Move the bottom curve of the window to the appropriate sill height.
+                sillUnitVec = rectHeightVec
+                sillUnitVec.Unitize()
+                
+                rectBtmCurveLength = rectBtmCurve.GetLength()
+                maxSillHeight = (rectHeight*0.99) - (targetArea / (rectBtmCurveLength * 0.98))
+                
+                if silHeightFinal < maxSillHeight:
+                    sillVec = rc.Geometry.Vector3d.Multiply(silHeightFinal, sillUnitVec)
+                else:
+                    sillVec = rc.Geometry.Vector3d.Multiply(maxSillHeight, sillUnitVec)
+                
+                #Move the window to the sill height.
+                transformMatrix = rc.Geometry.Transform.Translation(sillVec)
+                winStartLine = rectBtmCurve
+                rc.Geometry.NurbsCurve.Transform(winStartLine, transformMatrix)
+                
+                #Scale the curve so that it is not touching the edges of the surface.
+                lineCentPt = rc.Geometry.Point3d(((winStartLine.PointAtStart.X + winStartLine.PointAtEnd.X)/2), ((winStartLine.PointAtStart.Y + winStartLine.PointAtEnd.Y)/2), ((winStartLine.PointAtStart.Z + winStartLine.PointAtEnd.Z)/2))
+                
+                transformMatrixScale = rc.Geometry.Transform.Scale(lineCentPt, 0.98)
+                winStartLine.Transform(transformMatrixScale)
+                
+                #Find the maximum acceptable area for splitting the glazing vertically.
+                maxSplitVert = rectHeight - silHeightFinal - (targetArea / (rectBtmCurveLength * 0.98)) - (0.02*rectHeight)
+                #If the splitVertDist is beyond the maximum acceptable, set it to this maximum.
+                if splitVertDist < 0 or maxSplitVert < 0: splitVertDist = 0
+                elif splitVertDist != 0 and splitVertDist > maxSplitVert: splitVertDist = maxSplitVert
+                
+                if splitVertDist != 0:
+                    #Extrude the line to create the window
+                    extruUnitVec = rectHeightVec
+                    extruUnitVec.Unitize()
+                    extruVec = rc.Geometry.Vector3d.Multiply(extruUnitVec, (targetArea / (rectBtmCurveLength * 0.98))/2)
+                    vertMovingVec = rc.Geometry.Vector3d.Multiply(extruUnitVec, ((targetArea / (rectBtmCurveLength * 0.98))/2)+splitVertDist)
+                    vertMovingTransform = rc.Geometry.Transform.Translation(vertMovingVec)
+                    finalWinSrf1 = rc.Geometry.Surface.CreateExtrusion(winStartLine.ToNurbsCurve(), extruVec)
+                    winStartLine.Transform(vertMovingTransform)
+                    finalWinSrf2 = rc.Geometry.Surface.CreateExtrusion(winStartLine.ToNurbsCurve(), extruVec)
+                    rectWinBreps = [rc.Geometry.Surface.ToBrep(finalWinSrf1), rc.Geometry.Surface.ToBrep(finalWinSrf2)]
+                else:
+                    
+                    if (sc.doc.ModelAbsoluteTolerance > 0.01* rectBtmCurveLength):
+                        
+                        warning = "Your model tolerance is too high and for this reason the base surface is being split into two \n" + \
+                        "instead of making a window in the base surface! Lower your model tolerance or decrease your glazing ratio to fix this issue"
+                        w = gh.GH_RuntimeMessageLevel.Warning
+                        ghenv.Component.AddRuntimeMessage(w, warning)
+                    
+                    #Extrude the line to create the window
+                    extruUnitVec = rectHeightVec
+                    extruUnitVec.Unitize()
+                    extruVec = rc.Geometry.Vector3d.Multiply(extruUnitVec, (targetArea / (rectBtmCurveLength * 0.98)))
+                    finalWinSrf = rc.Geometry.Surface.CreateExtrusion(winStartLine, extruVec)
+                    rectWinBreps = [rc.Geometry.Surface.ToBrep(finalWinSrf)]
+        
+        else:
+            rectWinBreps = []
+        return rectWinBreps
+    
+    def createGlazingThatContainsRectangle(self, topEdge, btmEdge, baseSrf, glazingRatio, windowHeight, sillHeight, breakUpWindow, breakUpDist, splitVertDist, conversionFactor):
+        #Get the rectangle vertices points from the arrangement of closest points of the top and bottom curves.
+        rectPt1 = rc.Geometry.Curve.PointAt(topEdge, rc.Geometry.LineCurve.ClosestPoint(topEdge, btmEdge.PointAtEnd)[1])
+        rectPt2 = rc.Geometry.Curve.PointAt(btmEdge, rc.Geometry.LineCurve.ClosestPoint(btmEdge, topEdge.PointAtEnd)[1])
+        rectPt3 = rc.Geometry.Curve.PointAt(topEdge, rc.Geometry.LineCurve.ClosestPoint(topEdge, btmEdge.PointAtStart)[1])
+        rectPt4 = rc.Geometry.Curve.PointAt(btmEdge, rc.Geometry.LineCurve.ClosestPoint(btmEdge, topEdge.PointAtStart)[1])
+        
+        #Create the rectangle
+        rectPlane = rc.Geometry.Plane(rectPt4, rectPt2, rectPt3)
+        rect = rc.Geometry.Rectangle3d(rectPlane, rectPt2, rectPt1)
+        rectBrep = rc.Geometry.Brep.CreateFromCornerPoints(rectPt1, rectPt3, rectPt2, rectPt4, sc.doc.ModelAbsoluteTolerance)
+        
+        
+        def areEdgesLinear(brepList):
+            for srf in brepList:
+                for edge in srf.Edges:
+                    if not edge.IsLinear():
+                        return False       
+            return True
+            
+        #Split the base surface with the rectangle
+        if rectBrep:
+            srfSplit = rc.Geometry.Brep.Split(baseSrf, rectBrep, sc.doc.ModelAbsoluteTolerance)
+            # make sure split doesn't generate curves shapes!
+            # happens for some strange surfaces:
+            # https://github.com/mostaphaRoudsari/Honeybee/issues/115
+            if srfSplit!=[] and not areEdgesLinear(srfSplit): srfSplit =[]
+        
+        else:
+            srfSplit = []
+        
+        if len(srfSplit) == 0:
+            if rectBrep:
+                srfSplit = [baseSrf]
+            else:
+                srfSplit = []
+                middle = []
+                sides = []
+        
+        #Determine which Breps are rectangular and which are not by testing their angles and number of sides.
+        middle = []
+        sides = []
+        for srf in srfSplit:
+            edges = srf.Edges
+            joinedEdges = rc.Geometry.Curve.JoinCurves(edges)[0]
+            joinedEdges = self.cleanCurve(joinedEdges)
+            simplificationOpt = rc.Geometry.CurveSimplifyOptions.All
+            joinedEdgesSimplified = joinedEdges.Simplify(simplificationOpt, sc.doc.ModelAbsoluteTolerance, sc.doc.ModelAngleToleranceRadians)
+            try:
+                reconstructSrf = rc.Geometry.Brep.CreatePlanarBreps(joinedEdgesSimplified)[0]
+            except:
+                reconstructSrf = srf
+            
+            # On some systems there was an error with using Brep.Vertices
+            # I assume this should be an issue with one of Rhinocommon versions
+            # Hopefully this will fix it - 
+            vertices = reconstructSrf.DuplicateVertices()
+            angle1 = rc.Geometry.Vector3d.VectorAngle(rc.Geometry.Vector3d.Subtract(rc.Geometry.Vector3d(vertices[0]), rc.Geometry.Vector3d(vertices[1])), rc.Geometry.Vector3d.Subtract(rc.Geometry.Vector3d(vertices[0]), rc.Geometry.Vector3d(vertices[len(vertices) - 1])))
+            angle2 = rc.Geometry.Vector3d.VectorAngle(rc.Geometry.Vector3d.Subtract(rc.Geometry.Vector3d(vertices[1]), rc.Geometry.Vector3d(vertices[2])), rc.Geometry.Vector3d.Subtract(rc.Geometry.Vector3d(vertices[1]), rc.Geometry.Vector3d(vertices[0])))
+            numSides = reconstructSrf.Edges.Count
+            rectBool = reconstructSrf.IsValid
+            
+            if rectBool and numSides == 4 and angle1 < 1.570796 + sc.doc.ModelAngleToleranceRadians and angle1 > 1.570796 - sc.doc.ModelAngleToleranceRadians and angle2 < 1.570796 + sc.doc.ModelAngleToleranceRadians and angle2 > 1.570796 - sc.doc.ModelAngleToleranceRadians:
+                middle.append(reconstructSrf)
+            else:
+                sides.append(reconstructSrf)
+        
+        #Generate glazing for the non-rectangular surfaces.
+        sideGlaz = []
+        for srf in sides:
+            if srf.Edges.Count == 3:
+                sideGlaz.append(self.createGlazingTri(srf, glazingRatio, None))
+            elif srf.Edges.Count == 4:
+                sideGlaz.append(self.createGlazingQuad(srf, glazingRatio, None))
+            else:
+                sideGlaz.append(self.createGlazingOddPlanarGeo(srf, glazingRatio))
+        
+        #Find the glazing for the rectangle part of the wall
+        rectWinBreps = []
+        if breakUpWindow == True:
+            for rect in middle:
+                rectWinBreps.append(self.createGlazingForRect(rect, glazingRatio, windowHeight, sillHeight, breakUpDist, splitVertDist, conversionFactor))
+        else:
+            for rect in middle:
+                rectWinBreps.append(self.createGlazingQuad(rect, glazingRatio, None))
+        
+        #Add all of the glazings together into one list.
+        glzSrf = []
+        for item in rectWinBreps:
+            for window in item:
+                glzSrf.append(window)
+        for item in sideGlaz:
+            for window in item:
+                glzSrf.append(window)
+        
+        #If the surface failed to split and there was no rectangle, chances are that the surface is really oblique so I should get the glazing using the quad function or odd geo function. 
+        if len(srfSplit) == 0 and rectBrep == None:
+            try:
+                glzSrf = self.createGlazingQuad(baseSrf, glazingRatio, None)
+            except:
+                glzSrf = self.createGlazingOddPlanarGeo(baseSrf, glazingRatio)
+        
+        return glzSrf
+    
+    def bisect(self, a, b, fn, epsilon, target):
+        # This function is taken from the util.js script of the CBE comfort tool page.
+        while (abs(b - a) > 2 * epsilon):
+            midpoint = (b + a) / 2
+            a_T = fn(a)
+            b_T = fn(b)
+            midpoint_T = fn(midpoint)
+            if (a_T - target) * (midpoint_T - target) < 0: b = midpoint
+            elif (b_T - target) * (midpoint_T - target) < 0: a = midpoint
+            else: return -999
+    
+        return midpoint
+    
+    def secant(self, a, b, fn, epsilon):
+        # This function is taken from the util.js script of the CBE comfort tool page.
+        # root-finding only
+        f1 = fn(a)
+        if abs(f1) <= epsilon: return a
+        f2 = fn(b)
+        if abs(f2) <= epsilon: return b
+        
+        for i in range(100):
+            slope = (f2 - f1) / (b - a)
+            c = b - f2 / slope
+            f3 = fn(c)
+            if abs(f3) < epsilon: return c
+            a = b
+            b = c
+            f1 = f2
+            f2 = f3
+    
+        return 'NaN'
+    
+    def createGlazingCurved(self, baseSrf, glzRatio, planar):
+        def getOffsetDist(cenPt, edges):
+            distList = []
+            [distList.append(cenPt.DistanceTo(edge.PointAtNormalizedLength(0.5))) for edge in edges]
+            return min(distList)/2
+        
+        def getAreaAndCenPt(surface):
+            MP = rc.Geometry.AreaMassProperties.Compute(surface)
+            if MP:
+                area = MP.Area
+                centerPt = MP.Centroid
+                MP.Dispose()
+                bool, centerPtU, centerPtV = surface.Faces[0].ClosestPoint(centerPt)
+                normalVector = surface.Faces[0].NormalAt(centerPtU, centerPtV)
+                return area, centerPt, normalVector
+            else: return None, None, None
+        
+        def OffsetCurveOnSurface(border, glazingBrep, offsetDist, normalvector, planar):
+            success = False
+            glzArea = 0
+            direction = 1
+            splittedSrfs = []
+            
+            # Offset the curves on the surface with RhinoCommon
+            surface = glazingBrep.Faces[0]
+            glzCurve = border.OffsetOnSurface(surface, offsetDist, sc.doc.ModelAbsoluteTolerance)
+            if glzCurve==None:
+                glzCurve = border.OffsetOnSurface(surface, -offsetDist, sc.doc.ModelAbsoluteTolerance)
+                direction = -1
+            
+            if glzCurve!=None:
+                splitBrep = surface.Split(glzCurve, sc.doc.ModelAbsoluteTolerance)
+                
+                for srfCount in range(splitBrep.Faces.Count):
+                    splSurface = splitBrep.Faces.ExtractFace(srfCount)
+                    splittedSrfs.append(splSurface)
+                    edges = splSurface.DuplicateEdgeCurves(True)
+                    joinedEdges = rc.Geometry.Curve.JoinCurves(edges)
+                    
+                    if len(joinedEdges) == 1:
+                        glzSrf = splSurface
+                        glzArea = glzSrf.GetArea()
+                        success = True
+            else:
+                print "Offseting boundary and spliting the surface failed!"
+                splittedSrfs = None
+                success = False
+                
+            
+            return success, glzArea, glzCurve, splittedSrfs
+        
+        
+        face = baseSrf
+        edges = face.DuplicateEdgeCurves(True)
+        border = rc.Geometry.Curve.JoinCurves(edges)[0]
+        area, cenPt, normalvector = getAreaAndCenPt(face)
+        targetArea = area * glzRatio
+        offsetDist = getOffsetDist(cenPt, edges)
+        
+        i = 0
+        glzArea = 2 * targetArea
+        inwardDirection = 1 #define the inward direction for the surface
+        success = False
+        
+        lastSuccessfulGlzSrf = None
+        lastSuccessfulRestOfSrf = None
+        lastSuccessfulSrf = None
+        lastSuccessfulArea = area
+        srfs = []
+        
+        
+        try: coordinatesList = baseSrf.Vertices
+        except: coordinatesList = baseSrf.DuplicateVertices()
+        
+        succ, glzArea, glzCurve, splittedSrfs = OffsetCurveOnSurface(border, face, offsetDist, normalvector, planar)
+        
+        if baseSrf!= None:
+            srfCent = rc.Geometry.AreaMassProperties.Compute(baseSrf).Centroid
+            srfClstParam = border.ClosestPoint(srfCent)[1]
+            srfClstPt = border.PointAt(srfClstParam)
+            
+            glzO_l = 0.01
+            glzO_r = srfCent.DistanceTo(srfClstPt) - 0.01
+            eps = 0.01  # precision of glazing ratio.
+            def fn(offDist):
+                return (targetArea - OffsetCurveOnSurface(border, face, offDist, normalvector, planar)[1])
+            
+            try:
+                offsetDist = self.secant(glzO_l, glzO_r, fn, eps)
+            except System.DivideByZeroException:
+                offsetDist = self.bisect(glzO_l, glzO_r, fn, eps, 0)
+            else:
+                if offsetDist == 'NaN':
+                    offsetDist = self.bisect(glzO_l, glzO_r, fn, eps, 0)
+                    
+            succ, glzArea, glzCurve, splittedSrfs = OffsetCurveOnSurface(border, face, offsetDist, normalvector, planar)
+        
+        if succ:
+            srfs.append(splittedSrfs)
+            try:
+                lastSuccessfulGlzSrf = splittedSrfs[1]
+                lastSuccessfulRestOfSrf = splittedSrfs[0]
+                lastSuccessfulArea = glzArea
+            except Exception, e:
+                lastSuccessfulGlzSrf = None
+                lastSuccessfulRestOfSrf = None
+                lastSuccessfulArea = 0
+                        
+        
+        return lastSuccessfulGlzSrf, lastSuccessfulRestOfSrf
+    
+    def createSkylightGlazing(self, baseSrf, glazingRatio, planarBool, edgeLinear, breakUpWindow, breakUpDist, conversionFactor):
+        if breakUpWindow == True or breakUpWindow == None:
+            #Define the meshing paramters to break down the surface in a manner that produces only trinagles and quads.
+            meshPar = rc.Geometry.MeshingParameters.Default
+            
+            #Define the grid size break down based on the model units.
+            if breakUpDist != None: distBreakup = breakUpDist
+            else: distBreakup = 3
+            distBreakup = distBreakup/conversionFactor
+            
+            meshPar.MinimumEdgeLength = (distBreakup)
+            meshPar.MaximumEdgeLength = (distBreakup*2)
+            
+            #Create a mesh of the base surface.
+            windowMesh = rc.Geometry.Mesh.CreateFromBrep(baseSrf, meshPar)[0]
+            
+            #Define all of the vairables that will be used in the following steps
+            glzSrf = []
+            srfFaceList = windowMesh.Faces
+            srfVertList = windowMesh.Vertices
+            curvedOk = True
+            lastSuccessfulRestOfSrf = []
+            
+            #If the surface is curved, check to see if all of the faces are quads, in which case, the generated glazing should look pretty nice.  Otherwise, abandon this method and use the offset algorithm.
+            if planarBool == False:
+                for face in srfFaceList:
+                    if face.IsQuad == True: pass
+                    else: curvedOk = False
+                if curvedOk == False:
+                    glzSrf, lastSuccessfulRestOfSrf = self.createGlazingCurved(baseSrf, glazingRatio, planarBool)
+                else: pass
+            else:pass
+            
+            #Create breps of all of the mesh faces and use them to make each window.
+            if curvedOk == True:
+                for faceNum, face in enumerate(srfFaceList):
+                    if face.IsQuad == True:
+                        glzSrf.append(self.createGlazingQuad(rc.Geometry.Brep.CreateFromCornerPoints(srfVertList[face[0]], srfVertList[face[1]], srfVertList[face[2]], srfVertList[face[3]], sc.doc.ModelAbsoluteTolerance), glazingRatio, windowMesh.Faces.GetFaceCenter(faceNum))[0])
+                    else:
+                        glzSrf.append(self.createGlazingTri(rc.Geometry.Brep.CreateFromCornerPoints(srfVertList[face[0]], srfVertList[face[1]], srfVertList[face[2]], sc.doc.ModelAbsoluteTolerance), glazingRatio, windowMesh.Faces.GetFaceCenter(faceNum))[0])
+            
+            #If the surface is curved and has not been generated using the offset method, project the quad breps onto the curved surface and split it.
+            if planarBool == False and curvedOk == True:
+                faceNormals = []
+                curvedGlz = []
+                surface = baseSrf.Faces[0]
+                
+                for faceNum, face in enumerate(srfFaceList):
+                    facePlane = rc.Geometry.Plane(srfVertList[face[0]], srfVertList[face[1]], srfVertList[face[2]])
+                    faceNormals.append(facePlane.Normal)
+                for srfNum, srf in enumerate(glzSrf):
+                    edges = srf.Edges
+                    edge = rc.Geometry.Curve.JoinCurves(edges)
+                    projectEdge = rc.Geometry.Curve.ProjectToBrep(edge, [baseSrf], faceNormals[srfNum], sc.doc.ModelAbsoluteTolerance)[0]
+                    projectBrep = surface.Split([projectEdge], sc.doc.ModelAbsoluteTolerance)
+                    splSurface = projectBrep.Faces.ExtractFace(1)
+                    curvedGlz.append(splSurface)
+                glzSrf = curvedGlz
+        else:
+            #Check to see if it is a triangle for which we can use a simple mathematical relation.
+            if planarBool == True and baseSrf.Edges.Count == 3:
+                glzSrf = self.createGlazingTri(baseSrf, glazingRatio, None)
+                lastSuccessfulRestOfSrf = []
+            
+            #Since the surface does not seem to have a rectangle and is not a triangle, check to see if it is a just an odd-shaped quarilateral for which we can use a mathematical relation.
+            elif planarBool == True and edgeLinear == True and baseSrf.Edges.Count == 4:
+                glzSrf = self.createGlazingQuad(baseSrf, glazingRatio, None)
+                lastSuccessfulRestOfSrf = []
+            
+            #Since the surface does not have a rectangle, is not a triangle, and is not a quadrilateral but still may be planar, we will break it into triangles and quads by meshing it such that we can use the previous formulas.
+            elif planarBool == True and edgeLinear == True and breakUpWindow == True:
+                glzSrf = self.createGlazingOddPlanarGeo(baseSrf, glazingRatio)
+                lastSuccessfulRestOfSrf = []
+            
+            #If everything has failed up until this point, this means that the wall geometry is likely curved.  The best way forward is just to try to offset the curve on the surface to get the window.
+            else:
+                glzSrf, lastSuccessfulRestOfSrf = self.createGlazingCurved(baseSrf, glazingRatio, planarBool)
+        
+        
+        return glzSrf, lastSuccessfulRestOfSrf
 
 class HB_generatorsystem(object):
     
@@ -6711,7 +7537,6 @@ class HB_generatorsystem(object):
         self.windgenerators = windgenerators # Category includes Generator:WindTurbine
         self.PVgenerators = PVgenerators # Category includes Generator:Photovoltaic
         self.fuelgenerators = fuelgenerators # Category includes Generators:Mircoturbine,Generator:Combustion Turbine,Generator:InternalCombustionEngine
-
 
 class Wind_gen(object):
     
@@ -6747,7 +7572,6 @@ class Wind_gen(object):
             self.max_power_coefficient = ''
         else: 
             self.max_power_coefficient = max_power_coefficient
-
 
 class PV_gen(object):
     
@@ -6841,7 +7665,7 @@ class PVinverter(object):
         
     def __ne__(self,other):
         return self.ID != self.ID
-    
+
 class simple_battery(object):
     
     def __init__(self,_name,zone_name,n_charging,n_discharging,battery_capacity,max_discharging,max_charging,initial_charge,bat_cost,replacement_time):
@@ -6863,36 +7687,22 @@ class simple_battery(object):
         
         self.replacementtime = replacement_time
         self.ID = str(uuid.uuid4())
-        
 
 class generationhb_hive(object):
     # A hive that only accepts Honeybee generation objects
     
     def addToHoneybeeHive(self, genObjects, GHComponentID):
-        
         if not sc.sticky.has_key('HBHivegeneration'): sc.sticky['HBHivegeneration'] = {}
-        
         generationobjectkeys = []
-        
         if isinstance(genObjects, tuple):
-            
             key = GHComponentID
-            
             sc.sticky['HBHivegeneration'][key] = genObjects
-            
             generationobjectkeys.append(key)
-            
             return generationobjectkeys
-        
         else:
-            
-            
             for genObject in genObjects:
-    
                 key = GHComponentID
-                
                 sc.sticky['HBHivegeneration'][key] = genObject
-                
                 generationobjectkeys.append(key)
      
             return generationobjectkeys
@@ -6907,7 +7717,6 @@ class generationhb_hive(object):
             generationobjects.append(genobject)
         
         return generationobjects
-
 
 class thermDefaults(object):
     def __init__(self):
@@ -6992,7 +7801,8 @@ class thermPolygon(object):
         elif material.upper() in sc.sticky["honeybee_thermMaterialLib"].keys():
             if RGBColor == None: RGBColor = sc.sticky["honeybee_thermMaterialLib"][material.upper()]["RGBColor"]
             elif sc.sticky["honeybee_thermMaterialLib"][material.upper()]["RGBColor"] == RGBColor: pass
-            else: material = self.makeThermMatCopy(material, material+str(RGBColor), RGBColor)
+            else:
+                material = self.makeThermMatCopy(material, material+str(RGBColor), RGBColor)
         else:
             self.warning = 'Failed to find material ' + material + ' in either the therm maerial, EP Material, or EP Window Material libraries.'
             material = None
@@ -7023,15 +7833,19 @@ class thermPolygon(object):
         self.plane = plane
         self.normalVector = plane.Normal
         self.normalVector.Unitize()
+        self.resetID()
         
         return self.geometry
+    
+    def resetID(self):
+        self.ID = str(uuid.uuid4())
     
     def makeThermMatCopy(self, orgigMat, materialName, RGBColor):
         #Make a sub-dictionary for the material.
         sc.sticky["honeybee_thermMaterialLib"][materialName] = {}
         
         #Create the material with values from the original material.
-        sc.sticky["honeybee_thermMaterialLib"][materialName]["Name"] = sc.sticky["honeybee_thermMaterialLib"][orgigMat]["Name"]
+        sc.sticky["honeybee_thermMaterialLib"][materialName]["Name"] = materialName
         sc.sticky["honeybee_thermMaterialLib"][materialName]["Type"] = sc.sticky["honeybee_thermMaterialLib"][orgigMat]["Type"]
         sc.sticky["honeybee_thermMaterialLib"][materialName]["Conductivity"] = sc.sticky["honeybee_thermMaterialLib"][orgigMat]["Conductivity"]
         sc.sticky["honeybee_thermMaterialLib"][materialName]["Absorptivity"] = sc.sticky["honeybee_thermMaterialLib"][orgigMat]["Absorptivity"]
@@ -7051,7 +7865,11 @@ class thermPolygon(object):
         sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] = None
         sc.sticky["honeybee_thermMaterialLib"][material]["Absorptivity"] = 0.5
         sc.sticky["honeybee_thermMaterialLib"][material]["Emissivity"] = 0.9
-        if RGBColor != None: sc.sticky["honeybee_thermMaterialLib"][material]["RGBColor"] = RGBColor
+        if RGBColor != None:
+            if not RGBColor.startswith('#'):
+                color = System.Drawing.Color.FromName(RGBColor)
+                RGBColor = System.String.Format("#{0:X2}{1:X2}{2:X2}", color.R, color.G, color.B)
+            sc.sticky["honeybee_thermMaterialLib"][material]["RGBColor"] = RGBColor.replace('#','0x')
         else:
             r = lambda: random.randint(0,255)
             randColor = ('#%02X%02X%02X' % (r(),r(),r()))
@@ -7087,6 +7905,7 @@ class thermBC(object):
         self.objectType = "ThermBC"
         self.hasChild = False
         self.name = BCName
+        self.resetID()
         
         #Create a dictionary with all of the inputs for the BC properties.
         self.BCProperties = {}
@@ -7095,7 +7914,12 @@ class thermBC(object):
         self.BCProperties['H'] = str(filmCoeff)
         self.BCProperties['HeatFlux'] = "0.000000"
         self.BCProperties['Temperature'] = str(temperature)
-        if RGBColor != None: self.BCProperties['RGBColor'] = str(System.Drawing.ColorTranslator.ToHtml(RGBColor))
+        if RGBColor != None:
+            bColor = str(System.Drawing.ColorTranslator.ToHtml(RGBColor))
+            if not bColor.startswith('#'):
+                color = System.Drawing.Color.FromName(bColor)
+                bColor = System.String.Format("#{0:X2}{1:X2}{2:X2}", color.R, color.G, color.B)
+            self.BCProperties['RGBColor'] = bColor.replace('#','0x')
         else: self.BCProperties['RGBColor'] = '0x80FFFF'
         if radTemp == None: self.BCProperties['Tr'] = str(temperature)
         else: self.BCProperties['Tr'] = str(radTemp)
@@ -7140,6 +7964,9 @@ class thermBC(object):
         self.emissivityOverride = emissOverride
         
         return self.geometry
+    
+    def resetID(self):
+        self.ID = str(uuid.uuid4())
 
 
 
@@ -7281,78 +8108,98 @@ class hb_Hive(object):
             raise Exception(msg)
         elif bb1.Max.DistanceTo(bb2.Max) > 5 * sc.doc.ModelAbsoluteTolerance:
             raise Exception(msg)
-            
-    def addToHoneybeeHive(self, HBObjects, GHComponentID):
-        # check if the honeybeedictionary already existed
-        # if not create the dictionary
-        # eventually this should be generated as soon as they user let the bee fly
-        if not sc.sticky.has_key('HBHive'): sc.sticky['HBHive'] = {}
-        geometries = []
-        childGeometries = []
+    
+    @staticmethod
+    def addToHoneybeeHive(HBObjects, Component, removeCurrent=True):
+        """Add honeybee objects to memory so they can be passed between the components.
         
+        removeCurrent: Set false if the same component generates honeybee objects
+            multiple times in the same component, except for the first time.
+        """
+        if not sc.sticky.has_key('HBHive'):
+            sc.sticky['HBHive'] = {}
+        
+        try:
+            # get document ID
+            docId = Component.OnPingDocument().DocumentID
+        except AttributeError as e:
+            if str(e) == "'str' object has no attribute 'OnPingDocument'":
+                raise Exception('Honeybee version mismatch! Update the component.')
+            else:
+                raise Exception('Failed to add object to HoneybeeHive:\n\t{}'.format(e))
+                
+            
+        baseKey = '{}_{}'.format(docId, Component.InstanceGuid)
+        
+        # clean the dictionary if it's the first run
+        if removeCurrent and Component.RunCount == 1:
+            if baseKey in sc.sticky['HBHive']:
+                del(sc.sticky['HBHive'][baseKey])
+            sc.sticky['HBHive'][baseKey] = {}
+    
+        # create an empty dictionary for this component
+        outGeometry = []
         for HBObject in HBObjects:
-            try:
-                HBObject.resetID()
-                key = HBObject.ID
-            except:
-                #HB object is generated by an older version of Honeybee
-                key = GHComponentID + HBObject.name
             
-            sc.sticky['HBHive'][key] = HBObject
+            HBObject.resetID()
             
-            # assuming that all the HBOBjects has a geometry! I assume they do
+            key = '{}'.format(HBObject.ID)
+            sc.sticky['HBHive'][baseKey][key] = HBObject
             
+            # calculate punched geometry if HBobject has a child surface
             try:
                 if HBObject.objectType != "HBZone" and HBObject.hasChild:
+                    # Honeybee surface with openings
                     if HBObject.punchedGeometry == None:
                         HBObject.calculatePunchedSurface()
-                    geo = HBObject.punchedGeometry.Duplicate()
-                    geometry = geo.Duplicate()
-                    for childObject in HBObject.childSrfs:
-                        # for now I only return the childs as geometries and not objects
-                        # it could cause some confusion for the users that I will try to
-                        # address later
-                        childGeometries.append(childObject.geometry.Duplicate())
+                    
+                    geometries = [childObject.geometry for childObject in HBObject.childSrfs]
+                    geometries.append(HBObject.punchedGeometry)
                     # join geometries into a single surface
-                    geometry = rc.Geometry.Brep.JoinBreps([geometry] + childGeometries, sc.doc.ModelAbsoluteTolerance)[0]
+                    geometry = rc.Geometry.Brep.JoinBreps(geometries, sc.doc.ModelAbsoluteTolerance)[0]
                 
                 elif HBObject.objectType == "HBZone":
-                    geo = HBObject.geometry
-                    geometry = geo.Duplicate()
                     srfs = []
                     zoneHasChildSrf = False
                     for HBSrf in HBObject.surfaces:
                         if HBSrf.hasChild:
                             zoneHasChildSrf = True
-                            srfs.append(HBSrf.punchedGeometry.Duplicate())
+                            srfs.append(HBSrf.punchedGeometry)
                             for childObject in HBSrf.childSrfs:
-                                # for now I only return the childs as geometries and not objects
-                                # it could cause some confusion for the users that I will try to
-                                # address later
-                                srfs.append(childObject.geometry.Duplicate())
+                                srfs.append(childObject.geometry)
                         else:
-                            srfs.append(HBSrf.geometry.Duplicate())
+                            srfs.append(HBSrf.geometry)
                             
                     if zoneHasChildSrf:
                         geometry = rc.Geometry.Brep.JoinBreps(srfs, sc.doc.ModelAbsoluteTolerance)[0]
-                        
+                    else:
+                        geometry = HBObject.geometry
                 else:
-                    geo = HBObject.geometry
-                    geometry = geo.Duplicate()
-                geometry.UserDictionary.Set('HBID', key)
-                geometries.append(geometry)
+                    # if there is not child object use the geometry as it is
+                    geometry = HBObject.geometry
+                
+                # assign the key to surface
+                geometry.UserDictionary.Set('HBID', '{}#{}'.format(baseKey, key))
+                outGeometry.append(geometry)
             except Exception as e:
                 print `e`
                     
         # return geometry with the ID
-        return geometries
-        
+        return outGeometry
+    
+    
     def callFromHoneybeeHive(self, geometryList):
         HBObjects = []
         for geometry in geometryList:
-            key = geometry.UserDictionary['HBID']
-            if sc.sticky['HBHive'].has_key(key):
-                HBObject = sc.sticky['HBHive'][key]
+            hbkey = geometry.UserDictionary['HBID']
+            
+            if '#' not in hbkey:
+                raise Exception('Honeybee version mismatch! Update the input component.')
+                
+            baseKey, key = hbkey.split('#')[0], '#'.join(hbkey.split('#')[1:])
+            
+            if sc.sticky['HBHive'].has_key(baseKey):
+                HBObject = sc.sticky['HBHive'][baseKey][key]
                 
                 # make sure Honeybee object is not moved or rotated
                 self.checkifTransformed(geometry, HBObject)
@@ -7377,14 +8224,26 @@ class hb_Hive(object):
                     print "Failed to copy the object. Returning the original objects...\n" +\
                     "This can cause strange behaviour!"
                     HBObjects.append(sc.sticky['HBHive'][key])
+            else:
+                raise Exception('HoneybeeKeyMismatch: Failed to call the object from Honeybee hive.')
                 
         return HBObjects
     
     def visualizeFromHoneybeeHive(self, geometryList):
         HBObjects = []
         for geometry in geometryList:
-            key = geometry.UserDictionary['HBID']
-            if sc.sticky['HBHive'].has_key(key): HBObjects.append(sc.sticky['HBHive'][key])
+            hbkey = geometry.UserDictionary['HBID']
+            
+            if '#' not in hbkey:
+                raise Exception('Honeybee version mismatch! Update the input component.')
+                
+            baseKey, key = hbkey.split('#')[0], '#'.join(hbkey.split('#')[1:])
+            
+            if sc.sticky['HBHive'].has_key(baseKey):
+                HBObjects.append(sc.sticky['HBHive'][baseKey][key])
+            else:
+                raise Exception('HoneybeeKeyMismatch: Failed to call the object from Honeybee hive.')
+
         return HBObjects
 
 class hb_RADParameters(object):
@@ -7544,41 +8403,50 @@ class hb_hvacProperties(object):
         9:'WARM AIR FURNACE - GAS FIRED',
         10:'WARM AIR FURNACE - ELECTRIC',
         11:'FAN COIL UNITS + DOAS',
-        12:'ACTIVE CHILLED BEAMS + DOAS'
+        12:'ACTIVE CHILLED BEAMS + DOAS',
+        13:'RADIANT FLOORS + DOAS',
+        14:'VRF + DOAS',
+        15:'HEATED FLOORS + VAV COOLING'
         }
         
         # Dictionaries that state which features can be changed for each of the different systems.
         # It is used to give warnings to the user if they set a parameter that does not exist on the assigned HVAC system.
         self.thresholdCapabilities = {
-        0: {'recirc' : False, 'humidCntrl' : True, 'dehumidCntrl' : True},
-        1: {'recirc' : True, 'humidCntrl' : False, 'dehumidCntrl' : False},
-        2: {'recirc' : True, 'humidCntrl' : False, 'dehumidCntrl' : False},
-        3: {'recirc' : False, 'humidCntrl' : True, 'dehumidCntrl' : False},
-        4: {'recirc' : False, 'humidCntrl' : True, 'dehumidCntrl' : False},
-        5: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : False},
-        6: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : False},
-        7: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True},
-        8: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True},
-        9: {'recirc' : False, 'humidCntrl' : True, 'dehumidCntrl' : False},
-        10: {'recirc' : False, 'humidCntrl' : True, 'dehumidCntrl' : False},
-        11: {'recirc' : False, 'humidCntrl' : True, 'dehumidCntrl' : True},
-        12: {'recirc' : False, 'humidCntrl' : True, 'dehumidCntrl' : True}
+        0: {'recirc' : False, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
+        1: {'recirc' : True, 'humidCntrl' : False, 'dehumidCntrl' : False, 'ventSched' : False},
+        2: {'recirc' : True, 'humidCntrl' : False, 'dehumidCntrl' : False, 'ventSched' : False},
+        3: {'recirc' : False, 'humidCntrl' : True, 'dehumidCntrl' : False, 'ventSched' : False},
+        4: {'recirc' : False, 'humidCntrl' : True, 'dehumidCntrl' : False, 'ventSched' : False},
+        5: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : False, 'ventSched' : True},
+        6: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : False, 'ventSched' : True},
+        7: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
+        8: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
+        9: {'recirc' : False, 'humidCntrl' : True, 'dehumidCntrl' : False, 'ventSched' : False},
+        10: {'recirc' : False, 'humidCntrl' : True, 'dehumidCntrl' : False, 'ventSched' : False},
+        11: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
+        12: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : False},
+        13: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
+        14: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
+        15: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True}
         }
         
         self.airCapabilities = {
-        0: {'FanTotEff': False, 'FanMotEff': False, 'FanPres': False, 'FanPlace': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        1: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'HeatSupTemp' : True, 'CoolSupTemp' : False, 'Econ' : False, 'HeatRecov' : False},
-        2: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Econ' : False, 'HeatRecov' : False},
-        3: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        4: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        5: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        6: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'HeatSupTemp' : False, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        7: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        8: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'HeatSupTemp' : False, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        9: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        10: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        11: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        12: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True}
+        0: {'FanTotEff': False, 'FanMotEff': False, 'FanPres': False, 'FanPlace': False, 'airSysHardSize': False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        1: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : False, 'Econ' : False, 'HeatRecov' : False},
+        2: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'FanCntrl': False, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Econ' : False, 'HeatRecov' : False},
+        3: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        4: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        5: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        6: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'airSysHardSize': True, 'FanCntrl': False, 'HeatSupTemp' : False, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        7: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        8: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'airSysHardSize': True, 'FanCntrl': False, 'HeatSupTemp' : False, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        9: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        10: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        11: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        12: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        13: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        14: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        15: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True}
         }
         
         self.heatCapabilities = {
@@ -7594,7 +8462,10 @@ class hb_hvacProperties(object):
         9: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
         10: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
         11: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
-        12: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True}
+        12: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
+        13: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
+        14: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
+        15: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : False}
         }
         
         self.coolCapabilities = {
@@ -7610,7 +8481,10 @@ class hb_hvacProperties(object):
         9: {'COP' : False, 'Avail' : False, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : False},
         10: {'COP' : False, 'Avail' : False, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : False},
         11: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : True},
-        12: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : True}
+        12: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : True},
+        13: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : True},
+        14: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : True},
+        15: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : True}
         }
     
     @staticmethod
@@ -7637,7 +8511,7 @@ class hb_hvacProperties(object):
 
 class hb_airDetail(object):
     def __init__(self, HVACAvailabiltySched=None, fanTotalEfficiency=None, fanMotorEfficiency=None, fanPressureRise=None, \
-        fanPlacement=None, heatingSupplyAirTemp=None, coolingSupplyAirTemp=None, airsideEconomizer=None, heatRecovery=None, recoveryEffectiveness=None):
+        fanPlacement=None, airSysHardSize = None, fanControl = None, heatingSupplyAirTemp=None, coolingSupplyAirTemp=None, airsideEconomizer=None, heatRecovery=None, recoveryEffectiveness=None):
         
         self.areInputsChecked = False
         self.sysProps = hb_hvacProperties()
@@ -7666,6 +8540,13 @@ class hb_airDetail(object):
         False: 'Blow Through',
         'Draw Through': 'Draw Through',
         'Blow Through': 'Blow Through'
+        }
+        
+        self.fanControlDict = {
+        True: 'Variable Volume',
+        False: 'Constant Volume',
+        'Variable Volume': 'Variable Volume',
+        'Constant Volume': 'Constant Volume'
         }
         
         self.heatRecovDict = {
@@ -7697,6 +8578,14 @@ class hb_airDetail(object):
             self.fanPlacement = self.fanPlaceDict[fanPlacement]
         else:
             self.fanPlacement = "Default"
+        if airSysHardSize != None:
+            self.airSysHardSize = airSysHardSize
+        else:
+            self.airSysHardSize = "Default"
+        if fanControl != None:
+            self.fanControl = self.fanControlDict[fanControl]
+        else:
+            self.fanControl = "Default"
         if heatingSupplyAirTemp:
             self.heatingSupplyAirTemp = float(heatingSupplyAirTemp)
         else:
@@ -7721,6 +8610,7 @@ class hb_airDetail(object):
         else:
             self.recoveryEffectiveness = "Default"
     
+    
     @classmethod
     def fromTextStr(cls, textStr):
         paramList = []
@@ -7738,7 +8628,7 @@ class hb_airDetail(object):
                     paramList.append(None)
         
         if success == True:
-            airDetailObj = cls(paramList[0], paramList[1], paramList[2], paramList[3], paramList[4], paramList[5], paramList[6], paramList[7], paramList[8], paramList[9])
+            airDetailObj = cls(paramList[0], paramList[1], paramList[2], paramList[3], paramList[4], paramList[5], paramList[6], paramList[7], paramList[8], paramList[9], paramList[10], paramList[11])
             airDetailObj.areInputsChecked = True
             return airDetailObj
         else:
@@ -7760,6 +8650,10 @@ class hb_airDetail(object):
             if self.fanMotorEfficiency > 1 or self.fanMotorEfficiency < 0:
                 success = False
                 errors.append("Fan Motor Efficiency must be betweeon 0 and 1.")
+        if self.airSysHardSize != "Default":
+            if self.airSysHardSize < 0:
+                success = False
+                errors.append("airSystemHardSize_ cannot be less than 0.")
         if self.airsideEconomizer != "Default":
             if self.airsideEconomizer > 7 or self.airsideEconomizer < 0:
                 success = False
@@ -7789,6 +8683,10 @@ class hb_airDetail(object):
             errors.append(self.sysProps.generateWarning(sysType, 'FAN PRESSURE RISE', 'airDetails'))
         if self.fanPlacement != 'Default' and hvacCapabilities['FanPlace'] == False:
             errors.append(self.sysProps.generateWarning(sysType, 'FAN PLACEMENT', 'airDetails'))
+        if self.airSysHardSize != 'Default' and hvacCapabilities['airSysHardSize'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'Air System Hard Size', 'airDetails'))
+        if self.fanControl != 'Default' and hvacCapabilities['FanCntrl'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'DEMAND CONTROLLED VENTILATION', 'airDetails'))
         if self.heatingSupplyAirTemp != 'Default' and hvacCapabilities['HeatSupTemp'] == False:
             errors.append(self.sysProps.generateWarning(sysType, 'HEATING SUPPLY AIR TEMPERATURE', 'airDetails'))
         if self.coolingSupplyAirTemp != 'Default' and hvacCapabilities['CoolSupTemp'] == False:
@@ -7819,6 +8717,8 @@ class hb_airDetail(object):
             '  Fan Motor Efficiency: ' + str(self.fanMotorEfficiency) + '\n' + \
             '  Fan Pressure Rise: ' + str(self.fanPressureRise) + '\n' + \
             '  Fan Placement: ' + str(self.fanPlacement) + '\n' + \
+            '  Air System Hard Size: ' + str(self.airSysHardSize) + '\n' + \
+            '  Demand Controlled Ventilation: ' + str(self.fanControl) + '\n' + \
             '  Heating Supply Air Temperature: ' + str(self.heatingSupplyAirTemp) + '\n' + \
             '  Cooling Supply Air Temperature: ' + str(self.coolingSupplyAirTemp) + '\n' + \
             '  Airside Economizer Method: ' + str(self.airsideEconomizer) + '\n' + \
@@ -8128,46 +9028,69 @@ if checkIn.letItFly:
         sc.sticky["honeybee_folders"]["DSPath"] = folders.DSPath
         sc.sticky["honeybee_folders"]["DSCorePath"] = hb_DSCore
         sc.sticky["honeybee_folders"]["DSLibPath"] = hb_DSLibPath
-    
+        
         # supported versions for EnergyPlus
-        EPVersions = ["V8-5-0","V8-4-0","V8-3-0", "V8-2-10", "V8-2-9", "V8-2-8", "V8-2-7", "V8-2-6", \
+        EPVersions = ["V8-6-0", "V8-5-0", "V8-4-0","V8-3-0", "V8-2-10", "V8-2-9", "V8-2-8", "V8-2-7", "V8-2-6", \
                       "V8-2-5", "V8-2-4", "V8-2-3", "V8-2-2", "V8-2-1", "V8-2-0", \
                       "V8-1-5", "V8-1-4", "V8-1-3", "V8-1-2", "V8-1-1", "V8-1-0"]
-                      
-        
+        EPVersion = ''
         if folders.EPPath != None:
             # Honeybee has already found EnergyPlus make sure it's an acceptable version
             EPVersion = os.path.split(folders.EPPath)[-1].split("EnergyPlus")[-1]
-            
             if EPVersion not in EPVersions:
                 #Not an acceptable version so remove it from the path
                 folders.EPPath = None
-            
         if folders.EPPath == None:
-            for EPVersion in EPVersions:
-                if os.path.isdir("C:\EnergyPlus" + EPVersion + "\\"):
-                    folders.EPPath = "C:\EnergyPlus" + EPVersion + "\\"
-
-                    break
-            
-            if folders.EPPath == None:
-                # give a warning to the user
-                
-                msg= "Honeybee cannot find a compatible EnergyPlus folder on your system.\n" + \
-                     "Make sure you have EnergyPlus installed on your system.\n" + \
-                     "You won't be able to run energy simulations without EnergyPlus.\n" +\
-                     "Honeybee supports following versions:\n"
-                
-                versions = ", ".join(EPVersions)
-                
-                msg += versions
-                
-                ghenv.Component.AddRuntimeMessage(w, msg)
-                
-            
+            for EPVers in EPVersions:
+                if os.path.isdir("C:\EnergyPlus" + EPVers + "\\"):
+                    folders.EPPath = "C:\EnergyPlus" + EPVers + "\\"
+                    EPVersion = EPVers
+        
+        # check for OpenStudio Folder.
+        openStudioLibFolder = None
+        QtFolder = None
+        installedOPS = [f for f in os.listdir("C:\\Program Files") if f.startswith("OpenStudio")]
+        installedOPS = sorted(installedOPS, key = lambda x: int("".join(x.split(" ")[-1].split("."))), reverse = True)
+        if len(installedOPS) != 0:
+            openStudioLibFolder = "C:/Program Files/%s/CSharp/openstudio/"%installedOPS[0]
+            QtFolder = "C:/Program Files/%s/Ruby/openstudio/"%installedOPS[0]
+            for EPVers in EPVersions:
+                versStr = EPVers.replace('V', '-')
+                if os.path.isdir("C:/Program Files/%s/share/openstudio/"%installedOPS[0] + "EnergyPlus" + versStr + "/"):
+                    folders.EPPath = "C:/Program Files/%s/share/openstudio/"%installedOPS[0] + "EnergyPlus" + versStr
+                    EPVersion = EPVers
+            if os.path.isdir(openStudioLibFolder) and os.path.isfile(os.path.join(openStudioLibFolder, "openStudio.dll")):
+                # openstudio is there and we are good to go.
+                # add folders to path.
+                if not openStudioLibFolder in os.environ['PATH'] or QtFolder not in os.environ['PATH']:
+                    os.environ['PATH'] = ";".join([openStudioLibFolder, QtFolder, os.environ['PATH']])
+            else:
+                openStudioLibFolder = None
+                QtFolder = None
+        if openStudioLibFolder == None or QtFolder == None:
+            msg1 = "Honeybee cannot find OpenStudio on your system.\n" + \
+                "You wont be able to use the Export to OpenStudio component.\n" + \
+                "Download the latest OpenStudio for Windows from:\n"
+            msg2 = "https://www.openstudio.net/downloads"
+            print msg1
+            print msg2
+            ghenv.Component.AddRuntimeMessage(w, msg1)
+            ghenv.Component.AddRuntimeMessage(w, msg2)
+        
+        if folders.EPPath == None:
+            # give a warning to the user
+            msg= "Honeybee cannot find an EnergyPlus folder on your system.\n" + \
+                 "You wont be able to use the Run Energy Simulation component.\n" + \
+                 "Honeybee supports following versions of EnergyPlus:\n"
+            versions = ", ".join(EPVersions)
+            msg += versions
+            print msg
+        
+        sc.sticky["honeybee_folders"]["OSLibPath"] = openStudioLibFolder
+        sc.sticky["honeybee_folders"]["OSQtPath"] = QtFolder
         sc.sticky["honeybee_folders"]["EPPath"] = folders.EPPath  
-
         sc.sticky["honeybee_folders"]["EPVersion"] = EPVersion.replace("-", ".")[1:]
+        
         
         # initiate an empty library in case this is the first time honeybee is flying in this document
         # otherwise it has been already created/
@@ -8176,9 +9099,7 @@ if checkIn.letItFly:
         
         # set up radiance materials
         RADMaterialAux = RADMaterialAux(True, sc.sticky["honeybee_RADMaterialLib"], sc.sticky["Honeybee_DefaultFolder"])
-        
         sc.sticky["honeybee_RADMaterialAUX"] = RADMaterialAux
-        
         
         # Download EP libraries
         templateFilesPrep = PrepareTemplateEPLibFiles(downloadTemplate)
@@ -8208,14 +9129,16 @@ if checkIn.letItFly:
                 sc.sticky["honeybee_ScheduleLib"].update(EPLibs.getEPSchedule())
                 sc.sticky["honeybee_ScheduleTypeLimitsLib"].update(EPLibs.getEPScheduleTypeLimits())
                 sc.sticky["honeybee_thermMaterialLib"].update(EPLibs.getTHERMMaterials())
+                sc.sticky["honeybee_WindowPropLib"].update(EPLibs.getEPWindowProp())
+                sc.sticky["honeybee_SpectralDataLib"].update(EPLibs.getEPSpectralData())
             except:
                 print msg
                 ghenv.Component.AddRuntimeMessage(w, msg)
         else:
             print msg
             ghenv.Component.AddRuntimeMessage(w, msg)
-            
-            
+        
+        
         sc.sticky["honeybee_Hive"] = hb_Hive
         sc.sticky["honeybee_generationHive"] = generationhb_hive
         sc.sticky["honeybee_GetEPLibs"] = HB_GetEPLibraries
@@ -8228,7 +9151,7 @@ if checkIn.letItFly:
         sc.sticky["honeybee_BuildingProgramsLib"] = BuildingProgramsLib
         sc.sticky["honeybee_EPTypes"] = EPTypes()
         sc.sticky["honeybee_EPZone"] = EPZone
-        sc.sticky["honeybee_ExtraConstrProps"] = {}
+        sc.sticky["honeybee_EPHvac"] = EPHvac
         sc.sticky["honeybee_ThermPolygon"] = thermPolygon
         sc.sticky["honeybee_ThermBC"] = thermBC
         sc.sticky["honeybee_ThermDefault"] = thermDefaults
@@ -8248,6 +9171,7 @@ if checkIn.letItFly:
         sc.sticky["honeybee_EPShdSurface"] = hb_EPShdSurface
         sc.sticky["honeybee_EPZoneSurface"] = hb_EPZoneSurface
         sc.sticky["honeybee_EPFenSurface"] = hb_EPFenSurface
+        sc.sticky["honeybee_GlzGeoGeneration"] = hb_GlzGeoGeneration
         sc.sticky["honeybee_DLAnalysisRecipe"] = DLAnalysisRecipe
         sc.sticky["honeybee_MeshToRAD"] = hb_MSHToRAD
         sc.sticky["honeybee_WriteRAD"] = hb_WriteRAD

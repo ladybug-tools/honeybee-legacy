@@ -24,7 +24,7 @@
 """
 Use this component to assemble an adaptive comfort recipe for the "Honeybee_Annual Indoor Comfort Analysis" component.
 -
-Provided by Honeybee 0.0.59
+Provided by Honeybee 0.0.60
     
     Args:
         _viewFactorMesh: The data tree of view factor meshes that comes out of the  "Honeybee_Indoor View Factor Calculator".
@@ -64,12 +64,12 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Outdoor Comfort Analysis Recipe"
 ghenv.Component.NickName = 'OutdoorComfRecipe'
-ghenv.Component.Message = 'VER 0.0.59\nMAY_15_2016'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "09 | Energy | Energy"
+ghenv.Component.SubCategory = "10 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
-#compatibleLBVersion = VER 0.0.59\nAPR_12_2016
+#compatibleLBVersion = VER 0.0.59\nJUN_07_2016
 try: ghenv.Component.AdditionalHelpFromDocStrings = "6"
 except: pass
 
@@ -510,6 +510,7 @@ def checkTheInputs():
             directNormalRadiation = weatherData[5]
             diffuseHorizontalRadiation = weatherData[6]
             globalHorizontalRadiation = weatherData[7]
+            horizInfraredRadiation = weatherData[12]
             outDryBulbTemp = weatherData[0]
             outRelHumid = weatherData[2]
             outWindSpeed = weatherData[3]
@@ -524,6 +525,7 @@ def checkTheInputs():
             directSolarRad = directNormalRadiation[7:]
             diffSolarRad = diffuseHorizontalRadiation[7:]
             globHorizRad = globalHorizontalRadiation[7:]
+            horizInfraredRadiation = horizInfraredRadiation[7:]
             locList = location.split('\n')
             for line in locList:
                 if "Latitude" in line: latitude = float(line.split(',')[0])
@@ -648,7 +650,7 @@ def checkTheInputs():
             checkData = True
         else: return -1
         
-        return "UTCI", srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winStatusNumbers, cloA, zoneFloorReflectivity, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, analysisPeriod, northAngle
+        return "UTCI", srfTempNumbers, srfTempHeaders, airTempDataNumbers, airTempDataHeaders, flowVolDataHeaders, flowVolDataNumbers, heatGainDataHeaders, heatGainDataNumbers, relHumidDataHeaders, relHumidDataNumbers, zoneSrfNames, testPtViewFactor, viewFactorMesh, latitude, longitude, timeZone, diffSolarRad, directSolarRad, globHorizRad, testPtSkyView, testPtBlockedVec, numSkyPatchDivs, winStatusNumbers, cloA, zoneFloorReflectivity, testPtZoneNames, testPtZoneWeights, ptHeightWeights, zoneInletInfo, inletHeightOverride, mixedAirOverride, zoneHasWindows, outdoorClac, outSrfTempHeaders, outSrfTempNumbers, outdoorNonSrfViewFac, outDryBulbTemp, outRelHumid, outWindSpeed, d, a, outdoorPtHeightWeights, allWindowShadesSame, winStatusHeaders, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, allWindSpeedsSame, winSpeedNumbers, analysisPeriod, northAngle, horizInfraredRadiation
     else:
         return -1
 

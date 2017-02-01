@@ -24,7 +24,7 @@
 """
 Use this component to lablel zones with their names in the Rhino scene.  This can help ensure that the correct names are assigned to each zone and can help keep track of zones and zone data throughout analysis.
 -
-Provided by Honeybee 0.0.59
+Provided by Honeybee 0.0.60
     
     Args:
         _HBZones: The HBZones out of any of the HB components that generate or alter zones.  Note that these should ideally be the zones that are fed into the Run Energy Simulation component.  Zones read back into Grasshopper from the Import idf component will not align correctly with the EP Result data.
@@ -40,7 +40,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Label Zones"
 ghenv.Component.NickName = 'LabelZones'
-ghenv.Component.Message = 'VER 0.0.59\nFEB_21_2016'
+ghenv.Component.Message = 'VER 0.0.60\nDEC_28_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -106,6 +106,7 @@ def setDefaults():
 
 def main(hb_zones, basePts, textSize, font, attribute):
     lb_visualization = sc.sticky["ladybug_ResultVisualization"]()
+    hb_hvac = sc.sticky["honeybee_hvacProperties"]()
     
     #Make lists to be filled.
     zoneProperties =[]
@@ -123,7 +124,9 @@ def main(hb_zones, basePts, textSize, font, attribute):
                 theProp = "%.3f"%HZone.getFloorArea()
             elif attribute == "zoneVolume":
                 theProp = "%.3f"%HZone.getZoneVolume()
-                
+        if attribute == "HVACSystem":
+            theProp = hb_hvac.sysDict[theProp.Index]
+        
         if theProp == "":
             theProp = "Not Assigned"
         zoneProperties.append(str(theProp))
@@ -136,8 +139,22 @@ def main(hb_zones, basePts, textSize, font, attribute):
         newPt = rc.Geometry.Point3d(basePts[ptCount].X-basePtMove, basePts[ptCount].Y, basePts[ptCount].Z)
         newPts.append(newPt)
     
-    #Make the zone labels.
+    # Make the zone labels.
     zoneLabels = lb_visualization.text2srf(zoneProperties, newPts, font, textSize)
+    
+    # If people are requesting to see the illuminace point, output a sphere for this point instead of the pt location text.
+    if attribute == "illumCntrlSensorPt":
+        zoneLabels = []
+        for count, pointText in enumerate(zoneProperties):
+            if pointText == 'None':
+                hb_zones[count].atuoPositionDaylightSensor()
+                sensPt = hb_zones[count].illumCntrlSensorPt
+                hb_zones[count].illumCntrlSensorPt = None
+            else:
+                ptCoordList = pointText.split(',')
+                sensPt = rc.Geometry.Point3d(float(ptCoordList[0]),float(ptCoordList[1]),float(ptCoordList[2]))
+            sensSphere = rc.Geometry.Sphere(sensPt, 0.1)
+            zoneLabels.append([sensSphere])
     
     return zoneProperties, zoneLabels, wireFrames, newPts
 

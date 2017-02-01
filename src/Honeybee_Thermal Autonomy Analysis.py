@@ -32,7 +32,7 @@ Precedents for Thermal Autonomy (TA) as a metric to evaluate the passive operati
 Levitt, B.; Ubbelohde, M.; Loisos, G.; Brown, N.  Thermal Autonomy as Metric and Design Process. Loisos + Ubbelohde, Alameda, California, California College of the Arts, San Francisco. 2013.
 (http://www.coolshadow.com/research/Levitt_Thermal%20Autonomy%20as%20Metric%20and%20Design%20Process.pdf)
 -
-Provided by Honeybee 0.0.59
+Provided by Honeybee 0.0.60
     
     Args:
         _comfResultsMtx: A comfort matrix (adaptive, PMV or Outdoor) output from either the 'Honeybee_Microclimate Map Analysis' component or the 'Honeybee_Read Microclimate Matrix' component.
@@ -64,10 +64,10 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Thermal Autonomy Analysis"
 ghenv.Component.NickName = 'ThermalAutonomy'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.60\nJAN_27_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "09 | Energy | Energy"
+ghenv.Component.SubCategory = "10 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "6"
@@ -343,7 +343,7 @@ def checkTheInputs():
     checkData2 = True
     if analysisPeriod != []: HOYs, months, days = lb_preparation.getHOYsBasedOnPeriod(analysisPeriod, 1)
     else: HOYs = []
-    if _totalThermalEnergy_.BranchCount > 0: checkData3, checkData4, totEnergyUnits, totEnergyHeaders, totEnergyNumbers, totEAnalysisPeriod = checkCreateDataTree(_totalThermalEnergy_, "_totalThermalEnergy_", "Total Thermal Energy")
+    if _totalThermalEnergy_.BranchCount > 0: checkData3, checkData4, totEnergyUnits, totEnergyHeaders, totEnergyNumbers, totEAnalysisPeriod = checkCreateDataTree(_totalThermalEnergy_, "_totalThermalEnergy_", "Total Thermal Load")
     else:
         checkData3, checkData4 = True, True
         totEAnalysisPeriod = analysisPeriod
@@ -426,7 +426,7 @@ def main(viewFactorMesh, analysisPeriod, totEnergyHeaders, totEnergyNumbers, zon
         TA_Mtx.append(0)
         OverHeatedMtx.append(0)
         UnderHeatedMtx.append(0)
-    
+   
     #Match the totalEnergy values to the HBZones.
     totEnergyNumbersMatched = []
     for name in zoneNames:
@@ -482,31 +482,35 @@ def main(viewFactorMesh, analysisPeriod, totEnergyHeaders, totEnergyNumbers, zon
         OverHeated = []
         UnderHeated = []
         for pointCount, pointZone in enumerate(pointZoneList):
-            #Check to see if the point's zone is occupied.  Otheriswe, it does not count for anything.
-            if occupancySchList[pointZone][count] > occupancyThreshold:
-                occHrsNum[pointCount] += 1
-                #Check to see if the point is comfortable.
-                if _comfResultsMtx[count + 1][pointCount] > 0:
-                    occTCP.append(1)
-                    OverHeated.append(0)
-                    UnderHeated.append(0)
-                    #Check to see if the point's zone is being conditioned.
-                    if totEnergyNumbersMatched[pointZone][count] > 0: TA.append(0)
-                    else: TA.append(1)
-                else:
-                    occTCP.append(0)
-                    TA.append(0)
-                    if _degOrPMVMtx[count + 1][pointCount] > 0:
-                        OverHeated.append(1)
-                        UnderHeated.append(0)
-                    else:
+            try:
+                _comfResultsMtx[count + 1][pointCount]
+                #Check to see if the point's zone is occupied.  Otheriswe, it does not count for anything.
+                if occupancySchList[pointZone][count] > occupancyThreshold:
+                    occHrsNum[pointCount] += 1
+                    #Check to see if the point is comfortable.
+                    if _comfResultsMtx[count + 1][pointCount] > 0:
+                        occTCP.append(1)
                         OverHeated.append(0)
-                        UnderHeated.append(1)
-            else:
-                occTCP.append(0.0)
-                TA.append(0.0)
-                OverHeated.append(0.0)
-                UnderHeated.append(0.0)
+                        UnderHeated.append(0)
+                        #Check to see if the point's zone is being conditioned.
+                        if totEnergyNumbersMatched[pointZone][count] > 0: TA.append(0)
+                        else: TA.append(1)
+                    else:
+                        occTCP.append(0)
+                        TA.append(0)
+                        if _degOrPMVMtx[count + 1][pointCount] > 0:
+                            OverHeated.append(1)
+                            UnderHeated.append(0)
+                        else:
+                            OverHeated.append(0)
+                            UnderHeated.append(1)
+                else:
+                    occTCP.append(0.0)
+                    TA.append(0.0)
+                    OverHeated.append(0.0)
+                    UnderHeated.append(0.0)
+            except:
+                pass
         
         occTCP_Mtx[count+1] = occTCP
         TA_Mtx[count+1] = TA
@@ -514,11 +518,11 @@ def main(viewFactorMesh, analysisPeriod, totEnergyHeaders, totEnergyNumbers, zon
         UnderHeatedMtx[count+1] = UnderHeated
     
     #Run through every hour of the analysis to fill up the matrices.
-    if parallel_ == True and len(occupancySchList[0]) != 1:
-        tasks.Parallel.ForEach(range(len(occupancySchList[0])), calcComf)
-    else:
-        for hour in range(len(occupancySchList[0])):
-            calcComf(hour)
+    #if parallel_ == True and len(occupancySchList[0]) != 1:
+    #    tasks.Parallel.ForEach(range(len(occupancySchList[0])), calcComf)
+    #else:
+    for hour in range(len(occupancySchList[0])):
+        calcComf(hour)
     
     # Add the total occupied hours to the matrix (to be used to help calculate comfort autonomy).
     occTCP_Mtx.append(occHrsNum)

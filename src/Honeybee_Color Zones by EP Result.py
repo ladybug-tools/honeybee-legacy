@@ -28,7 +28,7 @@ By default, zones will be colored based on total energy per unit floor area of t
 If total annual simulation data has been connected, the analysisPeriod_ input can be used to select out a specific period fo the year for coloration.
 In order to color zones by individual hours/months, connecting interger values to the "stepOfSimulation_" will allow you to scroll though each step of the input data.
 -
-Provided by Honeybee 0.0.59
+Provided by Honeybee 0.0.60
     
     Args:
         _zoneData: A list zone data out of the Read EP Result component or the comfort calculator components that have zone data hooked up to them.
@@ -53,10 +53,10 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Color Zones by EP Result"
 ghenv.Component.NickName = 'ColorZones'
-ghenv.Component.Message = 'VER 0.0.59\nFEB_21_2016'
+ghenv.Component.Message = 'VER 0.0.60\nDEC_20_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "09 | Energy | Energy"
+ghenv.Component.SubCategory = "10 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_21_2016
 #compatibleLBVersion = VER 0.0.59\nNOV_20_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
@@ -124,6 +124,7 @@ def copyHBZoneData():
         floorGeo = []
         for srf in zone.surfaces:
             if srf.type == 2: floorGeo.append(srf.geometry)
+            elif str(srf.type) == "2.25": floorGeo.append(srf.geometry)
             elif str(srf.type) == "2.5": floorGeo.append(srf.geometry)
             elif str(srf.type) == "2.75": floorGeo.append(srf.geometry)
             else: pass
@@ -211,6 +212,7 @@ def checkTheInputs():
             normable = False
             total = True
         elif "Energy" in dataType: normable = True
+        elif "Load" in dataType: normable = True
         elif "Gain" in dataType: normable = True
         elif "Loss" in dataType: normable = True
         elif "Temperature" in dataType: normable = False

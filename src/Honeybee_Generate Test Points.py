@@ -23,7 +23,7 @@
 """
 Genrate Test Points
 -
-Provided by Honeybee 0.0.59
+Provided by Honeybee 0.0.60
     
     Args:
         _testSurface: Test surface as a Brep.
@@ -40,7 +40,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Generate Test Points"
 ghenv.Component.NickName = 'genTestPts'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"

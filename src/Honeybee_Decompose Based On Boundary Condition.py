@@ -23,7 +23,7 @@
 """
 Decompose zone surfaces by boundary condition
 -
-Provided by Honeybee 0.0.59
+Provided by Honeybee 0.0.60
 
     Args:
         _HBZone: Honeybee Zone
@@ -36,11 +36,11 @@ Provided by Honeybee 0.0.59
 """
 ghenv.Component.Name = "Honeybee_Decompose Based On Boundary Condition"
 ghenv.Component.NickName = 'decomposeByBC'
-ghenv.Component.Message = 'VER 0.0.59\nFEB_21_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
-#compatibleHBVersion = VER 0.0.56\nFEB_21_2016
+#compatibleHBVersion = VER 0.0.56\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
 except: pass
@@ -115,10 +115,6 @@ def main(HBZone):
         
     return outdoors, surface, adiabatic, ground
 
-
-#    # add to the hive
-#    hb_hive = sc.sticky["honeybee_Hive"]()
-#    HBSurface  = hb_hive.addToHoneybeeHive(HBSurfaces, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
 
 if _HBZone!= None:
     HBSurfaces = main(_HBZone)

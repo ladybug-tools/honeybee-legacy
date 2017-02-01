@@ -24,7 +24,7 @@
 Move Honeybee Objects
 
 -
-Provided by Honeybee 0.0.59
+Provided by Honeybee 0.0.60
 
     Args:
         _HBObject: Honeybee surface or Honeybee zone
@@ -34,13 +34,13 @@ Provided by Honeybee 0.0.59
 """
 ghenv.Component.Name = "Honeybee_Move Honeybee"
 ghenv.Component.NickName = 'moveHBObj'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "13 | WIP"
-#compatibleHBVersion = VER 0.0.57\nNOV_04_2015
+ghenv.Component.SubCategory = "00 | Honeybee"
+#compatibleHBVersion = VER 0.0.57\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
-try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "6"
 except: pass
 
 import scriptcontext as sc
@@ -82,7 +82,7 @@ def main(HBObj, vector):
     
     HBObject.transform(transform)
     
-    HBObj = hb_hive.addToHoneybeeHive([HBObject], ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+    HBObj = hb_hive.addToHoneybeeHive([HBObject], ghenv.Component)
 
     return HBObj
     

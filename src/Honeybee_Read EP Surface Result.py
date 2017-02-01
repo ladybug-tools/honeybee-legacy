@@ -26,7 +26,7 @@ _
 This component reads only the results related to surfaces.  For results related to zones, you should use the "Honeybee_Read EP Result" component.
 
 -
-Provided by Honeybee 0.0.59
+Provided by Honeybee 0.0.60
     
     Args:
         _resultFileAddress: The result file address that comes out of the WriteIDF component.
@@ -46,10 +46,10 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Read EP Surface Result"
 ghenv.Component.NickName = 'readEPSrfResult'
-ghenv.Component.Message = 'VER 0.0.59\nMAY_23_2016'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "09 | Energy | Energy"
+ghenv.Component.SubCategory = "10 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nJAN_17_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "4"

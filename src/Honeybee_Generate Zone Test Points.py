@@ -23,7 +23,7 @@
 """
 Genrate Test Points for all Floor Surfaces in Honeybee Zone
 -
-Provided by Honeybee 0.0.59
+Provided by Honeybee 0.0.60
     
     Args:
         _HBZone: HBZone; Test points will be generated for every floor surface inside zone
@@ -40,7 +40,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Generate Zone Test Points"
 ghenv.Component.NickName = 'genHBZoneTestPts'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"
@@ -139,7 +139,8 @@ def getTestPts(inputMesh, movingDis, moveTestMesh= False, parallel = True):
             # find surfaces based on first normal in srfNormals - It is a simplification we can write a better function for this later
             for meshCount, mesh in enumerate(inputMesh):
                 vector = srfNormals[meshCount][0]
-                mesh.Translate(vector.X, vector.Y, vector.Z)
+                movingVec = rc.Geometry.Vector3f.Multiply(movingDis,vector)
+                mesh.Translate(movingVec.X, movingVec.Y, movingVec.Z)
                 
         return flattenList(testPoint), flattenList(srfNormals), flattenList(meshSrfArea), inputMesh
 

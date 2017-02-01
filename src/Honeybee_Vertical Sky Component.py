@@ -27,7 +27,7 @@ The Vertical Sky Component (VSC) is described by the UK Building Research Establ
 _
 The calculation performed by this component comes from this discussion on the RADIANCE forum: http://www.radiance-online.org/pipermail/radiance-general/2006-September/004017.html
 -
-Provided by Honeybee 0.0.59
+Provided by Honeybee 0.0.60
     
     Args:
         _testPoints: Test points
@@ -40,7 +40,7 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Vertical Sky Component"
 ghenv.Component.NickName = 'verticalSkyComponent'
-ghenv.Component.Message = 'VER 0.0.59\nFEB_15_2016'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"

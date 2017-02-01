@@ -26,7 +26,7 @@ Use this component to generate test points within a zone and calculate the view 
 _
 This component is a necessary step before creating an thermal map of an energy model.
 -
-Provided by Honeybee 0.0.59
+Provided by Honeybee 0.0.60
     
     Args:
         _HBZones: The HBZones out of any of the HB components that generate or alter zones.  Note that these should ideally be the zones that are fed into the Run Energy Simulation component as surfaces may not align otherwise.  Zones read back into Grasshopper from the Import idf component will not align correctly with the EP Result data.
@@ -58,10 +58,10 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.59\nMAY_18_2016'
+ghenv.Component.Message = 'VER 0.0.60\nJAN_05_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "09 | Energy | Energy"
+ghenv.Component.SubCategory = "10 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_21_2016
 #compatibleLBVersion = VER 0.0.59\nJUN_25_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "6"
@@ -167,7 +167,10 @@ def copyHBZoneData():
                     for layer in windowLayers:
                         propNumbers = hb_EPMaterialAUX.decomposeMaterial(layer.upper(), ghenv.Component)[0]
                         if 'WindowMaterial:Glazing' in propNumbers[0]:
-                            winTrans = winTrans*float(propNumbers[4])
+                            try:
+                                winTrans = winTrans*float(propNumbers[4])
+                            except:
+                                winTrans = 0.4
                         elif 'WindowMaterial:SimpleGlazingSystem' in propNumbers[0]:
                             winTrans = winTrans*float(propNumbers[2])
                     windowSrfTransmiss[zoneCount].append(winTrans)
@@ -538,7 +541,6 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
         
         return finalBrep
     
-    
     #If interior walls have ben removed, see which surfaces are adjacent and re-make the lists fo zones.
     if removeInt == True:
         #Make a function to remove duplicates from a list.
@@ -699,6 +701,9 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
         windowSrfTransmiss = newWindowSrfTransmiss
         srfIntWindowAdjNumList = newSrfIntWindowAdjNumList
         zoneFloorReflect = newZoneFloorReflect
+    else:
+        for brep in zoneBreps:
+            zoneBrepsNonSolid.append([brep])
     
     #Make sure that the zone volumes are closed.
     for brepCount, brep in enumerate(zoneBreps):
@@ -741,9 +746,12 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                             faceBrep = rc.Geometry.Brep.CreateFromCornerPoints(rc.Geometry.Point3d(mesh.Vertices[face.A]), rc.Geometry.Point3d(mesh.Vertices[face.B]), rc.Geometry.Point3d(mesh.Vertices[face.C]), rc.Geometry.Point3d(mesh.Vertices[face.D]), sc.doc.ModelAbsoluteTolerance)
                         if face.IsTriangle:
                             faceBrep = rc.Geometry.Brep.CreateFromCornerPoints(rc.Geometry.Point3d(mesh.Vertices[face.A]), rc.Geometry.Point3d(mesh.Vertices[face.B]), rc.Geometry.Point3d(mesh.Vertices[face.C]), sc.doc.ModelAbsoluteTolerance)
-                        centPt = rc.Geometry.AreaMassProperties.Compute(faceBrep).Centroid
-                        allTestPts[meshCount].append(centPt)
-                        allFaceBreps[meshCount].append(faceBrep)
+                        try:
+                            centPt = rc.Geometry.AreaMassProperties.Compute(faceBrep).Centroid
+                            allTestPts[meshCount].append(centPt)
+                            allFaceBreps[meshCount].append(faceBrep)
+                        except:
+                            pass
         
         
         for zoneCount, srfList in enumerate(zoneSrfs):
@@ -824,7 +832,6 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                 for srfCount, srf in enumerate(srfList):
                     zoneSrfsMesh[zoneCount].append(rc.Geometry.Mesh.CreateFromBrep(srf, srfMeshPar)[0])
             
-            
             #Generate the meshes and test points of the final surface.
             if sectionMethod == 0:
                 for brep in finalBreps:
@@ -841,15 +848,18 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                                 faceBrep = rc.Geometry.Brep.CreateFromCornerPoints(rc.Geometry.Point3d(mesh.Vertices[face.A]), rc.Geometry.Point3d(mesh.Vertices[face.B]), rc.Geometry.Point3d(mesh.Vertices[face.C]), rc.Geometry.Point3d(mesh.Vertices[face.D]), sc.doc.ModelAbsoluteTolerance)
                             if face.IsTriangle:
                                 faceBrep = rc.Geometry.Brep.CreateFromCornerPoints(rc.Geometry.Point3d(mesh.Vertices[face.A]), rc.Geometry.Point3d(mesh.Vertices[face.B]), rc.Geometry.Point3d(mesh.Vertices[face.C]), sc.doc.ModelAbsoluteTolerance)
-                            centPt = rc.Geometry.AreaMassProperties.Compute(faceBrep).Centroid
-                            #Do a final check to be sure that the test point does not lie outside the zone and, if so, delete the mesh face, and don't append the point.
-                            if zoneBreps[zoneCount].IsPointInside(centPt, tol, False) == False:
-                                deleteIndices.append(faceCount)
-                                deleteFaceBreps.append(faceBrep)
-                                deleteTestPts.append(centPt)
-                            else:
-                                finalFaceBreps.append(faceBrep)
-                                finalTestPts.append(centPt)
+                            try:
+                                centPt = rc.Geometry.AreaMassProperties.Compute(faceBrep).Centroid
+                                #Do a final check to be sure that the test point does not lie outside the zone and, if so, delete the mesh face, and don't append the point.
+                                if zoneBreps[zoneCount].IsPointInside(centPt, tol, False) == False:
+                                    deleteIndices.append(faceCount)
+                                    deleteFaceBreps.append(faceBrep)
+                                    deleteTestPts.append(centPt)
+                                else:
+                                    finalFaceBreps.append(faceBrep)
+                                    finalTestPts.append(centPt)
+                            except:
+                                pass
                         
                         #Construct a new mesh from the breps that are inside each zone.
                         finalMesh = constructNewMesh(finalFaceBreps)
@@ -887,14 +897,11 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                     #Construct a new mesh from the breps that are inside each zone.
                     finalMesh = constructNewMesh(finalFaceBreps)
                     
-                    if len(finalTestPts) > 0:
-                        if len(MRTMeshInit[zoneCount]) > 0: MRTMeshInit[zoneCount][0].Append(finalMesh)
-                        else: MRTMeshInit[zoneCount].append(finalMesh)
+                    if finalMesh.Faces.Count > 3 and len(finalTestPts) > 0:
+                        MRTMeshInit[zoneCount].append(finalMesh)
                         
                         MRTMeshBreps[zoneCount].extend(finalFaceBreps)
                         testPts[zoneCount].extend(finalTestPts)
-        
-        
         
         #If the user has selected to use the results for an outdoor calculation, pull out those parts of the mesh related to the outdoors using the deletedIndices list.
         if sectionMethod != 0 and includeOutdoor == True:

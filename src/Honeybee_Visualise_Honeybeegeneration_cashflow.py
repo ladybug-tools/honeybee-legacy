@@ -76,7 +76,7 @@ import System
 
 ghenv.Component.Name = "Honeybee_Visualise_Honeybeegeneration_cashflow"
 ghenv.Component.NickName = 'Visualise_Honeybee_generation_cashflow'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"

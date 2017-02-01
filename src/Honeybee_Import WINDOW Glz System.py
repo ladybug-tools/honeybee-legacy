@@ -23,7 +23,7 @@
 """
 Use this component to import the content of a LBNL WINDOW text file report as a series of polygons and boundary conditions that can be plugged into the "Write THERM File' component.
 -
-Provided by Honeybee 0.0.59
+Provided by Honeybee 0.0.60
 
     Args:
         _windowGlzSysReport: A filepath to a detailed galzing system text file report exportedby WINDOW.
@@ -60,13 +60,13 @@ import decimal
 
 ghenv.Component.Name = 'Honeybee_Import WINDOW Glz System'
 ghenv.Component.NickName = 'importWINDOW'
-ghenv.Component.Message = 'VER 0.0.59\nMAY_25_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
-#compatibleHBVersion = VER 0.0.56\nJAN_12_2015
+#compatibleHBVersion = VER 0.0.56\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
-try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
 
 
@@ -131,31 +131,6 @@ def checkTheInputs():
             return -1
     
     
-    #Set any defaults for the dimensions of the glazing system.
-    conversionFactor = lb_preparation.checkUnits()*1000
-    sightLineToGlzBottom = 12.7
-    if _sightLineToGlzBottom_ != None: sightLineToGlzBottom = _sightLineToGlzBottom_*conversionFactor
-    spacerHeight = 12.7
-    if _spacerHeight_ != None: spacerHeight = _spacerHeight_*conversionFactor
-    edgeOfGlassDim = 63.5
-    if _edgeOfGlassDim_ != None: edgeOfGlassDim = _edgeOfGlassDim_*conversionFactor
-    glzSystemHeight = 150
-    if _glzSystemHeight_ != None: glzSystemHeight = _glzSystemHeight_*conversionFactor
-    
-    #Check to be sure that the sum of _sightLineToGlzBottom_ and _edgeOfGlassDim_ does not exceed the _glzSystemHeight_.
-    if sightLineToGlzBottom + edgeOfGlassDim > glzSystemHeight:
-        warning = "The sum of _sightLineToGlzBottom_ and _edgeOfGlassDim_ exceeds the _glzSystemHeight_."
-        print warning
-        ghenv.Component.AddRuntimeMessage(e, warning)
-        return -1
-    
-    #Check to be sure that the _spacerHeight_ does not exceed the _glzSystemHeight_.
-    if spacerHeight > glzSystemHeight:
-        warning = "The _spacerHeight_ exceeds the _glzSystemHeight_."
-        print warning
-        ghenv.Component.AddRuntimeMessage(e, warning)
-        return -1
-    
     #If there is a spacer material, check to be sure that it can be found in the library.
     material = None
     if spacerMaterial_ != None:
@@ -187,9 +162,9 @@ def checkTheInputs():
                 return -1
     
     
-    return glzPlane, sightLineToGlzBottom, spacerHeight, edgeOfGlassDim, glzSystemHeight, material, conversionFactor, thermDefault
+    return glzPlane, material, thermDefault
 
-def main(windowGlzSysReport, glzPlane, sightLineToGlz, spacerHeight, edgeOfGlassDim, glzSystemHeight, spacerMaterial, conversionFactor, thermDefault):
+def main(windowGlzSysReport, glzPlane, spacerMaterial, thermDefault, unitConverter):
     #Call the relevant classes
     hb_thermPolygon = sc.sticky["honeybee_ThermPolygon"]
     hb_thermBC = sc.sticky["honeybee_ThermBC"]
@@ -279,23 +254,60 @@ def main(windowGlzSysReport, glzPlane, sightLineToGlz, spacerHeight, edgeOfGlass
         print msg
         return -1
     
+    #Set any defaults for the dimensions of the glazing system.
+    if IPTrigger == False:
+        conversionFactor = 1 / (unitConverter * 1000)
+    else:
+        conversionFactor = 1 / (unitConverter * 39.3701)
+    rhinoConversionFactor = 1 / (unitConverter * 1000)
+    
+    sightLineToGlz = 12.7*rhinoConversionFactor
+    if _sightLineToGlzBottom_ != None: sightLineToGlz = _sightLineToGlzBottom_
+    spacerHeight = 12.7*rhinoConversionFactor
+    if _spacerHeight_ != None: spacerHeight = _spacerHeight_
+    edgeOfGlassDim = 63.5*rhinoConversionFactor
+    if _edgeOfGlassDim_ != None: edgeOfGlassDim = _edgeOfGlassDim_
+    glzSystemHeight = 150*rhinoConversionFactor
+    if _glzSystemHeight_ != None: glzSystemHeight = _glzSystemHeight_
+    
+    #Check to be sure that the sum of _sightLineToGlzBottom_ and _edgeOfGlassDim_ does not exceed the _glzSystemHeight_.
+    if sightLineToGlz + edgeOfGlassDim > glzSystemHeight + spacerHeight:
+        warning = "The sum of _sightLineToGlzBottom_ and _edgeOfGlassDim_ exceeds the _glzSystemHeight_."
+        print warning
+        ghenv.Component.AddRuntimeMessage(e, warning)
+        return -1
     
     #Create the window material geometry in the Rhino scene.
     initWindowGeos = []
-    extrusionVec = rc.Geometry.Vector3d(0,glzSystemHeight,0)
-    gasExtrusionVec = rc.Geometry.Vector3d(0,glzSystemHeight-spacerHeight,0)
+    extrusionVec = rc.Geometry.Vector3d(0,glzSystemHeight+sightLineToGlz,0)
+    gasExtrusionVec = rc.Geometry.Vector3d(0,glzSystemHeight+sightLineToGlz-spacerHeight,0)
     XCoord = 0
     glassPane = True
-    for thickness in glzSysThicknesses:
+    for count, thickness in enumerate(glzSysThicknesses):
         if glassPane == False:
             glassPane = True
             materialLine = rc.Geometry.LineCurve(rc.Geometry.Point3d(XCoord,spacerHeight, 0), rc.Geometry.Point3d(XCoord+thickness*conversionFactor,spacerHeight, 0))
             materialSrf = rc.Geometry.Surface.CreateExtrusion(materialLine, gasExtrusionVec)
+            materialBrep = rc.Geometry.Brep.CreateFromSurface(materialSrf)
         else:
             glassPane = False
             materialLine = rc.Geometry.LineCurve(rc.Geometry.Point3d(XCoord,0,0), rc.Geometry.Point3d(XCoord+thickness*conversionFactor,0,0))
             materialSrf = rc.Geometry.Surface.CreateExtrusion(materialLine, extrusionVec)
-        initWindowGeos.append(rc.Geometry.Brep.CreateFromSurface(materialSrf))
+            materialBrep = rc.Geometry.Brep.CreateFromSurface(materialSrf)
+            if count == len(glzSysThicknesses)-1:
+                #Add in extra point for the change in BC.
+                srfVertsInit = materialBrep.DuplicateVertices()
+                kinkPointBottom = rc.Geometry.Point3d(XCoord+thickness*conversionFactor, sightLineToGlz, 0)
+                kinkPointTop = rc.Geometry.Point3d(XCoord+thickness*conversionFactor, sightLineToGlz+edgeOfGlassDim, 0)
+                srfVerts = []
+                for pt in srfVertsInit: srfVerts.append(pt)
+                srfVerts.insert(3,kinkPointBottom)
+                srfVerts.insert(3,kinkPointTop)
+                pLine = rc.Geometry.PolylineCurve(srfVerts)
+                joinLine = rc.Geometry.LineCurve(srfVerts[-1], srfVerts[0])
+                joinedCurve = rc.Geometry.Curve.JoinCurves([pLine,joinLine])[0]
+                materialBrep = rc.Geometry.Brep.CreatePlanarBreps(joinedCurve)[0]
+        initWindowGeos.append(materialBrep)
         XCoord += thickness*conversionFactor
     
     #If a spacer material is requested, add in the extra polygons for it.
@@ -308,33 +320,26 @@ def main(windowGlzSysReport, glzPlane, sightLineToGlz, spacerHeight, edgeOfGlass
                 glassPane = True
                 materialLine = rc.Geometry.LineCurve(rc.Geometry.Point3d(newXCoord,0,0), rc.Geometry.Point3d(newXCoord+thickness*conversionFactor,0,0))
                 materialSrf = rc.Geometry.Surface.CreateExtrusion(materialLine, rc.Geometry.Vector3d(0,spacerHeight,0))
-                initSpacerGeos.append(rc.Geometry.Brep.CreateFromSurface(materialSrf))
+                finalSrf = rc.Geometry.Brep.CreateFromSurface(materialSrf)
+                if finalSrf != None:
+                    initSpacerGeos.append(rc.Geometry.Brep.CreateFromSurface(materialSrf))
             else: glassPane = False
             newXCoord += thickness*conversionFactor
     
     #Generate the boundary condition geometries.
-    outdoorBCGeo = rc.Geometry.PolylineCurve([rc.Geometry.Point3d.Origin, rc.Geometry.Point3d(0,glzSystemHeight,0)])
+    outdoorBCGeo = rc.Geometry.PolylineCurve([rc.Geometry.Point3d.Origin, rc.Geometry.Point3d(0,glzSystemHeight+sightLineToGlz,0)])
     indoorFrameBCGeo = rc.Geometry.PolylineCurve([rc.Geometry.Point3d(XCoord,sightLineToGlz,0), rc.Geometry.Point3d(XCoord,sightLineToGlz+edgeOfGlassDim,0)])
-    indoorRemainBCGeo = rc.Geometry.PolylineCurve([rc.Geometry.Point3d(XCoord,sightLineToGlz+edgeOfGlassDim,0), rc.Geometry.Point3d(XCoord,glzSystemHeight,0)])
+    indoorRemainBCGeo = rc.Geometry.PolylineCurve([rc.Geometry.Point3d(XCoord,sightLineToGlz+edgeOfGlassDim,0), rc.Geometry.Point3d(XCoord,glzSystemHeight+sightLineToGlz,0)])
     
     #Transform the geometries into the corrext scale and plane.
     plane = rc.Geometry.Plane.WorldXY
-    conversionFactor = conversionFactor/1000
-    conversionFactor = 1/(conversionFactor*1000)
-    unitsScale = rc.Geometry.Transform.Scale(rc.Geometry.Plane.WorldXY, conversionFactor, conversionFactor, conversionFactor)
-    for geo in initWindowGeos: geo.Transform(unitsScale)
-    for geo in initSpacerGeos: geo.Transform(unitsScale)
-    outdoorBCGeo.Transform(unitsScale)
-    indoorFrameBCGeo.Transform(unitsScale)
-    indoorRemainBCGeo.Transform(unitsScale)
-    
     planeTransform = rc.Geometry.Transform.ChangeBasis(glzPlane, rc.Geometry.Plane.WorldXY)
+    plane.Transform(planeTransform)
     for geo in initWindowGeos: geo.Transform(planeTransform)
     for geo in initSpacerGeos: geo.Transform(planeTransform)
     outdoorBCGeo.Transform(planeTransform)
     indoorFrameBCGeo.Transform(planeTransform)
     indoorRemainBCGeo.Transform(planeTransform)
-    plane.Transform(planeTransform)
     
     #Create the thermPolygons for the window materials.
     allMaterials = []
@@ -379,7 +384,7 @@ def main(windowGlzSysReport, glzPlane, sightLineToGlz, spacerHeight, edgeOfGlass
             materials.append(spacerMaterial)
     
     #Add All THERM Polygons to the hive.
-    thermPolygonsFinal  = hb_hive.addToHoneybeeHive(thermPolygons, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+    thermPolygonsFinal  = hb_hive.addToHoneybeeHive(thermPolygons, ghenv.Component)
     
     
     #Create the THERM BCs.
@@ -388,9 +393,9 @@ def main(windowGlzSysReport, glzPlane, sightLineToGlz, spacerHeight, edgeOfGlass
     indoorRemainThermBC = hb_thermBC(indoorRemainBCGeo, indoorProps[0].title(), indoorProps[1], indoorProps[2], plane, None, None, None, None, None)
     
     # ADD THERM BCs TO THE HIVE
-    thermOutBoundary  = hb_hive.addToHoneybeeHive([outdoorHBThermBC], ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
-    thermInBoundary1  = hb_hive.addToHoneybeeHive([indoorFrameThermBC], ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
-    thermInBoundary2  = hb_hive.addToHoneybeeHive([indoorRemainThermBC], ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+    thermOutBoundary  = hb_hive.addToHoneybeeHive([outdoorHBThermBC], ghenv.Component, False)
+    thermInBoundary1  = hb_hive.addToHoneybeeHive([indoorFrameThermBC], ghenv.Component, False)
+    thermInBoundary2  = hb_hive.addToHoneybeeHive([indoorRemainThermBC], ghenv.Component, False)
     
     
     return thermPolygonsFinal, thermInBoundary1 + thermInBoundary2, thermOutBoundary, materials, indoorProps, outdoorProps
@@ -432,12 +437,13 @@ else:
         ghenv.Component.AddRuntimeMessage(w, warning)
 
 #If the Rhino model tolerance is not fine enough for THERM modelling, give a warning.
+unitConverter = None
 if initCheck == True:
     lb_preparation = sc.sticky["ladybug_Preparation"]()
-    conversionFactor = lb_preparation.checkUnits()*1000
+    unitConverter = lb_preparation.checkUnits()*1000
     d = decimal.Decimal(str(sc.doc.ModelAbsoluteTolerance))
     numDecPlaces = abs(d.as_tuple().exponent)
-    numConversionFacPlaces = len(list(str(int(conversionFactor))))-1
+    numConversionFacPlaces = len(list(str(int(unitConverter))))-1
     numDecPlaces = numDecPlaces - numConversionFacPlaces
     if numDecPlaces < 2:
         zeroText = ''
@@ -452,7 +458,7 @@ if initCheck == True:
 if initCheck and _windowGlzSysReport:
     checkData = checkTheInputs()
     if checkData != -1:
-        glzPlane, sightLineToGlz, spacerHeight, edgeOfGlassDim, glzSystemHeight, spacerMaterial, conversionFactor, thermDefault = checkData
-        result = main(_windowGlzSysReport, glzPlane, sightLineToGlz, spacerHeight, edgeOfGlassDim, glzSystemHeight, spacerMaterial, conversionFactor, thermDefault)
+        glzPlane, spacerMaterial, thermDefault = checkData
+        result = main(_windowGlzSysReport, glzPlane, spacerMaterial, thermDefault, unitConverter/1000)
         if result != -1:
             thermPolygons, indoorBCs, outdoorBC, materials, indoorProperties, outdoorProperties = result

@@ -33,10 +33,10 @@ _
 The method used by this component is based off of the Shaderade method developed by Christoph Reinhart, Jon Sargent, Jeffrey Niemasz.  This component uses Shaderade's method for evaluating shade and window geometry in terms of solar vectors.
 _
 A special thanks goes to them and their research.  A paper detailing the Shaderade method is available at:
-http://www.gsd.harvard.edu/research/gsdsquare/Publications/Shaderade_BS2011.pdf
+http://web.mit.edu/tito_/www/Publications/BS2011_Shaderade.pdf
 
 -
-Provided by Honeybee 0.0.59
+Provided by Honeybee 0.0.60
     
     Args:
         _location: The output from the importEPW or constructLocation component.  This is essentially a list of text summarizing a location on the earth.
@@ -70,10 +70,10 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Energy Shade Benefit Evaluator"
 ghenv.Component.NickName = 'EnergyShadeBenefit'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_28_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "09 | Energy | Energy"
+ghenv.Component.SubCategory = "10 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
 #compatibleLBVersion = VER 0.0.59\nNOV_20_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "5"

@@ -23,7 +23,7 @@
 """
 Use this component to write your THERM polygons and boundary conditions into a therm XML that can be opened ready-to-run in THERM.
 -
-Provided by Honeybee 0.0.59
+Provided by Honeybee 0.0.60
 
     Args:
         _polygons: A list of thermPolygons from one or more "Honeybee_Create Therm Polygons" components.
@@ -51,7 +51,7 @@ import decimal
 
 ghenv.Component.Name = 'Honeybee_Write THERM File'
 ghenv.Component.NickName = 'writeTHERM'
-ghenv.Component.Message = 'VER 0.0.59\nMAY_13_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_30_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -447,14 +447,21 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
                 matFromLib = copy.deepcopy(thermMatLib[polygon.material])
                 matFromLib["Name"] = matFromLib["Name"].title()
                 correctFormatCol = str(System.Drawing.ColorTranslator.ToHtml(matFromLib["RGBColor"]))
-                matFromLib["RGBColor"] = '0x' + correctFormatCol.split('#')[-1]
+                if not correctFormatCol.startswith('#'):
+                    color = System.Drawing.Color.FromName(correctFormatCol)
+                    correctFormatCol = System.String.Format("#{0:X2}{1:X2}{2:X2}", color.R, color.G, color.B)
+                matFromLib["RGBColor"] = correctFormatCol.replace('#', '0x')
                 matFromLib["Name"] = checkAbbreviations(matFromLib["Name"])
                 #Check for frame cavity materials.
                 if matFromLib["Type"] == 1:
                     if 'Frame Cavity Slightly Ventilated NFRC' in matFromLib["Name"]: matFromLib["CavityModel"] = 5
                     elif 'Frame Cavity NFRC 100' in matFromLib["Name"]: matFromLib["CavityModel"] = 4
                     elif 'Frame Cavity - CEN Simplified' in matFromLib["Name"]: matFromLib["CavityModel"] = 1
-                    else: matFromLib["CavityModel"] = 4
+                    else:
+                        try:
+                            matFromLib["CavityModel"] = matFromLib["CavityModel"]
+                        except:
+                            matFromLib["CavityModel"] = 4
                 allMaterials.append(matFromLib)
             except:
                 warning = "The material " + polygon.material + " could not be found in your material library. \n Make sure your HB_HB component is in the back of your GH canvas by selecting it and hitting Cntrl+B. \n Then, right click on the GH canvas and hit 'recompute.'"
@@ -817,7 +824,13 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
     if basePlane.Normal.Z < -0.70710678118 or basePlane.Normal.Z > 0.70710678118: CrossSectionType = 'Jamb'
     
     #CHECK THE MESH LEVEL.
-    if meshLevel_: meshLevel = str(meshLevel_)
+    if meshLevel_:
+        meshLevel = str(meshLevel_)
+        if meshLevel_ > 8:
+            meshLevel = "8"
+            warning = "Therm cannot simulate a mesh level greater than 8. It will be automatically changed to 8 for you."
+            print warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
     else: meshLevel = '6'
     
     

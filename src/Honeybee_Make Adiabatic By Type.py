@@ -24,7 +24,7 @@
 Use this component to make certain surface types of a zone adiabatic.
 
 -
-Provided by Honeybee 0.0.59
+Provided by Honeybee 0.0.60
 
     Args:
         _HBZones: HBZones for which some surface types will be turned to adiabatic.
@@ -47,11 +47,11 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_Make Adiabatic By Type"
 ghenv.Component.NickName = 'makeAdiabaticByType'
-ghenv.Component.Message = 'VER 0.0.59\nFEB_19_2016'
+ghenv.Component.Message = 'VER 0.0.60\nNOV_04_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "09 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+ghenv.Component.SubCategory = "10 | Energy | Energy"
+#compatibleHBVersion = VER 0.0.56\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
 except: pass
@@ -152,7 +152,7 @@ def main(HBZones):
                         childSrf.sunExposure = "NoSun"
                         childSrf.windExposure = "NoWind"
     
-    HBZones  = hb_hive.addToHoneybeeHive(HBObjectsFromHive, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+    HBZones  = hb_hive.addToHoneybeeHive(HBObjectsFromHive, ghenv.Component)
     
     return HBZones
     

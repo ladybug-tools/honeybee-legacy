@@ -23,7 +23,7 @@
 """
 EnergyPlus Shadow Parameters
 -
-Provided by Honeybee 0.0.59
+Provided by Honeybee 0.0.60
 
     Args:
         calculationMethod_: An optional text string to set the means by which the shadow calculation is run.  Choose from the following two options:
@@ -37,10 +37,10 @@ Provided by Honeybee 0.0.59
 
 ghenv.Component.Name = "Honeybee_ShadowPar"
 ghenv.Component.NickName = 'shadowPar'
-ghenv.Component.Message = 'VER 0.0.59\nJAN_26_2016'
+ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "09 | Energy | Energy"
+ghenv.Component.SubCategory = "10 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
