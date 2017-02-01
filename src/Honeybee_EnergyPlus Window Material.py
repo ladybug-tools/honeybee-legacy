@@ -71,7 +71,9 @@ def checkInputs():
                 ghenv.Component.AddRuntimeMessage(w, warning)
         
         return newVariable
-    
+    if _U_Value <1:
+        infoMsg = "You probably input an imperial U value, please double check. If yes, please use uIP2uSI to convert it."
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, infoMsg)
     SHGC = checkBtwZeroAndOne(_SHGC, None, "_SHGC")
     VT = checkBtwZeroAndOne(_VT, None, "_VT")
     
