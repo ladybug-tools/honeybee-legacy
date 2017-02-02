@@ -42,7 +42,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Window Material"
 ghenv.Component.NickName = 'EPWindowMat'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nJAN_31_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
@@ -71,7 +71,9 @@ def checkInputs():
                 ghenv.Component.AddRuntimeMessage(w, warning)
         
         return newVariable
-    
+    if _U_Value <0.5:
+        infoMsg = "You probably input an imperial U value, please double check. If yes, please use uIP2uSI to convert it."
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, infoMsg)
     SHGC = checkBtwZeroAndOne(_SHGC, None, "_SHGC")
     VT = checkBtwZeroAndOne(_VT, None, "_VT")
     
