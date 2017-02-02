@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.60\nFeb_01_2017'
+ghenv.Component.Message = 'VER 0.0.60\nFeb_02_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -3253,9 +3253,9 @@ class hb_WriteDS(object):
                   '#################################\n'
         
         def checkkey(k):
-            return k not in ('xScale', 'yScale', 'additional')
+            return k.replace('_', '') not in ('xScale', 'yScale', 'additional')
             
-        params = '\n'.join('{} {}'.format(k, v)
+        params = '\n'.join('{} {}'.format(k.replace('_', ''), v)
                            for k, v in radParameters.iteritems()
                            if checkkey(k))
         
