@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.60\nFEB_02_2017'
+ghenv.Component.Message = 'VER 0.0.60\nJAN_23_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -85,7 +85,6 @@ import random
 PI = math.pi
 
 rc.Runtime.HostUtils.DisplayOleAlerts(False)
-
 
 class CheckIn():
     
@@ -385,8 +384,6 @@ class PrepareTemplateEPLibFiles(object):
         if not sc.sticky.has_key("honeybee_ScheduleLib"): sc.sticky["honeybee_ScheduleLib"] = {}
         if not sc.sticky.has_key("honeybee_ScheduleTypeLimitsLib"): sc.sticky["honeybee_ScheduleTypeLimitsLib"] = {}
         if not sc.sticky.has_key("honeybee_WindowPropLib"): sc.sticky["honeybee_WindowPropLib"] = {}
-        if not sc.sticky.has_key("honeybee_WindowThermalModelLib"): sc.sticky["honeybee_WindowThermalModelLib"] = {}
-        if not sc.sticky.has_key("honeybee_MatrixLib"): sc.sticky["honeybee_MatrixLib"] = {}
         if not sc.sticky.has_key("honeybee_SpectralDataLib"): sc.sticky["honeybee_SpectralDataLib"] = {}
         if not sc.sticky.has_key("honeybee_thermMaterialLib"): sc.sticky["honeybee_thermMaterialLib"] = {}
         
@@ -407,8 +404,6 @@ class PrepareTemplateEPLibFiles(object):
         sc.sticky["honeybee_ScheduleTypeLimitsLib"] = {}
         sc.sticky["honeybee_WindowPropLib"] = {}
         sc.sticky["honeybee_SpectralDataLib"] = {}
-        sc.sticky["honeybee_WindowThermalModelLib"] = {}
-        sc.sticky["honeybee_MatrixLib"] = {}
     
     def cleanThermLib(self):
         sc.sticky["honeybee_thermMaterialLib"] = {}
@@ -3886,12 +3881,7 @@ class EPMaterialAux(object):
             objectData = sc.sticky["honeybee_WindowPropLib"][objectName]
         elif objectName in sc.sticky["honeybee_SpectralDataLib"].keys():
             objectData = sc.sticky["honeybee_SpectralDataLib"][objectName]
-        elif objectName in sc.sticky["honeybee_WindowThermalModelLib"].keys():
-            objectData = sc.sticky["honeybee_WindowThermalModelLib"][objectName]
-        elif objectName in sc.sticky["honeybee_MatrixLib"].keys():
-            objectData = sc.sticky["honeybee_MatrixLib"][objectName]
-            
-           
+        
         if objectData!=None:
             numberOfLayers = len(objectData.keys())
             # add material/construction type
@@ -4137,7 +4127,7 @@ class EPObjectsAux(object):
     
     def getObjectKey(self, EPObject):
         
-        EPKeys = ["Material", "WindowMaterial", "Construction", "ScheduleTypeLimits", "Schedule", "WindowProperty", "MaterialProperty:GlazingSpectralData","WindowThermalModel","Matrix"]
+        EPKeys = ["Material", "WindowMaterial", "Construction", "ScheduleTypeLimits", "Schedule", "WindowProperty", "MaterialProperty:GlazingSpectralData"]
         
         # check if it is a full string
         for key in EPKeys:
@@ -4158,8 +4148,6 @@ class EPObjectsAux(object):
                        "Schedule": "honeybee_ScheduleLib",
                        "ScheduleTypeLimits" : "honeybee_ScheduleTypeLimitsLib",
                        "WindowProperty" : "honeybee_WindowPropLib",
-                       "WindowThermalModel" : "honeybee_WindowThermalModelLib",
-                       "Matrix" : "honeybee_MatrixLib",
                        "MaterialProperty:GlazingSpectralData" : "honeybee_SpectralDataLib"
                        }
         
