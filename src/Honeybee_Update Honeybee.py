@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Update Honeybee"
 ghenv.Component.NickName = 'updateHoneybee'
-ghenv.Component.Message = 'VER 0.0.60\nNOV_11_2016'
+ghenv.Component.Message = 'VER 0.0.60\nFEB_02_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | Developers"
@@ -65,7 +65,9 @@ def removeCurrentHB():
         print 'Removing Honeybee!'
         for fileName in fileNames:
             # check for ladybug userObjects and delete the files
-            if fileName.StartsWith('Honeybee') and not fileName.StartsWith('HoneybeePlus'):
+            if fileName.StartsWith('HoneybeePlus'):
+                continue
+            elif fileName.StartsWith('Honeybee'):
                 fullPath = os.path.join(folder, fileName)
                 os.remove(fullPath)
 
@@ -242,16 +244,8 @@ def main(sourceDirectory, updateThisFile, updateAllUObjects):
             return -1
 
         srcFiles = os.listdir(userObjectsFolder)
-        print 'Removing Old Version...'
-        # remove userobjects that are currently removed
-        fileNames = os.listdir(destinationDirectory)
-        for fileName in fileNames:
-            # check for ladybug userObjects and delete the files if they are not
-            # in source anymore
-            if fileName.StartsWith('Honeybee') and fileName not in srcFiles:
-                fullPath = os.path.join(destinationDirectory, fileName)
-                os.remove(fullPath)        
-        
+        # Remove Old version...      
+        removeCurrentHB()
         print 'Updating...'
         srcFiles = os.listdir(userObjectsFolder)
         for srcFileName in srcFiles:

@@ -9046,8 +9046,15 @@ if checkIn.letItFly:
         # check for OpenStudio Folder.
         openStudioLibFolder = None
         QtFolder = None
+        
+        def getversion(openStudioPath):
+            ver = ''.join(s for s in openStudioPath if (s.isdigit() or s == '.'))
+            return sum(int(i) * d ** 10 for d, i in enumerate(reversed(ver.split('.'))))
+
         installedOPS = [f for f in os.listdir("C:\\Program Files") if f.startswith("OpenStudio")]
-        installedOPS = sorted(installedOPS, key = lambda x: int("".join(x.split(" ")[-1].split("."))), reverse = True)
+        
+        installedOPS = sorted(installedOPS, key=getversion, reverse=True)
+        
         if len(installedOPS) != 0:
             openStudioLibFolder = "C:/Program Files/%s/CSharp/openstudio/"%installedOPS[0]
             QtFolder = "C:/Program Files/%s/Ruby/openstudio/"%installedOPS[0]
