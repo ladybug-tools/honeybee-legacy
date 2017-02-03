@@ -60,7 +60,7 @@ Provided by Honeybee 0.0.60
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.60\nNOV_22_2016'
+ghenv.Component.Message = 'VER 0.0.60\nFEB_02_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -1084,9 +1084,17 @@ class WriteIDF(object):
             materialData = sc.sticky ["honeybee_windowMaterialLib"][materialName]
         elif materialName in sc.sticky ["honeybee_materialLib"].keys():
             materialData = sc.sticky ["honeybee_materialLib"][materialName]
+        elif materialName in sc.sticky ["honeybee_WindowThermalModelLib"].keys():
+            materialData = sc.sticky ["honeybee_WindowThermalModelLib"][materialName]
+        elif materialName in sc.sticky ["honeybee_MatrixLib"].keys():
+            materialData = sc.sticky ["honeybee_MatrixLib"][materialName]
+           
         
         if materialData!=None:
             numberOfLayers = len(materialData.keys())
+            if materialData[0] == "":
+                return None
+            
             materialStr = materialData[0] + ",\n"
             
             # add the name
@@ -1098,8 +1106,11 @@ class WriteIDF(object):
                     materialStr =  materialStr + "  " + str(materialData[layer][0]) + ";   !- " +  materialData[layer][1] + "\n\n"
             
             return materialStr
+        #ComplexFenestrationState basis type or basis symmetry type
+        elif materialName == "LBNLWINDOW" or materialName == "NONE":
+            return None
         else:
-            warning = "Failed to find " + materialName + " in library."
+            warning = "Failed to find material(" + materialName + ") in library."
             print warning
             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
             return None

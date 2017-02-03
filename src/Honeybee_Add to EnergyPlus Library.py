@@ -38,7 +38,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Add to EnergyPlus Library"
 ghenv.Component.NickName = 'addToEPLibrary'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.60\nFEB_02_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
@@ -50,7 +50,32 @@ except: pass
 
 import scriptcontext as sc
 import Grasshopper.Kernel as gh
+import os
 
+def prepEPObjects(rawStrings):
+    if ":\\" in rawStrings:
+        lines = open(rawStrings, 'r')
+    else:
+        lines = rawStrings.split("\n")
+    
+    EPObjects = []
+    EPObject = ""
+    
+    for lineCount, line in enumerate(lines):
+            if line.startswith("!"):
+                continue
+            
+            
+            objValue = line.split("!")[0].strip()
+            ##try: objDescription = line.split("!")[1].strip()
+            ##except:  objDescription = ""
+            EPObject += objValue+"\n";
+            
+            if objValue.endswith(";"):
+                EPObjects.append(EPObject.strip())
+                EPObject = ""
+                
+    return EPObjects;
 
 def main(EPObject, addToProjectLib, overwrite):
     
@@ -95,5 +120,8 @@ def main(EPObject, addToProjectLib, overwrite):
     else:
         print name + " is added to this project library!"
         
-if _EPObject and _addToProjectLib:
-    main(_EPObject, _addToProjectLib, overwrite_)
+if _EPObjectsOrIDF and _addToProjectLib:
+    EPObjects = prepEPObjects(_EPObjectsOrIDF)
+    for EPObject in EPObjects:
+        main(EPObject, _addToProjectLib, overwrite_)
+        
