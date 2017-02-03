@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.60\nJAN_23_2017'
+ghenv.Component.Message = 'VER 0.0.60\nFeb_02_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -3248,22 +3248,18 @@ class hb_WriteDS(object):
     
     # radiance parameters
     def DSRADStr(self, radParameters):
-        return '\n\n#################################\n' + \
+        header =  '\n\n#################################\n' + \
                   '#       RADIANCE PARAMETERS      \n' + \
-                  '#################################\n' + \
-                  'ab ' + `radParameters["_ab_"]` + '\n' + \
-                  'ad ' + `radParameters["_ad_"]` + '\n' + \
-                  'as ' + `radParameters["_as_"]` + '\n' + \
-                  'ar ' + `radParameters["_ar_"]` + '\n' + \
-                  'aa ' + `radParameters["_aa_"]` + '\n' + \
-                  'lr 6\n' + \
-                  'st 0.1500\n' + \
-                  'sj 1.0000\n' + \
-                  'lw 0.0040000\n' + \
-                  'dj 0.0000\n' + \
-                  'ds 0.200\n' + \
-                  'dr 2\n' + \
-                  'dp 512\n'
+                  '#################################\n'
+        
+        def checkkey(k):
+            return k.replace('_', '') not in ('xScale', 'yScale', 'additional')
+            
+        params = '\n'.join('{} {}'.format(k.replace('_', ''), v)
+                           for k, v in radParameters.iteritems()
+                           if checkkey(k))
+        
+        return header + params + '\n'
                           
     def DSDynamicSimStr(self, shadingRecipes, projectName, subWorkingDir, testPts, cpuCount = 0):
         
@@ -8263,6 +8259,7 @@ class hb_RADParameters(object):
         "_dc_": [.25, .5, .75],
         "_dr_": [0, 1, 3],
         "_dp_": [64, 256, 512],
+        "_sj_": [.3, .7, 1],  # only for daysim which uses older version of rtrace
         "_st_": [.85, .5, .15],
         "_lr_": [4, 6, 8],
         "_lw_": [.05, .01, .005],
