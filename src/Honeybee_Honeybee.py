@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.60\nFeb_02_2017'
+ghenv.Component.Message = 'VER 0.0.60\nFEB_04_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -474,7 +474,7 @@ class PrepareTemplateEPLibFiles(object):
                     openStudioStandardLib = json.load(jsondata)
                 
                 sc.sticky ["honeybee_OpenStudioStandardsFile"] = openStudioStandardLib
-                print "Standard template file is loaded from %s\n"%filepath
+                print "Standard template file is loaded from %s"%filepath
             except:
                 print 'Download failed!!! You need OpenStudio_Standards.json to use honeybee.' + \
                 '\nPlease check your internet connection, and try again!'
@@ -518,7 +518,6 @@ class PrepareTemplateEPLibFiles(object):
             csvfilepath = os.path.join(workingDir, 'thermMaterial.csv')
             try:
                 libFilePaths.append(csvfilepath)
-                print "Therm Material file is loaded from %s\n"%csvfilepath
             except:
                 print 'Download failed!!! You need thermMaterial.csv to use the "export to THERM" capabilties of honeybee.' + \
                 '\nPlease check your internet connection, and try again!'
@@ -8977,6 +8976,7 @@ if checkIn.letItFly:
         if folders.RADPath == None:
             if os.path.isdir("c:\\radiance\\bin\\"):
                 folders.RADPath = "c:\\radiance\\bin\\"
+                print "Found installation of Radiance."
             else:
                 msg= "Honeybee cannot find RADIANCE folder on your system.\n" + \
                      "Make sure you have RADIANCE installed on your system.\n" + \
@@ -8984,6 +8984,14 @@ if checkIn.letItFly:
                      "A good place to install RADIANCE is c:\\radiance"
                 ghenv.Component.AddRuntimeMessage(w, msg)
                 folders.RADPath = ""
+        else:
+            versiFile = "\\".join(folders.RADPath.split('\\')[:-1]) + "\\NREL_ver.txt"
+            if os.path.isfile(versiFile):
+                with open(versiFile) as verFile:
+                    currentRADVersion = verFile.readline().strip()
+                print "Found installation of " + currentRADVersion + "."
+            else:
+                print "Found installation of Radiance."
         
         if  folders.RADPath.find(" ") > -1:
             msg =  "There is a white space in RADIANCE filepath: " + folders.RADPath + "\n" + \
@@ -9003,6 +9011,7 @@ if checkIn.letItFly:
         if folders.DSPath == None:
             if os.path.isdir("c:\\daysim\\bin\\"):
                 folders.DSPath = "c:\\daysim\\bin\\"
+                print "Found installation of DAYSIM."
             else:
                 msg= "Honeybee cannot find DAYSIM folder on your system.\n" + \
                      "Make sure you have DAYISM installed on your system.\n" + \
@@ -9010,13 +9019,15 @@ if checkIn.letItFly:
                      "A good place to install DAYSIM is c:\\DAYSIM"
                 ghenv.Component.AddRuntimeMessage(w, msg)
                 folders.DSPath = ""
+        else:
+            print "Found installation of DAYSIM."
         
         if folders.DSPath.find(" ") > -1:
             msg =  "There is a white space in DAYSIM filepath: " + folders.DSPath + "\n" + \
                    "Please install Daysism in a valid address (e.g. c:\\daysim)"
             ghenv.Component.AddRuntimeMessage(w, msg)
             folders.DSPath = ""
-            
+        
         if folders.DSPath.endswith("\\"): segmentNumber = -2
         else: segmentNumber = -1
         hb_DSCore = "\\".join(folders.DSPath.split("\\")[:segmentNumber])
@@ -9050,9 +9061,8 @@ if checkIn.letItFly:
         def getversion(openStudioPath):
             ver = ''.join(s for s in openStudioPath if (s.isdigit() or s == '.'))
             return sum(int(i) * d ** 10 for d, i in enumerate(reversed(ver.split('.'))))
-
-        installedOPS = [f for f in os.listdir("C:\\Program Files") if f.startswith("OpenStudio")]
         
+        installedOPS = [f for f in os.listdir("C:\\Program Files") if f.startswith("OpenStudio")]
         installedOPS = sorted(installedOPS, key=getversion, reverse=True)
         
         if len(installedOPS) != 0:
@@ -9063,6 +9073,7 @@ if checkIn.letItFly:
                 if os.path.isdir("C:/Program Files/%s/share/openstudio/"%installedOPS[0] + "EnergyPlus" + versStr + "/"):
                     folders.EPPath = "C:/Program Files/%s/share/openstudio/"%installedOPS[0] + "EnergyPlus" + versStr
                     EPVersion = EPVers
+                    
             if os.path.isdir(openStudioLibFolder) and os.path.isfile(os.path.join(openStudioLibFolder, "openStudio.dll")):
                 # openstudio is there and we are good to go.
                 # add folders to path.
@@ -9080,6 +9091,8 @@ if checkIn.letItFly:
             print msg2
             ghenv.Component.AddRuntimeMessage(w, msg1)
             ghenv.Component.AddRuntimeMessage(w, msg2)
+        else:
+            print "Found installation of " + installedOPS[0] + "."
         
         if folders.EPPath == None:
             # give a warning to the user
@@ -9089,6 +9102,8 @@ if checkIn.letItFly:
             versions = ", ".join(EPVersions)
             msg += versions
             print msg
+        else:
+            print "Found installation of EnergyPlus " + EPVersion + ".\n"
         
         sc.sticky["honeybee_folders"]["OSLibPath"] = openStudioLibFolder
         sc.sticky["honeybee_folders"]["OSQtPath"] = QtFolder
