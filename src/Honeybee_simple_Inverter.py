@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2016, Anton Szilasi - Icon by Djordje Spasic <ajszilas@gmail.com> 
+# Copyright (c) 2013-2017, Anton Szilasi - Icon by Djordje Spasic <ajszilas@gmail.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -22,7 +22,7 @@
 
 
 """
-Provided by Honeybee 0.0.60
+Provided by Honeybee 0.0.61
 
 Use this component to add EnergyPlus simple inverters to a Energy Plus simulation.
 
@@ -31,7 +31,7 @@ Find out more information about Energy Plus simple inverters here:
 http://bigladdersoftware.com/epx/docs/8-2/input-output-reference/group-electric-load-center.html#electricloadcenterinvertersimple
 
 -
-Provided by Honeybee 0.0.60
+Provided by Honeybee 0.0.61
 
     Args:
         
@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_simple_Inverter"
 ghenv.Component.NickName = 'simple_Inverter'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP" #"06 | Honeybee"

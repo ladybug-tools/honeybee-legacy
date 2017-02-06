@@ -1,6 +1,6 @@
 ghenv.Component.Name = "Honeybee_Scale Honeybee"
 ghenv.Component.NickName = 'scaleHBObj'
-ghenv.Component.Message = 'VER 0.0.60\nNOV_04_2016'
+ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"
@@ -16,7 +16,7 @@ import Rhino as rc
 """
 Scale Honeybee Objects Non-Uniformly
 -
-Provided by Honeybee 0.0.60
+Provided by Honeybee 0.0.61
     Args:
         _HBObj: Honeybee surface or Honeybee zone
         P: Base Plane

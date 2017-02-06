@@ -71,7 +71,7 @@ Provided by Ladybug 0.0.62
 
 ghenv.Component.Name = "Honeybee_Annual Schedule"
 ghenv.Component.NickName = 'AnnualSchedule'
-ghenv.Component.Message = 'VER 0.0.60\nNOV_01_2016'
+ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "07 | Energy | Schedule"

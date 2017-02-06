@@ -5,7 +5,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2016, Chris Mackey and Mostapha Sadeghipour Roudsari <Chris@MackeyArchitecture.com - Sadeghipour@gmail.com> 
+# Copyright (c) 2013-2017, Chris Mackey and Mostapha Sadeghipour Roudsari <Chris@MackeyArchitecture.com - mostapha@ladybug.tools> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -30,7 +30,7 @@ If you break up the window into several ones, you also have the ability to set t
 _
 If you input wall surfaces that have perfectly horizontal tops and/or bottoms, you also have access to a number of other other inputs such as window height, the sill height, and whether you want to split the glazing vertically into two windows.
 -
-Provided by Honeybee 0.0.60
+Provided by Honeybee 0.0.61
     
     Args:
         _HBObjects: Honeybee thermal zones or surfaces for which glazing should be generated.
@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Skylight Based on Ratio"
 ghenv.Component.NickName = 'skylightCreator'
-ghenv.Component.Message = 'VER 0.0.60\nJAN_01_2017'
+ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
