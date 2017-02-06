@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.60\nFEB_04_2017'
+ghenv.Component.Message = 'VER 0.0.60\nFEB_05_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -9063,8 +9063,11 @@ if checkIn.letItFly:
             return sum(int(i) * d ** 10 for d, i in enumerate(reversed(ver.split('.'))))
         
         installedOPS = [f for f in os.listdir("C:\\Program Files") if f.startswith("OpenStudio")]
-        installedOPS = sorted(installedOPS, key=getversion, reverse=True)
-        
+        try:
+            installedOPS = sorted(installedOPS, key=getversion, reverse=True)
+        except Exception as e:
+            print('Failed to sort OpenStudio installation folders.')
+            
         if len(installedOPS) != 0:
             openStudioLibFolder = "C:/Program Files/%s/CSharp/openstudio/"%installedOPS[0]
             QtFolder = "C:/Program Files/%s/Ruby/openstudio/"%installedOPS[0]
