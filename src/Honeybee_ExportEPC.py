@@ -42,7 +42,7 @@ ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
-try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
 
 import scriptcontext as sc
@@ -150,7 +150,7 @@ def main(HBZones):
 
 srfTypeDict = {0: "Wall", 1 : "Roof", 2: "Floor", 5 : "Glazing"}
 directionDict = {0: "N", 1 : "NW", 2: "W", 3: "SW", 4 : "S", 5 : "SE", 6 : "E", 7 : "NE"}
-
+print
 if len(_HBZones)!=0 and _HBZones[0]!=0:
     srfData = main(_HBZones)
     if srfData != -1:
