@@ -118,7 +118,7 @@ ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP" #"08 | Energy | Set Zone Properties"
 #compatibleHBVersion = VER 0.0.56\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
-try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
 
 import scriptcontext as sc

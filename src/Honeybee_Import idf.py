@@ -18,7 +18,7 @@ ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"
 #compatibleHBVersion = VER 0.0.56\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
-ghenv.Component.AdditionalHelpFromDocStrings = "4"
+ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
 
 import rhinoscriptsyntax as rs

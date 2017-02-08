@@ -6,7 +6,7 @@ ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"
 #compatibleHBVersion = VER 0.0.57\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
-try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
 except: pass
 
 import scriptcontext as sc
