@@ -145,7 +145,7 @@ hbCheck = True
 if not sc.sticky.has_key('honeybee_release') == True:
     hbCheck = False
     print "You should first let Honeybee fly..."
-    ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee fly...")
+    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, "You should first let Honeybee fly...")
 else:
     try:
         if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): hbCheck = False
@@ -155,7 +155,7 @@ else:
         "Use updateHoneybee component to update userObjects.\n" + \
         "If you have already updated userObjects drag Honeybee_Honeybee component " + \
         "into canvas and try again."
-        ghenv.Component.AddRuntimeMessage(w, warning)
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
 
 
 if _eioFile and hbCheck == True:
