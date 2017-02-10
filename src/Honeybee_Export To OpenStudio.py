@@ -3804,10 +3804,10 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
             # add humidistat if specified
             if zone.humidityMax != "" or zone.humidityMin != "":
                 hb_writeOPS.addHumidistat(zone, thermalZone, space, model)
-            
-            # add daylighting controls
-            if zone.daylightCntrlFract != 0:
-                hb_writeOPS.addDaylightCntrl(zone, thermalZone, space, model)
+        
+        # add daylighting controls
+        if zone.daylightCntrlFract != 0:
+            hb_writeOPS.addDaylightCntrl(zone, thermalZone, space, model)
         
         # write the surfaces
         for HBSrf in zone.surfaces:
