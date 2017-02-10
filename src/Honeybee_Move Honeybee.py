@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2017, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools> 
+# Copyright (c) 2013-2017, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools> and Chris Mackey <Chris@MackeyArchitecture.com>
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -27,10 +27,10 @@ Move Honeybee Objects
 Provided by Honeybee 0.0.61
 
     Args:
-        _HBObject: Honeybee surface or Honeybee zone
+        _HBObj: Honeybee surface or Honeybee zone
         _vector: Transform vector
     Returns:
-        HBObjs: Transformed objects
+        HBObj: Transformed objects
 """
 ghenv.Component.Name = "Honeybee_Move Honeybee"
 ghenv.Component.NickName = 'moveHBObj'

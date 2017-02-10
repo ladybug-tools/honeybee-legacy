@@ -27,20 +27,20 @@ Mirror Honeybee Objects
 Provided by Honeybee 0.0.61
 
     Args:
-        _HBObject: Honeybee surface or Honeybee zone
+        _HBObj: Honeybee surface or Honeybee zone
         _plane: Mirror plane
     Returns:
-        HBObjs: Transformed objects
+        HBObj: Transformed objects
 """
 ghenv.Component.Name = "Honeybee_Mirror Honeybee"
 ghenv.Component.NickName = 'mirrorHBObj'
 ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "13 | WIP"
+ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.57\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
-try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "6"
 except: pass
 
 import scriptcontext as sc

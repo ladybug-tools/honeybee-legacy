@@ -4983,9 +4983,11 @@ class EPZone(object):
         self.illumCntrlSensorPt = rc.Geometry.Point3d(zoneCentPt.X, zoneCentPt.Y, zOfPt)
     
     def transform(self, transform, clearSurfacesBC = True, flip = False):
-        self.name += str(uuid.uuid4())
+        self.name += str(uuid.uuid4())[:8]
         self.geometry.Transform(transform)
         self.cenPt.Transform(transform)
+        if flip == True:
+            self.geometry.Flip()
         for surface in self.surfaces:
             surface.transform(transform, clearSurfacesBC, flip)
     
@@ -6447,7 +6449,7 @@ class hb_EPSurface(object):
         """Transform EPSurface using a transform object
            Transform can be any valid transform object (e.g Translate, Rotate, Mirror)
         """
-        self.name += str(uuid.uuid4())
+        self.name += str(uuid.uuid4())[:8]
         self.geometry.Transform(transform)
         self.meshedFace.Transform(transform)
         # move center point and normal
@@ -6457,10 +6459,8 @@ class hb_EPSurface(object):
         self.basePlane.Transform(transform)
         
         if flip:
-            self.geometry.Flip()
             self.normalVector.Reverse()
-            self.basePlane.Flip()
-
+        
         if clearBC:
             self.setBC("Outdoors", False)
             self.setBCObjectToOutdoors()
@@ -9076,7 +9076,9 @@ if checkIn.letItFly:
                 if os.path.isdir("C:/Program Files/%s/share/openstudio/"%installedOPS[0] + "EnergyPlus" + versStr + "/"):
                     folders.EPPath = "C:/Program Files/%s/share/openstudio/"%installedOPS[0] + "EnergyPlus" + versStr
                     EPVersion = EPVers
-                    
+                elif os.path.isdir("C:/Program Files/%s/share/openstudio/"%installedOPS[0] + "EnergyPlus" + EPVers + "/"):
+                    folders.EPPath = "C:/Program Files/%s/share/openstudio/"%installedOPS[0] + "EnergyPlus" + EPVers
+                    EPVersion = EPVers
             if os.path.isdir(openStudioLibFolder) and os.path.isfile(os.path.join(openStudioLibFolder, "openStudio.dll")):
                 # openstudio is there and we are good to go.
                 # add folders to path.

@@ -1,17 +1,24 @@
-ghenv.Component.Name = "Honeybee_Scale Honeybee"
-ghenv.Component.NickName = 'scaleHBObj'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
-ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
-ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "13 | WIP"
-#compatibleHBVersion = VER 0.0.57\nNOV_04_2016
-#compatibleLBVersion = VER 0.0.59\nFEB_01_2015
-try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
-except: pass
+#
+# Honeybee: A Plugin for Environmental Analysis (GPL) started by Mostapha Sadeghipour Roudsari
+# 
+# This file is part of Honeybee.
+# 
+# Copyright (c) 2013-2017, Chris Mackey <Chris@MackeyArchitecture.com>
+# Honeybee is free software; you can redistribute it and/or modify 
+# it under the terms of the GNU General Public License as published 
+# by the Free Software Foundation; either version 3 of the License, 
+# or (at your option) any later version. 
+# 
+# Honeybee is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of 
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with Honeybee; If not, see <http://www.gnu.org/licenses/>.
+# 
+# @license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
 
-import scriptcontext as sc
-import uuid
-import Rhino as rc
 
 """
 Scale Honeybee Objects Non-Uniformly
@@ -19,13 +26,29 @@ Scale Honeybee Objects Non-Uniformly
 Provided by Honeybee 0.0.61
     Args:
         _HBObj: Honeybee surface or Honeybee zone
-        P: Base Plane
-        X: Scaling factor in {x} direction
-        Y: Scaling factor in {y} direction
-        Z: Scaling factor in {z} direction
+        _plane_: Base Plane
+        _X_: Scaling factor in {x} direction
+        _Y_: Scaling factor in {y} direction
+        _Z_: Scaling factor in {z} direction
     Returns:
-        HBObjs: Transformed objects
+        HBObj: Transformed objects
 """
+
+
+ghenv.Component.Name = "Honeybee_Scale Honeybee"
+ghenv.Component.NickName = 'scaleHBObj'
+ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
+ghenv.Component.Category = "Honeybee"
+ghenv.Component.SubCategory = "00 | Honeybee"
+#compatibleHBVersion = VER 0.0.57\nNOV_04_2016
+#compatibleLBVersion = VER 0.0.59\nFEB_01_2015
+try: ghenv.Component.AdditionalHelpFromDocStrings = "6"
+except: pass
+
+import scriptcontext as sc
+import uuid
+import Rhino as rc
 
 
 def main(HBObj, P,X,Y,Z):
@@ -57,35 +80,24 @@ def main(HBObj, P,X,Y,Z):
         raise TypeError("Wrong input type for _HBObj. Connect a Honeybee Surface or a HoneybeeZone to HBObject input")
     
     if not P:
-        
-        P = rc.Geometry.Plane(rc.Geometry.Point3d(0,0,0),rc.Geometry.Vector3d(0,0,1))
-        
+        P = rc.Geometry.Plane(rc.Geometry.Plane.WorldXY)
     if not X:
-        
         X = 1
-        
     if not Y:
-        
         Y = 1
-        
     if not Z:
-        
         Z = 1
     
     # create a NU scale
-    
     NUscale = rc.Geometry.Transform.Scale(P,X,Y,Z)
-    
-    #transform = rc.Geometry.Transform.Rotation(3.14, rc.Geometry.Vector3d.ZAxis, rc.Geometry.Point3d.Origin)
-    
     HBObject.transform(NUscale)
-    
     HBObj = hb_hive.addToHoneybeeHive([HBObject], ghenv.Component)
-
-    return HBObj
     
+    return HBObj
+
+
 if _HBObj:
-    result = main(_HBObj, P,X,Y,Z)
+    result = main(_HBObj, _plane_, _X_, _Y_, _Z_)
     
     if result!=-1:
         HBObj = result
