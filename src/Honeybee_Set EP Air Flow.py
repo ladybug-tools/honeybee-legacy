@@ -325,21 +325,20 @@ def setDefaults(natVentMethod):
             else: checkData21, fanFlowRate = False, None
             checkData22, fanEfficiency = checkWithHBZone(fanEfficiency_, "fanEfficiency_")
             checkData23 = checkRange(fanEfficiency, 0, 1)
-            checkData24, fanPressureRise = checkWithHBZone([fanPressureRise_], "fanPressureRise_")
+            fanPressureRise = fanPressureRise_
         except:
             checkData21, fanFlowRate = False, None
             checkData22, fanEfficiency = False, None
             checkData23 = False
-            checkData24, fanPressureRise = False, None
+            fanPressureRise = None
     else:
         checkData21, fanFlowRate = True, None
         checkData22, fanEfficiency = True, None
         checkData23 = True
-        checkData24, fanPressureRise = True, None
     
     #Check to be sure all is ok.
     checkData = False
-    if checkData1 == True and checkData2 == True and checkData3 == True and checkData4 == True and checkData5 == True and checkData6 == True and checkData7 == True and checkData8 == True and checkData9 == True and checkData10 == True and checkData11 == True and checkData12 == True and checkData13 == True and checkData14 == True and checkData17 == True and checkData18 == True and checkData19 == True and checkData20 == True and checkData21 == True and checkData22 == True and checkData23 == True and checkData24 == True and checkData25 == True and checkData26 == True:
+    if checkData1 == True and checkData2 == True and checkData3 == True and checkData4 == True and checkData5 == True and checkData6 == True and checkData7 == True and checkData8 == True and checkData9 == True and checkData10 == True and checkData11 == True and checkData12 == True and checkData13 == True and checkData14 == True and checkData17 == True and checkData18 == True and checkData19 == True and checkData20 == True and checkData21 == True and checkData22 == True and checkData23 == True and checkData25 == True and checkData26 == True:
         checkData = True
     
     return checkData, interZoneFlow, interZoneFlowSched, minIndoorTemp, maxIndoorTemp, minOutdoorTemp, maxOutdoorTemp, windDisCoeff, stackDisCoeff, fractionOfArea, fractionOfHeight, areaSched, effectiveArea, inletOutletHeight, fanFlowRate, fanEfficiency, fanPressureRise, windowAngle2North
@@ -603,7 +602,7 @@ def main(HBZones, natVentMethod, interZoneFlow, interZoneFlowSched, minIndoorTem
                 HBZone.FanEfficiency.append(fanEff)
                 
                 #Assign the fan pressure rise.
-                if fanPressureRise == []: fanPress = "70"
+                if fanPressureRise == None: fanPress = "70"
                 else: fanPress = str(fanPressureRise[zoneCount])
                 HBZone.FanPressure.append(fanPress)
                 
