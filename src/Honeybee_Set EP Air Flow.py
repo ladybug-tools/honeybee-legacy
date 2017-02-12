@@ -335,6 +335,7 @@ def setDefaults(natVentMethod):
         checkData21, fanFlowRate = True, None
         checkData22, fanEfficiency = True, None
         checkData23 = True
+        fanPressureRise = None
     
     #Check to be sure all is ok.
     checkData = False
