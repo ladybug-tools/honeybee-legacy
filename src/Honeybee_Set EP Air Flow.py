@@ -506,7 +506,7 @@ def main(HBZones, natVentMethod, interZoneFlow, interZoneFlowSched, minIndoorTem
                                 windDis = "autocalculate"
                             else:
                                 windDis = "0"
-                        elif einDisCoeff == 1:
+                        elif windDisCoeff == 1:
                             windDis = "autocalculate"
                         else:
                             windDis = "0"
