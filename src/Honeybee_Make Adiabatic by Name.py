@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2017, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools> 
+# Copyright (c) 2013-2017, Mingbo Peng <mpen@mpenDesign.com>
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -45,7 +45,6 @@ try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
 
 import scriptcontext as sc
-import uuid
 import Grasshopper.Kernel as gh
 
 def main(HBObjs,nameList):
@@ -79,7 +78,7 @@ def main(HBObjs,nameList):
                 if HBS.name in nameList:
                     HBS.BC = "Adiabatic"
         else:
-            if HBO.name in byName:
+            if HBO.name in nameList:
                 HBS.BC = "Adiabatic"
         
     
