@@ -55,7 +55,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.61\nFEB_15_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -407,8 +407,8 @@ if _resultFileAddress and gotData == True and csvExists == True:
                             zoneName = checkZoneSys(" " + ":".join(column.split(" FAN:")[:-1]).split('ZONE HVAC TERMINAL UNIT VARIABLE REFRIGERANT FLOW ')[-1])
                             makeHeader(fanElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Fan Electric Energy", energyUnit, False)
                         elif 'Zone Ventilation Fan Electric Energy' in column:
-                            zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
-                            makeHeader(fanElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Fan Electric Energy", energyUnit, False)
+                            zoneName = checkZoneOther(dataIndex, " " + ":".join(column.split(":")[:-1]))
+                            makeHeaderAlt(fanElectric, path[columnCount], zoneName, column.split('(')[-1].split(')')[0], "Fan Electric Energy", energyUnit, False)
                         elif 'Earth Tube Fan Electric Energy' in column:
                             zoneName = checkZoneOther(dataIndex, " " + ":".join(column.split(":")[:-1]))
                             makeHeaderAlt(fanElectric, path[columnCount], zoneName, column.split('(')[-1].split(')')[0], "Earth Tube Fan Electric Energy", energyUnit, False)
@@ -674,7 +674,6 @@ if _resultFileAddress and gotData == True and csvExists == True:
                   'If you report this bug of reading the output on the GH forums, we should be able to fix this component to accept the output soon.'
         print warn
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warn)
-
 
 
 #Construct the total energy and energy balance outputs.  Also, construct the total solar and operative temperature outputs
