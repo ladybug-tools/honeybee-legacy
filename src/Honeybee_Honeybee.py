@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.61\nFEB_16_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -1690,9 +1690,10 @@ class hb_WriteRAD(object):
                         if srf.hasChild:
                             # collect the custom material informations
                             for childSrf in srf.childSrfs:
+                                
                                 if childSrf.RadMaterial!=None:
                                     customRADMat, customMixFunRadMat = self.hb_RADMaterialAUX.addRADMatToDocumentDict(childSrf, customRADMat, customMixFunRadMat)
-                                    
+                            
                             if not srf.isPlanar or len(srf.childSrfs) > 1:
                                 geoRadFile.write(self.RADNonPlanarChildSurface(srf))
                             
@@ -2396,6 +2397,7 @@ class hb_WriteRAD(object):
     def getsurfaceStr(self, surface, count, coordinates):
         if surface.RadMaterial != None:
             surface.construction = surface.RadMaterial
+        
         elif not hasattr(surface, 'construction'):
             
             if not hasattr(surface, 'type'):
@@ -2439,7 +2441,7 @@ class hb_WriteRAD(object):
                     glzCoordinateLists = surface.extractGlzPoints(True)
                     for glzCount, glzCoorList in enumerate(glzCoordinateLists):
                         # glazingStr
-                        fullStr = fullStr + self.getsurfaceStr(surface.childSrfs[0], glzCount, glzCoorList)
+                        fullStr = fullStr + self.getsurfaceStr(surface.childSrfs[glzCount], glzCount, glzCoorList)
                         
                         # shift glazing list
                         glzCoorList = self.shiftList(glzCoorList)
@@ -2491,7 +2493,7 @@ class hb_WriteRAD(object):
             coordinatesList = [coordinatesList]
         for glzCount, glzCoorList in enumerate(coordinatesList):
             # glazingStr
-            fullStr = fullStr + self.getsurfaceStr(surface.childSrfs[0], glzCount, glzCoorList)
+            fullStr = fullStr + self.getsurfaceStr(surface.childSrfs[glzCount], glzCount, glzCoorList)
         return fullStr
 
 class hb_WriteRADAUX(object):
