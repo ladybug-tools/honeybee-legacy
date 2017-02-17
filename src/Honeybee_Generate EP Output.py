@@ -37,6 +37,7 @@ Provided by Honeybee 0.0.61
         surfaceTempAnalysis_: Set to "True" to have EnergyPlus solve for the interior and exterior surface temperatures of the individual surfaces of each zone.
         surfaceEnergyAnalysis_: Set to "True" to have EnergyPlus solve for the gains and losses through the individual surfaces of each zone.
         glazingSolarAnalysis_: Set to "True" to have EnergyPlus solve for the transmitted beam, diffuse, and total solar gain through the individual window surfaces of each zone.  These outputs are needed for Energy Shade Benefit Analysis.
+        summaryReports_:Set to "True" to have EnergyPlus generate an "Annual Building Utility Performance Summary" in SI unit. By default, it is set to "True". Set it to 2 if you need an IP format report.
         timestep_: Specify a timestep by inputing the words 'hourly', 'daily', 'monthly' or 'annual'.  The default is set to hourly.
     Returns:
         report: Report!
@@ -45,7 +46,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Generate EP Output"
 ghenv.Component.NickName = 'EPOutput'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.61\nFEB_17_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -61,12 +62,20 @@ import Grasshopper.Kernel as gh
 
 
 
-def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, zoneHVACMetrics, surfaceTempAnalysis, surfaceEnergyAnalysis, glazingSolarAnalysis, timestep):
+def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, zoneHVACMetrics, surfaceTempAnalysis, surfaceEnergyAnalysis, glazingSolarAnalysis,summaryReports, timestep):
     simulationOutputs = []
     timePeriod = timestep + ";"
     
-    simulationOutputs.append("OutputControl:Table:Style,Comma;")
-    
+    if summaryReports == True:
+        simulationOutputs.append("OutputControl:Table:Style,CommaAndHTML,JtoKWH;")
+        simulationOutputs.append("Output:Table:SummaryReports,AllSummary;")
+    elif summaryReports == 2:
+        simulationOutputs.append("OutputControl:Table:Style,CommaAndHTML,InchPound;")
+        simulationOutputs.append("Output:Table:SummaryReports,AllSummary;")
+    else:
+        simulationOutputs.append("OutputControl:Table:Style,Comma;")
+
+
     if zoneEnergyUse == True:
         simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Supply Air Total Cooling Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Cooling Coil Electric Energy, " + timePeriod)
@@ -156,5 +165,5 @@ except:
 
 #Generate the simulation outputs if the above checks are sucessful.
 if initCheck == True:
-    simulationOutputs = main(zoneEnergyUse_, zoneGainsAndLosses_, zoneComfortMetrics_, zoneHVACParams_, surfaceTempAnalysis_, surfaceEnergyAnalysis_, glazingSolarAnalysis_, timestep_)
+    simulationOutputs = main(zoneEnergyUse_, zoneGainsAndLosses_, zoneComfortMetrics_, zoneHVACParams_, surfaceTempAnalysis_, surfaceEnergyAnalysis_, glazingSolarAnalysis_,summaryReports_, timestep_)
     print "Simulation outputs generated successfully!"

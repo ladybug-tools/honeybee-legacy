@@ -55,12 +55,13 @@ Provided by Honeybee 0.0.61
     Returns:
         report: Check here to see a report of the EnergyPlus run, including errors.
         idfFileAddress: The file path of the IDF file that has been generated on your machine.
+        performanceSummary: The Html file path of the Building Utility Performance Summar. You can review the report by copying the file path, and open it in your web browser.
         resultFileAddress: The file path of the CSV result file that has been generated on your machine.  This only happens when you set "runEnergyPlus_" to "True."
         studyFolder: The directory in which the simulation has been run.  Connect this to the 'Honeybee_Lookup EnergyPlus' folder to bring many of the files in this directory into Grasshopper.
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.61\nFEB_17_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -2335,12 +2336,14 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     
     ######################## RUN ENERGYPLUS SIMULATION #######################
     resultFileFullName = None
+    performanceSummaryReport= None;
     studyFolder = None
     if runEnergyPlus:
         print "Analysis is running!..."
         # write the batch file
         hb_runIDF.writeBatchFile(workingDir, idfFileName, epwFileAddress, sc.sticky["honeybee_folders"]["EPPath"], runEnergyPlus > 1)
         resultFileFullName = idfFileFullName.replace('.idf', '.csv')
+        performanceSummaryReport = idfFileFullName.replace('.idf', 'Table.html');
         studyFolder = originalWorkingDir
         try:
             test = open(workingDir + '\eplusout.csv', 'r')
@@ -2352,7 +2355,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     else:
         print "Set runEnergyPlus to True!"
         
-    return idfFileFullName, resultFileFullName, studyFolder
+    return idfFileFullName, resultFileFullName, performanceSummaryReport,studyFolder
 
 
 if _writeIdf == True and _epwFile and _HBZones and _HBZones[0]!=None:
@@ -2361,7 +2364,7 @@ if _writeIdf == True and _epwFile and _HBZones and _HBZones[0]!=None:
                   HBContext_, simulationOutputs_, _writeIdf, runEnergyPlus_,
                   _workingDir_, _idfFileName_, meshSettings_)
     if result!= -1:
-        idfFileAddress, resultFileAddress, studyFolder = result
+        idfFileAddress, resultFileAddress,performanceSummary, studyFolder = result
         if runEnergyPlus_:
             try:
                 errorFileFullName = idfFileAddress.replace('.idf', '.err')
