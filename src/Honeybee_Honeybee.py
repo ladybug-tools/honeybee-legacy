@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_16_2017'
+ghenv.Component.Message = 'VER 0.0.61\nFEB_27_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -3300,6 +3300,7 @@ class hb_WriteDS(object):
                 # advanced dynamic shading
                 glareControlRecipe = shadingRecipe.glareControlR
                 shadingStates = shadingRecipe.shadingStates
+                stateCount = len(tuple(s for s in shadingStates if s is not None))
                 controlSystem = shadingRecipe.controlSystem
                 # sensors = shadingRecipe.sensorPts #sensors are removed from this part and will be added later for the analysis
                 coolingPeriod = shadingRecipe.coolingPeriod
@@ -3310,7 +3311,7 @@ class hb_WriteDS(object):
                 
                 if controlSystem == "ManualControl":
                     dynamicShd += groupName + '\n' + \
-                                  str(len(shadingStates)-1) + '\n' + \
+                                  str(stateCount) + '\n' + \
                                   "ManualControl " + subWorkingDir + "\\" + groupName + "_state_1.rad\n"
                     
                     for stateCount in range(1, len(shadingStates)):
@@ -3336,7 +3337,7 @@ class hb_WriteDS(object):
                     
                     if controlSystem == "AutomatedThermalControl":
                         dynamicShd += groupName + '\n' + \
-                                  str(len(shadingStates)-1) + '\n' + \
+                                  str(stateCount) + '\n' + \
                                   "AutomatedThermalControl " + subWorkingDir + "\\" + groupName + "_state_1.rad\n"
                         
                         for stateCount, shadingState in enumerate(shadingStates):
@@ -3351,7 +3352,7 @@ class hb_WriteDS(object):
                     
                     elif controlSystem == "AutomatedThermalControlWithOccupancy":
                         dynamicShd += groupName + '\n' + \
-                                  str(len(shadingStates)-1) + '\n' + \
+                                  str(stateCount) + '\n' + \
                                   "AutomatedThermalControlWithOccupancy " + \
                                   `stMonth` + " " + `stDay` + " " + `endMonth` + " " + `endDay` + " " + \
                                   subWorkingDir + "\\" + groupName + "_state_1.rad\n"
@@ -3367,7 +3368,7 @@ class hb_WriteDS(object):
                                 
                     elif controlSystem == "AutomatedGlareControl":
                         dynamicShd += groupName + '\n' + \
-                                  str(len(shadingStates)-1) + '\n' + \
+                                  str(stateCount) + '\n' + \
                                   "AutomatedGlareControl \n" + \
                                   `int(threshold)` + " " + `int(minAz)` + " " + `int(maxAz)` + " " + \
                                   `int(minAlt)` + " " + `int(maxAlt)` + " " + subWorkingDir + "\\" + groupName + "_state_1.rad\n"
@@ -3383,7 +3384,7 @@ class hb_WriteDS(object):
                     
                     elif controlSystem == "AutomatedGlareControlWithOccupancy":
                         dynamicShd += groupName + '\n' + \
-                                  str(len(shadingStates)-1) + '\n' + \
+                                  str(stateCount) + '\n' + \
                                   "AutomatedGlareControlWithOccupancy \n" + \
                                   `int(threshold)` + " " + `int(minAz)` + " " + `int(maxAz)` + " " + \
                                   `int(minAlt)` + " " + `int(maxAlt)` + "\n" + \
