@@ -2407,7 +2407,7 @@ class hb_WriteRAD(object):
             #assign the construction based on type
             surface.construction = surface.cnstrSet[surface.type]
             
-        srfStr =  surface.construction.replace(" ", "_") + " polygon " + surface.name + '_' + `count` + "\n" + \
+        srfStr =  surface.construction.replace(" ", "_") + " polygon " + surface.name.strip() + '_' + `count` + "\n" + \
             "0\n" + \
             "0\n" + \
             `(len(coordinates)*3)` + "\n"
@@ -2427,7 +2427,7 @@ class hb_WriteRAD(object):
         return srfStr + ptStr
 
     def RADSurface(self, surface):
-        fullStr = ''
+        fullStr = []
         # base surface coordinates
         coordinatesList = surface.extractPoints(1, True)
         
@@ -2441,21 +2441,21 @@ class hb_WriteRAD(object):
                     glzCoordinateLists = surface.extractGlzPoints(True)
                     for glzCount, glzCoorList in enumerate(glzCoordinateLists):
                         # glazingStr
-                        fullStr = fullStr + self.getsurfaceStr(surface.childSrfs[glzCount], glzCount, glzCoorList)
+                        fullStr.append(self.getsurfaceStr(surface.childSrfs[0], glzCount, glzCoorList))
                         
                         # shift glazing list
                         glzCoorList = self.shiftList(glzCoorList)
                         coordinates.extend(glzCoorList)
                         coordinates.append(glzCoorList[0])
                     coordinates.extend([endCoordinate, coordinates[0]])
-                fullStr = fullStr + self.getsurfaceStr(surface, count, coordinates)
-            return fullStr
+                fullStr.append(self.getsurfaceStr(surface, count, coordinates))
+            return ''.join(fullStr)
         else:
             print "one of the surfaces is not exported correctly"
             return ""
             
     def RADNonPlanarSurface(self, surface):
-        fullStr = ''
+        fullStr = []
         
         # replace the geometry with the punched geometry
         # for planar surfaces with multiple openings
@@ -2475,12 +2475,12 @@ class hb_WriteRAD(object):
             coordinatesList = [coordinatesList]
         for count, coordinates in enumerate(coordinatesList):
             #print count
-            fullStr = fullStr + self.getsurfaceStr(surface, count, coordinates)
+            fullStr.append(self.getsurfaceStr(surface, count, coordinates))
         
-        return fullStr
+        return ''.join(fullStr)
     
     def RADNonPlanarChildSurface(self, surface):
-        fullStr = ''
+        fullStr = []
         
         # I should test this function before the first release!
         # Not sure if it will work for cases generated only by surface
@@ -2492,9 +2492,9 @@ class hb_WriteRAD(object):
         if type(coordinatesList[0])is not list and type(coordinatesList[0]) is not tuple:
             coordinatesList = [coordinatesList]
         for glzCount, glzCoorList in enumerate(coordinatesList):
-            # glazingStr
-            fullStr = fullStr + self.getsurfaceStr(surface.childSrfs[glzCount], glzCount, glzCoorList)
-        return fullStr
+            # glazingStr`
+            fullStr.append(self.getsurfaceStr(surface.childSrfs[0], glzCount, glzCoorList))
+        return ''.join(fullStr)
 
 class hb_WriteRADAUX(object):
     
