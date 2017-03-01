@@ -1073,7 +1073,7 @@ class WriteOPS(object):
         oaReq = space.designSpecificationOutdoorAir()
         airTerminal.setControlForOutdoorAir(oaReq)
     
-    def createPrimaryAirLoop(self, airType, model, thermalZones, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotWaterPlant=None, chilledWaterPlant=None, terminalOption=None, heatRecovOverride = False):
+    def createPrimaryAirLoop(self, airType, model, thermalZones, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotWaterPlant=None, chilledWaterPlant=None, terminalOption=None):
         # Create the air loop.
         airloopPrimary = ops.AirLoopHVAC(model)
         if airType == 'DOAS':
@@ -1214,8 +1214,6 @@ class WriteOPS(object):
         # add erv to outdoor air system either based on user input or add the default AEDG erv.
         if airDetails != None and airDetails.heatRecovery != 'Default' and airDetails.heatRecovery != 'None':
             self.addHeatRecovToModel(model, airloopPrimary, airDetails.heatRecovery, airDetails.recoveryEffectiveness, False, True)
-        elif heatRecovOverride == False:
-            self.addHeatRecovToModel(model, airloopPrimary, 'Enthalpy', 0.75, False, True, 0.69)
         
         # add setpoint manager to supply equipment outlet node
         setpointManager.addToNode(airloopPrimary.supplyOutletNode())
@@ -2394,7 +2392,7 @@ class WriteOPS(object):
                         cndwl = self.createCondenser(model, cwl, HVACCount)
                 
                 #Make a DOAS air loop.
-                airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hwl, cwl, None, True)
+                airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hwl, cwl, None)
                 
                 # If there is a maximum humidity assigned to the zone, set the cooling coil to dehumidify the air.
                 if dehumidTrigger == True:
@@ -3733,7 +3731,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         hb_writeOPS.addDesignDays(model)
     
     # call Honeybee objects from the hive
-    HBZones = hb_hive.callFromHoneybeeHive(HBZones)
+    HBZones = hb_hive.visualizeFromHoneybeeHive(HBZones)
     
     reEvaluate = hb_reEvaluateHBZones(HBZones, None, "UpperLeftCorner")
     reEvaluate.evaluateZones()
