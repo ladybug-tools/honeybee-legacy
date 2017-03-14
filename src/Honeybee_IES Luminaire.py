@@ -615,12 +615,12 @@ def transformGeometry(geometry,spin,tilt,rotate,transform,mul):
         Utility function for transforming all the drawn objects.
         This function will be used to spin,tilt,rotate,transform and scale luminaireWeb, Axes and Luminaire Polygons.
     """
-
+    
     geometry = copy.deepcopy(geometry)
     normVector = rc.Geometry.Vector3d(0,0,1)
     xyPlane = rc.Geometry.Plane(rc.Geometry.Point3d(0,0,0),normVector)
     point3d = rc.Geometry.Point3d(0,0,0)
-    
+
     #Scale first.
     scaling = rc.Geometry.Transform.Scale(xyPlane,mul,mul,mul)
     geometry.Transform(scaling)
