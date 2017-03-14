@@ -82,7 +82,7 @@ from __future__ import division
 
 ghenv.Component.Name = "Honeybee_IES Luminaire"
 ghenv.Component.NickName = 'iesLuminaire'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.61\nMAR_14_2017'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "02 | Daylight | Light Source"
 #compatibleHBVersion = VER 0.0.56\nJUL_01_2016
@@ -186,6 +186,7 @@ class Luminaire:
                
            #Check the luminous dimensions. Throw an exception if they aren't round or rectangular.
            width,length,height = self.width,self.length,self.height
+           
            luminousDim = ''
            if round(width,2) == 0 and round(length,2) == 0 and round(height,2) == 0:
                luminousDim = "{0},{1},{2}.\n(The luminous opening is a point source. The IES data might be for a lamp)".format(width,length,height) 
@@ -217,6 +218,8 @@ class Luminaire:
                luminousDim = "{0},{1},{2}.\n(The luminous opening is a vertical circle. {3} is the diameter of the luminous opening)".format(width,length,height,abs(width))
            elif width < 0 and round(length) == 0 and height < 0 and round(width,2) != round(height,2):
                luminousDim = "{0},{1},{2}.\n(The luminous opening is a vertical ellipse. {3} and {4} are the major/minor axes of the luminous opening)".format(width,length,height,abs(width),abs(height)) 
+           elif width <0 and length == 0 and height == 0:
+               luminousDim = "{0},{1},{2}.\n(The luminous opening is circular. {3} is the diameter of the luminous opening)".format(width,length,height,abs(width)) 
            else:
                luminousDim = "{0},{1},{2}.\n(The luminous opening is unidentified)".format(width,length,height) 
                warning = "The luminous dimensions for the specfied luminaire are ({0},{1},{2}). These are not recognized.\n" \
@@ -414,13 +417,13 @@ def makeLum(fileName,_customLumName_):
 #Create a polygon,circle or box to be drawn as a luminaire represenation in the Rhino ViewPort.
 def createLumPoly(Luminaire):
     """
-        Draw a rectangle or circle in the Rhino viewport. The rectanlge/circle corresponds to the luminous dimensions of the luminaire.
+        Draw the luminaire geomtery in the Rhino viewport. The geomtery corresponds to the luminous dimensions of the luminaire.
     """
     
     #Honeybee units are meters. So convert the rect/circle according the IES units to meters..
     fileUnit = {1:0.304,2:1}[Luminaire.unitType]
     width,length,height = fileUnit*Luminaire.width,fileUnit*Luminaire.length,fileUnit*Luminaire.height
-    
+
     xyPlane = rc.Geometry.Plane.WorldXY
     point3d = rc.Geometry.Point3d.Origin
     LumPoly = point3d
@@ -444,7 +447,10 @@ def createLumPoly(Luminaire):
     elif width <0 and length < 0 and round(length,2) == round(width,2) and round(height,2)==0:
         LumCirc = rc.Geometry.Circle(xyPlane,point3d,abs(-width/2)).ToNurbsCurve()
         LumPoly = rc.Geometry.Brep.CreatePlanarBreps([LumCirc])[0]
-    # Implies that the luminous opening is an ellipse. 
+    elif width <0 and round(length,2)==0 and round(height,2)==0:
+        LumCirc = rc.Geometry.Circle(xyPlane,point3d,abs(-width/2)).ToNurbsCurve()
+        LumPoly = rc.Geometry.Brep.CreatePlanarBreps([LumCirc])[0]
+    # Implies that the luminous opening is an ellipse.
     elif width <0 and length < 0 and round(length,2) != round(width,2) and round(height,2)==0:
         LumEllip = rc.Geometry.Ellipse(xyPlane,abs(-width/2),abs(-length/2)).ToNurbsCurve()
         LumPoly = rc.Geometry.Brep.CreatePlanarBreps([LumEllip])[0]
@@ -510,7 +516,7 @@ def createLumWeb(Luminaire):
     fileUnit = {1:0.304,2:1}[Luminaire.unitType]
     candelas,vert,horz = Luminaire.candelaValues,Luminaire.arrVertAng,Luminaire.arrHorzAng
     width,length,height = fileUnit*Luminaire.width,fileUnit*Luminaire.length,fileUnit*Luminaire.height
-   
+    
     mul3d = max((abs(width),abs(length)))
     
     counter = 0
@@ -581,6 +587,7 @@ def createLumWeb(Luminaire):
 
     curveobjectlist = [curvelist[idx:idx+2]for idx in range(len(curvelist)-1)]
     LumWeb=map(rc.Geometry.Brep.CreateEdgeSurface,curveobjectlist)
+    
     return LumWeb
 
 
@@ -595,10 +602,10 @@ def createLumAxes(Luminaire):
     #In case the luminaire is circular, then length will be zero and width will be negative.
     if (not length) and width <0:
         length = abs(width)
-
+    
     horzAxis = rc.Geometry.Line(rc.Geometry.Point3d(0,0,0),rc.Geometry.Point3d(1.2*length/2,0,0))
     vertAxis = rc.Geometry.Line(rc.Geometry.Point3d(0,0,0),rc.Geometry.Point3d(0,0,-2*length/2))
-
+    
     return [horzAxis,vertAxis]
 
 
@@ -608,7 +615,7 @@ def transformGeometry(geometry,spin,tilt,rotate,transform,mul):
         Utility function for transforming all the drawn objects.
         This function will be used to spin,tilt,rotate,transform and scale luminaireWeb, Axes and Luminaire Polygons.
     """
-    
+
     geometry = copy.deepcopy(geometry)
     normVector = rc.Geometry.Vector3d(0,0,1)
     xyPlane = rc.Geometry.Plane(rc.Geometry.Point3d(0,0,0),normVector)
