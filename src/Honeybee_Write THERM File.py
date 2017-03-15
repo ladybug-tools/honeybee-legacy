@@ -51,7 +51,7 @@ import decimal
 
 ghenv.Component.Name = 'Honeybee_Write THERM File'
 ghenv.Component.NickName = 'writeTHERM'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.61\nMAR_14_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -103,8 +103,8 @@ def checkTheInputs():
     # Call the polygons from the hive.
     hb_hive = sc.sticky["honeybee_Hive"]()
     try:
-        thermPolygons = hb_hive.callFromHoneybeeHive(_polygons)
-        thermBCs = hb_hive.callFromHoneybeeHive(boundaries_)
+        thermPolygons = hb_hive.visualizeFromHoneybeeHive(_polygons)
+        thermBCs = hb_hive.visualizeFromHoneybeeHive(boundaries_)
     except:
         warning = "Failed to call _polygons and boundaries_ from the HB Hive. \n Make sure that connected geometry to _polygons is from the 'Create Therm Polygons' component \n and that geometry to boundaries_ is from the 'Create Therm Boundaries' component."
         print warning
