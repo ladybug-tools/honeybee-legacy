@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_27_2017'
+ghenv.Component.Message = 'VER 0.0.61\nMAR_14_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -8221,7 +8221,7 @@ class hb_Hive(object):
                     print `e`
                     print "Failed to copy the object. Returning the original objects...\n" +\
                     "This can cause strange behaviour!"
-                    HBObjects.append(sc.sticky['HBHive'][key])
+                    HBObjects.append(sc.sticky['HBHive'][baseKey][key])
             else:
                 raise Exception('HoneybeeKeyMismatch: Failed to call the object from Honeybee hive.')
                 
