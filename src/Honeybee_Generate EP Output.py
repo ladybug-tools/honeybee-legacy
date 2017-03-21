@@ -61,7 +61,7 @@ import Grasshopper.Kernel as gh
 
 
 
-def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, zoneHVACMetrics, surfaceTempAnalysis, surfaceEnergyAnalysis, glazingSolarAnalysis,summaryReports, timestep):
+def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, zoneHVACMetrics, surfaceTempAnalysis, surfaceEnergyAnalysis, glazingSolarAnalysis, timestep):
     simulationOutputs = []
     timePeriod = timestep + ";"
     simulationOutputs.append("OutputControl:Table:Style,Comma;")
@@ -155,5 +155,5 @@ except:
 
 #Generate the simulation outputs if the above checks are sucessful.
 if initCheck == True:
-    simulationOutputs = main(zoneEnergyUse_, zoneGainsAndLosses_, zoneComfortMetrics_, zoneHVACParams_, surfaceTempAnalysis_, surfaceEnergyAnalysis_, glazingSolarAnalysis_,summaryReports_, timestep_)
+    simulationOutputs = main(zoneEnergyUse_, zoneGainsAndLosses_, zoneComfortMetrics_, zoneHVACParams_, surfaceTempAnalysis_, surfaceEnergyAnalysis_, glazingSolarAnalysis_, timestep_)
     print "Simulation outputs generated successfully!"
