@@ -69,7 +69,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.61\nMAR_21_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -3608,7 +3608,7 @@ class RunOPS(object):
         else:
             os.system(batchFileAddress)
         
-        return fullPath + "Zsz.csv",fullPath+".sql",fullPath+".csv", fullPath+".rdd", fullPath+".eio"
+        return fullPath + "Zsz.csv",fullPath+".sql",fullPath+".csv", fullPath+".rdd", fullPath+".eio", fullPath+"Table.html"
     
     def runCmd(self, batchFileAddress, shellKey = True):
         batchFileAddress.replace("\\", "/")
@@ -3918,10 +3918,10 @@ if _HBZones and _HBZones[0]!=None and _epwWeatherFile and _writeOSM and openStud
     if results!=-1:
         osmFileAddress, idfFileAddress, resultsFiles, studyFolder, model = results
         try:
-            
-            resultsFileAddress = resultsFiles[2]
+            resultFileAddress = resultsFiles[2]
             eioFileAddress = resultsFiles[4]
             rddFileAddress = resultsFiles[3]
             sqlFileAddress = resultsFiles[1]
             meterFileAddress = resultsFiles[0]
-        except: resultsFileAddress = resultsFiles
+            htmlReport = resultsFiles[5]
+        except: resultFileAddress = resultsFiles

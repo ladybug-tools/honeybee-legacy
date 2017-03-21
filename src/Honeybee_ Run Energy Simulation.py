@@ -61,7 +61,7 @@ Provided by Honeybee 0.0.61
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_17_2017'
+ghenv.Component.Message = 'VER 0.0.61\nMAR_21_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -2312,7 +2312,9 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     if simulationOutputs:
         print "[8 of 8] Writing outputs..."
         idfFile.write('\n')
-        for line in simulationOutputs:
+        idfFile.write("OutputControl:Table:Style,CommaAndHTML,JtoKWH;")
+        idfFile.write("Output:Table:SummaryReports,AllSummary;")
+        for line in simulationOutputs[1:]:
             idfFile.write(line + '\n')
             
     else:
@@ -2364,7 +2366,7 @@ if _writeIdf == True and _epwFile and _HBZones and _HBZones[0]!=None:
                   HBContext_, simulationOutputs_, _writeIdf, runEnergyPlus_,
                   _workingDir_, _idfFileName_, meshSettings_)
     if result!= -1:
-        idfFileAddress, resultFileAddress,performanceSummary, studyFolder = result
+        idfFileAddress, resultFileAddress, htmlReport, studyFolder = result
         if runEnergyPlus_:
             try:
                 errorFileFullName = idfFileAddress.replace('.idf', '.err')
