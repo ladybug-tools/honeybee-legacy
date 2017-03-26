@@ -112,7 +112,7 @@ Provided by Honeybee 0.0.61
 """
 
 ghenv.Component.Name = "Honeybee_AddEarthtube"
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.61\nMAR_25_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP" #"08 | Energy | Set Zone Properties"
@@ -128,6 +128,7 @@ import Grasshopper
 import os
 import rhinoscriptsyntax as rs
 import itertools
+import subprocess
 
 
 readmedatatree = Grasshopper.DataTree[object]()
@@ -367,43 +368,19 @@ def main(_HBZones,schedules_,_designFlowrates,_mincoolingTemps_,_maxheatingTemps
             phaseconstant: Phase Constant of Soil Surface Temperature
         """
         
-        EPfolder = sc.sticky["honeybee_folders"]["EPPath"] 
-        
+        PfolderE = sc.sticky["honeybee_folders"]["EPPath"] 
+
         # The process for creating the wrapper is below
-        
-        os.chdir(EPfolder +"\PreProcess\CalcSoilSurfTemp")
-        
-        # 1. Write _soilCondition_ and _conditionGroundSurface_ to a text file so it can be read by the command line
-        # Create EnergyPlus file path
-        
-        auxfilepath = EPfolder +"PreProcess\CalcSoilSurfTemp"
-        filePath = os.path.join(auxfilepath,"exeinputs.txt")
-        fileWrite = open(filePath,"w")
-        
-        # Write _soilCondition_ and _conditionGroundSurface_ to a text file
-        
-        fileWrite.write(str(_soilCondition_) + "\n"+ str(_conditionGroundSurface_))
-        
-        fileWrite.close()
-        
-        # The EnergyPlus auxilary CalcSoilSurfTemp.exe takes EnergyPlus weather data epw as an arguement 
+        #os.chdir(os.path.join(PfolderE,'PreProcess','CalcSoilSurfTemp').replace("/","\\"))
         
         epwFile = _epwFile
         
-        # 2. A bat file is needed to open the exe give the epw as an arguement and feed the exe 
-        #the keystrokes _soilCondition_ and _conditionGroundSurface_ 
+        exePath = os.path.join(PfolderE,'PreProcess','CalcSoilSurfTemp','CalcSoilSurfTemp.exe ').replace("/","\\")
+        auxfilepath = os.path.join(PfolderE,"PreProcess","CalcSoilSurfTemp").replace("/","\\")
         
-        filePath1 = os.path.join(auxfilepath,"runwrapper.bat")
+        process = subprocess.Popen(exePath+' '+epwFile,stdin=subprocess.PIPE)
         
-        fileWrite1 = open(filePath1,"w")
-        
-        fileWrite1.write(EPfolder+"PreProcess\CalcSoilSurfTemp\CalcSoilSurfTemp.exe "+ epwFile +" < "+EPfolder+"PreProcess\CalcSoilSurfTemp\exeinputs.txt")
-        
-        fileWrite1.close()
-        
-        # Run the batch script
-        
-        os.system(filePath1)
+        process.communicate(input = str(_soilCondition_)+'\n'+str(_conditionGroundSurface_))
         
         def rchop(thestring, ending):
             return thestring[len(ending):]
@@ -426,12 +403,6 @@ def main(_HBZones,schedules_,_designFlowrates,_mincoolingTemps_,_maxheatingTemps
             
         calcsoilsurftempout.close()
             
-        # Delete the bat and textfile
-        
-        os.remove(filePath)
-        
-        #os.remove(filePath2) # XXX should delete bat file but not working???
-        
         return annav,amp,phaseconstant
             
     # Create a wrapper for the EnergyPlus auxilary CalcSoilSurfTemp.exe
@@ -573,7 +544,7 @@ def main(_HBZones,schedules_,_designFlowrates,_mincoolingTemps_,_maxheatingTemps
         
     # Add modified zones to dictionary
 
-    ModifiedHBZones = hb_hive.addToHoneybeeHive(HBObjectsFromHive, ghenv.Component4)
+    ModifiedHBZones = hb_hive.addToHoneybeeHive(HBObjectsFromHive, ghenv.Component)
     
     return ModifiedHBZones
     
