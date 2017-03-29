@@ -69,7 +69,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.61\nMAR_25_2017'
+ghenv.Component.Message = 'VER 0.0.61\nMAR_29_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -2288,12 +2288,16 @@ class WriteOPS(object):
                         self.updateElectricHeatingCoil(model, hc, heatingDetails.heatingAvailSched, heatingDetails.heatingEffOrCOP)
             
             elif systemIndex == 11 or systemIndex == 12 or systemIndex == 13 or systemIndex == 15:
-                # Check to see if there is humidity control on any of the zones.
+                # Check to see if there is humidity control on any of the zones and make sure there is ventilation demand.
+                totalAirFlowRates = []
                 for zone in hbZones:
                     if zone.humidityMax != '':
                         dehumidTrigger = True
                     if zone.humidityMin != '':
                         humidTrigger = True
+                    
+                    zoneTotAir = self.getZoneTotalAir(zone)
+                    totalAirFlowRates.append(zoneTotAir)
                 
                 # Create the hot water plant.
                 if heatingDetails != None and heatingDetails.supplyTemperature != 'Default':
@@ -2331,30 +2335,33 @@ class WriteOPS(object):
                 if chillType == "WaterCooled":
                     cndwl = self.createCondenser(model, cwl, HVACCount)
                 
-                # Create air loop.
-                if systemIndex == 11:
-                    airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hwl, cwl)
-                elif systemIndex == 12:
-                    airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hwl, cwl, "ChilledBeam")
-                elif systemIndex == 13 or systemIndex == 15:
-                    hotterLoopTemp = self.createConstantScheduleRuleset('Hot_Water_Temperature' + str(HVACCount), 'Hot_Water_Temperature_Default' + str(HVACCount), 'TEMPERATURE', 67, model)
-                    hotwl = self.createHotWaterPlant(model, hotterLoopTemp, heatingDetails, HVACCount)
-                    if systemIndex == 13:
-                        if dehumidTrigger == True:
-                            coolerLoopTemp = self.createConstantScheduleRuleset('Chilled_Water_Temperature' + str(HVACCount), 'Chilled_Water_Temperature_Default' + str(HVACCount), 'TEMPERATURE', 6.7, model)
-                            coolwl = self.createChilledWaterPlant(model, coolerLoopTemp, coolingDetails, HVACCount, chillType)
-                            airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotwl, coolwl)
-                        else:
-                            airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotwl, None)
-                    else:
-                        airLoop = self.createPrimaryAirLoop('VAV', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotwl, cwl)
+                print sum(totalAirFlowRates)
                 
-                # If there is a maximum humidity assigned to the zone, set the cooling coil to dehumidify the air.
-                if dehumidTrigger == True:
-                    self.addChilledWaterDehumid(model, airLoop)
-                # If there is a minimum humidity assigned to the zone, add in an electric humidifier to humidify the air.
-                if humidTrigger == True:
-                    self.addElectricHumidifier(model, airLoop)
+                # Create air loop.
+                if sum(totalAirFlowRates) > 0:
+                    if systemIndex == 11:
+                        airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hwl, cwl)
+                    elif systemIndex == 12:
+                        airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hwl, cwl, "ChilledBeam")
+                    elif systemIndex == 13 or systemIndex == 15:
+                        hotterLoopTemp = self.createConstantScheduleRuleset('Hot_Water_Temperature' + str(HVACCount), 'Hot_Water_Temperature_Default' + str(HVACCount), 'TEMPERATURE', 67, model)
+                        hotwl = self.createHotWaterPlant(model, hotterLoopTemp, heatingDetails, HVACCount)
+                        if systemIndex == 13:
+                            if dehumidTrigger == True:
+                                coolerLoopTemp = self.createConstantScheduleRuleset('Chilled_Water_Temperature' + str(HVACCount), 'Chilled_Water_Temperature_Default' + str(HVACCount), 'TEMPERATURE', 6.7, model)
+                                coolwl = self.createChilledWaterPlant(model, coolerLoopTemp, coolingDetails, HVACCount, chillType)
+                                airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotwl, coolwl)
+                            else:
+                                airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotwl, None)
+                        else:
+                            airLoop = self.createPrimaryAirLoop('VAV', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotwl, cwl)
+                    
+                    # If there is a maximum humidity assigned to the zone, set the cooling coil to dehumidify the air.
+                    if dehumidTrigger == True:
+                        self.addChilledWaterDehumid(model, airLoop)
+                    # If there is a minimum humidity assigned to the zone, add in an electric humidifier to humidify the air.
+                    if humidTrigger == True:
+                        self.addElectricHumidifier(model, airLoop)
                 
                 if systemIndex == 11:
                     # Add the fain coil units.
