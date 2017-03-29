@@ -58,7 +58,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.61\nFEB_29_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -1190,16 +1190,23 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
 def checkViewResolution(viewResolution, lb_preparation):
     newVecs = []
     skyViewVecs = []
+    newVecsAreas = []
+    skyViewVecsAreas = []
     skyPatches = lb_preparation.generateSkyGeo(rc.Geometry.Point3d.Origin, viewResolution, 1)
+    normPatchArea = 6.28318530723/len(skyPatches)
     for patch in skyPatches:
-        patchPt = rc.Geometry.AreaMassProperties.Compute(patch).Centroid
+        patchAreaProps = rc.Geometry.AreaMassProperties.Compute(patch)
+        patchPt = patchAreaProps.Centroid
+        patchAreaNorm = patchAreaProps.Area/normPatchArea
         Vec = rc.Geometry.Vector3d(patchPt.X, patchPt.Y, patchPt.Z)
         revVec = rc.Geometry.Vector3d(-patchPt.X, -patchPt.Y, -patchPt.Z)
         skyViewVecs.append(Vec)
+        skyViewVecsAreas.append(patchAreaNorm)
         newVecs.append(Vec)
         newVecs.append(revVec)
+        newVecsAreas.extend([patchAreaNorm, patchAreaNorm])
     
-    return newVecs, skyViewVecs
+    return newVecs, skyViewVecs, newVecsAreas, skyViewVecsAreas
 
 def allSame(items):
     return all(x == items[0] for x in items)
@@ -1246,7 +1253,7 @@ def parallel_projection(zoneSrfsMesh, viewVectors, pointList):
     return pointIntList
 
 
-def parallel_skyProjection(zoneOpaqueMesh, skyViewVecs, pointList, zoneWindowMesh, zoneWindowTransmiss, zoneHasWindows, zoneWindowNames):
+def parallel_skyProjection(zoneOpaqueMesh, skyViewVecs, skyViewVecsAreas, pointList, zoneWindowMesh, zoneWindowTransmiss, zoneHasWindows, zoneWindowNames):
     #Placeholder for the outcome of the parallel projection.
     pointIntList = []
     skyBlockedList = []
@@ -1320,7 +1327,7 @@ def checkOutdoorViewFac(outdoorTestPtViewFactor, testPtSkyView):
     return outdoorNonSrfViewFac
 
 
-def skyViewCalc(testPts, zoneOpaqueMesh, skyViewVecs, zoneHasWindows, zoneWindowMesh, zoneWindowTransmiss, zoneWindowNames):
+def skyViewCalc(testPts, zoneOpaqueMesh, skyViewVecs, skyViewVecsAreas, zoneHasWindows, zoneWindowMesh, zoneWindowTransmiss, zoneWindowNames):
     testPtSkyView = []
     testPtSkyBlockedList = []
     testPtBlockName = []
@@ -1328,7 +1335,7 @@ def skyViewCalc(testPts, zoneOpaqueMesh, skyViewVecs, zoneHasWindows, zoneWindow
     for zoneCount, pointList in enumerate(testPts):
         if zoneHasWindows[zoneCount] > 0:
             if parallel_ == True or parallel_ == None:
-                skyViewFactors, skyBlockedList, finalWindowNameCount = parallel_skyProjection(zoneOpaqueMesh[zoneCount], skyViewVecs, testPts[zoneCount], zoneWindowMesh[zoneCount], zoneWindowTransmiss[zoneCount], zoneHasWindows[zoneCount], zoneWindowNames[zoneCount])
+                skyViewFactors, skyBlockedList, finalWindowNameCount = parallel_skyProjection(zoneOpaqueMesh[zoneCount], skyViewVecs, skyViewVecsAreas, testPts[zoneCount], zoneWindowMesh[zoneCount], zoneWindowTransmiss[zoneCount], zoneHasWindows[zoneCount], zoneWindowNames[zoneCount])
                 testPtSkyView.append(skyViewFactors)
                 testPtSkyBlockedList.append(skyBlockedList)
                 testPtBlockName.append(finalWindowNameCount)
@@ -1579,9 +1586,9 @@ if checkData == True and buildMesh == True:
 #If all of the data is good and the user has set "_runIt" to "True", run the shade benefit calculation to generate all results.
 if checkData == True and _runIt == True and geoCheck == True and buildMesh == True:
     start = time.clock()
-    viewVectors, skyViewVecs = checkViewResolution(viewResolution, lb_preparation)
+    viewVectors, skyViewVecs, newVecsAreas, skyViewVecsAreas = checkViewResolution(viewResolution, lb_preparation)
     testPtViewFactor = main(testPtsInit, zoneSrfsMesh, viewVectors, includeOutdoor)
-    testPtSkyView, testPtBlockedVec, testPtBlockName = skyViewCalc(testPtsInit, zoneOpaqueMesh, skyViewVecs, zoneHasWindows, zoneWindowMesh, zoneWindowTransmiss, zoneWindowNames)
+    testPtSkyView, testPtBlockedVec, testPtBlockName = skyViewCalc(testPtsInit, zoneOpaqueMesh, skyViewVecs, skyViewVecsAreas, zoneHasWindows, zoneWindowMesh, zoneWindowTransmiss, zoneWindowNames)
     
     outdoorNonSrfViewFac = []
     if sectionMethod != 0 and includeOutdoor == True:
