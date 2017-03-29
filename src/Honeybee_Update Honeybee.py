@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Update Honeybee"
 ghenv.Component.NickName = 'updateHoneybee'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.61\nMAR_29_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | Developers"
@@ -132,6 +132,8 @@ def getAllTheComponents(onlyGHPython = True):
     for obj in objects:
         if type(obj) == gh.Special.GH_Cluster:
             clusterDoc = obj.Document("")
+            if not clusterDoc:
+                continue
             for clusterObj in  clusterDoc.Objects:
                 objects.append(clusterObj)
     
