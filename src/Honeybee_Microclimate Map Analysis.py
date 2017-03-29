@@ -57,7 +57,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Microclimate Map Analysis"
 ghenv.Component.NickName = 'MicroclimateMap'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.61\nMAR_29_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -292,8 +292,9 @@ def calculatePointMRT(srfTempDict, testPtsViewFactor, hour, originalHour, outdoo
                 pointMRT = 0
                 for srfCount, srfView in enumerate(pointViewFactor):
                     path  = str([zoneCount,srfCount])
-                    weightedSrfTemp = srfView*(srfTempDict[path]["srfTemp"][hour])
+                    weightedSrfTemp = srfView*(math.pow((srfTempDict[path]["srfTemp"][hour] + 273.15),4))
                     pointMRT = pointMRT+weightedSrfTemp
+                pointMRT = math.pow(pointMRT,0.25) - 273.15
                 pointMRTValues[zoneCount].append(round(pointMRT, 3))
         else:
             pointMRTValues.append([])
@@ -301,11 +302,13 @@ def calculatePointMRT(srfTempDict, testPtsViewFactor, hour, originalHour, outdoo
                 pointMRT = 0
                 for srfCount, srfView in enumerate(pointViewFactor):
                     path  = str([zoneCount,srfCount])
-                    weightedSrfTemp = srfView*(outSrfTempDict[path]["srfTemp"][hour])
+                    weightedSrfTemp = srfView*(math.pow((outSrfTempDict[path]["srfTemp"][hour]+273.15),4))
                     pointMRT = pointMRT+weightedSrfTemp
-                weightedSrfTemp = outdoorNonSrfViewFac[ptCount]*prevailingOutdoorTemp[originalHour]
+                
+                weightedSrfTemp = outdoorNonSrfViewFac[ptCount]*(math.pow((prevailingOutdoorTemp[originalHour]+273.15),4))
                 pointMRT = pointMRT+weightedSrfTemp
                 pointMRT = pointMRT / (sum(pointViewFactor) + outdoorNonSrfViewFac[ptCount])
+                pointMRT = math.pow(pointMRT,0.25) - 273.15
                 pointMRTValues[zoneCount].append(round(pointMRT, 3))
     
     return pointMRTValues
