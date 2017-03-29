@@ -3742,7 +3742,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         hb_writeOPS.addDesignDays(model)
     
     # call Honeybee objects from the hive
-    HBZones = hb_hive.visualizeFromHoneybeeHive(HBZones)
+    HBZones = hb_hive.callFromHoneybeeHive(HBZones)
     
     reEvaluate = hb_reEvaluateHBZones(HBZones, None, "UpperLeftCorner")
     reEvaluate.evaluateZones()
