@@ -53,7 +53,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Color Surfaces by EP Result"
 ghenv.Component.NickName = 'ColorSurfaces'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.61\nAPR_05_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -542,6 +542,14 @@ def getData(pyZoneData, surfaceAreas, annualData, simStep, srfNormalizable, srfH
                 startHour = analysisPeriod[0][2]
                 endHour = analysisPeriod[1][2]
                 HOYS, months, days = lb_preparation.getHOYsBasedOnPeriod(analysisPeriod, 1)
+                try:
+                    HOYSdata, monthsdata, daysdata = lb_preparation.getHOYsBasedOnPeriod((srfHeaders[0][5],srfHeaders[0][6]), 1)
+                    hoyDataStart = HOYSdata[0]
+                    for count, hour in enumerate(HOYS):
+                        HOYS[count] = hour - hoyDataStart
+                except:
+                    pass
+                
                 startIndex = HOYS[0]
                 endIndex = HOYS[-1]
                 #Get the data from the lists.
