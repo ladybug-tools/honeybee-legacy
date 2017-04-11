@@ -69,7 +69,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.61\nAPR_10_2017'
+ghenv.Component.Message = 'VER 0.0.61\nAPR_11_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -1062,6 +1062,75 @@ class WriteOPS(object):
         pipeDemandOutlet.addToNode(condenserLoop.demandOutletNode())
         return condenserLoop
     
+    def addInfiniteCapacityGroundLoop(self, model, chillerWaterPlant, HVACCount, coolingDetails=None):
+        # create the temperature schedules for the loop.
+        loopSetPtSchedule = self.createConstantScheduleRuleset('HP_Loop_Temp_Schedule' + str(HVACCount), 'HP_Loop_Temp_Schedule_Default' + str(HVACCount), 'TEMPERATURE', 21, model)
+        coolingSetPtSchedule = self.createConstantScheduleRuleset('HP_Loop_Clg_Temp_Schedule' + str(HVACCount), 'HP_Loop_Clg_Temp_Schedule' + str(HVACCount), 'TEMPERATURE', 21, model)
+        heatingSetPtSchedule = self.createConstantScheduleRuleset('HP_Loop_Htg_Temp_Schedule' + str(HVACCount), 'HP_Loop_Htg_Temp_Schedule' + str(HVACCount), 'TEMPERATURE', 5, model)
+        
+        # create condenser loop for heat pumps
+        condenserLoop = ops.PlantLoop(model)
+        condenserLoop.setName("AEDG Heat Pump Loop")
+        condenserLoop.setMaximumLoopTemperature(80)
+        condenserLoop.setMinimumLoopTemperature(1)
+        loopSizing = condenserLoop.sizingPlant()
+        loopSizing.setLoopType("Condenser")
+        loopSizing.setDesignLoopExitTemperature(21)
+        loopSizing.setLoopDesignTemperatureDifference(5)
+        # create a pump
+        pump = ops.PumpVariableSpeed(model)
+        pump.setRatedPumpHead(134508) #Pa
+        pump.setMotorEfficiency(0.9)
+        pump.setCoefficient1ofthePartLoadPerformanceCurve(0)
+        pump.setCoefficient2ofthePartLoadPerformanceCurve(0.0216)
+        pump.setCoefficient3ofthePartLoadPerformanceCurve(-0.0325)
+        pump.setCoefficient4ofthePartLoadPerformanceCurve(1.0095)
+        # create a supply bypass pipe
+        pipeSupplyBypass = ops.PipeAdiabatic(model)
+        # create a supply outlet pipe
+        pipeSupplyOutlet = ops.PipeAdiabatic(model)
+        # create a demand bypass pipe
+        pipeDemandBypass = ops.PipeAdiabatic(model)
+        # create a demand inlet pipe
+        pipeDemandInlet = ops.PipeAdiabatic(model)
+        # create a demand outlet pipe
+        pipeDemandOutlet = ops.PipeAdiabatic(model)
+        # create setpoint managers
+        setpointManagerScheduledLoop = ops.SetpointManagerScheduled(model,loopSetPtSchedule)
+        setpointManagerScheduledCooling = ops.SetpointManagerScheduled(model,coolingSetPtSchedule)
+        setpointManagerScheduledHeating = ops.SetpointManagerScheduled(model,heatingSetPtSchedule)
+        # connect components to plant loop
+        # supply side components
+        condenserLoop.addSupplyBranchForComponent(pipeSupplyBypass)
+        pump.addToNode(condenserLoop.supplyInletNode())
+        pipeSupplyOutlet.addToNode(condenserLoop.supplyOutletNode())
+        setpointManagerScheduledLoop.addToNode(condenserLoop.supplyOutletNode())
+        # demand side components
+        condenserLoop.addDemandBranchForComponent(pipeDemandBypass)
+        pipeDemandInlet.addToNode(condenserLoop.demandInletNode())
+        pipeDemandOutlet.addToNode(condenserLoop.demandOutletNode())
+        # add district cooling and heating to supply side
+        districtCooling = ops.DistrictCooling(model)
+        districtCooling.setNominalCapacity(1000000000000) # large number; no autosizing
+        condenserLoop.addSupplyBranchForComponent(districtCooling)
+        setpointManagerScheduledCooling.addToNode(districtCooling.outletModelObject().get().to_Node().get())
+        districtHeating = ops.DistrictHeating(model)
+        districtHeating.setNominalCapacity(1000000000000) # large number; no autosizing
+        districtHeating.addToNode(districtCooling.outletModelObject().get().to_Node().get())
+        setpointManagerScheduledHeating.addToNode(districtHeating.outletModelObject().get().to_Node().get())
+        
+        # demand side components in DOAS
+        if coolingDetails == None or coolingDetails.chillerType == 'WaterCooled':
+            chillervec = chillerWaterPlant.supplyComponents(ops.IddObjectType("OS:Chiller:Electric:EIR"))
+            chiller = model.getChillerElectricEIR(chillervec[0].handle()).get()
+            condenserLoop.addDemandBranchForComponent(chiller)
+            condenserLoop.addDemandBranchForComponent(pipeDemandBypass)
+            pipeDemandInlet.addToNode(condenserLoop.demandInletNode())
+            pipeDemandOutlet.addToNode(condenserLoop.demandOutletNode())
+        # add zone-level heat pumps to demand side after they get created
+        
+        return condenserLoop
+    
     def setDemandVent(self, model, airloop):
         oasys = airloop.airLoopHVACOutdoorAirSystem()
         oactrl = oasys.get().getControllerOutdoorAir()
@@ -1324,7 +1393,7 @@ class WriteOPS(object):
             vrfAirConditioner.addTerminal(vrfTerminalUnit)
     
     
-    def createZoneEquip(self, model, thermalZones, hbZones, equipList, hotWaterPlant=None, chilledWaterPlant=None, heatOnly=False):
+    def createZoneEquip(self, model, thermalZones, hbZones, equipList, hotWaterPlant=None, chilledWaterPlant=None, heatPumpLoop=None, heatOnly=False):
         radiantFloor = None
         if 'RadiantFloor' in equipList or 'RadiantCeiling' in equipList:
             # create radiant construction and substitute for existing surface (interior or exterior) constructions
@@ -1366,13 +1435,13 @@ class WriteOPS(object):
                 fanCoil.setMaximumOutdoorAirFlowRate(0)                                                          
                 # add fan coil to thermal zone
                 fanCoil.addToThermalZone(zone)
-            elif "Baseboard" in equipList:
+            if "Baseboard" in equipList:
                 # create baseboard heater add add to thermal zone and hot water loop
                 baseboardCoil = ops.CoilHeatingWaterBaseboard(model)
                 baseboardHeater = ops.ZoneHVACBaseboardConvectiveWater(model, model.alwaysOnDiscreteSchedule(), baseboardCoil)
                 baseboardHeater.addToThermalZone(zone)          
                 hotWaterPlant.addDemandBranchForComponent(baseboardCoil)
-            elif 'RadiantFloor' in equipList or 'RadiantCeiling' in equipList:
+            if 'RadiantFloor' in equipList or 'RadiantCeiling' in equipList:
                 # create hot water coil and attach to radiant hot water loop
                 heatingCoil = ops.CoilHeatingLowTempRadiantVarFlow(model, model.alwaysOnDiscreteSchedule())
                 heatSetPtSch = self.getOSSchedule(hbZones[zoneCount].heatingSetPtSchedule, model)
@@ -1405,6 +1474,59 @@ class WriteOPS(object):
                     for surface in space.surfaces:
                         if surface.surfaceType() == "Ceiling" or surface.surfaceType() == "RoofCeiling":
                             surface.setConstruction(radiantFloor)
+            if 'WSHP' in equipList:
+                # create water source heat pump and attach to heat pump loop
+                # create fan
+                fan = ops.FanOnOff(model, model.alwaysOnDiscreteSchedule())
+                fan.setFanEfficiency(0.5)
+                fan.setPressureRise(75) #Pa
+                fan.autosizeMaximumFlowRate()
+                fan.setMotorEfficiency(0.9)
+                fan.setMotorInAirstreamFraction(1.0)
+                # create cooling coil and connect to heat pump loop
+                coolingCoil = ops.CoilCoolingWaterToAirHeatPumpEquationFit(model)
+                coolingCoil.setRatedCoolingCoefficientofPerformance(6.45)
+                coolingCoil.setTotalCoolingCapacityCoefficient1(-9.149069561)
+                coolingCoil.setTotalCoolingCapacityCoefficient2(10.87814026)
+                coolingCoil.setTotalCoolingCapacityCoefficient3(-1.718780157)
+                coolingCoil.setTotalCoolingCapacityCoefficient4(0.746414818)
+                coolingCoil.setTotalCoolingCapacityCoefficient5(0.0)
+                coolingCoil.setSensibleCoolingCapacityCoefficient1(-5.462690012)
+                coolingCoil.setSensibleCoolingCapacityCoefficient2(17.95968138)
+                coolingCoil.setSensibleCoolingCapacityCoefficient3(-11.87818402)
+                coolingCoil.setSensibleCoolingCapacityCoefficient4(-0.980163419)
+                coolingCoil.setSensibleCoolingCapacityCoefficient5(0.767285761)
+                coolingCoil.setSensibleCoolingCapacityCoefficient6(0.0)
+                coolingCoil.setCoolingPowerConsumptionCoefficient1(-3.205409884)
+                coolingCoil.setCoolingPowerConsumptionCoefficient2(-0.976409399)
+                coolingCoil.setCoolingPowerConsumptionCoefficient3(3.97892546)
+                coolingCoil.setCoolingPowerConsumptionCoefficient4(0.938181818)
+                coolingCoil.setCoolingPowerConsumptionCoefficient5(0.0)
+                heatPumpLoop.addDemandBranchForComponent(coolingCoil)
+                # create heating coil and connect to heat pump loop
+                heatingCoil = ops.CoilHeatingWaterToAirHeatPumpEquationFit(model)
+                heatingCoil.setRatedHeatingCoefficientofPerformance(4.0)
+                heatingCoil.setHeatingCapacityCoefficient1(-1.361311959)
+                heatingCoil.setHeatingCapacityCoefficient2(-2.471798046)
+                heatingCoil.setHeatingCapacityCoefficient3(4.173164514)
+                heatingCoil.setHeatingCapacityCoefficient4(0.640757401)
+                heatingCoil.setHeatingCapacityCoefficient5(0.0)
+                heatingCoil.setHeatingPowerConsumptionCoefficient1(-2.176941116)
+                heatingCoil.setHeatingPowerConsumptionCoefficient2(0.832114286)
+                heatingCoil.setHeatingPowerConsumptionCoefficient3(1.570743399)
+                heatingCoil.setHeatingPowerConsumptionCoefficient4(0.690793651)
+                heatingCoil.setHeatingPowerConsumptionCoefficient5(0.0)
+                heatPumpLoop.addDemandBranchForComponent(heatingCoil)
+                # create supplemental heating coil
+                supplementalHeatingCoil = ops.CoilHeatingElectric(model, model.alwaysOnDiscreteSchedule())
+                # construct heat pump
+                heatPump = ops.ZoneHVACWaterToAirHeatPump(model, model.alwaysOnDiscreteSchedule(), fan, heatingCoil, coolingCoil, supplementalHeatingCoil)
+                heatPump.setSupplyAirFlowRateWhenNoCoolingorHeatingisNeeded(ops.OptionalDouble(0))
+                heatPump.setOutdoorAirFlowRateDuringCoolingOperation(ops.OptionalDouble(0))
+                heatPump.setOutdoorAirFlowRateDuringHeatingOperation(ops.OptionalDouble(0))
+                heatPump.setOutdoorAirFlowRateWhenNoCoolingorHeatingisNeeded(ops.OptionalDouble(0))
+                # add heat pump to thermal zone
+                heatPump.addToThermalZone(zone)
     
     ### END OF FUNCTIONS FOR CREATING HVAC SYSTEMS FROM SCRATCH ###
     
@@ -2339,12 +2461,12 @@ class WriteOPS(object):
                 else:
                     coolLoopTemp = self.createConstantScheduleRuleset('Chilled_Water_Temperature' + str(HVACCount), 'Chilled_Water_Temperature_Default' + str(HVACCount), 'TEMPERATURE', suppTemp, model)
                     cwl = self.createChilledWaterPlant(model, coolLoopTemp, coolingDetails, HVACCount, chillType)
-                if chillType == "WaterCooled":
+                if chillType == "WaterCooled" and systemIndex != 17:
                     cndwl = self.createCondenser(model, cwl, HVACCount)
                 
                 # Create air loop.
                 if sum(totalAirFlowRates) > 0:
-                    if systemIndex == 11:
+                    if systemIndex == 11 or systemIndex == 17:
                         airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hwl, cwl)
                     elif systemIndex == 12:
                         airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hwl, cwl, "ChilledBeam")
@@ -2385,7 +2507,11 @@ class WriteOPS(object):
                     if systemIndex == 13:
                         self.createZoneEquip(model, thermalZoneVector, hbZones, equipList, hwl, cwl)
                     elif systemIndex == 15:
-                        self.createZoneEquip(model, thermalZoneVector, hbZones, equipList, hwl, cwl, True)
+                        self.createZoneEquip(model, thermalZoneVector, hbZones, equipList, hwl, cwl, None, True)
+                elif systemIndex == 17:
+                    hpLoop = self.addInfiniteCapacityGroundLoop(model, cwl, HVACCount, coolingDetails)
+                    equipList = ['WSHP']
+                    self.createZoneEquip(model, thermalZoneVector, hbZones, equipList, hwl, cwl, hpLoop)
             
             elif systemIndex == 16:
                 # Check to see if there is humidity control on any of the zones.

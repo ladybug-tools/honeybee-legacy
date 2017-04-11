@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.61\nAPR_10_2017'
+ghenv.Component.Message = 'VER 0.0.61\nAPR_11_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -8493,7 +8493,7 @@ class hb_hvacProperties(object):
         14: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : True},
         15: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : True},
         16: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : True},
-        17: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : False}
+        17: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : True}
         }
     
     @staticmethod
