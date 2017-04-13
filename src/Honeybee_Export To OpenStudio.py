@@ -670,8 +670,8 @@ class WriteOPS(object):
     def getOSSchedule(self, schName, model):
         csvSched = False
         if schName.lower().endswith(".csv"):
-            msg = "Currently OpenStudio component cannot use .csv file as a schedule.\n" + \
-                      "The schedule: " + schName + " - will be written into the EnergyPlus IDF File after it has been written by decompressing the OS file."
+            msg = "Currently OpenStudio component des not support .csv file as a schedule.\n" + \
+                      "The schedule: " + schName + " will be written into IDF after it is translated from an OSM."
             print msg
             self.csvSchedules.append(schName)
             self.csvScheduleCount += 1
@@ -679,11 +679,20 @@ class WriteOPS(object):
         
         if csvSched == True:
             values, comments = self.hb_EPScheduleAUX.getScheduleDataByName('DEFAULTCSVPLACEHOLDER', ghenv.Component)
+            # Check the type limits.
+            with open(schName, "r") as schFile:
+                for lineCount, line in enumerate(schFile):
+                    if lineCount == 0:
+                        typeLims = line.split(',')[-1]
+            if 'dimensionless' not in typeLims.lower():
+                if typeLims.strip().lower() == 'temperature':
+                    values[1] = typeLims.strip() + ' 1'
+                else:
+                    values[1] = typeLims.strip()
         else:
             values, comments = self.hb_EPScheduleAUX.getScheduleDataByName(schName, ghenv.Component)
         
         if values[0].lower() != "schedule:week:daily":
-            
             scheduleTypeLimitsName = values[1]
             if not self.isScheduleInLib(scheduleTypeLimitsName):
                 OSScheduleTypeLimits = self.createOSScheduleTypeLimits(values[1], model)
@@ -699,12 +708,12 @@ class WriteOPS(object):
             elif values[0].lower() == "schedule:constant":
                 OSSchedule = self.createConstantOSSchedule(schName, values, model)
             else:
-                # print values[0]
                 OSSchedule = None
             
             if OSSchedule!=None:
                 # add to library
                 self.addScheduleToLib(schName, OSSchedule)
+            
             return OSSchedule
         else:
             return self.getScheduleFromLib(schName)
@@ -3525,6 +3534,8 @@ class RunOPS(object):
                 wrongLineTrigger = True
             elif 'CSV' in line or 'csv' in line:
                 origName = line.split(',')[0]
+                if origName == line:
+                    origName = line.split(';')[0]
                 newName = origName.split('\\')[-1].split('.')[0]
                 if origName not in foundCSVSchedules:
                     foundCSVSchedules.append(origName)
