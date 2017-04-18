@@ -69,7 +69,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.61\nAPR_11_2017'
+ghenv.Component.Message = 'VER 0.0.61\nAPR_17_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -3151,7 +3151,6 @@ class WriteOPS(object):
     
     
     def OPSFenSurface (self, surface, openStudioParentSrf, model):
-        
         for childSrf in surface.childSrfs:
             coordinates = childSrf.coordinates
             
@@ -3460,7 +3459,6 @@ class RunOPS(object):
     def __init__(self, model, weatherFilePath, HBZones, simParameters, openStudioLibFolder, csvSchedules, \
             csvScheduleCount, additionalcsvSchedules, shadeCntrlToReplace, replaceShdCntrl, windowSpectralData):
         self.weatherFile = weatherFilePath # just for batch file as an alternate solution
-        self.openStudioDir = "/".join(openStudioLibFolder.split("/")[:3]) + "/share/openstudio"
         self.EPFolder = self.getEPFolder()
         self.EPPath = ops.Path(self.EPFolder + "\EnergyPlus.exe")
         self.epwFile = ops.Path(weatherFilePath)
@@ -3478,13 +3476,10 @@ class RunOPS(object):
         self.lb_preparation = sc.sticky["ladybug_Preparation"]()
     
     def getEPFolder(self):
-        fList = os.listdir(self.openStudioDir)
-        for f in fList:
-            fullpath = os.path.join(self.openStudioDir, f)
-            if os.path.isdir(fullpath) and f.startswith("EnergyPlus"):
-                return fullpath
-            else:
-                raise Exception("Failed to find EnergyPlus folder at %s." % self.openStudioDir)
+        try:
+            return sc.sticky["honeybee_folders"]["EPPath"]
+        except:
+            raise Exception("Failed to find EnergyPlus folder.")
     
     def osmToidf(self, workingDir, projectName, osmPath):
         # create a new folder to run the analysis
@@ -3747,7 +3742,7 @@ class RunOPS(object):
         fullPath = workingDir + shIdfFileName
         folderName = workingDir.replace( (workingDrive + '\\'), '')
         batchStr = workingDrive + '\ncd\\' +  folderName + '\n"' + EPDirectory + \
-                '\\Epl-run" ' + fullPath + ' ' + fullPath + ' idf ' + epwFileAddress + ' EP N nolimit N N 0 Y'
+                'Epl-run" ' + fullPath + ' ' + fullPath + ' idf ' + epwFileAddress + ' EP N nolimit N N 0 Y'
     
         batchFileAddress = fullPath +'.bat'
         batchfile = open(batchFileAddress, 'w')

@@ -43,7 +43,7 @@ Provided by Ladybug 0.0.45
 
 ghenv.Component.Name = "Honeybee_Re-run OSM"
 ghenv.Component.NickName = 'Re-Run OSM'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.61\nAPR_17_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -117,14 +117,10 @@ def runCmd(batchFileAddress, shellKey = True):
     out, err = p.communicate()
 
 def getEPFolder(osmDirect):
-    EPDirect = osmDirect + '/share/openstudio/'
-    fList = os.listdir(EPDirect)
-    for f in fList:
-        fullpath = os.path.join(EPDirect, f)
-        if os.path.isdir(fullpath) and f.startswith("EnergyPlus"):
-            return fullpath
-        else:
-            raise Exception("Failed to find EnergyPlus folder at %s." % EPDirect)
+    try:
+        return sc.sticky["honeybee_folders"]["EPPath"]
+    except:
+        raise Exception("Failed to find EnergyPlus folder.")
 
 def osmToidf(workingDir, projectName, osmPath):
     # create a new folder to run the analysis
