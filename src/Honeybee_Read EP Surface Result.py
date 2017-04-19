@@ -46,7 +46,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Read EP Surface Result"
 ghenv.Component.NickName = 'readEPSrfResult'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.61\nAPR_18_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -78,102 +78,104 @@ gotSrfData = False
 curvedGeometry = False
 
 if _resultFileAddress:
-    try:
-        numZonesLine = 100000
-        numShadesLine = 100000
-        numZonesIndex = 0
-        numSrfsIndex = 0
-        numFixShdIndex = 0
-        numBldgShdIndex = 0
-        numAttShdIndex = 0
-        zoneAreaLines = []
-        srfAreaLines = []
-        areaIndex = 0
-        zoneCounter = -1
-        srfCounter = -1
-        numFixShd = 0
-        numBldgShd = 0
-        numAttShd = 0
-        
-        eioFileAddress = _resultFileAddress[0:-3] + "eio"
-        if not os.path.isfile(eioFileAddress):
-            # try to find the file from the list
-            studyFolder = os.path.dirname(_resultFileAddress)
-            fileNames = os.listdir(studyFolder)
-            for fileName in fileNames:
-                if fileName.lower().endswith("eio"):
-                    eioFileAddress = os.path.join(studyFolder, fileName)
-                    break
-        
-        eioResult = open(eioFileAddress, 'r')
-        for lineCount, line in enumerate(eioResult):
-            if "Site:Location," in line:
-                location = line.split(",")[1].split("WMO")[0]
-            elif "WeatherFileRunPeriod" in line:
-                start = (int(line.split(",")[3].split("/")[0]), int(line.split(",")[3].split("/")[1]), 1)
-                end = (int(line.split(",")[4].split("/")[0]), int(line.split(",")[4].split("/")[1]), 24)
-            elif "Shading Summary" in line and "Number of Building Detached Shades" in line:
-                for index, text in enumerate(line.split(",")):
-                    numShadesLine = lineCount+1
-                    if "Number of Fixed Detached Shades" in text: numFixShdIndex = index
-                    elif "Number of Building Detached Shades" in text: numBldgShdIndex = index
-                    elif "Number of Attached Shades" in text: numAttShdIndex = index
-                    else: pass
-            elif lineCount == numShadesLine:
-                numFixShd = int(line.split(",")[numFixShdIndex])
-                numBldgShd = int(line.split(",")[numBldgShdIndex])
-                numAttShd = int(line.split(",")[numAttShdIndex])
-            elif "Zone Summary" in line and "Number of Zones" in line:
-                for index, text in enumerate(line.split(",")):
-                    numZonesLine = lineCount+1
-                    if "Number of Zones" in text: numZonesIndex = index
-                    elif "Number of Zone Surfaces" in text: numSrfsIndex = index
-                    else: pass
-            elif lineCount == numZonesLine:
-                numZones = line.split(",")[numZonesIndex]
-                numSrfs = line.split(",")[numSrfsIndex]
-                for num in range(int(numZones)):
-                    zoneSrfNameList.append([])
-                    zoneSrfTypeList.append([])
-                    zoneSrfAreaList.append([])
-            elif "Zone Information" in line and "Floor Area {m2}" in line:
-                zoneAreaLines = range(lineCount+1, lineCount+1+int(numZones))
-            elif lineCount in zoneAreaLines:
-                zoneNameList.append(line.split(",")[1])
-                gotZoneData = True
-            elif "Surface Name" in line and "Area (Gross)" in line:
-                if numFixShd>0 or numBldgShd>0 or numAttShd>0:
-                    srfAreaLines = range(lineCount+3, lineCount+3+int(numZones)+int(numSrfs)+int(numFixShd)+int(numBldgShd)+int(numAttShd))
-                else:
-                    srfAreaLines = range(lineCount+2, lineCount+2+int(numZones)+int(numSrfs))
-            elif '-FRAME' in line: srfAreaLines.append(srfAreaLines[-1]+1)
-            elif lineCount in srfAreaLines:
-                if "Shading_Surface" in line: pass
-                elif "Zone_Surfaces" in line:
-                    zoneCounter += 1
-                    srfCounter = -1
-                else:
-                    if "SRFP" in line or "GLZP" in line:
-                        curvedGeometry = True
-                        if "_GLZP_" in line: surfaceName = line.split(",")[1].split("_GLZP_")[0]
-                        elif "_SRFP_" in line: surfaceName = line.split(",")[1].split("_SRFP")[0]
-                        else: surfaceName = None
-                        if surfaceName:
-                            if surfaceName in zoneSrfNameList[zoneCounter]:
-                                zoneSrfAreaList[zoneCounter][srfCounter] = zoneSrfAreaList[zoneCounter][srfCounter] + float(line.split(",")[9])
-                            else:
-                                srfCounter += 1
-                                zoneSrfNameList[zoneCounter].append(surfaceName)
-                                zoneSrfTypeList[zoneCounter].append(line.split(",")[2])
-                                zoneSrfAreaList[zoneCounter].append(float(line.split(",")[9]))
-                    else:
-                        srfCounter += 1
-                        zoneSrfNameList[zoneCounter].append(line.split(",")[1])
-                        zoneSrfTypeList[zoneCounter].append(line.split(",")[2])
-                        zoneSrfAreaList[zoneCounter].append(float(line.split(",")[9]))
-                gotSrfData = True
-            else: pass
-        eioResult.close()
+    #try:
+    numZonesLine = 100000
+    numShadesLine = 100000
+    numZonesIndex = 0
+    numSrfsIndex = 0
+    numFixShdIndex = 0
+    numBldgShdIndex = 0
+    numAttShdIndex = 0
+    zoneAreaLines = []
+    srfAreaLines = []
+    areaIndex = 0
+    zoneCounter = -1
+    srfCounter = -1
+    numFixShd = 0
+    numBldgShd = 0
+    numAttShd = 0
+    
+    eioFileAddress = _resultFileAddress[0:-3] + "eio"
+    if not os.path.isfile(eioFileAddress):
+        # try to find the file from the list
+        studyFolder = os.path.dirname(_resultFileAddress)
+        fileNames = os.listdir(studyFolder)
+        for fileName in fileNames:
+            if fileName.lower().endswith("eio"):
+                eioFileAddress = os.path.join(studyFolder, fileName)
+                break
+    
+    eioResult = open(eioFileAddress, 'r')
+    for lineCount, line in enumerate(eioResult):
+        if "Site:Location," in line:
+            location = line.split(",")[1].split("WMO")[0]
+        elif "WeatherFileRunPeriod" in line:
+            start = (int(line.split(",")[3].split("/")[0]), int(line.split(",")[3].split("/")[1]), 1)
+            end = (int(line.split(",")[4].split("/")[0]), int(line.split(",")[4].split("/")[1]), 24)
+        elif "Shading Summary" in line and "Number of Building Detached Shades" in line:
+            for index, text in enumerate(line.split(",")):
+                numShadesLine = lineCount+1
+                if "Number of Fixed Detached Shades" in text: numFixShdIndex = index
+                elif "Number of Building Detached Shades" in text: numBldgShdIndex = index
+                elif "Number of Attached Shades" in text: numAttShdIndex = index
+                else: pass
+        elif lineCount == numShadesLine:
+            numFixShd = int(line.split(",")[numFixShdIndex])
+            numBldgShd = int(line.split(",")[numBldgShdIndex])
+            numAttShd = int(line.split(",")[numAttShdIndex])
+        elif "Zone Summary" in line and "Number of Zones" in line:
+            for index, text in enumerate(line.split(",")):
+                numZonesLine = lineCount+1
+                if "Number of Zones" in text: numZonesIndex = index
+                elif "Number of Zone Surfaces" in text: numSrfsIndex = index
+                else: pass
+        elif lineCount == numZonesLine:
+            numZones = line.split(",")[numZonesIndex]
+            numSrfs = line.split(",")[numSrfsIndex]
+            for num in range(int(numZones)):
+                zoneSrfNameList.append([])
+                zoneSrfTypeList.append([])
+                zoneSrfAreaList.append([])
+        elif "Zone Information" in line and "Floor Area {m2}" in line:
+            zoneAreaLines = range(lineCount+1, lineCount+1+int(numZones))
+        elif lineCount in zoneAreaLines:
+            zoneNameList.append(line.split(",")[1])
+            gotZoneData = True
+        elif "Surface Name" in line and "Area (Gross)" in line:
+            if numFixShd>0 or numBldgShd>0 or numAttShd>0:
+                srfAreaLines = range(lineCount+3, lineCount+3+int(numZones)+int(numSrfs)+int(numFixShd)+int(numBldgShd)+int(numAttShd))
+            else:
+                srfAreaLines = range(lineCount+2, lineCount+2+int(numZones)+int(numSrfs))
+                print srfAreaLines
+        elif '-FRAME' in line: srfAreaLines.append(srfAreaLines[-1]+1)
+        elif lineCount in srfAreaLines:
+            if "Shading_Surface" in line: pass
+            elif "Zone_Surfaces" in line:
+                zoneCounter += 1
+                srfCounter = -1
+            else:
+                if "SRFP" in line or "GLZP" in line:
+                    curvedGeometry = True
+                    if "_GLZP_" in line: surfaceName = line.split(",")[1].split("_GLZP_")[0]
+                    elif "_SRFP_" in line: surfaceName = line.split(",")[1].split("_SRFP")[0]
+                    else: surfaceName = None
+                    if surfaceName:
+                        if surfaceName in zoneSrfNameList[zoneCounter]:
+                            zoneSrfAreaList[zoneCounter][srfCounter] = zoneSrfAreaList[zoneCounter][srfCounter] + float(line.split(",")[9])
+                        else:
+                            srfCounter += 1
+                            zoneSrfNameList[zoneCounter].append(surfaceName)
+                            zoneSrfTypeList[zoneCounter].append(line.split(",")[2])
+                            zoneSrfAreaList[zoneCounter].append(float(line.split(",")[9]))
+                elif '! <' not in line:
+                    srfCounter += 1
+                    zoneSrfNameList[zoneCounter].append(line.split(",")[1])
+                    zoneSrfTypeList[zoneCounter].append(line.split(",")[2])
+                    zoneSrfAreaList[zoneCounter].append(float(line.split(",")[9]))
+            gotSrfData = True
+        else: pass
+    eioResult.close()
+    """
     except:
         try: eioResult.close()
         except: pass 
@@ -185,6 +187,7 @@ if _resultFileAddress:
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
 else:
     gotSrfData =True
+"""
 
 #If no surafce data was imported from the .eio file, give the user a warning and tell them that they cannot normalize by area.
 if gotSrfData == False:
