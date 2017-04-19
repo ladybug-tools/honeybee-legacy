@@ -69,7 +69,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.61\nAPR_17_2017'
+ghenv.Component.Message = 'VER 0.0.61\nAPR_19_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -3453,6 +3453,39 @@ class EPFeaturesNotInOS(object):
                 '\t' + '1' + ',  !- Duration\n' + \
                 '\t' + 'Holiday' + ';  !- Special Day Type\n'
 
+    def EarthTube(self,zone):
+        
+        if zone.ETschedule.upper().endswith('CSV'):
+            # For custom schedule
+            scheduleFileName = os.path.basename(zone.ETschedule)
+            scheduleObjectName = "_".join(scheduleFileName.split(".")[:-1]).upper()
+            earthTubeSched = scheduleObjectName
+           
+        else: earthTubeSched = zone.ETschedule
+    
+        return '\nZoneEarthtube,\n' + \
+            '\t' + zone.name + ',\t!- Zone Name\n' + \
+            '\t' + str(earthTubeSched) + ',\t!- Schedule Name\n'+\
+            '\t' + str(zone.design_flow_rate) + ',\t!- Design Flow Rate {m3/s}\n'+\
+            '\t' + str(zone.mincooltemp) + ',\t!- Minimum Zone Temperature when Cooling {C}\n'+\
+            '\t' + str(zone.maxheatingtemp) + ',\t!- Maximum Zone Temperature when Heating {C}\n'+\
+            '\t' + str(zone.delta_temp) + ',\t!- Delta Temperature {deltaC}\n'+\
+            '\t' + str(zone.et_type) + ',\t!- Earthtube Type\n'+\
+            '\t' + str(zone.fanprise) + ',\t!- Fan Pressure Rise {Pa}\n'+\
+            '\t' + str(zone.efficiency) + ',\t!- Fan Total Efficiency\n'+\
+            '\t' + str(zone.piperadius) + ',\t!- Pipe Radius {m}\n'+\
+            '\t' + str(zone.thick) + ',\t!- Pipe Thickness {m}\n'+\
+            '\t' + str(zone.length) + ',\t!- Pipe Length {m}\n'+\
+            '\t' + str(zone.thermal_k) + ',\t!- Pipe Thermal Conductivity {W/m-K}\n'+\
+            '\t' + str(zone.pipedepth) + ',\t!- Pipe Depth Under Ground Surface {m}\n'+\
+            '\t' + str(zone.soil_con) + ',\t!- Soil Condition\n'+\
+            '\t' + str(zone.soil_avannual) +',\t!- Average Soil Surface Temperature {C}\n'+\
+            '\t' + str(zone.soil_amplitude) + ',\t!- Amplitude of Soil Surface Temperature {C}\n'+\
+            '\t' + str(zone.soil_phaseconstant) + ',\t!- Phase Constant of Soil Surface Temperature {days}\n'+\
+            '\t' + zone.termflow + ',\t!- Constant Term Flow Coefficient\n'+\
+            '\t' + zone.tempflowco + ',\t!- Temperature Term Flow Coefficient\n'+\
+            '\t' + zone.veltermflow  + ',\t!- Velocity Term Flow Coefficient\n'+\
+            '\t' + zone.velsquflow  + ';\t!- Velocity Squared Term Flow Coefficient\n'
 
 
 class RunOPS(object):
@@ -3614,6 +3647,12 @@ class RunOPS(object):
         if len(natVentStrings) > 0:
             for line in natVentStrings:
                 lines.append(line)
+        
+        # Add EarthTubes
+        for zone in HBZones:
+            if zone.earthtube == True:
+                
+                lines.append(otherFeatureClass.EarthTube(zone))
         
         # Write in any window spectral data.
         if self.windowSpectralData != {}:

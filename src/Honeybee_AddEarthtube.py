@@ -22,7 +22,6 @@
 
 """
 Use this component to add an Energy Plus earth tube to a Zone.
-
 An earth tube is a long, underground metal or plastic pipe through which air is drawn. During cooling season, as air travels through the pipe, it gives up some of its heat to the surrounding soil and enters the room as cooler air. Similarly, during heating season, as air travels through the pipe, it receives some of its heat from the soil and enters the room as warmer air. Simple earth tubes in EnergyPlus can be controlled by a schedule and through the specification of minimum, maximum, and delta temperatures as described below. As with infiltration and ventilation, the actual flow rate of air through the earth tube can be modified by the temperature difference between the inside and outside environment and the wind speed. The basic equation used to calculate air flow rate of earth tube in EnergyPlus is:
 EarthTubeFlowRate = E*F*[A+B|Tzone-Todb|+C(Windspeed)+D(Windspeed^2)]
 -
@@ -39,7 +38,6 @@ For more information about the Energy Plus Earthtube please see:
 http://bigladdersoftware.com/epx/docs/8-2/input-output-reference/group-airflow.html#zoneearthtube-earth-tube
 -
 Provided by Honeybee 0.0.61
-
     Args:
         _HBZones: The Honeybee zones to which Earthtubes will be added to. Only one earth tube will be added to each zone.
         _epwFile: An .epw file path on your system as a text string. Used to find the ground temperature of the site so Earthtube calculations can be undertaken.
@@ -112,7 +110,7 @@ Provided by Honeybee 0.0.61
 """
 
 ghenv.Component.Name = "Honeybee_AddEarthtube"
-ghenv.Component.Message = 'VER 0.0.61\nMAR_25_2017'
+ghenv.Component.Message = 'VER 0.0.61\nAPR_19_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP" #"08 | Energy | Set Zone Properties"
@@ -129,6 +127,7 @@ import os
 import rhinoscriptsyntax as rs
 import itertools
 import subprocess
+import tempfile
 
 
 readmedatatree = Grasshopper.DataTree[object]()
@@ -276,8 +275,6 @@ def checktheinputs(schedules_,_designFlowrates,_mincoolingTemps_,_maxheatingTemp
     schedules = [schedules_]
     HBScheduleList = sc.sticky["honeybee_ScheduleLib"].keys()
     
-    print HBScheduleList
-    
     for scheduleList in schedules:
         for schedule in scheduleList: 
             
@@ -371,12 +368,15 @@ def main(_HBZones,schedules_,_designFlowrates,_mincoolingTemps_,_maxheatingTemps
         PfolderE = sc.sticky["honeybee_folders"]["EPPath"] 
 
         # The process for creating the wrapper is below
-        #os.chdir(os.path.join(PfolderE,'PreProcess','CalcSoilSurfTemp').replace("/","\\"))
-        
+
         epwFile = _epwFile
         
         exePath = os.path.join(PfolderE,'PreProcess','CalcSoilSurfTemp','CalcSoilSurfTemp.exe ').replace("/","\\")
         auxfilepath = os.path.join(PfolderE,"PreProcess","CalcSoilSurfTemp").replace("/","\\")
+        # Need to change to auxfilepath directory or the .out file will be put under rhinoAppdata!!!
+        os.chdir(tempfile.gettempdir())
+        
+        print "The .out file was written to "+tempfile.gettempdir()
         
         process = subprocess.Popen(exePath+' '+epwFile,stdin=subprocess.PIPE)
         
@@ -385,7 +385,7 @@ def main(_HBZones,schedules_,_designFlowrates,_mincoolingTemps_,_maxheatingTemps
         def rchop(thestring, ending):
             return thestring[len(ending):]
         
-        filePath2 = os.path.join(auxfilepath,"CalcSoilSurfTemp.out")
+        filePath2 = os.path.join(tempfile.gettempdir(),"CalcSoilSurfTemp.out")
         
         calcsoilsurftempout = open(filePath2,"r")
         
@@ -421,7 +421,7 @@ def main(_HBZones,schedules_,_designFlowrates,_mincoolingTemps_,_maxheatingTemps
         
         try: zone.ETschedule = schedules_[zoneCount] # If zoneCount index in range of zoneCount
         except IndexError:
-            zone.ETschedule = "ALWAYS ON" # If zoneCount index is not in range of zoneCount or there is no schedule input set to default schedule of "ALWAYS ON"
+            zone.ETschedule = "Always On Discrete" # If zoneCount index is not in range of zoneCount or there is no schedule input set to default schedule of "ALWAYS ON"
         
         # Writing earth tube design flow rate
         
