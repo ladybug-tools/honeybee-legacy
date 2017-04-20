@@ -46,7 +46,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Read EP Surface Result"
 ghenv.Component.NickName = 'readEPSrfResult'
-ghenv.Component.Message = 'VER 0.0.61\nAPR_18_2017'
+ghenv.Component.Message = 'VER 0.0.61\nAPR_19_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -149,8 +149,8 @@ if _resultFileAddress:
                     print srfAreaLines
             elif '-FRAME' in line: srfAreaLines.append(srfAreaLines[-1]+1)
             elif lineCount in srfAreaLines:
-                if "Shading_Surface" in line: pass
-                elif "Zone_Surfaces" in line:
+                if "Shading_Surface" in line or "Shading Surface" in line: pass
+                elif "Zone_Surfaces" in line or "Zone Surfaces" in line:
                     zoneCounter += 1
                     srfCounter = -1
                 else:
@@ -186,7 +186,6 @@ if _resultFileAddress:
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
 else:
     gotSrfData =True
-
 
 #If no surafce data was imported from the .eio file, give the user a warning and tell them that they cannot normalize by area.
 if gotSrfData == False:
