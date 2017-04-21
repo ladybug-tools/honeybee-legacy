@@ -30,6 +30,7 @@ Provided by Honeybee 0.0.61
         _X_: Scaling factor in {x} direction
         _Y_: Scaling factor in {y} direction
         _Z_: Scaling factor in {z} direction
+        keepAdj_: Set to 'True' to have the component preserve adjacencies with other zones.  If set to 'False' or left blank, the existing adjacencies and boundary conditions will be deleted.
     Returns:
         HBObj: Transformed objects
 """
@@ -37,7 +38,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Scale Honeybee"
 ghenv.Component.NickName = 'scaleHBObj'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.61\nAPR_21_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -51,7 +52,7 @@ import uuid
 import Rhino as rc
 
 
-def main(HBObj, P,X,Y,Z):
+def main(HBObj, P,X,Y,Z, keepAdj=False):
 
     # import the classes
     if not sc.sticky.has_key('honeybee_release'):
@@ -87,17 +88,21 @@ def main(HBObj, P,X,Y,Z):
         Y = 1
     if not Z:
         Z = 1
+    if keepAdj == False:
+        clearBC = True
+    else:
+        clearBC = False
     
     # create a NU scale
     NUscale = rc.Geometry.Transform.Scale(P,X,Y,Z)
-    HBObject.transform(NUscale)
+    HBObject.transform(NUscale, clearBC)
     HBObj = hb_hive.addToHoneybeeHive([HBObject], ghenv.Component)
     
     return HBObj
 
 
 if _HBObj:
-    result = main(_HBObj, _plane_, _X_, _Y_, _Z_)
+    result = main(_HBObj, _plane_, _X_, _Y_, _Z_, keepAdj_)
     
     if result!=-1:
         HBObj = result

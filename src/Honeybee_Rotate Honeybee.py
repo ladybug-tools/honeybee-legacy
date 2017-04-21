@@ -31,12 +31,13 @@ Provided by Honeybee 0.0.61
         _angle: Angle of rotation in degrees
         centPt_: Optional rotation point if empty object center point will be used
         axis_: Optional rotation axis as a vector. Default is Z Axis
+        keepAdj_: Set to 'True' to have the component preserve adjacencies with other zones.  If set to 'False' or left blank, the existing adjacencies and boundary conditions will be deleted.
     Returns:
         HBObjs: Transformed objects
 """
 ghenv.Component.Name = "Honeybee_Rotate Honeybee"
 ghenv.Component.NickName = 'rotateHBObj'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.61\nAPR_21_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -50,7 +51,7 @@ import uuid
 import Rhino as rc
 import math
 
-def main(HBObj, angle, cenPt, axis):
+def main(HBObj, angle, cenPt, axis, keepAdj=False):
 
     # import the classes
     if not sc.sticky.has_key('honeybee_release'):
@@ -80,23 +81,26 @@ def main(HBObj, angle, cenPt, axis):
     
     if cenPt== None:
         cenPt = HBObject.cenPt
-    
     if not axis:
         axis = rc.Geometry.Vector3d.ZAxis
+    if keepAdj == False:
+        clearBC = True
+    else:
+        clearBC = False
     
     angle = math.radians(angle)
     
     # create a transform
     transform = rc.Geometry.Transform.Rotation(angle, axis, cenPt)
     
-    HBObject.transform(transform)
+    HBObject.transform(transform, clearBC)
     
     HBObj = hb_hive.addToHoneybeeHive([HBObject], ghenv.Component)
 
     return HBObj
     
 if _HBObj and _angle:
-    result = main(_HBObj, _angle, cenPt_, axis_)
+    result = main(_HBObj, _angle, cenPt_, axis_, keepAdj_)
     
     if result!=-1:
         HBObj = result

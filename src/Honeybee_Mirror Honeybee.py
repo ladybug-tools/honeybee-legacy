@@ -29,12 +29,13 @@ Provided by Honeybee 0.0.61
     Args:
         _HBObj: Honeybee surface or Honeybee zone
         _plane: Mirror plane
+        keepAdj_: Set to 'True' to have the component preserve adjacencies with other zones.  If set to 'False' or left blank, the existing adjacencies and boundary conditions will be deleted.
     Returns:
         HBObj: Transformed objects
 """
 ghenv.Component.Name = "Honeybee_Mirror Honeybee"
 ghenv.Component.NickName = 'mirrorHBObj'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.61\nAPR_21_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -48,7 +49,7 @@ import uuid
 import Rhino as rc
 
 
-def main(HBObj, plane):
+def main(HBObj, plane, keepAdj=False):
 
     # import the classes
     if not sc.sticky.has_key('honeybee_release'):
@@ -76,10 +77,15 @@ def main(HBObj, plane):
     except:
         raise TypeError("Wrong input type for _HBObj. Connect a Honeybee Surface or a HoneybeeZone to HBObject input")
     
+    if keepAdj == False:
+        clearBC = True
+    else:
+        clearBC = False
+    
     # create a transform
     transform = rc.Geometry.Transform.Mirror(plane)
     
-    HBObject.transform(transform, True, True)
+    HBObject.transform(transform, clearBC, True)
     if HBObject.objectType == 'HBZone':
         HBObject.checkZoneNormalsDir()
     
@@ -88,7 +94,7 @@ def main(HBObj, plane):
     return HBObj
     
 if _HBObj and _plane:
-    result = main(_HBObj, _plane)
+    result = main(_HBObj, _plane, keepAdj_)
     
     if result!=-1:
         HBObj = result

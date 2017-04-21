@@ -29,12 +29,13 @@ Provided by Honeybee 0.0.61
     Args:
         _HBObj: Honeybee surface or Honeybee zone
         _vector: Transform vector
+        keepAdj_: Set to 'True' to have the component preserve adjacencies with other zones.  If set to 'False' or left blank, the existing adjacencies and boundary conditions will be deleted.
     Returns:
         HBObj: Transformed objects
 """
 ghenv.Component.Name = "Honeybee_Move Honeybee"
 ghenv.Component.NickName = 'moveHBObj'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.61\nAPR_21_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -48,7 +49,7 @@ import uuid
 import Rhino as rc
 
 
-def main(HBObj, vector):
+def main(HBObj, vector, keepAdj=False):
 
     # import the classes
     if not sc.sticky.has_key('honeybee_release'):
@@ -76,18 +77,23 @@ def main(HBObj, vector):
     except:
         raise TypeError("Wrong input type for _HBObj. Connect a Honeybee Surface or a HoneybeeZone to HBObject input")
     
+    if keepAdj == False:
+        clearBC = True
+    else:
+        clearBC = False
+    
     # create a transform
     transform = rc.Geometry.Transform.Translation(_vector)
     #transform = rc.Geometry.Transform.Rotation(3.14, rc.Geometry.Vector3d.ZAxis, rc.Geometry.Point3d.Origin)
     
-    HBObject.transform(transform)
+    HBObject.transform(transform, clearBC)
     
     HBObj = hb_hive.addToHoneybeeHive([HBObject], ghenv.Component)
 
     return HBObj
     
 if _HBObj and _vector:
-    result = main(_HBObj, _vector)
+    result = main(_HBObj, _vector, keepAdj_)
     
     if result!=-1:
         HBObj = result
