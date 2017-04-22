@@ -34,7 +34,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Make Adiabatic"
 ghenv.Component.NickName = 'makeAdiabatic'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.61\nAPR_21_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -73,6 +73,9 @@ def main(HBSrfs):
     HBSurfaces = hb_hive.callFromHoneybeeHive(HBSrfs)
     for HBS in HBSurfaces:
         HBS.BC = "Adiabatic"
+        HBS.sunExposure = "NoSun"
+        HBS.windExposure = "NoWind"
+        HBS.srfBCByUser = True
     
     HBSurfaces  = hb_hive.addToHoneybeeHive(HBSurfaces, ghenv.Component)
     
