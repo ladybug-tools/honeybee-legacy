@@ -73,7 +73,7 @@ def main(HBObj, vector, keepAdj=False):
     # call the objects from the lib
     hb_hive = sc.sticky["honeybee_Hive"]()
     try:
-        HBObject = hb_hive.callFromHoneybeeHive([HBObj])[0]
+        HBObject = hb_hive.callFromHoneybeeHive(HBObj)
     except:
         raise TypeError("Wrong input type for _HBObj. Connect a Honeybee Surface or a HoneybeeZone to HBObject input")
     
@@ -84,11 +84,12 @@ def main(HBObj, vector, keepAdj=False):
     
     # create a transform
     transform = rc.Geometry.Transform.Translation(_vector)
-    #transform = rc.Geometry.Transform.Rotation(3.14, rc.Geometry.Vector3d.ZAxis, rc.Geometry.Point3d.Origin)
+    newKey = str(uuid.uuid4())[:8]
     
-    HBObject.transform(transform, clearBC)
+    for HObj in HBObject:
+        HObj.transform(transform, newKey, clearBC)
     
-    HBObj = hb_hive.addToHoneybeeHive([HBObject], ghenv.Component)
+    HBObj = hb_hive.addToHoneybeeHive(HBObject, ghenv.Component)
 
     return HBObj
     

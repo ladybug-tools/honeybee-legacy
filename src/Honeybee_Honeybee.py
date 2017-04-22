@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.61\nAPR_17_2017'
+ghenv.Component.Message = 'VER 0.0.61\nAPR_22_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -4986,14 +4986,25 @@ class EPZone(object):
         zOfPt = zoneBB.Min.Z + 0.8
         self.illumCntrlSensorPt = rc.Geometry.Point3d(zoneCentPt.X, zoneCentPt.Y, zOfPt)
     
-    def transform(self, transform, clearSurfacesBC = True, flip = False):
-        self.name += str(uuid.uuid4())[:8]
+    def transform(self, transform, newKey=None, clearSurfacesBC = True, flip = False):
+        if newKey == None:
+            self.name += str(uuid.uuid4())[:8]
+        else:
+            self.name += newKey
         self.geometry.Transform(transform)
         self.cenPt.Transform(transform)
+        if clearSurfacesBC == True:
+            self.mixAir = False
+            self.mixAirZoneList = []
+            self.mixAirFlowList = []
+            self.mixAirFlowSched = []
+        else:
+            for count, mixZ in enumerate(self.mixAirZoneList):
+                self.mixAirZoneList[count] = mixZ + newKey
         if flip == True:
             self.geometry.Flip()
         for surface in self.surfaces:
-            surface.transform(transform, clearSurfacesBC, flip)
+            surface.transform(transform, newKey, clearSurfacesBC, flip)
     
     def assignScheduleBasedOnProgram(self, component = None):
         # create an open office is the program is not assigned
@@ -6449,11 +6460,14 @@ class hb_EPSurface(object):
         else:
             return 0 #wall
     
-    def transform(self, transform, clearBC = True, flip = False):
+    def transform(self, transform, newKey=None, clearBC = True, flip = False):
         """Transform EPSurface using a transform object
            Transform can be any valid transform object (e.g Translate, Rotate, Mirror)
         """
-        self.name += str(uuid.uuid4())[:8]
+        if newKey == None:
+            self.name += str(uuid.uuid4())[:8]
+        else:
+            self.name += newKey
         self.geometry.Transform(transform)
         self.meshedFace.Transform(transform)
         # move center point and normal

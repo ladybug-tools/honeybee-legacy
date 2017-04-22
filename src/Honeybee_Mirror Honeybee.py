@@ -73,7 +73,7 @@ def main(HBObj, plane, keepAdj=False):
     # call the objects from the lib
     hb_hive = sc.sticky["honeybee_Hive"]()
     try:
-        HBObject = hb_hive.callFromHoneybeeHive([HBObj])[0]
+        HBObject = hb_hive.callFromHoneybeeHive(HBObj)
     except:
         raise TypeError("Wrong input type for _HBObj. Connect a Honeybee Surface or a HoneybeeZone to HBObject input")
     
@@ -84,12 +84,14 @@ def main(HBObj, plane, keepAdj=False):
     
     # create a transform
     transform = rc.Geometry.Transform.Mirror(plane)
+    newKey = str(uuid.uuid4())[:8]
     
-    HBObject.transform(transform, clearBC, True)
-    if HBObject.objectType == 'HBZone':
-        HBObject.checkZoneNormalsDir()
+    for HObj in HBObject:
+        HObj.transform(transform, newKey, clearBC, True)
+        if HObj.objectType == 'HBZone':
+            HObj.checkZoneNormalsDir()
     
-    HBObj = hb_hive.addToHoneybeeHive([HBObject], ghenv.Component)
+    HBObj = hb_hive.addToHoneybeeHive(HBObject, ghenv.Component)
 
     return HBObj
     

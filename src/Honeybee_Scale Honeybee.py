@@ -76,7 +76,7 @@ def main(HBObj, P,X,Y,Z, keepAdj=False):
     # call the objects from the lib
     hb_hive = sc.sticky["honeybee_Hive"]()
     try:
-        HBObject = hb_hive.callFromHoneybeeHive([HBObj])[0]
+        HBObject = hb_hive.callFromHoneybeeHive(HBObj)
     except:
         raise TypeError("Wrong input type for _HBObj. Connect a Honeybee Surface or a HoneybeeZone to HBObject input")
     
@@ -95,8 +95,12 @@ def main(HBObj, P,X,Y,Z, keepAdj=False):
     
     # create a NU scale
     NUscale = rc.Geometry.Transform.Scale(P,X,Y,Z)
-    HBObject.transform(NUscale, clearBC)
-    HBObj = hb_hive.addToHoneybeeHive([HBObject], ghenv.Component)
+    newKey = str(uuid.uuid4())[:8]
+    
+    for HObj in HBObject:
+        HObj.transform(NUscale, newKey, clearBC)
+    
+    HBObj = hb_hive.addToHoneybeeHive(HBObject, ghenv.Component)
     
     return HBObj
 

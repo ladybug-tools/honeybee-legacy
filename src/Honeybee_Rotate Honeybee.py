@@ -75,12 +75,10 @@ def main(HBObj, angle, cenPt, axis, keepAdj=False):
     # call the objects from the lib
     hb_hive = sc.sticky["honeybee_Hive"]()
     try:
-        HBObject = hb_hive.callFromHoneybeeHive([HBObj])[0]
+        HBObject = hb_hive.callFromHoneybeeHive(HBObj)
     except:
         raise TypeError("Wrong input type for _HBObj. Connect a Honeybee Surface or a HoneybeeZone to HBObject input")
     
-    if cenPt== None:
-        cenPt = HBObject.cenPt
     if not axis:
         axis = rc.Geometry.Vector3d.ZAxis
     if keepAdj == False:
@@ -92,10 +90,14 @@ def main(HBObj, angle, cenPt, axis, keepAdj=False):
     
     # create a transform
     transform = rc.Geometry.Transform.Rotation(angle, axis, cenPt)
+    newKey = str(uuid.uuid4())[:8]
     
-    HBObject.transform(transform, clearBC)
+    for HObj in HBObject:
+        if cenPt== None:
+            cenPt = HObj.cenPt
+        HObj.transform(transform, newKey, clearBC)
     
-    HBObj = hb_hive.addToHoneybeeHive([HBObject], ghenv.Component)
+    HBObj = hb_hive.addToHoneybeeHive(HBObject, ghenv.Component)
 
     return HBObj
     
