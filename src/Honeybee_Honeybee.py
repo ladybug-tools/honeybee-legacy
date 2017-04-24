@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.61\nAPR_22_2017'
+ghenv.Component.Message = 'VER 0.0.61\nAPR_24_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -4987,7 +4987,7 @@ class EPZone(object):
         self.illumCntrlSensorPt = rc.Geometry.Point3d(zoneCentPt.X, zoneCentPt.Y, zOfPt)
     
     def transform(self, transform, newKey=None, clearSurfacesBC = True, flip = False):
-        if newKey == None:
+        if clearSurfacesBC == True or newKey == None:
             self.name += str(uuid.uuid4())[:8]
         else:
             self.name += newKey
@@ -6464,7 +6464,7 @@ class hb_EPSurface(object):
         """Transform EPSurface using a transform object
            Transform can be any valid transform object (e.g Translate, Rotate, Mirror)
         """
-        if newKey == None:
+        if clearBC == True or newKey == None:
             self.name += str(uuid.uuid4())[:8]
         else:
             self.name += newKey
@@ -6488,7 +6488,7 @@ class hb_EPSurface(object):
             if flip: self.punchedGeometry.Flip()
             
             for childSrf in self.childSrfs:
-                childSrf.transform(transform, clearBC, flip)
+                childSrf.transform(transform, newKey, clearBC, flip)
         
     def getTotalArea(self):
         return self.geometry.GetArea()

@@ -35,11 +35,11 @@ Provided by Honeybee 0.0.61
 """
 ghenv.Component.Name = "Honeybee_Mirror Honeybee"
 ghenv.Component.NickName = 'mirrorHBObj'
-ghenv.Component.Message = 'VER 0.0.61\nAPR_21_2017'
+ghenv.Component.Message = 'VER 0.0.61\nAPR_24_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
-#compatibleHBVersion = VER 0.0.57\nNOV_04_2016
+#compatibleHBVersion = VER 0.0.57\nAPR_24_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "6"
 except: pass
@@ -77,7 +77,7 @@ def main(HBObj, plane, keepAdj=False):
     except:
         raise TypeError("Wrong input type for _HBObj. Connect a Honeybee Surface or a HoneybeeZone to HBObject input")
     
-    if keepAdj == False:
+    if keepAdj == False or keepAdj == None:
         clearBC = True
     else:
         clearBC = False
