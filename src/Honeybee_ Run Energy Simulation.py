@@ -61,11 +61,11 @@ Provided by Honeybee 0.0.61
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.61\nMAR_21_2017'
+ghenv.Component.Message = 'VER 0.0.61\nAPR_25_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nSEP_17_2016
+#compatibleHBVersion = VER 0.0.56\nAPR_25_2016
 #compatibleLBVersion = VER 0.0.59\nJUL_24_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
@@ -884,7 +884,7 @@ class WriteIDF(object):
                 '\t' + ',     !- Minimum Indoor Temperature Shcedule Name\n' + \
                 '\t' + str(zone.natVentMaxIndoorTemp[natVentCount])  + ',     !- Maximum Indoor Temperature\n' + \
                 '\t' + ',     !- Maximum Indoor Temperature Shcedule Name\n' + \
-                '\t' + '-100'  + ',     !- Delta Temperature\n' + \
+                '\t' + str(zone.natVentDeltaTemp[natVentCount])  + ',     !- Delta Temperature\n' + \
                 '\t' + ',     !- Delta Temperature Shcedule Name\n' + \
                 '\t' + str(zone.natVentMinOutdoorTemp[natVentCount])  + ',     !- Minimum Outdoor Temperature\n' + \
                 '\t' + ',     !- Minimum Outdoor Temperature Shcedule Name\n' + \
@@ -918,7 +918,7 @@ class WriteIDF(object):
                 '\t' + ',     !- Minimum Indoor Temperature Shcedule Name\n' + \
                 '\t' + str(zone.natVentMaxIndoorTemp[natVentCount])  + ',     !- Maximum Indoor Temperature\n' + \
                 '\t' + ',     !- Maximum Indoor Temperature Shcedule Name\n' + \
-                '\t' + '-100'  + ',     !- Delta Temperature\n' + \
+                '\t'  + str(zone.natVentDeltaTemp[natVentCount])  + ',     !- Delta Temperature\n' + \
                 '\t' + ',     !- Delta Temperature Shcedule Name\n' + \
                 '\t' + str(zone.natVentMinOutdoorTemp[natVentCount])  + ',     !- Minimum Outdoor Temperature\n' + \
                 '\t' + ',     !- Minimum Outdoor Temperature Shcedule Name\n' + \

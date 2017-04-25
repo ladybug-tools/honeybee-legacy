@@ -69,11 +69,11 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.61\nAPR_19_2017'
+ghenv.Component.Message = 'VER 0.0.61\nAPR_25_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nSEP_09_2016
+#compatibleHBVersion = VER 0.0.56\nAPR_25_2017
 #compatibleLBVersion = VER 0.0.59\nJUL_24_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
@@ -3398,10 +3398,10 @@ class EPFeaturesNotInOS(object):
                 '\t' + str(zone.windowHeightDiff[natVentCount]) + ', !- Height Difference\n' + \
                 '\t' + str(zone.natVentStackDischarge[natVentCount]) + ',    !- Discharge Coefficient for Opening\n' + \
                 '\t' + str(zone.natVentMinIndoorTemp[natVentCount])  + ',     !- Minimum Indoor Temperature\n' + \
-                '\t' + ',     !- Minimum Indoor Temperature Shcedule Name\n' + \
+                '\t' + ',     !- Minimum Indoor Temperature Schedule Name\n' + \
                 '\t' + str(zone.natVentMaxIndoorTemp[natVentCount])  + ',     !- Maximum Indoor Temperature\n' + \
-                '\t' + ',     !- Maximum Indoor Temperature Shcedule Name\n' + \
-                '\t' + '-100'  + ',     !- Delta Temperature\n' + \
+                '\t' + ',     !- Maximum Indoor Temperature Schedule Name\n' + \
+                '\t' + str(zone.natVentDeltaTemp[natVentCount])  + ',     !- Delta Temperature\n' + \
                 '\t' + ',     !- Delta Temperature Shcedule Name\n' + \
                 '\t' + str(zone.natVentMinOutdoorTemp[natVentCount])  + ',     !- Minimum Outdoor Temperature\n' + \
                 '\t' + ',     !- Minimum Outdoor Temperature Shcedule Name\n' + \
@@ -3437,7 +3437,7 @@ class EPFeaturesNotInOS(object):
                 '\t' + ',     !- Minimum Indoor Temperature Shcedule Name\n' + \
                 '\t' + str(zone.natVentMaxIndoorTemp[natVentCount])  + ',     !- Maximum Indoor Temperature\n' + \
                 '\t' + ',     !- Maximum Indoor Temperature Shcedule Name\n' + \
-                '\t' + '-100'  + ',     !- Delta Temperature\n' + \
+                '\t' + str(zone.natVentDeltaTemp[natVentCount]) + ',     !- Delta Temperature\n' + \
                 '\t' + ',     !- Delta Temperature Shcedule Name\n' + \
                 '\t' + str(zone.natVentMinOutdoorTemp[natVentCount])  + ',     !- Minimum Outdoor Temperature\n' + \
                 '\t' + ',     !- Minimum Outdoor Temperature Shcedule Name\n' + \

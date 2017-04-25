@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.61\nAPR_24_2017'
+ghenv.Component.Message = 'VER 0.0.61\nAPR_25_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -4902,6 +4902,7 @@ class EPZone(object):
         self.natVentMaxIndoorTemp = []
         self.natVentMinOutdoorTemp = []
         self.natVentMaxOutdoorTemp = []
+        self.natVentDeltaTemp = []
         self.windowOpeningArea = []
         self.windowHeightDiff = []
         self.natVentSchedule = []
