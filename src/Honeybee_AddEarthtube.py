@@ -22,6 +22,7 @@
 
 """
 Use this component to add an Energy Plus earth tube to a Zone.
+
 An earth tube is a long, underground metal or plastic pipe through which air is drawn. During cooling season, as air travels through the pipe, it gives up some of its heat to the surrounding soil and enters the room as cooler air. Similarly, during heating season, as air travels through the pipe, it receives some of its heat from the soil and enters the room as warmer air. Simple earth tubes in EnergyPlus can be controlled by a schedule and through the specification of minimum, maximum, and delta temperatures as described below. As with infiltration and ventilation, the actual flow rate of air through the earth tube can be modified by the temperature difference between the inside and outside environment and the wind speed. The basic equation used to calculate air flow rate of earth tube in EnergyPlus is:
 EarthTubeFlowRate = E*F*[A+B|Tzone-Todb|+C(Windspeed)+D(Windspeed^2)]
 -
@@ -38,6 +39,7 @@ For more information about the Energy Plus Earthtube please see:
 http://bigladdersoftware.com/epx/docs/8-2/input-output-reference/group-airflow.html#zoneearthtube-earth-tube
 -
 Provided by Honeybee 0.0.61
+
     Args:
         _HBZones: The Honeybee zones to which Earthtubes will be added to. Only one earth tube will be added to each zone.
         _epwFile: An .epw file path on your system as a text string. Used to find the ground temperature of the site so Earthtube calculations can be undertaken.
@@ -110,11 +112,11 @@ Provided by Honeybee 0.0.61
 """
 
 ghenv.Component.Name = "Honeybee_AddEarthtube"
-ghenv.Component.Message = 'VER 0.0.61\nAPR_19_2017'
+ghenv.Component.Message = 'VER 0.0.61\nMAY_06_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "13 | WIP" #"08 | Energy | Set Zone Properties"
-#compatibleHBVersion = VER 0.0.56\nNOV_04_2016
+ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
+#compatibleHBVersion = VER 0.0.56\nMAY_06_2017
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
@@ -128,7 +130,8 @@ import rhinoscriptsyntax as rs
 import itertools
 import subprocess
 import tempfile
-
+import System
+import zipfile
 
 readmedatatree = Grasshopper.DataTree[object]()
 
@@ -300,7 +303,31 @@ def checktheinputs(schedules_,_designFlowrates,_mincoolingTemps_,_maxheatingTemp
                     print msg
                     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
                     return -1
-    
+
+def downloadCalcSoilSrfTemp():
+    try:
+        EPPath = sc.sticky["honeybee_folders"]["EPPath"]
+        client = System.Net.WebClient()
+        client.DownloadFile('https://github.com/mostaphaRoudsari/honeybee/raw/master/resources/EPRunFiles/CalcSoilSurfTemp.zip', EPPath+'/PreProcess/CalcSoilSurfTemp.zip')
+        sourceFile = EPPath+'/PreProcess/CalcSoilSurfTemp.zip'
+        with zipfile.ZipFile(sourceFile) as zf:
+            for member in zf.infolist():
+                words = member.filename.split('\\')
+                path = EPPath+'/PreProcess/'
+                for word in words[:-1]:
+                    drive, word = os.path.splitdrive(word)
+                    head, word = os.path.split(word)
+                    if word in (os.curdir, os.pardir, ''): continue
+                    path = os.path.join(path, word)
+                zf.extract(member, path)
+        return os.path.join(EPPath,'PreProcess','CalcSoilSurfTemp','CalcSoilSurfTemp.exe ').replace("/","\\")
+    except Exception, e:
+        warning = 'Failed to download the files needed to run earth tubes with OpenStudio 2.x.'
+        warning += '\n' + `e`
+        print warning
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+        return None
+
 
 def main(_HBZones,schedules_,_designFlowrates,_mincoolingTemps_,_maxheatingTemps_,_deltaTemps_,_earthTubeTypes_,_fanPrises_,_fanEfficiencies_,_pipeRadii_,_pipeThicknesses_,_pipeLengths_,_pipeDepths_,_soilCondition_,_conditionGroundSurface_,_pipeThermalConductivity_):
     
@@ -366,17 +393,21 @@ def main(_HBZones,schedules_,_designFlowrates,_mincoolingTemps_,_maxheatingTemps
         """
         
         PfolderE = sc.sticky["honeybee_folders"]["EPPath"] 
-
-        # The process for creating the wrapper is below
-
-        epwFile = _epwFile
         
-        exePath = os.path.join(PfolderE,'PreProcess','CalcSoilSurfTemp','CalcSoilSurfTemp.exe ').replace("/","\\")
+        if not os.path.isdir(os.path.join(PfolderE,'PreProcess','CalcSoilSurfTemp')):
+            exePath = downloadCalcSoilSrfTemp()
+            if exePath == None:
+                return -1
+        else:
+            exePath = os.path.join(PfolderE,'PreProcess','CalcSoilSurfTemp','CalcSoilSurfTemp.exe ').replace("/","\\")
+        
+        # The process for creating the wrapper is below
+        epwFile = _epwFile
         auxfilepath = os.path.join(PfolderE,"PreProcess","CalcSoilSurfTemp").replace("/","\\")
         # Need to change to auxfilepath directory or the .out file will be put under rhinoAppdata!!!
         os.chdir(tempfile.gettempdir())
-        
         print "The .out file was written to "+tempfile.gettempdir()
+        
         
         process = subprocess.Popen(exePath+' '+epwFile,stdin=subprocess.PIPE)
         
@@ -407,7 +438,11 @@ def main(_HBZones,schedules_,_designFlowrates,_mincoolingTemps_,_maxheatingTemps
             
     # Create a wrapper for the EnergyPlus auxilary CalcSoilSurfTemp.exe
     
-    annav,amp,phaseconstant = calcsoilsurftempwrap(_soilCondition_,_conditionGroundSurface_)
+    result = calcsoilsurftempwrap(_soilCondition_,_conditionGroundSurface_)
+    if result != -1:
+        annav,amp,phaseconstant = result
+    else:
+        return -1
     
     soil_cond = soilconditionforIDF(_soilCondition_)
     
@@ -543,18 +578,19 @@ def main(_HBZones,schedules_,_designFlowrates,_mincoolingTemps_,_maxheatingTemps
         readmedatatree.Add(message,gh.Data.GH_Path(zoneCount))
         
     # Add modified zones to dictionary
-
+    
     ModifiedHBZones = hb_hive.addToHoneybeeHive(HBObjectsFromHive, ghenv.Component)
     
     return ModifiedHBZones
-    
 
 
 
 if checktheinputs(schedules_,_designFlowrates,_mincoolingTemps_,_maxheatingTemps_,_deltaTemps_,_earthTubeTypes_,_fanPrises_,_fanEfficiencies_,_pipeRadii_,_pipeDepths_,_soilCondition_,_conditionGroundSurface_,_pipeThermalConductivity_) != -1:
 
     if _HBZones and _HBZones[0]!= None:
-        earthTubeHBZones = main(_HBZones,schedules_,_designFlowrates,_mincoolingTemps_,_maxheatingTemps_,_deltaTemps_,_earthTubeTypes_,_fanPrises_,_fanEfficiencies_,_pipeRadii_,_pipeThicknesses_,_pipeLengths_,_pipeDepths_,_soilCondition_,_conditionGroundSurface_,_pipeThermalConductivity_)
+        result = main(_HBZones,schedules_,_designFlowrates,_mincoolingTemps_,_maxheatingTemps_,_deltaTemps_,_earthTubeTypes_,_fanPrises_,_fanEfficiencies_,_pipeRadii_,_pipeThicknesses_,_pipeLengths_,_pipeDepths_,_soilCondition_,_conditionGroundSurface_,_pipeThermalConductivity_)
+        if result != -1:
+            earthTubeHBZones = result
         
         # Create the output Datatree
-        Readme = readmedatatree
+        readMe = readmedatatree

@@ -9147,6 +9147,8 @@ if checkIn.letItFly:
                         warning += '\n' + `e`
                         print warning
                         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+                if not os.path.isdir('C:/%s/EnergyPlus/PreProcess/'%installedOPS):
+                    os.mkdir('C:/%s/EnergyPlus/PreProcess/'%installedOPS)
             else:
                 openStudioLibFolder = None
                 QtFolder = None
