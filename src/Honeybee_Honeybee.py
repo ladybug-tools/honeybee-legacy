@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.61\nAPR_25_2017'
+ghenv.Component.Message = 'VER 0.0.61\nMAY_06_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -3625,10 +3625,15 @@ class EPMaterialAux(object):
         elif materialType.lower() == "material:nomass":
             # Material:NoMass is defined by R-Value and not U-Value
             UValueSI = 1 / float(materialObj[2][0])
-            
+        
         elif materialType.lower() == "material":
             thickness = float(materialObj[2][0])
             conductivity = float(materialObj[3][0])
+            UValueSI = conductivity/thickness
+        
+        elif materialType.lower() == "material:roofvegetation":
+            thickness = float(materialObj[8][0])
+            conductivity = float(materialObj[9][0])
             UValueSI = conductivity/thickness
         
         elif materialType.lower() == "material:airgap":

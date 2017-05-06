@@ -69,7 +69,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.61\nAPR_25_2017'
+ghenv.Component.Message = 'VER 0.0.61\nMAY_06_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -2889,6 +2889,52 @@ class WriteOPS(object):
         
         return nomassMaterial
     
+    def createOSVegetationMaterial(self, HBMaterialName, values, model):
+        """
+        Material:NoMass
+        ['Height of Plants {m}', 'Leaf Area Index {dimensionless}', 'Leaf Reflectivity {dimensionless}', 'Leaf Emissivity', 'Minimum Stomatal Resistance {s/m}', 'Soil Layer Name', 'Roughness', 'Thickness {m}', 'Conductivity of Dry Soil {W/m-K}', 'Density of Dry Soil {kg/m3}', 'Specific Heat of Dry Soil {J/kg-K}', 'Thermal Absorptance', 'Solar Absorptance', 'Visible Absorptance', 'Saturation Volumetric Moisture Content of the Soil Layer', 'Residual Volumetric Moisture Content of the Soil Layer', 'Initial Volumetric Moisture Content of the Soil Layer', 'Moisture Diffusion Calculation Method']
+        """
+        vegMaterial = ops.RoofVegetation(model)
+        vegMaterial.setName(HBMaterialName)
+        
+        plantHeight = values[0]
+        lai = float(values[1])
+        lf = float(values[2])
+        le = float(values[3])
+        stomatalResis = float(values[4])
+        soilLayer = values[5]
+        roughness = values[6]
+        thickness = float(values[7])
+        conductivity = float(values[8])
+        density = float(values[9])
+        thermalAbsorptance = float(values[10])
+        solarAbsorptance = float(values[11])
+        visibleAbsorptance = float(values[12])
+        saturationVolumetricMoisture = float(values[13])
+        residualVolumetricMoisture = float(values[14])
+        initialVolumetricMoisture = float(values[15])
+        moistureDiffusionMethod = values[16]
+        
+        vegMaterial.setString(2, plantHeight)
+        vegMaterial.setLeafAreaIndex(lai)
+        vegMaterial.setLeafReflectivity(lf)
+        vegMaterial.setLeafEmissivity(le)
+        vegMaterial.setMinimumStomatalResistance(stomatalResis)
+        vegMaterial.setSoilLayerName(soilLayer)
+        vegMaterial.setRoughness(roughness)
+        vegMaterial.setThickness(thickness)
+        vegMaterial.setConductivityofDrySoil(conductivity)
+        vegMaterial.setDensityofDrySoil(density)
+        vegMaterial.setThermalAbsorptance(thermalAbsorptance)
+        vegMaterial.setSolarAbsorptance(solarAbsorptance)
+        vegMaterial.setVisibleAbsorptance(visibleAbsorptance)
+        vegMaterial.setSaturationVolumetricMoistureContentoftheSoilLayer(saturationVolumetricMoisture)
+        vegMaterial.setResidualVolumetricMoistureContentoftheSoilLayer(residualVolumetricMoisture)
+        vegMaterial.setInitialVolumetricMoistureContentoftheSoilLayer(initialVolumetricMoisture)
+        vegMaterial.setMoistureDiffusionCalculationMethod(moistureDiffusionMethod)
+        
+        return vegMaterial
+    
     def createOSWindowGasMaterial(self, HBMaterialName, values, model):
         """
         WindowMaterial:Gas
@@ -3026,6 +3072,9 @@ class WriteOPS(object):
         
         elif values[0].lower() == "material:nomass":
             return self.createOSNoMassMaterial(HBMaterialName, values[1:], model)
+        
+        elif values[0].lower() == "material:roofvegetation":
+            return self.createOSVegetationMaterial(HBMaterialName, values[1:], model)
         
         elif values[0].lower() == "material:airgap":
             return self.createOSAirGap(HBMaterialName, values[1:], model)
