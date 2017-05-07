@@ -337,6 +337,7 @@ class hb_findFolders():
         self.RADPath, self.RADFile = self.which('rad.exe')
         self.EPPath, self.EPFile = self.which('EnergyPlus.exe')
         self.DSPath, self.DSFile = self.which('gen_dc.exe')
+        self.THERMPath, self.THERMFile = self.which('Therm7.exe')
     
     def which(self, program):
         """
@@ -344,7 +345,7 @@ class hb_findFolders():
         http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
         """
         def is_exe(fpath):
-
+            
             # Avoid Radiance and Daysim that comes with DIVA as it has a different
             # structure which doesn't match the standard Daysim
             if fpath.upper().find("DIVA")<0:
@@ -355,7 +356,7 @@ class hb_findFolders():
             
             else:
                 return False
-                
+        
         fpath, fname = os.path.split(program)
         if fpath:
             if is_exe(program):
@@ -9005,6 +9006,11 @@ if checkIn.letItFly:
         sc.sticky["honeybee_release"] = versionCheck()
         folders = hb_findFolders()
         
+        # Function to sort vrsions of software
+        def getversion(filePath):
+            ver = ''.join(s for s in filePath if (s.isdigit() or s == '.'))
+            return sum(int(i) * d ** 10 for d, i in enumerate(reversed(ver.split('.'))))
+        
         sc.sticky["honeybee_folders"] = {}
         
         if folders.RADPath == None:
@@ -9041,7 +9047,7 @@ if checkIn.letItFly:
         
         sc.sticky["honeybee_folders"]["RADPath"] = folders.RADPath
         sc.sticky["honeybee_folders"]["RADLibPath"] = hb_RADLibPath
-            
+        
         if folders.DSPath == None:
             if os.path.isdir("c:\\daysim\\bin\\"):
                 folders.DSPath = "c:\\daysim\\bin\\"
@@ -9092,10 +9098,6 @@ if checkIn.letItFly:
         # check for OpenStudio Folder.
         openStudioLibFolder = None
         QtFolder = None
-        
-        def getversion(openStudioPath):
-            ver = ''.join(s for s in openStudioPath if (s.isdigit() or s == '.'))
-            return sum(int(i) * d ** 10 for d, i in enumerate(reversed(ver.split('.'))))
         
         installedOPS1 = [f for f in os.listdir("C:\\Program Files") if f.startswith("OpenStudio")]
         installedOPS2 = [f for f in os.listdir("C:\\") if f.startswith("openstudio")]
@@ -9194,7 +9196,7 @@ if checkIn.letItFly:
             msg += versions
             print msg
         else:
-            print "Found installation of EnergyPlus " + EPVersion + ".\n"
+            print "Found installation of EnergyPlus" + EPVersion + "."
         
         sc.sticky["honeybee_folders"]["OSLibPath"] = openStudioLibFolder
         sc.sticky["honeybee_folders"]["OSQtPath"] = QtFolder
@@ -9202,8 +9204,59 @@ if checkIn.letItFly:
         sc.sticky["honeybee_folders"]["EPVersion"] = EPVersion.replace("-", ".")[1:]
         
         
+        # Check for an installation of THERM.
+        THERMVersions = ["7.5"]
+        THERMVersion = ''
+        THERMSettingsFile = ''
+        if folders.THERMPath != None:
+            # Honeybee has already found a version of THERM. Make sure it's an acceptable version
+            THERMVersion = os.path.split(folders.THERMPath)[-1].split("THERM")[-1]
+            if THERMVersion not in THERMVersions:
+                #Not an acceptable version so remove it from the path
+                folders.THERMPath = None
+            else:
+                print "Found installation of THERM " + THERMVersion + "."
+        
+        if folders.THERMPath == None:
+            if os.path.isdir("C:/Program Files (x86)/lbnl/"):
+                installedTHERM = [f for f in os.listdir("C:/Program Files (x86)/lbnl/") if f.startswith("THERM")]
+                try:
+                    installedTHERM = sorted(installedTHERM, key=getversion, reverse=True)
+                except Exception as e:
+                    print('Failed to sort THERM installation folders.')
+                if len(installedTHERM) != 0:
+                    for thermInstall in installedTHERM:
+                        THERMVersionInit = thermInstall.split("THERM")[-1]
+                        if THERMVersionInit in THERMVersions:
+                            THERMVersion = THERMVersionInit
+                            folders.THERMPath = "C:/Program Files (x86)/lbnl/%s/"%thermInstall
+                            print "Found installation of THERM " + THERMVersion + "."
+        
+        if folders.THERMPath == None:
+            msg= "Honeybee cannot find a compatible LBNL THERM installation on your system.\n" + \
+             "You won't be able to run THERM simulations of heat flow through constructions.\n" + \
+             "You need THERM version 7.5 or above and you can download it from here:"
+            msg2 = "https://windows.lbl.gov/software/therm/7/index_7_5_13.html"
+            ghenv.Component.AddRuntimeMessage(w, msg)
+            ghenv.Component.AddRuntimeMessage(w, msg2)
+            folders.THERMPath = ""
+        else:
+            if os.path.isfile('C:/Users/Public/LBNL/Settings/therm%s.ini'%THERMVersion):
+                THERMSettingsFile = 'C:/Users/Public/LBNL/Settings/therm%s.ini'%THERMVersion
+            else:
+                msg= "Failed to load THERM settings file.\n" + \
+                 "You won't be able to run THERM simulations."
+                ghenv.Component.AddRuntimeMessage(w, msg)
+            if not folders.THERMPath in os.environ['PATH']:
+                os.environ['PATH'] = ";".join([folders.THERMPath, os.environ['PATH']])
+        
+        sc.sticky["honeybee_folders"]["THERMPath"] = folders.THERMPath
+        sc.sticky["honeybee_folders"]["ThermSettings"] = THERMSettingsFile
+        
+        
         # initiate an empty library in case this is the first time honeybee is flying in this document
         # otherwise it has been already created/
+        print ""
         if "honeybee_Hive" not in sc.sticky:
             sc.sticky["honeybee_RADMaterialLib"] = dict()
         
