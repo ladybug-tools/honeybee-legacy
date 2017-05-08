@@ -61,7 +61,7 @@ Provided by Honeybee 0.0.61
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.61\nAPR_25_2017'
+ghenv.Component.Message = 'VER 0.0.61\nMAY_07_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -2313,7 +2313,9 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         print "[8 of 8] Writing outputs..."
         idfFile.write('\n')
         idfFile.write("OutputControl:Table:Style,CommaAndHTML,JtoKWH;")
+        idfFile.write('\n')
         idfFile.write("Output:Table:SummaryReports,AllSummary;")
+        idfFile.write('\n')
         for line in simulationOutputs[1:]:
             idfFile.write(line + '\n')
             
