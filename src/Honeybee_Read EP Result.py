@@ -238,6 +238,11 @@ def checkZoneSys(sysInt):
     path.append(int(sysInt)-1)
     return zoneName
 
+def checkZSys(sysInt, sysType):
+    zoneName = " " + sysType + " " + str(sysInt)
+    path.append(int(sysInt)-1)
+    return zoneName
+
 def checkSys(sysInt, sysType):
     zoneName = " " + sysType + " " + str(sysInt)
     path.append(int(sysInt)-1+len(zoneNameList))
@@ -307,7 +312,7 @@ if _resultFileAddress and gotData == True and csvExists == True:
                             zoneName = checkSys(" " + ":".join(column.split(":")[:-1]).split('COIL COOLING DX TWO SPEED ')[-1], 'DX Cooling Coil')
                             idealAirTrigger = False
                         elif 'ZONE HVAC TERMINAL UNIT VARIABLE REFRIGERANT FLOW' in column:
-                            zoneName = checkZoneSys(" " + ":".join(column.split(":")[:-1]).split('ZONE HVAC TERMINAL UNIT VARIABLE REFRIGERANT FLOW ')[-1])
+                            zoneName = checkZSys(" " + ":".join(column.split(":")[:-1]).split('ZONE HVAC TERMINAL UNIT VARIABLE REFRIGERANT FLOW ')[-1], 'VRF Terminal Unit')
                             idealAirTrigger = False
                         elif 'VRF HEAT PUMP -' in column:
                             zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('VRF HEAT PUMP - ')[-1], 5)
@@ -338,8 +343,8 @@ if _resultFileAddress and gotData == True and csvExists == True:
                         elif 'IDEAL LOADS AIR SYSTEM' in column:
                             zoneName = checkZone(" " + ":".join(column.split(":")[:-1]).split(' IDEAL LOADS AIR SYSTEM')[0])
                             idealAirTrigger = True
-                        elif 'COIL HEATING DX SINGLE SPEED' in column:
-                            zoneName = checkZoneSys(" " + ":".join(column.split(":")[:-1]).split('COIL HEATING DX SINGLE SPEED ')[-1])
+                        elif 'COIL HEATING DX SINGLE SPEED' in column and not 'Heating Coil Total Heating Energy' in column:
+                            zoneName = checkZSys(" " + ":".join(column.split(":")[:-1]).split('COIL HEATING DX SINGLE SPEED ')[-1], 'DX Heating Coil')
                             idealAirTrigger = 2
                         elif 'COIL HEATING GAS' in column and not 'Heating Coil Electric Energy' in column:
                             zoneName = checkSys(" " + ":".join(column.split(":")[:-1]).split('COIL HEATING GAS ')[-1], 'Gas Coil')
@@ -348,7 +353,7 @@ if _resultFileAddress and gotData == True and csvExists == True:
                             zoneName = checkSys(" " + ":".join(column.split(":")[:-1]).split('COIL HEATING ELECTRIC ')[-1], 'Electric Coil')
                             idealAirTrigger = 2
                         elif 'ZONE HVAC TERMINAL UNIT VARIABLE REFRIGERANT FLOW' in column and not 'Heating Coil Total Heating Energy' in column:
-                            zoneName = checkZoneSys(" " + ":".join(column.split(":")[:-1]).split('ZONE HVAC TERMINAL UNIT VARIABLE REFRIGERANT FLOW ')[-1])
+                            zoneName = checkZSys(" " + ":".join(column.split(":")[:-1]).split('ZONE HVAC TERMINAL UNIT VARIABLE REFRIGERANT FLOW ')[-1], 'VRF Terminal Unit')
                             idealAirTrigger = 2
                         elif 'VRF HEAT PUMP -' in column:
                             zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('VRF HEAT PUMP - ')[-1], 5)
@@ -359,20 +364,26 @@ if _resultFileAddress and gotData == True and csvExists == True:
                         elif 'HUMIDIFIER STEAM ELECTRIC' in column:
                             zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('HUMIDIFIER STEAM ELECTRIC ')[-1], 4)
                             idealAirTrigger = 2
-                        else:
+                        elif 'Heating Coil Total Heating Energy' not in column:
                             zoneName = " " +column.split(":")[0]
                             checkCustomName(customCount)
                             customCount+=1
+                        else:
+                            zoneName = None
+                            path.append(0)
                         
                         try:
-                            if idealAirTrigger == True:
-                                makeHeader(heating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Heating Load", energyUnit, True)
-                            elif idealAirTrigger == False:
-                                makeHeader(heating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Heating Fuel Energy", energyUnit, False)
+                            if zoneName != None:
+                                if idealAirTrigger == True:
+                                    makeHeader(heating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Heating Load", energyUnit, True)
+                                elif idealAirTrigger == False:
+                                    makeHeader(heating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Heating Fuel Energy", energyUnit, False)
+                                else:
+                                    makeHeader(heating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Heating Electric Energy", energyUnit, False)
+                                dataTypeList[3] = True
+                                key.append(1)
                             else:
-                                makeHeader(heating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Heating Electric Energy", energyUnit, False)
-                            dataTypeList[3] = True
-                            key.append(1)
+                                key.append(-1)
                         except:
                             key.append(-1)
                     
