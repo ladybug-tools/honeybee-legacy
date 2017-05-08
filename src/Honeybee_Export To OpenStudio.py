@@ -1393,7 +1393,7 @@ class WriteOPS(object):
         
         for zone in thermalZoneVector:
             # construct Terminal VRF Unit
-            vrfTerminalUnit = ops.ZoneHVACTerminalUnitVariableRefrigerantFlow(model)		
+            vrfTerminalUnit = ops.ZoneHVACTerminalUnitVariableRefrigerantFlow(model)
             vrfTerminalUnit.setTerminalUnitAvailabilityschedule(model.alwaysOnDiscreteSchedule())
             vrfTerminalUnit.setOutdoorAirFlowRateDuringCoolingOperation(0)
             vrfTerminalUnit.setOutdoorAirFlowRateDuringHeatingOperation(0)
@@ -1910,6 +1910,9 @@ class WriteOPS(object):
                     zone.setUseIdealAirLoads(True)
                     # Create the ideal air system
                     zoneIdealAir = ops.ZoneHVACIdealLoadsAirSystem(model)
+                    
+                    # Set the name of the system to include the zone name.
+                    zoneIdealAir.setName(hbZones[zoneCount].name + ' IDEAL LOADS AIR SYSTEM')
                     
                     #Set the dehumidifcation / humidification based on the presence/absence of a zone humidistat.
                     dehumidTrigger = False
