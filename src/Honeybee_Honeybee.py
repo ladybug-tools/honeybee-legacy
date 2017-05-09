@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.61\nMAY_06_2017'
+ghenv.Component.Message = 'VER 0.0.61\nMAY_08_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -7808,7 +7808,7 @@ class thermDefaults(object):
         return materialName
 
 class thermPolygon(object):
-    def __init__(self, surfaceGeo, material, srfName, plane, RGBColor):
+    def __init__(self, surfaceGeo, material, srfName, plane, RGBColor, ghComp=None):
         #Set the name and material.
         self.objectType = "ThermPolygon"
         self.hasChild = False
@@ -7832,10 +7832,14 @@ class thermPolygon(object):
         segm = surfaceGeo.DuplicateEdgeCurves()
         self.segments = []
         for seg in segm:
-            if seg.IsLinear: self.segments.append(seg)
+            if seg.IsLinear(): self.segments.append(seg)
             else:
-                rc.Geometry.Curve.ToPolyline(0,0,0.1,0,0,sc.doc.ModelAbsoluteTolerance,0,0,True)
+                seg = seg.ToPolyline(3,0,0,0,0,0,0,0,True)
                 self.segments.append(seg)
+                msg = "A segment of your polygon is curved and THERM cannot simulate curved geometry.\n" + \
+                "It has been automatically converted into a polyline with three line segments."
+                ghComp.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+        
         #Build a new Polygon from the segments.
         self.polylineGeo = rc.Geometry.Curve.JoinCurves(self.segments, sc.doc.ModelAbsoluteTolerance)
         if len(self.polylineGeo) > 1:

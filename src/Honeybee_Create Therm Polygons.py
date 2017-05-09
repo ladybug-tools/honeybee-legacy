@@ -42,11 +42,11 @@ import decimal
 
 ghenv.Component.Name = 'Honeybee_Create Therm Polygons'
 ghenv.Component.NickName = 'createThermPolygons'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.61\nMAY_08_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
-#compatibleHBVersion = VER 0.0.56\nNOV_04_2016
+#compatibleHBVersion = VER 0.0.56\nMAY_08_2017
 #compatibleLBVersion = VER 0.0.59\nNOV_07_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
 except: pass
@@ -172,7 +172,7 @@ def main(geometry, material, RGBColor):
         #Make the therm polygon.
         guid = str(uuid.uuid4())
         polyName = "".join(guid.split("-")[:-1])
-        HBThermPolygon = hb_thermPolygon(geometry.Faces[faceCount].DuplicateFace(False), material, polyName, plane, RGBColor)
+        HBThermPolygon = hb_thermPolygon(geometry.Faces[faceCount].DuplicateFace(False), material, polyName, plane, RGBColor, ghenv)
         
         if HBThermPolygon.warning != None:
             w = gh.GH_RuntimeMessageLevel.Warning
