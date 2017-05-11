@@ -58,7 +58,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_29_2017'
+ghenv.Component.Message = 'VER 0.0.61\nMAY_10_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -343,7 +343,7 @@ def checkTheInputs():
     addShdTransmiss = []
     constantTransmis = True
     if addShdTransmiss_.BranchCount > 0:
-        if addShdTransmiss_.BranchCount == 1:
+        if addShdTransmiss_.BranchCount == 1 and not len(addShdTransmiss_.Branch(0)) == 8760:
             addShdTransmissInit = []
             for transmiss in addShdTransmiss_.Branch(0):
                 addShdTransmissInit.append(transmiss)
@@ -372,7 +372,7 @@ def checkTheInputs():
                 warning = 'addShdTransmiss_ must be either a list of values that correspond to the number of breps in the additionalShading_ input or a single constant value for all additionalShading_ objects.'
                 print warning
                 ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
-        elif addShdTransmiss_.BranchCount > 1:
+        elif addShdTransmiss_.BranchCount > 1 or len(addShdTransmiss_.Branch(0)) == 8760:
             if addShdTransmiss_.BranchCount == len(additionalShading_):
                 constantTransmis = False
                 for i in range(addShdTransmiss_.BranchCount):
