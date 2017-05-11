@@ -69,7 +69,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Set EP Air Flow"
 ghenv.Component.NickName = 'setEPNatVent'
-ghenv.Component.Message = 'VER 0.0.61\nAPR_25_2017'
+ghenv.Component.Message = 'VER 0.0.61\nMAY_11_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
@@ -156,7 +156,7 @@ def checkNatVentMethod():
                 ghenv.Component.Params.Input[input].Description = inputsDict[input][1]
     elif natVentMethod == 3:
         for input in range(15):
-            if input == 12 or input == 14:
+            if input == 13 or input == 14:
                 ghenv.Component.Params.Input[input].NickName = "__________"
                 ghenv.Component.Params.Input[input].Name = "."
                 ghenv.Component.Params.Input[input].Description = " "
