@@ -32,7 +32,7 @@ Provided by Honeybee 0.0.61
         _HBZones: The HBZones out of any of the HB components that generate or alter zones.  Note that these should ideally be the zones that are fed into the Run Energy Simulation component as surfaces may not align otherwise.  Zones read back into Grasshopper from the Import idf component will not align correctly with the EP Result data.
         gridSize_: A number in Rhino model units to make each cell of the view factor mesh.
         distFromFloorOrSrf_: A number in Rhino model units to set the distance of the view factor mesh from the ground.
-        additionalShading_: Add in additional shading breps here for geometry that is not a part of the zone but can still block direct sunlight to occupants.  Examples include outdoor context shading and indoor furniture.
+        additionalShading_: Add additional shading breps or meshes to account for geometry that is not a part of the zone but can still block direct sunlight to occupants.  Examples include outdoor context shading and indoor furniture.
         addShdTransmiss_: An optional transmissivity that will be used for all of the objects connected to the additionalShading_ input.  This can also be a list of transmissivities whose length matches the number of breps connected to additionalShading_ input, which will assign a different transmissivity to each object.  Lastly, this input can also accept a data tree with a number of branches equal to the number of objects connected to the additionalShading_ input with a number of values in each branch that march the number of hours in the simulated analysisPeriod (so, for an annual simulation, each branch would have 8760 values).  The default is set to assume that all additionalShading_ objects are completely opaque.  As one adds in transmissivities with this input, the calculation time will increase accordingly.
         ============: ...
         viewResolution_: An interger between 0 and 4 to set the number of times that the tergenza skyview patches are split.  A higher number will ensure a greater accuracy but will take longer.  The default is set to 0 for a quick calculation.
@@ -523,7 +523,13 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                 if addShdTransmiss != []: newAddShdTransmiss.append(addShdTransmiss[shdCount])
             else:
                 for face in shdBrep.Faces:
-                    additionalShading.append(rc.Geometry.BrepFace.ToBrep(face))
+                    try:
+                        additionalShading.append(rc.Geometry.BrepFace.ToBrep(face))
+                    except:
+                        if face.IsQuad:
+                            additionalShading.append(rc.Geometry.Brep.CreateFromCornerPoints(rc.Geometry.Point3d(shdBrep.Vertices[face.A]), rc.Geometry.Point3d(shdBrep.Vertices[face.B]), rc.Geometry.Point3d(shdBrep.Vertices[face.C]), rc.Geometry.Point3d(shdBrep.Vertices[face.D]), sc.doc.ModelAbsoluteTolerance))
+                        else:
+                            additionalShading.append(rc.Geometry.Brep.CreateFromCornerPoints(rc.Geometry.Point3d(shdBrep.Vertices[face.A]), rc.Geometry.Point3d(shdBrep.Vertices[face.B]), rc.Geometry.Point3d(shdBrep.Vertices[face.C]), sc.doc.ModelAbsoluteTolerance))
                     if addShdTransmiss != []: newAddShdTransmiss.append(addShdTransmiss[shdCount])
         addShdTransmiss = newAddShdTransmiss
     
