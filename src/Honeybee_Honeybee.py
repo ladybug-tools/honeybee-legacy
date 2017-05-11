@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.61\nMAY_08_2017'
+ghenv.Component.Message = 'VER 0.0.61\nMAY_11_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -734,6 +734,8 @@ class HB_GetEPLibraries:
                         self.libraries["ThermMaterial"][matName]["Conductivity"] = float(matPropLine[-5])
                         self.libraries["ThermMaterial"][matName]["Absorptivity"] = float(matPropLine[-4])
                         self.libraries["ThermMaterial"][matName]["Emissivity"] = float(matPropLine[-3])
+                        self.libraries["ThermMaterial"][matName]["WindowDB"] = ""
+                        self.libraries["ThermMaterial"][matName]["WindowID"] = "-1"
                         self.libraries["ThermMaterial"][matName]["RGBColor"] = System.Drawing.ColorTranslator.FromHtml("#" + matPropLine[-2])
                     except: pass
 
@@ -7801,6 +7803,8 @@ class thermDefaults(object):
         sc.sticky["honeybee_thermMaterialLib"][materialName]["Absorptivity"] = absorptivity
         sc.sticky["honeybee_thermMaterialLib"][materialName]["Emissivity"] = emissivity
         sc.sticky["honeybee_thermMaterialLib"][materialName]["RGBColor"] = RGBColor
+        sc.sticky["honeybee_thermMaterialLib"][materialName]["WindowDB"] = ""
+        sc.sticky["honeybee_thermMaterialLib"][materialName]["WindowID"] = "-1"
         try:
             sc.sticky["honeybee_thermMaterialLib"][materialName]["CavityModel"] = CavityModel
         except: pass
@@ -7874,6 +7878,8 @@ class thermPolygon(object):
         sc.sticky["honeybee_thermMaterialLib"][materialName]["Conductivity"] = sc.sticky["honeybee_thermMaterialLib"][orgigMat]["Conductivity"]
         sc.sticky["honeybee_thermMaterialLib"][materialName]["Absorptivity"] = sc.sticky["honeybee_thermMaterialLib"][orgigMat]["Absorptivity"]
         sc.sticky["honeybee_thermMaterialLib"][materialName]["Emissivity"] = sc.sticky["honeybee_thermMaterialLib"][orgigMat]["Emissivity"]
+        sc.sticky["honeybee_thermMaterialLib"][materialName]["WindowDB"] = sc.sticky["honeybee_thermMaterialLib"][materialName]["WindowDB"]
+        sc.sticky["honeybee_thermMaterialLib"][materialName]["WindowID"] = sc.sticky["honeybee_thermMaterialLib"][materialName]["WindowID"]
         sc.sticky["honeybee_thermMaterialLib"][materialName]["RGBColor"] = RGBColor
         
         return materialName
@@ -7889,6 +7895,8 @@ class thermPolygon(object):
         sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] = None
         sc.sticky["honeybee_thermMaterialLib"][material]["Absorptivity"] = 0.5
         sc.sticky["honeybee_thermMaterialLib"][material]["Emissivity"] = 0.9
+        sc.sticky["honeybee_thermMaterialLib"][material]["WindowDB"] = ""
+        sc.sticky["honeybee_thermMaterialLib"][material]["WindowID"] = "-1"
         if RGBColor != None:
             if not RGBColor.startswith('#'):
                 color = System.Drawing.Color.FromName(RGBColor)

@@ -51,11 +51,11 @@ import decimal
 
 ghenv.Component.Name = 'Honeybee_Write THERM File'
 ghenv.Component.NickName = 'writeTHERM'
-ghenv.Component.Message = 'VER 0.0.61\nMAR_14_2017'
+ghenv.Component.Message = 'VER 0.0.61\nMAY_11_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
-#compatibleHBVersion = VER 0.0.56\nMAY_12_2016
+#compatibleHBVersion = VER 0.0.56\nMAY_11_2017
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
@@ -381,20 +381,27 @@ def dictToXMLBC(dict, startTag, dataType):
 
 def dictToXMLSimple(dict, startTag, dataType):
     xmlStr = '\t<' + dataType + ' '
+    emissSide = 'Front'
     if dataType == 'Material':
         try:
             test = dict["CavityModel"]
-            keys = ['Name', 'Type', 'Conductivity', 'Absorptivity', 'Emissivity', 'RGBColor', 'CavityModel']
+            keys = ['Name', 'Type', 'Conductivity', 'Absorptivity', 'Emissivity', 'Emissivity', 'WindowDB', 'WindowID', 'RGBColor', 'CavityModel']
         except:
-            keys = ['Name', 'Type', 'Conductivity', 'Absorptivity', 'Emissivity', 'RGBColor']
+            keys = ['Name', 'Type', 'Conductivity', 'Absorptivity', 'Emissivity', 'Emissivity', 'WindowDB', 'WindowID', 'RGBColor']
             dict['Type'] = 0
-    elif dataType == 'BoundaryCondition': keys = ['Name', 'Type', 'H', 'HeatFlux', 'Temperature', 'RGBColor', 'Tr', 'Hr', 'Ei', 'Viewfactor', 'RadiationModel', 'ConvectionFlag', 'FluxFlag', 'RadiationFlag', 'ConstantTemperatureFlag', 'EmisModifier']
     elif dataType == 'Polygon': keys = ['ID', 'Material', 'NSides', 'Type', 'units']
     elif dataType == 'Point': keys = ['index', 'x', 'y']
-    elif dataType == 'BCPolygon': keys = ['ID', 'BC', 'units', 'PolygonID', 'EnclosureID', 'UFactorTag', 'Emissivity']
+    elif dataType == 'BCPolygon': keys = ['ID', 'BC', 'units', 'MaterialName', 'PolygonID', 'EnclosureID', 'UFactorTag', 'Emissivity', 'MaterialSide', 'IlluminatedSurface']
     else: keys = dict.keys()
     for count, item in enumerate(keys):
-        xmlStr = xmlStr + str(item)
+        if item == 'Emissivity' and dataType == 'Material':
+            xmlStr = xmlStr + str(item)+ emissSide
+            if emissSide == 'Front':
+                emissSide = 'Back'
+            else:
+                emissSide = 'Front'
+        else:
+            xmlStr = xmlStr + str(item)
         xmlStr = xmlStr + '="'
         xmlStr = xmlStr + str(dict[item])
         xmlStr = xmlStr + '" '
@@ -558,6 +565,9 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
         boundProp['EnclosureID'] = boundGeoProp['EnclosureID']
         boundProp['UFactorTag'] = boundGeoProp['UFactorTag']
         boundProp['Emissivity'] = boundGeoProp['Emissivity']
+        boundProp['MaterialName'] = ""
+        boundProp['MaterialSide'] = "Front"
+        boundProp['IlluminatedSurface'] = "FALSE"
         boundDesc.append(boundProp)
         
         #Put the transformed vertices into the dictionary.
@@ -661,7 +671,7 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
             for airSegment in enclosure:
                 #Define Default Parameters.
                 boundDesc = []
-                boundProp = {'UFactorTag': '', 'ID': str(boundCount), 'BC': 'Frame Cavity Surface', 'Emissivity': '0.900000', 'EnclosureID': str(enclosureCount+1), 'PolygonID': '0', 'units': "mm"}
+                boundProp = {'UFactorTag': '', 'ID': str(boundCount), 'BC': 'Frame Cavity Surface', 'Emissivity': '0.900000', 'EnclosureID': str(enclosureCount+1), 'PolygonID': '0', 'units': "mm", 'MaterialName':"", 'MaterialSide':"Front", 'IlluminatedSurface':"FALSE"}
                 segEndPt = airSegment.PointAtEnd
                 segStartPt = airSegment.PointAtStart
                 boundCount += 1
