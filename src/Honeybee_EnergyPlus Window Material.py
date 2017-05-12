@@ -42,7 +42,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Window Material"
 ghenv.Component.NickName = 'EPWindowMat'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.61\nMAY_12_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
@@ -59,24 +59,24 @@ def checkInputs():
     #Check to be sure that SHGC and VT are between 0 and 1.
     checkData = True
     
-    def checkBtwZeroAndOne(variable, default, variableName):
+    def checkBtwZeroAndOne(variable, default, variableName, max=1, min=0):
         if variable == None: newVariable = default
         else:
-            if variable <= 1 and variable >= 0: newVariable = variable
+            if variable <= max and variable >= min: newVariable = variable
             else:
                 newVariable = 0
                 checkData = False
-                warning = variableName + " must be between 0 and 1."
+                warning = variableName + " must be between " + str(min) + " and " + str(max)
                 print warning
                 ghenv.Component.AddRuntimeMessage(w, warning)
-        
         return newVariable
+    
     if _U_Value <0.5:
         infoMsg = "You probably input an imperial U value, please double check. If yes, please use uIP2uSI to convert it."
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, infoMsg)
     SHGC = checkBtwZeroAndOne(_SHGC, None, "_SHGC")
     VT = checkBtwZeroAndOne(_VT, None, "_VT")
-    
+    U_Value = checkBtwZeroAndOne(_U_Value, None, "_VT", 5.8)
     
     return checkData
 
