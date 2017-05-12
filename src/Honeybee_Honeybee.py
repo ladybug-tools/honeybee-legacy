@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.61\nMAY_11_2017'
+ghenv.Component.Message = 'VER 0.0.61\nMAY_12_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -7842,7 +7842,10 @@ class thermPolygon(object):
                 self.segments.append(seg)
                 msg = "A segment of your polygon is curved and THERM cannot simulate curved geometry.\n" + \
                 "It has been automatically converted into a polyline with three line segments."
-                ghComp.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                try:
+                    ghComp.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                except:
+                    pass
         
         #Build a new Polygon from the segments.
         self.polylineGeo = rc.Geometry.Curve.JoinCurves(self.segments, sc.doc.ModelAbsoluteTolerance)
