@@ -57,7 +57,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Microclimate Map Analysis"
 ghenv.Component.NickName = 'MicroclimateMap'
-ghenv.Component.Message = 'VER 0.0.61\nMAR_29_2017'
+ghenv.Component.Message = 'VER 0.0.61\nMAY_12_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -1850,7 +1850,7 @@ def writeCSVUTCI(lb_preparation, directory, fileName, radTempMtx, airTempMtx, UT
     
     return radTempResult, airTempResult, UTCI_Result, OutdoorComfResult, DegFromNeutralResult
 
-def writeCSVPET(lb_preparation, directory, fileName, radTempMtx, airTempMtx, PET_Mtx, PET_ComfMtx, PET_CategoryMtx):
+def writeCSVPET(lb_preparation, directory, fileName, radTempMtx, airTempMtx, PET_Mtx, PETComfMtx, PETCategoryMtx):
     #Find out the number of values in each hour.
     valLen = len(radTempMtx[-1])-1
     
