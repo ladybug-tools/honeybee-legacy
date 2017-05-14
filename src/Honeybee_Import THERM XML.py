@@ -46,7 +46,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_Import THERM XML'
 ghenv.Component.NickName = 'importTHERM'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.61\nMAY_12_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -220,7 +220,7 @@ def main(thermXMLFile):
     for count, geo in enumerate(thermPolygons):
         guid = str(uuid.uuid4())
         polyName = "".join(guid.split("-")[:-1])
-        HBThermPolygon = hb_thermPolygon(geo.Faces[0].DuplicateFace(False), polygonMaterials[count], polyName, plane, None)
+        HBThermPolygon = hb_thermPolygon(geo.Faces[0].DuplicateFace(False), polygonMaterials[count], polyName, plane, None, ghenv)
         if HBThermPolygon.warning != None:
             w = gh.GH_RuntimeMessageLevel.Warning
             ghenv.Component.AddRuntimeMessage(w, HBThermPolygon.warning)
@@ -240,7 +240,7 @@ def main(thermXMLFile):
             except:
                 segPts = [seg.PointAtStart, seg.PointAtEnd]
             finalGeo = rc.Geometry.PolylineCurve(segPts)
-            HBThermBC = hb_thermBC(finalGeo, BCTypes[bcCount]['Name'].title(), BCTypes[bcCount]['Temperature'], BCTypes[bcCount]['filmCoefficient'], plane, None, None, None, None, None)
+            HBThermBC = hb_thermBC(finalGeo, BCTypes[bcCount]['Name'].title(), BCTypes[bcCount]['Temperature'], BCTypes[bcCount]['filmCoefficient'], plane, None, None, None, None, None, ghenv)
             thermBound  = hb_hive.addToHoneybeeHive([HBThermBC], ghenv.Component, False)
             thermBCs.extend(thermBound)
             
