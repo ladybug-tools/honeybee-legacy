@@ -7836,8 +7836,12 @@ class thermPolygon(object):
         segm = surfaceGeo.DuplicateEdgeCurves()
         self.segments = []
         for seg in segm:
-            if seg.IsLinear(): self.segments.append(seg)
+            if seg.IsLinear():
+                self.segments.append(seg)
+            elif str(seg.CurvatureAt(0.5)) == '0,0,0':
+                self.segments.append(seg)
             else:
+                print seg.CurvatureAt(0.5)
                 seg = seg.ToPolyline(3,0,0,0,0,0,0,0,True)
                 self.segments.append(seg)
                 msg = "A segment of your polygon is curved and THERM cannot simulate curved geometry.\n" + \
@@ -7935,7 +7939,7 @@ class thermPolygon(object):
         return material
 
 class thermBC(object):
-    def __init__(self, lineGeo, BCName, temperature, filmCoeff, plane, radTemp, radTransCoeff, RGBColor, uFactorTag, emissOverride):
+    def __init__(self, lineGeo, BCName, temperature, filmCoeff, plane, radTemp, radTransCoeff, RGBColor, uFactorTag, emissOverride, ghComp=None):
         #Set the name and object type.
         self.objectType = "ThermBC"
         self.hasChild = False
@@ -7980,11 +7984,31 @@ class thermBC(object):
         #Increase the Therm ID count.
         sc.sticky["thermBCCount"] = sc.sticky["thermBCCount"] + 1
         
-        #Build surface geometry and extract the vertices.
-        self.geometry = lineGeo
-        self.vertices = []
-        for vertexCount in range(self.geometry.PointCount):
-            self.vertices.append(self.geometry.Point(vertexCount))
+        #Extract the segments of the polyline and make sure none of them are curved.
+        segm = lineGeo.DuplicateSegments()
+        if segm.Count == 0:
+            segm = [lineGeo]
+        self.segments = []
+        for seg in segm:
+            if seg.IsLinear():
+                self.segments.append(seg)
+            elif str(seg.CurvatureAt(0.5)) == '0,0,0':
+                self.segments.append(seg)
+            else:
+                seg = seg.ToPolyline(3,0,0,0,0,0,0,0,True)
+                self.segments.append(seg)
+                msg = "A segment of your boundary condition is curved and THERM cannot simulate curved geometry.\n" + \
+                "It has been automatically converted into a polyline with three line segments."
+                try:
+                    ghComp.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                except:
+                    pass
+        
+        #Build a new Polygon from the segments.
+        self.vertices = [self.segments[0].PointAtStart]
+        for seg in self.segments:
+            self.vertices.append(seg.PointAtEnd)
+        self.geometry = rc.Geometry.PolylineCurve(self.vertices)
         
         #Make note of the plane in which the surface lies.
         self.plane = plane

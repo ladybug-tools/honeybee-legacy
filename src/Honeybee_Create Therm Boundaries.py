@@ -50,7 +50,7 @@ import decimal
 
 ghenv.Component.Name = 'Honeybee_Create Therm Boundaries'
 ghenv.Component.NickName = 'createThermBoundaries'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.61\nMAY_12_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -115,7 +115,7 @@ def main(boundaryCurve, temperature, filmCoefficient, crvName, emissivity, uFact
         crvName = "".join(guid.split("-")[:-1])
     
     #Make the therm boundary condition.
-    HBThermBC = hb_thermBC(boundaryCurve, crvName, temperature, filmCoefficient, boundPlane, None, None, RGBColor, uFactorTag, emissivity)
+    HBThermBC = hb_thermBC(boundaryCurve, crvName, temperature, filmCoefficient, boundPlane, None, None, RGBColor, uFactorTag, emissivity, ghenv)
     
     # add to the hive
     thermBoundary  = hb_hive.addToHoneybeeHive([HBThermBC], ghenv.Component)
