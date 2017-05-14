@@ -28,14 +28,15 @@ Provided by Honeybee 0.0.61
     Args:
         _polygons: A list of thermPolygons from one or more "Honeybee_Create Therm Polygons" components.
         boundaries_: A list of thermBoundaries from one or more "Honeybee_Create Therm Boundaries" components.
-        meshLevel_: An optional integer to set the mesh level of the resulting exported file.  The default is set to a coarse value of 6 but it may be necessary to increase this if THERM tells you to 'increase the quad tree mesh parameter in the file'.
+        meshLevel_: An optional integer to set the mesh level of the resulting exported file.  The default is set to a coarse value of 8, which is the highest level available. If your model is not too complex, you may want to lower this to decrease the runtime.
         workingDir_: An optional working directory to a folder on your system, into which you would like to write the THERM XML and results.  The default will write these files in into your Ladybug default folder.  NOTE THAT DIRECTORIES INPUT HERE SHOULD NOT HAVE ANY SPACES OR UNDERSCORES IN THE FILE PATH.
         fileName_: An optional text string which will be used to name your THERM XML.  Change this to aviod over-writing results of previous runs of this component.
-        _writeXML: Set to "True" to have the component take your connected UWGParemeters and write them into an XML file.  The file path of the resulting XML file will appear in the xmlFileAddress output of this component.  Note that only setting this to "True" and not setting the output below to "True" will not automatically run the XML through the Urban Weather Generator for you.
+        _writeTHMFile: Set to "True" to have the component take your connected UWGParemeters and write them into an XML file.  The file path of the resulting XML file will appear in the xmlFileAddress output of this component.  Note that only setting this to "True" and not setting the output below to "True" will not automatically run the XML through the Urban Weather Generator for you.
     Returns:
         readMe!:...
-        xmlFileAddress: The file path of the therm XML file that has been generated on your machine.  Open this file in THERM to see your exported therm model.
-        resultFileAddress: The location where the THERM results will be written once you open the XML file above in THERM and hit "simulate."
+        thermFile: The file path of the therm XML file that has been generated on your machine.  Open this file in THERM to see your exported therm model.
+        resultFile: The file path of the THERM results including the mesh of the therm geometry and the values of temperature / heat flow at each point of the mesh.  Note that this file will not be generated unless runTHERM_ is set to "True" and your calculation is successful.
+        uFactorFile: The file path to a therm XML file that is written after the simulation is run.  This file contains all results or U-factors accross their respective tags as well as information that helps place the result mesh in the file above correctly in the Rhino scene. Note that this file will not be generated unless runTHERM_ is set to "True" and your calculation is successful.
 """
 
 import Rhino as rc
@@ -48,14 +49,16 @@ import math
 import copy
 import datetime
 import decimal
+from tempfile import mkstemp
+from shutil import move
 
 ghenv.Component.Name = 'Honeybee_Write THERM File'
 ghenv.Component.NickName = 'writeTHERM'
-ghenv.Component.Message = 'VER 0.0.61\nMAY_11_2017'
+ghenv.Component.Message = 'VER 0.0.61\nMAY_12_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
-#compatibleHBVersion = VER 0.0.56\nMAY_11_2017
+#compatibleHBVersion = VER 0.0.56\nMAY_12_2017
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
@@ -308,7 +311,7 @@ def checkTheInputs():
         for bnd in allBoundary: boundLengths.append(bnd.GetLength())
         boundLengths, allBoundary = zip(*sorted(zip(boundLengths, allBoundary)))
         encircling = allBoundary[-1]
-        warning = "Geometry connected to _polygons does not have a single boundary (there are holes in the model). \n You will have to fill in these gaps when you bring your model into THERM. \n Note that air gaps in your model can be represented with a polygon having an 'air' material."
+        warning = "Geometry connected to _polygons does not have a single boundary (there are holes in the model). \n You will not be able to simulate the model as connected. \n Note that air gaps in your model can be represented with a polygon having an 'air' material."
         print warning
         ghenv.Component.AddRuntimeMessage(w, warning)
     else:
@@ -424,12 +427,108 @@ def checkAbbreviations(matName):
         if abbrev.title() in matName: matName = matName.replace(abbrev.title(), abbrev.upper())
     return matName
 
+def checkThermSettings(thermSettings):
+    fh, absPath = mkstemp()
+    with open(absPath,'w') as newFile:
+        with open(thermSettings, "r") as settingsFile:
+            for line in settingsFile:
+                if line == "SaveConrad=0\n":
+                    newFile.write("SaveConrad=1\n")
+                elif line == "SaveResults=0\n":
+                    newFile.write("SaveResults=1\n")
+                elif line == "SaveXML=0\n":
+                    newFile.write("SaveXML=1\n")
+                elif line == "SaveSimFiles=0\n":
+                    newFile.write("SaveSimFiles=1\n")
+                else:
+                    newFile.write(line)
+    os.close(fh)
+    os.remove(thermSettings)
+    move(absPath, thermSettings)
 
-def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundary, thermFileOrigin, allGeoCentroid, conversionFactor):
+def runTHERMSim(workingDir, xmlFile, errorLogFile, batchFileAddress, thermDir, thermSettings, thmFile):
+    # Build the command string.
+    commandStr = 'Therm7.exe -pw thmCLA'
+    commandStr = commandStr + ' -log ' + errorLogFile
+    commandStr = commandStr + ' -ini ' + thermSettings
+    commandStr = commandStr + ' -thmx ' + xmlFile
+    commandStr = commandStr + ' -calc -exit'
+    
+    # Write everthing into a batch file.
+    workingDrive = workingDir[:2]
+    folderName = workingDir.replace( (workingDrive + '\\'), '')
+    batchStr = workingDrive + '\ncd\\' +  folderName + '\n' + commandStr + '\n'
+    batchfile = open(batchFileAddress, 'w')
+    batchfile.write(batchStr)
+    batchfile.close()
+    
+    # Run the batch file.
+    print "\nStarting simulation..."
+    os.system(batchFileAddress)
+    
+    return errorLogFile
+
+def parseErrorLog(errorLogFile, xmlFilePath):
+    #Open the Log File and grab the message.
+    logTrigger = False
+    successfulCalc = False
+    errorMsg = ''
+    with open(errorLogFile, "r") as errorFile:
+        for lcount, line in enumerate(errorFile):
+            if 'calculation complete' in line.lower():
+                errorMsg = "Calculation complete.  \n"
+                successfulCalc = True
+            if lcount < 3:
+                pass
+            elif xmlFilePath.lower() in line.lower():
+                logTrigger = True
+            elif line == '\n':
+                logTrigger = True
+            elif logTrigger == True:
+                errorMsg = line
+                logTrigger = False
+    
+    # Print the log.
+    print errorMsg
+    
+    if errorMsg != "Calculation complete.  \n":
+        warning =  'Your simulation did not run correctly because of the following error:\n' + errorMsg
+        ghenv.Component.AddRuntimeMessage(w, warning)
+    
+    return successfulCalc
+
+def replaceHeader(xmlFilePath, uFactorFile):
+    headerTrigger = False
+    fh, absPath = mkstemp()
+    with open(absPath,'w') as newFile:
+        with open(uFactorFile,'r') as uFactor:
+            with open(xmlFilePath, "r") as xmlFile:
+                xmlLineList = list(xmlFile)
+                for lcount, line in enumerate(uFactor):
+                    if '<Title>' in line:
+                        headerTrigger = True
+                        newFile.write(xmlLineList[lcount])
+                    elif '<Units>' in line:
+                        headerTrigger = False
+                        newFile.write(xmlLineList[lcount])
+                    elif headerTrigger == True:
+                        newFile.write(xmlLineList[lcount])
+                    else:
+                        newFile.write(line)
+    os.close(fh)
+    os.remove(uFactorFile)
+    move(absPath, uFactorFile)
+    
+    return None
+
+
+def main(runTHERM, workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundary, thermFileOrigin, allGeoCentroid, conversionFactor):
     #Call the needed classes.
     lb_preparation = sc.sticky["ladybug_Preparation"]()
     thermMatLib = sc.sticky["honeybee_thermMaterialLib"]
     thermDefault = sc.sticky["honeybee_ThermDefault"]()
+    thermDir = sc.sticky["honeybee_folders"]["THERMPath"]
+    thermSettings = sc.sticky["honeybee_folders"]["ThermSettings"]
     
     #Make a set of transformations from Rhino world coordinates to the Therm scene.
     #Check the units of the Rhino file and scale everything from meters to millimeters. Keep track of this transformation as well.
@@ -841,21 +940,26 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
             warning = "Therm cannot simulate a mesh level greater than 8. It will be automatically changed to 8 for you."
             print warning
             ghenv.Component.AddRuntimeMessage(w, warning)
-    else: meshLevel = '6'
+    else: meshLevel = '8'
     
     
     ### WRITE EVERYTHING TO THERM FILE
-    #Set up the file.
+    #Set up the files.
     xmlFilePath = workingDir + xmlFileName + '.thmx'
     uFactorFile = workingDir + xmlFileName + '_thmx.thmx'
-    resultDataPath = workingDir + xmlFileName + '_thmx.o'
+    resultDataPath = workingDir + xmlFileName + '.o'
+    resultDataPathFinal = workingDir + xmlFileName + '_thmx.o'
+    errorLogFile = workingDir + xmlFileName + '.log'
+    batchFileAddress = workingDir + xmlFileName + '.bat'
+    thmFile = workingDir + xmlFileName + '_thmx.thm'
+    
     xmlFile = open(xmlFilePath, "w")
     
     #HEADER
     #Keep track of the transformations used to convert between Rhino space and THERM space. Write it into the XML so that results can be read back onto the original geometry after running THERM.
     headerStr = '<?xml version="1.0"?>\n' + \
         '<THERM-XML xmlns="http://windows.lbl.gov">\n' + \
-        '<ThermVersion>Version 7.3.2.0</ThermVersion>\n' + \
+        '<ThermVersion>Version 7.5.13.0</ThermVersion>\n' + \
         '<SaveDate>' + str(datetime.datetime.now()) + '</SaveDate>\n' + \
         '\n' + \
         '<Title>' + xmlFileName + '</Title>\n' + \
@@ -908,7 +1012,48 @@ def main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundar
     
     xmlFile.close()
     
-    return xmlFilePath, uFactorFile, resultDataPath
+    # Remove any old versions of related files.
+    try:
+        os.remove(uFactorFile)
+    except:
+        pass
+    try:
+        os.remove(thmFile)
+    except:
+        pass
+    try:
+        os.remove(resultDataPathFinal)
+    except:
+        pass
+    try:
+        os.remove(errorLogFile)
+    except:
+        pass
+    try:
+        os.remove(batchFileAddress)
+    except:
+        pass
+    
+    # Run the file through THERM if this is requested.
+    if runTHERM:
+        # Set THERM to export the results autmatically.
+        checkThermSettings(thermSettings)
+        # Run the THERM simulation.
+        errorLog = runTHERMSim(workingDir, xmlFilePath, errorLogFile, batchFileAddress, thermDir, thermSettings, thmFile)
+        # Parse the error log and report any issues at the component level.
+        successfulCalc = False
+        try:
+            successfulCalc = parseErrorLog(errorLog, xmlFilePath)
+        except:
+            pass
+        # If the calculation is successful, re-write the header of the uFactor file to contian all info of the original THMX file.
+        if successfulCalc:
+            replaceHeader(xmlFilePath, uFactorFile)
+            # Change the name of the result file so that it matches what happens when someone manually simulates in THERM.
+            print resultDataPath
+            os.rename(resultDataPath, resultDataPathFinal)
+    
+    return xmlFilePath, uFactorFile, resultDataPathFinal
 
 
 
@@ -972,7 +1117,7 @@ if initCheck and _writeTHMFile:
     initInputs = checkTheInputs()
     if initInputs != -1:
         workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundary, thermFileOrigin, allGeoCentroid = initInputs
-        result = main(workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundary, thermFileOrigin, allGeoCentroid, conversionFactor)
+        result = main(runTHERM_, workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundary, thermFileOrigin, allGeoCentroid, conversionFactor)
         if result != -1:
             thermFile, uFactorFile, resultFile = result
 
