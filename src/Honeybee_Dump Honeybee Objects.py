@@ -25,7 +25,8 @@ Dump Honeybee Objects
 
 Use this component to dump Honeybee objects to a file on your system.
 You can use load Honeybee objects to load the file to Grasshopper.
-Note that this component does not write custom schedules or materials within the file and you must connect these full objects to a "Add to EnergyPlus Library" component in any GH cript that calls the Dumped HBZones from the file.
+WARNING: This component does not write custom schedules or materials within the file but it does write the names of the constructions and schedules.
+Accordingly, to properly load objects agian, you must connect the full strings of these objects to a "Add to EnergyPlus Library" component in any GH cript that loads the HBZones from the file.
 
 -
 Provided by Honeybee 0.0.61
@@ -46,7 +47,7 @@ ghenv.Component.Message = 'VER 0.0.61\nMAY_18_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"
-#compatibleHBVersion = VER 0.0.59\nMAY_12_2017
+#compatibleHBVersion = VER 0.0.59\nMAY_18_2017
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
 except: pass
