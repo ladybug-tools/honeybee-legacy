@@ -25,17 +25,15 @@ Dump Honeybee Objects
 
 Use this component to dump Honeybee objects to a file on your system.
 You can use load Honeybee objects to load the file to Grasshopper.
-WARNING: The component is WIP and it doesn't currently save the following properites:
-    1) custom schedules
-    2) custom materials
-    3) hvac airDetails, heatingDetails, coolingDetails
-    4) adjacencies between zones
+Note that this component does not write custom schedules or materials within the file and you must connect these full objects to a "Add to EnergyPlus Library" component in any GH cript that calls the Dumped HBZones from the file.
+
 -
 Provided by Honeybee 0.0.61
 
     Args:
         _HBObjects: A list of Honeybee objects
-        _filePath: A valid path to a file on your drive (e.g. c:\ladybug\20ZonesExample.HB)
+        _fileName: A name for the file to which HBObjects will be written (e.g. 20ZonesExample.HB).
+        _workingDir_: An optional working directory into which the HBZones will be written.  The default is set to C:\ladybug.
         _dump: Set to True to save the objects to file
     Returns:
         readMe!: ...
@@ -44,11 +42,11 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Dump Honeybee Objects"
 ghenv.Component.NickName = 'dumpHBObjects'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.61\nMAY_18_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"
-#compatibleHBVersion = VER 0.0.59\nFEB_12_2016
+#compatibleHBVersion = VER 0.0.59\nMAY_12_2017
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
 except: pass
@@ -58,10 +56,21 @@ import cPickle as pickle
 import scriptcontext as sc
 import Grasshopper.Kernel as gh
 import os
-from pprint import pprint
+import uuid
 
-def dumpHBObjects(HBObjects):
+
+def dumpHBObjects(HBObjects, fileName, workingDir=None):
     hb_hive = sc.sticky["honeybee_Hive"]()
+    if workingDir == None:
+        workingDir = sc.sticky["Honeybee_DefaultFolder"] 
+    if not fileName.upper().endswith('.HB.'):
+        fileName = fileName + '.HB'
+    
+    filePath = os.path.join(workingDir, fileName)
+    
+    if not os.path.isdir(os.path.split(filePath)[0]):
+        raise ValueError("Can't find %s"%os.path.split(filePath)[0])
+    
     HBObjects = hb_hive.callFromHoneybeeHive(HBObjects)
     ids = [HBObject.ID for HBObject in HBObjects]
     # a global dictonary to collect data
@@ -78,17 +87,13 @@ def dumpHBObjects(HBObjects):
         HBZone.surfaces = surfaceIds
         
         # dump the HVAC system.
-        hvacID = HBZone.HVACSystem.ID
-        HBZone.HVACSystem.airDetails = None
-        HBZone.HVACSystem.heatingDetails = None
-        HBZone.HVACSystem.coolingDetails = None
-        objs[hvacID] = HBZone.HVACSystem.__dict__
-        HBZone.HVACSystem = hvacID
+        dumpHBhvac(HBZone.HVACSystem)
+        HBZone.HVACSystem = HBZone.HVACSystem.ID
         
+        # dump all other objects in the zone.
         objs[HBZone.ID] = HBZone.__dict__
     
     def dumpHBSurface(HBSurface):
-        
         # replace parent object with it's ID
         if HBSurface.parent != None:
             # make sure parent object is also in the list
@@ -105,14 +110,11 @@ def dumpHBObjects(HBObjects):
         
         if HBSurface.type == 6:
             HBSurface.childSrfs = [childSrf.ID for childSrf in HBSurface.childSrfs]
-            
+        
         try:
             if HBSurface.BC.lower() in ["outdoors", "ground", "adiabatic"]:
-                HBSurface.BCObject.name
                 HBSurface.BCObject = "Outdoors" #This will be replaced by Outdoor object in loading
         except:
-            # print HBSurface.BC.lower()
-            # not out outdoor BC
             pass
         
         # in case the surface is adjacent to another surface
@@ -120,9 +122,35 @@ def dumpHBObjects(HBObjects):
             idsToBeChecked[HBSurface.BCObject.ID] = HBSurface.BCObject.name
             # replace parent object with ID
             HBSurface.BCObject = HBSurface.BCObject.ID
-            
-        objs[HBSurface.ID] = HBSurface.__dict__
         
+        objs[HBSurface.ID] = HBSurface.__dict__
+    
+    def dumpHBhvac(HBhvac):
+        hvacID = HBhvac.ID
+        if HBhvac.airDetails != None:
+            airID = HBhvac.airDetails.ID
+            airDetailsDict = HBhvac.airDetails.__dict__
+            del airDetailsDict['sysProps']
+            objs[airID] = airDetailsDict
+            HBhvac.airDetails = airID
+        
+        if HBhvac.heatingDetails != None:
+            heatID = HBhvac.heatingDetails.ID
+            heatingDetailsDict = HBhvac.heatingDetails.__dict__
+            del heatingDetailsDict['sysProps']
+            objs[heatID] = heatingDetailsDict
+            HBhvac.heatingDetails = heatID
+        
+        if HBhvac.coolingDetails != None:
+            coolID = HBhvac.coolingDetails.ID
+            coolingDetailsDict = HBhvac.coolingDetails.__dict__
+            del coolingDetailsDict['sysProps']
+            objs[coolID] = coolingDetailsDict
+            HBhvac.coolingDetails = coolID
+        
+        objs[hvacID] = HBhvac.__dict__
+    
+    
     for id, HBO in zip(ids, HBObjects):
         if HBO.objectType == 'HBSurface':
             dumpHBSurface(HBO)
@@ -136,29 +164,35 @@ def dumpHBObjects(HBObjects):
     keys = objs.keys()
     for id, name in idsToBeChecked.iteritems():
         assert id in keys,\
-            " InputError: Parent/Adjacent object %s is not in the list of HBObjects."%name
-            
-    return {'ids':ids, 'objs': objs}
-
-def main(HBObjects, filePath, dump):
-    if not sc.sticky.has_key('honeybee_release'):
-        print "You should first let Honeybee to fly..."
-        w = gh.GH_RuntimeMessageLevel.Warning
-        ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee to fly...")
-        return -1        
-    if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
-    if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): return -1
+            " InputError: Adjacent object %s is not in the list of HBObjects."%name
     
-    if not dump: return -1
-    
-    if not os.path.isdir(os.path.split(filePath)[0]):
-        raise ValueError("Can't find %s"%os.path.split(filePath)[0])
-    
-    HBData = dumpHBObjects(HBObjects)
-    
+    HBData = {'ids':ids, 'objs': objs}
     with open(filePath, "wb") as outf:
         pickle.dump(HBData, outf)
         print "Saved file to %s"%filePath
     return filePath
 
-filePath = main(_HBObjects, _filePath, _dump)
+
+
+#Honeybee check.
+initCheck = True
+if not sc.sticky.has_key('honeybee_release') == True:
+    initCheck = False
+    print "You should first let Honeybee fly..."
+    ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee fly...")
+else:
+    try:
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): initCheck = False
+        if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): initCheck = False
+    except:
+        initCheck = False
+        warning = "You need a newer version of Honeybee to use this compoent." + \
+        "Use updateHoneybee component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+        "into canvas and try again."
+        ghenv.Component.AddRuntimeMessage(w, warning)
+
+
+
+if initCheck == True and _dump == True and _fileName != None:
+    filePath = dumpHBObjects(_HBObjects, _fileName, _workingDir_)

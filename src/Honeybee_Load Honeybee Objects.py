@@ -38,11 +38,11 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Load Honeybee Objects"
 ghenv.Component.NickName = 'loadHBObjects'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.61\nMAY_18_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"
-#compatibleHBVersion = VER 0.0.59\nNOV_04_2016
+#compatibleHBVersion = VER 0.0.59\nMAY_18_2017
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
 except: pass
@@ -70,6 +70,9 @@ def loadHBObjects(HBData):
     hb_EPSHDSurface = sc.sticky["honeybee_EPShdSurface"]
     hb_EPFenSurface = sc.sticky["honeybee_EPFenSurface"]
     hb_EPHvac = sc.sticky["honeybee_EPHvac"]
+    hb_airDetail = sc.sticky["honeybee_hvacAirDetails"]
+    hb_heatingDetail = sc.sticky["honeybee_hvacHeatingDetails"]
+    hb_coolingDetail = sc.sticky["honeybee_hvacCoolingDetails"]
     hb_hive = sc.sticky["honeybee_Hive"]()
     
     # a global dictonary to collect data
@@ -79,17 +82,34 @@ def loadHBObjects(HBData):
     
     def loadHBHvac(HBHvacData):
         HBHvac = hb_EPHvac(HBHvacData['GroupID'], HBHvacData['Index'], HBHvacData['airDetails'], HBHvacData['heatingDetails'], HBHvacData['coolingDetails'])
-        # update fields in HBZone
         for key, value in HBHvacData.iteritems():
             HBHvac.__dict__[key] = value
         HBObjects[HBHvac.ID] = HBHvac
+    
+    def loadHBair(HBAirData):
+        HBAir = hb_airDetail()
+        for key, value in HBAirData.iteritems():
+            HBAir.__dict__[key] = value
+        HBObjects[HBAir.ID] = HBAir
+    
+    def loadHBheat(HBHeatData):
+        HBHeat = hb_heatingDetail()
+        for key, value in HBHeatData.iteritems():
+            HBHeat.__dict__[key] = value
+        HBObjects[HBHeat.ID] = HBHeat
+    
+    def loadHBcool(HBCoolData):
+        HBCool = hb_coolingDetail()
+        for key, value in HBCoolData.iteritems():
+            HBCool.__dict__[key] = value
+        HBObjects[HBCool.ID] = HBCool
     
     def loadHBZone(HBZoneData):
         # programs is set to default but will be overwritten
         HBZone = hb_EPZone(HBZoneData['geometry'], \
                 HBZoneData['num'], HBZoneData['name'], \
                 ('Office', 'OpenOffice'), HBZoneData['isConditioned'])
-                
+        
         # update fields in HBZone
         for key, value in HBZoneData.iteritems():
             HBZone.__dict__[key] = value
@@ -122,8 +142,15 @@ def loadHBObjects(HBData):
                 HBObject.surfaces = [HBObjects[id] for id in HBObject.surfaces]
                 HBObject.HVACSystem = HBObjects[HBObject.HVACSystem]
                 continue
-                
-            if HBObject.objectType == 'HBHvac':
+            elif HBObject.objectType == 'HBHvac':
+                if HBObject.airDetails != None:
+                    HBObject.airDetails = HBObjects[HBObject.airDetails]
+                if HBObject.heatingDetails != None:
+                    HBObject.heatingDetails = HBObjects[HBObject.heatingDetails]
+                if HBObject.coolingDetails != None:
+                    HBObject.coolingDetails = HBObjects[HBObject.coolingDetails]
+                continue
+            elif HBObject.objectType == 'HBair' or HBObject.objectType == 'HBheat' or HBObject.objectType == 'HBcool':
                 continue
             
             # replace parent ID with the object
@@ -153,6 +180,12 @@ def loadHBObjects(HBData):
             loadHBZone(HBO)
         elif HBO['objectType'] == 'HBHvac':
             loadHBHvac(HBO)
+        elif HBO['objectType'] == 'HBair':
+            loadHBair(HBO)
+        elif HBO['objectType'] == 'HBheat':
+            loadHBheat(HBO)
+        elif HBO['objectType'] == 'HBcool':
+            loadHBcool(HBO)
         else:
             raise Exception("Unsupported object! Assure all objects are Honeybee objects")
     
@@ -168,24 +201,33 @@ def loadHBObjects(HBData):
     return hb_hive.addToHoneybeeHive([HBObjects[id] for id in HBData["ids"]], ghenv.Component)
 
 
-def main(filePath, load):
-    if not sc.sticky.has_key('honeybee_release'):
-        print "You should first let Honeybee to fly..."
-        w = gh.GH_RuntimeMessageLevel.Warning
-        ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee to fly...")
-        return -1        
-    if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
-    if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): return -1
-    
-    if not load: return -1
-    
+def main(filePath):
     if not os.path.isfile(filePath):
         raise ValueError("Can't find %s"%filePath)
     
     with open(filePath, "rb") as inf:
         return loadHBObjects(pickle.load(inf))
-    
 
-results = main(_filePath, _load)
 
-HBObjects = results if results!= -1 else None
+
+#Honeybee check.
+initCheck = True
+if not sc.sticky.has_key('honeybee_release') == True:
+    initCheck = False
+    print "You should first let Honeybee fly..."
+    ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee fly...")
+else:
+    try:
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): initCheck = False
+        if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): initCheck = False
+    except:
+        initCheck = False
+        warning = "You need a newer version of Honeybee to use this compoent." + \
+        "Use updateHoneybee component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+        "into canvas and try again."
+        ghenv.Component.AddRuntimeMessage(w, warning)
+
+if initCheck == True and _filePath != None:
+    results = main(_filePath)
+    HBObjects = results if results!= -1 else None

@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.61\nMAY_12_2017'
+ghenv.Component.Message = 'VER 0.0.61\nMAY_18_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -8585,6 +8585,8 @@ class hb_airDetail(object):
         
         self.areInputsChecked = False
         self.sysProps = hb_hvacProperties()
+        self.ID = str(uuid.uuid4())
+        self.objectType = "HBair"
         
         self.economizerCntrlDict = {
         0:'NoEconomizer',
@@ -8805,6 +8807,8 @@ class hb_heatingDetail(object):
         
         self.areInputsChecked = False
         self.sysProps = hb_hvacProperties()
+        self.ID = str(uuid.uuid4())
+        self.objectType = "HBheat"
         
         if heatingAvailSched:
             self.heatingAvailSched = heatingAvailSched
@@ -8900,6 +8904,8 @@ class hb_coolingDetail(object):
         
         self.areInputsChecked = False
         self.sysProps = hb_hvacProperties()
+        self.ID = str(uuid.uuid4())
+        self.objectType = "HBcool"
         
         self.chillerTypeDict = {
         0: 'WaterCooled',
