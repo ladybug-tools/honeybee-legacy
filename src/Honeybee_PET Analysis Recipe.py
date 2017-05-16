@@ -80,7 +80,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_PET Analysis Recipe"
 ghenv.Component.NickName = 'PETComfRecipe'
-ghenv.Component.Message = 'VER 0.0.61\nMAY_12_2017'
+ghenv.Component.Message = 'VER 0.0.61\nMAY_16_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -642,7 +642,7 @@ def checkTheInputs():
         # check Icl and M from bodyCharacteristics
         if (bodyCharacteristics['Icl'] != None):
             # use "clothingInsulation" defined in "bodyCharacteristics_"
-            bodyCharacteristics['Icl'] = [Icl for i in range(8760)]
+            bodyCharacteristics['Icl'] = [bodyCharacteristics['Icl'] for i in range(8760)]
         else:
             # nothing inputted to "bodyCharacteristics_" or something inputted to "bodyCharacteristics_" but "clothingInsulation" is not defined (equals to: None)
             bodyCharacteristics['Icl'] = [clothingInsulation(Ta) for Ta in outDryBulbTemp[7:]]

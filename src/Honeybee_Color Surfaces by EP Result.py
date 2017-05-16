@@ -292,7 +292,7 @@ def getZoneSrfs(srfHeaders, pyZoneData, hb_zoneData):
     
     return dataCheck, finalSurfaceNames, finalSrfAreas, finalSrfBreps, newPyZoneData, newSrfHeaders, zoneBreps
 
-def manageInputOutput(annualData, simStep, srfNormalizable, srfHeaders, pyZoneData):
+def manageInputOutput(annualData, simStep, srfNormalizable, srfHeaders, pyZoneData, lb_preparation):
     #If some of the component inputs and outputs are not right, blot them out or change them.
     for input in range(8):
         if input == 3 and srfNormalizable == False:
@@ -662,6 +662,7 @@ else:
     try:
         if not sc.sticky['ladybug_release'].isCompatible(ghenv.Component): initCheck = False
         if sc.sticky['ladybug_release'].isInputMissing(ghenv.Component): initCheck = False
+        lb_preparation = sc.sticky["ladybug_Preparation"]()
     except:
         initCheck = False
         warning = "You need a newer version of Ladybug to use this compoent." + \
@@ -696,7 +697,7 @@ if _srfData.BranchCount > 0 and str(_srfData) != "tree {0}" and initCheck == Tru
 
 #Manage the inputs and outputs of the component based on the data that is hooked up.
 if checkData == True:
-    dataInfo = manageInputOutput(annualData, simStep, srfNormalizable, srfHeaders, pyZoneData)
+    dataInfo = manageInputOutput(annualData, simStep, srfNormalizable, srfHeaders, pyZoneData, lb_preparation)
     if dataInfo != -1: normByFlr, analysisPeriod, stepOfSimulation, annualData = dataInfo
     else: checkData = False
 else: restoreInputOutput()
