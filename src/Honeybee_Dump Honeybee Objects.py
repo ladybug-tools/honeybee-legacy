@@ -43,7 +43,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Dump Honeybee Objects"
 ghenv.Component.NickName = 'dumpHBObjects'
-ghenv.Component.Message = 'VER 0.0.61\nMAY_18_2017'
+ghenv.Component.Message = 'VER 0.0.61\nMAY_19_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"
@@ -77,6 +77,10 @@ def dumpHBObjects(HBObjects, fileName, workingDir=None):
     # a global dictonary to collect data
     objs = {}
     idsToBeChecked = {}
+    hvacIDs = []
+    airIDs = []
+    heatIDs = []
+    coolIDs = []
     
     def dumpHBZone(HBZone):
         if HBZone.objectType != 'HBZone': return
@@ -132,24 +136,32 @@ def dumpHBObjects(HBObjects, fileName, workingDir=None):
             airID = HBhvac.airDetails.ID
             airDetailsDict = HBhvac.airDetails.__dict__
             del airDetailsDict['sysProps']
-            objs[airID] = airDetailsDict
             HBhvac.airDetails = airID
+            if airID not in airIDs:
+                airIDs.append(airID)
+                objs[airID] = airDetailsDict
         
         if HBhvac.heatingDetails != None:
             heatID = HBhvac.heatingDetails.ID
             heatingDetailsDict = HBhvac.heatingDetails.__dict__
             del heatingDetailsDict['sysProps']
-            objs[heatID] = heatingDetailsDict
             HBhvac.heatingDetails = heatID
+            if heatID not in heatIDs:
+                heatIDs.append(heatID)
+                objs[heatID] = heatingDetailsDict
         
         if HBhvac.coolingDetails != None:
             coolID = HBhvac.coolingDetails.ID
             coolingDetailsDict = HBhvac.coolingDetails.__dict__
             del coolingDetailsDict['sysProps']
-            objs[coolID] = coolingDetailsDict
             HBhvac.coolingDetails = coolID
+            if coolID not in coolIDs:
+                coolIDs.append(coolID)
+                objs[coolID] = coolingDetailsDict
         
-        objs[hvacID] = HBhvac.__dict__
+        if hvacID not in hvacIDs:
+            hvacIDs.append(hvacID)
+            objs[hvacID] = HBhvac.__dict__
     
     
     for id, HBO in zip(ids, HBObjects):
