@@ -62,10 +62,17 @@ import uuid
 
 def dumpHBObjects(HBObjects, fileName, workingDir=None):
     hb_hive = sc.sticky["honeybee_Hive"]()
+    hb_RADMaterialAUX = sc.sticky["honeybee_RADMaterialAUX"]
+    hb_ConstrLib = sc.sticky ["honeybee_constructionLib"]
     if workingDir == None:
         workingDir = sc.sticky["Honeybee_DefaultFolder"] 
     if not fileName.upper().endswith('.HB.'):
         fileName = fileName + '.HB'
+    defaultEPConstrSet = ['INTERIOR CEILING', 'INTERIOR DOOR', 'INTERIOR FLOOR', 'INTERIOR PARTITION', \
+        'INTERIOR WALL', 'INTERIOR WINDOW', 'EXTERIOR DOOR', 'EXTERIOR FLOOR', 'EXTERIOR ROOF', \
+        'EXTERIOR WALL', 'EXTERIOR WINDOW']
+    defaultRADmaterials = ['CONTEXT_MATERIAL', 'EXTERIOR_FLOOR', 'EXTERIOR_ROOF', 'EXTERIOR_WALL', \
+        'EXTERIOR_WINDOW', 'INTERIOR_CEILING', 'INTERIOR_FLOOR', 'INTERIOR_WALL', 'INTERIOR_WINDOW']
     
     filePath = os.path.join(workingDir, fileName)
     
@@ -77,6 +84,11 @@ def dumpHBObjects(HBObjects, fileName, workingDir=None):
     # a global dictonary to collect data
     objs = {}
     idsToBeChecked = {}
+    
+    # Objects to write back to the memory of the document.
+    constructions = []
+    EPmaterials = []
+    RADmaterials = []
     hvacIDs = []
     airIDs = []
     heatIDs = []
@@ -92,7 +104,8 @@ def dumpHBObjects(HBObjects, fileName, workingDir=None):
         HBZone.surfaces = surfaceIds
         
         # dump the HVAC system.
-        dumpHBhvac(HBZone.HVACSystem)
+        if HBZone.HVACSystem.ID not in hvacIDs:
+            dumpHBhvac(HBZone.HVACSystem)
         HBZone.HVACSystem = HBZone.HVACSystem.ID
         
         # dump all other objects in the zone.
@@ -105,20 +118,35 @@ def dumpHBObjects(HBObjects, fileName, workingDir=None):
             idsToBeChecked[HBSurface.parent.ID] = HBSurface.parent.name
             # replace parent object with ID
             HBSurface.parent = HBSurface.parent.ID
-            
+        
+        # dump windows
         if not HBSurface.isChild and HBSurface.hasChild:
             childIds = [childSrf.ID for childSrf in HBSurface.childSrfs]
             for childSrf in HBSurface.childSrfs:
                 dumpHBSurface(childSrf)
-            
             HBSurface.childSrfs = childIds
         
+        # dump custom constructions.
+        if HBSurface.EPConstruction != None and HBSurface.EPConstruction.upper() not in constructions and HBSurface.EPConstruction.upper() not in defaultEPConstrSet:
+            constructions.append(HBSurface.EPConstruction.upper())
+            materials = dumpHBConstr(HBSurface.EPConstruction.upper())
+            for mat in materials:
+                if mat.upper() not in EPmaterials:
+                    EPmaterials.append(mat.upper())
+                    dumpHBMat(mat.upper())
+        
+        # dump custom RAD materials.
+        if HBSurface.RadMaterial != None and HBSurface.RadMaterial.upper() not in RADmaterials and HBSurface.RadMaterial.upper() not in defaultRADmaterials:
+            RADmaterials.append(HBSurface.RadMaterial.upper())
+            dumpHBRad(HBSurface.RadMaterial)
+        
+        # Shading surfaces.
         if HBSurface.type == 6:
             HBSurface.childSrfs = [childSrf.ID for childSrf in HBSurface.childSrfs]
         
         try:
             if HBSurface.BC.lower() in ["outdoors", "ground", "adiabatic"]:
-                HBSurface.BCObject = "Outdoors" #This will be replaced by Outdoor object in loading
+                HBSurface.BCObject = "Outdoors" #This will be replaced by the correct object on loading
         except:
             pass
         
@@ -163,7 +191,47 @@ def dumpHBObjects(HBObjects, fileName, workingDir=None):
             hvacIDs.append(hvacID)
             objs[hvacID] = HBhvac.__dict__
     
+    def dumpHBConstr(constructionName):
+        constructionData = hb_ConstrLib[constructionName]
+        constrMats = []
+        numberOfLayers = len(constructionData.keys())
+        constructionStr = constructionData[0] + ",\n"
+        constructionStr =  constructionStr + "  " + constructionName + ",   !- name\n"
+        for layer in range(1, numberOfLayers):
+            if layer < numberOfLayers-1:
+                constructionStr =  constructionStr + "  " + constructionData[layer][0] + ",   !- " +  constructionData[layer][1] + "\n"
+            else:
+                constructionStr =  constructionStr + "  " + constructionData[layer][0] + ";   !- " +  constructionData[layer][1] + "\n\n"
+            constrMats.append(constructionData[layer][0])
+        constructionDict = {'objectType': 'HBConstr', 'name': constructionName, 'EPstr': constructionStr}
+        objs[constructionName] = constructionDict
+        return constrMats
     
+    def dumpHBMat(materialName):
+        materialName = materialName.strip()
+        materialData = None
+        if materialName in sc.sticky ["honeybee_windowMaterialLib"].keys():
+            materialData = sc.sticky ["honeybee_windowMaterialLib"][materialName]
+        elif materialName in sc.sticky ["honeybee_materialLib"].keys():
+            materialData = sc.sticky ["honeybee_materialLib"][materialName]
+        if materialData!=None:
+            numberOfLayers = len(materialData.keys())
+            materialStr = materialData[0] + ",\n"
+            materialStr =  materialStr + "  " + materialName + ",   !- name\n"
+            for layer in range(1, numberOfLayers):
+                if layer < numberOfLayers-1:
+                    materialStr =  materialStr + "  " + str(materialData[layer][0]) + ",   !- " +  materialData[layer][1] + "\n"
+                else:
+                    materialStr =  materialStr + "  " + str(materialData[layer][0]) + ";   !- " +  materialData[layer][1] + "\n\n"
+            materialDict = {'objectType': 'HBMat', 'name': materialName, 'EPstr': materialStr}
+            objs[materialName] = materialDict
+    
+    def dumpHBRad(radMatName):
+        radStr =  hb_RADMaterialAUX.getRADMaterialString(radMatName)
+        radMaterialDict = {'objectType': 'HBRadMat', 'name': radMatName, 'RADstr': radStr}
+        objs[radMatName] = radMaterialDict
+    
+    # cycle through the objects and dump everything.
     for id, HBO in zip(ids, HBObjects):
         if HBO.objectType == 'HBSurface':
             dumpHBSurface(HBO)

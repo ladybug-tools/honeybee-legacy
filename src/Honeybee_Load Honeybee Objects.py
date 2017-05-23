@@ -73,12 +73,21 @@ def loadHBObjects(HBData):
     hb_airDetail = sc.sticky["honeybee_hvacAirDetails"]
     hb_heatingDetail = sc.sticky["honeybee_hvacHeatingDetails"]
     hb_coolingDetail = sc.sticky["honeybee_hvacCoolingDetails"]
+    hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
+    hb_RADMaterialAUX = sc.sticky["honeybee_RADMaterialAUX"]
     hb_hive = sc.sticky["honeybee_Hive"]()
     
     # a global dictonary to collect data
     ids = HBData["ids"]
     objs = HBData["objs"]
     HBObjects = {}
+    
+    def loadHBconstr(HBconstrObj):
+        EPObject = HBconstrObj['EPstr']
+        added, name = hb_EPObjectsAux.addEPObjectToLib(EPObject, True)
+    
+    def loadHBradMat(HBradMat):
+        added, name = hb_RADMaterialAUX.analyseRadMaterials(HBradMat['RADstr'], True, True)
     
     def loadHBHvac(HBHvacData):
         HBHvac = hb_EPHvac(HBHvacData['GroupID'], HBHvacData['Index'], HBHvacData['airDetails'], HBHvacData['heatingDetails'], HBHvacData['coolingDetails'])
@@ -186,6 +195,10 @@ def loadHBObjects(HBData):
             loadHBheat(HBO)
         elif HBO['objectType'] == 'HBcool':
             loadHBcool(HBO)
+        elif HBO['objectType'] == 'HBConstr' or HBO['objectType'] == 'HBMat':
+            loadHBconstr(HBO)
+        elif HBO['objectType'] == 'HBRadMat':
+            loadHBradMat(HBO)
         else:
             raise Exception("Unsupported object! Assure all objects are Honeybee objects")
     
