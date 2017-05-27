@@ -54,7 +54,7 @@ from shutil import move
 
 ghenv.Component.Name = 'Honeybee_Write THERM File'
 ghenv.Component.NickName = 'writeTHERM'
-ghenv.Component.Message = 'VER 0.0.61\nMAY_12_2017'
+ghenv.Component.Message = 'VER 0.0.61\nMAY_26_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -694,23 +694,15 @@ def main(runTHERM, workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, 
         boundForAirFilm['emissivity'].append(boundProp['Emissivity'])
     
     #If someone has not specified a numerical value for air film, then auto-calculate the film coefficeint based on the Rhino geometry and emissivity of materials.
+    autocalcIndoorFilmCoeffs = []
     for boundaryType in boundConditions:
-        if boundaryType['H'] == 'OUTDOOR': boundaryType['H'] = '22.7'
+        if boundaryType['H'] == 'OUTDOOR': boundaryType['H'] = '26'
         elif boundaryType['H'] == 'INDOOR':
-            #Find all of the segments that this BCType references and get their average emissivity and slope in the Rhino scene.
-            emissivities = []
-            lengths = []
+            #Find all of the segments that this BCType references and get their average slope in the Rhino scene.
             lineSegs = []
             for bCount, boundName in enumerate(boundForAirFilm['bTypeName']):
                 if boundName == boundaryType['Name']:
-                    emissivities.append(boundForAirFilm['emissivity'][bCount])
-                    lengths.append(boundForAirFilm['geometry'][bCount].GetLength())
                     lineSegs.append(boundForAirFilm['geometry'][bCount])
-            #Compute an average emissivity that is wieghted by the length of the segments.
-            totalLength = sum(lengths)
-            emissWeights = []
-            for count, val in enumerate(lengths): emissWeights.append((val*emissivities[count])/totalLength)
-            weightAvgEmiss = sum(emissWeights)
             
             #Compute an average direction of heat flow across the boundary.
             segmentVertices = []
@@ -741,7 +733,10 @@ def main(runTHERM, workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, 
             
             #Compute a film coefficient from the emissivity, heat flow direction, and a paramterization of AHSHRAE fundemantals.
             heatFlowFactor = (-12.443 * (math.pow(dimHeatFlow,3))) + (24.28 * (math.pow(dimHeatFlow,2))) - (16.898 * dimHeatFlow) + 8.1275
-            filmCoeff = (heatFlowFactor * dimHeatFlow) + (5.81176 * weightAvgEmiss) + 0.9629
+            filmCoeff = (heatFlowFactor * dimHeatFlow) + 0.9629
+            if str(filmCoeff) not in autocalcIndoorFilmCoeffs:
+                print '_\nInterior convective film coefficeint has been autocalculated to be \n' + str(filmCoeff)[:5] + ' W/m2K based on the orientation of the geometry in the Rhino scene.'
+                autocalcIndoorFilmCoeffs.append(str(filmCoeff))
             boundaryType['H'] = str(filmCoeff)
     allNotMatched = False
     if len(thermBCs) != len(matchedBoundaries): allNotMatched = True
