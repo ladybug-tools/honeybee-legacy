@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.61\nMAY_18_2017'
+ghenv.Component.Message = 'VER 0.0.61\nMAY_26_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -7939,7 +7939,7 @@ class thermPolygon(object):
         return material
 
 class thermBC(object):
-    def __init__(self, lineGeo, BCName, temperature, filmCoeff, plane, radTemp, radTransCoeff, RGBColor, uFactorTag, emissOverride, ghComp=None):
+    def __init__(self, lineGeo, BCName, temperature, filmCoeff, plane, radTemp, radTransCoeff, RGBColor, uFactorTag, emissOverride, viewFactor=None, envEmiss=None, heatFlux=None, ghComp=None):
         #Set the name and object type.
         self.objectType = "ThermBC"
         self.hasChild = False
@@ -7951,7 +7951,6 @@ class thermBC(object):
         self.BCProperties['Name'] = BCName
         self.BCProperties['Type'] = "1"
         self.BCProperties['H'] = str(filmCoeff)
-        self.BCProperties['HeatFlux'] = "0.000000"
         self.BCProperties['Temperature'] = str(temperature)
         if RGBColor != None:
             bColor = str(System.Drawing.ColorTranslator.ToHtml(RGBColor))
@@ -7959,19 +7958,36 @@ class thermBC(object):
                 color = System.Drawing.Color.FromName(bColor)
                 bColor = System.String.Format("#{0:X2}{1:X2}{2:X2}", color.R, color.G, color.B)
             self.BCProperties['RGBColor'] = bColor.replace('#','0x')
-        else: self.BCProperties['RGBColor'] = '0x80FFFF'
-        if radTemp == None: self.BCProperties['Tr'] = str(temperature)
-        else: self.BCProperties['Tr'] = str(radTemp)
-        if radTransCoeff == None: self.BCProperties['Hr'] = "-431602080.000000"
-        else: self.BCProperties['Hr'] = str(radTransCoeff)
-        self.BCProperties['Ei'] = "1.000000" 
-        self.BCProperties['Viewfactor'] = "1.000000"
-        self.BCProperties['RadiationModel'] = "3"
+        else:
+            self.BCProperties['RGBColor'] = '0x80FFFF'
+        if radTemp == None:
+            self.BCProperties['Tr'] = str(temperature)
+        else:
+            self.BCProperties['Tr'] = str(radTemp)
+        if radTransCoeff == None:
+            self.BCProperties['Hr'] = "-431602080.000000"
+        else:
+            self.BCProperties['Hr'] = str(radTransCoeff)
+        if envEmiss == None:
+            self.BCProperties['Ei'] = "1.000000" 
+        else:
+            self.BCProperties['Ei'] = str(envEmiss)
+        if viewFactor == None:
+            self.BCProperties['Viewfactor'] = "1.000000"
+            self.BCProperties['RadiationModel'] = "3"
+        else:
+            self.BCProperties['Viewfactor'] = str(viewFactor)
+            self.BCProperties['RadiationModel'] = "1"
         self.BCProperties['ConvectionFlag'] = "1"
-        self.BCProperties['FluxFlag'] = "0"
         self.BCProperties['RadiationFlag'] = "1"
         self.BCProperties['ConstantTemperatureFlag'] = "0"
         self.BCProperties['EmisModifier'] = "1.000000"
+        if heatFlux == None:
+            self.BCProperties['HeatFlux'] = "0.000000"
+            self.BCProperties['FluxFlag'] = "0"
+        else:
+            self.BCProperties['HeatFlux'] = str(heatFlux)
+            self.BCProperties['FluxFlag'] = "1"
         
         #Create a dictionary for the geometry.
         self.BCGeo = {}
@@ -8017,7 +8033,8 @@ class thermBC(object):
         
         #Set the U-Factor tag information.
         self.uFactorTag = None
-        if uFactorTag != None: self.uFactorTag = uFactorTag
+        if uFactorTag != None:
+            self.uFactorTag = uFactorTag
         
         #Set any emissivity over-rides.
         self.emissivityOverride = emissOverride
@@ -8585,8 +8602,6 @@ class hb_airDetail(object):
         
         self.areInputsChecked = False
         self.sysProps = hb_hvacProperties()
-        self.ID = str(uuid.uuid4())
-        self.objectType = "HBair"
         
         self.economizerCntrlDict = {
         0:'NoEconomizer',
@@ -8807,8 +8822,6 @@ class hb_heatingDetail(object):
         
         self.areInputsChecked = False
         self.sysProps = hb_hvacProperties()
-        self.ID = str(uuid.uuid4())
-        self.objectType = "HBheat"
         
         if heatingAvailSched:
             self.heatingAvailSched = heatingAvailSched
@@ -8904,8 +8917,6 @@ class hb_coolingDetail(object):
         
         self.areInputsChecked = False
         self.sysProps = hb_hvacProperties()
-        self.ID = str(uuid.uuid4())
-        self.objectType = "HBcool"
         
         self.chillerTypeDict = {
         0: 'WaterCooled',
