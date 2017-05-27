@@ -77,7 +77,8 @@ def main(boundaryCurve, temperature, filmCoefficient, crvName, emissivity, custo
     #Check that the film coefficient makes sense.
     try: filmCoefficient = float(filmCoefficient)
     except:
-        if filmCoefficient.upper() == 'INDOOR' or filmCoefficient.upper() == 'OUTDOOR': filmCoefficient = filmCoefficient.upper()
+        if filmCoefficient.upper() == 'INDOOR' or filmCoefficient.upper() == 'OUTDOOR':
+            filmCoefficient = filmCoefficient.upper()
         else:
             warning = "The connected _filmCoefficient is not recognized. \n This input must be either a numerical value or the word 'indoor' or 'outdoor' (without quotations)."
             print warning
@@ -104,7 +105,17 @@ def main(boundaryCurve, temperature, filmCoefficient, crvName, emissivity, custo
             ghenv.Component.AddRuntimeMessage(w, warning)
             return -1
     else:
-        radTemp, envEmiss, viewFactor = None, None, None
+        radTemp, envEmiss = None, None
+        if filmCoefficient == 'OUTDOOR':
+            viewFactor = 1.0
+        else:
+            try:
+                if float(filmCoefficient) > 10:
+                    viewFactor = 1.0
+                else:
+                    viewFactor = None
+            except:
+                viewFactor = None
     
     #Check to be sure that the polyline is planar.
     boundaryCurve = rc.Geometry.PolylineCurve(boundaryCurve)
