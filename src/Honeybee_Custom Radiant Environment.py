@@ -48,7 +48,7 @@ import decimal
 
 ghenv.Component.Name = 'Honeybee_Custom Radiant Environment'
 ghenv.Component.NickName = 'customRadEnv'
-ghenv.Component.Message = 'VER 0.0.61\nMAY_30_2017'
+ghenv.Component.Message = 'VER 0.0.61\nMAY_31_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
