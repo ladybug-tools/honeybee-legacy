@@ -36,7 +36,6 @@ Provided by Honeybee 0.0.61
             Note that, when inputting 'outdoor', the component will assume an outdoor wind speed of ~4.5 m/s (and a corresponding film coefficient of 26 W/m2-K). You may want to simulate with a lower wind speed of 3.4 m/s (filmCoefficient = 22.7 W/m2-K) or a higher wind speed of 6.7 m/s (filmCoefficient = 34.0 W/m2-K).
         emissivity_: An optional number between 0 and 1 to set an override for the emissivity along the boundary.  By default, the Grasshopper components will take the emissivity of the material that is adjacent to the boundary.  However, a value here can over-ride this value to account for coatings like those on Low-E glass or matte paint on metallic materials.
         customRadEnv_: A list of radiant environmental properties from the 'Honeybee_Custom Radiant Environment' component.  Inputting values here will create a radiant environment that is different than typical NFRC conditions.
-        heatFlux_: An optional numerical value in W/m2 that represents additional energy flux across the boundary condition. You can use this to account for solar flux across the exterior boundary condition.
         uFactorTag_: An optional text string to define a U-Factor tag for the boundary condition.  U-Factor tags are used tell THERM the boundary on which you would like to compute a U-Value.  The default is set to to have no U-Factor tag.  This input can be any text string.  For example "Frame", "Edge", or "Spacer."
         RGBColor_: An optional color to set the color of the boundary condition when you import it into THERM.
     Returns:
@@ -52,7 +51,7 @@ import decimal
 
 ghenv.Component.Name = 'Honeybee_Create Therm Boundaries'
 ghenv.Component.NickName = 'createThermBoundaries'
-ghenv.Component.Message = 'VER 0.0.61\nMAY_26_2017'
+ghenv.Component.Message = 'VER 0.0.61\nMAY_30_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -66,7 +65,7 @@ tolerance = sc.doc.ModelAbsoluteTolerance
 w = gh.GH_RuntimeMessageLevel.Warning
 e = gh.GH_RuntimeMessageLevel.Error
 
-def main(boundaryCurve, temperature, filmCoefficient, crvName, emissivity, customRadEnv, heatFlux, uFactorTag, RGBColor):
+def main(boundaryCurve, temperature, filmCoefficient, crvName, emissivity, customRadEnv, uFactorTag, RGBColor):
     # import the classes
     hb_thermBC = sc.sticky["honeybee_ThermBC"]
     hb_hive = sc.sticky["honeybee_Hive"]()
@@ -95,9 +94,10 @@ def main(boundaryCurve, temperature, filmCoefficient, crvName, emissivity, custo
             ghenv.Component.AddRuntimeMessage(w, warning)
             return -1
     
+    # Read out any custon radiant envrionment.
     if customRadEnv != []:
-        if len(customRadEnv) == 3:
-            radTemp, envEmiss, viewFactor = customRadEnv
+        if len(customRadEnv) == 4:
+            radTemp, envEmiss, viewFactor, heatFlux = customRadEnv
         else:
             warning = "customRadEnv_ is not valid.  Plug in the output of the 'Honeybee_Custom Radiant Environment' component."
             print warning
@@ -105,7 +105,10 @@ def main(boundaryCurve, temperature, filmCoefficient, crvName, emissivity, custo
             ghenv.Component.AddRuntimeMessage(w, warning)
             return -1
     else:
-        radTemp, envEmiss = None, None
+        radTemp, envEmiss, viewFactor, heatFlux = None, None, None, None
+    
+    # Assign default radiation models and view factors based on NFRC.
+    if viewFactor == None:
         if filmCoefficient == 'OUTDOOR':
             viewFactor = 1.0
         else:
@@ -116,6 +119,21 @@ def main(boundaryCurve, temperature, filmCoefficient, crvName, emissivity, custo
                     viewFactor = None
             except:
                 viewFactor = None
+    else:
+        try:
+            viewFactor = float(viewFactor)
+        except:
+            try:
+                if viewFactor.lower() == 'auto':
+                    viewFactor = None
+                else:
+                    warning = "viewFactor_ is not valid.  Plug in the output of the 'Honeybee_Custom Radiant Environment' component."
+                    print warning
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+            except:
+                warning = "viewFactor_ is not valid.  Plug in the output of the 'Honeybee_Custom Radiant Environment' component."
+                print warning
+                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
     
     #Check to be sure that the polyline is planar.
     boundaryCurve = rc.Geometry.PolylineCurve(boundaryCurve)
@@ -201,7 +219,7 @@ if initCheck == True:
 
 
 if initCheck == True and _boundaryCurve != None and _name != None and _temperature != None and _filmCoefficient != None:
-    result= main(_boundaryCurve, _temperature, _filmCoefficient, _name, emissivity_, customRadEnv_, heatFlux_, uFactorTag_, RGBColor_)
+    result= main(_boundaryCurve, _temperature, _filmCoefficient, _name, emissivity_, customRadEnv_, uFactorTag_, RGBColor_)
     
     if result!=-1:
         thermBoundary = result

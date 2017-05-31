@@ -30,9 +30,12 @@ Provided by Honeybee 0.0.61
         envEmissivity_: A value between 0 and 1 that represents the emissivity of the environment. Use this ti account for environments made of atypical materials like metals. If no value is plugged in here, it will be assumed that the envrionment has an emissivity of 1.
         viewFactor_: An optional value between 0 and 1 that sets the view factor of the boundary to the surrounding exterior/interior environment.
         _
-        If this is left blank, the view factor will be calculated using THERM's 'Automatic Enclosure' model, which will check the geometry of the boundary condition to see if the boundary is concave (meaning that the boundary blocks some of the view of itself to the environment).
+        Alternatively, you can simply input the word 'auto' and the view factor will be calculated using THERM's 'Automatic Enclosure' model, which will check the geometry of the boundary condition to see if the boundary is concave (meaning that the boundary blocks some of the view of itself to the environment).
         _
-        If a view factor is connected here, THERM's 'Blackbody Radiation' model will be used and the view factor specified will determine the radiative heat transfer.  A view factor of 1 implies that all edges of the boundary can see 100% of the exterior environment.
+        If a view factor number is connected here, THERM's 'Blackbody Radiation' model will be used and the view factor specified will determine the radiative heat transfer.  A view factor of 1 implies that all edges of the boundary can see 100% of the exterior environment.
+        _
+        If this is left blank, the 'Automatic Enclosure' model will be used any time an indoor film coefficient is specified (< 10 W/m2K).  A 'Blackbody Radiation' model with a view factor of 1 will be used for all outdoor film coefficients (> 10 W/m2K).  These default boundary conditions assume compliance with the NFRC standard.
+        heatFlux_: An optional numerical value in W/m2 that represents additional energy flux across the boundary condition. You can use this to account for solar flux across the exterior boundary condition.
     Returns:
         customRadEnv: A list of radiant environmental properties that can be plugged into the 'Honeybee_Create Therm Boundaries' component in order to run a THERM simulation with a atypical radiant environment.
 """
@@ -45,7 +48,7 @@ import decimal
 
 ghenv.Component.Name = 'Honeybee_Custom Radiant Environment'
 ghenv.Component.NickName = 'customRadEnv'
-ghenv.Component.Message = 'VER 0.0.61\nMAY_26_2017'
+ghenv.Component.Message = 'VER 0.0.61\nMAY_30_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -56,7 +59,7 @@ except: pass
 
 
 
-def main(radTemp, emissivity, viewFactor):
+def main(radTemp, emissivity, viewFactor, heatFlux):
     #Check to be sure that any emissivity values make sense.
     if emissivity != None:
         if emissivity > 1 or emissivity < 0:
@@ -68,16 +71,27 @@ def main(radTemp, emissivity, viewFactor):
     
     #Check to be sure that any emissivity values make sense.
     if viewFactor != None:
-        if viewFactor > 1 or viewFactor < 0:
-            warning = "viewFactor_ must be between 0 and 1"
-            print warning
-            w = gh.GH_RuntimeMessageLevel.Warning
-            ghenv.Component.AddRuntimeMessage(w, warning)
-            return -1
+        if viewFactor.lower() == 'auto':
+            viewFactor = 'auto'
+        else:
+            try:
+                viewFactor = float(viewFactor)
+                if viewFactor > 1 or viewFactor < 0:
+                    warning = "viewFactor_ must be between 0 and 1"
+                    print warning
+                    w = gh.GH_RuntimeMessageLevel.Warning
+                    ghenv.Component.AddRuntimeMessage(w, warning)
+                    return -1
+            except:
+                warning = "viewFactor_ input is not valid."
+                print warning
+                w = gh.GH_RuntimeMessageLevel.Warning
+                ghenv.Component.AddRuntimeMessage(w, warning)
+                return -1
     
-    return radTemp, emissivity, viewFactor
+    return radTemp, emissivity, viewFactor, heatFlux
 
 
-result = main(radiantTemp_, envEmissivity_, viewFactor_)
+result = main(radiantTemp_, envEmissivity_, viewFactor_, heatFlux_)
 if result != -1:
     customRadEnv = result
