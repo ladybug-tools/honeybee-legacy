@@ -42,7 +42,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Radiance Metal Material"
 ghenv.Component.NickName = 'radMetalMaterial'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.61\nJUN_05_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "01 | Daylight | Material"
@@ -94,6 +94,10 @@ def main():
                 avrgRef = (0.265 * _RReflectance + 0.670 * _GReflectance + 0.065 * _BReflectance) * (1 - _specularity_) + _specularity_
                 
                 materialName = _materialName.Replace(" ", "_")
+                #check if the name as same as value
+                if materialName == str(_RReflectance):
+                    materialName = "metal_" + materialName
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, "We renamed the material name to "+materialName+", but we highly recommend you to give a notable name for good practice.")
                 
                 RADMaterial = createRadMaterial(modifier, materialName, _RReflectance, _GReflectance, _BReflectance, _specularity_, _roughness_)
                 
