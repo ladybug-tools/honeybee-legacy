@@ -96,6 +96,7 @@ def main():
                 #check if the name as same as value
                 if materialName == str(_RReflectance):
                     materialName = "plastic_" + materialName
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, "We renamed the material name to "+materialName+", but we highly recommend you to give a notable name for good practice.")
                 
                 RADMaterial = createRadMaterial(modifier, materialName, _RReflectance, _GReflectance, _BReflectance, _specularity_, _roughness_)
                 

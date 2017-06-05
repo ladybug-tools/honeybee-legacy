@@ -108,7 +108,7 @@ def main(materialName, RReflectance, GReflectance, BReflectance):
                 #check if the name as same as value
                 if materialName == str(RReflectance):
                     materialName = "mirror_" + materialName
-                    
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, "We renamed the material name to "+materialName+", but we highly recommend you to give a notable name for good practice.")
                 RADMaterial = createRadMaterial(modifier, materialName, getTransmissivity(RReflectance), getTransmissivity(GReflectance), getTransmissivity(BReflectance))
                 
                 return RADMaterial

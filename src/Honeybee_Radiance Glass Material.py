@@ -106,7 +106,7 @@ def main():
                 #check if the name as same as value
                 if materialName == str(_RTransmittance):
                     materialName = "glass_" + materialName
-                    
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, "We renamed the material name to "+materialName+", but we highly recommend you to give a notable name for good practice.")
                 RADMaterial = createRadMaterial(modifier, materialName, getTransmissivity(_RTransmittance), getTransmissivity(_GTransmittance), getTransmissivity(_BTransmittance), refractiveIndex_)
                 
                 return avrgTrans, RADMaterial
