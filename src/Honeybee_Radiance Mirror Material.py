@@ -38,7 +38,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Radiance Mirror Material"
 ghenv.Component.NickName = 'radMirrorMaterial'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.61\nJUN_05_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "01 | Daylight | Material"
@@ -105,7 +105,10 @@ def main(materialName, RReflectance, GReflectance, BReflectance):
                 avrgTrans = (0.265 * RReflectance + 0.670 * GReflectance + 0.065 * BReflectance)
                 
                 materialName = materialName.Replace(" ", "_")
-                
+                #check if the name as same as value
+                if materialName == str(RReflectance):
+                    materialName = "mirror_" + materialName
+                    
                 RADMaterial = createRadMaterial(modifier, materialName, getTransmissivity(RReflectance), getTransmissivity(GReflectance), getTransmissivity(BReflectance))
                 
                 return RADMaterial

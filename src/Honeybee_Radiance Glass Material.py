@@ -40,7 +40,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Radiance Glass Material"
 ghenv.Component.NickName = 'radGlassMaterial'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.61\nJUN_05_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "01 | Daylight | Material"
@@ -69,7 +69,6 @@ def getTransmissivity(transmittance):
     
 def createRadMaterial(modifier, name, *args):
     # I should check the inputs here
-    
     radMaterial = "void " + modifier + " " + name + "\n" + \
                   "0\n" + \
                   "0\n" + \
@@ -104,6 +103,10 @@ def main():
                 avrgTrans = (0.265 * _RTransmittance + 0.670 * _GTransmittance + 0.065 * _BTransmittance)
                 
                 materialName = _materialName.strip().Replace(" ", "_")
+                #check if the name as same as value
+                if materialName == str(_RTransmittance):
+                    materialName = "glass_" + materialName
+                    
                 RADMaterial = createRadMaterial(modifier, materialName, getTransmissivity(_RTransmittance), getTransmissivity(_GTransmittance), getTransmissivity(_BTransmittance), refractiveIndex_)
                 
                 return avrgTrans, RADMaterial
