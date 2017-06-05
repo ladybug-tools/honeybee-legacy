@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2016, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
+# Copyright (c) 2013-2017, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -24,7 +24,7 @@
 Use this component to add a custom glazing surface to a HBSurface or HBZone.
 
 -
-Provided by Honeybee 0.0.60
+Provided by Honeybee 0.0.61
 
     Args:
         _HBObj: A HBZone or HBSurface to which you would like to add a customized glazing surface.
@@ -48,7 +48,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_addHBGlz'
 ghenv.Component.NickName = 'addHBGlz'
-ghenv.Component.Message = 'VER 0.0.60\nJAN_01_2017'
+ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"

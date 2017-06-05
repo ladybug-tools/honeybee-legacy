@@ -4,7 +4,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2016, Chris Mackey <Chris@MackeyArchitecture.com> 
+# Copyright (c) 2013-2017, Chris Mackey <Chris@MackeyArchitecture.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -26,13 +26,13 @@ Use this component to generate test points within a zone and calculate the view 
 _
 This component is a necessary step before creating an thermal map of an energy model.
 -
-Provided by Honeybee 0.0.60
+Provided by Honeybee 0.0.61
     
     Args:
         _HBZones: The HBZones out of any of the HB components that generate or alter zones.  Note that these should ideally be the zones that are fed into the Run Energy Simulation component as surfaces may not align otherwise.  Zones read back into Grasshopper from the Import idf component will not align correctly with the EP Result data.
         gridSize_: A number in Rhino model units to make each cell of the view factor mesh.
         distFromFloorOrSrf_: A number in Rhino model units to set the distance of the view factor mesh from the ground.
-        additionalShading_: Add in additional shading breps here for geometry that is not a part of the zone but can still block direct sunlight to occupants.  Examples include outdoor context shading and indoor furniture.
+        additionalShading_: Add additional shading breps or meshes to account for geometry that is not a part of the zone but can still block direct sunlight to occupants.  Examples include outdoor context shading and indoor furniture.
         addShdTransmiss_: An optional transmissivity that will be used for all of the objects connected to the additionalShading_ input.  This can also be a list of transmissivities whose length matches the number of breps connected to additionalShading_ input, which will assign a different transmissivity to each object.  Lastly, this input can also accept a data tree with a number of branches equal to the number of objects connected to the additionalShading_ input with a number of values in each branch that march the number of hours in the simulated analysisPeriod (so, for an annual simulation, each branch would have 8760 values).  The default is set to assume that all additionalShading_ objects are completely opaque.  As one adds in transmissivities with this input, the calculation time will increase accordingly.
         ============: ...
         viewResolution_: An interger between 0 and 4 to set the number of times that the tergenza skyview patches are split.  A higher number will ensure a greater accuracy but will take longer.  The default is set to 0 for a quick calculation.
@@ -58,7 +58,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.60\nJAN_05_2017'
+ghenv.Component.Message = 'VER 0.0.61\nMAY_10_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -343,7 +343,7 @@ def checkTheInputs():
     addShdTransmiss = []
     constantTransmis = True
     if addShdTransmiss_.BranchCount > 0:
-        if addShdTransmiss_.BranchCount == 1:
+        if addShdTransmiss_.BranchCount == 1 and not len(addShdTransmiss_.Branch(0)) == 8760:
             addShdTransmissInit = []
             for transmiss in addShdTransmiss_.Branch(0):
                 addShdTransmissInit.append(transmiss)
@@ -372,7 +372,7 @@ def checkTheInputs():
                 warning = 'addShdTransmiss_ must be either a list of values that correspond to the number of breps in the additionalShading_ input or a single constant value for all additionalShading_ objects.'
                 print warning
                 ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
-        elif addShdTransmiss_.BranchCount > 1:
+        elif addShdTransmiss_.BranchCount > 1 or len(addShdTransmiss_.Branch(0)) == 8760:
             if addShdTransmiss_.BranchCount == len(additionalShading_):
                 constantTransmis = False
                 for i in range(addShdTransmiss_.BranchCount):
@@ -523,7 +523,13 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                 if addShdTransmiss != []: newAddShdTransmiss.append(addShdTransmiss[shdCount])
             else:
                 for face in shdBrep.Faces:
-                    additionalShading.append(rc.Geometry.BrepFace.ToBrep(face))
+                    try:
+                        additionalShading.append(rc.Geometry.BrepFace.ToBrep(face))
+                    except:
+                        if face.IsQuad:
+                            additionalShading.append(rc.Geometry.Brep.CreateFromCornerPoints(rc.Geometry.Point3d(shdBrep.Vertices[face.A]), rc.Geometry.Point3d(shdBrep.Vertices[face.B]), rc.Geometry.Point3d(shdBrep.Vertices[face.C]), rc.Geometry.Point3d(shdBrep.Vertices[face.D]), sc.doc.ModelAbsoluteTolerance))
+                        else:
+                            additionalShading.append(rc.Geometry.Brep.CreateFromCornerPoints(rc.Geometry.Point3d(shdBrep.Vertices[face.A]), rc.Geometry.Point3d(shdBrep.Vertices[face.B]), rc.Geometry.Point3d(shdBrep.Vertices[face.C]), sc.doc.ModelAbsoluteTolerance))
                     if addShdTransmiss != []: newAddShdTransmiss.append(addShdTransmiss[shdCount])
         addShdTransmiss = newAddShdTransmiss
     
@@ -1190,16 +1196,23 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
 def checkViewResolution(viewResolution, lb_preparation):
     newVecs = []
     skyViewVecs = []
+    newVecsAreas = []
+    skyViewVecsAreas = []
     skyPatches = lb_preparation.generateSkyGeo(rc.Geometry.Point3d.Origin, viewResolution, 1)
+    normPatchArea = 6.28318530723/len(skyPatches)
     for patch in skyPatches:
-        patchPt = rc.Geometry.AreaMassProperties.Compute(patch).Centroid
+        patchAreaProps = rc.Geometry.AreaMassProperties.Compute(patch)
+        patchPt = patchAreaProps.Centroid
+        patchAreaNorm = patchAreaProps.Area/normPatchArea
         Vec = rc.Geometry.Vector3d(patchPt.X, patchPt.Y, patchPt.Z)
         revVec = rc.Geometry.Vector3d(-patchPt.X, -patchPt.Y, -patchPt.Z)
         skyViewVecs.append(Vec)
+        skyViewVecsAreas.append(patchAreaNorm)
         newVecs.append(Vec)
         newVecs.append(revVec)
+        newVecsAreas.extend([patchAreaNorm, patchAreaNorm])
     
-    return newVecs, skyViewVecs
+    return newVecs, skyViewVecs, newVecsAreas, skyViewVecsAreas
 
 def allSame(items):
     return all(x == items[0] for x in items)
@@ -1246,7 +1259,7 @@ def parallel_projection(zoneSrfsMesh, viewVectors, pointList):
     return pointIntList
 
 
-def parallel_skyProjection(zoneOpaqueMesh, skyViewVecs, pointList, zoneWindowMesh, zoneWindowTransmiss, zoneHasWindows, zoneWindowNames):
+def parallel_skyProjection(zoneOpaqueMesh, skyViewVecs, skyViewVecsAreas, pointList, zoneWindowMesh, zoneWindowTransmiss, zoneHasWindows, zoneWindowNames):
     #Placeholder for the outcome of the parallel projection.
     pointIntList = []
     skyBlockedList = []
@@ -1320,7 +1333,7 @@ def checkOutdoorViewFac(outdoorTestPtViewFactor, testPtSkyView):
     return outdoorNonSrfViewFac
 
 
-def skyViewCalc(testPts, zoneOpaqueMesh, skyViewVecs, zoneHasWindows, zoneWindowMesh, zoneWindowTransmiss, zoneWindowNames):
+def skyViewCalc(testPts, zoneOpaqueMesh, skyViewVecs, skyViewVecsAreas, zoneHasWindows, zoneWindowMesh, zoneWindowTransmiss, zoneWindowNames):
     testPtSkyView = []
     testPtSkyBlockedList = []
     testPtBlockName = []
@@ -1328,7 +1341,7 @@ def skyViewCalc(testPts, zoneOpaqueMesh, skyViewVecs, zoneHasWindows, zoneWindow
     for zoneCount, pointList in enumerate(testPts):
         if zoneHasWindows[zoneCount] > 0:
             if parallel_ == True or parallel_ == None:
-                skyViewFactors, skyBlockedList, finalWindowNameCount = parallel_skyProjection(zoneOpaqueMesh[zoneCount], skyViewVecs, testPts[zoneCount], zoneWindowMesh[zoneCount], zoneWindowTransmiss[zoneCount], zoneHasWindows[zoneCount], zoneWindowNames[zoneCount])
+                skyViewFactors, skyBlockedList, finalWindowNameCount = parallel_skyProjection(zoneOpaqueMesh[zoneCount], skyViewVecs, skyViewVecsAreas, testPts[zoneCount], zoneWindowMesh[zoneCount], zoneWindowTransmiss[zoneCount], zoneHasWindows[zoneCount], zoneWindowNames[zoneCount])
                 testPtSkyView.append(skyViewFactors)
                 testPtSkyBlockedList.append(skyBlockedList)
                 testPtBlockName.append(finalWindowNameCount)
@@ -1579,9 +1592,9 @@ if checkData == True and buildMesh == True:
 #If all of the data is good and the user has set "_runIt" to "True", run the shade benefit calculation to generate all results.
 if checkData == True and _runIt == True and geoCheck == True and buildMesh == True:
     start = time.clock()
-    viewVectors, skyViewVecs = checkViewResolution(viewResolution, lb_preparation)
+    viewVectors, skyViewVecs, newVecsAreas, skyViewVecsAreas = checkViewResolution(viewResolution, lb_preparation)
     testPtViewFactor = main(testPtsInit, zoneSrfsMesh, viewVectors, includeOutdoor)
-    testPtSkyView, testPtBlockedVec, testPtBlockName = skyViewCalc(testPtsInit, zoneOpaqueMesh, skyViewVecs, zoneHasWindows, zoneWindowMesh, zoneWindowTransmiss, zoneWindowNames)
+    testPtSkyView, testPtBlockedVec, testPtBlockName = skyViewCalc(testPtsInit, zoneOpaqueMesh, skyViewVecs, skyViewVecsAreas, zoneHasWindows, zoneWindowMesh, zoneWindowTransmiss, zoneWindowNames)
     
     outdoorNonSrfViewFac = []
     if sectionMethod != 0 and includeOutdoor == True:

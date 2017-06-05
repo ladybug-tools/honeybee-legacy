@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2016, Mostapha Sadeghipour Roudsari and Chris Mackey <Sadeghipour@gmail.com and chris@mackeyarchitecture.com> 
+# Copyright (c) 2013-2017, Mostapha Sadeghipour Roudsari and Chris Mackey <mostapha@ladybug.tools and chris@mackeyarchitecture.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -26,7 +26,7 @@ http://bigladdersoftware.com/epx/docs/8-3/input-output-reference/
 _
 You can also use the "Honeybee_Read Result Dictionary" component after running a simulation to get a list of all possible outputs that you can request from a given simulation.
 -
-Provided by Honeybee 0.0.60
+Provided by Honeybee 0.0.61
     
     Args:
         zoneEnergyUse_: Set to "True" to have EnergyPlus solve for basic building energy use such as heating, cooling, electricity for lights and electricity for plug loads for each zone.
@@ -45,7 +45,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Generate EP Output"
 ghenv.Component.NickName = 'EPOutput'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_28_2016'
+ghenv.Component.Message = 'VER 0.0.61\nMAR_21_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -64,7 +64,6 @@ import Grasshopper.Kernel as gh
 def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, zoneHVACMetrics, surfaceTempAnalysis, surfaceEnergyAnalysis, glazingSolarAnalysis, timestep):
     simulationOutputs = []
     timePeriod = timestep + ";"
-    
     simulationOutputs.append("OutputControl:Table:Style,Comma;")
     
     if zoneEnergyUse == True:

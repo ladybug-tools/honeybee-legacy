@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2016, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
+# Copyright (c) 2013-2017, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -23,7 +23,7 @@
 """
 EnergyPlus Shadow Parameters
 -
-Provided by Honeybee 0.0.60
+Provided by Honeybee 0.0.61
 
     Args:
         timestep_: A number between 1 and 60 that represents the number of timesteps per hour at which the simulation will be run.  The default is set to 6 timesteps per hour, which means that the energy balance calculation is run every 10 minutes of the year.
@@ -61,7 +61,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Energy Simulation Par"
 ghenv.Component.NickName = 'EnergySimPar'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_26_2016'
+ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"

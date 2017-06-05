@@ -4,7 +4,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2016, Chris Mackey <Chris@MackeyArchitecture.com> 
+# Copyright (c) 2013-2017, Chris Mackey <Chris@MackeyArchitecture.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -25,7 +25,7 @@
 Use this component runs an annual comfort assessment off of EnergyPlus results and write all values into csv files.
 The results in these files can be used for creating indoor comfort maps.
 -
-Provided by Honeybee 0.0.60
+Provided by Honeybee 0.0.61
     
     Args:
         _comfAnalysisRecipe: A comfort analysis recipe out of one of the comfort recipe component.
@@ -57,7 +57,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Microclimate Map Analysis"
 ghenv.Component.NickName = 'MicroclimateMap'
-ghenv.Component.Message = 'VER 0.0.60\nOCT_23_2016'
+ghenv.Component.Message = 'VER 0.0.61\nMAY_12_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -292,8 +292,9 @@ def calculatePointMRT(srfTempDict, testPtsViewFactor, hour, originalHour, outdoo
                 pointMRT = 0
                 for srfCount, srfView in enumerate(pointViewFactor):
                     path  = str([zoneCount,srfCount])
-                    weightedSrfTemp = srfView*(srfTempDict[path]["srfTemp"][hour])
+                    weightedSrfTemp = srfView*(math.pow((srfTempDict[path]["srfTemp"][hour] + 273.15),4))
                     pointMRT = pointMRT+weightedSrfTemp
+                pointMRT = math.pow(pointMRT,0.25) - 273.15
                 pointMRTValues[zoneCount].append(round(pointMRT, 3))
         else:
             pointMRTValues.append([])
@@ -301,11 +302,13 @@ def calculatePointMRT(srfTempDict, testPtsViewFactor, hour, originalHour, outdoo
                 pointMRT = 0
                 for srfCount, srfView in enumerate(pointViewFactor):
                     path  = str([zoneCount,srfCount])
-                    weightedSrfTemp = srfView*(outSrfTempDict[path]["srfTemp"][hour])
+                    weightedSrfTemp = srfView*(math.pow((outSrfTempDict[path]["srfTemp"][hour]+273.15),4))
                     pointMRT = pointMRT+weightedSrfTemp
-                weightedSrfTemp = outdoorNonSrfViewFac[ptCount]*prevailingOutdoorTemp[originalHour]
+                
+                weightedSrfTemp = outdoorNonSrfViewFac[ptCount]*(math.pow((prevailingOutdoorTemp[originalHour]+273.15),4))
                 pointMRT = pointMRT+weightedSrfTemp
                 pointMRT = pointMRT / (sum(pointViewFactor) + outdoorNonSrfViewFac[ptCount])
+                pointMRT = math.pow(pointMRT,0.25) - 273.15
                 pointMRTValues[zoneCount].append(round(pointMRT, 3))
     
     return pointMRTValues
@@ -1847,7 +1850,7 @@ def writeCSVUTCI(lb_preparation, directory, fileName, radTempMtx, airTempMtx, UT
     
     return radTempResult, airTempResult, UTCI_Result, OutdoorComfResult, DegFromNeutralResult
 
-def writeCSVPET(lb_preparation, directory, fileName, radTempMtx, airTempMtx, PET_Mtx, PET_ComfMtx, PET_CategoryMtx):
+def writeCSVPET(lb_preparation, directory, fileName, radTempMtx, airTempMtx, PET_Mtx, PETComfMtx, PETCategoryMtx):
     #Find out the number of values in each hour.
     valLen = len(radTempMtx[-1])-1
     

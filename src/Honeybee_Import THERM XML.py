@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2016, Chris Mackey <Chris@MackeyArchitecture.com.com> 
+# Copyright (c) 2013-2017, Chris Mackey <Chris@MackeyArchitecture.com.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -25,7 +25,7 @@ Use this component to read the content of a THERM XML file into Grasshopper.  Th
 _
 At this point in time, U-Factor tags are not supported but all other features should be imported.
 -
-Provided by Honeybee 0.0.60
+Provided by Honeybee 0.0.61
 
     Args:
         _thermXMLFile: A filepath to a therm XML file on your machine.
@@ -46,11 +46,11 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_Import THERM XML'
 ghenv.Component.NickName = 'importTHERM'
-ghenv.Component.Message = 'VER 0.0.60\nNOV_04_2016'
+ghenv.Component.Message = 'VER 0.0.61\nMAY_26_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
-#compatibleHBVersion = VER 0.0.56\nNOV_04_2016
+#compatibleHBVersion = VER 0.0.56\nMAY_26_201
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "4"
 except: pass
@@ -107,12 +107,19 @@ def main(thermXMLFile):
     unitsScale = rc.Geometry.Transform.Scale(rc.Geometry.Plane.WorldXY, conversionFactor, conversionFactor, conversionFactor)
     
     #Open the file and begin extracting the relevant bits of information.
+    BCDict = {'radTemp':None, 'envEmiss':None, 'Viewfactor':None, 'HeatFlux':None}
+    bcTrigger = False
     thermFi = open(thermXMLFile, 'r')
     for lineCount, line in enumerate(thermFi):
         if '<Materials>' in line: materialsTrigger = True
         elif '</Materials>' in line: materialsTrigger = False
         elif '<BoundaryConditions>' in line: BCTypeTrigger = True
-        elif '</BoundaryConditions>' in line: BCTypeTrigger = False
+        elif '</BoundaryConditions>' in line:
+            BCTypeTrigger = False
+            if BCDict != {'radTemp':None, 'envEmiss':None, 'Viewfactor':None, 'HeatFlux':None}:
+                BCTypeNames.append(BCDict['Name'])
+                BCTypes.append(BCDict)
+                BCSegments.append([])
         elif '<Polygons>' in line: polygonTrigger = True
         elif '</Polygons>' in line: polygonTrigger = False
         elif '<Boundaries>' in line: BCSegmentsTrigger = True
@@ -145,15 +152,41 @@ def main(thermXMLFile):
         
         #Try to extract the types of Boundary Conditions.
         if BCTypeTrigger == True:
-            if 'Adiabatic' in line or 'Frame Cavity Surface' in line: pass
+            if 'Adiabatic' in line or 'Frame Cavity Surface' in line:
+                bcTrigger = False
+                if BCDict != {'radTemp':None, 'envEmiss':None, 'Viewfactor':None, 'HeatFlux':None}:
+                    BCTypeNames.append(BCDict['Name'])
+                    BCTypes.append(BCDict)
+                    BCSegments.append([])
             elif '<BoundaryCondition Name' in line:
-                BCDict = {}
+                bcTrigger = True
+                if BCDict != {'radTemp':None, 'envEmiss':None, 'Viewfactor':None, 'HeatFlux':None}:
+                    BCTypeNames.append(BCDict['Name'])
+                    BCTypes.append(BCDict)
+                    BCSegments.append([])
+                BCDict = {'radTemp':None, 'envEmiss':None, 'Viewfactor':None, 'HeatFlux':None}
                 BCDict['Name'] = line.split('Name="')[-1].split('" Type')[0]
                 BCDict['Temperature'] = float(line.split('Temperature="')[-1].split('" ')[0])
                 BCDict['filmCoefficient'] = float(line.split('H="')[-1].split('" ')[0])
-                BCTypeNames.append(BCDict['Name'])
-                BCTypes.append(BCDict)
-                BCSegments.append([])
+                if 'HeatFlux="' in line:
+                    BCDict['HeatFlux'] = float(line.split('HeatFlux="')[-1].split('" ')[0])
+                    if BCDict['HeatFlux'] == 0:
+                        BCDict['HeatFlux'] = None
+            elif bcTrigger == True:
+                if 'Tr="' in line:
+                    BCDict['radTemp'] = float(line.split('Tr="')[-1].split('"')[0])
+                    if BCDict['radTemp'] == BCDict['Temperature']:
+                        BCDict['radTemp'] = None
+                if 'Ei="' in line:
+                    BCDict['envEmiss'] = float(line.split('Ei="')[-1].split('"')[0])
+                    if BCDict['envEmiss'] == 1:
+                        BCDict['envEmiss'] = None
+                if 'RadiationModel="' in line:
+                    radModel = float(line.split('RadiationModel="')[-1].split('"')[0])
+                    if radModel == 3:
+                        BCDict['Viewfactor'] = None
+                    else:
+                        BCDict['Viewfactor'] = float(line.split('Viewfactor="')[-1].split('"')[0])
         
         #Try to extract the polygons from the file.
         if polygonTrigger == True:
@@ -240,7 +273,7 @@ def main(thermXMLFile):
             except:
                 segPts = [seg.PointAtStart, seg.PointAtEnd]
             finalGeo = rc.Geometry.PolylineCurve(segPts)
-            HBThermBC = hb_thermBC(finalGeo, BCTypes[bcCount]['Name'].title(), BCTypes[bcCount]['Temperature'], BCTypes[bcCount]['filmCoefficient'], plane, None, None, None, None, None)
+            HBThermBC = hb_thermBC(finalGeo, BCTypes[bcCount]['Name'].title(), BCTypes[bcCount]['Temperature'], BCTypes[bcCount]['filmCoefficient'], plane, BCTypes[bcCount]['radTemp'], None, None, None, None, BCTypes[bcCount]['Viewfactor'], BCTypes[bcCount]['envEmiss'], BCTypes[bcCount]['HeatFlux'])
             thermBound  = hb_hive.addToHoneybeeHive([HBThermBC], ghenv.Component, False)
             thermBCs.extend(thermBound)
             

@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2016, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
+# Copyright (c) 2013-2017, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -24,7 +24,7 @@
 Make Adiabatic
 
 -
-Provided by Honeybee 0.0.60
+Provided by Honeybee 0.0.61
 
     Args:
         HBSrfs_: A list of valid Honeybee surfaces
@@ -34,7 +34,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Make Adiabatic"
 ghenv.Component.NickName = 'makeAdiabatic'
-ghenv.Component.Message = 'VER 0.0.60\nNOV_04_2016'
+ghenv.Component.Message = 'VER 0.0.61\nAPR_21_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -73,6 +73,9 @@ def main(HBSrfs):
     HBSurfaces = hb_hive.callFromHoneybeeHive(HBSrfs)
     for HBS in HBSurfaces:
         HBS.BC = "Adiabatic"
+        HBS.sunExposure = "NoSun"
+        HBS.windExposure = "NoWind"
+        HBS.srfBCByUser = True
     
     HBSurfaces  = hb_hive.addToHoneybeeHive(HBSurfaces, ghenv.Component)
     

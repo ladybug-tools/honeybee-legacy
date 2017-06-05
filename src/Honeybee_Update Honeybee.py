@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2016, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
+# Copyright (c) 2013-2017, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -23,7 +23,7 @@
 """
 This component [removes | updates] Honeybee components from [grasshopper | a source folder]
 -
-Provided by Honeybee 0.0.60
+Provided by Honeybee 0.0.61
 
     Args:
         sourceDirectory_: Optional address to a folder that contains Honeybee updated userObjects. If None the component will download the latest version from GitHUB.
@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Update Honeybee"
 ghenv.Component.NickName = 'updateHoneybee'
-ghenv.Component.Message = 'VER 0.0.60\nNOV_11_2016'
+ghenv.Component.Message = 'VER 0.0.61\nMAR_29_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "12 | Developers"
@@ -65,7 +65,9 @@ def removeCurrentHB():
         print 'Removing Honeybee!'
         for fileName in fileNames:
             # check for ladybug userObjects and delete the files
-            if fileName.StartsWith('Honeybee') and not fileName.StartsWith('HoneybeePlus'):
+            if fileName.StartsWith('HoneybeePlus'):
+                continue
+            elif fileName.StartsWith('Honeybee'):
                 fullPath = os.path.join(folder, fileName)
                 os.remove(fullPath)
 
@@ -130,6 +132,8 @@ def getAllTheComponents(onlyGHPython = True):
     for obj in objects:
         if type(obj) == gh.Special.GH_Cluster:
             clusterDoc = obj.Document("")
+            if not clusterDoc:
+                continue
             for clusterObj in  clusterDoc.Objects:
                 objects.append(clusterObj)
     
@@ -242,16 +246,8 @@ def main(sourceDirectory, updateThisFile, updateAllUObjects):
             return -1
 
         srcFiles = os.listdir(userObjectsFolder)
-        print 'Removing Old Version...'
-        # remove userobjects that are currently removed
-        fileNames = os.listdir(destinationDirectory)
-        for fileName in fileNames:
-            # check for ladybug userObjects and delete the files if they are not
-            # in source anymore
-            if fileName.StartsWith('Honeybee') and fileName not in srcFiles:
-                fullPath = os.path.join(destinationDirectory, fileName)
-                os.remove(fullPath)        
-        
+        # Remove Old version...      
+        removeCurrentHB()
         print 'Updating...'
         srcFiles = os.listdir(userObjectsFolder)
         for srcFileName in srcFiles:

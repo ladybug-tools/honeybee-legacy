@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2016, Chris Mackey <Chris@MackeyArchitecture.com.com> 
+# Copyright (c) 2013-2017, Chris Mackey <Chris@MackeyArchitecture.com.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -23,7 +23,7 @@
 """
 Use this component to import the content of a LBNL WINDOW text file report as a series of polygons and boundary conditions that can be plugged into the "Write THERM File' component.
 -
-Provided by Honeybee 0.0.60
+Provided by Honeybee 0.0.61
 
     Args:
         _windowGlzSysReport: A filepath to a detailed galzing system text file report exportedby WINDOW.
@@ -60,7 +60,7 @@ import decimal
 
 ghenv.Component.Name = 'Honeybee_Import WINDOW Glz System'
 ghenv.Component.NickName = 'importWINDOW'
-ghenv.Component.Message = 'VER 0.0.60\nNOV_04_2016'
+ghenv.Component.Message = 'VER 0.0.61\nMAY_12_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -353,7 +353,7 @@ def main(windowGlzSysReport, glzPlane, spacerMaterial, thermDefault, unitConvert
             RGBColor = '#ADADAD'
             isGlass = True
         #Create a material for the glass or gas.
-        if glzSysNames[count].upper() not in allMaterials and glzSysNames[count].upper() not in sc.sticky["honeybee_thermMaterialLib"].keys():
+        if glzSysNames[count].upper() not in allMaterials:
             materialStr = '<Material Name=' + glzSysNames[count].upper() + ' Type=0' + ' Conductivity=' + str(glzSysKEffs[count]) + ' Absorptivity=0.5' + ' Emissivity=' + str(glzSysEmiss[count]) + ' RGBColor=' + str(RGBColor) + '/>'
             material = thermDefault.addThermMatToLib(materialStr)
             allMaterials.append(material)
@@ -363,7 +363,7 @@ def main(windowGlzSysReport, glzPlane, spacerMaterial, thermDefault, unitConvert
         #Create the THERM polygon.
         guid = str(uuid.uuid4())
         polyName = "".join(guid.split("-")[:-1])
-        HBThermPolygon = hb_thermPolygon(geo.Faces[0].DuplicateFace(False), material, polyName, plane, None)
+        HBThermPolygon = hb_thermPolygon(geo.Faces[0].DuplicateFace(False), material, polyName, plane, None, ghenv)
         if HBThermPolygon.warning != None:
             w = gh.GH_RuntimeMessageLevel.Warning
             ghenv.Component.AddRuntimeMessage(w, HBThermPolygon.warning)
@@ -376,7 +376,7 @@ def main(windowGlzSysReport, glzPlane, spacerMaterial, thermDefault, unitConvert
             #Create the THERM polygon.
             guid = str(uuid.uuid4())
             polyName = "".join(guid.split("-")[:-1])
-            HBThermPolygon = hb_thermPolygon(geo.Faces[0].DuplicateFace(False), spacerMaterial, polyName, plane, None)
+            HBThermPolygon = hb_thermPolygon(geo.Faces[0].DuplicateFace(False), spacerMaterial, polyName, plane, None, ghenv)
             if HBThermPolygon.warning != None:
                 w = gh.GH_RuntimeMessageLevel.Warning
                 ghenv.Component.AddRuntimeMessage(w, HBThermPolygon.warning)

@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2016, Chris Mackey <Chris@MackeyArchitecture.com> 
+# Copyright (c) 2013-2017, Chris Mackey <Chris@MackeyArchitecture.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -23,7 +23,7 @@
 """
 This component parses an .eio file from an energy simulation and brings in the sizes of all of the HVAC equipment.
 -
-Provided by Honeybee 0.0.60
+Provided by Honeybee 0.0.61
     
     Args:
         _eioFile: The file address of the eio file that comes out of the "Honeybee_Lookup EnergyPlus Folder" component.
@@ -34,7 +34,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Read HVAC Sizing"
 ghenv.Component.NickName = 'readEio'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_27_2016'
+ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -145,7 +145,7 @@ hbCheck = True
 if not sc.sticky.has_key('honeybee_release') == True:
     hbCheck = False
     print "You should first let Honeybee fly..."
-    ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee fly...")
+    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, "You should first let Honeybee fly...")
 else:
     try:
         if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): hbCheck = False
@@ -155,7 +155,7 @@ else:
         "Use updateHoneybee component to update userObjects.\n" + \
         "If you have already updated userObjects drag Honeybee_Honeybee component " + \
         "into canvas and try again."
-        ghenv.Component.AddRuntimeMessage(w, warning)
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
 
 
 if _eioFile and hbCheck == True:

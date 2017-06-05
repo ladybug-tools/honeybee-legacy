@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2016, Chris Mackey <Chris@MackeyArchitecture.com> 
+# Copyright (c) 2013-2017, Chris Mackey <Chris@MackeyArchitecture.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -26,7 +26,7 @@ _
 This component reads only the results related to surfaces.  For results related to zones, you should use the "Honeybee_Read EP Result" component.
 
 -
-Provided by Honeybee 0.0.60
+Provided by Honeybee 0.0.61
     
     Args:
         _resultFileAddress: The result file address that comes out of the WriteIDF component.
@@ -46,7 +46,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Read EP Surface Result"
 ghenv.Component.NickName = 'readEPSrfResult'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.61\nAPR_19_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -146,10 +146,11 @@ if _resultFileAddress:
                     srfAreaLines = range(lineCount+3, lineCount+3+int(numZones)+int(numSrfs)+int(numFixShd)+int(numBldgShd)+int(numAttShd))
                 else:
                     srfAreaLines = range(lineCount+2, lineCount+2+int(numZones)+int(numSrfs))
+                    print srfAreaLines
             elif '-FRAME' in line: srfAreaLines.append(srfAreaLines[-1]+1)
             elif lineCount in srfAreaLines:
-                if "Shading_Surface" in line: pass
-                elif "Zone_Surfaces" in line:
+                if "Shading_Surface" in line or "Shading Surface" in line: pass
+                elif "Zone_Surfaces" in line or "Zone Surfaces" in line:
                     zoneCounter += 1
                     srfCounter = -1
                 else:
@@ -166,7 +167,7 @@ if _resultFileAddress:
                                 zoneSrfNameList[zoneCounter].append(surfaceName)
                                 zoneSrfTypeList[zoneCounter].append(line.split(",")[2])
                                 zoneSrfAreaList[zoneCounter].append(float(line.split(",")[9]))
-                    else:
+                    elif '! <' not in line:
                         srfCounter += 1
                         zoneSrfNameList[zoneCounter].append(line.split(",")[1])
                         zoneSrfTypeList[zoneCounter].append(line.split(",")[2])

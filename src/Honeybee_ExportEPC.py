@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2016, "Write your names here..." <"Write your email address here> 
+# Copyright (c) 2013-2017, "Write your names here..." <"Write your email address here> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -25,7 +25,7 @@ Export to Energy Performace Calculator (EPC)
 ... Add more description here
 
 -
-Provided by Honeybee 0.0.60
+Provided by Honeybee 0.0.61
 
     Args:
         _HBZones: Honeybee Zones
@@ -36,13 +36,13 @@ Provided by Honeybee 0.0.60
 """
 ghenv.Component.Name = "Honeybee_ExportEPC"
 ghenv.Component.NickName = 'Export to EPC'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
-try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
 
 import scriptcontext as sc
@@ -150,7 +150,7 @@ def main(HBZones):
 
 srfTypeDict = {0: "Wall", 1 : "Roof", 2: "Floor", 5 : "Glazing"}
 directionDict = {0: "N", 1 : "NW", 2: "W", 3: "SW", 4 : "S", 5 : "SE", 6 : "E", 7 : "NE"}
-
+print
 if len(_HBZones)!=0 and _HBZones[0]!=0:
     srfData = main(_HBZones)
     if srfData != -1:

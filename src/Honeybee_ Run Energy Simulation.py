@@ -4,7 +4,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2016, Mostapha Sadeghipour Roudsari and Chris Mackey <Sadeghipour@gmail.com and Chris@MackeyArchitecture.com> 
+# Copyright (c) 2013-2017, Mostapha Sadeghipour Roudsari and Chris Mackey <mostapha@ladybug.tools and Chris@MackeyArchitecture.com> 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
 # or (at your option) any later version. 
@@ -23,7 +23,7 @@ Use this component to export HBZones into an IDF file, and run them through Ener
 _
 The component outputs the report from the simulation, the file path of the IDF file, and the CSV result file from the EnergyPlus run.
 -
-Provided by Honeybee 0.0.60
+Provided by Honeybee 0.0.61
     Args:
         north_: Input a vector to be used as a true North direction for the energy simulation or a number between 0 and 360 that represents the degrees off from the y-axis to make North.  The default North direction is set to the Y-axis (0 degrees).
         _epwFile: An .epw file path on your system as a text string.
@@ -55,16 +55,17 @@ Provided by Honeybee 0.0.60
     Returns:
         report: Check here to see a report of the EnergyPlus run, including errors.
         idfFileAddress: The file path of the IDF file that has been generated on your machine.
+        performanceSummary: The Html file path of the Building Utility Performance Summar. You can review the report by copying the file path, and open it in your web browser.
         resultFileAddress: The file path of the CSV result file that has been generated on your machine.  This only happens when you set "runEnergyPlus_" to "True."
         studyFolder: The directory in which the simulation has been run.  Connect this to the 'Honeybee_Lookup EnergyPlus' folder to bring many of the files in this directory into Grasshopper.
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.60\nNOV_22_2016'
+ghenv.Component.Message = 'VER 0.0.61\nMAY_07_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nSEP_17_2016
+#compatibleHBVersion = VER 0.0.56\nAPR_25_2016
 #compatibleLBVersion = VER 0.0.59\nJUL_24_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
@@ -883,7 +884,7 @@ class WriteIDF(object):
                 '\t' + ',     !- Minimum Indoor Temperature Shcedule Name\n' + \
                 '\t' + str(zone.natVentMaxIndoorTemp[natVentCount])  + ',     !- Maximum Indoor Temperature\n' + \
                 '\t' + ',     !- Maximum Indoor Temperature Shcedule Name\n' + \
-                '\t' + '-100'  + ',     !- Delta Temperature\n' + \
+                '\t' + str(zone.natVentDeltaTemp[natVentCount])  + ',     !- Delta Temperature\n' + \
                 '\t' + ',     !- Delta Temperature Shcedule Name\n' + \
                 '\t' + str(zone.natVentMinOutdoorTemp[natVentCount])  + ',     !- Minimum Outdoor Temperature\n' + \
                 '\t' + ',     !- Minimum Outdoor Temperature Shcedule Name\n' + \
@@ -917,7 +918,7 @@ class WriteIDF(object):
                 '\t' + ',     !- Minimum Indoor Temperature Shcedule Name\n' + \
                 '\t' + str(zone.natVentMaxIndoorTemp[natVentCount])  + ',     !- Maximum Indoor Temperature\n' + \
                 '\t' + ',     !- Maximum Indoor Temperature Shcedule Name\n' + \
-                '\t' + '-100'  + ',     !- Delta Temperature\n' + \
+                '\t'  + str(zone.natVentDeltaTemp[natVentCount])  + ',     !- Delta Temperature\n' + \
                 '\t' + ',     !- Delta Temperature Shcedule Name\n' + \
                 '\t' + str(zone.natVentMinOutdoorTemp[natVentCount])  + ',     !- Minimum Outdoor Temperature\n' + \
                 '\t' + ',     !- Minimum Outdoor Temperature Shcedule Name\n' + \
@@ -2311,7 +2312,11 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     if simulationOutputs:
         print "[8 of 8] Writing outputs..."
         idfFile.write('\n')
-        for line in simulationOutputs:
+        idfFile.write("OutputControl:Table:Style,CommaAndHTML,JtoKWH;")
+        idfFile.write('\n')
+        idfFile.write("Output:Table:SummaryReports,AllSummary;")
+        idfFile.write('\n')
+        for line in simulationOutputs[1:]:
             idfFile.write(line + '\n')
             
     else:
@@ -2335,12 +2340,14 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     
     ######################## RUN ENERGYPLUS SIMULATION #######################
     resultFileFullName = None
+    performanceSummaryReport= None;
     studyFolder = None
     if runEnergyPlus:
         print "Analysis is running!..."
         # write the batch file
         hb_runIDF.writeBatchFile(workingDir, idfFileName, epwFileAddress, sc.sticky["honeybee_folders"]["EPPath"], runEnergyPlus > 1)
         resultFileFullName = idfFileFullName.replace('.idf', '.csv')
+        performanceSummaryReport = idfFileFullName.replace('.idf', 'Table.html');
         studyFolder = originalWorkingDir
         try:
             test = open(workingDir + '\eplusout.csv', 'r')
@@ -2352,7 +2359,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     else:
         print "Set runEnergyPlus to True!"
         
-    return idfFileFullName, resultFileFullName, studyFolder
+    return idfFileFullName, resultFileFullName, performanceSummaryReport,studyFolder
 
 
 if _writeIdf == True and _epwFile and _HBZones and _HBZones[0]!=None:
@@ -2361,7 +2368,7 @@ if _writeIdf == True and _epwFile and _HBZones and _HBZones[0]!=None:
                   HBContext_, simulationOutputs_, _writeIdf, runEnergyPlus_,
                   _workingDir_, _idfFileName_, meshSettings_)
     if result!= -1:
-        idfFileAddress, resultFileAddress, studyFolder = result
+        idfFileAddress, resultFileAddress, htmlReport, studyFolder = result
         if runEnergyPlus_:
             try:
                 errorFileFullName = idfFileAddress.replace('.idf', '.err')

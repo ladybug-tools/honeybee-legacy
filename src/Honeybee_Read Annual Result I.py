@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2016, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
+# Copyright (c) 2013-2017, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -24,7 +24,7 @@
 Read Annual Daylight Results I [Standard Daysim Results]
 
 -
-Provided by Honeybee 0.0.60
+Provided by Honeybee 0.0.61
 
     Args:
         _illFilesAddress: List of .ill files
@@ -46,7 +46,7 @@ Provided by Honeybee 0.0.60
 """
 ghenv.Component.Name = "Honeybee_Read Annual Result I"
 ghenv.Component.NickName = 'readAnnualResultsI'
-ghenv.Component.Message = 'VER 0.0.60\nJAN_15_2017'
+ghenv.Component.Message = 'VER 0.0.61\nFEB_19_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
@@ -84,21 +84,59 @@ def getFilelength(fileName):
             pass
     return i + 1
 
-def isTheStudyOver(fileNames):
-    while True:
-        cmd = 'WMIC PROCESS get Commandline' #,Processid'
-        proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-        cmdCount = 0
-        for line in proc.stdout:
-            if line.strip().startswith("cmd") and line.strip().endswith(".bat"):
-                fileName = line.strip().split(" ")[-1].split("\\")[-1]
-                # I should check the file names and make sure they are the right files
-                if fileName in fileNames:
-                    cmdCount += 1
-        time.sleep(0.2)
-        if cmdCount == 0:
-            return
+def executeBatchFiles(batchFileNames, maxPRuns = None, shell = False, waitingTime = 0.2):
+
+    """Run a number of batch files in parallel and
+        wait to end of the analysis.
+
+        Args:
+            batchFileNames: List of batch files
+            maxPRuns: max number of files to be ran in parallel (default = 0)
+            shell: set to True if you do NOT want to see the cmd window while the analysis is runnig
+    """
+
+    if not maxPRuns : maxPRuns = 1
+    maxPRuns = int(maxPRuns)
+    total = len(batchFileNames)
+    
+    if maxPRuns < 1: maxPRuns = 1
+    if maxPRuns > total: maxPRuns = total
+    
+    running = 0
+    done = False
+    jobs = []
+    pid = 0
+    
+    try:
+        while not done:
+            if running < maxPRuns and pid < total:
+                # execute the files
+                jobs.append(subprocess.Popen(batchFileNames[pid].replace("\\", "/") , shell = shell))
+                pid+=1
+                time.sleep(waitingTime)
             
+            # count how many jobs are running and how many are done
+            running = 0
+            finished = 0
+            for job in jobs:
+                if job.poll() is None:
+                    #one job is still running
+                    running += 1
+                else:
+                    finished += 1
+    
+            if running == maxPRuns:
+                # wait for half a second
+                #print "waiting..."
+                time.sleep(waitingTime)
+    
+            if finished ==  total:
+                done = True
+    
+    except Exception, e:
+        print "Something went wrong: %s"%str(e) 
+
+
 def convertIllFileDaraTreeIntoSortedDictionary(illFilesAddress):
     
     # I should move this function into Honeybee_Honeybee #BadPractice!
@@ -184,7 +222,7 @@ def convertEPScheduleToDSSchedule(scheduleName, folder):
     
     return fullPath
 
-def main(illFilesAddress, testPts, testVecs, occFiles, lightingControlGroups, SHDGroupI_Sensors, SHDGroupII_Sensors, DLAIllumThresholds, runInBackground = False):
+def main(illFilesAddress, testPts, testVecs, occFiles, lightingControlGroups, SHDGroupI_Sensors, SHDGroupII_Sensors, DLAIllumThresholds, runInBackground=False):
     
     if sc.sticky.has_key('honeybee_release'):
 
@@ -764,23 +802,11 @@ def main(illFilesAddress, testPts, testVecs, occFiles, lightingControlGroups, SH
     #execute the batch files in parallel if there is enough CPUs!
     fileNames = []
 
-    if ncpus >= numOfSpaces:
-        for fileName in batchFileNames:
-            batchFileName = os.path.join(filePath, fileName)
-            fileNames.append(batchFileName)
-            if runInBackground:
-                p = subprocess.Popen(batchFileName , shell=True)
-            else:
-                p = subprocess.Popen(r'start cmd /c ' + batchFileName , shell=True)
-                
-        isTheStudyOver(batchFileNames)
-    else:
-        for fileName in batchFileNames:
-            batchFileName = os.path.join(filePath, fileName)
-            if runInBackground:
-                p = subprocess.Popen(batchFileName , shell=True)
-            else:
-                p = subprocess.Popen(r'start cmd /c ' + batchFileName , shell=True)
+    for fileName in batchFileNames:
+        batchFileName = os.path.join(filePath, fileName)
+        fileNames.append(batchFileName)
+
+    executeBatchFiles(fileNames, ncpus - 1, shell=runInBackground)
     
     # calculate sDA    
     

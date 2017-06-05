@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2016, Chris Mackey <Chris@MackeyArchitecture.com.com> 
+# Copyright (c) 2013-2017, Chris Mackey <Chris@MackeyArchitecture.com.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -23,18 +23,19 @@
 """
 Use this component to create a THERM boundary condition.
 -
-Provided by Honeybee 0.0.60
+Provided by Honeybee 0.0.61
 
     Args:
         _boundaryCurve: A polyline or list of polylines that coincide with the thermPolygons that you plan to connect to the "Write Therm File" component.
         _name: An name for the boundary condition to keep track of it through the creation of the THERM model.  If no value is input here, a default unique name will be generated.
         _temperature: A numerical value that represents the temperature at the boundary in degrees Celcius.
-        _filmCoefficient: Either a numerical value in W/m2-K that represents the conductivity of the air film at the boundary condition or simply input the word 'indoor' or 'outdoor' to have the film coefficient autocalculated based on the position of geometry in the Rhino scene and an interpolation of values from Table 10 from chapter 26 of ASHRAE Fundementals 2013:
+        _filmCoefficient: A numerical value in W/m2-K that represents the convective resistance of the air film at the boundary condition.  Alternatively, you can simply input the word 'indoor' or 'outdoor' to have the film coefficient autocalculated based on the position of geometry in the Rhino scene and an interpolation of values from Table 10 from chapter 26 of ASHRAE Fundementals 2013.
             _
-            Typical film coefficient values range from 26 W/m2-K (for an NFRC exterior envelope) to 2.5 W/m2-K (for an interior wood/vinyl surface).
+            Typical film coefficient values range from 36 W/m2-K (for an exterior condition where outdoor wind strips away most convective resistance) to 2.5 W/m2-K (for a vertically-oriented interior wood/vinyl surface).
             _
-            Note that, when inputting 'outdoor', the component will assume an outdoor wind speed of 3.4 m/s (22.7 W/m2-K) and, for higher wind speeds, higher film coefficients should be input (ie. 6.7 m/s = 34.0 W/m2-K).
+            Note that, when inputting 'outdoor', the component will assume an outdoor wind speed of ~4.5 m/s (and a corresponding film coefficient of 26 W/m2-K). You may want to simulate with a lower wind speed of 3.4 m/s (filmCoefficient = 22.7 W/m2-K) or a higher wind speed of 6.7 m/s (filmCoefficient = 34.0 W/m2-K).
         emissivity_: An optional number between 0 and 1 to set an override for the emissivity along the boundary.  By default, the Grasshopper components will take the emissivity of the material that is adjacent to the boundary.  However, a value here can over-ride this value to account for coatings like those on Low-E glass or matte paint on metallic materials.
+        customRadEnv_: A list of radiant environmental properties from the 'Honeybee_Custom Radiant Environment' component.  Inputting values here will create a radiant environment that is different than typical NFRC conditions.
         uFactorTag_: An optional text string to define a U-Factor tag for the boundary condition.  U-Factor tags are used tell THERM the boundary on which you would like to compute a U-Value.  The default is set to to have no U-Factor tag.  This input can be any text string.  For example "Frame", "Edge", or "Spacer."
         RGBColor_: An optional color to set the color of the boundary condition when you import it into THERM.
     Returns:
@@ -50,11 +51,11 @@ import decimal
 
 ghenv.Component.Name = 'Honeybee_Create Therm Boundaries'
 ghenv.Component.NickName = 'createThermBoundaries'
-ghenv.Component.Message = 'VER 0.0.60\nJAN_15_2017'
+ghenv.Component.Message = 'VER 0.0.61\nMAY_31_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
-#compatibleHBVersion = VER 0.0.56\nNOV_04_2016
+#compatibleHBVersion = VER 0.0.56\nMAY_26_2017
 #compatibleLBVersion = VER 0.0.59\nNOV_07_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
 except: pass
@@ -64,7 +65,7 @@ tolerance = sc.doc.ModelAbsoluteTolerance
 w = gh.GH_RuntimeMessageLevel.Warning
 e = gh.GH_RuntimeMessageLevel.Error
 
-def main(boundaryCurve, temperature, filmCoefficient, crvName, emissivity, uFactorTag, RGBColor):
+def main(boundaryCurve, temperature, filmCoefficient, crvName, emissivity, customRadEnv, uFactorTag, RGBColor):
     # import the classes
     hb_thermBC = sc.sticky["honeybee_ThermBC"]
     hb_hive = sc.sticky["honeybee_Hive"]()
@@ -75,7 +76,8 @@ def main(boundaryCurve, temperature, filmCoefficient, crvName, emissivity, uFact
     #Check that the film coefficient makes sense.
     try: filmCoefficient = float(filmCoefficient)
     except:
-        if filmCoefficient.upper() == 'INDOOR' or filmCoefficient.upper() == 'OUTDOOR': filmCoefficient = filmCoefficient.upper()
+        if filmCoefficient.upper() == 'INDOOR' or filmCoefficient.upper() == 'OUTDOOR':
+            filmCoefficient = filmCoefficient.upper()
         else:
             warning = "The connected _filmCoefficient is not recognized. \n This input must be either a numerical value or the word 'indoor' or 'outdoor' (without quotations)."
             print warning
@@ -86,11 +88,52 @@ def main(boundaryCurve, temperature, filmCoefficient, crvName, emissivity, uFact
     #Check to be sure that any emissivity values make sense.
     if emissivity != None:
         if emissivity > 1 or emissivity < 0:
-            warning = "_emissivity must be between 0 and 1"
+            warning = "emissivity_ must be between 0 and 1"
             print warning
             w = gh.GH_RuntimeMessageLevel.Warning
             ghenv.Component.AddRuntimeMessage(w, warning)
             return -1
+    
+    # Read out any custon radiant envrionment.
+    if customRadEnv != []:
+        if len(customRadEnv) == 4:
+            radTemp, envEmiss, viewFactor, heatFlux = customRadEnv
+        else:
+            warning = "customRadEnv_ is not valid.  Plug in the output of the 'Honeybee_Custom Radiant Environment' component."
+            print warning
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+            return -1
+    else:
+        radTemp, envEmiss, viewFactor, heatFlux = None, None, None, None
+    
+    # Assign default radiation models and view factors based on NFRC.
+    if viewFactor == None:
+        if filmCoefficient == 'OUTDOOR':
+            viewFactor = 1.0
+        else:
+            try:
+                if float(filmCoefficient) > 10:
+                    viewFactor = 1.0
+                else:
+                    viewFactor = None
+            except:
+                viewFactor = None
+    else:
+        try:
+            viewFactor = float(viewFactor)
+        except:
+            try:
+                if viewFactor.lower() == 'auto':
+                    viewFactor = None
+                else:
+                    warning = "viewFactor_ is not valid.  Plug in the output of the 'Honeybee_Custom Radiant Environment' component."
+                    print warning
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+            except:
+                warning = "viewFactor_ is not valid.  Plug in the output of the 'Honeybee_Custom Radiant Environment' component."
+                print warning
+                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
     
     #Check to be sure that the polyline is planar.
     boundaryCurve = rc.Geometry.PolylineCurve(boundaryCurve)
@@ -115,7 +158,7 @@ def main(boundaryCurve, temperature, filmCoefficient, crvName, emissivity, uFact
         crvName = "".join(guid.split("-")[:-1])
     
     #Make the therm boundary condition.
-    HBThermBC = hb_thermBC(boundaryCurve, crvName, temperature, filmCoefficient, boundPlane, None, None, RGBColor, uFactorTag, emissivity)
+    HBThermBC = hb_thermBC(boundaryCurve, crvName, temperature, filmCoefficient, boundPlane, radTemp, None, RGBColor, uFactorTag, emissivity, viewFactor, envEmiss, heatFlux, ghenv)
     
     # add to the hive
     thermBoundary  = hb_hive.addToHoneybeeHive([HBThermBC], ghenv.Component)
@@ -176,7 +219,7 @@ if initCheck == True:
 
 
 if initCheck == True and _boundaryCurve != None and _name != None and _temperature != None and _filmCoefficient != None:
-    result= main(_boundaryCurve, _temperature, _filmCoefficient, _name, emissivity_, uFactorTag_, RGBColor_)
+    result= main(_boundaryCurve, _temperature, _filmCoefficient, _name, emissivity_, customRadEnv_, uFactorTag_, RGBColor_)
     
     if result!=-1:
         thermBoundary = result

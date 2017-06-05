@@ -4,7 +4,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2016, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
+# Copyright (c) 2013-2017, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -36,7 +36,7 @@ along with Honeybee; If not, see <http://www.gnu.org/licenses/>.
 Source code is available at: https://github.com/mostaphaRoudsari/Honeybee
 
 -
-Provided by Honeybee 0.0.60
+Provided by Honeybee 0.0.61
     
     Args:
         defaultFolder_: Optional input for Honeybee default folder.
@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.60\nFeb_02_2017'
+ghenv.Component.Message = 'VER 0.0.61\nMAY_26_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -81,6 +81,7 @@ import subprocess
 import uuid
 import re
 import random
+import zipfile
 
 PI = math.pi
 
@@ -336,6 +337,7 @@ class hb_findFolders():
         self.RADPath, self.RADFile = self.which('rad.exe')
         self.EPPath, self.EPFile = self.which('EnergyPlus.exe')
         self.DSPath, self.DSFile = self.which('gen_dc.exe')
+        self.THERMPath, self.THERMFile = self.which('Therm7.exe')
     
     def which(self, program):
         """
@@ -343,7 +345,7 @@ class hb_findFolders():
         http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
         """
         def is_exe(fpath):
-
+            
             # Avoid Radiance and Daysim that comes with DIVA as it has a different
             # structure which doesn't match the standard Daysim
             if fpath.upper().find("DIVA")<0:
@@ -354,7 +356,7 @@ class hb_findFolders():
             
             else:
                 return False
-                
+        
         fpath, fname = os.path.split(program)
         if fpath:
             if is_exe(program):
@@ -474,7 +476,7 @@ class PrepareTemplateEPLibFiles(object):
                     openStudioStandardLib = json.load(jsondata)
                 
                 sc.sticky ["honeybee_OpenStudioStandardsFile"] = openStudioStandardLib
-                print "Standard template file is loaded from %s\n"%filepath
+                print "Standard template file is loaded from %s"%filepath
             except:
                 print 'Download failed!!! You need OpenStudio_Standards.json to use honeybee.' + \
                 '\nPlease check your internet connection, and try again!'
@@ -518,7 +520,6 @@ class PrepareTemplateEPLibFiles(object):
             csvfilepath = os.path.join(workingDir, 'thermMaterial.csv')
             try:
                 libFilePaths.append(csvfilepath)
-                print "Therm Material file is loaded from %s\n"%csvfilepath
             except:
                 print 'Download failed!!! You need thermMaterial.csv to use the "export to THERM" capabilties of honeybee.' + \
                 '\nPlease check your internet connection, and try again!'
@@ -733,6 +734,8 @@ class HB_GetEPLibraries:
                         self.libraries["ThermMaterial"][matName]["Conductivity"] = float(matPropLine[-5])
                         self.libraries["ThermMaterial"][matName]["Absorptivity"] = float(matPropLine[-4])
                         self.libraries["ThermMaterial"][matName]["Emissivity"] = float(matPropLine[-3])
+                        self.libraries["ThermMaterial"][matName]["WindowDB"] = ""
+                        self.libraries["ThermMaterial"][matName]["WindowID"] = "-1"
                         self.libraries["ThermMaterial"][matName]["RGBColor"] = System.Drawing.ColorTranslator.FromHtml("#" + matPropLine[-2])
                     except: pass
 
@@ -1691,9 +1694,10 @@ class hb_WriteRAD(object):
                         if srf.hasChild:
                             # collect the custom material informations
                             for childSrf in srf.childSrfs:
+                                
                                 if childSrf.RadMaterial!=None:
                                     customRADMat, customMixFunRadMat = self.hb_RADMaterialAUX.addRADMatToDocumentDict(childSrf, customRADMat, customMixFunRadMat)
-                                    
+                            
                             if not srf.isPlanar or len(srf.childSrfs) > 1:
                                 geoRadFile.write(self.RADNonPlanarChildSurface(srf))
                             
@@ -2397,6 +2401,7 @@ class hb_WriteRAD(object):
     def getsurfaceStr(self, surface, count, coordinates):
         if surface.RadMaterial != None:
             surface.construction = surface.RadMaterial
+        
         elif not hasattr(surface, 'construction'):
             
             if not hasattr(surface, 'type'):
@@ -2406,7 +2411,7 @@ class hb_WriteRAD(object):
             #assign the construction based on type
             surface.construction = surface.cnstrSet[surface.type]
             
-        srfStr =  surface.construction.replace(" ", "_") + " polygon " + surface.name + '_' + `count` + "\n" + \
+        srfStr =  surface.construction.replace(" ", "_") + " polygon " + surface.name.strip() + '_' + `count` + "\n" + \
             "0\n" + \
             "0\n" + \
             `(len(coordinates)*3)` + "\n"
@@ -2426,7 +2431,7 @@ class hb_WriteRAD(object):
         return srfStr + ptStr
 
     def RADSurface(self, surface):
-        fullStr = ''
+        fullStr = []
         # base surface coordinates
         coordinatesList = surface.extractPoints(1, True)
         
@@ -2440,21 +2445,21 @@ class hb_WriteRAD(object):
                     glzCoordinateLists = surface.extractGlzPoints(True)
                     for glzCount, glzCoorList in enumerate(glzCoordinateLists):
                         # glazingStr
-                        fullStr = fullStr + self.getsurfaceStr(surface.childSrfs[0], glzCount, glzCoorList)
+                        fullStr.append(self.getsurfaceStr(surface.childSrfs[0], glzCount, glzCoorList))
                         
                         # shift glazing list
                         glzCoorList = self.shiftList(glzCoorList)
                         coordinates.extend(glzCoorList)
                         coordinates.append(glzCoorList[0])
                     coordinates.extend([endCoordinate, coordinates[0]])
-                fullStr = fullStr + self.getsurfaceStr(surface, count, coordinates)
-            return fullStr
+                fullStr.append(self.getsurfaceStr(surface, count, coordinates))
+            return ''.join(fullStr)
         else:
             print "one of the surfaces is not exported correctly"
             return ""
             
     def RADNonPlanarSurface(self, surface):
-        fullStr = ''
+        fullStr = []
         
         # replace the geometry with the punched geometry
         # for planar surfaces with multiple openings
@@ -2474,12 +2479,12 @@ class hb_WriteRAD(object):
             coordinatesList = [coordinatesList]
         for count, coordinates in enumerate(coordinatesList):
             #print count
-            fullStr = fullStr + self.getsurfaceStr(surface, count, coordinates)
+            fullStr.append(self.getsurfaceStr(surface, count, coordinates))
         
-        return fullStr
+        return ''.join(fullStr)
     
     def RADNonPlanarChildSurface(self, surface):
-        fullStr = ''
+        fullStr = []
         
         # I should test this function before the first release!
         # Not sure if it will work for cases generated only by surface
@@ -2491,9 +2496,9 @@ class hb_WriteRAD(object):
         if type(coordinatesList[0])is not list and type(coordinatesList[0]) is not tuple:
             coordinatesList = [coordinatesList]
         for glzCount, glzCoorList in enumerate(coordinatesList):
-            # glazingStr
-            fullStr = fullStr + self.getsurfaceStr(surface.childSrfs[0], glzCount, glzCoorList)
-        return fullStr
+            # glazingStr`
+            fullStr.append(self.getsurfaceStr(surface.childSrfs[0], glzCount, glzCoorList))
+        return ''.join(fullStr)
 
 class hb_WriteRADAUX(object):
     
@@ -3299,6 +3304,7 @@ class hb_WriteDS(object):
                 # advanced dynamic shading
                 glareControlRecipe = shadingRecipe.glareControlR
                 shadingStates = shadingRecipe.shadingStates
+                stateCount = len(tuple(s for s in shadingStates if s is not None))
                 controlSystem = shadingRecipe.controlSystem
                 # sensors = shadingRecipe.sensorPts #sensors are removed from this part and will be added later for the analysis
                 coolingPeriod = shadingRecipe.coolingPeriod
@@ -3309,7 +3315,7 @@ class hb_WriteDS(object):
                 
                 if controlSystem == "ManualControl":
                     dynamicShd += groupName + '\n' + \
-                                  str(len(shadingStates)-1) + '\n' + \
+                                  str(stateCount) + '\n' + \
                                   "ManualControl " + subWorkingDir + "\\" + groupName + "_state_1.rad\n"
                     
                     for stateCount in range(1, len(shadingStates)):
@@ -3335,7 +3341,7 @@ class hb_WriteDS(object):
                     
                     if controlSystem == "AutomatedThermalControl":
                         dynamicShd += groupName + '\n' + \
-                                  str(len(shadingStates)-1) + '\n' + \
+                                  str(stateCount) + '\n' + \
                                   "AutomatedThermalControl " + subWorkingDir + "\\" + groupName + "_state_1.rad\n"
                         
                         for stateCount, shadingState in enumerate(shadingStates):
@@ -3350,7 +3356,7 @@ class hb_WriteDS(object):
                     
                     elif controlSystem == "AutomatedThermalControlWithOccupancy":
                         dynamicShd += groupName + '\n' + \
-                                  str(len(shadingStates)-1) + '\n' + \
+                                  str(stateCount) + '\n' + \
                                   "AutomatedThermalControlWithOccupancy " + \
                                   `stMonth` + " " + `stDay` + " " + `endMonth` + " " + `endDay` + " " + \
                                   subWorkingDir + "\\" + groupName + "_state_1.rad\n"
@@ -3366,7 +3372,7 @@ class hb_WriteDS(object):
                                 
                     elif controlSystem == "AutomatedGlareControl":
                         dynamicShd += groupName + '\n' + \
-                                  str(len(shadingStates)-1) + '\n' + \
+                                  str(stateCount) + '\n' + \
                                   "AutomatedGlareControl \n" + \
                                   `int(threshold)` + " " + `int(minAz)` + " " + `int(maxAz)` + " " + \
                                   `int(minAlt)` + " " + `int(maxAlt)` + " " + subWorkingDir + "\\" + groupName + "_state_1.rad\n"
@@ -3382,7 +3388,7 @@ class hb_WriteDS(object):
                     
                     elif controlSystem == "AutomatedGlareControlWithOccupancy":
                         dynamicShd += groupName + '\n' + \
-                                  str(len(shadingStates)-1) + '\n' + \
+                                  str(stateCount) + '\n' + \
                                   "AutomatedGlareControlWithOccupancy \n" + \
                                   `int(threshold)` + " " + `int(minAz)` + " " + `int(maxAz)` + " " + \
                                   `int(minAlt)` + " " + `int(maxAlt)` + "\n" + \
@@ -3622,10 +3628,15 @@ class EPMaterialAux(object):
         elif materialType.lower() == "material:nomass":
             # Material:NoMass is defined by R-Value and not U-Value
             UValueSI = 1 / float(materialObj[2][0])
-            
+        
         elif materialType.lower() == "material":
             thickness = float(materialObj[2][0])
             conductivity = float(materialObj[3][0])
+            UValueSI = conductivity/thickness
+        
+        elif materialType.lower() == "material:roofvegetation":
+            thickness = float(materialObj[8][0])
+            conductivity = float(materialObj[9][0])
             UValueSI = conductivity/thickness
         
         elif materialType.lower() == "material:airgap":
@@ -4899,6 +4910,7 @@ class EPZone(object):
         self.natVentMaxIndoorTemp = []
         self.natVentMinOutdoorTemp = []
         self.natVentMaxOutdoorTemp = []
+        self.natVentDeltaTemp = []
         self.windowOpeningArea = []
         self.windowHeightDiff = []
         self.natVentSchedule = []
@@ -4983,12 +4995,25 @@ class EPZone(object):
         zOfPt = zoneBB.Min.Z + 0.8
         self.illumCntrlSensorPt = rc.Geometry.Point3d(zoneCentPt.X, zoneCentPt.Y, zOfPt)
     
-    def transform(self, transform, clearSurfacesBC = True, flip = False):
-        self.name += str(uuid.uuid4())
+    def transform(self, transform, newKey=None, clearSurfacesBC = True, flip = False):
+        if clearSurfacesBC == True or newKey == None:
+            self.name += str(uuid.uuid4())[:8]
+        else:
+            self.name += newKey
         self.geometry.Transform(transform)
         self.cenPt.Transform(transform)
+        if clearSurfacesBC == True:
+            self.mixAir = False
+            self.mixAirZoneList = []
+            self.mixAirFlowList = []
+            self.mixAirFlowSched = []
+        else:
+            for count, mixZ in enumerate(self.mixAirZoneList):
+                self.mixAirZoneList[count] = mixZ + newKey
+        if flip == True:
+            self.geometry.Flip()
         for surface in self.surfaces:
-            surface.transform(transform, clearSurfacesBC, flip)
+            surface.transform(transform, newKey, clearSurfacesBC, flip)
     
     def assignScheduleBasedOnProgram(self, component = None):
         # create an open office is the program is not assigned
@@ -6444,11 +6469,14 @@ class hb_EPSurface(object):
         else:
             return 0 #wall
     
-    def transform(self, transform, clearBC = True, flip = False):
+    def transform(self, transform, newKey=None, clearBC = True, flip = False):
         """Transform EPSurface using a transform object
            Transform can be any valid transform object (e.g Translate, Rotate, Mirror)
         """
-        self.name += str(uuid.uuid4())
+        if clearBC == True or newKey == None:
+            self.name += str(uuid.uuid4())[:8]
+        else:
+            self.name += newKey
         self.geometry.Transform(transform)
         self.meshedFace.Transform(transform)
         # move center point and normal
@@ -6458,10 +6486,8 @@ class hb_EPSurface(object):
         self.basePlane.Transform(transform)
         
         if flip:
-            self.geometry.Flip()
             self.normalVector.Reverse()
-            self.basePlane.Flip()
-
+        
         if clearBC:
             self.setBC("Outdoors", False)
             self.setBCObjectToOutdoors()
@@ -6471,7 +6497,7 @@ class hb_EPSurface(object):
             if flip: self.punchedGeometry.Flip()
             
             for childSrf in self.childSrfs:
-                childSrf.transform(transform, clearBC, flip)
+                childSrf.transform(transform, newKey, clearBC, flip)
         
     def getTotalArea(self):
         return self.geometry.GetArea()
@@ -7777,6 +7803,8 @@ class thermDefaults(object):
         sc.sticky["honeybee_thermMaterialLib"][materialName]["Absorptivity"] = absorptivity
         sc.sticky["honeybee_thermMaterialLib"][materialName]["Emissivity"] = emissivity
         sc.sticky["honeybee_thermMaterialLib"][materialName]["RGBColor"] = RGBColor
+        sc.sticky["honeybee_thermMaterialLib"][materialName]["WindowDB"] = ""
+        sc.sticky["honeybee_thermMaterialLib"][materialName]["WindowID"] = "-1"
         try:
             sc.sticky["honeybee_thermMaterialLib"][materialName]["CavityModel"] = CavityModel
         except: pass
@@ -7784,7 +7812,7 @@ class thermDefaults(object):
         return materialName
 
 class thermPolygon(object):
-    def __init__(self, surfaceGeo, material, srfName, plane, RGBColor):
+    def __init__(self, surfaceGeo, material, srfName, plane, RGBColor, ghComp=None):
         #Set the name and material.
         self.objectType = "ThermPolygon"
         self.hasChild = False
@@ -7808,10 +7836,21 @@ class thermPolygon(object):
         segm = surfaceGeo.DuplicateEdgeCurves()
         self.segments = []
         for seg in segm:
-            if seg.IsLinear: self.segments.append(seg)
-            else:
-                rc.Geometry.Curve.ToPolyline(0,0,0.1,0,0,sc.doc.ModelAbsoluteTolerance,0,0,True)
+            if seg.IsLinear():
                 self.segments.append(seg)
+            elif str(seg.CurvatureAt(0.5)) == '0,0,0':
+                self.segments.append(seg)
+            else:
+                print seg.CurvatureAt(0.5)
+                seg = seg.ToPolyline(3,0,0,0,0,0,0,0,True)
+                self.segments.append(seg)
+                msg = "A segment of your polygon is curved and THERM cannot simulate curved geometry.\n" + \
+                "It has been automatically converted into a polyline with three line segments."
+                try:
+                    ghComp.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                except:
+                    pass
+        
         #Build a new Polygon from the segments.
         self.polylineGeo = rc.Geometry.Curve.JoinCurves(self.segments, sc.doc.ModelAbsoluteTolerance)
         if len(self.polylineGeo) > 1:
@@ -7846,6 +7885,8 @@ class thermPolygon(object):
         sc.sticky["honeybee_thermMaterialLib"][materialName]["Conductivity"] = sc.sticky["honeybee_thermMaterialLib"][orgigMat]["Conductivity"]
         sc.sticky["honeybee_thermMaterialLib"][materialName]["Absorptivity"] = sc.sticky["honeybee_thermMaterialLib"][orgigMat]["Absorptivity"]
         sc.sticky["honeybee_thermMaterialLib"][materialName]["Emissivity"] = sc.sticky["honeybee_thermMaterialLib"][orgigMat]["Emissivity"]
+        sc.sticky["honeybee_thermMaterialLib"][materialName]["WindowDB"] = sc.sticky["honeybee_thermMaterialLib"][materialName]["WindowDB"]
+        sc.sticky["honeybee_thermMaterialLib"][materialName]["WindowID"] = sc.sticky["honeybee_thermMaterialLib"][materialName]["WindowID"]
         sc.sticky["honeybee_thermMaterialLib"][materialName]["RGBColor"] = RGBColor
         
         return materialName
@@ -7861,6 +7902,8 @@ class thermPolygon(object):
         sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] = None
         sc.sticky["honeybee_thermMaterialLib"][material]["Absorptivity"] = 0.5
         sc.sticky["honeybee_thermMaterialLib"][material]["Emissivity"] = 0.9
+        sc.sticky["honeybee_thermMaterialLib"][material]["WindowDB"] = ""
+        sc.sticky["honeybee_thermMaterialLib"][material]["WindowID"] = "-1"
         if RGBColor != None:
             if not RGBColor.startswith('#'):
                 color = System.Drawing.Color.FromName(RGBColor)
@@ -7896,7 +7939,7 @@ class thermPolygon(object):
         return material
 
 class thermBC(object):
-    def __init__(self, lineGeo, BCName, temperature, filmCoeff, plane, radTemp, radTransCoeff, RGBColor, uFactorTag, emissOverride):
+    def __init__(self, lineGeo, BCName, temperature, filmCoeff, plane, radTemp, radTransCoeff, RGBColor, uFactorTag, emissOverride, viewFactor=None, envEmiss=None, heatFlux=None, ghComp=None):
         #Set the name and object type.
         self.objectType = "ThermBC"
         self.hasChild = False
@@ -7908,7 +7951,6 @@ class thermBC(object):
         self.BCProperties['Name'] = BCName
         self.BCProperties['Type'] = "1"
         self.BCProperties['H'] = str(filmCoeff)
-        self.BCProperties['HeatFlux'] = "0.000000"
         self.BCProperties['Temperature'] = str(temperature)
         if RGBColor != None:
             bColor = str(System.Drawing.ColorTranslator.ToHtml(RGBColor))
@@ -7916,19 +7958,36 @@ class thermBC(object):
                 color = System.Drawing.Color.FromName(bColor)
                 bColor = System.String.Format("#{0:X2}{1:X2}{2:X2}", color.R, color.G, color.B)
             self.BCProperties['RGBColor'] = bColor.replace('#','0x')
-        else: self.BCProperties['RGBColor'] = '0x80FFFF'
-        if radTemp == None: self.BCProperties['Tr'] = str(temperature)
-        else: self.BCProperties['Tr'] = str(radTemp)
-        if radTransCoeff == None: self.BCProperties['Hr'] = "-431602080.000000"
-        else: self.BCProperties['Hr'] = str(radTransCoeff)
-        self.BCProperties['Ei'] = "1.000000" 
-        self.BCProperties['Viewfactor'] = "1.000000"
-        self.BCProperties['RadiationModel'] = "3"
+        else:
+            self.BCProperties['RGBColor'] = '0x80FFFF'
+        if radTemp == None:
+            self.BCProperties['Tr'] = str(temperature)
+        else:
+            self.BCProperties['Tr'] = str(radTemp)
+        if radTransCoeff == None:
+            self.BCProperties['Hr'] = "-431602080.000000"
+        else:
+            self.BCProperties['Hr'] = str(radTransCoeff)
+        if envEmiss == None:
+            self.BCProperties['Ei'] = "1.000000" 
+        else:
+            self.BCProperties['Ei'] = str(envEmiss)
+        if viewFactor == None:
+            self.BCProperties['Viewfactor'] = "1.000000"
+            self.BCProperties['RadiationModel'] = "3"
+        else:
+            self.BCProperties['Viewfactor'] = str(viewFactor)
+            self.BCProperties['RadiationModel'] = "1"
         self.BCProperties['ConvectionFlag'] = "1"
-        self.BCProperties['FluxFlag'] = "0"
         self.BCProperties['RadiationFlag'] = "1"
         self.BCProperties['ConstantTemperatureFlag'] = "0"
         self.BCProperties['EmisModifier'] = "1.000000"
+        if heatFlux == None:
+            self.BCProperties['HeatFlux'] = "0.000000"
+            self.BCProperties['FluxFlag'] = "0"
+        else:
+            self.BCProperties['HeatFlux'] = str(heatFlux)
+            self.BCProperties['FluxFlag'] = "1"
         
         #Create a dictionary for the geometry.
         self.BCGeo = {}
@@ -7941,11 +8000,31 @@ class thermBC(object):
         #Increase the Therm ID count.
         sc.sticky["thermBCCount"] = sc.sticky["thermBCCount"] + 1
         
-        #Build surface geometry and extract the vertices.
-        self.geometry = lineGeo
-        self.vertices = []
-        for vertexCount in range(self.geometry.PointCount):
-            self.vertices.append(self.geometry.Point(vertexCount))
+        #Extract the segments of the polyline and make sure none of them are curved.
+        segm = lineGeo.DuplicateSegments()
+        if segm.Count == 0:
+            segm = [lineGeo]
+        self.segments = []
+        for seg in segm:
+            if seg.IsLinear():
+                self.segments.append(seg)
+            elif str(seg.CurvatureAt(0.5)) == '0,0,0':
+                self.segments.append(seg)
+            else:
+                seg = seg.ToPolyline(3,0,0,0,0,0,0,0,True)
+                self.segments.append(seg)
+                msg = "A segment of your boundary condition is curved and THERM cannot simulate curved geometry.\n" + \
+                "It has been automatically converted into a polyline with three line segments."
+                try:
+                    ghComp.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+                except:
+                    pass
+        
+        #Build a new Polygon from the segments.
+        self.vertices = [self.segments[0].PointAtStart]
+        for seg in self.segments:
+            self.vertices.append(seg.PointAtEnd)
+        self.geometry = rc.Geometry.PolylineCurve(self.vertices)
         
         #Make note of the plane in which the surface lies.
         self.plane = plane
@@ -7954,7 +8033,8 @@ class thermBC(object):
         
         #Set the U-Factor tag information.
         self.uFactorTag = None
-        if uFactorTag != None: self.uFactorTag = uFactorTag
+        if uFactorTag != None:
+            self.uFactorTag = uFactorTag
         
         #Set any emissivity over-rides.
         self.emissivityOverride = emissOverride
@@ -8219,7 +8299,7 @@ class hb_Hive(object):
                     print `e`
                     print "Failed to copy the object. Returning the original objects...\n" +\
                     "This can cause strange behaviour!"
-                    HBObjects.append(sc.sticky['HBHive'][key])
+                    HBObjects.append(sc.sticky['HBHive'][baseKey][key])
             else:
                 raise Exception('HoneybeeKeyMismatch: Failed to call the object from Honeybee hive.')
                 
@@ -8402,8 +8482,10 @@ class hb_hvacProperties(object):
         11:'FAN COIL UNITS + DOAS',
         12:'ACTIVE CHILLED BEAMS + DOAS',
         13:'RADIANT FLOORS + DOAS',
-        14:'VRF + DOAS',
-        15:'HEATED FLOORS + VAV COOLING'
+        14:'RADIANT CEILINGS + DOAS',
+        15:'HEATED FLOORS + VAV COOLING',
+        16:'VRF + DOAS',
+        17:'GSHP + DOAS'
         }
         
         # Dictionaries that state which features can be changed for each of the different systems.
@@ -8424,7 +8506,9 @@ class hb_hvacProperties(object):
         12: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : False},
         13: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
         14: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
-        15: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True}
+        15: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
+        16: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
+        17: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True}
         }
         
         self.airCapabilities = {
@@ -8443,7 +8527,9 @@ class hb_hvacProperties(object):
         12: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
         13: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
         14: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        15: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True}
+        15: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        16: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        17: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True}
         }
         
         self.heatCapabilities = {
@@ -8461,8 +8547,10 @@ class hb_hvacProperties(object):
         11: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
         12: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
         13: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
-        14: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
-        15: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : False}
+        14: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
+        15: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : False},
+        16: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
+        17: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True}
         }
         
         self.coolCapabilities = {
@@ -8480,8 +8568,10 @@ class hb_hvacProperties(object):
         11: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : True},
         12: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : True},
         13: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : True},
-        14: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : True},
-        15: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : True}
+        14: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : True},
+        15: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : True},
+        16: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : True},
+        17: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : True}
         }
     
     @staticmethod
@@ -8972,11 +9062,17 @@ if checkIn.letItFly:
         sc.sticky["honeybee_release"] = versionCheck()
         folders = hb_findFolders()
         
+        # Function to sort vrsions of software
+        def getversion(filePath):
+            ver = ''.join(s for s in filePath if (s.isdigit() or s == '.'))
+            return sum(int(i) * d ** 10 for d, i in enumerate(reversed(ver.split('.'))))
+        
         sc.sticky["honeybee_folders"] = {}
         
         if folders.RADPath == None:
             if os.path.isdir("c:\\radiance\\bin\\"):
                 folders.RADPath = "c:\\radiance\\bin\\"
+                print "Found installation of Radiance."
             else:
                 msg= "Honeybee cannot find RADIANCE folder on your system.\n" + \
                      "Make sure you have RADIANCE installed on your system.\n" + \
@@ -8984,6 +9080,14 @@ if checkIn.letItFly:
                      "A good place to install RADIANCE is c:\\radiance"
                 ghenv.Component.AddRuntimeMessage(w, msg)
                 folders.RADPath = ""
+        else:
+            versiFile = "\\".join(folders.RADPath.split('\\')[:-1]) + "\\NREL_ver.txt"
+            if os.path.isfile(versiFile):
+                with open(versiFile) as verFile:
+                    currentRADVersion = verFile.readline().strip()
+                print "Found installation of " + currentRADVersion + "."
+            else:
+                print "Found installation of Radiance."
         
         if  folders.RADPath.find(" ") > -1:
             msg =  "There is a white space in RADIANCE filepath: " + folders.RADPath + "\n" + \
@@ -8999,10 +9103,11 @@ if checkIn.letItFly:
         
         sc.sticky["honeybee_folders"]["RADPath"] = folders.RADPath
         sc.sticky["honeybee_folders"]["RADLibPath"] = hb_RADLibPath
-            
+        
         if folders.DSPath == None:
             if os.path.isdir("c:\\daysim\\bin\\"):
                 folders.DSPath = "c:\\daysim\\bin\\"
+                print "Found installation of DAYSIM."
             else:
                 msg= "Honeybee cannot find DAYSIM folder on your system.\n" + \
                      "Make sure you have DAYISM installed on your system.\n" + \
@@ -9010,13 +9115,15 @@ if checkIn.letItFly:
                      "A good place to install DAYSIM is c:\\DAYSIM"
                 ghenv.Component.AddRuntimeMessage(w, msg)
                 folders.DSPath = ""
+        else:
+            print "Found installation of DAYSIM."
         
         if folders.DSPath.find(" ") > -1:
             msg =  "There is a white space in DAYSIM filepath: " + folders.DSPath + "\n" + \
                    "Please install Daysism in a valid address (e.g. c:\\daysim)"
             ghenv.Component.AddRuntimeMessage(w, msg)
             folders.DSPath = ""
-            
+        
         if folders.DSPath.endswith("\\"): segmentNumber = -2
         else: segmentNumber = -1
         hb_DSCore = "\\".join(folders.DSPath.split("\\")[:segmentNumber])
@@ -9027,7 +9134,8 @@ if checkIn.letItFly:
         sc.sticky["honeybee_folders"]["DSLibPath"] = hb_DSLibPath
         
         # supported versions for EnergyPlus
-        EPVersions = ["V8-6-0", "V8-5-0", "V8-4-0","V8-3-0", "V8-2-10", "V8-2-9", "V8-2-8", "V8-2-7", "V8-2-6", \
+        EPVersions = ["V8-7-0", "V8-6-0", "V8-5-0", "V8-4-0","V8-3-0", "V8-2-10", \
+                      "V8-2-9", "V8-2-8", "V8-2-7", "V8-2-6", \
                       "V8-2-5", "V8-2-4", "V8-2-3", "V8-2-2", "V8-2-1", "V8-2-0", \
                       "V8-1-5", "V8-1-4", "V8-1-3", "V8-1-2", "V8-1-1", "V8-1-0"]
         EPVersion = ''
@@ -9046,15 +9154,73 @@ if checkIn.letItFly:
         # check for OpenStudio Folder.
         openStudioLibFolder = None
         QtFolder = None
-        installedOPS = [f for f in os.listdir("C:\\Program Files") if f.startswith("OpenStudio")]
-        installedOPS = sorted(installedOPS, key = lambda x: int("".join(x.split(" ")[-1].split("."))), reverse = True)
-        if len(installedOPS) != 0:
-            openStudioLibFolder = "C:/Program Files/%s/CSharp/openstudio/"%installedOPS[0]
-            QtFolder = "C:/Program Files/%s/Ruby/openstudio/"%installedOPS[0]
+        
+        installedOPS1 = [f for f in os.listdir("C:\\Program Files") if f.startswith("OpenStudio")]
+        installedOPS2 = [f for f in os.listdir("C:\\") if f.startswith("openstudio")]
+        try:
+            installedOPS1 = sorted(installedOPS1, key=getversion, reverse=True)
+            installedOPS2 = sorted(installedOPS2, key=getversion, reverse=True)
+        except Exception as e:
+            print('Failed to sort OpenStudio installation folders.')
+        
+        if len(installedOPS2) != 0:
+            installedOPS = installedOPS2[0]
+            openStudioLibFolder = "C:/%s/CSharp/openstudio"%installedOPS
+            QtFolder = "C:/%s/Ruby/"%installedOPS
+            # Grab the version of EP that installs with OpenStudio
+            if os.path.isdir("C:/%s/EnergyPlus/"%installedOPS):
+                folders.EPPath = "C:/%s/EnergyPlus/"%installedOPS
+                EPVersion = ""
+            if os.path.isdir(openStudioLibFolder) and os.path.isfile(os.path.join(openStudioLibFolder, "OpenStudio.dll")):
+                # Add Openstudio to the path if it is not there already.
+                if not openStudioLibFolder in os.environ['PATH'] or QtFolder not in os.environ['PATH']:
+                    os.environ['PATH'] = ";".join([openStudioLibFolder, QtFolder, os.environ['PATH']])
+                # Try to download the EP Run Files that are no longer distributed with OpenStudio but are necessary for Honeybee.
+                if not os.path.isfile('C:/%s/EnergyPlus/Epl-run.bat'%installedOPS):
+                    try:
+                        client = System.Net.WebClient()
+                        client.DownloadFile('https://github.com/mostaphaRoudsari/honeybee/raw/master/resources/EPRunFiles/Epl-run.bat', 'C:/%s/EnergyPlus/Epl-run.bat'%installedOPS)
+                    except Exception, e:
+                        warning = 'Failed to download the files needed to run EnergyPlus with OpenStudio 2.x.'
+                        warning += '\n' + `e`
+                        print warning
+                        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+                if not os.path.isdir('C:/%s/EnergyPlus/PostProcess/'%installedOPS):
+                    try:
+                        client = System.Net.WebClient()
+                        client.DownloadFile('https://github.com/mostaphaRoudsari/honeybee/raw/master/resources/EPRunFiles/PostProcess.zip', 'C:/%s/EnergyPlus/PostProcess.zip'%installedOPS)
+                        sourceFile = 'C:/%s/EnergyPlus/PostProcess.zip'%installedOPS
+                        with zipfile.ZipFile(sourceFile) as zf:
+                            for member in zf.infolist():
+                                words = member.filename.split('\\')
+                                path = 'C:/%s/EnergyPlus/'%installedOPS
+                                for word in words[:-1]:
+                                    drive, word = os.path.splitdrive(word)
+                                    head, word = os.path.split(word)
+                                    if word in (os.curdir, os.pardir, ''): continue
+                                    path = os.path.join(path, word)
+                                zf.extract(member, path)
+                    except Exception, e:
+                        warning = 'Failed to download the files needed to PostProcess EnergyPlus results with OpenStudio 2.x.'
+                        warning += '\n' + `e`
+                        print warning
+                        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+                if not os.path.isdir('C:/%s/EnergyPlus/PreProcess/'%installedOPS):
+                    os.mkdir('C:/%s/EnergyPlus/PreProcess/'%installedOPS)
+            else:
+                openStudioLibFolder = None
+                QtFolder = None
+        elif len(installedOPS1) != 0:
+            installedOPS = installedOPS1[0]
+            openStudioLibFolder = "C:/Program Files/%s/CSharp/openstudio/"%installedOPS
+            QtFolder = "C:/Program Files/%s/Ruby/openstudio/"%installedOPS
             for EPVers in EPVersions:
                 versStr = EPVers.replace('V', '-')
-                if os.path.isdir("C:/Program Files/%s/share/openstudio/"%installedOPS[0] + "EnergyPlus" + versStr + "/"):
-                    folders.EPPath = "C:/Program Files/%s/share/openstudio/"%installedOPS[0] + "EnergyPlus" + versStr
+                if os.path.isdir("C:/Program Files/%s/share/openstudio/"%installedOPS + "EnergyPlus" + versStr + "/"):
+                    folders.EPPath = "C:/Program Files/%s/share/openstudio/"%installedOPS + "EnergyPlus" + versStr + "//"
+                    EPVersion = EPVers
+                elif os.path.isdir("C:/Program Files/%s/share/openstudio/"%installedOPS + "EnergyPlus" + EPVers + "/"):
+                    folders.EPPath = "C:/Program Files/%s/share/openstudio/"%installedOPS + "EnergyPlus" + EPVers + "//"
                     EPVersion = EPVers
             if os.path.isdir(openStudioLibFolder) and os.path.isfile(os.path.join(openStudioLibFolder, "openStudio.dll")):
                 # openstudio is there and we are good to go.
@@ -9064,6 +9230,7 @@ if checkIn.letItFly:
             else:
                 openStudioLibFolder = None
                 QtFolder = None
+        
         if openStudioLibFolder == None or QtFolder == None:
             msg1 = "Honeybee cannot find OpenStudio on your system.\n" + \
                 "You wont be able to use the Export to OpenStudio component.\n" + \
@@ -9073,6 +9240,8 @@ if checkIn.letItFly:
             print msg2
             ghenv.Component.AddRuntimeMessage(w, msg1)
             ghenv.Component.AddRuntimeMessage(w, msg2)
+        else:
+            print "Found installation of " + installedOPS + "."
         
         if folders.EPPath == None:
             # give a warning to the user
@@ -9082,6 +9251,8 @@ if checkIn.letItFly:
             versions = ", ".join(EPVersions)
             msg += versions
             print msg
+        else:
+            print "Found installation of EnergyPlus" + EPVersion + "."
         
         sc.sticky["honeybee_folders"]["OSLibPath"] = openStudioLibFolder
         sc.sticky["honeybee_folders"]["OSQtPath"] = QtFolder
@@ -9089,8 +9260,59 @@ if checkIn.letItFly:
         sc.sticky["honeybee_folders"]["EPVersion"] = EPVersion.replace("-", ".")[1:]
         
         
+        # Check for an installation of THERM.
+        THERMVersions = ["7.5"]
+        THERMVersion = ''
+        THERMSettingsFile = ''
+        if folders.THERMPath != None:
+            # Honeybee has already found a version of THERM. Make sure it's an acceptable version
+            THERMVersion = os.path.split(folders.THERMPath)[-1].split("THERM")[-1]
+            if THERMVersion not in THERMVersions:
+                #Not an acceptable version so remove it from the path
+                folders.THERMPath = None
+            else:
+                print "Found installation of THERM " + THERMVersion + "."
+        
+        if folders.THERMPath == None:
+            if os.path.isdir("C:/Program Files (x86)/lbnl/"):
+                installedTHERM = [f for f in os.listdir("C:/Program Files (x86)/lbnl/") if f.startswith("THERM")]
+                try:
+                    installedTHERM = sorted(installedTHERM, key=getversion, reverse=True)
+                except Exception as e:
+                    print('Failed to sort THERM installation folders.')
+                if len(installedTHERM) != 0:
+                    for thermInstall in installedTHERM:
+                        THERMVersionInit = thermInstall.split("THERM")[-1]
+                        if THERMVersionInit in THERMVersions:
+                            THERMVersion = THERMVersionInit
+                            folders.THERMPath = "C:/Program Files (x86)/lbnl/%s/"%thermInstall
+                            print "Found installation of THERM " + THERMVersion + "."
+        
+        if folders.THERMPath == None:
+            msg= "Honeybee cannot find a compatible LBNL THERM installation on your system.\n" + \
+             "You won't be able to run THERM simulations of heat flow through constructions.\n" + \
+             "You need THERM version 7.5 or above and you can download it from here:"
+            msg2 = "https://windows.lbl.gov/software/therm/7/index_7_5_13.html"
+            ghenv.Component.AddRuntimeMessage(w, msg)
+            ghenv.Component.AddRuntimeMessage(w, msg2)
+            folders.THERMPath = ""
+        else:
+            if os.path.isfile('C:/Users/Public/LBNL/Settings/therm%s.ini'%THERMVersion):
+                THERMSettingsFile = 'C:/Users/Public/LBNL/Settings/therm%s.ini'%THERMVersion
+            else:
+                msg= "Failed to load THERM settings file.\n" + \
+                 "You won't be able to run THERM simulations."
+                ghenv.Component.AddRuntimeMessage(w, msg)
+            if not folders.THERMPath in os.environ['PATH']:
+                os.environ['PATH'] = ";".join([folders.THERMPath, os.environ['PATH']])
+        
+        sc.sticky["honeybee_folders"]["THERMPath"] = folders.THERMPath
+        sc.sticky["honeybee_folders"]["ThermSettings"] = THERMSettingsFile
+        
+        
         # initiate an empty library in case this is the first time honeybee is flying in this document
         # otherwise it has been already created/
+        print ""
         if "honeybee_Hive" not in sc.sticky:
             sc.sticky["honeybee_RADMaterialLib"] = dict()
         

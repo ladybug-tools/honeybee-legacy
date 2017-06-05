@@ -71,7 +71,7 @@ Provided by Ladybug 0.0.62
 
 ghenv.Component.Name = "Honeybee_Annual Schedule"
 ghenv.Component.NickName = 'AnnualSchedule'
-ghenv.Component.Message = 'VER 0.0.60\nNOV_01_2016'
+ghenv.Component.Message = 'VER 0.0.61\nAPR_25_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "07 | Energy | Schedule"
@@ -445,12 +445,12 @@ def main(sun, mon, tue, wed, thu, fri, sat, holiday, hdd, cdd, runIt, epwFile, w
             schTypeLims = 'Fractional'
         else:
             schTypeLims = schedTypeLimits
+            if schTypeLims.upper() == 'TEMPERATURE':
+                schTypeLims = 'TEMPERATURE 1'
             if schTypeLims.upper() not in scheduleTypeLimitsLib:
                 warning = "Can't find the connected _schedTypeLimits_ '" + schTypeLims + "' in the Honeybee EP Schedule Library."
                 ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
                 return -1
-            if schTypeLims.upper() == 'TEMPERATURE':
-                schTypeLims = 'TEMPERATURE 1'
         
         # Write out text strings for the daily schedules
         for dCount, daySch in enumerate([sun, mon, tue, wed, thu, fri, sat, holiday, cdd, hdd]):
