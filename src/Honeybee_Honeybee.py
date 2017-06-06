@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.61\nMAY_26_2017'
+ghenv.Component.Message = 'VER 0.0.61\nJUN_06_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -7838,10 +7838,9 @@ class thermPolygon(object):
         for seg in segm:
             if seg.IsLinear():
                 self.segments.append(seg)
-            elif str(seg.CurvatureAt(0.5)) == '0,0,0':
+            elif seg.Degree == 1:
                 self.segments.append(seg)
             else:
-                print seg.CurvatureAt(0.5)
                 seg = seg.ToPolyline(3,0,0,0,0,0,0,0,True)
                 self.segments.append(seg)
                 msg = "A segment of your polygon is curved and THERM cannot simulate curved geometry.\n" + \

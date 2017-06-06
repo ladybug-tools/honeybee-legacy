@@ -54,7 +54,7 @@ from shutil import move
 
 ghenv.Component.Name = 'Honeybee_Write THERM File'
 ghenv.Component.NickName = 'writeTHERM'
-ghenv.Component.Message = 'VER 0.0.61\nMAY_26_2017'
+ghenv.Component.Message = 'VER 0.0.61\nJUN_06_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -78,6 +78,7 @@ def checkTheInputs():
     if fileName_ != None:
         if fileName_.upper().endswith('.THMX'): xmlFileName = fileName_.upper().split('.THMX')[0]
         else: xmlFileName = fileName_
+        xmlFileName = xmlFileName.strip().replace(' ','')
     
     # If there is a workingDir, make sure that it exists and, if not, try to make it.
     workingDir = None
@@ -100,6 +101,13 @@ def checkTheInputs():
         else: workingDir = workingDir_
         if not os.path.exists(workingDir): os.makedirs(workingDir)
         print 'Current working directory is set to: ' + workingDir
+    
+    if ' ' in workingDir:
+        checkData3 = False
+        warning =  'woirkingDir_ cannot have a whitespace in the name for THERM to run.'
+        print warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+        return -1
     
     if not workingDir.endswith('\\'): workingDir = workingDir + '\\'
     
@@ -294,7 +302,7 @@ def checkTheInputs():
     joinedPolygons = rc.Geometry.Brep.JoinBreps(allPolygonGeo, sc.doc.ModelAbsoluteTolerance)
     if len(joinedPolygons) != 1:
         warning = "Geometry connected to _polygons does not form a single polysurface and THERM does not like this. \n" + \
-        "A thermFile will still be written but you will have to finish making the geometry in THERM."
+        "A thermFile will still be written but you will have to finish making the geometry in the THERM interface."
         print warning
         ghenv.Component.AddRuntimeMessage(w, warning)
     
@@ -311,7 +319,7 @@ def checkTheInputs():
         for bnd in allBoundary: boundLengths.append(bnd.GetLength())
         boundLengths, allBoundary = zip(*sorted(zip(boundLengths, allBoundary)))
         encircling = allBoundary[-1]
-        warning = "Geometry connected to _polygons does not have a single boundary (there are holes in the model). \n You will not be able to simulate the model as connected. \n Note that air gaps in your model can be represented with a polygon having an 'air' material."
+        warning = "Geometry connected to _polygons does not have a single boundary (there are holes in the model). \n You will not be able to simulate the model as connected. \n Try baking all of your polygons, joining them, and using the Rhino DupBorder command to see the holes. \n Note that air gaps in your model can be represented with a polygon having an 'air' material."
         print warning
         ghenv.Component.AddRuntimeMessage(w, warning)
     else:
