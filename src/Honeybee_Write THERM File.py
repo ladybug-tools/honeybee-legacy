@@ -37,6 +37,8 @@ Provided by Honeybee 0.0.61
         thermFile: The file path of the therm XML file that has been generated on your machine.  Open this file in THERM to see your exported therm model.
         resultFile: The file path of the THERM results including the mesh of the therm geometry and the values of temperature / heat flow at each point of the mesh.  Note that this file will not be generated unless runTHERM_ is set to "True" and your calculation is successful.
         uFactorFile: The file path to a therm XML file that is written after the simulation is run.  This file contains all results or U-factors accross their respective tags as well as information that helps place the result mesh in the file above correctly in the Rhino scene. Note that this file will not be generated unless runTHERM_ is set to "True" and your calculation is successful.
+        ------------: ...
+        probRegion: Check this output for the problematic regions of your model (where holes in the model are).
 """
 
 import Rhino as rc
@@ -70,6 +72,8 @@ tol = sc.doc.ModelAbsoluteTolerance
 
 
 def checkTheInputs():
+    probRegions = []
+    
     # Import Polygon class.
     hb_thermPolygon = sc.sticky["honeybee_ThermPolygon"]
     
@@ -319,7 +323,8 @@ def checkTheInputs():
         for bnd in allBoundary: boundLengths.append(bnd.GetLength())
         boundLengths, allBoundary = zip(*sorted(zip(boundLengths, allBoundary)))
         encircling = allBoundary[-1]
-        warning = "Geometry connected to _polygons does not have a single boundary (there are holes in the model). \n You will not be able to simulate the model as connected. \n Try baking all of your polygons, joining them, and using the Rhino DupBorder command to see the holes. \n Note that air gaps in your model can be represented with a polygon having an 'air' material."
+        probRegions = allBoundary[:-1]
+        warning = "Geometry connected to _polygons does not have a single boundary (there are holes in the model). \n You will not be able to simulate the model as connected. \n Check the probRegion output of this component to see the places where the holes are. \n Note that air gaps in your model can be represented with a polygon having an 'air' material."
         print warning
         ghenv.Component.AddRuntimeMessage(w, warning)
     else:
@@ -332,7 +337,7 @@ def checkTheInputs():
     # Get the centroid of all geometry
     allGeoCentroid = rc.Geometry.AreaMassProperties.Compute(joinedPolygons[0]).Centroid
     
-    return workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, polygonBoundaries, thermFileOrigin, allGeoCentroid
+    return workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, polygonBoundaries, thermFileOrigin, allGeoCentroid, probRegions
 
 def calcBestFitVector(vertices, basePlane):
     #Transform all points into the XY Plane
@@ -1119,7 +1124,7 @@ if initCheck == True:
 if initCheck and _writeTHMFile:
     initInputs = checkTheInputs()
     if initInputs != -1:
-        workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundary, thermFileOrigin, allGeoCentroid = initInputs
+        workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundary, thermFileOrigin, allGeoCentroid, probRegion = initInputs
         result = main(runTHERM_, workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, allBoundary, thermFileOrigin, allGeoCentroid, conversionFactor)
         if result != -1:
             thermFile, uFactorFile, resultFile = result
