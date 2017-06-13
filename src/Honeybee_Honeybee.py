@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.61\nJUN_07_2017'
+ghenv.Component.Message = 'VER 0.0.61\nJUN_13_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -5723,8 +5723,11 @@ class hb_reEvaluateHBZones(object):
                         if len(surface.childSrfs) == len(glzCoordinates):
                             glzAdjcSrfName = childSrfsNames[count]
                         else:
-                            glzAdjcSrfName = childSrfsNames[count] + "_glzP_" + `count`
-                            
+                            try:
+                                glzAdjcSrfName = childSrfsNames[count] + "_glzP_" + `count`
+                            except:
+                                glzAdjcSrfName = childSrfsNames[0] + "_glzP_" + `count`
+                        
                         adjcGlzPt = glzCoordinates[1:]
                         adjcGlzPt.reverse()
                         adjcGlzPt = [glzCoordinates[0]] + adjcGlzPt
@@ -5919,7 +5922,8 @@ class hb_EPSurface(object):
         # define if type and BC is defined by user and should be kept
         self.srfTypeByUser = False
         self.srfBCByUser = False
-        
+        self.BCObject = self.outdoorBCObject()
+
         # Special attribute for shading control on inidivdual windows that influences the zone properties
         self.shdCntrlZoneInstructs = []
         
@@ -8289,18 +8293,60 @@ class hb_Hive(object):
                 try:
                     # after the first round meshedFace makes copy.deepcopy crash
                     # so I need to regenerate meshFaces
+                    bc = []
                     if HBObject.objectType == "HBZone":
                         for surface in HBObject.surfaces:
                             newMesh = rc.Geometry.Mesh()
                             newMesh.Append(surface.meshedFace)
                             surface.meshedFace = newMesh
+                            
+                            # keep track of boundary conditions
+                            # and then set them to None not to create
+                            # memory issues for large models.
+                            bc.append(copy.copy(surface.BCObject))
+                            surface.BCObject = None
+                            for csrf in surface.childSrfs:
+                                bc.append(copy.copy(csrf.BCObject))
+                                csrf.BCObject = None
+                                
                     elif HBObject.objectType == "HBSurface": 
                         newMesh = rc.Geometry.Mesh()
                         newMesh.Append(HBObject.meshedFace)
                         HBObject.meshedFace = newMesh
+                        # keep track of boundary conditions
+                        # and then set them to None not to create
+                        # memory issues for large models.
+                        bc.append(copy.copy(HBObject.BCObject))
+                        HBObject.BCObject = None
+                        for csrf in HBObject.childSrfs:
+                            bc.append(copy.copy(csrf.BCObject))
+                            csrf.BCObject = None                    
                     
-                    HBObjects.append(copy.deepcopy(HBObject))
+                    newObject = copy.deepcopy(HBObject)
                     
+                    # put the boundary condition objects back
+                    count = 0
+                    if HBObject.objectType == "HBZone":
+                        for c, surface in enumerate(newObject.surfaces):
+                            surface.BCObject = bc[count]
+                            HBObject.surfaces[c].BCObject = bc[count]
+                            count += 1
+                            for cc, csrf in enumerate(surface.childSrfs):
+                                csrf.BCObject = bc[count]
+                                HBObject.surfaces[c].childSrfs[cc].BCObject = bc[count]
+                                count += 1
+                                
+                    elif HBObject.objectType == "HBSurface": 
+                        newObject.BCObject = bc[count]
+                        HBObject.BCObject = bc[count]
+                        count += 1
+                        for cc, csrf in enumerate(newObject.childSrfs):
+                            csrf.BCObject = bc[count]
+                            HBObject.childSrfs[cc].BCObject = bc[count]
+                            count += 1
+                    
+                    HBObjects.append(newObject)
+                    del(bc)
                 except Exception, e:
                     print `e`
                     print "Failed to copy the object. Returning the original objects...\n" +\
