@@ -28,6 +28,7 @@ Provided by Honeybee 0.0.61
     Args:
         _HBZones: A list of Honeybee zones for which you want to calculate whether they are next to each other.
         altConstruction_: An optional alternate EP construction to assign to all adjacent surfaces.  The default is set to be "Interior Wall", "Interior Foor" or "Interior Ceiling" or "Interior Window" depending on the type of surface that is adjacent.
+        altWindowConstr_: An optional alternate EP window construction to assign to all adjacent surfaces.  The default is set to be the "Interior Window" construction with a single pane of clear glass.
         altBC_: An optional alternate boundary condition such as "Adiabatic".  The default will be "Surafce", which ensures that heat flows across each adjacent surface to a neighboring zone.
         tolerance_: The tolerance in Rhino model units that will be used determine whether two zones are adjacent to each other.  If no value is input here, the component will use the tolerance of the Rhino model document.
         removeCurrentAdjc_: If you are using this component after already solving for the adjacencies between some of the zones previously, set this to "False" in order to remeber the previously determined adcacency conditions.  If set to "True", the current adjacencies will be removed. The default is set to "False" in order to remeber your previously-set adjacencies.
@@ -38,7 +39,7 @@ Provided by Honeybee 0.0.61
 """
 ghenv.Component.Name = "Honeybee_Solve Adjacencies"
 ghenv.Component.NickName = 'solveAdjc'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.61\nJUN_06_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -85,7 +86,7 @@ def updateZoneMixing(surface1, zone1, zone2):
     
     return flowRate
 
-def updateAdj(surface1, surface2, altConstruction, altBC, tol):
+def updateAdj(surface1, surface2, altConstruction, altBC, altWinConstr, tol):
     # change roof to ceiling
     # the same for ceiling on ground
     if int(surface1.type) == 1: surface1.setType(3) # roof + adjacent surface = ceiling
@@ -153,8 +154,12 @@ def updateAdj(surface1, surface2, altConstruction, altBC, tol):
                         childSurface1.BCObject.name = childSurface2.name
                         childSurface2.BCObject.name = childSurface1.name
                         # change construction
-                        childSurface1.setEPConstruction(surface1.intCnstrSet[5])
-                        childSurface2.setEPConstruction(surface1.intCnstrSet[5])
+                        if altWinConstr == None:
+                            childSurface1.setEPConstruction(surface1.intCnstrSet[5])
+                            childSurface2.setEPConstruction(surface1.intCnstrSet[5])
+                        else:
+                            childSurface1.setEPConstruction(altWinConstr)
+                            childSurface2.setEPConstruction(altWinConstr)
                         # change the boundary condition
                         childSurface1.setBC('SURFACE', True)
                         childSurface2.setBC('SURFACE', True)
@@ -177,7 +182,7 @@ def notTheSameZone(targetZone, testZone):
         return targetZone.name != testZone.name
     
 
-def main(HBZones, altConstruction, altBC, tol, remCurrent):
+def main(HBZones, altConstruction, altWinConstr, altBC, tol, remCurrent):
     
     # import the classes
     if not sc.sticky.has_key('honeybee_release'):
@@ -271,24 +276,15 @@ def main(HBZones, altConstruction, altBC, tol, remCurrent):
                                             print 'Surface ' + srf.name + ' which is a ' + srf.srfType[srf.type] + \
                                                   '\t-> is adjacent to <-\t' + surface.name + ' which is a ' + \
                                                   surface.srfType[surface.type] + '.'
-                                            #if normalAngle == 0:
-                                            #    msg = "Warning: Normal direction of one of the surfaces " + srf.name + ", " + surface.name + " should be reversed!"
-                                            #    print msg
-                                            #    w = gh.GH_RuntimeMessageLevel.Warning
-                                            #    ghenv.Component.AddRuntimeMessage(w, msg)
                                             
-                                            updateAdj(srf, surface, altConstruction, altBC, tol)                                        
+                                            updateAdj(srf, surface, altConstruction, altBC, altWinConstr, tol)                                        
                                             if surface.type == 4:
                                                 flowRate = updateZoneMixing(surface, testZone, targetZone)
                                                 print "Air has been mixed between " + testZone.name + " and " + targetZone.name + " with a flow rate of " + str(flowRate) + " m3/s."
                                             
                                             break
-                    
-                #if srf.type == 3 and srf.BCObject.name == '':
-                #        srf.setType(1) # Roof
-                #        srf.setBC(srf.srfBC[srf.type])
     
-    # add zones to dictionary
+    # add zones to memory
     ModifiedHBZones  = hb_hive.addToHoneybeeHive(HBZoneObjects, ghenv.Component)
     
     return ModifiedHBZones
@@ -303,7 +299,7 @@ if _findAdjc and _HBZones and _HBZones[0]!=None:
     if tol < sc.doc.ModelAbsoluteTolerance:
         tol = sc.doc.ModelAbsoluteTolerance
         
-    results = main(_HBZones, altConstruction_, altBC_, tol, removeCurrentAdjc_)
+    results = main(_HBZones, altConstruction_, altWindowConstr_, altBC_, tol, removeCurrentAdjc_)
     
     if results!=-1:
         HBZonesWADJ = results

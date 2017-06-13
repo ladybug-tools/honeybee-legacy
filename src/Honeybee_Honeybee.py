@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.61\nMAY_26_2017'
+ghenv.Component.Message = 'VER 0.0.61\nJUN_07_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -5366,7 +5366,13 @@ class EPZone(object):
                 ##check mesh normal direction
                 reverseList = False
                 ## make a vector from the center point of the zone to center point of the surface
-                testVector = rc.Geometry.Vector3d(cenPt - self.cenPt)
+                try:
+                    testVector = rc.Geometry.Vector3d(cenPt - self.cenPt)
+                except:
+                    MP3D = rc.Geometry.AreaMassProperties.Compute(self.geometry)
+                    self.cenPt = MP3D.Centroid
+                    testVector = rc.Geometry.Vector3d(cenPt - self.cenPt)
+                
                 ## check the direction of the vectors and flip zone surfaces if needed
                 if rc.Geometry.Vector3d.VectorAngle(testVector, normal)> 1:
                     normal.Reverse()
@@ -7838,7 +7844,7 @@ class thermPolygon(object):
         for seg in segm:
             if seg.IsLinear():
                 self.segments.append(seg)
-            elif str(seg.CurvatureAt(0.5)) == '0,0,0':
+            elif seg.Degree == 1:
                 self.segments.append(seg)
             else:
                 print seg.CurvatureAt(0.5)
