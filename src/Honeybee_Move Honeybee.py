@@ -29,17 +29,18 @@ Provided by Honeybee 0.0.61
     Args:
         _HBObj: Honeybee surface or Honeybee zone
         _vector: Transform vector
+        _name_: An optional text string that will be appended to the name of the transformed object(s).  If nothing is input here, a default unique name will be generated.
         keepAdj_: Set to 'True' to have the component preserve adjacencies with other zones.  If set to 'False' or left blank, the existing adjacencies and boundary conditions will be deleted.
     Returns:
         HBObj: Transformed objects
 """
 ghenv.Component.Name = "Honeybee_Move Honeybee"
 ghenv.Component.NickName = 'moveHBObj'
-ghenv.Component.Message = 'VER 0.0.61\nAPR_24_2017'
+ghenv.Component.Message = 'VER 0.0.61\nJUN_15_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
-#compatibleHBVersion = VER 0.0.57\nAPR_24_2016
+#compatibleHBVersion = VER 0.0.57\nJUN_15_2017
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "6"
 except: pass
@@ -49,7 +50,7 @@ import uuid
 import Rhino as rc
 
 
-def main(HBObj, vector, keepAdj=False):
+def main(HBObj, vector, name, keepAdj=False):
 
     # import the classes
     if not sc.sticky.has_key('honeybee_release'):
@@ -84,7 +85,10 @@ def main(HBObj, vector, keepAdj=False):
     
     # create a transform
     transform = rc.Geometry.Transform.Translation(_vector)
-    newKey = str(uuid.uuid4())[:8]
+    if name == None:
+        newKey = str(uuid.uuid4())[:8]
+    else:
+        newKey = name
     
     for HObj in HBObject:
         HObj.transform(transform, newKey, clearBC)
@@ -94,7 +98,7 @@ def main(HBObj, vector, keepAdj=False):
     return HBObj
     
 if _HBObj and _vector:
-    result = main(_HBObj, _vector, keepAdj_)
+    result = main(_HBObj, _vector, _name_, keepAdj_)
     
     if result!=-1:
         HBObj = result

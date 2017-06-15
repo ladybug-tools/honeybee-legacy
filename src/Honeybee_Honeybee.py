@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.61\nJUN_13_2017'
+ghenv.Component.Message = 'VER 0.0.61\nJUN_15_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -4996,7 +4996,7 @@ class EPZone(object):
         self.illumCntrlSensorPt = rc.Geometry.Point3d(zoneCentPt.X, zoneCentPt.Y, zOfPt)
     
     def transform(self, transform, newKey=None, clearSurfacesBC = True, flip = False):
-        if clearSurfacesBC == True or newKey == None:
+        if newKey == None:
             self.name += str(uuid.uuid4())[:8]
         else:
             self.name += newKey
@@ -6483,7 +6483,7 @@ class hb_EPSurface(object):
         """Transform EPSurface using a transform object
            Transform can be any valid transform object (e.g Translate, Rotate, Mirror)
         """
-        if clearBC == True or newKey == None:
+        if newKey == None:
             self.name += str(uuid.uuid4())[:8]
         else:
             self.name += newKey
