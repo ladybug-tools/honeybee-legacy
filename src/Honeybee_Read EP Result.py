@@ -55,7 +55,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_15_2017'
+ghenv.Component.Message = 'VER 0.0.61\nJUN_20_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -297,9 +297,12 @@ if _resultFileAddress and gotData == True and csvExists == True:
                 key = []; path = []
                 for columnCount, column in enumerate(line.split(',')):
                     
-                    if 'Zone Ideal Loads Supply Air Total Cooling Energy' in column or 'Chiller Electric Energy' in column or 'Cooling Coil Electric Energy' in column or 'Zone VRF Air Terminal Cooling Electric Energy' in column or 'VRF Heat Pump Cooling Electric Energy' in column:
+                    if 'Zone Ideal Loads Supply Air Total Cooling Energy' in column or 'Zone Ideal Loads Supply Air Sensible Cooling Energy' in column or 'Zone Ideal Loads Supply Air Latent Cooling Energy' in column or 'Chiller Electric Energy' in column or 'Cooling Coil Electric Energy' in column or 'Zone VRF Air Terminal Cooling Electric Energy' in column or 'VRF Heat Pump Cooling Electric Energy' in column:
                         
                         if 'Zone Ideal Loads Supply Air Total Cooling Energy' in column and 'ZONE HVAC' in column:
+                            zoneName = checkZoneSys(" " + (":".join(column.split(":")[:-1])).split('ZONE HVAC IDEAL LOADS AIR SYSTEM ')[-1])
+                            idealAirTrigger = True
+                        elif 'Zone Ideal Loads Supply Air Sensible Cooling Energy' in column and 'ZONE HVAC' in column:
                             zoneName = checkZoneSys(" " + (":".join(column.split(":")[:-1])).split('ZONE HVAC IDEAL LOADS AIR SYSTEM ')[-1])
                             idealAirTrigger = True
                         elif 'IDEAL LOADS AIR SYSTEM' in column:
@@ -335,7 +338,7 @@ if _resultFileAddress and gotData == True and csvExists == True:
                         except:
                             key.append(-1)
                     
-                    elif 'Zone Ideal Loads Supply Air Total Heating Energy' in column  or 'Boiler Heating Energy' in column or 'Heating Coil Total Heating Energy' in column or 'Heating Coil Gas Energy' in column or 'Heating Coil Electric Energy' in column or 'Humidifier Electric Energy' in column or 'Zone VRF Air Terminal Heating Electric Energy' in column or 'VRF Heat Pump Heating Electric Energy' in column:
+                    elif 'Zone Ideal Loads Supply Air Total Heating Energy' in column or 'Zone Ideal Loads Supply Air Sensible Heating Energy' in column or 'Zone Ideal Loads Supply Air Latent Heating Energy' in column or 'Boiler Heating Energy' in column or 'Heating Coil Total Heating Energy' in column or 'Heating Coil Gas Energy' in column or 'Heating Coil Electric Energy' in column or 'Humidifier Electric Energy' in column or 'Zone VRF Air Terminal Heating Electric Energy' in column or 'VRF Heat Pump Heating Electric Energy' in column:
                         notFound = False
                         if 'Zone Ideal Loads Supply Air Total Heating Energy' in column and 'ZONE HVAC' in column:
                             zoneName = checkZoneSys(" " + (":".join(column.split(":")[:-1])).split('ZONE HVAC IDEAL LOADS AIR SYSTEM ')[-1])
@@ -445,7 +448,7 @@ if _resultFileAddress and gotData == True and csvExists == True:
                             makeHeader(pumpElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Pump Electric Energy", energyUnit, True)
                         dataTypeList[7] = True
                     
-                    elif 'Zone People Total Heating Energy' in column:
+                    elif 'Zone People Total Heating Energy' in column or 'Zone People Sensible Heating Energy' in column or 'Zone People Latent Gain Energy' in column:
                         key.append(4)
                         zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
                         makeHeader(peopleGains, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "People Energy", energyUnit, True)
@@ -467,7 +470,7 @@ if _resultFileAddress and gotData == True and csvExists == True:
                         key.append(7)
                         zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
                     
-                    elif 'Zone Ideal Loads Zone Total Heating Energy' in column:
+                    elif 'Zone Ideal Loads Zone Total Heating Energy' in column or 'Zone Ideal Loads Zone Sensible Heating Energy' in column or 'Zone Ideal Loads Zone Latent Heating Energy' in column:
                         key.append(23)
                         if 'Zone Ideal Loads Zone Total Heating Energy' in column and 'ZONE HVAC' in column:
                             zoneName = checkZoneSys(" " + (":".join(column.split(":")[:-1])).split('ZONE HVAC IDEAL LOADS AIR SYSTEM ')[-1])
@@ -476,7 +479,7 @@ if _resultFileAddress and gotData == True and csvExists == True:
                         zoneHeatingEnergy[int(path[-1])].append(zoneName)
                         zoneHeatingEnergy[int(path[-1])].append(column.split('(')[-1].split(')')[0])
                     
-                    elif 'Zone Ideal Loads Zone Total Cooling Energy' in column:
+                    elif 'Zone Ideal Loads Zone Total Cooling Energy' in column or 'Zone Ideal Loads Zone Sensible Cooling Energy' in column or 'Zone Ideal Loads Zone Latent Cooling Energy' in column:
                         key.append(24)
                         if 'Zone Ideal Loads Zone Total Cooling Energy' in column and 'ZONE HVAC' in column:
                             zoneName = checkZoneSys(" " + (":".join(column.split(":")[:-1])).split('ZONE HVAC IDEAL LOADS AIR SYSTEM ')[-1])
@@ -485,13 +488,13 @@ if _resultFileAddress and gotData == True and csvExists == True:
                         zoneCoolingEnergy[int(path[-1])].append(zoneName)
                         zoneCoolingEnergy[int(path[-1])].append(column.split('(')[-1].split(')')[0])
                     
-                    elif 'Zone Infiltration Total Heat Loss Energy' in column:
+                    elif 'Zone Infiltration Total Heat Loss Energy' in column or 'Zone Infiltration Sensible Heat Loss Energy' in column or 'Zone Infiltration Latent Heat Loss Energy' in column:
                         key.append(8)
                         zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
                         makeHeader(infiltrationEnergy, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Infiltration Energy", energyUnit, True)
                         dataTypeList[10] = True
                     
-                    elif 'Zone Infiltration Total Heat Gain Energy' in column:
+                    elif 'Zone Infiltration Total Heat Gain Energy' in column or 'Zone Infiltration Sensible Heat Gain Energy' in column or 'Zone Infiltration Latent Heat Gain Energy' in column:
                         key.append(9)
                         zoneName = checkZone(" " + ":".join(column.split(":")[:-1]))
                     
