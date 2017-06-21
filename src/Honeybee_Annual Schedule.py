@@ -21,9 +21,7 @@
 
 
 """
-Use this component to generate values for Honeybee_Create CSV Schedule
--
-Use this component to write schedules for EnergyPlus using LB_schedules as inputs.
+Use this component to generate schedules that can be assigned to HBZones.
 -
 Provided by Ladybug 0.0.62
     
@@ -71,7 +69,7 @@ Provided by Ladybug 0.0.62
 
 ghenv.Component.Name = "Honeybee_Annual Schedule"
 ghenv.Component.NickName = 'AnnualSchedule'
-ghenv.Component.Message = 'VER 0.0.61\nAPR_25_2017'
+ghenv.Component.Message = 'VER 0.0.61\nJUN_21_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "07 | Energy | Schedule"
