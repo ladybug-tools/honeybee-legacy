@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2016, Mostapha Sadeghipour Roudsari <sadeghipour@gmail.com> 
+# Copyright (c) 2013-2017, Mostapha Sadeghipour Roudsari <sadeghipour@gmail.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -23,7 +23,7 @@
 """
 Separate zones based on floor height
 -
-Provided by Honeybee 0.0.60
+Provided by Honeybee 0.0.61
 
     Args:
         _HBZones: List of HBZones
@@ -36,11 +36,11 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = 'Honeybee_Separate Zones By Floor'
 ghenv.Component.NickName = 'separateZonesByFloor'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.56\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
@@ -76,7 +76,7 @@ def main(HBZones):
         return -1
     
     hb_hive = sc.sticky["honeybee_Hive"]()
-    HBZonesFromHive = hb_hive.callFromHoneybeeHive(HBZones)
+    HBZonesFromHive = hb_hive.visualizeFromHoneybeeHive(HBZones)
     
     HBZones = {}
     
@@ -108,5 +108,5 @@ if _HBZones and _HBZones!=None:
             zoneList = floorInfo[1]
             floorHeights.append(flrH)
             # item 0 is the heights
-            zones = hb_hive.addToHoneybeeHive(zoneList, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+            zones = hb_hive.addToHoneybeeHive(zoneList, ghenv.Component, count==0)
             HBZones.AddRange(zones, p)

@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2016, Mostapha Sadeghipour Roudsari and Chris Mackey <Sadeghipour@gmail.com and chris@mackeyarchitecture.com> 
+# Copyright (c) 2013-2017, Mostapha Sadeghipour Roudsari and Chris Mackey <mostapha@ladybug.tools and chris@mackeyarchitecture.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -26,7 +26,7 @@ http://bigladdersoftware.com/epx/docs/8-3/input-output-reference/
 _
 You can also use the "Honeybee_Read Result Dictionary" component after running a simulation to get a list of all possible outputs that you can request from a given simulation.
 -
-Provided by Honeybee 0.0.60
+Provided by Honeybee 0.0.61
     
     Args:
         zoneEnergyUse_: Set to "True" to have EnergyPlus solve for basic building energy use such as heating, cooling, electricity for lights and electricity for plug loads for each zone.
@@ -37,6 +37,10 @@ Provided by Honeybee 0.0.60
         surfaceTempAnalysis_: Set to "True" to have EnergyPlus solve for the interior and exterior surface temperatures of the individual surfaces of each zone.
         surfaceEnergyAnalysis_: Set to "True" to have EnergyPlus solve for the gains and losses through the individual surfaces of each zone.
         glazingSolarAnalysis_: Set to "True" to have EnergyPlus solve for the transmitted beam, diffuse, and total solar gain through the individual window surfaces of each zone.  These outputs are needed for Energy Shade Benefit Analysis.
+        _loadType_: An integer or text value to set the type of load outputs requested (sensible, latent, total).  The default is set to "0 = Total" but you may want to change this to "1 = Sensible" for zone HVAC sizing, etc.  Choose from the following options:
+            0 = Total
+            1 = Sensible
+            2 = Latent
         timestep_: Specify a timestep by inputing the words 'hourly', 'daily', 'monthly' or 'annual'.  The default is set to hourly.
     Returns:
         report: Report!
@@ -45,7 +49,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Generate EP Output"
 ghenv.Component.NickName = 'EPOutput'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_28_2016'
+ghenv.Component.Message = 'VER 0.0.61\nJUN_20_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -61,17 +65,42 @@ import Grasshopper.Kernel as gh
 
 
 
-def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, zoneHVACMetrics, surfaceTempAnalysis, surfaceEnergyAnalysis, glazingSolarAnalysis, timestep):
-    simulationOutputs = []
-    timePeriod = timestep + ";"
+def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, zoneHVACMetrics, surfaceTempAnalysis, surfaceEnergyAnalysis, glazingSolarAnalysis, loadType, timestep):
+    loadTypeDict = {
+    '0': 0,
+    '1': 1,
+    '2': 2,
+    'total': 0,
+    'sensible': 1,
+    'latent': 2
+    }
     
+    timePeriod = timestep + ";"
+    if loadType == None:
+        loadType = 0
+    else:
+        try:
+            loadType = loadTypeDict[loadType.lower()]
+        except:
+            warning = '_loadType_ is not valid.'
+            print warning
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+    simulationOutputs = []
     simulationOutputs.append("OutputControl:Table:Style,Comma;")
     
     if zoneEnergyUse == True:
-        simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Supply Air Total Cooling Energy, " + timePeriod)
+        if loadType == 0:
+            simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Supply Air Total Cooling Energy, " + timePeriod)
+            simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Supply Air Total Heating Energy, " + timePeriod)
+        elif loadType == 1:
+            simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Supply Air Sensible Cooling Energy, " + timePeriod)
+            simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Supply Air Sensible Heating Energy, " + timePeriod)
+        elif loadType == 2:
+            simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Supply Air Latent Cooling Energy, " + timePeriod)
+            simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Supply Air Latent Heating Energy, " + timePeriod)
+        
         simulationOutputs.append("Output:Variable,*,Cooling Coil Electric Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Chiller Electric Energy, " + timePeriod)
-        simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Supply Air Total Heating Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Boiler Heating Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Heating Coil Total Heating Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Heating Coil Gas Energy, " + timePeriod)
@@ -90,13 +119,26 @@ def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, zoneHVACMetrics,
     
     if zoneGainsAndLosses == True:
         simulationOutputs.append("Output:Variable,*,Zone Windows Total Transmitted Solar Radiation Energy, " + timePeriod)
-        simulationOutputs.append("Output:Variable,*,Zone People Total Heating Energy, " + timePeriod)
-        simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Zone Total Heating Energy, " + timePeriod)
-        simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Zone Total Cooling Energy, " + timePeriod)
-        simulationOutputs.append("Output:Variable,*,Zone Infiltration Total Heat Loss Energy, " + timePeriod)
-        simulationOutputs.append("Output:Variable,*,Zone Infiltration Total Heat Gain Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Ventilation Sensible Heat Loss Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,Zone Ventilation Sensible Heat Gain Energy, " + timePeriod)
+        if loadType == 0:
+            simulationOutputs.append("Output:Variable,*,Zone People Total Heating Energy, " + timePeriod)
+            simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Zone Total Heating Energy, " + timePeriod)
+            simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Zone Total Cooling Energy, " + timePeriod)
+            simulationOutputs.append("Output:Variable,*,Zone Infiltration Total Heat Loss Energy, " + timePeriod)
+            simulationOutputs.append("Output:Variable,*,Zone Infiltration Total Heat Gain Energy, " + timePeriod)
+        elif loadType == 1:
+            simulationOutputs.append("Output:Variable,*,Zone People Sensible Heating Energy, " + timePeriod)
+            simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Zone Sensible Heating Energy, " + timePeriod)
+            simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Zone Sensible Cooling Energy, " + timePeriod)
+            simulationOutputs.append("Output:Variable,*,Zone Infiltration Sensible Heat Loss Energy, " + timePeriod)
+            simulationOutputs.append("Output:Variable,*,Zone Infiltration Sensible Heat Gain Energy, " + timePeriod)
+        elif loadType == 2:
+            simulationOutputs.append("Output:Variable,*,Zone People Latent Gain Energy, " + timePeriod)
+            simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Zone Latent Heating Energy, " + timePeriod)
+            simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Zone Latent Cooling Energy, " + timePeriod)
+            simulationOutputs.append("Output:Variable,*,Zone Infiltration Latent Heat Loss Energy, " + timePeriod)
+            simulationOutputs.append("Output:Variable,*,Zone Infiltration Latent Heat Gain Energy, " + timePeriod)
     
     if zoneComfortMetrics == True:
         simulationOutputs.append("Output:Variable,*,Zone Operative Temperature, " + timePeriod)
@@ -114,10 +156,6 @@ def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, zoneHVACMetrics,
         simulationOutputs.append("Output:Variable,*,Surface Window System Solar Transmittance, " + timePeriod)
     
     if zoneHVACMetrics == True:
-        simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Supply Air Latent Heating Energy, " + timePeriod)
-        simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Supply Air Latent Cooling Energy, " + timePeriod)
-        simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Supply Air Sensible Heating Energy, " + timePeriod)
-        simulationOutputs.append("Output:Variable,*,Zone Ideal Loads Supply Air Sensible Cooling Energy, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,System Node Standard Density Volume Flow Rate, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,System Node Temperature, " + timePeriod)
         simulationOutputs.append("Output:Variable,*,System Node Relative Humidity, " + timePeriod)
@@ -156,5 +194,5 @@ except:
 
 #Generate the simulation outputs if the above checks are sucessful.
 if initCheck == True:
-    simulationOutputs = main(zoneEnergyUse_, zoneGainsAndLosses_, zoneComfortMetrics_, zoneHVACParams_, surfaceTempAnalysis_, surfaceEnergyAnalysis_, glazingSolarAnalysis_, timestep_)
+    simulationOutputs = main(zoneEnergyUse_, zoneGainsAndLosses_, zoneComfortMetrics_, zoneHVACParams_, surfaceTempAnalysis_, surfaceEnergyAnalysis_, glazingSolarAnalysis_, _loadType_, timestep_)
     print "Simulation outputs generated successfully!"

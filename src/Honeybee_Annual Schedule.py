@@ -21,9 +21,7 @@
 
 
 """
-Use this component to generate values for Honeybee_Create CSV Schedule
--
-Use this component to write schedules for EnergyPlus using LB_schedules as inputs.
+Use this component to generate schedules that can be assigned to HBZones.
 -
 Provided by Ladybug 0.0.62
     
@@ -71,7 +69,7 @@ Provided by Ladybug 0.0.62
 
 ghenv.Component.Name = "Honeybee_Annual Schedule"
 ghenv.Component.NickName = 'AnnualSchedule'
-ghenv.Component.Message = 'VER 0.0.60\nSEP_16_2016'
+ghenv.Component.Message = 'VER 0.0.61\nJUN_21_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "07 | Energy | Schedule"
@@ -445,12 +443,12 @@ def main(sun, mon, tue, wed, thu, fri, sat, holiday, hdd, cdd, runIt, epwFile, w
             schTypeLims = 'Fractional'
         else:
             schTypeLims = schedTypeLimits
+            if schTypeLims.upper() == 'TEMPERATURE':
+                schTypeLims = 'TEMPERATURE 1'
             if schTypeLims.upper() not in scheduleTypeLimitsLib:
                 warning = "Can't find the connected _schedTypeLimits_ '" + schTypeLims + "' in the Honeybee EP Schedule Library."
                 ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
                 return -1
-            if schTypeLims.upper() == 'TEMPERATURE':
-                schTypeLims = 'TEMPERATURE 1'
         
         # Write out text strings for the daily schedules
         for dCount, daySch in enumerate([sun, mon, tue, wed, thu, fri, sat, holiday, cdd, hdd]):
@@ -460,7 +458,10 @@ def main(sun, mon, tue, wed, thu, fri, sat, holiday, hdd, cdd, runIt, epwFile, w
                 daySchName = schedName + ' Day Schedule - ' + daySchedDict[dCount]
                 daySchNameCollect.append(daySchName)
             elif daySch == [] and dCount == 8:
-                daySchName = daySchNameCollect[1]
+                try:
+                    daySchName = daySchNameCollect[1]
+                except:
+                    daySchName = daySchNameCollect[0]
                 daySchNameCollect.append(daySchName)
             elif daySch == []:
                 daySchName = daySchNameCollect[0]

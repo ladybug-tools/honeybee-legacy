@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2016, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
+# Copyright (c) 2013-2017, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -24,7 +24,7 @@
     Create an HBZone from HB Surfaces
     
 -
-Provided by Honeybee 0.0.60
+Provided by Honeybee 0.0.61
 
     Args:
         _name_: The name of the zone as a string
@@ -48,11 +48,11 @@ import math
 
 ghenv.Component.Name = 'Honeybee_createHBZones'
 ghenv.Component.NickName = 'createHBZones'
-ghenv.Component.Message = 'VER 0.0.60\nSEP_04_2016'
+ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
-#compatibleHBVersion = VER 0.0.56\nSEP_04_2016
+#compatibleHBVersion = VER 0.0.56\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
 except: pass
@@ -122,7 +122,7 @@ def main(zoneName,  HBZoneProgram, HBSurfaces, isConditioned):
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, message)
     
-    HBZone  = hb_hive.addToHoneybeeHive([HBZone], ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+    HBZone  = hb_hive.addToHoneybeeHive([HBZone], ghenv.Component)
     
     return HBZone 
 

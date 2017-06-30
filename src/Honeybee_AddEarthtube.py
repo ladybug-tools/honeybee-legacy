@@ -1,11 +1,9 @@
-# Created by Anton Szilasi
-# ajszilas@gmail.com
 #
 # Honeybee: A Plugin for Environmental Analysis (GPL) started by Mostapha Sadeghipour Roudsari
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2016, Abraham Yezioro <ayez@ar.technion.ac.il> 
+# Copyright (c) 2013-2017, Anton Szilasi <ajszilas@gmail.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -40,7 +38,7 @@ Where:
 For more information about the Energy Plus Earthtube please see:
 http://bigladdersoftware.com/epx/docs/8-2/input-output-reference/group-airflow.html#zoneearthtube-earth-tube
 -
-Provided by Honeybee 0.0.60
+Provided by Honeybee 0.0.61
 
     Args:
         _HBZones: The Honeybee zones to which Earthtubes will be added to. Only one earth tube will be added to each zone.
@@ -114,13 +112,13 @@ Provided by Honeybee 0.0.60
 """
 
 ghenv.Component.Name = "Honeybee_AddEarthtube"
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.61\nMAY_06_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "13 | WIP" #"08 | Energy | Set Zone Properties"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
+#compatibleHBVersion = VER 0.0.56\nMAY_06_2017
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
-try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
 
 import scriptcontext as sc
@@ -130,7 +128,10 @@ import Grasshopper
 import os
 import rhinoscriptsyntax as rs
 import itertools
-
+import subprocess
+import tempfile
+import System
+import zipfile
 
 readmedatatree = Grasshopper.DataTree[object]()
 
@@ -277,8 +278,6 @@ def checktheinputs(schedules_,_designFlowrates,_mincoolingTemps_,_maxheatingTemp
     schedules = [schedules_]
     HBScheduleList = sc.sticky["honeybee_ScheduleLib"].keys()
     
-    print HBScheduleList
-    
     for scheduleList in schedules:
         for schedule in scheduleList: 
             
@@ -304,7 +303,31 @@ def checktheinputs(schedules_,_designFlowrates,_mincoolingTemps_,_maxheatingTemp
                     print msg
                     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
                     return -1
-    
+
+def downloadCalcSoilSrfTemp():
+    try:
+        EPPath = sc.sticky["honeybee_folders"]["EPPath"]
+        client = System.Net.WebClient()
+        client.DownloadFile('https://github.com/mostaphaRoudsari/honeybee/raw/master/resources/EPRunFiles/CalcSoilSurfTemp.zip', EPPath+'/PreProcess/CalcSoilSurfTemp.zip')
+        sourceFile = EPPath+'/PreProcess/CalcSoilSurfTemp.zip'
+        with zipfile.ZipFile(sourceFile) as zf:
+            for member in zf.infolist():
+                words = member.filename.split('\\')
+                path = EPPath+'/PreProcess/'
+                for word in words[:-1]:
+                    drive, word = os.path.splitdrive(word)
+                    head, word = os.path.split(word)
+                    if word in (os.curdir, os.pardir, ''): continue
+                    path = os.path.join(path, word)
+                zf.extract(member, path)
+        return os.path.join(EPPath,'PreProcess','CalcSoilSurfTemp','CalcSoilSurfTemp.exe ').replace("/","\\")
+    except Exception, e:
+        warning = 'Failed to download the files needed to run earth tubes with OpenStudio 2.x.'
+        warning += '\n' + `e`
+        print warning
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+        return None
+
 
 def main(_HBZones,schedules_,_designFlowrates,_mincoolingTemps_,_maxheatingTemps_,_deltaTemps_,_earthTubeTypes_,_fanPrises_,_fanEfficiencies_,_pipeRadii_,_pipeThicknesses_,_pipeLengths_,_pipeDepths_,_soilCondition_,_conditionGroundSurface_,_pipeThermalConductivity_):
     
@@ -369,48 +392,31 @@ def main(_HBZones,schedules_,_designFlowrates,_mincoolingTemps_,_maxheatingTemps
             phaseconstant: Phase Constant of Soil Surface Temperature
         """
         
-        EPfolder = sc.sticky["honeybee_folders"]["EPPath"] 
+        PfolderE = sc.sticky["honeybee_folders"]["EPPath"] 
+        
+        if not os.path.isdir(os.path.join(PfolderE,'PreProcess','CalcSoilSurfTemp')):
+            exePath = downloadCalcSoilSrfTemp()
+            if exePath == None:
+                return -1
+        else:
+            exePath = os.path.join(PfolderE,'PreProcess','CalcSoilSurfTemp','CalcSoilSurfTemp.exe ').replace("/","\\")
         
         # The process for creating the wrapper is below
-        
-        os.chdir(EPfolder +"\PreProcess\CalcSoilSurfTemp")
-        
-        # 1. Write _soilCondition_ and _conditionGroundSurface_ to a text file so it can be read by the command line
-        # Create EnergyPlus file path
-        
-        auxfilepath = EPfolder +"PreProcess\CalcSoilSurfTemp"
-        filePath = os.path.join(auxfilepath,"exeinputs.txt")
-        fileWrite = open(filePath,"w")
-        
-        # Write _soilCondition_ and _conditionGroundSurface_ to a text file
-        
-        fileWrite.write(str(_soilCondition_) + "\n"+ str(_conditionGroundSurface_))
-        
-        fileWrite.close()
-        
-        # The EnergyPlus auxilary CalcSoilSurfTemp.exe takes EnergyPlus weather data epw as an arguement 
-        
         epwFile = _epwFile
+        auxfilepath = os.path.join(PfolderE,"PreProcess","CalcSoilSurfTemp").replace("/","\\")
+        # Need to change to auxfilepath directory or the .out file will be put under rhinoAppdata!!!
+        os.chdir(tempfile.gettempdir())
+        print "The .out file was written to "+tempfile.gettempdir()
         
-        # 2. A bat file is needed to open the exe give the epw as an arguement and feed the exe 
-        #the keystrokes _soilCondition_ and _conditionGroundSurface_ 
         
-        filePath1 = os.path.join(auxfilepath,"runwrapper.bat")
+        process = subprocess.Popen(exePath+' '+epwFile,stdin=subprocess.PIPE)
         
-        fileWrite1 = open(filePath1,"w")
-        
-        fileWrite1.write(EPfolder+"PreProcess\CalcSoilSurfTemp\CalcSoilSurfTemp.exe "+ epwFile +" < "+EPfolder+"PreProcess\CalcSoilSurfTemp\exeinputs.txt")
-        
-        fileWrite1.close()
-        
-        # Run the batch script
-        
-        os.system(filePath1)
+        process.communicate(input = str(_soilCondition_)+'\n'+str(_conditionGroundSurface_))
         
         def rchop(thestring, ending):
             return thestring[len(ending):]
         
-        filePath2 = os.path.join(auxfilepath,"CalcSoilSurfTemp.out")
+        filePath2 = os.path.join(tempfile.gettempdir(),"CalcSoilSurfTemp.out")
         
         calcsoilsurftempout = open(filePath2,"r")
         
@@ -428,17 +434,15 @@ def main(_HBZones,schedules_,_designFlowrates,_mincoolingTemps_,_maxheatingTemps
             
         calcsoilsurftempout.close()
             
-        # Delete the bat and textfile
-        
-        os.remove(filePath)
-        
-        #os.remove(filePath2) # XXX should delete bat file but not working???
-        
         return annav,amp,phaseconstant
             
     # Create a wrapper for the EnergyPlus auxilary CalcSoilSurfTemp.exe
     
-    annav,amp,phaseconstant = calcsoilsurftempwrap(_soilCondition_,_conditionGroundSurface_)
+    result = calcsoilsurftempwrap(_soilCondition_,_conditionGroundSurface_)
+    if result != -1:
+        annav,amp,phaseconstant = result
+    else:
+        return -1
     
     soil_cond = soilconditionforIDF(_soilCondition_)
     
@@ -452,7 +456,7 @@ def main(_HBZones,schedules_,_designFlowrates,_mincoolingTemps_,_maxheatingTemps
         
         try: zone.ETschedule = schedules_[zoneCount] # If zoneCount index in range of zoneCount
         except IndexError:
-            zone.ETschedule = "ALWAYS ON" # If zoneCount index is not in range of zoneCount or there is no schedule input set to default schedule of "ALWAYS ON"
+            zone.ETschedule = "Always On Discrete" # If zoneCount index is not in range of zoneCount or there is no schedule input set to default schedule of "ALWAYS ON"
         
         # Writing earth tube design flow rate
         
@@ -574,18 +578,19 @@ def main(_HBZones,schedules_,_designFlowrates,_mincoolingTemps_,_maxheatingTemps
         readmedatatree.Add(message,gh.Data.GH_Path(zoneCount))
         
     # Add modified zones to dictionary
-
-    ModifiedHBZones = hb_hive.addToHoneybeeHive(HBObjectsFromHive, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+    
+    ModifiedHBZones = hb_hive.addToHoneybeeHive(HBObjectsFromHive, ghenv.Component)
     
     return ModifiedHBZones
-    
 
 
 
 if checktheinputs(schedules_,_designFlowrates,_mincoolingTemps_,_maxheatingTemps_,_deltaTemps_,_earthTubeTypes_,_fanPrises_,_fanEfficiencies_,_pipeRadii_,_pipeDepths_,_soilCondition_,_conditionGroundSurface_,_pipeThermalConductivity_) != -1:
 
     if _HBZones and _HBZones[0]!= None:
-        earthTubeHBZones = main(_HBZones,schedules_,_designFlowrates,_mincoolingTemps_,_maxheatingTemps_,_deltaTemps_,_earthTubeTypes_,_fanPrises_,_fanEfficiencies_,_pipeRadii_,_pipeThicknesses_,_pipeLengths_,_pipeDepths_,_soilCondition_,_conditionGroundSurface_,_pipeThermalConductivity_)
+        result = main(_HBZones,schedules_,_designFlowrates,_mincoolingTemps_,_maxheatingTemps_,_deltaTemps_,_earthTubeTypes_,_fanPrises_,_fanEfficiencies_,_pipeRadii_,_pipeThicknesses_,_pipeLengths_,_pipeDepths_,_soilCondition_,_conditionGroundSurface_,_pipeThermalConductivity_)
+        if result != -1:
+            earthTubeHBZones = result
         
         # Create the output Datatree
-        Readme = readmedatatree
+        readMe = readmedatatree

@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2016, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
+# Copyright (c) 2013-2017, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -24,23 +24,25 @@
 Rotate Honeybee Objects
 
 -
-Provided by Honeybee 0.0.60
+Provided by Honeybee 0.0.61
 
     Args:
         _HBObject: Honeybee surface or Honeybee zone
         _angle: Angle of rotation in degrees
         centPt_: Optional rotation point if empty object center point will be used
         axis_: Optional rotation axis as a vector. Default is Z Axis
+        _name_: An optional text string that will be appended to the name of the transformed object(s).  If nothing is input here, a default unique name will be generated.
+        keepAdj_: Set to 'False' to remove existing adjacencies and boundary conditions (this is useful if you plan to re-solve adjacencies after this component). If left blank or set to 'True', the component will preserve adjacencies with other zones.
     Returns:
         HBObjs: Transformed objects
 """
 ghenv.Component.Name = "Honeybee_Rotate Honeybee"
 ghenv.Component.NickName = 'rotateHBObj'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.61\nJUN_15_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
-#compatibleHBVersion = VER 0.0.57\nNOV_04_2015
+#compatibleHBVersion = VER 0.0.57\nJUN_15_2017
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "6"
 except: pass
@@ -50,7 +52,7 @@ import uuid
 import Rhino as rc
 import math
 
-def main(HBObj, angle, cenPt, axis):
+def main(HBObj, angle, cenPt, axis, name, keepAdj=False):
 
     # import the classes
     if not sc.sticky.has_key('honeybee_release'):
@@ -74,29 +76,35 @@ def main(HBObj, angle, cenPt, axis):
     # call the objects from the lib
     hb_hive = sc.sticky["honeybee_Hive"]()
     try:
-        HBObject = hb_hive.callFromHoneybeeHive([HBObj])[0]
+        HBObject = hb_hive.callFromHoneybeeHive(HBObj)
     except:
         raise TypeError("Wrong input type for _HBObj. Connect a Honeybee Surface or a HoneybeeZone to HBObject input")
     
-    if cenPt== None:
-        cenPt = HBObject.cenPt
-    
     if not axis:
         axis = rc.Geometry.Vector3d.ZAxis
+    if keepAdj == False:
+        clearBC = True
+    else:
+        clearBC = False
     
     angle = math.radians(angle)
+    if name == None:
+        newKey = str(uuid.uuid4())[:8]
+    else:
+        newKey = name
     
-    # create a transform
-    transform = rc.Geometry.Transform.Rotation(angle, axis, cenPt)
+    for HObj in HBObject:
+        if cenPt== None:
+            cenPt = HObj.cenPt
+        transform = rc.Geometry.Transform.Rotation(angle, axis, cenPt)
+        HObj.transform(transform, newKey, clearBC)
     
-    HBObject.transform(transform)
-    
-    HBObj = hb_hive.addToHoneybeeHive([HBObject], ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+    HBObj = hb_hive.addToHoneybeeHive(HBObject, ghenv.Component)
 
     return HBObj
     
 if _HBObj and _angle:
-    result = main(_HBObj, _angle, cenPt_, axis_)
+    result = main(_HBObj, _angle, cenPt_, axis_, _name_, keepAdj_)
     
     if result!=-1:
         HBObj = result

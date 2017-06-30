@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2016, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
+# Copyright (c) 2013-2017, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools> and Chris Mackey <Chris@MackeyArchitecture.com>
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -24,21 +24,23 @@
 Move Honeybee Objects
 
 -
-Provided by Honeybee 0.0.60
+Provided by Honeybee 0.0.61
 
     Args:
-        _HBObject: Honeybee surface or Honeybee zone
+        _HBObj: Honeybee surface or Honeybee zone
         _vector: Transform vector
+        _name_: An optional text string that will be appended to the name of the transformed object(s).  If nothing is input here, a default unique name will be generated.
+        keepAdj_: Set to 'False' to remove existing adjacencies and boundary conditions (this is useful if you plan to re-solve adjacencies after this component). If left blank or set to 'True', the component will preserve adjacencies with other zones.
     Returns:
-        HBObjs: Transformed objects
+        HBObj: Transformed objects
 """
 ghenv.Component.Name = "Honeybee_Move Honeybee"
 ghenv.Component.NickName = 'moveHBObj'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.61\nJUN_15_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
-#compatibleHBVersion = VER 0.0.57\nNOV_04_2015
+#compatibleHBVersion = VER 0.0.57\nJUN_15_2017
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "6"
 except: pass
@@ -48,7 +50,7 @@ import uuid
 import Rhino as rc
 
 
-def main(HBObj, vector):
+def main(HBObj, vector, name, keepAdj=False):
 
     # import the classes
     if not sc.sticky.has_key('honeybee_release'):
@@ -72,22 +74,31 @@ def main(HBObj, vector):
     # call the objects from the lib
     hb_hive = sc.sticky["honeybee_Hive"]()
     try:
-        HBObject = hb_hive.callFromHoneybeeHive([HBObj])[0]
+        HBObject = hb_hive.callFromHoneybeeHive(HBObj)
     except:
         raise TypeError("Wrong input type for _HBObj. Connect a Honeybee Surface or a HoneybeeZone to HBObject input")
     
+    if keepAdj == False:
+        clearBC = True
+    else:
+        clearBC = False
+    
     # create a transform
     transform = rc.Geometry.Transform.Translation(_vector)
-    #transform = rc.Geometry.Transform.Rotation(3.14, rc.Geometry.Vector3d.ZAxis, rc.Geometry.Point3d.Origin)
+    if name == None:
+        newKey = str(uuid.uuid4())[:8]
+    else:
+        newKey = name
     
-    HBObject.transform(transform)
+    for HObj in HBObject:
+        HObj.transform(transform, newKey, clearBC)
     
-    HBObj = hb_hive.addToHoneybeeHive([HBObject], ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+    HBObj = hb_hive.addToHoneybeeHive(HBObject, ghenv.Component)
 
     return HBObj
     
 if _HBObj and _vector:
-    result = main(_HBObj, _vector)
+    result = main(_HBObj, _vector, _name_, keepAdj_)
     
     if result!=-1:
         HBObj = result

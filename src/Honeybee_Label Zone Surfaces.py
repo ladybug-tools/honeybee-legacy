@@ -4,7 +4,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2016, Chris Mackey <Chris@MackeyArchitecture.com> 
+# Copyright (c) 2013-2017, Chris Mackey <Chris@MackeyArchitecture.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -24,7 +24,7 @@
 """
 Use this component to lablel HBSurfaces or HBZones with their names or energy/daylight properties in the Rhino scene.  This is useful for checking whether certain properties have been assigned correctly.
 -
-Provided by Honeybee 0.0.60
+Provided by Honeybee 0.0.61
     
     Args:
         _HBObjects: The HBZones out of any of the HB components that generate or alter zones.  Note that these should ideally be the zones that are fed into the Run Energy Simulation component.  Zones read back into Grasshopper from the Import idf component will not align correctly with the EP Result data.
@@ -41,7 +41,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Label Zone Surfaces"
 ghenv.Component.NickName = 'LabelSurfaces'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.61\nMAY_30_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -241,6 +241,7 @@ def main(HBZoneObjects, textSize, font, windows, attribute):
 
 #If Honeybee or Ladybug is not flying or is an older version, give a warning.
 initCheck = True
+w = gh.GH_RuntimeMessageLevel.Warning
 
 #Ladybug check.
 if not sc.sticky.has_key('ladybug_release') == True:

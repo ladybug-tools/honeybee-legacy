@@ -98,7 +98,7 @@ import scriptcontext as sc
 
 ghenv.Component.Name = "Honeybee_IES Custom Lamp"
 ghenv.Component.NickName = 'iesCustomLamp'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "02 | Daylight | Light Source"

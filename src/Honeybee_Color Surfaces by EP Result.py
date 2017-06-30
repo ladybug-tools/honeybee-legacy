@@ -4,7 +4,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2016, Chris Mackey <Chris@MackeyArchitecture.com> 
+# Copyright (c) 2013-2017, Chris Mackey <Chris@MackeyArchitecture.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -28,7 +28,7 @@ By default, zone surfaces will be colored based on total energy per unit surface
 If total annual simulation data has been connected, the analysisPeriod_ input can be used to select out a specific period fo the year for coloration.
 In order to color surfaces by individual hours/months, connecting interger values to the "stepOfSimulation_" will allow you to scroll though each step of the input data.
 -
-Provided by Honeybee 0.0.60
+Provided by Honeybee 0.0.61
     
     Args:
         _srfData: A list surface data out of the "Honeybee_Read EP Surface Result" component.
@@ -53,7 +53,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Color Surfaces by EP Result"
 ghenv.Component.NickName = 'ColorSurfaces'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.61\nAPR_05_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -292,7 +292,7 @@ def getZoneSrfs(srfHeaders, pyZoneData, hb_zoneData):
     
     return dataCheck, finalSurfaceNames, finalSrfAreas, finalSrfBreps, newPyZoneData, newSrfHeaders, zoneBreps
 
-def manageInputOutput(annualData, simStep, srfNormalizable, srfHeaders, pyZoneData):
+def manageInputOutput(annualData, simStep, srfNormalizable, srfHeaders, pyZoneData, lb_preparation):
     #If some of the component inputs and outputs are not right, blot them out or change them.
     for input in range(8):
         if input == 3 and srfNormalizable == False:
@@ -542,6 +542,14 @@ def getData(pyZoneData, surfaceAreas, annualData, simStep, srfNormalizable, srfH
                 startHour = analysisPeriod[0][2]
                 endHour = analysisPeriod[1][2]
                 HOYS, months, days = lb_preparation.getHOYsBasedOnPeriod(analysisPeriod, 1)
+                try:
+                    HOYSdata, monthsdata, daysdata = lb_preparation.getHOYsBasedOnPeriod((srfHeaders[0][5],srfHeaders[0][6]), 1)
+                    hoyDataStart = HOYSdata[0]
+                    for count, hour in enumerate(HOYS):
+                        HOYS[count] = hour - hoyDataStart
+                except:
+                    pass
+                
                 startIndex = HOYS[0]
                 endIndex = HOYS[-1]
                 #Get the data from the lists.
@@ -654,6 +662,7 @@ else:
     try:
         if not sc.sticky['ladybug_release'].isCompatible(ghenv.Component): initCheck = False
         if sc.sticky['ladybug_release'].isInputMissing(ghenv.Component): initCheck = False
+        lb_preparation = sc.sticky["ladybug_Preparation"]()
     except:
         initCheck = False
         warning = "You need a newer version of Ladybug to use this compoent." + \
@@ -688,7 +697,7 @@ if _srfData.BranchCount > 0 and str(_srfData) != "tree {0}" and initCheck == Tru
 
 #Manage the inputs and outputs of the component based on the data that is hooked up.
 if checkData == True:
-    dataInfo = manageInputOutput(annualData, simStep, srfNormalizable, srfHeaders, pyZoneData)
+    dataInfo = manageInputOutput(annualData, simStep, srfNormalizable, srfHeaders, pyZoneData, lb_preparation)
     if dataInfo != -1: normByFlr, analysisPeriod, stepOfSimulation, annualData = dataInfo
     else: checkData = False
 else: restoreInputOutput()

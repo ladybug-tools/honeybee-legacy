@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2016, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> 
+# Copyright (c) 2013-2017, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -30,7 +30,7 @@ Check this link for more information about glare analysis. Thanks to Christoph R
 http://web.mit.edu/tito_/www/Projects/Glare/GlareRecommendationsForPractice.html
 
 -
-Provided by Honeybee 0.0.60
+Provided by Honeybee 0.0.61
     
     Args:
         _HDRImagePath: Path to an HDR image file
@@ -49,7 +49,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Glare Analysis"
 ghenv.Component.NickName = 'glareAnalysis'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
@@ -176,6 +176,7 @@ def main(HDRImagePath, taskPosition, taskPositionAngle):
             msg = "\nThis component is using " + out.split("\n")[0] + " for glare analysis.\n"
             print msg
             notes += msg + "\n"
+            
         else:
             print msg
             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Error, msg)
@@ -193,7 +194,6 @@ def main(HDRImagePath, taskPosition, taskPositionAngle):
         taskPA = math.radians(taskPositionAngle)
         taskP = True
         
-    
     if taskP and (taskPX > 1 or taskPY > 1):
         msg = "U and V valeus for taskPositionUV should be between 0 and 1." + \
                 "%.3f"%taskPX + " and " + "%.3f"%taskPY + " are not acceptable input." + \
@@ -243,7 +243,7 @@ def main(HDRImagePath, taskPosition, taskPositionAngle):
         
         pflitLine = "/c " + hb_RADPath + "\pfilt -x/" + str(proportion) + " -y/" + str(proportion) + \
                   " " + HDRImagePath +" > " + resizedImage
-                  
+
         out, err = runCmdAndGetTheResults(pflitLine)
         
         x = x/proportion
@@ -254,15 +254,16 @@ def main(HDRImagePath, taskPosition, taskPositionAngle):
     glareNoTextImage = ".".join(HDRImagePath.split(".")[:-1]) + "_noText." + HDRImagePath.split(".")[-1]
     # run the analysis
     evalGlareLine = "/c " + hb_RADPath + "\evalglare -c " +  glareNoTextImage + " " + HDRImagePath
+    
     glareRes, err = runCmdAndGetTheResults(evalGlareLine)
     
-    if err.strip() == "error: no valid view specified":
+    if "error: no valid view specified" in err.strip():
+        
         # since I use pcomp to merge images HDR image doesn't have HDR view information
         # adding default Honeybee view information for fish-eye camera
         evalGlareLine = "/c " + hb_RADPath + "\evalglare -vth -vv 180 -vh 180 -c " +  glareNoTextImage + " " + HDRImagePath
         glareRes, err = runCmdAndGetTheResults(evalGlareLine)
         
-    
     notes += "Results for the image:\n" + glareRes + "\n"
     
     # read the results
@@ -286,7 +287,6 @@ def main(HDRImagePath, taskPosition, taskPositionAngle):
         
         glareTaskPCheckImage = ".".join(HDRImagePath.split(".")[:-1]) + "_TPChkFile." + HDRImagePath.split(".")[-1]
         glareTaskPNoText = ".".join(HDRImagePath.split(".")[:-1]) + "_TPnoText." + HDRImagePath.split(".")[-1]
-        
         
         xPixle = int(taskPX * x)
         yPixle = int(taskPY * y) # 0,0 coordinate for evalglare located at top left
@@ -325,8 +325,8 @@ def main(HDRImagePath, taskPosition, taskPositionAngle):
     else:
         return notes, glareCheckImage, totalGlareResultDict, None, None
         
-        
 if _HDRImagePath and _runIt:
+
     result = main(_HDRImagePath, taskPositionUV_, taskPositionAngle_)
     
     if result!= -1:

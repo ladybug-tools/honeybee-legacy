@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2016, Chris Mackey <Chris@MackeyArchitecture.com> 
+# Copyright (c) 2013-2017, Chris Mackey <Chris@MackeyArchitecture.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -23,18 +23,25 @@
 """
 This component parses an .eio file from an energy simulation and brings in the sizes of all of the HVAC equipment.
 -
-Provided by Honeybee 0.0.60
+Provided by Honeybee 0.0.61
     
     Args:
         _eioFile: The file address of the eio file that comes out of the "Honeybee_Lookup EnergyPlus Folder" component.
         keywords_: Optional keywords that will be used to search through the outputs.
     Returns:
-        simOutputs: EnergyPlus code that should be plugged into the "simulationOutputs" parameter of the "Honeybee_Export to OpenStudio" component.
+        zonePeakLoadObjs: Text describing the meaning of the zonePeakLoadVals below.
+        zonePeakLoadVals: The sum of the zone's peak sensible loads on the design days.  These are eventually used to size the HVAC equipment that delivers heating/cooling to the zones.
+        zoneSizingObjs: Text describing the meaning of the zoneSizingValues below.
+        zoneSizingValues: The zone's peak sensible loads multiplied by their respective design "safety" factors (set on the "Energy Simulation Par" component). These safety factors are used to slightly oversize zone heating/cooling equipment and is standard ASHRAE practice.
+        systemSizingObjs: Text describing the meaning of the systemSizingVals below.
+        systemSizingVals: Values denoting the size of various central HVAC system elemts (like the primary air loop flow rates).
+        componentSizObjs: Text describing the meaning of the componentSizVals below.
+        componentSizVals: Values denoting the size of various zone HVAC components (like zone terminal sizes, heating/cooling coil sizes, lengths of chilled beams, etc.).
 """
 
 ghenv.Component.Name = "Honeybee_Read HVAC Sizing"
 ghenv.Component.NickName = 'readEio'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_27_2016'
+ghenv.Component.Message = 'VER 0.0.61\nJUN_20_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -96,17 +103,22 @@ def main(keywords):
             componentSizing = hb_EPMaterialAUX.searchListByKeyword(componentSizing, keywords_)
         
         # Split the results and the values.
+        peakDict = {}
         zoneDict = {}
         for zSiz in zoneSizing:
             sizInfoSplit = zSiz.split(', ')
             zName = sizInfoSplit[1]
             zText = zName + '-' + sizInfoSplit[2] + '[W]'
             znum = sizInfoSplit[4]
+            zpeak = sizInfoSplit[3]
             if zName not in zoneDict.keys():
                 zoneDict[zName] = [[zText],[znum]]
+                peakDict[zName] = [[zText],[zpeak]]
             else:
                 zoneDict[zName][0].append(zText)
                 zoneDict[zName][1].append(znum)
+                peakDict[zName][0].append(zText)
+                peakDict[zName][1].append(zpeak)
         
         sysDict = {}
         for sysSiz in systemSizing:
@@ -132,7 +144,7 @@ def main(keywords):
                 compDict[compName][0].append(zText)
                 compDict[compName][1].append(compNum)
         
-        return zoneDict, sysDict, compDict
+        return peakDict, zoneDict, sysDict, compDict
     except:
         warning = 'Fauled to parse .rdd file.  Make sure that it is the correct type of file.'
         print warning
@@ -145,7 +157,7 @@ hbCheck = True
 if not sc.sticky.has_key('honeybee_release') == True:
     hbCheck = False
     print "You should first let Honeybee fly..."
-    ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee fly...")
+    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, "You should first let Honeybee fly...")
 else:
     try:
         if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): hbCheck = False
@@ -155,7 +167,7 @@ else:
         "Use updateHoneybee component to update userObjects.\n" + \
         "If you have already updated userObjects drag Honeybee_Honeybee component " + \
         "into canvas and try again."
-        ghenv.Component.AddRuntimeMessage(w, warning)
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
 
 
 if _eioFile and hbCheck == True:
@@ -163,7 +175,8 @@ if _eioFile and hbCheck == True:
     if initCheck == True:
         result = main(keywords_)
         if result != -1:
-            zoneDict, sysDict, compDict = result
+            peakDict, zoneDict, sysDict, compDict = result
+            zonePeakLoadObjs, zonePeakLoadVals = dict2Tree(peakDict)
             zoneSizingObjs, zoneSizingValues = dict2Tree(zoneDict)
             systemSizingObjs, systemSizingVals = dict2Tree(sysDict)
             componentSizObjs, componentSizVals = dict2Tree(compDict)

@@ -4,7 +4,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2016, Chris Mackey and Mostapha Sadeghipour Roudsari <Chris@MackeyArchitecture.com and Sadeghipour@gmail.com> 
+# Copyright (c) 2013-2017, Chris Mackey and Mostapha Sadeghipour Roudsari <Chris@MackeyArchitecture.com and mostapha@ladybug.tools> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -35,7 +35,7 @@ Provided by Ladybug 0.0.57
 
 ghenv.Component.Name = "Honeybee_Convert EnergyPlus Schedule to Values"
 ghenv.Component.NickName = 'convertEPSCHValues'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "07 | Energy | Schedule"

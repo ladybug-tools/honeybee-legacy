@@ -33,7 +33,7 @@ Args:
 
 ghenv.Component.Name = "Honeybee_OpenFileDirectory"
 ghenv.Component.NickName = 'fileExplorer'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"

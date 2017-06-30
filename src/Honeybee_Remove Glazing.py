@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2016, Mostapha Sadeghipour Roudsari <Sadeghipour@gmail.com> and Anton Szilasi <ajszilasi@gmail.com>
+# Copyright (c) 2013-2017, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools> and Anton Szilasi <ajszilasi@gmail.com>
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -24,7 +24,7 @@
 Remove Glazing 
 
 -
-Provided by Honeybee 0.0.60
+Provided by Honeybee 0.0.61
 
     Args:
         _HBZones: A list of Honeybee Zones, this component can only use Honeybee Zones
@@ -40,11 +40,11 @@ Provided by Honeybee 0.0.60
 """
 ghenv.Component.Name = "Honeybee_Remove Glazing"
 ghenv.Component.NickName = 'remGlz'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.56\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
@@ -154,7 +154,7 @@ def main(HBObjects, srfIndex, pattern):
         # Reassign HBO objects after they have had their surfaces removed.
         HBObjs[count] = HBO
     
-    return hb_hive.addToHoneybeeHive(HBObjs, ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
+    return hb_hive.addToHoneybeeHive(HBObjs, ghenv.Component)
 
 HBZones = main(_HBZones, srfIndex_, pattern_)
 

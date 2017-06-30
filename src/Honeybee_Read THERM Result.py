@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2016, Chris Mackey <Chris@MackeyArchitecture.com.com> 
+# Copyright (c) 2013-2017, Chris Mackey <Chris@MackeyArchitecture.com.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -25,7 +25,7 @@ Use this component to import the colored mesh results from a THERM simulation.  
 _
 Before you run the file in THERM, make sure that you go to Options > Preferences > Simulation and check "Save Conrad results file (.O)" in order to enure that your THERM simulation writes all results out in a format that this component understands.
 -
-Provided by Honeybee 0.0.60
+Provided by Honeybee 0.0.61
     
     Args:
         _resultFile: The resultFileAddress from the "Write THERM File" component.  Make sure that you have opened THERM and run your file before using this component. Also, before you run the file in THERM, make sure that you go to Options > Preferences > Simulation and check "Save Conrad results file (.O)" in order to enure that your THERM simulation writes this file.
@@ -57,7 +57,7 @@ import math
 
 ghenv.Component.Name = 'Honeybee_Read THERM Result'
 ghenv.Component.NickName = 'readTHERM'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.61\nMAY_12_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -70,6 +70,33 @@ except: pass
 w = gh.GH_RuntimeMessageLevel.Warning
 e = gh.GH_RuntimeMessageLevel.Error
 
+
+def extractTransform(thmxFile):
+    planeReorientation = None
+    rhinoOrig = None
+    
+    thermFi = open(thmxFile, 'r')
+    for lineCount, line in enumerate(thermFi):
+        if '<Notes>' in line and '</Notes>' in line:
+            if 'RhinoUnits-' in line and 'RhinoOrigin-' in line and 'RhinoXAxis-' in line:
+                origRhinoUnits = line.split(',')[0].split('RhinoUnits-')[-1]
+                origRhinoOrigin = line.split('),')[0].split('RhinoOrigin-(')[-1].split(',')
+                origRhinoXaxis = line.split('),')[1].split('RhinoXAxis-(')[-1].split(',')
+                origRhinoYaxis = line.split('),')[2].split('RhinoYAxis-(')[-1].split(',')
+                origRhinoZaxis = line.split(')</Notes>')[0].split('RhinoZAxis-(')[-1].split(',')
+                
+                rhinoOrig = rc.Geometry.Point3d(float(origRhinoOrigin[0]), float(origRhinoOrigin[1]), float(origRhinoOrigin[2]))
+                thermPlane = rc.Geometry.Plane(rhinoOrig, rc.Geometry.Plane.WorldXY.XAxis, rc.Geometry.Plane.WorldXY.YAxis)
+                basePlane = rc.Geometry.Plane(rhinoOrig, rc.Geometry.Vector3d(float(origRhinoXaxis[0]), float(origRhinoXaxis[1]), float(origRhinoXaxis[2])), rc.Geometry.Vector3d(float(origRhinoYaxis[0]), float(origRhinoYaxis[1]), float(origRhinoYaxis[2])))
+                basePlaneNormal = rc.Geometry.Vector3d(float(origRhinoZaxis[0]), float(origRhinoZaxis[1]), float(origRhinoZaxis[2]))
+                planeReorientation = rc.Geometry.Transform.ChangeBasis(basePlane, thermPlane)
+            else:
+                warning = "Cannot find the transformation data in the header of the thermFile_ or uFactorFile_. \n Result geometry will not be imported to the location of the original Rhino geometry."
+                print warning
+                ghenv.Component.AddRuntimeMessage(w, warning)
+    thermFi.close()
+    
+    return planeReorientation, rhinoOrig
 
 
 def checkTheInputs():
@@ -84,39 +111,21 @@ def checkTheInputs():
     
     #If there is a thermFile_ connected, check to make sure it exists and contains transformation data.
     planeReorientation = None
-    unitsScale = None
     rhinoOrig = None
-    if thermFile_ != None:
-        if not os.path.isfile(thermFile_):
-            warning = "Cannot find the THERM file at the thermFile_. \n Result geometry will not be imported to the location of the original Rhino geometry."
-            print warning
-            ghenv.Component.AddRuntimeMessage(w, warning)
-        else:
-            #Try to extract the transformations from the file header.
-            thermFi = open(thermFile_, 'r')
-            for lineCount, line in enumerate(thermFi):
-                if '<Notes>' in line and '</Notes>' in line:
-                    if 'RhinoUnits-' in line and 'RhinoOrigin-' in line and 'RhinoXAxis-' in line:
-                        origRhinoUnits = line.split(',')[0].split('RhinoUnits-')[-1]
-                        origRhinoOrigin = line.split('),')[0].split('RhinoOrigin-(')[-1].split(',')
-                        origRhinoXaxis = line.split('),')[1].split('RhinoXAxis-(')[-1].split(',')
-                        origRhinoYaxis = line.split('),')[2].split('RhinoYAxis-(')[-1].split(',')
-                        origRhinoZaxis = line.split(')</Notes>')[0].split('RhinoZAxis-(')[-1].split(',')
-                        
-                        rhinoOrig = rc.Geometry.Point3d(float(origRhinoOrigin[0]), float(origRhinoOrigin[1]), float(origRhinoOrigin[2]))
-                        thermPlane = rc.Geometry.Plane(rhinoOrig, rc.Geometry.Plane.WorldXY.XAxis, rc.Geometry.Plane.WorldXY.YAxis)
-                        basePlane = rc.Geometry.Plane(rhinoOrig, rc.Geometry.Vector3d(float(origRhinoXaxis[0]), float(origRhinoXaxis[1]), float(origRhinoXaxis[2])), rc.Geometry.Vector3d(float(origRhinoYaxis[0]), float(origRhinoYaxis[1]), float(origRhinoYaxis[2])))
-                        basePlaneNormal = rc.Geometry.Vector3d(float(origRhinoZaxis[0]), float(origRhinoZaxis[1]), float(origRhinoZaxis[2]))
-                        planeReorientation = rc.Geometry.Transform.ChangeBasis(basePlane, thermPlane)
-                        
-                        conversionFactor = lb_preparation.checkUnits()
-                        conversionFactor = 1/conversionFactor
-                        unitsScale = rc.Geometry.Transform.Scale(rc.Geometry.Plane.WorldXY, conversionFactor, conversionFactor, conversionFactor)
-                    else:
-                        warning = "Cannot find the transformation data in the header of the THERM file at the thermFile_. \n Result geometry will not be imported to the location of the original Rhino geometry."
-                        print warning
-                        ghenv.Component.AddRuntimeMessage(w, warning)
-            thermFi.close()
+    
+    conversionFactor = lb_preparation.checkUnits()
+    conversionFactor = 1/conversionFactor
+    unitsScale = rc.Geometry.Transform.Scale(rc.Geometry.Plane.WorldXY, conversionFactor, conversionFactor, conversionFactor)
+    
+    #Try to extract the transformations from the file header.
+    if thermFile_ != None and os.path.isfile(thermFile_):
+        planeReorientation, rhinoOrig = extractTransform(thermFile_)
+    elif uFactorFile_ != None and os.path.isfile(uFactorFile_):
+        planeReorientation, rhinoOrig = extractTransform(uFactorFile_)
+    else:
+        warning = "No uFactorFile_ or thermFile_ connected. \n Result geometry will not be imported to the location of the original Rhino geometry."
+        print warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
     
     #If there is a uFactorFile_ connected, check to make sure it exists and contains the U-Factor data.
     uFactorNames = []
@@ -147,7 +156,7 @@ def checkTheInputs():
                         uFactors.append(uFactor)
             uFacFile.close()
         if SIorIP_ == False:
-            for count, val in enumerate(uFactors): uFactors[count] = val*0.316998331
+            for count, val in enumerate(uFactors): uFactors[count] = val/5.678
     
     #If there is an input for dataType_, check to make sure that it makes sense.
     dataType = 0

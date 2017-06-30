@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2016, Chris Mackey <Chris@MackeyArchitecture.com> 
+# Copyright (c) 2013-2017, Chris Mackey <Chris@MackeyArchitecture.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -26,7 +26,7 @@ _
 This component reads only the results related to zone ideal air and earth tube HVAC systems.  For other results related to zones, you should use the "Honeybee_Read EP Result" component and, for results related to surfaces, you should use the "Honeybee_Read EP Surface Result" component.
 
 -
-Provided by Honeybee 0.0.60
+Provided by Honeybee 0.0.61
     
     Args:
         _resultFileAddress: The result file address that comes out of the WriteIDF component.
@@ -44,7 +44,7 @@ Provided by Honeybee 0.0.60
 
 ghenv.Component.Name = "Honeybee_Read EP HVAC Result"
 ghenv.Component.NickName = 'readEP_HVAC_Result'
-ghenv.Component.Message = 'VER 0.0.60\nAUG_10_2016'
+ghenv.Component.Message = 'VER 0.0.61\nJUN_20_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -136,7 +136,7 @@ unmetHoursHeating = DataTree[Object]()
 
 
 #Make a list to keep track of what outputs are in the result file.
-dataTypeList = [False, False, False, False, False, False, False, False, False]
+dataTypeList = [False, False, False, False, False]
 parseSuccess = False
 centralSys = False
 
@@ -184,7 +184,7 @@ if _resultFileAddress and gotData == True:
                 #ANALYZE THE FILE HEADING
                 key = []; path = []
                 for columnCount, column in enumerate(line.split(',')):
-                    
+                    """
                     if 'Zone Ideal Loads Supply Air Sensible Cooling Energy' in column:
                         key.append(0)
                         if 'ZONE HVAC' in column:
@@ -220,8 +220,8 @@ if _resultFileAddress and gotData == True:
                             zoneName = checkZone(" " + column.split(':')[0].split(' IDEAL LOADS AIR SYSTEM')[0])
                         makeHeader(latentHeating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Latent Heating Energy", "kWh", True)
                         dataTypeList[3] = True
-                    
-                    elif 'System Node Standard Density Volume Flow Rate' in column:
+                    """
+                    if 'System Node Standard Density Volume Flow Rate' in column:
                         if "RETURN" in column or "OUTDOOR AIR" in column or "ZONE AIR NODE" in column:
                             key.append(-1)
                             path.append(-1)
@@ -230,13 +230,13 @@ if _resultFileAddress and gotData == True:
                                 key.append(4)
                                 zoneName = checkZone(" " + column.split(':')[0].split(' IDEAL LOADS SUPPLY INLET')[0])
                                 makeHeader(supplyVolFlow, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Supply Air Standard Density Volume Flow Rate", "m3/s", True)
-                                dataTypeList[4] = True
+                                dataTypeList[0] = True
                             else:
                                 try:
                                     zoneName = checkCentralSys((" " + column.split(":")[0].split('NODE')[-1]), 0)
                                     centralSys = True
                                     makeHeader(supplyVolFlow, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Supply Air Standard Density Volume Flow Rate", "m3/s", True)
-                                    dataTypeList[4] = True
+                                    dataTypeList[0] = True
                                     key.append(4)
                                     print zoneName
                                 except:
@@ -252,13 +252,13 @@ if _resultFileAddress and gotData == True:
                                 key.append(5)
                                 zoneName = checkZone(" " + column.split(':')[0].split(' IDEAL LOADS SUPPLY INLET')[0])
                                 makeHeader(supplyAirTemp, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Supply Air Temperature", "C", False)
-                                dataTypeList[5] = True
+                                dataTypeList[1] = True
                             else:
                                 try:
                                     zoneName = checkCentralSys((" " + column.split(":")[0].split('NODE')[-1]), 1)
                                     centralSys = True
                                     makeHeader(supplyAirTemp, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Supply Air Temperature", "C", False)
-                                    dataTypeList[5] = True
+                                    dataTypeList[1] = True
                                     key.append(5)
                                 except:
                                     key.append(-1)
@@ -273,13 +273,13 @@ if _resultFileAddress and gotData == True:
                                 key.append(6)
                                 zoneName = checkZone(" " + column.split(':')[0].split(' IDEAL LOADS SUPPLY INLET')[0])
                                 makeHeader(supplyAirHumidity, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Supply Air Relative Humidity", "%", False)
-                                dataTypeList[6] = True
+                                dataTypeList[2] = True
                             else:
                                 try:
                                     zoneName = checkCentralSys((" " + column.split(":")[0].split('NODE')[-1]), 2)
                                     centralSys = True
                                     makeHeader(supplyAirHumidity, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Supply Air Relative Humidity", "%", False)
-                                    dataTypeList[6] = True
+                                    dataTypeList[2] = True
                                     key.append(6)
                                 except:
                                     key.append(-1)
@@ -289,13 +289,13 @@ if _resultFileAddress and gotData == True:
                         key.append(7)
                         zoneName = checkZone(" " + column.split(':')[0])
                         makeHeader(unmetHoursCooling, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Unmet Cooling hours", "hours", True)
-                        dataTypeList[7] = True
+                        dataTypeList[3] = True
                     
                     elif 'Zone Heating Setpoint Not Met Time' in column:
                         key.append(8)
                         zoneName = checkZone(" " + column.split(':')[0])
                         makeHeader(unmetHoursHeating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Unmet Heating hours", "hours", True)
-                        dataTypeList[8] = True
+                        dataTypeList[4] = True
                     
                     else:
                         key.append(-1)
@@ -342,23 +342,24 @@ if _resultFileAddress and gotData == True:
 
 
 #If some of the component outputs are not in the result csv file, blot the variable out of the component.
-
-outputsDict = {
-     
+"""
 0: ["sensibleCooling", "The sensible energy removed by the ideal air cooling load for each zone in kWh."],
 1: ["latentCooling", "The latent energy removed by the ideal air cooling load for each zone in kWh."],
 2: ["sensibleHeating", "The sensible energy added by the ideal air heating load for each zone in kWh."],
 3: ["latentHeating", "The latent energy added by the ideal air heating load for each zone in kWh."],
-4: ["supplyVolFlow", "The mass of supply air flowing into each zone in kg/s."],
-5: ["supplyAirTemp", "The mean air temperature of the supply air for each zone (degrees Celcius)."],
-6: ["supplyAirHumidity", "The relative humidity of the supply air for each zone (%)."],
-7: ["unmetHoursCooling", "Time Zone Cooling Setpoint Not Met Time"],
-8: ["unmetHoursHeating", "Time Zone Heating Setpoint Not Met Time"]
+"""
+outputsDict = {
+     
+0: ["supplyVolFlow", "The mass of supply air flowing into each zone in kg/s."],
+1: ["supplyAirTemp", "The mean air temperature of the supply air for each zone (degrees Celcius)."],
+2: ["supplyAirHumidity", "The relative humidity of the supply air for each zone (%)."],
+3: ["unmetHoursCooling", "Time Zone Cooling Setpoint Not Met Time"],
+4: ["unmetHoursHeating", "Time Zone Heating Setpoint Not Met Time"]
 }
 
 
 if _resultFileAddress and parseSuccess == True:
-    for output in range(9):
+    for output in range(5):
         if dataTypeList[output] == False:
             ghenv.Component.Params.Output[output].NickName = "."
             ghenv.Component.Params.Output[output].Name = "."
@@ -368,7 +369,7 @@ if _resultFileAddress and parseSuccess == True:
             ghenv.Component.Params.Output[output].Name = outputsDict[output][0]
             ghenv.Component.Params.Output[output].Description = outputsDict[output][1]
 else:
-    for output in range(9):
+    for output in range(5):
         ghenv.Component.Params.Output[output].NickName = outputsDict[output][0]
         ghenv.Component.Params.Output[output].Name = outputsDict[output][0]
         ghenv.Component.Params.Output[output].Description = outputsDict[output][1]
