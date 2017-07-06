@@ -38,13 +38,13 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Load Honeybee Objects"
 ghenv.Component.NickName = 'loadHBObjects'
-ghenv.Component.Message = 'VER 0.0.61\nMAY_18_2017'
+ghenv.Component.Message = 'VER 0.0.61\nJUL_06_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "13 | WIP"
+ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.59\nMAY_18_2017
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
-try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "6"
 except: pass
 
 import cPickle as pickle
@@ -82,7 +82,7 @@ def loadHBObjects(HBData):
     objs = HBData["objs"]
     HBObjects = {}
     
-    def loadHBconstr(HBconstrObj):
+    def loadHBEPstr(HBconstrObj):
         EPObject = HBconstrObj['EPstr']
         added, name = hb_EPObjectsAux.addEPObjectToLib(EPObject, True)
     
@@ -195,11 +195,12 @@ def loadHBObjects(HBData):
             loadHBheat(HBO)
         elif HBO['objectType'] == 'HBcool':
             loadHBcool(HBO)
-        elif HBO['objectType'] == 'HBConstr' or HBO['objectType'] == 'HBMat':
-            loadHBconstr(HBO)
+        elif HBO['objectType'] == 'HBConstr' or HBO['objectType'] == 'HBMat' or HBO['objectType'] == 'HBsched':
+            loadHBEPstr(HBO)
         elif HBO['objectType'] == 'HBRadMat':
             loadHBradMat(HBO)
         else:
+            print HBO['objectType']
             raise Exception("Unsupported object! Assure all objects are Honeybee objects")
     
     # create Fenestration surfaces
