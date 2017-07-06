@@ -51,7 +51,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Daily Schedule"
 ghenv.Component.NickName = 'DailySchedule'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.61\nJUL_06_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "07 | Energy | Schedule"

@@ -37,7 +37,7 @@ Provided by Ladybug 0.0.62
 
 ghenv.Component.Name = "Honeybee_Constant Schedule"
 ghenv.Component.NickName = 'ConstantSchedule'
-ghenv.Component.Message = 'VER 0.0.61\nJUN_21_2017'
+ghenv.Component.Message = 'VER 0.0.61\nJUL_06_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "07 | Energy | Schedule"
@@ -126,7 +126,9 @@ def main(values, schedName, schedTypeLimits):
     # Write out text strings for the daily schedules
     if len(values) == 1:
         values = [values[0] for x in range(24)]
-    elif len(values) != 1:
+    elif len(values) == 24:
+        pass
+    else:
         warning = "_value must be either a single value or a list of 24 values for each hour of the day."
         print warning
         ghenv.Component.AddRuntimeMessage(w, warning)
@@ -146,7 +148,7 @@ def main(values, schedName, schedTypeLimits):
     for EPObject in schedIDFStrs:
         added, name = hb_EPObjectsAux.addEPObjectToLib(EPObject, overwrite = True)
     
-    return yearSchedName, schedIDFStrs
+    return yearSchedName, weekSchedName, schedIDFStrs
 
 
 w = gh.GH_RuntimeMessageLevel.Warning
@@ -190,5 +192,5 @@ else:
 if initCheck == True:
     result = main(_value, _scheduleName, _schedTypeLimits_)
     if result != -1:
-        schedule, schedIDFText = result
+        schedule, weekSched, schedIDFText = result
         print '\nscheduleValues generated!'
