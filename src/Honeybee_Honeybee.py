@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.61\nJUN_15_2017'
+ghenv.Component.Message = 'VER 0.0.61\nJUL_10_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -4536,9 +4536,9 @@ class ReadEPSchedules(object):
             scheduleType = scheduleValues[0].lower()
             if self.count == 0:
                 self.schType = scheduleType
-
+            
             self.count += 1
-
+            
             if scheduleType == "schedule:year":
                 hourlyValues = self.getYearlyEPScheduleValues(schName)
             elif scheduleType == "schedule:day:interval":
@@ -4556,6 +4556,26 @@ class ReadEPSchedules(object):
                 hourlyValues = []
             
             return hourlyValues
+    
+    def getHolidaySchedValues(self, schName = None):
+        hourlyValues = []
+        if schName == None:
+            schName = self.schName
+        if self.hb_EPObjectsAUX.isSchedule(schName):
+            values, comments = self.hb_EPScheduleAUX.getScheduleDataByName(schName.upper(), ghenv.Component)
+            scheduleType = values[0].lower()
+            if scheduleType == "schedule:year":
+                # generate weekly schedules
+                numOfWeeklySchedules = int((len(values)-2)/5)
+                for i in range(numOfWeeklySchedules):
+                    weekDayScheduleName = values[5 * i + 2]
+                    startDay = int(self.lb_preparation.getJD(int(values[5 * i + 3]), int(values[5 * i + 4])))
+                    endDay = int(self.lb_preparation.getJD(int(values[5 * i + 5]), int(values[5 * i + 6])))
+                    weekValues, comments = self.hb_EPScheduleAUX.getScheduleDataByName(weekDayScheduleName.upper(), ghenv.Component)
+                    holidaySchedule = self.getScheduleValues(weekValues[8])
+                    hourlyValues.append([startDay,endDay,holidaySchedule])
+        
+        return hourlyValues
 
 class EPTypes(object):
     def __init__(self):

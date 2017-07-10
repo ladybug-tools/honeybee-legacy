@@ -32,12 +32,13 @@ Provided by Ladybug 0.0.62
     Returns:
         readMe!: ...
         schedule: The name of the schedule that has been written to the memory of the GH document.  Connect this to any shcedule input of a Honeybee component to assign the schedule.
-        scheduleIDFText: The text needed to tell EnergyPlus how to run the schedule.  If you are done creating/editing a shcedule with this component, you may want to make your GH document smaller by internalizing this IDF text and using the "Honeybee_Add To EnergyPlus Library" component to make sure that the schedule is added to the memory the next time you open the GH file.
+        weekSched: The name of the weekly schedule that has been written to the memory of the GH document.  If your final intended annual schedule is seasonal (composed of different weekly schedules), you can use this output with the "Honeybee_Seasonal Schedule" to create such schedules.
+        schedIDFText: The text needed to tell EnergyPlus how to run the schedule.  If you are done creating/editing a shcedule with this component, you may want to make your GH document smaller by internalizing this IDF text and using the "Honeybee_Add To EnergyPlus Library" component to make sure that the schedule is added to the memory the next time you open the GH file.
 """
 
 ghenv.Component.Name = "Honeybee_Constant Schedule"
 ghenv.Component.NickName = 'ConstantSchedule'
-ghenv.Component.Message = 'VER 0.0.61\nJUL_06_2017'
+ghenv.Component.Message = 'VER 0.0.61\nJUL_10_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "07 | Energy | Schedule"
@@ -89,7 +90,7 @@ def IFDstrForWeek(daySchedName, schName):
 
 def IFDstrForYear(weekSchedName, schName, schTypeLims):
     idfStr = 'Schedule:Year,\n' + \
-        '\t' + schName + ' Year Schedule' + ', !- Name\n' + \
+        '\t' + schName + ', !- Name\n' + \
         '\t' + schTypeLims + ', !- Schedule Type Limits Name\n' + \
         '\t' + weekSchedName + ',  !- Schedule:Week Name\n' + \
         '\t' + '1' + ',  !- Start Month 1\n' + \
@@ -142,7 +143,7 @@ def main(values, schedName, schedTypeLimits):
     
     # Write out text for the annual values.
     schedIDFStrs.append(IFDstrForYear(schedName + ' Week Schedule', schedName, schTypeLims))
-    yearSchedName = schedName + ' Year Schedule'
+    yearSchedName = schedName
     
     # Write all of the schedules to the memory of the GH document.
     for EPObject in schedIDFStrs:
