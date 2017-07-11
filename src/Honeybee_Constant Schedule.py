@@ -27,7 +27,7 @@ Provided by Ladybug 0.0.62
     
     Args:
         _value: A value or list of 24 values that will be repeated for every day of the year.
-        _scheduleName: A name for the schedule that will be written to the memory of the document.  If no name is connected here, a uniqui ID will be generated for the schedule.
+        _scheduleName: A text string representing a name for the schedule that this component will create.  This name should be unique among the schedules in your Grasshopper document to ensure that you do not overwrite other schedules.
         _schedTypeLimits_: A text string from the scheduleTypeLimits output of the "Honeybee_Call From EP Schedule Library" component.  This value represents the units of the schedule input values.  The default is "Fractional" for a schedule with values that range between 0 and 1.  Other common inputs include "Temperature", "On/Off", and "ActivityLevel".
     Returns:
         readMe!: ...
