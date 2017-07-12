@@ -93,8 +93,8 @@ def main(scheduleName, schedTypeLimits, baseWeekSched, numInputs):
     startDOYs = []
     endDOYs = []
     for period in allAnalysisPeriods:
-        doyStart = int(lb_preparation.getJD(period[0][0]+1, period[0][1]))
-        doyEnd = int(lb_preparation.getJD(period[1][0]+1, period[1][1]))
+        doyStart = int(lb_preparation.getJD(period[0][0], period[0][1]))
+        doyEnd = int(lb_preparation.getJD(period[1][0], period[1][1]))
         allDOYs.extend(range(doyStart, doyEnd+1))
         startDOYs.append(doyStart)
         endDOYs.append(doyEnd)
@@ -108,34 +108,37 @@ def main(scheduleName, schedTypeLimits, baseWeekSched, numInputs):
     finalWeekScheds = []
     finalAnalysisPds = []
     startDOYs, endDOYs, allAnalysisPeriods, allSchedules = zip(*sorted(zip(startDOYs, endDOYs, allAnalysisPeriods, allSchedules)))
-    currentDOYs = []
-    currentSchedNum = 0
-    for day in range(1,366):
-        if day == 1 and day not in allDOYs:
+    
+    lastDOY = 1
+    for count, period in enumerate(allAnalysisPeriods):
+        if count == 0 and period[0] != (1,1,1):
             finalWeekScheds.append(baseWeekSched)
-            endOfBase = d, m, t = lb_preparation.hour2Date((startDOYs[0]-1)*24, True)
-            finalAnalysisPds.append([(1,1,1), (m, d, t)])
-            currentDOYs = range(1,startDOYs[0])
-        elif day == 1:
-            finalWeekScheds.append(allSchedules[0])
-            finalAnalysisPds.append(allAnalysisPeriods[0])
-            currentDOYs = range(1,endDOYs[0]+1)
-            currentSchedNum += 1
-        elif day in currentDOYs:
-            pass
-        elif day in allDOYs:
-            try:
-                finalWeekScheds.append(allSchedules[currentSchedNum])
-                finalAnalysisPds.append(allAnalysisPeriods[currentSchedNum])
-                currentDOYs = range(startDOYs[currentSchedNum],endDOYs[currentSchedNum])
-                currentSchedNum += 1
-            except:
-                finalWeekScheds.append(baseWeekSched)
-                d, m, t = lb_preparation.hour2Date((day+1)*24, True)
-                finalAnalysisPds.append([(m, d, t),(12,31,24)])
-                endDOY = 366
+            d, m, t = lb_preparation.hour2Date((endDOYs[count]-1)*24, True)
+            finalAnalysisPds.append([(1,1,1),(m+1,d,t)])
+            finalWeekScheds.append(allSchedules[count])
+            finalAnalysisPds.append(period)
+            lastDOY = endDOYs[count]
+        elif count == 0:
+            finalWeekScheds.append(allSchedules[count])
+            finalAnalysisPds.append(period)
+            lastDOY = endDOYs[count]
+        elif startDOYs[count] == lastDOY+1:
+            finalWeekScheds.append(allSchedules[count])
+            finalAnalysisPds.append(period)
+            lastDOY = endDOYs[count]
         else:
-            pass
+            finalWeekScheds.append(baseWeekSched)
+            d1, m1, t1 = lb_preparation.hour2Date((lastDOY+1)*24, True)
+            d2, m2, t2 = lb_preparation.hour2Date((startDOYs[count]-1)*24, True)
+            finalAnalysisPds.append([(m1+1,d1,t1),(m2+1,d2,t2)])
+            finalWeekScheds.append(allSchedules[count])
+            finalAnalysisPds.append(period)
+            lastDOY = endDOYs[count]
+    if finalAnalysisPds[-1][1] != (12,31,24):
+        finalWeekScheds.append(baseWeekSched)
+        d, m, t = lb_preparation.hour2Date((endDOYs[-1]+1)*24, True)
+        finalAnalysisPds.append([(m+1,d,t),(12,31,24)])
+    
     
     # Get the type limits for the schedule.
     if schedTypeLimits == None:
