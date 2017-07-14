@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.61\nJUL_10_2017'
+ghenv.Component.Message = 'VER 0.0.61\nJUL_14_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -5568,7 +5568,6 @@ class hb_reEvaluateHBZones(object):
                 HBZone.surfaces.append(HBSrf)
     
     def createSubSurfaceFromBaseSrf(self, surface, newSurfaceName, count, coordinates, glazingBase = False, nameAddition = None):
-        
         # pass the wrong geometry for now. I assume creating planar surface from
         # coordinates will be computationally heavy and at this point geometry doesn't
         # matter, since I have the coordinates.
@@ -5660,7 +5659,6 @@ class hb_reEvaluateHBZones(object):
         return insetPts
             
     def checkChildSurfaces(self, surface, pointOrient = 'LowerLeftCorner'):
-        
         def isRectangle(ptList):
             vector1 = rc.Geometry.Vector3d(ptList[0] - ptList[1])
             vector2 = rc.Geometry.Vector3d(ptList[1] - ptList[2])
@@ -5693,6 +5691,9 @@ class hb_reEvaluateHBZones(object):
         glzCoordinates = surface.extractGlzPoints(False, 2, pointOrient)
         
         # make sure order is right
+        if not isAntiClockWise(surface.coordinates, surface.normalVector):
+            surface.coordinates.reverse()
+        
         for coorList in glzCoordinates:
             if not isAntiClockWise(coorList, surface.normalVector):
                 coorList.reverse()
