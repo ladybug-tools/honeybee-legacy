@@ -69,7 +69,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.61\nMAY_06_2017'
+ghenv.Component.Message = 'VER 0.0.61\nJUL_14_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -1063,23 +1063,24 @@ class WriteOPS(object):
         pipeSupplyOutlet.addToNode(condenserLoop.supplyOutletNode())
         setpointManagerFollowOA.addToNode(condenserLoop.supplyOutletNode())
         # demand side components
-        chillervec = chillerWaterPlant.supplyComponents(ops.IddObjectType("OS:Chiller:Electric:EIR"))
-        chiller = model.getChillerElectricEIR(chillervec[0].handle()).get()
-        condenserLoop.addDemandBranchForComponent(chiller)
-        condenserLoop.addDemandBranchForComponent(pipeDemandBypass)
-        pipeDemandInlet.addToNode(condenserLoop.demandInletNode())
-        pipeDemandOutlet.addToNode(condenserLoop.demandOutletNode())
+        if chillerWaterPlant != None:
+            chillervec = chillerWaterPlant.supplyComponents(ops.IddObjectType("OS:Chiller:Electric:EIR"))
+            chiller = model.getChillerElectricEIR(chillervec[0].handle()).get()
+            condenserLoop.addDemandBranchForComponent(chiller)
+            condenserLoop.addDemandBranchForComponent(pipeDemandBypass)
+            pipeDemandInlet.addToNode(condenserLoop.demandInletNode())
+            pipeDemandOutlet.addToNode(condenserLoop.demandOutletNode())
         return condenserLoop
     
     def addInfiniteCapacityGroundLoop(self, model, chillerWaterPlant, HVACCount, coolingDetails=None):
         # create the temperature schedules for the loop.
-        loopSetPtSchedule = self.createConstantScheduleRuleset('HP_Loop_Temp_Schedule' + str(HVACCount), 'HP_Loop_Temp_Schedule_Default' + str(HVACCount), 'TEMPERATURE', 21, model)
-        coolingSetPtSchedule = self.createConstantScheduleRuleset('HP_Loop_Clg_Temp_Schedule' + str(HVACCount), 'HP_Loop_Clg_Temp_Schedule' + str(HVACCount), 'TEMPERATURE', 21, model)
-        heatingSetPtSchedule = self.createConstantScheduleRuleset('HP_Loop_Htg_Temp_Schedule' + str(HVACCount), 'HP_Loop_Htg_Temp_Schedule' + str(HVACCount), 'TEMPERATURE', 5, model)
+        loopSetPtSchedule = self.createConstantScheduleRuleset('Ground_Loop_Temp_Schedule' + str(HVACCount), 'Ground_Loop_Temp_Schedule_Default' + str(HVACCount), 'TEMPERATURE', 21, model)
+        coolingSetPtSchedule = self.createConstantScheduleRuleset('Ground_Loop_Clg_Temp_Schedule' + str(HVACCount), 'Ground_Loop_Clg_Temp_Schedule' + str(HVACCount), 'TEMPERATURE', 21, model)
+        heatingSetPtSchedule = self.createConstantScheduleRuleset('Ground_Loop_Htg_Temp_Schedule' + str(HVACCount), 'Ground_Loop_Htg_Temp_Schedule' + str(HVACCount), 'TEMPERATURE', 5, model)
         
         # create condenser loop for heat pumps
         condenserLoop = ops.PlantLoop(model)
-        condenserLoop.setName("AEDG Heat Pump Loop")
+        condenserLoop.setName("AEDG Ground Source Heat Pump Loop")
         condenserLoop.setMaximumLoopTemperature(80)
         condenserLoop.setMinimumLoopTemperature(1)
         loopSizing = condenserLoop.sizingPlant()
@@ -1128,16 +1129,6 @@ class WriteOPS(object):
         districtHeating.addToNode(districtCooling.outletModelObject().get().to_Node().get())
         setpointManagerScheduledHeating.addToNode(districtHeating.outletModelObject().get().to_Node().get())
         
-        # demand side components in DOAS
-        if coolingDetails == None or coolingDetails.chillerType == 'WaterCooled':
-            chillervec = chillerWaterPlant.supplyComponents(ops.IddObjectType("OS:Chiller:Electric:EIR"))
-            chiller = model.getChillerElectricEIR(chillervec[0].handle()).get()
-            condenserLoop.addDemandBranchForComponent(chiller)
-            condenserLoop.addDemandBranchForComponent(pipeDemandBypass)
-            pipeDemandInlet.addToNode(condenserLoop.demandInletNode())
-            pipeDemandOutlet.addToNode(condenserLoop.demandOutletNode())
-        # add zone-level heat pumps to demand side after they get created
-        
         return condenserLoop
     
     def setDemandVent(self, model, airloop):
@@ -1151,7 +1142,7 @@ class WriteOPS(object):
         oaReq = space.designSpecificationOutdoorAir()
         airTerminal.setControlForOutdoorAir(oaReq)
     
-    def createPrimaryAirLoop(self, airType, model, thermalZones, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotWaterPlant=None, chilledWaterPlant=None, terminalOption=None, heatRecovOverride = False):
+    def createPrimaryAirLoop(self, airType, model, thermalZones, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotWaterPlant=None, chilledWaterPlant=None, condenserPlant=None, terminalOption=None, heatRecovOverride = False):
         # Create the air loop.
         airloopPrimary = ops.AirLoopHVAC(model)
         if airType == 'DOAS':
@@ -1213,28 +1204,54 @@ class WriteOPS(object):
         # create heating coil
         if hotWaterPlant != None:
             heatingCoil = ops.CoilHeatingWater(model, model.alwaysOnDiscreteSchedule())
-        else:
+        elif condenserPlant == None:
             heatingCoil = ops.CoilHeatingGas(model, model.alwaysOnDiscreteSchedule())
-        if heatingDetails != None and heatingDetails.heatingAvailSched != 'ALWAYS ON':
-             heatAvailSch = self.getOSSchedule(heatingDetails.heatingAvailSched,model)
-             heatingCoil.setAvailabilitySchedule(heatAvailSch)
         
-        airLoopComps.append(heatingCoil)
         # create cooling coil
         if chilledWaterPlant != None:
             coolingCoil = ops.CoilCoolingWater(model, model.alwaysOnDiscreteSchedule())
-            if coolingDetails != None and coolingDetails.coolingAvailSched != 'ALWAYS ON':
-                 coolAvailSch = self.getOSSchedule(coolingDetails.coolingAvailSched, model)
-                 coolingCoil.setAvailabilitySchedule(coolAvailSch)
             if coolingDetails != None and coolingDetails.supplyTemperature != 'Default':
                 coolingCoil.setDesignInletWaterTemperature(coolingDetails.supplyTemperature)
-            airLoopComps.append(coolingCoil)
-        else:
+        elif condenserPlant == None:
             coolingCoil = ops.CoilCoolingDXSingleSpeed(model)
             coolingCoil.setRatedCOP(ops.OptionalDouble(4.0))
-            if coolingDetails != None and coolingDetails.coolingAvailSched != 'ALWAYS ON':
-                 coolAvailSch = self.getOSSchedule(coolingDetails.coolingAvailSched, model)
-                 coolingCoil.setAvailabilitySchedule(coolAvailSch)
+        
+        # create unitary heat pumps if a condenser is connected.
+        if condenserPlant != None:
+            unitarySystemCool = ops.AirLoopHVACUnitarySystem(model)
+            unitarySystemCool.setName('Unitary System for Cooling Coil'+ str(HVACCount))
+            unitarySystemCool.setFanPlacement('DrawThrough')
+            coolingCoil = ops.CoilCoolingWaterToAirHeatPumpEquationFit(model)
+            coolingCoil.setName('DOAS Cooling Heat Pump' + str(HVACCount))
+            condenserPlant.addDemandBranchForComponent(coolingCoil)
+            unitarySystemCool.setCoolingCoil(coolingCoil)
+            # Have this coil obey the setpoint manager (not the zone thermostat).
+            unitarySystemCool.setString(2,'SetPoint')
+            
+            unitarySystemHeat = ops.AirLoopHVACUnitarySystem(model)
+            unitarySystemHeat.setName('Unitary System for Heating Coil'+ str(HVACCount))
+            unitarySystemHeat.setFanPlacement('DrawThrough')
+            heatingCoil = ops.CoilHeatingWaterToAirHeatPumpEquationFit(model)
+            heatingCoil.setName('DOAS Heating Heat Pump' + str(HVACCount))
+            condenserPlant.addDemandBranchForComponent(heatingCoil)
+            unitarySystemHeat.setHeatingCoil(heatingCoil)
+            # Have this coil obey the setpoint manager (not the zone thermostat).
+            unitarySystemHeat.setString(2,'SetPoint')
+        
+        # Set availabilty of heating/cooling coils.
+        if heatingDetails != None and heatingDetails.heatingAvailSched != 'ALWAYS ON':
+             heatAvailSch = self.getOSSchedule(heatingDetails.heatingAvailSched,model)
+             heatingCoil.setAvailabilitySchedule(heatAvailSch)
+        if coolingDetails != None and coolingDetails.coolingAvailSched != 'ALWAYS ON':
+             coolAvailSch = self.getOSSchedule(coolingDetails.coolingAvailSched, model)
+             coolingCoil.setAvailabilitySchedule(coolAvailSch)
+        
+        # Add the coils to the airloop.
+        if condenserPlant != None:
+            airLoopComps.append(unitarySystemCool)
+            airLoopComps.append(unitarySystemHeat)
+        else:
+            airLoopComps.append(heatingCoil)
             airLoopComps.append(coolingCoil)
         
         # create controller outdoor air
@@ -1362,7 +1379,7 @@ class WriteOPS(object):
         
         return airloopPrimary
     
-    def createVRFSystem(self, model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount):
+    def createVRFSystem(self, model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, condenserLoop=None):
         vrfAirConditioner = ops.AirConditionerVariableRefrigerantFlow(model)
         vrfAirConditioner.setZoneforMasterThermostatLocation(thermalZoneVector[0])
         vrfAirConditioner.setName("VRF Heat Pump - " + str(HVACCount))
@@ -1386,10 +1403,13 @@ class WriteOPS(object):
             coolAvailSch = self.getOSSchedule(coolingDetails.coolinggAvailSched, model)
             vrfAirConditioner.setAvailabilitySchedule(coolAvailSch)
         
-        if coolingDetails != None and coolingDetails.chillerType == "WaterCooled":
+        if coolingDetails != None and coolingDetails.chillerType == "WaterCooled" and condenserLoop == None:
             vrfAirConditioner.setString(56,"WaterCooled")
-            cndwl = self.createCondenser(model, cwl, "VRF - " + str(HVACCount))
+            cndwl = self.createCondenser(model, None, "VRF - " + str(HVACCount))
             cndwl.addDemandBranchForComponent(vrfAirConditioner)
+        elif condenserLoop != None:
+            vrfAirConditioner.setString(56,"WaterCooled")
+            condenserLoop.addDemandBranchForComponent(vrfAirConditioner)
         
         for zone in thermalZoneVector:
             # construct Terminal VRF Unit
@@ -1661,7 +1681,7 @@ class WriteOPS(object):
         humidController.setMinimumSetpointHumidityRatio(0.001)
         setPNode = airloop.supplyOutletNode()
         # I should be using the controller sensor node but trying to call it causes Rhino to crash.
-        #For now, I am just using the supply outlet node, which works well aside from an error that E+ gives us.
+        #For now, I am just using the supply outlet node, which works well aside from a warning that E+ gives us.
         #setPNode = ccontroller.sensorNode().get()
         humidController.addToNode(setPNode)
         return setPNode
@@ -2428,7 +2448,7 @@ class WriteOPS(object):
                         hc = model.getCoilHeatingElectric(hcs[0].handle()).get()
                         self.updateElectricHeatingCoil(model, hc, heatingDetails.heatingAvailSched, heatingDetails.heatingEffOrCOP)
             
-            elif systemIndex == 11 or systemIndex == 12 or systemIndex == 13 or systemIndex == 14 or systemIndex == 15 or systemIndex == 17:
+            elif systemIndex == 11 or systemIndex == 12 or systemIndex == 13 or systemIndex == 14 or systemIndex == 15:
                 # Check to see if there is humidity control on any of the zones and make sure there is ventilation demand.
                 totalAirFlowRates = []
                 for zone in hbZones:
@@ -2473,15 +2493,15 @@ class WriteOPS(object):
                 else:
                     coolLoopTemp = self.createConstantScheduleRuleset('Chilled_Water_Temperature' + str(HVACCount), 'Chilled_Water_Temperature_Default' + str(HVACCount), 'TEMPERATURE', suppTemp, model)
                     cwl = self.createChilledWaterPlant(model, coolLoopTemp, coolingDetails, HVACCount, chillType)
-                if chillType == "WaterCooled" and systemIndex != 17:
+                if chillType == "WaterCooled":
                     cndwl = self.createCondenser(model, cwl, HVACCount)
                 
                 # Create air loop.
                 if sum(totalAirFlowRates) > 0:
-                    if systemIndex == 11 or systemIndex == 17:
+                    if systemIndex == 11:
                         airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hwl, cwl)
                     elif systemIndex == 12:
-                        airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hwl, cwl, "ChilledBeam")
+                        airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hwl, cwl, None, "ChilledBeam")
                     elif systemIndex == 13 or systemIndex == 14 or systemIndex == 15:
                         hotterLoopTemp = self.createConstantScheduleRuleset('Hot_Water_Temperature' + str(HVACCount), 'Hot_Water_Temperature_Default' + str(HVACCount), 'TEMPERATURE', 67, model)
                         hotwl = self.createHotWaterPlant(model, hotterLoopTemp, heatingDetails, HVACCount)
@@ -2491,7 +2511,7 @@ class WriteOPS(object):
                                 coolwl = self.createChilledWaterPlant(model, coolerLoopTemp, coolingDetails, HVACCount, chillType)
                                 airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotwl, coolwl)
                             else:
-                                airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotwl, None)
+                                airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotwl)
                         else:
                             airLoop = self.createPrimaryAirLoop('VAV', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotwl, cwl)
                     
@@ -2520,46 +2540,36 @@ class WriteOPS(object):
                         self.createZoneEquip(model, thermalZoneVector, hbZones, equipList, hwl, cwl)
                     elif systemIndex == 15:
                         self.createZoneEquip(model, thermalZoneVector, hbZones, equipList, hwl, cwl, None, True)
-                elif systemIndex == 17:
-                    hpLoop = self.addInfiniteCapacityGroundLoop(model, cwl, HVACCount, coolingDetails)
-                    equipList = ['WSHP']
-                    self.createZoneEquip(model, thermalZoneVector, hbZones, equipList, hwl, cwl, hpLoop)
             
-            elif systemIndex == 16:
+            elif systemIndex == 16 or systemIndex == 17 or systemIndex == 18:
                 # Check to see if there is humidity control on any of the zones.
                 for zone in hbZones:
-                    if zone.humidityMax != '':
-                        dehumidTrigger = True
                     if zone.humidityMin != '':
                         humidTrigger = True
                 
-                # Make a chilled water loop for the DOAS if it has been specified or if there is humidity control.
-                cwl = None
-                hwl = None
-                chillTrigger = False
-                if coolingDetails != None and coolingDetails.chillerType != 'Default': chillTrigger = True
-                if dehumidTrigger == True or chillTrigger:
+                if systemIndex == 16:
+                    # Make a chilled water loop for the DOAS if it has been specified.
+                    cndwl = None
                     if coolingDetails != None and coolingDetails.chillerType != 'Default':
-                        chillType = coolingDetails.chillerType
-                    else:
-                        chillType = "WaterCooled"
-                    coolLoopTemp = self.createConstantScheduleRuleset('Chilled_Water_Temperature' + str(HVACCount), 'Chilled_Water_Temperature_Default' + str(HVACCount), 'TEMPERATURE', 6.7, model)
-                    cwl = self.createChilledWaterPlant(model, coolLoopTemp, None, HVACCount, chillType)
-                    if chillType == "WaterCooled":
-                        cndwl = self.createCondenser(model, cwl, HVACCount)
+                        if coolingDetails.chillerType == "WaterCooled":
+                            cndwl = self.createCondenser(model, None, HVACCount)
+                    #Make a DOAS air loop.
+                    airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, None, None, cndwl, None, True)
+                else:
+                    # Make a ground source condenser loop.
+                    cndwl = self.addInfiniteCapacityGroundLoop(model, None, HVACCount, coolingDetails)
+                    airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, None, None, cndwl, None, True)
                 
-                #Make a DOAS air loop.
-                airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hwl, cwl, None, True)
-                
-                # If there is a maximum humidity assigned to the zone, set the cooling coil to dehumidify the air.
-                if dehumidTrigger == True:
-                    self.addChilledWaterDehumid(model, airLoop)
                 # If there is a minimum humidity assigned to the zone, add in an electric humidifier to humidify the air.
                 if humidTrigger == True:
                     self.addElectricHumidifier(model, airLoop)
                 
-                # Make the VRF System.
-                self.createVRFSystem(model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount)
+                if systemIndex == 17:
+                    equipList = ['WSHP']
+                    self.createZoneEquip(model, thermalZoneVector, hbZones, equipList, None, None, cndwl)
+                else:
+                    # Make the VRF System.
+                    self.createVRFSystem(model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, cndwl)
             
             else:
                 msg = "HVAC system index " + str(systemIndex) +  " is not implemented yet!"

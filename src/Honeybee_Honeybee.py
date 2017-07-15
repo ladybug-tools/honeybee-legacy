@@ -8558,7 +8558,8 @@ class hb_hvacProperties(object):
         14:'RADIANT CEILINGS + DOAS',
         15:'HEATED FLOORS + VAV COOLING',
         16:'VRF + DOAS',
-        17:'GSHP + DOAS'
+        17:'GROUND SOURCE WSHP + DOAS',
+        18:'GROUND SOURCE VRF + DOAS'
         }
         
         # Dictionaries that state which features can be changed for each of the different systems.
@@ -8580,8 +8581,9 @@ class hb_hvacProperties(object):
         13: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
         14: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
         15: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
-        16: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
-        17: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True}
+        16: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : False, 'ventSched' : True},
+        17: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : False, 'ventSched' : True},
+        18: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : False, 'ventSched' : True}
         }
         
         self.airCapabilities = {
@@ -8602,7 +8604,8 @@ class hb_hvacProperties(object):
         14: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
         15: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
         16: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        17: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True}
+        17: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        18: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True}
         }
         
         self.heatCapabilities = {
@@ -8623,7 +8626,8 @@ class hb_hvacProperties(object):
         14: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
         15: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : False},
         16: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
-        17: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True}
+        17: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
+        18: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False}
         }
         
         self.coolCapabilities = {
@@ -8644,7 +8648,8 @@ class hb_hvacProperties(object):
         14: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : True},
         15: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : True},
         16: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : True},
-        17: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : True}
+        17: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : False},
+        18: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : False}
         }
     
     @staticmethod
