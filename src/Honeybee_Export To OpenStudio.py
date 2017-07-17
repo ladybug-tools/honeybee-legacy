@@ -69,7 +69,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.61\nJUL_16_2017'
+ghenv.Component.Message = 'VER 0.0.61\nJUL_17_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -152,6 +152,8 @@ class WriteOPS(object):
         self.shadeCntrlToReplace = []
         self.replaceShdCntrl = False
         self.windowSpectralDatasets = {}
+        
+        self.waterSourceVRFs = {}
     
     def setSimulationControls(self, model):
         solarDist = self.simParameters[2]
@@ -1382,7 +1384,8 @@ class WriteOPS(object):
     def createVRFSystem(self, model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, condenserLoop=None):
         vrfAirConditioner = ops.AirConditionerVariableRefrigerantFlow(model)
         vrfAirConditioner.setZoneforMasterThermostatLocation(thermalZoneVector[0])
-        vrfAirConditioner.setName("VRF Heat Pump - " + str(HVACCount))
+        vrfName = "VRF Heat Pump - " + str(HVACCount)
+        vrfAirConditioner.setName(vrfName)
         
         # Set the COP.
         if coolingDetails != None and coolingDetails.coolingCOP != 'Default':
@@ -1404,12 +1407,32 @@ class WriteOPS(object):
             vrfAirConditioner.setAvailabilitySchedule(coolAvailSch)
         
         if coolingDetails != None and coolingDetails.chillerType == "WaterCooled" and condenserLoop == None:
-            vrfAirConditioner.setString(56,"WaterCooled")
             cndwl = self.createCondenser(model, None, "VRF - " + str(HVACCount))
-            cndwl.addDemandBranchForComponent(vrfAirConditioner)
-        elif condenserLoop != None:
+        
+        # For water source VRFs.
+        if (coolingDetails != None and coolingDetails.chillerType == "WaterCooled" and condenserLoop == None) or (condenserLoop != None):
+            # The following should connect the VRF to a plant loop.
+            # However, OpenStudio does not currently support this and these inputs end up doing nothing.
             vrfAirConditioner.setString(56,"WaterCooled")
             condenserLoop.addDemandBranchForComponent(vrfAirConditioner)
+            # ... So I will add some placeholders in the plant loop now
+            # and substitue them with VRF connections after the export to IDF.
+            vrfPlaceHolder = ops.PipeAdiabatic(model)
+            pipeName = 'VRF PLACEHOLDER ' + str(HVACCount)
+            vrfPlaceHolder.setName(pipeName)
+            condenserLoop.addDemandBranchForComponent(vrfPlaceHolder)
+            # Add all of the relevant info about the VRF to the dictionary.
+            self.waterSourceVRFs[vrfName] = {}
+            
+            outNode = str(vrfPlaceHolder.outletModelObject().get().to_Node().get().name())
+            inNode = str(vrfPlaceHolder.inletModelObject().get().to_Node().get().name())
+            splitter = condenserLoop.demandSplitter()
+            branchInd = int(splitter.branchIndexForOutletModelObject(vrfPlaceHolder.inletModelObject().get().to_Node().get())) +1
+            branchName = str(condenserLoop.name()) + ' Demand Branch ' + str(branchInd)
+            self.waterSourceVRFs[vrfName]['outlet'] = outNode
+            self.waterSourceVRFs[vrfName]['inlet'] = inNode
+            self.waterSourceVRFs[vrfName]['pipe'] = pipeName
+            self.waterSourceVRFs[vrfName]['branch'] = branchName
         
         for zone in thermalZoneVector:
             # construct Terminal VRF Unit
@@ -3365,7 +3388,7 @@ class WriteOPS(object):
                     pass
     
     def getObjToReplace(self):
-        return self.csvSchedules, self.csvScheduleCount, self.shadeCntrlToReplace, self.replaceShdCntrl, self.windowSpectralDatasets
+        return self.csvSchedules, self.csvScheduleCount, self.shadeCntrlToReplace, self.replaceShdCntrl, self.windowSpectralDatasets, self.waterSourceVRFs
 
 class HoneybeeHVAC(object):
     def __init__(self, ID, systemIndex, thermalZones, hbZones, airDetails, heatingDetails, coolingDetails, count):
@@ -3568,7 +3591,7 @@ class EPFeaturesNotInOS(object):
 
 class RunOPS(object):
     def __init__(self, model, weatherFilePath, HBZones, simParameters, openStudioLibFolder, csvSchedules, \
-            csvScheduleCount, additionalcsvSchedules, shadeCntrlToReplace, replaceShdCntrl, windowSpectralData):
+            csvScheduleCount, additionalcsvSchedules, shadeCntrlToReplace, replaceShdCntrl, windowSpectralData, waterSourceVRFs):
         self.weatherFile = weatherFilePath # just for batch file as an alternate solution
         self.EPFolder = self.getEPFolder()
         self.EPPath = ops.Path(self.EPFolder + "\EnergyPlus.exe")
@@ -3583,6 +3606,7 @@ class RunOPS(object):
         self.shadeCntrlToReplace = shadeCntrlToReplace
         self.replaceShdCntrl = replaceShdCntrl
         self.windowSpectralData = windowSpectralData
+        self.waterSourceVRFs = waterSourceVRFs
         self.hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
         self.lb_preparation = sc.sticky["ladybug_Preparation"]()
     
@@ -3711,6 +3735,64 @@ class RunOPS(object):
                 shdCntrlStr = shdCntrlStrList[0] + str(shdCntrlItem[1]) + shdCntrlStrList[1]
                 lines.append(shdCntrlStr)
         
+        # Connect any water source VRFs to their plant loops.
+        if self.waterSourceVRFs != {}:
+            VRFs2Find = self.waterSourceVRFs.keys()
+            # Connect any VRFs to the right plant loop.
+            # Delete the adiabatic pipe placeholders.
+            # Change the ground source branch to refernce the VRF.
+            for VRF in VRFs2Find:
+                vrfFound = False
+                condenCount = 0
+                pipeFound = False
+                pipeName = self.waterSourceVRFs[VRF]['pipe']
+                pipeCount = 0
+                branchFound = False
+                branchName = self.waterSourceVRFs[VRF]['branch']
+                branchCount = 0
+                for count, line in enumerate(lines):
+                    if VRF in line:
+                        vrfFound = True
+                    elif vrfFound == True and ';' in line:
+                        vrfFound = False
+                    elif vrfFound == True and 'AirCooled' in line:
+                        lines[count] = 'WaterCooled,\n'
+                        condenCount = 1
+                    elif vrfFound == True and condenCount == 1:
+                        lines[count] = self.waterSourceVRFs[VRF]['inlet'] + ',\n'
+                        condenCount = 2
+                    elif vrfFound == True and condenCount == 2:
+                        lines[count] = self.waterSourceVRFs[VRF]['outlet'] + ',\n'
+                        condenCount = 0
+                    elif 'Pipe:Adiabatic,\n' in line:
+                        pipeFound = True
+                    elif pipeFound == True and pipeName in line:
+                        lines[count-1] = '\n'
+                        lines[count] = '\n'
+                        pipeCount = 1
+                    elif pipeCount == 1:
+                        lines[count] = '\n'
+                        pipeCount = 2
+                    elif pipeCount == 2:
+                        lines[count] = '\n'
+                        pipeCount = 0
+                        pipeFound = False
+                    elif pipeFound == True and ';' in line:
+                        pipeFound = False
+                    elif 'Branch,\n' in line:
+                        branchFound = True
+                    elif branchFound == True and branchName in line:
+                        branchCount = 1
+                    elif branchCount == 1 and 'Pipe:Adiabatic' in line:
+                        lines[count] = '  AirConditioner:VariableRefrigerantFlow,\n'
+                        branchCount = 2
+                    elif branchCount == 2:
+                        lines[count] = '  ' + VRF + ',\n'
+                        branchCount = 0
+                        branchFound = False
+                    elif branchFound == True and ';' in line:
+                        branchFound = False
+        
         # Write in any requested natural ventilation objects.
         # Find any natural ventilation objects on the Zones.
         natVentStrings = []
@@ -3729,7 +3811,6 @@ class RunOPS(object):
         # Add EarthTubes
         for zone in HBZones:
             if zone.earthtube == True:
-                
                 lines.append(otherFeatureClass.EarthTube(zone))
         
         # Write in any window spectral data.
@@ -4135,7 +4216,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         hb_writeOPS.OPSShdSurface(shdingSurfcaes, model)
     
     # Get the objects in the file that we need to replace or add because OpenStudio does not support them.
-    csvSchedules, csvScheduleCount, shadeCntrlToReplace, replaceShdCntrl, windowSpectralData = hb_writeOPS.getObjToReplace()
+    csvSchedules, csvScheduleCount, shadeCntrlToReplace, replaceShdCntrl, windowSpectralData, waterSourceVRFs = hb_writeOPS.getObjToReplace()
     
     #save the model
     model.save(ops.Path(fname), True)
@@ -4149,7 +4230,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     
     if runIt > 0:
         hb_runOPS = RunOPS(model, epwWeatherFile, HBZones, hb_writeOPS.simParameters, openStudioLibFolder, csvSchedules, \
-            csvScheduleCount, additionalcsvSchedules, shadeCntrlToReplace, replaceShdCntrl, windowSpectralData)
+            csvScheduleCount, additionalcsvSchedules, shadeCntrlToReplace, replaceShdCntrl, windowSpectralData, waterSourceVRFs)
         
         idfFile, resultFile = hb_runOPS.runAnalysis(fname, runIt, useRunManager = False)
         if runIt < 3:
