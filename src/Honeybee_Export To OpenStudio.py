@@ -69,7 +69,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.61\nJUL_14_2017'
+ghenv.Component.Message = 'VER 0.0.61\nJUL_16_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -1902,6 +1902,10 @@ class WriteOPS(object):
     def addSystemsToZones(self, model):
         # Variabe to track the number of systems.
         HVACCount = 0
+        # Variables for central plants (if requested).
+        centralHeat = None
+        centralCool = None
+        centralConden = None
         for osHVAC in (sorted(self.HVACSystemDict.values(), key=operator.attrgetter('count'))):
             # HAVC system index for this group and thermal zones.
             HAVCGroupID, systemIndex, thermalZones, hbZones, airDetails, heatingDetails, coolingDetails = osHVAC.getData()
@@ -2552,12 +2556,24 @@ class WriteOPS(object):
                     cndwl = None
                     if coolingDetails != None and coolingDetails.chillerType != 'Default':
                         if coolingDetails.chillerType == "WaterCooled":
-                            cndwl = self.createCondenser(model, None, HVACCount)
+                            if coolingDetails.centralPlant == 'True':
+                                if centralConden == None:
+                                    centralConden = cndwl = self.createCondenser(model, None, HVACCount)
+                                else:
+                                    cndwl = centralConden
+                            else:
+                                cndwl = self.createCondenser(model, None, HVACCount)
                     #Make a DOAS air loop.
                     airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, None, None, cndwl, None, True)
                 else:
                     # Make a ground source condenser loop.
-                    cndwl = self.addInfiniteCapacityGroundLoop(model, None, HVACCount, coolingDetails)
+                    if (coolingDetails != None and coolingDetails.centralPlant == 'True') or (heatingDetails != None and heatingDetails.centralPlant == 'True'):
+                        if centralConden == None:
+                            centralConden = cndwl = self.addInfiniteCapacityGroundLoop(model, None, HVACCount, coolingDetails)
+                        else:
+                            cndwl = centralConden
+                    else:
+                        cndwl = self.addInfiniteCapacityGroundLoop(model, None, HVACCount, coolingDetails)
                     airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, None, None, cndwl, None, True)
                 
                 # If there is a minimum humidity assigned to the zone, add in an electric humidifier to humidify the air.

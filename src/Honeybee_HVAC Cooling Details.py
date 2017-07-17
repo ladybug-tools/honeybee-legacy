@@ -31,6 +31,7 @@ Provided by Honeybee 0.0.61
         _coolingCOP_ : A number (typically greater than 1) that sets the reference coefficient of performance (COP) of the primary cooling component (under design-day conditions). The COP is the ratio of heat removed by the cooling system per unit of electricity input.  For a large HVAC system, this input refers to the COP of the chiller compressor.  For a smaller system, this likely refers to the COP of the direct expansion cooling coil or equivalent.  Defaults range from 2 to 5.5 depending on the system type.
         supplyTemperature_: A number representing the temperature of the water leaving the chiller in degrees Celsius.  This input does not have an effect on direct expansion cooling systems.  If left blank, the default temperature is usually 6.67 degrees Celsius.
         pumpMotorEfficiency_: A number between 0 and 1 that represents the motor efficiency of the chilled water pump.  This input does not have an effect on direct expansion cooling systems.  If left blank, the defualt efficiency is usally 0.9.
+        centralPlant_: Set to "True" to have all instances of this HVAC Type have a single central cooling plant.  If set to False or left blank, each branch of a HBZone data tree that is plugged into this component will have a separate cooling plant.
         chillerType_: An integer or boolean (0/1) value that represents the type of chiller used.  This input does not have an effect on direct expansion cooling systems.  If left blank, the defualt efficiency is usally 0 = water cooled.  Choose from the following options:
             0 = Water Cooled - The chiller will be cooled using a condenser water loop with cooling tower and will use a higher default COP.
             1 = Air Cooled - The chiller will reject heat directly to the air and will have a lower default COP.
@@ -44,7 +45,7 @@ import Grasshopper.Kernel as gh
 
 ghenv.Component.Name = "Honeybee_HVAC Cooling Details"
 ghenv.Component.NickName = 'CoolingDetails'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.61\nJUL_16_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | HVACSystems"
@@ -62,7 +63,7 @@ w = gh.GH_RuntimeMessageLevel.Warning
 
 def main(hb_coolingDetail):
     myCoolDetails = hb_coolingDetail(_coolingAvailSched_, _coolingCOP_, supplyTemperature_, \
-    pumpMotorEfficiency_, chillerType_)
+    pumpMotorEfficiency_, centralPlant_, chillerType_)
     
     success, coolDetails = myCoolDetails.class2Str()
     if success:

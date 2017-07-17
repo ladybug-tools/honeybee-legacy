@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.61\nJUL_14_2017'
+ghenv.Component.Message = 'VER 0.0.61\nJUL_16_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -8609,47 +8609,47 @@ class hb_hvacProperties(object):
         }
         
         self.heatCapabilities = {
-        0: {'COP' : False, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
-        1: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
-        2: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
-        3: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
-        4: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
-        5: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
-        6: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
-        7: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
-        8: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
-        9: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
-        10: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
-        11: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
-        12: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
-        13: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
-        14: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
-        15: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : False},
-        16: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
-        17: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
-        18: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False}
+        0: {'COP' : False, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False},
+        1: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : False},
+        2: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False},
+        3: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False},
+        4: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False},
+        5: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : False},
+        6: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False},
+        7: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : False},
+        8: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False},
+        9: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False},
+        10: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False},
+        11: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : False},
+        12: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : False},
+        13: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : False},
+        14: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : False},
+        15: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : False, 'CentralPlant' : False},
+        16: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : True},
+        17: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : True},
+        18: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : True}
         }
         
         self.coolCapabilities = {
-        0: {'COP' : False, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : False},
-        1: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : False},
-        2: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : False},
-        3: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : False},
-        4: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : False},
-        5: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : False},
-        6: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : False},
-        7: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : False},
-        8: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : False},
-        9: {'COP' : False, 'Avail' : False, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : False},
-        10: {'COP' : False, 'Avail' : False, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : False},
-        11: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : True},
-        12: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : True},
-        13: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : True},
-        14: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : True},
-        15: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : True},
-        16: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : True},
-        17: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : False},
-        18: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : False}
+        0: {'COP' : False, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False, 'ChillType' : False},
+        1: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False, 'ChillType' : False},
+        2: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False, 'ChillType' : False},
+        3: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False, 'ChillType' : False},
+        4: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False, 'ChillType' : False},
+        5: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False, 'ChillType' : False},
+        6: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False, 'ChillType' : False},
+        7: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : False, 'ChillType' : False},
+        8: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : False, 'ChillType' : False},
+        9: {'COP' : False, 'Avail' : False, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False, 'ChillType' : False},
+        10: {'COP' : False, 'Avail' : False, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False, 'ChillType' : False},
+        11: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : False, 'ChillType' : True},
+        12: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : False, 'ChillType' : True},
+        13: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : False, 'ChillType' : True},
+        14: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : False, 'ChillType' : True},
+        15: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : False, 'ChillType' : True},
+        16: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : True, 'ChillType' : True},
+        17: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : True, 'ChillType' : False},
+        18: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : True, 'ChillType' : False}
         }
     
     @staticmethod
@@ -8898,7 +8898,7 @@ class hb_airDetail(object):
 
 
 class hb_heatingDetail(object):
-    def __init__(self, heatingAvailSched=None, heatingEffOrCOP=None, supplyTemperature=None, pumpMotorEfficiency=None):
+    def __init__(self, heatingAvailSched=None, heatingEffOrCOP=None, supplyTemperature=None, pumpMotorEfficiency=None, centralPlant=None):
         
         self.areInputsChecked = False
         self.sysProps = hb_hvacProperties()
@@ -8921,6 +8921,10 @@ class hb_heatingDetail(object):
             self.pumpMotorEfficiency = float(pumpMotorEfficiency)
         else:
             self.pumpMotorEfficiency = "Default"
+        if centralPlant != None:
+            self.centralPlant = centralPlant
+        else:
+            self.centralPlant = "Default"
     
     @classmethod
     def fromTextStr(cls, textStr):
@@ -8974,6 +8978,8 @@ class hb_heatingDetail(object):
             errors.append(self.sysProps.generateWarning(sysType, 'HEATING SYSTEM SUPPLY TEMPERATURE', 'heatingDetails'))
         if self.pumpMotorEfficiency != 'Default' and heatCapabilities['PumpEff'] == False:
             errors.append(self.sysProps.generateWarning(sysType, 'HEATING SYSTEM PUMP MOTOR EFFICIENCY', 'heatingDetails'))
+        if self.centralPlant != 'Default' and heatCapabilities['CentralPlant'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'HEATING SYSTEM CENTRALIZED PLANT', 'heatingDetails'))
         
         return errors
     
@@ -8987,7 +8993,8 @@ class hb_heatingDetail(object):
             '  Heating Availability Schedule: ' + str(self.heatingAvailSched) + '\n' + \
             '  Heating System Efficiency or COP: ' + str(self.heatingEffOrCOP) + '\n' + \
             '  Heating System Supply Temperature: ' + str(self.supplyTemperature) + '\n' + \
-            '  Heating Hystem Pump Motor Efficiency: ' + str(self.pumpMotorEfficiency)
+            '  Heating System Pump Motor Efficiency: ' + str(self.pumpMotorEfficiency) + '\n' + \
+            '  Heating System Centralized Plant: ' + str(self.centralPlant)
             
             return True, textStr
         else:
@@ -8995,7 +9002,7 @@ class hb_heatingDetail(object):
 
 
 class hb_coolingDetail(object):
-    def __init__(self, coolingAvailSched=None, coolingCOP=None, supplyTemperature=None, pumpMotorEfficiency=None, chillerType=None):
+    def __init__(self, coolingAvailSched=None, coolingCOP=None, supplyTemperature=None, pumpMotorEfficiency=None, centralPlant=None, chillerType=None):
         
         self.areInputsChecked = False
         self.sysProps = hb_hvacProperties()
@@ -9025,6 +9032,10 @@ class hb_coolingDetail(object):
             self.pumpMotorEfficiency = float(pumpMotorEfficiency)
         else:
             self.pumpMotorEfficiency = "Default"
+        if centralPlant != None:
+            self.centralPlant = centralPlant
+        else:
+            self.centralPlant = "Default"
         if chillerType != None:
             self.chillerType = self.chillerTypeDict[chillerType]
         else:
@@ -9082,6 +9093,8 @@ class hb_coolingDetail(object):
             errors.append(self.sysProps.generateWarning(sysType, 'COOLING SYSTEM SUPPLY TEMPERATURE', 'coolingDetails'))
         if self.pumpMotorEfficiency != 'Default' and coolCapabilities['PumpEff'] == False:
             errors.append(self.sysProps.generateWarning(sysType, 'COOLING SYSTEM PUMP MOTOR EFFICIENCY', 'coolingDetails'))
+        if self.centralPlant != 'Default' and coolCapabilities['CentralPlant'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'COOLING SYSTEM CENTRALIZED PLANT', 'coolingDetails'))
         if self.chillerType != 'Default' and coolCapabilities['ChillType'] == False:
             errors.append(self.sysProps.generateWarning(sysType, 'COOLING SYSTEM CHILLER TPYE', 'coolingDetails'))
         
@@ -9098,6 +9111,7 @@ class hb_coolingDetail(object):
             '  Cooling System COP: ' + str(self.coolingCOP) + '\n' + \
             '  Cooling System Supply Temperature: ' + str(self.supplyTemperature) + '\n' + \
             '  Cooling System Pump Motor Efficiency: ' + str(self.pumpMotorEfficiency) + '\n' + \
+            '  Cooling System Centralized Plant: ' + str(self.centralPlant) + '\n' + \
             '  Cooling System Chiller Type: ' + str(self.chillerType)
             
             return True, textStr
