@@ -1076,9 +1076,9 @@ class WriteOPS(object):
     
     def addInfiniteCapacityGroundLoop(self, model, chillerWaterPlant, HVACCount, coolingDetails=None):
         # create the temperature schedules for the loop.
-        loopSetPtSchedule = self.createConstantScheduleRuleset('Ground_Loop_Temp_Schedule' + str(HVACCount), 'Ground_Loop_Temp_Schedule_Default' + str(HVACCount), 'TEMPERATURE', 21, model)
-        coolingSetPtSchedule = self.createConstantScheduleRuleset('Ground_Loop_Clg_Temp_Schedule' + str(HVACCount), 'Ground_Loop_Clg_Temp_Schedule' + str(HVACCount), 'TEMPERATURE', 21, model)
-        heatingSetPtSchedule = self.createConstantScheduleRuleset('Ground_Loop_Htg_Temp_Schedule' + str(HVACCount), 'Ground_Loop_Htg_Temp_Schedule' + str(HVACCount), 'TEMPERATURE', 5, model)
+        loopSetPtSchedule = self.createConstantScheduleRuleset('Ground_Loop_Temp_Schedule' + str(HVACCount), 'Ground_Loop_Temp_Schedule_Default' + str(HVACCount), 'TEMPERATURE 1', 21, model)
+        coolingSetPtSchedule = self.createConstantScheduleRuleset('Ground_Loop_Clg_Temp_Schedule' + str(HVACCount), 'Ground_Loop_Clg_Temp_Schedule' + str(HVACCount), 'TEMPERATURE 1', 21, model)
+        heatingSetPtSchedule = self.createConstantScheduleRuleset('Ground_Loop_Htg_Temp_Schedule' + str(HVACCount), 'Ground_Loop_Htg_Temp_Schedule' + str(HVACCount), 'TEMPERATURE 1', 5, model)
         
         # create condenser loop for heat pumps
         condenserLoop = ops.PlantLoop(model)
@@ -1288,7 +1288,7 @@ class WriteOPS(object):
                 suppTemp = airDetails.coolingSupplyAirTemp
             else:
                 suppTemp = 20
-            setpointSchedule = self.createConstantScheduleRuleset('DOAS_Temperature_Setpoint' + str(HVACCount), 'DOAS_Temperature_Setpoint_Default' + str(HVACCount), 'TEMPERATURE', suppTemp, model)
+            setpointSchedule = self.createConstantScheduleRuleset('DOAS_Temperature_Setpoint' + str(HVACCount), 'DOAS_Temperature_Setpoint_Default' + str(HVACCount), 'TEMPERATURE 1', suppTemp, model)
             setpointManager = ops.SetpointManagerScheduled(model, setpointSchedule)
         
         # connect components to airloop
@@ -1984,7 +1984,7 @@ class WriteOPS(object):
     
     def updateLoopSupplyTemp(self, loop, model, suppTemp, schedName, ruleSetName, HVACCount):
         #Change the cooling supply air temperature schedule.
-        suppTempRuleset = self.createConstantScheduleRuleset(ruleSetName + str(HVACCount), schedName + str(HVACCount), 'TEMPERATURE', suppTemp, model)
+        suppTempRuleset = self.createConstantScheduleRuleset(ruleSetName + str(HVACCount), schedName + str(HVACCount), 'TEMPERATURE 1', suppTemp, model)
         supplyNode = loop.supplyOutletNode()
         spManager = supplyNode.setpointManagerScheduled().get()
         spManager.setSchedule(suppTempRuleset)
@@ -2569,10 +2569,10 @@ class WriteOPS(object):
                         suppTemp = 67
                 radLoop = False
                 if systemIndex == 13 or systemIndex == 14:
-                    hotLoopTemp = self.createConstantScheduleRuleset('Hot_Water_Radiant_Loop_Temperature' + str(HVACCount), 'Hot_Water_Radiant_Loop_Temperature_Default' + str(HVACCount), 'TEMPERATURE', suppTemp, model)
+                    hotLoopTemp = self.createConstantScheduleRuleset('Hot_Water_Radiant_Loop_Temperature' + str(HVACCount), 'Hot_Water_Radiant_Loop_Temperature_Default' + str(HVACCount), 'TEMPERATURE 1', suppTemp, model)
                     radLoop = True
                 else:
-                    hotLoopTemp = self.createConstantScheduleRuleset('Hot_Water_Temperature' + str(HVACCount), 'Hot_Water_Temperature_Default' + str(HVACCount), 'TEMPERATURE', suppTemp, model)
+                    hotLoopTemp = self.createConstantScheduleRuleset('Hot_Water_Temperature' + str(HVACCount), 'Hot_Water_Temperature_Default' + str(HVACCount), 'TEMPERATURE 1', suppTemp, model)
                 if heatingDetails != None and heatingDetails.centralPlant == 'True' and centralHeat != None:
                     hwl = centralHeat
                 else:
@@ -2593,9 +2593,9 @@ class WriteOPS(object):
                 else:
                     chillType = "WaterCooled"
                 if systemIndex == 13 or systemIndex == 14:
-                    coolLoopTemp = self.createConstantScheduleRuleset('Chilled_Water_Radiant_Loop_Temperature' + str(HVACCount), 'Chilled_Water_Radiant_Loop_Temperature_Default' + str(HVACCount), 'TEMPERATURE', suppTemp, model)
+                    coolLoopTemp = self.createConstantScheduleRuleset('Chilled_Water_Radiant_Loop_Temperature' + str(HVACCount), 'Chilled_Water_Radiant_Loop_Temperature_Default' + str(HVACCount), 'TEMPERATURE 1', suppTemp, model)
                 else:
-                    coolLoopTemp = self.createConstantScheduleRuleset('Chilled_Water_Temperature' + str(HVACCount), 'Chilled_Water_Temperature_Default' + str(HVACCount), 'TEMPERATURE', suppTemp, model)
+                    coolLoopTemp = self.createConstantScheduleRuleset('Chilled_Water_Temperature' + str(HVACCount), 'Chilled_Water_Temperature_Default' + str(HVACCount), 'TEMPERATURE 1', suppTemp, model)
                 
                 if coolingDetails != None and coolingDetails.centralPlant == 'True' and centralCool != None:
                     cwl = centralCool
@@ -2621,11 +2621,11 @@ class WriteOPS(object):
                     elif systemIndex == 12:
                         airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hwl, cwl, None, "ChilledBeam")
                     elif systemIndex == 13 or systemIndex == 14 or systemIndex == 15:
-                        hotterLoopTemp = self.createConstantScheduleRuleset('Hot_Water_Temperature' + str(HVACCount), 'Hot_Water_Temperature_Default' + str(HVACCount), 'TEMPERATURE', 67, model)
+                        hotterLoopTemp = self.createConstantScheduleRuleset('Hot_Water_Temperature' + str(HVACCount), 'Hot_Water_Temperature_Default' + str(HVACCount), 'TEMPERATURE 1', 67, model)
                         hotwl = self.createHotWaterPlant(model, hotterLoopTemp, heatingDetails, HVACCount)
                         if systemIndex == 13  or systemIndex == 14:
                             if dehumidTrigger == True:
-                                coolerLoopTemp = self.createConstantScheduleRuleset('Chilled_Water_Temperature' + str(HVACCount), 'Chilled_Water_Temperature_Default' + str(HVACCount), 'TEMPERATURE', 6.7, model)
+                                coolerLoopTemp = self.createConstantScheduleRuleset('Chilled_Water_Temperature' + str(HVACCount), 'Chilled_Water_Temperature_Default' + str(HVACCount), 'TEMPERATURE 1', 6.7, model)
                                 coolwl = self.createChilledWaterPlant(model, coolerLoopTemp, coolingDetails, HVACCount, chillType)
                                 airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotwl, coolwl)
                             else:
