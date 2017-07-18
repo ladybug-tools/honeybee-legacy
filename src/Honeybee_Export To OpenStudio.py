@@ -1381,6 +1381,74 @@ class WriteOPS(object):
         
         return airloopPrimary
     
+    
+    def addZoneToAirLoop(self, airloopPrimary, airType, model, thermalZones, hbZones, airDetails, coolingDetails, chilledWaterPlant=None, terminalOption=None):
+        ventSchedTrigger = False
+        recircTrigger = False
+        for zone in hbZones:
+            if zone.ventilationSched != '':
+                ventSchedTrigger = True
+            if zone.recirculatedAirPerArea != 0:
+                recircTrigger = True
+        
+        # add thermal zones to airloop.
+        recircAirFlowRates = []
+        for zCount, zone in enumerate(thermalZones):
+            zoneTotAir = self.getZoneTotalAir(hbZones[zCount])
+            recircAirFlowRates.append(zoneTotAir)
+            # make an air terminal for the zone
+            airTerminal = None
+            if terminalOption == "ChilledBeam":
+                # create cooling coil
+                coolingCoil = ops.CoilCoolingCooledBeam(model)
+                chilledWaterPlant.addDemandBranchForComponent(coolingCoil)
+                airTerminal = ops.AirTerminalSingleDuctConstantVolumeCooledBeam(model, model.alwaysOnDiscreteSchedule(), coolingCoil)
+                airTerminal.setCooledBeamType('Active')
+                if coolingDetails != None and coolingDetails.coolingAvailSched != 'ALWAYS ON':
+                     coolAvailSch = self.getOSSchedule(coolingDetails.coolingAvailSched, model)
+                     airTerminal.setAvailabilitySchedule(coolAvailSch)
+            else:
+                if ventSchedTrigger == True:
+                    airTerminal = ops.AirTerminalSingleDuctVAVNoReheat(model, model.alwaysOnDiscreteSchedule())
+                    self.setOutdoorAirReq(airTerminal, zone)
+                elif airType == 'VAV':
+                    airTerminal = ops.AirTerminalSingleDuctVAVNoReheat(model, model.alwaysOnDiscreteSchedule())
+                elif airDetails != None and airDetails.fanControl == 'Variable Volume':
+                    airTerminal = ops.AirTerminalSingleDuctVAVNoReheat(model, model.alwaysOnDiscreteSchedule())
+                elif airDetails != None and airDetails.airsideEconomizer != 'Default' and airDetails.airsideEconomizer != 'NoEconomizer':
+                    airTerminal = ops.AirTerminalSingleDuctVAVNoReheat(model, model.alwaysOnDiscreteSchedule())
+                elif hbZones[zCount].recirculatedAirPerArea == 0:
+                    airTerminal = ops.AirTerminalSingleDuctUncontrolled(model, model.alwaysOnDiscreteSchedule())
+                else:
+                    airTerminal = ops.AirTerminalSingleDuctVAVNoReheat(model, model.alwaysOnDiscreteSchedule())
+            if hbZones[zCount].recirculatedAirPerArea != 0 and terminalOption != "ChilledBeam":
+                self.sizeAirTerminalForRecirc(model, hbZones[zCount], airTerminal, zoneTotAir)
+            elif hbZones[zCount].recirculatedAirPerArea != 0:
+                airTerminal.setSupplyAirVolumetricFlowRate(zoneTotAir)
+            elif recircTrigger == True:
+                try:
+                    airTerminal.setZoneMinimumAirFlowInputMethod('Constant')
+                    airTerminal.autosizeMaximumAirFlowRate()
+                    airTerminal.resetMinimumAirFlowFractionSchedule()
+                except:
+                    try:
+                        airTerminal.autosizeSupplyAirVolumetricFlowRate()
+                    except:
+                        pass
+            
+            # attach new terminal to the zone and to the airloop
+            airloopPrimary.addBranchForZone(zone, airTerminal.to_StraightComponent())
+        
+        # Size fan for recirc if needed.
+        if recircTrigger == True:
+            x = airloopPrimary.supplyComponents(ops.IddObjectType("OS:Fan:VariableVolume"))
+            vvfan = model.getFanVariableVolume(x[0].handle()).get()
+            recircAirFlowRates.append(float(str(vvfan.maximumFlowRate())))
+            self.sizeVAVFanForRecirc(model, airloopPrimary, recircAirFlowRates)
+        
+        return airloopPrimary
+    
+    
     def createVRFSystem(self, model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, condenserLoop=None):
         vrfAirConditioner = ops.AirConditionerVariableRefrigerantFlow(model)
         vrfAirConditioner.setZoneforMasterThermostatLocation(thermalZoneVector[0])
@@ -1929,6 +1997,7 @@ class WriteOPS(object):
         centralHeat = None
         centralCool = None
         centralConden = None
+        centralAir = None
         for osHVAC in (sorted(self.HVACSystemDict.values(), key=operator.attrgetter('count'))):
             # HAVC system index for this group and thermal zones.
             HAVCGroupID, systemIndex, thermalZones, hbZones, airDetails, heatingDetails, coolingDetails = osHVAC.getData()
@@ -2587,7 +2656,11 @@ class WriteOPS(object):
                             else:
                                 cndwl = self.createCondenser(model, None, HVACCount)
                     #Make a DOAS air loop.
-                    airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, None, None, cndwl, None, True)
+                    if airDetails != None and airDetails.centralAirLoop == 'True' and centralAir != None:
+                        airLoop = self.addZoneToAirLoop(centralAir, 'DOAS', model, thermalZoneVector, hbZones, airDetails, coolingDetails, None, None)
+                    else:
+                        airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, None, None, cndwl, None, True)
+                    
                 else:
                     # Make a ground source condenser loop.
                     if (coolingDetails != None and coolingDetails.centralPlant == 'True') or (heatingDetails != None and heatingDetails.centralPlant == 'True'):
@@ -2597,7 +2670,14 @@ class WriteOPS(object):
                             cndwl = centralConden
                     else:
                         cndwl = self.addInfiniteCapacityGroundLoop(model, None, HVACCount, coolingDetails)
-                    airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, None, None, cndwl, None, True)
+                    if airDetails != None and airDetails.centralAirLoop == 'True' and centralAir != None:
+                        airLoop = self.addZoneToAirLoop(centralAir, 'DOAS', model, thermalZoneVector, hbZones, airDetails, coolingDetails, None, None)
+                    else:
+                        airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, None, None, cndwl, None, True)
+                
+                # If central air loop is specified, se tthe current air loop to the job.
+                if airDetails != None and airDetails.centralAirLoop == 'True' and centralAir == None:
+                    centralAir = airLoop
                 
                 # If there is a minimum humidity assigned to the zone, add in an electric humidifier to humidify the air.
                 if humidTrigger == True:

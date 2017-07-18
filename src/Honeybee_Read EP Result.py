@@ -55,7 +55,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.61\nJUL_14_2017'
+ghenv.Component.Message = 'VER 0.0.61\nJUL_17_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -323,8 +323,11 @@ if _resultFileAddress and gotData == True and csvExists == True:
                         elif 'VRF HEAT PUMP -' in column:
                             zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('VRF HEAT PUMP - ')[-1], 5)
                             idealAirTrigger = False
-                        elif 'COIL COOLING WATER TO AIR HEAT PUMP EQUATION FIT' in column:
-                            zoneName = checkSys(" " + ":".join(column.split(":")[:-1]).split('COIL COOLING WATER TO AIR HEAT PUMP EQUATION FIT ')[-1], 'Zone Heat Pump Coil', 2)
+                        elif 'COIL COOLING WATER TO AIR HEAT PUMP EQUATION FIT' in column and not 'DOAS' in column:
+                            zoneName = checkZSys(" " + ":".join(column.split(":")[:-1]).split('COIL COOLING WATER TO AIR HEAT PUMP EQUATION FIT ')[-1], 'Zone Heat Pump Coil')
+                            idealAirTrigger = False
+                        elif 'COIL COOLING WATER TO AIR HEAT PUMP EQUATION FIT' in column and 'DOAS' in column:
+                            zoneName = checkSys(" " + ":".join(column.split(":")[:-1]).split('COIL COOLING WATER TO AIR HEAT PUMP EQUATION FIT ')[-1], 'Heat Pump Coil', 2)
                             idealAirTrigger = 2
                         elif 'Chiller Electric Energy' in column:
                             zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('CHILLER ELECTRIC EIR ')[-1], 0)

@@ -42,11 +42,11 @@ import Grasshopper.Kernel as gh
 
 ghenv.Component.Name = "Honeybee_HVAC Heating Details"
 ghenv.Component.NickName = 'HeatingDetails'
-ghenv.Component.Message = 'VER 0.0.61\nJUL_16_2017'
+ghenv.Component.Message = 'VER 0.0.61\nJUL_17_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | HVACSystems"
-#compatibleHBVersion = VER 0.0.56\nMAY_01_2016
+#compatibleHBVersion = VER 0.0.56\nJUL_17_2017
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
