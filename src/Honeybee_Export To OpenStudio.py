@@ -2564,12 +2564,18 @@ class WriteOPS(object):
                         suppTemp = 45
                     else:
                         suppTemp = 67
+                radLoop = False
                 if systemIndex == 13 or systemIndex == 14:
                     hotLoopTemp = self.createConstantScheduleRuleset('Hot_Water_Radiant_Loop_Temperature' + str(HVACCount), 'Hot_Water_Radiant_Loop_Temperature_Default' + str(HVACCount), 'TEMPERATURE', suppTemp, model)
-                    hwl = self.createHotWaterPlant(model, hotLoopTemp, heatingDetails, HVACCount, True)
+                    radLoop = True
                 else:
                     hotLoopTemp = self.createConstantScheduleRuleset('Hot_Water_Temperature' + str(HVACCount), 'Hot_Water_Temperature_Default' + str(HVACCount), 'TEMPERATURE', suppTemp, model)
-                    hwl = self.createHotWaterPlant(model, hotLoopTemp, heatingDetails, HVACCount)
+                if heatingDetails != None and heatingDetails.centralPlant == 'True' and centralHeat != None:
+                    hwl = centralHeat
+                else:
+                    hwl = self.createHotWaterPlant(model, hotLoopTemp, heatingDetails, HVACCount, radLoop)
+                if heatingDetails != None and heatingDetails.centralPlant == 'True' and centralHeat == None:
+                    centralHeat = hwl
                 
                 # Create the chilled water plant.
                 if coolingDetails != None and coolingDetails.supplyTemperature != 'Default':
@@ -2585,12 +2591,25 @@ class WriteOPS(object):
                     chillType = "WaterCooled"
                 if systemIndex == 13 or systemIndex == 14:
                     coolLoopTemp = self.createConstantScheduleRuleset('Chilled_Water_Radiant_Loop_Temperature' + str(HVACCount), 'Chilled_Water_Radiant_Loop_Temperature_Default' + str(HVACCount), 'TEMPERATURE', suppTemp, model)
-                    cwl = self.createChilledWaterPlant(model, coolLoopTemp, coolingDetails, HVACCount, chillType, True)
                 else:
                     coolLoopTemp = self.createConstantScheduleRuleset('Chilled_Water_Temperature' + str(HVACCount), 'Chilled_Water_Temperature_Default' + str(HVACCount), 'TEMPERATURE', suppTemp, model)
-                    cwl = self.createChilledWaterPlant(model, coolLoopTemp, coolingDetails, HVACCount, chillType)
+                
+                if coolingDetails != None and coolingDetails.centralPlant == 'True' and centralCool != None:
+                    cwl = centralCool
+                else:
+                    cwl = self.createChilledWaterPlant(model, coolLoopTemp, coolingDetails, HVACCount, chillType, radLoop)
+                if coolingDetails != None and coolingDetails.centralPlant == 'True' and centralCool == None:
+                    centralCool = cwl
+                
+                # create a condenser if necessary.
                 if chillType == "WaterCooled":
-                    cndwl = self.createCondenser(model, cwl, HVACCount)
+                    if coolingDetails != None and coolingDetails.centralPlant == 'True' and centralCool != None:
+                        cndwl = centralConden
+                    else:
+                        cndwl = self.createCondenser(model, cwl, HVACCount)
+                    if coolingDetails != None and coolingDetails.centralPlant == 'True' and centralCool == None:
+                        centralConden = cndwl
+                
                 
                 # Create air loop.
                 if sum(totalAirFlowRates) > 0:

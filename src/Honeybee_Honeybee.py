@@ -8619,12 +8619,12 @@ class hb_hvacProperties(object):
         7: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : False},
         8: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False},
         9: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False},
-        10: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False},
-        11: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : False},
-        12: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : False},
-        13: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : False},
-        14: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : False},
-        15: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : False, 'CentralPlant' : False},
+        10: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : True},
+        11: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True},
+        12: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True},
+        13: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True},
+        14: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True},
+        15: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : False, 'CentralPlant' : True},
         16: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : True},
         17: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : True},
         18: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : True}
@@ -8641,12 +8641,12 @@ class hb_hvacProperties(object):
         7: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : False, 'ChillType' : False},
         8: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : False, 'ChillType' : False},
         9: {'COP' : False, 'Avail' : False, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False, 'ChillType' : False},
-        10: {'COP' : False, 'Avail' : False, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False, 'ChillType' : False},
-        11: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : False, 'ChillType' : True},
-        12: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : False, 'ChillType' : True},
-        13: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : False, 'ChillType' : True},
-        14: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : False, 'ChillType' : True},
-        15: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : False, 'ChillType' : True},
+        10: {'COP' : False, 'Avail' : False, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : True, 'ChillType' : False},
+        11: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True, 'ChillType' : True},
+        12: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True, 'ChillType' : True},
+        13: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True, 'ChillType' : True},
+        14: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True, 'ChillType' : True},
+        15: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True, 'ChillType' : True},
         16: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : True, 'ChillType' : True},
         17: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : True, 'ChillType' : False},
         18: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : True, 'ChillType' : False}
@@ -8800,7 +8800,7 @@ class hb_airDetail(object):
                     paramList.append(None)
         
         if success == True:
-            airDetailObj = cls(paramList[0], paramList[1], paramList[2], paramList[3], paramList[4], paramList[5], paramList[6], paramList[7], paramList[8], paramList[9], paramList[10], paramList[11])
+            airDetailObj = cls(paramList[0], paramList[1], paramList[2], paramList[3], paramList[4], paramList[5], paramList[6], paramList[7], paramList[8], paramList[9], paramList[10], paramList[11], paramList[12])
             airDetailObj.areInputsChecked = True
             return airDetailObj
         else:
@@ -8951,7 +8951,7 @@ class hb_heatingDetail(object):
                     paramList.append(None)
         
         if success == True:
-            heatDetailObj = cls(paramList[0], paramList[1], paramList[2], paramList[3])
+            heatDetailObj = cls(paramList[0], paramList[1], paramList[2], paramList[3], paramList[4])
             heatDetailObj.areInputsChecked = True
             return heatDetailObj
         else:
