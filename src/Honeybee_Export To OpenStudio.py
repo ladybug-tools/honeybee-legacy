@@ -1440,11 +1440,14 @@ class WriteOPS(object):
             airloopPrimary.addBranchForZone(zone, airTerminal.to_StraightComponent())
         
         # Size fan for recirc if needed.
-        if recircTrigger == True:
+        try:
             x = airloopPrimary.supplyComponents(ops.IddObjectType("OS:Fan:VariableVolume"))
             vvfan = model.getFanVariableVolume(x[0].handle()).get()
-            recircAirFlowRates.append(float(str(vvfan.maximumFlowRate())))
-            self.sizeVAVFanForRecirc(model, airloopPrimary, recircAirFlowRates)
+            if recircTrigger == True or bool(vvfan.isMaximumFlowRateAutosized()) == False:
+                recircAirFlowRates.append(float(str(vvfan.maximumFlowRate())))
+                self.sizeVAVFanForRecirc(model, airloopPrimary, recircAirFlowRates)
+        except:
+            pass
         
         return airloopPrimary
     
