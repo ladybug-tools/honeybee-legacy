@@ -69,11 +69,11 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.61\nJUL_17_2017'
+ghenv.Component.Message = 'VER 0.0.61\nJUL_18_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nAPR_25_2017
+#compatibleHBVersion = VER 0.0.56\nJUL_18_2017
 #compatibleLBVersion = VER 0.0.59\nJUL_24_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
@@ -1382,6 +1382,42 @@ class WriteOPS(object):
         return airloopPrimary
     
     
+    def addVAVairLoop(self, model, chilledWaterPlant, hotWaterPlant, sysType):
+        if sysType == 7:
+            hvacHandle = ops.OpenStudioModelHVAC.addSystemType7(model).handle()
+        elif sysType == 8:
+            hvacHandle = ops.OpenStudioModelHVAC.addSystemType8(model).handle()
+        elif sysType == 5:
+            hvacHandle = ops.OpenStudioModelHVAC.addSystemType5(model).handle()
+        
+        airloop = model.getAirLoopHVAC(hvacHandle).get()
+        
+        # Replace the hot water loop.
+        if sysType == 7 or sysType == 5:
+            if hotWaterPlant != None:
+                x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Heating:Water"))
+                hc = model.getCoilHeatingWater(x[0].handle()).get()
+                hwl = hc.plantLoop().get()
+                hwl.remove()
+                hotWaterPlant.addDemandBranchForComponent(hc)
+        
+        # Replace the chilled water loop.
+        if sysType == 7 or sysType == 8:
+            if chilledWaterPlant != None:
+                x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:Water"))
+                cc = model.getCoilCoolingWater(x[0].handle()).get()
+                cwl = cc.plantLoop().get()
+                x = cwl.supplyComponents(ops.IddObjectType("OS:Chiller:Electric:EIR"))
+                if sysType == 7:
+                    chiller = model.getChillerElectricEIR(x[0].handle()).get()
+                    cnwl = chiller.secondaryPlantLoop().get()
+                    cnwl.remove()
+                cwl.remove()
+                chilledWaterPlant.addDemandBranchForComponent(cc)
+        
+        return airloop
+    
+    
     def addZoneToAirLoop(self, airloopPrimary, airType, model, thermalZones, hbZones, airDetails, coolingDetails, chilledWaterPlant=None, terminalOption=None):
         ventSchedTrigger = False
         recircTrigger = False
@@ -2260,8 +2296,16 @@ class WriteOPS(object):
             
             elif systemIndex == 5:
                 # 5: Packaged VAV w/ Reheat
-                hvacHandle = ops.OpenStudioModelHVAC.addSystemType5(model).handle()
-                airloop = model.getAirLoopHVAC(hvacHandle).get()
+                if heatingDetails != None and heatingDetails.centralPlant == 'True' and centralHeat != None:
+                    airloop = self.addVAVairLoop(model, centralCool, centralHeat, 5)
+                else:
+                    hvacHandle = ops.OpenStudioModelHVAC.addSystemType5(model).handle()
+                    airloop = model.getAirLoopHVAC(hvacHandle).get()
+                    if heatingDetails != None and heatingDetails.centralPlant == 'True' and centralHeat == None:
+                        x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Heating:Water"))
+                        hc = model.getCoilHeatingWater(x[0].handle()).get()
+                        hwl = hc.plantLoop().get()
+                        centralHeat = hwl
                 
                 # Add branches for zones.
                 for zoneCount, zone in enumerate(thermalZoneVector):
@@ -2272,6 +2316,12 @@ class WriteOPS(object):
                     recircAirFlowRates.append(zoneTotAir)
                     x = airloop.demandComponents(ops.IddObjectType("OS:AirTerminal:SingleDuct:VAV:Reheat"))
                     vavBox = model.getAirTerminalSingleDuctVAVReheat(x[zoneCount].handle()).get()
+                    
+                    if heatingDetails != None and heatingDetails.centralPlant == 'True' and centralHeat != None:
+                        reheatCoil = vavBox.reheatCoil()
+                        hc = model.getCoilHeatingWater(reheatCoil.handle()).get()
+                        centralHeat.addDemandBranchForComponent(hc)
+                    
                     if hbZones[zoneCount].recirculatedAirPerArea != 0:
                         recicTrigger = True
                         self.sizeAirTerminalForRecirc(model, hbZones[zoneCount], vavBox, zoneTotAir)
@@ -2374,8 +2424,21 @@ class WriteOPS(object):
             
             elif systemIndex == 7:
                 # 7: VAV w/ Reheat
-                hvacHandle = ops.OpenStudioModelHVAC.addSystemType7(model).handle()
-                airloop = model.getAirLoopHVAC(hvacHandle).get()
+                if (coolingDetails != None and coolingDetails.centralPlant == 'True' and centralCool != None) or (heatingDetails != None and heatingDetails.centralPlant == 'True' and centralHeat != None):
+                    airloop = self.addVAVairLoop(model, centralCool, centralHeat, 7)
+                else:
+                    hvacHandle = ops.OpenStudioModelHVAC.addSystemType7(model).handle()
+                    airloop = model.getAirLoopHVAC(hvacHandle).get()
+                    if heatingDetails != None and heatingDetails.centralPlant == 'True' and centralHeat == None:
+                        x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Heating:Water"))
+                        hc = model.getCoilHeatingWater(x[0].handle()).get()
+                        hwl = hc.plantLoop().get()
+                        centralHeat = hwl
+                    if coolingDetails != None and coolingDetails.centralPlant == 'True' and centralCool == None:
+                        x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:Water"))
+                        cc = model.getCoilCoolingWater(x[0].handle()).get()
+                        cwl = cc.plantLoop().get()
+                        centralCool = cwl
                 
                 # Add branches for zones.
                 for zoneCount, zone in enumerate(thermalZoneVector):
@@ -2386,6 +2449,12 @@ class WriteOPS(object):
                     recircAirFlowRates.append(zoneTotAir)
                     x = airloop.demandComponents(ops.IddObjectType("OS:AirTerminal:SingleDuct:VAV:Reheat"))
                     vavBox = model.getAirTerminalSingleDuctVAVReheat(x[zoneCount].handle()).get()
+                    
+                    if heatingDetails != None and heatingDetails.centralPlant == 'True' and centralHeat != None:
+                        reheatCoil = vavBox.reheatCoil()
+                        hc = model.getCoilHeatingWater(reheatCoil.handle()).get()
+                        centralHeat.addDemandBranchForComponent(hc)
+                    
                     if hbZones[zoneCount].recirculatedAirPerArea != 0:
                         recicTrigger = True
                         self.sizeAirTerminalForRecirc(model, hbZones[zoneCount], vavBox, zoneTotAir)
@@ -2431,8 +2500,16 @@ class WriteOPS(object):
             
             elif systemIndex == 8:
                 # 8: VAV w/ PFP Boxes
-                hvacHandle = ops.OpenStudioModelHVAC.addSystemType8(model).handle()
-                airloop = model.getAirLoopHVAC(hvacHandle).get()
+                if (coolingDetails != None and coolingDetails.centralPlant == 'True' and centralCool != None):
+                    airloop = self.addVAVairLoop(model, centralCool, centralHeat, 8)
+                else:
+                    hvacHandle = ops.OpenStudioModelHVAC.addSystemType8(model).handle()
+                    airloop = model.getAirLoopHVAC(hvacHandle).get()
+                    if coolingDetails != None and coolingDetails.centralPlant == 'True' and centralCool == None:
+                        x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:Water"))
+                        cc = model.getCoilCoolingWater(x[0].handle()).get()
+                        cwl = cc.plantLoop().get()
+                        centralCool = cwl
                 
                 # Add branches for zones.
                 for zoneCount, zone in enumerate(thermalZoneVector):

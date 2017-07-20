@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.61\nJUL_17_2017'
+ghenv.Component.Message = 'VER 0.0.61\nJUL_18_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -8614,12 +8614,12 @@ class hb_hvacProperties(object):
         2: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False},
         3: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False},
         4: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False},
-        5: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : False},
+        5: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True},
         6: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False},
-        7: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : False},
+        7: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True},
         8: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False},
         9: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False},
-        10: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : True},
+        10: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False},
         11: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True},
         12: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True},
         13: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True},
@@ -8638,10 +8638,10 @@ class hb_hvacProperties(object):
         4: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False, 'ChillType' : False},
         5: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False, 'ChillType' : False},
         6: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False, 'ChillType' : False},
-        7: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : False, 'ChillType' : False},
-        8: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : False, 'ChillType' : False},
+        7: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True, 'ChillType' : False},
+        8: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True, 'ChillType' : False},
         9: {'COP' : False, 'Avail' : False, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False, 'ChillType' : False},
-        10: {'COP' : False, 'Avail' : False, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : True, 'ChillType' : False},
+        10: {'COP' : False, 'Avail' : False, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False, 'ChillType' : False},
         11: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True, 'ChillType' : True},
         12: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True, 'ChillType' : True},
         13: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True, 'ChillType' : True},
@@ -9066,7 +9066,7 @@ class hb_coolingDetail(object):
                     paramList.append(None)
         
         if success == True:
-            coolDetailObj = cls(paramList[0], paramList[1], paramList[2], paramList[3], paramList[4])
+            coolDetailObj = cls(paramList[0], paramList[1], paramList[2], paramList[3], paramList[4], paramList[5])
             coolDetailObj.areInputsChecked = True
             return coolDetailObj
         else:
