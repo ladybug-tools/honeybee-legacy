@@ -44,7 +44,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Assign HVAC System"
 ghenv.Component.NickName = 'HVACSystem'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.61\nJUL_23_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | HVACSystems"
@@ -99,6 +99,12 @@ def main(HBZones, HVACIndex, hb_hvacProperties, hb_airDetail, hb_heatingDetail, 
                 if zone.humidityMax != '':
                     warning = "HVAC system " + hb_hvacProperties.sysDict[HVACIndex] + " does not support \n" + \
                     "DEHUMIDIFICATION but a maximum humidity threshold has been assigned to the HBZones."
+                    print warning
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+            if HVACIndex == 16 and (_coolingDetails_ == None or not _coolingDetails_.endswith('WaterCooled')):
+                if zone.humidityMax != '':
+                    warning = "HVAC system " + hb_hvacProperties.sysDict[HVACIndex] + " only supports DEHUMIDIFICATION\n" + \
+                    "when heatRejectionType_ is set to 'Water Cooled' on the connected _coolingDetails_."
                     print warning
                     ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
             if hvacCapabil['humidCntrl'] == False:

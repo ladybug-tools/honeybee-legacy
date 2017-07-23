@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.61\nJUL_18_2017'
+ghenv.Component.Message = 'VER 0.0.61\nJUL_23_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -8581,9 +8581,9 @@ class hb_hvacProperties(object):
         13: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
         14: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
         15: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
-        16: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : False, 'ventSched' : True},
-        17: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : False, 'ventSched' : True},
-        18: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : False, 'ventSched' : True}
+        16: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
+        17: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
+        18: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True}
         }
         
         self.airCapabilities = {
@@ -9104,7 +9104,7 @@ class hb_coolingDetail(object):
         if self.centralPlant != 'Default' and coolCapabilities['CentralPlant'] == False:
             errors.append(self.sysProps.generateWarning(sysType, 'COOLING SYSTEM CENTRALIZED PLANT', 'coolingDetails'))
         if self.chillerType != 'Default' and coolCapabilities['ChillType'] == False:
-            errors.append(self.sysProps.generateWarning(sysType, 'COOLING SYSTEM CHILLER TPYE', 'coolingDetails'))
+            errors.append(self.sysProps.generateWarning(sysType, 'COOLING SYSTEM HEAT REJECTION TPYE', 'coolingDetails'))
         
         return errors
     
@@ -9120,7 +9120,7 @@ class hb_coolingDetail(object):
             '  Cooling System Supply Temperature: ' + str(self.supplyTemperature) + '\n' + \
             '  Cooling System Pump Motor Efficiency: ' + str(self.pumpMotorEfficiency) + '\n' + \
             '  Cooling System Centralized Plant: ' + str(self.centralPlant) + '\n' + \
-            '  Cooling System Chiller Type: ' + str(self.chillerType)
+            '  Cooling System Heat Rejection Type: ' + str(self.chillerType)
             
             return True, textStr
         else:

@@ -69,7 +69,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.61\nJUL_18_2017'
+ghenv.Component.Message = 'VER 0.0.61\nJUL_23_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -1074,6 +1074,55 @@ class WriteOPS(object):
             pipeDemandOutlet.addToNode(condenserLoop.demandOutletNode())
         return condenserLoop
     
+    def createVRFCondenser(self, model, HVACCount, condLoopTemp, coolLoopTemp, heatLoopTemp):
+        # create condenser loop for VRFs or WSHPs
+        condenserLoop = ops.PlantLoop(model)
+        condenserLoop.setName("Heat Pump Loop"  + str(HVACCount))
+        condenserLoop.setMaximumLoopTemperature(80)
+        condenserLoop.setMinimumLoopTemperature(5)
+        loopSizing = condenserLoop.sizingPlant()
+        loopSizing.setLoopType("Condenser")
+        loopSizing.setDesignLoopExitTemperature(32.222)
+        loopSizing.setLoopDesignTemperatureDifference(5.6)
+        # create a pump
+        pump = self.createDefaultAEDGPump(model, 0.9, pressRise=134508)
+        # create pipes
+        pipeSupplyBypass = ops.PipeAdiabatic(model)
+        pipeSupplyOutlet = ops.PipeAdiabatic(model)
+        pipeDemandBypass = ops.PipeAdiabatic(model)
+        pipeDemandInlet = ops.PipeAdiabatic(model)
+        pipeDemandOutlet = ops.PipeAdiabatic(model)
+        # create setpoint managers
+        setpointManagerLoop = ops.SetpointManagerScheduled(model,condLoopTemp)
+        setpointManagerCooling = ops.SetpointManagerScheduled(model,coolLoopTemp)
+        setpointManagerHeating = ops.SetpointManagerScheduled(model,heatLoopTemp)
+        # connect components to plant loop
+        # supply side components
+        condenserLoop.addSupplyBranchForComponent(pipeSupplyBypass)
+        pump.addToNode(condenserLoop.supplyInletNode())
+        pipeSupplyOutlet.addToNode(condenserLoop.supplyOutletNode())
+        setpointManagerLoop.addToNode(condenserLoop.supplyOutletNode())
+        # demand side components
+        condenserLoop.addDemandBranchForComponent(pipeDemandBypass)
+        pipeDemandInlet.addToNode(condenserLoop.demandInletNode())
+        pipeDemandOutlet.addToNode(condenserLoop.demandOutletNode())
+        # add a boiler and cooling tower to supply side
+        # create a boiler
+        boiler = ops.BoilerHotWater(model)
+        boiler.setNominalThermalEfficiency(0.9)
+        boiler.setDesignWaterOutletTemperature(48)
+        condenserLoop.addSupplyBranchForComponent(boiler)
+        setpointManagerHeating.addToNode(boiler.outletModelObject().get().to_Node().get())
+        # create a cooling tower
+        tower = ops.CoolingTowerVariableSpeed(model)
+        tower.setDesignInletAirWetBulbTemperature(20)
+        tower.setDesignApproachTemperature(3.89)
+        tower.setDesignRangeTemperature(5.56)
+        tower.addToNode(boiler.outletModelObject().get().to_Node().get())
+        setpointManagerCooling.addToNode(tower.outletModelObject().get().to_Node().get())
+        
+        return condenserLoop
+    
     def addInfiniteCapacityGroundLoop(self, model, chillerWaterPlant, HVACCount, coolingDetails=None):
         # create the temperature schedules for the loop.
         loopSetPtSchedule = self.createConstantScheduleRuleset('Ground_Loop_Temp_Schedule' + str(HVACCount), 'Ground_Loop_Temp_Schedule_Default' + str(HVACCount), 'TEMPERATURE 1', 21, model)
@@ -1250,8 +1299,8 @@ class WriteOPS(object):
         
         # Add the coils to the airloop.
         if condenserPlant != None:
-            airLoopComps.append(unitarySystemCool)
             airLoopComps.append(unitarySystemHeat)
+            airLoopComps.append(unitarySystemCool)
         else:
             airLoopComps.append(heatingCoil)
             airLoopComps.append(coolingCoil)
@@ -1824,6 +1873,19 @@ class WriteOPS(object):
         ccontroller.setControlVariable('TemperatureAndHumidityRatio')
         sensorNode = self.addDehumidController(model, airloop)
         ccontroller.setSensorNode(sensorNode)
+    
+    def addHeatPumpCoilDehumid(self, model, airloop):
+        # Get the unitary air system.
+        x = airloop.supplyComponents(ops.IddObjectType("OS:AirLoopHVAC:UnitarySystem"))
+        unitarySystemCool = model.getAirLoopHVACUnitarySystem(x[0].handle()).get()
+        # Set the deumidification control type to CoolReheat
+        unitarySystemCool.setDehumidificationControlType('CoolReheat')
+        unitarySystemCool.setLatentLoadControl('LatentOrSensibleLoadControl')
+        # Add a humidity set point controller into the air loop.
+        humidController = ops.SetpointManagerMultiZoneHumidityMaximum(model)
+        humidController.setMinimumSetpointHumidityRatio(0.001)
+        setPNode = unitarySystemCool.airOutletModelObject().get().to_Node().get()
+        humidController.addToNode(setPNode)
     
     def addHumidifierController(self, model, airloop):
         # Add a humidity set point controller into the air loop.
@@ -2739,6 +2801,8 @@ class WriteOPS(object):
             elif systemIndex == 16 or systemIndex == 17 or systemIndex == 18:
                 # Check to see if there is humidity control on any of the zones.
                 for zone in hbZones:
+                    if zone.humidityMax != '':
+                        dehumidTrigger = True
                     if zone.humidityMin != '':
                         humidTrigger = True
                 
@@ -2747,13 +2811,13 @@ class WriteOPS(object):
                     cndwl = None
                     if coolingDetails != None and coolingDetails.chillerType != 'Default':
                         if coolingDetails.chillerType == "WaterCooled":
-                            if coolingDetails.centralPlant == 'True':
-                                if centralConden == None:
-                                    centralConden = cndwl = self.createCondenser(model, None, HVACCount)
-                                else:
-                                    cndwl = centralConden
+                            if coolingDetails.centralPlant == 'True' and centralConden!= None:
+                                cndwl = centralConden
                             else:
-                                cndwl = self.createCondenser(model, None, HVACCount)
+                                condLoopTemp = self.createConstantScheduleRuleset('Condenser_Temperature' + str(HVACCount), 'Condenser_Temperature_Default' + str(HVACCount), 'TEMPERATURE 1', 30, model)
+                                coolLoopTemp = self.createConstantScheduleRuleset('Condenser_Cooling_Temperature' + str(HVACCount), 'Condenser_Cooling_Temperature_Default' + str(HVACCount), 'TEMPERATURE 1', 30, model)
+                                heatLoopTemp = self.createConstantScheduleRuleset('Condenser_Heating_Temperature' + str(HVACCount), 'Condenser_Heating_Temperature_Default' + str(HVACCount), 'TEMPERATURE 1', 20, model)
+                                cndwl = self.createVRFCondenser(model, HVACCount, condLoopTemp, coolLoopTemp, heatLoopTemp)
                     #Make a DOAS air loop.
                     if airDetails != None and airDetails.centralAirLoop == 'True' and centralAir != None:
                         airLoop = self.addZoneToAirLoop(centralAir, 'DOAS', model, thermalZoneVector, hbZones, airDetails, coolingDetails, None, None)
@@ -2781,6 +2845,14 @@ class WriteOPS(object):
                 # If there is a minimum humidity assigned to the zone, add in an electric humidifier to humidify the air.
                 if humidTrigger == True:
                     self.addElectricHumidifier(model, airLoop)
+                # If there is a maximum humidity assigned to the zone, set the cooling coil to dehumidify the air.
+                if dehumidTrigger == True:
+                    if systemIndex == 17 or systemIndex == 18:
+                        self.addHeatPumpCoilDehumid(model, airLoop)
+                    elif systemIndex == 16 and coolingDetails != None and coolingDetails.chillerType != 'WaterCooled':
+                        self.addHeatPumpCoilDehumid(model, airLoop)
+                    else:
+                        pass
                 
                 if systemIndex == 17:
                     equipList = ['WSHP']

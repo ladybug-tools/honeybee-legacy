@@ -55,7 +55,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.61\nJUL_17_2017'
+ghenv.Component.Message = 'VER 0.0.61\nJUL_23_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -263,10 +263,12 @@ def checkCentralSys(sysInt, sysType):
     elif sysType == 4: zoneName = " Humidifier" + str(sysInt)
     elif sysType == 5: zoneName = " VRF Heat Pump" + str(sysInt)
     else: zoneName = 'Unknown'
-    if sysType != 4:
-        path.append(len(zoneNameList)+int(sysInt))
+    if sysType == 4:
+        path.append((len(zoneNameList)*3)+int(sysInt))
+    elif sysType == 5:
+        path.append((len(zoneNameList)*2)+int(sysInt))
     else:
-        path.append(len(zoneNameList)+len(zoneNameList)+int(sysInt))
+        path.append(len(zoneNameList)+int(sysInt))
     
     return zoneName
 
