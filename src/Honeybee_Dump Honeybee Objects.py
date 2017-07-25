@@ -127,6 +127,11 @@ def dumpHBObjects(HBObjects, fileName, workingDir=None):
                             EPmaterials.append(mat.upper())
                             dumpHBMat(mat.upper())
         
+        # dump any earth tube schedules.
+        if HBZone.earthtube == True:
+            if HBZone.ETschedule != "Always On Discrete" and HBZone.ETschedule.upper() not in scheduleCollection:
+                dumpAllSchedules([HBZone.ETschedule])
+        
         # add the zone to the master dictionary.
         objs[HBZone.ID] = HBZone.__dict__
     
