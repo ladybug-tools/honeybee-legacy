@@ -38,7 +38,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Load Honeybee Objects"
 ghenv.Component.NickName = 'loadHBObjects'
-ghenv.Component.Message = 'VER 0.0.61\nJUL_06_2017'
+ghenv.Component.Message = 'VER 0.0.61\nJUL_24_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -195,7 +195,7 @@ def loadHBObjects(HBData):
             loadHBheat(HBO)
         elif HBO['objectType'] == 'HBcool':
             loadHBcool(HBO)
-        elif HBO['objectType'] == 'HBConstr' or HBO['objectType'] == 'HBMat' or HBO['objectType'] == 'HBsched':
+        elif HBO['objectType'] == 'HBConstr' or HBO['objectType'] == 'HBMat' or HBO['objectType'] == 'HBsched' or HBO['objectType'] == 'HBShdCntrl':
             loadHBEPstr(HBO)
         elif HBO['objectType'] == 'HBRadMat':
             loadHBradMat(HBO)
