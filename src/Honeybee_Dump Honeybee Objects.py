@@ -168,6 +168,9 @@ def dumpHBObjects(HBObjects, fileName, workingDir=None):
         
         # Shading surfaces.
         if HBSurface.type == 6:
+            if HBSurface.TransmittanceSCH != '' and HBSurface.TransmittanceSCH.upper() not in scheduleCollection:
+                scheduleCollection.append(HBSurface.TransmittanceSCH.upper())
+                dumpAllSchedules([HBSurface.TransmittanceSCH])
             HBSurface.childSrfs = [childSrf.ID for childSrf in HBSurface.childSrfs]
         
         # This needs to be set to outdoors at first but will be replaced by the correct object on loading
