@@ -242,6 +242,6 @@ else:
         "into canvas and try again."
         ghenv.Component.AddRuntimeMessage(w, warning)
 
-if initCheck == True and _filePath != None:
+if initCheck == True and _filePath != None and _load == True:
     results = main(_filePath)
     HBObjects = results if results!= -1 else None
