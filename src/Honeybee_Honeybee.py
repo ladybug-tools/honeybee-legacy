@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.61\nJUL_23_2017'
+ghenv.Component.Message = 'VER 0.0.61\nJUL_24_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -8075,120 +8075,64 @@ class thermBC(object):
     def resetID(self):
         self.ID = str(uuid.uuid4())
 
-
-
-class zoneNetworkSolving(object):
+class viewFactorInfo(object):
     
-    
-    def notTheSameBldg(targetZone, testZone):
-        return targetZone.Faces != testZone.Faces
-    
-    
-    def shootIt(rayList, geometry, tol = 0.01, bounce =1):
-       # shoot a list of rays from surface to geometry
-       # to find if geometry is adjacent to surface
-       for ray in rayList:
-            intPt = rc.Geometry.Intersect.Intersection.RayShoot(ray, geometry, bounce)
-            if intPt:
-                if ray.Position.DistanceTo(intPt[0]) <= tol:
-                    return True #'Bang!'
-    
-    def getAdjacencyNetwork(buildingBreps, srfNormalVecs):
-        tol = sc.doc.ModelAbsoluteTolerance
-        meshPar = rc.Geometry.MeshingParameters.Default
-        adjacentBldgNumList = []
+    def __init__(self, testPtViewFactor=None, zoneSrfNames=None, testPtSkyView=None, testPtBlockedVec=None, testPtZoneWeights=None, \
+    testPtZoneNames=None, ptHeightWeights=None, zoneInletInfo=None, zoneHasWindows=None, outdoorIsThere=None, outdoorNonSrfViewFac=None, \
+    outdoorPtHeightWeights=None, testPtBlockName=None, zoneWindowTransmiss=None, zoneWindowNames=None, finalFloorRefList=None, \
+    constantTransmis=None, finalAddShdTransmiss=None):
+        #Set the name and object type.
+        self.objectType = "ViewFactorInfo"
+        self.hasChild = False
+        self.parent = None
+        self.isChild = False
+        self.hasChild = False
+        self.type = -1
+        self.BCObject = 'none'
+        self.BC = 'none'
+        self.name = str(uuid.uuid4())[:8]
+        self.ID = str(uuid.uuid4())
         
-        for testBldgCount, testBldg in enumerate(buildingBreps):
-            allMatchFound = False
-            # mesh each surface and test if it will be adjacent to any surface
-            # from other zones
-            for testSrfCount, srf in enumerate(testBldg.Faces):
-                srfFace = rc.Geometry.BrepFace.ToBrep(srf)
-                #Create a mesh of surface to use center points as test points
-                BrepMesh = rc.Geometry.Mesh.CreateFromBrep(srfFace, meshPar)[0]
-                
-                # calculate face normals
-                BrepMesh.FaceNormals.ComputeFaceNormals()
-                BrepMesh.FaceNormals.UnitizeFaceNormals()
-                
-                # dictionary to collect center points and rays
-                raysDict = {}
-                for faceIndex in range(BrepMesh.Faces.Count):
-                    srfNormal = (BrepMesh.FaceNormals)[faceIndex]
-                    meshSrfCen = BrepMesh.Faces.GetFaceCenter(faceIndex)
-                    # move testPt backward for half of tolerance
-                    meshSrfCen = rc.Geometry.Point3d.Add(meshSrfCen, -rc.Geometry.Vector3d(srfNormal)* tol /2)
-                    
-                    raysDict[meshSrfCen] = rc.Geometry.Ray3d(meshSrfCen, srfNormal)
-                
-                for tarBldgCount, targetBldg in enumerate(buildingBreps):
-                    if notTheSameBldg(targetBldg, testBldg):
-                        # check ray intersection to see if this zone is next to the surface
-                        if shootIt(raysDict.values(), [targetBldg], tol + sc.doc.ModelAbsoluteTolerance):
-                            for tarSrfCount, surface in enumerate(targetBldg.Faces):
-                                surfaceBrep = rc.Geometry.BrepFace.ToBrep(surface)
-                                # check distance with the nearest point on each surface
-                                for pt in raysDict.keys():
-                                    if surfaceBrep.ClosestPoint(pt).DistanceTo(pt) <= tol:
-                                        # extra check for normal direction
-                                        normalAngle = abs(rc.Geometry.Vector3d.VectorAngle(srfNormalVecs[tarBldgCount][tarSrfCount], srfNormalVecs[testBldgCount][testSrfCount]))
-                                        revNormalAngle = abs(rc.Geometry.Vector3d.VectorAngle(srfNormalVecs[tarBldgCount][tarSrfCount], -srfNormalVecs[testBldgCount][testSrfCount]))
-                                        if normalAngle==0  or revNormalAngle <= sc.doc.ModelAngleToleranceRadians:
-                                            #Have a value to keep track of whether a match has been found for a zone.
-                                            matchFound = False
-                                            
-                                            #Check the current adjacencies list to find out where to place the zone.
-                                            for zoneAdjListCount, zoneAdjList in enumerate(adjacentBldgNumList):
-                                                #Maybe we already have both of the zones as adjacent.
-                                                if testBldgCount in zoneAdjList and tarBldgCount in zoneAdjList:
-                                                    matchFound = True
-                                                #If we have the zone but not the adjacent zone, append it to the list.
-                                                elif testBldgCount in zoneAdjList and tarBldgCount not in zoneAdjList:
-                                                    adjacentBldgNumList[zoneAdjListCount].append(tarBldgCount)
-                                                    matchFound = True
-                                                #If we have the adjacent zone but not the zone itself, append it to the list.
-                                                elif testBldgCount not in zoneAdjList and tarBldgCount in zoneAdjList:
-                                                    adjacentBldgNumList[zoneAdjListCount].append(testBldgCount)
-                                                    matchFound = True
-                                                else: pass
-                                            
-                                            #If no match was found, start a new list.
-                                            if matchFound == False:
-                                                adjacentBldgNumList.append([testBldgCount])
-            if allMatchFound == False:
-                #The building is not adjacent to any other buildings so we will put it in its own list.
-                adjacentBldgNumList.append([testBldgCount])
+        #Set all of the properties.
+        self.testPtViewFactor = testPtViewFactor
+        self.zoneSrfNames = zoneSrfNames
+        self.testPtSkyView = testPtSkyView
+        self.testPtBlockedVec = testPtBlockedVec
+        self.testPtZoneWeights = testPtZoneWeights
+        self.testPtZoneNames = testPtZoneNames
+        self.ptHeightWeights = ptHeightWeights
+        self.zoneInletInfo = zoneInletInfo
+        self.zoneHasWindows = zoneHasWindows
+        self.outdoorIsThere = outdoorIsThere
+        self.outdoorNonSrfViewFac = outdoorNonSrfViewFac
+        self.outdoorPtHeightWeights = outdoorPtHeightWeights
+        self.testPtBlockName = testPtBlockName
+        self.zoneWindowTransmiss = zoneWindowTransmiss
+        self.zoneWindowNames = zoneWindowNames
+        self.finalFloorRefList = finalFloorRefList
+        self.constantTransmis = constantTransmis
+        self.finalAddShdTransmiss = finalAddShdTransmiss
         
-        #Remove duplicates found in the process of looking for adjacencies.
-        fullAdjacentList = []
-        newAjdacenList = []
-        for listCount, zoneList in enumerate(adjacentBldgNumList):
-            good2Go = True
-            listCheck = []
-            notAccountedForCheck = []
-            
-            #Check if the zones are already accounted for
-            for zoneNum in zoneList:
-                if zoneNum in fullAdjacentList: listCheck.append(zoneNum)
-                else: notAccountedForCheck.append(zoneNum)
-            
-            if len(listCheck) == len(zoneList):
-                #All zones in the list are already accounted for.
-                good2Go = False
-            
-            if good2Go == True and len(listCheck) == 0:
-                #All of the zones in the list are not yet accounted for.
-                newAjdacenList.append(zoneList)
-                fullAdjacentList.extend(adjacentBldgNumList[listCount])
-            elif good2Go == True:
-                #Find the existing zone list that contains the duplicates and append the non-duplicates to the list.
-                for val in listCheck:
-                    for existingListCount, existingList in enumerate(newAjdacenList):
-                        if val in existingList: thisIsTheList = existingListCount
-                newAjdacenList[thisIsTheList].extend(notAccountedForCheck)
-                fullAdjacentList.extend(notAccountedForCheck)
-        
-        return newAjdacenList
+        # Calculate the number of points.
+        self.NumPts = 0
+        if testPtViewFactor != None:
+            for zList in testPtViewFactor:
+                self.NumPts = self.NumPts + len(zList)
+    
+    def calcNumPts(self):
+        self.NumPts = 0
+        if testPtViewFactor != None:
+            for zList in testPtViewFactor:
+                self.NumPts = self.NumPts + len(zList)
+    
+    def recallAllProps(self):
+        return [self.testPtViewFactor, self.zoneSrfNames, self.testPtSkyView, self.testPtBlockedVec, self.testPtZoneWeights, \
+        self.testPtZoneNames, self.ptHeightWeights, self.zoneInletInfo, self.zoneHasWindows, self.outdoorIsThere, self.outdoorNonSrfViewFac, \
+        self.outdoorPtHeightWeights, self.testPtBlockName, self.zoneWindowTransmiss, self.zoneWindowNames, self.finalFloorRefList, \
+        self.constantTransmis, self.finalAddShdTransmiss]
+    
+    def __str__(self):
+        return 'View Factor Info' + '\nNumber of Points: ' + str(self.NumPts)
 
 
 class hb_Hive(object):
@@ -8294,11 +8238,22 @@ class hb_Hive(object):
         # return geometry with the ID
         return outGeometry
     
+    def addNonGeoObjToHive(self, HBObject, Component):
+        docId = Component.OnPingDocument().DocumentID
+        baseKey = '{}_{}'.format(docId, Component.InstanceGuid)
+        sc.sticky['HBHive'][baseKey] = {}
+        key = '{}'.format(HBObject.ID)
+        sc.sticky['HBHive'][baseKey][key] = HBObject
+        HBID = '{}#{}'.format(baseKey, key)
+        return 'Honeybee View Factor Info - ' + HBID
     
     def callFromHoneybeeHive(self, geometryList):
         HBObjects = []
         for geometry in geometryList:
-            hbkey = geometry.UserDictionary['HBID']
+            try:
+                hbkey = geometry.UserDictionary['HBID']
+            except:
+                hbkey = geometry.split(' ')[-1]
             
             if '#' not in hbkey:
                 raise Exception('Honeybee version mismatch! Update the input component.')
@@ -8309,7 +8264,10 @@ class hb_Hive(object):
                 HBObject = sc.sticky['HBHive'][baseKey][key]
                 
                 # make sure Honeybee object is not moved or rotated
-                self.checkifTransformed(geometry, HBObject)
+                try:
+                    self.checkifTransformed(geometry, HBObject)
+                except:
+                    pass
                 
                 try:
                     # after the first round meshedFace makes copy.deepcopy crash
@@ -8381,7 +8339,10 @@ class hb_Hive(object):
     def visualizeFromHoneybeeHive(self, geometryList):
         HBObjects = []
         for geometry in geometryList:
-            hbkey = geometry.UserDictionary['HBID']
+            try:
+                hbkey = geometry.UserDictionary['HBID']
+            except:
+                hbkey = geometry.split(' ')[-1]
             
             if '#' not in hbkey:
                 raise Exception('Honeybee version mismatch! Update the input component.')
@@ -8392,7 +8353,7 @@ class hb_Hive(object):
                 HBObjects.append(sc.sticky['HBHive'][baseKey][key])
             else:
                 raise Exception('HoneybeeKeyMismatch: Failed to call the object from Honeybee hive.')
-
+        
         return HBObjects
 
 class hb_RADParameters(object):
@@ -9480,6 +9441,7 @@ if checkIn.letItFly:
         sc.sticky["honeybee_ThermPolygon"] = thermPolygon
         sc.sticky["honeybee_ThermBC"] = thermBC
         sc.sticky["honeybee_ThermDefault"] = thermDefaults
+        sc.sticky["honeybee_ViewFactors"] = viewFactorInfo
         sc.sticky["PVgen"] = PV_gen
         sc.sticky["PVinverter"] = PVinverter
         sc.sticky["HB_generatorsystem"] = HB_generatorsystem

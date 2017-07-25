@@ -42,7 +42,7 @@ ghenv.Component.Message = 'VER 0.0.61\nJUL_24_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
-#compatibleHBVersion = VER 0.0.59\nMAY_18_2017
+#compatibleHBVersion = VER 0.0.59\nJUL_24_2017
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "6"
 except: pass
@@ -73,6 +73,7 @@ def loadHBObjects(HBData):
     hb_airDetail = sc.sticky["honeybee_hvacAirDetails"]
     hb_heatingDetail = sc.sticky["honeybee_hvacHeatingDetails"]
     hb_coolingDetail = sc.sticky["honeybee_hvacCoolingDetails"]
+    hb_viewFac = sc.sticky["honeybee_ViewFactors"]
     hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
     hb_RADMaterialAUX = sc.sticky["honeybee_RADMaterialAUX"]
     hb_hive = sc.sticky["honeybee_Hive"]()
@@ -81,6 +82,14 @@ def loadHBObjects(HBData):
     ids = HBData["ids"]
     objs = HBData["objs"]
     HBObjects = {}
+    
+    def loadHBviewFac(HBViewFacInfo):
+        # programs is set to default but will be overwritten
+        HBViewFac = hb_viewFac()
+        # update fields in HBZone
+        for key, value in HBViewFacInfo.iteritems():
+            HBViewFac.__dict__[key] = value
+        HBObjects[HBViewFac.ID] = HBViewFac
     
     def loadHBEPstr(HBconstrObj):
         EPObject = HBconstrObj['EPstr']
@@ -199,6 +208,8 @@ def loadHBObjects(HBData):
             loadHBEPstr(HBO)
         elif HBO['objectType'] == 'HBRadMat':
             loadHBradMat(HBO)
+        elif HBO['objectType'] == 'ViewFactorInfo':
+            loadHBviewFac(HBO)
         else:
             print HBO['objectType']
             raise Exception("Unsupported object! Assure all objects are Honeybee objects")
@@ -212,7 +223,10 @@ def loadHBObjects(HBData):
     updateHoneybeeObjects()
     
     # return new Honeybee objects
-    return hb_hive.addToHoneybeeHive([HBObjects[id] for id in HBData["ids"]], ghenv.Component)
+    try:
+        return hb_hive.addToHoneybeeHive([HBObjects[id] for id in HBData["ids"]], ghenv.Component)
+    except:
+        return hb_hive.addNonGeoObjToHive([HBObjects[id] for id in HBData["ids"]][0], ghenv.Component)
 
 
 def main(filePath):

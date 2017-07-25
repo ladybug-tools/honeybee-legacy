@@ -47,7 +47,7 @@ ghenv.Component.Message = 'VER 0.0.61\nJUL_24_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
-#compatibleHBVersion = VER 0.0.59\nMAY_18_2017
+#compatibleHBVersion = VER 0.0.59\nJUL_24_2017
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "6"
 except: pass
@@ -337,12 +337,18 @@ def dumpHBObjects(HBObjects, fileName, workingDir=None):
         radMaterialDict = {'objectType': 'HBRadMat', 'name': radMatName, 'RADstr': radStr}
         objs[radMatName] = radMaterialDict
     
+    def dumpHBViewFactor(viewFacInfo):
+        # add the view factor to the master dictionary.
+        objs[viewFacInfo.ID] = viewFacInfo.__dict__
+    
     # cycle through the objects and dump everything.
     for id, HBO in zip(ids, HBObjects):
         if HBO.objectType == 'HBSurface':
             dumpHBSurface(HBO)
         elif HBO.objectType == 'HBZone':
             dumpHBZone(HBO)
+        elif HBO.objectType == 'ViewFactorInfo':
+            dumpHBViewFactor(HBO)
         else:
             raise Exception("Unsupported object! Assure all objects are Honeybee objects")
     
