@@ -82,6 +82,14 @@ def checkTheInputs(idfFileName, epwWeatherFile):
         print msg
         ghenv.Component.AddRuntimeMessage(w, msg)
         return -1
+    # Check for white space in file path.
+    if ' ' in idfFileName:
+        warning = "A white space was found in the .idf file path.  EnergyPlus cannot run out of directories with white spaces.\n" + \
+        "Copy the .idf file to a directory without a white space and try again."
+        print warning
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+        return -1
     
     # make sure EnergyPlus folder is found
     EPPath = sc.sticky["honeybee_folders"]["EPPath"]

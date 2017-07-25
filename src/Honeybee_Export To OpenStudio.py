@@ -4267,12 +4267,21 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     # Set up the folder structure.
     if fileName == None: 
          fileName = "unnamed"
+    fileName = fileName.replace(' ', '_')
     
     if workingDir == None:
         workingDir = sc.sticky["Honeybee_DefaultFolder"] 
         originalWorkDir = os.path.join(workingDir, fileName)
     else:
         originalWorkDir = copy.copy(workingDir)
+    
+    if ' ' in workingDir:
+        warning = "A white space was found in the workingDir_ path.  EnergyPlus cannot run out of directories with white spaces.\n" + \
+        "Set the workingDir_ on this component to be a directory without a white space and try again."
+        print warning
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+        return -1
     
     subWorkingDir = lb_preparation.makeWorkingDir(os.path.join(workingDir, fileName, "OpenStudio")).replace("\\\\", "\\")
     
