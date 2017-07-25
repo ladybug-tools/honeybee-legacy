@@ -89,6 +89,7 @@ def loadHBObjects(HBData):
         # update fields in HBZone
         for key, value in HBViewFacInfo.iteritems():
             HBViewFac.__dict__[key] = value
+        HBViewFac.calcNumPts()
         HBObjects[HBViewFac.ID] = HBViewFac
     
     def loadHBEPstr(HBconstrObj):

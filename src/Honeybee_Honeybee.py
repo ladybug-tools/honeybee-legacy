@@ -8121,8 +8121,8 @@ class viewFactorInfo(object):
     
     def calcNumPts(self):
         self.NumPts = 0
-        if testPtViewFactor != None:
-            for zList in testPtViewFactor:
+        if self.testPtViewFactor != None:
+            for zList in self.testPtViewFactor:
                 self.NumPts = self.NumPts + len(zList)
     
     def recallAllProps(self):
