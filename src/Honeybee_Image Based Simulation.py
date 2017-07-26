@@ -23,7 +23,7 @@
 """
 Analysis Recipie for Image-Based Analysis
 -
-Provided by Honeybee 0.0.61
+Provided by Honeybee 0.0.62
     
     Args:
         _skyFile: Path to a radiance sky file
@@ -42,7 +42,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Image Based Simulation"
 ghenv.Component.NickName = 'imageBasedSimulation'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"

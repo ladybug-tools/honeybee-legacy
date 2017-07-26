@@ -24,7 +24,7 @@
 Call from EP Schedule Library
 
 -
-Provided by Honeybee 0.0.61
+Provided by Honeybee 0.0.62
     
     Args:
         keywords_: List of keywords to filter the list of schedules
@@ -37,7 +37,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Call from EP Schedule Library"
 ghenv.Component.NickName = 'callFromEPSCHLibrary'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "07 | Energy | Schedule"

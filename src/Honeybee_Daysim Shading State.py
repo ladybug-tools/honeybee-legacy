@@ -23,7 +23,7 @@
 """
 Daysim Shading State for Advanced Dynamic Shading
 -
-Provided by Honeybee 0.0.61
+Provided by Honeybee 0.0.62
     
     Args:
         shdHBObjects: A list of HB Objects that define the shading geometry and materials
@@ -36,7 +36,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Daysim Shading State"
 ghenv.Component.NickName = 'DSShadingState'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"

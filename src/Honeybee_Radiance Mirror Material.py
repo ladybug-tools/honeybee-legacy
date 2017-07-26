@@ -24,7 +24,7 @@
 Radiance Mirror Material
 Read more here to understand Radiance materials: http://www.artifice.com/radiance/rad_materials.html
 -
-Provided by Honeybee 0.0.61
+Provided by Honeybee 0.0.62
 
     Args:
         _materialName: Unique name for this material
@@ -38,7 +38,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Radiance Mirror Material"
 ghenv.Component.NickName = 'radMirrorMaterial'
-ghenv.Component.Message = 'VER 0.0.61\nJUN_05_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "01 | Daylight | Material"

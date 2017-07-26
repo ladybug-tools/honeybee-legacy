@@ -23,7 +23,7 @@
 """
 This component reads the results of an Adaptive Indoor Comfort Analysis.  Note that this usually takes about a minute
 -
-Provided by Honeybee 0.0.61
+Provided by Honeybee 0.0.62
     
     Args:
         _comfResultFileAddress: Any one of the result file addresses that comes out of the 'Honeybee_Microclimate Map Analysis' component or the 'Honeybee_Thermal Comfort Autonomy Analysis' component.
@@ -33,7 +33,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Read Microclimate Matrix"
 ghenv.Component.NickName = 'readMicroclimateMtx'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"

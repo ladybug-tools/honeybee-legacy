@@ -24,7 +24,7 @@
 Conceptual Shading Recipe for Annual Simulation with Daysim
 You need to add sensor points later in the Daysim result reader.
 -
-Provided by Honeybee 0.0.61
+Provided by Honeybee 0.0.62
     
     Args:
         This sensors will be triggered by the 50 W/m2 threshold. "When lowered the blinds transmit 25% of diffuse daylight and block all direct solar radiation."
@@ -36,7 +36,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Conceptual Dynamic Shading Recipe"
 ghenv.Component.NickName = 'conceptualDynamicSHDRecipe'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"

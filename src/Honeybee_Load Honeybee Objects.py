@@ -26,7 +26,7 @@ Load Honeybee Objects
 Use this component to load Honeybee objects from a file on your system.
 The valid files are created by dump Honeybee objects component.
 -
-Provided by Honeybee 0.0.61
+Provided by Honeybee 0.0.62
 
     Args:
         _HBObjects: A list of Honeybee objects
@@ -38,7 +38,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Load Honeybee Objects"
 ghenv.Component.NickName = 'loadHBObjects'
-ghenv.Component.Message = 'VER 0.0.61\nJUL_24_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"

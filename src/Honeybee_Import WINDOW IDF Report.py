@@ -24,7 +24,7 @@
 Use this component to import an EnergyPlus window construction from LBNL WINDOW.  This construction can then be assigned to any Honebee window for an EnergyPlus model.
 
 -
-Provided by Honeybee 0.0.61
+Provided by Honeybee 0.0.62
     
     Args:
         _windowIDFReport: A filepath to a 'EnergyPlus IDF' report exported by LBNL WINDOW.
@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = 'Honeybee_Import WINDOW IDF Report'
 ghenv.Component.NickName = 'importWINDOWidf'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"

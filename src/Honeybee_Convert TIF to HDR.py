@@ -23,7 +23,7 @@
 """
 Convert HDR to TIF
 -
-Provided by Honeybee 0.0.61
+Provided by Honeybee 0.0.62
     
     Args:
         TIFFilePath: Path to the result TIFF file
@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Convert TIF to HDR"
 ghenv.Component.NickName = 'TIF > HDR'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
