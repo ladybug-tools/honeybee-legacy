@@ -23,7 +23,7 @@
 """
 Use this component to separate grafed lists of surface data that come out of the "Honeybee_Read EP Surface Result" component based on rough surface type.
 -
-Provided by Honeybee 0.0.61
+Provided by Honeybee 0.0.62
 
     Args:
         _srfData: Any surface data out of the "Honeybee_Read EP Surface Result" component.
@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.61
 """
 ghenv.Component.Name = "Honeybee_Surface Data Based On Type"
 ghenv.Component.NickName = 'srfDataByType'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"

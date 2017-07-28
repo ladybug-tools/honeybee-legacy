@@ -25,7 +25,7 @@ Import a rad file to gh
 This component is just a proof of concept for now and needs major modifications
 
 -
-Provided by Honeybee 0.0.61
+Provided by Honeybee 0.0.62
 
     Args:
         _radianceFile: File path to radiance file
@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.61
 """
 ghenv.Component.Name = "Honeybee_Import rad"
 ghenv.Component.NickName = 'importRad'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"

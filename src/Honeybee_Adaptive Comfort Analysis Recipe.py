@@ -24,7 +24,7 @@
 """
 Use this component to assemble an adaptive comfort recipe for the "Honeybee_Annual Indoor Comfort Analysis" component.
 -
-Provided by Honeybee 0.0.61
+Provided by Honeybee 0.0.62
     
     Args:
         _viewFactorMesh: The data tree of view factor meshes that comes out of the  "Honeybee_Indoor View Factor Calculator".
@@ -63,11 +63,11 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Adaptive Comfort Analysis Recipe"
 ghenv.Component.NickName = 'AdaptComfRecipe'
-ghenv.Component.Message = 'VER 0.0.61\nMAY_12_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.56\nJUL_24_2017
 #compatibleLBVersion = VER 0.0.59\nJUN_07_2016
 try: ghenv.Component.AdditionalHelpFromDocStrings = "6"
 except: pass
@@ -94,7 +94,11 @@ def checkTheInputs():
     #Unpack the viewFactorInfo.
     checkData25 = True
     try:
-        testPtViewFactor, zoneSrfNames, testPtSkyView, testPtBlockedVec, testPtZoneWeights, testPtZoneNames, ptHeightWeights, zoneInletInfo, zoneHasWindows, outdoorIsThere, outdoorNonSrfViewFac, outdoorPtHeightWeights, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, zoneFloorReflectivity, constantTransmis, finalAddShdTransmiss = _viewFactorInfo
+        viewFacInfoFromHive = hb_hive.visualizeFromHoneybeeHive(_viewFactorInfo)[0]
+        testPtViewFactor, zoneSrfNames, testPtSkyView, testPtBlockedVec, testPtZoneWeights, \
+        testPtZoneNames, ptHeightWeights, zoneInletInfo, zoneHasWindows, outdoorIsThere, \
+        outdoorNonSrfViewFac, outdoorPtHeightWeights, testPtBlockName, zoneWindowTransmiss, \
+        zoneWindowNames, zoneFloorReflectivity, constantTransmis, finalAddShdTransmiss = viewFacInfoFromHive.recallAllProps()
     except:
         testPtViewFactor, zoneSrfNames, testPtSkyView, testPtBlockedVec, testPtZoneWeights, testPtZoneNames, ptHeightWeights, zoneInletInfo, zoneHasWindows, outdoorIsThere, outdoorNonSrfViewFac, outdoorPtHeightWeights, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, zoneFloorReflectivity, constantTransmis, finalAddShdTransmiss = [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], True, []
         checkData25 = False
@@ -625,6 +629,7 @@ else:
     initCheck = True
     lb_preparation = sc.sticky["ladybug_Preparation"]()
     lb_wind = sc.sticky["ladybug_WindSpeed"]()
+    hb_hive = sc.sticky["honeybee_Hive"]()
 
 
 #Check the data input.

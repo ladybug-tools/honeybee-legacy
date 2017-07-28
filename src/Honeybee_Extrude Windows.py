@@ -25,7 +25,7 @@
 Extrude pseudo walls from window polygons. This component has only been tested with rectangular windows.
 
 -
-Provided by Honeybee 0.0.61
+Provided by Honeybee 0.0.62
     
 
     Args:
@@ -40,7 +40,7 @@ from __future__ import print_function
 
 ghenv.Component.Name = "Honeybee_Extrude Windows"
 ghenv.Component.NickName = 'extrudeWindows'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"

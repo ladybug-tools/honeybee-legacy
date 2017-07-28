@@ -26,7 +26,7 @@ _
 This component reads only the results related to zones.  For results related to surfaces, you should use the "Honeybee_Read EP Surface Result" component.
 
 -
-Provided by Honeybee 0.0.61
+Provided by Honeybee 0.0.62
     
     Args:
         _resultFileAddress: The result file address that comes out of the WriteIDF component.
@@ -55,7 +55,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.61\nJUN_20_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -243,9 +243,12 @@ def checkZSys(sysInt, sysType):
     path.append(int(sysInt)-1)
     return zoneName
 
-def checkSys(sysInt, sysType):
+def checkSys(sysInt, sysType, sysMult=None):
     zoneName = " " + sysType + " " + str(sysInt)
-    path.append(int(sysInt)-1+len(zoneNameList))
+    if sysMult == None:
+        path.append(int(sysInt)-1+len(zoneNameList))
+    else:
+        path.append((int(sysInt)-1+len(zoneNameList))*sysMult)
     return zoneName
 
 customCount = 0
@@ -260,10 +263,12 @@ def checkCentralSys(sysInt, sysType):
     elif sysType == 4: zoneName = " Humidifier" + str(sysInt)
     elif sysType == 5: zoneName = " VRF Heat Pump" + str(sysInt)
     else: zoneName = 'Unknown'
-    if sysType != 4:
-        path.append(len(zoneNameList)+int(sysInt))
+    if sysType == 4:
+        path.append((len(zoneNameList)*3)+int(sysInt))
+    elif sysType == 5:
+        path.append((len(zoneNameList)*2)+int(sysInt))
     else:
-        path.append(len(zoneNameList)+len(zoneNameList)+int(sysInt))
+        path.append(len(zoneNameList)+int(sysInt))
     
     return zoneName
 
@@ -320,6 +325,12 @@ if _resultFileAddress and gotData == True and csvExists == True:
                         elif 'VRF HEAT PUMP -' in column:
                             zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('VRF HEAT PUMP - ')[-1], 5)
                             idealAirTrigger = False
+                        elif 'COIL COOLING WATER TO AIR HEAT PUMP EQUATION FIT' in column and not 'DOAS' in column:
+                            zoneName = checkZSys(" " + ":".join(column.split(":")[:-1]).split('COIL COOLING WATER TO AIR HEAT PUMP EQUATION FIT ')[-1], 'Zone Heat Pump Coil')
+                            idealAirTrigger = False
+                        elif 'COIL COOLING WATER TO AIR HEAT PUMP EQUATION FIT' in column and 'DOAS' in column:
+                            zoneName = checkSys(" " + ":".join(column.split(":")[:-1]).split('COIL COOLING WATER TO AIR HEAT PUMP EQUATION FIT ')[-1], 'Heat Pump Coil', 2)
+                            idealAirTrigger = 2
                         elif 'Chiller Electric Energy' in column:
                             zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('CHILLER ELECTRIC EIR ')[-1], 0)
                             idealAirTrigger = False
@@ -355,6 +366,9 @@ if _resultFileAddress and gotData == True and csvExists == True:
                         elif 'COIL HEATING ELECTRIC' in column:
                             zoneName = checkSys(" " + ":".join(column.split(":")[:-1]).split('COIL HEATING ELECTRIC ')[-1], 'Electric Coil')
                             idealAirTrigger = 2
+                        elif 'COIL HEATING WATER TO AIR HEAT PUMP EQUATION FIT' in column:
+                            zoneName = checkSys(" " + ":".join(column.split(":")[:-1]).split('COIL HEATING WATER TO AIR HEAT PUMP EQUATION FIT ')[-1], 'Zone Heat Pump Coil', 2)
+                            idealAirTrigger = 2
                         elif 'ZONE HVAC TERMINAL UNIT VARIABLE REFRIGERANT FLOW' in column and not 'Heating Coil Total Heating Energy' in column:
                             zoneName = checkZSys(" " + ":".join(column.split(":")[:-1]).split('ZONE HVAC TERMINAL UNIT VARIABLE REFRIGERANT FLOW ')[-1], 'VRF Terminal Unit')
                             idealAirTrigger = 2
@@ -367,7 +381,7 @@ if _resultFileAddress and gotData == True and csvExists == True:
                         elif 'HUMIDIFIER STEAM ELECTRIC' in column:
                             zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('HUMIDIFIER STEAM ELECTRIC ')[-1], 4)
                             idealAirTrigger = 2
-                        elif 'Heating Coil Total Heating Energy' not in column:
+                        elif 'Heating Coil Total Heating Energy' not in column and not 'COIL HEATING GAS' in column:
                             zoneName = " " +column.split(":")[0]
                             checkCustomName(customCount)
                             customCount+=1

@@ -27,7 +27,7 @@ This component requires you to know a lot of the characteristics of the material
 _
 If you are not able to find all of the necessary material characteristcs and your desired material is relatively light, it might be easier for you to use a "Honeybee_EnergyPlus NoMass Opaque Material."
 -
-Provided by Honeybee 0.0.61
+Provided by Honeybee 0.0.62
     
     Args:
         _name: A text name for your Opaque Material.
@@ -46,7 +46,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Opaque Material"
 ghenv.Component.NickName = 'EPOpaqueMat'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"

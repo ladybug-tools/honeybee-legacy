@@ -26,7 +26,7 @@ Use this component to generate test points within a zone and calculate the view 
 _
 This component is a necessary step before creating an thermal map of an energy model.
 -
-Provided by Honeybee 0.0.61
+Provided by Honeybee 0.0.62
     
     Args:
         _HBZones: The HBZones out of any of the HB components that generate or alter zones.  Note that these should ideally be the zones that are fed into the Run Energy Simulation component as surfaces may not align otherwise.  Zones read back into Grasshopper from the Import idf component will not align correctly with the EP Result data.
@@ -58,11 +58,11 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.61\nMAY_10_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nFEB_21_2016
+#compatibleHBVersion = VER 0.0.56\nJUL_24_2017
 #compatibleLBVersion = VER 0.0.59\nJUN_25_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "6"
 except: pass
@@ -1561,6 +1561,8 @@ if initCheck == True:
     hb_zoneData = sc.sticky["Honeybee_ViewFacotrSrfData"]
     if hb_zoneData[10] == True:
         lb_preparation = sc.sticky["ladybug_Preparation"]()
+        hb_viewFactor = sc.sticky["honeybee_ViewFactors"]
+        hb_hive = sc.sticky["honeybee_Hive"]()
         checkData, gridSize, distFromFloor, viewResolution, removeInt, sectionMethod, sectionBreps, includeOutdoor, constantTransmis, addShdTransmiss = checkTheInputs()
 
 #Create a mesh of the area to calculate the view factor from.
@@ -1607,7 +1609,11 @@ if checkData == True and _runIt == True and geoCheck == True and buildMesh == Tr
     total_fs = time.clock() - start
     
     #Put all of the information into a list that will carry the data onto the next component easily.
-    viewFactorInfo = [testPtViewFactor, zoneSrfNames, testPtSkyView, testPtBlockedVec, testPtZoneWeights, testPtZoneNames, ptHeightWeights, zoneInletInfo, zoneHasWindows, outdoorIsThere, outdoorNonSrfViewFac, outdoorPtHeightWeights, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, finalFloorRefList, constantTransmis, finalAddShdTransmiss]
+    viewFactorInfo = hb_viewFactor(testPtViewFactor, zoneSrfNames, testPtSkyView, testPtBlockedVec, testPtZoneWeights, \
+    testPtZoneNames, ptHeightWeights, zoneInletInfo, zoneHasWindows, outdoorIsThere, outdoorNonSrfViewFac, \
+    outdoorPtHeightWeights, testPtBlockName, zoneWindowTransmiss, zoneWindowNames, finalFloorRefList, \
+    constantTransmis, finalAddShdTransmiss)
+    viewFactorInfo = hb_hive.addNonGeoObjToHive(viewFactorInfo, ghenv.Component)
 
 #Print out a report of calculation time.
 print "_"

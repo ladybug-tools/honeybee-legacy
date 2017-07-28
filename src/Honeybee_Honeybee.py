@@ -36,7 +36,7 @@ along with Honeybee; If not, see <http://www.gnu.org/licenses/>.
 Source code is available at: https://github.com/mostaphaRoudsari/Honeybee
 
 -
-Provided by Honeybee 0.0.61
+Provided by Honeybee 0.0.62
     
     Args:
         defaultFolder_: Optional input for Honeybee default folder.
@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.61\nJUN_15_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -4536,9 +4536,9 @@ class ReadEPSchedules(object):
             scheduleType = scheduleValues[0].lower()
             if self.count == 0:
                 self.schType = scheduleType
-
+            
             self.count += 1
-
+            
             if scheduleType == "schedule:year":
                 hourlyValues = self.getYearlyEPScheduleValues(schName)
             elif scheduleType == "schedule:day:interval":
@@ -4556,6 +4556,26 @@ class ReadEPSchedules(object):
                 hourlyValues = []
             
             return hourlyValues
+    
+    def getHolidaySchedValues(self, schName = None):
+        hourlyValues = []
+        if schName == None:
+            schName = self.schName
+        if self.hb_EPObjectsAUX.isSchedule(schName):
+            values, comments = self.hb_EPScheduleAUX.getScheduleDataByName(schName.upper(), ghenv.Component)
+            scheduleType = values[0].lower()
+            if scheduleType == "schedule:year":
+                # generate weekly schedules
+                numOfWeeklySchedules = int((len(values)-2)/5)
+                for i in range(numOfWeeklySchedules):
+                    weekDayScheduleName = values[5 * i + 2]
+                    startDay = int(self.lb_preparation.getJD(int(values[5 * i + 3]), int(values[5 * i + 4])))
+                    endDay = int(self.lb_preparation.getJD(int(values[5 * i + 5]), int(values[5 * i + 6])))
+                    weekValues, comments = self.hb_EPScheduleAUX.getScheduleDataByName(weekDayScheduleName.upper(), ghenv.Component)
+                    holidaySchedule = self.getScheduleValues(weekValues[8])
+                    hourlyValues.append([startDay,endDay,holidaySchedule])
+        
+        return hourlyValues
 
 class EPTypes(object):
     def __init__(self):
@@ -5548,7 +5568,6 @@ class hb_reEvaluateHBZones(object):
                 HBZone.surfaces.append(HBSrf)
     
     def createSubSurfaceFromBaseSrf(self, surface, newSurfaceName, count, coordinates, glazingBase = False, nameAddition = None):
-        
         # pass the wrong geometry for now. I assume creating planar surface from
         # coordinates will be computationally heavy and at this point geometry doesn't
         # matter, since I have the coordinates.
@@ -5640,7 +5659,6 @@ class hb_reEvaluateHBZones(object):
         return insetPts
             
     def checkChildSurfaces(self, surface, pointOrient = 'LowerLeftCorner'):
-        
         def isRectangle(ptList):
             vector1 = rc.Geometry.Vector3d(ptList[0] - ptList[1])
             vector2 = rc.Geometry.Vector3d(ptList[1] - ptList[2])
@@ -5673,6 +5691,9 @@ class hb_reEvaluateHBZones(object):
         glzCoordinates = surface.extractGlzPoints(False, 2, pointOrient)
         
         # make sure order is right
+        if not isAntiClockWise(surface.coordinates, surface.normalVector):
+            surface.coordinates.reverse()
+        
         for coorList in glzCoordinates:
             if not isAntiClockWise(coorList, surface.normalVector):
                 coorList.reverse()
@@ -8054,120 +8075,64 @@ class thermBC(object):
     def resetID(self):
         self.ID = str(uuid.uuid4())
 
-
-
-class zoneNetworkSolving(object):
+class viewFactorInfo(object):
     
-    
-    def notTheSameBldg(targetZone, testZone):
-        return targetZone.Faces != testZone.Faces
-    
-    
-    def shootIt(rayList, geometry, tol = 0.01, bounce =1):
-       # shoot a list of rays from surface to geometry
-       # to find if geometry is adjacent to surface
-       for ray in rayList:
-            intPt = rc.Geometry.Intersect.Intersection.RayShoot(ray, geometry, bounce)
-            if intPt:
-                if ray.Position.DistanceTo(intPt[0]) <= tol:
-                    return True #'Bang!'
-    
-    def getAdjacencyNetwork(buildingBreps, srfNormalVecs):
-        tol = sc.doc.ModelAbsoluteTolerance
-        meshPar = rc.Geometry.MeshingParameters.Default
-        adjacentBldgNumList = []
+    def __init__(self, testPtViewFactor=None, zoneSrfNames=None, testPtSkyView=None, testPtBlockedVec=None, testPtZoneWeights=None, \
+    testPtZoneNames=None, ptHeightWeights=None, zoneInletInfo=None, zoneHasWindows=None, outdoorIsThere=None, outdoorNonSrfViewFac=None, \
+    outdoorPtHeightWeights=None, testPtBlockName=None, zoneWindowTransmiss=None, zoneWindowNames=None, finalFloorRefList=None, \
+    constantTransmis=None, finalAddShdTransmiss=None):
+        #Set the name and object type.
+        self.objectType = "ViewFactorInfo"
+        self.hasChild = False
+        self.parent = None
+        self.isChild = False
+        self.hasChild = False
+        self.type = -1
+        self.BCObject = 'none'
+        self.BC = 'none'
+        self.name = str(uuid.uuid4())[:8]
+        self.ID = str(uuid.uuid4())
         
-        for testBldgCount, testBldg in enumerate(buildingBreps):
-            allMatchFound = False
-            # mesh each surface and test if it will be adjacent to any surface
-            # from other zones
-            for testSrfCount, srf in enumerate(testBldg.Faces):
-                srfFace = rc.Geometry.BrepFace.ToBrep(srf)
-                #Create a mesh of surface to use center points as test points
-                BrepMesh = rc.Geometry.Mesh.CreateFromBrep(srfFace, meshPar)[0]
-                
-                # calculate face normals
-                BrepMesh.FaceNormals.ComputeFaceNormals()
-                BrepMesh.FaceNormals.UnitizeFaceNormals()
-                
-                # dictionary to collect center points and rays
-                raysDict = {}
-                for faceIndex in range(BrepMesh.Faces.Count):
-                    srfNormal = (BrepMesh.FaceNormals)[faceIndex]
-                    meshSrfCen = BrepMesh.Faces.GetFaceCenter(faceIndex)
-                    # move testPt backward for half of tolerance
-                    meshSrfCen = rc.Geometry.Point3d.Add(meshSrfCen, -rc.Geometry.Vector3d(srfNormal)* tol /2)
-                    
-                    raysDict[meshSrfCen] = rc.Geometry.Ray3d(meshSrfCen, srfNormal)
-                
-                for tarBldgCount, targetBldg in enumerate(buildingBreps):
-                    if notTheSameBldg(targetBldg, testBldg):
-                        # check ray intersection to see if this zone is next to the surface
-                        if shootIt(raysDict.values(), [targetBldg], tol + sc.doc.ModelAbsoluteTolerance):
-                            for tarSrfCount, surface in enumerate(targetBldg.Faces):
-                                surfaceBrep = rc.Geometry.BrepFace.ToBrep(surface)
-                                # check distance with the nearest point on each surface
-                                for pt in raysDict.keys():
-                                    if surfaceBrep.ClosestPoint(pt).DistanceTo(pt) <= tol:
-                                        # extra check for normal direction
-                                        normalAngle = abs(rc.Geometry.Vector3d.VectorAngle(srfNormalVecs[tarBldgCount][tarSrfCount], srfNormalVecs[testBldgCount][testSrfCount]))
-                                        revNormalAngle = abs(rc.Geometry.Vector3d.VectorAngle(srfNormalVecs[tarBldgCount][tarSrfCount], -srfNormalVecs[testBldgCount][testSrfCount]))
-                                        if normalAngle==0  or revNormalAngle <= sc.doc.ModelAngleToleranceRadians:
-                                            #Have a value to keep track of whether a match has been found for a zone.
-                                            matchFound = False
-                                            
-                                            #Check the current adjacencies list to find out where to place the zone.
-                                            for zoneAdjListCount, zoneAdjList in enumerate(adjacentBldgNumList):
-                                                #Maybe we already have both of the zones as adjacent.
-                                                if testBldgCount in zoneAdjList and tarBldgCount in zoneAdjList:
-                                                    matchFound = True
-                                                #If we have the zone but not the adjacent zone, append it to the list.
-                                                elif testBldgCount in zoneAdjList and tarBldgCount not in zoneAdjList:
-                                                    adjacentBldgNumList[zoneAdjListCount].append(tarBldgCount)
-                                                    matchFound = True
-                                                #If we have the adjacent zone but not the zone itself, append it to the list.
-                                                elif testBldgCount not in zoneAdjList and tarBldgCount in zoneAdjList:
-                                                    adjacentBldgNumList[zoneAdjListCount].append(testBldgCount)
-                                                    matchFound = True
-                                                else: pass
-                                            
-                                            #If no match was found, start a new list.
-                                            if matchFound == False:
-                                                adjacentBldgNumList.append([testBldgCount])
-            if allMatchFound == False:
-                #The building is not adjacent to any other buildings so we will put it in its own list.
-                adjacentBldgNumList.append([testBldgCount])
+        #Set all of the properties.
+        self.testPtViewFactor = testPtViewFactor
+        self.zoneSrfNames = zoneSrfNames
+        self.testPtSkyView = testPtSkyView
+        self.testPtBlockedVec = testPtBlockedVec
+        self.testPtZoneWeights = testPtZoneWeights
+        self.testPtZoneNames = testPtZoneNames
+        self.ptHeightWeights = ptHeightWeights
+        self.zoneInletInfo = zoneInletInfo
+        self.zoneHasWindows = zoneHasWindows
+        self.outdoorIsThere = outdoorIsThere
+        self.outdoorNonSrfViewFac = outdoorNonSrfViewFac
+        self.outdoorPtHeightWeights = outdoorPtHeightWeights
+        self.testPtBlockName = testPtBlockName
+        self.zoneWindowTransmiss = zoneWindowTransmiss
+        self.zoneWindowNames = zoneWindowNames
+        self.finalFloorRefList = finalFloorRefList
+        self.constantTransmis = constantTransmis
+        self.finalAddShdTransmiss = finalAddShdTransmiss
         
-        #Remove duplicates found in the process of looking for adjacencies.
-        fullAdjacentList = []
-        newAjdacenList = []
-        for listCount, zoneList in enumerate(adjacentBldgNumList):
-            good2Go = True
-            listCheck = []
-            notAccountedForCheck = []
-            
-            #Check if the zones are already accounted for
-            for zoneNum in zoneList:
-                if zoneNum in fullAdjacentList: listCheck.append(zoneNum)
-                else: notAccountedForCheck.append(zoneNum)
-            
-            if len(listCheck) == len(zoneList):
-                #All zones in the list are already accounted for.
-                good2Go = False
-            
-            if good2Go == True and len(listCheck) == 0:
-                #All of the zones in the list are not yet accounted for.
-                newAjdacenList.append(zoneList)
-                fullAdjacentList.extend(adjacentBldgNumList[listCount])
-            elif good2Go == True:
-                #Find the existing zone list that contains the duplicates and append the non-duplicates to the list.
-                for val in listCheck:
-                    for existingListCount, existingList in enumerate(newAjdacenList):
-                        if val in existingList: thisIsTheList = existingListCount
-                newAjdacenList[thisIsTheList].extend(notAccountedForCheck)
-                fullAdjacentList.extend(notAccountedForCheck)
-        
-        return newAjdacenList
+        # Calculate the number of points.
+        self.NumPts = 0
+        if testPtViewFactor != None:
+            for zList in testPtViewFactor:
+                self.NumPts = self.NumPts + len(zList)
+    
+    def calcNumPts(self):
+        self.NumPts = 0
+        if self.testPtViewFactor != None:
+            for zList in self.testPtViewFactor:
+                self.NumPts = self.NumPts + len(zList)
+    
+    def recallAllProps(self):
+        return [self.testPtViewFactor, self.zoneSrfNames, self.testPtSkyView, self.testPtBlockedVec, self.testPtZoneWeights, \
+        self.testPtZoneNames, self.ptHeightWeights, self.zoneInletInfo, self.zoneHasWindows, self.outdoorIsThere, self.outdoorNonSrfViewFac, \
+        self.outdoorPtHeightWeights, self.testPtBlockName, self.zoneWindowTransmiss, self.zoneWindowNames, self.finalFloorRefList, \
+        self.constantTransmis, self.finalAddShdTransmiss]
+    
+    def __str__(self):
+        return 'View Factor Info' + '\nNumber of Points: ' + str(self.NumPts)
 
 
 class hb_Hive(object):
@@ -8273,11 +8238,22 @@ class hb_Hive(object):
         # return geometry with the ID
         return outGeometry
     
+    def addNonGeoObjToHive(self, HBObject, Component):
+        docId = Component.OnPingDocument().DocumentID
+        baseKey = '{}_{}'.format(docId, Component.InstanceGuid)
+        sc.sticky['HBHive'][baseKey] = {}
+        key = '{}'.format(HBObject.ID)
+        sc.sticky['HBHive'][baseKey][key] = HBObject
+        HBID = '{}#{}'.format(baseKey, key)
+        return 'Honeybee View Factor Info - ' + HBID
     
     def callFromHoneybeeHive(self, geometryList):
         HBObjects = []
         for geometry in geometryList:
-            hbkey = geometry.UserDictionary['HBID']
+            try:
+                hbkey = geometry.UserDictionary['HBID']
+            except:
+                hbkey = geometry.split(' ')[-1]
             
             if '#' not in hbkey:
                 raise Exception('Honeybee version mismatch! Update the input component.')
@@ -8288,7 +8264,10 @@ class hb_Hive(object):
                 HBObject = sc.sticky['HBHive'][baseKey][key]
                 
                 # make sure Honeybee object is not moved or rotated
-                self.checkifTransformed(geometry, HBObject)
+                try:
+                    self.checkifTransformed(geometry, HBObject)
+                except:
+                    pass
                 
                 try:
                     # after the first round meshedFace makes copy.deepcopy crash
@@ -8360,7 +8339,10 @@ class hb_Hive(object):
     def visualizeFromHoneybeeHive(self, geometryList):
         HBObjects = []
         for geometry in geometryList:
-            hbkey = geometry.UserDictionary['HBID']
+            try:
+                hbkey = geometry.UserDictionary['HBID']
+            except:
+                hbkey = geometry.split(' ')[-1]
             
             if '#' not in hbkey:
                 raise Exception('Honeybee version mismatch! Update the input component.')
@@ -8371,7 +8353,7 @@ class hb_Hive(object):
                 HBObjects.append(sc.sticky['HBHive'][baseKey][key])
             else:
                 raise Exception('HoneybeeKeyMismatch: Failed to call the object from Honeybee hive.')
-
+        
         return HBObjects
 
 class hb_RADParameters(object):
@@ -8537,7 +8519,8 @@ class hb_hvacProperties(object):
         14:'RADIANT CEILINGS + DOAS',
         15:'HEATED FLOORS + VAV COOLING',
         16:'VRF + DOAS',
-        17:'GSHP + DOAS'
+        17:'GROUND SOURCE WSHP + DOAS',
+        18:'GROUND SOURCE VRF + DOAS'
         }
         
         # Dictionaries that state which features can be changed for each of the different systems.
@@ -8560,70 +8543,74 @@ class hb_hvacProperties(object):
         14: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
         15: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
         16: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
-        17: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True}
+        17: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
+        18: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True}
         }
         
         self.airCapabilities = {
-        0: {'FanTotEff': False, 'FanMotEff': False, 'FanPres': False, 'FanPlace': False, 'airSysHardSize': False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        1: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : False, 'Econ' : False, 'HeatRecov' : False},
-        2: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'FanCntrl': False, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Econ' : False, 'HeatRecov' : False},
-        3: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        4: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        5: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        6: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'airSysHardSize': True, 'FanCntrl': False, 'HeatSupTemp' : False, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        7: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        8: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'airSysHardSize': True, 'FanCntrl': False, 'HeatSupTemp' : False, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        9: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        10: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        11: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        12: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        13: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        14: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        15: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        16: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        17: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True}
+        0: {'FanTotEff': False, 'FanMotEff': False, 'FanPres': False, 'FanPlace': False, 'airSysHardSize': False, 'centralAirLoop' : False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        1: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : False, 'Econ' : False, 'HeatRecov' : False},
+        2: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Econ' : False, 'HeatRecov' : False},
+        3: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        4: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        5: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        6: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : False, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        7: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        8: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : False, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        9: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        10: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        11: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        12: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        13: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        14: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        15: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        16: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        17: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        18: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True}
         }
         
         self.heatCapabilities = {
-        0: {'COP' : False, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
-        1: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
-        2: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
-        3: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
-        4: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
-        5: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
-        6: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
-        7: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
-        8: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
-        9: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
-        10: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
-        11: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
-        12: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
-        13: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
-        14: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True},
-        15: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : False},
-        16: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False},
-        17: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True}
+        0: {'COP' : False, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False},
+        1: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : False},
+        2: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False},
+        3: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False},
+        4: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False},
+        5: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True},
+        6: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False},
+        7: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True},
+        8: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False},
+        9: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False},
+        10: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False},
+        11: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True},
+        12: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True},
+        13: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True},
+        14: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True},
+        15: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : False, 'CentralPlant' : True},
+        16: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : True},
+        17: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : True},
+        18: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : True}
         }
         
         self.coolCapabilities = {
-        0: {'COP' : False, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : False},
-        1: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : False},
-        2: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : False},
-        3: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : False},
-        4: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : False},
-        5: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : False},
-        6: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : False},
-        7: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : False},
-        8: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : False},
-        9: {'COP' : False, 'Avail' : False, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : False},
-        10: {'COP' : False, 'Avail' : False, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : False},
-        11: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : True},
-        12: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : True},
-        13: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : True},
-        14: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : True},
-        15: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : True},
-        16: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'ChillType' : True},
-        17: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'ChillType' : True}
+        0: {'COP' : False, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False, 'ChillType' : False},
+        1: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False, 'ChillType' : False},
+        2: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False, 'ChillType' : False},
+        3: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False, 'ChillType' : False},
+        4: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False, 'ChillType' : False},
+        5: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False, 'ChillType' : False},
+        6: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False, 'ChillType' : False},
+        7: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True, 'ChillType' : False},
+        8: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True, 'ChillType' : False},
+        9: {'COP' : False, 'Avail' : False, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False, 'ChillType' : False},
+        10: {'COP' : False, 'Avail' : False, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False, 'ChillType' : False},
+        11: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True, 'ChillType' : True},
+        12: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True, 'ChillType' : True},
+        13: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True, 'ChillType' : True},
+        14: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True, 'ChillType' : True},
+        15: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True, 'ChillType' : True},
+        16: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : True, 'ChillType' : True},
+        17: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : True, 'ChillType' : False},
+        18: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : True, 'ChillType' : False}
         }
     
     @staticmethod
@@ -8650,7 +8637,8 @@ class hb_hvacProperties(object):
 
 class hb_airDetail(object):
     def __init__(self, HVACAvailabiltySched=None, fanTotalEfficiency=None, fanMotorEfficiency=None, fanPressureRise=None, \
-        fanPlacement=None, airSysHardSize = None, fanControl = None, heatingSupplyAirTemp=None, coolingSupplyAirTemp=None, airsideEconomizer=None, heatRecovery=None, recoveryEffectiveness=None):
+        fanPlacement=None, airSysHardSize = None, centralAirLoop=None, fanControl = None, heatingSupplyAirTemp=None, \
+        coolingSupplyAirTemp=None, airsideEconomizer=None, heatRecovery=None, recoveryEffectiveness=None):
         
         self.areInputsChecked = False
         self.sysProps = hb_hvacProperties()
@@ -8723,6 +8711,10 @@ class hb_airDetail(object):
             self.airSysHardSize = airSysHardSize
         else:
             self.airSysHardSize = "Default"
+        if centralAirLoop != None:
+            self.centralAirLoop = centralAirLoop
+        else:
+            self.centralAirLoop = "Default"
         if fanControl != None:
             self.fanControl = self.fanControlDict[fanControl]
         else:
@@ -8769,7 +8761,7 @@ class hb_airDetail(object):
                     paramList.append(None)
         
         if success == True:
-            airDetailObj = cls(paramList[0], paramList[1], paramList[2], paramList[3], paramList[4], paramList[5], paramList[6], paramList[7], paramList[8], paramList[9], paramList[10], paramList[11])
+            airDetailObj = cls(paramList[0], paramList[1], paramList[2], paramList[3], paramList[4], paramList[5], paramList[6], paramList[7], paramList[8], paramList[9], paramList[10], paramList[11], paramList[12])
             airDetailObj.areInputsChecked = True
             return airDetailObj
         else:
@@ -8825,7 +8817,9 @@ class hb_airDetail(object):
         if self.fanPlacement != 'Default' and hvacCapabilities['FanPlace'] == False:
             errors.append(self.sysProps.generateWarning(sysType, 'FAN PLACEMENT', 'airDetails'))
         if self.airSysHardSize != 'Default' and hvacCapabilities['airSysHardSize'] == False:
-            errors.append(self.sysProps.generateWarning(sysType, 'Air System Hard Size', 'airDetails'))
+            errors.append(self.sysProps.generateWarning(sysType, 'AIR SYSTEM HARD SIZE', 'airDetails'))
+        if self.centralAirLoop != 'Default' and hvacCapabilities['centralAirLoop'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'CENTRAL AIR LOOP', 'airDetails'))
         if self.fanControl != 'Default' and hvacCapabilities['FanCntrl'] == False:
             errors.append(self.sysProps.generateWarning(sysType, 'DEMAND CONTROLLED VENTILATION', 'airDetails'))
         if self.heatingSupplyAirTemp != 'Default' and hvacCapabilities['HeatSupTemp'] == False:
@@ -8859,6 +8853,7 @@ class hb_airDetail(object):
             '  Fan Pressure Rise: ' + str(self.fanPressureRise) + '\n' + \
             '  Fan Placement: ' + str(self.fanPlacement) + '\n' + \
             '  Air System Hard Size: ' + str(self.airSysHardSize) + '\n' + \
+            '  Central Air Loop: ' + str(self.centralAirLoop) + '\n' + \
             '  Demand Controlled Ventilation: ' + str(self.fanControl) + '\n' + \
             '  Heating Supply Air Temperature: ' + str(self.heatingSupplyAirTemp) + '\n' + \
             '  Cooling Supply Air Temperature: ' + str(self.coolingSupplyAirTemp) + '\n' + \
@@ -8872,7 +8867,7 @@ class hb_airDetail(object):
 
 
 class hb_heatingDetail(object):
-    def __init__(self, heatingAvailSched=None, heatingEffOrCOP=None, supplyTemperature=None, pumpMotorEfficiency=None):
+    def __init__(self, heatingAvailSched=None, heatingEffOrCOP=None, supplyTemperature=None, pumpMotorEfficiency=None, centralPlant=None):
         
         self.areInputsChecked = False
         self.sysProps = hb_hvacProperties()
@@ -8895,6 +8890,10 @@ class hb_heatingDetail(object):
             self.pumpMotorEfficiency = float(pumpMotorEfficiency)
         else:
             self.pumpMotorEfficiency = "Default"
+        if centralPlant != None:
+            self.centralPlant = centralPlant
+        else:
+            self.centralPlant = "Default"
     
     @classmethod
     def fromTextStr(cls, textStr):
@@ -8913,7 +8912,7 @@ class hb_heatingDetail(object):
                     paramList.append(None)
         
         if success == True:
-            heatDetailObj = cls(paramList[0], paramList[1], paramList[2], paramList[3])
+            heatDetailObj = cls(paramList[0], paramList[1], paramList[2], paramList[3], paramList[4])
             heatDetailObj.areInputsChecked = True
             return heatDetailObj
         else:
@@ -8948,6 +8947,8 @@ class hb_heatingDetail(object):
             errors.append(self.sysProps.generateWarning(sysType, 'HEATING SYSTEM SUPPLY TEMPERATURE', 'heatingDetails'))
         if self.pumpMotorEfficiency != 'Default' and heatCapabilities['PumpEff'] == False:
             errors.append(self.sysProps.generateWarning(sysType, 'HEATING SYSTEM PUMP MOTOR EFFICIENCY', 'heatingDetails'))
+        if self.centralPlant != 'Default' and heatCapabilities['CentralPlant'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'HEATING SYSTEM CENTRALIZED PLANT', 'heatingDetails'))
         
         return errors
     
@@ -8961,7 +8962,8 @@ class hb_heatingDetail(object):
             '  Heating Availability Schedule: ' + str(self.heatingAvailSched) + '\n' + \
             '  Heating System Efficiency or COP: ' + str(self.heatingEffOrCOP) + '\n' + \
             '  Heating System Supply Temperature: ' + str(self.supplyTemperature) + '\n' + \
-            '  Heating Hystem Pump Motor Efficiency: ' + str(self.pumpMotorEfficiency)
+            '  Heating System Pump Motor Efficiency: ' + str(self.pumpMotorEfficiency) + '\n' + \
+            '  Heating System Centralized Plant: ' + str(self.centralPlant)
             
             return True, textStr
         else:
@@ -8969,7 +8971,7 @@ class hb_heatingDetail(object):
 
 
 class hb_coolingDetail(object):
-    def __init__(self, coolingAvailSched=None, coolingCOP=None, supplyTemperature=None, pumpMotorEfficiency=None, chillerType=None):
+    def __init__(self, coolingAvailSched=None, coolingCOP=None, supplyTemperature=None, pumpMotorEfficiency=None, centralPlant=None, chillerType=None):
         
         self.areInputsChecked = False
         self.sysProps = hb_hvacProperties()
@@ -8999,6 +9001,10 @@ class hb_coolingDetail(object):
             self.pumpMotorEfficiency = float(pumpMotorEfficiency)
         else:
             self.pumpMotorEfficiency = "Default"
+        if centralPlant != None:
+            self.centralPlant = centralPlant
+        else:
+            self.centralPlant = "Default"
         if chillerType != None:
             self.chillerType = self.chillerTypeDict[chillerType]
         else:
@@ -9021,7 +9027,7 @@ class hb_coolingDetail(object):
                     paramList.append(None)
         
         if success == True:
-            coolDetailObj = cls(paramList[0], paramList[1], paramList[2], paramList[3], paramList[4])
+            coolDetailObj = cls(paramList[0], paramList[1], paramList[2], paramList[3], paramList[4], paramList[5])
             coolDetailObj.areInputsChecked = True
             return coolDetailObj
         else:
@@ -9056,8 +9062,10 @@ class hb_coolingDetail(object):
             errors.append(self.sysProps.generateWarning(sysType, 'COOLING SYSTEM SUPPLY TEMPERATURE', 'coolingDetails'))
         if self.pumpMotorEfficiency != 'Default' and coolCapabilities['PumpEff'] == False:
             errors.append(self.sysProps.generateWarning(sysType, 'COOLING SYSTEM PUMP MOTOR EFFICIENCY', 'coolingDetails'))
+        if self.centralPlant != 'Default' and coolCapabilities['CentralPlant'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'COOLING SYSTEM CENTRALIZED PLANT', 'coolingDetails'))
         if self.chillerType != 'Default' and coolCapabilities['ChillType'] == False:
-            errors.append(self.sysProps.generateWarning(sysType, 'COOLING SYSTEM CHILLER TPYE', 'coolingDetails'))
+            errors.append(self.sysProps.generateWarning(sysType, 'COOLING SYSTEM HEAT REJECTION TPYE', 'coolingDetails'))
         
         return errors
     
@@ -9072,7 +9080,8 @@ class hb_coolingDetail(object):
             '  Cooling System COP: ' + str(self.coolingCOP) + '\n' + \
             '  Cooling System Supply Temperature: ' + str(self.supplyTemperature) + '\n' + \
             '  Cooling System Pump Motor Efficiency: ' + str(self.pumpMotorEfficiency) + '\n' + \
-            '  Cooling System Chiller Type: ' + str(self.chillerType)
+            '  Cooling System Centralized Plant: ' + str(self.centralPlant) + '\n' + \
+            '  Cooling System Heat Rejection Type: ' + str(self.chillerType)
             
             return True, textStr
         else:
@@ -9432,6 +9441,7 @@ if checkIn.letItFly:
         sc.sticky["honeybee_ThermPolygon"] = thermPolygon
         sc.sticky["honeybee_ThermBC"] = thermBC
         sc.sticky["honeybee_ThermDefault"] = thermDefaults
+        sc.sticky["honeybee_ViewFactors"] = viewFactorInfo
         sc.sticky["PVgen"] = PV_gen
         sc.sticky["PVinverter"] = PVinverter
         sc.sticky["HB_generatorsystem"] = HB_generatorsystem

@@ -27,17 +27,18 @@ Provided by Ladybug 0.0.62
     
     Args:
         _value: A value or list of 24 values that will be repeated for every day of the year.
-        _scheduleName: A name for the schedule that will be written to the memory of the document.  If no name is connected here, a uniqui ID will be generated for the schedule.
+        _scheduleName: A text string representing a name for the schedule that this component will create.  This name should be unique among the schedules in your Grasshopper document to ensure that you do not overwrite other schedules.
         _schedTypeLimits_: A text string from the scheduleTypeLimits output of the "Honeybee_Call From EP Schedule Library" component.  This value represents the units of the schedule input values.  The default is "Fractional" for a schedule with values that range between 0 and 1.  Other common inputs include "Temperature", "On/Off", and "ActivityLevel".
     Returns:
         readMe!: ...
         schedule: The name of the schedule that has been written to the memory of the GH document.  Connect this to any shcedule input of a Honeybee component to assign the schedule.
-        scheduleIDFText: The text needed to tell EnergyPlus how to run the schedule.  If you are done creating/editing a shcedule with this component, you may want to make your GH document smaller by internalizing this IDF text and using the "Honeybee_Add To EnergyPlus Library" component to make sure that the schedule is added to the memory the next time you open the GH file.
+        weekSched: The name of the weekly schedule that has been written to the memory of the GH document.  If your final intended annual schedule is seasonal (composed of different weekly schedules), you can use this output with the "Honeybee_Seasonal Schedule" to create such schedules.
+        schedIDFText: The text needed to tell EnergyPlus how to run the schedule.  If you are done creating/editing a shcedule with this component, you may want to make your GH document smaller by internalizing this IDF text and using the "Honeybee_Add To EnergyPlus Library" component to add the schedule to the memory the next time you open the GH file.  Then you can delete this component.
 """
 
 ghenv.Component.Name = "Honeybee_Constant Schedule"
 ghenv.Component.NickName = 'ConstantSchedule'
-ghenv.Component.Message = 'VER 0.0.61\nJUN_21_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "07 | Energy | Schedule"
@@ -89,7 +90,7 @@ def IFDstrForWeek(daySchedName, schName):
 
 def IFDstrForYear(weekSchedName, schName, schTypeLims):
     idfStr = 'Schedule:Year,\n' + \
-        '\t' + schName + ' Year Schedule' + ', !- Name\n' + \
+        '\t' + schName + ', !- Name\n' + \
         '\t' + schTypeLims + ', !- Schedule Type Limits Name\n' + \
         '\t' + weekSchedName + ',  !- Schedule:Week Name\n' + \
         '\t' + '1' + ',  !- Start Month 1\n' + \
@@ -126,7 +127,9 @@ def main(values, schedName, schedTypeLimits):
     # Write out text strings for the daily schedules
     if len(values) == 1:
         values = [values[0] for x in range(24)]
-    elif len(values) != 1:
+    elif len(values) == 24:
+        pass
+    else:
         warning = "_value must be either a single value or a list of 24 values for each hour of the day."
         print warning
         ghenv.Component.AddRuntimeMessage(w, warning)
@@ -140,13 +143,13 @@ def main(values, schedName, schedTypeLimits):
     
     # Write out text for the annual values.
     schedIDFStrs.append(IFDstrForYear(schedName + ' Week Schedule', schedName, schTypeLims))
-    yearSchedName = schedName + ' Year Schedule'
+    yearSchedName = schedName
     
     # Write all of the schedules to the memory of the GH document.
     for EPObject in schedIDFStrs:
         added, name = hb_EPObjectsAux.addEPObjectToLib(EPObject, overwrite = True)
     
-    return yearSchedName, schedIDFStrs
+    return yearSchedName, weekSchedName, schedIDFStrs
 
 
 w = gh.GH_RuntimeMessageLevel.Warning
@@ -190,5 +193,5 @@ else:
 if initCheck == True:
     result = main(_value, _scheduleName, _schedTypeLimits_)
     if result != -1:
-        schedule, schedIDFText = result
+        schedule, weekSched, schedIDFText = result
         print '\nscheduleValues generated!'
