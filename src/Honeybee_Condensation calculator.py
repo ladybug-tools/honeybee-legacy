@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.60
         textSize: 
         decimalPlaces: 
 """
-###
+#
 ghenv.Component.Name = "Honeybee_Condensation calculator"
 ghenv.Component.NickName = 'HB_CondensationCalculator'
 ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
