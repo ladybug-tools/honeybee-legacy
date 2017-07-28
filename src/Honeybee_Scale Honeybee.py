@@ -23,7 +23,7 @@
 """
 Scale Honeybee Objects Non-Uniformly
 -
-Provided by Honeybee 0.0.61
+Provided by Honeybee 0.0.62
     Args:
         _HBObj: Honeybee surface or Honeybee zone
         _plane_: Base Plane
@@ -39,7 +39,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Scale Honeybee"
 ghenv.Component.NickName = 'scaleHBObj'
-ghenv.Component.Message = 'VER 0.0.61\nJUN_15_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"

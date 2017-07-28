@@ -25,14 +25,14 @@
 Use this component to write custom .csv schedules for EnergyPlus using a list of numbers that you have in grasshopper.  This can be used to make custom infiltration shcedules based on indoor thermal comdort (to mimic opening of windows), shading transparency shedules based on glare or thermal comfort, etc.
 
 -
-Provided by Honeybee 0.0.61
+Provided by Honeybee 0.0.62
     
     Args:
         _values: The values to be written into the .csv schedule.
         units_: Text for the units of the input values above.  The default is "Dimensionless" for a fractional schedule.  Possible inputs include "Dimensionless", "Temperature", "DeltaTemperature", "PrecipitationRate", "Angle", "ConvectionCoefficient", "ActivityLevel", "Velocity", "Capacity", "Power", "Availability", "Percent", "Control", and "Mode".
         analysisPeriod_: If your input units do not represent a full year, use this input to specify the period of the year that the schedule applies to.
         timeStep_: If your connected _values do not represent a value for each hour (ie. one value for every half-hour), input an interger here to specify the timestep.  Inputting 2 means that every 2 values indicate an hour (each value indicates a half-hour), etc.
-        scheduleName_: Input a name for your schedule here.  The default is "unnamedSchedule".
+        _scheduleName: Input a name for your schedule here.  The default is "unnamedSchedule".
         _writeFile: Set to "True" to generate the .csv schedule.
     Returns:
         readMe!: ...
@@ -41,7 +41,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Create CSV Schedule"
 ghenv.Component.NickName = 'csvSchedule'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "07 | Energy | Schedule"
@@ -139,8 +139,8 @@ def checkTheInputs():
                     csvValues.append(0.0)
         
         #Set a default schedule name.
-        if scheduleName_ == None: scheduleName = "SCHunnamedSchedule.csv"
-        else: scheduleName = "SCH" + scheduleName_.strip()
+        if _scheduleName == None: scheduleName = "SCHunnamedSchedule.csv"
+        else: scheduleName = "SCH" + _scheduleName.strip()
         
         #If everything is good, return one value to represent this.
         if checkData1 == True and checkData2 == True: checkData = True
@@ -186,8 +186,45 @@ def main(units, numericType, totalHOYS, totalDays, totalMonths, csvValues, sched
     return filePath
 
 
+w = gh.GH_RuntimeMessageLevel.Warning
+#If Honeybee or Ladybug is not flying or is an older version, give a warning.
+initCheck = True
+#Ladybug check.
+if not sc.sticky.has_key('ladybug_release') == True:
+    initCheck = False
+    print "You should first let Ladybug fly..."
+    ghenv.Component.AddRuntimeMessage(w, "You should first let Ladybug fly...")
+else:
+    try:
+        if not sc.sticky['ladybug_release'].isCompatible(ghenv.Component): initCheck = False
+        if sc.sticky['ladybug_release'].isInputMissing(ghenv.Component): initCheck = False
+    except:
+        initCheck = False
+        warning = "You need a newer version of Ladybug to use this compoent." + \
+        "Use updateLadybug component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Ladybug_Ladybug component " + \
+        "into canvas and try again."
+        ghenv.Component.AddRuntimeMessage(w, warning)
+#Honeybee check.
+if not sc.sticky.has_key('honeybee_release') == True:
+    initCheck = False
+    print "You should first let Honeybee fly..."
+    ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee fly...")
+else:
+    try:
+        if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): initCheck = False
+        if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): initCheck = False
+    except:
+        initCheck = False
+        warning = "You need a newer version of Honeybee to use this compoent." + \
+        "Use updateHoneybee component to update userObjects.\n" + \
+        "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+        "into canvas and try again."
+        ghenv.Component.AddRuntimeMessage(w, warning)
+
+
 checkData = False
-if _values != []:
+if initCheck == True:
     checkData, units, numericType, totalHOYS, totalDays, totalMonths, csvValues, scheduleName, timeStep = checkTheInputs()
 
 if checkData == True and _writeFile == True:

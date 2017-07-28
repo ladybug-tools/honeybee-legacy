@@ -27,7 +27,7 @@ You can download several measures from here: https://bcl.nrel.gov/nrel/types/mea
 
 Many thanks to NREL team for their support during the process. See (https://github.com/mostaphaRoudsari/Honeybee/issues/214) and (https://github.com/mostaphaRoudsari/Honeybee/issues/290)for just two examples!
 -
-Provided by Honeybee 0.0.61
+Provided by Honeybee 0.0.62
 
     Args:
         _osmFilePath: A file path of the an OpemStdio file
@@ -43,11 +43,11 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Apply OpenStudio Measure"
 ghenv.Component.NickName = 'applyOSMeasure'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.56\nJUL_25_2017
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
 except: pass
@@ -57,43 +57,30 @@ import scriptcontext as sc
 import time
 from distutils.dir_util import copy_tree
 
-# I need to add a central function to check the version and compare with available version.
 if sc.sticky.has_key('honeybee_release'):
-    
-    installedOPS = [f for f in os.listdir("C:\\Program Files") if f.startswith("OpenStudio")]
-    installedOPS = sorted(installedOPS, key = lambda x: int("".join(x.split(" ")[-1].split("."))), reverse = True)
-    
-    if len(installedOPS) != 0:
-        openStudioFolder = "C:/Program Files/%s/"%installedOPS[0]
-        openStudioLibFolder = "C:/Program Files/%s/CSharp/openstudio/"%installedOPS[0]
-        QtFolder = "C:/Program Files/%s/Ruby/openstudio/"%installedOPS[0]
-    else:
-        openStudioFolder = ""
-        openStudioLibFolder = ""
-        QtFolder = ""
-    
-    if os.path.isdir(openStudioLibFolder) and os.path.isfile(os.path.join(openStudioLibFolder, "openStudio.dll")):
+    if sc.sticky["honeybee_folders"]["OSLibPath"] != None:
         # openstudio is there
-        # add both folders to path to avoid PINVOKE exception
-        if not openStudioLibFolder in os.environ['PATH'] or QtFolder not in os.environ['PATH']:
-            os.environ['PATH'] = ";".join([openStudioLibFolder, QtFolder, os.environ['PATH']])
-        
+        openStudioLibFolder = sc.sticky["honeybee_folders"]["OSLibPath"]
         openStudioIsReady = True
         import clr
         clr.AddReferenceToFileAndPath(openStudioLibFolder+"\\openStudio.dll")
-    
+        
         import sys
         if openStudioLibFolder not in sys.path:
             sys.path.append(openStudioLibFolder)
-    
+        
         import OpenStudio
     else:
         openStudioIsReady = False
         # let the user know that they need to download OpenStudio libraries
-        msg = "Cannot find OpenStudio libraries at " + openStudioLibFolder + \
-              "\nYou need to download and install OpenStudio to be able to use this component."
-              
-        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+        msg1 = "You do not have OpenStudio installed on Your System.\n" + \
+            "You wont be able to use this component until you install it.\n" + \
+            "Download the latest OpenStudio for Windows from:\n"
+        msg2 = "https://www.openstudio.net/downloads"
+        print msg1
+        print msg2
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg1)
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg2)
 else:
     openStudioIsReady = False
 

@@ -38,7 +38,7 @@ Provided by Ladybug 0.0.45
 
 ghenv.Component.Name = "Honeybee_Re-run IDF"
 ghenv.Component.NickName = 'Re-Run IDF'
-ghenv.Component.Message = 'VER 0.0.61\nAPR_16_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -81,6 +81,14 @@ def checkTheInputs(idfFileName, epwWeatherFile):
         msg = "IDF file cannot be in the root of the C:\ drive. \n Please move it into a directory."
         print msg
         ghenv.Component.AddRuntimeMessage(w, msg)
+        return -1
+    # Check for white space in file path.
+    if ' ' in idfFileName:
+        warning = "A white space was found in the .idf file path.  EnergyPlus cannot run out of directories with white spaces.\n" + \
+        "Copy the .idf file to a directory without a white space and try again."
+        print warning
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
         return -1
     
     # make sure EnergyPlus folder is found

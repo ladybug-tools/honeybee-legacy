@@ -24,7 +24,7 @@
 Use this component to get basic information on Honeybee Objects, whether they are HBSrfs or HBZones.
 
 -
-Provided by Honeybee 0.0.61
+Provided by Honeybee 0.0.62
 
     Args:
         _HBObjects: Any valid Honeybee object.
@@ -33,11 +33,11 @@ Provided by Honeybee 0.0.61
 """
 ghenv.Component.Name = "Honeybee_AskMe"
 ghenv.Component.NickName = 'askMe'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.56\nJUL_24_2017
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass
@@ -47,20 +47,9 @@ import scriptcontext as sc
 try:
     # call the objects from the lib
     hb_hive = sc.sticky["honeybee_Hive"]()
-    HBObjectsFromHive = hb_hive.callFromHoneybeeHive(_HBObjects)
+    HBObjectsFromHive = hb_hive.visualizeFromHoneybeeHive(_HBObjects)
     for HBO in HBObjectsFromHive:
         print HBO
-        #print HBO.getFloorArea()
-        #print HBO.getZoneVolume()
-        #for HBS in HBO.surfaces:
-        #    print "----------------"
-        #    #print HBS.getTotalArea()
-        #    print "-----------------"
-        #    print HBS
-        #    print HBS.getOpaqueArea()
-        #    print HBS.getWWR()
-            
-            
 except Exception, e:
     print "Honeybee has no idea what this object is! Vviiiiiiz!"
     pass

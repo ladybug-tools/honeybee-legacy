@@ -43,7 +43,7 @@ Provided by Ladybug 0.0.45
 
 ghenv.Component.Name = "Honeybee_Re-run OSM"
 ghenv.Component.NickName = 'Re-Run OSM'
-ghenv.Component.Message = 'VER 0.0.61\nAPR_17_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -82,6 +82,14 @@ def checkTheInputs(osmFileName, epwWeatherFile):
         msg = "OSM file is not a valid OSM!"
         print msg
         ghenv.Component.AddRuntimeMessage(w, msg)
+        return -1
+    # Check for white space in file path.
+    if ' ' in osmFileName:
+        warning = "A white space was found in the .osm file path.  EnergyPlus cannot run out of directories with white spaces.\n" + \
+        "Copy the .osm file to a directory without a white space and try again."
+        print warning
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
         return -1
     
     return True
@@ -243,4 +251,6 @@ else:
 if openStudioIsReady and initCheck == True and openStudioIsReady == True and _runIt > 0 and _epwFileAddress and _osmFilePath:
     fileCheck = checkTheInputs(_osmFilePath, _epwFileAddress)
     if fileCheck != -1:
-        studyFolder, idfFileAddress, resultFileAddress = main(_epwFileAddress, _osmFilePath, _runIt, openStudioLibFolder)
+        result = main(_epwFileAddress, _osmFilePath, _runIt, openStudioLibFolder)
+        if result != -1:
+            studyFolder, idfFileAddress, resultFileAddress = result

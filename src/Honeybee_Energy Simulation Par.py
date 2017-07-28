@@ -23,7 +23,7 @@
 """
 EnergyPlus Shadow Parameters
 -
-Provided by Honeybee 0.0.61
+Provided by Honeybee 0.0.62
 
     Args:
         timestep_: A number between 1 and 60 that represents the number of timesteps per hour at which the simulation will be run.  The default is set to 6 timesteps per hour, which means that the energy balance calculation is run every 10 minutes of the year.
@@ -34,17 +34,17 @@ Provided by Honeybee 0.0.61
             2 = "FullInteriorAndExterior" - The simulation will perform the solar calculation in a manner that models the direct sun (and wheter it is blocked by outdoor context goemetry.  It will also ray trace the direct sun on the interior of zones to distribute it correctly between interior surfaces.  Any indirect sun or sun bouncing off of objects will not be modled.
             3 = "FullExteriorWithReflections" - The simulation will perform the solar calculation in a manner that accounts for both direct sun and the light bouncing off outdoor surrounding context.  For the inside of the building, all beam solar radiation entering the zone is assumed to fall on the floor. A simple window view factor calculation will be used to distribute incoming diffuse solar energy between interior surfaces.
             4 = "FullInteriorAndExteriorWithReflections" - The simulation will perform the solar calculation in a manner that accounts for light bounces that happen both outside and inside the zones.  This is the most accurate method and is the one assigned by default.  Note that, if you use this method, EnergyPlus will give Severe warnings if your zones have concave geometry (or are "L"-shaped).  Such geometries mess up this solar distribution calculation and it is recommeded that you either break up your zones in this case or not use this solar distribution method.
-        holidays_: A list of numbers, each between 1 and 365, that represent the days of the year on which a holiday occurs.  This can be the holiday output from the "Honeybee_Annual Schedule" component.
-        startDayOfWeek_: An integer that represents the day of the week for the first day of the year. The default is set to 2 - "monday".
+        holidays_: A list of integers, each between 1 and 365, that represent the days of the year on which a holiday occurs.  Alternatively, this can be a list of text strings (example: DEC 25).  Finally, this input can accept the "holidays" output from the "Honeybee_Convert EnergyPlus Schedule to Values" component.
+        startDayOfWeek_: An integer or text descriptor to set the ssimulation start day of the week. The default is set to 0 - sun - sunday.
             -
-            Choose one of the following:
-            1) sun
-            2) mon
-            3) tue
-            4) wed
-            5) thu
-            6) fri
-            7) sat
+            Choose from one of the following:
+            0 - sun - sunday
+            1 - mon - monday
+            2 - tue - tuesday
+            3 - wed - wednesday
+            4 - thu - thursday
+            5 - fri - friday
+            6 - sat - saturday
         simulationControls_: An optional set of simulation controls from the "Honeybee_Simulation Control" component.
         ddyFile_: An optional file path to a .ddy file on your system.  This ddy file will be used to size the HVAC system before running the simulation.
         heatingSizingFactor_: An optional number that represents the 'saftey factor' to which the heating system will be sized.  A sizing factor of 1 means that the system is sized to perfectly meet the design day conditions.  The default is set to 1.25 as it is usually appropriate to oversize the system slightly to ensure that there are no unmet hours.  Specifying a factor here that is below 1.25 can result in more hours that do not meet the heating setpoint.
@@ -61,7 +61,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Energy Simulation Par"
 ghenv.Component.NickName = 'EnergySimPar'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -70,6 +70,7 @@ ghenv.Component.SubCategory = "10 | Energy | Energy"
 try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
 except: pass
 
+import Grasshopper.Kernel as gh
 
 def main(timestep, shadowCalcPar, solarDistribution, simulationControls, ddyFile, terrain, monthlyGrndTemps, holidays, startDayOfWeek, heatingSizingFactor, coolingSizingFactor):
     solarDist = {
@@ -96,9 +97,20 @@ def main(timestep, shadowCalcPar, solarDistribution, simulationControls, ddyFile
                 "Ocean" : "Ocean"
                 }
     
-    daysOfWeek = {None:None, 1:'Sunday', 2:'Monday', 3:'Tuesday', 4:'Wednesday', 5:'Thursday', 6:'Friday', 7:'Saturday'}
+    # Check the start day of the week.
+    daysOfWeek = {'0':'Sunday', '1':'Monday', '2':'Tuesday', '3':'Wednesday', '4':'Thursday', '5':'Friday', '6':'Saturday',
+    'sun':'Sunday', 'mon':'Monday', 'tue':'Tuesday', 'wed':'Wednesday', 'thu':'Thursday', 'fri':'Friday', 'sat':'Saturday',
+    'sunday':'Sunday', 'monday':'monday', 'tuesday':'Tuesday', 'wednesday':'Wednesday', 'thursday':'Thursday', 'friday':'Friday', 'saturday':'Saturday'}
     
-    # I will add check for inputs later
+    if startDayOfWeek != None:
+        try:
+            startDayOfWeek = daysOfWeek[startDayOfWeek.lower()]
+        except:
+            warning = 'Input for startDayOfWeek_ is not valid.'
+            print warning
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+            return -1
+    
     if timestep == None: timestep = 6
     if shadowCalcPar == []:
         shadowCalcPar = ["AverageOverDaysInFrequency", 30, 3000]
@@ -120,13 +132,11 @@ def main(timestep, shadowCalcPar, solarDistribution, simulationControls, ddyFile
     if coolingSizingFactor == None:
         coolingSizingFactor = 1.15
     
-    if (monthlyGrndTemps == [] or len(monthlyGrndTemps) == 12) and (startDayOfWeek == None or (startDayOfWeek < 8 and startDayOfWeek > 0)):
-        return [timestep] + shadowCalcPar + [solarDistribution] + simulationControls + [ddyFile] + [terrain] + [monthlyGrndTemps] + [holidays]  + [daysOfWeek[startDayOfWeek]] + [heatingSizingFactor] + [coolingSizingFactor]
+    if (monthlyGrndTemps == [] or len(monthlyGrndTemps) == 12):
+        return [timestep] + shadowCalcPar + [solarDistribution] + simulationControls + [ddyFile] + [terrain] + [monthlyGrndTemps] + [holidays]  + [startDayOfWeek] + [heatingSizingFactor] + [coolingSizingFactor]
     else:
         if monthlyGrndTemps != [] and len(monthlyGrndTemps) != 12:
             warning = 'monthlyGrndTemps_ must either be left blank or contain 12 values representing the average ground temperature for each month.'
-        if startDayOfWeek != None and (startDayOfWeek > 8 or startDayOfWeek < 0):
-            warning = 'startDayOfWeek_ must be between 1 and 7.'
         print warning
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
         return None

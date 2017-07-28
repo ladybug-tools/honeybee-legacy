@@ -26,7 +26,7 @@ Load Honeybee Objects
 Use this component to load Honeybee objects from a file on your system.
 The valid files are created by dump Honeybee objects component.
 -
-Provided by Honeybee 0.0.61
+Provided by Honeybee 0.0.62
 
     Args:
         _HBObjects: A list of Honeybee objects
@@ -38,13 +38,13 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Load Honeybee Objects"
 ghenv.Component.NickName = 'loadHBObjects'
-ghenv.Component.Message = 'VER 0.0.61\nMAY_18_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "13 | WIP"
-#compatibleHBVersion = VER 0.0.59\nMAY_18_2017
+ghenv.Component.SubCategory = "00 | Honeybee"
+#compatibleHBVersion = VER 0.0.59\nJUL_24_2017
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
-try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "6"
 except: pass
 
 import cPickle as pickle
@@ -73,6 +73,7 @@ def loadHBObjects(HBData):
     hb_airDetail = sc.sticky["honeybee_hvacAirDetails"]
     hb_heatingDetail = sc.sticky["honeybee_hvacHeatingDetails"]
     hb_coolingDetail = sc.sticky["honeybee_hvacCoolingDetails"]
+    hb_viewFac = sc.sticky["honeybee_ViewFactors"]
     hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
     hb_RADMaterialAUX = sc.sticky["honeybee_RADMaterialAUX"]
     hb_hive = sc.sticky["honeybee_Hive"]()
@@ -82,7 +83,16 @@ def loadHBObjects(HBData):
     objs = HBData["objs"]
     HBObjects = {}
     
-    def loadHBconstr(HBconstrObj):
+    def loadHBviewFac(HBViewFacInfo):
+        # programs is set to default but will be overwritten
+        HBViewFac = hb_viewFac()
+        # update fields in HBZone
+        for key, value in HBViewFacInfo.iteritems():
+            HBViewFac.__dict__[key] = value
+        HBViewFac.calcNumPts()
+        HBObjects[HBViewFac.ID] = HBViewFac
+    
+    def loadHBEPstr(HBconstrObj):
         EPObject = HBconstrObj['EPstr']
         added, name = hb_EPObjectsAux.addEPObjectToLib(EPObject, True)
     
@@ -195,11 +205,14 @@ def loadHBObjects(HBData):
             loadHBheat(HBO)
         elif HBO['objectType'] == 'HBcool':
             loadHBcool(HBO)
-        elif HBO['objectType'] == 'HBConstr' or HBO['objectType'] == 'HBMat':
-            loadHBconstr(HBO)
+        elif HBO['objectType'] == 'HBConstr' or HBO['objectType'] == 'HBMat' or HBO['objectType'] == 'HBsched' or HBO['objectType'] == 'HBShdCntrl':
+            loadHBEPstr(HBO)
         elif HBO['objectType'] == 'HBRadMat':
             loadHBradMat(HBO)
+        elif HBO['objectType'] == 'ViewFactorInfo':
+            loadHBviewFac(HBO)
         else:
+            print HBO['objectType']
             raise Exception("Unsupported object! Assure all objects are Honeybee objects")
     
     # create Fenestration surfaces
@@ -211,7 +224,10 @@ def loadHBObjects(HBData):
     updateHoneybeeObjects()
     
     # return new Honeybee objects
-    return hb_hive.addToHoneybeeHive([HBObjects[id] for id in HBData["ids"]], ghenv.Component)
+    try:
+        return hb_hive.addToHoneybeeHive([HBObjects[id] for id in HBData["ids"]], ghenv.Component)
+    except:
+        return hb_hive.addNonGeoObjToHive([HBObjects[id] for id in HBData["ids"]][0], ghenv.Component)
 
 
 def main(filePath):
@@ -241,6 +257,6 @@ else:
         "into canvas and try again."
         ghenv.Component.AddRuntimeMessage(w, warning)
 
-if initCheck == True and _filePath != None:
+if initCheck == True and _filePath != None and _load == True:
     results = main(_filePath)
     HBObjects = results if results!= -1 else None

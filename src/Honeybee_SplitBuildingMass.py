@@ -34,7 +34,7 @@ Therefore, it is usually customary to break up a building depending on the areas
 This includes breaking up the building into floors (since each floor can have a different microclimate) and breanking up each floor into a core zone and perimeter zones (since each side of the buidling gets a different amount of solar gains and losses/gains through the envelope).
 This component helps break up building masses in such a manner.
 -
-Provided by Honeybee 0.0.61
+Provided by Honeybee 0.0.62
 
     Args:
         _bldgMasses: A Closed brep or list of closed breps representing a building massing.
@@ -49,7 +49,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = 'Honeybee_SplitBuildingMass'
 ghenv.Component.NickName = 'SplitMass'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
