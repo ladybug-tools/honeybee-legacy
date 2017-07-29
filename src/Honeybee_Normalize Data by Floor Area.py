@@ -107,8 +107,25 @@ def main(HBZones, simData):
     if len(dataPyList) == 1 and dataPyList[0] == []:
         return -1
     
-    # Create a list with all data combined.
-    sumPyList = sumAllDataTree(dataPyList)
+    # Normalize any recognizable zone data.
+    normZoneDat = []
+    normZoneDatValue = []
+    try:
+        for count, branch in enumerate(strPyList):
+            zName = branch[2].split('for ')[-1]
+            if zName in hbZoneNames.keys():
+                zoneDat = dataPyList[hbZoneNames[zName]]
+                flrNormDat = createNormHeader(branch)
+                flrNormDatValue = []
+                for val in zoneDat:
+                    flrNormDatValue.append(val/hbZoneAreas[hbZoneNames[zName]])
+                flrNormDat.extend(flrNormDatValue)
+                normZoneDatValue.append(zoneDat)
+                normZoneDat.append(flrNormDat)
+    except: pass
+    
+    # Create a list with all data combined (only that matches input zones).
+    sumPyList = sumAllDataTree(normZoneDatValue)
     flrNrmSumList = []
     for val in sumPyList:
         flrNrmSumList.append(val/totZoneArea)
@@ -119,19 +136,6 @@ def main(HBZones, simData):
         combDat = combHeader + flrNrmSumList
     else:
         combDat = flrNrmSumList
-    
-    # Normalize any recognizable zone data.
-    normZoneDat = []
-    try:
-        for count, branch in enumerate(strPyList):
-            zName = branch[2].split('for ')[-1]
-            if zName in hbZoneNames.keys():
-                zoneDat = dataPyList[hbZoneNames[zName]]
-                flrNormDat = createNormHeader(branch)
-                for val in zoneDat:
-                    flrNormDat.append(val/hbZoneAreas[hbZoneNames[zName]])
-                normZoneDat.append(flrNormDat)
-    except: pass
     
     return combDat, normZoneDat
 
