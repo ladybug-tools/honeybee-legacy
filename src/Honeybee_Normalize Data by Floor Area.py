@@ -125,7 +125,11 @@ def main(HBZones, simData):
     except: pass
     
     # Create a list with all data combined (only that matches input zones).
-    sumPyList = sumAllDataTree(normZoneDatValue)
+    # If the input data does not match with zones, assume that the data applies to all zones.
+    if normZoneDatValue == []:
+        sumPyList = sumAllDataTree(dataPyList)
+    else:
+        sumPyList = sumAllDataTree(normZoneDatValue)
     flrNrmSumList = []
     for val in sumPyList:
         flrNrmSumList.append(val/totZoneArea)
