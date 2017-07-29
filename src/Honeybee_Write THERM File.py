@@ -510,6 +510,13 @@ def parseErrorLog(errorLogFile, xmlFilePath):
     
     return successfulCalc
 
+def findUFacFile(uFactorFile):
+    uFacWorkingDir = os.path.dirname(os.path.realpath(uFactorFile))
+    for simfile in os.listdir(uFacWorkingDir):
+        if simfile.endswith('_thmx.thmx'):
+            uFactorFile = uFacWorkingDir + '\\' + simfile
+    return uFactorFile
+
 def replaceHeader(xmlFilePath, uFactorFile):
     headerTrigger = False
     fh, absPath = mkstemp()
@@ -1056,9 +1063,9 @@ def main(runTHERM, workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, 
             pass
         # If the calculation is successful, re-write the header of the uFactor file to contian all info of the original THMX file.
         if successfulCalc:
+            uFactorFile = findUFacFile(uFactorFile)
             replaceHeader(xmlFilePath, uFactorFile)
             # Change the name of the result file so that it matches what happens when someone manually simulates in THERM.
-            print resultDataPath
             os.rename(resultDataPath, resultDataPathFinal)
     
     return xmlFilePath, uFactorFile, resultDataPathFinal
