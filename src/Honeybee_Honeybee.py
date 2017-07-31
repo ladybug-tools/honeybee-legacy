@@ -3843,14 +3843,11 @@ class EPMaterialAux(object):
                     clmZones = []
                     # split by space " "
                     possibleAlt, zoneCode = cnstrName.split(" ")[-2:]
-                    
                     clmZoneList = zoneCode.split("-")
-                    
                     if len(clmZoneList) != 1:
                         try:
                             clmZoneRange = range(int(clmZoneList[0]), int(clmZoneList[1]) + 1)
                             for clmZone in clmZoneRange: clmZones.append(str(clmZone))
-                            
                         except:
                             clmZones = [clmZoneList[0], clmZoneList[1]]
                     else:
