@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nAUG_01_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -3852,8 +3852,8 @@ class EPMaterialAux(object):
                             clmZones = [clmZoneList[0], clmZoneList[1]]
                     else:
                         clmZones = clmZoneList
-                        
-                    if climateZone in clmZones:
+                    
+                    if climateZone[0] in clmZones or climateZone[:1] in clmZones:
                         selConstr.append(cnstrName)
                     elif climateZone[0] in clmZones:
                         # cases like 3a that is included in 3
