@@ -38,7 +38,7 @@ Provided by Honeybee 0.0.62
 """
 ghenv.Component.Name = "Honeybee_Rotate Honeybee"
 ghenv.Component.NickName = 'rotateHBObj'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJUL_31_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -102,8 +102,8 @@ def main(HBObj, angle, cenPt, axis, name, keepAdj=False):
     HBObj = hb_hive.addToHoneybeeHive(HBObject, ghenv.Component)
 
     return HBObj
-    
-if _HBObj and _angle:
+
+if _HBObj is not [] and _angle is not None:
     result = main(_HBObj, _angle, cenPt_, axis_, _name_, keepAdj_)
     
     if result!=-1:
