@@ -44,7 +44,7 @@ Provided by Honeybee 0.0.62
 """
 ghenv.Component.Name = "Honeybee_Surface Data Based On Type Detailed"
 ghenv.Component.NickName = 'srfDataByTypeDetailed'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.61\nAUG_03_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -120,7 +120,7 @@ def getSrfNames(HBZones):
         for srf in zone.surfaces:
             # WALL
             if srf.type == 0:
-                if srf.BC.upper() == "SURFACE":
+                if srf.BC.upper() == "SURFACE" or srf.BC.upper() == "ADIABATIC":
                     if srf.hasChild:
                         interiorWall.append(srf.name)
                         for childSrf in srf.childSrfs:

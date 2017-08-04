@@ -46,7 +46,7 @@ Provided by Honeybee 0.0.62
 """
 ghenv.Component.Name = "Honeybee_Decompose Based On Type"
 ghenv.Component.NickName = 'decomposeByType'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nAUG_03_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -104,7 +104,7 @@ def main(HBZone):
     for srf in zone.surfaces:
         # WALL
         if srf.type == 0:
-            if srf.BC.upper() == "SURFACE":
+            if srf.BC.upper() == "SURFACE" or srf.BC.upper() == "ADIABATIC":
                 if srf.hasChild:
                     interiorWalls.append(srf.punchedGeometry)
                     for childSrf in srf.childSrfs:
