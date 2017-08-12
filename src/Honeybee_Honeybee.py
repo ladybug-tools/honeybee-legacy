@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nAUG_12_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -1663,7 +1663,7 @@ class hb_WriteRAD(object):
             
             for objCount, HBObj in enumerate(HBObjects):
                 
-                if rotateObjects: HBObj.transform(transform, False)
+                if rotateObjects: HBObj.transform(transform, None, False)
                 
                 # check if the object is zone or a surface (?)
                 if HBObj.objectType == "HBZone":
@@ -5018,8 +5018,9 @@ class EPZone(object):
     def transform(self, transform, newKey=None, clearSurfacesBC = True, flip = False):
         if newKey == None:
             self.name += str(uuid.uuid4())[:8]
-        else:
+        elif newKey != None:
             self.name += newKey
+        
         self.geometry.Transform(transform)
         self.cenPt.Transform(transform)
         if clearSurfacesBC == True:
@@ -6506,7 +6507,7 @@ class hb_EPSurface(object):
         """
         if newKey == None:
             self.name += str(uuid.uuid4())[:8]
-        else:
+        elif newKey != None:
             self.name += newKey
         self.geometry.Transform(transform)
         self.meshedFace.Transform(transform)
