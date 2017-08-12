@@ -57,7 +57,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Microclimate Map Analysis"
 ghenv.Component.NickName = 'MicroclimateMap'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nAUG_12_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -570,7 +570,10 @@ def createShdDict(shdHeaders, shdNumbers, zoneWindowTransmiss, zoneWindowNames):
     for headerCt, header in enumerate(shdHeaders):
         windowName = header[2].split(" for ")[-1].split(":")[0].upper()
         shdDict[windowName] = shdNumbers[headerCt]
-        calcLen = len(shdNumbers[headerCt])
+        try:
+            calcLen = len(shdNumbers[headerCt])
+        except:
+            pass
     
     #Add any windows with static transmittance to the list.
     for zC, zone in enumerate(zoneWindowNames):
