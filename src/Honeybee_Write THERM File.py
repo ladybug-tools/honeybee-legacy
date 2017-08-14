@@ -56,7 +56,7 @@ from shutil import move
 
 ghenv.Component.Name = 'Honeybee_Write THERM File'
 ghenv.Component.NickName = 'writeTHERM'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nAUG_14_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -445,7 +445,9 @@ def checkThermSettings(thermSettings):
     with open(absPath,'w') as newFile:
         with open(thermSettings, "r") as settingsFile:
             for line in settingsFile:
-                if line == "SaveConrad=0\n":
+                if line == "AskAboutAutoAdjust=1\n":
+                    newFile.write("AskAboutAutoAdjust=0\n")
+                elif line == "SaveConrad=0\n":
                     newFile.write("SaveConrad=1\n")
                 elif line == "SaveResults=0\n":
                     newFile.write("SaveResults=1\n")
