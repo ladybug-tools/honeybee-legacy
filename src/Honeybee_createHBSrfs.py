@@ -60,7 +60,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_createHBSrfs'
 ghenv.Component.NickName = 'createHBSrfs'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nAUG_14_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -123,8 +123,6 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
         number = guid.split("-")[-1]
         
         if srfName != None:
-            if originalSrfName == None: originalSrfName = srfName
-            originalSrfName = originalSrfName.strip().replace(" ","_")
             if geometry.Faces.Count != 1:
                 srfName = originalSrfName + "_" + `faceCount`
             else: srfName = originalSrfName

@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.62\nAUG_12_2017'
+ghenv.Component.Message = 'VER 0.0.62\nAUG_14_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -4912,7 +4912,7 @@ class EPZone(object):
         
         self.num = zoneID
         self.ID = str(uuid.uuid4())
-        self.name = zoneName
+        self.name = self.cleanName(zoneName)
         self.hasNonPlanarSrf = False
         self.hasInternalEdge = False
         
@@ -4999,12 +4999,11 @@ class EPZone(object):
         
         # Earthtube
         self.earthtube = False
-        
-        # PV - A Honeybee zone can hold more than one photovoltaic generator for this reason we use a list 
-        # of all PV generators linked to this instance of the zone.
-        
-        # XXX self.PVgenlist = []
     
+    def cleanName(self, zname):
+        #illegal characters include : , ! ; ( ) { } [ ] .
+        return zname.strip().replace(" ","_").replace(":","-").replace(",","-").replace("!","-").replace(";","-")\
+            .replace("(","|").replace(")","|").replace("{","|").replace("}","|").replace("[","|").replace("]","|").replace(".","-")
     
     def resetID(self):
         self.ID = str(uuid.uuid4())
@@ -5927,7 +5926,7 @@ class hb_EPSurface(object):
         self.geometry = surface
         self.num = srfNumber
         
-        self.name = srfID
+        self.name = self.cleanName(srfID)
         
         self.ID = str(uuid.uuid4())
         
@@ -6069,6 +6068,11 @@ class hb_EPSurface(object):
             # I can remove default constructions at some point
             self.construction = self.cnstrSet[int(self.type)]
             self.EPConstruction = self.construction
+    
+    def cleanName(self, sname):
+        #illegal characters include : , ! ; ( ) { } [ ] .
+        return sname.strip().replace(" ","_").replace(":","-").replace(",","-").replace("!","-").replace(";","-")\
+            .replace("(","|").replace(")","|").replace("{","|").replace("}","|").replace("[","|").replace("]","|").replace(".","-")
     
     def resetID(self):
         self.ID = str(uuid.uuid4())
