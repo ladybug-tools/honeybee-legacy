@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.62\nAUG_14_2017'
+ghenv.Component.Message = 'VER 0.0.62\nAUG_17_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -5015,13 +5015,13 @@ class EPZone(object):
         self.illumCntrlSensorPt = rc.Geometry.Point3d(zoneCentPt.X, zoneCentPt.Y, zOfPt)
     
     def transform(self, transform, newKey=None, clearSurfacesBC = True, flip = False):
+        # Gnerate a new name if none is provided.
         if newKey == None:
             self.name += str(uuid.uuid4())[:8]
-        elif newKey != None:
+        else:
             self.name += newKey
         
-        self.geometry.Transform(transform)
-        self.cenPt.Transform(transform)
+        # Update air mixing accross air walls to refernce new zones
         if clearSurfacesBC == True:
             self.mixAir = False
             self.mixAirZoneList = []
@@ -5030,6 +5030,14 @@ class EPZone(object):
         else:
             for count, mixZ in enumerate(self.mixAirZoneList):
                 self.mixAirZoneList[count] = mixZ + newKey
+        
+        # Transform any daylight control sensor points.
+        if self.illumCntrlSensorPt != None:
+            self.illumCntrlSensorPt.Transform(transform)
+        
+        #Transform the geometry.
+        self.geometry.Transform(transform)
+        self.cenPt.Transform(transform)
         if flip == True:
             self.geometry.Flip()
         for surface in self.surfaces:
