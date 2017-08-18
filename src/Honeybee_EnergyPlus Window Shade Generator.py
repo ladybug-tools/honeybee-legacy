@@ -84,7 +84,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Window Shade Generator"
 ghenv.Component.NickName = 'EPWindowShades'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nAUG_17_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -940,12 +940,17 @@ def makeShade(_glzSrf):
         distToGlass = float(getValueBasedOnOrientation(distToGlass_, normalVector))
     except:
         distToGlass = None
-    if distToGlass == None: distToGlass = 0.2
+    if distToGlass == None: distToGlass = 0.1
     
     #Generate the shade geometry based on the offset distance.
-    if interiorOrExter == True: distToGlass = -distToGlass
+    transVec = copy.deepcopy(normalVector)
+    transVec.Unitize()
+    transVec = rc.Geometry.Vector3d.Multiply(distToGlass, transVec)
+    if interiorOrExter == True:
+        transVec.Reverse()
     try:
-        shdSrf = rc.Geometry.Surface.Offset(_glzSrf.Faces[0], distToGlass, sc.doc.ModelAbsoluteTolerance)
+        shdSrf = copy.deepcopy(_glzSrf)
+        shdSrf.Transform(rc.Geometry.Transform.Translation(transVec))
         shadingSurfaces.append(shdSrf)
     except: pass
     
