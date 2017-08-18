@@ -123,6 +123,8 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
         number = guid.split("-")[-1]
         
         if srfName != None:
+            if originalSrfName == None: originalSrfName = srfName
+            originalSrfName = originalSrfName.strip().replace(" ","_")
             if geometry.Faces.Count != 1:
                 srfName = originalSrfName + "_" + `faceCount`
             else: srfName = originalSrfName
