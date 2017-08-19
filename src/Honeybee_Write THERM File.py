@@ -445,8 +445,8 @@ def checkThermSettings(thermSettings):
     with open(absPath,'w') as newFile:
         with open(thermSettings, "r") as settingsFile:
             for line in settingsFile:
-                if line == "AskAboutAutoAdjust=0\n":
-                    newFile.write("AskAboutAutoAdjust=1\n")
+                if "CheckingTolerance" in line:
+                    newFile.write("CheckingTolerance=0\n")
                 elif line == "SaveConrad=0\n":
                     newFile.write("SaveConrad=1\n")
                 elif line == "SaveResults=0\n":
