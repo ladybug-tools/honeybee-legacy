@@ -43,10 +43,11 @@ Provided by Honeybee 0.0.62
         thermPolygons: The therm polygons for the glazing system.
         indoorBCs: The thermBCs that represent the interior side of the glazing system, including separate boundary conditions for the edge of frame and center of glass.  Note that a boundary condition for with the 'Frame' UFactorTag must be made separately.
         outdoorBC: A single thermBC that represents the exterior side of the glazing system.  This includes the exterior conditions taken from the report.
-        --------------------: ...
-        materials: A list of materials that correspond to the thermPolygons.  These can be used to assign the properties to new glazing geomtry.
         indoorProperties: A list of properties for the interior boundary condition in the following order: Name, temperature, film coefficient.  These can be used to create a boundary condition for the 'Frame.'
         outdoorProperties: A list of properties for the exterior boundary condition in the following order: Name, temperature, film coefficient.  These can be used to create a boundary condition that includes the frame of the window.
+        cogUValue: A value representing the "center of glass" U-value for the imported WINDOW glazing construction in SI units (W/m2-K).  This output can be used in conjunction with the "Honeybee_Assembly Uvalue" component to calculate the full U-value of a window assembly.
+        SHGC: The solar heat gain coefficient of the WINDOW glazing construction.
+        VT: The visible transmittance of the WINDOW glazing construction.
 """
 
 
@@ -60,7 +61,7 @@ import decimal
 
 ghenv.Component.Name = 'Honeybee_Import WINDOW Glz System'
 ghenv.Component.NickName = 'importWINDOW'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nAUG_20_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -165,12 +166,15 @@ def checkTheInputs():
     return glzPlane, material, thermDefault
 
 def main(windowGlzSysReport, glzPlane, spacerMaterial, thermDefault, unitConverter):
-    #Call the relevant classes
+    # Call the relevant classes
     hb_thermPolygon = sc.sticky["honeybee_ThermPolygon"]
     hb_thermBC = sc.sticky["honeybee_ThermBC"]
     hb_hive = sc.sticky["honeybee_Hive"]()
     
-    #Make a series of lists to be filled
+    # Make a series of lists to be filled.
+    cogUValue = None
+    SHGC = None
+    VT = None
     thermPolygons = []
     indoorBCs = []
     outdoorBC = []
@@ -182,7 +186,8 @@ def main(windowGlzSysReport, glzPlane, spacerMaterial, thermDefault, unitConvert
     outdoorProps = []
     materials = []
     
-    #Define some parameters to be changes while the file is open.
+    # Define some parameters to be changes while the file is open.
+    headerTrigger = True
     materialTrigger1 = False
     materialTrigger2 = False
     envConditTrigger1 = False
@@ -191,17 +196,28 @@ def main(windowGlzSysReport, glzPlane, spacerMaterial, thermDefault, unitConvert
     IPTrigger = False
     
     try:
-        #Open the file and begin extracting the relevant bits of information.
+        # Open the file and begin extracting the relevant bits of information.
         textFile = open(windowGlzSysReport, 'r')
         for lineCount, line in enumerate(textFile):
-            if 'Layer Data for Glazing System' in line: materialTrigger1 = True
+            if 'Layer Data for Glazing System' in line:
+                headerTrigger = False
+                materialTrigger1 = True
             elif 'Environmental Conditions' in line:
                 materialTrigger1 = False
                 envConditTrigger1 = True
                 outdoorProps.append(line.split('Environmental Conditions:')[-1].strip())
-            elif 'Optical Properties for Glazing System' in line: envConditTrigger1 = False
-            elif 'Outside' in line and materialTrigger1 == True: materialTrigger2 = True
-            elif 'Inside' in line and materialTrigger1 == True: materialTrigger2 = False
+            elif 'Optical Properties for Glazing System' in line:
+                envConditTrigger1 = False
+            elif 'Outside' in line and materialTrigger1 == True:
+                materialTrigger2 = True
+            elif 'Inside' in line and materialTrigger1 == True:
+                materialTrigger2 = False
+            elif 'Uvalue' in line and headerTrigger == True:
+                cogUValue = float(line.split(':')[-1].strip())
+            elif 'SHGCc' in line and headerTrigger == True:
+                SHGC = float(line.split(':')[-1].strip())
+            elif 'Vtc' in line and headerTrigger == True:
+                VT = float(line.split(':')[-1].strip())
             elif materialTrigger1 == True and materialTrigger2 == True:
                 if gasTrigger == False:
                     tableColumns = line.split('#')
@@ -253,6 +269,10 @@ def main(windowGlzSysReport, glzPlane, spacerMaterial, thermDefault, unitConvert
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Error, msg)
         print msg
         return -1
+    
+    # Convert U value to SI if necessary.
+    if IPTrigger == True and cogUValue != None:
+        cogUValue = cogUValue*5.678263337
     
     #Set any defaults for the dimensions of the glazing system.
     if IPTrigger == False:
@@ -398,7 +418,7 @@ def main(windowGlzSysReport, glzPlane, spacerMaterial, thermDefault, unitConvert
     thermInBoundary2  = hb_hive.addToHoneybeeHive([indoorRemainThermBC], ghenv.Component, False)
     
     
-    return thermPolygonsFinal, thermInBoundary1 + thermInBoundary2, thermOutBoundary, materials, indoorProps, outdoorProps
+    return thermPolygonsFinal, thermInBoundary1 + thermInBoundary2, thermOutBoundary, materials, indoorProps, outdoorProps, cogUValue, SHGC, VT
 
 
 #If Honeybee or Ladybug is not flying or is an older version, give a warning.
@@ -461,4 +481,4 @@ if initCheck and _windowGlzSysReport:
         glzPlane, spacerMaterial, thermDefault = checkData
         result = main(_windowGlzSysReport, glzPlane, spacerMaterial, thermDefault, unitConverter/1000)
         if result != -1:
-            thermPolygons, indoorBCs, outdoorBC, materials, indoorProperties, outdoorProperties = result
+            thermPolygons, indoorBCs, outdoorBC, materials, indoorProperties, outdoorProperties, cogUValue, SHGC, VT = result
