@@ -42,7 +42,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Window Material"
 ghenv.Component.NickName = 'EPWindowMat'
-ghenv.Component.Message = 'VER 0.0.62\nAUG_12_2017'
+ghenv.Component.Message = 'VER 0.0.62\nAUG_20_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
@@ -76,7 +76,7 @@ def checkInputs():
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, infoMsg)
     SHGC = checkBtwZeroAndOne(_SHGC, None, "_SHGC")
     VT = checkBtwZeroAndOne(_VT, None, "_VT")
-    U_Value = checkBtwZeroAndOne(_U_Value, None, "_VT", 5.8)
+    U_Value = checkBtwZeroAndOne(_U_Value, None, "_U_Value", 5.8)
     
     return checkData
 
