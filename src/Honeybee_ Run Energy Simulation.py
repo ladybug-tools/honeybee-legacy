@@ -61,7 +61,7 @@ Provided by Honeybee 0.0.62
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nAUG_28_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -2170,13 +2170,13 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
             if zone.isConditioned:
                 needToWriteAlwaysSched = True
                 if zone.HVACSystem.airDetails != None:
-                    if zone.HVACSystem.airDetails.HVACAvailabiltySched != 'ALWAYS ON':
+                    if zone.HVACSystem.airDetails.HVACAvailabiltySched != 'ALWAYS ON' and zone.HVACSystem.airDetails.HVACAvailabiltySched not in EPScheduleCollection:
                         EPScheduleCollection.append(zone.HVACSystem.airDetails.HVACAvailabiltySched)
                 if zone.HVACSystem.heatingDetails != None:
-                    if zone.HVACSystem.heatingDetails.heatingAvailSched != 'ALWAYS ON':
+                    if zone.HVACSystem.heatingDetails.heatingAvailSched != 'ALWAYS ON' and zone.HVACSystem.heatingDetails.heatingAvailSched not in EPScheduleCollection:
                         EPScheduleCollection.append(zone.HVACSystem.heatingDetails.heatingAvailSched)
                 if zone.HVACSystem.coolingDetails != None:
-                    if zone.HVACSystem.coolingDetails.coolingAvailSched != 'ALWAYS ON':
+                    if zone.HVACSystem.coolingDetails.coolingAvailSched != 'ALWAYS ON' and zone.HVACSystem.coolingDetails.coolingAvailSched not in EPScheduleCollection:
                         EPScheduleCollection.append(zone.HVACSystem.coolingDetails.coolingAvailSched)
         if needToWriteAlwaysSched == True and 'ALWAYS ON' not in EPScheduleCollection: EPScheduleCollection.append('ALWAYS ON')
     
