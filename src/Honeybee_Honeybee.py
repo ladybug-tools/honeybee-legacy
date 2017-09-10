@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.62\nAUG_17_2017'
+ghenv.Component.Message = 'VER 0.0.62\nSEP_10_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -5699,8 +5699,9 @@ class hb_reEvaluateHBZones(object):
         glzCoordinates = surface.extractGlzPoints(False, 2, pointOrient)
         
         # make sure order is right
-        if not isAntiClockWise(surface.coordinates, surface.normalVector):
-            surface.coordinates.reverse()
+        #if not isAntiClockWise(surface.coordinatesList, surface.normalVector):
+        #        surface.coordinatesList.reverse()
+
         
         for coorList in glzCoordinates:
             if not isAntiClockWise(coorList, surface.normalVector):
