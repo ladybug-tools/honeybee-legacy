@@ -38,7 +38,7 @@ Provided by Honeybee 0.0.62
 """
 ghenv.Component.Name = "Honeybee_Select by Type"
 ghenv.Component.NickName = 'selByType_'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nSEP_19_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -68,6 +68,8 @@ if _showFloors_ == True:
     showCases.append(2.5)
     # For underground slab
     showCases.append(2.25)
+    # For Exposed floor
+    showCases.append(2.75)
     
 if _showCeilings_: showCases.append(3)
 if _showRoofs_: showCases.append(1)
