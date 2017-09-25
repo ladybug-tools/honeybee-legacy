@@ -68,7 +68,6 @@ import math
 
 def runCmdAndGetTheResults(command, shellKey = True):
     p = subprocess.Popen(["cmd", command], shell=shellKey, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    p.wait()
     out, err = p.communicate()
     # p.kill()
     return out, err
