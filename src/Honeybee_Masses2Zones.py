@@ -51,7 +51,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_Masses2Zones'
 ghenv.Component.NickName = 'Mass2Zone'
-ghenv.Component.Message = 'VER 0.0.62\nAUG_14_2017'
+ghenv.Component.Message = 'VER 0.0.62\nSEP_24_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -119,7 +119,7 @@ def main(maximumRoofAngle, zoneMasses, zoneNames, zonePrograms, isConditioned):
         isConditioned = duplicateData(isConditioned, zoneNumber)
         print "An IsConditioned value of " + str(isConditioned[0]) + " has been applied to all " + str(zoneNumber) + " connected zones."
     elif len(isConditioned) == 0:
-        print "No value connected for isConditioned_.  All zones will be conditioned by default."
+        print "No value is connected for isConditioned_.  All zones will be conditioned by default."
     elif len(isConditioned) != zoneNumber:
         warning = "The number of items in the connected isConditioned_ list does not match the number of connected _zoneMasses. Zones will be conditioned by default to if there is not isConditioned_ value for them in the list."
         w = gh.GH_RuntimeMessageLevel.Warning
@@ -130,6 +130,11 @@ def main(maximumRoofAngle, zoneMasses, zoneNames, zonePrograms, isConditioned):
     #Give a warning if the length of the zoneNames_ list does not match the number of zones.
     if len(zoneNames) == 0:
         print "No value connected for zoneNames_.  All zones will be assigned a default name based on their order in the list."
+    elif len(zoneNames) == 1:
+        newZoneNames = []
+        for count, mass in enumerate(zoneMasses):
+            newZoneNames.append(zoneNames[0] + "_" + str(count))
+        zoneNames = newZoneNames
     elif len(zoneNames) != zoneNumber:
         warning = "The number of items in the connected zoneNames_ list does not match the number of connected _zoneMasses. Zones without a name in the list will be be assigned a default name based on their order in the list."
         w = gh.GH_RuntimeMessageLevel.Warning
@@ -141,7 +146,7 @@ def main(maximumRoofAngle, zoneMasses, zoneNames, zonePrograms, isConditioned):
     # create zones out of masses
     for zoneKey, zone in enumerate(zoneMasses):
         # zone name
-        try: zoneName = zoneNames[zoneKey]
+        try: zoneName = zoneNames[zoneKey].strip().replace(" ","_").replace(":","-")
         except:
             zoneName = "zone_" + str(sc.sticky["hBZoneCount"])
             sc.sticky["hBZoneCount"] += 1
