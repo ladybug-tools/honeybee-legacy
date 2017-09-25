@@ -60,7 +60,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_createHBSrfs'
 ghenv.Component.NickName = 'createHBSrfs'
-ghenv.Component.Message = 'VER 0.0.62\nAUG_14_2017'
+ghenv.Component.Message = 'VER 0.0.62\nSEP_25_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -207,10 +207,16 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
                 try:
                     HBSurface.setBC(EPBC, isUserInput= True)
                     
+                    if EPBC.lower()== "adiabatic":
+                        if srfType == None and str(HBSurface.type).startswith('2'):
+                            HBSurface.setType(2, False)
+                        elif srfType == None and str(HBSurface.type).startswith('1'):
+                            HBSurface.setType(3, False)
+                        HBSurface.setEPConstruction(HBSurface.intCnstrSet[HBSurface.type])
+                    
                     # change type of surface if BC is set to ground
                     if EPBC.lower()== "ground":
                         HBSurface.setType(int(HBSurface.type) + 0.5, isUserInput= True)
-                    
                     
                     if EPBC.lower()== "ground" or EPBC.lower()== "adiabatic":
                         HBSurface.setSunExposure('NoSun')
@@ -297,7 +303,7 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
                 warningMsg = "Failed to add " + RADMaterial + " to the Library."
                 ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
                 return
-            
+        
         HBSurfaces.append(HBSurface)
     
     # add to the hive
