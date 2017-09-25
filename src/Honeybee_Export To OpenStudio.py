@@ -69,7 +69,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.62\nSEP_24_2017'
+ghenv.Component.Message = 'VER 0.0.62\nSEP_25_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -3615,13 +3615,20 @@ class WriteOPS(object):
                 else:
                     constructionText = str(self.defaultConstrDict[str(surface.type)].name())
                 
-                if constructionText != str(surface.EPConstruction):
+                if constructionText != str(surface.EPConstruction) or surface.BC.upper() == "ADIABATIC":
                     if self.isConstructionInLib(surface.EPConstruction):
                         construction = self.getConstructionFromLib(surface.EPConstruction)
                     else:
                         construction = self.getOSConstruction(surface.EPConstruction, model)
                         self.addConstructionToLib(surface.EPConstruction, construction)
                     thisSurface.setConstruction(construction)
+            elif surface.BC.upper() == "ADIABATIC":
+                if self.isConstructionInLib(surface.construction):
+                    construction = self.getConstructionFromLib(surface.construction)
+                else:
+                    construction = self.getOSConstruction(surface.construction, model)
+                    self.addConstructionToLib(surface.construction, construction)
+                thisSurface.setConstruction(construction)
             
             thisSurface.setOutsideBoundaryCondition(surface.BC.capitalize())
             if surface.BC.capitalize()!= "ADIABATIC":
