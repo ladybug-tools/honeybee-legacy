@@ -301,10 +301,6 @@ if initCheck == True:
         # clean first input
         cleanFirstInput()
         
-        for i in range(1, ghenv.Component.Params.Input.Count):
-            if ghenv.Component.Params.Input[i].NickName.startswith("_"):
-                print "warning"
-        
         if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component):
             OSMeasure = None
     else:
