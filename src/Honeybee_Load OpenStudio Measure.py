@@ -289,13 +289,8 @@ if initCheck == True:
         
         measure = OpenStudio.BCLMeasure(OpenStudio.Path(_OSMeasure))
         if measure.arguments().Count == 0:
-            print "https://youtu.be/S4wvL7_DJBM"
-            msg = "Failed to load measure arguments. You need to regenerate measure.xml file." + \
-                "\nCheck this disucssion to know how to do that using OpenStudio application." + \
-                "\nhttps://unmethours.com/question/16955/openstudiobclmeasurearguments-returns-an-empty-vector/" + \
-                "\n\nCheck read me for the link to the YouTube video that shows you how to fix this."
-            raise Exception(msg)
-            
+            print "Measure contains no arguments."
+        
         # load arguments
         args = get_measureArgs(xmlFile)
         
