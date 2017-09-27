@@ -69,7 +69,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.62\nSEP_25_2017'
+ghenv.Component.Message = 'VER 0.0.62\nSEP_27_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -4267,7 +4267,7 @@ class RunOPS(object):
         fiw.close()
     
     
-    def runAnalysis(self, osmFile, runEnergyPlus, useRunManager = False):
+    def runAnalysis(self, osmFile, runEnergyPlus):
         
         # Preparation
         workingDir, fileName = os.path.split(osmFile)
@@ -4280,57 +4280,8 @@ class RunOPS(object):
         print 'OSM > IDF: ' + str(idfPath)
         
         if runEnergyPlus < 3:
-            if not useRunManager:
-                resultFile = self.writeBatchFile(idfFolder, "ModelToIdf\\in.idf", self.weatherFile, runEnergyPlus > 1)
-                return os.path.join(idfFolder, "ModelToIdf", "in.idf"), resultFile
-            
-            outputPath = ops.Path(idfFolder)
-            
-            rmDBPath = ops.Path(os.path.join(idfFolder, projectName + ".db"))
-            try:
-                rm = ops.RunManager(rmDBPath, True, True, False, False)
-                
-                # set up tool info to pass to run manager
-                energyPlusTool = ops.ToolInfo(self.EPPath)
-                toolInfo = ops.Tools()
-                toolInfo.append(energyPlusTool)
-                
-                # get manager configration options
-                configOptions = rm.getConfigOptions()
-                
-                EPRunJob = ops.JobFactory.createEnergyPlusJob(energyPlusTool, self.iddFile, idfPath,
-                                                   self.epwFile, outputPath)
-                
-                # put in queue and let it go
-                rm.enqueue(EPRunJob, True)
-                rm.setPaused(False)
-                
-                # This make Rhino and NOT Grasshopper to crash
-                # I should send this as a discussion later
-                #rm.showStatusDialog()
-                
-                while rm.workPending():
-                    time.sleep(1)
-                    print "Running simulation..."
-                #    print "Process Event:" + str(ops.Application.instance().processEvents())
-                jobErrors = EPRunJob.errors()
-                #    print jobErrors.succeeded()
-                
-                # print "Process: " + str(ops.Application.instance().processEvents())
-                print "Errors and Warnings:"
-                for msg in list(jobErrors.errors()):
-                    print msg
-                    
-                rm.Dispose() # don't remove this as Rhino will crash if you don't dispose run manager
-                
-                if jobErrors.succeeded():
-                    return os.path.join(idfFolder, "ModelToIdf", "in.idf"), idfFolder + "\\EnergyPlus\\epluszsz.csv"
-                else:
-                    return None, None
-                    
-            except Exception, e:
-                 rm.Dispose() # in case anything goes wrong it closes the rm
-                 print `e`
+            resultFile = self.writeBatchFile(idfFolder, "ModelToIdf\\in.idf", self.weatherFile, runEnergyPlus > 1)
+            return os.path.join(idfFolder, "ModelToIdf", "in.idf"), resultFile
         else:
             return os.path.join(idfFolder, "ModelToIdf", "in.idf"), None
     
@@ -4349,7 +4300,7 @@ class RunOPS(object):
         folderName = workingDir.replace( (workingDrive + '\\'), '')
         batchStr = workingDrive + '\ncd\\' +  folderName + '\n"' + EPDirectory + \
                 'Epl-run" ' + fullPath + ' ' + fullPath + ' idf ' + epwFileAddress + ' EP N nolimit N N 0 Y'
-    
+        
         batchFileAddress = fullPath +'.bat'
         batchfile = open(batchFileAddress, 'w')
         batchfile.write(batchStr)
@@ -4655,7 +4606,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         hb_runOPS = RunOPS(model, epwWeatherFile, HBZones, hb_writeOPS.simParameters, openStudioLibFolder, csvSchedules, \
             csvScheduleCount, additionalcsvSchedules, shadeCntrlToReplace, replaceShdCntrl, windowSpectralData, waterSourceVRFs)
         
-        idfFile, resultFile = hb_runOPS.runAnalysis(fname, runIt, useRunManager = False)
+        idfFile, resultFile = hb_runOPS.runAnalysis(fname, runIt)
         if runIt < 3:
             try:
                 errorFileFullName = idfFile.replace('.idf', '.err')
