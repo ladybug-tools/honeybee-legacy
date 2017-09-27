@@ -317,7 +317,7 @@ if initCheck == True:
         
         if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component):
             OSMeasure = None
-    elif ghenv.Component.Params.Input.Count==1:
+    elif ghenv.Component.Params.Input.Count==1 and not _OSMeasure == False:
         sc.sticky['honeybee_release'].isInputMissing(ghenv.Component)
     else:
         OSMeasure = loadMeasureFromMem()
