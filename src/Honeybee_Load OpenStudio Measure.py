@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.62
 """
 ghenv.Component.Name = "Honeybee_Load OpenStudio Measure"
 ghenv.Component.NickName = 'importOSMeasure'
-ghenv.Component.Message = 'VER 0.0.62\nSEP_25_2017'
+ghenv.Component.Message = 'VER 0.0.62\nSEP_26_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"
@@ -232,7 +232,9 @@ class OpenStudioMeasure:
                 value = ghenv.Component.Params.Input[i].VolatileData[0][0]
             except:
                 value = self.args[i].default_value
-                
+                path = gh.Data.GH_Path(0)
+                ghenv.Component.Params.Input[i].AddVolatileData(path, 0, value)
+            
             self.args[i].update_value(value)
     
     def __repr__(self):
@@ -248,7 +250,6 @@ if not sc.sticky.has_key('honeybee_release') == True:
 else:
     try:
         if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): initCheck = False
-        if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): initCheck = False
         hb_hvacProperties = sc.sticky['honeybee_hvacProperties']()
         hb_airDetail = sc.sticky["honeybee_hvacAirDetails"]
         hb_heatingDetail = sc.sticky["honeybee_hvacHeatingDetails"]
@@ -261,6 +262,24 @@ else:
         "into canvas and try again."
         ghenv.Component.AddRuntimeMessage(w, warning)
 
+
+def loadMeasureFromMem():
+    try:
+        key = ghenv.Component.InstanceGuid.ToString()
+        OSMeasure = sc.sticky["osMeasures"][key]
+        OSMeasure.updateArguments()
+        ghenv.Component.Name = OSMeasure.name
+        ghenv.Component.NickName =  OSMeasure.nickName
+        ghenv.Component.Description = OSMeasure.description
+        return OSMeasure
+    except Exception , e:
+        msg = "Couldn't load the measure!\n%s" % str(e)
+            
+        if ghenv.Component.Params.Input.Count!=1:
+            msg += "\nTry to reload the measure with a fresh component."
+            raise Exception(msg)
+        print msg
+        return None
 
 if initCheck == True:
     if ghenv.Component.Params.Input.Count==1 and _OSMeasure:
@@ -303,18 +322,8 @@ if initCheck == True:
         
         if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component):
             OSMeasure = None
+    elif ghenv.Component.Params.Input.Count==1:
+        sc.sticky['honeybee_release'].isInputMissing(ghenv.Component)
     else:
-        try:
-            key = ghenv.Component.InstanceGuid.ToString()
-            OSMeasure = sc.sticky["osMeasures"][key]
-            OSMeasure.updateArguments()
-            ghenv.Component.Name = OSMeasure.name
-            ghenv.Component.NickName =  OSMeasure.nickName
-            ghenv.Component.Description = OSMeasure.description
-        except Exception , e:
-            msg = "Couldn't load the measure!\n%s" % str(e)
-                
-            if ghenv.Component.Params.Input.Count!=1:
-                msg += "\nTry to reload the measure with a fresh component."
-                raise Exception(msg)
-            print msg
+        OSMeasure = loadMeasureFromMem()
+        sc.sticky['honeybee_release'].isInputMissing(ghenv.Component)
