@@ -69,7 +69,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.62\nSEP_27_2017'
+ghenv.Component.Message = 'VER 0.0.62\nOCT_04_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -3044,7 +3044,8 @@ class WriteOPS(object):
         '2.75': [],
         '3': [],
         '5': [],
-        '5.5': []
+        '5.5': [],
+        '5.25': []
         }
         
         # Pull all of the constructions out of the model.
@@ -3073,6 +3074,8 @@ class WriteOPS(object):
                         
                         if srf.BC.lower() == 'surface' or srf.BC.lower() == 'adiabatic':
                             self.defaultConstrDict['5.5'].append(constructionText)
+                        elif srf.type == 1:
+                            self.defaultConstrDict['5.25'].append(constructionText)
                         else:
                             self.defaultConstrDict['5'].append(constructionText)
         
@@ -3127,7 +3130,10 @@ class WriteOPS(object):
         extWindowConstrs = ops.DefaultSubSurfaceConstructions(model)
         if self.defaultConstrDict['5'] != None:
             extWindowConstrs.setFixedWindowConstruction(self.defaultConstrDict['5'])
+        if self.defaultConstrDict['5.25'] != None:
+            extWindowConstrs.setSkylightConstruction(self.defaultConstrDict['5.25'])
         self.defaultConstrSet.setDefaultExteriorSubSurfaceConstructions(extWindowConstrs)
+        
         intWindowConstrs = ops.DefaultSubSurfaceConstructions(model)
         if self.defaultConstrDict['5.5'] != None:
             intWindowConstrs.setFixedWindowConstruction(self.defaultConstrDict['5.5'])
@@ -3666,6 +3672,8 @@ class WriteOPS(object):
             if childSrf.EPConstruction != None:
                 if childSrf.BC.lower() == 'surface' or childSrf.BC.lower() == 'adiabatic':
                     constructionText = str(self.defaultConstrDict['5.5'].name())
+                elif surface.type == 1:
+                    constructionText = str(self.defaultConstrDict['5.25'].name())
                 else:
                     constructionText = str(self.defaultConstrDict['5'].name())
                 
