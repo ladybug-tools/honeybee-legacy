@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.62\nSEP_10_2017'
+ghenv.Component.Message = 'VER 0.0.62\nOCT_06_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -9101,6 +9101,118 @@ class hb_coolingDetail(object):
         else:
             return False, errors
 
+class OPSChoice(object):
+    
+    def __init__(self, originalString):
+        self.originalString = originalString
+        self.value = self.get_value()
+        self.display_name = self.get_display_name()
+    
+    def get_display_name(self):
+        return self.originalString.split("<display_name>")[-1].split("</display_name>")[0]
+    
+    def get_value(self):
+        return self.originalString.split("<value>")[-1].split("</value>")[0]
+    
+    def __repr__(self):
+        return self.display_name
+
+class OPSMeasureArg(object):
+    def __init__(self, originalString):
+        self.originalString = originalString
+        self.name = self.get_name()
+        self.display_name = self.get_display_name()
+        self.description = self.get_description()
+        self.type = self.get_type()
+        self.required = self.get_required()
+        if self.required == True:
+            self.display_name = "_" + self.display_name
+        else:
+            self.display_name = self.display_name + "_"
+        self.model_dependent = self.get_model_dependent()
+        self.default_value = self.get_default_value()
+        self.choices = self.get_choices()
+        self.validChoices = [choice.value.lower() for choice in self.choices]
+        self.userInput = None
+        
+    def get_name(self):
+        return self.originalString.split("<name>")[-1].split("</name>")[0]
+    
+    def get_display_name(self):
+        return self.originalString.split("</display_name>")[0].split("<display_name>")[-1]
+    
+    def get_description(self):
+        return self.originalString.split("<description>")[-1].split("</description>")[0]
+    
+    def get_type(self):
+        return self.originalString.split("<type>")[-1].split("</type>")[0]
+    
+    def get_required(self):
+        req = self.originalString.split("<required>")[-1].split("</required>")[0]
+        return True if req.strip() == "true" else False
+    
+    def get_model_dependent(self):
+        depends = self.originalString.split("<model_dependent>")[-1].split("</model_dependent>")[0]
+        return True if depends.strip() == "true" else False
+    
+    def get_default_value(self):
+        if not "<default_value>" in self.originalString:
+            return None
+        else:
+            value = self.originalString.split("<default_value>")[-1].split("</default_value>")[0]
+        if self.type.lower() != "boolean": return value
+        return True if value.strip() == "true" else False
+    
+    def get_choices(self):
+        choicesContainer = self.originalString.split("<choices>")[-1].split("</choices>")[0]
+        choices = [arg.split("<choice>")[-1] for arg in choicesContainer.split("</choice>")][:-1]
+        return [OPSChoice(choice) for choice in choices]
+    
+    def update_value(self, userInput):
+        #currently everything is string
+        if len(self.validChoices) == 0:
+            self.userInput = userInput
+        elif str(userInput).lower() not in self.validChoices:
+            #give warning
+            msg = str(userInput) + " is not a valid input for " + self.display_name + ".\nValid inputs are: " + str(self.choices)
+            give_warning(msg)
+        else:
+            self.userInput = userInput
+    
+    def __repr__(self):
+        return (self.display_name + "<" + self.type + "> " + str(self.choices) + \
+               " Current Value: %s")%(self.default_value if not self.userInput else self.userInput)
+
+class OpenStudioMeasure(object):
+    
+    def __init__(self, xmlFile):
+        self.nickName = os.path.normpath(xmlFile).split("\\")[-2]
+        
+        with open(xmlFile, "r") as measure:
+            lines = "".join(measure.readlines())
+            self.name = lines.split("</display_name>")[0].split("<display_name>")[-1]
+            self.description = lines.split("</description>")[0].split("<description>")[-1]
+        
+        self.path = os.path.normpath(os.path.split(xmlFile)[0])
+        self.args = self.get_measureArgs(xmlFile)
+    
+    def get_measureArgs(self, xmlFile):
+        # there is no good XML parser for IronPython
+        # here is parsing the file
+        with open(xmlFile, "r") as measure:
+            lines = measure.readlines()
+            argumentsContainer = "".join(lines).split("<arguments>")[-1].split("</arguments>")[0]
+        
+        arguments = [arg.split("<argument>")[-1] for arg in argumentsContainer.split("</argument>")][:-1]
+        
+        #collect arguments in a dictionary so I can map the values on update
+        args = dict()
+        for count, arg in enumerate(arguments):
+            args[count+1] = OPSMeasureArg(arg)
+        return args
+    
+    def __repr__(self):
+        return "OpenStudio " + self.name
 
 
 
@@ -9215,7 +9327,7 @@ if checkIn.letItFly:
         sc.sticky["honeybee_folders"]["DSLibPath"] = hb_DSLibPath
         
         # supported versions for EnergyPlus
-        EPVersions = ["V8-7-0", "V8-6-0", "V8-5-0", "V8-4-0","V8-3-0", "V8-2-10", \
+        EPVersions = ["V8-8-0","V8-7-0", "V8-6-0", "V8-5-0", "V8-4-0","V8-3-0", "V8-2-10", \
                       "V8-2-9", "V8-2-8", "V8-2-7", "V8-2-6", \
                       "V8-2-5", "V8-2-4", "V8-2-3", "V8-2-2", "V8-2-1", "V8-2-0", \
                       "V8-1-5", "V8-1-4", "V8-1-3", "V8-1-2", "V8-1-1", "V8-1-0"]
@@ -9452,6 +9564,8 @@ if checkIn.letItFly:
         sc.sticky["honeybee_EPTypes"] = EPTypes()
         sc.sticky["honeybee_EPZone"] = EPZone
         sc.sticky["honeybee_EPHvac"] = EPHvac
+        sc.sticky["honeybee_Measure"] = OpenStudioMeasure
+        sc.sticky["honeybee_MeasureArg"] = OPSMeasureArg
         sc.sticky["honeybee_ThermPolygon"] = thermPolygon
         sc.sticky["honeybee_ThermBC"] = thermBC
         sc.sticky["honeybee_ThermDefault"] = thermDefaults

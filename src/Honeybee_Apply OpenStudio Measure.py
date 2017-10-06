@@ -38,18 +38,21 @@ Provided by Honeybee 0.0.62
             1 = Run the OSM and IDF through EnergyPlus with a command prompt window that displays the progress of the simulation
             2 = Run the OSM and IDF through EnergyPlus in the background (without the command line popup window).
             3 = Generate an IDF from the OSM file but do not run it through EnergyPlus
+            4 = Run the OSM and IDF through EnergyPlus using only OpenStudio CLI (note that there will be no resultFileAddress produced in this case).
     Returns:
         readMe!: ...
         osmFileAddress: The file path of the OSM file that has been generated on your machine.
         idfFileAddress: The file path of the IDF file that has been generated on your machine. This file is only generated when you set "runSimulation_" to "True."
+        sqlFileAddress: The file path to the SQL result file that has been generated on your machine.  This file contains all results from the energy model run.
         eioFileAddress:  The file path of the EIO file that has been generated on your machine.  This file contains information about the sizes of all HVAC equipment from the simulation.  This file is only generated when you set "runSimulation_" to "True."
         rddFileAddress: The file path of the Result Data Dictionary (.rdd) file that is generated after running the file through EnergyPlus.  This file contains all possible outputs that can be requested from the EnergyPlus model.  Use the "Honeybee_Read Result Dictionary" to see what outputs can be requested.
+        htmlReport:Tthe file path to the HTML report that was generated after running the file through EnergyPlus.  Open this in a web browser for an overview of the energy model results.
         studyFolder: The directory in which the simulation has been run.  Connect this to the 'Honeybee_Lookup EnergyPlus' folder to bring many of the files in this directory into Grasshopper.
 """
 
 ghenv.Component.Name = "Honeybee_Apply OpenStudio Measure"
 ghenv.Component.NickName = 'applyOSMeasure'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nOCT_06_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"
@@ -60,6 +63,8 @@ except: pass
 
 import os
 import shutil
+import scriptcontext as sc
+import Grasshopper.Kernel as gh
 
 if sc.sticky.has_key('honeybee_release'):
     if sc.sticky["honeybee_folders"]["OSLibPath"] != None:
@@ -88,13 +93,41 @@ if sc.sticky.has_key('honeybee_release'):
 else:
     openStudioIsReady = False
 
+def writeBatchFile(workingDir, idfFileName, epwFileAddress, runInBackground = False):
+    
+    EPDirectory = sc.sticky["honeybee_folders"]["EPPath"]
+    workingDrive = workingDir[:2]
+    if idfFileName.EndsWith('.idf'):  shIdfFileName = idfFileName.replace('.idf', '')
+    else: shIdfFileName = idfFileName
+    
+    if not workingDir.EndsWith('\\'): workingDir = workingDir + '\\'
+    
+    fullPath = workingDir + shIdfFileName
+    folderName = workingDir.replace( (workingDrive + '\\'), '')
+    batchStr = workingDrive + '\ncd\\' +  folderName + '\n"' + EPDirectory + \
+            'Epl-run" ' + fullPath + ' ' + fullPath + ' idf ' + epwFileAddress + ' EP N nolimit N N 0 Y'
+    
+    batchFileAddress = fullPath +'.bat'
+    batchfile = open(batchFileAddress, 'w')
+    batchfile.write(batchStr)
+    batchfile.close()
+    
+    #execute the batch file
+    if runInBackground:
+        self.runCmd(batchFileAddress)
+    else:
+        os.system(batchFileAddress)
+    
+    return fullPath + "Zsz.csv",fullPath+".sql",fullPath+".csv", fullPath+".rdd", fullPath+".eio", fullPath+"Table.html"
+
+
 def runCmd(self, batchFileAddress, shellKey = True):
     batchFileAddress.replace("\\", "/")
     p = subprocess.Popen(["cmd /c ", batchFileAddress], shell=shellKey, stdout=subprocess.PIPE, stderr=subprocess.PIPE)		
     out, err = p.communicate()
 
 
-def main(runIt, epwFile, OSMeasures, osmFile):
+def main(runIt, epwFile, OSMeasures, osmFile, hb_OpenStudioMeasure):
     
     # check inputs
     if not os.path.isfile(epwFile) or not epwFile.lower().endswith(".epw"):
@@ -122,7 +155,8 @@ def main(runIt, epwFile, OSMeasures, osmFile):
     wf = OpenStudio.WorkflowJSON()
     wf.setOswPath(oswPath)
     wf.setSeedFile(osmPath)
-    wf.setWeatherFile(epwPath)
+    if runIt == 4:
+        wf.setWeatherFile(epwPath)
     
     # Add the measures to the workflow.
     workflowSteps = []
@@ -146,35 +180,51 @@ def main(runIt, epwFile, OSMeasures, osmFile):
     wf.setWorkflowSteps(stepVector)
     wf.save()
     
-    # Write the batch file
+    # Write the batch file.
     workingDrive = workingDir[:2].upper()
     osExePath = '/'.join(openStudioLibFolder.split('/')[:-2]) +'/bin/'
     osExePath = osExePath.replace('/', '\\')
     osExePath = osExePath.replace((workingDrive + '\\'), '')
     
-    if runIt != 3:
-        batchStr = workingDrive + '\ncd\\' +  osExePath + '\n"' + 'openstudio.exe"' + ' run -w ' + oswAddress
-    else:
-        batchStr = workingDrive + '\ncd\\' +  osExePath + '\n"' + 'openstudio.exe"' + ' run -m ' + oswAddress
+    # Write the batch file to apply the measures.
+    batchStr = workingDrive + '\ncd\\' +  osExePath + '\n"' + 'openstudio.exe"' + ' run -w ' + oswAddress
     batchFileAddress = workingDir + '\\' + osmName.replace(" ", "_") +'.bat'
     batchfile = open(batchFileAddress, 'w')
     batchfile.write(batchStr)
     batchfile.close()
     
-    #execute the batch file
+    # Apply the measures.
     if runIt == 2:
         self.runCmd(batchFileAddress)
     else:
         os.system(batchFileAddress)
     
-    # Get all of the resulting files.
+    # Run the resulting IDF through EnergyPlus using EPl-Run.
     runDir = workingDir + '\\' + 'run\\'
+    epRunDir = workingDir + '\\' + osmName + '\\'
+    if runIt < 3:
+        try:
+            os.mkdir(epRunDir)
+        except:
+            pass
+        idfFolder = os.path.join(epRunDir)
+        idfFolder = os.path.join(idfFolder, "ModelToIdf")
+        try:
+            os.mkdir(idfFolder)
+        except:
+            pass
+        idfFilePath = os.path.join(idfFolder, "in.idf")
+        shutil.copy(runDir+"in.idf", idfFilePath)
+        resultFile = writeBatchFile(idfFolder, "in.idf", epwFile, runIt > 1)
+    
+    # Get all of the resulting files.
     osmFileAddress = runDir + 'in.osm'
     idfFileAddress = runDir + 'in.idf'
+    sqlFileAddress = runDir + 'eplusout.sql'
     eioFileAddress = runDir + 'eplusout.eio'
     rddFileAddress = runDir + 'eplusout.rdd'
     
-    return osmFileAddress, idfFileAddress, eioFileAddress, rddFileAddress, runDir
+    return osmFileAddress, idfFileAddress, sqlFileAddress, eioFileAddress, rddFileAddress, runDir
 
 #Honeybee check.
 initCheck = True
@@ -186,10 +236,8 @@ else:
     try:
         if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): initCheck = False
         if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): initCheck = False
-        hb_hvacProperties = sc.sticky['honeybee_hvacProperties']()
-        hb_airDetail = sc.sticky["honeybee_hvacAirDetails"]
-        hb_heatingDetail = sc.sticky["honeybee_hvacHeatingDetails"]
-        hb_coolingDetail = sc.sticky["honeybee_hvacCoolingDetails"]
+        hb_OpenStudioMeasure = sc.sticky["honeybee_Measure"]
+        hb_OPSMeasureArg = sc.sticky["honeybee_MeasureArg"]
     except:
         initCheck = False
         warning = "You need a newer version of Honeybee to use this compoent." + \
@@ -199,6 +247,6 @@ else:
         ghenv.Component.AddRuntimeMessage(w, warning)
 
 if openStudioIsReady and initCheck == True and _runIt > 0:
-    result = main(_runIt, _epwWeatherFile, _OSMeasures, _osmFilePath)
+    result = main(_runIt, _epwWeatherFile, _OSMeasures, _osmFilePath, hb_OpenStudioMeasure)
     if result != -1:
-        osmFileAddress, idfFileAddress, eioFileAddress, rddFileAddress, studyFolder = result
+        osmFileAddress, idfFileAddress, sqlFileAddress, eioFileAddress, rddFileAddress, studyFolder = result
