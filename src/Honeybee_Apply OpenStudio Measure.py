@@ -202,29 +202,43 @@ def main(runIt, epwFile, OSMeasures, osmFile, hb_OpenStudioMeasure):
     # Run the resulting IDF through EnergyPlus using EPl-Run.
     runDir = workingDir + '\\' + 'run\\'
     epRunDir = workingDir + '\\' + osmName + '\\'
+    idfFolder = os.path.join(epRunDir)
+    idfFolder = os.path.join(idfFolder, "ModelToIdf")
+    idfFilePath = os.path.join(idfFolder, "in.idf")
+    if not os.path.isfile(runDir+"in.idf"):
+        # The simulation has not run correctly and we must parse the error log.
+        logfile  = runDir + 'run.log'
+        if os.path.isfile(logfile):
+            errorFound = False
+            errorMsg = 'The measures did not correctly as a result of the following error:\n'
+            with open(logfile, "r") as log:
+                for line in log:
+                    if 'ERROR]' in line and errorFound == False:
+                        errorFound = True
+                        msg = line.split('ERROR]')[-1]
+                        errorMsg = errorMsg + msg
+            print errorMsg
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, errorMsg)
+            return -1
+    
+    
     if runIt < 3:
         try:
             os.mkdir(epRunDir)
         except:
             pass
-        idfFolder = os.path.join(epRunDir)
-        idfFolder = os.path.join(idfFolder, "ModelToIdf")
         try:
             os.mkdir(idfFolder)
         except:
             pass
-        idfFilePath = os.path.join(idfFolder, "in.idf")
-        shutil.copy(runDir+"in.idf", idfFilePath)
-        resultFile = writeBatchFile(idfFolder, "in.idf", epwFile, runIt > 1)
+        shutil.copy(runDir+"pre-preprocess.idf", idfFilePath)
+        resultFile = writeBatchFile(epRunDir, "ModelToIdf\\in.idf", epwFile, runIt > 1)
+    else:
+        idfFilePath = None
     
-    # Get all of the resulting files.
     osmFileAddress = runDir + 'in.osm'
-    idfFileAddress = runDir + 'in.idf'
-    sqlFileAddress = runDir + 'eplusout.sql'
-    eioFileAddress = runDir + 'eplusout.eio'
-    rddFileAddress = runDir + 'eplusout.rdd'
     
-    return osmFileAddress, idfFileAddress, sqlFileAddress, eioFileAddress, rddFileAddress, runDir
+    return osmFileAddress, idfFilePath, resultFile[2], resultFile[1], resultFile[4], resultFile[3], resultFile[5], workingDir
 
 #Honeybee check.
 initCheck = True
@@ -249,4 +263,4 @@ else:
 if openStudioIsReady and initCheck == True and _runIt > 0:
     result = main(_runIt, _epwWeatherFile, _OSMeasures, _osmFilePath, hb_OpenStudioMeasure)
     if result != -1:
-        osmFileAddress, idfFileAddress, sqlFileAddress, eioFileAddress, rddFileAddress, studyFolder = result
+        osmFileAddress, idfFileAddress, resultFileAddress, sqlFileAddress, eioFileAddress, rddFileAddress, htmlReport, studyFolder = result
