@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.62\nSEP_10_2017'
+ghenv.Component.Message = 'VER 0.0.62\nOCT_09_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -82,9 +82,10 @@ import uuid
 import re
 import random
 import zipfile
+import itertools
 
 PI = math.pi
-
+tolerance = sc.doc.ModelAbsoluteTolerance
 rc.Runtime.HostUtils.DisplayOleAlerts(False)
 
 class CheckIn():
@@ -9101,9 +9102,77 @@ class hb_coolingDetail(object):
         else:
             return False, errors
 
-
-
-
+class hb_NonConvexChecking(object):
+    """
+    This class currently holds isConvex function only. Eventually, this class shall be merged with the other zone spliting class.
+    """
+    def __init__(self, surface):
+        self.surface = surface
+    
+    def isConvex(self):
+        """
+        This function takes a brep surface and checks whether that is convex or non-convex
+        Args
+            surface: A brep surface
+        return
+            check : True if the surface is convex and False if it is not non-convex.
+            faultyGeometry : A list of faultyGeometry.
+        """
+        
+        #Getting the center of the  base brep surface to find the vector at this point
+        center = rc.Geometry.AreaMassProperties.Compute(self.surface)
+        center = center.Centroid
+        
+        #Getting the vector at the center of the  base brep surface
+        face = self.surface.Faces[0]
+        centerVector = face.NormalAt(center[0], center[1])
+     
+        #Now getting vertices of the base brep surface and sorting those vertice in order
+        joinedBorder = rc.Geometry.Curve.JoinCurves(self.surface.DuplicateEdgeCurves())
+        pts = self.surface.DuplicateVertices()
+        pointsSorted = sorted(pts, key =lambda pt: joinedBorder[0].ClosestPoint(pt)[1])
+    
+        #Creating two item pairs for all the vertices
+        #Connecting points of each pair will give us a line per pair
+        #This line can be used for split the brep
+        #However, since a brep can't be split by a line in rhinocommon, we'll have to create cuttingBrepss
+        permutations = itertools.combinations(pointsSorted, 2)
+        pointPairs = [item for item in permutations]
+            
+        #Each pair of points are projected on the both the sides of the surface by a certain distance (factor)
+        #This gives four points for every two points.
+        #These four points are used to create cuttingBreps.
+        cutBreps = []
+        factor = 2
+        for pair in pointPairs:
+            point01 = pair[0]
+            point02 = pair[1]
+            direction = centerVector
+            vertice01 = point01 + direction * factor
+            vertice02 = point02 + direction * factor
+            vertice03 = point02 + direction * factor * -1
+            vertice04 = point01 + direction * factor * -1
+            cutSurface = rc.Geometry.Brep.CreateFromCornerPoints(vertice01, vertice02, vertice03, vertice04, tolerance)
+            cutBreps.append(cutSurface)
+        
+        #Filtering breps by intersection. This intersection returns a list of curves.
+        #If the length of the list if 0, there's no intersecction.
+        #If a baseBrep is not a valid baseBrep, then such baseBreps are to be caught as faultyGeometry
+        faultyGeometry = []
+        try:
+            intersections = [rc.Geometry.Intersect.Intersection.BrepBrep(cutter, self.surface, tolerance)[1] for cutter in cutBreps]
+            for curveList in intersections:
+                curveLengthList = [len(item) for item in intersections]
+            if 0 in curveLengthList:
+                check = False
+            else:
+                check = True
+                
+        except Exception:
+            faultyGeometry.append(self.surface)
+            check = None
+            
+        return (check, faultyGeometry)
 
 
 checkIn = CheckIn(defaultFolder_)
@@ -9491,6 +9560,7 @@ if checkIn.letItFly:
                                                   3: ["3: DF", "%"],
                                                   4: ["4: VSC", "%"],
                                                   5: ["5: annual analysis", "var"]}
+        sc.sticky["honeybee_NonConvexChecking"] = hb_NonConvexChecking
                                                  
         # done! sharing the happiness.
         print "Hooohooho...Flying!!\nVviiiiiiizzz..."
