@@ -34,7 +34,8 @@ Provided by Honeybee 0.0.62
     
     Args:
         _HDRImagePath: Path to an HDR image file
-        taskPositionUV_: Task position in x and y coordinates
+        age_ : Enter age (average, if age of users vary) of users that are likely to occupy the space. This input only accepts one number for age. If no value is provided, by default age of 20 is considered.
+        taskPositionUV_: Task position in x and y coordinates. Use MD Slider to provide UV value.
         taskPositionAngle_: Task position opening angle in degrees
         _runIt: Set to True to run the analysis
     Returns:
@@ -49,7 +50,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Glare Analysis"
 ghenv.Component.NickName = 'glareAnalysis'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nSEP_25_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
@@ -109,6 +110,7 @@ def DGPComfortRange(DGP):
         
         
 def main(HDRImagePath, taskPosition, taskPositionAngle):
+    age = age_
     # import the classes
     if sc.sticky.has_key('honeybee_release'):
 
@@ -195,7 +197,7 @@ def main(HDRImagePath, taskPosition, taskPositionAngle):
         taskP = True
         
     if taskP and (taskPX > 1 or taskPY > 1):
-        msg = "U and V valeus for taskPositionUV should be between 0 and 1." + \
+        msg = "U and V values for taskPositionUV should be between 0 and 1." + \
                 "%.3f"%taskPX + " and " + "%.3f"%taskPY + " are not acceptable input." + \
                 "glare study will be run for the image and not the task plane"
         taskP = False
@@ -253,19 +255,24 @@ def main(HDRImagePath, taskPosition, taskPositionAngle):
     glareCheckImage = ".".join(HDRImagePath.split(".")[:-1]) + "_chkFile." + HDRImagePath.split(".")[-1]
     glareNoTextImage = ".".join(HDRImagePath.split(".")[:-1]) + "_noText." + HDRImagePath.split(".")[-1]
     # run the analysis
-    evalGlareLine = "/c " + hb_RADPath + "\evalglare -c " +  glareNoTextImage + " " + HDRImagePath
-    
+    if age == None:
+        evalGlareLine = "/c " + hb_RADPath + "\evalglare -c " +  glareNoTextImage + " " + HDRImagePath
+    if type(age) == int and age > 0:
+        evalGlareLine = "/c " + hb_RADPath + "\evalglare -a " + str(age)+ " -c " +  glareNoTextImage + " " + HDRImagePath
     glareRes, err = runCmdAndGetTheResults(evalGlareLine)
     
     if "error: no valid view specified" in err.strip():
         
         # since I use pcomp to merge images HDR image doesn't have HDR view information
         # adding default Honeybee view information for fish-eye camera
-        evalGlareLine = "/c " + hb_RADPath + "\evalglare -vth -vv 180 -vh 180 -c " +  glareNoTextImage + " " + HDRImagePath
+        if age == None:
+            evalGlareLine = "/c " + hb_RADPath + "\evalglare -vth -vv 180 -vh 180 -c " +  glareNoTextImage + " " + HDRImagePath
+        if type(age) == int and age > 0:
+            evalGlareLine = "/c " + hb_RADPath + "\evalglare -vth -vv 180 -vh 180 -a " + str(age) + " -c " +  glareNoTextImage + " " + HDRImagePath
         glareRes, err = runCmdAndGetTheResults(evalGlareLine)
         
     notes += "Results for the image:\n" + glareRes + "\n"
-    
+
     # read the results
     totalGlareResultDict, possibleNotice = readGlareResults(glareRes)
     
@@ -294,8 +301,12 @@ def main(HDRImagePath, taskPosition, taskPositionAngle):
         
         TArguments = " ".join([str(xPixle), str(yPixle), "%.3f"%taskPA])
         
-        evalGlareTaskPLine = "/c " + hb_RADPath + "\evalglare -c " +  glareTaskPNoText + " -T " + \
-        TArguments + " " + HDRImagePath
+        if age == None:
+            evalGlareTaskPLine = "/c " + hb_RADPath + "\evalglare -c " +  glareTaskPNoText + " -T " + \
+            TArguments + " " + HDRImagePath
+        if type(age) == int and age > 0:
+            evalGlareTaskPLine = "/c " + hb_RADPath + "\evalglare -a "+ str(age)+ " -c " +  glareTaskPNoText + " -T " + \
+            TArguments + " " + HDRImagePath
         
         glareTaskRes, err = runCmdAndGetTheResults(evalGlareTaskPLine)
         notes += "Results for the task position:\n" + glareTaskRes + "\n"
@@ -303,8 +314,12 @@ def main(HDRImagePath, taskPosition, taskPositionAngle):
         if err.strip() == "error: no valid view specified":
             # since I use pcomp to merge images HDR image doesn't have HDR view information
             # adding default Honeybee view information for fish-eye camera
-            evalGlareTaskPLine = "/c " + hb_RADPath + "\evalglare -vth -vv 180 -vh 180 -c " +  glareTaskPNoText + " -T " + \
-            TArguments + " " + HDRImagePath
+            if age == None:
+                evalGlareTaskPLine = "/c " + hb_RADPath + "\evalglare -vth -vv 180 -vh 180 -c " +  glareTaskPNoText + " -T " + \
+                TArguments + " " + HDRImagePath
+            if type(age) == int and age > 0:
+                evalGlareTaskPLine = "/c " + hb_RADPath + "\evalglare -vth -vv 180 -vh 180 -a "+ str(age)+ " -c " +  glareTaskPNoText + " -T " + \
+                TArguments + " " + HDRImagePath
             glareTaskRes, err = runCmdAndGetTheResults(evalGlareTaskPLine)        
         
         taskPGlareResultDict, possibleNotice = readGlareResults(glareTaskRes)
