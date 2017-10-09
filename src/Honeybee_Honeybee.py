@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.62\nOCT_09_2017'
+ghenv.Component.Message = 'VER 0.0.62\nOCT_10_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -7243,8 +7243,7 @@ class hb_GlzGeoGeneration(object):
                         
                         warning = "Your model tolerance is too high and for this reason the base surface is being split into two \n" + \
                         "instead of making a window in the base surface! Lower your model tolerance or decrease your glazing ratio to fix this issue"
-                        w = gh.GH_RuntimeMessageLevel.Warning
-                        ghenv.Component.AddRuntimeMessage(w, warning)
+                        print warning
                     
                     #Extrude the line to create the window
                     extruUnitVec = rectHeightVec
