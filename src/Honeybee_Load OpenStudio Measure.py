@@ -213,19 +213,28 @@ def updateComponentDescription(xmlFile):
     # get name of measure and description
     nickName = os.path.normpath(xmlFile).split("\\")[-2]
     ghenv.Component.NickName = nickName
+    measureType = 'OpenStudio'
     with open(xmlFile, "r") as measure:
         lines = "".join(measure.readlines())
         ghenv.Component.Name = lines.split("</display_name>")[0].split("<display_name>")[-1]
         ghenv.Component.Description = lines.split("</description>")[0].split("<description>")[-1]
+        if 'EnergyPlusMeasure' in lines:
+            measureType = 'EnergyPlus'
+        elif 'ModelMeasure' in lines:
+            measureType = 'OpenStudio'
+        elif 'ReportingMeasure' in lines:
+            measureType = 'Reporting'
+    return measureType
 
 class OpenStudioMeasure:
     
-    def __init__(self, name, nickName, description, measurePath, args):
+    def __init__(self, name, nickName, description, measurePath, args, measureType):
         self.name = name
         self.nickName = nickName
         self.description = description
         self.path = os.path.normpath(measurePath)
         self.args = args
+        self.type = measureType
     
     def updateArguments(self):
         #iterate over inputs and assign the new values in case there is any new values
@@ -254,8 +263,18 @@ def loadMeasureFromFile(xmlFile):
     path = gh.Data.GH_Path(0)
     for i, key in enumerate(sorted(args.keys())):
         addInputParam(args[key], path, i+1)
+    
+    with open(xmlFile, "r") as measure:
+        lines = "".join(measure.readlines())
+        if 'EnergyPlusMeasure' in lines:
+            measureType = 'EnergyPlus'
+        elif 'ModelMeasure' in lines:
+            measureType = 'OpenStudio'
+        elif 'ReportingMeasure' in lines:
+            measureType = 'Reporting'
+    
     # create an OSMeasure based on default values
-    OSMeasure = OpenStudioMeasure(ghenv.Component.Name, ghenv.Component.NickName, ghenv.Component.Description, _, args)
+    OSMeasure = OpenStudioMeasure(ghenv.Component.Name, ghenv.Component.NickName, ghenv.Component.Description, _, args, measureType)
     # add the measure to sticky to be able to load and update it
     key = ghenv.Component.InstanceGuid.ToString()
     if "osMeasures" not in sc.sticky.keys():
@@ -333,10 +352,10 @@ if initCheck == True and fileLoad == False:
         for key in sorted(args.keys()):
             addInputParam(args[key], path)
         
-        updateComponentDescription(xmlFile)
+        measureType = updateComponentDescription(xmlFile)
         
         # create an OSMeasure based on default values
-        OSMeasure = OpenStudioMeasure(ghenv.Component.Name, ghenv.Component.NickName, ghenv.Component.Description, _OSMeasure, args)
+        OSMeasure = OpenStudioMeasure(ghenv.Component.Name, ghenv.Component.NickName, ghenv.Component.Description, _OSMeasure, args, measureType)
         
         # add the measure to sticky to be able to load and update it
         key = ghenv.Component.InstanceGuid.ToString()

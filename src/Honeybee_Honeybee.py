@@ -9192,6 +9192,12 @@ class OpenStudioMeasure(object):
             lines = "".join(measure.readlines())
             self.name = lines.split("</display_name>")[0].split("<display_name>")[-1]
             self.description = lines.split("</description>")[0].split("<description>")[-1]
+            if 'EnergyPlusMeasure' in lines:
+                self.type = 'EnergyPlus'
+            elif 'ModelMeasure' in lines:
+                self.type = 'OpenStudio'
+            else:
+                self.type = 'Reporting'
         
         self.path = os.path.normpath(os.path.split(xmlFile)[0])
         self.args = self.get_measureArgs(xmlFile)

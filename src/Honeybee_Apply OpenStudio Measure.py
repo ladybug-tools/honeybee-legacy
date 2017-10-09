@@ -52,7 +52,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Apply OpenStudio Measure"
 ghenv.Component.NickName = 'applyOSMeasure'
-ghenv.Component.Message = 'VER 0.0.62\nOCT_06_2017'
+ghenv.Component.Message = 'VER 0.0.62\nOCT_09_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"
@@ -158,9 +158,17 @@ def main(runIt, epwFile, OSMeasures, osmFile, hb_OpenStudioMeasure):
     if runIt == 4:
         wf.setWeatherFile(epwPath)
     
+    # Sort the measures so that the OpenStudio ones come first, then E+, then reporting.
+    measureOrder = {"OpenStudio":[], "EnergyPlus":[], "Reporting":[]}
+    for measure in OSMeasures:
+        measureOrder[measure.type].append(measure)
+    sortedMeasures = measureOrder["OpenStudio"]
+    sortedMeasures.extend(measureOrder["EnergyPlus"])
+    sortedMeasures.extend(measureOrder["Reporting"])
+    
     # Add the measures to the workflow.
     workflowSteps = []
-    for OSMeasure in OSMeasures:
+    for OSMeasure in sortedMeasures:
         # Copy measure files to a folder next to the OSM.
         measureName = OSMeasure.path.split('\\')[-1]
         destDir = workingDir + '\\measures\\' + measureName + '\\'
