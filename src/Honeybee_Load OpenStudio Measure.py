@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.62
 """
 ghenv.Component.Name = "Honeybee_Load OpenStudio Measure"
 ghenv.Component.NickName = 'importOSMeasure'
-ghenv.Component.Message = 'VER 0.0.62\nSEP_26_2017'
+ghenv.Component.Message = 'VER 0.0.62\nOCT_09_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"
@@ -176,34 +176,37 @@ def get_measureArgs(xmlFile):
         args[count+1] = OPSMeasureArg(arg)
     return args
 
-def addInputParam(arg, path):
-    param = gh.Parameters.Param_ScriptVariable()
+def addInputParam(arg, path, i=None):
+    if i == None:
+        param = gh.Parameters.Param_ScriptVariable()
+    else:
+        param = ghenv.Component.Params.Input[i]
     param.NickName = arg.display_name
     param.Name = arg.name
     param.Description = str(arg)
     param.Optional = True # even if it is required it has a default value
     param.AllowTreeAccess = False
-    #gh.Parameters.Param_ScriptVariable.
     param.Access = gh.GH_ParamAccess.item # I assume this can't be a list
     if arg.default_value != None:
         param.AddVolatileData(path, 0, arg.default_value)
-    index = ghenv.Component.Params.Input.Count
-    ghenv.Component.Params.RegisterInputParam(param,index)
-    ghenv.Component.Params.OnParametersChanged()
+    if i == None:
+        index = ghenv.Component.Params.Input.Count
+        ghenv.Component.Params.RegisterInputParam(param,index)
+        ghenv.Component.Params.OnParametersChanged()
 
 def cleanInputNames():
     # I couldn't find a clean way to remove the input so I just change the name
     for paramCount in range(1,ghenv.Component.Params.Input.Count):
         param = ghenv.Component.Params.Input[paramCount]
-        param.NickName = "."
-        param.Name = "."
-        param.Description = "."
+        param.NickName = "_"
+        param.Name = "_"
+        param.Description = "_"
         param.Optional = False
         ghenv.Component.Params.OnParametersChanged()
 
 def cleanFirstInput():
-    ghenv.Component.Params.Input[0].NickName = "."
-    ghenv.Component.Params.Input[0].Name = "."
+    ghenv.Component.Params.Input[0].NickName = "_"
+    ghenv.Component.Params.Input[0].Name = "_"
     # ghenv.Component.Params.Input[0].RemoveAllSources()    
 
 def updateComponentDescription(xmlFile):
@@ -240,6 +243,55 @@ class OpenStudioMeasure:
     def __repr__(self):
         return "OpenStudio " + self.name
 
+def loadMeasureFromFile(xmlFile):
+    if not os.path.isfile(xmlFile): raise Exception("Can't find measure at " + xmlFile)
+    
+    measure = OpenStudio.BCLMeasure(OpenStudio.Path(_))
+    if measure.arguments().Count == 0:
+        print "Measure contains no arguments."
+    # load arguments
+    args = get_measureArgs(xmlFile)
+    path = gh.Data.GH_Path(0)
+    for i, key in enumerate(sorted(args.keys())):
+        addInputParam(args[key], path, i+1)
+    # create an OSMeasure based on default values
+    OSMeasure = OpenStudioMeasure(ghenv.Component.Name, ghenv.Component.NickName, ghenv.Component.Description, _, args)
+    # add the measure to sticky to be able to load and update it
+    key = ghenv.Component.InstanceGuid.ToString()
+    if "osMeasures" not in sc.sticky.keys():
+        sc.sticky["osMeasures"] = dict()
+    sc.sticky["osMeasures"][key] = OSMeasure
+    OSMeasure.updateArguments()
+    return OSMeasure
+
+def loadMeasureFromMem():
+    try:
+        key = ghenv.Component.InstanceGuid.ToString()
+        OSMeasure = sc.sticky["osMeasures"][key]
+        OSMeasure.updateArguments()
+        ghenv.Component.Name = OSMeasure.name
+        ghenv.Component.NickName =  OSMeasure.nickName
+        ghenv.Component.Description = OSMeasure.description
+        return OSMeasure
+    except Exception , e:
+        msg = "Couldn't load the measure!\n%s" % str(e)
+            
+        if ghenv.Component.Params.Input.Count!=1:
+            msg += "\nTry to reload the measure with a fresh component."
+            raise Exception(msg)
+        print msg
+        return None
+
+fileLoad = False
+try:
+    OSMeasure = sc.sticky["osMeasures"][key]
+except:
+    try:
+        xmlFile = os.path.join(_ , "measure.xml")
+        OSMeasure = loadMeasureFromFile(xmlFile)
+        fileLoad = True
+    except:
+        pass
 
 #Honeybee check.
 initCheck = True
@@ -263,25 +315,7 @@ else:
         ghenv.Component.AddRuntimeMessage(w, warning)
 
 
-def loadMeasureFromMem():
-    try:
-        key = ghenv.Component.InstanceGuid.ToString()
-        OSMeasure = sc.sticky["osMeasures"][key]
-        OSMeasure.updateArguments()
-        ghenv.Component.Name = OSMeasure.name
-        ghenv.Component.NickName =  OSMeasure.nickName
-        ghenv.Component.Description = OSMeasure.description
-        return OSMeasure
-    except Exception , e:
-        msg = "Couldn't load the measure!\n%s" % str(e)
-            
-        if ghenv.Component.Params.Input.Count!=1:
-            msg += "\nTry to reload the measure with a fresh component."
-            raise Exception(msg)
-        print msg
-        return None
-
-if initCheck == True:
+if initCheck == True and fileLoad == False:
     if ghenv.Component.Params.Input.Count==1 and _OSMeasure:
         # first time loading
         xmlFile = os.path.join(_OSMeasure, "measure.xml")
@@ -296,7 +330,8 @@ if initCheck == True:
         
         # add arguments to component
         path = gh.Data.GH_Path(0)
-        for key in sorted(args.keys()): addInputParam(args[key], path)
+        for key in sorted(args.keys()):
+            addInputParam(args[key], path)
         
         updateComponentDescription(xmlFile)
         
