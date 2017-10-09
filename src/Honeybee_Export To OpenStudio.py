@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.62\nOCT_04_2017'
+ghenv.Component.Message = 'VER 0.0.62\nOCT_09_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -4628,7 +4628,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
                         w = gh.GH_RuntimeMessageLevel.Warning
                         ghenv.Component.AddRuntimeMessage(w, warning)
                         resultFile = None
-                    elif "** Severe  **" in line and 'CheckControllerListOrder' not in line:
+                    elif "** Severe  **" in line and 'CheckControllerListOrder' not in line and not "surfaces and are non-convex" in line:
                         comment = "The simulation has not run correctly because of this severe error: \n" + str(line)
                         c = gh.GH_RuntimeMessageLevel.Warning
                         ghenv.Component.AddRuntimeMessage(c, comment)
