@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.62\nOCT_09_2017'
+ghenv.Component.Message = 'VER 0.0.62\nOCT_11_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -3062,8 +3062,12 @@ class WriteOPS(object):
                     self.defaultConstrDict['0.25'].append(constructionText)
                 elif srf.type == 0 and (srf.BC.lower() == 'surface' or srf.BC.lower() == 'adiabatic'):
                     self.defaultConstrDict['0.25'].append(constructionText)
-                elif srf.type == 2.25:
+                elif int(srf.type) == 2 and srf.BC.lower() == 'ground':
                     self.defaultConstrDict['2.5'].append(constructionText)
+                elif int(srf.type) == 2 and (srf.BC.lower() == 'surface' or srf.BC.lower() == 'adiabatic'):
+                    self.defaultConstrDict['2'].append(constructionText)
+                elif int(srf.type) == 2 and srf.BC.lower() == 'outdoors':
+                    self.defaultConstrDict['2.75'].append(constructionText)
                 else:
                     self.defaultConstrDict[str(srf.type)].append(constructionText)
                 
@@ -3618,10 +3622,17 @@ class WriteOPS(object):
                     constructionText = str(self.defaultConstrDict['0.25'].name())
                 elif surface.type == 0 and (surface.BC.lower() == 'surface' or surface.BC.lower() == 'adiabatic'):
                     constructionText = str(self.defaultConstrDict['0.25'].name())
-                elif surface.type == 2.25:
+                elif int(surface.type) == 2 and surface.BC.lower() == 'ground':
                     constructionText = str(self.defaultConstrDict['2.5'].name())
+                elif int(surface.type) == 2 and (surface.BC.lower() == 'surface' or surface.BC.lower() == 'adiabatic'):
+                    constructionText = str(self.defaultConstrDict['2'].name())
+                elif int(surface.type) == 2 and surface.BC.lower() == 'outdoors':
+                    constructionText = str(self.defaultConstrDict['2.75'].name())
                 else:
-                    constructionText = str(self.defaultConstrDict[str(surface.type)].name())
+                    try:
+                        constructionText = str(self.defaultConstrDict[str(surface.type)].name())
+                    except:
+                        constructionText = None
                 
                 if constructionText != str(surface.EPConstruction) or surface.BC.upper() == "ADIABATIC":
                     if self.isConstructionInLib(surface.EPConstruction):

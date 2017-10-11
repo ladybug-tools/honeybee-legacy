@@ -60,7 +60,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_createHBSrfs'
 ghenv.Component.NickName = 'createHBSrfs'
-ghenv.Component.Message = 'VER 0.0.62\nSEP_25_2017'
+ghenv.Component.Message = 'VER 0.0.62\nOCT_11_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -166,7 +166,7 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
                 try: surfaceType = int(srfType)
                 except:
                     if float(srfType) == 0.5 or float(srfType) == 1.5 or float(srfType) == 2.25 or float(srfType) == 2.5 or float(srfType) == 2.75:
-                        surfaceType = srfType
+                        surfaceType = float(srfType)
                     else: pass
                 print "HBSurface Type has been set to " + HBSurface.srfType[float(srfType)]
                 
@@ -192,6 +192,8 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
                                      "Honeybee won't overwrite the type so you may need to manually flip the surface."
                         print warningMsg
                     HBSurface.setType(surfaceType, isUserInput= True)
+                    if surfaceType == 2.5 or surfaceType == 2.25:
+                        HBSurface.setBC('ground', isUserInput= False)
                 except:
                     warningMsg = "You are using an old version of Honeybee_Honeybee! Update your files and try again."
                     print warningMsg
