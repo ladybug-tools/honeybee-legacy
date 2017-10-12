@@ -57,11 +57,12 @@ Provided by Honeybee 0.0.62
         idfFileAddress: The file path of the IDF file that has been generated on your machine.
         performanceSummary: The Html file path of the Building Utility Performance Summar. You can review the report by copying the file path, and open it in your web browser.
         resultFileAddress: The file path of the CSV result file that has been generated on your machine.  This only happens when you set "runEnergyPlus_" to "True."
+        eioFileAddress:  The file path of the EIO file that has been generated on your machine.  This file contains information about the sizes of all HVAC equipment from the simulation.
         studyFolder: The directory in which the simulation has been run.  Connect this to the 'Honeybee_Lookup EnergyPlus' folder to bring many of the files in this directory into Grasshopper.
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.62\nAUG_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nOCT_11_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -2347,6 +2348,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         # write the batch file
         hb_runIDF.writeBatchFile(workingDir, idfFileName, epwFileAddress, sc.sticky["honeybee_folders"]["EPPath"], runEnergyPlus > 1)
         resultFileFullName = idfFileFullName.replace('.idf', '.csv')
+        eioFileFullName = idfFileFullName.replace('.idf', '.eio')
         performanceSummaryReport = idfFileFullName.replace('.idf', 'Table.html');
         studyFolder = originalWorkingDir
         try:
@@ -2359,7 +2361,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     else:
         print "Set runEnergyPlus to True!"
         
-    return idfFileFullName, resultFileFullName, performanceSummaryReport,studyFolder
+    return idfFileFullName, resultFileFullName, eioFileFullName, performanceSummaryReport, studyFolder
 
 
 if _writeIdf == True and _epwFile and _HBZones and _HBZones[0]!=None:
@@ -2368,7 +2370,7 @@ if _writeIdf == True and _epwFile and _HBZones and _HBZones[0]!=None:
                   HBContext_, simulationOutputs_, _writeIdf, runEnergyPlus_,
                   _workingDir_, _idfFileName_, meshSettings_)
     if result!= -1:
-        idfFileAddress, resultFileAddress, htmlReport, studyFolder = result
+        idfFileAddress, resultFileAddress, eioFileAddress, htmlReport, studyFolder = result
         if runEnergyPlus_:
             try:
                 errorFileFullName = idfFileAddress.replace('.idf', '.err')
