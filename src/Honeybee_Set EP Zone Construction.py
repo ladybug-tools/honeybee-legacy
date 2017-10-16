@@ -42,7 +42,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Set EP Zone Construction"
 ghenv.Component.NickName = 'setEPZoneCnstr'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nSEP_13_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
@@ -125,7 +125,7 @@ def main(HBZones, wallEPCnst, windowEPCnst, roofEPCnst, flrEPCnst, expFlrEpCnst,
                     hb_EPObjectsAux.assignEPConstruction(srf, wallEPCnst[count], ghenv.Component)
                 elif srf.type == 1 and roofEPCnst[count]!=None:
                     hb_EPObjectsAux.assignEPConstruction(srf, roofEPCnst[count], ghenv.Component)
-                elif srf.type == 2 and flrEPCnst[count]!=None:
+                elif (srf.type == 2 or srf.type == 2.25 or srf.type == 2.5) and flrEPCnst[count]!=None:
                     hb_EPObjectsAux.assignEPConstruction(srf, flrEPCnst[count], ghenv.Component)
                 elif srf.type == 2.75 and expFlrEpCnst[count]!=None:
                     hb_EPObjectsAux.assignEPConstruction(srf, expFlrEpCnst[count], ghenv.Component)

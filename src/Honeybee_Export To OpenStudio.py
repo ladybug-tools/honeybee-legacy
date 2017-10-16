@@ -61,15 +61,17 @@ Provided by Honeybee 0.0.62
         osmFileAddress: The file path of the OSM file that has been generated on your machine.
         idfFileAddress: The file path of the IDF file that has been generated on your machine. This file is only generated when you set "runSimulation_" to "True."
         resultFileAddress: The file path of the CSV result file that has been generated on your machine.  This file is only generated when you set "runSimulation_" to "True."
+        sqlFileAddress: The file path to the SQL result file that has been generated on your machine.  This file contains all results from the energy model run. This file is only generated when you set "runSimulation_" to "True."
         eioFileAddress:  The file path of the EIO file that has been generated on your machine.  This file contains information about the sizes of all HVAC equipment from the simulation.  This file is only generated when you set "runSimulation_" to "True."
         rddFileAddress: The file path of the Result Data Dictionary (.rdd) file that is generated after running the file through EnergyPlus.  This file contains all possible outputs that can be requested from the EnergyPlus model.  Use the "Honeybee_Read Result Dictionary" to see what outputs can be requested.
+        htmlReport: The file path to the HTML report that was generated after running the file through EnergyPlus.  Open this in a web browser for an overview of the energy model results.
         studyFolder: The directory in which the simulation has been run.  Connect this to the 'Honeybee_Lookup EnergyPlus' folder to bring many of the files in this directory into Grasshopper.
         model: The openStudio model ojbect. Use this output to generate gbXML files from your OpwnStudio models.
 """
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nOCT_11_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -139,12 +141,19 @@ class WriteOPS(object):
         self.constructionList = {}
         self.materialList = {}
         self.scheduleList = {}
+        self.scheduleSetList = {}
+        self.peopleList = {}
+        self.lightingList = {}
+        self.equipList = {}
+        self.ventList = {}
+        self.internalMassList = {}
         self.shdCntrlList = {}
         self.frameObjList = {}
         self.bldgTypes = {}
         self.levels = {}
         self.HVACSystemDict = {}
         self.adjacentSurfacesDict = {}
+        self.adjacentFenSrfsDict = {}
         self.thermalZonesDict = {}
         
         self.csvSchedules = []
@@ -2983,39 +2992,172 @@ class WriteOPS(object):
             zoneMixing.setSchedule(self.getOSSchedule(zone.mixAirFlowSched[mixZoneCount], model))
     
     def setDefaultSchedule(self, zone, space, model):
-        # I'm not sure how default schedule will be useful
-        # if I have to create separate definitions for people, light, equipments and infiltration!
-        defSchedule = ops.DefaultScheduleSet(model)
-        defSchedule.setName(zone.name + "_DefaultScheduleSet")
-        defSchedule.setInfiltrationSchedule(self.getOSSchedule(zone.infiltrationSchedule, model))
-        defSchedule.setLightingSchedule(self.getOSSchedule(zone.lightingSchedule, model))
-        # Not all default zone types have people, or equipment.
-        try:
-            defSchedule.setElectricEquipmentSchedule(self.getOSSchedule(zone.equipmentSchedule, model))
-        except:
-            pass
-        try:
-            defSchedule.setHoursofOperationSchedule(self.getOSSchedule(zone.occupancySchedule, model))
-        except:
-            pass
-        try:
-            defSchedule.setPeopleActivityLevelSchedule(self.getOSSchedule(zone.occupancyActivitySch, model))
-        except:
-            pass
+        # Make sure that we do not have redundant schedule sets.
+        equipStr = zone.equipmentSchedule
+        if equipStr == None:
+            equipStr = ''
+        occStr = zone.occupancySchedule
+        if occStr == None:
+            occStr = ''
+        occActStr = zone.occupancyActivitySch
+        if occActStr == None:
+            occActStr = ''
+        
+        defSchStr = occStr + occActStr + zone.lightingSchedule + \
+            equipStr + zone.infiltrationSchedule
+        
+        if defSchStr not in self.scheduleSetList.keys():
+            defSchedule = ops.DefaultScheduleSet(model)
+            defSchedule.setName(zone.name + "_DefaultScheduleSet")
+            defSchedule.setInfiltrationSchedule(self.getOSSchedule(zone.infiltrationSchedule, model))
+            defSchedule.setLightingSchedule(self.getOSSchedule(zone.lightingSchedule, model))
+            # Not all default zone types have people, or equipment.
+            try:
+                defSchedule.setElectricEquipmentSchedule(self.getOSSchedule(zone.equipmentSchedule, model))
+            except:
+                pass
+            try:
+                defSchedule.setHoursofOperationSchedule(self.getOSSchedule(zone.occupancySchedule, model))
+            except:
+                pass
+            try:
+                defSchedule.setPeopleActivityLevelSchedule(self.getOSSchedule(zone.occupancyActivitySch, model))
+            except:
+                pass
+            self.scheduleSetList[defSchStr] = defSchedule
+        else:
+            defSchedule = self.scheduleSetList[defSchStr]
+        
         space.setDefaultScheduleSet(defSchedule)
         return space
+    
+    def findDominantConstr(self, lst):
+        return max(set(lst), key=lst.count)
+    
+    def buildDefaultConstrSet(self, HBZones, model):
+        self.defaultConstrDict = {
+        '0':[],
+        '0.25':[],
+        '0.5': [],
+        '1': [],
+        '1.5': [],
+        '2': [],
+        '2.5': [],
+        '2.75': [],
+        '3': [],
+        '5': [],
+        '5.5': [],
+        '5.25': []
+        }
         
+        # Pull all of the constructions out of the model.
+        for zone in HBZones:
+            for srf in zone.surfaces:
+                if srf.EPConstruction != None:
+                    constructionText = srf.EPConstruction
+                else:
+                    constructionText = srf.construction
+                
+                if srf.type == 4:
+                    self.defaultConstrDict['0.25'].append(constructionText)
+                elif srf.type == 0 and (srf.BC.lower() == 'surface' or srf.BC.lower() == 'adiabatic'):
+                    self.defaultConstrDict['0.25'].append(constructionText)
+                elif int(srf.type) == 2 and srf.BC.lower() == 'ground':
+                    self.defaultConstrDict['2.5'].append(constructionText)
+                elif int(srf.type) == 2 and (srf.BC.lower() == 'surface' or srf.BC.lower() == 'adiabatic'):
+                    self.defaultConstrDict['2'].append(constructionText)
+                elif int(srf.type) == 2 and srf.BC.lower() == 'outdoors':
+                    self.defaultConstrDict['2.75'].append(constructionText)
+                else:
+                    self.defaultConstrDict[str(srf.type)].append(constructionText)
+                
+                if srf.hasChild:
+                    for childSrf in srf.childSrfs:
+                        if childSrf.EPConstruction != None:
+                            constructionText = childSrf.EPConstruction
+                        else:
+                            constructionText = childSrf.construction
+                        
+                        if srf.BC.lower() == 'surface' or srf.BC.lower() == 'adiabatic':
+                            self.defaultConstrDict['5.5'].append(constructionText)
+                        elif srf.type == 1:
+                            self.defaultConstrDict['5.25'].append(constructionText)
+                        else:
+                            self.defaultConstrDict['5'].append(constructionText)
+        
+        # Get the most common constructions of each type in the model.
+        for key in self.defaultConstrDict.keys():
+            if self.defaultConstrDict[key] != []:
+                constrName = self.findDominantConstr(self.defaultConstrDict[key])
+                # create construction.
+                if self.isConstructionInLib(constrName):
+                    construction = self.getConstructionFromLib(constrName)
+                else:
+                    construction = self.getOSConstruction(constrName, model)
+                    self.addConstructionToLib(constrName, construction)
+                self.defaultConstrDict[key] = construction
+            else:
+                self.defaultConstrDict[key] = None
+        
+        # Make an OpenStudio construction set.
+        self.defaultConstrSet = ops.DefaultConstructionSet(model)
+        
+        # Exterior Constructions.
+        exteriorConstrs = ops.DefaultSurfaceConstructions(model)
+        if self.defaultConstrDict['0'] != None:
+            exteriorConstrs.setWallConstruction(self.defaultConstrDict['0'])
+        if self.defaultConstrDict['1'] != None:
+            exteriorConstrs.setRoofCeilingConstruction(self.defaultConstrDict['1'])
+        if self.defaultConstrDict['2.75'] != None:
+            exteriorConstrs.setFloorConstruction(self.defaultConstrDict['2.75'])
+        self.defaultConstrSet.setDefaultExteriorSurfaceConstructions(exteriorConstrs)
+        
+        # Interior Constructions.
+        interiorConstrs = ops.DefaultSurfaceConstructions(model)
+        if self.defaultConstrDict['0.25'] != None:
+            interiorConstrs.setWallConstruction(self.defaultConstrDict['0.25'])
+        if self.defaultConstrDict['3'] != None:
+            interiorConstrs.setRoofCeilingConstruction(self.defaultConstrDict['3'])
+        if self.defaultConstrDict['2'] != None:
+            interiorConstrs.setFloorConstruction(self.defaultConstrDict['2'])
+        self.defaultConstrSet.setDefaultInteriorSurfaceConstructions(interiorConstrs)
+        
+        # Ground Constructions.
+        groundConstrs = ops.DefaultSurfaceConstructions(model)
+        if self.defaultConstrDict['0.5'] != None:
+            groundConstrs.setWallConstruction(self.defaultConstrDict['0.5'])
+        if self.defaultConstrDict['1.5'] != None:
+            groundConstrs.setRoofCeilingConstruction(self.defaultConstrDict['1.5'])
+        if self.defaultConstrDict['2.5'] != None:
+            groundConstrs.setFloorConstruction(self.defaultConstrDict['2.5'])
+        self.defaultConstrSet.setDefaultGroundContactSurfaceConstructions(groundConstrs)
+        
+        # Windows.
+        extWindowConstrs = ops.DefaultSubSurfaceConstructions(model)
+        if self.defaultConstrDict['5'] != None:
+            extWindowConstrs.setFixedWindowConstruction(self.defaultConstrDict['5'])
+        if self.defaultConstrDict['5.25'] != None:
+            extWindowConstrs.setSkylightConstruction(self.defaultConstrDict['5.25'])
+        self.defaultConstrSet.setDefaultExteriorSubSurfaceConstructions(extWindowConstrs)
+        
+        intWindowConstrs = ops.DefaultSubSurfaceConstructions(model)
+        if self.defaultConstrDict['5.5'] != None:
+            intWindowConstrs.setFixedWindowConstruction(self.defaultConstrDict['5.5'])
+        self.defaultConstrSet.setDefaultInteriorSubSurfaceConstructions(intWindowConstrs)
+        
+        return self.defaultConstrSet
+    
     def setPeopleDefinition(self, zone, space, model):
         if zone.numOfPeoplePerArea != 0:
-            peopleDefinition = ops.PeopleDefinition(model)
-            peopleDefinition.setName(zone.name + "_PeopleDefinition")
-            flrArea = zone.getFloorArea()
-            if flrArea != 0:
-                peopleDefinition.setNumberofPeople(zone.numOfPeoplePerArea * flrArea)
+            if zone.numOfPeoplePerArea not in self.peopleList.keys():
+                peopleDefinition = ops.PeopleDefinition(model)
+                peopleDefinition.setName(zone.name + "_PeopleDefinition")
+                flrArea = zone.getFloorArea()
                 peopleDefinition.setNumberOfPeopleCalculationMethod("People/Area", flrArea)
-                peopleDefinition.setPeopleperSpaceFloorArea(zone.numOfPeoplePerArea) #space.peoplePerFloorArea())
-            #peopleDefinition.setFractionRadiant
-            #peopleDefinition.setSensibleHeatFraction
+                peopleDefinition.setPeopleperSpaceFloorArea(zone.numOfPeoplePerArea)
+                self.peopleList[zone.numOfPeoplePerArea] = peopleDefinition
+            else:
+                peopleDefinition = self.peopleList[zone.numOfPeoplePerArea]
             
             # This was so confusing to find people and people definition as two different objects
             people = ops.People(peopleDefinition)
@@ -3027,16 +3169,20 @@ class WriteOPS(object):
      
     def setInternalMassDefinition(self, zone, space, model):
         for srfNum,srfArea in enumerate(zone.internalMassSrfAreas):
-            # Create internal mass definition
-            internalMassDefinition = ops.InternalMassDefinition(model)
-            internalMassDefinition.setName(zone.internalMassNames[srfNum]+"_Definition")
-            if self.isConstructionInLib(zone.internalMassConstructions[srfNum]):
-                construction = self.getConstructionFromLib(zone.internalMassConstructions[srfNum])
+            if str(zone.internalMassConstructions[srfNum])+str(srfArea) not in self.internalMassList.keys():
+                # Create internal mass definition
+                internalMassDefinition = ops.InternalMassDefinition(model)
+                internalMassDefinition.setName(zone.internalMassNames[srfNum]+"_Definition")
+                if self.isConstructionInLib(zone.internalMassConstructions[srfNum]):
+                    construction = self.getConstructionFromLib(zone.internalMassConstructions[srfNum])
+                else:
+                    construction = self.getOSConstruction(zone.internalMassConstructions[srfNum],model)
+                    self.addConstructionToLib(zone.internalMassConstructions[srfNum], construction)
+                internalMassDefinition.setConstruction(construction)
+                internalMassDefinition.setSurfaceArea(float(srfArea))
+                self.internalMassList[str(zone.internalMassConstructions[srfNum])+str(srfArea)] = internalMassDefinition
             else:
-                construction = self.getOSConstruction(zone.internalMassConstructions[srfNum],model)
-                self.addConstructionToLib(zone.internalMassConstructions[srfNum], construction)
-            internalMassDefinition.setConstruction(construction)
-            internalMassDefinition.setSurfaceArea(float(srfArea))
+                internalMassDefinition = self.internalMassList[str(zone.internalMassConstructions[srfNum])+str(srfArea)]
             
             # Create actual internal mass by using the definition above
             internalMass = ops.InternalMass(internalMassDefinition)
@@ -3044,27 +3190,32 @@ class WriteOPS(object):
             internalMass.setSpace(space)
     
     def setLightingDefinition(self, zone, space, model):
-        
-        lightsDefinition = ops.LightsDefinition(model)
-        lightsDefinition.setName(zone.name + "_LightsDefinition")
-        flrArea = zone.getFloorArea()
-        if flrArea != 0:
+        if zone.lightingDensityPerArea not in self.lightingList.keys():
+            lightsDefinition = ops.LightsDefinition(model)
+            lightsDefinition.setName(zone.name + "_LightsDefinition")
+            flrArea = zone.getFloorArea()
             lightsDefinition.setDesignLevelCalculationMethod("Watts/Area", flrArea, space.numberOfPeople())
-        lightsDefinition.setWattsperSpaceFloorArea(float(zone.lightingDensityPerArea))
+            lightsDefinition.setWattsperSpaceFloorArea(float(zone.lightingDensityPerArea))
+            self.lightingList[zone.lightingDensityPerArea] = lightsDefinition
+        else:
+            lightsDefinition = self.lightingList[zone.lightingDensityPerArea]
         
         lights = ops.Lights(lightsDefinition)
         lights.setName(zone.name + "_LightsObject")
         lights.setSchedule(self.getOSSchedule(zone.lightingSchedule, model))
         lights.setSpace(space)
-        
+    
     def setEquipmentDefinition(self, zone, space, model):
         if zone.equipmentLoadPerArea != 0:
-            electricDefinition = ops.ElectricEquipmentDefinition(model)
-            electricDefinition.setName(zone.name + "_ElectricEquipmentDefinition")
-            flrArea = zone.getFloorArea()
-            if flrArea != 0:
+            if zone.equipmentLoadPerArea not in self.equipList.keys():
+                electricDefinition = ops.ElectricEquipmentDefinition(model)
+                electricDefinition.setName(zone.name + "_ElectricEquipmentDefinition")
+                flrArea = zone.getFloorArea()
                 electricDefinition.setDesignLevelCalculationMethod("Watts/Area", flrArea, space.numberOfPeople())
-            electricDefinition.setWattsperSpaceFloorArea(zone.equipmentLoadPerArea)
+                electricDefinition.setWattsperSpaceFloorArea(zone.equipmentLoadPerArea)
+                self.equipList[zone.equipmentLoadPerArea] = electricDefinition
+            else:
+                electricDefinition = self.equipList[zone.equipmentLoadPerArea]
             
             electricEqipment = ops.ElectricEquipment(electricDefinition)
             electricEqipment.setName(zone.name + "_ElectricEquipmentObject")
@@ -3074,14 +3225,19 @@ class WriteOPS(object):
         
     def setDesignSpecificationOutdoorAir(self, zone, space, model):
         if zone.outdoorAirReq != 'None':
-            ventilation = ops.DesignSpecificationOutdoorAir(model)
-            ventilation.setName(zone.name + "_DSOA")
-            ventilation.setOutdoorAirMethod(zone.outdoorAirReq)
-            ventilation.setOutdoorAirFlowperPerson(zone.ventilationPerPerson)
-            ventilation.setOutdoorAirFlowperFloorArea(zone.ventilationPerArea)
-            if zone.ventilationSched != '':
-                ventSch = self.getOSSchedule(zone.ventilationSched,model)
-                ventilation.setOutdoorAirFlowRateFractionSchedule(ventSch)
+            if str(zone.ventilationPerArea)+str(zone.ventilationPerPerson)+str(zone.ventilationSched) not in self.ventList.keys():
+                ventilation = ops.DesignSpecificationOutdoorAir(model)
+                ventilation.setName(zone.name + "_DSOA")
+                ventilation.setOutdoorAirMethod(zone.outdoorAirReq)
+                ventilation.setOutdoorAirFlowperPerson(zone.ventilationPerPerson)
+                ventilation.setOutdoorAirFlowperFloorArea(zone.ventilationPerArea)
+                if zone.ventilationSched != '':
+                    ventSch = self.getOSSchedule(zone.ventilationSched,model)
+                    ventilation.setOutdoorAirFlowRateFractionSchedule(ventSch)
+                self.ventList[str(zone.ventilationPerArea)+str(zone.ventilationPerPerson)+str(zone.ventilationSched)] = ventilation
+            else:
+                ventilation = self.ventList[str(zone.ventilationPerArea)+str(zone.ventilationPerPerson)+str(zone.ventilationSched)]
+            
             space.setDesignSpecificationOutdoorAir(ventilation)
         return space
     
@@ -3161,16 +3317,6 @@ class WriteOPS(object):
         standardGlazing.setConductivity(float(values[12]))
         try: standardGlazing.setDirtCorrectionFactorforSolarandVisibleTransmittance(float(values[13]))
         except: pass
-        
-        """
-        try:
-            if values[14].lower() == "no":
-                standardGlazing.setSolarDiffusing(False)
-            else:
-                standardGlazing.setSolarDiffusing(True)
-        except Exception, e:
-            pass
-        """
         
         return standardGlazing
     
@@ -3394,7 +3540,6 @@ class WriteOPS(object):
             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
         
     def getOSConstruction(self, HBConstructionlName, model):
-        
         # call the layers form HB library
         materialNames, comments, UVSI, UVIP = self.hb_EPMaterialAUX.decomposeEPCnstr(HBConstructionlName)
         
@@ -3471,20 +3616,39 @@ class WriteOPS(object):
             
             thisSurface.setSurfaceType(srfType);
             
-            # create construction
+            # create constructions if it's not in the default set.
+            if surface.EPConstruction != None:
+                if surface.type == 4:
+                    constructionText = str(self.defaultConstrDict['0.25'].name())
+                elif surface.type == 0 and (surface.BC.lower() == 'surface' or surface.BC.lower() == 'adiabatic'):
+                    constructionText = str(self.defaultConstrDict['0.25'].name())
+                elif int(surface.type) == 2 and surface.BC.lower() == 'ground':
+                    constructionText = str(self.defaultConstrDict['2.5'].name())
+                elif int(surface.type) == 2 and (surface.BC.lower() == 'surface' or surface.BC.lower() == 'adiabatic'):
+                    constructionText = str(self.defaultConstrDict['2'].name())
+                elif int(surface.type) == 2 and surface.BC.lower() == 'outdoors':
+                    constructionText = str(self.defaultConstrDict['2.75'].name())
+                else:
+                    try:
+                        constructionText = str(self.defaultConstrDict[str(surface.type)].name())
+                    except:
+                        constructionText = None
+                
+                if constructionText != str(surface.EPConstruction) or surface.BC.upper() == "ADIABATIC":
+                    if self.isConstructionInLib(surface.EPConstruction):
+                        construction = self.getConstructionFromLib(surface.EPConstruction)
+                    else:
+                        construction = self.getOSConstruction(surface.EPConstruction, model)
+                        self.addConstructionToLib(surface.EPConstruction, construction)
+                    thisSurface.setConstruction(construction)
+            elif surface.BC.upper() == "ADIABATIC":
+                if self.isConstructionInLib(surface.construction):
+                    construction = self.getConstructionFromLib(surface.construction)
+                else:
+                    construction = self.getOSConstruction(surface.construction, model)
+                    self.addConstructionToLib(surface.construction, construction)
+                thisSurface.setConstruction(construction)
             
-            if self.isConstructionInLib(surface.EPConstruction) and surface.EPConstruction != None:
-                construction = self.getConstructionFromLib(surface.EPConstruction)
-            elif self.isConstructionInLib(surface.construction) and surface.EPConstruction == None:
-                construction = self.getConstructionFromLib(surface.construction)
-            elif surface.EPConstruction == None:
-                construction = self.getOSConstruction(surface.construction, model)
-                self.addConstructionToLib(surface.construction, construction)
-            else:
-                construction = self.getOSConstruction(surface.EPConstruction, model)
-                self.addConstructionToLib(surface.EPConstruction, construction)
-            
-            thisSurface.setConstruction(construction)
             thisSurface.setOutsideBoundaryCondition(surface.BC.capitalize())
             if surface.BC.capitalize()!= "ADIABATIC":
                 thisSurface.setSunExposure(surface.sunExposure.capitalize())
@@ -3492,7 +3656,6 @@ class WriteOPS(object):
             else:
                 thisSurface.setSunExposure("NOSUN")
                 thisSurface.setWindExposure("NOWIND")
-                
             
             # Boundary condition object
             #setAdjacentSurface(self: Surface, surface: Surface)
@@ -3513,19 +3676,27 @@ class WriteOPS(object):
                 # add the points to an openStudio list
                 windowPointVectors.Add(ops.Point3d(pt.X,pt.Y,pt.Z))
             
-            # create construction
-            if self.isConstructionInLib(childSrf.EPConstruction):
-                construction = self.getConstructionFromLib(childSrf.EPConstruction)
-            else:
-                construction = self.getOSConstruction(childSrf.EPConstruction, model)
-                # keep track of constructions
-                self.addConstructionToLib(childSrf.EPConstruction, construction)
-            
             glazing = ops.SubSurface(windowPointVectors, model)
             glazing.setName(childSrf.name)
             glazing.setSurface(openStudioParentSrf)
             glazing.setSubSurfaceType(childSrf.srfType[childSrf.type])
-            glazing.setConstruction(construction)
+            
+            # create constructions if it's not in the default set.
+            if childSrf.EPConstruction != None:
+                if childSrf.BC.lower() == 'surface' or childSrf.BC.lower() == 'adiabatic':
+                    constructionText = str(self.defaultConstrDict['5.5'].name())
+                elif surface.type == 1:
+                    constructionText = str(self.defaultConstrDict['5.25'].name())
+                else:
+                    constructionText = str(self.defaultConstrDict['5'].name())
+                
+                if constructionText != str(childSrf.EPConstruction):
+                    if self.isConstructionInLib(childSrf.EPConstruction):
+                        construction = self.getConstructionFromLib(childSrf.EPConstruction)
+                    else:
+                        construction = self.getOSConstruction(childSrf.EPConstruction, model)
+                        self.addConstructionToLib(childSrf.EPConstruction, construction)
+                    glazing.setConstruction(construction)
             
             # Check if there are any frame objects associated with the window.
             try:
@@ -3548,7 +3719,7 @@ class WriteOPS(object):
                 if childSrf.name == childSrf.BCObject.name:
                     raise Exception("Interior facing surfaces can't have the same name: %s"%childSrf.name + \
                         "\nRename one of the surfaces and try again!")
-                self.adjacentSurfacesDict[childSrf.name] = [childSrf.BCObject.name, glazing]
+                self.adjacentFenSrfsDict[childSrf.name] = [childSrf.BCObject.name, glazing]
     
     def OPSShdSurface(self, shdSurfaces, model):
         shadingGroup = ops.ShadingSurfaceGroup(model)
@@ -3579,15 +3750,22 @@ class WriteOPS(object):
                 
     
     def setAdjacentSurfaces(self):
+        # Set Adjacent zone surfaces.
         for surfaceName in self.adjacentSurfacesDict.keys():
             adjacentSurfaceName, OSSurface = self.adjacentSurfacesDict[surfaceName]
             try:
                 adjacentOSSurface = self.adjacentSurfacesDict[adjacentSurfaceName][1]
-                
-                try:
-                    OSSurface.setAdjacentSurface(adjacentOSSurface)
-                except:
-                    OSSurface.setAdjacentSubSurface(adjacentOSSurface)
+                OSSurface.setAdjacentSurface(adjacentOSSurface)
+            except:
+                warning = "Adjacent surface " + adjacentSurfaceName + " was not found."
+                print warning
+        
+        # Set adjacent Fenestration surfaces.
+        for surfaceName in self.adjacentFenSrfsDict.keys():
+            adjacentSurfaceName, OSSurface = self.adjacentFenSrfsDict[surfaceName]
+            try:
+                adjacentOSSurface = self.adjacentFenSrfsDict[adjacentSurfaceName][1]
+                OSSurface.setAdjacentSubSurface(adjacentOSSurface)
             except:
                 warning = "Adjacent surface " + adjacentSurfaceName + " was not found."
                 print warning
@@ -4110,7 +4288,7 @@ class RunOPS(object):
         fiw.close()
     
     
-    def runAnalysis(self, osmFile, runEnergyPlus, useRunManager = False):
+    def runAnalysis(self, osmFile, runEnergyPlus):
         
         # Preparation
         workingDir, fileName = os.path.split(osmFile)
@@ -4123,57 +4301,8 @@ class RunOPS(object):
         print 'OSM > IDF: ' + str(idfPath)
         
         if runEnergyPlus < 3:
-            if not useRunManager:
-                resultFile = self.writeBatchFile(idfFolder, "ModelToIdf\\in.idf", self.weatherFile, runEnergyPlus > 1)
-                return os.path.join(idfFolder, "ModelToIdf", "in.idf"), resultFile
-            
-            outputPath = ops.Path(idfFolder)
-            
-            rmDBPath = ops.Path(os.path.join(idfFolder, projectName + ".db"))
-            try:
-                rm = ops.RunManager(rmDBPath, True, True, False, False)
-                
-                # set up tool info to pass to run manager
-                energyPlusTool = ops.ToolInfo(self.EPPath)
-                toolInfo = ops.Tools()
-                toolInfo.append(energyPlusTool)
-                
-                # get manager configration options
-                configOptions = rm.getConfigOptions()
-                
-                EPRunJob = ops.JobFactory.createEnergyPlusJob(energyPlusTool, self.iddFile, idfPath,
-                                                   self.epwFile, outputPath)
-                
-                # put in queue and let it go
-                rm.enqueue(EPRunJob, True)
-                rm.setPaused(False)
-                
-                # This make Rhino and NOT Grasshopper to crash
-                # I should send this as a discussion later
-                #rm.showStatusDialog()
-                
-                while rm.workPending():
-                    time.sleep(1)
-                    print "Running simulation..."
-                #    print "Process Event:" + str(ops.Application.instance().processEvents())
-                jobErrors = EPRunJob.errors()
-                #    print jobErrors.succeeded()
-                
-                # print "Process: " + str(ops.Application.instance().processEvents())
-                print "Errors and Warnings:"
-                for msg in list(jobErrors.errors()):
-                    print msg
-                    
-                rm.Dispose() # don't remove this as Rhino will crash if you don't dispose run manager
-                
-                if jobErrors.succeeded():
-                    return os.path.join(idfFolder, "ModelToIdf", "in.idf"), idfFolder + "\\EnergyPlus\\epluszsz.csv"
-                else:
-                    return None, None
-                    
-            except Exception, e:
-                 rm.Dispose() # in case anything goes wrong it closes the rm
-                 print `e`
+            resultFile = self.writeBatchFile(idfFolder, "ModelToIdf\\in.idf", self.weatherFile, runEnergyPlus > 1)
+            return os.path.join(idfFolder, "ModelToIdf", "in.idf"), resultFile
         else:
             return os.path.join(idfFolder, "ModelToIdf", "in.idf"), None
     
@@ -4192,7 +4321,7 @@ class RunOPS(object):
         folderName = workingDir.replace( (workingDrive + '\\'), '')
         batchStr = workingDrive + '\ncd\\' +  folderName + '\n"' + EPDirectory + \
                 'Epl-run" ' + fullPath + ' ' + fullPath + ' idf ' + epwFileAddress + ' EP N nolimit N N 0 Y'
-    
+        
         batchFileAddress = fullPath +'.bat'
         batchfile = open(batchFileAddress, 'w')
         batchfile.write(batchStr)
@@ -4348,6 +4477,9 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     # generate stories
     hb_writeOPS.generateStories(HBZones, model)
     
+    # build a default construction set from the connected zones.
+    defaultConstrSet = hb_writeOPS.buildDefaultConstrSet(HBZones, model)
+    
     #Make a list of schedules to keep track of what needs to be written into the model.
     additionalSchedList = []
     additionalcsvSchedules = []
@@ -4365,6 +4497,9 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         
         # schedules
         space = hb_writeOPS.setDefaultSchedule(zone, space, model)
+        
+        # construction set
+        space.setDefaultConstructionSet(defaultConstrSet)
         
         #   INFILTRATION
         hb_writeOPS.setInfiltration(zone, space, model)
@@ -4492,7 +4627,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         hb_runOPS = RunOPS(model, epwWeatherFile, HBZones, hb_writeOPS.simParameters, openStudioLibFolder, csvSchedules, \
             csvScheduleCount, additionalcsvSchedules, shadeCntrlToReplace, replaceShdCntrl, windowSpectralData, waterSourceVRFs)
         
-        idfFile, resultFile = hb_runOPS.runAnalysis(fname, runIt, useRunManager = False)
+        idfFile, resultFile = hb_runOPS.runAnalysis(fname, runIt)
         if runIt < 3:
             try:
                 errorFileFullName = idfFile.replace('.idf', '.err')
@@ -4504,7 +4639,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
                         w = gh.GH_RuntimeMessageLevel.Warning
                         ghenv.Component.AddRuntimeMessage(w, warning)
                         resultFile = None
-                    elif "** Severe  **" in line and 'CheckControllerListOrder' not in line:
+                    elif "** Severe  **" in line and 'CheckControllerListOrder' not in line and not "surfaces and are non-convex" in line:
                         comment = "The simulation has not run correctly because of this severe error: \n" + str(line)
                         c = gh.GH_RuntimeMessageLevel.Warning
                         ghenv.Component.AddRuntimeMessage(c, comment)

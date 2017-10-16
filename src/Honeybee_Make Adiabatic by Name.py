@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Make Adiabatic by Name"
 ghenv.Component.NickName = 'makeAdiabaticByName'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nSEP_25_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -46,6 +46,13 @@ except: pass
 
 import scriptcontext as sc
 import Grasshopper.Kernel as gh
+
+def changeSrfType(HBSurface):
+    if srfType == None and str(HBSurface.type).startswith('2'):
+        HBSurface.setType(2, False)
+    elif srfType == None and str(HBSurface.type).startswith('1'):
+        HBSurface.setType(3, False)
+    HBSurface.setEPConstruction(HBSurface.intCnstrSet[HBSurface.type])
 
 def main(HBObjs,nameList):
     
@@ -77,9 +84,17 @@ def main(HBObjs,nameList):
             for HBS in HBO.surfaces:
                 if HBS.name in nameList:
                     HBS.BC = "Adiabatic"
+                    HBS.sunExposure = "NoSun"
+                    HBS.windExposure = "NoWind"
+                    HBS.srfBCByUser = True
+                    changeSrfType(HBS)
         else:
             if HBO.name in nameList:
                 HBS.BC = "Adiabatic"
+                HBS.sunExposure = "NoSun"
+                HBS.windExposure = "NoWind"
+                HBS.srfBCByUser = True
+                changeSrfType(HBS)
         
     
     HBObjects  = hb_hive.addToHoneybeeHive(HBObjects, ghenv.Component)
