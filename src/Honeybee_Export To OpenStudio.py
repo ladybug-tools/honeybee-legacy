@@ -3872,7 +3872,8 @@ class OPSmeasures(object):
                         with open(natVentCSV, 'a') as natVentFile:
                             natVentFile.write(self.simpleNatVentFileLine(zone, natVentCount))
                     elif natVentObj == 3:
-                        pass
+                        with open(natVentCSV, 'a') as natVentFile:
+                            natVentFile.write(self.fanNatVentFileLine(zone, natVentCount))
     
     def simpleNatVentFileLine(self, zone, natVentCount):
         if zone.natVentSchedule[natVentCount] == None: natVentSched = 'ALWAYS ON'
@@ -3888,6 +3889,21 @@ class OPSmeasures(object):
             str(zone.windowOpeningArea[natVentCount]) + ',' + natVentSched + ',' + \
             str(zone.natVentWindDischarge[natVentCount]) + ',' + str(zone.windowAngle[natVentCount])+ ',' + \
             str(zone.windowHeightDiff[natVentCount]) + ',' + str(zone.natVentStackDischarge[natVentCount])+ '\n'
+        return line
+    
+    def fanNatVentFileLine(self, zone, natVentCount):
+        if zone.natVentSchedule[natVentCount] == None: natVentSched = 'ALWAYS ON'
+        elif zone.natVentSchedule[natVentCount].upper().endswith('CSV'):
+            natVentSchedFileName = os.path.basename(zone.natVentSchedule[natVentCount])
+            natVentSched = "_".join(natVentSchedFileName.split(".")[:-1])
+        else: natVentSched = zone.natVentSchedule[natVentCount]
+        
+        line = zone.name + ',' + str(zone.natVentType[natVentCount]) + ',' + zone.name +'NatVent' + str(natVentCount) + ',' + \
+            str(zone.natVentMinIndoorTemp[natVentCount]) + ',' + str(zone.natVentMaxIndoorTemp[natVentCount]) + ',' + \
+            str(zone.natVentDeltaTemp[natVentCount]) + ',' + str(zone.natVentMinOutdoorTemp[natVentCount]) + ',' + \
+            str(zone.natVentMaxOutdoorTemp[natVentCount]) + ',' + \
+            str(zone.fanFlow[natVentCount]) + ',' + natVentSched + ',' + \
+            str(zone.FanEfficiency[natVentCount]) + ',' + str(zone.FanPressure[natVentCount])+ ',,\n'
         return line
 
 
