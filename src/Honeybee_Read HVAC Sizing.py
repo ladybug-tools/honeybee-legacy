@@ -41,7 +41,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Read HVAC Sizing"
 ghenv.Component.NickName = 'readEio'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nOCT_17_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -72,7 +72,6 @@ def checkInputs():
 def dict2Tree(dict):
     textInfo = DataTree[Object]()
     numInfo = DataTree[Object]()
-    
     for zCount, zone in enumerate(dict.keys()):
         for text in dict[zone][0]:
             textInfo.Add(text, GH_Path(zCount))
@@ -125,7 +124,15 @@ def main(keywords):
             sizInfoSplit = sysSiz.split(', ')
             sysName = sizInfoSplit[1]
             zText = sysName + '-' + sizInfoSplit[2]
-            sysNum = sizInfoSplit[3]
+            try:
+                openStudioLibFolder = sc.sticky["honeybee_folders"]["OSLibPath"]
+                if int(openStudioLibFolder.split('/')[1].split('.')[-2]) > 2:
+                    sysNum = sizInfoSplit[4]
+                else:
+                    sysNum = sizInfoSplit[3]
+            except:
+                sysNum = sizInfoSplit[3]
+            
             if sysName not in sysDict.keys():
                 sysDict[sysName] = [[zText],[sysNum]]
             else:
