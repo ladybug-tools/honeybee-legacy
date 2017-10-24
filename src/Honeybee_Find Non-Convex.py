@@ -34,6 +34,8 @@ _
 _
 2. Imagine you are walking from one vertice of a surface to the next verice of the same surface, and you are travelling to all the vertices of the surface like that. While making this journey, you'll make turns. If all those turns that you took at vertices, are either clockwise or counter-clockwise, then the surface is convex. If at least one of the turns was in the opposite direction, meaning, if total number of turns you took were 6, and out of those, 5 times you turned clockwise (or counter-clockwise) and one time you turned counter-clockwise (or clockwise), then it is a non-convex surface.
 _
+3. EnergyPlus displays severe error for non-convex zones. So if any of the face of the zone is made of more than one planar surfaces, and none of those surfaces are non-convex, however, if the resultant zone is not convex then EnergyPlus will still announce a severe error. To address this, in addition to providing your breps as input to this component,  please also pass your breps through the native grasshopper Merge Faces (FMerge) component. And then provide the output of FMerge component (Simplified Brep) to the input of this component.
+_
 Please visit the following link to know why EnegyPlus does not like non-convex surfaces.
 http://bigladdersoftware.com/epx/docs/8-2/input-output-reference/group-simulation-parameters.html#field-solar-distribution
 -
@@ -50,7 +52,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Find Non-Convex"
 ghenv.Component.NickName = 'IsConvex'
-ghenv.Component.Message = 'VER 0.0.62\nOCT_09_2017' #Change this date to be that of your commit or pull request.
+ghenv.Component.Message = 'VER 0.0.62\nOCT_24_2017' #Change this date to be that of your commit or pull request.
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"
 #compatibleHBVersion = VER 0.0.57\nNOV_04_2016
@@ -61,6 +63,7 @@ except: pass
 import Rhino
 import Grasshopper.Kernel as gh
 import scriptcontext as sc
+
 
 def checkTheInputs():
     total = 0
@@ -75,7 +78,6 @@ def checkTheInputs():
         return False
     else:
         return True
-
 
 
 def main():
@@ -107,9 +109,12 @@ def main():
                     nonConvex.append(surface)
                 if hb_NonConvexChecking(surface).isConvex()[1] > 0:
                     faultyGeometry.extend(hb_NonConvexChecking(surface).isConvex()[1])
+                    
+        if len(nonConvex) == 0:
+            print "No non-convex surfaces are found in provided brep / breps."          
         
         if len(faultyGeometry) == 0:
-            print "No faulty geometry has been found in brep / breps you provided. This is good."           
+            print "No faulty geometry has been found in provided brep / breps."          
         
         if len(faultyGeometry) > 0:
             warning = 'Faulty geometry has been found in the brep / breps you provided. Please take analyze these faultyGeometries using native grasshopper Deconstruct Brep component and fix them.'
@@ -131,4 +136,5 @@ if checkData:
     result = main()
     if result != -1:
         nonConvex, faultyGeometry = result
+        
 
