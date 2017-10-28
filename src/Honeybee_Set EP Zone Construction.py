@@ -42,7 +42,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Set EP Zone Construction"
 ghenv.Component.NickName = 'setEPZoneCnstr'
-ghenv.Component.Message = 'VER 0.0.62\nSEP_13_2017'
+ghenv.Component.Message = 'VER 0.0.62\nOCT_28_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
@@ -73,8 +73,7 @@ def matchLists(input, length):
         return tuple(input[i] if i < il else input[-1] for i in range(length))
 
 
-def main(HBZones, wallEPCnst, windowEPCnst, roofEPCnst, flrEPCnst, expFlrEpCnst, \
-        skylightEPCnst):
+def main(HBZones, wallEPCnst, windowEPCnst, roofEPCnst, flrEPCnst, expFlrEpCnst, skylightEPCnst):
             
     # Make sure Honeybee is flying
     if not sc.sticky.has_key('honeybee_release'):
@@ -102,13 +101,18 @@ def main(HBZones, wallEPCnst, windowEPCnst, roofEPCnst, flrEPCnst, expFlrEpCnst,
     hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
     modifiedObjects = []
     l = len(HBZoneObjects)
-    wallEPCnst = matchLists(wallEPCnst, l)
-    windowEPCnst = matchLists(windowEPCnst, l)
-    roofEPCnst = matchLists(roofEPCnst, l)
-    flrEPCnst = matchLists(flrEPCnst, l)
-    expFlrEpCnst = matchLists(expFlrEpCnst, l)
-    skylightEPCnst = matchLists(skylightEPCnst, l)
-    
+    try:
+        wallEPCnst = matchLists(wallEPCnst, l)
+        windowEPCnst = matchLists(windowEPCnst, l)
+        roofEPCnst = matchLists(roofEPCnst, l)
+        flrEPCnst = matchLists(flrEPCnst, l)
+        expFlrEpCnst = matchLists(expFlrEpCnst, l)
+        skylightEPCnst = matchLists(skylightEPCnst, l)
+    except:
+        warning = "Null values connected for constructions."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, warning)
+        return -1
     
     for count, HBZoneObject in enumerate(HBZoneObjects):
         for srf in HBZoneObject.surfaces:
@@ -129,14 +133,12 @@ def main(HBZones, wallEPCnst, windowEPCnst, roofEPCnst, flrEPCnst, expFlrEpCnst,
                     hb_EPObjectsAux.assignEPConstruction(srf, flrEPCnst[count], ghenv.Component)
                 elif srf.type == 2.75 and expFlrEpCnst[count]!=None:
                     hb_EPObjectsAux.assignEPConstruction(srf, expFlrEpCnst[count], ghenv.Component)
-
-
+    
         modifiedObjects.append(HBZoneObject)
-
+    
     # add zones to dictionary
     HBZones  = hb_hive.addToHoneybeeHive(modifiedObjects, ghenv.Component)
     
-    #print HBZones
     return HBZones
 
 if _HBZones and _HBZones[0] != None:
