@@ -33,8 +33,9 @@ Provided by Honeybee 0.0.62
     Returns:
         readMe!:...
         bridgedConstruction: A thermally bridged construction that can be applied to HBZones and HBSurfaces for energy simulations.
-        bridgedConstrStr: The IDF text that defines the thermally bridged construction that has been written to the memory of the document.
-        bridgedMaterialStr: The IDF text that defines the thermally bridged material within the construction.
+        bridgedConstrText: The IDF text that defines the thermally bridged construction that has been written to the memory of the document.
+        bridgedMaterialText: The IDF text that defines the thermally bridged material within the construction.
+        bridgedMatRValue: The R-value of the newly created thermally bridged material.
 """
 
 
@@ -113,16 +114,26 @@ def main(EPConstruction, thermBridgedUValue, materialToAdjust, customName, hb_EP
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
         return -1
     
-    # Calculate the conductivity of the new thermally bridged material.
-    newRvalue = matRValue_SI - RValueDifference
-    newUvalue = 1/newRvalue
-    thickness = values[2]
-    newConductivity = newUvalue * float(thickness)
-    
     # Create the new thermally bridged material.
     bridgedMatName = materialToAdjust + customName
-    materialStr = "Material,\n" + bridgedMatName.upper() + ",    !- Name\n"
-    values[3] = newConductivity
+    newRvalue = matRValue_SI - RValueDifference
+    if values[0].upper() == 'MATERIAL:NOMASS':
+        materialStr = "Material:NoMass,\n" + bridgedMatName.upper() + ",    !- Name\n"
+        values[2] = newRvalue
+    elif values[0].upper() == 'MATERIAL':
+        # Calculate the conductivity of the new thermally bridged material.
+        newUvalue = 1/newRvalue
+        thickness = values[2]
+        newConductivity = newUvalue * float(thickness)
+        materialStr = "Material,\n" + bridgedMatName.upper() + ",    !- Name\n"
+        values[3] = newConductivity
+    else:
+        warning = "The R-value of materials of type " + values[0].upper() + " cannot be adjusted with this component."
+        print warning
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+        return -1
+    
+    
     for count, (value, comment) in enumerate(zip(values, matComments)):
         if count != 0:
             if count!= len(values) - 1:
@@ -156,7 +167,7 @@ def main(EPConstruction, thermBridgedUValue, materialToAdjust, customName, hb_EP
         return -1
     else: print newConstrname + " is has been added to the project library!"
     
-    return newConstrname, constrStr, materialStr
+    return newConstrname, constrStr, materialStr, newRvalue
 
 
 
@@ -190,4 +201,4 @@ if initCheck == True:
 if initCheck and _originalEPConstruction != None and _thermBridgedUValue != None and _materialToAdjust != None:
     result = main(_originalEPConstruction, _thermBridgedUValue, _materialToAdjust, _customName_, hb_EPMaterialAUX, hb_EPObjectsAux)
     if result != -1:
-        bridgedConstruction, bridgedConstrStr, bridgedMaterialStr = result
+        bridgedConstruction, bridgedConstrText, bridgedMaterialText, bridgedMatRValue = result
