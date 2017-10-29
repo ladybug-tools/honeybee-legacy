@@ -9579,7 +9579,7 @@ if checkIn.letItFly:
             msg= "Honeybee cannot find a compatible LBNL THERM installation on your system.\n" + \
              "You won't be able to run THERM simulations of heat flow through constructions.\n" + \
              "You need THERM version 7.5 or above and you can download it from here:"
-            msg2 = "https://windows.lbl.gov/software/therm/7/index_7_5_13.html"
+            msg2 = "https://windows.lbl.gov/software/therm"
             ghenv.Component.AddRuntimeMessage(w, msg)
             ghenv.Component.AddRuntimeMessage(w, msg2)
             folders.THERMPath = ""
