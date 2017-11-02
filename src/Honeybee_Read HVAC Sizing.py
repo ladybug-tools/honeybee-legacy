@@ -37,11 +37,13 @@ Provided by Honeybee 0.0.62
         systemSizingVals: Values denoting the size of various central HVAC system elemts (like the primary air loop flow rates).
         componentSizObjs: Text describing the meaning of the componentSizVals below.
         componentSizVals: Values denoting the size of various zone HVAC components (like zone terminal sizes, heating/cooling coil sizes, lengths of chilled beams, etc.).
+        coolDesignDayLoad: The sum of the load that must be reomved from the space at every timestep of the cooling design day.
+        heatDesignDayLoad: The sum of the load that must be added to the space at every timestep of the heating design day.
 """
 
 ghenv.Component.Name = "Honeybee_Read HVAC Sizing"
 ghenv.Component.NickName = 'readEio'
-ghenv.Component.Message = 'VER 0.0.62\nOCT_17_2017'
+ghenv.Component.Message = 'VER 0.0.62\nNOV_03_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -64,10 +66,20 @@ def checkInputs():
         initCheck = True
         if not os.path.isfile(_eioFile):
             initCheck = False
-            warning = 'The .rdd file does not exist.'
+            warning = 'The .eio file does not exist.'
             print warning
             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
     return initCheck
+
+def createHeader(loadType, zoneName):
+    header = ["key:location/dataType/units/frequency/startsAt/endsAt"]
+    header.append('Some Location')
+    header.append(loadType + " for " + zoneName)
+    header.append('W')
+    header.append('TimeStep')
+    header.append('NoDate')
+    header.append('NoDate')
+    return header
 
 def dict2Tree(dict):
     textInfo = DataTree[Object]()
@@ -119,6 +131,7 @@ def main(keywords):
                 peakDict[zName][0].append(zText)
                 peakDict[zName][1].append(zpeak)
         
+        # Make a list of system sizing objects.
         sysDict = {}
         for sysSiz in systemSizing:
             sizInfoSplit = sysSiz.split(', ')
@@ -139,6 +152,7 @@ def main(keywords):
                 sysDict[sysName][0].append(zText)
                 sysDict[sysName][1].append(sysNum)
         
+        # Make a list of HVAC components.
         compDict = {}
         for compSiz in componentSizing:
             sizInfoSplit = compSiz.split(', ')
@@ -151,9 +165,51 @@ def main(keywords):
                 compDict[compName][0].append(zText)
                 compDict[compName][1].append(compNum)
         
-        return peakDict, zoneDict, sysDict, compDict
+        # Try to parse the Zsz.csv file to bring in all of the timestep load data.
+        coolDesLoad = []
+        heatDesLoad = []
+        loadTrigger = True
+        try:
+            sizingLogFile = _eioFile.replace('.eio', 'Zsz.csv')
+            coolCols = []
+            heatCols = []
+            zoneNames = []
+            with open(sizingLogFile,'r') as sizingFile:
+                for lCount, line in enumerate(sizingFile):
+                    columns = line.split(',')
+                    if lCount == 0:
+                        for colCount, col in enumerate(columns):
+                            if 'Des Heat Load' in col:
+                                heatCols.append(colCount)
+                                zoneName = col.split(':')[0]
+                                zoneNames.append(zoneName)
+                            elif 'Des Sens Cool Load' in col:
+                                coolCols.append(colCount)
+                        coolDesLoad.append(createHeader('Design Day Cooling Load', zoneName))
+                        heatDesLoad.append(createHeader('Design Day Heating Load', zoneName))
+                    elif 'Peak' in line:
+                        loadTrigger = False
+                    elif loadTrigger == True:
+                        for cCount, coolCount in enumerate(coolCols):
+                            coolDesLoad[cCount].append(float(columns[coolCount]))
+                        for hCount, heatCount in enumerate(heatCols):
+                            heatDesLoad[hCount].append(float(columns[heatCount]))
+        except:
+            pass
+        
+        # Convert the list of lists into a data tree.
+        coolDesignLoad = DataTree[Object]()
+        heatDesignLoad = DataTree[Object]()
+        for datCount, dataList in enumerate(coolDesLoad):
+            for item in dataList:
+                coolDesignLoad.Add(item, GH_Path(datCount))
+        for datCount, dataList in enumerate(heatDesLoad):
+            for item in dataList:
+                heatDesignLoad.Add(item, GH_Path(datCount))
+        
+        return peakDict, zoneDict, sysDict, compDict, coolDesignLoad, heatDesignLoad
     except:
-        warning = 'Fauled to parse .rdd file.  Make sure that it is the correct type of file.'
+        warning = 'Fauled to parse .eio file.  Make sure that it is the correct type of file.'
         print warning
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
         return -1
@@ -182,7 +238,7 @@ if _eioFile and hbCheck == True:
     if initCheck == True:
         result = main(keywords_)
         if result != -1:
-            peakDict, zoneDict, sysDict, compDict = result
+            peakDict, zoneDict, sysDict, compDict, coolDesignDayLoad, heatDesignDayLoad = result
             zonePeakLoadObjs, zonePeakLoadVals = dict2Tree(peakDict)
             zoneSizingObjs, zoneSizingValues = dict2Tree(zoneDict)
             systemSizingObjs, systemSizingVals = dict2Tree(sysDict)
