@@ -1,4 +1,4 @@
-﻿#
+#
 # Honeybee: A Plugin for Environmental Analysis (GPL) started by Mostapha Sadeghipour Roudsari
 #
 # This file is part of Honeybee.
@@ -23,7 +23,8 @@
 """
 Use this component to divide up a brep (polysurface) representative of a building floor into smaller volumes that roughly correspond to how a generic EnergyPlus model should be zoned.
 This zoning divide up each floor into a core and perimeter zones, which helps account for the different microclimates you would get on each of the different orientations of a building.
-Note: Currently in this WIP convex only convex geometry can be handled. Most concave geometries will fail, and any shapes with holes in them will fail.
+Note: Currently in this WIP convex only convex geometry can be handled. Most concave geometries will fail, and any shapes with holes in them will fail. You should therefore prepare the
+massing of your building by dividing it into convex volumes before using this component.
 _
 If you have a single mass representing two towers off of a podium, the two towers are not a continuous mass and you should therefore send each tower and the podium in as a separate Brep into this component.
 Core and perimeter zoneing should work for almost all masses where all walls are planar.
@@ -37,7 +38,7 @@ This component helps break up building masses in such a manner.
 Provided by Honeybee 0.0.62
 
     Args:
-        _bldgFloors: A Closed brep or list of closed breps representing building floors. In this WIP only convex geometries and very simple concave geometries will succeed. However it is very robust for even complex concave geometries. You can use the Honeybee_SplitBuildingMass2Floors to generate floors from a building mass.
+        _bldgFloors: A Closed brep or list of closed breps representing building floors. In this WIP only convex geometries and very simple concave geometries will succeed. You should prepare the massing of your building by dividing it into convex volumes before using this component. You can use the Honeybee_SplitBuildingMass2Floors to generate floors from a building mass.
         _perimeterZoneDepth: A number for perimeter depths in Rhino model units that will be used to divide up each floor of the building into core and perimeter zones.
     Returns:
         readMe!: ...
@@ -48,10 +49,10 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = 'Honeybee_SplitFloor2ThermalZones'
 ghenv.Component.NickName = 'Split2Zone'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nNOV_07_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "13 | WIP"
+ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -106,6 +107,7 @@ def checkTheInputs():
     else: checkData = False
 
     return checkData
+
 
 #Define a function that will extract the points from a polycurve line
 def getCurvePoints(curve):
@@ -2172,28 +2174,15 @@ def main(mass, _perimeterZoneDepth):
         ghenv.Component.AddRuntimeMessage(w, "You should first let both Ladybug and Honeybee to fly...")
         return -1
 
-checkData = False
-if _runIt == True:
-    checkData = checkTheInputs()
 
-"""
-def checkTheInputs():
-    total = 0
-    for brep in _breps:
-        if type(brep) != Rhino.Geometry.Brep:
-            total += 1
-    if total > 0:
-        warning = 'Please check inputs. This component only accepts breps.'
-        print warning
-        w = gh.GH_RuntimeMessageLevel.Warning
-        ghenv.Component.AddRuntimeMessage(w, warning)
-        return False
-    else:
-        return True
-def main():
-    # import the classes
+
+def checkNonConvex(breps):
+    """
+    Temporary until I get the concave section working!
+    Code from https://github.com/mostaphaRoudsari/honeybee/blob/master/src/Honeybee_Find%20Non-Convex.py
+    """
+    #import the classes
     if sc.sticky.has_key('honeybee_release'):
-
         try:
             if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
             if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): return -1
@@ -2212,40 +2201,40 @@ def main():
         nonConvex = []
         faultyGeometry = []
 
-        for brep in _breps:
+        for brep in breps:
             surfaces = [brep.Faces.ExtractFace(i) for i in range(brep.Faces.Count)]
             for surface in surfaces:
                 if hb_NonConvexChecking(surface).isConvex()[0] == False:
                     nonConvex.append(surface)
                 if hb_NonConvexChecking(surface).isConvex()[1] > 0:
                     faultyGeometry.extend(hb_NonConvexChecking(surface).isConvex()[1])
-
-        if len(faultyGeometry) == 0:
-            print "No faulty geometry has been found in brep / breps you provided. This is good."
-
-        if len(faultyGeometry) > 0:
-            warning = 'Faulty geometry has been found in the brep / breps you provided. Please take analyze these faultyGeometries using native grasshopper Deconstruct Brep component and fix them.'
-            print warning
-            w = gh.GH_RuntimeMessageLevel.Warning
-            ghenv.Component.AddRuntimeMessage(w, warning)
-
         return (nonConvex , faultyGeometry)
-
     else:
         print "You should first let Honeybee to fly..."
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee to fly...")
         return -1
 
-#If the intital check is good, run the component.
-checkData = checkTheInputs()
-if checkData:
-    result = main()
-    if result != -1:
-        nonConvex, faultyGeometry = result
-"""
+
+checkData = False
+if _runIt == True:
+    checkData = checkTheInputs()
+
+    # CHECK CONVEX
+    brep4convexchk = copy.copy(_bldgFloors)
+    convex_result = checkNonConvex(brep4convexchk)
+    if convex_result != -1:
+        nonConvex, faultyGeometry = convex_result
+        if len(faultyGeometry) > 0.0:
+            convex_error_msg = "You have a non-convex (or faulty) geometry, and this component only handles convex geometries (at this point). You should prepare the massing of your building by dividing it into convex volumes before using this component."
+            print convex_error_msg
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, convex_error_msg)
+    # /CHECK CONVEX
+
 if checkData == True:
     #sc.sticky['#debug'] = []
+
     splitBldgMassesLists = main(_bldgFloors, _perimeterZoneDepth)
     #print splitBldgMassesLists
     #splitBldgMasses = splitBldgMassesLists
