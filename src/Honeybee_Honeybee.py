@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.62\nOCT_10_2017'
+ghenv.Component.Message = 'VER 0.0.62\nOCT_28_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -7982,6 +7982,12 @@ class thermPolygon(object):
             print self.warning
         
         return material
+    
+    def __str__(self):
+        return 'THERM Polygon Object:' + str(self.name) + \
+           '\nMaterial: ' + str(self.material) + \
+           '\n# of vertices: ' + `len(self.vertices)` + \
+           '\n-------------------------------------'
 
 class thermBC(object):
     def __init__(self, lineGeo, BCName, temperature, filmCoeff, plane, radTemp, radTransCoeff, RGBColor, uFactorTag, emissOverride, viewFactor=None, envEmiss=None, heatFlux=None, ghComp=None):
@@ -8088,6 +8094,18 @@ class thermBC(object):
     
     def resetID(self):
         self.ID = str(uuid.uuid4())
+    
+    def __str__(self):
+        if str(self.BCProperties['H']) == 'INDOOR' or str(self.BCProperties['H']) == 'OUTDOOR':
+            return 'THERM Boundary Object:' + str(self.name) + \
+               '\nTemperature: ' + str(self.BCProperties['Temperature']) + ' C' + \
+               '\nFilm Coefficient: ' + str(self.BCProperties['H']) + \
+               '\n-------------------------------------'
+        else:
+            return 'THERM Boundary Object:' + str(self.name) + \
+               '\nTemperature: ' + str(self.BCProperties['Temperature']) + ' C' + \
+               '\nFilm Coefficient: ' + str(self.BCProperties['H']) + ' W/m2-K' + \
+               '\n-------------------------------------'
 
 class viewFactorInfo(object):
     
@@ -9561,7 +9579,7 @@ if checkIn.letItFly:
             msg= "Honeybee cannot find a compatible LBNL THERM installation on your system.\n" + \
              "You won't be able to run THERM simulations of heat flow through constructions.\n" + \
              "You need THERM version 7.5 or above and you can download it from here:"
-            msg2 = "https://windows.lbl.gov/software/therm/7/index_7_5_13.html"
+            msg2 = "https://windows.lbl.gov/software/therm"
             ghenv.Component.AddRuntimeMessage(w, msg)
             ghenv.Component.AddRuntimeMessage(w, msg2)
             folders.THERMPath = ""

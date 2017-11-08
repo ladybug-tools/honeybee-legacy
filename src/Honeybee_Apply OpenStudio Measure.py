@@ -43,6 +43,7 @@ Provided by Honeybee 0.0.62
         readMe!: ...
         osmFileAddress: The file path of the OSM file that has been generated on your machine.
         idfFileAddress: The file path of the IDF file that has been generated on your machine. This file is only generated when you set "runSimulation_" to "True."
+        resultFileAddress: The file path of the CSV result file that has been generated on your machine.
         sqlFileAddress: The file path to the SQL result file that has been generated on your machine.  This file contains all results from the energy model run.
         eioFileAddress:  The file path of the EIO file that has been generated on your machine.  This file contains information about the sizes of all HVAC equipment from the simulation.  This file is only generated when you set "runSimulation_" to "True."
         rddFileAddress: The file path of the Result Data Dictionary (.rdd) file that is generated after running the file through EnergyPlus.  This file contains all possible outputs that can be requested from the EnergyPlus model.  Use the "Honeybee_Read Result Dictionary" to see what outputs can be requested.
@@ -52,7 +53,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Apply OpenStudio Measure"
 ghenv.Component.NickName = 'applyOSMeasure'
-ghenv.Component.Message = 'VER 0.0.62\nOCT_09_2017'
+ghenv.Component.Message = 'VER 0.0.62\nOCT_17_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"
@@ -71,6 +72,21 @@ if sc.sticky.has_key('honeybee_release'):
         # openstudio is there
         openStudioLibFolder = sc.sticky["honeybee_folders"]["OSLibPath"]
         openStudioIsReady = True
+        
+        # check to see that it's version 2.0 or above.
+        rightVersion = False
+        try:
+            osVersion = openStudioLibFolder.split('-')[-1]
+            if osVersion.startswith('2'):
+                rightVersion = True
+        except:
+            pass
+        if rightVersion == False:
+            openStudioIsReady = False
+            msg = "Your version of OpenStudio must be 2.0 or above to use the measures components."
+            print msg
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+        
         import clr
         clr.AddReferenceToFileAndPath(openStudioLibFolder+"\\openStudio.dll")
         

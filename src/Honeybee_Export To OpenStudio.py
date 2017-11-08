@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.62\nOCT_11_2017'
+ghenv.Component.Message = 'VER 0.0.62\nOCT_17_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -3833,6 +3833,80 @@ class HoneybeeHVAC(object):
     def getData(self):
         return [self.ID, self.systemIndex, self.thermalZones, self.hbZones, self.airDetails, self.heatingDetails, self.coolingDetails]
 
+class OPSmeasures(object):
+    def __init__(self, model, weatherFilePath, HBZones, simParameters, openStudioLibFolder, csvSchedules, \
+            csvScheduleCount, additionalcsvSchedules, shadeCntrlToReplace, replaceShdCntrl, windowSpectralData, waterSourceVRFs):
+        self.weatherFile = weatherFilePath # just for batch file as an alternate solution
+        self.EPFolder = sc.sticky["honeybee_folders"]["EPPath"]
+        self.EPPath = ops.Path(self.EPFolder + "\EnergyPlus.exe")
+        self.epwFile = ops.Path(weatherFilePath)
+        self.iddFile = ops.Path(self.EPFolder + "\Energy+.idd")
+        self.model = model
+        self.HBZones = HBZones
+        self.simParameters = simParameters
+        self.csvSchedules = csvSchedules
+        self.csvScheduleCount = csvScheduleCount
+        self.additionalcsvSchedules = additionalcsvSchedules
+        self.shadeCntrlToReplace = shadeCntrlToReplace
+        self.replaceShdCntrl = replaceShdCntrl
+        self.windowSpectralData = windowSpectralData
+        self.waterSourceVRFs = waterSourceVRFs
+        self.hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
+        self.lb_preparation = sc.sticky["ladybug_Preparation"]()
+    
+    def setupOSW(self, fileLoaction):
+        # Write out a CSV with all natural ventilation definitions within it.
+        natVentCSV = os.path.join(os.path.split(fileLoaction)[0], 'NaturalVentilationParams.csv')
+        natVentCount = 0
+        for zone in self.HBZones:
+            if zone.natVent == True:
+                if natVentCount == 0:
+                    with open(natVentCSV, 'a') as natVentFile:
+                        header = 'Zone Name, Nat Vent Type, Nat Vent Obj Name, Min Indoor, Max Indoor, ' + \
+                        'Delta, Min Outdoor, Max Outdoor, Area/Flowrate, Schedule, Wind Coeff/Fan Eff, ' + \
+                        'Wind Angle/Fan Pres, Height, Stack Coeff\n'
+                        natVentFile.write(header)
+                
+                for natVentCount, natVentObj in enumerate(zone.natVentType):
+                    if natVentObj == 1 or natVentObj == 2:
+                        with open(natVentCSV, 'a') as natVentFile:
+                            natVentFile.write(self.simpleNatVentFileLine(zone, natVentCount))
+                    elif natVentObj == 3:
+                        with open(natVentCSV, 'a') as natVentFile:
+                            natVentFile.write(self.fanNatVentFileLine(zone, natVentCount))
+    
+    def simpleNatVentFileLine(self, zone, natVentCount):
+        if zone.natVentSchedule[natVentCount] == None: natVentSched = 'ALWAYS ON'
+        elif zone.natVentSchedule[natVentCount].upper().endswith('CSV'):
+            natVentSchedFileName = os.path.basename(zone.natVentSchedule[natVentCount])
+            natVentSched = "_".join(natVentSchedFileName.split(".")[:-1])
+        else: natVentSched = zone.natVentSchedule[natVentCount]
+        
+        line = zone.name + ',' + str(zone.natVentType[natVentCount]) + ',' + zone.name +'NatVent' + str(natVentCount) + ',' + \
+            str(zone.natVentMinIndoorTemp[natVentCount]) + ',' + str(zone.natVentMaxIndoorTemp[natVentCount]) + ',' + \
+            str(zone.natVentDeltaTemp[natVentCount]) + ',' + str(zone.natVentMinOutdoorTemp[natVentCount]) + ',' + \
+            str(zone.natVentMaxOutdoorTemp[natVentCount]) + ',' + \
+            str(zone.windowOpeningArea[natVentCount]) + ',' + natVentSched + ',' + \
+            str(zone.natVentWindDischarge[natVentCount]) + ',' + str(zone.windowAngle[natVentCount])+ ',' + \
+            str(zone.windowHeightDiff[natVentCount]) + ',' + str(zone.natVentStackDischarge[natVentCount])+ '\n'
+        return line
+    
+    def fanNatVentFileLine(self, zone, natVentCount):
+        if zone.natVentSchedule[natVentCount] == None: natVentSched = 'ALWAYS ON'
+        elif zone.natVentSchedule[natVentCount].upper().endswith('CSV'):
+            natVentSchedFileName = os.path.basename(zone.natVentSchedule[natVentCount])
+            natVentSched = "_".join(natVentSchedFileName.split(".")[:-1])
+        else: natVentSched = zone.natVentSchedule[natVentCount]
+        
+        line = zone.name + ',' + str(zone.natVentType[natVentCount]) + ',' + zone.name +'NatVent' + str(natVentCount) + ',' + \
+            str(zone.natVentMinIndoorTemp[natVentCount]) + ',' + str(zone.natVentMaxIndoorTemp[natVentCount]) + ',' + \
+            str(zone.natVentDeltaTemp[natVentCount]) + ',' + str(zone.natVentMinOutdoorTemp[natVentCount]) + ',' + \
+            str(zone.natVentMaxOutdoorTemp[natVentCount]) + ',' + \
+            str(zone.fanFlow[natVentCount]) + ',' + natVentSched + ',' + \
+            str(zone.FanEfficiency[natVentCount]) + ',' + str(zone.FanPressure[natVentCount])+ ',,\n'
+        return line
+
+
 class EPFeaturesNotInOS(object):
     def __init__(self, workingDir):
         self.fileBasedSchedules = {}
@@ -4073,9 +4147,11 @@ class RunOPS(object):
         Simple Natural Ventilation
         CSV Schedules
         Additional IDF Strings
+        Advanced Shading Control
+        Earth Tubes
+        Holidays
         """
         self.writeNonOSFeatures(idfFilePath, self.HBZones, self.simParameters, workingDir)
-        
         
         return idfFolder, idfFilePath
     
@@ -4613,16 +4689,22 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     # Get the objects in the file that we need to replace or add because OpenStudio does not support them.
     csvSchedules, csvScheduleCount, shadeCntrlToReplace, replaceShdCntrl, windowSpectralData, waterSourceVRFs = hb_writeOPS.getObjToReplace()
     
-    #save the model
-    model.save(ops.Path(fname), True)
+    # Assign measures to the OpenStudio model (along with features not supported by OS currently).
+    hb_assingMeasures = OPSmeasures(model, epwWeatherFile, HBZones, hb_writeOPS.simParameters, openStudioLibFolder, csvSchedules, \
+        csvScheduleCount, additionalcsvSchedules, shadeCntrlToReplace, replaceShdCntrl, windowSpectralData, waterSourceVRFs)
+    hb_assingMeasures.setupOSW(fname)
     
+    # save the model
+    model.save(ops.Path(fname), True)
     print "Model saved to: " + fname
     workingDir, fileName = os.path.split(fname)
     projectName = (".").join(fileName.split(".")[:-1])
     
+    # Open the model in OpenStudio (if requested).
     if openOpenStudio:
         os.startfile(fname)
     
+    # Run the file through OpenStudio
     if runIt > 0:
         hb_runOPS = RunOPS(model, epwWeatherFile, HBZones, hb_writeOPS.simParameters, openStudioLibFolder, csvSchedules, \
             csvScheduleCount, additionalcsvSchedules, shadeCntrlToReplace, replaceShdCntrl, windowSpectralData, waterSourceVRFs)
