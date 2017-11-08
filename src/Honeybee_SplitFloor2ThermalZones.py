@@ -23,7 +23,7 @@
 """
 Use this component to divide up a brep (polysurface) representative of a building floor into smaller volumes that roughly correspond to how a generic EnergyPlus model should be zoned.
 This zoning divide up each floor into a core and perimeter zones, which helps account for the different microclimates you would get on each of the different orientations of a building.
-Note: Currently in this WIP convex only convex geometry can be handled. Most concave geometries will fail, and any shapes with holes in them will fail. You should therefore prepare the
+Note: Currently in this WIP convex mainly convex geometry can be handled. Most concave geometries will fail, and any shapes with holes in them will fail. You should therefore prepare the
 massing of your building by dividing it into convex volumes before using this component.
 _
 If you have a single mass representing two towers off of a podium, the two towers are not a continuous mass and you should therefore send each tower and the podium in as a separate Brep into this component.
@@ -49,7 +49,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = 'Honeybee_SplitFloor2ThermalZones'
 ghenv.Component.NickName = 'Split2Zone'
-ghenv.Component.Message = 'VER 0.0.62\nNOV_07_2017'
+ghenv.Component.Message = 'VER 0.0.62\nNOV_08_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -2220,24 +2220,23 @@ checkData = False
 if _runIt == True:
     checkData = checkTheInputs()
 
-    # CHECK CONVEX
-    brep4convexchk = copy.copy(_bldgFloors)
+    #---------------- TEMP ----------------------------
+    brep4convexchk = copy.deepcopy(_bldgFloors)
     convex_result = checkNonConvex(brep4convexchk)
     if convex_result != -1:
         nonConvex, faultyGeometry = convex_result
-        if len(faultyGeometry) > 0.0:
-            convex_error_msg = "You have a non-convex (or faulty) geometry, and this component only handles convex geometries (at this point). You should prepare the massing of your building by dividing it into convex volumes before using this component."
+        if len(faultyGeometry) > 0.0 or len(nonConvex) > 0.0:
+            convex_error_msg = "You have a non-convex (or faulty) geometry, and this component mainly handles convex geometries (at this point). You should prepare the massing of your building by dividing it into convex volumes before using this component."
             print convex_error_msg
             w = gh.GH_RuntimeMessageLevel.Warning
             ghenv.Component.AddRuntimeMessage(w, convex_error_msg)
-    # /CHECK CONVEX
+    #---------------- TEMP ----------------------------
+
 
 if checkData == True:
     #sc.sticky['#debug'] = []
 
     splitBldgMassesLists = main(_bldgFloors, _perimeterZoneDepth)
-    #print splitBldgMassesLists
-    #splitBldgMasses = splitBldgMassesLists
 
     if splitBldgMassesLists!= -1:
         pass#splitBldgMasses = DataTree[Object]()
