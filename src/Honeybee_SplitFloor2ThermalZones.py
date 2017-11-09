@@ -1,32 +1,33 @@
-﻿#
+#
 # Honeybee: A Plugin for Environmental Analysis (GPL) started by Mostapha Sadeghipour Roudsari
-# 
+#
 # This file is part of Honeybee.
-# 
-# Copyright (c) 2013-2017, Chris Mackey <Chris@MackeyArchitecture.com> and Saeran Vasanthakumar <saeranv@gmail.com> 
-# Honeybee is free software; you can redistribute it and/or modify 
-# it under the terms of the GNU General Public License as published 
-# by the Free Software Foundation; either version 3 of the License, 
-# or (at your option) any later version. 
-# 
+#
+# Copyright (c) 2013-2017, Chris Mackey <Chris@MackeyArchitecture.com> and Saeran Vasanthakumar <saeranv@gmail.com>
+# Honeybee is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published
+# by the Free Software Foundation; either version 3 of the License,
+# or (at your option) any later version.
+#
 # Honeybee is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of 
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with Honeybee; If not, see <http://www.gnu.org/licenses/>.
-# 
+#
 # @license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
 
 
 """
 Use this component to divide up a brep (polysurface) representative of a building floor into smaller volumes that roughly correspond to how a generic EnergyPlus model should be zoned.
 This zoning divide up each floor into a core and perimeter zones, which helps account for the different microclimates you would get on each of the different orientations of a building.
-Note: Currently in this WIP convex only convex geometry can be handled. Most concave geometries will fail, and any shapes with holes in them will fail.
+Note: Currently in this WIP convex mainly convex geometry can be handled. Most concave geometries will fail, and any shapes with holes in them will fail. You should therefore prepare the
+massing of your building by dividing it into convex volumes before using this component.
 _
 If you have a single mass representing two towers off of a podium, the two towers are not a continuous mass and you should therefore send each tower and the podium in as a separate Brep into this component.
-Core and perimeter zoneing should work for almost all masses where all walls are planar.  
+Core and perimeter zoneing should work for almost all masses where all walls are planar.
 While this component can usually get you the most of the way there, it is still recommended that you bake the output and check the geometry in Rhino before turning the breps into HBZones.
 _
 The assumption about an E+ zone is that the air is well mixed and all at the same temperature.
@@ -37,27 +38,25 @@ This component helps break up building masses in such a manner.
 Provided by Honeybee 0.0.62
 
     Args:
-        _bldgFloors: A Closed brep or list of closed breps representing building floors. In this WIP only convex geometries and very simple concave geometries will succeed. However it is very robust for even complex concave geometries. You can use the Honeybee_SplitBuildingMass2Floors to generate floors from a building mass.
+        _bldgFloors: A Closed brep or list of closed breps representing building floors. In this WIP only convex geometries and very simple concave geometries will succeed. You should prepare the massing of your building by dividing it into convex volumes before using this component. You can use the Honeybee_SplitBuildingMass2Floors to generate floors from a building mass.
         _perimeterZoneDepth: A number for perimeter depths in Rhino model units that will be used to divide up each floor of the building into core and perimeter zones.
     Returns:
         readMe!: ...
-        splitBldgZones: A series of breps that correspond to the recommended means of breaking up building geometry into zones for energy simulations. All zones for each floor will have its own list.  
-        
+        splitBldgZones: A series of breps that correspond to the recommended means of breaking up building geometry into zones for energy simulations. All zones for each floor will have its own list.
+
 """
 
 
 ghenv.Component.Name = 'Honeybee_SplitFloor2ThermalZones'
 ghenv.Component.NickName = 'Split2Zone'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nNOV_08_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "13 | WIP"
+ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
 except: pass
-
-
 
 import Rhino as rc
 import scriptcontext as sc
@@ -80,7 +79,7 @@ def checkTheInputs():
         for i,b in enumerate(_bldgFloors):
             if type(b)==type(rs.AddPoint(0,0,0)):
                 _bldgFloors[i] = rs.coercebrep(b)
-        
+
         brepSolid = []
         for brep in _bldgFloors:
             if brep.IsSolid == True:
@@ -92,22 +91,23 @@ def checkTheInputs():
                 ghenv.Component.AddRuntimeMessage(w, warning)
         if sum(brepSolid) == len(_bldgFloors):
             checkData1 = True
-            
+
     else:
         checkData1 = False
         print "Connect closed solid building floors to split them up into zones."
-    
+
     if _perimeterZoneDepth != []:
         checkData2 = True
     else:
         checkData2 = False
         print "A value must be conneted for _perimeterZoneDepth in order to run."
-    
+
     if checkData1 == True and checkData2 == True:
         checkData = True
     else: checkData = False
-    
+
     return checkData
+
 
 #Define a function that will extract the points from a polycurve line
 def getCurvePoints(curve):
@@ -124,7 +124,7 @@ def cleanCurve(curve, curvePts, offsetDepth):
     for segment in exploCurve:
         if segment.IsLinear() == False: curveBool.append(True)
         else: curveBool.append(False)
-    
+
     #Test if any of the points lie in a line and use this to generate a new list of curve segments and points.
     newPts = []
     newSegments = []
@@ -145,7 +145,7 @@ def cleanCurve(curve, curvePts, offsetDepth):
                     curve.PointAtStart.Transform(transformMatrix)
                 else: pass
         else: pass
-    
+
     #Add a segment to close the curves and join them together into one polycurve.
     if curveBool[-2] == True and exploCurve[-2].GetLength()>offsetDepth/25:
         newSegments.append(exploCurve[-2])
@@ -153,19 +153,19 @@ def cleanCurve(curve, curvePts, offsetDepth):
         newSegments.append(rc.Geometry.LineCurve(newPts[-1], newPts[0]))
     else:
         pass
-    
+
     #Shift the lists over by 1 to ensure that the order of the points and curves match the input
     newCurvePts = newPts[1:]
     newCurvePts.append(newPts[0])
     newCurveSegments = newSegments[1:]
     newCurveSegments.append(newSegments[0])
-    
+
     #Join the segments together into one curve.
     newCrv = rc.Geometry.PolyCurve()
     for seg in newCurveSegments:
         newCrv.Append(seg)
     newCrv.MakeClosed(tolerance)
-    
+
     #return the new curve and the list of points associated with it.
     return newCrv, newCurvePts, newCurveSegments
 
@@ -174,7 +174,7 @@ def getFloorCrvs(buildingMass, floorHeights, maxHeights):
     #Draw a bounding box around the mass and use the lowest Z point to set the base point.
     massBB = buildingMass.GetBoundingBox(rc.Geometry.Plane.WorldXY)
     minZ = massBB.Min.Z
-    
+
     basePoint = rc.Geometry.Point3d.Origin
     cntrCrvs = []; splitters = []
     bbox = buildingMass.GetBoundingBox(True)
@@ -183,7 +183,7 @@ def getFloorCrvs(buildingMass, floorHeights, maxHeights):
         floorBasePt = rc.Geometry.Point3d.Add(basePoint, rc.Geometry.Vector3d(0,0,h + minZ))
         sectionPlane = rc.Geometry.Plane(floorBasePt, rc.Geometry.Vector3d.ZAxis)
         crvList = rc.Geometry.Brep.CreateContourCurves(buildingMass, sectionPlane)
-        
+
         #If the crvList cointains multiple curves, this probably means that it's a courtyard building.  Order the curves from greatest area to least area and create different lists of curves for the interior and exterior.
         if len(crvList) > 1 and count == 0:
             areaList = []
@@ -210,7 +210,7 @@ def getFloorCrvs(buildingMass, floorHeights, maxHeights):
             try: cntrCrvs[0].append(crvList[0])
             except: cntrCrvs.append([crvList[0]])
         else: pass
-        
+
         if crvList != []:
             # This part is based on one of David Rutten's script
             bool, extU, extV = sectionPlane.ExtendThroughBox(bbox)
@@ -220,13 +220,13 @@ def getFloorCrvs(buildingMass, floorHeights, maxHeights):
             extV.T0 -= 1.0
             extV.T1 += 1.0
             splitters.append(rc.Geometry.PlaneSurface(sectionPlane, extU, extV))
-    
+
     finalCrvsList = []
     finaltopIncList = []
     finalNurbsList = []
-    
+
     for courtyrdCount, contourCrvs in enumerate(cntrCrvs):
-        
+
         #Check if the operation has generated a single nurbs curve for a floor (like a circle) and, if so, segment it.
         goodContourCrvs = []
         nurbsList = []
@@ -246,7 +246,7 @@ def getFloorCrvs(buildingMass, floorHeights, maxHeights):
                 goodContourCrvs.append(newCrv)
                 nurbsList.append(True)
         contourCrvs = goodContourCrvs
-        
+
         #Check if any of the generated curves have no area and, if so, discount them from the list. Make a note if the curves are at the top, which happens a lot with gabled roofs.  This can be corrected later.
         newContourCrvs = []
         problemIndices = []
@@ -264,7 +264,7 @@ def getFloorCrvs(buildingMass, floorHeights, maxHeights):
             else: topProblem = False
         else: topProblem = False
         contourCrvs = newContourCrvs
-        
+
         #Check to see if the top floor is shorter than 2 meters and, if so, discount it.
         units = sc.doc.ModelUnitSystem
         #Define a default max height for a floor based on the model units and typical building dimensions.
@@ -283,15 +283,15 @@ def getFloorCrvs(buildingMass, floorHeights, maxHeights):
             print warning
             w = gh.GH_RuntimeMessageLevel.Warning
             ghenv.Component.AddRuntimeMessage(w, warning)
-        
+
         lastFloorHeight = (maxHeights)  - floorHeights[-1]
-        
-        if is_near_zero(lastFloorHeight): 
+
+        if is_near_zero(lastFloorHeight):
             lastFloorInc = True
         else:
             if lastFloorHeight < maxHeight:
                 lastFloorInc = False
-            else: 
+            else:
                 lastFloorInc = True
         #print lastFloorHeight, lastFloorInc, maxHeight
         #Check to see if the top surface is horizontal + planar and, if so, include it in the curve process below.
@@ -311,7 +311,7 @@ def getFloorCrvs(buildingMass, floorHeights, maxHeights):
                 srfAvgZValue.append(zAvg)
             maxIndex = max(enumerate(srfAvgZValue),key=lambda x: x[1])[0]
             topSurface = massSurfaces[maxIndex]
-            
+
             #Check the Z-Values of the vertices to see if they are equal and check for planarity
             topZValues = []
             for vertex in topSurface.DuplicateVertices():
@@ -338,7 +338,7 @@ def getFloorCrvs(buildingMass, floorHeights, maxHeights):
                     edgeCurvesSorted = [x for (y,x) in sorted(zip(areaList, edgeCurves))]
                     edgeCurves = [edgeCurvesSorted[courtyrdCount]]
                 else: pass
-                
+
                 isNurbCurve = []
                 for count, curve in enumerate(edgeCurves):
                     try:
@@ -363,11 +363,11 @@ def getFloorCrvs(buildingMass, floorHeights, maxHeights):
             if lastFloorHeight < maxHeight:
                 topInc = True
             else: topInc = False
-        
+
         if topProblem == True:
             topInc = False
         else: pass
-        
+
         # Match the curve directions.
         if len(contourCrvs)!= 0:
             refCrv = contourCrvs[0]
@@ -377,7 +377,7 @@ def getFloorCrvs(buildingMass, floorHeights, maxHeights):
             for count, dir in enumerate(crvDir):
                 if dir == True:
                     contourCrvs[count].Reverse()
-        
+
         #Check if there are any curved segments in the polycurve and if so, make a note of it
         curveSegmentList = []
         for curve in contourCrvs:
@@ -386,8 +386,8 @@ def getFloorCrvs(buildingMass, floorHeights, maxHeights):
                 if segment.IsLinear(): pass
                 else: curved = True
             curveSegmentList.append(curved)
-        
-        
+
+
         #Match the curve seams in order to ensure proper zone splitting later.
         if len(contourCrvs)!= 0:
             crvCentPt = rc.Geometry.AreaMassProperties.Compute(contourCrvs[-1]).Centroid
@@ -399,7 +399,7 @@ def getFloorCrvs(buildingMass, floorHeights, maxHeights):
             longestCurveLength = curveLengths[-1]
             factor = ((longestCurveLength)/(contourCrvs[-1].PointAtStart.X - crvCentPt.X))*2
             seamVectorPt = rc.Geometry.Vector3d((contourCrvs[-1].PointAtStart.X - crvCentPt.X)*factor, (contourCrvs[-1].PointAtStart.Y - crvCentPt.Y)*factor, 0)
-            
+
             # Try to adjust the seam of the curves.
             crvAdjust = []
             try:
@@ -436,20 +436,20 @@ def getFloorCrvs(buildingMass, floorHeights, maxHeights):
                         print warning
                         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
             except: crvAdjust = contourCrvs
-        
+
         #Simplify the contour curves to ensure that they do not mess up the next few steps.
         for curve in crvAdjust:
             curve.Simplify(rc.Geometry.CurveSimplifyOptions.All, tolerance, sc.doc.ModelAngleToleranceRadians)
-        
+
         #Append the results to the list.
         finalCrvsList.append(crvAdjust)
         finaltopIncList.append(topInc)
         finalNurbsList.append(nurbsList)
-    
+
     return splitters, finalCrvsList, finaltopIncList, finalNurbsList, lastFloorInc
 def is_near_zero(num,eps=1E-10):
     return abs(float(num)) < eps
-    
+
 class DoubleLinkedList(object):
     #Creates empty doubly linked list
     def __init__(self):
@@ -802,7 +802,7 @@ class Shape:
         self.x_dist = float(rs.Distance(self.s_wt[0],self.s_wt[1]))
         self.y_dist = float(rs.Distance(self.e_ht[0],self.e_ht[1]))
         self.cpt = rc.Geometry.AreaMassProperties.Compute(self.bottom_crv).Centroid
-        
+
         try:
             if self.cplane == None:
                 self.cplane = self.get_cplane_advanced(self.geom)
@@ -966,7 +966,7 @@ class Shape:
                     bbrefpt = self.get_boundingbox(self.geom,None)[0]
                     self.bottom_crv = self.get_bottom(self.geom,bbrefpt,bottomref=bbrefpt[2])
                 crv = self.bottom_crv
-                
+
             segments = crv.DuplicateSegments()
             matrix = []
             for i in xrange(len(segments)):
@@ -1149,7 +1149,7 @@ class Shape:
             anglerad = 2.*math.pi - anglerad
         return anglerad
     def convert_shape_to_circular_double_linked_list(self):
-        
+
         LAV = DoubleLinkedList()
         #Add all vertices and incident edges from polygon
         for i in xrange(len(self.base_matrix)):
@@ -1169,47 +1169,47 @@ class Shape:
             curr_node = LAV[i]
             if type(angle_index)==type(1) and not self.is_near_zero(i-angle_index):
                 continue
-    
+
             edge_prev = curr_node.data.edge_prev
             edge_next = curr_node.data.edge_next
-    
+
             # Get two vectors pointing AWAY from the curr_vertex
             # i.e <--- v --->
             dir_prev = edge_prev[0]-edge_prev[1]
             dir_next = edge_next[1]-edge_next[0]
             dir_prev.Unitize()
             dir_next.Unitize()
-    
+
             # Get angle / Make this own function?
             dotprod = rc.Geometry.Vector3d.Multiply(dir_next,dir_prev)
             cos_angle = dotprod/(dir_next.Length * dir_prev.Length)
             dotrad = math.acos(cos_angle)
-    
+
             inrad = self.get_inner_angle(dir_prev,dir_next,dotrad)
-    
+
             if inrad > math.pi:
                 curr_node.data.is_reflex = True
                 ##debug.append(curr_node.data.vertex)
-    
+
             #print 'deg:', round(math.degrees(inrad),2)
             #print 'is reflex:', curr_node.data.is_reflex
-    
+
             #Flip the cross prod if dotprod gave outer angle
             if self.is_near_zero(abs(inrad - dotrad)):
                 crossprod = rc.Geometry.Vector3d.CrossProduct(dir_prev,dir_next)
             else:
                 crossprod = rc.Geometry.Vector3d.CrossProduct(dir_next,dir_prev)
-    
+
             #Rotate next point CCW by inner_rad
             #We could also use unit vector addition to get biesctor
             dir_next.Rotate(-inrad/2.,crossprod)
-    
+
             #Create bisector ray
             ray_origin = curr_node.data.vertex
             ray_dir = dir_next
             #Create ray tuple
             curr_node.data.bisector_ray = (ray_origin,ray_dir)
-    
+
             xchk = 178.000124531
             xcor = curr_node.data.vertex[0]
             if True==False:#Sangle_index == 0 and i == 0: #and self.is_near_zero(abs(xcor-xchk),1):
@@ -1219,7 +1219,7 @@ class Shape:
                 ##debug.append(rc.Geometry.Curve.CreateControlPointCurve(ptlst))
                 ##debug.append(rc.Geometry.Curve.CreateControlPointCurve(edge_prev))
                 ##debug.append(rc.Geometry.Curve.CreateControlPointCurve(edge_next))
-    
+
         return LAV
     def find_opposite_edge_from_node(self,curr_node_,SLAV_,is_LOV=True,edge_event_=None,cchk=None):
         def distline2pt(v,w,p):
@@ -1231,44 +1231,44 @@ class Shape:
             ##We find projection of point p onto the line.
             ##It falls where t = [(p-v) . (w-v)] / |w-v|^2
             ##We clamp t from [0,1] to handle points outside the segment vw.
-    
+
             ##Convert to rc geometry
             v = rc.Geometry.Vector3d(v)
             w = rc.Geometry.Vector3d(w)
             p = rc.Geometry.Vector3d(p)
-    
+
             ##Create dir vectors for line and point
             wv = w-v
             pv = p-v
-    
+
             ##Calculate |w-v|^2 w/o costly sqrt
             lsq = wv.SquareLength
             # Check for zero line segment case: v == w
             if self.is_near_zero(lsq):
                 return pv.Length
-    
+
             ##ProjectionPVonWV = (w-v)/|w-v| * (w-v)/|w-v| * (p-v)
             ##simplfiied = projpv = (w-v) * ((p-v) * (w-v))/|w-v|^2
             ##Then: projpv - p == perpendicular line
-    
+
             ##clamp_to_line: ((p-v) * (w-v))/|w-v|^2
             ##(w-v): wv
             ##projpv = clamp_to_line * wv
             clamp_to_line = (pv * wv)/lsq
-    
+
             ##This is to handle points outside line segment. They will have
             ##obtuse angle so costheta < 0. in that case will clamp_to_line factor == 0.
             ##therefore if obtuse, clamp_to_line turns projpv into a zero vector and
             ##and will return (non perpendicular) distance from point v to p.
             clamp_to_line = max(0., min(1.,clamp_to_line))
             projpv = clamp_to_line * wv
-    
+
             ##Instead of simply subtracting projpv-p, we first add it to v
             ##and then subtract it from p
             ##This is so that if p is outside of line segment, then projpv = 0 vector, so
             ##v - p will be our minimum distance.
             perpvector = (v + projpv) - p
-    
+
             ##Return values
             perpgeom = rs.AddLine(projpv,p)
             perpline = rs.AddLine(v,w)
@@ -1282,7 +1282,7 @@ class Shape:
         #debug = sc.sticky["#debug"]
         raypt = curr_node_.data.bisector_ray[0]
         raydir = curr_node_.data.bisector_ray[1]
-    
+
         ##debug.append(vertex_bisector_line[1])
         #Loop through LAV original edges
         min_dist = float("Inf")
@@ -1300,26 +1300,26 @@ class Shape:
         #    print 'This is second round LAV'#, edge_event_.opposite_edge
         #Botffy uses original edges (LOV) to calculate split events
         #But Felzel and Obdzel seem to suggest use active SLAV...
-    
+
         for i in xrange(len(SLAV_)):
             LAV_ = SLAV_[i]
             for j in xrange(LAV_.size):
                 #print '-\nj', j
                 orig_node_ = LAV_[j]
-    
+
                 edge_line = [orig_node_.data.vertex,orig_node_.data.edge_next[1]]
                 if edge_event_!= None:
                     opposite_edge = edge_event_.opposite_edge
                     orig_oppo_vec = opposite_edge[1] - opposite_edge[0]
                     orig_oppo_vec.Unitize()
-    
+
                     edge_line_next_vec = orig_node_.data.edge_next[1] - orig_node_.data.vertex
                     edge_line_prev_vec = orig_node_.data.vertex - orig_node_.data.edge_prev[0]
                     edge_line_next_vec.Unitize()
                     edge_line_prev_vec.Unitize()
                     #print 'is parrallel', orig_oppo_vec.IsParallelTo(edge_line_next_vec,0.01)
                     #print 'is parrallel', orig_oppo_vec.IsParallelTo(edge_line_prev_vec, 0.01)
-    
+
                     if orig_oppo_vec == edge_line_next_vec and edge_event_.opposite_edge[0] == orig_node_.data.vertex:
                         #print 'is next vec'
                         edge_line = [orig_node_.data.vertex, orig_node_.data.edge_next[1]]# orig_node_.next.data.vertex]#
@@ -1330,64 +1330,64 @@ class Shape:
                         #print 'cant find match'
                         edge_line = [orig_node_.data.vertex, orig_node_.data.edge_next[1]]#[orig_node_.data.vertex, orig_node_.next.data.vertex]
                         #break
-    
+
                     #if norm == v.edge_left.v.normalized() and event.opposite_edge.p == v.edge_left.p:
         			#	x = v
         			#	y = x.prev
         			#elif norm == v.edge_right.v.normalized() and event.opposite_edge.p == v.edge_right.p:
         			#	y=v
         			#	x=y.next
-    
+
                 #print 'why is this failing'
                 #print orig_node_.data.edge_next
                 #print edge_line
                 #print '-'
                 #edge_line = orig_node_.data.edge_prev
-    
+
                 chk_next = edge_line == curr_node_.data.edge_next
                 chk_prev = edge_line == curr_node_.data.edge_prev
                 if chk_next or chk_prev:
                     continue
-    
+
                 bisect_int_pt = self.intersect_ray_to_infinite_line(raypt,raydir,edge_line)
                 if not bisect_int_pt:
                     continue
-    
+
                 #Now we use edge_line to compute point B
                 #pt_B: intersection btwn bisector at V and
                 #bisector btwn least parrallel edge starting at V and edge_line
-    
+
                 #Choose least parallel edge for curr_node_.prev/next with edge_line
                 #Maintain CCW ordering
                 #Note that we are using pointers to edge_next/edge_prev
                 edge_next_vec = curr_node_.data.edge_next[1] - curr_node_.data.edge_next[0]
                 edge_prev_vec = curr_node_.data.edge_prev[1] - curr_node_.data.edge_prev[0]
                 edge_line_vec = edge_line[1] - edge_line[0]
-    
+
                 edge_prev_vec.Unitize()
                 edge_next_vec.Unitize()
                 edge_line_vec.Unitize()
-    
+
                 #Use dot prod to get angle
                 prev_rad = math.acos(edge_prev_vec * edge_line_vec)
                 next_rad = math.acos(edge_next_vec * edge_line_vec)
-    
+
                 #Store this info carefully bc need it for Event creation
                 if next_rad > prev_rad:
                     vertex_edge_line = curr_node_.data.edge_next
                 else:
                     vertex_edge_line = curr_node_.data.edge_prev
-    
+
                 vertex_vec = vertex_edge_line[1]-vertex_edge_line[0]
                 #vertex_vec.Unitize()
-    
+
                 #print 'print chk prallel', edge_line_vec.IsParallelTo(vertex_vec)
-    
+
                 #Intersection at edge
                 edge_int_pt = self.intersect_infinite_lines(vertex_edge_line,edge_line)
                 if not edge_int_pt:
                     continue
-    
+
                 #Now get bisector btwn edge_line and vertex_edge_line
                 #B_bisect: edge_line_vec.unitize - vertex_edge_vec.unitize
                 #^ Trying a cleaner way to get angle bisector!
@@ -1396,13 +1396,13 @@ class Shape:
                 vertex_edge_vec.Unitize()
                 edge_line_vec.Unitize()
                 #Get bisector by subtraction
-    
+
                 B_bisect_dir =  edge_line_vec - vertex_edge_vec
-    
+
                 B_bisect_dir.Unitize()
-    
-    
-    
+
+
+
                 Bline = [edge_int_pt, edge_int_pt + B_bisect_dir*50.0]
                 #if j==2:
                 #    pass##debug.extend(vertex_edge_line)
@@ -1419,7 +1419,7 @@ class Shape:
                 #else:
                 #    break
                 #print 'B exists'
-    
+
                 #Check if B is bound by edge_line, and left,right bisectors of edge_line
                 def is_pt_bound_by_vectors(pt2chk,ray2chk,direction="istoleft",chkdebug=False):
                     #Input: pt, and ray(raypt, raydir)
@@ -1434,13 +1434,13 @@ class Shape:
                         ##debug.append(ray2chk[0] + ray2chk[1])
                         ##debug.append(pt2chk)
                         ##debug.append(ray2chk[0])
-    
+
                     crossprod2d = boundvec[0]*chkvec[1] - chkvec[0]*boundvec[1]
                     #print 'crossprod is: ', crossprod2d
                     #print 'actual cross', rc.Geometry.Vector3d.CrossProduct(boundvec,chkvec)
                     #print 'dir', direction
                     #print res = a[0] * b[1] - b[0] * a[1]
-    
+
                     if self.is_near_zero(crossprod2d):
                         #print 'cross prod at 0, must be parallel edges'
                         #print 'print chk prallel', boundvec.IsParallelTo(chkvec)
@@ -1450,58 +1450,58 @@ class Shape:
                     else:
                         IsBound = True if crossprod2d > 0.0 else False
                     return IsBound
-    
+
                 #Create left/right bisectors from edge
                 #Using node.next rather then node.data.edge_next... careful...
                 def _cross(a, b):
                 	res = a[0] * b[1] - b[0] * a[1]
                 	return res
-    
+
                 """
                 xleft =  _cross(edge.bisector_left.v.normalized(), (b - edge.bisector_left.p).normalized())  > 0
     			xright = _cross(edge.bisector_right.v.normalized(), (b - edge.bisector_right.p).normalized())  <  0
     			xedge =  _cross(edge.edge.v.normalized(), (b - edge.edge.p).normalized()) < 0
                 """
-    
+
                 #if j==3 and not debugisfirst:
                 #    #debug.append(orig_node_.data.vertex)
                 #    #debug.append(orig_node_.next.data.vertex)
                     #edgeline = rc.Geometry.Curve.CreateControlPointCurve(edge_line)
                     ##debug.append(edgeline)
-    
+
                 leftray = orig_node_.data.bisector_ray
                 IsLeftBound = is_pt_bound_by_vectors(B,leftray,direction="istoright",chkdebug=True)
                 #if edge_event_: print 'isleftbound', IsLeftBound
-    
+
                 rightray = orig_node_.next.data.bisector_ray
                 IsRightBound = is_pt_bound_by_vectors(B,rightray,direction="istoleft")
                 #if edge_event_: print 'isrightbound', IsRightBound
-    
+
                 bottomray = (edge_line[0], edge_line_vec)
                 IsBottomBound = is_pt_bound_by_vectors(B,bottomray,direction="istoleft")
                 #if edge_event_: print 'isbottombound', IsBottomBound
-    
+
                 if not (IsLeftBound and IsRightBound and IsBottomBound):
                     continue
-    
+
                 #if debugisfirst and edge_event_ != None and j==1:
                 #    debug.append(B)
-    
+
                 #print 'B is bound'
                 #if debugisfirst and j==0:
                 #    print 'this B is bound'
                     ##debug.append(B)
-    
+
                 #prevdist,g = distline2pt(pn1,pn2,int_prev.PointAtEnd)
                 #B_dist,g_ = distline2pt(edge_line[0],edge_line[1],B)
                 B_dist = B.DistanceTo(curr_node_.data.vertex)
-    
+
                 if min_dist > B_dist:
                     min_dist = B_dist
                     min_candidate_B = B
                     min_edge_line = edge_line
                     min_node_A = curr_node_
-    
+
                 #edgeline = rc.Geometry.Curve.CreateControlPointCurve(edge_line)
                 ##debug.extend(min_edge_line)
                 #edgeline = rc.Geometry.Curve.CreateControlPointCurve(vertex_edge_line)
@@ -1519,70 +1519,70 @@ class Shape:
             ##We find projection of point p onto the line.
             ##It falls where t = [(p-v) . (w-v)] / |w-v|^2
             ##We clamp t from [0,1] to handle points outside the segment vw.
-    
+
             ##Convert to rc geometry
             v = rc.Geometry.Vector3d(v)
             w = rc.Geometry.Vector3d(w)
             p = rc.Geometry.Vector3d(p)
-    
+
             ##Create dir vectors for line and point
             wv = w-v
             pv = p-v
-    
+
             ##Calculate |w-v|^2 w/o costly sqrt
             lsq = wv.SquareLength
             # Check for zero line segment case: v == w
             if self.is_near_zero(lsq):
                 return pv.Length
-    
+
             ##ProjectionPVonWV = (w-v)/|w-v| * (w-v)/|w-v| * (p-v)
             ##simplfiied = projpv = (w-v) * ((p-v) * (w-v))/|w-v|^2
             ##Then: projpv - p == perpendicular line
-    
+
             ##clamp_to_line: ((p-v) * (w-v))/|w-v|^2
             ##(w-v): wv
             ##projpv = clamp_to_line * wv
             clamp_to_line = (pv * wv)/lsq
-    
+
             ##This is to handle points outside line segment. They will have
             ##obtuse angle so costheta < 0. in that case will clamp_to_line factor == 0.
             ##therefore if obtuse, clamp_to_line turns projpv into a zero vector and
             ##and will return (non perpendicular) distance from point v to p.
             clamp_to_line = max(0., min(1.,clamp_to_line))
             projpv = clamp_to_line * wv
-    
+
             ##Instead of simply subtracting projpv-p, we first add it to v
             ##and then subtract it from p
             ##This is so that if p is outside of line segment, then projpv = 0 vector, so
             ##v - p will be our minimum distance.
             perpvector = (v + projpv) - p
-    
+
             ##Return values
             perpgeom = rs.AddLine(projpv,p)
             perpline = rs.AddLine(v,w)
             perppt = rc.Geometry.Point3d(p)
             return perpvector.Length, (perpgeom,perpline,perppt)
-    
+
         #debug = sc.sticky['#debug']
         #Create Priotity Queue from Python module
         #Ref: https://docs.python.org/2.7/library/heapq.html#priority-queue-implementation-notes
-    
+
         #hypothenuse = sqrt(a^2 + b^2) = c; to get longest line
         side1 = self.get_long_short_axis()[1]
         side2 = self.get_long_short_axis()[3]
         linedim = math.sqrt(side1*side1 + side2*side2)
-    
+
         debug_minev = None
-    
+
         for i in xrange(LAV.size):
             curr_node = LAV[i]
             if type(angle_index)==type(1) and not self.is_near_zero(i-angle_index):
                 continue
-    
+
             curr_ray = curr_node.data.bisector_ray
             prev_ray = curr_node.prev.data.bisector_ray
             next_ray = curr_node.next.data.bisector_ray
-    
+
             #In case of reflex angle, edge_event or split_event can occur
             split_event_pt = None
             if curr_node.data.is_reflex==True:
@@ -1599,24 +1599,24 @@ class Shape:
             p_start = curr_ray[0] + (curr_ray[1]*-1) * linedim
             p_end = curr_ray[0]+curr_ray[1]*linedim
             curr_line = rc.Geometry.Curve.CreateControlPointCurve([p_start,p_end],0)
-    
+
             #!!!should check for parallel edge case
             int_prev = self.extend_ray_to_line(prev_ray,curr_line)
             int_next = self.extend_ray_to_line(next_ray,curr_line)
-    
+
             #Get nodes from prevedge and nextedge for distance check
             #Use edge pointers we stored earlier as
             #we updated LAV. This edge pointer point back to original edges in polgon
             #but changes along with LAV
-    
+
             pn1,pn2 = curr_node.data.edge_prev[0],curr_node.data.edge_prev[1]
             nn1,nn2 = curr_node.data.edge_next[0],curr_node.data.edge_next[1]
-    
+
             ##--- Debug ---##
             def debug_dist2line(pn1,pn2,curr_node,int_prev,int_next):
                 pdt,g1 = distline2pt(pn1,pn2,int_prev.PointAtEnd)
                 ndt,g2 = distline2pt(nn1,nn2,int_next.PointAtEnd)
-    
+
                 #debug.append(curr_line)
                 #debug.append(curr_node.prev.data.vertex)
                 #debug.append(curr_node.data.vertex)
@@ -1630,7 +1630,7 @@ class Shape:
                 #debug.append(g2[2])#pt
             ##debug_dist2line(pn1,pn2,curr_node,int_prev,int_next)
             ##--- Debug ---##
-    
+
             event_tuple = []
             ##ref: __init__(self,int_vertex,node_A,node_B,length2edge):
             #node_A, node_B are the two nodes whose intersection creates new node
@@ -1652,14 +1652,14 @@ class Shape:
                 event_tuple.append(split_edge_event)
             #make edge_event
             #event_tuple.append(edge_event)
-    
+
             if event_tuple:
                 min_event = min(event_tuple, key=lambda e: e.length2edge)
                 min_event.LAV = LAV #store pointer to LAV
                 heapq.heappush(PQ,(min_event.length2edge,min_event))
                 if angle_index:
                     debug_minev = min_event
-    
+
             #print '-'
         #print '----'
         return PQ, debug_minev
@@ -1667,7 +1667,7 @@ class Shape:
         #Purpose: converts bottom of polygon into a adjacency list
         #Input: self base_matrix
         #Output: adjacency list polygon shape as directed cycles
-    
+
         #Add all vertices from polygon
         ##base_matrix: listof (list of edge vertices)
         #Label of vertice is index (may have to change this to coordinates)
@@ -1678,7 +1678,7 @@ class Shape:
             prev_v = self.base_matrix[i-1][0]
             prev_key = adjgraph.vector2hash(prev_v)
             prev_node = adjgraph[prev_key]
-    
+
             #If beggining need to add previous node
             if prev_node == None:
                 prev_node = adjgraph.add_node(prev_key,prev_v,is_out_edge=True)
@@ -1698,13 +1698,13 @@ class Shape:
         new_key = adj_graph_.vector2hash(new_vertex)
         #Get the node with the key
         exist_node = adj_graph_[exist_key]
-    
+
         if new_key in adj_graph_:
             new_node = adj_graph_[new_key]
         else:
             new_node = adj_graph_.add_node(new_key,new_vertex)
             #print 'newnode', new_node
-    
+
         #Add new node to graph
         adj_graph_.add_directed_edge(exist_key,new_key)
         if twoside == True:
@@ -1715,13 +1715,13 @@ class Shape:
         #Move this into its own repo/class
         #call bibil for shape libraries
         #thats how we can transition to HB
-    
+
         ##Initialization of ABNunlo
         #Organize given vertices into LAV in SLAV
         #Set of LAV: (listof LAV)
         SLAV = []
         PQ = []
-        
+
         #LAV: doubly linked list (DLL).
         #Initialize List of Active Vertices as Double Linked List
         LAV = self.convert_shape_to_circular_double_linked_list()
@@ -1731,13 +1731,13 @@ class Shape:
         #Keep a copy of LAV for original polygon
         #LOV: List of Original Vertices
         LOV = copy.deepcopy(LAV)
-    
+
         #Add LAV to SLAV
         SLAV.append(LAV)
         #Compute bisector intersections and maintain Priority Queue of Edge Events
         #An edge event is when a edge shrinks to point in Straight Skeleton
         PQ,minev = self.find_polygon_events(LAV,SLAV,PQ,cchk=stepnum)
-    
+
         #Main skeleton algorithm
         ##--- Debug ---##
         #print 'length: ', len(PQ), ' vertices'
@@ -1748,13 +1748,13 @@ class Shape:
         #if True:
         #    return None
         while len(PQ) > 0 and count<=30:
-    
+
             if count > stepnum:
                 break
             #print '-'
             #print 'count: ', count
             #edge_event: int_vertex,int_arc,node_A,node_B,length2edge
-    
+
             #Priority Queue as Heap data structure
             #time complexity for insertion is: O(nlogn)
             #space complexity is: O(1)
@@ -1763,21 +1763,21 @@ class Shape:
             #situation where small numbers of items are removed or added,
             #and after each change you want to know again which is the
             #smallest element
-    
+
             edge_event = heapq.heappop(PQ)[1]
-    
+
             #Get specific LAV from SLAV using event class
             LAV_ = edge_event.LAV
             #print 'lav size', LAV_.size
             if edge_event.event_type == "edge":
                 #print 'event type edge'
-    
+
                 #If not processed this edge will shrink to zero edge
                 if edge_event.node_A.data.is_processed or edge_event.node_B.data.is_processed:
                     #print '0 peak'
                     count+=1
                     continue
-    
+
                 Vc_I_arc = None
                 #Check for peak of the roof event
                 #print 'eenA', edge_event.node_A.prev
@@ -1794,28 +1794,28 @@ class Shape:
                             #debug.append(cn.next.data.vertex)
                         ##debug.append(cn.data.vertex)
                     #print '---- ----'
-    
+
                 ##debug_LAV_links(LAV_V1)
                 ##debug.append(edge_event.node_A.data.vertex)
                 #print edge_event.node_A.data.is_processed
                 #break
-    
+
                 if edge_event.node_A.prev.prev is edge_event.node_B:
                     #print '3 peak'
                     new_int_vertex = edge_event.int_vertex
                     A_vertex = edge_event.node_A.data.vertex
                     B_vertex = edge_event.node_B.data.vertex
                     prev_A_vertex = edge_event.node_A.prev.data.vertex
-    
+
                     #Update adjacency graph
                     adj_graph = self.update_shape_adj_graph(adj_graph,prev_A_vertex,new_int_vertex)
                     adj_graph = self.update_shape_adj_graph(adj_graph,A_vertex,new_int_vertex)
                     adj_graph = self.update_shape_adj_graph(adj_graph,B_vertex,new_int_vertex)
-    
+
                     Vc_I_arc = rc.Geometry.Curve.CreateControlPointCurve([prev_A_vertex, new_int_vertex])
                     Va_I_arc = rc.Geometry.Curve.CreateControlPointCurve([A_vertex, new_int_vertex])
                     Vb_I_arc = rc.Geometry.Curve.CreateControlPointCurve([B_vertex, new_int_vertex])
-    
+
                     #if create_geom and debug_crv >= 0 and debug_crv >= count:
                         ##debug.append(Va_I_arc)
                         ##debug.append(Vb_I_arc)
@@ -1824,18 +1824,18 @@ class Shape:
                     edge_event.node_A.data.is_processed = True
                     edge_event.node_B.data.is_processed = True
                     count += 1
-    
+
                     #Update the adjacency list
                     #tbd
                     continue
-    
+
                 new_int_vertex = edge_event.int_vertex
                 A_vertex = edge_event.node_A.data.vertex
                 B_vertex = edge_event.node_B.data.vertex
                 #Update adjacency graph
                 adj_graph = self.update_shape_adj_graph(adj_graph,A_vertex,new_int_vertex)
                 adj_graph = self.update_shape_adj_graph(adj_graph, B_vertex,new_int_vertex)
-    
+
                 Va_I_arc = rc.Geometry.Curve.CreateControlPointCurve([A_vertex, new_int_vertex])
                 Vb_I_arc = rc.Geometry.Curve.CreateControlPointCurve([B_vertex, new_int_vertex])
                 #print '2 peak'
@@ -1843,25 +1843,25 @@ class Shape:
                     ##debug.append(Va_I_arc)
                     ##debug.append(Vb_I_arc)
                     pass
-    
+
                 #Pointer to appropriate edge for bisector compution
                 #Note that these edges according to Felkel and Obdrsalek are NOT adjacent
                 #edges, but actually original edges from polygon linked via LAV
                 new_prev_edge = edge_event.node_A.data.edge_prev
                 new_next_edge = edge_event.node_B.data.edge_next
-    
+
                 #Create new vertex node
                 int_vertex_obj = Vertex(edge_event.int_vertex,new_prev_edge,new_next_edge)
                 V = DLLNode(int_vertex_obj)
-    
+
                 LAV_.insert_node(V,edge_event.node_A)
                 LAV_.remove_node(edge_event.node_A)
                 LAV_.remove_node(edge_event.node_B)
-    
+
                 #Mark as processed
                 edge_event.node_A.data.is_processed = True
                 edge_event.node_B.data.is_processed = True
-    
+
                 #Now compute bisector and edge event for new V node
                 V_index = LAV_.get_node_index(V)
                 LAV_ = self.compute_interior_bisector_vector(LAV_,angle_index=V_index)
@@ -1873,14 +1873,14 @@ class Shape:
                 if edge_event.node_A.data.is_processed:# or edge_event.node_B==True:
                     count+=1
                     continue
-    
+
                 #if count == 2:
                 #    #debug.append(edge_event.node_A.data.vertex)
                 #    #debug.extend(edge_event.node_B)
-    
+
                 int_vertex = edge_event.int_vertex
                 node_V = edge_event.node_A #this is the only node/vertex that points to I/int_vertex
-    
+
                 #C) Check for peak of the roof event
                 ref_edge = edge_event.node_B
                 if LAV_.size < 3:
@@ -1890,7 +1890,7 @@ class Shape:
                     count += 1
                     #edge_event.node_A.data.is_processed = True
                     continue
-    
+
                 if edge_event.node_A.next.next.data.vertex == ref_edge[0]:
                     pass#print '3 peak'
                     """
@@ -1899,33 +1899,33 @@ class Shape:
                     A_vertex = edge_event.node_A.data.vertex
                     B_vertex = ref_edge[1]
                     prev_A_vertex = edge_event.node_A.prev.data.vertex
-    
+
                     Vc_I_arc = rc.Geometry.Curve.CreateControlPointCurve([prev_A_vertex, new_int_vertex])
                     Va_I_arc = rc.Geometry.Curve.CreateControlPointCurve([A_vertex, new_int_vertex])
                     Vb_I_arc = rc.Geometry.Curve.CreateControlPointCurve([B_vertex, new_int_vertex])
-    
+
                     #debug.append(Vc_I_arc)
                     #debug.append(Va_I_arc)
                     #debug.append(Vb_I_arc)
-    
+
                     edge_event.node_A.data.is_processed = True
                     #edge_event.node_B = True
                     count += 1
                     continue
                     """
-    
+
                 #D) Output arc
                 split_I_arc = rc.Geometry.Curve.CreateControlPointCurve([int_vertex, node_V.data.vertex])
                 #Update adjacency graph
                 adj_graph = self.update_shape_adj_graph(adj_graph,node_V.data.vertex,int_vertex)
-    
+
                 if create_geom and debug_crv >= 0 and debug_crv >= count:
                     pass##debug.append(split_I_arc)
                 #print '2 peak'
                 edge_event.node_A.data.is_processed = True
                 #if count == 7:
                 #    #debug.append(LAV_.head.next.data.vertex)
-    
+
                 #Find opposite edge from V
                 #Botsky just uses original, Fezkel suggests do it again.
                 opposite_edge, opposite_I, opposite_A = self.find_opposite_edge_from_node(node_V,SLAV,edge_event_=edge_event)
@@ -1941,7 +1941,7 @@ class Shape:
                 vertex_V2 = Vertex(opposite_I,opposite_edge,node_V.data.edge_next)
                 node_V1 = DLLNode(vertex_V1)
                 node_V2 = DLLNode(vertex_V2)
-    
+
                 #E) Modify the SLAV
                 #Match the correct nodes to vertex from opposite_edge event ref
                 #The trick here is to ensure new opposite node may not be original original
@@ -1962,12 +1962,12 @@ class Shape:
                             break
                     if op_zero_node != None:
                         break
-    
+
                 if op_zero_node == None or op_one_node == None:
                     #print 'opposite edge nodes not found!'
                     count += 1
                     continue
-    
+
                 def copy_DLL_from_node(old_LAV):
                     copy_LAV = DoubleLinkedList()
                     curr_node = old_LAV.head
@@ -1977,8 +1977,8 @@ class Shape:
                     #get tail data in to
                     copy_LAV.append(curr_node.data)
                     return copy_LAV
-    
-    
+
+
                 #Split LAV - V1
                 node_V.prev.next = node_V1
                 op_one_node.prev = node_V1
@@ -1988,55 +1988,55 @@ class Shape:
                 LAV_.head = node_V1
                 LAV_.tail = node_V1.prev
                 LAV_V1 = copy_DLL_from_node(LAV_)
-    
-    
+
+
                 #Split LAV - V2
                 node_V.next.prev = node_V2
                 op_zero_node.next = node_V2
                 node_V2.next = node_V.next
                 node_V2.prev = op_zero_node
-    
+
                 ##debug.append(node_V.next.data.vertex)
                 ##debug.append(opposite_left_node.data.vertex)
                 #Copy LAV_ for V2
                 LAV_.head = node_V2
                 LAV_.tail = node_V2.prev
                 LAV_V2 = copy_DLL_from_node(LAV_)
-    
+
                 #remove node_V
                 #LAV_.remove_node(node_V)
                 node_V.next = None
                 node_V.prev = None
-    
+
                 #opposite_left_node.is_processed = True
                 #opposite_right_node.is_processed = True
-    
+
                 for i in xrange(len(SLAV)):
                     if SLAV[i] == LAV_:
                         SLAV[i] = None
-    
+
                 SLAV = filter(lambda n: n!=None,SLAV)
                 SLAV.append(LAV_V1)
                 SLAV.append(LAV_V2)
                 #print 'LAV_V1', len(LAV_V1)
                 #print 'LAV_V2', len(LAV_V2)
-    
+
                 for i in xrange(len(SLAV)):
                     LAV__ = SLAV[i]
                     if LAV__.size < 3:
                         for j in xrange(LAV__.size):
                             cn = LAV__[j]
                             cn.is_processed = True
-    
+
                 #Now compute bisector and edge event for new V1/2 node
                 V1_index = LAV_V1.get_node_index(node_V1)
                 V2_index = LAV_V2.get_node_index(node_V2)
-    
+
                 LAV_V1 = self.compute_interior_bisector_vector(LAV_V1,angle_index=V1_index)
                 LAV_V2 = self.compute_interior_bisector_vector(LAV_V2,angle_index=V2_index)
-    
+
                 PQ,minev = self.find_polygon_events(LAV_V1,SLAV,PQ,angle_index=V1_index,cchk=count)
-    
+
                 def debug_LAV_links(LAV):
                     print '---- ----'
                     print 'checking LAV_ size is:', LAV.size
@@ -2050,7 +2050,7 @@ class Shape:
                         #    #debug.append(cn.next.data.vertex)
                         #debug.append(cn.data.vertex)
                     print '---- ----'
-    
+
                 ##debug.append(opposite_edge[0])
                 ##debug.append(opposite_edge[1])
                 ##debug.append(node_V.data.vertex)
@@ -2062,10 +2062,10 @@ class Shape:
                 PQ,minev = self.find_polygon_events(LAV_V2,SLAV,PQ,angle_index=V2_index,cchk=count)
                 #break
             count += 1
-    
+
         #Take the cycles and create perimeter
         #print adj_graph
-    
+
         #loc: listof (listof cycles)
         loc = adj_graph.find_most_ccw_cycle()
         #Get offset
@@ -2073,7 +2073,7 @@ class Shape:
         core_crv_lst = self.bottom_crv.Offset(self.cpt,\
                                  self.normal,perimeter_depth,\
                                  sc.doc.ModelAbsoluteTolerance,corner_style)
-    
+
         ##debug.extend(core_crv_lst)
         core_brep_lst = []
         split_zones = []
@@ -2097,7 +2097,7 @@ class Shape:
         #    print 'we have multiple cores check the way we are diffing this:',\
         #     len(core_brep_lst)
         #Make preimeter breps
-        
+
         for i in xrange(len(loc)):
             cycle = loc[i]
             ptlst = map(lambda n: n.value,cycle)
@@ -2110,7 +2110,7 @@ class Shape:
                     core_brep = core_brep_lst[i]
                     diff_per = rc.Geometry.Brep.CreateBooleanDifference(per_brep,\
                                                                         core_brep,sc.doc.ModelAbsoluteTolerance)
-    
+
                     #If no difference, then just include original zone
                     if diff_per == None or self.is_near_zero(len(diff_per)):
                         diff_per_lst.append(per_brep)
@@ -2120,8 +2120,8 @@ class Shape:
                 diff_per_lst = [per_brep]
             split_zones.extend(diff_per_lst)
             ##debug.extend(diff_per_lst)
-    
-    
+
+
         """
         #For #debugging/checkign
         tnode.grammar.type['idlst'] = []
@@ -2141,19 +2141,19 @@ class Shape:
         #print '--'
         adj_graph = None
         return [split_zones]
-    
 
-def main(mass, _perimeterZoneDepth):  
+
+def main(mass, _perimeterZoneDepth):
     ##debug = sc.sticky['#debug']
     #Import the Ladybug Classes.
     if sc.sticky.has_key('ladybug_release')and sc.sticky.has_key('honeybee_release'):
         lb_preparation = sc.sticky["ladybug_Preparation"]()
         lb_visualization = sc.sticky["ladybug_ResultVisualization"]()
-        
+
         splitZones = []
         for i in xrange(len(mass)):
             mass_ = mass[i]
-            
+
             if _perimeterZoneDepth < 0.001:
                 splitZones.append([mass_])
                 continue
@@ -2164,7 +2164,7 @@ def main(mass, _perimeterZoneDepth):
             #flrCrv = flrCrvs[0][0]
             mass_shape = Shape(mass_)#,#flrCrv)
             split_zones_per_mass = mass_shape.straight_skeleton(_perimeterZoneDepth,1000)
-            
+
             splitZones.append(split_zones_per_mass)
             RhinoApp.Wait()
         return splitZones
@@ -2172,16 +2172,71 @@ def main(mass, _perimeterZoneDepth):
         print "You should first let both Ladybug and Honeybee to fly..."
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, "You should first let both Ladybug and Honeybee to fly...")
-        return -1    
+        return -1
+
+
+
+def checkNonConvex(breps):
+    """
+    Temporary until I get the concave section working!
+    Code from https://github.com/mostaphaRoudsari/honeybee/blob/master/src/Honeybee_Find%20Non-Convex.py
+    """
+    #import the classes
+    if sc.sticky.has_key('honeybee_release'):
+        try:
+            if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
+            if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): return -1
+        except:
+            warning = "You need a newer version of Honeybee to use this compoent." + \
+            "Use updateHoneybee component to update userObjects.\n" + \
+            "If you have already updated userObjects drag Honeybee_Honeybee component " + \
+            "into canvas and try again."
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+            return -1
+
+        #Bringing NonConvexChecking class from Honeybee_Honeybee
+        hb_NonConvexChecking = sc.sticky["honeybee_NonConvexChecking"]
+
+        nonConvex = []
+        faultyGeometry = []
+
+        for brep in breps:
+            surfaces = [brep.Faces.ExtractFace(i) for i in range(brep.Faces.Count)]
+            for surface in surfaces:
+                if hb_NonConvexChecking(surface).isConvex()[0] == False:
+                    nonConvex.append(surface)
+                if hb_NonConvexChecking(surface).isConvex()[1] > 0:
+                    faultyGeometry.extend(hb_NonConvexChecking(surface).isConvex()[1])
+        return (nonConvex , faultyGeometry)
+    else:
+        print "You should first let Honeybee to fly..."
+        w = gh.GH_RuntimeMessageLevel.Warning
+        ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee to fly...")
+        return -1
+
 
 checkData = False
 if _runIt == True:
     checkData = checkTheInputs()
+
+    #---------------- TEMP ----------------------------
+    brep4convexchk = copy.deepcopy(_bldgFloors)
+    convex_result = checkNonConvex(brep4convexchk)
+    if convex_result != -1:
+        nonConvex, faultyGeometry = convex_result
+        if len(faultyGeometry) > 0.0 or len(nonConvex) > 0.0:
+            convex_error_msg = "You have a non-convex (or faulty) geometry, and this component mainly handles convex geometries (at this point). You should prepare the massing of your building by dividing it into convex volumes before using this component."
+            print convex_error_msg
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, convex_error_msg)
+    #---------------- TEMP ----------------------------
+
+
 if checkData == True:
     #sc.sticky['#debug'] = []
+
     splitBldgMassesLists = main(_bldgFloors, _perimeterZoneDepth)
-    #print splitBldgMassesLists
-    #splitBldgMasses = splitBldgMassesLists
 
     if splitBldgMassesLists!= -1:
         pass#splitBldgMasses = DataTree[Object]()
@@ -2190,13 +2245,13 @@ if checkData == True:
     for i, buildingMasses in enumerate(splitBldgMassesLists):
         for j, mass in enumerate(buildingMasses):
             p = GH_Path(i,j)
-            
+
             # in case mass is not a list change it to list
             try: mass[0]
             except: mass = [mass]
             #splitBldgMasses.Add(mass)
             splitBldgZones.extend(mass)
-            
+
             newMass = []
             for brep in mass:
                 if brep != None:
@@ -2207,16 +2262,15 @@ if checkData == True:
                     if guid1:
                         a = [rs.coercegeometry(a) for a in guid1]
                         for g in a: g.EnsurePrivateCopy() #must ensure copy if we delete from doc
-                        
+
                         rs.DeleteObjects(guid1)
-                    
+
                     sc.doc = ghdoc #put back document
                     rs.EnableRedraw()
                     newMass.append(g)
                 mass = newMass
-            
+
             #try:
             #    splitBldgZones.AddRange(mass, p)
             #except:
             #    splitBldgZones.Add(mass, p)
-            

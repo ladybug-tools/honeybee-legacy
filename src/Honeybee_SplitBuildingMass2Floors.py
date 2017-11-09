@@ -1,22 +1,22 @@
-﻿#
+#
 # Honeybee: A Plugin for Environmental Analysis (GPL) started by Mostapha Sadeghipour Roudsari
-# 
+#
 # This file is part of Honeybee.
-# 
-# Copyright (c) 2013-2017, Chris Mackey <Chris@MackeyArchitecture.com> and Saeran Vasanthakumar <saeranv@gmail.com> 
-# Honeybee is free software; you can redistribute it and/or modify 
-# it under the terms of the GNU General Public License as published 
-# by the Free Software Foundation; either version 3 of the License, 
-# or (at your option) any later version. 
-# 
+#
+# Copyright (c) 2013-2017, Chris Mackey <Chris@MackeyArchitecture.com> and Saeran Vasanthakumar <saeranv@gmail.com>
+# Honeybee is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published
+# by the Free Software Foundation; either version 3 of the License,
+# or (at your option) any later version.
+#
 # Honeybee is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of 
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with Honeybee; If not, see <http://www.gnu.org/licenses/>.
-# 
+#
 # @license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
 
 
@@ -40,16 +40,16 @@ Provided by Honeybee 0.0.62
         _bldgsFlr2FlrHeights: A list of floor heights in Rhino model units that will be used to make each floor of the building.  The list should run from bottom floor to top floor.  Alternatively, you can input a text string that codes for how many floors of each height you want.  For example, inputting "2@4" (without quotations) will make two ground floors with a height of 4 Rhino model units.  Simply typing "@3" will make all floors 3 Rhino model units.  Putting in lists of these text strings will divide up floors accordingly.  For example, the list "1@5   2@4   @3"  will make a ground floor of 5 units, two floors above that at 4 units and all remaining floors at 3 units.
     Returns:
         readMe!: ...
-        splitBldgFloors: A series of breps that correspond to inputted floor heights. These can be inserted into the Honeybee_SplitBuildingFloor2ThermalZones component to further split the floors into thermal zones for energy simulation. 
+        splitBldgFloors: A series of breps that correspond to inputted floor heights. These can be inserted into the Honeybee_SplitBuildingFloor2ThermalZones component to further split the floors into thermal zones for energy simulation.
 """
 
 
 ghenv.Component.Name = 'Honeybee_SplitBuildingMass2Floors'
 ghenv.Component.NickName = 'Split2Floors'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nNOV_08_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "13 | WIP"
+ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -82,16 +82,16 @@ def checkTheInputs():
     else:
         checkData1 = False
         print "Connect closed solid building masses to split them up into floors."
-    
+
     if _bldgsFlr2FlrHeights != []:
         checkData2 = True
     else:
-        print "A value must be connected for floor heights in _bldgsFlr2FlrHeights in order to run." 
+        print "A value must be connected for floor heights in _bldgsFlr2FlrHeights in order to run."
         checkData2 = False
-    
+
     if checkData1 == True and checkData2 == True:
         checkData = True
-    else: 
+    else:
         checkData = False
     return checkData
 def getFloorHeights(flr2flrHeights, maxHeights, firstFloorHeight = 0, rep = True):
@@ -109,15 +109,15 @@ def getFloorHeights(flr2flrHeights, maxHeights, firstFloorHeight = 0, rep = True
             #    print 'There are ' + `numOfFlr` + ' floors with height of ' + `floorH` + ' m.'
             #elif rep:
             #    print 'There is a floor with height of ' + `floorH` + ' m.'
-            
+
             for floors in range(numOfFlr): flrHeights.append(flrHeights[-1] + floorH)
-    
+
     return flrHeights # list of floor heights
 def getFloorCrvs(buildingMass, floorHeights, maxHeights):
     #Draw a bounding box around the mass and use the lowest Z point to set the base point.
     massBB = buildingMass.GetBoundingBox(rc.Geometry.Plane.WorldXY)
     minZ = massBB.Min.Z
-    
+
     basePoint = rc.Geometry.Point3d.Origin
     cntrCrvs = []; splitters = []
     bbox = buildingMass.GetBoundingBox(True)
@@ -126,7 +126,7 @@ def getFloorCrvs(buildingMass, floorHeights, maxHeights):
         floorBasePt = rc.Geometry.Point3d.Add(basePoint, rc.Geometry.Vector3d(0,0,h + minZ))
         sectionPlane = rc.Geometry.Plane(floorBasePt, rc.Geometry.Vector3d.ZAxis)
         crvList = rc.Geometry.Brep.CreateContourCurves(buildingMass, sectionPlane)
-        
+
         #If the crvList cointains multiple curves, this probably means that it's a courtyard building.  Order the curves from greatest area to least area and create different lists of curves for the interior and exterior.
         if len(crvList) > 1 and count == 0:
             areaList = []
@@ -153,7 +153,7 @@ def getFloorCrvs(buildingMass, floorHeights, maxHeights):
             try: cntrCrvs[0].append(crvList[0])
             except: cntrCrvs.append([crvList[0]])
         else: pass
-        
+
         if crvList != []:
             # This part is based on one of David Rutten's script
             bool, extU, extV = sectionPlane.ExtendThroughBox(bbox)
@@ -163,11 +163,11 @@ def getFloorCrvs(buildingMass, floorHeights, maxHeights):
             extV.T0 -= 1.0
             extV.T1 += 1.0
             splitters.append(rc.Geometry.PlaneSurface(sectionPlane, extU, extV))
-    
+
     finaltopIncList = []
-    
+
     for courtyrdCount, contourCrvs in enumerate(cntrCrvs):
-        
+
         #Check if the operation has generated a single nurbs curve for a floor (like a circle) and, if so, segment it.
         goodContourCrvs = []
         nurbsList = []
@@ -187,7 +187,7 @@ def getFloorCrvs(buildingMass, floorHeights, maxHeights):
                 goodContourCrvs.append(newCrv)
                 nurbsList.append(True)
         contourCrvs = goodContourCrvs
-        
+
         #Check if any of the generated curves have no area and, if so, discount them from the list. Make a note if the curves are at the top, which happens a lot with gabled roofs.  This can be corrected later.
         newContourCrvs = []
         problemIndices = []
@@ -205,7 +205,7 @@ def getFloorCrvs(buildingMass, floorHeights, maxHeights):
             else: topProblem = False
         else: topProblem = False
         contourCrvs = newContourCrvs
-        
+
         #Check to see if the top floor is shorter than 2 meters and, if so, discount it.
         units = sc.doc.ModelUnitSystem
         #Define a default max height for a floor based on the model units and typical building dimensions.
@@ -224,17 +224,17 @@ def getFloorCrvs(buildingMass, floorHeights, maxHeights):
             print warning
             w = gh.GH_RuntimeMessageLevel.Warning
             ghenv.Component.AddRuntimeMessage(w, warning)
-        
+
         lastFloorHeight = (maxHeights)  - floorHeights[-1]
-        
-        #Adding is_near_zero function due 
+
+        #Adding is_near_zero function due
         #to rounding/precision issues with equality of floats
         if is_near_zero(lastFloorHeight):
             lastFloorInc = True
         else:
             if lastFloorHeight < maxHeight:
                 lastFloorInc = False
-            else: 
+            else:
                 lastFloorInc = True
         #Check to see if the top surface is horizontal + planar and, if so, include it in the curve process below.
         if lastFloorInc == True:
@@ -253,7 +253,7 @@ def getFloorCrvs(buildingMass, floorHeights, maxHeights):
                 srfAvgZValue.append(zAvg)
             maxIndex = max(enumerate(srfAvgZValue),key=lambda x: x[1])[0]
             topSurface = massSurfaces[maxIndex]
-            
+
             #Check the Z-Values of the vertices to see if they are equal and check for planarity
             topZValues = []
             for vertex in topSurface.DuplicateVertices():
@@ -276,7 +276,7 @@ def getFloorCrvs(buildingMass, floorHeights, maxHeights):
             if lastFloorHeight < maxHeight:
                 topInc = True
             else: topInc = False
-        
+
         if topProblem == True:
             topInc = False
         else: pass
@@ -288,11 +288,11 @@ def splitFloorHeights(bldgMasses, bldgsFlr2FlrHeights, lb_preparation, lb_visual
     #Input: mass, floorHeights, lb_preparation, lb_visualization
     #Output: splitFloors, floorCrvs, topInc, nurbsList, lastFloorInclud
     debug = sc.sticky['debug']
-    
+
     if len(bldgMasses)!=0:
-        # clean the geometries 
+        # clean the geometries
         analysisMesh, initialMasses = lb_preparation.cleanAndCoerceList(bldgMasses)
-        
+
         splitZones = []
         topIncluded = []
         lastFloorInclud = []
@@ -305,13 +305,13 @@ def splitFloorHeights(bldgMasses, bldgsFlr2FlrHeights, lb_preparation, lb_visual
             # I don't use floor curves here. It is originally developed for upload Rhino2Web
             maxHeights = massBB.Max.Z - massBB.Min.Z
             floorHeights = getFloorHeights(bldgsFlr2FlrHeights, maxHeights)
-            
+
             if floorHeights!=[0]:
                 splitterSrfs, topInc,lastFloorInc = getFloorCrvs(mass, floorHeights, maxHeights)
-                
+
                 topIncluded.append(topInc)
                 lastFloorInclud.append(lastFloorInc)
-                
+
                 # well, I'm pretty sure that something like this is smarter to be written
                 # as a recursive fuction but I'm not comfortable enough to write it that way
                 # right now. Should be fixed later!
@@ -321,9 +321,9 @@ def splitFloorHeights(bldgMasses, bldgsFlr2FlrHeights, lb_preparation, lb_visual
                     lastPiece = []
                     lastPiece.append(restOfmass)
                     pieces = restOfmass.Split(srf.ToBrep(), tolerance)
-                    
+
                     if len(pieces)== 2 and lb_visualization.calculateBB([pieces[0]], True)[-1].Z < lb_visualization.calculateBB([pieces[1]], True)[-1].Z:
-                        try: 
+                        try:
                             zone = pieces[0].CapPlanarHoles(tolerance);
                             if zone!=None:
                                 massZones.append(zone)
@@ -341,9 +341,9 @@ def splitFloorHeights(bldgMasses, bldgsFlr2FlrHeights, lb_preparation, lb_visual
                 if restOfmass != None:
                     massZones.append(restOfmass)
                 else: pass
-                
+
                 splitZones.append(massZones)
-        
+
         return splitZones, topIncluded, lastFloorInclud
 def is_near_zero(num, eps=1E-10):
     return abs(float(num)) < eps
@@ -373,7 +373,7 @@ def main(mass, floorHeights):
             else:
                 debug.append(mass[0])
                 splitZones.append(mass[:-1])
-        
+
         #return list of list of each floor zones
         return splitZones
     else:
@@ -395,11 +395,11 @@ if checkData == True:
         for i, buildingMasses in enumerate(splitBldgMassesLists):
             for j, mass in enumerate(buildingMasses):
                 p = GH_Path(i,j)
-                
+
                 # in case mass is not a list change it to list
                 try: mass[0]
                 except: mass = [mass]
-                
+
                 newMass = []
                 for brep in mass:
                     if brep != None:
@@ -407,18 +407,18 @@ if checkData == True:
                         sc.doc = rc.RhinoDoc.ActiveDoc #change target document
                         rs.EnableRedraw(False)
                         guid1 = [sc.doc.Objects.AddBrep(brep)]
-                        
+
                         if guid1:
                             a = [rs.coercegeometry(a) for a in guid1]
                             for g in a: g.EnsurePrivateCopy() #must ensure copy if we delete from doc
-                            
+
                             rs.DeleteObjects(guid1)
-                        
+
                         sc.doc = ghdoc #put back document
                         rs.EnableRedraw()
                         newMass.append(g)
                     mass = newMass
-                
+
                 try:
                     splitBldgFloors.AddRange(mass, p)
                     #zoneNames = [str(i) + "_" + str(m) for m in range(len(mass))]
