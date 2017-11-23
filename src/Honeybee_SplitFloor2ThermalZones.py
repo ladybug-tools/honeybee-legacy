@@ -2101,6 +2101,12 @@ class Shape:
         for i in xrange(len(loc)):
             cycle = loc[i]
             ptlst = map(lambda n: n.value,cycle)
+
+            # This is to deal with degenerate polygons (just two lines) by making it into a triangle
+            # Could be a better solution for this.
+            if len(ptlst) < 4:
+                ptlst.append(ptlst[0])
+                
             per_crv = rc.Geometry.Curve.CreateControlPointCurve(ptlst,1)
             per_extrusion = rc.Geometry.Extrusion.Create(per_crv,self.ht-self.cpt[2],True)
             per_brep = per_extrusion.ToBrep()
