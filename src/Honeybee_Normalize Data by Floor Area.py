@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Normalize Data by Floor Area"
 ghenv.Component.NickName = 'flrNorm'
-ghenv.Component.Message = 'VER 0.0.62\nOCT_09_2017'
+ghenv.Component.Message = 'VER 0.0.62\nOCT_17_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -126,12 +126,12 @@ def main(HBZones, simData):
     
     # Create a list with all data combined (only that matches input zones).
     # If the input data does not match with zones, assume that the data applies to all zones.
-    
-    if len(dataPyList) != len(zones):
+    if len(dataPyList) != len(zones) or normZoneDatValue == []:
         sumPyList = sumAllDataTree(dataPyList)
     else:
         sumPyList = sumAllDataTree(normZoneDatValue)
     flrNrmSumList = []
+    
     for val in sumPyList:
         flrNrmSumList.append(val/totZoneArea)
     

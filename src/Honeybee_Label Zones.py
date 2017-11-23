@@ -40,7 +40,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Label Zones"
 ghenv.Component.NickName = 'LabelZones'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nNOV_17_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -52,8 +52,6 @@ except: pass
 
 from System import Object
 from System import Drawing
-from clr import AddReference
-AddReference('Grasshopper')
 import Grasshopper.Kernel as gh
 from Grasshopper import DataTree
 from Grasshopper.Kernel.Data import GH_Path
@@ -83,7 +81,7 @@ def setDefaults():
     zoneCentPts = []
     shortestDimensions = []
     for HZone in _HBZones:
-        bBox = rc.Geometry.Box(HZone.GetBoundingBox(False))
+        bBox = rc.Geometry.Box(HZone.GetBoundingBox(True))
         shortestDimensions.extend([bBox.X[1]-bBox.X[0], bBox.Y[1]-bBox.Y[0], bBox.Z[1]-bBox.Z[0]])
         zoneCentPts.append(bBox.Center)
     
@@ -138,7 +136,7 @@ def main(hb_zones, basePts, textSize, font, attribute):
         basePtMove = textSize*(length/2.1)
         newPt = rc.Geometry.Point3d(basePts[ptCount].X-basePtMove, basePts[ptCount].Y, basePts[ptCount].Z)
         newPts.append(newPt)
-    
+
     # Make the zone labels.
     zoneLabels = lb_visualization.text2srf(zoneProperties, newPts, font, textSize)
     

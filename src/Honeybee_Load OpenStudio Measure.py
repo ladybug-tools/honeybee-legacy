@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.62
 """
 ghenv.Component.Name = "Honeybee_Load OpenStudio Measure"
 ghenv.Component.NickName = 'importOSMeasure'
-ghenv.Component.Message = 'VER 0.0.62\nOCT_09_2017'
+ghenv.Component.Message = 'VER 0.0.62\nOCT_17_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"
@@ -53,6 +53,21 @@ if sc.sticky.has_key('honeybee_release'):
         # openstudio is there
         openStudioLibFolder = sc.sticky["honeybee_folders"]["OSLibPath"]
         openStudioIsReady = True
+        
+        # check to see that it's version 2.0 or above.
+        rightVersion = False
+        try:
+            osVersion = openStudioLibFolder.split('-')[-1]
+            if osVersion.startswith('2'):
+                rightVersion = True
+        except:
+            pass
+        if rightVersion == False:
+            openStudioIsReady = False
+            msg = "Your version of OpenStudio must be 2.0 or above to use the measures components."
+            print msg
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+        
         import clr
         clr.AddReferenceToFileAndPath(openStudioLibFolder+"\\openStudio.dll")
         
@@ -334,7 +349,7 @@ else:
         ghenv.Component.AddRuntimeMessage(w, warning)
 
 
-if initCheck == True and fileLoad == False:
+if openStudioIsReady == True and initCheck == True and fileLoad == False:
     if ghenv.Component.Params.Input.Count==1 and _OSMeasure:
         # first time loading
         xmlFile = os.path.join(_OSMeasure, "measure.xml")
