@@ -2179,7 +2179,8 @@ def main(mass, _perimeterZoneDepth):
 def checkNonConvex(breps):
     """
     Temporary until I get the concave section working!
-    Code from https://github.com/mostaphaRoudsari/honeybee/blob/master/src/Honeybee_Find%20Non-Convex.py
+    Credit to Devang Chauhan for code from:
+    https://github.com/mostaphaRoudsari/honeybee/blob/master/src/Honeybee_Find%20Non-Convex.py
     """
     #import the classes
     if sc.sticky.has_key('honeybee_release'):
