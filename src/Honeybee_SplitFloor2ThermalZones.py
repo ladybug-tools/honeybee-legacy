@@ -23,7 +23,7 @@
 """
 Use this component to divide up a brep (polysurface) representative of a building floor into smaller volumes that roughly correspond to how a generic EnergyPlus model should be zoned.
 This zoning divide up each floor into a core and perimeter zones, which helps account for the different microclimates you would get on each of the different orientations of a building.
-Note: Currently in this WIP convex mainly convex geometry can be handled. Most concave geometries will fail, and any shapes with holes in them will fail. You should therefore prepare the
+Note: This component is intended mainly for convex geometry. Most concave geometries will fail, and any shapes with holes in them will fail. You should therefore prepare the
 massing of your building by dividing it into convex volumes before using this component.
 _
 If you have a single mass representing two towers off of a podium, the two towers are not a continuous mass and you should therefore send each tower and the podium in as a separate Brep into this component.
@@ -49,7 +49,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = 'Honeybee_SplitFloor2ThermalZones'
 ghenv.Component.NickName = 'Split2Zone'
-ghenv.Component.Message = 'VER 0.0.62\nNOV_08_2017'
+ghenv.Component.Message = 'VER 0.0.62\nNOV_23_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
