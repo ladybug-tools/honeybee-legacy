@@ -4,7 +4,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2017, Abraham Yezioro <ayez@ar.technion.ac.il> 
+# Copyright (c) 2013-2017, Abraham Yezioro <ayez@ar.technion.ac.il> and Chris Mackey <chris@ladybug.tools>
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -44,7 +44,7 @@ Provided by Honeybee 0.0.62
 """
 ghenv.Component.Name = "Honeybee_Lookup EnergyPlus Folder"
 ghenv.Component.NickName = 'LookupFolder_EnergyPlus'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nNOV_10_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -89,15 +89,12 @@ def main(studyFolder, subFoldersOS):
     fileNames   = os.listdir(studyFolder)
     fileNames.sort()
     if subFoldersOS == "None":
-        ##print 'In Main - EnergyPlus option\t', studyFolder, '\t', subFoldersOS
         for fileName in fileNames:
             if fileName.lower().endswith(".idf"):
                 idfFiles.append(os.path.join(studyFolder, fileName))
             elif fileName.lower().endswith(".csv") and not fileName.endswith("sz.csv") and "SCH" not in fileName and not fileName.endswith("inTable.csv"):
-                #print fileName, studyFolder
                 resultFileAddress.append(os.path.join(studyFolder, fileName))
             elif fileName.lower().endswith(".csv") and not fileName.endswith("sz.csv") and "SCH" in fileName:
-                #print fileName, studyFolder
                 scheduleCsvFiles.append(os.path.join(studyFolder, fileName))
             elif fileName.lower().endswith(".rdd"):
                 rddFiles.append(os.path.join(studyFolder, fileName))
@@ -109,12 +106,13 @@ def main(studyFolder, subFoldersOS):
                 esoFiles.append(os.path.join(studyFolder, fileName))
             elif fileName.lower().endswith(".sql"):
                 sqlFiles.append(os.path.join(studyFolder, fileName))
-            #elif fileName.lower().endswith(".osm"):
-            #    osmFiles.append(os.path.join(studyFolder, fileName))
+    elif subFoldersOS == "OS":
+        for fileName in os.listdir(studyFolder):
+            if fileName.lower().endswith(".osm"):
+                osmFiles.append(os.path.join(studyFolder, fileName))
     else:
         fileNamesOS = os.listdir(subFoldersOS)
         fileNamesOS.sort()
-        ##print 'In Main - OpenStudio option\t', studyFolder, '\t', subFoldersOS
         for fileName in fileNames:
             if fileName.lower().endswith(".osm"):
                 osmFiles.append(os.path.join(studyFolder, fileName))
@@ -191,7 +189,6 @@ if _studyFolder!=None and os.path.isdir(_studyFolder) and initCheck == True:
     if studyType_ == None:
         studyType_ = 2
     try:
-#####
         dirNames = os.listdir(_studyFolder)
         dirNames.sort()
         for dirName in dirNames: 
@@ -212,6 +209,7 @@ if _studyFolder!=None and os.path.isdir(_studyFolder) and initCheck == True:
         ################################################################
         for studyTypeName in subFolders:
             studyFolder = studyTypeName
+            subFoldersOS = "OS"
             if studyType_ == 1: # EnergyPlus
                 subFoldersOS = "None"
             elif studyType_ == 2: # OpenStudio
@@ -231,7 +229,6 @@ if _studyFolder!=None and os.path.isdir(_studyFolder) and initCheck == True:
                 else:
                     idfFiles, resultFileAddress, scheduleCsvFiles, rddFiles, errFiles, eioFiles, esoFiles, sqlFiles, osmFiles = results
     except:
-        #warning = "Study type is not valid! Folder will be set to studyFolder"
         warning = "Please provide a valid studyType! See hint"
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, warning)

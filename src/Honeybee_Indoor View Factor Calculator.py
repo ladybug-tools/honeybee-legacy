@@ -58,7 +58,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nNOV_21_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -202,7 +202,10 @@ def copyHBZoneData():
                 if 'Material:NoMass' in propNumbers[0]:
                     solRef = 1 - float(propNumbers[4])
                 elif 'Material' in propNumbers[0]:
-                    solRef = 1 - float(propNumbers[7])
+                    try:
+                        solRef = 1 - float(propNumbers[7])
+                    except:
+                        solRef = 0.5
                 if srf.type == 1 or srf.type == 1.5:
                     zoneRoofReflect.append(solRef)
                     zoneFloorReflect[zoneCount].append(None)
