@@ -2106,7 +2106,7 @@ class Shape:
             # Could be a better solution for this.
             if len(ptlst) < 4:
                 ptlst.append(ptlst[0])
-                
+
             per_crv = rc.Geometry.Curve.CreateControlPointCurve(ptlst,1)
             per_extrusion = rc.Geometry.Extrusion.Create(per_crv,self.ht-self.cpt[2],True)
             per_brep = per_extrusion.ToBrep()
