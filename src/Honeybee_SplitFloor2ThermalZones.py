@@ -23,7 +23,7 @@
 """
 Use this component to divide up a brep (polysurface) representative of a building floor into smaller volumes that roughly correspond to how a generic EnergyPlus model should be zoned.
 This zoning divide up each floor into a core and perimeter zones, which helps account for the different microclimates you would get on each of the different orientations of a building.
-Note: Currently in this WIP convex mainly convex geometry can be handled. Most concave geometries will fail, and any shapes with holes in them will fail. You should therefore prepare the
+Note: This component is intended mainly for convex geometry. Most concave geometries will fail, and any shapes with holes in them will fail. You should therefore prepare the
 massing of your building by dividing it into convex volumes before using this component.
 _
 If you have a single mass representing two towers off of a podium, the two towers are not a continuous mass and you should therefore send each tower and the podium in as a separate Brep into this component.
@@ -49,7 +49,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = 'Honeybee_SplitFloor2ThermalZones'
 ghenv.Component.NickName = 'Split2Zone'
-ghenv.Component.Message = 'VER 0.0.62\nNOV_08_2017'
+ghenv.Component.Message = 'VER 0.0.62\nNOV_23_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -2101,6 +2101,12 @@ class Shape:
         for i in xrange(len(loc)):
             cycle = loc[i]
             ptlst = map(lambda n: n.value,cycle)
+
+            # This is to deal with degenerate polygons (just two lines) by making it into a triangle
+            # Could be a better solution for this.
+            if len(ptlst) < 4:
+                ptlst.append(ptlst[0])
+
             per_crv = rc.Geometry.Curve.CreateControlPointCurve(ptlst,1)
             per_extrusion = rc.Geometry.Extrusion.Create(per_crv,self.ht-self.cpt[2],True)
             per_brep = per_extrusion.ToBrep()
@@ -2179,7 +2185,8 @@ def main(mass, _perimeterZoneDepth):
 def checkNonConvex(breps):
     """
     Temporary until I get the concave section working!
-    Code from https://github.com/mostaphaRoudsari/honeybee/blob/master/src/Honeybee_Find%20Non-Convex.py
+    Credit to Devang Chauhan for code from:
+    https://github.com/mostaphaRoudsari/honeybee/blob/master/src/Honeybee_Find%20Non-Convex.py
     """
     #import the classes
     if sc.sticky.has_key('honeybee_release'):
