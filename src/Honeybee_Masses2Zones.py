@@ -51,7 +51,7 @@ import copy
 
 ghenv.Component.Name = 'Honeybee_Masses2Zones'
 ghenv.Component.NickName = 'Mass2Zone'
-ghenv.Component.Message = 'VER 0.0.62\nNOV_23_2017'
+ghenv.Component.Message = 'VER 0.0.62\nNOV_24_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -100,7 +100,7 @@ def main(maximumRoofAngle, zoneMasses, zoneNames, zonePrograms, isConditioned):
         return dupData
 
     zoneNumber = len(zoneMasses)
-    zoneMasses = map(lambda zm: copy.deepcopy(zm), zoneMasses) # Duplicate the breps so that we don't have same memory access
+    zoneMasses = copy.deepcopy(zoneMasses) # Duplicate the breps so that we don't have same memory access
 
     #If the length of the zonePrograms_ is 1, duplicate it to apply it to all zones.  Give a warning if the length of the list does not match the number of zones.
     if len(zonePrograms) == 1:
