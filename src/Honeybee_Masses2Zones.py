@@ -1,22 +1,22 @@
 #
 # Honeybee: A Plugin for Environmental Analysis (GPL) started by Mostapha Sadeghipour Roudsari
-# 
+#
 # This file is part of Honeybee.
-# 
-# Copyright (c) 2013-2017, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools> 
-# Honeybee is free software; you can redistribute it and/or modify 
-# it under the terms of the GNU General Public License as published 
-# by the Free Software Foundation; either version 3 of the License, 
-# or (at your option) any later version. 
-# 
+#
+# Copyright (c) 2013-2017, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools>
+# Honeybee is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published
+# by the Free Software Foundation; either version 3 of the License,
+# or (at your option) any later version.
+#
 # Honeybee is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of 
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with Honeybee; If not, see <http://www.gnu.org/licenses/>.
-# 
+#
 # @license GPL-3.0+ <http://spdx.org/licenses/GPL-3.0+>
 
 
@@ -25,7 +25,7 @@ Use this component to take any list of closed breps and turn them into Honeybee 
 _
 This includes constructions of the surfaces, boundary condtions of all of the surfaces (ie ground, exterior, etc), schedules+ loads for occupancy/internal electronics, and settings for an HVAC system if isContitioned_ is set to True.
 -
-Provided by Honeybee 0.0.61
+Provided by Honeybee 0.0.62
 
     Args:
         _zoneMasses: A list of closed breps or a  single closed brep that represents the geometry of the zone(s) that will be output from this component.
@@ -47,11 +47,11 @@ import sys
 import System
 import Grasshopper.Kernel as gh
 import uuid
-
+import copy
 
 ghenv.Component.Name = 'Honeybee_Masses2Zones'
 ghenv.Component.NickName = 'Mass2Zone'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.62\nNOV_24_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -67,13 +67,13 @@ import math
 ################################################################################
 
 def main(maximumRoofAngle, zoneMasses, zoneNames, zonePrograms, isConditioned):
-    
+
     # check for Honeybee
     if not sc.sticky.has_key('honeybee_release'):
         msg = "You should first let Honeybee fly..."
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
         return -1
-    
+
     try:
         if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): return -1
         if sc.sticky['honeybee_release'].isInputMissing(ghenv.Component): return -1
@@ -85,22 +85,23 @@ def main(maximumRoofAngle, zoneMasses, zoneNames, zonePrograms, isConditioned):
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, warning)
         return -1
-            
+
     # import the classes
     # don't customize this part
     hb_EPZone = sc.sticky["honeybee_EPZone"]
     hb_EPSrf = sc.sticky["honeybee_EPSurface"]
     hb_EPZoneSurface = sc.sticky["honeybee_EPZoneSurface"]
-    
+
     #Have a function to duplicate data.
     def duplicateData(data, calcLength):
         dupData = []
         for count in range(calcLength):
             dupData.append(data[0])
         return dupData
-    
+
     zoneNumber = len(zoneMasses)
-    
+    zoneMasses = copy.deepcopy(zoneMasses) # Duplicate the breps so that we don't have same memory access
+
     #If the length of the zonePrograms_ is 1, duplicate it to apply it to all zones.  Give a warning if the length of the list does not match the number of zones.
     if len(zonePrograms) == 1:
         zonePrograms = duplicateData(zonePrograms, zoneNumber)
@@ -113,30 +114,35 @@ def main(maximumRoofAngle, zoneMasses, zoneNames, zonePrograms, isConditioned):
         ghenv.Component.AddRuntimeMessage(w, warning)
     else:
         print "Zones will be assigned a zone program based on the list of connected zonePrograms_."
-    
+
     #If the length of the isConditioned_ is 1, duplicate it to apply it to all zones.  Give a warning if the length of the list does not match the number of zones.
     if len(isConditioned) == 1:
         isConditioned = duplicateData(isConditioned, zoneNumber)
         print "An IsConditioned value of " + str(isConditioned[0]) + " has been applied to all " + str(zoneNumber) + " connected zones."
     elif len(isConditioned) == 0:
-        print "No value connected for isConditioned_.  All zones will be conditioned by default."
+        print "No value is connected for isConditioned_.  All zones will be conditioned by default."
     elif len(isConditioned) != zoneNumber:
         warning = "The number of items in the connected isConditioned_ list does not match the number of connected _zoneMasses. Zones will be conditioned by default to if there is not isConditioned_ value for them in the list."
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, warning)
     else:
         print "Zones will be assigned an isConditioned value based on the list of connected isConditioned_ list."
-    
+
     #Give a warning if the length of the zoneNames_ list does not match the number of zones.
     if len(zoneNames) == 0:
         print "No value connected for zoneNames_.  All zones will be assigned a default name based on their order in the list."
+    elif len(zoneNames) == 1:
+        newZoneNames = []
+        for count, mass in enumerate(zoneMasses):
+            newZoneNames.append(zoneNames[0] + "_" + str(count))
+        zoneNames = newZoneNames
     elif len(zoneNames) != zoneNumber:
         warning = "The number of items in the connected zoneNames_ list does not match the number of connected _zoneMasses. Zones without a name in the list will be be assigned a default name based on their order in the list."
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, warning)
     else:
         print "Zones will be assigned a zoneName based on the list of connected zoneName_ list."
-    
+
     HBZones = []
     # create zones out of masses
     for zoneKey, zone in enumerate(zoneMasses):
@@ -145,36 +151,35 @@ def main(maximumRoofAngle, zoneMasses, zoneNames, zonePrograms, isConditioned):
         except:
             zoneName = "zone_" + str(sc.sticky["hBZoneCount"])
             sc.sticky["hBZoneCount"] += 1
-        
+
         # zone programs
         try: thisZoneProgram = zonePrograms[zoneKey].split("::")
         except: thisZoneProgram = 'Office', 'OpenOffice'
 
         try: isZoneConditioned = isConditioned[zoneKey]
         except: isZoneConditioned = True
-        
+
         thisZone = hb_EPZone(zone, zoneKey, zoneName, thisZoneProgram, isZoneConditioned)
-        
+
         # assign surface types and construction based on type
         thisZone.decomposeZone(maximumRoofAngle)
-        
+
         # append this zone to other zones
         HBZones.append(thisZone)
-                
+
     return HBZones
-        
+
         ################################################################################################
 
 
 if _createHBZones == True and len(_zoneMasses)!=0 and _zoneMasses[0]!=None:
-    
+
     try:  maximumRoofAngle = float(maxRoofAngle_)
     except: maximumRoofAngle = 30
-    
+
     result= main(maximumRoofAngle, _zoneMasses, zoneNames_, zonePrograms_,isConditioned_)
-    
+
     if result!=-1:
-        zoneClasses = result 
+        zoneClasses = result
         hb_hive = sc.sticky["honeybee_Hive"]()
         HBZones  = hb_hive.addToHoneybeeHive(zoneClasses, ghenv.Component)
-    

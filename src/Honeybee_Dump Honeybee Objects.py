@@ -29,7 +29,7 @@ WARNING: This component does not write custom schedules or materials within the 
 Accordingly, to properly load objects agian, you must connect the full strings of these objects to a "Add to EnergyPlus Library" component in any GH cript that loads the HBZones from the file.
 
 -
-Provided by Honeybee 0.0.61
+Provided by Honeybee 0.0.62
 
     Args:
         _HBObjects: A list of Honeybee objects
@@ -43,13 +43,13 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Dump Honeybee Objects"
 ghenv.Component.NickName = 'dumpHBObjects'
-ghenv.Component.Message = 'VER 0.0.61\nMAY_19_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "13 | WIP"
-#compatibleHBVersion = VER 0.0.59\nMAY_18_2017
+ghenv.Component.SubCategory = "00 | Honeybee"
+#compatibleHBVersion = VER 0.0.59\nJUL_24_2017
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
-try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "6"
 except: pass
 
 
@@ -64,6 +64,8 @@ def dumpHBObjects(HBObjects, fileName, workingDir=None):
     hb_hive = sc.sticky["honeybee_Hive"]()
     hb_RADMaterialAUX = sc.sticky["honeybee_RADMaterialAUX"]
     hb_ConstrLib = sc.sticky ["honeybee_constructionLib"]
+    hb_EPScheduleAUX = sc.sticky["honeybee_EPScheduleAUX"]()
+    hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
     if workingDir == None:
         workingDir = sc.sticky["Honeybee_DefaultFolder"] 
     if not fileName.upper().endswith('.HB.'):
@@ -89,6 +91,8 @@ def dumpHBObjects(HBObjects, fileName, workingDir=None):
     constructions = []
     EPmaterials = []
     RADmaterials = []
+    scheduleCollection = []
+    shdCntrlCollection = []
     hvacIDs = []
     airIDs = []
     heatIDs = []
@@ -97,7 +101,7 @@ def dumpHBObjects(HBObjects, fileName, workingDir=None):
     def dumpHBZone(HBZone):
         if HBZone.objectType != 'HBZone': return
         
-        # dump all surfaces and replace surfaces with ids
+        # dump all surfaces and replace surfaces with ids.
         surfaceIds = [srf.ID for srf in HBZone.surfaces]
         for surface in HBZone.surfaces:
             dumpHBSurface(surface)
@@ -108,7 +112,27 @@ def dumpHBObjects(HBObjects, fileName, workingDir=None):
             dumpHBhvac(HBZone.HVACSystem)
         HBZone.HVACSystem = HBZone.HVACSystem.ID
         
-        # dump all other objects in the zone.
+        # dump the schedules associated with the zone.
+        schedules = HBZone.getCurrentSchedules(True)
+        dumpAllSchedules(schedules)
+        
+        # dump any internal masses.
+        if HBZone.internalMassConstructions != []:
+            for massMat in HBZone.internalMassConstructions:
+                if massMat.upper() not in constructions and massMat.upper() not in defaultEPConstrSet:
+                    constructions.append(massMat.upper())
+                    materials = dumpHBConstr(massMat.upper())
+                    for mat in materials:
+                        if mat.upper() not in EPmaterials:
+                            EPmaterials.append(mat.upper())
+                            dumpHBMat(mat.upper())
+        
+        # dump any earth tube schedules.
+        if HBZone.earthtube == True:
+            if HBZone.ETschedule != "Always On Discrete" and HBZone.ETschedule.upper() not in scheduleCollection:
+                dumpAllSchedules([HBZone.ETschedule])
+        
+        # add the zone to the master dictionary.
         objs[HBZone.ID] = HBZone.__dict__
     
     def dumpHBSurface(HBSurface):
@@ -126,6 +150,13 @@ def dumpHBObjects(HBObjects, fileName, workingDir=None):
                 dumpHBSurface(childSrf)
             HBSurface.childSrfs = childIds
         
+        # dump blinds and shading control.
+        if HBSurface.isChild and HBSurface.shadingControlName != []:
+            for shadingCount, windowShading in enumerate(HBSurface.shadingControlName):
+                if windowShading.upper() not in shdCntrlCollection:
+                    dumpHBShdCntrl(windowShading)
+                    shdCntrlCollection.append(windowShading.upper())
+        
         # dump custom constructions.
         if HBSurface.EPConstruction != None and HBSurface.EPConstruction.upper() not in constructions and HBSurface.EPConstruction.upper() not in defaultEPConstrSet:
             constructions.append(HBSurface.EPConstruction.upper())
@@ -142,8 +173,12 @@ def dumpHBObjects(HBObjects, fileName, workingDir=None):
         
         # Shading surfaces.
         if HBSurface.type == 6:
+            if HBSurface.TransmittanceSCH != '' and HBSurface.TransmittanceSCH.upper() not in scheduleCollection:
+                scheduleCollection.append(HBSurface.TransmittanceSCH.upper())
+                dumpAllSchedules([HBSurface.TransmittanceSCH])
             HBSurface.childSrfs = [childSrf.ID for childSrf in HBSurface.childSrfs]
         
+        # This needs to be set to outdoors at first but will be replaced by the correct object on loading
         try:
             if HBSurface.BC.lower() in ["outdoors", "ground", "adiabatic"]:
                 HBSurface.BCObject = "Outdoors" #This will be replaced by the correct object on loading
@@ -226,10 +261,85 @@ def dumpHBObjects(HBObjects, fileName, workingDir=None):
             materialDict = {'objectType': 'HBMat', 'name': materialName, 'EPstr': materialStr}
             objs[materialName] = materialDict
     
+    def dumpAllSchedules(schedules):
+        schedCollect = schedules.values()
+        for schedule in schedCollect:
+            if schedule.upper() not in scheduleCollection and schedule != '':
+                scheduleCollection.append(schedule.upper())
+                dumpHBSched(schedule)
+                scheduleValues, comments = hb_EPScheduleAUX.getScheduleDataByName(schedule, ghenv.Component)
+                
+                if scheduleValues[0].lower() == "schedule:year":
+                    numOfWeeklySchedules = int((len(scheduleValues)-2)/5)
+                    for i in range(numOfWeeklySchedules):
+                        weekDayScheduleName = scheduleValues[5 * i + 2]
+                        if weekDayScheduleName not in schedCollect and not weekDayScheduleName == '':
+                            schedCollect.append(weekDayScheduleName)
+                # collect all the schedule items inside the schedule
+                elif scheduleValues[0].lower() == "schedule:week:daily":
+                    for value in scheduleValues[1:]:
+                        if value not in schedCollect:
+                            schedCollect.append(value)
+    
+    def dumpHBSched(scheduleName):
+        scheduleData = None
+        scheduleName= scheduleName.upper()
+        if scheduleName.lower().endswith(".csv"):
+            warning = "CSV schedule detected.  Make sure that the machine that\n  loads the HBZones has the CSV schedule in the same location."
+            print warning
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+        
+        if scheduleName in sc.sticky ["honeybee_ScheduleLib"].keys():
+            scheduleData = sc.sticky ["honeybee_ScheduleLib"][scheduleName]
+        elif scheduleName in sc.sticky ["honeybee_ScheduleTypeLimitsLib"].keys():
+            scheduleData = sc.sticky["honeybee_ScheduleTypeLimitsLib"][scheduleName]
+        
+        if scheduleData!=None:
+            numberOfLayers = len(scheduleData.keys())
+            scheduleStr = scheduleData[0] + ",\n"
+            if numberOfLayers == 1:
+                return scheduleStr  + "  " +  scheduleName + ";   !- name\n\n"
+            # add the name
+            scheduleStr =  scheduleStr  + "  " +  scheduleName + ",   !- name\n"
+            
+            for layer in range(1, numberOfLayers):
+                if layer < numberOfLayers - 1:
+                    scheduleStr =  scheduleStr + "  " + scheduleData[layer][0] + ",   !- " +  scheduleData[layer][1] + "\n"
+                else:
+                    scheduleStr =  scheduleStr + "  " + str(scheduleData[layer][0]) + ";   !- " +  scheduleData[layer][1] + "\n\n"
+            scheduleDict = {'objectType': 'HBsched', 'name': scheduleName, 'EPstr': scheduleStr}
+            objs[scheduleName] = scheduleDict
+    
+    def dumpHBShdCntrl(windowShading):
+        shdCntrlDict = {'objectType': 'HBShdCntrl', 'name': windowShading, 'EPstr': hb_EPObjectsAux.getEPObjectsStr(windowShading)}
+        objs[windowShading] = shdCntrlDict
+        
+        values = hb_EPObjectsAux.getEPObjectDataByName(windowShading)
+        if values[4][0] != '' and values[4][0].upper() not in scheduleCollection:
+            dumpAllSchedules([values[4][0]])
+        if values[2][0] != '':
+            # Iniitalize for construction (for switchable glazing).
+            constrName = values[2][0]
+            constructions.append(constrName.upper())
+            materials = dumpHBConstr(constrName.upper())
+            for mat in materials:
+                if mat.upper() not in EPmaterials:
+                    EPmaterials.append(mat.upper())
+                    dumpHBMat(mat.upper())
+        else:
+            # Iniitalize for material (for blinds and shades).
+            materialName = values[8][0]
+            EPmaterials.append(materialName.upper())
+            dumpHBMat(materialName.upper())
+    
     def dumpHBRad(radMatName):
         radStr =  hb_RADMaterialAUX.getRADMaterialString(radMatName)
         radMaterialDict = {'objectType': 'HBRadMat', 'name': radMatName, 'RADstr': radStr}
         objs[radMatName] = radMaterialDict
+    
+    def dumpHBViewFactor(viewFacInfo):
+        # add the view factor to the master dictionary.
+        objs[viewFacInfo.ID] = viewFacInfo.__dict__
     
     # cycle through the objects and dump everything.
     for id, HBO in zip(ids, HBObjects):
@@ -237,6 +347,8 @@ def dumpHBObjects(HBObjects, fileName, workingDir=None):
             dumpHBSurface(HBO)
         elif HBO.objectType == 'HBZone':
             dumpHBZone(HBO)
+        elif HBO.objectType == 'ViewFactorInfo':
+            dumpHBViewFactor(HBO)
         else:
             raise Exception("Unsupported object! Assure all objects are Honeybee objects")
     
@@ -260,7 +372,7 @@ initCheck = True
 if not sc.sticky.has_key('honeybee_release') == True:
     initCheck = False
     print "You should first let Honeybee fly..."
-    ghenv.Component.AddRuntimeMessage(w, "You should first let Honeybee fly...")
+    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, "You should first let Honeybee fly...")
 else:
     try:
         if not sc.sticky['honeybee_release'].isCompatible(ghenv.Component): initCheck = False
@@ -271,7 +383,7 @@ else:
         "Use updateHoneybee component to update userObjects.\n" + \
         "If you have already updated userObjects drag Honeybee_Honeybee component " + \
         "into canvas and try again."
-        ghenv.Component.AddRuntimeMessage(w, warning)
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
 
 
 

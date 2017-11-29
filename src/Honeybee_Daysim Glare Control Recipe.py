@@ -25,7 +25,7 @@
 Glare Control Recipe for Annual Simulation with Daysim "Based on exterior illuminance and/or position of the sun"
 You need to add an external sensor later in the Daysim result reader.
 -
-Provided by Honeybee 0.0.61
+Provided by Honeybee 0.0.62
     
     Args:
         exteriorSensor: Selected list of test points that indicates where occupants sit. If empty Daysim will consider all the test points as sensors.
@@ -38,7 +38,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Daysim Glare Control Recipe"
 ghenv.Component.NickName = 'DSGlareControl'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"

@@ -24,7 +24,7 @@
 """
 Use this component to produce a colored mesh from a comfResultsMtx.
 -
-Provided by Honeybee 0.0.61
+Provided by Honeybee 0.0.62
     
     Args:
         _comfResultsMtx: Any matrix output from the 'Honeybee_Microclimate Map Analysis' component, the 'Honeybee_Thermal Comfort Autonomy Analysis' component, or the 'Honeybee_Read Microclimate Matrix' component.
@@ -49,7 +49,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Visualize Microclimate Map"
 ghenv.Component.NickName = 'VisualizeMicroclimate'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"

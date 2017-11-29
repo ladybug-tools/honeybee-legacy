@@ -28,11 +28,11 @@ Also because of this, the accuracy of this material is not as great as a materia
 _
 If you want to create a material that accounts for mass, you should use the "Honeybee_EnergyPlus Glass Material" component and the "Honeybee_EnergyPlus Window Air Gap" to create a window construction with one or multiple panes.
 -
-Provided by Honeybee 0.0.61
+Provided by Honeybee 0.0.62
     
     Args:
         _name: A text name for your NoMass Window Material.
-        _U_Value: A number representing the conductivity of the window in W/m-K. This is the rated (NFRC) value for U-factor under winter heating conditions. As a result, the U-Value input here should include the air films for a vertically-mounted product.
+        _U_Value: A number representing the U-value of the window in W/m2-K. This is the rated (NFRC) U-value under winter heating conditions. As a result, the U-Value input here should include the air films for a vertically-mounted product.
         _SHGC: A number between 0 and 1 that represents the solar heat gain coefficient (SHGC) of the window. The solar heat gain coeffieceint is essentially the fraction of solar radiation falling on the window that makes it through the glass (at normal incidence).  This number is usually very close to the visible transmittance (VT) for glass without low-e coatings but can be might lower for glass with low-e coatings.
         _VT: A number between 0 and 1 that represents the visible transmittance (VT) of the window. The visible transmittance is essentially the fraction of visible light falling on the window that makes it through the glass (at normal incidence).  This number is usually very close to the solar heat gain coefficent (SHGC) for glass without low-e coatings but can be might higher for glass with low-e coatings.
     Returns:
@@ -42,7 +42,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Window Material"
 ghenv.Component.NickName = 'EPWindowMat'
-ghenv.Component.Message = 'VER 0.0.61\nMAY_12_2017'
+ghenv.Component.Message = 'VER 0.0.62\nAUG_20_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"
@@ -76,7 +76,7 @@ def checkInputs():
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, infoMsg)
     SHGC = checkBtwZeroAndOne(_SHGC, None, "_SHGC")
     VT = checkBtwZeroAndOne(_VT, None, "_VT")
-    U_Value = checkBtwZeroAndOne(_U_Value, None, "_VT", 5.8)
+    U_Value = checkBtwZeroAndOne(_U_Value, None, "_U_Value", 5.8)
     
     return checkData
 

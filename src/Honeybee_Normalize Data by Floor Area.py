@@ -23,7 +23,7 @@
 """
 This component takes data that has been output from a simulation and normalizes the results by the floor area of the HBZones.
 -
-Provided by Honeybee 0.0.61
+Provided by Honeybee 0.0.62
     
     Args:
         _simData: Results from one of the Read Result components.
@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Normalize Data by Floor Area"
 ghenv.Component.NickName = 'flrNorm'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.62\nOCT_17_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -107,9 +107,31 @@ def main(HBZones, simData):
     if len(dataPyList) == 1 and dataPyList[0] == []:
         return -1
     
-    # Create a list with all data combined.
-    sumPyList = sumAllDataTree(dataPyList)
+    # Normalize any recognizable zone data.
+    normZoneDat = []
+    normZoneDatValue = []
+    try:
+        for count, branch in enumerate(strPyList):
+            zName = branch[2].split('for ')[-1]
+            if zName in hbZoneNames.keys():
+                zoneDat = dataPyList[hbZoneNames[zName]]
+                flrNormDat = createNormHeader(branch)
+                flrNormDatValue = []
+                for val in zoneDat:
+                    flrNormDatValue.append(val/hbZoneAreas[hbZoneNames[zName]])
+                flrNormDat.extend(flrNormDatValue)
+                normZoneDatValue.append(zoneDat)
+                normZoneDat.append(flrNormDat)
+    except: pass
+    
+    # Create a list with all data combined (only that matches input zones).
+    # If the input data does not match with zones, assume that the data applies to all zones.
+    if len(dataPyList) != len(zones) or normZoneDatValue == []:
+        sumPyList = sumAllDataTree(dataPyList)
+    else:
+        sumPyList = sumAllDataTree(normZoneDatValue)
     flrNrmSumList = []
+    
     for val in sumPyList:
         flrNrmSumList.append(val/totZoneArea)
     
@@ -119,19 +141,6 @@ def main(HBZones, simData):
         combDat = combHeader + flrNrmSumList
     else:
         combDat = flrNrmSumList
-    
-    # Normalize any recognizable zone data.
-    normZoneDat = []
-    try:
-        for count, branch in enumerate(strPyList):
-            zName = branch[2].split('for ')[-1]
-            if zName in hbZoneNames.keys():
-                zoneDat = dataPyList[hbZoneNames[zName]]
-                flrNormDat = createNormHeader(branch)
-                for val in zoneDat:
-                    flrNormDat.append(val/hbZoneAreas[hbZoneNames[zName]])
-                normZoneDat.append(flrNormDat)
-    except: pass
     
     return combDat, normZoneDat
 

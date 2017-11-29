@@ -23,7 +23,7 @@
 """
 Use this component to write your THERM polygons and boundary conditions into a therm XML that can be opened ready-to-run in THERM.
 -
-Provided by Honeybee 0.0.61
+Provided by Honeybee 0.0.62
 
     Args:
         _polygons: A list of thermPolygons from one or more "Honeybee_Create Therm Polygons" components.
@@ -56,7 +56,7 @@ from shutil import move
 
 ghenv.Component.Name = 'Honeybee_Write THERM File'
 ghenv.Component.NickName = 'writeTHERM'
-ghenv.Component.Message = 'VER 0.0.61\nJUN_06_2017'
+ghenv.Component.Message = 'VER 0.0.62\nAUG_18_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -445,7 +445,9 @@ def checkThermSettings(thermSettings):
     with open(absPath,'w') as newFile:
         with open(thermSettings, "r") as settingsFile:
             for line in settingsFile:
-                if line == "SaveConrad=0\n":
+                if "CheckingTolerance" in line:
+                    newFile.write("CheckingTolerance=0\n")
+                elif line == "SaveConrad=0\n":
                     newFile.write("SaveConrad=1\n")
                 elif line == "SaveResults=0\n":
                     newFile.write("SaveResults=1\n")
@@ -509,6 +511,13 @@ def parseErrorLog(errorLogFile, xmlFilePath):
         ghenv.Component.AddRuntimeMessage(w, warning)
     
     return successfulCalc
+
+def findUFacFile(uFactorFile):
+    uFacWorkingDir = os.path.dirname(os.path.realpath(uFactorFile))
+    for simfile in os.listdir(uFacWorkingDir):
+        if simfile.endswith('_thmx.thmx'):
+            uFactorFile = uFacWorkingDir + '\\' + simfile
+    return uFactorFile
 
 def replaceHeader(xmlFilePath, uFactorFile):
     headerTrigger = False
@@ -1056,9 +1065,9 @@ def main(runTHERM, workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, 
             pass
         # If the calculation is successful, re-write the header of the uFactor file to contian all info of the original THMX file.
         if successfulCalc:
+            uFactorFile = findUFacFile(uFactorFile)
             replaceHeader(xmlFilePath, uFactorFile)
             # Change the name of the result file so that it matches what happens when someone manually simulates in THERM.
-            print resultDataPath
             os.rename(resultDataPath, resultDataPathFinal)
     
     return xmlFilePath, uFactorFile, resultDataPathFinal

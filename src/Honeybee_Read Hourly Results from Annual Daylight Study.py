@@ -24,7 +24,7 @@
 Read the results of the annual study for a single hour of the year
 
 -
-Provided by Honeybee 0.0.61
+Provided by Honeybee 0.0.62
 
     Args:
         _illFilesAddress: List of .ill files
@@ -40,7 +40,7 @@ Provided by Honeybee 0.0.61
 """
 ghenv.Component.Name = "Honeybee_Read Hourly Results from Annual Daylight Study"
 ghenv.Component.NickName = 'readDSHourlyResults'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"

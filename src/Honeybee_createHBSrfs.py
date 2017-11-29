@@ -23,7 +23,7 @@
 """
 Create a Honeybee surface, which can be plugged into the "Run Daylight Sumilation" component or combined with other surfaces to make HBZones with the "createHBZones" component.
 -
-Provided by Honeybee 0.0.61
+Provided by Honeybee 0.0.62
 
     Args:
         _geometry: List of Breps
@@ -60,7 +60,7 @@ import uuid
 
 ghenv.Component.Name = 'Honeybee_createHBSrfs'
 ghenv.Component.NickName = 'createHBSrfs'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.62\nOCT_11_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -166,7 +166,7 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
                 try: surfaceType = int(srfType)
                 except:
                     if float(srfType) == 0.5 or float(srfType) == 1.5 or float(srfType) == 2.25 or float(srfType) == 2.5 or float(srfType) == 2.75:
-                        surfaceType = srfType
+                        surfaceType = float(srfType)
                     else: pass
                 print "HBSurface Type has been set to " + HBSurface.srfType[float(srfType)]
                 
@@ -192,6 +192,8 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
                                      "Honeybee won't overwrite the type so you may need to manually flip the surface."
                         print warningMsg
                     HBSurface.setType(surfaceType, isUserInput= True)
+                    if surfaceType == 2.5 or surfaceType == 2.25:
+                        HBSurface.setBC('ground', isUserInput= False)
                 except:
                     warningMsg = "You are using an old version of Honeybee_Honeybee! Update your files and try again."
                     print warningMsg
@@ -207,10 +209,16 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
                 try:
                     HBSurface.setBC(EPBC, isUserInput= True)
                     
+                    if EPBC.lower()== "adiabatic":
+                        if srfType == None and str(HBSurface.type).startswith('2'):
+                            HBSurface.setType(2, False)
+                        elif srfType == None and str(HBSurface.type).startswith('1'):
+                            HBSurface.setType(3, False)
+                        HBSurface.setEPConstruction(HBSurface.intCnstrSet[HBSurface.type])
+                    
                     # change type of surface if BC is set to ground
                     if EPBC.lower()== "ground":
                         HBSurface.setType(int(HBSurface.type) + 0.5, isUserInput= True)
-                    
                     
                     if EPBC.lower()== "ground" or EPBC.lower()== "adiabatic":
                         HBSurface.setSunExposure('NoSun')
@@ -297,7 +305,7 @@ def main(geometry, srfName, srfType, EPBC, EPConstruction, RADMaterial):
                 warningMsg = "Failed to add " + RADMaterial + " to the Library."
                 ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warningMsg)
                 return
-            
+        
         HBSurfaces.append(HBSurface)
     
     # add to the hive

@@ -27,7 +27,7 @@ The first is that it can be used to assign shade objects to HBZones prior to sim
 _
 The second way to use the component is to create test shade areas for shade benefit evaluation after an energy simulation has already been run.  In this case, the component helps keep the data tree paths of heating, cooling and beam gain synced with that of the zones and windows.  For this, you would take imported EnergyPlus results and hook them up to the "zoneData" inputs and use the output "zoneDataTree" in the shade benefit evaluation.
 -
-Provided by Honeybee 0.0.61
+Provided by Honeybee 0.0.62
     
     Args:
         _HBObjects: The HBZones or HBSurfaces out of any of the HB components that generate or alter zones.
@@ -84,7 +84,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Window Shade Generator"
 ghenv.Component.NickName = 'EPWindowShades'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.62\nAUG_17_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -940,12 +940,17 @@ def makeShade(_glzSrf):
         distToGlass = float(getValueBasedOnOrientation(distToGlass_, normalVector))
     except:
         distToGlass = None
-    if distToGlass == None: distToGlass = 0.2
+    if distToGlass == None: distToGlass = 0.1
     
     #Generate the shade geometry based on the offset distance.
-    if interiorOrExter == True: distToGlass = -distToGlass
+    transVec = copy.deepcopy(normalVector)
+    transVec.Unitize()
+    transVec = rc.Geometry.Vector3d.Multiply(distToGlass, transVec)
+    if interiorOrExter == True:
+        transVec.Reverse()
     try:
-        shdSrf = rc.Geometry.Surface.Offset(_glzSrf.Faces[0], distToGlass, sc.doc.ModelAbsoluteTolerance)
+        shdSrf = copy.deepcopy(_glzSrf)
+        shdSrf.Transform(rc.Geometry.Transform.Translation(transVec))
         shadingSurfaces.append(shdSrf)
     except: pass
     

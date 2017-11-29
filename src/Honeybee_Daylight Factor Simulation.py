@@ -23,7 +23,7 @@
 """
 Analysis Recipie for Daylight Factor Analysis
 -
-Provided by Honeybee 0.0.61
+Provided by Honeybee 0.0.62
     
     Args:
         _testPoints: Test points
@@ -36,7 +36,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Daylight Factor Simulation"
 ghenv.Component.NickName = 'daylighFactorSimulation'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "03 | Daylight | Recipes"

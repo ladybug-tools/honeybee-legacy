@@ -24,24 +24,25 @@
 Rotate Honeybee Objects
 
 -
-Provided by Honeybee 0.0.61
+Provided by Honeybee 0.0.62
 
     Args:
         _HBObject: Honeybee surface or Honeybee zone
         _angle: Angle of rotation in degrees
         centPt_: Optional rotation point if empty object center point will be used
         axis_: Optional rotation axis as a vector. Default is Z Axis
-        keepAdj_: Set to 'True' to have the component preserve adjacencies with other zones.  If set to 'False' or left blank, the existing adjacencies and boundary conditions will be deleted.
+        _name_: An optional text string that will be appended to the name of the transformed object(s).  If nothing is input here, a default unique name will be generated.
+        keepAdj_: Set to 'False' to remove existing adjacencies and boundary conditions (this is useful if you plan to re-solve adjacencies after this component). If left blank or set to 'True', the component will preserve adjacencies with other zones.
     Returns:
         HBObjs: Transformed objects
 """
 ghenv.Component.Name = "Honeybee_Rotate Honeybee"
 ghenv.Component.NickName = 'rotateHBObj'
-ghenv.Component.Message = 'VER 0.0.61\nAPR_24_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJUL_31_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
-#compatibleHBVersion = VER 0.0.57\nAPR_24_2016
+#compatibleHBVersion = VER 0.0.57\nJUN_15_2017
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "6"
 except: pass
@@ -51,7 +52,7 @@ import uuid
 import Rhino as rc
 import math
 
-def main(HBObj, angle, cenPt, axis, keepAdj=False):
+def main(HBObj, angle, cenPt, axis, name, keepAdj=False):
 
     # import the classes
     if not sc.sticky.has_key('honeybee_release'):
@@ -81,13 +82,16 @@ def main(HBObj, angle, cenPt, axis, keepAdj=False):
     
     if not axis:
         axis = rc.Geometry.Vector3d.ZAxis
-    if keepAdj == False or keepAdj == None:
+    if keepAdj == False:
         clearBC = True
     else:
         clearBC = False
     
     angle = math.radians(angle)
-    newKey = str(uuid.uuid4())[:8]
+    if name == None:
+        newKey = str(uuid.uuid4())[:8]
+    else:
+        newKey = name
     
     for HObj in HBObject:
         if cenPt== None:
@@ -98,9 +102,9 @@ def main(HBObj, angle, cenPt, axis, keepAdj=False):
     HBObj = hb_hive.addToHoneybeeHive(HBObject, ghenv.Component)
 
     return HBObj
-    
-if _HBObj and _angle:
-    result = main(_HBObj, _angle, cenPt_, axis_, keepAdj_)
+
+if _HBObj is not [] and _angle is not None:
+    result = main(_HBObj, _angle, cenPt_, axis_, _name_, keepAdj_)
     
     if result!=-1:
         HBObj = result

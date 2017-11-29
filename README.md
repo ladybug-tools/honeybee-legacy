@@ -27,27 +27,11 @@ Useful links
 ========================================
 [Honeybee group page on Grasshopper](http://www.grasshopper3d.com/group/ladybug)
 
-[Facebook page](https://www.facebook.com/LadybugAnalysisTools)
+[Facebook page](https://www.facebook.com/LadybugTools)
 
 [Honeybee on Twitter](https://www.twitter.com/ladybug_tool)
 
-
-Contributors(a-z):
+[Contributors](https://github.com/mostaphaRoudsari/honeybee/graphs/contributors)
 ========================================
-[Abraham Yezioro](https://github.com/ayezioro)
-
-[Anton Szilasi](https://github.com/antonszilasi)
-
-[Chien Si Harriman](https://github.com/chiensiTB)
-
-[Chris Mackey](https://github.com/chriswmackey)
-
-[Mostapha Roudsari](https://github.com/mostapharoudsari)
-
-[Patrick Chopson](https://github.com/pchopson)
-
-[Sandeep Ahuja](https://github.com/sahuja9)
-
-[Sarith Subramaniam](https://github.com/sariths)
 
 So many thanks to Radiance, Daysim, EnergyPlus and OpenStudio!

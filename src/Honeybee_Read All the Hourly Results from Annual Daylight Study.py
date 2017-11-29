@@ -24,7 +24,7 @@
 Read the results of the annual study for a all the hours of the year for all the points
 
 -
-Provided by Honeybee 0.0.61
+Provided by Honeybee 0.0.62
 
     Args:
         _illFilesAddress: List of .ill files
@@ -39,7 +39,7 @@ Provided by Honeybee 0.0.61
 """
 ghenv.Component.Name = "Honeybee_Read All the Hourly Results from Annual Daylight Study"
 ghenv.Component.NickName = 'readAllTheDSHourlyResults'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.62\nNOV_18_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
@@ -74,12 +74,13 @@ def convertIllFileDaraTreeIntoSortedDictionary(illFilesAddress):
     for branch in range(illFilesAddress.BranchCount):
         # sort files inside each branch if they are not sorted
         fileNames = list(illFilesAddress.Branch(branch))
-        try:
-            fileNames = sorted(fileNames, key=lambda fileName: int(fileName.split(".")[-2].split("_")[-1]))
-        except:
-            tmpmsg = "Can't sort .ill files based on the file names. Make sure the branches are sorted correctly."
-            w = gh.GH_RuntimeMessageLevel.Warning
-            ghenv.Component.AddRuntimeMessage(w, tmpmsg)
+        if illFilesAddress.BranchCount != 1:
+            try:
+                fileNames = sorted(fileNames, key=lambda fileName: int(fileName.split(".")[-2].split("_")[-1]))
+            except:
+                tmpmsg = "Can't sort .ill files based on the file names. Make sure the branches are sorted correctly."
+                w = gh.GH_RuntimeMessageLevel.Warning
+                ghenv.Component.AddRuntimeMessage(w, tmpmsg)
         
         #convert data tree to a useful dictionary
         shadingGroupNumber = illFilesAddress.Path(branch).Indices[0]

@@ -23,14 +23,15 @@
 """
 False Color
 -
-Provided by Honeybee 0.0.61
+Provided by Honeybee 0.0.62
     
     Args:
         _HDRFilePath: Path to an HDR image file
         legendUnit_: Unit of the legend (e.g. lux, cd/m2,...)
         conversionF_: Conversion factor for the results. Default is 179.
         legendMax_: Maximum bound for the legend
-        colorLines_: Set to True ro render the image with colored lines
+        contourLines_: Set to True ro render the image with colored contour lines.
+        contourBands_: Set to True ro render the image with solid-colored contour regions.
         legendPosition_: A number between 0 to 11 to set legend position to the given direction WS|W|WN|NW|N|NE|EN|E|ES|SE|S|SW
         numOfSegments_: An interger representing the number of steps between the high and low boundary of the legend. Default value is set to 10.
         maskThreshold_: Optional number for masking threshold. Pixels with values less than this number will be rendered in black.
@@ -43,7 +44,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_FalseColor"
 ghenv.Component.NickName = 'FalseColor'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"

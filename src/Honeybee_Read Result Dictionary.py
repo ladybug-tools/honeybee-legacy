@@ -23,7 +23,7 @@
 """
 This component parses an .rdd file from an energy simulation to show all possible outputs that could be requested.
 -
-Provided by Honeybee 0.0.61
+Provided by Honeybee 0.0.62
     
     Args:
         _rddFile: The file address of the rdd file that comes out of the "Honeybee_Lookup EnergyPlus Folder" component.
@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Read Result Dictionary"
 ghenv.Component.NickName = 'readRDD'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"

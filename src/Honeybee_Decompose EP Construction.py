@@ -25,7 +25,7 @@
 Decompose EnergyPlus Construction
 
 -
-Provided by Honeybee 0.0.61
+Provided by Honeybee 0.0.62
     
     Args:
         _cnstrName: EnergyPlus construction name
@@ -33,13 +33,15 @@ Provided by Honeybee 0.0.61
     Returns:
         materials: List of materials (from outside to inside)
         comments: Comments for each layer of materials if any
-        UValue_SI: U value of the construction in W/m2.K
-        UValue_IP: U value of the construction in Btu/hft2F
+        UValue_SI: U-value of the construction in W/m2-K.  Note that this U-value does not include the resistance of air films on either side of the construction and this resistance is typically included in U-values used by manufacturers.  Use the "Honeybee_R-Value With Air Films" component to account for these air films.
+        UValue_IP: U-value of the construction in Btu/hft2F.  Note that this U-value does not include the resistance of air films on either side of the construction and this resistance is typically included in U-values used by manufacturers.  Use the "Honeybee_R-Value With Air Films" component to account for these air films.
+        RValue_SI: R-value of the construction in m2-K/W.
+        RValue_IP: R-value of the construction in hft2F/Btu.
 """
 
 ghenv.Component.Name = "Honeybee_Decompose EP Construction"
 ghenv.Component.NickName = 'DecomposeEPConstruction'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"

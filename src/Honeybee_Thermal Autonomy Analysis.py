@@ -32,7 +32,7 @@ Precedents for Thermal Autonomy (TA) as a metric to evaluate the passive operati
 Levitt, B.; Ubbelohde, M.; Loisos, G.; Brown, N.  Thermal Autonomy as Metric and Design Process. Loisos + Ubbelohde, Alameda, California, California College of the Arts, San Francisco. 2013.
 (http://www.coolshadow.com/research/Levitt_Thermal%20Autonomy%20as%20Metric%20and%20Design%20Process.pdf)
 -
-Provided by Honeybee 0.0.61
+Provided by Honeybee 0.0.62
     
     Args:
         _comfResultsMtx: A comfort matrix (adaptive, PMV or Outdoor) output from either the 'Honeybee_Microclimate Map Analysis' component or the 'Honeybee_Read Microclimate Matrix' component.
@@ -64,7 +64,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Thermal Autonomy Analysis"
 ghenv.Component.NickName = 'ThermalAutonomy'
-ghenv.Component.Message = 'VER 0.0.61\nFEB_05_2017'
+ghenv.Component.Message = 'VER 0.0.62\nSEP_15_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -535,7 +535,7 @@ def main(viewFactorMesh, analysisPeriod, totEnergyHeaders, totEnergyNumbers, zon
 
 def writeCSV(comfortType, fileName, directory, occTCP_Mtx, TA_Mtx, OverHeatedMtx, UnderHeatedMtx):
     #Find out the number of values in each hour.
-    valLen = len(occTCP_Mtx[-1])-1
+    valLen = len(occTCP_Mtx[1])-1
     
     #Set up a working directory.
     workingDir = lb_preparation.makeWorkingDir(os.path.join(directory)) 
@@ -549,12 +549,17 @@ def writeCSV(comfortType, fileName, directory, occTCP_Mtx, TA_Mtx, OverHeatedMtx
     #Write the occTCP result file.
     occTCP_Result = os.path.join(workingDir, occTCPFile)
     occTCPCSVfile = open(occTCP_Result, 'wb')
+    
     for lineCount, line in enumerate(occTCP_Mtx):
         lineStr = ''
         if lineCount != 0:
             for valCt, val in enumerate(line):
-                if valCt != valLen: lineStr = lineStr + str(val) + ','
-                else: lineStr = lineStr + str(val) + "\n"
+                if valCt == valLen:
+                    lineStr = lineStr + str(val) + "\n"
+                elif valCt < valLen:
+                    lineStr = lineStr + str(val) + ','
+                else:
+                    pass
             occTCPCSVfile.write(lineStr)
         else: occTCPCSVfile.write(line + "\n")
     occTCPCSVfile.close()
@@ -566,8 +571,12 @@ def writeCSV(comfortType, fileName, directory, occTCP_Mtx, TA_Mtx, OverHeatedMtx
         lineStr = ''
         if lineCount != 0:
             for valCt, val in enumerate(line):
-                if valCt != valLen: lineStr = lineStr + str(val) + ','
-                else: lineStr = lineStr + str(val) + "\n"
+                if valCt == valLen:
+                    lineStr = lineStr + str(val) + "\n"
+                elif valCt < valLen:
+                    lineStr = lineStr + str(val) + ','
+                else:
+                    pass
             TACSVfile.write(lineStr)
         else: TACSVfile.write(line + "\n")
     TACSVfile.close()
@@ -580,8 +589,12 @@ def writeCSV(comfortType, fileName, directory, occTCP_Mtx, TA_Mtx, OverHeatedMtx
             lineStr = ''
             if lineCount != 0:
                 for valCt, val in enumerate(line):
-                    if valCt != valLen: lineStr = lineStr + str(val) + ','
-                    else: lineStr = lineStr + str(val) + "\n"
+                    if valCt == valLen:
+                        lineStr = lineStr + str(val) + "\n"
+                    elif valCt < valLen:
+                        lineStr = lineStr + str(val) + ','
+                    else:
+                        pass
                 OverHeatedCSVfile.write(lineStr)
             else: OverHeatedCSVfile.write(line + "\n")
         OverHeatedCSVfile.close()
@@ -596,8 +609,12 @@ def writeCSV(comfortType, fileName, directory, occTCP_Mtx, TA_Mtx, OverHeatedMtx
             lineStr = ''
             if lineCount != 0:
                 for valCt, val in enumerate(line):
-                    if valCt != valLen: lineStr = lineStr + str(val) + ','
-                    else: lineStr = lineStr + str(val) + "\n"
+                    if valCt == valLen:
+                        lineStr = lineStr + str(val) + "\n"
+                    elif valCt < valLen:
+                        lineStr = lineStr + str(val) + ','
+                    else:
+                        pass
                 UnderHeatedCSVfile.write(lineStr)
             else: UnderHeatedCSVfile.write(line + "\n")
         UnderHeatedCSVfile.close()
