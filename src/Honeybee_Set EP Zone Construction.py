@@ -42,7 +42,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Set EP Zone Construction"
 ghenv.Component.NickName = 'setEPZoneCnstr'
-ghenv.Component.Message = 'VER 0.0.62\nOCT_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nNOV_29_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
@@ -73,7 +73,7 @@ def matchLists(input, length):
         return tuple(input[i] if i < il else input[-1] for i in range(length))
 
 
-def main(HBZones, wallEPCnst, windowEPCnst, roofEPCnst, flrEPCnst, expFlrEpCnst, skylightEPCnst):
+def main(HBZones, exteriorWallEPCnst, wallEPCnst, windowEPCnst, roofEPCnst, flrEPCnst, expFlrEpCnst, skylightEPCnst):
             
     # Make sure Honeybee is flying
     if not sc.sticky.has_key('honeybee_release'):
@@ -102,6 +102,7 @@ def main(HBZones, wallEPCnst, windowEPCnst, roofEPCnst, flrEPCnst, expFlrEpCnst,
     modifiedObjects = []
     l = len(HBZoneObjects)
     try:
+        exteriorWallEPCnst = matchLists(exteriorWallEPCnst, l)
         wallEPCnst = matchLists(wallEPCnst, l)
         windowEPCnst = matchLists(windowEPCnst, l)
         roofEPCnst = matchLists(roofEPCnst, l)
@@ -125,8 +126,10 @@ def main(HBZones, wallEPCnst, windowEPCnst, roofEPCnst, flrEPCnst, expFlrEpCnst,
                 if skylightEPCnst[count]!=None and (srf.type == 1 or srf.type == 1.5) and srf.hasChild:
                     for childSrf in srf.childSrfs:
                         hb_EPObjectsAux.assignEPConstruction(childSrf, skylightEPCnst[count], ghenv.Component)
-                if wallEPCnst[count]!=None and srf.type == 0:
+                if wallEPCnst[count]!=None and srf.type == 0 and srf.BC == "SURFACE":
                     hb_EPObjectsAux.assignEPConstruction(srf, wallEPCnst[count], ghenv.Component)
+                elif exteriorWallEPCnst[count]!=None and srf.type == 0 and srf.BC == "Outdoors":
+                    hb_EPObjectsAux.assignEPConstruction(srf, exteriorWallEPCnst[count], ghenv.Component)
                 elif srf.type == 1 and roofEPCnst[count]!=None:
                     hb_EPObjectsAux.assignEPConstruction(srf, roofEPCnst[count], ghenv.Component)
                 elif (srf.type == 2 or srf.type == 2.25 or srf.type == 2.5) and flrEPCnst[count]!=None:
@@ -142,7 +145,7 @@ def main(HBZones, wallEPCnst, windowEPCnst, roofEPCnst, flrEPCnst, expFlrEpCnst,
     return HBZones
 
 if _HBZones and _HBZones[0] != None:
-    result = main(_HBZones, wallEPConstruction_, windowEPConstruction_, \
+    result = main(_HBZones, exteriorWallEPConstruction_, wallEPConstruction_, windowEPConstruction_, \
         roofEPConstruction_, floorEPConstruction_, expFloorEPConstruction_, \
         skylightEPConstruction_)
     
