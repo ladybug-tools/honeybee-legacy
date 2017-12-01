@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.62\nOCT_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nDEC_01_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -9548,7 +9548,7 @@ if checkIn.letItFly:
         
         
         # Check for an installation of THERM.
-        THERMVersions = ["7.5"]
+        THERMVersions = ["7.5", "7.6"]
         THERMVersion = ''
         THERMSettingsFile = ''
         if folders.THERMPath != None:
