@@ -734,6 +734,10 @@ class HB_GetEPLibraries:
                         self.libraries["ThermMaterial"][matName]["Type"] = int(matPropLine[-1])
                         self.libraries["ThermMaterial"][matName]["Conductivity"] = float(matPropLine[-5])
                         self.libraries["ThermMaterial"][matName]["Absorptivity"] = float(matPropLine[-4])
+                        if self.libraries["ThermMaterial"][matName]["Type"] == 0:
+                            self.libraries["ThermMaterial"][matName]["Tir"] = "0.0"
+                        else:
+                            self.libraries["ThermMaterial"][matName]["Tir"] = "-1.0"
                         self.libraries["ThermMaterial"][matName]["Emissivity"] = float(matPropLine[-3])
                         self.libraries["ThermMaterial"][matName]["WindowDB"] = ""
                         self.libraries["ThermMaterial"][matName]["WindowID"] = "-1"
@@ -7826,6 +7830,9 @@ class thermDefaults(object):
         self.frameCavityBCProperties['EmisModifier'] = "1.000000"
     
     def addThermMatToLib(self, materialString):
+        #Make a sub-dictionary for the material.
+        sc.sticky["honeybee_thermMaterialLib"][materialName] = {}
+        
         #Parse the string.
         materialName = materialString.split('Material Name=')[-1].split(' Type=')[0].upper()
         type = int(materialString.split('Type=')[-1].split(' ')[0])
@@ -7834,12 +7841,11 @@ class thermDefaults(object):
         emissivity = float(materialString.split('Emissivity=')[-1].split(' ')[0])
         try:
             RGBColor = System.Drawing.ColorTranslator.FromHtml(materialString.split('RGBColor=')[-1].split('/>')[0])
+            sc.sticky["honeybee_thermMaterialLib"][materialName]["Tir"] = "0.0"
         except:
             RGBColor = System.Drawing.ColorTranslator.FromHtml(materialString.split('RGBColor=')[-1].split(' ')[0])
             CavityModel = int(materialString.split('CavityModel=')[-1].split('/>')[0])
-        
-        #Make a sub-dictionary for the material.
-        sc.sticky["honeybee_thermMaterialLib"][materialName] = {}
+            sc.sticky["honeybee_thermMaterialLib"][materialName]["Tir"] = "-1.0"
         
         #Create the material with values from the original material.
         sc.sticky["honeybee_thermMaterialLib"][materialName]["Name"] = materialName
@@ -7929,6 +7935,7 @@ class thermPolygon(object):
         sc.sticky["honeybee_thermMaterialLib"][materialName]["Type"] = sc.sticky["honeybee_thermMaterialLib"][orgigMat]["Type"]
         sc.sticky["honeybee_thermMaterialLib"][materialName]["Conductivity"] = sc.sticky["honeybee_thermMaterialLib"][orgigMat]["Conductivity"]
         sc.sticky["honeybee_thermMaterialLib"][materialName]["Absorptivity"] = sc.sticky["honeybee_thermMaterialLib"][orgigMat]["Absorptivity"]
+        sc.sticky["honeybee_thermMaterialLib"][materialName]["Tir"] = sc.sticky["honeybee_thermMaterialLib"][orgigMat]["Tir"]
         sc.sticky["honeybee_thermMaterialLib"][materialName]["Emissivity"] = sc.sticky["honeybee_thermMaterialLib"][orgigMat]["Emissivity"]
         sc.sticky["honeybee_thermMaterialLib"][materialName]["WindowDB"] = sc.sticky["honeybee_thermMaterialLib"][materialName]["WindowDB"]
         sc.sticky["honeybee_thermMaterialLib"][materialName]["WindowID"] = sc.sticky["honeybee_thermMaterialLib"][materialName]["WindowID"]
@@ -7946,6 +7953,7 @@ class thermPolygon(object):
         sc.sticky["honeybee_thermMaterialLib"][material]["Type"] = 0
         sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] = None
         sc.sticky["honeybee_thermMaterialLib"][material]["Absorptivity"] = 0.5
+        sc.sticky["honeybee_thermMaterialLib"][material]["Tir"] = "0.0"
         sc.sticky["honeybee_thermMaterialLib"][material]["Emissivity"] = 0.9
         sc.sticky["honeybee_thermMaterialLib"][material]["WindowDB"] = ""
         sc.sticky["honeybee_thermMaterialLib"][material]["WindowID"] = "-1"
@@ -7972,6 +7980,7 @@ class thermPolygon(object):
             sc.sticky["honeybee_thermMaterialLib"][material]["Type"] = 1
             sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] = 0.435449
             sc.sticky["honeybee_thermMaterialLib"][material]["CavityModel"] = 4
+            sc.sticky["honeybee_thermMaterialLib"][materialName]["Tir"] = "-1.0"
         elif sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] == None:
             #This is a no-mass material and we are not going to be able to figure out a conductivity. The best we can do is give a warning.
             if values[0] == "WindowMaterial:SimpleGlazingSystem": sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] = float(values[2])*0.01
@@ -9548,7 +9557,7 @@ if checkIn.letItFly:
         
         
         # Check for an installation of THERM.
-        THERMVersions = ["7.5", "7.6"]
+        THERMVersions = ["7.5","7.6"]
         THERMVersion = ''
         THERMSettingsFile = ''
         if folders.THERMPath != None:
