@@ -53,10 +53,11 @@ import datetime
 import decimal
 from tempfile import mkstemp
 from shutil import move
+from shutil import copyfile
 
 ghenv.Component.Name = 'Honeybee_Write THERM File'
 ghenv.Component.NickName = 'writeTHERM'
-ghenv.Component.Message = 'VER 0.0.62\nDEC_01_2017'
+ghenv.Component.Message = 'VER 0.0.62\nDEC_04_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -1094,6 +1095,10 @@ def main(runTHERM, workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, 
     except:
         pass
     try:
+        os.remove(resultDataPath)
+    except:
+        pass
+    try:
         os.remove(errorLogFile)
     except:
         pass
@@ -1106,6 +1111,10 @@ def main(runTHERM, workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, 
     if runTHERM:
         # Set THERM to export the results autmatically.
         checkThermSettings(thermSettings)
+        # Make a copy of the original file if we are using the newer version of THERM.
+        if thermVersion != '7.5.1.0':
+            copyfile(xmlFilePath, uFactorFile)
+        
         # Run the THERM simulation.
         errorLog = runTHERMSim(workingDir, xmlFilePath, errorLogFile, batchFileAddress, thermDir, thermSettings, thmFile)
         # Parse the error log and report any issues at the component level.
@@ -1117,9 +1126,18 @@ def main(runTHERM, workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, 
         # If the calculation is successful, re-write the header of the uFactor file to contian all info of the original THMX file.
         if successfulCalc:
             uFactorFile = findUFacFile(uFactorFile)
-            replaceHeader(xmlFilePath, uFactorFile)
+            if thermVersion == '7.5.1.0':
+                replaceHeader(xmlFilePath, uFactorFile)
+            else:
+                replaceHeader(uFactorFile, xmlFilePath)
+                xmlFilePathReal = copy.deepcopy(uFactorFile)
+                uFactorFile = xmlFilePath
+                xmlFilePath = xmlFilePathReal
             # Change the name of the result file so that it matches what happens when someone manually simulates in THERM.
             os.rename(resultDataPath, resultDataPathFinal)
+    elif thermVersion != '7.5.1.0':
+        resultDataPathFinal = resultDataPath
+        uFactorFile = xmlFilePath
     
     return xmlFilePath, uFactorFile, resultDataPathFinal
 
