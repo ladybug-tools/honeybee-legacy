@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.62\nOCT_17_2017'
+ghenv.Component.Message = 'VER 0.0.62\nDEC_04_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -4702,7 +4702,13 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     
     # Open the model in OpenStudio (if requested).
     if openOpenStudio:
-        os.startfile(fname)
+        try:
+            os.startfile(fname)
+        except:
+            try:
+                os.system("start " + fname)
+            except:
+                os.system("OpenStudioApp.exe " + fname)
     
     # Run the file through OpenStudio
     if runIt > 0:
