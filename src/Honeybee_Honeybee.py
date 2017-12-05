@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.62\nDEC_01_2017'
+ghenv.Component.Message = 'VER 0.0.62\nDEC_05_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -7830,11 +7830,13 @@ class thermDefaults(object):
         self.frameCavityBCProperties['EmisModifier'] = "1.000000"
     
     def addThermMatToLib(self, materialString):
+        # Get the name
+        materialName = materialString.split('Material Name=')[-1].split(' Type=')[0].upper()
+        
         #Make a sub-dictionary for the material.
         sc.sticky["honeybee_thermMaterialLib"][materialName] = {}
         
         #Parse the string.
-        materialName = materialString.split('Material Name=')[-1].split(' Type=')[0].upper()
         type = int(materialString.split('Type=')[-1].split(' ')[0])
         conductivity = float(materialString.split('Conductivity=')[-1].split(' ')[0])
         absorptivity = float(materialString.split('Absorptivity=')[-1].split(' ')[0])
