@@ -48,12 +48,12 @@ Provided by Honeybee 0.0.62
         zoneBreps: A list of breps for each zone. This is essentially the same as the _HBZones input. Connecting this output and the following zoneColors to a Grasshopper 'Preview' component will thus allow you to see the zones colored transparently.
         zoneColors: A list of colors that correspond to the colors of each zone.  These colors include alpha values to make them slightly transparent.  Connecting the previous output and this output to a Grasshopper 'Preview' component will thus allow you to see the zones colored transparently.
         zoneValues: The values of the input data that are being used to color the zones.
-        floorNormZoneData: The input data normalized by the floor area of it corresponding zone.
+        relevantZoneData: The input data used to color the zones.
 """
 
 ghenv.Component.Name = "Honeybee_Color Zones by EP Result"
 ghenv.Component.NickName = 'ColorZones'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nDEC_06_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -96,7 +96,7 @@ outputsDict = {
 6: ["zoneBreps", "A list of breps for each zone. This is essentially the same as the _HBZones input. Connecting this output and the following zoneColors to a Grasshopper 'Preview' component will thus allow you to see the zones colored transparently."],
 7: ["zoneColors", "A list of colors that correspond to the colors of each zone.  These colors include alpha values to make them slightly transparent.  Connecting the previous output and this output to a Grasshopper 'Preview' component will thus allow you to see the zones colored transparently."],
 8: ["zoneValues", "The values of the input data that are being used to color the zones."],
-9: ["floorNormZoneData", "The input data normalized by the floor area of it corresponding zone."]
+9: ["relevantZoneData", "The input data used to color the zones."]
 }
 
 
@@ -293,16 +293,6 @@ def manageInputOutput(annualData, simStep, zoneNormalizable, zoneHeaders, pyZone
             ghenv.Component.Params.Input[input].NickName = inputsDict[input][0]
             ghenv.Component.Params.Input[input].Name = inputsDict[input][0]
             ghenv.Component.Params.Input[input].Description = inputsDict[input][1]
-    
-    for output in range(10):
-        if output == 9 and zoneNormalizable == False:
-            ghenv.Component.Params.Output[output].NickName = "."
-            ghenv.Component.Params.Output[output].Name = "."
-            ghenv.Component.Params.Output[output].Description = " "
-        else:
-            ghenv.Component.Params.Output[output].NickName = outputsDict[output][0]
-            ghenv.Component.Params.Output[output].Name = outputsDict[output][0]
-            ghenv.Component.Params.Output[output].Description = outputsDict[output][1]
     
     if zoneNormalizable == False: normByFlr = False
     else: normByFlr = normalizeByFloorArea_
@@ -566,7 +556,7 @@ def getData(pyZoneData, zoneFlrAreas, annualData, simStep, zoneNormalizable, zon
             for listCount, list in enumerate(normedZoneData):
                 floorNormData.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(listCount))
                 floorNormData.Add(str(zoneHeaders[listCount][1]), GH_Path(listCount))
-                floorNormData.Add("Floor Normalized " + str(zoneHeaders[listCount][1]), GH_Path(listCount))
+                floorNormData.Add("Floor Normalized " + str(zoneHeaders[listCount][2]), GH_Path(listCount))
                 floorNormData.Add(headerUnits + "/"+ str(sc.doc.ModelUnitSystem) + "2", GH_Path(listCount))
                 floorNormData.Add(str(zoneHeaders[listCount][4]), GH_Path(listCount))
                 floorNormData.Add(str(zoneHeaders[listCount][5]), GH_Path(listCount))
@@ -574,7 +564,17 @@ def getData(pyZoneData, zoneFlrAreas, annualData, simStep, zoneNormalizable, zon
                 for num in list:
                     floorNormData.Add((num), GH_Path(listCount))
         else:
-            floorNormData = normedZoneData
+            floorNormData = DataTree[Object]()
+            for listCount, list in enumerate(pyZoneData):
+                floorNormData.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(listCount))
+                floorNormData.Add(str(zoneHeaders[listCount][1]), GH_Path(listCount))
+                floorNormData.Add(str(zoneHeaders[listCount][2]), GH_Path(listCount))
+                floorNormData.Add(headerUnits)
+                floorNormData.Add(str(zoneHeaders[listCount][4]), GH_Path(listCount))
+                floorNormData.Add(str(zoneHeaders[listCount][5]), GH_Path(listCount))
+                floorNormData.Add(str(zoneHeaders[listCount][6]), GH_Path(listCount))
+                for num in list:
+                    floorNormData.Add((num), GH_Path(listCount))
         
         #Return all of the data
         return dataForColoring, floorNormData, coloredTitle, coloredUnits, lb_preparation, lb_visualization
@@ -705,7 +705,7 @@ if _runIt == True and checkData == True and _HBZones != []:
     hb_zoneData = sc.sticky["Honeybee_ZoneData"]
     
     zoneNames, zoneFlrAreas, zoneFloors, pyZoneData, zoneHeaders, newZoneBreps = checkZones(zoneHeaders, pyZoneData, hb_zoneData)
-    zoneValues, floorNormZoneData, title, legendTitle, lb_preparation, lb_visualization = getData(pyZoneData, zoneFlrAreas, annualData, simStep, zoneNormalizable, zoneHeaders, headerUnits, normByFlr, analysisPeriod, stepOfSimulation, total)
+    zoneValues, relevantZoneData, title, legendTitle, lb_preparation, lb_visualization = getData(pyZoneData, zoneFlrAreas, annualData, simStep, zoneNormalizable, zoneHeaders, headerUnits, normByFlr, analysisPeriod, stepOfSimulation, total)
 
 #Color the zones with the data and get all of the other cool stuff that this component does.
 if _runIt == True and checkData == True and _HBZones != [] and zoneValues != []:
