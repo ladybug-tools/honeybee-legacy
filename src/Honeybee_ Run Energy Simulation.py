@@ -62,7 +62,7 @@ Provided by Honeybee 0.0.62
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.62\nOCT_11_2017'
+ghenv.Component.Message = 'VER 0.0.62\nDEC_11_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -2343,6 +2343,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     resultFileFullName = None
     performanceSummaryReport= None;
     studyFolder = None
+    eioFileFullName = None
     if runEnergyPlus:
         print "Analysis is running!..."
         # write the batch file
