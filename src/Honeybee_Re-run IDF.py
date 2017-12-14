@@ -38,7 +38,7 @@ Provided by Ladybug 0.0.45
 
 ghenv.Component.Name = "Honeybee_Re-run IDF"
 ghenv.Component.NickName = 'Re-Run IDF'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nDEC_10_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -109,6 +109,8 @@ def checkTheInputs(idfFileName, epwWeatherFile):
 def writeBatchFile(workingDir, idfFilePath, epwFileAddress, EPDirectory):
     idfFileName = idfFilePath.split('\\')[-1]
     newIDFPath = "\\".join(idfFilePath.split('\\')[:-2])
+    if not newIDFPath.endswith('\\'):
+        newIDFPath = newIDFPath + '\\'
     newIDFPath = newIDFPath + idfFileName
     shutil.copy(idfFilePath, newIDFPath)
     
