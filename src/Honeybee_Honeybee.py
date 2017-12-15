@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.62\nDEC_05_2017'
+ghenv.Component.Message = 'VER 0.0.62\nDEC_15_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -6532,11 +6532,17 @@ class hb_EPSurface(object):
         # move center point and normal
         self.cenPt.Transform(transform)
         self.normalVector.Transform(transform)
+        
         # move plane
         self.basePlane.Transform(transform)
         
         if flip:
             self.normalVector.Reverse()
+        
+        try:
+            self.getAngle2North()
+        except:
+            pass
         
         if clearBC:
             self.setBC("Outdoors", False)
