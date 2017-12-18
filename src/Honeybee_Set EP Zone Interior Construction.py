@@ -40,11 +40,11 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Set EP Zone Interior Construction"
 ghenv.Component.NickName = 'setEPZoneIntCnstr'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nDEC_15_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
-#compatibleHBVersion = VER 0.0.56\nNOV_04_2016
+#compatibleHBVersion = VER 0.0.56\nDEC_15_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
@@ -65,7 +65,7 @@ def updateZoneMixing(surface1, zone1, zone2):
     
     #Calculate a rough flow rate of air based on the cross-sectional area of the surface between them.
     flowFactor = zone1.mixAirFlowRate
-    flowRate = (rc.Geometry.AreaMassProperties.Compute(surface1.geometry).Area)*flowFactor
+    flowRate = (rc.Geometry.AreaMassProperties.Compute(surface1.geometry).Area)*sc.sticky["honeybee_ConversionFactor"]*sc.sticky["honeybee_ConversionFactor"]*flowFactor
     
     #Append the flow rate of mixing to the mixAirFlowList
     zone1.mixAirFlowList.append(flowRate)

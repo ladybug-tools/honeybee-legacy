@@ -84,11 +84,11 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Window Shade Generator"
 ghenv.Component.NickName = 'EPWindowShades'
-ghenv.Component.Message = 'VER 0.0.62\nAUG_17_2017'
+ghenv.Component.Message = 'VER 0.0.62\nDEC_15_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nNOV_04_2016
+#compatibleHBVersion = VER 0.0.56\nDEC_15_2017
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
 except: pass
@@ -881,7 +881,7 @@ def makeBlind(_glzSrf, depth, numShds, distBtwn):
     
     #Get the EnergyPlus distance to glass.
     assignEPCheckInit = True
-    EPDistToGlass = distToGlass + (depth)*(0.5)*math.sin(math.radians(EPshdAngle))
+    EPDistToGlass = (distToGlass + (depth)*(0.5)*math.sin(math.radians(EPshdAngle))) * sc.sticky["honeybee_ConversionFactor"]
   
     if EPDistToGlass < (depth)*(0.5): EPDistToGlass = (depth)*(0.5)
     if EPDistToGlass < 0.01: EPDistToGlass = 0.01
@@ -891,17 +891,17 @@ def makeBlind(_glzSrf, depth, numShds, distBtwn):
         print warning
     
     #Check the depth and the shadingHeight to see if E+ will crash.
-    if depth > 1:
+    if depth*sc.sticky["honeybee_ConversionFactor"] > 1:
         assignEPCheckInit = False
         warning = "NHBObjWShades will not be generated.  shadeBreps will still be produced and you can account for these shades using a 'Honeybee_EP Context Surfaces' component."
         print warning
-    if shadingHeight > 1:
+    if shadingHeight*sc.sticky["honeybee_ConversionFactor"] > 1:
         assignEPCheckInit = False
         warning = "HBObjWShades will not be generated.  shadeBreps will still be produced and you can account for these shades using a 'Honeybee_EP Context Surfaces' component."
         print warning
     
     
-    return shadingSurfaces, EPSlatOrient, depth, shadingHeight, EPshdAngle, EPDistToGlass, EPinteriorOrExter, assignEPCheckInit
+    return shadingSurfaces, EPSlatOrient, depth*sc.sticky["honeybee_ConversionFactor"], shadingHeight*sc.sticky["honeybee_ConversionFactor"], EPshdAngle, EPDistToGlass, EPinteriorOrExter, assignEPCheckInit
 
 def makeShade(_glzSrf):
     rotationAngle_ = 0
@@ -961,9 +961,9 @@ def makeShade(_glzSrf):
     
     #Get the EnergyPlus distance to glass.
     assignEPCheckInit = True
-    if distToGlass < 0 : EPDistToGlass = -distToGlass
+    if distToGlass < 0 : EPDistToGlass = -distToGlass*sc.sticky["honeybee_ConversionFactor"]
     else: EPDistToGlass = distToGlass
-    if EPDistToGlass < 0.01: EPDistToGlass = 0.01
+    if EPDistToGlass < 0.01: EPDistToGlass = 0.01*sc.sticky["honeybee_ConversionFactor"]
     elif EPDistToGlass > 1:
         assignEPCheckInit = False
         warning = "The input distToGlass_ value is so large that it will cause EnergyPlus to crash."

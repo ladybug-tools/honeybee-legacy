@@ -58,11 +58,11 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.62\nNOV_21_2017'
+ghenv.Component.Message = 'VER 0.0.62\nDEC_15_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nJUL_24_2017
+#compatibleHBVersion = VER 0.0.56\nDEC_15_2017
 #compatibleLBVersion = VER 0.0.59\nJUN_25_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "6"
 except: pass
@@ -1206,7 +1206,7 @@ def checkViewResolution(viewResolution, lb_preparation):
     for patch in skyPatches:
         patchAreaProps = rc.Geometry.AreaMassProperties.Compute(patch)
         patchPt = patchAreaProps.Centroid
-        patchAreaNorm = patchAreaProps.Area/normPatchArea
+        patchAreaNorm = (patchAreaProps.Area*sc.sticky["honeybee_ConversionFactor"]*sc.sticky["honeybee_ConversionFactor"])/normPatchArea
         Vec = rc.Geometry.Vector3d(patchPt.X, patchPt.Y, patchPt.Z)
         revVec = rc.Geometry.Vector3d(-patchPt.X, -patchPt.Y, -patchPt.Z)
         skyViewVecs.append(Vec)

@@ -53,11 +53,11 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Color Zones by EP Result"
 ghenv.Component.NickName = 'ColorZones'
-ghenv.Component.Message = 'VER 0.0.62\nDEC_06_2017'
+ghenv.Component.Message = 'VER 0.0.62\nDEC_15_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nFEB_21_2016
+#compatibleHBVersion = VER 0.0.56\nDEC_15_2016
 #compatibleLBVersion = VER 0.0.59\nNOV_20_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
 except: pass
@@ -266,7 +266,7 @@ def checkZones(zoneHeaders, pyZoneData, hb_zoneData):
         for count, name in enumerate(zoneNames):
             if zoneName == name.upper():
                 newZoneFloors.append(zoneFloors[count])
-                try: zoneFlrAreas.append(rc.Geometry.AreaMassProperties.Compute(zoneFloors[count]).Area)
+                try: zoneFlrAreas.append(rc.Geometry.AreaMassProperties.Compute(zoneFloors[count]).Area*sc.sticky["honeybee_ConversionFactor"]*sc.sticky["honeybee_ConversionFactor"])
                 except: zoneFlrAreas.append(None)
                 newZoneBreps.append(zoneBreps[count])
                 newZoneHeaders.append(zoneHeaders[listCount])
@@ -703,7 +703,6 @@ if checkData == True and normByFlr == None: normByFlr = True
 if _runIt == True and checkData == True and _HBZones != []:
     copyHBZoneData()
     hb_zoneData = sc.sticky["Honeybee_ZoneData"]
-    
     zoneNames, zoneFlrAreas, zoneFloors, pyZoneData, zoneHeaders, newZoneBreps = checkZones(zoneHeaders, pyZoneData, hb_zoneData)
     zoneValues, relevantZoneData, title, legendTitle, lb_preparation, lb_visualization = getData(pyZoneData, zoneFlrAreas, annualData, simStep, zoneNormalizable, zoneHeaders, headerUnits, normByFlr, analysisPeriod, stepOfSimulation, total)
 

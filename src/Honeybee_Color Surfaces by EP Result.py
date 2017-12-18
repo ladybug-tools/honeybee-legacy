@@ -53,11 +53,11 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Color Surfaces by EP Result"
 ghenv.Component.NickName = 'ColorSurfaces'
-ghenv.Component.Message = 'VER 0.0.62\nDEC_06_2017'
+ghenv.Component.Message = 'VER 0.0.62\nDEC_15_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nFEB_21_2016
+#compatibleHBVersion = VER 0.0.56\nDEC_15_2017
 #compatibleLBVersion = VER 0.0.59\nNOV_20_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
 except: pass
@@ -252,30 +252,30 @@ def getZoneSrfs(srfHeaders, pyZoneData, hb_zoneData):
         for count, name in enumerate(surfaceNames):
             if srfName == name.upper():
                 finalSrfBreps.append(srfBreps[count])
-                finalSrfAreas.append(rc.Geometry.AreaMassProperties.Compute(srfBreps[count]).Area)
+                finalSrfAreas.append(rc.Geometry.AreaMassProperties.Compute(srfBreps[count]).Area*sc.sticky["honeybee_ConversionFactor"]*sc.sticky["honeybee_ConversionFactor"])
                 newPyZoneData.append(pyZoneData[listCount])
                 newSrfHeaders.append(srfHeaders[listCount])
             elif name.upper() in srfName and "GLZ" in name.upper():
                 if srfName == name.upper() + "_0":
                     finalSrfBreps.append(srfBreps[count])
-                    finalSrfAreas.append(rc.Geometry.AreaMassProperties.Compute(srfBreps[count]).Area)
+                    finalSrfAreas.append(rc.Geometry.AreaMassProperties.Compute(srfBreps[count]).Area*sc.sticky["honeybee_ConversionFactor"]*sc.sticky["honeybee_ConversionFactor"])
                     newPyZoneData.append(pyZoneData[listCount])
                     newSrfHeaders.append(srfHeaders[listCount])
                 elif srfName == name.upper() + "_1":
                     finalSrfBreps.append(srfBreps[count])
-                    finalSrfAreas.append(rc.Geometry.AreaMassProperties.Compute(srfBreps[count]).Area)
+                    finalSrfAreas.append(rc.Geometry.AreaMassProperties.Compute(srfBreps[count]).Area*sc.sticky["honeybee_ConversionFactor"]*sc.sticky["honeybee_ConversionFactor"])
                     newPyZoneData.append(pyZoneData[listCount])
                     newSrfHeaders.append(srfHeaders[listCount])
             elif srfName.split('_')[0] in name.upper() and "GLZ" in name.upper():
                 try:
                     if srfName == name.upper().split('_')[-2] + "_GLZ_0":
                         finalSrfBreps.append(srfBreps[count])
-                        finalSrfAreas.append(rc.Geometry.AreaMassProperties.Compute(srfBreps[count]).Area)
+                        finalSrfAreas.append(rc.Geometry.AreaMassProperties.Compute(srfBreps[count]).Area*sc.sticky["honeybee_ConversionFactor"]*sc.sticky["honeybee_ConversionFactor"])
                         newPyZoneData.append(pyZoneData[listCount])
                         newSrfHeaders.append(srfHeaders[listCount])
                     elif srfName == name.upper().split('_')[-2] + "_GLZ_1":
                         finalSrfBreps.append(srfBreps[count])
-                        finalSrfAreas.append(rc.Geometry.AreaMassProperties.Compute(srfBreps[count]).Area)
+                        finalSrfAreas.append(rc.Geometry.AreaMassProperties.Compute(srfBreps[count]).Area*sc.sticky["honeybee_ConversionFactor"]*sc.sticky["honeybee_ConversionFactor"])
                         newPyZoneData.append(pyZoneData[listCount])
                         newSrfHeaders.append(srfHeaders[listCount])
                 except: pass

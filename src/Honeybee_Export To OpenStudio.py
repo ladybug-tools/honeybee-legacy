@@ -71,11 +71,11 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.62\nDEC_04_2017'
+ghenv.Component.Message = 'VER 0.0.62\nDEC_15_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nJUL_18_2017
+#compatibleHBVersion = VER 0.0.56\nDEC_15_2017
 #compatibleLBVersion = VER 0.0.59\nJUL_24_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
@@ -1823,7 +1823,7 @@ class WriteOPS(object):
              heatcoil.setAvailabilitySchedule(heatAvailSch)
     
     def getZoneTotalAir(self, hbZone):
-        zoneFlrArea = hbZone.getFloorArea()
+        zoneFlrArea = hbZone.getFloorArea(True)
         totalZoneFlow = (hbZone.recirculatedAirPerArea*zoneFlrArea) +  (hbZone.ventilationPerArea*zoneFlrArea) + (hbZone.ventilationPerPerson*hbZone.numOfPeoplePerArea*zoneFlrArea)
         return totalZoneFlow
     
@@ -3152,7 +3152,7 @@ class WriteOPS(object):
             if zone.numOfPeoplePerArea not in self.peopleList.keys():
                 peopleDefinition = ops.PeopleDefinition(model)
                 peopleDefinition.setName(zone.name + "_PeopleDefinition")
-                flrArea = zone.getFloorArea()
+                flrArea = zone.getFloorArea(True)
                 peopleDefinition.setNumberOfPeopleCalculationMethod("People/Area", flrArea)
                 peopleDefinition.setPeopleperSpaceFloorArea(zone.numOfPeoplePerArea)
                 self.peopleList[zone.numOfPeoplePerArea] = peopleDefinition
@@ -3193,7 +3193,7 @@ class WriteOPS(object):
         if zone.lightingDensityPerArea not in self.lightingList.keys():
             lightsDefinition = ops.LightsDefinition(model)
             lightsDefinition.setName(zone.name + "_LightsDefinition")
-            flrArea = zone.getFloorArea()
+            flrArea = zone.getFloorArea(True)
             lightsDefinition.setDesignLevelCalculationMethod("Watts/Area", flrArea, space.numberOfPeople())
             lightsDefinition.setWattsperSpaceFloorArea(float(zone.lightingDensityPerArea))
             self.lightingList[zone.lightingDensityPerArea] = lightsDefinition
@@ -3210,7 +3210,7 @@ class WriteOPS(object):
             if zone.equipmentLoadPerArea not in self.equipList.keys():
                 electricDefinition = ops.ElectricEquipmentDefinition(model)
                 electricDefinition.setName(zone.name + "_ElectricEquipmentDefinition")
-                flrArea = zone.getFloorArea()
+                flrArea = zone.getFloorArea(True)
                 electricDefinition.setDesignLevelCalculationMethod("Watts/Area", flrArea, space.numberOfPeople())
                 electricDefinition.setWattsperSpaceFloorArea(zone.equipmentLoadPerArea)
                 self.equipList[zone.equipmentLoadPerArea] = electricDefinition
@@ -4427,10 +4427,10 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         return -1
     
     units = sc.doc.ModelUnitSystem
-    if `units` != 'Rhino.UnitSystem.Meters':
-        msg = "Currently the OpenStudio component only works in meters. Change the units to Meters and try again!"
-        ghenv.Component.AddRuntimeMessage(w, msg)
-        return -1
+    #if `units` != 'Rhino.UnitSystem.Meters':
+    #    msg = "Currently the OpenStudio component only works in meters. Change the units to Meters and try again!"
+    #    ghenv.Component.AddRuntimeMessage(w, msg)
+    #    return -1
     
     # version check
     try:
@@ -4684,6 +4684,10 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     # add shading surfaces if any
     if HBContext!=[] and HBContext[0]!=None:
         shdingSurfcaes = hb_hive.callFromHoneybeeHive(HBContext)
+        if sc.sticky["honeybee_ConversionFactor"] != 1:
+            NUscale = rc.Geometry.Transform.Scale(rc.Geometry.Plane(rc.Geometry.Plane.WorldXY),sc.sticky["honeybee_ConversionFactor"],sc.sticky["honeybee_ConversionFactor"],sc.sticky["honeybee_ConversionFactor"])
+            for con in shdingSurfcaes:
+                con.transform(NUscale, "", False)
         hb_writeOPS.OPSShdSurface(shdingSurfcaes, model)
     
     # Get the objects in the file that we need to replace or add because OpenStudio does not support them.

@@ -69,11 +69,11 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Set EP Air Flow"
 ghenv.Component.NickName = 'setEPNatVent'
-ghenv.Component.Message = 'VER 0.0.62\nDEC_11_2017'
+ghenv.Component.Message = 'VER 0.0.62\nDEC_15_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
-#compatibleHBVersion = VER 0.0.56\nAPR_25_2017
+#compatibleHBVersion = VER 0.0.56\nDEC_15_2017
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
@@ -483,7 +483,7 @@ def main(HBZones, natVentMethod, interZoneFlow, interZoneFlowSched, minIndoorTem
                     for windowsList in windows:
                         glazedArea = 0.0
                         for srf in windowsList:
-                            glazedArea = glazedArea + rc.Geometry.AreaMassProperties.Compute(srf).Area
+                            glazedArea = glazedArea + (rc.Geometry.AreaMassProperties.Compute(srf).Area*sc.sticky["honeybee_ConversionFactor"]*sc.sticky["honeybee_ConversionFactor"])
                         glazedAreas.append(glazedArea)
                     
                     #Calculate the height difference of the glazing across the surface.
