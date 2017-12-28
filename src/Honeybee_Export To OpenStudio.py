@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.62\nDEC_15_2017'
+ghenv.Component.Message = 'VER 0.0.62\nDEC_28_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -4416,6 +4416,22 @@ class RunOPS(object):
         p = subprocess.Popen(["cmd /c ", batchFileAddress], shell=shellKey, stdout=subprocess.PIPE, stderr=subprocess.PIPE)		
         out, err = p.communicate()
 
+def checkUnits():
+    units = sc.doc.ModelUnitSystem
+    if `units` == 'Rhino.UnitSystem.Meters': conversionFactor = 1.00
+    elif `units` == 'Rhino.UnitSystem.Centimeters': conversionFactor = 0.01
+    elif `units` == 'Rhino.UnitSystem.Millimeters': conversionFactor = 0.001
+    elif `units` == 'Rhino.UnitSystem.Feet': conversionFactor = 0.305
+    elif `units` == 'Rhino.UnitSystem.Inches': conversionFactor = 0.0254
+    else:
+        print 'Kidding me! Which units are you using?'+ `units`+'?'
+        print 'Please use Meters, Centimeters, Millimeters, Inches or Feet'
+        return
+    print 'Current document units is in', sc.doc.ModelUnitSystem
+    print 'Conversion to Meters will be applied = ' + "%.3f"%conversionFactor
+    
+    return conversionFactor
+
 
 def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameters, simulationOutputs, runIt, openOpenStudio, workingDir = "C:\ladybug", fileName = "openStudioModel.osm"):
     # check the release
@@ -4426,11 +4442,13 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         ghenv.Component.AddRuntimeMessage(w, "You should first let both Ladybug and Honeybee to fly...")
         return -1
     
-    units = sc.doc.ModelUnitSystem
-    #if `units` != 'Rhino.UnitSystem.Meters':
-    #    msg = "Currently the OpenStudio component only works in meters. Change the units to Meters and try again!"
-    #    ghenv.Component.AddRuntimeMessage(w, msg)
-    #    return -1
+    # Units check with HB_HB.
+    convFac = sc.sticky["honeybee_ConversionFactor"]
+    convCheck = checkUnits()
+    if convFac != convCheck:
+        msg = "There is a mismatch between the current units system and that read by HB_HB. Recompute the grasshopper canvass!"
+        ghenv.Component.AddRuntimeMessage(w, msg)
+        return -1
     
     # version check
     try:
