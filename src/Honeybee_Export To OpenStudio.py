@@ -149,12 +149,18 @@ class WriteOPS(object):
         self.internalMassList = {}
         self.shdCntrlList = {}
         self.frameObjList = {}
-        self.bldgTypes = {}
         self.levels = {}
         self.HVACSystemDict = {}
         self.adjacentSurfacesDict = {}
         self.adjacentFenSrfsDict = {}
         self.thermalZonesDict = {}
+        self.spaceTypeDict = {}
+        
+        self.infiltList = []
+        self.schSetList = []
+        self.pplList = []
+        self.lightList = []
+        self.eqList = []
         
         self.csvSchedules = []
         self.csvScheduleCount = 0
@@ -2957,29 +2963,42 @@ class WriteOPS(object):
         OSThermalZone.setPrimaryDaylightingControl(zoneDayLCntrl)
         OSThermalZone.setFractionofZoneControlledbyPrimaryDaylightingControl(HBZone.daylightCntrlFract)
     
+    def getSpaceType(self, zone, space, model):
+        # Create a unique string that contains all unique space info.
+        loadsIDstr = str(zone.equipmentLoadPerArea) + str(zone.infiltrationRatePerArea) + str(zone.lightingDensityPerArea) + \
+            str(zone.numOfPeoplePerArea) + str(zone.ventilationPerPerson)
+        schIDstr = zone.occupancySchedule + zone.occupancyActivitySch + zone.lightingSchedule + \
+            zone.equipmentSchedule + zone.infiltrationSchedule
+        spaceIDstr = loadsIDstr + schIDstr
+        
+        # Create a new space type if there is nothing in the library with all of the right properties.
+        if spaceIDstr not in self.spaceTypeDict.keys():
+            spaceTypeName = ":".join([zone.bldgProgram, zone.zoneProgram, zone.name])
+            spaceType = ops.SpaceType(model)
+            spaceType.setName(spaceTypeName)
+            self.spaceTypeDict[spaceIDstr] = spaceType
+        else:
+            spaceType = self.spaceTypeDict[spaceIDstr]
+        
+        return spaceType
+    
     def setupNameAndType(self, zone, space, model):
         space.setName('{}_space'.format(zone.name))
         
-        # assign space type
-        spaceTypeName = ":".join([zone.bldgProgram, zone.zoneProgram])
-        
-        if not spaceTypeName in self.bldgTypes.keys():
-            spaceType = ops.SpaceType(model)
-            spaceType.setName(spaceTypeName)
-            self.bldgTypes[spaceTypeName] = spaceType
-        else:
-            spaceType = self.bldgTypes[spaceTypeName]
-        
+        spaceType = self.getSpaceType(zone, space, model)
         space.setSpaceType(spaceType)
         
         return space
     
     def setInfiltration(self, zone, space, model):
-        # infiltration
-        infiltration = ops.SpaceInfiltrationDesignFlowRate(model)
-        infiltration.setFlowperSpaceFloorArea(zone.infiltrationRatePerArea)
-        infiltration.setSchedule(self.getOSSchedule(zone.infiltrationSchedule, model))
-        infiltration.setSpace(space)
+        spaceType = space.spaceType.get()
+        spaceName = str(spaceType.name())
+        if spaceName not in self.infiltList:
+            infiltration = ops.SpaceInfiltrationDesignFlowRate(model)
+            infiltration.setFlowperSpaceFloorArea(zone.infiltrationRatePerArea)
+            infiltration.setSchedule(self.getOSSchedule(zone.infiltrationSchedule, model))
+            infiltration.setSpaceType(spaceType)
+            self.infiltList.append(spaceName)
     
     def setAirMixing(self, zone, model):
         # air mixing from air walls
@@ -3028,7 +3047,12 @@ class WriteOPS(object):
         else:
             defSchedule = self.scheduleSetList[defSchStr]
         
-        space.setDefaultScheduleSet(defSchedule)
+        spaceType = space.spaceType.get()
+        spaceName = str(spaceType.name())
+        if spaceName not in self.schSetList:
+            spaceType.setDefaultScheduleSet(defSchedule)
+            self.schSetList.append(spaceName)
+        
         return space
     
     def findDominantConstr(self, lst):
@@ -3160,12 +3184,16 @@ class WriteOPS(object):
                 peopleDefinition = self.peopleList[zone.numOfPeoplePerArea]
             
             # This was so confusing to find people and people definition as two different objects
-            people = ops.People(peopleDefinition)
-            people.setName(zone.name + "_PeopleObject")
-            people.setActivityLevelSchedule(self.getOSSchedule(zone.occupancyActivitySch, model))
-            people.setNumberofPeopleSchedule(self.getOSSchedule(zone.occupancySchedule, model))
-            #people.setPeopleDefinition(peopleDefinition)
-            people.setSpace(space)
+            spaceType = space.spaceType.get()
+            spaceName = str(spaceType.name())
+            if spaceName not in self.pplList:
+                people = ops.People(peopleDefinition)
+                people.setName(spaceName + "_PeopleObject")
+                people.setActivityLevelSchedule(self.getOSSchedule(zone.occupancyActivitySch, model))
+                people.setNumberofPeopleSchedule(self.getOSSchedule(zone.occupancySchedule, model))
+                people.setPeopleDefinition(peopleDefinition)
+                people.setSpaceType(spaceType)
+                self.pplList.append(spaceName)
      
     def setInternalMassDefinition(self, zone, space, model):
         for srfNum,srfArea in enumerate(zone.internalMassSrfAreas):
@@ -3200,10 +3228,14 @@ class WriteOPS(object):
         else:
             lightsDefinition = self.lightingList[zone.lightingDensityPerArea]
         
-        lights = ops.Lights(lightsDefinition)
-        lights.setName(zone.name + "_LightsObject")
-        lights.setSchedule(self.getOSSchedule(zone.lightingSchedule, model))
-        lights.setSpace(space)
+        spaceType = space.spaceType.get()
+        spaceName = str(spaceType.name())
+        if spaceName not in self.lightList:
+            lights = ops.Lights(lightsDefinition)
+            lights.setName(spaceName + "_LightsObject")
+            lights.setSchedule(self.getOSSchedule(zone.lightingSchedule, model))
+            lights.setSpaceType(spaceType)
+            self.lightList.append(spaceName)
     
     def setEquipmentDefinition(self, zone, space, model):
         if zone.equipmentLoadPerArea != 0:
@@ -3217,11 +3249,15 @@ class WriteOPS(object):
             else:
                 electricDefinition = self.equipList[zone.equipmentLoadPerArea]
             
-            electricEqipment = ops.ElectricEquipment(electricDefinition)
-            electricEqipment.setName(zone.name + "_ElectricEquipmentObject")
-            electricEqipment.setSchedule(self.getOSSchedule(zone.equipmentSchedule, model))
-            electricEqipment.setEndUseSubcategory('ElectricEquipment')
-            electricEqipment.setSpace(space)
+            spaceType = space.spaceType.get()
+            spaceName = str(spaceType.name())
+            if spaceName not in self.eqList:
+                electricEqipment = ops.ElectricEquipment(electricDefinition)
+                electricEqipment.setName(zone.name + "_ElectricEquipmentObject")
+                electricEqipment.setSchedule(self.getOSSchedule(zone.equipmentSchedule, model))
+                electricEqipment.setEndUseSubcategory('ElectricEquipment')
+                electricEqipment.setSpaceType(spaceType)
+                self.eqList.append(spaceName)
         
     def setDesignSpecificationOutdoorAir(self, zone, space, model):
         if zone.outdoorAirReq != 'None':
@@ -3238,7 +3274,10 @@ class WriteOPS(object):
             else:
                 ventilation = self.ventList[str(zone.ventilationPerArea)+str(zone.ventilationPerPerson)+str(zone.ventilationSched)]
             
-            space.setDesignSpecificationOutdoorAir(ventilation)
+            spaceType = space.spaceType.get()
+            if spaceType.isDesignSpecificationOutdoorAirDefaulted() == True:
+                spaceType.setDesignSpecificationOutdoorAir(ventilation)
+            
         return space
     
     def createOSStanadardOpaqueMaterial(self, HBMaterialName, values, model):
