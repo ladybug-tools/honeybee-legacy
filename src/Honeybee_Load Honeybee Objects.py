@@ -42,7 +42,7 @@ ghenv.Component.Message = 'VER 0.0.62\nDEC_29_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
-#compatibleHBVersion = VER 0.0.59\nJUL_24_2017
+#compatibleHBVersion = VER 0.0.59\nDEC_15_2017
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "6"
 except: pass

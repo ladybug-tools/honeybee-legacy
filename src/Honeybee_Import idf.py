@@ -16,7 +16,7 @@ ghenv.Component.Message = 'VER 0.0.62\nDEC_29_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"
-#compatibleHBVersion = VER 0.0.56\nDEC_15_2016
+#compatibleHBVersion = VER 0.0.56\nDEC_15_2017
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
