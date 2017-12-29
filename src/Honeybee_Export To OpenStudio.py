@@ -2894,24 +2894,7 @@ class WriteOPS(object):
         heatingSetPtSchedule = self.getOSSchedule(HBZone.heatingSetPtSchedule, model)
         coolingSetPtSchedule = self.getOSSchedule(HBZone.coolingSetPtSchedule, model)
         
-        if HBZone.heatingSetPt != "":
-            heatingSch = ops.ScheduleRuleset(model)
-            heatingSch.setName("Heating Sch")
-            defaultDaySchedule = heatingSch.defaultDaySchedule()
-            defaultDaySchedule.setName("Heating Sch Default")
-            defaultDaySchedule.addValue(time24hrs, float(HBZone.heatingSetPt))
-            thermostat.setHeatingSchedule(heatingSch)
-            
         thermostat.setHeatingSetpointTemperatureSchedule(heatingSetPtSchedule)
-        
-        if HBZone.coolingSetPt != "":
-            coolingSch = ops.ScheduleRuleset(model)
-            coolingSch.setName("Cooling Sch")
-            defaultDaySchedule = coolingSch.defaultDaySchedule()
-            defaultDaySchedule.setName("Cooling Sch Default")
-            defaultDaySchedule.addValue(time24hrs, float(HBZone.coolingSetPt))
-            thermostat.setCoolingSchedule(coolingSch)
-            
         thermostat.setCoolingSetpointTemperatureSchedule(coolingSetPtSchedule)
         
         OSThermalZone.setThermostatSetpointDualSetpoint(thermostat)
