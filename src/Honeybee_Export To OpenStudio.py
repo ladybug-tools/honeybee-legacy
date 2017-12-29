@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.62\nDEC_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nDEC_29_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -274,18 +274,18 @@ class WriteOPS(object):
     def generateStories(self, HBZones, model):
         levels = []
         for HBZone in HBZones:
-            floorH = "%.3f"%HBZone.getFloorZLevel()
-            if floorH not in self.levels.keys():
+            floorH = "%.2f"%HBZone.getFloorZLevel()
+            if float(floorH) not in levels:
                 levels.append(float(floorH))
         
         levels.sort()
         for floorH in levels:
             story = ops.BuildingStory(model)
             story.setNominalZCoordinate(float(floorH))
-            self.levels["%.3f"%floorH] = story
-        
+            self.levels["%.2f"%floorH] = story
+    
     def setupLevels(self, zone, space):
-        floorH = "%.3f"%zone.getFloorZLevel()
+        floorH = "%.2f"%zone.getFloorZLevel()
         space.setBuildingStory(self.levels[floorH])
         return space
     
