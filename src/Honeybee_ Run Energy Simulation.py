@@ -62,7 +62,7 @@ Provided by Honeybee 0.0.62
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.62\nDEC_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nDEC_29_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -2365,6 +2365,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     performanceSummaryReport= None;
     studyFolder = None
     eioFileFullName = None
+    rddFileName = None
     if runEnergyPlus:
         print "Analysis is running!..."
         # write the batch file
@@ -2372,6 +2373,7 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         resultFileFullName = idfFileFullName.replace('.idf', '.csv')
         eioFileFullName = idfFileFullName.replace('.idf', '.eio')
         performanceSummaryReport = idfFileFullName.replace('.idf', 'Table.html');
+        rddFileName = idfFileFullName.replace('.idf', '.rdd')
         studyFolder = originalWorkingDir
         try:
             test = open(workingDir + '\eplusout.csv', 'r')
@@ -2383,16 +2385,16 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
     else:
         print "Set runEnergyPlus to True!"
         
-    return idfFileFullName, resultFileFullName, eioFileFullName, performanceSummaryReport, studyFolder
+    return idfFileFullName, resultFileFullName, eioFileFullName, rddFileName, performanceSummaryReport, studyFolder
 
 
 if _writeIdf == True and _epwFile and _HBZones and _HBZones[0]!=None:
     
     result = main(north_, _epwFile, _energySimPar_, _analysisPeriod_, _HBZones,
                   HBContext_, simulationOutputs_, _writeIdf, runEnergyPlus_,
-                  _workingDir_, _idfFileName_, meshSettings_)
+                  _workingDir_, _idfFileName_, None)
     if result!= -1:
-        idfFileAddress, resultFileAddress, eioFileAddress, htmlReport, studyFolder = result
+        idfFileAddress, resultFileAddress, eioFileAddress, rddFileAddress, htmlReport, studyFolder = result
         if runEnergyPlus_:
             try:
                 errorFileFullName = idfFileAddress.replace('.idf', '.err')

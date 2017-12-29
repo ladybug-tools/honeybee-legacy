@@ -32,15 +32,15 @@ Provided by Honeybee 0.0.62
                     2 > OpenStudio
         refresh_: Refresh
     Returns:
-        idfFileAddress: The file path of the Input Data File (idf) file that has been generated on your machine.
-        csvFileAddress: The file path of the Comma-Separated Values file (csv)  result file that has been generated on your machine.
-        rddFileAddress: The file path of the Report Data Dictionary (rdd) file that has been generated on your machine.
-        errFileAddress: The file path of the Error (err) file that has been generated on your machine.
-        eioFileAddress: The file path of the EnergyPlus Invariant Output (eio) file that has been generated on your machine.
-        esoFileAddress: The file path of the EnergyPlus Simulation Output (eso) result file that has been generated on your machine.
-        sqlFileAddress: The file path of the Structured Query Language (sql) result file that has been generated on your machine.
-        osmFileAddress: The file path of the OpenStudio Model (osm) file that has been generated on your machine.
-        
+        idfFiles: The file path of the Input Data File (idf) file that has been generated on your machine.
+        osmFiles: The file path of the OpenStudio Model (osm) file that has been generated on your machine.
+        resultFileAddress: The file path of the Comma-Separated Values file (csv)  result file that has been generated on your machine.
+        scheduleCsvFiles: The file paths to any CSV schedules in the study folder.
+        rddFiles: The file path of the Report Data Dictionary (rdd) file that has been generated on your machine.
+        errFiles: The file path of the Error (err) file that has been generated on your machine.
+        eioFiles: The file path of the EnergyPlus Invariant Output (eio) file that has been generated on your machine.
+        esoFiles: The file path of the EnergyPlus Simulation Output (eso) result file that has been generated on your machine.
+        sqlFiles: The file path of the Structured Query Language (sql) result file that has been generated on your machine.
 """
 ghenv.Component.Name = "Honeybee_Lookup EnergyPlus Folder"
 ghenv.Component.NickName = 'LookupFolder_EnergyPlus'
@@ -85,7 +85,7 @@ def main(studyFolder, subFoldersOS):
     if not os.path.isdir(studyFolder):
         msg = "Can't find " + studyFolder
         return msg, None
-        
+    
     fileNames   = os.listdir(studyFolder)
     fileNames.sort()
     if subFoldersOS == "None":
