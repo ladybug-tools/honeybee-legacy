@@ -31,22 +31,22 @@ Provided by Honeybee 0.0.62
         north_: Input a vector to be used as a true North direction for the energy simulation or a number between 0 and 360 that represents the degrees off from the y-axis to make North.  The default North direction is set to the Y-axis (0 degrees).
         _epwWeatherFile: An .epw file path on your system as a text string.
         _analysisPeriod_: An optional analysis period from the Ladybug_Analysis Period component.  If no Analysis period is given, the energy simulation will be run for the enitre year.
-        +++++++++++++++: ...
         _energySimPar_: Optional Energy Simulation Parameters from the "Honeybee_Energy Simulation Par" component.  If no value is connected here, the simulation will run with the following parameters:
             1 - 6 timeSteps per hour
             2 - A shadow calculation that averages over multiple days (as opposed to running it for each timeStep)
             3 - A shadow calculation frequency of 30 (meaning that the shadow calulation is averaged over every 30 days)
             4 - A maximum of 3000 points used in the shadow calculation. (This may need to be higher if you have a lot of detailed context geometry)
-            5 - An colar energy calculation that includes both interior and exterior light reflections.
+            5 - A solar energy calculation that includes both interior and exterior light reflections.
             6 - A simulation including a zone sizing calculation, a system sizing calculation, a plat sizing calculation, and a full run of the energy use ofver the analysis period.  The simulation is not run for the sizing period by default.
             7 - A system sizing period that runs from the extreme periods of the weather file and not a ddy file.
             8 - City terrian.
-        +++++++++++++++: ...
+        ::::::::::::::::::::::::::::::::::::::: ...
         _HBZones: The HBZones that you wish to write into an OSM file and/or run through EnergyPlus.  These can be from any of the components that output HBZones.
         HBContext_: Optional HBContext geometry from the "Honeybee_EP Context Surfaces." component.
         simulationOutputs_: A list of the outputs that you would like EnergyPlus to write into the result CSV file.  This can be any set of any outputs that you would like from EnergyPlus, writen as a list of text that will be written into the IDF.  It is recommended that, if you are not expereinced with writing EnergyPlus outputs, you should use the "Honeybee_Write EP Result Parameters" component to request certain types of common outputs. 
+        _OSMeasures: Any number of OpenStudio measures that you want to apply to your OpenStudio model. Use the "Honeybee_Load OpenStudio Measure" component to load a measure into Grasshopper.  OpenStudio measures can be downloaded from the NREL Building Components Library (BCL) at this link: https://bcl.nrel.gov/
         additionalStrings_: THIS OPTION IS JUST FOR ADVANCED USERS OF ENERGYPLUS.  You can input additional text strings here that you would like written into the IDF.  The strings input here should be complete EnergyPlus objects that are correctly formatted.  You can input as many objects as you like in a list.  This input can be used to write objects into the IDF that are not currently supported by Honeybee.
-        +++++++++++++++: ...
+        ::::::::::::::::::::::::::::::::::::::: ...
         _writeOSM: Set to "True" to have the component take your HBZones and other inputs and write them into an OSM file.  Note that only setting this to "True" and not setting the output below to "True" will not automatically run the file through EnergyPlus for you.
         runSimulation_: Set to "True" to have the component generate an IDF file from the OSM file and run the IDF through through EnergyPlus.  Set to "False" to not run the file (this is the default).  You can also connect an integer for the following options:
             0 = Do Not Run OSM and IDF thrrough EnergyPlus
@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.62\nDEC_29_2017'
+ghenv.Component.Message = 'VER 0.0.62\nDEC_30_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -3856,77 +3856,121 @@ class HoneybeeHVAC(object):
         return [self.ID, self.systemIndex, self.thermalZones, self.hbZones, self.airDetails, self.heatingDetails, self.coolingDetails]
 
 class OPSmeasures(object):
-    def __init__(self, model, weatherFilePath, HBZones, simParameters, openStudioLibFolder, csvSchedules, \
-            csvScheduleCount, additionalcsvSchedules, shadeCntrlToReplace, replaceShdCntrl, windowSpectralData, waterSourceVRFs):
-        self.weatherFile = weatherFilePath # just for batch file as an alternate solution
-        self.EPFolder = sc.sticky["honeybee_folders"]["EPPath"]
-        self.EPPath = ops.Path(self.EPFolder + "\EnergyPlus.exe")
-        self.epwFile = ops.Path(weatherFilePath)
-        self.iddFile = ops.Path(self.EPFolder + "\Energy+.idd")
+    def __init__(self, model, OSMeasures, osmFile):
+        # Load the measure class.
+        self.hb_OpenStudioMeasure = sc.sticky["honeybee_Measure"]
+        
+        # Set up the paths to the files.
+        self.osmName = os.path.split(osmFile)[-1].split('.osm')[0]
+        self.workingDir = os.path.split(osmFile)[0]
+        self.oswAddress = self.workingDir + '\\' + 'workflow.osw'
+        self.osmPath = ops.Path(osmFile)
+        self.oswPath = ops.Path(self.oswAddress)
+        
+        # Put measures and model into the class.
+        self.OSMeasures = OSMeasures
         self.model = model
-        self.HBZones = HBZones
-        self.simParameters = simParameters
-        self.csvSchedules = csvSchedules
-        self.csvScheduleCount = csvScheduleCount
-        self.additionalcsvSchedules = additionalcsvSchedules
-        self.shadeCntrlToReplace = shadeCntrlToReplace
-        self.replaceShdCntrl = replaceShdCntrl
-        self.windowSpectralData = windowSpectralData
-        self.waterSourceVRFs = waterSourceVRFs
-        self.hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
-        self.lb_preparation = sc.sticky["ladybug_Preparation"]()
-    
-    def setupOSW(self, fileLoaction):
-        # Write out a CSV with all natural ventilation definitions within it.
-        natVentCSV = os.path.join(os.path.split(fileLoaction)[0], 'NaturalVentilationParams.csv')
-        natVentCount = 0
-        for zone in self.HBZones:
-            if zone.natVent == True:
-                if natVentCount == 0:
-                    with open(natVentCSV, 'a') as natVentFile:
-                        header = 'Zone Name, Nat Vent Type, Nat Vent Obj Name, Min Indoor, Max Indoor, ' + \
-                        'Delta, Min Outdoor, Max Outdoor, Area/Flowrate, Schedule, Wind Coeff/Fan Eff, ' + \
-                        'Wind Angle/Fan Pres, Height, Stack Coeff\n'
-                        natVentFile.write(header)
-                
-                for natVentCount, natVentObj in enumerate(zone.natVentType):
-                    if natVentObj == 1 or natVentObj == 2:
-                        with open(natVentCSV, 'a') as natVentFile:
-                            natVentFile.write(self.simpleNatVentFileLine(zone, natVentCount))
-                    elif natVentObj == 3:
-                        with open(natVentCSV, 'a') as natVentFile:
-                            natVentFile.write(self.fanNatVentFileLine(zone, natVentCount))
-    
-    def simpleNatVentFileLine(self, zone, natVentCount):
-        if zone.natVentSchedule[natVentCount] == None: natVentSched = 'ALWAYS ON'
-        elif zone.natVentSchedule[natVentCount].upper().endswith('CSV'):
-            natVentSchedFileName = os.path.basename(zone.natVentSchedule[natVentCount])
-            natVentSched = "_".join(natVentSchedFileName.split(".")[:-1])
-        else: natVentSched = zone.natVentSchedule[natVentCount]
         
-        line = zone.name + ',' + str(zone.natVentType[natVentCount]) + ',' + zone.name +'NatVent' + str(natVentCount) + ',' + \
-            str(zone.natVentMinIndoorTemp[natVentCount]) + ',' + str(zone.natVentMaxIndoorTemp[natVentCount]) + ',' + \
-            str(zone.natVentDeltaTemp[natVentCount]) + ',' + str(zone.natVentMinOutdoorTemp[natVentCount]) + ',' + \
-            str(zone.natVentMaxOutdoorTemp[natVentCount]) + ',' + \
-            str(zone.windowOpeningArea[natVentCount]) + ',' + natVentSched + ',' + \
-            str(zone.natVentWindDischarge[natVentCount]) + ',' + str(zone.windowAngle[natVentCount])+ ',' + \
-            str(zone.windowHeightDiff[natVentCount]) + ',' + str(zone.natVentStackDischarge[natVentCount])+ '\n'
-        return line
+        # Check the measures that are connected to be sure that they are valid.
+        for OSMeasure in OSMeasures:
+            try:
+                measureArgs = OSMeasure.args
+                measurePath = OSMeasure.path
+            except:
+                raise Exception("Not a valid Honeybee measure. \nUse the Honeybee_Load OpenStudio Measure component to create one!")
     
-    def fanNatVentFileLine(self, zone, natVentCount):
-        if zone.natVentSchedule[natVentCount] == None: natVentSched = 'ALWAYS ON'
-        elif zone.natVentSchedule[natVentCount].upper().endswith('CSV'):
-            natVentSchedFileName = os.path.basename(zone.natVentSchedule[natVentCount])
-            natVentSched = "_".join(natVentSchedFileName.split(".")[:-1])
-        else: natVentSched = zone.natVentSchedule[natVentCount]
+    def setupOSW(self):
+        # Create the workflow JSON.
+        wf = ops.WorkflowJSON()
+        wf.setOswPath(self.oswPath)
+        wf.setSeedFile(self.osmPath)
         
-        line = zone.name + ',' + str(zone.natVentType[natVentCount]) + ',' + zone.name +'NatVent' + str(natVentCount) + ',' + \
-            str(zone.natVentMinIndoorTemp[natVentCount]) + ',' + str(zone.natVentMaxIndoorTemp[natVentCount]) + ',' + \
-            str(zone.natVentDeltaTemp[natVentCount]) + ',' + str(zone.natVentMinOutdoorTemp[natVentCount]) + ',' + \
-            str(zone.natVentMaxOutdoorTemp[natVentCount]) + ',' + \
-            str(zone.fanFlow[natVentCount]) + ',' + natVentSched + ',' + \
-            str(zone.FanEfficiency[natVentCount]) + ',' + str(zone.FanPressure[natVentCount])+ ',,\n'
-        return line
+        # Sort the measures so that the OpenStudio ones come first, then E+, then reporting.
+        measureOrder = {"OpenStudio":[], "EnergyPlus":[], "Reporting":[]}
+        for measure in self.OSMeasures:
+            measureOrder[measure.type].append(measure)
+        sortedMeasures = measureOrder["OpenStudio"]
+        sortedMeasures.extend(measureOrder["EnergyPlus"])
+        sortedMeasures.extend(measureOrder["Reporting"])
+        
+        # Add the measures to the workflow.
+        workflowSteps = []
+        for OSMeasure in sortedMeasures:
+            # Copy measure files to a folder next to the OSM.
+            measureName = OSMeasure.path.split('\\')[-1]
+            destDir = self.workingDir + '\\measures\\' + measureName + '\\'
+            if os.path.isdir(destDir):
+                shutil.rmtree(destDir)
+            shutil.copytree(OSMeasure.path, destDir)
+            
+            # Create the measure step
+            measure = ops.MeasureStep(measureName)
+            for arg in OSMeasure.args.values():
+                if str(arg.userInput) != str(arg.default_value):
+                    measure.setArgument(arg.name, str(arg.userInput))
+            workflowSteps.append(measure)
+        
+        # Set the workflow steps and save the JSON.
+        stepVector = ops.WorkflowStepVector(workflowSteps)
+        wf.setWorkflowSteps(stepVector)
+        wf.save()
+        
+        # Associate the workflowJSON with the OpenStudio model.
+        self.model.setWorkflowJSON(wf)
+    
+    def applyMeasures(self, runIt):
+        # Write the batch file.
+        workingDrive = self.workingDir[:2].upper()
+        osExePath = '/'.join(openStudioLibFolder.split('/')[:-2]) +'/bin/'
+        osExePath = osExePath.replace('/', '\\')
+        osExePath = osExePath.replace((workingDrive + '\\'), '')
+        
+        # Write the batch file to apply the measures.
+        batchStr = workingDrive + '\ncd\\' +  osExePath + '\n"' + 'openstudio.exe"' + ' run -w ' + self.oswAddress
+        batchFileAddress = self.workingDir + '\\' + self.osmName.replace(" ", "_") +'.bat'
+        batchfile = open(batchFileAddress, 'w')
+        batchfile.write(batchStr)
+        batchfile.close()
+        
+        # Apply the measures.
+        if runIt == 2:
+            self.runCmd(batchFileAddress)
+        else:
+            os.system(batchFileAddress)
+        
+        # Check to be sure that the measures were applied correctly.
+        runDir = self.workingDir + '\\' + 'run\\'
+        epRunDir = self.workingDir + '\\' + self.osmName + '\\'
+        idfFolder = os.path.join(epRunDir)
+        idfFolder = os.path.join(idfFolder, "ModelToIdf")
+        idfFilePath = os.path.join(idfFolder, "in.idf")
+        if not os.path.isfile(runDir+"in.idf"):
+            # The simulation has not run correctly and we must parse the error log.
+            logfile  = runDir + 'run.log'
+            if os.path.isfile(logfile):
+                errorFound = False
+                errorMsg = 'The measures did not correctly as a result of the following error:\n'
+                with open(logfile, "r") as log:
+                    for line in log:
+                        if 'ERROR]' in line and errorFound == False:
+                            errorFound = True
+                            msg = line.split('ERROR]')[-1]
+                            errorMsg = errorMsg + msg
+                print errorMsg
+                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, errorMsg)
+                return None
+        
+        try:
+            os.mkdir(epRunDir)
+        except:
+            pass
+        try:
+            os.mkdir(idfFolder)
+        except:
+            pass
+        shutil.copy(runDir+"pre-preprocess.idf", idfFilePath)
+        return idfFolder, idfFilePath
+
 
 
 class EPFeaturesNotInOS(object):
@@ -4385,9 +4429,7 @@ class RunOPS(object):
             fiw.write(line)
         fiw.close()
     
-    
-    def runAnalysis(self, osmFile, runEnergyPlus):
-        
+    def runAnalysis(self, osmFile, runEnergyPlus, idfFileP=None, idfFold=None):
         # Preparation
         workingDir, fileName = os.path.split(osmFile)
         projectName = (".").join(fileName.split(".")[:-1])
@@ -4395,7 +4437,12 @@ class RunOPS(object):
         
         # create idf - I separated this job as putting them together
         # was making EnergyPlus to crash
-        idfFolder, idfPath = self.osmToidf(workingDir, projectName, osmPath)
+        if idfFileP == None:
+            idfFolder, idfPath = self.osmToidf(workingDir, projectName, osmPath)
+        else:
+            self.writeNonOSFeatures(idfFileP, self.HBZones, self.simParameters, workingDir)
+            idfPath = idfFileP
+            idfFolder = idfFold.split('ModelToIdf')[0]
         print 'OSM > IDF: ' + str(idfPath)
         
         if runEnergyPlus < 3:
@@ -4405,9 +4452,6 @@ class RunOPS(object):
             return os.path.join(idfFolder, "ModelToIdf", "in.idf"), None
     
     def writeBatchFile(self, workingDir, idfFileName, epwFileAddress, runInBackground = False):
-        """
-        This is here as an alternate until I can get RunManager to work
-        """
         EPDirectory = self.EPFolder
         workingDrive = workingDir[:2]
         if idfFileName.EndsWith('.idf'):  shIdfFileName = idfFileName.replace('.idf', '')
@@ -4455,7 +4499,7 @@ def checkUnits():
     return conversionFactor
 
 
-def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameters, simulationOutputs, runIt, openOpenStudio, workingDir = "C:\ladybug", fileName = "openStudioModel.osm"):
+def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameters, simulationOutputs, OSMeasures, runIt, openOpenStudio, workingDir = "C:\ladybug", fileName = "openStudioModel.osm"):
     # check the release
     w = gh.GH_RuntimeMessageLevel.Warning
     
@@ -4733,10 +4777,10 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     # Get the objects in the file that we need to replace or add because OpenStudio does not support them.
     csvSchedules, csvScheduleCount, shadeCntrlToReplace, replaceShdCntrl, windowSpectralData, waterSourceVRFs = hb_writeOPS.getObjToReplace()
     
-    # Assign measures to the OpenStudio model (along with features not supported by OS currently).
-    hb_assingMeasures = OPSmeasures(model, epwWeatherFile, HBZones, hb_writeOPS.simParameters, openStudioLibFolder, csvSchedules, \
-        csvScheduleCount, additionalcsvSchedules, shadeCntrlToReplace, replaceShdCntrl, windowSpectralData, waterSourceVRFs)
-    hb_assingMeasures.setupOSW(fname)
+    # If there are OSMeasures, assign them to the OpenStudio model.
+    if OSMeasures != [] and OSMeasures[0] != None:
+        hb_assingMeasures = OPSmeasures(model, OSMeasures, fname)
+        hb_assingMeasures.setupOSW()
     
     # save the model
     model.save(ops.Path(fname), True)
@@ -4756,10 +4800,16 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     
     # Run the file through OpenStudio
     if runIt > 0:
+        # Apply measures if necessary.
+        idfFold, idfFileP = None, None
+        if OSMeasures != [] and OSMeasures[0] != None:
+            idfFold, idfFileP = hb_assingMeasures.applyMeasures(runIt)
+        
+        # Run the model through OpenStudio
         hb_runOPS = RunOPS(model, epwWeatherFile, HBZones, hb_writeOPS.simParameters, openStudioLibFolder, csvSchedules, \
             csvScheduleCount, additionalcsvSchedules, shadeCntrlToReplace, replaceShdCntrl, windowSpectralData, waterSourceVRFs)
         
-        idfFile, resultFile = hb_runOPS.runAnalysis(fname, runIt)
+        idfFile, resultFile = hb_runOPS.runAnalysis(fname, runIt, idfFileP, idfFold)
         if runIt < 3:
             try:
                 errorFileFullName = idfFile.replace('.idf', '.err')
@@ -4785,7 +4835,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
 
 if _HBZones and _HBZones[0]!=None and _epwWeatherFile and _writeOSM and openStudioIsReady:
     results = main(_HBZones, HBContext_, north_, _epwWeatherFile,
-                  _analysisPeriod_, _energySimPar_, simulationOutputs_,
+                  _analysisPeriod_, _energySimPar_, simulationOutputs_, OSMeasures_,
                   runSimulation_, openOpenStudio_, workingDir_, fileName_)
     if results!=-1:
         osmFileAddress, idfFileAddress, resultsFiles, studyFolder, model = results
