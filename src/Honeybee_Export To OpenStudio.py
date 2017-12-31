@@ -4778,9 +4778,11 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     csvSchedules, csvScheduleCount, shadeCntrlToReplace, replaceShdCntrl, windowSpectralData, waterSourceVRFs = hb_writeOPS.getObjToReplace()
     
     # If there are OSMeasures, assign them to the OpenStudio model.
+    measureApplied = False
     if OSMeasures != [] and OSMeasures[0] != None:
         hb_assingMeasures = OPSmeasures(model, OSMeasures, fname)
         hb_assingMeasures.setupOSW()
+        measureApplied =  True
     
     # save the model
     model.save(ops.Path(fname), True)
@@ -4789,7 +4791,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     projectName = (".").join(fileName.split(".")[:-1])
     
     # Open the model in OpenStudio (if requested).
-    if openOpenStudio:
+    def openModel(fname):
         try:
             os.startfile(fname)
         except:
@@ -4797,6 +4799,8 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
                 os.system("start " + fname)
             except:
                 os.system("OpenStudioApp.exe " + fname)
+    if openOpenStudio and not (measureApplied == True and runIt > 0):
+        openModel(fname)
     
     # Run the file through OpenStudio
     if runIt > 0:
@@ -4828,6 +4832,11 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
                 errFile.close()
             except:
                 pass
+        
+        if measureApplied == True and runIt > 0:
+            fname = fname.split(fileName)[0] + 'run\\in.osm'
+            if openOpenStudio:
+                openModel(fname)
         
         return fname, idfFile, resultFile, originalWorkDir, model
         
