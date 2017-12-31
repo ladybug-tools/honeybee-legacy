@@ -24,8 +24,8 @@
 Import gbXML files as Honeybee zones.
 
 This component uses OpenStudio libraries to import the file and at this point
-the component imports geometry and constrcuctions(if available). Loads, schedules,
-and eventually systems can be added to the component eventually.
+the component imports geometry and constrcuctions(if available). Loads and schedules may 
+be added to the component eventually.
 
 You also need to solve adjacencies after importing the zones.
 -
@@ -50,10 +50,10 @@ ghenv.Component.NickName = 'XMLTOHB'
 ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "13 | WIP"
+ghenv.Component.SubCategory = "10 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nSEP_09_2016
 #compatibleLBVersion = VER 0.0.59\nJUL_24_2015
-ghenv.Component.AdditionalHelpFromDocStrings = "1"
+ghenv.Component.AdditionalHelpFromDocStrings = "0"
 
 import os
 import scriptcontext as sc

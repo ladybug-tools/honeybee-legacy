@@ -39,7 +39,7 @@ ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
-try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
 
 def main(htmlReport):

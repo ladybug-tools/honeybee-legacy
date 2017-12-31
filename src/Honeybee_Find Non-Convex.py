@@ -54,10 +54,10 @@ ghenv.Component.Name = "Honeybee_Find Non-Convex"
 ghenv.Component.NickName = 'IsConvex'
 ghenv.Component.Message = 'VER 0.0.62\nOCT_24_2017' #Change this date to be that of your commit or pull request.
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "13 | WIP"
+ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.57\nNOV_04_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
-try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
 except: pass
 
 import Rhino

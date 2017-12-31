@@ -41,7 +41,7 @@ ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nMAY_02_2015
 #compatibleLBVersion = VER 0.0.59\nAPR_04_2015
-ghenv.Component.AdditionalHelpFromDocStrings = "0"
+ghenv.Component.AdditionalHelpFromDocStrings = "4"
 
 
 import Grasshopper.Kernel as gh

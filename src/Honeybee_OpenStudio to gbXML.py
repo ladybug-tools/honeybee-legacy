@@ -39,10 +39,10 @@ ghenv.Component.NickName = 'OpenStudioToXML'
 ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "13 | WIP"
+ghenv.Component.SubCategory = "10 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nSEP_09_2016
 #compatibleLBVersion = VER 0.0.59\nJUL_24_2015
-ghenv.Component.AdditionalHelpFromDocStrings = "1"
+ghenv.Component.AdditionalHelpFromDocStrings = "0"
 
 import os
 import scriptcontext as sc
