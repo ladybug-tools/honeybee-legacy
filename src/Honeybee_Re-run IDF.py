@@ -34,11 +34,13 @@ Provided by Ladybug 0.0.45
     Returns:
         report: Report!
         resultFileAddress: The address of the EnergyPlus result file.
+        eioFileAddress:  The file path of the EIO file that has been generated on your machine.  This file contains information about the sizes of all HVAC equipment from the simulation.  This file is only generated when you set "runSimulation_" to "True."
+        rddFileAddress: The file path of the Result Data Dictionary (.rdd) file that is generated after running the file through EnergyPlus.  This file contains all possible outputs that can be requested from the EnergyPlus model.  Use the "Honeybee_Read Result Dictionary" to see what outputs can be requested.
 """
 
 ghenv.Component.Name = "Honeybee_Re-run IDF"
 ghenv.Component.NickName = 'Re-Run IDF'
-ghenv.Component.Message = 'VER 0.0.62\nDEC_10_2017'
+ghenv.Component.Message = 'VER 0.0.62\nDEC_31_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -180,7 +182,10 @@ if initCheck and _runIt > 0:
         batchFileAddress, newIDFPath, idfFileName = writeBatchFile(workingDir, _idfFilePath, _epwFileAddress, epPath)
         print "The file is written to %s"%batchFileAddress 
         runBatchFile(batchFileAddress, _runIt)
-        os.remove(newIDFPath)
+        try:
+            os.remove(newIDFPath)
+        except:
+            pass
         
         print '...'
         print 'RUNNING SIMULATION'
@@ -206,4 +211,6 @@ if initCheck and _runIt > 0:
         
         shIdfFileName = idfFileName.replace('.idf', '')
         resultFileAddress = str(workingDir) + '\\' + str(shIdfFileName) + '.csv'
+        eioFileAddress = resultFileAddress.replace('.csv', '.eio')
+        rddFileAddress = resultFileAddress.replace('.csv', '.rdd')
         print 'EnergyPlus file '+ str(shIdfFileName)+'.idf ' + 're-run successful!'

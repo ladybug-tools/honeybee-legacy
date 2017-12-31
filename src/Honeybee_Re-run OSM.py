@@ -37,13 +37,15 @@ Provided by Ladybug 0.0.45
             3 = Generate an IDF from the OSM file but do not run it through EnergyPlus
     Returns:
         report: Report!
+        idfFileAddress: The file path of the IDF file that has been generated on your machine. This file is only generated when you set "runSimulation_" to "True."
         resultFileAddress: The address of the EnergyPlus result file.
-        studyFolder: The directory in which the simulation has been run.  Connect this to the 'Honeybee_Lookup EnergyPlus' folder to bring many of the files in this directory into Grasshopper.
+        eioFileAddress:  The file path of the EIO file that has been generated on your machine.  This file contains information about the sizes of all HVAC equipment from the simulation.  This file is only generated when you set "runSimulation_" to "True."
+        rddFileAddress: The file path of the Result Data Dictionary (.rdd) file that is generated after running the file through EnergyPlus.  This file contains all possible outputs that can be requested from the EnergyPlus model.  Use the "Honeybee_Read Result Dictionary" to see what outputs can be requested.
 """
 
 ghenv.Component.Name = "Honeybee_Re-run OSM"
 ghenv.Component.NickName = 'Re-Run OSM'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nDEC_31_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -195,7 +197,15 @@ def main(epwFile, osmFile, runEnergyPlus, openStudioLibFolder):
     else:
         resultFile = None
     
-    return workingDir, os.path.join(idfFolder, "ModelToIdf", "in.idf"), resultFile
+    eioFile = None
+    rddFile = None
+    try:
+        eioFile = resultFile.replace('.csv', '.eio')
+        rddFile = resultFile.replace('.csv', '.rdd')
+    except:
+        pass
+    
+    return workingDir, os.path.join(idfFolder, "ModelToIdf", "in.idf"), resultFile, eioFile, rddFile
 
 
 #Honeybee check.
@@ -253,4 +263,4 @@ if openStudioIsReady and initCheck == True and openStudioIsReady == True and _ru
     if fileCheck != -1:
         result = main(_epwFileAddress, _osmFilePath, _runIt, openStudioLibFolder)
         if result != -1:
-            studyFolder, idfFileAddress, resultFileAddress = result
+            studyFolder, idfFileAddress, resultFileAddress, eioFileAddress, rddFileAddress = result
