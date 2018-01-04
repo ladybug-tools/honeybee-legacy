@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2017, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools>, Chris Mackey <Chris@MackeyArchitecture.com>, and Chien Si Harriman <charriman@terabuild.com>
+# Copyright (c) 2013-2017, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools>, Chris Mackey <chris@ladybug.tools>, and Chien Si Harriman <charriman@terabuild.com>
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -95,12 +95,19 @@ import subprocess
 import operator
 
 rc.Runtime.HostUtils.DisplayOleAlerts(False)
-
+osVersion = ''
 if sc.sticky.has_key('honeybee_release'):
     if sc.sticky["honeybee_folders"]["OSLibPath"] != None:
         # openstudio is there
         openStudioLibFolder = sc.sticky["honeybee_folders"]["OSLibPath"]
         openStudioIsReady = True
+        
+        # check the version of OpenStudio.
+        try:
+            osVersion = openStudioLibFolder.split('-')[-1].split('/')[0]
+        except:
+            pass
+        
         import clr
         clr.AddReferenceToFileAndPath(openStudioLibFolder+"\\openStudio.dll")
         
@@ -4546,6 +4553,13 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         print msg
         ghenv.Component.AddRuntimeMessage(w, msg)
         return -1
+    
+    # Make sure that the version of OpenStudio is correct if OSMeasures are specified.
+    if OSMeasures != [] and OSMeasures[0] != None and not osVersion.startswith('2'):
+        openStudioIsReady = False
+        msg = "Your version of OpenStudio must be 2.0 or above to use OSMeasures_."
+        print msg
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
     
     # Import all classes
     lb_preparation = sc.sticky["ladybug_Preparation"]()
