@@ -28,8 +28,9 @@ This is a component for running a previoulsy-generated .idf file through EnergyP
 Provided by Ladybug 0.0.45
     
     Args:
-        _idfFilePath: Name of the idf file (e.g. sample1.idf).
-        _epwFileAddress: Address to epw weather file.
+        _idfFilePath: The full file path to the idf file on your system that you would like to run (e.g. C:\ladybug\sample1.idf).
+        _epwFileAddress: The full file path to epw weather file that you would like the simulation to run with.
+        parallel_: Set to "True" to run multiple IDFs using multiple CPUs.  Note that this input is only relevant when you have plugged in a list of IDF file addresses.
         runIt_: Set to 'True' to run the simulation.  You can also connect a 2 to run the simulation in the background.
     Returns:
         report: Report!
@@ -40,7 +41,7 @@ Provided by Ladybug 0.0.45
 
 ghenv.Component.Name = "Honeybee_Re-run IDF"
 ghenv.Component.NickName = 'Re-Run IDF'
-ghenv.Component.Message = 'VER 0.0.62\nDEC_31_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJAN_04_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -55,6 +56,7 @@ import shutil
 import Grasshopper.Kernel as gh
 import time
 import subprocess
+import System.Threading.Tasks as tasks
 
 def checkTheInputs(idfFileName, epwWeatherFile):
     w = gh.GH_RuntimeMessageLevel.Warning
@@ -149,6 +151,35 @@ def runBatchFile(batchFileAddress, runInBackground):
     else:
         os.system(batchFileAddress)
 
+def runParallelIDFs(idfFilePaths, epwFileAddress, runIt, parallel):
+    # placeholders for final lists.
+    resultFileAddress = [None for x in idfFilePaths]
+    eioFileAddress = [None for x in idfFilePaths]
+    rddFileAddress = [None for x in idfFilePaths]
+    
+    def runEP(i):
+        epPath = checkTheInputs(idfFilePaths[i], _epwFileAddress)
+        if epPath != -1:
+            workingDir = "\\".join(idfFilePaths[i].split('\\')[:-1])
+            batchFileAddress, newIDFPath, idfFileName = writeBatchFile(workingDir, idfFilePaths[i], _epwFileAddress, epPath)
+            runBatchFile(batchFileAddress, runIt)
+            try:
+                os.remove(newIDFPath)
+            except:
+                pass
+            
+            shIdfFileName = idfFileName.replace('.idf', '')
+            resultFileAddress[i] = str(workingDir) + '\\' + str(shIdfFileName) + '.csv'
+            eioFileAddress[i] = resultFileAddress[i].replace('.csv', '.eio')
+            rddFileAddress[i] = resultFileAddress[i].replace('.csv', '.rdd')
+    
+    if parallel == True:
+        tasks.Parallel.ForEach(range(len(idfFilePaths)), runEP)
+    else:
+        for x in range(len(idfFilePaths)):
+            runEP(x)
+    
+    return resultFileAddress, eioFileAddress, rddFileAddress
 
 
 #Honeybee check.
@@ -173,44 +204,51 @@ else:
         "into canvas and try again."
         ghenv.Component.AddRuntimeMessage(w, warning)
 
+# placeholders.
+resultFileAddress = []
+eioFileAddress = []
+rddFileAddress = []
 
 
 if initCheck and _runIt > 0:
-    epPath = checkTheInputs(_idfFilePath, _epwFileAddress)
-    if epPath != -1:
-        workingDir = "\\".join(_idfFilePath.split('\\')[:-1])
-        batchFileAddress, newIDFPath, idfFileName = writeBatchFile(workingDir, _idfFilePath, _epwFileAddress, epPath)
-        print "The file is written to %s"%batchFileAddress 
-        runBatchFile(batchFileAddress, _runIt)
-        try:
-            os.remove(newIDFPath)
-        except:
-            pass
-        
-        print '...'
-        print 'RUNNING SIMULATION'
-        print '...'
-        
-        try:
-            errorFileFullName = (str(workingDir)+ '\\' +str(idfFileName)).replace('.idf', '.err')
-            errFile = open(errorFileFullName, 'r')
-            for line in errFile:
-                print line
-                if "**  Fatal  **" in line:
-                    warning = "The simulation has failed because of this fatal error: \n" + str(line)
-                    w = gh.GH_RuntimeMessageLevel.Warning
-                    ghenv.Component.AddRuntimeMessage(w, warning)
-                    resultFile = None
-                elif "** Severe  **" in line and 'CheckControllerListOrder' not in line:
-                    comment = "The simulation has not run correctly because of this severe error: \n" + str(line)
-                    c = gh.GH_RuntimeMessageLevel.Warning
-                    ghenv.Component.AddRuntimeMessage(c, comment)
-            errFile.close()
-        except:
-            pass
-        
-        shIdfFileName = idfFileName.replace('.idf', '')
-        resultFileAddress = str(workingDir) + '\\' + str(shIdfFileName) + '.csv'
-        eioFileAddress = resultFileAddress.replace('.csv', '.eio')
-        rddFileAddress = resultFileAddress.replace('.csv', '.rdd')
-        print 'EnergyPlus file '+ str(shIdfFileName)+'.idf ' + 're-run successful!'
+    if len(_idfFilePath) == 1:
+        epPath = checkTheInputs(_idfFilePath[0], _epwFileAddress)
+        if epPath != -1:
+            workingDir = "\\".join(_idfFilePath[0].split('\\')[:-1])
+            batchFileAddress, newIDFPath, idfFileName = writeBatchFile(workingDir, _idfFilePath[0], _epwFileAddress, epPath)
+            print "The file is written to %s"%batchFileAddress 
+            runBatchFile(batchFileAddress, _runIt)
+            try:
+                os.remove(newIDFPath)
+            except:
+                pass
+            
+            print '...'
+            print 'RUNNING SIMULATION'
+            print '...'
+            
+            try:
+                errorFileFullName = (str(workingDir)+ '\\' +str(idfFileName)).replace('.idf', '.err')
+                errFile = open(errorFileFullName, 'r')
+                for line in errFile:
+                    print line
+                    if "**  Fatal  **" in line:
+                        warning = "The simulation has failed because of this fatal error: \n" + str(line)
+                        w = gh.GH_RuntimeMessageLevel.Warning
+                        ghenv.Component.AddRuntimeMessage(w, warning)
+                        resultFile = None
+                    elif "** Severe  **" in line and 'CheckControllerListOrder' not in line:
+                        comment = "The simulation has not run correctly because of this severe error: \n" + str(line)
+                        c = gh.GH_RuntimeMessageLevel.Warning
+                        ghenv.Component.AddRuntimeMessage(c, comment)
+                errFile.close()
+            except:
+                pass
+            
+            shIdfFileName = idfFileName.replace('.idf', '')
+            resultFileAddress.append(str(workingDir) + '\\' + str(shIdfFileName) + '.csv')
+            eioFileAddress.append(resultFileAddress[0].replace('.csv', '.eio'))
+            rddFileAddress.append(resultFileAddress[0].replace('.csv', '.rdd'))
+            print 'EnergyPlus file '+ str(shIdfFileName)+'.idf ' + 're-run successful!'
+    else:
+        resultFileAddress, eioFileAddress, rddFileAddress = runParallelIDFs(_idfFilePath, _epwFileAddress, _runIt, parallel_)
