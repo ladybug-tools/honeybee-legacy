@@ -38,7 +38,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Daysim Occupancy Generator"
 ghenv.Component.NickName = 'occupancyGenerator'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJAN_04_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
@@ -108,7 +108,7 @@ def main(analysisPeriod, dailyOffHours, weekendDays, fileName):
     
     stMonth, stDay, stHour, endMonth, endDay, endHour = lb_preparation.readRunPeriod(analysisPeriod, False)
     # selected hourly data includes the last hour that daysim doesnt
-    analysisPeriod = [(stMonth, stDay, stHour), (endMonth, endDay, endHour)]
+    analysisPeriod = [(stMonth, stDay, stHour+1), (endMonth, endDay, endHour)]
     occHours = lb_preparation.selectHourlyData(range(1,8761), analysisPeriod)
     stOfDLSHour = lb_preparation.date2Hour(3, 12, 1)
     endOfDLSHour = lb_preparation.date2Hour(11, 5, 1)
@@ -147,8 +147,6 @@ def main(analysisPeriod, dailyOffHours, weekendDays, fileName):
                     # check if the hour is the hour off
                     if not HOY%24 in dailyOffHours:
                         occ = 1
-                else:
-                    print HOY
             t -= .5 # add half and hour to be similar to daysim
             if t == -.5: t = 23.5
             
