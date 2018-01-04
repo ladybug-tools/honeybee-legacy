@@ -41,7 +41,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Label Zone Surfaces"
 ghenv.Component.NickName = 'LabelSurfaces'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJAN_04_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -145,6 +145,12 @@ def main(HBZoneObjects, textSize, font, windows, attribute):
                 except: theProp = "Not Assigned"
             elif theProp == "" or theProp == None:
                 theProp = "Not Assigned"
+            
+            if attribute == "BCObject":
+                theProp = theProp.name
+                if theProp == '':
+                    theProp = "N/A"
+            
             surfaceAttributes.append(str(theProp))
             surfaceNameLength.append(len(list(str(theProp))))
             srfBreps.append(srf.geometry)

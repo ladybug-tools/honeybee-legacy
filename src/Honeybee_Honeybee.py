@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.62\nDEC_15_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJAN_04_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -6558,18 +6558,24 @@ class hb_EPSurface(object):
         # move plane
         self.basePlane.Transform(transform)
         
+        # Flip the normal if necessary
         if flip:
             self.normalVector.Reverse()
         
+        # Reset the angle to North
         try:
             self.getAngle2North()
         except:
             pass
         
+        # Deal with the boundary conditions.
         if clearBC:
             self.setBC("Outdoors", False)
             self.setBCObjectToOutdoors()
-            
+        elif self.BCObject.name != '':
+            self.BCObject = copy.deepcopy(self.BCObject)
+            self.BCObject.name = self.BCObject.name + newKey
+        
         if not self.isChild and self.hasChild:
             self.punchedGeometry.Transform(transform)
             if flip: self.punchedGeometry.Flip()
