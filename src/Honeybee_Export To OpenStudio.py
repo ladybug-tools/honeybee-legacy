@@ -4555,11 +4555,18 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         return -1
     
     # Make sure that the version of OpenStudio is correct if OSMeasures are specified.
-    if OSMeasures != [] and OSMeasures[0] != None and not osVersion.startswith('2'):
-        openStudioIsReady = False
-        msg = "Your version of OpenStudio must be 2.0 or above to use OSMeasures_."
-        print msg
-        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
+    if OSMeasures != [] and OSMeasures[0] != None:
+        versionOk = False
+        try:
+            verNum = osVersion.split('.')[0]
+            if verNum >= 2:
+                versionOk = True
+        except:
+            pass
+        if versionOk == False:
+            msg = "Your version of OpenStudio must be 2.0 or above to use OSMeasures_."
+            print msg
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
     
     # Import all classes
     lb_preparation = sc.sticky["ladybug_Preparation"]()
