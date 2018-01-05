@@ -157,12 +157,16 @@ def runParallelIDFs(idfFilePaths, epwFileAddress, runIt, parallel):
     eioFileAddress = [None for x in idfFilePaths]
     rddFileAddress = [None for x in idfFilePaths]
     
+    reunInBackground = runIt
+    if parallel == True:
+        runInBackground = 2
+    
     def runEP(i):
         epPath = checkTheInputs(idfFilePaths[i], _epwFileAddress)
         if epPath != -1:
             workingDir = "\\".join(idfFilePaths[i].split('\\')[:-1])
             batchFileAddress, newIDFPath, idfFileName = writeBatchFile(workingDir, idfFilePaths[i], _epwFileAddress, epPath)
-            runBatchFile(batchFileAddress, runIt)
+            runBatchFile(batchFileAddress, runInBackground)
             try:
                 os.remove(newIDFPath)
             except:
@@ -204,11 +208,6 @@ else:
         "into canvas and try again."
         ghenv.Component.AddRuntimeMessage(w, warning)
 
-# placeholders.
-resultFileAddress = []
-eioFileAddress = []
-rddFileAddress = []
-
 
 if initCheck and _runIt > 0:
     if len(_idfFilePath) == 1:
@@ -246,9 +245,9 @@ if initCheck and _runIt > 0:
                 pass
             
             shIdfFileName = idfFileName.replace('.idf', '')
-            resultFileAddress.append(str(workingDir) + '\\' + str(shIdfFileName) + '.csv')
-            eioFileAddress.append(resultFileAddress[0].replace('.csv', '.eio'))
-            rddFileAddress.append(resultFileAddress[0].replace('.csv', '.rdd'))
+            resultFileAddress = str(workingDir) + '\\' + str(shIdfFileName) + '.csv'
+            eioFileAddress = resultFileAddress[0].replace('.csv', '.eio')
+            rddFileAddress = resultFileAddress[0].replace('.csv', '.rdd')
             print 'EnergyPlus file '+ str(shIdfFileName)+'.idf ' + 're-run successful!'
     else:
         resultFileAddress, eioFileAddress, rddFileAddress = runParallelIDFs(_idfFilePath, _epwFileAddress, _runIt, parallel_)
