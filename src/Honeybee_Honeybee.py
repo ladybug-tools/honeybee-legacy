@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.62\nOCT_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJAN_04_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -734,11 +734,31 @@ class HB_GetEPLibraries:
                         self.libraries["ThermMaterial"][matName]["Type"] = int(matPropLine[-1])
                         self.libraries["ThermMaterial"][matName]["Conductivity"] = float(matPropLine[-5])
                         self.libraries["ThermMaterial"][matName]["Absorptivity"] = float(matPropLine[-4])
+                        if self.libraries["ThermMaterial"][matName]["Type"] == 0:
+                            self.libraries["ThermMaterial"][matName]["Tir"] = "0.0"
+                        else:
+                            self.libraries["ThermMaterial"][matName]["Tir"] = "-1.0"
                         self.libraries["ThermMaterial"][matName]["Emissivity"] = float(matPropLine[-3])
                         self.libraries["ThermMaterial"][matName]["WindowDB"] = ""
                         self.libraries["ThermMaterial"][matName]["WindowID"] = "-1"
                         self.libraries["ThermMaterial"][matName]["RGBColor"] = System.Drawing.ColorTranslator.FromHtml("#" + matPropLine[-2])
                     except: pass
+
+def checkUnits():
+    units = sc.doc.ModelUnitSystem
+    if `units` == 'Rhino.UnitSystem.Meters': conversionFactor = 1.00
+    elif `units` == 'Rhino.UnitSystem.Centimeters': conversionFactor = 0.01
+    elif `units` == 'Rhino.UnitSystem.Millimeters': conversionFactor = 0.001
+    elif `units` == 'Rhino.UnitSystem.Feet': conversionFactor = 0.305
+    elif `units` == 'Rhino.UnitSystem.Inches': conversionFactor = 0.0254
+    else:
+        print 'Kidding me! Which units are you using?'+ `units`+'?'
+        print 'Please use Meters, Centimeters, Millimeters, Inches or Feet'
+        return
+    print 'Current document units is in', sc.doc.ModelUnitSystem
+    print 'Conversion to Meters will be applied = ' + "%.3f"%conversionFactor
+    
+    return conversionFactor
 
 class RADMaterialAux(object):
 
@@ -5427,15 +5447,15 @@ class EPZone(object):
                             if cenPt.DistanceTo(fenSrf.parent.punchedGeometry.ClosestPoint(cenPt))<0.05 * disFactor:
                                 srf.collectMeshFaces(mesh.Faces.GetFaceVertices(faceIndex), reverseList); break
     
-    def getFloorArea(self):
+    def getFloorArea(self, meterOverride=False):
         totalFloorArea = 0
         for HBSrf in self.surfaces:
             if int(HBSrf.type) == 2:
-                totalFloorArea += HBSrf.getTotalArea()
+                totalFloorArea += HBSrf.getTotalArea(meterOverride)
         return totalFloorArea
     
     def getZoneVolume(self):
-        return self.geometry.GetVolume()
+        return self.geometry.GetVolume()*sc.sticky["honeybee_ConversionFactor"]*sc.sticky["honeybee_ConversionFactor"]*sc.sticky["honeybee_ConversionFactor"]
     
     def getExposedArea(self):
         totalExpArea = 0
@@ -5560,7 +5580,13 @@ class hb_reEvaluateHBZones(object):
         return self.fakeSurface
         
     def evaluateZones(self):
+        if sc.sticky["honeybee_ConversionFactor"] != 1:
+            NUscale = rc.Geometry.Transform.Scale(rc.Geometry.Plane(rc.Geometry.Plane.WorldXY),sc.sticky["honeybee_ConversionFactor"],sc.sticky["honeybee_ConversionFactor"],sc.sticky["honeybee_ConversionFactor"])
+        
         for HBZone in self.originalHBZones:
+            if sc.sticky["honeybee_ConversionFactor"] != 1:
+                HBZone.transform(NUscale, "", False)
+            
             self.checkNameDuplication(HBZone)
             self.prepareNonPlanarZones(HBZone)
             
@@ -6528,16 +6554,28 @@ class hb_EPSurface(object):
         # move center point and normal
         self.cenPt.Transform(transform)
         self.normalVector.Transform(transform)
+        
         # move plane
         self.basePlane.Transform(transform)
         
+        # Flip the normal if necessary
         if flip:
             self.normalVector.Reverse()
         
+        # Reset the angle to North
+        try:
+            self.getAngle2North()
+        except:
+            pass
+        
+        # Deal with the boundary conditions.
         if clearBC:
             self.setBC("Outdoors", False)
             self.setBCObjectToOutdoors()
-            
+        elif self.BCObject.name != '':
+            self.BCObject = copy.deepcopy(self.BCObject)
+            self.BCObject.name = self.BCObject.name + newKey
+        
         if not self.isChild and self.hasChild:
             self.punchedGeometry.Transform(transform)
             if flip: self.punchedGeometry.Flip()
@@ -6545,8 +6583,11 @@ class hb_EPSurface(object):
             for childSrf in self.childSrfs:
                 childSrf.transform(transform, newKey, clearBC, flip)
         
-    def getTotalArea(self):
-        return self.geometry.GetArea()
+    def getTotalArea(self, meterOverride=False):
+        if meterOverride == True:
+            return (self.geometry.GetArea())
+        else:
+            return (self.geometry.GetArea())*sc.sticky["honeybee_ConversionFactor"]*sc.sticky["honeybee_ConversionFactor"]
     
     def setType(self, type, isUserInput = False):
         self.type = type
@@ -6579,8 +6620,7 @@ class hb_EPSurface(object):
         self.windExposure = exposure
     
     def getArea(self):
-        
-        return rc.Geometry.AreaMassProperties.Compute(self.geometry).Area
+        return rc.Geometry.AreaMassProperties.Compute(self.geometry).Area *sc.sticky["honeybee_ConversionFactor"]*sc.sticky["honeybee_ConversionFactor"]
 
     def __str__(self):
         try:
@@ -6644,11 +6684,6 @@ class hb_EPZoneSurface(hb_EPSurface):
             ptOnSrf = self.geometry.ClosestPoint(pt)
             if pt.DistanceTo(ptOnSrf) > tolerance: return False
         
-        # check the area of the child surface and make sure is smaller than base surface
-        #if self.geometry.GetArea() <= chidSrfCandidate.GetArea():
-        #    print "The area of the child surface cannot be larger than the area of the parent surface!"
-        #    return False
-        
         # all points are located on the surface and the area is less so it is all good!
         return True
     
@@ -6665,7 +6700,7 @@ class hb_EPZoneSurface(hb_EPSurface):
         
         def checkCrvArea(crv):
             try:
-                area = rc.Geometry.AreaMassProperties.Compute(crv).Area
+                area = rc.Geometry.AreaMassProperties.Compute(crv).Area *sc.sticky["honeybee_ConversionFactor"]*sc.sticky["honeybee_ConversionFactor"]
             except:
                 area = 0
             
@@ -6706,9 +6741,9 @@ class hb_EPZoneSurface(hb_EPSurface):
             # check area of curve
             try:
                 if self.isPlanar:
-                    area = rc.Geometry.AreaMassProperties.Compute(jGlzCrv).Area
+                    area = rc.Geometry.AreaMassProperties.Compute(jGlzCrv).Area *sc.sticky["honeybee_ConversionFactor"]*sc.sticky["honeybee_ConversionFactor"]
                 else:
-                    area = rc.Geometry.AreaMassProperties.Compute(glzSrf.geometry).Area
+                    area = rc.Geometry.AreaMassProperties.Compute(glzSrf.geometry).Area *sc.sticky["honeybee_ConversionFactor"]*sc.sticky["honeybee_ConversionFactor"]
             except:
                 # in case area calulation fails
                 # let it go anyways!
@@ -6778,10 +6813,10 @@ class hb_EPZoneSurface(hb_EPSurface):
     def getOpaqueArea(self):
         if self.hasChild:
             try:
-                return self.punchedGeometry.GetArea()
+                return self.punchedGeometry.GetArea()*sc.sticky["honeybee_ConversionFactor"]*sc.sticky["honeybee_ConversionFactor"]
             except:
                 self.calculatePunchedSurface()
-                return self.punchedGeometry.GetArea()
+                return self.punchedGeometry.GetArea()*sc.sticky["honeybee_ConversionFactor"]*sc.sticky["honeybee_ConversionFactor"]
         else:
             return self.getTotalArea()
     
@@ -7402,7 +7437,7 @@ class hb_GlzGeoGeneration(object):
         def getAreaAndCenPt(surface):
             MP = rc.Geometry.AreaMassProperties.Compute(surface)
             if MP:
-                area = MP.Area
+                area = MP.Area *sc.sticky["honeybee_ConversionFactor"]*sc.sticky["honeybee_ConversionFactor"]
                 centerPt = MP.Centroid
                 MP.Dispose()
                 bool, centerPtU, centerPtV = surface.Faces[0].ClosestPoint(centerPt)
@@ -7434,7 +7469,7 @@ class hb_GlzGeoGeneration(object):
                     
                     if len(joinedEdges) == 1:
                         glzSrf = splSurface
-                        glzArea = glzSrf.GetArea()
+                        glzArea = glzSrf.GetArea()*sc.sticky["honeybee_ConversionFactor"]*sc.sticky["honeybee_ConversionFactor"]
                         success = True
             else:
                 print "Offseting boundary and spliting the surface failed!"
@@ -7826,20 +7861,24 @@ class thermDefaults(object):
         self.frameCavityBCProperties['EmisModifier'] = "1.000000"
     
     def addThermMatToLib(self, materialString):
-        #Parse the string.
+        # Get the name
         materialName = materialString.split('Material Name=')[-1].split(' Type=')[0].upper()
+        
+        #Make a sub-dictionary for the material.
+        sc.sticky["honeybee_thermMaterialLib"][materialName] = {}
+        
+        #Parse the string.
         type = int(materialString.split('Type=')[-1].split(' ')[0])
         conductivity = float(materialString.split('Conductivity=')[-1].split(' ')[0])
         absorptivity = float(materialString.split('Absorptivity=')[-1].split(' ')[0])
         emissivity = float(materialString.split('Emissivity=')[-1].split(' ')[0])
         try:
             RGBColor = System.Drawing.ColorTranslator.FromHtml(materialString.split('RGBColor=')[-1].split('/>')[0])
+            sc.sticky["honeybee_thermMaterialLib"][materialName]["Tir"] = "0.0"
         except:
             RGBColor = System.Drawing.ColorTranslator.FromHtml(materialString.split('RGBColor=')[-1].split(' ')[0])
             CavityModel = int(materialString.split('CavityModel=')[-1].split('/>')[0])
-        
-        #Make a sub-dictionary for the material.
-        sc.sticky["honeybee_thermMaterialLib"][materialName] = {}
+            sc.sticky["honeybee_thermMaterialLib"][materialName]["Tir"] = "-1.0"
         
         #Create the material with values from the original material.
         sc.sticky["honeybee_thermMaterialLib"][materialName]["Name"] = materialName
@@ -7929,6 +7968,7 @@ class thermPolygon(object):
         sc.sticky["honeybee_thermMaterialLib"][materialName]["Type"] = sc.sticky["honeybee_thermMaterialLib"][orgigMat]["Type"]
         sc.sticky["honeybee_thermMaterialLib"][materialName]["Conductivity"] = sc.sticky["honeybee_thermMaterialLib"][orgigMat]["Conductivity"]
         sc.sticky["honeybee_thermMaterialLib"][materialName]["Absorptivity"] = sc.sticky["honeybee_thermMaterialLib"][orgigMat]["Absorptivity"]
+        sc.sticky["honeybee_thermMaterialLib"][materialName]["Tir"] = sc.sticky["honeybee_thermMaterialLib"][orgigMat]["Tir"]
         sc.sticky["honeybee_thermMaterialLib"][materialName]["Emissivity"] = sc.sticky["honeybee_thermMaterialLib"][orgigMat]["Emissivity"]
         sc.sticky["honeybee_thermMaterialLib"][materialName]["WindowDB"] = sc.sticky["honeybee_thermMaterialLib"][materialName]["WindowDB"]
         sc.sticky["honeybee_thermMaterialLib"][materialName]["WindowID"] = sc.sticky["honeybee_thermMaterialLib"][materialName]["WindowID"]
@@ -7946,6 +7986,7 @@ class thermPolygon(object):
         sc.sticky["honeybee_thermMaterialLib"][material]["Type"] = 0
         sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] = None
         sc.sticky["honeybee_thermMaterialLib"][material]["Absorptivity"] = 0.5
+        sc.sticky["honeybee_thermMaterialLib"][material]["Tir"] = "0.0"
         sc.sticky["honeybee_thermMaterialLib"][material]["Emissivity"] = 0.9
         sc.sticky["honeybee_thermMaterialLib"][material]["WindowDB"] = ""
         sc.sticky["honeybee_thermMaterialLib"][material]["WindowID"] = "-1"
@@ -7972,6 +8013,7 @@ class thermPolygon(object):
             sc.sticky["honeybee_thermMaterialLib"][material]["Type"] = 1
             sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] = 0.435449
             sc.sticky["honeybee_thermMaterialLib"][material]["CavityModel"] = 4
+            sc.sticky["honeybee_thermMaterialLib"][materialName]["Tir"] = "-1.0"
         elif sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] == None:
             #This is a no-mass material and we are not going to be able to figure out a conductivity. The best we can do is give a warning.
             if values[0] == "WindowMaterial:SimpleGlazingSystem": sc.sticky["honeybee_thermMaterialLib"][material]["Conductivity"] = float(values[2])*0.01
@@ -9548,7 +9590,7 @@ if checkIn.letItFly:
         
         
         # Check for an installation of THERM.
-        THERMVersions = ["7.5"]
+        THERMVersions = ["7.5","7.6"]
         THERMVersion = ''
         THERMSettingsFile = ''
         if folders.THERMPath != None:
@@ -9700,7 +9742,8 @@ if checkIn.letItFly:
                                                   4: ["4: VSC", "%"],
                                                   5: ["5: annual analysis", "var"]}
         sc.sticky["honeybee_NonConvexChecking"] = hb_NonConvexChecking
-                                                 
+        sc.sticky["honeybee_ConversionFactor"] = checkUnits()
+        
         # done! sharing the happiness.
         print "Hooohooho...Flying!!\nVviiiiiiizzz..."
         

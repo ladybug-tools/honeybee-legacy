@@ -28,8 +28,9 @@ This is a component for running a previoulsy-generated .osm file through EnergyP
 Provided by Ladybug 0.0.45
     
     Args:
-        _osmFilePath: A file path of the an OpemStdio file
-        _epwFileAddress: Address to epw weather file.
+        _osmFilePath: A full file path to an OpenStdio Model (.osm) file.
+        _epwFileAddress: A full file path to an epw weather file.
+        parallel_: Set to "True" to run multiple IDFs using multiple CPUs.  Note that this input is only relevant when you have plugged in a list of OSM file addresses.
         _runIt: Set to "True" to have the component generate an IDF file from the OSM file and run the IDF through through EnergyPlus.  Set to "False" to not run the file (this is the default).  You can also connect an integer for the following options:
             0 = Do Not Run OSM and IDF thrrough EnergyPlus
             1 = Run the OSM and IDF through EnergyPlus with a command prompt window that displays the progress of the simulation
@@ -37,13 +38,15 @@ Provided by Ladybug 0.0.45
             3 = Generate an IDF from the OSM file but do not run it through EnergyPlus
     Returns:
         report: Report!
+        idfFileAddress: The file path of the IDF file that has been generated on your machine. This file is only generated when you set "runSimulation_" to "True."
         resultFileAddress: The address of the EnergyPlus result file.
-        studyFolder: The directory in which the simulation has been run.  Connect this to the 'Honeybee_Lookup EnergyPlus' folder to bring many of the files in this directory into Grasshopper.
+        eioFileAddress:  The file path of the EIO file that has been generated on your machine.  This file contains information about the sizes of all HVAC equipment from the simulation.  This file is only generated when you set "runSimulation_" to "True."
+        rddFileAddress: The file path of the Result Data Dictionary (.rdd) file that is generated after running the file through EnergyPlus.  This file contains all possible outputs that can be requested from the EnergyPlus model.  Use the "Honeybee_Read Result Dictionary" to see what outputs can be requested.
 """
 
 ghenv.Component.Name = "Honeybee_Re-run OSM"
 ghenv.Component.NickName = 'Re-Run OSM'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJAN_04_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -58,7 +61,7 @@ import shutil
 import Grasshopper.Kernel as gh
 import time
 import subprocess
-
+import System.Threading.Tasks as tasks
 
 def checkTheInputs(osmFileName, epwWeatherFile):
     w = gh.GH_RuntimeMessageLevel.Warning
@@ -195,8 +198,54 @@ def main(epwFile, osmFile, runEnergyPlus, openStudioLibFolder):
     else:
         resultFile = None
     
-    return workingDir, os.path.join(idfFolder, "ModelToIdf", "in.idf"), resultFile
+    eioFile = None
+    rddFile = None
+    try:
+        eioFile = resultFile.replace('.csv', '.eio')
+        rddFile = resultFile.replace('.csv', '.rdd')
+    except:
+        pass
+    
+    return workingDir, os.path.join(idfFolder, "ModelToIdf", "in.idf"), resultFile, eioFile, rddFile
 
+def main_parallel(epwFile, osmFiles, runEnergyPlus, parallel, openStudioLibFolder):
+    # placeholders.
+    idfFileAddress = [None for x in osmFiles]
+    resultFileAddress = [None for x in osmFiles]
+    eioFileAddress = [None for x in osmFiles]
+    rddFileAddress = [None for x in osmFiles]
+    
+    runInBackground = False
+    if parallel == True:
+        runInBackground = True
+    elif runEnergyPlus > 1:
+        runInBackground = True
+    
+    def runOS(i):
+        fileCheck = checkTheInputs(osmFiles[i], epwFile)
+        if fileCheck != -1:
+            # Preparation
+            workingDir, fileName = os.path.split(osmFiles[i])
+            projectName = (".").join(fileName.split(".")[:-1])
+            osmPath = ops.Path(osmFiles[i])
+            # create idf
+            idfFolder, idfPath = osmToidf(workingDir, projectName, osmPath)
+            idfFileAddress[i] = idfFolder + "ModelToIdf\\in.idf"
+            
+            if runEnergyPlus < 3:
+                osmDirect = '/'.join(openStudioLibFolder.split('/')[:-3])
+                resultFile = writeBatchFile(idfFolder, "ModelToIdf\\in.idf", epwFile, getEPFolder(osmDirect), runInBackground)
+                resultFileAddress[i] = resultFile
+                eioFileAddress[i] = resultFile.replace('.csv', '.eio')
+                rddFileAddress[i] = resultFile.replace('.csv', '.rdd')
+    
+    if parallel == True:
+        tasks.Parallel.ForEach(range(len(osmFiles)), runOS)
+    else:
+        for x in range(len(osmFiles)):
+            runOS(x)
+    
+    return None, idfFileAddress, resultFileAddress, eioFileAddress, rddFileAddress
 
 #Honeybee check.
 initCheck = True
@@ -248,9 +297,13 @@ else:
     openStudioIsReady = False
 
 
-if openStudioIsReady and initCheck == True and openStudioIsReady == True and _runIt > 0 and _epwFileAddress and _osmFilePath:
-    fileCheck = checkTheInputs(_osmFilePath, _epwFileAddress)
-    if fileCheck != -1:
-        result = main(_epwFileAddress, _osmFilePath, _runIt, openStudioLibFolder)
-        if result != -1:
-            studyFolder, idfFileAddress, resultFileAddress = result
+if initCheck == True and openStudioIsReady == True and _runIt > 0:
+    if len(_osmFilePath) == 1:
+        fileCheck = checkTheInputs(_osmFilePath[0], _epwFileAddress)
+        if fileCheck != -1:
+            result = main(_epwFileAddress, _osmFilePath[0], _runIt, openStudioLibFolder)
+    else:
+        result = main_parallel(_epwFileAddress, _osmFilePath, _runIt, parallel_, openStudioLibFolder)
+    
+    if result != -1:
+        studyFolder, idfFileAddress, resultFileAddress, eioFileAddress, rddFileAddress = result

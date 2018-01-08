@@ -12,11 +12,11 @@ Constructions, schedules and systems will be neglected
 """
 ghenv.Component.Name = "Honeybee_Import idf"
 ghenv.Component.NickName = 'importIdf'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nDEC_30_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP"
-#compatibleHBVersion = VER 0.0.56\nNOV_04_2016
+#compatibleHBVersion = VER 0.0.56\nDEC_15_2017
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
@@ -496,7 +496,15 @@ def main(idfFile, importEPObjects = False):
                     pass
         
         zonesList.append(HBZone)
-        
+    
+    # Scale everything if the units system is not meters.
+    if sc.sticky["honeybee_ConversionFactor"] != 1:
+        fac = 1/sc.sticky["honeybee_ConversionFactor"]
+        NUscale = rc.Geometry.Transform.Scale(rc.Geometry.Plane(rc.Geometry.Plane.WorldXY),fac,fac,fac)
+        for HBZone in zonesList:
+            HBZone.transform(NUscale, "", False)
+        for shad in shadingList:
+            shad.transform(NUscale, "", False)
     
     # add to the hive
     hb_hive = sc.sticky["honeybee_Hive"]()

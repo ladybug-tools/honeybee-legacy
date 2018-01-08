@@ -43,11 +43,11 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Dump Honeybee Objects"
 ghenv.Component.NickName = 'dumpHBObjects'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nDEC_29_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
-#compatibleHBVersion = VER 0.0.59\nJUL_24_2017
+#compatibleHBVersion = VER 0.0.59\nDEC_15_2017
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "6"
 except: pass
@@ -58,7 +58,7 @@ import scriptcontext as sc
 import Grasshopper.Kernel as gh
 import os
 import uuid
-
+import Rhino as rc
 
 def dumpHBObjects(HBObjects, fileName, workingDir=None):
     hb_hive = sc.sticky["honeybee_Hive"]()
@@ -101,6 +101,12 @@ def dumpHBObjects(HBObjects, fileName, workingDir=None):
     def dumpHBZone(HBZone):
         if HBZone.objectType != 'HBZone': return
         
+        # Scale everything if the units system is not meters.
+        if sc.sticky["honeybee_ConversionFactor"] != 1:
+            fac = sc.sticky["honeybee_ConversionFactor"]
+            NUscale = rc.Geometry.Transform.Scale(rc.Geometry.Plane(rc.Geometry.Plane.WorldXY),fac,fac,fac)
+            HBZone.transform(NUscale, "", False)
+        
         # dump all surfaces and replace surfaces with ids.
         surfaceIds = [srf.ID for srf in HBZone.surfaces]
         for surface in HBZone.surfaces:
@@ -135,7 +141,13 @@ def dumpHBObjects(HBObjects, fileName, workingDir=None):
         # add the zone to the master dictionary.
         objs[HBZone.ID] = HBZone.__dict__
     
-    def dumpHBSurface(HBSurface):
+    def dumpHBSurface(HBSurface, checkTransform=False):
+        # Scale everything if the units system is not meters.
+        if checkTransform == True and sc.sticky["honeybee_ConversionFactor"] != 1:
+            fac = sc.sticky["honeybee_ConversionFactor"]
+            NUscale = rc.Geometry.Transform.Scale(rc.Geometry.Plane(rc.Geometry.Plane.WorldXY),fac,fac,fac)
+            HBSurface.transform(NUscale, "", False)
+        
         # replace parent object with it's ID
         if HBSurface.parent != None:
             # make sure parent object is also in the list
@@ -344,7 +356,7 @@ def dumpHBObjects(HBObjects, fileName, workingDir=None):
     # cycle through the objects and dump everything.
     for id, HBO in zip(ids, HBObjects):
         if HBO.objectType == 'HBSurface':
-            dumpHBSurface(HBO)
+            dumpHBSurface(HBO, True)
         elif HBO.objectType == 'HBZone':
             dumpHBZone(HBO)
         elif HBO.objectType == 'ViewFactorInfo':

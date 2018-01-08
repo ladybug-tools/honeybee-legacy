@@ -46,11 +46,11 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Add Internal Mass to Zone"
 ghenv.Component.NickName = 'addInternalMass'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nDEC_15_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nNOV_04_2016
+#compatibleHBVersion = VER 0.0.56\nDEC_15_2017
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
 except: pass
@@ -129,7 +129,7 @@ def checkTheInputs():
                             brepZoneCounter[zoneCount] += 1
                     if brepZoneCounter[zoneCount] == len(srfVerts[count]):
                         #The surface is completely inside the zone.
-                        area = rc.Geometry.AreaMassProperties.Compute(brep).Area
+                        area = rc.Geometry.AreaMassProperties.Compute(brep).Area*sc.sticky["honeybee_ConversionFactor"]*sc.sticky["honeybee_ConversionFactor"]
                         srfAreas[zoneCount] += area
                 
                 #Give a warning if a surface was not found to lie completely inside any zone.

@@ -42,7 +42,7 @@ ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
 #compatibleHBVersion = VER 0.0.56\nFEB_01_2015
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
-try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
 
 
@@ -51,12 +51,14 @@ import Grasshopper.Kernel as gh
 from Grasshopper import DataTree
 from Grasshopper.Kernel.Data import GH_Path
 
-occupancyProfile = DataTree[Object]()
-shadingProfiles = DataTree[Object]()
-lightingControlProfiles = DataTree[Object]()
-dgpProfile = DataTree[Object]()
+
 
 if _annualProfiles.DataCount!=0 and _annualProfiles.Branch(0)[0]!=None:
+    occupancyProfile = DataTree[Object]()
+    shadingProfiles = DataTree[Object]()
+    lightingControlProfiles = DataTree[Object]()
+    dgpProfile = DataTree[Object]()
+    
     for branchCount in range(_annualProfiles.BranchCount):
         # open the file
         filePath = _annualProfiles.Branch(branchCount)[0]

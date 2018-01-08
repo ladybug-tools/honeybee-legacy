@@ -53,13 +53,13 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Apply OpenStudio Measure"
 ghenv.Component.NickName = 'applyOSMeasure'
-ghenv.Component.Message = 'VER 0.0.62\nOCT_17_2017'
+ghenv.Component.Message = 'VER 0.0.62\nDEC_31_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
-ghenv.Component.SubCategory = "13 | WIP"
+ghenv.Component.SubCategory = "10 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nJUL_25_2017
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
-try: ghenv.Component.AdditionalHelpFromDocStrings = "3"
+try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
 
 import os
@@ -259,6 +259,7 @@ def main(runIt, epwFile, OSMeasures, osmFile, hb_OpenStudioMeasure):
         resultFile = writeBatchFile(epRunDir, "ModelToIdf\\in.idf", epwFile, runIt > 1)
     else:
         idfFilePath = None
+        resultFile = [None, None, None, None, None, None]
     
     osmFileAddress = runDir + 'in.osm'
     
@@ -284,7 +285,7 @@ else:
         "into canvas and try again."
         ghenv.Component.AddRuntimeMessage(w, warning)
 
-if openStudioIsReady and initCheck == True and _runIt > 0:
+if openStudioIsReady and initCheck == True and _runIt > 0 and _osmFilePath != None:
     result = main(_runIt, _epwWeatherFile, _OSMeasures, _osmFilePath, hb_OpenStudioMeasure)
     if result != -1:
         osmFileAddress, idfFileAddress, resultFileAddress, sqlFileAddress, eioFileAddress, rddFileAddress, htmlReport, studyFolder = result

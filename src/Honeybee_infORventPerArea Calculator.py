@@ -40,7 +40,7 @@ Provided by Honeybee 0.0.62
 """
 ghenv.Component.Name = "Honeybee_infORventPerArea Calculator"
 ghenv.Component.NickName = 'ACH2m3/s-m2 Calculator'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nDEC_15_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
@@ -114,7 +114,6 @@ def main(hb_hive, HBZones, airFlowRate, unit):
         for srf in HZone.surfaces:
             #srf.type == 2 (floors), == 2.5 (groundFloors), == 2.75 (exposedFloors)
             if int(srf.type) == 2:
-                option2FlrArea = rc.Geometry.AreaMassProperties.Compute(srf.geometry).Area
                 allFloors.append(srf.geometry)
     
     return infORventPerArea, allFloors

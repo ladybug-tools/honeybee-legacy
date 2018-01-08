@@ -70,11 +70,11 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Energy Shade Benefit Evaluator"
 ghenv.Component.NickName = 'EnergyShadeBenefit'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nDEC_15_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nFEB_01_2015
+#compatibleHBVersion = VER 0.0.56\nDEC_15_2017
 #compatibleLBVersion = VER 0.0.59\nNOV_20_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
 except: pass
@@ -343,7 +343,7 @@ def meshTheShade(gridSize, testShades):
         #Calculate the areas of the breps for later use in the normalization of shade benefit values.
         analysisAreas = []
         for brep in analysisBreps:
-            area = rc.Geometry.AreaMassProperties.Compute(brep).Area
+            area = rc.Geometry.AreaMassProperties.Compute(brep).Area*sc.sticky["honeybee_ConversionFactor"]*sc.sticky["honeybee_ConversionFactor"]
             analysisAreas.append(area)
         
         #Append the lists to the total list.

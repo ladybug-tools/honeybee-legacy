@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2017, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools>, Chris Mackey <Chris@MackeyArchitecture.com>, and Chien Si Harriman <charriman@terabuild.com>
+# Copyright (c) 2013-2017, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools>, Chris Mackey <chris@ladybug.tools>, and Chien Si Harriman <charriman@terabuild.com>
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -31,22 +31,22 @@ Provided by Honeybee 0.0.62
         north_: Input a vector to be used as a true North direction for the energy simulation or a number between 0 and 360 that represents the degrees off from the y-axis to make North.  The default North direction is set to the Y-axis (0 degrees).
         _epwWeatherFile: An .epw file path on your system as a text string.
         _analysisPeriod_: An optional analysis period from the Ladybug_Analysis Period component.  If no Analysis period is given, the energy simulation will be run for the enitre year.
-        +++++++++++++++: ...
         _energySimPar_: Optional Energy Simulation Parameters from the "Honeybee_Energy Simulation Par" component.  If no value is connected here, the simulation will run with the following parameters:
             1 - 6 timeSteps per hour
             2 - A shadow calculation that averages over multiple days (as opposed to running it for each timeStep)
             3 - A shadow calculation frequency of 30 (meaning that the shadow calulation is averaged over every 30 days)
             4 - A maximum of 3000 points used in the shadow calculation. (This may need to be higher if you have a lot of detailed context geometry)
-            5 - An colar energy calculation that includes both interior and exterior light reflections.
+            5 - A solar energy calculation that includes both interior and exterior light reflections.
             6 - A simulation including a zone sizing calculation, a system sizing calculation, a plat sizing calculation, and a full run of the energy use ofver the analysis period.  The simulation is not run for the sizing period by default.
             7 - A system sizing period that runs from the extreme periods of the weather file and not a ddy file.
             8 - City terrian.
-        +++++++++++++++: ...
+        ::::::::::::::::::::::::::::::::::::::: ...
         _HBZones: The HBZones that you wish to write into an OSM file and/or run through EnergyPlus.  These can be from any of the components that output HBZones.
         HBContext_: Optional HBContext geometry from the "Honeybee_EP Context Surfaces." component.
         simulationOutputs_: A list of the outputs that you would like EnergyPlus to write into the result CSV file.  This can be any set of any outputs that you would like from EnergyPlus, writen as a list of text that will be written into the IDF.  It is recommended that, if you are not expereinced with writing EnergyPlus outputs, you should use the "Honeybee_Write EP Result Parameters" component to request certain types of common outputs. 
+        _OSMeasures: Any number of OpenStudio measures that you want to apply to your OpenStudio model. Use the "Honeybee_Load OpenStudio Measure" component to load a measure into Grasshopper.  OpenStudio measures can be downloaded from the NREL Building Components Library (BCL) at this link: https://bcl.nrel.gov/
         additionalStrings_: THIS OPTION IS JUST FOR ADVANCED USERS OF ENERGYPLUS.  You can input additional text strings here that you would like written into the IDF.  The strings input here should be complete EnergyPlus objects that are correctly formatted.  You can input as many objects as you like in a list.  This input can be used to write objects into the IDF that are not currently supported by Honeybee.
-        +++++++++++++++: ...
+        ::::::::::::::::::::::::::::::::::::::: ...
         _writeOSM: Set to "True" to have the component take your HBZones and other inputs and write them into an OSM file.  Note that only setting this to "True" and not setting the output below to "True" will not automatically run the file through EnergyPlus for you.
         runSimulation_: Set to "True" to have the component generate an IDF file from the OSM file and run the IDF through through EnergyPlus.  Set to "False" to not run the file (this is the default).  You can also connect an integer for the following options:
             0 = Do Not Run OSM and IDF thrrough EnergyPlus
@@ -71,11 +71,11 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.62\nOCT_17_2017'
+ghenv.Component.Message = 'VER 0.0.62\nDEC_30_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nJUL_18_2017
+#compatibleHBVersion = VER 0.0.56\nDEC_15_2017
 #compatibleLBVersion = VER 0.0.59\nJUL_24_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
@@ -95,12 +95,19 @@ import subprocess
 import operator
 
 rc.Runtime.HostUtils.DisplayOleAlerts(False)
-
+osVersion = ''
 if sc.sticky.has_key('honeybee_release'):
     if sc.sticky["honeybee_folders"]["OSLibPath"] != None:
         # openstudio is there
         openStudioLibFolder = sc.sticky["honeybee_folders"]["OSLibPath"]
         openStudioIsReady = True
+        
+        # check the version of OpenStudio.
+        try:
+            osVersion = openStudioLibFolder.split('-')[-1].split('/')[0]
+        except:
+            pass
+        
         import clr
         clr.AddReferenceToFileAndPath(openStudioLibFolder+"\\openStudio.dll")
         
@@ -149,12 +156,18 @@ class WriteOPS(object):
         self.internalMassList = {}
         self.shdCntrlList = {}
         self.frameObjList = {}
-        self.bldgTypes = {}
         self.levels = {}
         self.HVACSystemDict = {}
         self.adjacentSurfacesDict = {}
         self.adjacentFenSrfsDict = {}
         self.thermalZonesDict = {}
+        self.spaceTypeDict = {}
+        
+        self.infiltList = []
+        self.schSetList = []
+        self.pplList = []
+        self.lightList = []
+        self.eqList = []
         
         self.csvSchedules = []
         self.csvScheduleCount = 0
@@ -274,18 +287,18 @@ class WriteOPS(object):
     def generateStories(self, HBZones, model):
         levels = []
         for HBZone in HBZones:
-            floorH = "%.3f"%HBZone.getFloorZLevel()
-            if floorH not in self.levels.keys():
+            floorH = "%.2f"%HBZone.getFloorZLevel()
+            if float(floorH) not in levels:
                 levels.append(float(floorH))
         
         levels.sort()
         for floorH in levels:
             story = ops.BuildingStory(model)
             story.setNominalZCoordinate(float(floorH))
-            self.levels["%.3f"%floorH] = story
-        
+            self.levels["%.2f"%floorH] = story
+    
     def setupLevels(self, zone, space):
-        floorH = "%.3f"%zone.getFloorZLevel()
+        floorH = "%.2f"%zone.getFloorZLevel()
         space.setBuildingStory(self.levels[floorH])
         return space
     
@@ -1823,7 +1836,7 @@ class WriteOPS(object):
              heatcoil.setAvailabilitySchedule(heatAvailSch)
     
     def getZoneTotalAir(self, hbZone):
-        zoneFlrArea = hbZone.getFloorArea()
+        zoneFlrArea = hbZone.getFloorArea(True)
         totalZoneFlow = (hbZone.recirculatedAirPerArea*zoneFlrArea) +  (hbZone.ventilationPerArea*zoneFlrArea) + (hbZone.ventilationPerPerson*hbZone.numOfPeoplePerArea*zoneFlrArea)
         return totalZoneFlow
     
@@ -2888,24 +2901,7 @@ class WriteOPS(object):
         heatingSetPtSchedule = self.getOSSchedule(HBZone.heatingSetPtSchedule, model)
         coolingSetPtSchedule = self.getOSSchedule(HBZone.coolingSetPtSchedule, model)
         
-        if HBZone.heatingSetPt != "":
-            heatingSch = ops.ScheduleRuleset(model)
-            heatingSch.setName("Heating Sch")
-            defaultDaySchedule = heatingSch.defaultDaySchedule()
-            defaultDaySchedule.setName("Heating Sch Default")
-            defaultDaySchedule.addValue(time24hrs, float(HBZone.heatingSetPt))
-            thermostat.setHeatingSchedule(heatingSch)
-            
         thermostat.setHeatingSetpointTemperatureSchedule(heatingSetPtSchedule)
-        
-        if HBZone.coolingSetPt != "":
-            coolingSch = ops.ScheduleRuleset(model)
-            coolingSch.setName("Cooling Sch")
-            defaultDaySchedule = coolingSch.defaultDaySchedule()
-            defaultDaySchedule.setName("Cooling Sch Default")
-            defaultDaySchedule.addValue(time24hrs, float(HBZone.coolingSetPt))
-            thermostat.setCoolingSchedule(coolingSch)
-            
         thermostat.setCoolingSetpointTemperatureSchedule(coolingSetPtSchedule)
         
         OSThermalZone.setThermostatSetpointDualSetpoint(thermostat)
@@ -2957,29 +2953,42 @@ class WriteOPS(object):
         OSThermalZone.setPrimaryDaylightingControl(zoneDayLCntrl)
         OSThermalZone.setFractionofZoneControlledbyPrimaryDaylightingControl(HBZone.daylightCntrlFract)
     
+    def getSpaceType(self, zone, space, model):
+        # Create a unique string that contains all unique space info.
+        loadsIDstr = str(zone.equipmentLoadPerArea) + str(zone.infiltrationRatePerArea) + str(zone.lightingDensityPerArea) + \
+            str(zone.numOfPeoplePerArea) + str(zone.ventilationPerPerson)
+        schIDstr = zone.occupancySchedule + zone.occupancyActivitySch + zone.lightingSchedule + \
+            zone.equipmentSchedule + zone.infiltrationSchedule
+        spaceIDstr = loadsIDstr + schIDstr
+        
+        # Create a new space type if there is nothing in the library with all of the right properties.
+        if spaceIDstr not in self.spaceTypeDict.keys():
+            spaceTypeName = ":".join([zone.bldgProgram, zone.zoneProgram, zone.name])
+            spaceType = ops.SpaceType(model)
+            spaceType.setName(spaceTypeName)
+            self.spaceTypeDict[spaceIDstr] = spaceType
+        else:
+            spaceType = self.spaceTypeDict[spaceIDstr]
+        
+        return spaceType
+    
     def setupNameAndType(self, zone, space, model):
         space.setName('{}_space'.format(zone.name))
         
-        # assign space type
-        spaceTypeName = ":".join([zone.bldgProgram, zone.zoneProgram])
-        
-        if not spaceTypeName in self.bldgTypes.keys():
-            spaceType = ops.SpaceType(model)
-            spaceType.setName(spaceTypeName)
-            self.bldgTypes[spaceTypeName] = spaceType
-        else:
-            spaceType = self.bldgTypes[spaceTypeName]
-        
+        spaceType = self.getSpaceType(zone, space, model)
         space.setSpaceType(spaceType)
         
         return space
     
     def setInfiltration(self, zone, space, model):
-        # infiltration
-        infiltration = ops.SpaceInfiltrationDesignFlowRate(model)
-        infiltration.setFlowperSpaceFloorArea(zone.infiltrationRatePerArea)
-        infiltration.setSchedule(self.getOSSchedule(zone.infiltrationSchedule, model))
-        infiltration.setSpace(space)
+        spaceType = space.spaceType.get()
+        spaceName = str(spaceType.name())
+        if spaceName not in self.infiltList:
+            infiltration = ops.SpaceInfiltrationDesignFlowRate(model)
+            infiltration.setFlowperSpaceFloorArea(zone.infiltrationRatePerArea)
+            infiltration.setSchedule(self.getOSSchedule(zone.infiltrationSchedule, model))
+            infiltration.setSpaceType(spaceType)
+            self.infiltList.append(spaceName)
     
     def setAirMixing(self, zone, model):
         # air mixing from air walls
@@ -3028,7 +3037,12 @@ class WriteOPS(object):
         else:
             defSchedule = self.scheduleSetList[defSchStr]
         
-        space.setDefaultScheduleSet(defSchedule)
+        spaceType = space.spaceType.get()
+        spaceName = str(spaceType.name())
+        if spaceName not in self.schSetList:
+            spaceType.setDefaultScheduleSet(defSchedule)
+            self.schSetList.append(spaceName)
+        
         return space
     
     def findDominantConstr(self, lst):
@@ -3152,7 +3166,7 @@ class WriteOPS(object):
             if zone.numOfPeoplePerArea not in self.peopleList.keys():
                 peopleDefinition = ops.PeopleDefinition(model)
                 peopleDefinition.setName(zone.name + "_PeopleDefinition")
-                flrArea = zone.getFloorArea()
+                flrArea = zone.getFloorArea(True)
                 peopleDefinition.setNumberOfPeopleCalculationMethod("People/Area", flrArea)
                 peopleDefinition.setPeopleperSpaceFloorArea(zone.numOfPeoplePerArea)
                 self.peopleList[zone.numOfPeoplePerArea] = peopleDefinition
@@ -3160,12 +3174,16 @@ class WriteOPS(object):
                 peopleDefinition = self.peopleList[zone.numOfPeoplePerArea]
             
             # This was so confusing to find people and people definition as two different objects
-            people = ops.People(peopleDefinition)
-            people.setName(zone.name + "_PeopleObject")
-            people.setActivityLevelSchedule(self.getOSSchedule(zone.occupancyActivitySch, model))
-            people.setNumberofPeopleSchedule(self.getOSSchedule(zone.occupancySchedule, model))
-            #people.setPeopleDefinition(peopleDefinition)
-            people.setSpace(space)
+            spaceType = space.spaceType.get()
+            spaceName = str(spaceType.name())
+            if spaceName not in self.pplList:
+                people = ops.People(peopleDefinition)
+                people.setName(spaceName + "_PeopleObject")
+                people.setActivityLevelSchedule(self.getOSSchedule(zone.occupancyActivitySch, model))
+                people.setNumberofPeopleSchedule(self.getOSSchedule(zone.occupancySchedule, model))
+                people.setPeopleDefinition(peopleDefinition)
+                people.setSpaceType(spaceType)
+                self.pplList.append(spaceName)
      
     def setInternalMassDefinition(self, zone, space, model):
         for srfNum,srfArea in enumerate(zone.internalMassSrfAreas):
@@ -3193,35 +3211,43 @@ class WriteOPS(object):
         if zone.lightingDensityPerArea not in self.lightingList.keys():
             lightsDefinition = ops.LightsDefinition(model)
             lightsDefinition.setName(zone.name + "_LightsDefinition")
-            flrArea = zone.getFloorArea()
+            flrArea = zone.getFloorArea(True)
             lightsDefinition.setDesignLevelCalculationMethod("Watts/Area", flrArea, space.numberOfPeople())
             lightsDefinition.setWattsperSpaceFloorArea(float(zone.lightingDensityPerArea))
             self.lightingList[zone.lightingDensityPerArea] = lightsDefinition
         else:
             lightsDefinition = self.lightingList[zone.lightingDensityPerArea]
         
-        lights = ops.Lights(lightsDefinition)
-        lights.setName(zone.name + "_LightsObject")
-        lights.setSchedule(self.getOSSchedule(zone.lightingSchedule, model))
-        lights.setSpace(space)
+        spaceType = space.spaceType.get()
+        spaceName = str(spaceType.name())
+        if spaceName not in self.lightList:
+            lights = ops.Lights(lightsDefinition)
+            lights.setName(spaceName + "_LightsObject")
+            lights.setSchedule(self.getOSSchedule(zone.lightingSchedule, model))
+            lights.setSpaceType(spaceType)
+            self.lightList.append(spaceName)
     
     def setEquipmentDefinition(self, zone, space, model):
         if zone.equipmentLoadPerArea != 0:
             if zone.equipmentLoadPerArea not in self.equipList.keys():
                 electricDefinition = ops.ElectricEquipmentDefinition(model)
                 electricDefinition.setName(zone.name + "_ElectricEquipmentDefinition")
-                flrArea = zone.getFloorArea()
+                flrArea = zone.getFloorArea(True)
                 electricDefinition.setDesignLevelCalculationMethod("Watts/Area", flrArea, space.numberOfPeople())
                 electricDefinition.setWattsperSpaceFloorArea(zone.equipmentLoadPerArea)
                 self.equipList[zone.equipmentLoadPerArea] = electricDefinition
             else:
                 electricDefinition = self.equipList[zone.equipmentLoadPerArea]
             
-            electricEqipment = ops.ElectricEquipment(electricDefinition)
-            electricEqipment.setName(zone.name + "_ElectricEquipmentObject")
-            electricEqipment.setSchedule(self.getOSSchedule(zone.equipmentSchedule, model))
-            electricEqipment.setEndUseSubcategory('ElectricEquipment')
-            electricEqipment.setSpace(space)
+            spaceType = space.spaceType.get()
+            spaceName = str(spaceType.name())
+            if spaceName not in self.eqList:
+                electricEqipment = ops.ElectricEquipment(electricDefinition)
+                electricEqipment.setName(zone.name + "_ElectricEquipmentObject")
+                electricEqipment.setSchedule(self.getOSSchedule(zone.equipmentSchedule, model))
+                electricEqipment.setEndUseSubcategory('ElectricEquipment')
+                electricEqipment.setSpaceType(spaceType)
+                self.eqList.append(spaceName)
         
     def setDesignSpecificationOutdoorAir(self, zone, space, model):
         if zone.outdoorAirReq != 'None':
@@ -3238,7 +3264,10 @@ class WriteOPS(object):
             else:
                 ventilation = self.ventList[str(zone.ventilationPerArea)+str(zone.ventilationPerPerson)+str(zone.ventilationSched)]
             
-            space.setDesignSpecificationOutdoorAir(ventilation)
+            spaceType = space.spaceType.get()
+            if spaceType.isDesignSpecificationOutdoorAirDefaulted() == True:
+                spaceType.setDesignSpecificationOutdoorAir(ventilation)
+            
         return space
     
     def createOSStanadardOpaqueMaterial(self, HBMaterialName, values, model):
@@ -3834,77 +3863,121 @@ class HoneybeeHVAC(object):
         return [self.ID, self.systemIndex, self.thermalZones, self.hbZones, self.airDetails, self.heatingDetails, self.coolingDetails]
 
 class OPSmeasures(object):
-    def __init__(self, model, weatherFilePath, HBZones, simParameters, openStudioLibFolder, csvSchedules, \
-            csvScheduleCount, additionalcsvSchedules, shadeCntrlToReplace, replaceShdCntrl, windowSpectralData, waterSourceVRFs):
-        self.weatherFile = weatherFilePath # just for batch file as an alternate solution
-        self.EPFolder = sc.sticky["honeybee_folders"]["EPPath"]
-        self.EPPath = ops.Path(self.EPFolder + "\EnergyPlus.exe")
-        self.epwFile = ops.Path(weatherFilePath)
-        self.iddFile = ops.Path(self.EPFolder + "\Energy+.idd")
+    def __init__(self, model, OSMeasures, osmFile):
+        # Load the measure class.
+        self.hb_OpenStudioMeasure = sc.sticky["honeybee_Measure"]
+        
+        # Set up the paths to the files.
+        self.osmName = os.path.split(osmFile)[-1].split('.osm')[0]
+        self.workingDir = os.path.split(osmFile)[0]
+        self.oswAddress = self.workingDir + '\\' + 'workflow.osw'
+        self.osmPath = ops.Path(osmFile)
+        self.oswPath = ops.Path(self.oswAddress)
+        
+        # Put measures and model into the class.
+        self.OSMeasures = OSMeasures
         self.model = model
-        self.HBZones = HBZones
-        self.simParameters = simParameters
-        self.csvSchedules = csvSchedules
-        self.csvScheduleCount = csvScheduleCount
-        self.additionalcsvSchedules = additionalcsvSchedules
-        self.shadeCntrlToReplace = shadeCntrlToReplace
-        self.replaceShdCntrl = replaceShdCntrl
-        self.windowSpectralData = windowSpectralData
-        self.waterSourceVRFs = waterSourceVRFs
-        self.hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
-        self.lb_preparation = sc.sticky["ladybug_Preparation"]()
-    
-    def setupOSW(self, fileLoaction):
-        # Write out a CSV with all natural ventilation definitions within it.
-        natVentCSV = os.path.join(os.path.split(fileLoaction)[0], 'NaturalVentilationParams.csv')
-        natVentCount = 0
-        for zone in self.HBZones:
-            if zone.natVent == True:
-                if natVentCount == 0:
-                    with open(natVentCSV, 'a') as natVentFile:
-                        header = 'Zone Name, Nat Vent Type, Nat Vent Obj Name, Min Indoor, Max Indoor, ' + \
-                        'Delta, Min Outdoor, Max Outdoor, Area/Flowrate, Schedule, Wind Coeff/Fan Eff, ' + \
-                        'Wind Angle/Fan Pres, Height, Stack Coeff\n'
-                        natVentFile.write(header)
-                
-                for natVentCount, natVentObj in enumerate(zone.natVentType):
-                    if natVentObj == 1 or natVentObj == 2:
-                        with open(natVentCSV, 'a') as natVentFile:
-                            natVentFile.write(self.simpleNatVentFileLine(zone, natVentCount))
-                    elif natVentObj == 3:
-                        with open(natVentCSV, 'a') as natVentFile:
-                            natVentFile.write(self.fanNatVentFileLine(zone, natVentCount))
-    
-    def simpleNatVentFileLine(self, zone, natVentCount):
-        if zone.natVentSchedule[natVentCount] == None: natVentSched = 'ALWAYS ON'
-        elif zone.natVentSchedule[natVentCount].upper().endswith('CSV'):
-            natVentSchedFileName = os.path.basename(zone.natVentSchedule[natVentCount])
-            natVentSched = "_".join(natVentSchedFileName.split(".")[:-1])
-        else: natVentSched = zone.natVentSchedule[natVentCount]
         
-        line = zone.name + ',' + str(zone.natVentType[natVentCount]) + ',' + zone.name +'NatVent' + str(natVentCount) + ',' + \
-            str(zone.natVentMinIndoorTemp[natVentCount]) + ',' + str(zone.natVentMaxIndoorTemp[natVentCount]) + ',' + \
-            str(zone.natVentDeltaTemp[natVentCount]) + ',' + str(zone.natVentMinOutdoorTemp[natVentCount]) + ',' + \
-            str(zone.natVentMaxOutdoorTemp[natVentCount]) + ',' + \
-            str(zone.windowOpeningArea[natVentCount]) + ',' + natVentSched + ',' + \
-            str(zone.natVentWindDischarge[natVentCount]) + ',' + str(zone.windowAngle[natVentCount])+ ',' + \
-            str(zone.windowHeightDiff[natVentCount]) + ',' + str(zone.natVentStackDischarge[natVentCount])+ '\n'
-        return line
+        # Check the measures that are connected to be sure that they are valid.
+        for OSMeasure in OSMeasures:
+            try:
+                measureArgs = OSMeasure.args
+                measurePath = OSMeasure.path
+            except:
+                raise Exception("Not a valid Honeybee measure. \nUse the Honeybee_Load OpenStudio Measure component to create one!")
     
-    def fanNatVentFileLine(self, zone, natVentCount):
-        if zone.natVentSchedule[natVentCount] == None: natVentSched = 'ALWAYS ON'
-        elif zone.natVentSchedule[natVentCount].upper().endswith('CSV'):
-            natVentSchedFileName = os.path.basename(zone.natVentSchedule[natVentCount])
-            natVentSched = "_".join(natVentSchedFileName.split(".")[:-1])
-        else: natVentSched = zone.natVentSchedule[natVentCount]
+    def setupOSW(self):
+        # Create the workflow JSON.
+        wf = ops.WorkflowJSON()
+        wf.setOswPath(self.oswPath)
+        wf.setSeedFile(self.osmPath)
         
-        line = zone.name + ',' + str(zone.natVentType[natVentCount]) + ',' + zone.name +'NatVent' + str(natVentCount) + ',' + \
-            str(zone.natVentMinIndoorTemp[natVentCount]) + ',' + str(zone.natVentMaxIndoorTemp[natVentCount]) + ',' + \
-            str(zone.natVentDeltaTemp[natVentCount]) + ',' + str(zone.natVentMinOutdoorTemp[natVentCount]) + ',' + \
-            str(zone.natVentMaxOutdoorTemp[natVentCount]) + ',' + \
-            str(zone.fanFlow[natVentCount]) + ',' + natVentSched + ',' + \
-            str(zone.FanEfficiency[natVentCount]) + ',' + str(zone.FanPressure[natVentCount])+ ',,\n'
-        return line
+        # Sort the measures so that the OpenStudio ones come first, then E+, then reporting.
+        measureOrder = {"OpenStudio":[], "EnergyPlus":[], "Reporting":[]}
+        for measure in self.OSMeasures:
+            measureOrder[measure.type].append(measure)
+        sortedMeasures = measureOrder["OpenStudio"]
+        sortedMeasures.extend(measureOrder["EnergyPlus"])
+        sortedMeasures.extend(measureOrder["Reporting"])
+        
+        # Add the measures to the workflow.
+        workflowSteps = []
+        for OSMeasure in sortedMeasures:
+            # Copy measure files to a folder next to the OSM.
+            measureName = OSMeasure.path.split('\\')[-1]
+            destDir = self.workingDir + '\\measures\\' + measureName + '\\'
+            if os.path.isdir(destDir):
+                shutil.rmtree(destDir)
+            shutil.copytree(OSMeasure.path, destDir)
+            
+            # Create the measure step
+            measure = ops.MeasureStep(measureName)
+            for arg in OSMeasure.args.values():
+                if str(arg.userInput) != str(arg.default_value):
+                    measure.setArgument(arg.name, str(arg.userInput))
+            workflowSteps.append(measure)
+        
+        # Set the workflow steps and save the JSON.
+        stepVector = ops.WorkflowStepVector(workflowSteps)
+        wf.setWorkflowSteps(stepVector)
+        wf.save()
+        
+        # Associate the workflowJSON with the OpenStudio model.
+        self.model.setWorkflowJSON(wf)
+    
+    def applyMeasures(self, runIt):
+        # Write the batch file.
+        workingDrive = self.workingDir[:2].upper()
+        osExePath = '/'.join(openStudioLibFolder.split('/')[:-2]) +'/bin/'
+        osExePath = osExePath.replace('/', '\\')
+        osExePath = osExePath.replace((workingDrive + '\\'), '')
+        
+        # Write the batch file to apply the measures.
+        batchStr = workingDrive + '\ncd\\' +  osExePath + '\n"' + 'openstudio.exe"' + ' run -w ' + self.oswAddress
+        batchFileAddress = self.workingDir + '\\' + self.osmName.replace(" ", "_") +'.bat'
+        batchfile = open(batchFileAddress, 'w')
+        batchfile.write(batchStr)
+        batchfile.close()
+        
+        # Apply the measures.
+        if runIt == 2:
+            self.runCmd(batchFileAddress)
+        else:
+            os.system(batchFileAddress)
+        
+        # Check to be sure that the measures were applied correctly.
+        runDir = self.workingDir + '\\' + 'run\\'
+        epRunDir = self.workingDir + '\\' + self.osmName + '\\'
+        idfFolder = os.path.join(epRunDir)
+        idfFolder = os.path.join(idfFolder, "ModelToIdf")
+        idfFilePath = os.path.join(idfFolder, "in.idf")
+        if not os.path.isfile(runDir+"in.idf"):
+            # The simulation has not run correctly and we must parse the error log.
+            logfile  = runDir + 'run.log'
+            if os.path.isfile(logfile):
+                errorFound = False
+                errorMsg = 'The measures did not correctly as a result of the following error:\n'
+                with open(logfile, "r") as log:
+                    for line in log:
+                        if 'ERROR]' in line and errorFound == False:
+                            errorFound = True
+                            msg = line.split('ERROR]')[-1]
+                            errorMsg = errorMsg + msg
+                print errorMsg
+                ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, errorMsg)
+                return None
+        
+        try:
+            os.mkdir(epRunDir)
+        except:
+            pass
+        try:
+            os.mkdir(idfFolder)
+        except:
+            pass
+        shutil.copy(runDir+"pre-preprocess.idf", idfFilePath)
+        return idfFolder, idfFilePath
+
 
 
 class EPFeaturesNotInOS(object):
@@ -4363,9 +4436,7 @@ class RunOPS(object):
             fiw.write(line)
         fiw.close()
     
-    
-    def runAnalysis(self, osmFile, runEnergyPlus):
-        
+    def runAnalysis(self, osmFile, runEnergyPlus, idfFileP=None, idfFold=None):
         # Preparation
         workingDir, fileName = os.path.split(osmFile)
         projectName = (".").join(fileName.split(".")[:-1])
@@ -4373,7 +4444,12 @@ class RunOPS(object):
         
         # create idf - I separated this job as putting them together
         # was making EnergyPlus to crash
-        idfFolder, idfPath = self.osmToidf(workingDir, projectName, osmPath)
+        if idfFileP == None:
+            idfFolder, idfPath = self.osmToidf(workingDir, projectName, osmPath)
+        else:
+            self.writeNonOSFeatures(idfFileP, self.HBZones, self.simParameters, workingDir)
+            idfPath = idfFileP
+            idfFolder = idfFold.split('ModelToIdf')[0]
         print 'OSM > IDF: ' + str(idfPath)
         
         if runEnergyPlus < 3:
@@ -4383,9 +4459,6 @@ class RunOPS(object):
             return os.path.join(idfFolder, "ModelToIdf", "in.idf"), None
     
     def writeBatchFile(self, workingDir, idfFileName, epwFileAddress, runInBackground = False):
-        """
-        This is here as an alternate until I can get RunManager to work
-        """
         EPDirectory = self.EPFolder
         workingDrive = workingDir[:2]
         if idfFileName.EndsWith('.idf'):  shIdfFileName = idfFileName.replace('.idf', '')
@@ -4416,8 +4489,24 @@ class RunOPS(object):
         p = subprocess.Popen(["cmd /c ", batchFileAddress], shell=shellKey, stdout=subprocess.PIPE, stderr=subprocess.PIPE)		
         out, err = p.communicate()
 
+def checkUnits():
+    units = sc.doc.ModelUnitSystem
+    if `units` == 'Rhino.UnitSystem.Meters': conversionFactor = 1.00
+    elif `units` == 'Rhino.UnitSystem.Centimeters': conversionFactor = 0.01
+    elif `units` == 'Rhino.UnitSystem.Millimeters': conversionFactor = 0.001
+    elif `units` == 'Rhino.UnitSystem.Feet': conversionFactor = 0.305
+    elif `units` == 'Rhino.UnitSystem.Inches': conversionFactor = 0.0254
+    else:
+        print 'Kidding me! Which units are you using?'+ `units`+'?'
+        print 'Please use Meters, Centimeters, Millimeters, Inches or Feet'
+        return
+    print 'Current document units is in', sc.doc.ModelUnitSystem
+    print 'Conversion to Meters will be applied = ' + "%.3f"%conversionFactor
+    
+    return conversionFactor
 
-def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameters, simulationOutputs, runIt, openOpenStudio, workingDir = "C:\ladybug", fileName = "openStudioModel.osm"):
+
+def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameters, simulationOutputs, OSMeasures, runIt, openOpenStudio, workingDir = "C:\ladybug", fileName = "openStudioModel.osm"):
     # check the release
     w = gh.GH_RuntimeMessageLevel.Warning
     
@@ -4426,9 +4515,11 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         ghenv.Component.AddRuntimeMessage(w, "You should first let both Ladybug and Honeybee to fly...")
         return -1
     
-    units = sc.doc.ModelUnitSystem
-    if `units` != 'Rhino.UnitSystem.Meters':
-        msg = "Currently the OpenStudio component only works in meters. Change the units to Meters and try again!"
+    # Units check with HB_HB.
+    convFac = sc.sticky["honeybee_ConversionFactor"]
+    convCheck = checkUnits()
+    if convFac != convCheck:
+        msg = "There is a mismatch between the current units system and that read by HB_HB. Recompute the grasshopper canvass!"
         ghenv.Component.AddRuntimeMessage(w, msg)
         return -1
     
@@ -4462,6 +4553,20 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         print msg
         ghenv.Component.AddRuntimeMessage(w, msg)
         return -1
+    
+    # Make sure that the version of OpenStudio is correct if OSMeasures are specified.
+    if OSMeasures != [] and OSMeasures[0] != None:
+        versionOk = False
+        try:
+            verNum = osVersion.split('.')[0]
+            if verNum >= 2:
+                versionOk = True
+        except:
+            pass
+        if versionOk == False:
+            msg = "Your version of OpenStudio must be 2.0 or above to use OSMeasures_."
+            print msg
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, msg)
     
     # Import all classes
     lb_preparation = sc.sticky["ladybug_Preparation"]()
@@ -4684,15 +4789,21 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     # add shading surfaces if any
     if HBContext!=[] and HBContext[0]!=None:
         shdingSurfcaes = hb_hive.callFromHoneybeeHive(HBContext)
+        if sc.sticky["honeybee_ConversionFactor"] != 1:
+            NUscale = rc.Geometry.Transform.Scale(rc.Geometry.Plane(rc.Geometry.Plane.WorldXY),sc.sticky["honeybee_ConversionFactor"],sc.sticky["honeybee_ConversionFactor"],sc.sticky["honeybee_ConversionFactor"])
+            for con in shdingSurfcaes:
+                con.transform(NUscale, "", False)
         hb_writeOPS.OPSShdSurface(shdingSurfcaes, model)
     
     # Get the objects in the file that we need to replace or add because OpenStudio does not support them.
     csvSchedules, csvScheduleCount, shadeCntrlToReplace, replaceShdCntrl, windowSpectralData, waterSourceVRFs = hb_writeOPS.getObjToReplace()
     
-    # Assign measures to the OpenStudio model (along with features not supported by OS currently).
-    hb_assingMeasures = OPSmeasures(model, epwWeatherFile, HBZones, hb_writeOPS.simParameters, openStudioLibFolder, csvSchedules, \
-        csvScheduleCount, additionalcsvSchedules, shadeCntrlToReplace, replaceShdCntrl, windowSpectralData, waterSourceVRFs)
-    hb_assingMeasures.setupOSW(fname)
+    # If there are OSMeasures, assign them to the OpenStudio model.
+    measureApplied = False
+    if OSMeasures != [] and OSMeasures[0] != None:
+        hb_assingMeasures = OPSmeasures(model, OSMeasures, fname)
+        hb_assingMeasures.setupOSW()
+        measureApplied =  True
     
     # save the model
     model.save(ops.Path(fname), True)
@@ -4701,15 +4812,29 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     projectName = (".").join(fileName.split(".")[:-1])
     
     # Open the model in OpenStudio (if requested).
-    if openOpenStudio:
-        os.startfile(fname)
+    def openModel(fname):
+        try:
+            os.startfile(fname)
+        except:
+            try:
+                os.system("start " + fname)
+            except:
+                os.system("OpenStudioApp.exe " + fname)
+    if openOpenStudio and not (measureApplied == True and runIt > 0):
+        openModel(fname)
     
     # Run the file through OpenStudio
     if runIt > 0:
+        # Apply measures if necessary.
+        idfFold, idfFileP = None, None
+        if OSMeasures != [] and OSMeasures[0] != None:
+            idfFold, idfFileP = hb_assingMeasures.applyMeasures(runIt)
+        
+        # Run the model through OpenStudio
         hb_runOPS = RunOPS(model, epwWeatherFile, HBZones, hb_writeOPS.simParameters, openStudioLibFolder, csvSchedules, \
             csvScheduleCount, additionalcsvSchedules, shadeCntrlToReplace, replaceShdCntrl, windowSpectralData, waterSourceVRFs)
         
-        idfFile, resultFile = hb_runOPS.runAnalysis(fname, runIt)
+        idfFile, resultFile = hb_runOPS.runAnalysis(fname, runIt, idfFileP, idfFold)
         if runIt < 3:
             try:
                 errorFileFullName = idfFile.replace('.idf', '.err')
@@ -4729,13 +4854,18 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
             except:
                 pass
         
+        if measureApplied == True and runIt > 0:
+            fname = fname.split(fileName)[0] + 'run\\in.osm'
+            if openOpenStudio:
+                openModel(fname)
+        
         return fname, idfFile, resultFile, originalWorkDir, model
         
     return fname, None, None, originalWorkDir, model
 
 if _HBZones and _HBZones[0]!=None and _epwWeatherFile and _writeOSM and openStudioIsReady:
     results = main(_HBZones, HBContext_, north_, _epwWeatherFile,
-                  _analysisPeriod_, _energySimPar_, simulationOutputs_,
+                  _analysisPeriod_, _energySimPar_, simulationOutputs_, OSMeasures_,
                   runSimulation_, openOpenStudio_, workingDir_, fileName_)
     if results!=-1:
         osmFileAddress, idfFileAddress, resultsFiles, studyFolder, model = results

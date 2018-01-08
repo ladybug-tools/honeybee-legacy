@@ -50,7 +50,7 @@ Provided by Ladybug 0.0.57
 
 ghenv.Component.Name = "Honeybee_Convert EnergyPlus Schedule to Values"
 ghenv.Component.NickName = 'convertEPSCHValues'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJAN_04_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "07 | Energy | Schedule"
@@ -298,10 +298,13 @@ def main(schName, startDayOfTheWeek, epwFile, customHol):
                     elif lineCount == 1: readSchedules.schName = line.split('; ')[-1].split(':')[0]
                     elif lineCount < 4: pass
                     else:
-                        for columnCount, column in enumerate(line.split(',')):
-                            if columnCount == 4:
-                                values.append(float(column))
+                        columns = line.split(',')
+                        try:
+                            values.append(float(columns[4]))
+                        except:
+                            values.append(float(columns[3]))
                     lineCount += 1
+            values.insert(0, values.pop(-1))
             dataGotten = True
     else:
         HBScheduleList = sc.sticky["honeybee_ScheduleLib"].keys()

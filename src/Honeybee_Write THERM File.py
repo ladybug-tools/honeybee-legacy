@@ -53,10 +53,11 @@ import datetime
 import decimal
 from tempfile import mkstemp
 from shutil import move
+from shutil import copyfile
 
 ghenv.Component.Name = 'Honeybee_Write THERM File'
 ghenv.Component.NickName = 'writeTHERM'
-ghenv.Component.Message = 'VER 0.0.62\nAUG_18_2017'
+ghenv.Component.Message = 'VER 0.0.62\nDEC_04_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -423,6 +424,47 @@ def dictToXMLSimple(dict, startTag, dataType):
         xmlStr = xmlStr + '" '
     if startTag: xmlStr = xmlStr[:-1] + '>'
     else: xmlStr = xmlStr + '/>'
+    xmlStr = xmlStr + '\n'
+    return xmlStr
+
+def dictToXMLMatV76(dict, dataType):
+    xmlStr = '\t<' + dataType + ' '
+    emissSide = 'Front'
+    gas = False
+    try:
+        test = dict["CavityModel"]
+        keys = ['Name', 'Type', 'Conductivity', 'Tir', 'Absorptivity', 'Emissivity', 'Emissivity', 'RGBColor', 'CavityModel']
+        gas = True
+    except:
+        keys = ['Name', 'Type', 'Conductivity', 'Tir', 'Emissivity', 'Emissivity', 'RGBColor']
+        dict['Type'] = 0
+    
+    for count, item in enumerate(keys):
+        if item == 'Emissivity':
+            xmlStr = xmlStr + str(item)+ emissSide
+            if emissSide == 'Front':
+                emissSide = 'Back'
+            else:
+                emissSide = 'Front'
+        else:
+            xmlStr = xmlStr + str(item)
+        xmlStr = xmlStr + '="'
+        xmlStr = xmlStr + str(dict[item])
+        xmlStr = xmlStr + '" '
+    if gas == True:
+        xmlStr = xmlStr + '/>'
+    else:
+        xmlStr = xmlStr + '>\n' + \
+            '\t\t<Property Side="Front" Range="Visible" Specularity="Direct" T="0.000000" R="0.000000"/>\n' + \
+            '\t\t<Property Side="Front" Range="Visible" Specularity="Diffuse" T="0.000000" R="0.000000"/>\n' + \
+            '\t\t<Property Side="Front" Range="Solar" Specularity="Direct" T="0.000000" R="0.000000"/>\n' + \
+            '\t\t<Property Side="Front" Range="Solar" Specularity="Diffuse" T="0.000000" R="0.000000"/>\n' + \
+            '\t\t<Property Side="Back" Range="Visible" Specularity="Direct" T="0.000000" R="0.000000"/>\n' + \
+            '\t\t<Property Side="Back" Range="Visible" Specularity="Diffuse" T="0.000000" R="0.000000"/>\n' + \
+            '\t\t<Property Side="Back" Range="Solar" Specularity="Direct" T="0.000000" R="0.000000"/>\n' + \
+            '\t\t<Property Side="Back" Range="Solar" Specularity="Diffuse" T="0.000000" R="0.000000"/>\n' + \
+            '\t</Material>'
+    
     xmlStr = xmlStr + '\n'
     return xmlStr
 
@@ -971,12 +1013,19 @@ def main(runTHERM, workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, 
     thmFile = workingDir + xmlFileName + '_thmx.thm'
     
     xmlFile = open(xmlFilePath, "w")
+    if thermDir.endswith('7.6/'):
+        thermVersion = '7.6.1.0'
+    else:
+        thermVersion = '7.5.1.0'
     
     #HEADER
     #Keep track of the transformations used to convert between Rhino space and THERM space. Write it into the XML so that results can be read back onto the original geometry after running THERM.
     headerStr = '<?xml version="1.0"?>\n' + \
         '<THERM-XML xmlns="http://windows.lbl.gov">\n' + \
-        '<ThermVersion>Version 7.5.13.0</ThermVersion>\n' + \
+        '<ThermVersion>Version '+ thermVersion + '</ThermVersion>\n'
+    if thermVersion == '7.6.1.0':
+        headerStr = headerStr + '<FileVersion>1</FileVersion>\n'
+    headerStr = headerStr + \
         '<SaveDate>' + str(datetime.datetime.now()) + '</SaveDate>\n' + \
         '\n' + \
         '<Title>' + xmlFileName + '</Title>\n' + \
@@ -993,7 +1042,10 @@ def main(runTHERM, workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, 
     #MATERIALS
     xmlFile.write('<Materials>\n')
     for material in allMaterials:
-        xmlFile.write(dictToXMLSimple(material, False, 'Material'))
+        if thermVersion == '7.5.1.0':
+            xmlFile.write(dictToXMLSimple(material, False, 'Material'))
+        else:
+            xmlFile.write(dictToXMLMatV76(material, 'Material'))
     xmlFile.write('</Materials>\n')
     
     
@@ -1043,6 +1095,10 @@ def main(runTHERM, workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, 
     except:
         pass
     try:
+        os.remove(resultDataPath)
+    except:
+        pass
+    try:
         os.remove(errorLogFile)
     except:
         pass
@@ -1055,6 +1111,10 @@ def main(runTHERM, workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, 
     if runTHERM:
         # Set THERM to export the results autmatically.
         checkThermSettings(thermSettings)
+        # Make a copy of the original file if we are using the newer version of THERM.
+        if thermVersion != '7.5.1.0':
+            copyfile(xmlFilePath, uFactorFile)
+        
         # Run the THERM simulation.
         errorLog = runTHERMSim(workingDir, xmlFilePath, errorLogFile, batchFileAddress, thermDir, thermSettings, thmFile)
         # Parse the error log and report any issues at the component level.
@@ -1066,9 +1126,18 @@ def main(runTHERM, workingDir, xmlFileName, thermPolygons, thermBCs, basePlane, 
         # If the calculation is successful, re-write the header of the uFactor file to contian all info of the original THMX file.
         if successfulCalc:
             uFactorFile = findUFacFile(uFactorFile)
-            replaceHeader(xmlFilePath, uFactorFile)
+            if thermVersion == '7.5.1.0':
+                replaceHeader(xmlFilePath, uFactorFile)
+            else:
+                replaceHeader(uFactorFile, xmlFilePath)
+                xmlFilePathReal = copy.deepcopy(uFactorFile)
+                uFactorFile = xmlFilePath
+                xmlFilePath = xmlFilePathReal
             # Change the name of the result file so that it matches what happens when someone manually simulates in THERM.
             os.rename(resultDataPath, resultDataPathFinal)
+    elif thermVersion != '7.5.1.0':
+        resultDataPathFinal = resultDataPath
+        uFactorFile = xmlFilePath
     
     return xmlFilePath, uFactorFile, resultDataPathFinal
 

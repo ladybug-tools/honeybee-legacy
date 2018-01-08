@@ -38,11 +38,11 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Load Honeybee Objects"
 ghenv.Component.NickName = 'loadHBObjects'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nDEC_29_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
-#compatibleHBVersion = VER 0.0.59\nJUL_24_2017
+#compatibleHBVersion = VER 0.0.59\nDEC_15_2017
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "6"
 except: pass
@@ -53,6 +53,7 @@ import Grasshopper.Kernel as gh
 import os
 import uuid
 from Rhino.Geometry import *
+import Rhino as rc
 
 class outdoorBCObject(object):
     """
@@ -222,6 +223,17 @@ def loadHBObjects(HBData):
     
     #replace ids with objects in surfaces
     updateHoneybeeObjects()
+    
+    #Scale everything if units are not meters.
+    if sc.sticky["honeybee_ConversionFactor"] != 1:
+        fac = 1/sc.sticky["honeybee_ConversionFactor"]
+        NUscale = rc.Geometry.Transform.Scale(rc.Geometry.Plane(rc.Geometry.Plane.WorldXY),fac,fac,fac)
+        for obj in HBObjects.keys():
+            if HBObjects[obj].objectType == 'HBSurface':
+                if HBObjects[obj].type == 6:
+                    HBObjects[obj].transform(NUscale, "", False)
+            elif HBObjects[obj].objectType == 'HBZone':
+                HBObjects[obj].transform(NUscale, "", False)
     
     # return new Honeybee objects
     try:

@@ -50,12 +50,11 @@ Provided by Honeybee 0.0.62
         relativeHumidity: The relative humidity of each zone (%).
         airFlowVolume: The total volume of air flowing into the room through both the windows and infiltration (m3/s).  This is voulme of air is at standard density (20 C and adjusted for the elevation above sea level of the weather file).
         airHeatGainRate: The total heat transfer rate to the air from lighting, equipment(appliances/pulg loads), people, the surfaces of the zone, and gains through the heating system.  This output is useful for the estimation of air stratification in the Comfort Analysis workflow.
-        otherZoneData: Other zone data that is in the result file (in no particular order).  Note that this data cannot be normalized by floor area as the component does not know if it can be normalized.
 """
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nDEC_31_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -165,7 +164,6 @@ meanRadTemperature = DataTree[Object]()
 relativeHumidity = DataTree[Object]()
 airFlowVolume = DataTree[Object]()
 airHeatGainRate = DataTree[Object]()
-otherZoneData = DataTree[Object]()
 
 #Create py lists to hold the airflow data.
 infiltrationFlow = []
@@ -193,13 +191,18 @@ try:
 except: pass
 
 #Make a list to keep track of what outputs are in the result file.
-dataTypeList = [False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False]
+dataTypeList = [False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False]
 parseSuccess = False
 
 #If the energy values are set to be normalized, make the units in kWh/m2.
 energyUnit = "kWh"
 idealAirTrigger = False
-centTrigger = False
+
+# lists to keep track of the number of data tree paths.
+coolingC = 0
+heatingC = 0
+fanC = 0
+pumpC = 0
 
 #Make a function to add headers.
 def makeHeader(list, path, zoneName, timestep, name, units, normable):
@@ -222,7 +225,7 @@ def makeHeaderAlt(list, path, zoneName, timestep, name, units, normable):
     list.Add(end, thePath)
 
 
-#Make a function to check the zone name.
+#Function to check the zone name.
 def checkZone(csvName):
     zoneName = None
     
@@ -233,9 +236,12 @@ def checkZone(csvName):
     
     return zoneName
 
-def checkZoneSys(sysInt):
+def checkZoneSys(sysInt, pathOverride=None):
     zoneName = zoneNameList[int(sysInt)-1]
-    path.append(int(sysInt)-1)
+    if pathOverride == None:
+        path.append(int(sysInt)-1)
+    else:
+         path.append(pathOverride)
     return zoneName
 
 def checkZSys(sysInt, sysType):
@@ -253,7 +259,7 @@ def checkSys(sysInt, sysType, sysMult=None):
 
 customCount = 0
 def checkCustomName(customInt):
-    path.append(len(zoneNameList)+len(zoneNameList)+len(zoneNameList)+int(customInt))
+    path.append(int(customInt))
 
 def checkCentralSys(sysInt, sysType):
     if sysType == 0: zoneName = " Chiller " + str(sysInt)
@@ -313,31 +319,9 @@ if _resultFileAddress and gotData == True and csvExists == True:
                         elif 'IDEAL LOADS AIR SYSTEM' in column:
                             zoneName = checkZone(" " + ":".join(column.split(":")[:-1]).split(' IDEAL LOADS AIR SYSTEM')[0])
                             idealAirTrigger = True
-                        elif 'COIL COOLING DX SINGLE SPEED' in column:
-                            zoneName = checkSys(" " + ":".join(column.split(":")[:-1]).split('COIL COOLING DX SINGLE SPEED ')[-1], 'DX Cooling Coil')
-                            idealAirTrigger = False
-                        elif 'COIL COOLING DX TWO SPEED' in column:
-                            zoneName = checkSys(" " + ":".join(column.split(":")[:-1]).split('COIL COOLING DX TWO SPEED ')[-1], 'DX Cooling Coil')
-                            idealAirTrigger = False
-                        elif 'ZONE HVAC TERMINAL UNIT VARIABLE REFRIGERANT FLOW' in column:
-                            zoneName = checkZSys(" " + ":".join(column.split(":")[:-1]).split('ZONE HVAC TERMINAL UNIT VARIABLE REFRIGERANT FLOW ')[-1], 'VRF Terminal Unit')
-                            idealAirTrigger = False
-                        elif 'VRF HEAT PUMP -' in column:
-                            zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('VRF HEAT PUMP - ')[-1], 5)
-                            idealAirTrigger = False
-                        elif 'COIL COOLING WATER TO AIR HEAT PUMP EQUATION FIT' in column and not 'DOAS' in column:
-                            zoneName = checkZSys(" " + ":".join(column.split(":")[:-1]).split('COIL COOLING WATER TO AIR HEAT PUMP EQUATION FIT ')[-1], 'Zone Heat Pump Coil')
-                            idealAirTrigger = False
-                        elif 'COIL COOLING WATER TO AIR HEAT PUMP EQUATION FIT' in column and 'DOAS' in column:
-                            zoneName = checkSys(" " + ":".join(column.split(":")[:-1]).split('COIL COOLING WATER TO AIR HEAT PUMP EQUATION FIT ')[-1], 'Heat Pump Coil', 2)
-                            idealAirTrigger = 2
-                        elif 'Chiller Electric Energy' in column:
-                            zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('CHILLER ELECTRIC EIR ')[-1], 0)
-                            idealAirTrigger = False
                         else:
                             zoneName = " " +column.split(":")[0]
-                            checkCustomName(customCount)
-                            customCount+=1
+                            checkCustomName(coolingC)
                         
                         try:
                             if idealAirTrigger == True:
@@ -346,48 +330,29 @@ if _resultFileAddress and gotData == True and csvExists == True:
                                 makeHeader(cooling, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Cooling Electric Energy", energyUnit, True)
                             dataTypeList[2] = True
                             key.append(0)
+                            coolingC += 1
                         except:
                             key.append(-1)
                     
                     elif 'Zone Ideal Loads Supply Air Total Heating Energy' in column or 'Zone Ideal Loads Supply Air Sensible Heating Energy' in column or 'Zone Ideal Loads Supply Air Latent Heating Energy' in column or 'Boiler Heating Energy' in column or 'Heating Coil Total Heating Energy' in column or 'Heating Coil Gas Energy' in column or 'Heating Coil Electric Energy' in column or 'Humidifier Electric Energy' in column or 'Zone VRF Air Terminal Heating Electric Energy' in column or 'VRF Heat Pump Heating Electric Energy' in column:
-                        notFound = False
+                        idealAirTrigger = 2
                         if 'Zone Ideal Loads Supply Air Total Heating Energy' in column and 'ZONE HVAC' in column:
                             zoneName = checkZoneSys(" " + (":".join(column.split(":")[:-1])).split('ZONE HVAC IDEAL LOADS AIR SYSTEM ')[-1])
                             idealAirTrigger = True
                         elif 'IDEAL LOADS AIR SYSTEM' in column:
                             zoneName = checkZone(" " + ":".join(column.split(":")[:-1]).split(' IDEAL LOADS AIR SYSTEM')[0])
                             idealAirTrigger = True
-                        elif 'COIL HEATING DX SINGLE SPEED' in column and not 'Heating Coil Total Heating Energy' in column:
-                            zoneName = checkZSys(" " + ":".join(column.split(":")[:-1]).split('COIL HEATING DX SINGLE SPEED ')[-1], 'DX Heating Coil')
-                            idealAirTrigger = 2
-                        elif 'COIL HEATING GAS' in column and not 'Heating Coil Electric Energy' in column:
-                            zoneName = checkSys(" " + ":".join(column.split(":")[:-1]).split('COIL HEATING GAS ')[-1], 'Gas Coil')
-                            idealAirTrigger = False
-                        elif 'COIL HEATING ELECTRIC' in column:
-                            zoneName = checkSys(" " + ":".join(column.split(":")[:-1]).split('COIL HEATING ELECTRIC ')[-1], 'Electric Coil')
-                            idealAirTrigger = 2
-                        elif 'COIL HEATING WATER TO AIR HEAT PUMP EQUATION FIT' in column:
-                            zoneName = checkSys(" " + ":".join(column.split(":")[:-1]).split('COIL HEATING WATER TO AIR HEAT PUMP EQUATION FIT ')[-1], 'Zone Heat Pump Coil', 2)
-                            idealAirTrigger = 2
-                        elif 'ZONE HVAC TERMINAL UNIT VARIABLE REFRIGERANT FLOW' in column and not 'Heating Coil Total Heating Energy' in column:
-                            zoneName = checkZSys(" " + ":".join(column.split(":")[:-1]).split('ZONE HVAC TERMINAL UNIT VARIABLE REFRIGERANT FLOW ')[-1], 'VRF Terminal Unit')
-                            idealAirTrigger = 2
-                        elif 'VRF HEAT PUMP -' in column:
-                            zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('VRF HEAT PUMP - ')[-1], 5)
-                            idealAirTrigger = 2
-                        elif 'Boiler Heating Energy' in column:
-                            zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('BOILER HOT WATER ')[-1], 1)
-                            idealAirTrigger = False
-                        elif 'HUMIDIFIER STEAM ELECTRIC' in column:
-                            zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('HUMIDIFIER STEAM ELECTRIC ')[-1], 4)
-                            idealAirTrigger = 2
-                        elif 'Heating Coil Total Heating Energy' not in column and not 'COIL HEATING GAS' in column:
+                        elif 'Heating Coil Total Heating Energy' not in column:
                             zoneName = " " +column.split(":")[0]
-                            checkCustomName(customCount)
-                            customCount+=1
+                            checkCustomName(heatingC)
                         else:
                             zoneName = None
                             path.append(0)
+                        
+                        if 'COIL HEATING GAS' in column and not 'Heating Coil Electric Energy' in column:
+                            idealAirTrigger = False
+                        elif 'Boiler Heating Energy' in column:
+                            idealAirTrigger = False
                         
                         try:
                             if zoneName != None:
@@ -399,6 +364,7 @@ if _resultFileAddress and gotData == True and csvExists == True:
                                     makeHeader(heating, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Heating Electric Energy", energyUnit, False)
                                 dataTypeList[3] = True
                                 key.append(1)
+                                heatingC += 1
                             else:
                                 key.append(-1)
                         except:
@@ -418,33 +384,14 @@ if _resultFileAddress and gotData == True and csvExists == True:
                     
                     elif 'Fan Electric Energy' in column:
                         key.append(15)
-                        if 'FAN CONSTANT VOLUME' in column:
-                            centTrigger = True
-                            zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('FAN CONSTANT VOLUME ')[-1], 2)
+                        if 'FAN ON OFF' in column:
+                            zoneName = checkZoneSys(" " + ":".join(column.split(":")[:-1]).split('FAN ON OFF ')[-1], fanC)
                             makeHeader(fanElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Fan Electric Energy", energyUnit, False)
-                        elif 'FAN VARIABLE VOLUME' in column:
-                            fanNum = int(":".join(column.split(":")[:-1]).split('FAN VARIABLE VOLUME ')[-1])
-                            if centTrigger == True:
-                                fanNum = fanNum+len(zoneNameList)
-                            zoneName = checkCentralSys(" " + str(fanNum), 2)
-                            makeHeader(fanElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Fan Electric Energy", energyUnit, False)
-                        elif 'FAN ON OFF' in column:
-                            zoneName = checkZoneSys(" " + ":".join(column.split(":")[:-1]).split('FAN ON OFF ')[-1])
-                            makeHeader(fanElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Fan Electric Energy", energyUnit, False)
-                        elif 'ZONE HVAC TERMINAL UNIT VARIABLE REFRIGERANT FLOW'  in column:
-                            zoneName = checkZoneSys(" " + ":".join(column.split(" FAN:")[:-1]).split('ZONE HVAC TERMINAL UNIT VARIABLE REFRIGERANT FLOW ')[-1])
-                            makeHeader(fanElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Fan Electric Energy", energyUnit, False)
-                        elif 'Zone Ventilation Fan Electric Energy' in column:
-                            zoneName = checkZoneOther(dataIndex, " " + ":".join(column.split(":")[:-1]))
-                            makeHeaderAlt(fanElectric, path[columnCount], zoneName, column.split('(')[-1].split(')')[0], "Fan Electric Energy", energyUnit, False)
-                        elif 'Earth Tube Fan Electric Energy' in column:
-                            zoneName = checkZoneOther(dataIndex, " " + ":".join(column.split(":")[:-1]))
-                            makeHeaderAlt(fanElectric, path[columnCount], zoneName, column.split('(')[-1].split(')')[0], "Earth Tube Fan Electric Energy", energyUnit, False)
                         else:
                             zoneName = " " +column.split(":")[0]
-                            checkCustomName(customCount)
-                            customCount+=1
+                            checkCustomName(fanC)
                             makeHeader(fanElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Fan Electric Energy", energyUnit, False)
+                        fanC += 1
                         dataTypeList[6] = True
                     
                     elif 'Pump Electric Energy' in column:
@@ -452,14 +399,11 @@ if _resultFileAddress and gotData == True and csvExists == True:
                         if 'PUMP CONSTANT SPEED' in column:
                             zoneName = checkZoneSys(" " + ":".join(column.split(":")[:-1]).split('PUMP CONSTANT SPEED ')[-1])
                             makeHeader(pumpElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Pump Electric Energy", energyUnit, True)
-                        elif 'PUMP VARIABLE SPEED' in column:
-                            zoneName = checkCentralSys(" " + ":".join(column.split(":")[:-1]).split('PUMP VARIABLE SPEED ')[-1], 3)
-                            makeHeader(pumpElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Pump Electric Energy", energyUnit, True)
                         else:
                             zoneName = " " + column.split(":")[0]
-                            checkCustomName(customCount)
-                            customCount+=1
+                            checkCustomName(pumpC)
                             makeHeader(pumpElectric, int(path[columnCount]), zoneName, column.split('(')[-1].split(')')[0], "Pump Electric Energy", energyUnit, True)
+                        pumpC += 1
                         dataTypeList[7] = True
                     
                     elif 'Zone People Total Heating Energy' in column or 'Zone People Sensible Heating Energy' in column or 'Zone People Latent Gain Energy' in column:
@@ -578,27 +522,6 @@ if _resultFileAddress and gotData == True and csvExists == True:
                         systemAirGain[int(path[-1])].append(zoneName)
                         systemAirGain[int(path[-1])].append(column.split('(')[-1].split(')')[0])
                     
-                    elif ('Zone' in column or 'Site' in column) and not "Setpoint Not Met Time" in column or "Pump Electric Energy" in column:
-                        if "Site" in column:
-                            zoneName = checkOther(column, otherCount)
-                            otherCount += 1
-                        elif not "System" in column and not "SYSTEM" in column and not "ZONEHVAC" in column:
-                            zoneName = checkZoneOther(dataIndex, (" " + ":".join(column.split(":")[:-1])))
-                        elif 'IDEAL LOADS' in column and not "Supply Air Sensible" in column and not "Supply Air Latent" in column:
-                            zoneName = checkZoneOther(dataIndex, (" " + column.split(" IDEAL LOADS")[0]))
-                        else: zoneName = None
-                        
-                        if zoneName != None:
-                            key.append(14)
-                            otherDataName = column.split(':')[-1].split(' [')[0].upper()
-                            if "ENERGY" in otherDataName or "GAIN" in otherDataName or "MASS" in otherDataName or "VOLUME" in otherDataName or "Loss" in otherDataName: normalizble = True
-                            else: normalizble = False
-                            makeHeaderAlt(otherZoneData, path[columnCount], zoneName, column.split('(')[-1].split(')')[0], column.split(':')[-1].split(' [')[0], column.split('[')[-1].split(']')[0], normalizble)
-                            dataTypeList[19] = True
-                        else:
-                            key.append(-1)
-                            path.append(-1)
-                    
                     else:
                         key.append(-1)
                         path.append(-1)
@@ -657,10 +580,6 @@ if _resultFileAddress and gotData == True and csvExists == True:
                     elif key[columnCount] == 13:
                         try: relativeHumidity.Add(float(column), p)
                         except: dataTypeList[15] = False
-                    elif key[columnCount] == 14:
-                        try:
-                            otherZoneData.Add(float(column), p)
-                        except: pass
                     elif key[columnCount] == 15:
                         try: fanElectric.Add((float(column)/3600000), p)
                         except: pass
@@ -815,11 +734,10 @@ outputsDict = {
 16: ["relativeHumidity", "The relative humidity of each zone (%)."],
 17: ["airFlowVolume", "The total volume of air flowing into the room through both the windows and infiltration (m3/s).  This is voulme of air is at standard density (20 C and adjusted for the elevation above sea level of the weather file)."],
 18: ["airHeatGainRate", "The total heat transfer rate to the air from lighting, equipment(appliances/pulg loads), people, the surfaces of the zone, and gains through the heating system.  This output is useful for the estimation of air stratification in the Comfort Analysis workflow."],
-19: ["otherZoneData", "Other zone data that is in the result file (in no particular order). Note that this data cannot be normalized by floor area as the component does not know if it can be normalized."]
 }
 
 if _resultFileAddress and parseSuccess == True:
-    for output in range(20):
+    for output in range(19):
         if dataTypeList[output] == False:
             ghenv.Component.Params.Output[output].NickName = "."
             ghenv.Component.Params.Output[output].Name = "."
@@ -829,7 +747,7 @@ if _resultFileAddress and parseSuccess == True:
             ghenv.Component.Params.Output[output].Name = outputsDict[output][0]
             ghenv.Component.Params.Output[output].Description = outputsDict[output][1]
 else:
-    for output in range(20):
+    for output in range(19):
         ghenv.Component.Params.Output[output].NickName = outputsDict[output][0]
         ghenv.Component.Params.Output[output].Name = outputsDict[output][0]
         ghenv.Component.Params.Output[output].Description = outputsDict[output][1]

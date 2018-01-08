@@ -48,16 +48,16 @@ Provided by Honeybee 0.0.62
         srfBreps: A list of breps for each zone surface. Connecting this output and the following zoneColors to a Grasshopper 'Preview' component will thus allow you to see the surfaces colored transparently.
         srfColors: A list of colors that correspond to the colors of each zone surface.  These colors include alpha values to make them slightly transparent.  Connecting the previous output and this output to a Grasshopper 'Preview' component will thus allow you to see the surfaces colored transparently.
         srfValues: The values of the input data that are being used to color the surfaces.
-        normalizedSrfData: The input data normalized by the areas of each surface.
+        relevantSrfData: The input data used to color the zones.
 """
 
 ghenv.Component.Name = "Honeybee_Color Surfaces by EP Result"
 ghenv.Component.NickName = 'ColorSurfaces'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nDEC_15_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nFEB_21_2016
+#compatibleHBVersion = VER 0.0.56\nDEC_15_2017
 #compatibleLBVersion = VER 0.0.59\nNOV_20_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "5"
 except: pass
@@ -96,7 +96,7 @@ outputsDict = {
 6: ["srfBreps", "A list of breps for each zone surface. Connecting this output and the following zoneColors to a Grasshopper 'Preview' component will thus allow you to see the surfaces colored transparently."],
 7: ["srfColors", "A list of colors that correspond to the colors of each zone surface.  These colors include alpha values to make them slightly transparent.  Connecting the previous output and this output to a Grasshopper 'Preview' component will thus allow you to see the surfaces colored transparently."],
 8: ["srfValues", "The values of the input data that are being used to color the surfaces."],
-9: ["normalizedSrfData", "The input data normalized by the areas of each surface."]
+9: ["relevantSrfData", "The input data used to color the zones."]
 }
 
 
@@ -252,30 +252,30 @@ def getZoneSrfs(srfHeaders, pyZoneData, hb_zoneData):
         for count, name in enumerate(surfaceNames):
             if srfName == name.upper():
                 finalSrfBreps.append(srfBreps[count])
-                finalSrfAreas.append(rc.Geometry.AreaMassProperties.Compute(srfBreps[count]).Area)
+                finalSrfAreas.append(rc.Geometry.AreaMassProperties.Compute(srfBreps[count]).Area*sc.sticky["honeybee_ConversionFactor"]*sc.sticky["honeybee_ConversionFactor"])
                 newPyZoneData.append(pyZoneData[listCount])
                 newSrfHeaders.append(srfHeaders[listCount])
             elif name.upper() in srfName and "GLZ" in name.upper():
                 if srfName == name.upper() + "_0":
                     finalSrfBreps.append(srfBreps[count])
-                    finalSrfAreas.append(rc.Geometry.AreaMassProperties.Compute(srfBreps[count]).Area)
+                    finalSrfAreas.append(rc.Geometry.AreaMassProperties.Compute(srfBreps[count]).Area*sc.sticky["honeybee_ConversionFactor"]*sc.sticky["honeybee_ConversionFactor"])
                     newPyZoneData.append(pyZoneData[listCount])
                     newSrfHeaders.append(srfHeaders[listCount])
                 elif srfName == name.upper() + "_1":
                     finalSrfBreps.append(srfBreps[count])
-                    finalSrfAreas.append(rc.Geometry.AreaMassProperties.Compute(srfBreps[count]).Area)
+                    finalSrfAreas.append(rc.Geometry.AreaMassProperties.Compute(srfBreps[count]).Area*sc.sticky["honeybee_ConversionFactor"]*sc.sticky["honeybee_ConversionFactor"])
                     newPyZoneData.append(pyZoneData[listCount])
                     newSrfHeaders.append(srfHeaders[listCount])
             elif srfName.split('_')[0] in name.upper() and "GLZ" in name.upper():
                 try:
                     if srfName == name.upper().split('_')[-2] + "_GLZ_0":
                         finalSrfBreps.append(srfBreps[count])
-                        finalSrfAreas.append(rc.Geometry.AreaMassProperties.Compute(srfBreps[count]).Area)
+                        finalSrfAreas.append(rc.Geometry.AreaMassProperties.Compute(srfBreps[count]).Area*sc.sticky["honeybee_ConversionFactor"]*sc.sticky["honeybee_ConversionFactor"])
                         newPyZoneData.append(pyZoneData[listCount])
                         newSrfHeaders.append(srfHeaders[listCount])
                     elif srfName == name.upper().split('_')[-2] + "_GLZ_1":
                         finalSrfBreps.append(srfBreps[count])
-                        finalSrfAreas.append(rc.Geometry.AreaMassProperties.Compute(srfBreps[count]).Area)
+                        finalSrfAreas.append(rc.Geometry.AreaMassProperties.Compute(srfBreps[count]).Area*sc.sticky["honeybee_ConversionFactor"]*sc.sticky["honeybee_ConversionFactor"])
                         newPyZoneData.append(pyZoneData[listCount])
                         newSrfHeaders.append(srfHeaders[listCount])
                 except: pass
@@ -311,16 +311,6 @@ def manageInputOutput(annualData, simStep, srfNormalizable, srfHeaders, pyZoneDa
             ghenv.Component.Params.Input[input].NickName = inputsDict[input][0]
             ghenv.Component.Params.Input[input].Name = inputsDict[input][0]
             ghenv.Component.Params.Input[input].Description = inputsDict[input][1]
-    
-    for output in range(10):
-        if output == 9 and srfNormalizable == False:
-            ghenv.Component.Params.Output[output].NickName = "."
-            ghenv.Component.Params.Output[output].Name = "."
-            ghenv.Component.Params.Output[output].Description = " "
-        else:
-            ghenv.Component.Params.Output[output].NickName = outputsDict[output][0]
-            ghenv.Component.Params.Output[output].Name = outputsDict[output][0]
-            ghenv.Component.Params.Output[output].Description = outputsDict[output][1]
     
     if srfNormalizable == False: normByFlr = False
     else: normByFlr = normalizeBySrfArea_
@@ -582,22 +572,31 @@ def getData(pyZoneData, surfaceAreas, annualData, simStep, srfNormalizable, srfH
         
         #If there is floor normalized zone data, turn it into a data tree object.
         if normedZoneData != []:
-            normalizedSrfData = DataTree[Object]()
+            relevantSrfData = DataTree[Object]()
             for listCount, list in enumerate(normedZoneData):
-                normalizedSrfData.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(listCount))
-                normalizedSrfData.Add(str(srfHeaders[listCount][1]), GH_Path(listCount))
-                normalizedSrfData.Add("Floor Normalized " + str(srfHeaders[listCount][1]), GH_Path(listCount))
-                normalizedSrfData.Add(headerUnits + "/"+ str(sc.doc.ModelUnitSystem) + "2", GH_Path(listCount))
-                normalizedSrfData.Add(str(srfHeaders[listCount][4]), GH_Path(listCount))
-                normalizedSrfData.Add(str(srfHeaders[listCount][5]), GH_Path(listCount))
-                normalizedSrfData.Add(str(srfHeaders[listCount][6]), GH_Path(listCount))
+                relevantSrfData.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(listCount))
+                relevantSrfData.Add(str(srfHeaders[listCount][1]), GH_Path(listCount))
+                relevantSrfData.Add("Floor Normalized " + str(srfHeaders[listCount][1]), GH_Path(listCount))
+                relevantSrfData.Add(headerUnits + "/"+ str(sc.doc.ModelUnitSystem) + "2", GH_Path(listCount))
+                relevantSrfData.Add(str(srfHeaders[listCount][4]), GH_Path(listCount))
+                relevantSrfData.Add(str(srfHeaders[listCount][5]), GH_Path(listCount))
+                relevantSrfData.Add(str(srfHeaders[listCount][6]), GH_Path(listCount))
                 for num in list:
-                    normalizedSrfData.Add((num), GH_Path(listCount))
+                    relevantSrfData.Add((num), GH_Path(listCount))
         else:
-            normalizedSrfData = normedZoneData
+            relevantSrfData = DataTree[Object]()
+            for listCount, list in enumerate(pyZoneData):
+                relevantSrfData.Add("key:location/dataType/units/frequency/startsAt/endsAt", GH_Path(listCount))
+                relevantSrfData.Add(str(srfHeaders[listCount][1]), GH_Path(listCount))
+                relevantSrfData.Add(headerUnits, GH_Path(listCount))
+                relevantSrfData.Add(str(srfHeaders[listCount][4]), GH_Path(listCount))
+                relevantSrfData.Add(str(srfHeaders[listCount][5]), GH_Path(listCount))
+                relevantSrfData.Add(str(srfHeaders[listCount][6]), GH_Path(listCount))
+                for num in list:
+                    relevantSrfData.Add((num), GH_Path(listCount))
         
         #Return all of the data
-        return dataForColoring, normalizedSrfData, coloredTitle, coloredUnits, lb_preparation, lb_visualization
+        return dataForColoring, relevantSrfData, coloredTitle, coloredUnits, lb_preparation, lb_visualization
     else:
         print "You should first let the Ladybug fly..."
         ghenv.Component.AddRuntimeMessage(w, "You should first let the Ladybug fly...")
@@ -712,7 +711,7 @@ if _runIt == True and checkData == True and _HBZones != []:
     
     dataCheck, surfaceNames, srfAreas, srfBreps, pyZoneData, srfHeaders, zoneBreps = getZoneSrfs(srfHeaders, pyZoneData, hb_zoneData)
     if dataCheck == True:
-        srfValues, normalizedSrfData, title, legendTitle, lb_preparation, lb_visualization = getData(pyZoneData, srfAreas, annualData, simStep, srfNormalizable, srfHeaders, headerUnits, normByFlr, analysisPeriod, stepOfSimulation, total)
+        srfValues, relevantSrfData, title, legendTitle, lb_preparation, lb_visualization = getData(pyZoneData, srfAreas, annualData, simStep, srfNormalizable, srfHeaders, headerUnits, normByFlr, analysisPeriod, stepOfSimulation, total)
 
 #Color the surfaces with the data and get all of the other cool stuff that this component does.
 if _runIt == True and checkData == True and _HBZones != [] and srfValues != [] and dataCheck == True:

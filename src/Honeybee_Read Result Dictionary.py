@@ -35,7 +35,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Read Result Dictionary"
 ghenv.Component.NickName = 'readRDD'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nDEC_30_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"

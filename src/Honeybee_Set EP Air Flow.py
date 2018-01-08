@@ -69,11 +69,11 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Set EP Air Flow"
 ghenv.Component.NickName = 'setEPNatVent'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nDEC_15_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
-#compatibleHBVersion = VER 0.0.56\nAPR_25_2017
+#compatibleHBVersion = VER 0.0.56\nDEC_15_2017
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "0"
 except: pass
@@ -266,9 +266,22 @@ def setDefaults(natVentMethod):
     #Check the inputs related to window-driven or custom wind/stack ventilation.
     checkData17 = True
     checkData18 = True
-    if natVentMethod == 1 or natVentMethod == 2:
+    if natVentMethod == 1:
         try:
             windDisCoeff = windDrivenCrossVent_
+            stackDisCoeff = stackDischargeCoeff_
+            if windDisCoeff != None:
+                checkData17 = checkRange([windDisCoeff], 0, 1)
+            if stackDisCoeff != None:
+                checkData18 = checkRange([stackDisCoeff], 0, 1)
+        except:
+            windDisCoeff = None
+            stackDisCoeff = None
+            checkData17 = False
+            checkData18 = False
+    elif natVentMethod == 2:
+        try:
+            windDisCoeff = windCoefficient_
             stackDisCoeff = stackDischargeCoeff_
             if windDisCoeff != None:
                 checkData17 = checkRange([windDisCoeff], 0, 1)
@@ -470,7 +483,7 @@ def main(HBZones, natVentMethod, interZoneFlow, interZoneFlowSched, minIndoorTem
                     for windowsList in windows:
                         glazedArea = 0.0
                         for srf in windowsList:
-                            glazedArea = glazedArea + rc.Geometry.AreaMassProperties.Compute(srf).Area
+                            glazedArea = glazedArea + (rc.Geometry.AreaMassProperties.Compute(srf).Area*sc.sticky["honeybee_ConversionFactor"]*sc.sticky["honeybee_ConversionFactor"])
                         glazedAreas.append(glazedArea)
                     
                     #Calculate the height difference of the glazing across the surface.

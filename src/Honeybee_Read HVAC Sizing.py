@@ -43,13 +43,13 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Read HVAC Sizing"
 ghenv.Component.NickName = 'readEio'
-ghenv.Component.Message = 'VER 0.0.62\nNOV_03_2017'
+ghenv.Component.Message = 'VER 0.0.62\nDEC_30_2017'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
 #compatibleHBVersion = VER 0.0.56\nMAY_02_2015
 #compatibleLBVersion = VER 0.0.59\nAPR_04_2015
-ghenv.Component.AdditionalHelpFromDocStrings = "0"
+ghenv.Component.AdditionalHelpFromDocStrings = "4"
 
 from System import Object
 from Grasshopper import DataTree
