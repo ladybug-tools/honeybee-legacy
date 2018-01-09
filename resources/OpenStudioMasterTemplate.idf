@@ -33,6 +33,17 @@ Construction,
   Air 13mm,                           !- Layer 2
   Clear 3mm;                          !- Layer 3
 
+Material,
+  Internal Source,                    !- Name
+  Smooth,                                 !- Roughness
+  0.012,                                  !- Thickness {m}
+  0.6,                                    !- Conductivity {W/m-K}
+  1000,                                   !- Density {kg/m3}
+  4185,                                   !- Specific Heat {J/kg-K}
+  0.95,                                   !- Thermal Absorptance
+  0.7,                                    !- Solar Absorptance
+  0.7;                                    !- Visible Absorptance
+  
  Material,
   I02 50mm insulation board,          !- Name
   MediumRough,                            !- Roughness

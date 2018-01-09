@@ -39,7 +39,7 @@ Provided by Honeybee 0.0.62
 """
 ghenv.Component.Name = "Honeybee_Solve Adjacencies"
 ghenv.Component.NickName = 'solveAdjc'
-ghenv.Component.Message = 'VER 0.0.62\nDEC_15_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJAN_09_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -149,30 +149,31 @@ def updateAdj(surface1, surface2, altConstruction, altBC, altWinConstr, tol):
         # find child surfaces that match the other one
         for childSurface1 in surface1.childSrfs:
             for childSurface2 in surface2.childSrfs:
-                if childSurface2.BCObject.name == "":
-                    if childSurface1.cenPt.DistanceTo(childSurface2.cenPt) <= tol:
-                        childSurface1.BCObject.name = childSurface2.name
-                        childSurface2.BCObject.name = childSurface1.name
-                        # change construction
-                        if altWinConstr == None:
-                            childSurface1.setEPConstruction(surface1.intCnstrSet[5])
-                            childSurface2.setEPConstruction(surface1.intCnstrSet[5])
-                        else:
-                            childSurface1.setEPConstruction(altWinConstr)
-                            childSurface2.setEPConstruction(altWinConstr)
-                        # change the boundary condition
-                        childSurface1.setBC('SURFACE', True)
-                        childSurface2.setBC('SURFACE', True)
-                        childSurface1.setBCObject(childSurface2)
-                        childSurface2.setBCObject(childSurface1)
-                        # set sun and wind exposure to no exposure
-                        childSurface2.setSunExposure('NoSun')
-                        childSurface1.setSunExposure('NoSun')
-                        childSurface2.setWindExposure('NoWind')
-                        childSurface1.setWindExposure('NoWind')
-                        
-                        print 'Interior window ' + childSurface1.BCObject.name + \
-                              '\t-> is adjacent to <-\t' + childSurface2.BCObject.name + '.'
+                if childSurface1.cenPt.DistanceTo(childSurface2.cenPt) <= tol:
+                    childSurface1.BCObject.name = childSurface2.name
+                    childSurface2.BCObject.name = childSurface1.name
+                    # change construction
+                    if altWinConstr == None:
+                        childSurface1.setEPConstruction(surface1.intCnstrSet[5])
+                        childSurface2.setEPConstruction(surface1.intCnstrSet[5])
+                    else:
+                        hb_EPObjectsAux.assignEPConstruction(childSurface1, altWinConstr, ghenv.Component)
+                        hb_EPObjectsAux.assignEPConstruction(childSurface2, altWinConstr, ghenv.Component)
+                        #childSurface1.setEPConstruction(altWinConstr)
+                        #childSurface2.setEPConstruction(altWinConstr)
+                    # change the boundary condition
+                    childSurface1.setBC('SURFACE', True)
+                    childSurface2.setBC('SURFACE', True)
+                    childSurface1.setBCObject(childSurface2)
+                    childSurface2.setBCObject(childSurface1)
+                    # set sun and wind exposure to no exposure
+                    childSurface2.setSunExposure('NoSun')
+                    childSurface1.setSunExposure('NoSun')
+                    childSurface2.setWindExposure('NoWind')
+                    childSurface1.setWindExposure('NoWind')
+                    
+                    print 'Interior window ' + childSurface1.BCObject.name + \
+                          '\t-> is adjacent to <-\t' + childSurface2.BCObject.name + '.'
         
 
 def notTheSameZone(targetZone, testZone):
