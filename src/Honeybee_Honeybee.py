@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.62\nJAN_04_2018'
+ghenv.Component.Message = 'VER 0.0.62\nJAN_09_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -8590,8 +8590,8 @@ class hb_hvacProperties(object):
         11:'FAN COIL UNITS + DOAS',
         12:'ACTIVE CHILLED BEAMS + DOAS',
         13:'RADIANT FLOORS + DOAS',
-        14:'RADIANT CEILINGS + DOAS',
-        15:'HEATED FLOORS + VAV COOLING',
+        14:'CUSTOM RAD SURFACES + DOAS',
+        15:'HEATED SURFACES + VAV COOLING',
         16:'VRF + DOAS',
         17:'GROUND SOURCE WSHP + DOAS',
         18:'GROUND SOURCE VRF + DOAS'

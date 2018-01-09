@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.62\nDEC_30_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJAN_09_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -1624,8 +1624,10 @@ class WriteOPS(object):
     
     
     def createZoneEquip(self, model, thermalZones, hbZones, equipList, hotWaterPlant=None, chilledWaterPlant=None, heatPumpLoop=None, heatOnly=False):
+        # create radiant constructions.
         radiantFloor = None
-        if 'RadiantFloor' in equipList or 'RadiantCeiling' in equipList:
+        radConstructions = {}
+        if 'RadiantFloor' in equipList:
             # create radiant construction and substitute for existing surface (interior or exterior) constructions
             # ignore layer below insulation, which will depend on boundary condition
             insul = ops.StandardOpaqueMaterial(model,"Rough",0.0254,0.02,56.06,1210) # rigid_insulation_1in
@@ -1639,7 +1641,6 @@ class WriteOPS(object):
             radiantFloor = ops.ConstructionWithInternalSource(model)
             radiantFloor.setName('4in Radiant Slab Construction')
             radiantFloor.setLayers(materials)
-            radiantFloor.setSourcePresentAfterLayerNumber(2)
             radiantFloor.setSourcePresentAfterLayerNumber(2)
         
         for zoneCount, zone in enumerate(thermalZones):
@@ -1671,7 +1672,7 @@ class WriteOPS(object):
                 baseboardHeater = ops.ZoneHVACBaseboardConvectiveWater(model, model.alwaysOnDiscreteSchedule(), baseboardCoil)
                 baseboardHeater.addToThermalZone(zone)          
                 hotWaterPlant.addDemandBranchForComponent(baseboardCoil)
-            if 'RadiantFloor' in equipList or 'RadiantCeiling' in equipList:
+            if 'RadiantFloor' in equipList or 'CustomRadiant' in equipList:
                 # create hot water coil and attach to radiant hot water loop
                 heatingCoil = ops.CoilHeatingLowTempRadiantVarFlow(model, model.alwaysOnDiscreteSchedule())
                 heatSetPtSch = self.getOSSchedule(hbZones[zoneCount].heatingSetPtSchedule, model)
@@ -1688,13 +1689,11 @@ class WriteOPS(object):
                 lowTempRadiant = ops.ZoneHVACLowTempRadiantVarFlow(model, model.alwaysOnDiscreteSchedule(), heatingCoil, coolingCoil)
                 if 'RadiantFloor' in equipList:
                     lowTempRadiant.setRadiantSurfaceType("Floors")
-                else:
-                    lowTempRadiant.setRadiantSurfaceType("Ceilings")
                 lowTempRadiant.setHydronicTubingInsideDiameter(0.012)
                 lowTempRadiant.setTemperatureControlType("MeanRadiantTemperature")
                 lowTempRadiant.addToThermalZone(zone)
                 
-                # assign radiant construction to zone floor
+                # assign radiant construction to zone surfaces
                 space = zone.spaces()[0]
                 if 'RadiantFloor' in equipList:
                     for surface in space.surfaces:
@@ -1702,8 +1701,38 @@ class WriteOPS(object):
                             surface.setConstruction(radiantFloor)
                 else:
                     for surface in space.surfaces:
-                        if surface.surfaceType() == "Ceiling" or surface.surfaceType() == "RoofCeiling":
-                            surface.setConstruction(radiantFloor)
+                        srfConstruction = surface.construction().get()
+                        constrName = str(srfConstruction.name())
+                        materialNames, comments, UVSI, UVIP = self.hb_EPMaterialAUX.decomposeEPCnstr(constrName)
+                        if 'INTERNAL SOURCE' in str(materialNames).upper():
+                            try:
+                                surface.setConstruction(radConstructions[constrName])
+                            except:
+                                # create an empty vector to collect the materials
+                                layers = []
+                                sourceLoc = 1
+                                for count, materialName in enumerate(materialNames):
+                                    # check if the material has been already produced
+                                    if materialName.upper() == 'INTERNAL SOURCE':
+                                        sourceLoc = count
+                                    elif not self.isMaterialInLib(materialName):
+                                        # create an openstudio material for EP material
+                                        OSMaterial = self.getOSMaterial(materialName, model)
+                                        layers.append(OSMaterial)
+                                        self.addMaterialToLib(materialName, OSMaterial)
+                                    else:
+                                        # material has been already created so let's just use it
+                                        layers.append(self.getMaterialFromLib(materialName))
+                                
+                                materials = ops.MaterialVector()
+                                for OSMaterial in layers:
+                                    materials.Add(OSMaterial)
+                                radiantSrf = ops.ConstructionWithInternalSource(model)
+                                radiantSrf.setName(constrName)
+                                radiantSrf.setLayers(materials)
+                                radiantSrf.setSourcePresentAfterLayerNumber(sourceLoc)
+                                surface.setConstruction(radiantSrf)
+                                radConstructions[constrName] = radiantSrf
             if 'WSHP' in equipList:
                 # create water source heat pump and attach to heat pump loop
                 # create fan
@@ -2809,16 +2838,16 @@ class WriteOPS(object):
                     #Add the baseboard heating.
                     equipList = ['Baseboard']
                     self.createZoneEquip(model, thermalZoneVector, hbZones, equipList, hwl, cwl)
-                elif systemIndex == 14:
-                    equipList = ['RadiantCeiling']
-                    self.createZoneEquip(model, thermalZoneVector, hbZones, equipList, hwl, cwl)
-                elif systemIndex == 13 or systemIndex == 15:
-                    #Add the radiant floors.
-                    equipList = ['RadiantFloor']
-                    if systemIndex == 13:
+                elif systemIndex == 14 or systemIndex == 15:
+                    equipList = ['CustomRadiant']
+                    if systemIndex == 14:
                         self.createZoneEquip(model, thermalZoneVector, hbZones, equipList, hwl, cwl)
                     elif systemIndex == 15:
                         self.createZoneEquip(model, thermalZoneVector, hbZones, equipList, hwl, cwl, None, True)
+                elif systemIndex == 13:
+                    #Add the radiant floors.
+                    equipList = ['RadiantFloor']
+                    self.createZoneEquip(model, thermalZoneVector, hbZones, equipList, hwl, cwl)
             
             elif systemIndex == 16 or systemIndex == 17 or systemIndex == 18:
                 # Check to see if there is humidity control on any of the zones.
