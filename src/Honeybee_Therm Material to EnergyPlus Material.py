@@ -36,13 +36,14 @@ Provided by Honeybee 0.0.62
         _density:  A number representing the density of the material in kg/m3.  This is essentially the mass one cubic meter of the material.
         _specificHeat:  A number representing the specific heat capacity of the material in J/kg-K.  This is essentially the number of joules needed to raise one kg of the material by 1 degree Kelvin.
     Returns:
-        EPMaterial: An opaque material that can be plugged into the "Honeybee_EnergyPlus Construction" component.
+        EPMaterialStr: An opaque material that can be plugged into the "Honeybee_EnergyPlus Construction" component.
+        matName: The name of the generated EP Material.
 
 """
 
 ghenv.Component.Name = "Honeybee_Therm Material to EnergyPlus Material"
 ghenv.Component.NickName = 'ThermMat2EPMat'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.62\nJAN_09_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -108,7 +109,7 @@ def main(thermMaterial, roughness, thickness, density, specificHeat):
     visAbsp = thermMaterial['Absorptivity']
     if roughness == None: roughness = "Rough"
     
-    values = [name.upper(), roughness, thickness, conductivity, density, specificHeat, thermAbsp, solAbsp, visAbsp]
+    values = [name.upper()+'-EP', roughness, thickness, conductivity, density, specificHeat, thermAbsp, solAbsp, visAbsp]
     comments = ["Name", "Roughness", "Thickness {m}", "Conductivity {W/m-K}", "Density {kg/m3}", "Specific Heat {J/kg-K}", "Thermal Absorptance", "Solar Absorptance", "Visible Absorptance"]
     
     materialStr = "Material,\n"
@@ -119,7 +120,7 @@ def main(thermMaterial, roughness, thickness, density, specificHeat):
         else:
             materialStr += str(value) + ";    !" + str(comment)
             
-    return materialStr
+    return materialStr, name.upper()+'-EP'
 
 
 #Honeybee check.
@@ -144,4 +145,4 @@ else:
 if initCheck == True and _thermMaterial and _thickness and _density and _specificHeat:
     thermMaterial = checkInputs()
     if thermMaterial != -1:
-        EPMaterial = main(thermMaterial, _roughness_, _thickness, _density, _specificHeat)
+        EPMaterialStr, matName = main(thermMaterial, _roughness_, _thickness, _density, _specificHeat)
