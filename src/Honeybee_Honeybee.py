@@ -2466,7 +2466,10 @@ class hb_WriteRAD(object):
                     glzCoordinateLists = surface.extractGlzPoints(True)
                     for glzCount, glzCoorList in enumerate(glzCoordinateLists):
                         # glazingStr
-                        fullStr.append(self.getsurfaceStr(surface.childSrfs[glzCount], glzCount, glzCoorList))
+                        try:
+                            fullStr.append(self.getsurfaceStr(surface.childSrfs[glzCount], glzCount, glzCoorList))
+                        except:
+                            fullStr.append(self.getsurfaceStr(surface.childSrfs[0], glzCount, glzCoorList))
                         
                         # shift glazing list
                         glzCoorList = self.shiftList(glzCoorList)
@@ -2518,7 +2521,10 @@ class hb_WriteRAD(object):
             coordinatesList = [coordinatesList]
         for glzCount, glzCoorList in enumerate(coordinatesList):
             # glazingStr`
-            fullStr.append(self.getsurfaceStr(surface.childSrfs[glzCount], glzCount, glzCoorList))
+            try:
+                fullStr.append(self.getsurfaceStr(surface.childSrfs[glzCount], glzCount, glzCoorList))
+            except:
+                fullStr.append(self.getsurfaceStr(surface.childSrfs[0], glzCount, glzCoorList))
         return ''.join(fullStr)
 
 class hb_WriteRADAUX(object):
