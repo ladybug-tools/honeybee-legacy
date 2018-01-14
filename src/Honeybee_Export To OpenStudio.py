@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.62\nJAN_09_2018'
+ghenv.Component.Message = 'VER 0.0.62\nJAN_14_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -223,6 +223,9 @@ class WriteOPS(object):
         site.setLongitude(lngt)
         site.setTimeZone(timeZone)
         site.setElevation(elev)
+        
+        # Set weather file for OSM
+        ops.WeatherFile.setWeatherFile(model,ops.EpwFile(ops.Path(epwFilePath)))
     
     def setStartDayOfWeek(self, model):
         # The ability to set the start day of week currently breaks OpenStudio's way of assigning schedules.
