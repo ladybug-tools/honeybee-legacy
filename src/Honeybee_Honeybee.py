@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.62\nJAN_09_2018'
+ghenv.Component.Message = 'VER 0.0.62\nJAN_14_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -2466,7 +2466,7 @@ class hb_WriteRAD(object):
                     glzCoordinateLists = surface.extractGlzPoints(True)
                     for glzCount, glzCoorList in enumerate(glzCoordinateLists):
                         # glazingStr
-                        fullStr.append(self.getsurfaceStr(surface.childSrfs[0], glzCount, glzCoorList))
+                        fullStr.append(self.getsurfaceStr(surface.childSrfs[glzCount], glzCount, glzCoorList))
                         
                         # shift glazing list
                         glzCoorList = self.shiftList(glzCoorList)
@@ -2518,7 +2518,7 @@ class hb_WriteRAD(object):
             coordinatesList = [coordinatesList]
         for glzCount, glzCoorList in enumerate(coordinatesList):
             # glazingStr`
-            fullStr.append(self.getsurfaceStr(surface.childSrfs[0], glzCount, glzCoorList))
+            fullStr.append(self.getsurfaceStr(surface.childSrfs[glzCount], glzCount, glzCoorList))
         return ''.join(fullStr)
 
 class hb_WriteRADAUX(object):
