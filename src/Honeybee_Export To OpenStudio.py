@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.62\nJAN_14_2018'
+ghenv.Component.Message = 'VER 0.0.62\nJAN_16_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -302,6 +302,8 @@ class WriteOPS(object):
     
     def setupLevels(self, zone, space):
         floorH = "%.2f"%zone.getFloorZLevel()
+        if str(floorH) == '-0.00':
+            floorH = '0.00'
         space.setBuildingStory(self.levels[floorH])
         return space
     
