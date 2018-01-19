@@ -54,12 +54,19 @@ def main(HBObjects, minDetailDim, aa):
     if aa == None:
         aa = 0.25
     
-    # Calculate a bounding box diagonal around the HBObjects.
-    joinedMesh = rc.Geometry.Mesh()
-    for brep in HBObjects:
-        joinedMesh.Append(brep)
-    geoBB = joinedMesh.GetBoundingBox(False)
-    longestDim = geoBB.Diagonal.Length
+    # Calculate a bounding box around the HBObjects.
+    BBs = []
+    for item in HBObjects:
+        BBs.append(item.GetBoundingBox(False))
+    geoBB = BBs[0]
+    for BB in BBs:
+        geoBB.Union(BB)
+    
+    # get the longest dimension.
+    xDim = geoBB.Max.X - geoBB.Min.X
+    yDim = geoBB.Max.Y - geoBB.Min.Y
+    zDim = geoBB.Max.Z - geoBB.Min.Z
+    longestDim = max([xDim, yDim, zDim])
     
     # Calculate the ambient resolution.
     aRes = int((longestDim*aa)/minDetailDim)
