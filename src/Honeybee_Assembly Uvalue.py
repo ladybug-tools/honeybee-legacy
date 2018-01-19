@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2017, Chris Mackey <Chris@MackeyArchitecture.com.com> 
+# Copyright (c) 2013-2018, Chris Mackey <Chris@MackeyArchitecture.com.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -23,7 +23,7 @@
 """
 Use this component to calculate the assembly U-Value for a window given an input window geometry, center of glass U-value, and frame+edge U-value.  This component can also add a frame to a EnergyPlus window construction that has the glass and spacing information.
 -
-Provided by Honeybee 0.0.62
+Provided by Honeybee 0.0.63
 
     Args:
         _glazingSrf: A surface representing the window geomtry for which an assebly U-value is being calculated.  This should be the region of glass only (not frame) and it can be the same glazing geometry that is assigned to a Honeybee Zone for an energy simulation.
@@ -49,7 +49,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = 'Honeybee_Assembly Uvalue'
 ghenv.Component.NickName = 'assemblyUvalue'
-ghenv.Component.Message = 'VER 0.0.62\nAUG_20_2017'
+ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"

@@ -3,7 +3,7 @@
 #
 # This file is part of Honeybee.
 #
-# Copyright (c) 2013-2017, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools>
+# Copyright (c) 2013-2018, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools>
 # Honeybee is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published
 # by the Free Software Foundation; either version 3 of the License,
@@ -25,7 +25,7 @@ Use this component to take any list of closed breps and turn them into Honeybee 
 _
 This includes constructions of the surfaces, boundary condtions of all of the surfaces (ie ground, exterior, etc), schedules+ loads for occupancy/internal electronics, and settings for an HVAC system if isContitioned_ is set to True.
 -
-Provided by Honeybee 0.0.62
+Provided by Honeybee 0.0.63
 
     Args:
         _zoneMasses: A list of closed breps or a  single closed brep that represents the geometry of the zone(s) that will be output from this component.
@@ -51,7 +51,7 @@ import copy
 
 ghenv.Component.Name = 'Honeybee_Masses2Zones'
 ghenv.Component.NickName = 'Mass2Zone'
-ghenv.Component.Message = 'VER 0.0.62\nNOV_24_2017'
+ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"

@@ -2,7 +2,7 @@
 #
 # This file is part of Honeybee.
 #
-# Copyright (c) 2013-2017, Devang Chauhan <devang@outlook.in>
+# Copyright (c) 2013-2018, Devang Chauhan <devang@outlook.in>
 # Honeybee is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published
 # by the Free Software Foundation; either version 3 of the License,
@@ -39,7 +39,7 @@ _
 Please visit the following link to know why EnegyPlus does not like non-convex surfaces.
 http://bigladdersoftware.com/epx/docs/8-2/input-output-reference/group-simulation-parameters.html#field-solar-distribution
 -
-Provided by Honeybee 0.0.61
+Provided by Honeybee 0.0.63
 
     Args:
         _breps: A list of breps that you wish to scan for non-convex surfaces
@@ -52,7 +52,7 @@ Provided by Honeybee 0.0.61
 
 ghenv.Component.Name = "Honeybee_Find Non-Convex"
 ghenv.Component.NickName = 'IsConvex'
-ghenv.Component.Message = 'VER 0.0.62\nOCT_24_2017' #Change this date to be that of your commit or pull request.
+ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
 #compatibleHBVersion = VER 0.0.57\nNOV_04_2016

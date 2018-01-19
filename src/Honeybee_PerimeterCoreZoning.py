@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2017, Chien Si Harriman - Modified by Mostapha Sadeghipour Roudsari <Chien.Harriman@gmail.com> 
+# Copyright (c) 2013-2018, Chien Si Harriman - Modified by Mostapha Sadeghipour Roudsari <Chien.Harriman@gmail.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -23,7 +23,7 @@
 """
 Separate zones into perimeter and core
 -
-Provided by Honeybee 0.0.62
+Provided by Honeybee 0.0.63
 
     Args:
         _bldgMasses: A Closed brep representing a building or a list of closed Breps.
@@ -38,7 +38,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = 'Honeybee_PerimeterCoreZoning'
 ghenv.Component.NickName = 'PerimeterCore'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"

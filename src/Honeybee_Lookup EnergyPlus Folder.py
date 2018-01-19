@@ -4,7 +4,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2017, Abraham Yezioro <ayez@ar.technion.ac.il> and Chris Mackey <chris@ladybug.tools>
+# Copyright (c) 2013-2018, Abraham Yezioro <ayez@ar.technion.ac.il> and Chris Mackey <chris@ladybug.tools>
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -23,7 +23,7 @@
 """
 Search Energy Simulation Folder
 -
-Provided by Honeybee 0.0.62
+Provided by Honeybee 0.0.63
     
     Args:
         _studyFolder: Path to base study folder. It can be a single simulation folder or a folder containing subfolders produced by parametric simulations
@@ -44,7 +44,7 @@ Provided by Honeybee 0.0.62
 """
 ghenv.Component.Name = "Honeybee_Lookup EnergyPlus Folder"
 ghenv.Component.NickName = 'LookupFolder_EnergyPlus'
-ghenv.Component.Message = 'VER 0.0.62\nNOV_10_2017'
+ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"

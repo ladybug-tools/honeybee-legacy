@@ -3,7 +3,7 @@
 #
 # This file is part of Honeybee.
 #
-# Copyright (c) 2013-2017, Chris Mackey <Chris@MackeyArchitecture.com> and Saeran Vasanthakumar <saeranv@gmail.com>
+# Copyright (c) 2013-2018, Chris Mackey <Chris@MackeyArchitecture.com> and Saeran Vasanthakumar <saeranv@gmail.com>
 # Honeybee is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published
 # by the Free Software Foundation; either version 3 of the License,
@@ -35,7 +35,7 @@ Therefore, it is usually customary to break up a building depending on the areas
 This includes breaking up the building into floors (since each floor can have a different microclimate) and breaking up each floor into a core zone and perimeter zones (since each side of the buidling gets a different amount of solar gains and losses/gains through the envelope).
 This component helps break up building masses in such a manner.
 -
-Provided by Honeybee 0.0.62
+Provided by Honeybee 0.0.63
 
     Args:
         _bldgFloors: A Closed brep or list of closed breps representing building floors. In this WIP only convex geometries and very simple concave geometries will succeed. You should prepare the massing of your building by dividing it into convex volumes before using this component. You can use the Honeybee_SplitBuildingMass2Floors to generate floors from a building mass.
@@ -49,7 +49,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = 'Honeybee_SplitFloor2ThermalZones'
 ghenv.Component.NickName = 'Split2Zone'
-ghenv.Component.Message = 'VER 0.0.62\nNOV_23_2017'
+ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"

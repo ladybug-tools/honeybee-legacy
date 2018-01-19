@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2017 Chris Mackey <Chris@MackeyArchitecture.com> 
+# Copyright (c) 2013-2018, 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -39,7 +39,7 @@ Provided by Ladybug 0.0.62
 
 ghenv.Component.Name = "Honeybee_Seasonal Schedule"
 ghenv.Component.NickName = 'Honeybee_SeasonalSchedule'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "07 | Energy | Schedule"

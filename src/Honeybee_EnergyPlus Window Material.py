@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2017, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools> 
+# Copyright (c) 2013-2018, Mostapha Sadeghipour Roudsari <mostapha@ladybug.tools> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -28,7 +28,7 @@ Also because of this, the accuracy of this material is not as great as a materia
 _
 If you want to create a material that accounts for mass, you should use the "Honeybee_EnergyPlus Glass Material" component and the "Honeybee_EnergyPlus Window Air Gap" to create a window construction with one or multiple panes.
 -
-Provided by Honeybee 0.0.62
+Provided by Honeybee 0.0.63
     
     Args:
         _name: A text name for your NoMass Window Material.
@@ -42,7 +42,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_EnergyPlus Window Material"
 ghenv.Component.NickName = 'EPWindowMat'
-ghenv.Component.Message = 'VER 0.0.62\nAUG_20_2017'
+ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "06 | Energy | Material | Construction"

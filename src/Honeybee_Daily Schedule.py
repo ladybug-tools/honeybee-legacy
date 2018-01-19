@@ -3,7 +3,7 @@
 # 
 # This file is part of Honeybee.
 # 
-# Copyright (c) 2013-2017, Antonello Di Nunzio <antonellodinunzio@gmail.com> 
+# Copyright (c) 2013-2018, Antonello Di Nunzio <antonellodinunzio@gmail.com> 
 # Honeybee is free software; you can redistribute it and/or modify 
 # it under the terms of the GNU General Public License as published 
 # by the Free Software Foundation; either version 3 of the License, 
@@ -23,7 +23,7 @@
 """
 Use this component to make daily schedules for "Honeybee_AnnualSchedule". This component works with the native Grasshopper Gene Pool.
 -
-Provided by Honeybee 0.0.62
+Provided by Honeybee 0.0.63
     
     Args:
         _genePool: Input Galapagos Gene Pool
@@ -51,7 +51,7 @@ Provided by Honeybee 0.0.62
 
 ghenv.Component.Name = "Honeybee_Daily Schedule"
 ghenv.Component.NickName = 'DailySchedule'
-ghenv.Component.Message = 'VER 0.0.62\nJUL_28_2017'
+ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "07 | Energy | Schedule"
