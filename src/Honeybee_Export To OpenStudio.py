@@ -3820,6 +3820,9 @@ class WriteOPS(object):
                 adjacentOSSurface = self.adjacentSurfacesDict[adjacentSurfaceName][1]
                 OSSurface.setAdjacentSurface(adjacentOSSurface)
             except:
+                OSSurface.setOutsideBoundaryCondition("ADIABATIC")
+                OSSurface.setSunExposure("NOSUN")
+                OSSurface.setWindExposure("NOWIND")
                 warning = "Adjacent surface " + adjacentSurfaceName + " was not found."
                 print warning
         
@@ -3830,6 +3833,9 @@ class WriteOPS(object):
                 adjacentOSSurface = self.adjacentFenSrfsDict[adjacentSurfaceName][1]
                 OSSurface.setAdjacentSubSurface(adjacentOSSurface)
             except:
+                OSSurface.setOutsideBoundaryCondition("ADIABATIC")
+                OSSurface.setSunExposure("NOSUN")
+                OSSurface.setWindExposure("NOWIND")
                 warning = "Adjacent surface " + adjacentSurfaceName + " was not found."
                 print warning
     
