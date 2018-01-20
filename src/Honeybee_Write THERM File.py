@@ -275,6 +275,8 @@ def checkTheInputs():
         # Check to be sure that the polyline geomtry is clockwise in the base plane.
         if str(polygon.polylineGeo.ClosedCurveOrientation(basePlane)) == 'CounterClockwise':
             polygon.polylineGeo.Reverse()
+        if str(rc.RhinoApp.Version).startswith('6'):
+            polygon.polylineGeo.Reverse()
         # Remake the list of vertices so that we are sure they are oriented clockwise.
         polygon.vertices = []
         for segment in polygon.polylineGeo.DuplicateSegments():
@@ -332,6 +334,8 @@ def checkTheInputs():
         # Check to be sure the curve is facing counter-clockwise.
         encircling = allBoundary[0]
     if str(encircling.ClosedCurveOrientation(basePlane)) == 'CounterClockwise':
+        encircling.Reverse()
+    if str(rc.RhinoApp.Version).startswith('6'):
         encircling.Reverse()
     polygonBoundaries = encircling.DuplicateSegments()
     
