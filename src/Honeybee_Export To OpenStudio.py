@@ -3813,6 +3813,11 @@ class WriteOPS(object):
                 
     
     def setAdjacentSurfaces(self):
+        defaultConstrDict = {
+            'Wall': 'Interior Wall',
+            'Ceiling': 'Interior Ceiling',
+            'Floor': 'Interior Floor'}
+        
         # Set Adjacent zone surfaces.
         for surfaceName in self.adjacentSurfacesDict.keys():
             adjacentSurfaceName, OSSurface = self.adjacentSurfacesDict[surfaceName]
@@ -3820,9 +3825,17 @@ class WriteOPS(object):
                 adjacentOSSurface = self.adjacentSurfacesDict[adjacentSurfaceName][1]
                 OSSurface.setAdjacentSurface(adjacentOSSurface)
             except:
+                # if we didn't find the adjacent surfcae, do the next most accurate thing:
+                # make the surface adiabatic and add an interior construction
                 OSSurface.setOutsideBoundaryCondition("ADIABATIC")
                 OSSurface.setSunExposure("NOSUN")
                 OSSurface.setWindExposure("NOWIND")
+                if self.isConstructionInLib(defaultConstrDict[str(OSSurface.surfaceType())]):
+                    construction = self.getConstructionFromLib(defaultConstrDict[str(OSSurface.surfaceType())])
+                else:
+                    construction = self.getOSConstruction(defaultConstrDict[str(OSSurface.surfaceType())], model)
+                    self.addConstructionToLib(defaultConstrDict[str(OSSurface.surfaceType())], construction)
+                OSSurface.setConstruction(construction)
                 warning = "Adjacent surface " + adjacentSurfaceName + " was not found."
                 print warning
         
@@ -3833,9 +3846,17 @@ class WriteOPS(object):
                 adjacentOSSurface = self.adjacentFenSrfsDict[adjacentSurfaceName][1]
                 OSSurface.setAdjacentSubSurface(adjacentOSSurface)
             except:
+                # if we didn't find the adjacent surfcae, do the next most accurate thing:
+                # make the surface adiabatic and add an interior construction
                 OSSurface.setOutsideBoundaryCondition("ADIABATIC")
                 OSSurface.setSunExposure("NOSUN")
                 OSSurface.setWindExposure("NOWIND")
+                if self.isConstructionInLib('Interior Window'):
+                    construction = self.getConstructionFromLib('Interior Window')
+                else:
+                    construction = self.getOSConstruction('Interior Window', model)
+                    self.addConstructionToLib('Interior Window', construction)
+                OSSurface.setConstruction(construction)
                 warning = "Adjacent surface " + adjacentSurfaceName + " was not found."
                 print warning
     
