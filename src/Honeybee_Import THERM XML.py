@@ -76,7 +76,7 @@ def main(thermXMLFile):
     if not os.path.isfile(thermXMLFile):
         warning = "Cannot find the result file. Check the location of the file on your machine. \n If it is not there, make sure that you have opened THERM and run your .thmx file before using this component. \n Also, before you run the file in THERM, make sure that you go to Options > Preferences > Simulation and check 'Save Conrad results file (.O).'"
         print warning
-        ghenv.Component.AddRuntimeMessage(w, warning)
+        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
         return -1
     
     #Define some parameters to be changes while the file is open.
