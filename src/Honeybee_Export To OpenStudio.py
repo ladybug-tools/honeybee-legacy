@@ -562,6 +562,7 @@ class WriteOPS(object):
         ['ScheduleTypeLimits', '0', '1', 'Continuous']
         ['Schedule Type', 'Lower Limit Value {BasedOnField A3}', 'Upper Limit Value {BasedOnField A3}', 'Numeric Type']
         """
+        
         values, comments = self.hb_EPScheduleAUX.getScheduleTypeLimitsDataByName(schdTypeLimitsName, ghenv.Component)
         typeLimit = ops.ScheduleTypeLimits(model)
         try: typeLimit.setLowerLimitValue(float(values[1]))
@@ -716,6 +717,8 @@ class WriteOPS(object):
             if 'dimensionless' not in typeLims.lower():
                 if typeLims.strip().lower() == 'temperature':
                     values[1] = typeLims.strip() + ' 1'
+                elif 'daysim schedule file' in typeLims.lower():
+                    values[1] = 'fractional'
                 else:
                     values[1] = typeLims.strip()
         else:
