@@ -4201,9 +4201,8 @@ class EPFeaturesNotInOS(object):
             scheduleFileName = os.path.basename(zone.ETschedule)
             scheduleObjectName = "_".join(scheduleFileName.split(".")[:-1]).upper()
             earthTubeSched = scheduleObjectName
-           
         else: earthTubeSched = zone.ETschedule
-    
+        
         return '\nZoneEarthtube,\n' + \
             '\t' + zone.name + ',\t!- Zone Name\n' + \
             '\t' + str(earthTubeSched) + ',\t!- Schedule Name\n'+\
@@ -4454,6 +4453,13 @@ class RunOPS(object):
         for zone in HBZones:
             if zone.earthtube == True:
                 lines.append(otherFeatureClass.EarthTube(zone))
+                if zone.ETschedule != 'Always On Discrete':
+                    if zone.ETschedule.upper().endswith('.CSV'):
+                        lines.append(otherFeatureClass.createCSVSchedString(zone.ETschedule))
+                    else:
+                        warning = 'Please use a CSV schedule for earth tubes. Other schedules are not supported at the moment.'
+                        print warning
+                        ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
         
         # Write in any window spectral data.
         if self.windowSpectralData != {}:
