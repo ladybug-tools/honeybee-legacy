@@ -49,7 +49,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Glare Analysis"
 ghenv.Component.NickName = 'glareAnalysis'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.63\nFEB_06_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "04 | Daylight | Daylight"
@@ -241,7 +241,7 @@ def main(HDRImagePath, taskPosition, taskPositionAngle):
         proportion = max(x,y)/800
         resizedImage = ".".join(HDRImagePath.split(".")[:-1]) + "_resized." + HDRImagePath.split(".")[-1]
         
-        pflitLine = "/c " + hb_RADPath + "\pfilt -x/" + str(proportion) + " -y/" + str(proportion) + \
+        pflitLine = "/c " + hb_RADPath + "\pfilt -x /" + str(proportion) + " -y /" + str(proportion) + \
                   " " + HDRImagePath +" > " + resizedImage
 
         out, err = runCmdAndGetTheResults(pflitLine)

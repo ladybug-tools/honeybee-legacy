@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.63\nFEB_06_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -3122,7 +3122,7 @@ class hb_WriteRADAUX(object):
         line1_3 = " -e error.log " + octFile + " > " + unfFile + "\n"
                 
     
-        line2 = "pfilt -1 -r .6 -x/2 -y/2 " + unfFile + " > " + outputFile + "\n"
+        line2 = "pfilt -r .6 -x /2 -y /2 " + unfFile + " > " + outputFile + "\n"
         
         return line0 + line1_1 + line1_2 + line1_3 + line2
         
