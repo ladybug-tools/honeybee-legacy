@@ -298,7 +298,10 @@ class WriteOPS(object):
         for floorH in levels:
             story = ops.BuildingStory(model)
             story.setNominalZCoordinate(float(floorH))
-            self.levels["%.2f"%floorH] = story
+            key = "%.2f"%floorH
+            if str(key) == '-0.00':
+                key = '0.00'
+            self.levels[key] = story
     
     def setupLevels(self, zone, space):
         floorH = "%.2f"%zone.getFloorZLevel()
