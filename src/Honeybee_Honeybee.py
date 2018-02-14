@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.63\nFEB_06_2018'
+ghenv.Component.Message = 'VER 0.0.63\nFEB_13_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -2247,10 +2247,14 @@ class hb_WriteRAD(object):
                         pcomposLine = "pcompos -a " + `nXDiv` + " "
                         # pieces.reverse()
                         for piece in pieces:
-                            pcomposLine += piece + " "
-                        pcomposLine += " > " + mergedName + "\n"
+                            pcomposLine += piece.replace('.HDR', '.unf') + " "
+                        pcomposLine += " > " + mergedName.replace('.HDR', '_temp.HDR') + "\n"
                         
                         pcompFile.write(pcomposLine)
+                    
+                        pfiltLine = "pfilt -r .6 -x /2 -y /2 {} > {}\n" \
+                            .format(mergedName.replace('.HDR', '_temp.HDR'), mergedName)
+                        pcompFile.write(pfiltLine)
             
             return initBatchFileName, batchFiles, fileNames, pcompFileName, HDRFileAddress
                         
@@ -3120,11 +3124,8 @@ class hb_WriteRADAUX(object):
                 line1_2 += "-%s  "%par
         
         line1_3 = " -e error.log " + octFile + " > " + unfFile + "\n"
-                
-    
-        line2 = "pfilt -r .6 -x /2 -y /2 " + unfFile + " > " + outputFile + "\n"
         
-        return line0 + line1_1 + line1_2 + line1_3 + line2
+        return line0 + line1_1 + line1_2 + line1_3
         
         
     def falsecolorLine(self, projectName, viewName):
