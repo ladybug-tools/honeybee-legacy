@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.63\nFEB_13_2018'
+ghenv.Component.Message = 'VER 0.0.63\nFEB_15_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -6574,14 +6574,15 @@ class hb_EPSurface(object):
             self.getAngle2North()
         except:
             pass
-        
-        # Deal with the boundary conditions.
-        if clearBC:
-            self.setBC("Outdoors", False)
-            self.setBCObjectToOutdoors()
-        elif self.BCObject.name != '':
-            self.BCObject = copy.deepcopy(self.BCObject)
-            self.BCObject.name = self.BCObject.name + newKey
+        try:
+            if clearBC:
+                self.setBC("Outdoors", False)
+                self.setBCObjectToOutdoors()
+            elif self.BCObject.name != '':
+                self.BCObject = copy.deepcopy(self.BCObject)
+                self.BCObject.name = self.BCObject.name + newKey
+        except:
+            pass
         
         if not self.isChild and self.hasChild:
             self.punchedGeometry.Transform(transform)
