@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.63\nFEB_15_2018'
+ghenv.Component.Message = 'VER 0.0.63\nFEB_17_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -1678,13 +1678,14 @@ class hb_WriteRAD(object):
             if analysisRecipe.type == 2 and analysisRecipe.northDegrees!=0:
                 print "Rotating the scene for %d degrees"%analysisRecipe.northDegrees
                 
-                transform = rc.Geometry.Transform.Rotation(math.radians(analysisRecipe.northDegrees), \
+                transform = rc.Geometry.Transform.Rotation(-math.radians(analysisRecipe.northDegrees), \
                             rc.Geometry.Point3d.Origin)
                 rotateObjects = True
             
             for objCount, HBObj in enumerate(HBObjects):
                 
-                if rotateObjects: HBObj.transform(transform, None, False)
+                if rotateObjects:
+                    HBObj.transform(transform, None, False)
                 
                 # check if the object is zone or a surface (?)
                 if HBObj.objectType == "HBZone":
@@ -1851,12 +1852,16 @@ class hb_WriteRAD(object):
         if simulationType == 2:
             dynamicShadingRecipes = analysisRecipe.DSParameters.DShdR
             
-            if  len(dynamicShadingRecipes) == 0: return radFileFullName, materialFileName
+            if  len(dynamicShadingRecipes) == 0:
+                return radFileFullName, materialFileName
             
             customRADMat = {} # dictionary to collect the custom material names
             customMixFunRadMat = {} # dictionary to collect the custom mixfunc material names
             
             for shadingRecipe in dynamicShadingRecipes:
+                
+                if analysisRecipe.type == 2 and analysisRecipe.northDegrees!=0:
+                    print "Rotating %s for %d degrees" % (shadingRecipe.name, analysisRecipe.northDegrees)
                 
                 if shadingRecipe.type == 2:
                     
@@ -1873,6 +1878,8 @@ class hb_WriteRAD(object):
                             shdHBObjects = hb_hive.callFromHoneybeeHive(shadingState.shdHBObjects)
                             
                             for HBObj in shdHBObjects:
+                                if rotateObjects:
+                                    HBObj.transform(transform, None, False)                                
                                 # collect the custom material informations
                                 if HBObj.RadMaterial!=None:
                                         customRADMat, customMixFunRadMat = self.hb_RADMaterialAUX.addRADMatToDocumentDict(HBObj, customRADMat, customMixFunRadMat)
@@ -1931,7 +1938,7 @@ class hb_WriteRAD(object):
         if analysisRecipe.type == 2 and analysisRecipe.northDegrees!=0:
             print "Rotating test points for %d degrees"%analysisRecipe.northDegrees
             
-            transform = rc.Geometry.Transform.Rotation(math.radians(analysisRecipe.northDegrees), \
+            transform = rc.Geometry.Transform.Rotation(-math.radians(analysisRecipe.northDegrees), \
                         rc.Geometry.Point3d.Origin)
             
             for pt in flattenTestPoints: pt.Transform(transform)
