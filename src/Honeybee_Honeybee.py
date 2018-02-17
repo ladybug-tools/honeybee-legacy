@@ -2037,11 +2037,28 @@ class hb_WriteRAD(object):
             
             initBatchFile = open(initBatchFileName, "w")
             initBatchFile.write(pathStr)
+            
+            
+            xformCmds = []
+            if additionalRadFiles and northAngleRotation != 0:
+                # rotate additional radiance files:
+                cmdbase = 'xform -rz -%f {} > {}' % northAngleRotation
+                
+                for count, adfile in enumerate(additionalRadFiles):
+                    target = adfile[:-4] + '_' + str(northAngleRotation) + adfile[-4:]
+                    xformCmds.append(cmdbase.format(adfile, target))
+                    additionalRadFiles[count] = target
+            
             initBatchStr =  os.path.splitdrive(self.hb_DSPath)[0] + '\n' + \
                             'CD ' + self.hb_DSPath + '\n' + \
-                            'epw2wea  ' + subWorkingDir + "\\" + self.lb_preparation.removeBlankLight(locName) + '.epw ' + subWorkingDir + "\\" +  self.lb_preparation.removeBlankLight(locName) + '.wea\n' + \
-                            ':: 1. Generate Daysim version of Radiance Files\n' + \
+                            'epw2wea  ' + subWorkingDir + "\\" + self.lb_preparation.removeBlankLight(locName) + '.epw ' + subWorkingDir + "\\" +  self.lb_preparation.removeBlankLight(locName) + '.wea\n'
+                            
+            if xformCmds:
+                initBatchStr += ':: Rotate additional files if any\n' + '\n'.join(xformCmds) + '\n'
+            
+            initBatchStr += ':: 1. Generate Daysim version of Radiance Files\n' + \
                             'radfiles2daysim ' + heaFileName + ' -m -g\n'
+            
             
             # rotate scene if angle is not 0!
             #if northAngleRotation!=0:
