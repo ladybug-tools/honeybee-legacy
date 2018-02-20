@@ -57,7 +57,7 @@ from shutil import copyfile
 
 ghenv.Component.Name = 'Honeybee_Write THERM File'
 ghenv.Component.NickName = 'writeTHERM'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.63\nFEB_20_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "11 | THERM"
@@ -307,6 +307,7 @@ def checkTheInputs():
     for polygon in thermPolygons:
         allPolygonGeo.append(polygon.geometry)
     joinedPolygons = rc.Geometry.Brep.JoinBreps(allPolygonGeo, sc.doc.ModelAbsoluteTolerance)
+    probRegions = joinedPolygons
     if len(joinedPolygons) != 1:
         warning = "Geometry connected to _polygons does not form a single polysurface and THERM does not like this. \n" + \
         "A thermFile will still be written but you will have to finish making the geometry in the THERM interface."
