@@ -8659,7 +8659,7 @@ class hb_hvacProperties(object):
         }
         
         self.airCapabilities = {
-        0: {'FanTotEff': False, 'FanMotEff': False, 'FanPres': False, 'FanPlace': False, 'airSysHardSize': False, 'centralAirLoop' : False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        0: {'FanTotEff': False, 'FanMotEff': False, 'FanPres': False, 'FanPlace': False, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
         1: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : False, 'Econ' : False, 'HeatRecov' : False},
         2: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Econ' : False, 'HeatRecov' : False},
         3: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},

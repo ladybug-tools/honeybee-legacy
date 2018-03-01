@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.63\nMAR_01_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -2241,6 +2241,11 @@ class WriteOPS(object):
                             zoneIdealAir.setMinimumCoolingSupplyAirTemperature(airDetails.coolingSupplyAirTemp)
                         if airDetails.airsideEconomizer != 'Default':
                             zoneIdealAir.setOutdoorAirEconomizerType(airDetails.airsideEconomizer)
+                            if airDetails.airsideEconomizer == 'NoEconomizer':
+                                zoneIdealAir.setCoolingLimit('NoLimit')
+                        if airDetails.airSysHardSize != "Default":
+                            zoneIdealAir.setCoolingLimit('LimitFlowRate')
+                            zoneIdealAir.setMaximumCoolingAirFlowRate(float(airDetails.airSysHardSize))
                         if airDetails.heatRecovery != 'Default':
                             zoneIdealAir.setHeatRecoveryType(airDetails.heatRecovery)
                         if airDetails.recoveryEffectiveness != 'Default':
