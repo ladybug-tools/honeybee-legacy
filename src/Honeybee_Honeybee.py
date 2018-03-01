@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.63\nFEB_17_2018'
+ghenv.Component.Message = 'VER 0.0.63\nMAR_01_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -7141,17 +7141,13 @@ class hb_GlzGeoGeneration(object):
     def createGlazingForRect(self, rectBrep, glazingRatio, windowHeight, sillHeight, breakUpDist, splitGlzVertDist, conversionFactor):
         #Define a default window height, sill height, breakup distance and vertical glazing dist of windows.
         if windowHeight != None: winHeight = windowHeight
-        else: winHeight = 2
-        winHeight = winHeight/conversionFactor
+        else: winHeight = 2/conversionFactor
         if sillHeight != None: silHeight = sillHeight
-        else: silHeight = 0.8
-        silHeight = silHeight/conversionFactor
+        else: silHeight = 0.8/conversionFactor
         if breakUpDist != None: distBreakup = breakUpDist
-        else: distBreakup = 2
-        distBreakup = distBreakup/conversionFactor
+        else: distBreakup = 2/conversionFactor
         if splitGlzVertDist != None: splitVertDist = splitGlzVertDist
-        else: splitVertDist = 0
-        splitVertDist = splitVertDist/conversionFactor
+        else: splitVertDist = 0/conversionFactor
         
         
         if rectBrep:
