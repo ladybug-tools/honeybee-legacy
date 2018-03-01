@@ -93,8 +93,13 @@ import copy
 import math
 import subprocess
 import operator
+import platform
 
 rc.Runtime.HostUtils.DisplayOleAlerts(False)
+
+assert platform.architecture()[0] == '64bit', \
+    'You must use Rhino 64-bit to run OpenStudio not {}.'.format(platform.architecture()[0])
+
 osVersion = ''
 if sc.sticky.has_key('honeybee_release'):
     if sc.sticky["honeybee_folders"]["OSLibPath"] != None:
@@ -107,7 +112,7 @@ if sc.sticky.has_key('honeybee_release'):
             osVersion = openStudioLibFolder.split('-')[-1].split('/')[0]
         except:
             pass
-        
+
         import clr
         clr.AddReferenceToFileAndPath(openStudioLibFolder+"\\openStudio.dll")
         
@@ -344,7 +349,7 @@ class WriteOPS(object):
                     selectedDesignDays.Add(dday)
                     ddFound = True
             model.addObjects(selectedDesignDays)
-        
+
         return ddFound
     
     def writeDDObjStr(self, ddName, designType, month, day, dbTemp, dbTempRange, wbTemp, enth, humidConditType, pressure, windSpeed, windDir, ashraeSkyClearness):
@@ -834,6 +839,18 @@ class WriteOPS(object):
         thermalZone = ops.ThermalZone(model)
         ops.OpenStudioModelHVAC.setThermalZone(space, thermalZone)
         thermalZone.setName(zone.name)
+        if zone.isPlenum or not zone.partOfArea:
+            space.partofTotalFloorArea = False
+        if zone.multiplier and zone.multiplier != 1:
+            thermalZone.setMultiplier(zone.multiplier)
+        if zone.ceilingHeight:
+            thermalZone.setCeilingHeight(zone.ceilingHeight)
+        if zone.volume:
+            thermalZone.setVolume(zone.volume)
+        if zone.insideConvectionAlgorithm:
+            thermalZone.setZoneInsideConvectionAlgorithm(zone.insideConvectionAlgorithm)
+        if zone.outsideConvectionAlgorithm:
+            thermalZone.setZoneOutsideConvectionAlgorithm(zone.outsideConvectionAlgorithm)
         return space, thermalZone
     
     ### START OF FUNCTIONS FOR CREATING HVAC SYSTEMS FROM SCRATCH ###
@@ -4679,7 +4696,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     
     # initiate OpenStudio model
     model = ops.Model()
-    
+
     hb_writeOPS = WriteOPS(simParameters, epwWeatherFile)
     
     #set runningPeriod

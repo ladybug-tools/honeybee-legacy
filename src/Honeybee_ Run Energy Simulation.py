@@ -62,11 +62,11 @@ Provided by Honeybee 0.0.63
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.63\nMAR_01_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nDEC_15_2017
+#compatibleHBVersion = VER 0.0.63\nMAR_01_2018
 #compatibleLBVersion = VER 0.0.59\nJUL_24_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
@@ -101,36 +101,38 @@ class WriteIDF(object):
     
     financialdata = []
     
+    @staticmethod
+    def booleanToYesNo(input):
+        if input:
+            return 'Yes'
+        else:
+            return 'False'
+
     def __init__(self, workingDir):
         self.fileBasedSchedules = {}
         self.workingDir = workingDir
-        
+
     def EPZone(self, zone):
+        if zone.isPlenum:
+            zone.partOfArea = False
         
         zoneStr = '\nZone,\n' + \
                 '\t' + zone.name + ',\n' + \
                 '\t' + `zone.north` + ',\t!-Direction of Relative North {deg}\n' + \
                 '\t' + `zone.origin.X` + ',\t!- X Origin {m}\n' + \
                 '\t' + `zone.origin.Y` + ',\t!- Y Origin {m}\n' + \
-                '\t' + `zone.origin.Z` + ',\t!- Z Origin {m}\n'
-                
-        try:
-            if zone.isPlenum:
-                return zoneStr + \
-                '\t1,\t!- Type\n' + \
-                '\t,\t!- Multiplier\n' + \
-                '\t,\t!- Ceiling Height\n' + \
-                '\t,\t!- Volume\n' + \
-                '\t,\t!- Floor Area\n' + \
-                '\t,\t!- Zone Inside Convection Algorithm\n' + \
-                '\t,\t!- Zone Outside Convection Algorithm\n' + \
-                '\tNo;\t!- Part of Total Floor Area\n'                
-            else:
-                return zoneStr + '\t1;\t!- Type\n'
-        except:
-            #older versions
-            return zoneStr + '\t1;\t!- Type\n'
-            
+                '\t' + `zone.origin.Z` + ',\t!- Z Origin {m}\n' + \
+                '\t' + str(zone.zoneType) + ',\t!- Type\n' + \
+                '\t' + str(zone.multiplier) + ',\t!- Multiplier\n' + \
+                '\t' + str(zone.ceilingHeight) + ',\t!- Ceiling Height\n' + \
+                '\t' + str(zone.volume) + ',\t!- Volume\n' + \
+                '\t' + str(zone.floorArea) + ',\t!- Floor Area\n' + \
+                '\t' + str(zone.insideConvectionAlgorithm) + ',\t!- Zone Inside Convection Algorithm\n' + \
+                '\t' + str(zone.outsideConvectionAlgorithm) + ',\t!- Zone Outside Convection Algorithm\n' + \
+                '\t' + self.booleanToYesNo(zone.partOfArea) + ';\t!- Part of Total Floor Area\n'                
+        
+        return zoneStr
+
     def EPZoneSurface (self, surface):
         coordinates = surface.coordinates
         checked, coordinates= self.checkCoordinates(coordinates)

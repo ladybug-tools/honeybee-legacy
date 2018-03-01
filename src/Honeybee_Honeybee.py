@@ -4961,10 +4961,19 @@ class EPZone(object):
         self.objectType = "HBZone"
         self.origin = rc.Geometry.Point3d.Origin
         self.geometry = zoneBrep
-        
+        self.zoneType = 1
+        self.multiplier = 1
+        self.ceilingHeight = ''
+        self.volume = ''
+        self.floorArea = ''
+        self.insideConvectionAlgorithm = ''
+        self.outsideConvectionAlgorithm = ''
+        self.partOfArea = True
+        self.isPlenum = False        
         self.num = zoneID
         self.ID = str(uuid.uuid4())
         self.name = self.cleanName(zoneName)
+        
         self.hasNonPlanarSrf = False
         self.hasInternalEdge = False
         
