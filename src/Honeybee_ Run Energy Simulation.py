@@ -62,7 +62,7 @@ Provided by Honeybee 0.0.63
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.63\nMAR_01_2018'
+ghenv.Component.Message = 'VER 0.0.63\nMAR_02_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -1725,13 +1725,20 @@ def main(north, epwFileAddress, EPParameters, analysisPeriod, HBZones, HBContext
         print "Extreme values from the weather file design will be used instead."
     
     if usedDDY == False:
-        # If there are no design days, analyze the EPW file and produce design day objects.
-        ddyFile = hb_writeIDF.createDdyFromEPW(epwFileAddress, workingDir, lb_preparation, lb_comfortModels)
-        designDayLines = hb_writeIDF.extractDDYObjs(ddyFile)
-        if designDayLines != ['\n']:
-            for line in designDayLines:
-                idfFile.write(line)
-            usedDDY = True
+        try:
+            # If there are no design days, analyze the EPW file and produce design day objects.
+            ddyFile = hb_writeIDF.createDdyFromEPW(epwFileAddress, workingDir, lb_preparation, lb_comfortModels)
+            designDayLines = hb_writeIDF.extractDDYObjs(ddyFile)
+            if designDayLines != ['\n']:
+                for line in designDayLines:
+                    idfFile.write(line)
+                usedDDY = True
+        except:
+            warning = "Honeybee could not find a ddy next to the epw file and could not create sizing criteria from the data in the epw file.\n" + \
+                "No sizing calcualtion will be performed for this model."
+            print warning
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
     
     # simulationControl
     idfFile.write(hb_writeIDF.EPSimulationControl(*simulationControl[0:5]))

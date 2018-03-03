@@ -71,11 +71,11 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.63\nMAR_01_2018'
+ghenv.Component.Message = 'VER 0.0.63\nMAR_02_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nDEC_15_2017
+#compatibleHBVersion = VER 0.0.56\nMAR_01_2018
 #compatibleLBVersion = VER 0.0.59\nJUL_24_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
@@ -216,7 +216,10 @@ class WriteOPS(object):
         lat = float(csheadline[6])
         lngt = float(csheadline[7])
         timeZone = float(csheadline[8])
-        elev = float(csheadline[9][:-1])
+        try:
+            elev = float(csheadline[9][:-1])
+        except:
+            elev = float(csheadline[9])
         epwfile.close()
         
         # Get the OpenStudio Model Site.
@@ -349,7 +352,7 @@ class WriteOPS(object):
                     selectedDesignDays.Add(dday)
                     ddFound = True
             model.addObjects(selectedDesignDays)
-
+        
         return ddFound
     
     def writeDDObjStr(self, ddName, designType, month, day, dbTemp, dbTempRange, wbTemp, enth, humidConditType, pressure, windSpeed, windDir, ashraeSkyClearness):
@@ -4640,7 +4643,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         "into canvas and try again."
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, warning)
-        return -1    
+        return -1
         
     # make sure epw file address is correct
     if not os.path.isfile(epwWeatherFile):
@@ -4741,8 +4744,15 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     ddyFound = hb_writeOPS.addDesignDays(model)
     if ddyFound == False:
         # Create a ddy file from the information in the EPW.
-        hb_writeOPS.createDdyFromEPW(epwWeatherFile, subWorkingDir, lb_preparation, lb_comfortModels)
-        hb_writeOPS.addDesignDays(model)
+        try:
+            hb_writeOPS.createDdyFromEPW(epwWeatherFile, subWorkingDir, lb_preparation, lb_comfortModels)
+            hb_writeOPS.addDesignDays(model)
+        except:
+            warning = "Honeybee could not find a ddy next to the epw file and could not create sizing criteria from the data in the epw file.\n" + \
+                "No sizing calcualtion will be performed for this model."
+            print warning
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
     
     # call Honeybee objects from the hive
     HBZones = hb_hive.callFromHoneybeeHive(HBZones)
