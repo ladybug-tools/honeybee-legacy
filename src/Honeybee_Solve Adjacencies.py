@@ -39,7 +39,7 @@ Provided by Honeybee 0.0.63
 """
 ghenv.Component.Name = "Honeybee_Solve Adjacencies"
 ghenv.Component.NickName = 'solveAdjc'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.63\nMAR_03_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -157,6 +157,7 @@ def updateAdj(surface1, surface2, altConstruction, altBC, altWinConstr, tol):
                         childSurface1.setEPConstruction(surface1.intCnstrSet[5])
                         childSurface2.setEPConstruction(surface1.intCnstrSet[5])
                     else:
+                        hb_EPObjectsAux = sc.sticky["honeybee_EPObjectsAUX"]()
                         hb_EPObjectsAux.assignEPConstruction(childSurface1, altWinConstr, ghenv.Component)
                         hb_EPObjectsAux.assignEPConstruction(childSurface2, altWinConstr, ghenv.Component)
                         #childSurface1.setEPConstruction(altWinConstr)
