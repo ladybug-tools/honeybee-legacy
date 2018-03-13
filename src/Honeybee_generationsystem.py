@@ -56,6 +56,9 @@ import uuid
 import Grasshopper.Kernel as gh
 import itertools
 
+global _MaintenanceCost
+_MaintenanceCost = 300
+
 
 def checHBgenobjects(PVHBSurfaces_,HBGenerationObjects_):
     
@@ -107,12 +110,7 @@ def checktheinputs(_GeneratorSystemName,PVHBSurfaces_,HBGenerationObjects_,_Main
         ghenv.Component.AddRuntimeMessage(w, "Please specify a name for this generator system and make sure it is not the same as another generation system!")
         return -1
     
-    if _MaintenanceCost == None:
-        
-        print "Please specify the annual maintenance cost of this Honeybee generation system!"
-        w = gh.GH_RuntimeMessageLevel.Warning
-        ghenv.Component.AddRuntimeMessage(w, "Please specify the annual maintenance of this Honeybee generation system!")
-        return -1
+
     # If no inputs do not let the component run and output something other than Null
     # will cause problems in Run Energy Simulation 
     if PVHBSurfaces_ == [] and HBGenerationObjects_ == []:
@@ -193,6 +191,7 @@ def main(PV_generation,HB_generation,_MaintenanceCost):
     
     for HBgenobject in PV_generation:
         
+        #print HBgenobject
         if HBgenobject.containsPVgen == True:
             
             try:
@@ -208,9 +207,9 @@ def main(PV_generation,HB_generation,_MaintenanceCost):
                     
             except AttributeError:
                 pass
-            
+
             for PVgen in HBgenobject.PVgenlist:
-                
+
                 PVgenerators.append(PVgen)
                 
                 # Append the inverter of each PV generator to the list
@@ -316,7 +315,7 @@ def main(PV_generation,HB_generation,_MaintenanceCost):
                                 if windandbat(windgenerators,battery) != -1:
 
                                     HB_generators.append(HB_generator(_GeneratorSystemName,simulationinverters,battery,windgenerators,PVgenerators,fuelgenerators,HBgencontextsurfaces,HBzonesurfaces,_MaintenanceCost))
-                                    
+
                                     HB_generator1 = hb_hivegen.addToHoneybeeHive(HB_generators,ghenv.Component.InstanceGuid.ToString() + str(uuid.uuid4()))
                                     
                                     return HB_generator1
