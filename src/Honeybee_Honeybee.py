@@ -70,6 +70,7 @@ import shutil
 import os
 import System.Threading.Tasks as tasks
 import System
+System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12
 import time
 import itertools
 import datetime

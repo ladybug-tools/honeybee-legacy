@@ -75,7 +75,7 @@ ghenv.Component.Message = 'VER 0.0.63\nMAR_08_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nDEC_15_2017
+#compatibleHBVersion = VER 0.0.56\nMAR_01_2018
 #compatibleLBVersion = VER 0.0.59\nJUL_24_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
