@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.63\nMAR_03_2018'
+ghenv.Component.Message = 'VER 0.0.63\nMAR_13_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -70,7 +70,6 @@ import shutil
 import os
 import System.Threading.Tasks as tasks
 import System
-System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12
 import time
 import itertools
 import datetime
@@ -7726,56 +7725,22 @@ class PV_gen(object):
     Generator:WindTurbine
     """
     
-    def __init__(self,_name,surfacename_,_integrationmode,No_parallel,No_series,costper_module,powerout,namePVperformobject,SA_solarcells,cell_n,sandia):
+    def __init__(self,_name,mountedsurface_,No_parallel,No_series,powerout,SA_solarcells,cell_n):
         
         self.name = _name
-        self.surfacename = surfacename_
+        self.mountedSurface = mountedsurface_
         self.type = 'Generator:Photovoltaic'
         
-        self.integrationmode = _integrationmode
         self.NOparallel = No_parallel
         self.NOseries = No_series
-        
-        self.namePVperformobject =  namePVperformobject # One Photovoltaic performance object is made for each PV object so names are the same
         
         # Cost and power out of the Generator is the cost and power of each module by the number of modules in each generator
         # number in series by number in parallel.
         
-        self.cost_ = costper_module*No_series*No_parallel
         self.powerout = powerout*No_series*No_parallel
         
         self.inverter = None # Define the inverter for this PV generator all PVgenerations being used in the same - run energy simulation must have the same inverter
-    
-        if sandia == []:
-            
-            self.mode = 'simple'
-            self.performancetype = 'PhotovoltaicPerformance:Simple'
-            
-            # Use PhotovoltaicPerformance:Simple, call the method below.
-            
-            self.PV_performanceSimple(namePVperformobject,SA_solarcells,cell_n)
-            
-        if sandia != []:
-            
-            # Use PhotovoltaicPerformance:Sandia,
-            
-            self.mode = 'sandia'
-            self.performancetype = 'PhotovoltaicPerformance:Sandia'
-            
-            self.PV_performanceSandia(sandia,namePVperformobject)
-            
-    def PV_performanceSimple(self,namePVperformobject,SA_solarcells,cell_n,cell_efficiencyinputmode = "Fixed", schedule_ = "always on"):
-    
-        self.namePVperformobject = namePVperformobject
-        self.surfaceareacells = SA_solarcells
-        self.cellefficiencyinputmode = cell_efficiencyinputmode
-        self.efficiency = cell_n
-        self.schedule = schedule_
         
-        
-    def PV_performanceSandia(self,sandia,namePVperformobject):
-        
-        self.sandia = sandia
 
 class PVinverter(object):
     

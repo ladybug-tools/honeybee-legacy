@@ -71,11 +71,11 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.63\nMAR_02_2018'
+ghenv.Component.Message = 'VER 0.0.63\nMAR_08_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nMAR_01_2018
+#compatibleHBVersion = VER 0.0.56\nDEC_15_2017
 #compatibleLBVersion = VER 0.0.59\nJUL_24_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
@@ -93,6 +93,7 @@ import copy
 import math
 import subprocess
 import operator
+import collections
 import platform
 
 rc.Runtime.HostUtils.DisplayOleAlerts(False)
@@ -112,7 +113,7 @@ if sc.sticky.has_key('honeybee_release'):
             osVersion = openStudioLibFolder.split('-')[-1].split('/')[0]
         except:
             pass
-
+        
         import clr
         clr.AddReferenceToFileAndPath(openStudioLibFolder+"\\openStudio.dll")
         
@@ -3334,6 +3335,273 @@ class WriteOPS(object):
                 spaceType.setDesignSpecificationOutdoorAir(ventilation)
             
         return space
+        
+        
+    def setGenerators(self,generators,simulationOutputs,model):
+        
+        def checks(HBsystemgenerators):
+            
+            # CHECK that HBgenerator names are unique for each HB generator
+            HBgenerators = []
+            for HBgenerator in HBsystemgenerators:
+                HBgenerators.extend([generator.name for generator in HBgenerator.windgenerators])
+                HBgenerators.extend([generator.name for generator in HBgenerator.PVgenerators])
+            if len(HBgenerators) != len(set(HBgenerators)):
+                duplicateHBgenerators =  [item for item, count in collections.Counter([item for item in HBgenerators]).items() if count > 1]
+                for HBgenerator in duplicateHBgenerators:
+                    warn = " Duplicate Honeybee generator (A PV or wind generator) name, named : " + HBgenerator +" detected!"+ "\n"+\
+                    "Please ensure that all PV and wind generators have unique names for EnergyPlus to run!"+ "\n"+\
+                    "This error usually occurs when several PVgen components are connected to one EnergyPlus simulation, and default names " + "\n"+\
+                    "have been assigned in each component. Fix this issue by inputing unique names to the input _name_ on the PVgen component."
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warn )
+                return -1
+            
+            # CHECK that the HBsystemgenerator_name is unique for this simulation - Otherwise E+ will crash
+            if len(set([HBsystemgenerator.name for HBsystemgenerator in HBsystemgenerators])) != len(HBsystemgenerators):
+                duplicateHBsystemgenerators = [HBsystemgenerator for HBsystemgenerator, count in collections.Counter([HBsystemgenerator.name for HBsystemgenerator in HBsystemgenerators]).items() if count > 1]
+                for HBsystemgenerator in duplicateHBsystemgenerators:
+                    warn = " Duplicate Honeybee generation system name, named: " + HBsystemgenerator +" detected!"+ "\n"+\
+                    "Please ensure that all Honeybee generation systems have unique names for EnergyPlus to run!"
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warn )
+                return -1
+                
+        hb_hivegen = sc.sticky["honeybee_generationHive"]()
+
+        HBsystemgenerators = hb_hivegen.callFromHoneybeeHive(generators)
+        # Generation objects use "always on" schedule
+        #EPScheduleCollection.append('ALWAYS ON')
+        
+        checks(HBsystemgenerators)
+        
+        # This code here is used to extractingruntime periods if outputs are specified externally
+        # If the function returns and exception that means that external outputs are not specified.
+        # and teh default below will be used.
+        
+        def extracttimeperiod(simulationOutputs):
+            try:
+                timeperiod = simulationOutputs[-1].split(',')[-1]
+                HBgeneratortimeperiod = timeperiod.replace(";","")
+                return HBgeneratortimeperiod
+            except:
+                # By default return hourly if no simulation outputs are returned
+                return 'hourly'
+        
+        # Extract the timestep from the incoming component simulationOutputs if its being used
+        HBgeneratortimeperiod = extracttimeperiod(simulationOutputs)
+        
+        HBgeneratoroutputs = []
+        
+        # 1. Ensure the correct simulation outputs for the electric generators
+        if simulationOutputs == []:
+            HBgeneratoroutputs.append("Output:Variable,*,Facility Net Purchased Electric Energy, hourly;")
+            HBgeneratoroutputs.append("Output:Variable,*,Facility Total Electric Demand Power, hourly;")
+
+        if simulationOutputs != []:
+            if (not any('Output:Variable,*,Facility Total Electric Demand Power' in s for s in simulationOutputs)) and (not any('Output:Variable,*,Facility Net Purchased Electric Power' in s for s in simulationOutputs)):
+                # These are the default inputs if the user does not specify their own using the component
+                # simulationOutputs, the default timestep is therefore hourly 
+                # the component Ladybug monthly bar chart needs hourly in order to run
+                HBgeneratoroutputs.append("Output:Variable,*,Facility Net Purchased Electric Energy, hourly;")
+                HBgeneratoroutputs.append("Output:Variable,*,Facility Total Electric Demand Power, hourly;")
+
+        # 2. Ensure the correct simulation outputs for each electric generator
+        for HBsystemcount, HBsystemgenerator in enumerate(HBsystemgenerators):
+            
+            # Define the name for the list of generators and to use in generator's list name in ElectricLoadCenter:Distribution
+            if HBsystemgenerator.name == None:
+                # This shouldn't happen as Honeybee generation system has a check on it 
+                # which doesnt allow for no names to be specified.
+                HBsystemgenerator_name = "generatorsystem" + str(HBsystemcount)
+            else:
+                HBsystemgenerator_name = str(HBsystemgenerator.name)
+            
+            # For this HBsystemgenerator write the output so that the produced electric energy is reported.
+            HBgeneratoroutputs.append("Output:Variable,"+str(HBsystemgenerator_name)+":DISTRIBUTIONSYSTEM,Electric Load Center Produced Electric Energy,"+ HBgeneratortimeperiod +";")
+            
+            # Determine whether it is a PV, Wind or fuel generator system
+            if HBsystemgenerator.PVgenerators != []:
+                    
+                for surface in HBsystemgenerator.HBzonesurfaces:
+                    if not surface.name in [surface.name().get() for surface in model.getSurfaces()]:
+                        warn  = "It has been detected that there are PV generators attached to sufaces of a Honeybee zone\n"+\
+                        " However this Honeybee zone has not been connected to the _HBZones input on this component\n"+\
+                        " Please connect it to run the EnergyPlus simulation!"
+                        print warn 
+                        ghenv.Component.AddRuntimeMessage(w, warn)
+                        return -1
+                        
+                if HBsystemgenerator.simulationinverter != None:
+                    
+                    # HBsystem contains a inverter and is a DC system there are NO batteries in the system
+
+                    inverterobject = HBsystemgenerator.simulationinverter[0] # All inverters are the same doesnt matter which one you pick
+                    
+                    # Write HBsystemgenerator inverters
+                    
+                    inverter = ops.ElectricLoadCenterInverterSimple(model)
+                    inverter.setInverterEfficiency(inverterobject.efficiency)
+                    
+                    # Write HBsystemgenerator ElectricLoadCenter:Distribution
+                    elcd = ops.ElectricLoadCenterDistribution(model)
+                    elcd.setInverter(inverter)
+                    
+                    # Write HBsystemgenerator photovoltaic generators
+                    for PVgen in HBsystemgenerator.PVgenerators:
+                        
+                        try:
+                            # Get the panel's surface by name from the openstudio model
+                            # model.getSurfaces is only zone surfaces
+                            for opssurface in model.getSurfaces():
+                                
+                                if str(opssurface.name().get()) == str(PVgen.mountedSurface.name):
+                                    
+                                    panel_surface = surface
+                                    
+                            if 'panel_surface' not in locals():
+                                # Happens when the mounted surface is not in the zone surfaces
+                                raise UnboundLocalError("Local variable 'panel_surface' referenced before assignment.")
+                            
+                            # Add the pv generator to the openstudio model
+                            pvgenerator = ops.GeneratorPhotovoltaic.simple(model)
+                            pvgenerator.setName(PVgen.name)
+                            pvgenerator.setNumberOfModulesInParallel(PVgen.NOparallel)
+                            pvgenerator.setNumberOfModulesInSeries(PVgen.NOseries)
+                            pvgenerator.setSurface(panel_surface)
+                            elcd.addGenerator(pvgenerator)
+                            
+                        except UnboundLocalError as e:
+                            # mounted surface is not in model.getSurfaces so so PV generator is mounted on context surface
+
+                            if str(e) != "Local variable 'panel_surface' referenced before assignment.":
+                                # Some other error
+                                raise 
+                            else:
+                                
+                                # https://stackoverflow.com/questions/16001959/how-can-you-execute-a-command-at-the-end-of-a-for-loop
+                                
+                                assigned = False
+                                
+                                def assignMountingSurface(PVgen,model):
+                                
+                                    for shadingSurface in model.getShadingSurfaces():
+                                        
+                                        def coordinatesOfMountedSurface(PVgen):
+                                        
+                                            coordinates = PVgen.mountedSurface.extractPoints(1, False, None, 'UpperLeftCorner')
+                                            if type(coordinates[0])is not list and type(coordinates[0]) is not tuple:
+                                                coordinates = [coordinates]
+                                            
+                                            # generate OpenStudio points
+                                            shdPointVectors = ops.Point3dVector()
+                                            
+                                            for shadingCount, ptList in enumerate(coordinates):
+                                                for pt in ptList:
+                                                    # add the points to an openStudio list
+                                                    shdPointVectors.Add(ops.Point3d(pt.X,pt.Y,pt.Z))
+                                                    
+                                            return shdPointVectors
+                                                    
+                                        def toPythonArray(vector):
+                                            # for some reason the equals in OpenStudio arrays dont compare
+                                            # for this reason extract out all the points for a comparision
+                                            allPoints = []
+                                            
+                                            for point in shadingSurface.vertices():
+        
+                                                allPoints.append([point.x(),point.y(),point.z()])
+                                                
+                                            return allPoints
+                                            
+                                        shdPointVectors = coordinatesOfMountedSurface(PVgen)
+                                        
+                                        if toPythonArray(shdPointVectors) == toPythonArray(shadingSurface.vertices()):
+                                            
+                                            # If coordinates of Mounted Surface and Context Surface are the same - they are the same surface so mount the surface there
+                                            
+                                            pvgenerator = ops.GeneratorPhotovoltaic.simple(model)
+                                            pvgenerator.setName(PVgen.name)
+                                            pvgenerator.setNumberOfModulesInParallel(PVgen.NOparallel)
+                                            pvgenerator.setNumberOfModulesInSeries(PVgen.NOseries)
+                                            pvgenerator.setSurface(shadingSurface)
+                                            elcd.addGenerator(pvgenerator)
+
+                                            return True
+                                        
+                                        
+                                assigned = assignMountingSurface(PVgen,model)
+
+                                if not assigned:
+                                    # Shading surface is not in the model yet! So it wasn't connected to HBContext_
+                                    # Add it! - copied the code from the function OPSShdSurface - but we didnt need all the function
+
+                                    # Shading Group
+                                    shadingGroup = ops.ShadingSurfaceGroup(model)
+            
+                                    coordinates = PVgen.mountedSurface.extractPoints(1, False, None, 'UpperLeftCorner')
+                                    if type(coordinates[0])is not list and type(coordinates[0]) is not tuple:
+                                        coordinates = [coordinates]
+                                    
+                                    shadingSch = ""
+                                    schedule = PVgen.mountedSurface.TransmittanceSCH
+                                    if schedule!="":
+                                        # transmittance schedule
+                                        shadingSch = self.getOSSchedule(schedule, model)
+                                    
+                                    # generate OpenStudio points
+                                    shdPointVectors = ops.Point3dVector();
+                                    
+                                    # surfaceCount is the number of shading surfaces already in the model
+                                    surfaceCount = model.getShadingSurfaces().Count
+                                    
+                                    for shadingCount, ptList in enumerate(coordinates):
+                                        for pt in ptList:
+                                            # add the points to an openStudio list
+                                            shdPointVectors.Add(ops.Point3d(pt.X,pt.Y,pt.Z))
+                                        
+                                        shdSurface = ops.ShadingSurface(shdPointVectors, model)
+                                        shdSurface.setName("shdSurface_" + str(surfaceCount) + "_" + str(shadingCount))
+                                        shdSurface.setShadingSurfaceGroup(shadingGroup)
+
+                                        if shadingSch!="": shdSurface.setTransmittanceSchedule(shadingSch)
+                                            
+                                    # Finally add the PV generator
+                                    
+                                    assignMountingSurface(PVgen,model)
+                                    
+                                                                    
+                    if HBsystemgenerator.battery != None:
+                        # XXX No implemented yet
+                        elecstorageobject = HBsystemgenerator.battery
+                        battery = ops.ElectricalStorage(model)
+                        # Write HBsystemgenerator battery
+                        
+                        battery = ops.ElectricLoadCenter_Storage.simple(model)
+                        
+
+            elif HBsystemgenerator.windgenerators != []:
+                operationscheme = 'Baseload'
+                busstype = 'AlternatingCurrent'
+                demandlimit = ''
+                trackschedule = 'Always On'
+                trackmeterschedule = ''
+                inverterobject = None
+                elecstorageobject = None
+                
+                # Write HBsystemgenerator wind generators
+                for windgenerator in HBsystemgenerator.windgenerators:
+                    idfFile.write(hb_writeIDF.wind_generator(windgenerator))
+                    WriteIDF.financialdata.append('Wind turbine cost - '+str(windgenerator.cost_)) 
+                # Write HBsystemgenerator ElectricLoadCenter:Distribution
+                idfFile.write(hb_writeIDF.writeloadcenterdistribution(distribution_name,HBsystemgenerator_name,operationscheme,demandlimit,trackschedule,trackmeterschedule,busstype,inverterobject,elecstorageobject))
+            
+            elif HBsystemgenerator.fuelgenerators != []: # XXX 14/04/2015 not yet implemented so always equal to []
+                pass
+            
+            
+        # Write the outputs required for HB generators to the model
+        
+        self.setOutputs(HBgeneratoroutputs, model)
+        
     
     def createOSStanadardOpaqueMaterial(self, HBMaterialName, values, model):
         # values = ['Roughness', 'Thickness {m}', 'Conductivity {W/m-K}', 'Density {kg/m3}', 'Specific Heat {J/kg-K}', 'Thermal Absorptance', 'Solar Absorptance', 'Visible Absorptance']
@@ -3832,6 +4100,7 @@ class WriteOPS(object):
             # generate OpenStudio points
             shdPointVectors = ops.Point3dVector();
             
+
             for shadingCount, ptList in enumerate(coordinates):
                 for pt in ptList:
                     # add the points to an openStudio list
@@ -4643,7 +4912,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         "into canvas and try again."
         w = gh.GH_RuntimeMessageLevel.Warning
         ghenv.Component.AddRuntimeMessage(w, warning)
-        return -1
+        return -1    
         
     # make sure epw file address is correct
     if not os.path.isfile(epwWeatherFile):
@@ -4704,7 +4973,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     
     # initiate OpenStudio model
     model = ops.Model()
-
+    
     hb_writeOPS = WriteOPS(simParameters, epwWeatherFile)
     
     #set runningPeriod
@@ -4753,7 +5022,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
             print warning
             w = gh.GH_RuntimeMessageLevel.Warning
             ghenv.Component.AddRuntimeMessage(w, warning)
-    
+            
     # call Honeybee objects from the hive
     HBZones = hb_hive.callFromHoneybeeHive(HBZones)
     
@@ -4865,7 +5134,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
     # add zone air mixing objects.
     for zoneCount, zone in enumerate(HBZones):
         if zone.mixAir == True: hb_writeOPS.setAirMixing(zone, model)
-    
+        
     # outputs
     defaultOutputs = ['Output:Variable,*,Zone Ideal Loads Supply Air Total Cooling Energy, hourly;',\
         'Output:Variable,*,Cooling Coil Electric Energy, hourly;',\
@@ -4889,8 +5158,9 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         outputs = simulationOutputs
     else:
        outputs = defaultOutputs
-    hb_writeOPS.setOutputs(outputs, model)
-    
+       
+    # Add generators to the model (PV,wind etc)
+
     # add shading surfaces if any
     if HBContext!=[] and HBContext[0]!=None:
         shdingSurfcaes = hb_hive.callFromHoneybeeHive(HBContext)
@@ -4899,6 +5169,12 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
             for con in shdingSurfcaes:
                 con.transform(NUscale, "", False)
         hb_writeOPS.OPSShdSurface(shdingSurfcaes, model)
+    
+    if HBGenerators_ != []:
+        
+        hb_writeOPS.setGenerators(HBGenerators_,outputs,model)
+       
+    hb_writeOPS.setOutputs(outputs, model)
     
     # Get the objects in the file that we need to replace or add because OpenStudio does not support them.
     csvSchedules, csvScheduleCount, shadeCntrlToReplace, replaceShdCntrl, windowSpectralData, waterSourceVRFs = hb_writeOPS.getObjToReplace()

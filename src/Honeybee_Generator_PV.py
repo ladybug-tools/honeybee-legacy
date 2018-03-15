@@ -42,7 +42,6 @@ Provided by Honeybee 0.0.63
         _name_: An optional input, a name or a list of names of PV generators which correspond sequentially to the Honeybee surfaces in _HBSurfaces. Without this input PV generators will be assigned default names.
         _SASolarCells: A float or a list of floats that sequentially correspond to what percentage of each Honeybee surface in  _HBSurfaces are covered with Photovoltaics.  e.g the first float corresponds to the first Honeybee surface. If only one float is given this value will be used for all other PV generators.
         _cellsEfficiency: A float or a list of floats that sequentially detail the efficiency of the Photovoltaic generator cells on each Honeybee surface in _HBSurfaces as a fraction. e.g the first float corresponds to the first Honeybee surface. If only one float is given this value will be used for all other PV generators.
-        _integrationMode: EnergyPlus allows for different ways of integrating with other EnergyPlus heat transfer surfaces and models and calculating Photovoltaic cell temperature. This field is a integer or a list of integers sequentially to _HBSurfaces between 1 and 6 that defines the heat transfer integration mode used in the calculations as one of the following options. Decoupled a value of 1, DecoupledUllebergDynamic a value of 2, IntegratedSurfaceOutsideFace a value of 3, IntegratedTranspiredCollector a value of 4, IntegratedExteriorVentedCavity a value of 5, PhotovoltaicThermalSolarCollector a value of 6. If only one integer is given this value will be used for all other PV generators. More information about each mode can be found on page 1767 and 1768 of the Energyplus Input Output reference.
         _NoParallel: A integer or a list of integers that sequentially correspond to each Honeybee surface in _HBSurfaces. These integers define the series-wired strings of PV modules that are in parallel to form the PV generator on each Honeybee surface. The product of this field and the next field will equal the total number of modules in the PV generator on each Honeybee surface. If only one integer is given this value will be used for all other PV generators.
         _Noseries: A integer or a list of integers that sequentially correspond to each Honeybee surface in _HBSurfaces.  These integers define the number of modules wired in series (on each string) to form the PV generator on each Honeybee surface in _HBSurfaces. The product of this field and the previous field will equal the total number of modules in the PV generator on each Honeybee surface. If only one integer is given this value will be used for all other PV generators.
         _costPVgen: A float or a list of floats that sequentially correspond to each Honeybee surface in _HBSurfaces. The float is the cost of each PV module in US dollars (Other currencies will be available in the future). The cost of the PV generator will be the cost of the module multiplied by the number of modules in parallel and series (number of modules as a generator is made up of modules). If only one float is given this value will be used for all other PV generators.
@@ -57,7 +56,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Generator_PV"
 ghenv.Component.NickName = 'PVgen'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.63\nMAR_08_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "13 | WIP" #"06 | Honeybee"
@@ -73,6 +72,7 @@ import itertools
 import Grasshopper
 import collections
 import re
+import Rhino
 
 hb_hive = sc.sticky["honeybee_Hive"]() # Creating an instance of hb_hive here
 PV_gen = sc.sticky["PVgen"] # Linked to class PV_gen in honeybee honeybee 
@@ -80,7 +80,7 @@ hb_hivegen = sc.sticky["honeybee_generationHive"]() # Creating an instance of th
 
 readmedatatree = Grasshopper.DataTree[object]()
 
-def checktheinputs(_name_,_HBSurfaces,_cellsEfficiency,_integrationMode,_NoParallel,_Noseries,sandiaMode_):
+def checktheinputs(_name_,_HBSurfaces,_cellsEfficiency,_NoParallel,_Noseries):
 
     """This function checks all the inputs of the component to ensure that the component is stopped if there is anything wrong with the inputs ie the 
     inputs will produce serious errors in the execution of this component.
@@ -115,52 +115,6 @@ def checktheinputs(_name_,_HBSurfaces,_cellsEfficiency,_integrationMode,_NoParal
 
     # Simple check for sandia to be expanded upon
         
-        
-    try:
-        
-        if "PhotovoltaicPerformance:Sandia," not in sandiaMode_[0]:
-            
-            warn =  "To use Sandria mode you must enter a multiline panel containing Sanddia performance data see the examples \n"+\
-            "C:\EnergyPlusV8-4-0\MacroDataSets\SandiaPVdata this component will not run until you do!"
-            w = gh.GH_RuntimeMessageLevel.Warning
-            ghenv.Component.AddRuntimeMessage(w, warn)
-            return -1
-        """
-        if "!- Name," not in sandiaMode_[1]:
-            
-            warn =  "To use Sandria mode you must enter a multiline panel containing Sanddia performance data see the examples \n"+\
-            "C:\EnergyPlusV8-4-0\MacroDataSets\SandiaPVdata this component will not run until you do!"
-            w = gh.GH_RuntimeMessageLevel.Warning
-            ghenv.Component.AddRuntimeMessage(w, warn)
-            return -1
-            
-            
-        if "!- Active Area {m2}," not in sandiaMode_[2]:
-            
-            warn =  "To use Sandria mode you must enter a multiline panel containing Sanddia performance data see the examples \n"+\
-            "C:\EnergyPlusV8-4-0\MacroDataSets\SandiaPVdata this component will not run until you do!"
-            w = gh.GH_RuntimeMessageLevel.Warning
-            ghenv.Component.AddRuntimeMessage(w, warn)
-            return -1
-            
-        if "!- Number of Cells in Series {dimensionless}" not in sandiaMode_[3]:
-            
-            warn = "To use Sandria mode you must enter a multiline panel containing Sanddia performance data see the examples \n"+\
-            "C:\EnergyPlusV8-4-0\MacroDataSets\SandiaPVdata this component will not run until you do!"
-            w = gh.GH_RuntimeMessageLevel.Warning
-            ghenv.Component.AddRuntimeMessage(w, warn)
-            return -1
-            
-        if "!- Number of Cells in Parallel {dimensionless}" not in sandiaMode_[4]:
-            
-            warn = "To use Sandria mode you must enter a multiline panel containing Sanddia performance data see the examples \n"+\
-            "C:\EnergyPlusV8-4-0\MacroDataSets\SandiaPVdata this component will not run until you do!"
-            w = gh.GH_RuntimeMessageLevel.Warning
-            ghenv.Component.AddRuntimeMessage(w, warn)
-            return -1
-        """
-    except: pass
-
     # Check that Honeybee Zones are connected
    
     if (_PVInverter == []) or (_PVInverter == None):
@@ -191,18 +145,6 @@ def checktheinputs(_name_,_HBSurfaces,_cellsEfficiency,_integrationMode,_NoParal
         return -1
         
         
-    if (_integrationMode == []) or (_integrationMode[0]) == None:
-        print "_integrationMode must contain one or a number of integers between 1 and 6!"
-        w = gh.GH_RuntimeMessageLevel.Warning
-        ghenv.Component.AddRuntimeMessage(w, "_integrationMode must contain one or a number of integers between 1 and 6!")
-        return -1
-        
-    if (_costPVPerModule == []) or (_costPVPerModule[0]) == None:
-        print "Cost of module must be specified!"
-        w = gh.GH_RuntimeMessageLevel.Warning
-        ghenv.Component.AddRuntimeMessage(w, "Cost of module must be specified!")
-        return -1
-        
     for cell_n in _cellsEfficiency:
             
         if (cell_n >1) or (cell_n < 0):
@@ -210,14 +152,6 @@ def checktheinputs(_name_,_HBSurfaces,_cellsEfficiency,_integrationMode,_NoParal
             print "All values of _cellsEfficiency must be between 1 and zero as it is a efficiency!"
             w = gh.GH_RuntimeMessageLevel.Warning
             ghenv.Component.AddRuntimeMessage(w, "All values of _cellsEfficiency must be between 1 and zero as it is a efficiency!")
-            return -1
-
-    for mode1 in _integrationMode:
-    
-        if (mode1 > 6) or (mode1 < 1):
-            print "_integrationMode must be an integer between 1 and 6!"
-            w = gh.GH_RuntimeMessageLevel.Warning
-            ghenv.Component.AddRuntimeMessage(w, "_integrationMode must be an integer between 1 and 6!")
             return -1
             
     for PVgencount in range(len(_HBSurfaces)):
@@ -256,7 +190,7 @@ def returnmodename(mode):
         return "PhotovoltaicThermalSolarCollector"
 
 
-def main(_name_,_HBSurfaces,_cellsEfficiency,_integrationMode,_NoParallel,_Noseries,_costPVgen,_powerOutput,PVinverter,sandiaMode_):
+def main(_name_,_HBSurfaces,_cellsEfficiency,_NoParallel,_Noseries,_powerOutput,PVinverter):
  
     """ This function is the heart of this component it takes all the component arguments and writes one PV generator onto each Honeybee surface connected to this component
  
@@ -318,7 +252,7 @@ def main(_name_,_HBSurfaces,_cellsEfficiency,_integrationMode,_NoParallel,_Noser
 
     try:
     
-        for name,surface,celleff,mode,parallel,series,modelcost,powerout in itertools.izip_longest(_name_,HBSurfacesfromhive,_cellsEfficiency,_integrationMode,_NoParallel,_Noseries,_costPVPerModule,_powerOutputPerModule): 
+        for name,surface,celleff,parallel,series,powerout in itertools.izip_longest(_name_,HBSurfacesfromhive,_cellsEfficiency,_NoParallel,_Noseries,_powerOutputPerModule): 
     
             surface.containsPVgen = True # Set this it true so the surface can be identified in run and write IDF component
             
@@ -368,7 +302,6 @@ def main(_name_,_HBSurfaces,_cellsEfficiency,_integrationMode,_NoParallel,_Noser
                 
                 ghenv.Component.AddRuntimeMessage(w, warn)
             
-            
             try:
     
                 name = _name_[PVgencount]
@@ -379,30 +312,20 @@ def main(_name_,_HBSurfaces,_cellsEfficiency,_integrationMode,_NoParallel,_Noser
                 name = "PVgenerator" + str(PVgencount)
                 message0 = "For this generator no name has been given so a default name of PVgenerator" + str(PVgencount) + " has been assigned. This generator is mounted on Honeybee surface " + str(surface.name) # If no name given for a PV generator assign one.
             
-            if sandiaMode_ == []:
-                
-                try:
-        
-                    _cellsEfficiency[PVgencount]
-                    message2 = "The solar cell efficiency is "+ str(celleff*100) + " %"
-        
-                except IndexError:
-                    
-                    celleff = _cellsEfficiency[0]
-                    message2 = "The solar cell efficiency is "+ str(celleff*100) + " %"
-        
             try:
     
-                _integrationMode[PVgencount]
+                _cellsEfficiency[PVgencount]
                 
-                message3 = "The integration mode is " + returnmodename(mode)
+                message4 = "The number of PV modules in parallel is "+ str(parallel)
             
-                
             except IndexError:
                 
-                mode = _integrationMode[0]
-                message3 = "The integration mode is "+ returnmodename(mode)
+                parallel = _cellsEfficiency[0]
                 
+                message4 = "The number of PV modules in parallel is "+ str(parallel) 
+            
+            
+            
             try:
     
                 _NoParallel[PVgencount]
@@ -431,18 +354,6 @@ def main(_name_,_HBSurfaces,_cellsEfficiency,_integrationMode,_NoParallel,_Noser
             message6 = "So " + name + " is made up of "+ str(series*parallel) + " PV modules"
                 
             try:
-                _costPVPerModule[PVgencount]
-                message7 = "The cost per PV module is " + str(modelcost) + " US dollars" + " \n " +\
-                "Therefore the total cost of "+ name +" is " + str(modelcost*float(parallel*series)) + " US dollars"
-                
-                
-            except IndexError:
-                
-                 modelcost = _costPVPerModule[0]
-                 message7 = "The cost per PV module is " + str(_costPVPerModule[0]) + " \n " +\
-                 "Therefore the total cost of "+ name + " is " + str(modelcost*float(parallel*series)) + " in US dollars "
-        
-            try:
                 _powerOutputPerModule[PVgencount]
     
                 message8 = "The power output per PV module is " + str(powerout) + " W \n " +\
@@ -456,23 +367,9 @@ def main(_name_,_HBSurfaces,_cellsEfficiency,_integrationMode,_NoParallel,_Noser
                 "Therefore the total power output of "+ name+ " is " + str(powerout*float(parallel*series)) + " W "
             
             # The surface area of the surface that the PV panels cover are calculated from this equation.
-    
-            if sandiaMode_ == []:
-                
-                SA_solarcell = (powerout*parallel*series)/(1000*surface.getArea()*celleff)
             
-            if sandiaMode_ != []:
-                
-                # Get Active Area from Sandria
-                for lineCount,line in enumerate(sandiaMode_):
-                    
-                    if "!- Active Area {m2}" in line:
-                        
-                        # [^.0-9] remove all non numeric characters from a string using Regex!
-                        areaPerPanel = float(re.sub(r'[^.0-9]', "", line))
-                        
-                        SA_solarcell = (parallel*series*areaPerPanel)/(surface.getArea())
-                        
+            SA_solarcell = (powerout*parallel*series)/(1000*surface.getArea()*celleff)
+            
             if (SA_solarcell > 0.85) and (SA_solarcell < 1):
                 
                 warn = "According to your inputs solar panels cover more than 85% of the surface area of the Honeybee surface "+ surface.name+ "\n"+\
@@ -486,34 +383,35 @@ def main(_name_,_HBSurfaces,_cellsEfficiency,_integrationMode,_NoParallel,_Noser
             if SA_solarcell >= 1:
                 
                 warn = "Error! According to your inputs solar panels cover more than 100% of the surface area of the Honeybee surface " + surface.name+"\n"+\
-                "Are you sure that the power rating and the number of modules on each surface is correct? \n "+\
+                "Are you sure that the power rating and the number of modules on each surface is correct and that units are in meters? \n "+\
                 "This value is calculated from the total power output of each PV generator (The sum of each PV module in that generator) divided by the surface area of the surface they are mounted on."
                 "This component will not run until the surface area is less than 100%."
                 w = gh.GH_RuntimeMessageLevel.Error
                 ghenv.Component.AddRuntimeMessage(w, warn)
                 
-                return 
+                return
+
+            if SA_solarcell < 0.025:
+                
+                warn = "Warning! According to your inputs solar panels cover less than 2.5% of the surface area of " + surface.name+"\n"+\
+                "Are you sure that the power rating and the number of modules on each surface is correct? \n "+\
+                "This value is calculated from the total power output of each PV generator (The sum of each PV module in that generator) divided by the surface area of the surface they are mounted on."
+                "This component will not run until the surface area is less than 100%."
+                w = gh.GH_RuntimeMessageLevel.Warning
+                ghenv.Component.AddRuntimeMessage(w, warn)
+                
+            units = sc.doc.ModelUnitSystem
+            if units != Rhino.UnitSystem.Meters:
+                
+                warn = "You must use meters as your unit system to work with the PV component!"
+                w = gh.GH_RuntimeMessageLevel.Error
+                ghenv.Component.AddRuntimeMessage(w, warn)
+                
                 
             message1 = "According to the data you entered it is calculated that the modules of this PV generator cover roughly "+str(round(SA_solarcell*100,2))+ " % of the surface area of this surface"
-                
-            # A hb_EPShdSurface
-            if surface.type == 6: ## A bit of a hack to get context surface name the same as being produced by EPShdSurface
-                
-                coordinatesList = surface.extractPoints()
-    
-                if type(coordinatesList[0])is not list and type(coordinatesList[0]) is not tuple: coordinatesList = [coordinatesList]
-                
-                for count in range(len(coordinatesList)):
-                    
-                    PVsurfacename = surface.name + '_' + `count`
-                    surface.name = surface.name + '_' + `count`
-    
-                surface.PVgenlist.append(PV_gen(name,PVsurfacename,returnmodename(mode),parallel,series,modelcost,powerout,namePVperform,SA_solarcell,celleff,sandiaMode_)) # Last three inputs are for instance method PV_performance
             
-            # Not a hb_EPShdSurface
-            else:
                 
-                surface.PVgenlist.append(PV_gen(name,surface.name,returnmodename(mode),parallel,series,modelcost,powerout,namePVperform,SA_solarcell,celleff,sandiaMode_))
+            surface.PVgenlist.append(PV_gen(name,surface,parallel,series,powerout,SA_solarcell,celleff))
                 
             # Assign the inverter to each PVgenerator.
             
@@ -521,34 +419,46 @@ def main(_name_,_HBSurfaces,_cellsEfficiency,_integrationMode,_NoParallel,_Noser
                 
                 PVgen.inverter = PVinverter
             
-            if sandiaMode_ == []:
-                
-                message = message0 +" \n "+ name + " has the following properties: "+"\n "+message1+"\n " +message2+"\n "+message3+"\n "+message4+"\n "+message5+"\n "+ message6 +"\n "+message7+"\n "+message8
-            
-            if sandiaMode_ != []:
-            
-                message = message0 +" \n "+ name + " has the following properties: "+"\n "+message1+"\n " +"\n "+message3+"\n "+message4+"\n "+message5+"\n "+ message6 +"\n "+message7+"\n "+message8
+            message = message0 +" \n "+ name + " has the following properties: "+"\n "+message1+"\n "+message4+"\n "+message5+"\n "+ message6 +"\n "+message8
             
             readmedatatree.Add(message,gh.Data.GH_Path(PVgencount))
                 
             PVgencount = PVgencount+1
 
-    except:
+    except Exception as e:
         
-        # This catches an error when there is a missing member exception ie length of one of inputs is longer than 
-        # number of Honeybee surfaces not sure how to just catch missing member exception!
-        warn = "The length of a list of inputs into either _name_,_cellsEfficiency \n" + \
-                "_integrationMode,_NoParallel,_Noseries,_costPVgen or _powerOutput \n" + \
-                "is longer than the number of Honeybee surfaces connected to this component!\n" + \
-                "e.g if you have 2 Honeybee surfaces you cannot have 3 values input into _costPVgen!\n" + \
-                "Please check the inputs and try again!"
-    
-        print warn
-        w = gh.GH_RuntimeMessageLevel.Warning
-        ghenv.Component.AddRuntimeMessage(w, warn)
+        if str(e) == "unsupported operand type(s) for *: 'float' and 'NoneType'":
+            
+            # This catches an error when there is a missing member exception ie length of one of inputs is longer than 
+            # number of Honeybee surfaces not sure how to just catch missing member exception!
+            warn = "The length of a list of inputs into either _name_,_cellsEfficiency \n" + \
+                    "_integrationMode,_NoParallel,_Noseries,_costPVgen or _powerOutput \n" + \
+                    "is longer than the number of Honeybee surfaces connected to this component!\n" + \
+                    "e.g if you have 2 Honeybee surfaces you cannot have 3 values input into _costPVgen!\n" + \
+                    "Please check the inputs and try again!"
         
-        return -1 
-
+            #print warn
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, warn)
+            return -1 
+            
+        elif str(e) == "'NoneType' object has no attribute 'containsPVgen'":
+            
+            # This catches an error when there is a missing member exception ie length of one of inputs is longer than 
+            # number of Honeybee surfaces not sure how to just catch missing member exception!
+            warn = "The length of a list of inputs into either _name_,_cellsEfficiency \n" + \
+                    "_integrationMode,_NoParallel,_Noseries,_costPVgen or _powerOutput \n" + \
+                    "is longer than the number of Honeybee surfaces connected to this component!\n" + \
+                    "e.g if you have 2 Honeybee surfaces you cannot have 3 values input into _costPVgen!\n" + \
+                    "Please check the inputs and try again!"
+        
+            #print warn
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, warn)
+            return -1
+        
+        else:
+            raise
         
     ModifiedHBSurfaces = hb_hive.addToHoneybeeHive(HBSurfacesfromhive, ghenv.Component)
     
@@ -556,34 +466,10 @@ def main(_name_,_HBSurfaces,_cellsEfficiency,_integrationMode,_NoParallel,_Noser
 
 # Call the PVinverter from the hive
 
-
-# Change the inputs according to the circumstance
-if sandiaMode_ != []:
-    
-    ghenv.Component.Params.Input[2].NickName = "_________"
-    ghenv.Component.Params.Input[2].Name = "."
-    ghenv.Component.Params.Input[2].Description = ""
-    
-if sandiaMode_ == []:
-    
-    ghenv.Component.Params.Input[2].NickName = "_cellsEfficiency"
-    ghenv.Component.Params.Input[2].Name = "_cellsEfficiency"
-    ghenv.Component.Params.Input[2].Description = "A float or a list of floats that sequentially detail the efficiency of the Photovoltaic generator cells on each Honeybee surface in _HBSurfaces as a fraction. e.g the first float corresponds to the first Honeybee surface. If only one float is given this value will be used for all other PV generators."
-    
 PVinverter = hb_hivegen.callFromHoneybeeHive(_PVInverter)
 
-if sandiaMode_ == []:
+if checktheinputs(_name_,_HBSurfaces,_cellsEfficiency,_NoParallel,_Noseries) != -1:
 
-    if checktheinputs(_name_,_HBSurfaces,_cellsEfficiency,_integrationMode,_NoParallel,_Noseries,sandiaMode_) != -1:
+    PV_HBSurfaces = main(_name_,_HBSurfaces,_cellsEfficiency,_NoParallel,_Noseries,_powerOutputPerModule,PVinverter)
     
-        PV_HBSurfaces = main(_name_,_HBSurfaces,_cellsEfficiency,_integrationMode,_NoParallel,_Noseries,_costPVPerModule,_powerOutputPerModule,PVinverter,sandiaMode_)
-        
-        readMe = readmedatatree
-        
-if sandiaMode_ != []:
-    
-    if checktheinputs(_name_,_HBSurfaces,_________,_integrationMode,_NoParallel,_Noseries,sandiaMode_) != -1:
-    
-        PV_HBSurfaces = main(_name_,_HBSurfaces,_________,_integrationMode,_NoParallel,_Noseries,_costPVPerModule,_powerOutputPerModule,PVinverter,sandiaMode_)
-        
-        readMe = readmedatatree
+    readMe = readmedatatree
