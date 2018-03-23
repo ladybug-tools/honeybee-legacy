@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.63\nMAR_08_2018'
+ghenv.Component.Message = 'VER 0.0.63\nMAR_21_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -3393,9 +3393,14 @@ class WriteOPS(object):
         
         # 1. Ensure the correct simulation outputs for the electric generators
         if simulationOutputs == []:
+
             HBgeneratoroutputs.append("Output:Variable,*,Facility Net Purchased Electric Energy, hourly;")
             HBgeneratoroutputs.append("Output:Variable,*,Facility Total Electric Demand Power, hourly;")
-
+            
+        # 2. Add default PV outputs
+        HBgeneratoroutputs.append("outputcontrol:table:style,*,Photovoltaic:ElectricityProduced, monthly;")
+        HBgeneratoroutputs.append("output:meter,*,Photovoltaic:ElectricityProduced, runperiod;")
+        
         if simulationOutputs != []:
             if (not any('Output:Variable,*,Facility Total Electric Demand Power' in s for s in simulationOutputs)) and (not any('Output:Variable,*,Facility Net Purchased Electric Power' in s for s in simulationOutputs)):
                 # These are the default inputs if the user does not specify their own using the component
@@ -3404,7 +3409,7 @@ class WriteOPS(object):
                 HBgeneratoroutputs.append("Output:Variable,*,Facility Net Purchased Electric Energy, hourly;")
                 HBgeneratoroutputs.append("Output:Variable,*,Facility Total Electric Demand Power, hourly;")
 
-        # 2. Ensure the correct simulation outputs for each electric generator
+        # 3. Ensure the correct simulation outputs for each electric generator
         for HBsystemcount, HBsystemgenerator in enumerate(HBsystemgenerators):
             
             # Define the name for the list of generators and to use in generator's list name in ElectricLoadCenter:Distribution
