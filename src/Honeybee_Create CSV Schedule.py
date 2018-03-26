@@ -31,7 +31,6 @@ Provided by Honeybee 0.0.63
         _values: The values to be written into the .csv schedule.
         units_: Text for the units of the input values above.  The default is "Dimensionless" for a fractional schedule.  Possible inputs include "Dimensionless", "Temperature", "DeltaTemperature", "PrecipitationRate", "Angle", "ConvectionCoefficient", "ActivityLevel", "Velocity", "Capacity", "Power", "Availability", "Percent", "Control", and "Mode".
         analysisPeriod_: If your input units do not represent a full year, use this input to specify the period of the year that the schedule applies to.
-        timeStep_: If your connected _values do not represent a value for each hour (ie. one value for every half-hour), input an interger here to specify the timestep.  Inputting 2 means that every 2 values indicate an hour (each value indicates a half-hour), etc.
         _scheduleName: Input a name for your schedule here.  The default is "unnamedSchedule".
         _writeFile: Set to "True" to generate the .csv schedule.
     Returns:
@@ -41,7 +40,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Create CSV Schedule"
 ghenv.Component.NickName = 'csvSchedule'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.63\nMAR_26_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "07 | Energy | Schedule"
@@ -88,11 +87,6 @@ def checkTheInputs():
         #Set the numeric type to continuous.
         numericType = "Continuous"
         
-        #Check to be sure that the timestep, the analysisPeriod and the length of the input values align.
-        #If there is not timestep, set the default to 1.
-        if timeStep_ == None: timeStep = 1
-        else:timeStep = timeStep_
-        
         #Get a list of all HOYs, months, and days of the year based on the input timestep.
         def drange(start, stop, step):
             r = start
@@ -101,7 +95,7 @@ def checkTheInputs():
                 r += step
         
         totalHOYS = []
-        i = drange(0, 8760, 1/timeStep)
+        i = drange(0, 8760, 1)
         HOYSinit = ["%g" % x for x in i]
         for item in HOYSinit: totalHOYS.append(float(item)+1)
         
@@ -114,7 +108,7 @@ def checkTheInputs():
         
         #If there is an analysis period, check the HOYs of it.
         if analysisPeriod_ != []:
-            HOYS, months, days = lb_preparation.getHOYsBasedOnPeriod(analysisPeriod_, timeStep)
+            HOYS, months, days = lb_preparation.getHOYsBasedOnPeriod(analysisPeriod_, 1)
         else:
             HOYS = totalHOYS
         
@@ -122,7 +116,7 @@ def checkTheInputs():
         checkData2 = True
         if len(_values) != len(HOYS):
             checkData2 = False
-            warning = "The length of the list of connected values does not align with the analysisPeriod_ and the timeStep_.  Note that the default list length for connected values is 8760 (one for each hour of the year)."
+            warning = "The length of the list of connected values does not align with the analysisPeriod_.  Note that the default list length for connected values is 8760 (one for each hour of the year)."
             print warning
             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
         
@@ -146,14 +140,14 @@ def checkTheInputs():
         if checkData1 == True and checkData2 == True: checkData = True
         else: checkData = False
         
-        return checkData, units, numericType, totalHOYS, totalDays, totalMonths, csvValues, scheduleName, timeStep
+        return checkData, units, numericType, totalHOYS, totalDays, totalMonths, csvValues, scheduleName
     else:
         print "You should first let the Ladybug fly..."
         ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, "You should first let the Ladybug fly...")
         return False, None, None, [], [], [], [], None, 1
 
 
-def main(units, numericType, totalHOYS, totalDays, totalMonths, csvValues, scheduleName, timeStep):
+def main(units, numericType, totalHOYS, totalDays, totalMonths, csvValues, scheduleName):
     #Find the Ladybug default folder.
     lb_defaultFolder = sc.sticky["Ladybug_DefaultFolder"]
     lb_preparation = sc.sticky["ladybug_Preparation"]()
@@ -171,7 +165,7 @@ def main(units, numericType, totalHOYS, totalDays, totalMonths, csvValues, sched
     #Create a file header.
     header = "Honeybee Schedule file (to be used in combination with a thermal simulation program)," + " , , " + numericType + ", " + units + "\n" +\
     "Schedule file address:" + filePath + "; " + scheduleName + ": This is a custom schedule created by the user.,,,Occupied Hours: N/A" + "\n" + \
-    str(timeStep) + ",,,,Values [" + "units" + "],N/A" + "\n" + \
+    "1" + ",,,,Values [" + "units" + "],N/A" + "\n" + \
     "month, day, hour, values" + "\n"
     
     csvfile.write(header)
@@ -225,7 +219,7 @@ else:
 
 checkData = False
 if initCheck == True:
-    checkData, units, numericType, totalHOYS, totalDays, totalMonths, csvValues, scheduleName, timeStep = checkTheInputs()
+    checkData, units, numericType, totalHOYS, totalDays, totalMonths, csvValues, scheduleName = checkTheInputs()
 
 if checkData == True and _writeFile == True:
-    csvSchedule = main(units, numericType, totalHOYS, totalDays, totalMonths, csvValues, scheduleName, timeStep)
+    csvSchedule = main(units, numericType, totalHOYS, totalDays, totalMonths, csvValues, scheduleName)
