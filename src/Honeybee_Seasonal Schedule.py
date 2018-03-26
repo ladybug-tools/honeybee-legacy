@@ -39,7 +39,7 @@ Provided by Ladybug 0.0.62
 
 ghenv.Component.Name = "Honeybee_Seasonal Schedule"
 ghenv.Component.NickName = 'Honeybee_SeasonalSchedule'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.63\nMAR_26_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "07 | Energy | Schedule"
@@ -113,7 +113,7 @@ def main(scheduleName, schedTypeLimits, baseWeekSched, numInputs):
     for count, period in enumerate(allAnalysisPeriods):
         if count == 0 and period[0] != (1,1,1):
             finalWeekScheds.append(baseWeekSched)
-            d, m, t = lb_preparation.hour2Date((endDOYs[count]-1)*24, True)
+            d, m, t = lb_preparation.hour2Date((startDOYs[count]-1)*24, True)
             finalAnalysisPds.append([(1,1,1),(m+1,d,t)])
             finalWeekScheds.append(allSchedules[count])
             finalAnalysisPds.append(period)
@@ -138,7 +138,6 @@ def main(scheduleName, schedTypeLimits, baseWeekSched, numInputs):
         finalWeekScheds.append(baseWeekSched)
         d, m, t = lb_preparation.hour2Date((endDOYs[-1]+1)*24, True)
         finalAnalysisPds.append([(m+1,d,t),(12,31,24)])
-    
     
     # Get the type limits for the schedule.
     if schedTypeLimits == None:
