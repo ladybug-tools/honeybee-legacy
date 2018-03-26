@@ -186,24 +186,28 @@ def main(bldgMassesBefore):
     
     
     for bldgNum, building in buildingDict.items():
-        #try:
-        #Intersect the geomtry with all buildings in the list after it.
-        for otherBldg in  bldgMassesBefore[:bldgNum]:
-            building = intersectMasses(bldgNum, building, otherBldg)
-            #Update the dictionary with the new split geometry.
-            buildingDict[bldgNum] = building
-            bldgMassesBefore[bldgNum] = building
-        
-        #Intersect the geomtry with all buildings in the list before it.
-        for otherBldg in  bldgMassesBefore[bldgNum+1:]:
-            building = intersectMasses(bldgNum, building, otherBldg)
-            #Update the dictionary with the new split geometry.
-            buildingDict[bldgNum] = building
-            bldgMassesBefore[bldgNum] = building
-        #except:
-        #    buildingDict[bldgNum] = building
-        #    bldgMassesBefore[bldgNum] = building
+        try:
+            #Intersect the geomtry with all buildings in the list after it.
+            for otherBldg in  bldgMassesBefore[:bldgNum]:
+                building = intersectMasses(bldgNum, building, otherBldg)
+                #Update the dictionary with the new split geometry.
+                buildingDict[bldgNum] = building
+                bldgMassesBefore[bldgNum] = building
             
+            #Intersect the geomtry with all buildings in the list before it.
+            for otherBldg in  bldgMassesBefore[bldgNum+1:]:
+                building = intersectMasses(bldgNum, building, otherBldg)
+                #Update the dictionary with the new split geometry.
+                buildingDict[bldgNum] = building
+                bldgMassesBefore[bldgNum] = building
+        except:
+            buildingDict[bldgNum] = building
+            bldgMassesBefore[bldgNum] = building
+            warning = "Failed to intersect correctly.  Some output geometry may not be intersected."
+            w = gh.GH_RuntimeMessageLevel.Warning
+            ghenv.Component.AddRuntimeMessage(w, warning)
+            print warning
+        
     for bldgNum, building in buildingDict.items():
         intersectedBldgs.append(building)
     
