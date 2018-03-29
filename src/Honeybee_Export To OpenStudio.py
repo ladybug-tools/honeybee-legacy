@@ -4135,17 +4135,23 @@ class WriteOPS(object):
             except:
                 # if we didn't find the adjacent surfcae, do the next most accurate thing:
                 # make the surface adiabatic and add an interior construction
-                OSSurface.setOutsideBoundaryCondition("ADIABATIC")
-                OSSurface.setSunExposure("NOSUN")
-                OSSurface.setWindExposure("NOWIND")
-                if self.isConstructionInLib(defaultConstrDict[str(OSSurface.surfaceType())]):
-                    construction = self.getConstructionFromLib(defaultConstrDict[str(OSSurface.surfaceType())])
-                else:
-                    construction = self.getOSConstruction(defaultConstrDict[str(OSSurface.surfaceType())], model)
-                    self.addConstructionToLib(defaultConstrDict[str(OSSurface.surfaceType())], construction)
-                OSSurface.setConstruction(construction)
-                warning = "Adjacent surface " + adjacentSurfaceName + " was not found."
-                print warning
+                try:
+                    OSSurface.setOutsideBoundaryCondition("ADIABATIC")
+                    OSSurface.setSunExposure("NOSUN")
+                    OSSurface.setWindExposure("NOWIND")
+                    if self.isConstructionInLib(defaultConstrDict[str(OSSurface.surfaceType())]):
+                        construction = self.getConstructionFromLib(defaultConstrDict[str(OSSurface.surfaceType())])
+                    else:
+                        construction = self.getOSConstruction(defaultConstrDict[str(OSSurface.surfaceType())], model)
+                        self.addConstructionToLib(defaultConstrDict[str(OSSurface.surfaceType())], construction)
+                    OSSurface.setConstruction(construction)
+                    warning = "Adjacent surface " + adjacentSurfaceName + " was not found.\n" + \
+                        "Boundary for surface " + surfaceName + " will be set to adiabatic."
+                    print warning
+                except:
+                    warning = "Adjacent surface " + adjacentSurfaceName + " was not found.\n" + \
+                        "Boundary for surface " + surfaceName + " will be set to adiabatic."
+                    print warning
         
         # Set adjacent Fenestration surfaces.
         for surfaceName in self.adjacentFenSrfsDict.keys():
@@ -4157,17 +4163,23 @@ class WriteOPS(object):
             except:
                 # if we didn't find the adjacent surfcae, do the next most accurate thing:
                 # make the surface adiabatic and add an interior construction
-                OSSurface.setOutsideBoundaryCondition("ADIABATIC")
-                OSSurface.setSunExposure("NOSUN")
-                OSSurface.setWindExposure("NOWIND")
-                if self.isConstructionInLib('Interior Window'):
-                    construction = self.getConstructionFromLib('Interior Window')
-                else:
-                    construction = self.getOSConstruction('Interior Window', model)
-                    self.addConstructionToLib('Interior Window', construction)
-                OSSurface.setConstruction(construction)
-                warning = "Adjacent surface " + adjacentSurfaceName + " was not found."
-                print warning
+                try:
+                    OSSurface.setOutsideBoundaryCondition("ADIABATIC")
+                    OSSurface.setSunExposure("NOSUN")
+                    OSSurface.setWindExposure("NOWIND")
+                    if self.isConstructionInLib('Interior Window'):
+                        construction = self.getConstructionFromLib('Interior Window')
+                    else:
+                        construction = self.getOSConstruction('Interior Window', model)
+                        self.addConstructionToLib('Interior Window', construction)
+                    OSSurface.setConstruction(construction)
+                    warning = "Adjacent surface " + adjacentSurfaceName + " was not found.\n" + \
+                            "Boundary for surface " + surfaceName + " will be set to adiabatic."
+                    print warning
+                except:
+                    warning = "Adjacent surface " + adjacentSurfaceName + " was not found.\n" + \
+                        "Boundary for surface " + surfaceName + " will be set to adiabatic."
+                    print warning
     
     def setOutputVariable(self, fields, model):
         """
