@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.63\nMAR_21_2018'
+ghenv.Component.Message = 'VER 0.0.63\nMAR_28_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -4027,7 +4027,7 @@ class WriteOPS(object):
             # Boundary condition object
             #setAdjacentSurface(self: Surface, surface: Surface)
             if surface.BC.lower() == "surface" and surface.BCObject.name.strip()!="":
-                self.adjacentSurfacesDict[surface.name] = [surface.BCObject.name, thisSurface]
+                self.adjacentSurfacesDict[surface.name] = [surface.BCObject.name, thisSurface.handle()]
             
             return thisSurface
     
@@ -4117,7 +4117,7 @@ class WriteOPS(object):
                 if shadingSch!="": shdSurface.setTransmittanceSchedule(shadingSch)
                 
     
-    def setAdjacentSurfaces(self):
+    def setAdjacentSurfaces(self, model):
         defaultConstrDict = {
             'Wall': 'Interior Wall',
             'Ceiling': 'Interior Ceiling',
@@ -4125,9 +4125,12 @@ class WriteOPS(object):
         
         # Set Adjacent zone surfaces.
         for surfaceName in self.adjacentSurfacesDict.keys():
-            adjacentSurfaceName, OSSurface = self.adjacentSurfacesDict[surfaceName]
+            adjacentSurfaceName, OSSurfaceHandle = self.adjacentSurfacesDict[surfaceName]
+            OSSurface = model.getSurface(OSSurfaceHandle).get()
+            
             try:
-                adjacentOSSurface = self.adjacentSurfacesDict[adjacentSurfaceName][1]
+                adjacentOSSurfaceHandle = self.adjacentSurfacesDict[adjacentSurfaceName][1]
+                adjacentOSSurface = model.getSurface(OSSurfaceHandle).get()
                 OSSurface.setAdjacentSurface(adjacentOSSurface)
             except:
                 # if we didn't find the adjacent surfcae, do the next most accurate thing:
@@ -4147,6 +4150,7 @@ class WriteOPS(object):
         # Set adjacent Fenestration surfaces.
         for surfaceName in self.adjacentFenSrfsDict.keys():
             adjacentSurfaceName, OSSurface = self.adjacentFenSrfsDict[surfaceName]
+            
             try:
                 adjacentOSSurface = self.adjacentFenSrfsDict[adjacentSurfaceName][1]
                 OSSurface.setAdjacentSubSurface(adjacentOSSurface)
@@ -5131,7 +5135,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         ossch = hb_writeOPS.getOSSchedule(schedName, model)
     
     # this should be done once for the whole model
-    hb_writeOPS.setAdjacentSurfaces()
+    hb_writeOPS.setAdjacentSurfaces(model)
     
     # add systems
     hb_writeOPS.addSystemsToZones(model)
