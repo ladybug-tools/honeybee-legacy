@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.63\nMAR_13_2018'
+ghenv.Component.Message = 'VER 0.0.63\nMAR_28_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -6586,10 +6586,13 @@ class hb_EPSurface(object):
         """Transform EPSurface using a transform object
            Transform can be any valid transform object (e.g Translate, Rotate, Mirror)
         """
-        if newKey == None:
-            self.name += str(uuid.uuid4())[:8]
-        elif newKey != None:
-            self.name += newKey
+        try:
+            if newKey == None:
+                self.name += str(uuid.uuid4())[:8]
+            elif newKey != None:
+                self.name += newKey
+        except:
+            pass
         self.geometry.Transform(transform)
         self.meshedFace.Transform(transform)
         # move center point and normal
