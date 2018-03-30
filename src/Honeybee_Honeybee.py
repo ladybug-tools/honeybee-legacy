@@ -9405,70 +9405,6 @@ if checkIn.letItFly:
         
         sc.sticky["honeybee_folders"] = {}
         
-        if folders.RADPath == None:
-            if os.path.isdir("c:\\radiance\\bin\\"):
-                folders.RADPath = "c:\\radiance\\bin\\"
-                print "Found installation of Radiance."
-            else:
-                msg= "Honeybee cannot find RADIANCE folder on your system.\n" + \
-                     "Make sure you have RADIANCE installed on your system.\n" + \
-                     "You won't be able to run daylighting studies without RADIANCE.\n" + \
-                     "A good place to install RADIANCE is c:\\radiance"
-                ghenv.Component.AddRuntimeMessage(w, msg)
-                folders.RADPath = ""
-        else:
-            versiFile = "\\".join(folders.RADPath.split('\\')[:-1]) + "\\NREL_ver.txt"
-            if os.path.isfile(versiFile):
-                with open(versiFile) as verFile:
-                    currentRADVersion = verFile.readline().strip()
-                print "Found installation of " + currentRADVersion + "."
-            else:
-                print "Found installation of Radiance."
-        
-        if  folders.RADPath.find(" ") > -1:
-            msg =  "There is a white space in RADIANCE filepath: " + folders.RADPath + "\n" + \
-                   "Please install RADIANCE in a valid address (e.g. c:\\radiance)"
-            ghenv.Component.AddRuntimeMessage(w, msg)
-            folders.RADPath = ""
-            
-        # I should replace this with python methods in os library
-        # looks stupid!
-        if folders.RADPath.endswith("\\"): segmentNumber = -2
-        else: segmentNumber = -1
-        hb_RADLibPath = "\\".join(folders.RADPath.split("\\")[:segmentNumber]) + "\\lib"
-        
-        sc.sticky["honeybee_folders"]["RADPath"] = folders.RADPath
-        sc.sticky["honeybee_folders"]["RADLibPath"] = hb_RADLibPath
-        
-        if folders.DSPath == None:
-            if os.path.isdir("c:\\daysim\\bin\\"):
-                folders.DSPath = "c:\\daysim\\bin\\"
-                print "Found installation of DAYSIM."
-            else:
-                msg= "Honeybee cannot find DAYSIM folder on your system.\n" + \
-                     "Make sure you have DAYISM installed on your system.\n" + \
-                     "You won't be able to run annual climate-based daylighting studies without DAYSIM.\n" + \
-                     "A good place to install DAYSIM is c:\\DAYSIM"
-                ghenv.Component.AddRuntimeMessage(w, msg)
-                folders.DSPath = ""
-        else:
-            print "Found installation of DAYSIM."
-        
-        if folders.DSPath.find(" ") > -1:
-            msg =  "There is a white space in DAYSIM filepath: " + folders.DSPath + "\n" + \
-                   "Please install Daysism in a valid address (e.g. c:\\daysim)"
-            ghenv.Component.AddRuntimeMessage(w, msg)
-            folders.DSPath = ""
-        
-        if folders.DSPath.endswith("\\"): segmentNumber = -2
-        else: segmentNumber = -1
-        hb_DSCore = "\\".join(folders.DSPath.split("\\")[:segmentNumber])
-        hb_DSLibPath = "\\".join(folders.DSPath.split("\\")[:segmentNumber]) + "\\lib"
-        
-        sc.sticky["honeybee_folders"]["DSPath"] = folders.DSPath
-        sc.sticky["honeybee_folders"]["DSCorePath"] = hb_DSCore
-        sc.sticky["honeybee_folders"]["DSLibPath"] = hb_DSLibPath
-        
         # supported versions for EnergyPlus
         EPVersions = ["V8-8-0","V8-7-0", "V8-6-0", "V8-5-0", "V8-4-0","V8-3-0", "V8-2-10", \
                       "V8-2-9", "V8-2-8", "V8-2-7", "V8-2-6", \
@@ -9594,6 +9530,74 @@ if checkIn.letItFly:
         sc.sticky["honeybee_folders"]["OSQtPath"] = QtFolder
         sc.sticky["honeybee_folders"]["EPPath"] = folders.EPPath  
         sc.sticky["honeybee_folders"]["EPVersion"] = EPVersion.replace("-", ".")[1:]
+        
+        
+        # Check for an installation of Radiance.
+        if folders.RADPath == None:
+            if os.path.isdir("c:\\radiance\\bin\\"):
+                folders.RADPath = "c:\\radiance\\bin\\"
+            elif len(installedOPS2) != 0 and os.path.isdir("C:\\%s\\Radiance\\bin\\"%installedOPS2[0]):
+                folders.RADPath = "C:\\%s\\Radiance\\bin\\"%installedOPS2[0]
+            else:
+                msg= "Honeybee cannot find RADIANCE folder on your system.\n" + \
+                     "Make sure you have RADIANCE installed on your system.\n" + \
+                     "You won't be able to run daylighting studies without RADIANCE.\n" + \
+                     "A good place to install RADIANCE is c:\\radiance"
+                ghenv.Component.AddRuntimeMessage(w, msg)
+                folders.RADPath = ""
+        
+        if folders.RADPath != None:
+            versiFile = "\\".join(folders.RADPath.split('\\')[:-1]) + "\\NREL_ver.txt"
+            if os.path.isfile(versiFile):
+                with open(versiFile) as verFile:
+                    currentRADVersion = verFile.readline().strip()
+                print "Found installation of " + currentRADVersion + "."
+            else:
+                print "Found installation of Radiance."
+        
+        if  folders.RADPath.find(" ") > -1:
+            msg =  "There is a white space in RADIANCE filepath: " + folders.RADPath + "\n" + \
+                   "Please install RADIANCE in a valid address (e.g. c:\\radiance)"
+            ghenv.Component.AddRuntimeMessage(w, msg)
+            folders.RADPath = ""
+        
+        if folders.RADPath.endswith("\\"): segmentNumber = -2
+        else: segmentNumber = -1
+        hb_RADLibPath = "\\".join(folders.RADPath.split("\\")[:segmentNumber]) + "\\lib"
+        
+        sc.sticky["honeybee_folders"]["RADPath"] = folders.RADPath
+        sc.sticky["honeybee_folders"]["RADLibPath"] = hb_RADLibPath
+        
+        
+        # Check for installation of DAYSIM
+        if folders.DSPath == None:
+            if os.path.isdir("c:\\daysim\\bin\\"):
+                folders.DSPath = "c:\\daysim\\bin\\"
+                print "Found installation of DAYSIM."
+            else:
+                msg= "Honeybee cannot find DAYSIM folder on your system.\n" + \
+                     "Make sure you have DAYISM installed on your system.\n" + \
+                     "You won't be able to run annual climate-based daylighting studies without DAYSIM.\n" + \
+                     "A good place to install DAYSIM is c:\\DAYSIM"
+                ghenv.Component.AddRuntimeMessage(w, msg)
+                folders.DSPath = ""
+        else:
+            print "Found installation of DAYSIM."
+        
+        if folders.DSPath.find(" ") > -1:
+            msg =  "There is a white space in DAYSIM filepath: " + folders.DSPath + "\n" + \
+                   "Please install Daysism in a valid address (e.g. c:\\daysim)"
+            ghenv.Component.AddRuntimeMessage(w, msg)
+            folders.DSPath = ""
+        
+        if folders.DSPath.endswith("\\"): segmentNumber = -2
+        else: segmentNumber = -1
+        hb_DSCore = "\\".join(folders.DSPath.split("\\")[:segmentNumber])
+        hb_DSLibPath = "\\".join(folders.DSPath.split("\\")[:segmentNumber]) + "\\lib"
+        
+        sc.sticky["honeybee_folders"]["DSPath"] = folders.DSPath
+        sc.sticky["honeybee_folders"]["DSCorePath"] = hb_DSCore
+        sc.sticky["honeybee_folders"]["DSLibPath"] = hb_DSLibPath
         
         
         # Check for an installation of THERM.
