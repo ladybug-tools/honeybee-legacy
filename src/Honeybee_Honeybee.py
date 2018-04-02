@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.63\nMAR_28_2018'
+ghenv.Component.Message = 'VER 0.0.63\nAPR_02_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -9536,8 +9536,6 @@ if checkIn.letItFly:
         if folders.RADPath == None:
             if os.path.isdir("c:\\radiance\\bin\\"):
                 folders.RADPath = "c:\\radiance\\bin\\"
-            elif len(installedOPS2) != 0 and os.path.isdir("C:\\%s\\Radiance\\bin\\"%installedOPS2[0]):
-                folders.RADPath = "C:\\%s\\Radiance\\bin\\"%installedOPS2[0]
             else:
                 msg= "Honeybee cannot find RADIANCE folder on your system.\n" + \
                      "Make sure you have RADIANCE installed on your system.\n" + \
