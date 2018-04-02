@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.63\nMAR_28_2018'
+ghenv.Component.Message = 'VER 0.0.63\nAPR_02_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -5161,7 +5161,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
         'Output:Variable,*,Cooling Coil Electric Energy, hourly;',\
         'Output:Variable,*,Chiller Electric Energy, hourly;',\
         'Output:Variable,*,Zone Ideal Loads Supply Air Total Heating Energy, hourly;',\
-        'Output:Variable,*,Boiler Heating Energy, hourly;',\
+        'Output:Variable,*,Boiler Gas Energy, hourly;',\
         'Output:Variable,*,Heating Coil Total Heating Energy, hourly;',\
         'Output:Variable,*,Heating Coil Gas Energy, hourly;',\
         'Output:Variable,*,Heating Coil Electric Energy, hourly;',\
