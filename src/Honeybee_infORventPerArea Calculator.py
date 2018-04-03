@@ -109,7 +109,7 @@ def main(hb_hive, HBZones, airFlowRate, unit):
         if unit == True:
             infORventPerAreaRes = '; Flowrate %.3f ACH' % ((standardFlowRate * 3600)/ zoneVolume)
         else:
-            infORventPerAreaRes = '; Flowrate Per Facade Area %.6f m3/second-m2' % (standardFlowRate/zoneSrfArea)
+            infORventPerAreaRes = '; Flowrate Per Exposed Surface Area %.6f m3/second-m2' % (standardFlowRate/zoneSrfArea)
         
         try:
             print 'Floor Area= %.2f; Volume= %.2f %s' % (flrArea, zoneVolume, infORventPerAreaRes)
