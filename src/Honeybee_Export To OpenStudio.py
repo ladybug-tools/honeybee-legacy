@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.63\nAPR_02_2018'
+ghenv.Component.Message = 'VER 0.0.63\nAPR_03_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -1010,12 +1010,28 @@ class WriteOPS(object):
         else:
             pEfficiency = 0.9
         pump = self.createDefaultAEDGPump(model, pEfficiency)
+        
         # create a boiler
         boiler = ops.BoilerHotWater(model)
         if heatingDetails != None and heatingDetails.heatingEffOrCOP != 'Default':
             boiler.setNominalThermalEfficiency(heatingDetails.heatingEffOrCOP)
         else:
             boiler.setNominalThermalEfficiency(0.9)
+        # boiler efficiency curve
+        boilerEfficiency = ops.CurveBiquadratic(model)
+        boilerEfficiency.setName("Boiler Efficiency" + str(HVACCount))
+        boilerEfficiency.setCoefficient1Constant(1)
+        boilerEfficiency.setCoefficient2x(0)
+        boilerEfficiency.setCoefficient3xPOW2(0)
+        boilerEfficiency.setCoefficient4y(0)
+        boilerEfficiency.setCoefficient5yPOW2(0)
+        boilerEfficiency.setCoefficient6xTIMESY(0)
+        boilerEfficiency.setMinimumValueofx(0)
+        boilerEfficiency.setMaximumValueofx(1)
+        boilerEfficiency.setMinimumValueofy(0)
+        boilerEfficiency.setMaximumValueofy(1)
+        boiler.setNormalizedBoilerEfficiencyCurve(boilerEfficiency)
+        boiler.setEfficiencyCurveTemperatureEvaluationVariable('LeavingBoiler')
         
         # create a scheduled setpoint manager
         setpointManagerScheduled = ops.SetpointManagerScheduled(model,hotWaterSetpointSchedule)
