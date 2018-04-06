@@ -44,7 +44,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Assign HVAC System"
 ghenv.Component.NickName = 'HVACSystem'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.63\nAPR_06_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | HVACSystems"
@@ -169,6 +169,10 @@ def main(HBZones, HVACIndex, hb_hvacProperties, hb_airDetail, hb_heatingDetail, 
                         for error in capabilErrors:
                             print error
                             ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, error)
+                            if error.startswith('Cooling system must be hard sized'):
+                                return None
+                            elif error.endswith('cannot be air cooled.'):
+                                return None
                         cDetail = coolDetailObj
                     else:
                         warning = '_coolingDetials_ are not valid.'

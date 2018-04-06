@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.63\nAPR_02_2018'
+ghenv.Component.Message = 'VER 0.0.63\nAPR_06_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -8577,6 +8577,7 @@ class SerializeObjects(object):
             self.data = pickle.load(inf)
 
 
+
 class hb_hvacProperties(object):
     def __init__(self):
         
@@ -8600,8 +8601,7 @@ class hb_hvacProperties(object):
         14:'CUSTOM RAD SURFACES + DOAS',
         15:'HEATED SURFACES + VAV COOLING',
         16:'VRF + DOAS',
-        17:'GROUND SOURCE WSHP + DOAS',
-        18:'GROUND SOURCE VRF + DOAS'
+        17:'WSHP + DOAS'
         }
         
         # Dictionaries that state which features can be changed for each of the different systems.
@@ -8624,12 +8624,11 @@ class hb_hvacProperties(object):
         14: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
         15: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
         16: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
-        17: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True},
-        18: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True}
+        17: {'recirc' : True, 'humidCntrl' : True, 'dehumidCntrl' : True, 'ventSched' : True}
         }
         
         self.airCapabilities = {
-        0: {'FanTotEff': False, 'FanMotEff': False, 'FanPres': False, 'FanPlace': False, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        0: {'FanTotEff': False, 'FanMotEff': False, 'FanPres': False, 'FanPlace': False, 'airSysHardSize': False, 'centralAirLoop' : False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
         1: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : False, 'Econ' : False, 'HeatRecov' : False},
         2: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Econ' : False, 'HeatRecov' : False},
         3: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
@@ -8646,52 +8645,49 @@ class hb_hvacProperties(object):
         14: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
         15: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
         16: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        17: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        18: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True}
+        17: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : True, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True}
         }
         
         self.heatCapabilities = {
-        0: {'COP' : False, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False},
-        1: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : False},
-        2: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False},
-        3: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False},
-        4: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False},
-        5: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True},
-        6: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False},
-        7: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True},
-        8: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False},
-        9: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False},
-        10: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False},
-        11: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True},
-        12: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True},
-        13: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True},
-        14: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True},
-        15: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : False, 'CentralPlant' : True},
-        16: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : True},
-        17: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : True},
-        18: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : True}
+        0: {'COP' : False, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'HeatHardSize': False, 'CentralPlant' : False},
+        1: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'HeatHardSize': True, 'CentralPlant' : False},
+        2: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'HeatHardSize': False, 'CentralPlant' : False},
+        3: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'HeatHardSize': False, 'CentralPlant' : False},
+        4: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'HeatHardSize': False, 'CentralPlant' : False},
+        5: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'HeatHardSize': False, 'CentralPlant' : True},
+        6: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'HeatHardSize': False, 'CentralPlant' : False},
+        7: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'HeatHardSize': True, 'CentralPlant' : True},
+        8: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'HeatHardSize': False, 'CentralPlant' : False},
+        9: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'HeatHardSize': False, 'CentralPlant' : False},
+        10: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'HeatHardSize': False, 'CentralPlant' : False},
+        11: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'HeatHardSize': True, 'CentralPlant' : True},
+        12: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'HeatHardSize': True, 'CentralPlant' : True},
+        13: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'HeatHardSize': True, 'CentralPlant' : True},
+        14: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'HeatHardSize': True, 'CentralPlant' : True},
+        15: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : False, 'HeatHardSize': True, 'CentralPlant' : True},
+        16: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : False, 'HeatHardSize': False, 'CentralPlant' : True},
+        17: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : False, 'HeatHardSize': False, 'CentralPlant' : True}
         }
         
         self.coolCapabilities = {
-        0: {'COP' : False, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False, 'ChillType' : False},
-        1: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False, 'ChillType' : False},
-        2: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False, 'ChillType' : False},
-        3: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False, 'ChillType' : False},
-        4: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False, 'ChillType' : False},
-        5: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False, 'ChillType' : False},
-        6: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False, 'ChillType' : False},
-        7: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True, 'ChillType' : False},
-        8: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True, 'ChillType' : False},
-        9: {'COP' : False, 'Avail' : False, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False, 'ChillType' : False},
-        10: {'COP' : False, 'Avail' : False, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : False, 'ChillType' : False},
-        11: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True, 'ChillType' : True},
-        12: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True, 'ChillType' : True},
-        13: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True, 'ChillType' : True},
-        14: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True, 'ChillType' : True},
-        15: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CentralPlant' : True, 'ChillType' : True},
-        16: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : True, 'ChillType' : True},
-        17: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : True, 'ChillType' : False},
-        18: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CentralPlant' : True, 'ChillType' : False}
+        0: {'COP' : False, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CoolHardSize': False, 'CentralPlant' : False, 'ChillType' : False},
+        1: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CoolHardSize': False, 'CentralPlant' : False, 'ChillType' : False},
+        2: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CoolHardSize': False, 'CentralPlant' : False, 'ChillType' : False},
+        3: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CoolHardSize': False, 'CentralPlant' : False, 'ChillType' : False},
+        4: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CoolHardSize': False, 'CentralPlant' : False, 'ChillType' : False},
+        5: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CoolHardSize': False, 'CentralPlant' : False, 'ChillType' : False},
+        6: {'COP' : True, 'Avail' : True, 'SupTemp' : False, 'PumpEff' : False, 'CoolHardSize': False, 'CentralPlant' : False, 'ChillType' : False},
+        7: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CoolHardSize': True, 'CentralPlant' : True, 'ChillType' : True},
+        8: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CoolHardSize': True, 'CentralPlant' : True, 'ChillType' : True},
+        9: {'COP' : False, 'Avail' : False, 'SupTemp' : False, 'PumpEff' : False, 'CoolHardSize': False, 'CentralPlant' : False, 'ChillType' : False},
+        10: {'COP' : False, 'Avail' : False, 'SupTemp' : False, 'PumpEff' : False, 'CoolHardSize': False, 'CentralPlant' : False, 'ChillType' : False},
+        11: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CoolHardSize': True, 'CentralPlant' : True, 'ChillType' : True},
+        12: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CoolHardSize': True, 'CentralPlant' : True, 'ChillType' : True},
+        13: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CoolHardSize': True, 'CentralPlant' : True, 'ChillType' : True},
+        14: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CoolHardSize': True, 'CentralPlant' : True, 'ChillType' : True},
+        15: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : True, 'CoolHardSize': True, 'CentralPlant' : True, 'ChillType' : True},
+        16: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : False, 'CoolHardSize': False, 'CentralPlant' : True, 'ChillType' : True},
+        17: {'COP' : True, 'Avail' : True, 'SupTemp' : True, 'PumpEff' : False, 'CoolHardSize': False, 'CentralPlant' : True, 'ChillType' : True}
         }
     
     @staticmethod
@@ -8948,7 +8944,7 @@ class hb_airDetail(object):
 
 
 class hb_heatingDetail(object):
-    def __init__(self, heatingAvailSched=None, heatingEffOrCOP=None, supplyTemperature=None, pumpMotorEfficiency=None, centralPlant=None):
+    def __init__(self, heatingAvailSched=None, heatingEffOrCOP=None, supplyTemperature=None, pumpMotorEfficiency=None, heatHardSize = None, centralPlant=None):
         
         self.areInputsChecked = False
         self.sysProps = hb_hvacProperties()
@@ -8971,6 +8967,10 @@ class hb_heatingDetail(object):
             self.pumpMotorEfficiency = float(pumpMotorEfficiency)
         else:
             self.pumpMotorEfficiency = "Default"
+        if heatHardSize != None:
+            self.heatHardSize = heatHardSize
+        else:
+            self.heatHardSize = "Autosize"
         if centralPlant != None:
             self.centralPlant = centralPlant
         else:
@@ -8993,7 +8993,7 @@ class hb_heatingDetail(object):
                     paramList.append(None)
         
         if success == True:
-            heatDetailObj = cls(paramList[0], paramList[1], paramList[2], paramList[3], paramList[4])
+            heatDetailObj = cls(paramList[0], paramList[1], paramList[2], paramList[3], paramList[4], paramList[5])
             heatDetailObj.areInputsChecked = True
             return heatDetailObj
         else:
@@ -9028,6 +9028,8 @@ class hb_heatingDetail(object):
             errors.append(self.sysProps.generateWarning(sysType, 'HEATING SYSTEM SUPPLY TEMPERATURE', 'heatingDetails'))
         if self.pumpMotorEfficiency != 'Default' and heatCapabilities['PumpEff'] == False:
             errors.append(self.sysProps.generateWarning(sysType, 'HEATING SYSTEM PUMP MOTOR EFFICIENCY', 'heatingDetails'))
+        if self.heatHardSize != 'Autosize' and heatCapabilities['HeatHardSize'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'HEATING SYSTEM HARD SIZE', 'heatingDetails'))
         if self.centralPlant != 'Default' and heatCapabilities['CentralPlant'] == False:
             errors.append(self.sysProps.generateWarning(sysType, 'HEATING SYSTEM CENTRALIZED PLANT', 'heatingDetails'))
         
@@ -9044,6 +9046,7 @@ class hb_heatingDetail(object):
             '  Heating System Efficiency or COP: ' + str(self.heatingEffOrCOP) + '\n' + \
             '  Heating System Supply Temperature: ' + str(self.supplyTemperature) + '\n' + \
             '  Heating System Pump Motor Efficiency: ' + str(self.pumpMotorEfficiency) + '\n' + \
+            '  Heating System Hard Size: ' + str(self.heatHardSize) + '\n' + \
             '  Heating System Centralized Plant: ' + str(self.centralPlant)
             
             return True, textStr
@@ -9052,7 +9055,7 @@ class hb_heatingDetail(object):
 
 
 class hb_coolingDetail(object):
-    def __init__(self, coolingAvailSched=None, coolingCOP=None, supplyTemperature=None, pumpMotorEfficiency=None, centralPlant=None, chillerType=None):
+    def __init__(self, coolingAvailSched=None, coolingCOP=None, supplyTemperature=None, pumpMotorEfficiency=None, coolHardSize = None, centralPlant=None, chillerType=None):
         
         self.areInputsChecked = False
         self.sysProps = hb_hvacProperties()
@@ -9060,10 +9063,12 @@ class hb_coolingDetail(object):
         self.objectType = "HBcool"
         
         self.chillerTypeDict = {
+        -1: 'GroundSourced',
         0: 'WaterCooled',
         1: 'AirCooled',
         'WaterCooled': 'WaterCooled',
         'AirCooled': 'AirCooled',
+        'GroundSourced': 'GroundSourced'
         }
         
         if coolingAvailSched:
@@ -9082,6 +9087,10 @@ class hb_coolingDetail(object):
             self.pumpMotorEfficiency = float(pumpMotorEfficiency)
         else:
             self.pumpMotorEfficiency = "Default"
+        if coolHardSize != None:
+            self.coolHardSize = coolHardSize
+        else:
+            self.coolHardSize = "Autosize"
         if centralPlant != None:
             self.centralPlant = centralPlant
         else:
@@ -9108,7 +9117,7 @@ class hb_coolingDetail(object):
                     paramList.append(None)
         
         if success == True:
-            coolDetailObj = cls(paramList[0], paramList[1], paramList[2], paramList[3], paramList[4], paramList[5])
+            coolDetailObj = cls(paramList[0], paramList[1], paramList[2], paramList[3], paramList[4], paramList[5], paramList[6])
             coolDetailObj.areInputsChecked = True
             return coolDetailObj
         else:
@@ -9143,10 +9152,17 @@ class hb_coolingDetail(object):
             errors.append(self.sysProps.generateWarning(sysType, 'COOLING SYSTEM SUPPLY TEMPERATURE', 'coolingDetails'))
         if self.pumpMotorEfficiency != 'Default' and coolCapabilities['PumpEff'] == False:
             errors.append(self.sysProps.generateWarning(sysType, 'COOLING SYSTEM PUMP MOTOR EFFICIENCY', 'coolingDetails'))
+        if self.coolHardSize != 'Autosize' and coolCapabilities['CoolHardSize'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'COOLING SYSTEM HARD SIZE', 'coolingDetails'))
         if self.centralPlant != 'Default' and coolCapabilities['CentralPlant'] == False:
             errors.append(self.sysProps.generateWarning(sysType, 'COOLING SYSTEM CENTRALIZED PLANT', 'coolingDetails'))
         if self.chillerType != 'Default' and coolCapabilities['ChillType'] == False:
             errors.append(self.sysProps.generateWarning(sysType, 'COOLING SYSTEM HEAT REJECTION TPYE', 'coolingDetails'))
+        
+        if (sysInt == 7 or 11 <= sysInt <= 15) and self.chillerType == 'GroundSourced' and self.coolHardSize == 'Autosize':
+            errors.append('Cooling system must be hard sized when using GROUND SOURCED systems with ' + sysType)
+        elif sysInt == 17 and self.chillerType == 'AirCooled':
+            errors.append('The system ' + sysType + ' cannot be air cooled.')
         
         return errors
     
@@ -9161,12 +9177,14 @@ class hb_coolingDetail(object):
             '  Cooling System COP: ' + str(self.coolingCOP) + '\n' + \
             '  Cooling System Supply Temperature: ' + str(self.supplyTemperature) + '\n' + \
             '  Cooling System Pump Motor Efficiency: ' + str(self.pumpMotorEfficiency) + '\n' + \
+            '  Cooling System Hard Size: ' + str(self.coolHardSize) + '\n' + \
             '  Cooling System Centralized Plant: ' + str(self.centralPlant) + '\n' + \
             '  Cooling System Heat Rejection Type: ' + str(self.chillerType)
             
             return True, textStr
         else:
             return False, errors
+
 
 class OPSChoice(object):
     

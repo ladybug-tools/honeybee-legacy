@@ -54,7 +54,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Read EP Result"
 ghenv.Component.NickName = 'readEPResult'
-ghenv.Component.Message = 'VER 0.0.63\nAPR_02_2018'
+ghenv.Component.Message = 'VER 0.0.63\nAPR_06_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -308,7 +308,7 @@ if _resultFileAddress and gotData == True and csvExists == True:
                 key = []; path = []
                 for columnCount, column in enumerate(line.split(',')):
                     
-                    if 'Zone Ideal Loads Supply Air Total Cooling Energy' in column or 'Zone Ideal Loads Supply Air Sensible Cooling Energy' in column or 'Zone Ideal Loads Supply Air Latent Cooling Energy' in column or 'Chiller Electric Energy' in column or 'Cooling Coil Electric Energy' in column or 'Zone VRF Air Terminal Cooling Electric Energy' in column or 'VRF Heat Pump Cooling Electric Energy' in column:
+                    if 'Zone Ideal Loads Supply Air Total Cooling Energy' in column or 'Zone Ideal Loads Supply Air Sensible Cooling Energy' in column or 'Zone Ideal Loads Supply Air Latent Cooling Energy' in column or 'Chiller Electric Energy' in column or 'Cooling Coil Electric Energy' in column or 'Zone VRF Air Terminal Cooling Electric Energy' in column or 'VRF Heat Pump Cooling Electric Energy' in column or 'Chiller Heater System Cooling Electric Energy' in column:
                         
                         if 'Zone Ideal Loads Supply Air Total Cooling Energy' in column and 'ZONE HVAC' in column:
                             zoneName = checkZoneSys(" " + (":".join(column.split(":")[:-1])).split('ZONE HVAC IDEAL LOADS AIR SYSTEM ')[-1])
@@ -334,7 +334,7 @@ if _resultFileAddress and gotData == True and csvExists == True:
                         except:
                             key.append(-1)
                     
-                    elif 'Zone Ideal Loads Supply Air Total Heating Energy' in column or 'Zone Ideal Loads Supply Air Sensible Heating Energy' in column or 'Zone Ideal Loads Supply Air Latent Heating Energy' in column or 'Boiler Heating Energy' in column or 'Boiler Gas Energy' in column or 'Heating Coil Total Heating Energy' in column or 'Heating Coil Gas Energy' in column or 'Heating Coil Electric Energy' in column or 'Humidifier Electric Energy' in column or 'Zone VRF Air Terminal Heating Electric Energy' in column or 'VRF Heat Pump Heating Electric Energy' in column:
+                    elif 'Zone Ideal Loads Supply Air Total Heating Energy' in column or 'Zone Ideal Loads Supply Air Sensible Heating Energy' in column or 'Zone Ideal Loads Supply Air Latent Heating Energy' in column or 'Boiler Heating Energy' in column or 'Boiler Gas Energy' in column or 'Heating Coil Total Heating Energy' in column or 'Heating Coil Gas Energy' in column or 'Heating Coil Electric Energy' in column or 'Humidifier Electric Energy' in column or 'Zone VRF Air Terminal Heating Electric Energy' in column or 'VRF Heat Pump Heating Electric Energy' in column or 'Chiller Heater System Heating Electric Energy' in column:
                         idealAirTrigger = 2
                         if 'Zone Ideal Loads Supply Air Total Heating Energy' in column and 'ZONE HVAC' in column:
                             zoneName = checkZoneSys(" " + (":".join(column.split(":")[:-1])).split('ZONE HVAC IDEAL LOADS AIR SYSTEM ')[-1])

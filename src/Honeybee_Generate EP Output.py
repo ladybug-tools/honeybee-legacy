@@ -49,7 +49,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Generate EP Output"
 ghenv.Component.NickName = 'EPOutput'
-ghenv.Component.Message = 'VER 0.0.63\nAPR_02_2018'
+ghenv.Component.Message = 'VER 0.0.63\nAPR_06_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -116,6 +116,8 @@ def main(zoneEnergyUse, zoneGainsAndLosses, zoneComfortMetrics, zoneHVACMetrics,
         simulationOutputs.append("Output:Variable,*,Zone VRF Air Terminal Heating Electric Energy, "+ timePeriod)
         simulationOutputs.append("Output:Variable,*,VRF Heat Pump Cooling Electric Energy, "+ timePeriod)
         simulationOutputs.append("Output:Variable,*,VRF Heat Pump Heating Electric Energy, "+ timePeriod)
+        simulationOutputs.append("Output:Variable,*,Chiller Heater System Cooling Electric Energy, "+ timePeriod)
+        simulationOutputs.append("Output:Variable,*,Chiller Heater System Heating Electric Energy, "+ timePeriod)
     
     if zoneGainsAndLosses == True:
         simulationOutputs.append("Output:Variable,*,Zone Windows Total Transmitted Solar Radiation Energy, " + timePeriod)

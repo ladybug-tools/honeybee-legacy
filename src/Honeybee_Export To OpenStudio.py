@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.63\nAPR_03_2018'
+ghenv.Component.Message = 'VER 0.0.63\nAPR_06_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -904,6 +904,128 @@ class WriteOPS(object):
         fan.setMotorInAirstreamFraction(1.0)
         return fan
     
+    def createDefaultGroundSourceChiller(self, model, coolingDetails, HVACCount):
+        # cooling
+        # create clgCapFuncTempCurve
+        clgCapFuncTempCurve = ops.CurveBiquadratic(model)
+        clgCapFuncTempCurve.setName('ChillerHeaterClgCapFT' +str(HVACCount))
+        clgCapFuncTempCurve.setCoefficient1Constant(0.950829)
+        clgCapFuncTempCurve.setCoefficient2x(0.03419327)
+        clgCapFuncTempCurve.setCoefficient3xPOW2(0.000266642)
+        clgCapFuncTempCurve.setCoefficient4y(-0.001733397)
+        clgCapFuncTempCurve.setCoefficient5yPOW2(-0.0001762417)
+        clgCapFuncTempCurve.setCoefficient6xTIMESY(-0.0000369198)
+        clgCapFuncTempCurve.setMinimumValueofx(4.44)
+        clgCapFuncTempCurve.setMaximumValueofx(12.78)
+        clgCapFuncTempCurve.setMinimumValueofy(12.78)
+        clgCapFuncTempCurve.setMaximumValueofy(29.44)
+        clgCapFuncTempCurve.setInputUnitTypeforX('Temperature')
+        clgCapFuncTempCurve.setInputUnitTypeforY('Temperature')
+        clgCapFuncTempCurve.setOutputUnitType('Dimensionless')
+        
+        # create eirFuncTempCurve
+        eirFuncTempCurve = ops.CurveBiquadratic(model)
+        eirFuncTempCurve.setName('ChillerHeaterClgEIRFT' +str(HVACCount))
+        eirFuncTempCurve.setCoefficient1Constant(0.7362431)
+        eirFuncTempCurve.setCoefficient2x(0.02136491)
+        eirFuncTempCurve.setCoefficient3xPOW2(0.0003638909)
+        eirFuncTempCurve.setCoefficient4y(-0.004284947)
+        eirFuncTempCurve.setCoefficient5yPOW2(0.0003389817)
+        eirFuncTempCurve.setCoefficient6xTIMESY(-0.0003632396)
+        eirFuncTempCurve.setMinimumValueofx(4.44)
+        eirFuncTempCurve.setMaximumValueofx(12.78)
+        eirFuncTempCurve.setMinimumValueofy(12.78)
+        eirFuncTempCurve.setMaximumValueofy(29.44)
+        eirFuncTempCurve.setInputUnitTypeforX('Temperature')
+        eirFuncTempCurve.setInputUnitTypeforY('Temperature')
+        eirFuncTempCurve.setOutputUnitType('Dimensionless')
+        
+        # create eirFuncPlrCurve
+        eirFuncPlrCurve = ops.CurveBicubic(model)
+        eirFuncPlrCurve.setName('ChillerHeaterClgEIRFPLR' +str(HVACCount))
+        eirFuncPlrCurve.setCoefficient1Constant(0)
+        eirFuncPlrCurve.setCoefficient2x(1.22895)
+        eirFuncPlrCurve.setCoefficient3xPOW2(-0.751383)
+        eirFuncPlrCurve.setCoefficient7xPOW3(0.517396)
+        eirFuncPlrCurve.setMinimumValueofx(0.2)
+        eirFuncPlrCurve.setMaximumValueofx(1)
+        
+        # heating
+        # create htgCapFuncTempCurve
+        htgCapFuncTempCurve = ops.CurveBiquadratic(model)
+        htgCapFuncTempCurve.setName('ChillerHeaterHtgCapFT' +str(HVACCount))
+        htgCapFuncTempCurve.setCoefficient1Constant(0.9415266)
+        htgCapFuncTempCurve.setCoefficient2x(0.05527431)
+        htgCapFuncTempCurve.setCoefficient3xPOW2(0.0003573558)
+        htgCapFuncTempCurve.setCoefficient4y(0.001258391)
+        htgCapFuncTempCurve.setCoefficient5yPOW2(-0.00006420546)
+        htgCapFuncTempCurve.setCoefficient6xTIMESY(-0.0005350989)
+        htgCapFuncTempCurve.setMinimumValueofx(4.44)
+        htgCapFuncTempCurve.setMaximumValueofx(15.56)
+        htgCapFuncTempCurve.setMinimumValueofy(35)
+        htgCapFuncTempCurve.setMaximumValueofy(57.22)
+        htgCapFuncTempCurve.setInputUnitTypeforX('Temperature')
+        htgCapFuncTempCurve.setInputUnitTypeforY('Temperature')
+        htgCapFuncTempCurve.setOutputUnitType('Dimensionless')
+        
+        # create eirFuncTempCurve
+        chillerHeaterHtgEIRFT = ops.CurveBiquadratic(model)
+        chillerHeaterHtgEIRFT.setName('ChillerHeaterHtgEIRFT' +str(HVACCount))
+        chillerHeaterHtgEIRFT.setCoefficient1Constant(0.2286246)
+        chillerHeaterHtgEIRFT.setCoefficient2x(0.02498714)
+        chillerHeaterHtgEIRFT.setCoefficient3xPOW2(-0.00001267106)
+        chillerHeaterHtgEIRFT.setCoefficient4y(0.009327184)
+        chillerHeaterHtgEIRFT.setCoefficient5yPOW2(0.00005892037)
+        chillerHeaterHtgEIRFT.setCoefficient6xTIMESY(-0.0003268512)
+        chillerHeaterHtgEIRFT.setMinimumValueofx(4.44)
+        chillerHeaterHtgEIRFT.setMaximumValueofx(15.56)
+        chillerHeaterHtgEIRFT.setMinimumValueofy(35)
+        chillerHeaterHtgEIRFT.setMaximumValueofy(57.22)
+        chillerHeaterHtgEIRFT.setInputUnitTypeforX('Temperature')
+        chillerHeaterHtgEIRFT.setInputUnitTypeforY('Temperature')
+        chillerHeaterHtgEIRFT.setOutputUnitType('Dimensionless')
+        
+        # create eirFuncPlrCurve
+        chillerHeaterHtgEIRFPLR = ops.CurveBicubic(model)
+        chillerHeaterHtgEIRFPLR.setName('ChillerHeaterHtgEIRFPLR' +str(HVACCount))
+        chillerHeaterHtgEIRFPLR.setCoefficient1Constant(0)
+        chillerHeaterHtgEIRFPLR.setCoefficient2x(1.12853)
+        chillerHeaterHtgEIRFPLR.setCoefficient3xPOW2(-0.0264962)
+        chillerHeaterHtgEIRFPLR.setCoefficient7xPOW3(-0.103811)
+        chillerHeaterHtgEIRFPLR.setMinimumValueofx(0.3)
+        chillerHeaterHtgEIRFPLR.setMaximumValueofx(1)
+        
+        # performance of entire heat pump system.
+        chiller1 = ops.ChillerHeaterPerformanceElectricEIR(model, clgCapFuncTempCurve, eirFuncTempCurve, 
+            eirFuncPlrCurve, htgCapFuncTempCurve, chillerHeaterHtgEIRFT, chillerHeaterHtgEIRFPLR)
+        
+        # For now I need to ard size the system to get it to run correctly.
+        # This a bug in EnergyPlus.
+        # See here for more information:
+        # https://github.com/NREL/EnergyPlus/issues/6445
+        if coolingDetails != None and coolingDetails.coolHardSize != 'Autosize':
+            chiller1.setReferenceCoolingModeEvaporatorCapacity(float(coolingDetails.coolHardSize))
+        
+        # set the properties of the chiller/heater
+        if coolingDetails != None and coolingDetails.coolingCOP != 'Default':
+            chiller1.setReferenceCoolingModeCOP(coolingDetails.coolingCOP)
+        else:
+            chiller1.setReferenceCoolingModeCOP(5.5)
+        if coolingDetails != None and coolingDetails.supplyTemperature != 'Default':
+            chiller1.setReferenceLeavingChilledWaterTemperature(coolingDetails.supplyTemperature)
+        chiller1.setCondenserType("WaterCooled")
+        chiller1.setChilledWaterFlowModeType("VariableFlow")
+        
+        # create the two modules
+        centralPumpModule1 = ops.CentralHeatPumpSystemModule(model)
+        centralPumpModule1.setChillerHeaterModulesPerformanceComponent(chiller1)
+        
+        # construct the system
+        centralPumpSystem = ops.CentralHeatPumpSystem(model)
+        centralPumpSystem.addModule(centralPumpModule1)
+        
+        return centralPumpSystem
+    
     def createDefaultAEDGWaterChiller(self, model, coolingDetails):
         # create clgCapFuncTempCurve
         clgCapFuncTempCurve = ops.CurveBiquadratic(model)
@@ -944,8 +1066,11 @@ class WriteOPS(object):
             chiller.setReferenceCOP(5.5)
         if coolingDetails != None and coolingDetails.supplyTemperature != 'Default':
             chiller.setReferenceLeavingChilledWaterTemperature(coolingDetails.supplyTemperature)
+        if coolingDetails != None and coolingDetails.coolHardSize != 'Autosize':
+            chiller.setReferenceCapacity(float(coolingDetails.coolHardSize))
         chiller.setCondenserType("WaterCooled")
         chiller.setChillerFlowMode("ConstantFlow")
+        
         return chiller
     
     def createDefaultAEDGAirChiller(self, model, coolingDetails):
@@ -988,6 +1113,8 @@ class WriteOPS(object):
             chiller.setReferenceCOP(2.93)
         if coolingDetails != None and coolingDetails.supplyTemperature != 'Default':
             chiller.setReferenceLeavingChilledWaterTemperature(coolingDetails.supplyTemperature)
+        if coolingDetails != None and coolingDetails.coolHardSize != 'Autosize':
+            chiller.setReferenceCapacity(float(coolingDetails.coolHardSize))
         chiller.setCondenserType("AirCooled")
         chiller.setChillerFlowMode("ConstantFlow")
         return chiller
@@ -1017,6 +1144,8 @@ class WriteOPS(object):
             boiler.setNominalThermalEfficiency(heatingDetails.heatingEffOrCOP)
         else:
             boiler.setNominalThermalEfficiency(0.9)
+        if heatingDetails != None and heatingDetails.heatHardSize != 'Autosize':
+            boiler.setNominalCapacity(float(heatingDetails.heatHardSize))
         # boiler efficiency curve
         boilerEfficiency = ops.CurveBiquadratic(model)
         boilerEfficiency.setName("Boiler Efficiency" + str(HVACCount))
@@ -1079,6 +1208,9 @@ class WriteOPS(object):
             chiller = self.createDefaultAEDGWaterChiller(model, coolingDetails)
         elif chillerType == "AirCooled":
             chiller = self.createDefaultAEDGAirChiller(model, coolingDetails)
+        elif chillerType == "GroundSourced":
+            chiller = self.createDefaultGroundSourceChiller(model, coolingDetails, HVACCount)
+        
         # create a scheduled setpoint manager
         setpointManagerScheduled = ops.SetpointManagerScheduled(model, chilledWaterSetpointSchedule)
         # create pipes
@@ -1250,7 +1382,49 @@ class WriteOPS(object):
         districtHeating.addToNode(districtCooling.outletModelObject().get().to_Node().get())
         setpointManagerScheduledHeating.addToNode(districtHeating.outletModelObject().get().to_Node().get())
         
+        # demand side components
+        if chillerWaterPlant != None:
+            chillervec = chillerWaterPlant.supplyComponents(ops.IddObjectType("OS:CentralHeatPumpSystem"))
+            chiller = model.getCentralHeatPumpSystem(chillervec[0].handle()).get()
+            condenserLoop.addDemandBranchForComponent(chiller)
+            condenserLoop.addDemandBranchForComponent(pipeDemandBypass)
+            pipeDemandInlet.addToNode(condenserLoop.demandInletNode())
+            pipeDemandOutlet.addToNode(condenserLoop.demandOutletNode())
+            chiller.setName('Central Heat Pump System ' + str(HVACCount))
+        
         return condenserLoop
+    
+    def replaceChillerWithHeatPump(self, model, centHeatPump, cwl, HVACCount):
+        # replace the chiller.
+        chillerVec = cwl.supplyComponents(ops.IddObjectType("OS:Chiller:Electric:EIR"))
+        for chiller in chillerVec:
+            osChiller = model.getChillerElectricEIR(chiller.handle()).get()
+            condenserLoop = osChiller.secondaryPlantLoop().get()
+            condenserLoop.remove()
+            osChiller.remove()
+        cwl.addSupplyBranchForComponent(centHeatPump)
+    
+    def replaceBoilerWithHeatPump(self, model, hotWaterPlant, chillerWaterPlant, HVACCount):
+        # replace the boiler.
+        boilerVec = hotWaterPlant.supplyComponents(ops.IddObjectType("OS:Boiler:HotWater"))
+        for boiler in boilerVec:
+            osBoiler = model.getBoilerHotWater(boiler.handle()).get()
+            osBoiler.remove()
+        
+        # get the chiller/heat pump
+        chillervec = chillerWaterPlant.supplyComponents(ops.IddObjectType("OS:CentralHeatPumpSystem"))
+        chiller = model.getCentralHeatPumpSystem(chillervec[0].handle()).get()
+        hotWaterPlant.addSupplyBranchForComponent(chiller)
+    
+    def replaceWaterChillWithAirChill(self, model, airChiller, cwl, HVACCount):
+        # replace the chiller.
+        chillerVec = cwl.supplyComponents(ops.IddObjectType("OS:Chiller:Electric:EIR"))
+        for chiller in chillerVec:
+            osChiller = model.getChillerElectricEIR(chiller.handle()).get()
+            condenserLoop = osChiller.secondaryPlantLoop().get()
+            condenserLoop.remove()
+            osChiller.remove()
+        cwl.addSupplyBranchForComponent(airChiller)
     
     def setDemandVent(self, model, airloop):
         oasys = airloop.airLoopHVACOutdoorAirSystem()
@@ -1632,11 +1806,11 @@ class WriteOPS(object):
             coolAvailSch = self.getOSSchedule(coolingDetails.coolinggAvailSched, model)
             vrfAirConditioner.setAvailabilitySchedule(coolAvailSch)
         
-        if coolingDetails != None and coolingDetails.chillerType == "WaterCooled" and condenserLoop == None:
+        if coolingDetails != None and (coolingDetails.chillerType == "WaterCooled" or coolingDetails.chillerType == "GroundSourced") and condenserLoop == None:
             cndwl = self.createCondenser(model, None, "VRF - " + str(HVACCount))
         
         # For water source VRFs.
-        if (coolingDetails != None and coolingDetails.chillerType == "WaterCooled" and condenserLoop == None) or (condenserLoop != None):
+        if (coolingDetails != None and (coolingDetails.chillerType == "WaterCooled" or coolingDetails.chillerType == "GroundSourced") and condenserLoop == None) or (condenserLoop != None):
             # The following should connect the VRF to a plant loop.
             # However, OpenStudio does not currently support this and these inputs end up doing nothing.
             vrfAirConditioner.setString(56,"WaterCooled")
@@ -1675,6 +1849,7 @@ class WriteOPS(object):
         # create radiant constructions.
         radiantFloor = None
         radConstructions = {}
+        customRadFound = False
         if 'RadiantFloor' in equipList:
             # create radiant construction and substitute for existing surface (interior or exterior) constructions
             # ignore layer below insulation, which will depend on boundary condition
@@ -1753,6 +1928,7 @@ class WriteOPS(object):
                         constrName = str(srfConstruction.name())
                         materialNames, comments, UVSI, UVIP = self.hb_EPMaterialAUX.decomposeEPCnstr(constrName)
                         if 'INTERNAL SOURCE' in str(materialNames).upper():
+                            customRadFound = True
                             try:
                                 surface.setConstruction(radConstructions[constrName])
                             except:
@@ -1834,6 +2010,11 @@ class WriteOPS(object):
                 heatPump.setOutdoorAirFlowRateWhenNoCoolingorHeatingisNeeded(ops.OptionalDouble(0))
                 # add heat pump to thermal zone
                 heatPump.addToThermalZone(zone)
+        
+        if 'CustomRadiant' in equipList and customRadFound == False:
+            warning = 'Custom Radiant HVAC selected \n but no surfaces with Internal Source constructions were found.'
+            print warning
+            ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
     
     ### END OF FUNCTIONS FOR CREATING HVAC SYSTEMS FROM SCRATCH ###
     
@@ -1852,17 +2033,21 @@ class WriteOPS(object):
         if pumpMotorEfficiency != 'Default':
             pump.setMotorEfficiency(pumpMotorEfficiency)
     
-    def updateChiller(self, model, osChiller, coolingCOP, supplyTemperature):
+    def updateChiller(self, model, osChiller, coolingCOP, supplyTemperature, coolHardSize):
         if coolingCOP != 'Default':
             osChiller.setReferenceCOP(coolingCOP)
         if supplyTemperature != 'Default':
             osChiller.setReferenceLeavingChilledWaterTemperature(supplyTemperature)
+        if coolHardSize != 'Autisize':
+            osChiller.setReferenceCapacity(coolHardSize)
    
-    def updateBoiler(self, model, osboiler, heatingEffOrCOP, supplyTemperature):
+    def updateBoiler(self, model, osboiler, heatingEffOrCOP, supplyTemperature, heatHardSize):
         if heatingEffOrCOP != 'Default':
             osboiler.setNominalThermalEfficiency(heatingEffOrCOP)
         if supplyTemperature != 'Default':
             osboiler.setDesignWaterOutletTemperature(supplyTemperature)
+        if heatHardSize != 'Autosize':
+            boiler.setNominalCapacity(float(heatingDetails.heatHardSize))
     
     def updateDXCoolingCoil(self, model, coolCoil, coolingAvailSched, coolingCOP):
         if coolingAvailSched != 'ALWAYS ON':
@@ -2140,7 +2325,7 @@ class WriteOPS(object):
                 boilerVec = hwl.supplyComponents(ops.IddObjectType("OS:Boiler:HotWater"))
                 for boiler in boilerVec:
                     osBoiler = model.getBoilerHotWater(boiler.handle()).get()
-                    self.updateBoiler(model, osBoiler, heatingDetails.heatingEffOrCOP, heatingDetails.supplyTemperature)
+                    self.updateBoiler(model, osBoiler, heatingDetails.heatingEffOrCOP, heatingDetails.supplyTemperature, heatingDetails.heatHardSize)
             if heatingDetails.pumpMotorEfficiency != "Default":
                 pumpVec = hwl.supplyComponents(ops.IddObjectType("OS:Pump:VariableSpeed"))
                 for pump in enumerate(pumpVec):
@@ -2156,11 +2341,11 @@ class WriteOPS(object):
             x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:Water"))
             cc = model.getCoilCoolingWater(x[0].handle()).get()
             cwl = cc.plantLoop().get()
-            if coolingDetails.coolingCOP != "Default" or coolingDetails.supplyTemperature != "Default":
+            if coolingDetails.coolingCOP != "Default" or coolingDetails.supplyTemperature != "Default" or coolingDetails.coolHardSize != "Autosize":
                 chillervec = cwl.supplyComponents(ops.IddObjectType("OS:Chiller:Electric:EIR"))
                 for chiller in chillervec:
                     osChiller = model.getChillerElectricEIR(chiller.handle()).get()
-                    self.updateChiller(model, osChiller, coolingDetails.coolingCOP, coolingDetails.supplyTemperature)
+                    self.updateChiller(model, osChiller, coolingDetails.coolingCOP, coolingDetails.supplyTemperature, coolingDetails.coolHardSize)
             if coolingDetails.pumpMotorEfficiency != "Default":
                 pumpVec = cwl.supplyComponents(ops.IddObjectType("OS:Pump:VariableSpeed"))
                 for pump in enumerate(pumpVec):
@@ -2213,6 +2398,23 @@ class WriteOPS(object):
             dehumidTrigger = False
             humidTrigger = False
             HVACCount +=1
+            
+            # Check that the version of OpenStudio is correct for ground source hydronic systems.
+            if coolingDetails != None:
+                if coolingDetails.chillerType == 'GroundSourced':
+                    try:
+                        vernum1 = int(osVersion.split('.')[0])
+                        vernum2 = int(osVersion.split('.')[1])
+                    except:
+                        vernum1 = 1
+                        vernum2 = 0
+                    if vernum1 > 2:
+                        pass
+                    elif vernum1 == 2 and vernum2 >=4:
+                        pass
+                    else:
+                        msg = 'You must have OpenStudio 2.5 or greater to use ground sourced systems.'
+                        raise Exception(msg)
             
             # add systems. There are 10 standard ASHRAE systems + Ideal Air Loads
             if systemIndex == -1:
@@ -2338,11 +2540,11 @@ class WriteOPS(object):
                         x = ptac.heatingCoil().name()
                         hc = model.getCoilHeatingWaterByName(str(x)).get()
                         hwl = hc.plantLoop().get()
-                        if heatingDetails.heatingEffOrCOP != "Default" or heatingDetails.supplyTemperature != "Default":
+                        if heatingDetails.heatingEffOrCOP != "Default" or heatingDetails.supplyTemperature != "Default" or heatingDetails.heatHardSize != "Autosize":
                             boilerVec = hwl.supplyComponents(ops.IddObjectType("OS:Boiler:HotWater"))
                             for boiler in boilerVec:
                                 osBoiler = model.getBoilerHotWater(boiler.handle()).get()
-                                self.updateBoiler(model, osBoiler, heatingDetails.heatingEffOrCOP, heatingDetails.supplyTemperature)
+                                self.updateBoiler(model, osBoiler, heatingDetails.heatingEffOrCOP, heatingDetails.supplyTemperature, heatingDetails.heatHardSize)
                         if heatingDetails.pumpMotorEfficiency != "Default":
                             pumpVec = hwl.supplyComponents(ops.IddObjectType("OS:Pump:VariableSpeed"))
                             for pump in enumerate(pumpVec):
@@ -2398,9 +2600,9 @@ class WriteOPS(object):
                 
             elif systemIndex == 3:
                 # 3: Packaged Single Zone - AC
+                hvacHandle = ops.OpenStudioModelHVAC.addSystemType3(model).handle()
+                airloop = model.getAirLoopHVAC(hvacHandle).get()
                 for zoneCount, zone in enumerate(thermalZoneVector):
-                    handle = ops.OpenStudioModelHVAC.addSystemType3(model).handle()
-                    airloop = model.getAirLoopHVAC(handle).get()
                     airloop.addBranchForZone(zone)
                     
                     if hbZones[zoneCount].humidityMin != '':
@@ -2430,9 +2632,9 @@ class WriteOPS(object):
                 
             elif systemIndex == 4:
                 # 4: Packaged Single Zone - HP
+                handle = ops.OpenStudioModelHVAC.addSystemType4(model).handle()
+                airloop = model.getAirLoopHVAC(handle).get()
                 for zoneCount, zone in enumerate(thermalZoneVector):
-                    handle = ops.OpenStudioModelHVAC.addSystemType4(model).handle()
-                    airloop = model.getAirLoopHVAC(handle).get()
                     airloop.addBranchForZone(zone)
                     
                     if hbZones[zoneCount].humidityMin != '':
@@ -2606,6 +2808,27 @@ class WriteOPS(object):
                         cwl = cc.plantLoop().get()
                         centralCool = cwl
                 
+                if (coolingDetails != None and coolingDetails.chillerType == "GroundSourced"):
+                    centHeatPump = self.createDefaultGroundSourceChiller(model, coolingDetails, HVACCount)
+                    x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:Water"))
+                    cc = model.getCoilCoolingWater(x[0].handle()).get()
+                    cwl = cc.plantLoop().get()
+                    self.replaceChillerWithHeatPump(model, centHeatPump, cwl, HVACCount)
+                    cndwl = self.addInfiniteCapacityGroundLoop(model, cwl, HVACCount, coolingDetails)
+                    
+                    x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Heating:Water"))
+                    hc = model.getCoilHeatingWater(x[0].handle()).get()
+                    hwl = hc.plantLoop().get()
+                    # remove boiler and add heat pump.
+                    self.replaceBoilerWithHeatPump(model, hwl, cwl, HVACCount)
+                    self.updateLoopSupplyTemp(hwl, model, 55, "Hot_Water_Temperature_Default", "Hot_Water_Temp", HVACCount)
+                elif (coolingDetails != None and coolingDetails.chillerType == "AirCooled"):
+                    airChill = self.createDefaultAEDGAirChiller(model, coolingDetails, HVACCount)
+                    x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:Water"))
+                    cc = model.getCoilCoolingWater(x[0].handle()).get()
+                    cwl = cc.plantLoop().get()
+                    self.replaceWaterChillWithAirChill(model, airChill, cwl, HVACCount)
+                
                 # Add branches for zones.
                 for zoneCount, zone in enumerate(thermalZoneVector):
                     airloop.addBranchForZone(zone)
@@ -2676,6 +2899,17 @@ class WriteOPS(object):
                         cc = model.getCoilCoolingWater(x[0].handle()).get()
                         cwl = cc.plantLoop().get()
                         centralCool = cwl
+                
+                if (coolingDetails != None and coolingDetails.chillerType == "GroundSourced"):
+                    warning = "VAV w/ PFP Boxes cannot be ground sourced. \n Defaulting to a water cooled chiller."
+                    print warning
+                    ghenv.Component.AddRuntimeMessage(gh.GH_RuntimeMessageLevel.Warning, warning)
+                elif (coolingDetails != None and coolingDetails.chillerType == "AirCooled"):
+                    airChill = self.createDefaultAEDGAirChiller(model, coolingDetails, HVACCount)
+                    x = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:Water"))
+                    cc = model.getCoilCoolingWater(x[0].handle()).get()
+                    cwl = cc.plantLoop().get()
+                    self.replaceWaterChillWithAirChill(model, airChill, cwl, HVACCount)
                 
                 # Add branches for zones.
                 for zoneCount, zone in enumerate(thermalZoneVector):
@@ -2802,12 +3036,19 @@ class WriteOPS(object):
                     zoneTotAir = self.getZoneTotalAir(zone)
                     totalAirFlowRates.append(zoneTotAir)
                 
+                if coolingDetails != None and coolingDetails.chillerType != 'Default':
+                    chillType = coolingDetails.chillerType
+                else:
+                    chillType = "WaterCooled"
+                
                 # Create the hot water plant.
                 if heatingDetails != None and heatingDetails.supplyTemperature != 'Default':
                     suppTemp = heatingDetails.supplyTemperature
                 else:
                     if systemIndex == 13 or systemIndex == 14 or systemIndex == 15:
-                        suppTemp = 45
+                        suppTemp = 40
+                    elif chillType == "GroundSourced":
+                        suppTemp = 55
                     else:
                         suppTemp = 67
                 radLoop = False
@@ -2831,10 +3072,7 @@ class WriteOPS(object):
                         suppTemp = 15
                     else:
                         suppTemp = 6.7
-                if coolingDetails != None and coolingDetails.chillerType != 'Default':
-                    chillType = coolingDetails.chillerType
-                else:
-                    chillType = "WaterCooled"
+                
                 if systemIndex == 13 or systemIndex == 14:
                     coolLoopTemp = self.createConstantScheduleRuleset('Chilled_Water_Radiant_Loop_Temperature' + str(HVACCount), 'Chilled_Water_Radiant_Loop_Temperature_Default' + str(HVACCount), 'TEMPERATURE 1', suppTemp, model)
                 else:
@@ -2855,7 +3093,16 @@ class WriteOPS(object):
                         cndwl = self.createCondenser(model, cwl, HVACCount)
                     if coolingDetails != None and coolingDetails.centralPlant == 'True' and centralCool == None:
                         centralConden = cndwl
-                
+                elif chillType == "GroundSourced":
+                    # add a ground loop.
+                    if coolingDetails != None and coolingDetails.centralPlant == 'True' and centralCool != None:
+                        cndwl = centralConden
+                    else:
+                        cndwl = self.addInfiniteCapacityGroundLoop(model, cwl, HVACCount, coolingDetails)
+                        # remove boiler and add heat pump.
+                        self.replaceBoilerWithHeatPump(model, hwl, cwl, HVACCount)
+                    if coolingDetails != None and coolingDetails.centralPlant == 'True' and centralCool == None:
+                        centralConden = cndwl
                 
                 # Create air loop.
                 if sum(totalAirFlowRates) > 0:
@@ -2864,15 +3111,19 @@ class WriteOPS(object):
                     elif systemIndex == 12:
                         airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hwl, cwl, None, "ChilledBeam")
                     elif systemIndex == 13 or systemIndex == 14 or systemIndex == 15:
-                        hotterLoopTemp = self.createConstantScheduleRuleset('Hot_Water_Temperature' + str(HVACCount), 'Hot_Water_Temperature_Default' + str(HVACCount), 'TEMPERATURE 1', 67, model)
-                        hotwl = self.createHotWaterPlant(model, hotterLoopTemp, heatingDetails, HVACCount)
+                        if chillType != "GroundSourced" or systemIndex == 15 or dehumidTrigger == True:
+                            hotterLoopTemp = self.createConstantScheduleRuleset('Hot_Water_Temperature' + str(HVACCount), 'Hot_Water_Temperature_Default' + str(HVACCount), 'TEMPERATURE 1', 67, model)
+                            hotwl = self.createHotWaterPlant(model, hotterLoopTemp, heatingDetails, HVACCount)
                         if systemIndex == 13  or systemIndex == 14:
                             if dehumidTrigger == True:
                                 coolerLoopTemp = self.createConstantScheduleRuleset('Chilled_Water_Temperature' + str(HVACCount), 'Chilled_Water_Temperature_Default' + str(HVACCount), 'TEMPERATURE 1', 6.7, model)
                                 coolwl = self.createChilledWaterPlant(model, coolerLoopTemp, coolingDetails, HVACCount, chillType)
                                 airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotwl, coolwl)
                             else:
-                                airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotwl)
+                                if chillType != "GroundSourced":
+                                    airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotwl)
+                                else:
+                                    airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, None, None, cndwl, None, True)
                         else:
                             airLoop = self.createPrimaryAirLoop('VAV', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, hotwl, cwl)
                     
@@ -2902,7 +3153,7 @@ class WriteOPS(object):
                     equipList = ['RadiantFloor']
                     self.createZoneEquip(model, thermalZoneVector, hbZones, equipList, hwl, cwl)
             
-            elif systemIndex == 16 or systemIndex == 17 or systemIndex == 18:
+            elif systemIndex == 16 or systemIndex == 17 :
                 # Check to see if there is humidity control on any of the zones.
                 for zone in hbZones:
                     if zone.humidityMax != '':
@@ -2910,24 +3161,30 @@ class WriteOPS(object):
                     if zone.humidityMin != '':
                         humidTrigger = True
                 
-                if systemIndex == 16:
+                if coolingDetails == None or coolingDetails.chillerType != "GroundSourced":
                     # Make a chilled water loop for the DOAS if it has been specified.
                     cndwl = None
-                    if coolingDetails != None and coolingDetails.chillerType != 'Default':
-                        if coolingDetails.chillerType == "WaterCooled":
-                            if coolingDetails.centralPlant == 'True' and centralConden!= None:
+                    if (coolingDetails != None and coolingDetails.chillerType != 'Default') or (coolingDetails == None and systemIndex == 17):
+                        if (coolingDetails == None and systemIndex == 17) or coolingDetails.chillerType == "WaterCooled":
+                            if coolingDetails != None and coolingDetails.centralPlant == 'True' and centralConden!= None:
                                 cndwl = centralConden
                             else:
-                                condLoopTemp = self.createConstantScheduleRuleset('Condenser_Temperature' + str(HVACCount), 'Condenser_Temperature_Default' + str(HVACCount), 'TEMPERATURE 1', 30, model)
-                                coolLoopTemp = self.createConstantScheduleRuleset('Condenser_Cooling_Temperature' + str(HVACCount), 'Condenser_Cooling_Temperature_Default' + str(HVACCount), 'TEMPERATURE 1', 30, model)
-                                heatLoopTemp = self.createConstantScheduleRuleset('Condenser_Heating_Temperature' + str(HVACCount), 'Condenser_Heating_Temperature_Default' + str(HVACCount), 'TEMPERATURE 1', 20, model)
+                                if coolingDetails != None and coolingDetails.supplyTemperature != "Default":
+                                    condLoopTemp = self.createConstantScheduleRuleset('Condenser_Temperature' + str(HVACCount), 'Condenser_Temperature_Default' + str(HVACCount), 'TEMPERATURE 1', float(coolingDetails.supplyTemperature), model)
+                                    coolLoopTemp = self.createConstantScheduleRuleset('Condenser_Cooling_Temperature' + str(HVACCount), 'Condenser_Cooling_Temperature_Default' + str(HVACCount), 'TEMPERATURE 1', float(coolingDetails.supplyTemperature), model)
+                                else:
+                                    condLoopTemp = self.createConstantScheduleRuleset('Condenser_Temperature' + str(HVACCount), 'Condenser_Temperature_Default' + str(HVACCount), 'TEMPERATURE 1', 30, model)
+                                    coolLoopTemp = self.createConstantScheduleRuleset('Condenser_Cooling_Temperature' + str(HVACCount), 'Condenser_Cooling_Temperature_Default' + str(HVACCount), 'TEMPERATURE 1', 30, model)
+                                if heatingDetails != None and heatingDetails.supplyTemperature != "Default":
+                                    heatLoopTemp = self.createConstantScheduleRuleset('Condenser_Heating_Temperature' + str(HVACCount), 'Condenser_Heating_Temperature_Default' + str(HVACCount), 'TEMPERATURE 1', float(heatingDetails.supplyTemperature), model)
+                                else:
+                                    heatLoopTemp = self.createConstantScheduleRuleset('Condenser_Heating_Temperature' + str(HVACCount), 'Condenser_Heating_Temperature_Default' + str(HVACCount), 'TEMPERATURE 1', 20, model)
                                 cndwl = self.createVRFCondenser(model, HVACCount, condLoopTemp, coolLoopTemp, heatLoopTemp)
                     #Make a DOAS air loop.
                     if airDetails != None and airDetails.centralAirLoop == 'True' and centralAir != None:
                         airLoop = self.addZoneToAirLoop(centralAir, 'DOAS', model, thermalZoneVector, hbZones, airDetails, coolingDetails, None, None)
                     else:
                         airLoop = self.createPrimaryAirLoop('DOAS', model, thermalZoneVector, hbZones, airDetails, heatingDetails, coolingDetails, HVACCount, None, None, cndwl, None, True)
-                    
                 else:
                     # Make a ground source condenser loop.
                     if (coolingDetails != None and coolingDetails.centralPlant == 'True') or (heatingDetails != None and heatingDetails.centralPlant == 'True'):

@@ -31,6 +31,7 @@ Provided by Honeybee 0.0.63
         _heatingEffOrCOP_: A number that sets the reference efficiency of the primary heating component (under design-day conditions). For a system with a boiler, this is the fraction of energy contained within fuel that is converted into usable heat energy (default boiler efficiencies are typically between 0.7 and 0.9). For electric heat pump systems, this value is the coefficient of performance (COP) of the heat pump ot the ratio of heat added by the heat pump system per unit of electricity input. Defaults COPs typically range from 2 to 5 depending on the system type.
         supplyTemperature_: A number representing the temperature of the water leaving the boiler in degrees Celsius.  This input does not have an effect on direct expansion heat pump systems.  If left blank, the default temperature is usually 82.0 degrees Celsius.
         pumpMotorEfficiency_: A number between 0 and 1 that represents the motor efficiency of the hot water pump.  This input does not have an effect on direct expansion cooling systems.  If left blank, the defualt efficiency is usally 0.9.
+        heatingHardSize_: A number in Watts that sets the maximum capacity of the heating system.  This will override the default, which is to autosize the heating system based on the design day.
         centralPlant_: Set to "True" to have all instances of this HVAC Type have a single central heating plant.  If set to False or left blank, each branch of a HBZone data tree that is plugged into this component will have a separate heating plant.
     Returns:
         heatingDetail: A description of the heating system features, which can be plugged into "Honeybee_HVAC Systems" component.
@@ -42,7 +43,7 @@ import Grasshopper.Kernel as gh
 
 ghenv.Component.Name = "Honeybee_HVAC Heating Details"
 ghenv.Component.NickName = 'HeatingDetails'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.63\nAPR_06_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | HVACSystems"
@@ -59,7 +60,7 @@ w = gh.GH_RuntimeMessageLevel.Warning
 
 def main(hb_heatingDetail):
     myHeatDetails = hb_heatingDetail(_heatingAvailSched_, _heatingEffOrCOP_, supplyTemperature_, \
-    pumpMotorEfficiency_, centralPlant_)
+    pumpMotorEfficiency_, heatingHardSize_, centralPlant_)
     
     success, heatDetails = myHeatDetails.class2Str()
     if success:
