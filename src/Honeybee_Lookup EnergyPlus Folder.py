@@ -44,7 +44,7 @@ Provided by Honeybee 0.0.63
 """
 ghenv.Component.Name = "Honeybee_Lookup EnergyPlus Folder"
 ghenv.Component.NickName = 'LookupFolder_EnergyPlus'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.63\nAPR_08_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -92,9 +92,9 @@ def main(studyFolder, subFoldersOS):
         for fileName in fileNames:
             if fileName.lower().endswith(".idf"):
                 idfFiles.append(os.path.join(studyFolder, fileName))
-            elif fileName.lower().endswith(".csv") and not fileName.endswith("sz.csv") and "SCH" not in fileName and not fileName.endswith("inTable.csv"):
+            elif fileName.lower().endswith(".csv") and not fileName.endswith("sz.csv") and not "SCH" in fileName and not "INTGAIN" in fileName and not fileName.endswith("Table.csv"):
                 resultFileAddress.append(os.path.join(studyFolder, fileName))
-            elif fileName.lower().endswith(".csv") and not fileName.endswith("sz.csv") and "SCH" in fileName:
+            elif fileName.lower().endswith(".csv") and not fileName.endswith("sz.csv") and ("SCH" in fileName or "INTGAIN" in fileName):
                 scheduleCsvFiles.append(os.path.join(studyFolder, fileName))
             elif fileName.lower().endswith(".rdd"):
                 rddFiles.append(os.path.join(studyFolder, fileName))
@@ -119,9 +119,9 @@ def main(studyFolder, subFoldersOS):
         for fileName in fileNamesOS:
             if fileName.lower().endswith(".idf"):
                 idfFiles.append(os.path.join(subFoldersOS, fileName))
-            elif fileName.lower().endswith(".csv") and not fileName.endswith("sz.csv") and "SCH" not in fileName and not fileName.endswith("inTable.csv"):
+            elif fileName.lower().endswith(".csv") and not fileName.endswith("sz.csv") and not "SCH" in fileName and not "INTGAIN" in fileName and not fileName.endswith("Table.csv"):
                 resultFileAddress.append(os.path.join(subFoldersOS, fileName))
-            elif fileName.lower().endswith(".csv") and not fileName.endswith("sz.csv") and "SCH" in fileName:
+            elif fileName.lower().endswith(".csv") and not fileName.endswith("sz.csv") and ("SCH" in fileName or "INTGAIN" in fileName):
                 scheduleCsvFiles.append(os.path.join(subFoldersOS, fileName))
             elif fileName.lower().endswith(".rdd"):
                 rddFiles.append(os.path.join(subFoldersOS, fileName))
