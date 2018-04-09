@@ -41,7 +41,7 @@ Provided by Ladybug 0.0.45
 
 ghenv.Component.Name = "Honeybee_Re-run IDF"
 ghenv.Component.NickName = 'Re-Run IDF'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.63\nAPR_09_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -183,6 +183,7 @@ def runParallelIDFs(idfFilePaths, epwFileAddress, runIt, parallel):
         for x in range(len(idfFilePaths)):
             runEP(x)
     
+    
     return resultFileAddress, eioFileAddress, rddFileAddress
 
 
@@ -246,8 +247,8 @@ if initCheck and _runIt > 0:
             
             shIdfFileName = idfFileName.replace('.idf', '')
             resultFileAddress = str(workingDir) + '\\' + str(shIdfFileName) + '.csv'
-            eioFileAddress = resultFileAddress[0].replace('.csv', '.eio')
-            rddFileAddress = resultFileAddress[0].replace('.csv', '.rdd')
+            eioFileAddress = resultFileAddress.replace('.csv', '.eio')
+            rddFileAddress = resultFileAddress.replace('.csv', '.rdd')
             print 'EnergyPlus file '+ str(shIdfFileName)+'.idf ' + 're-run successful!'
     else:
         resultFileAddress, eioFileAddress, rddFileAddress = runParallelIDFs(_idfFilePath, _epwFileAddress, _runIt, parallel_)
