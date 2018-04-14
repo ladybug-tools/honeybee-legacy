@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.63\nAPR_06_2018'
+ghenv.Component.Message = 'VER 0.0.63\nAPR_14_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -813,7 +813,9 @@ class RADMaterialAux(object):
         
         self.HoneybeeFolder = HoneybeeFolder
         self.radMaterialLibrary = materialLibrary
-        self.radMatTypes = ["plastic", "glass", "trans", "metal", "mirror", "texfunc", "mixedfunc", "dielectric", "transdata", "light", "glow"]
+        self.radMatTypes = ["plastic", "glass", "trans", "metal",
+            "mirror", "texfunc", "mixedfunc", "dielectric", "transdata",
+            "light", "glow", "BRTDfunc"]
         
         if reloadRADMaterial:
                         
@@ -1120,9 +1122,13 @@ class RADMaterialAux(object):
         Returns:
             A list of strings. Each string represents a differnt Rdiance Object
         """
-        rawRadObjects = re.findall(r'(\n|^)(\w*(\h*\w.*\n){1,})', radFileString + "\n",re.MULTILINE)
-        
-        return [("").join(radObject[:-1]) for radObject in rawRadObjects]
+        rawRadObjects = re.findall(r'\s*[^0-9].*[^a-zA-Z]*',
+                                   radFileString, re.MULTILINE)
+                                   
+        radObjects = tuple(' '.join(radianceObject.split())
+                           for radianceObject in rawRadObjects
+                           if radianceObject.strip()[0] != '#')
+        return radObjects
     
     def getRadianceObjectsFromFile(self, radFilePath):
         """
