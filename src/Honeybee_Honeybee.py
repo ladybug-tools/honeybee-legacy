@@ -1122,12 +1122,16 @@ class RADMaterialAux(object):
         Returns:
             A list of strings. Each string represents a differnt Rdiance Object
         """
-        rawRadObjects = re.findall(r'\s*[^0-9].*[^a-zA-Z]*',
-                                   radFileString, re.MULTILINE)
-                                   
-        radObjects = tuple(' '.join(radianceObject.split())
-                           for radianceObject in rawRadObjects
-                           if radianceObject.strip()[0] != '#')
+        raw_rad_objects = re.findall(
+            r'^\s*([^0-9].*(\s*[\d|.]+.*)*)',
+            radFileString,
+            re.MULTILINE)
+    
+        radObjects = (' '.join(''.join(radiance_object).split())
+                      for radiance_object in raw_rad_objects)
+
+        radObjects = tuple(obj for obj in radObjects if obj and obj[0] != '#')
+        
         return radObjects
     
     def getRadianceObjectsFromFile(self, radFilePath):
