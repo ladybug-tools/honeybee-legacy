@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.63\nAPR_06_2018'
+ghenv.Component.Message = 'VER 0.0.63\nAPR_15_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -1602,12 +1602,10 @@ class WriteOPS(object):
             self.adjustAirSideEcon(airloopPrimary, airDetails)
         
         # add erv to outdoor air system either based on user input or add the default AEDG erv.
-        if airDetails != None and airDetails.heatRecovery != 'Default' and airDetails.heatRecovery != 'None':
-            self.addHeatRecovToModel(model, airloopPrimary, airDetails.heatRecovery, airDetails.recoveryEffectiveness, False, True)
-        elif airDetails != None and airDetails.heatRecovery != 'Default' and airDetails.heatRecovery == 'None':
-            pass
+        if airDetails != None and (airDetails.sensibleHeatRecovery != 'Default' or airDetails.latentHeatRecovery != 'Default'):
+            self.addHeatRecovToModel(model, airloopPrimary, airDetails.sensibleHeatRecovery, airDetails.latentHeatRecovery, False, True)
         elif heatRecovOverride == False:
-            self.addHeatRecovToModel(model, airloopPrimary, 'Enthalpy', 0.75, False, True, 0.69)
+            self.addHeatRecovToModel(model, airloopPrimary, 'Default', 'Default', False, True, 0.69)
         
         # add setpoint manager to supply equipment outlet node
         setpointManager.addToNode(airloopPrimary.supplyOutletNode())
@@ -1793,10 +1791,8 @@ class WriteOPS(object):
         if heatingDetails != None and heatingDetails.heatingEffOrCOP != 'Default':
             vrfAirConditioner.setRatedHeatingCOP(heatingDetails.heatingEffOrCOP)
         
-        if airDetails != None and airDetails.heatRecovery != 'Default' and airDetails.heatRecovery != 'None':
-            vrfAirConditioner.setHeatPumpWasteHeatRecovery(True)
-        else:
-            vrfAirConditioner.setHeatPumpWasteHeatRecovery(False)
+        # set the heat pump to recover wast heat by default
+        vrfAirConditioner.setHeatPumpWasteHeatRecovery(True)
         
         vrfAirConditioner.setAvailabilitySchedule(model.alwaysOnDiscreteSchedule())
         if heatingDetails != None and heatingDetails.heatingAvailSched != "ALWAYS ON":
@@ -2038,7 +2034,7 @@ class WriteOPS(object):
             osChiller.setReferenceCOP(coolingCOP)
         if supplyTemperature != 'Default':
             osChiller.setReferenceLeavingChilledWaterTemperature(supplyTemperature)
-        if coolHardSize != 'Autisize':
+        if coolHardSize != 'Autosize':
             osChiller.setReferenceCapacity(coolHardSize)
    
     def updateBoiler(self, model, osboiler, heatingEffOrCOP, supplyTemperature, heatHardSize):
@@ -2184,41 +2180,44 @@ class WriteOPS(object):
         humidifier.addToNode(supplyNode)
         self.addHumidifierController(model, airloop)
     
-    def addHeatRecovToModel(self, model, airloop, heatRecovery, recoveryEffectiveness, econLockout=False, aedgRecov=False, latentEff=None):
-        # Create an air-to-air heat exchanger.
-        heatEx = ops.HeatExchangerAirToAirSensibleAndLatent(model)
-        #Set how the economizer interacts with the heat recovery.
-        heatEx.setEconomizerLockout(econLockout)
-        # Change the properties of the heat exchanger based on the inputs.
-        if heatRecovery == 'Sensible':
-            heatEx.setLatentEffectivenessat100CoolingAirFlow(0)
-            heatEx.setLatentEffectivenessat100HeatingAirFlow(0)
-            heatEx.setLatentEffectivenessat75CoolingAirFlow(0)
-            heatEx.setLatentEffectivenessat75HeatingAirFlow(0)
-        if recoveryEffectiveness != 'Default':
-            heatEx.setSensibleEffectivenessat100CoolingAirFlow(recoveryEffectiveness)
-            heatEx.setSensibleEffectivenessat100HeatingAirFlow(recoveryEffectiveness)
-            heatEx.setSensibleEffectivenessat75CoolingAirFlow(recoveryEffectiveness)
-            heatEx.setSensibleEffectivenessat75HeatingAirFlow(recoveryEffectiveness)
-            if heatRecovery != 'Sensible':
-                if latentEff == None:
-                    heatEx.setLatentEffectivenessat100CoolingAirFlow(recoveryEffectiveness)
-                    heatEx.setLatentEffectivenessat100HeatingAirFlow(recoveryEffectiveness)
-                    heatEx.setLatentEffectivenessat75CoolingAirFlow(recoveryEffectiveness)
-                    heatEx.setLatentEffectivenessat75HeatingAirFlow(recoveryEffectiveness)
-                else:
-                    heatEx.setLatentEffectivenessat100CoolingAirFlow(latentEff)
-                    heatEx.setLatentEffectivenessat100HeatingAirFlow(latentEff)
-                    heatEx.setLatentEffectivenessat75CoolingAirFlow(latentEff)
-                    heatEx.setLatentEffectivenessat75HeatingAirFlow(latentEff)
-        if aedgRecov == True:
-            heatEx.setFrostControlType("ExhaustOnly")
-            heatEx.setThresholdTemperature(-12.2)
-            heatEx.setInitialDefrostTimeFraction(0.1670)
-            heatEx.setRateofDefrostTimeFractionIncrease(0.0240)
-        # Add the heat exchanger to the model.
-        outdoorNode = airloop.reliefAirNode().get()
-        heatEx.addToNode(outdoorNode)
+    def addHeatRecovToModel(self, model, airloop, sensibleHeatRecovery, latentHeatRecovery, econLockout=False, aedgRecov=False, latentEff=None):
+        if not (sensibleHeatRecovery == 0 and latentHeatRecovery == 0):
+            # Create an air-to-air heat exchanger.
+            heatEx = ops.HeatExchangerAirToAirSensibleAndLatent(model)
+            #Set how the economizer interacts with the heat recovery.
+            heatEx.setEconomizerLockout(econLockout)
+            # Change the properties of the heat exchanger based on the inputs.
+            if latentHeatRecovery == 'Default':
+                heatEx.setLatentEffectivenessat100CoolingAirFlow(0.68)
+                heatEx.setLatentEffectivenessat100HeatingAirFlow(0.68)
+                heatEx.setLatentEffectivenessat75CoolingAirFlow(0.73)
+                heatEx.setLatentEffectivenessat75HeatingAirFlow(0.73)
+            if sensibleHeatRecovery == 'Default':
+                heatEx.setSensibleEffectivenessat100CoolingAirFlow(0.76)
+                heatEx.setSensibleEffectivenessat100HeatingAirFlow(0.76)
+                heatEx.setSensibleEffectivenessat75CoolingAirFlow(0.81)
+                heatEx.setSensibleEffectivenessat75HeatingAirFlow(0.81)
+            if latentHeatRecovery != 'Default':
+                effAtMax = latentHeatRecovery*(0.68/0.73)
+                heatEx.setLatentEffectivenessat100CoolingAirFlow(effAtMax)
+                heatEx.setLatentEffectivenessat100HeatingAirFlow(effAtMax)
+                heatEx.setLatentEffectivenessat75CoolingAirFlow(latentHeatRecovery)
+                heatEx.setLatentEffectivenessat75HeatingAirFlow(latentHeatRecovery)
+            if sensibleHeatRecovery != 'Default':
+                effAtMax = sensibleHeatRecovery*(0.76/0.81)
+                heatEx.setSensibleEffectivenessat100CoolingAirFlow(effAtMax)
+                heatEx.setSensibleEffectivenessat100HeatingAirFlow(effAtMax)
+                heatEx.setSensibleEffectivenessat75CoolingAirFlow(sensibleHeatRecovery)
+                heatEx.setSensibleEffectivenessat75HeatingAirFlow(sensibleHeatRecovery)
+            
+            if aedgRecov == True:
+                heatEx.setFrostControlType("ExhaustOnly")
+                heatEx.setThresholdTemperature(-12.2)
+                heatEx.setInitialDefrostTimeFraction(0.1670)
+                heatEx.setRateofDefrostTimeFractionIncrease(0.0240)
+            # Add the heat exchanger to the model.
+            outdoorNode = airloop.reliefAirNode().get()
+            heatEx.addToNode(outdoorNode)
     
     def addDefaultAirsideEcon(self, airloop, dehumidTrigger):
         oasys = airloop.airLoopHVACOutdoorAirSystem()
@@ -2266,8 +2265,11 @@ class WriteOPS(object):
             self.adjustAirSideEcon(airloop, airDetails)
         else:
             self.addDefaultAirsideEcon(airloop, False)
-        if airDetails.heatRecovery != 'Default' and airDetails.heatRecovery != 'None':
-            self.addHeatRecovToModel(model, airloop, airDetails.heatRecovery, airDetails.recoveryEffectiveness, econLockout)
+        if airDetails.sensibleHeatRecovery != 'Default' or airDetails.latentHeatRecovery != 'Default':
+            self.addHeatRecovToModel(model, airloop, airDetails.sensibleHeatRecovery, airDetails.latentHeatRecovery, econLockout)
+        if airDetails.fanControl == 'Variable Volume':
+            self.swapCVFanForVV(model, airloop, airDetails)
+            self.setDemandVent(model, airloop)
     
     def adjustVAVAirLoop(self, model, airloop, airDetails, HVACCount, dehumidTrigger, waterCoolCoil=False, fanAdjustable=True):
         econLockout = False
@@ -2286,8 +2288,8 @@ class WriteOPS(object):
                 econLockout = True
         else:
             self.addDefaultAirsideEcon(airloop, dehumidTrigger)
-        if airDetails.heatRecovery != 'Default' and airDetails.heatRecovery != 'None':
-            self.addHeatRecovToModel(model, airloop, airDetails.heatRecovery, airDetails.recoveryEffectiveness, econLockout)
+        if airDetails.sensibleHeatRecovery != 'Default' or airDetails.latentHeatRecovery != 'Default':
+            self.addHeatRecovToModel(model, airloop, airDetails.sensibleHeatRecovery, airDetails.latentHeatRecovery, econLockout)
         if airDetails.fanPlacement != 'Default' and fanAdjustable == True:
             if airDetails.fanPlacement == 'Blow Through':
                 x = airloop.supplyComponents(ops.IddObjectType("OS:Fan:VariableVolume"))
@@ -2468,11 +2470,15 @@ class WriteOPS(object):
                         if airDetails.airSysHardSize != "Default":
                             zoneIdealAir.setCoolingLimit('LimitFlowRate')
                             zoneIdealAir.setMaximumCoolingAirFlowRate(float(airDetails.airSysHardSize))
-                        if airDetails.heatRecovery != 'Default':
-                            zoneIdealAir.setHeatRecoveryType(airDetails.heatRecovery)
-                        if airDetails.recoveryEffectiveness != 'Default':
-                            zoneIdealAir.setSensibleHeatRecoveryEffectiveness(airDetails.recoveryEffectiveness)
-                            zoneIdealAir.setLatentHeatRecoveryEffectiveness(airDetails.recoveryEffectiveness)
+                        if airDetails.sensibleHeatRecovery != 'Default' and airDetails.sensibleHeatRecovery != 0:
+                            zoneIdealAir.setHeatRecoveryType('Sensible')
+                            zoneIdealAir.setSensibleHeatRecoveryEffectiveness(airDetails.sensibleHeatRecovery)
+                            zoneIdealAir.setLatentHeatRecoveryEffectiveness(0)
+                        if airDetails.latentHeatRecovery != 'Default' and airDetails.latentHeatRecovery != 0:
+                            zoneIdealAir.setHeatRecoveryType('Enthalpy')
+                            zoneIdealAir.setLatentHeatRecoveryEffectiveness(airDetails.latentHeatRecovery)
+                            if airDetails.latentHeatRecovery == 'Default':
+                                zoneIdealAir.setSensibleHeatRecoveryEffectiveness(0.8)
                     
                     # Set the heatingDetails.
                     if heatingDetails != None:
@@ -2602,65 +2608,68 @@ class WriteOPS(object):
                 # 3: Packaged Single Zone - AC
                 hvacHandle = ops.OpenStudioModelHVAC.addSystemType3(model).handle()
                 airloop = model.getAirLoopHVAC(hvacHandle).get()
+                humidTrigg = False
                 for zoneCount, zone in enumerate(thermalZoneVector):
                     airloop.addBranchForZone(zone)
-                    
-                    if hbZones[zoneCount].humidityMin != '':
+                    if hbZones[zoneCount].humidityMin != '' and humidTrigg == False:
+                        humidTrigg = True
                         self.addElectricHumidifier(model, airloop)
-                    
-                    #Set the airDetails.
-                    if airDetails != None:
-                        self.adjustCVAirLoop(model, airloop, airDetails)
-                    else:
-                        self.addDefaultAirsideEcon(airloop, False)
-                    
-                    #Set the heatingDetails.
-                    if heatingDetails != None:
-                        if heatingDetails.heatingAvailSched != "ALWAYS ON" or heatingDetails.heatingEffOrCOP != 'Default':
-                            comps = airloop.supplyComponents()
-                            hcs = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Heating:Gas"))
-                            hc = model.getCoilHeatingGas(hcs[0].handle()).get()
-                            self.updateGasHeatingCoil(model, hc, heatingDetails.heatingAvailSched, heatingDetails.heatingEffOrCOP)
-                    
-                    #Set the coolingDetails.
-                    if coolingDetails != None:
-                        if coolingDetails.coolingAvailSched != "ALWAYS ON" or coolingDetails.coolingCOP != "Default":
-                            comps = airloop.supplyComponents()
-                            ccs = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:DX:SingleSpeed"))
-                            cc = model.getCoilCoolingDXSingleSpeed(ccs[0].handle()).get()
-                            self.updateDXCoolingCoil(model, cc, coolingDetails.coolingAvailSched, coolingDetails.coolingCOP)
                 
+                #Set the airDetails.
+                if airDetails != None:
+                    self.adjustCVAirLoop(model, airloop, airDetails)
+                else:
+                    self.addDefaultAirsideEcon(airloop, False)
+                
+                #Set the heatingDetails.
+                if heatingDetails != None:
+                    if heatingDetails.heatingAvailSched != "ALWAYS ON" or heatingDetails.heatingEffOrCOP != 'Default':
+                        comps = airloop.supplyComponents()
+                        hcs = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Heating:Gas"))
+                        hc = model.getCoilHeatingGas(hcs[0].handle()).get()
+                        self.updateGasHeatingCoil(model, hc, heatingDetails.heatingAvailSched, heatingDetails.heatingEffOrCOP)
+                
+                #Set the coolingDetails.
+                if coolingDetails != None:
+                    if coolingDetails.coolingAvailSched != "ALWAYS ON" or coolingDetails.coolingCOP != "Default":
+                        comps = airloop.supplyComponents()
+                        ccs = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:DX:SingleSpeed"))
+                        cc = model.getCoilCoolingDXSingleSpeed(ccs[0].handle()).get()
+                        self.updateDXCoolingCoil(model, cc, coolingDetails.coolingAvailSched, coolingDetails.coolingCOP)
+            
             elif systemIndex == 4:
                 # 4: Packaged Single Zone - HP
                 handle = ops.OpenStudioModelHVAC.addSystemType4(model).handle()
                 airloop = model.getAirLoopHVAC(handle).get()
+                humidTrigg = False
                 for zoneCount, zone in enumerate(thermalZoneVector):
                     airloop.addBranchForZone(zone)
                     
-                    if hbZones[zoneCount].humidityMin != '':
+                    if hbZones[zoneCount].humidityMin != '' and humidTrigg == False:
+                        humidTrigg = True
                         self.addElectricHumidifier(model, airloop)
-                    
-                    #Set the airDetails.
-                    if airDetails != None:
-                        self.adjustCVAirLoop(model, airloop, airDetails)
-                    else:
-                        self.addDefaultAirsideEcon(airloop, False)
-                    
-                    #Set the heatingDetails.
-                    if heatingDetails != None:
-                        if heatingDetails.heatingAvailSched != "ALWAYS ON" or heatingDetails.heatingEffOrCOP != 'Default':
-                            comps = airloop.supplyComponents()
-                            hcs = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Heating:DX:SingleSpeed"))
-                            hc = model.getCoilHeatingDXSingleSpeed(hcs[0].handle()).get()
-                            self.updateDXHeatingCoil(model, hc, heatingDetails.heatingAvailSched, heatingDetails.heatingEffOrCOP)
-                    
-                    #Set the coolingDetails.
-                    if coolingDetails != None:
-                        if coolingDetails.coolingAvailSched != "ALWAYS ON" or coolingDetails.coolingCOP != "Default":
-                            comps = airloop.supplyComponents()
-                            ccs = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:DX:SingleSpeed"))
-                            cc = model.getCoilCoolingDXSingleSpeed(ccs[0].handle()).get()
-                            self.updateDXCoolingCoil(model, cc, coolingDetails.coolingAvailSched, coolingDetails.coolingCOP)
+                
+                #Set the airDetails.
+                if airDetails != None:
+                    self.adjustCVAirLoop(model, airloop, airDetails)
+                else:
+                    self.addDefaultAirsideEcon(airloop, False)
+                
+                #Set the heatingDetails.
+                if heatingDetails != None:
+                    if heatingDetails.heatingAvailSched != "ALWAYS ON" or heatingDetails.heatingEffOrCOP != 'Default':
+                        comps = airloop.supplyComponents()
+                        hcs = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Heating:DX:SingleSpeed"))
+                        hc = model.getCoilHeatingDXSingleSpeed(hcs[0].handle()).get()
+                        self.updateDXHeatingCoil(model, hc, heatingDetails.heatingAvailSched, heatingDetails.heatingEffOrCOP)
+                
+                #Set the coolingDetails.
+                if coolingDetails != None:
+                    if coolingDetails.coolingAvailSched != "ALWAYS ON" or coolingDetails.coolingCOP != "Default":
+                        comps = airloop.supplyComponents()
+                        ccs = airloop.supplyComponents(ops.IddObjectType("OS:Coil:Cooling:DX:SingleSpeed"))
+                        cc = model.getCoilCoolingDXSingleSpeed(ccs[0].handle()).get()
+                        self.updateDXCoolingCoil(model, cc, coolingDetails.coolingAvailSched, coolingDetails.coolingCOP)
             
             elif systemIndex == 5:
                 # 5: Packaged VAV w/ Reheat

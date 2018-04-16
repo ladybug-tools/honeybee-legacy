@@ -8641,14 +8641,14 @@ class hb_hvacProperties(object):
         0: {'FanTotEff': False, 'FanMotEff': False, 'FanPres': False, 'FanPlace': False, 'airSysHardSize': False, 'centralAirLoop' : False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
         1: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : False, 'Econ' : False, 'HeatRecov' : False},
         2: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Econ' : False, 'HeatRecov' : False},
-        3: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        4: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        3: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        4: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
         5: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
         6: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : False, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
         7: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
         8: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : False, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        9: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        10: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        9: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        10: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
         11: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
         12: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
         13: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
@@ -8725,7 +8725,7 @@ class hb_hvacProperties(object):
 class hb_airDetail(object):
     def __init__(self, HVACAvailabiltySched=None, fanTotalEfficiency=None, fanMotorEfficiency=None, fanPressureRise=None, \
         fanPlacement=None, airSysHardSize = None, centralAirLoop=None, fanControl = None, heatingSupplyAirTemp=None, \
-        coolingSupplyAirTemp=None, airsideEconomizer=None, heatRecovery=None, recoveryEffectiveness=None):
+        coolingSupplyAirTemp=None, airsideEconomizer=None, sensibleHeatRecovery=None, latentHeatRecovery=None):
         
         self.areInputsChecked = False
         self.sysProps = hb_hvacProperties()
@@ -8763,15 +8763,6 @@ class hb_airDetail(object):
         False: 'Constant Volume',
         'Variable Volume': 'Variable Volume',
         'Constant Volume': 'Constant Volume'
-        }
-        
-        self.heatRecovDict = {
-        0: 'None',
-        1: 'Sensible',
-        2: 'Enthalpy',
-        'None': 'None',
-        'Sensible': 'Sensible',
-        'Enthalpy': 'Enthalpy'
         }
         
         if HVACAvailabiltySched:
@@ -8821,14 +8812,14 @@ class hb_airDetail(object):
                 self.airsideEconomizer = self.economizerCntrlDict[airsideEconomizer]
         else:
             self.airsideEconomizer = "Default"
-        if heatRecovery != None:
-            self.heatRecovery = self.heatRecovDict[heatRecovery]
+        if sensibleHeatRecovery != None:
+            self.sensibleHeatRecovery = float(sensibleHeatRecovery)
         else:
-            self.heatRecovery = "Default"
-        if recoveryEffectiveness:
-            self.recoveryEffectiveness = float(recoveryEffectiveness)
+            self.sensibleHeatRecovery = "Default"
+        if latentHeatRecovery != None:
+            self.latentHeatRecovery = float(latentHeatRecovery)
         else:
-            self.recoveryEffectiveness = "Default"
+            self.latentHeatRecovery = "Default"
     
     
     @classmethod
@@ -8880,13 +8871,14 @@ class hb_airDetail(object):
                 errors.append("Air Side Economizer not a valid control type.")
             else:
                 self.airsideEconomizer = self.economizerCntrlDict[self.airsideEconomizer]
-        if self.recoveryEffectiveness != 'Default':
-            if self.heatRecovery == 'Default' or self.heatRecovery == 'None':
+        if self.sensibleHeatRecovery != 'Default':
+            if self.sensibleHeatRecovery > 1 or self.sensibleHeatRecovery < 0:
                 success = False
-                errors.append("Heat recovery effectivness specified without setting heatRecovery to True.")
-            if self.recoveryEffectiveness > 1 or self.recoveryEffectiveness < 0:
+                errors.append("Sensible Heat Recovery Effeictiveness must be between 0 and 1.")
+        if self.latentHeatRecovery != 'Default':
+            if self.latentHeatRecovery > 1 or self.latentHeatRecovery < 0:
                 success = False
-                errors.append("Heat Recovery Effeictiveness must be between 0 and 1.")
+                errors.append("Latent Heat Recovery Effeictiveness must be between 0 and 1.")
         
         return success, errors
     
@@ -8920,10 +8912,10 @@ class hb_airDetail(object):
                 pass
             else:
                 errors.append('Airside economizer type ' + self.airsideEconomizer + ' is not supported for IDEAL AIR LOADS SYSTEMS.')
-        if self.heatRecovery != 'Default' and hvacCapabilities['HeatRecov'] == False:
+        if self.sensibleHeatRecovery != 'Default' and hvacCapabilities['HeatRecov'] == False:
             errors.append(self.sysProps.generateWarning(sysType, 'A HEAT RECOVERY SYSTEM', 'airDetails'))
-        if self.recoveryEffectiveness != 'Default' and hvacCapabilities['HeatRecov'] == False:
-            errors.append(self.sysProps.generateWarning(sysType, 'HEAT RECOVERY EFFECTIVENESS', 'airDetails'))
+        if self.latentHeatRecovery != 'Default' and hvacCapabilities['HeatRecov'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'A HEAT RECOVERY SYSTEM', 'airDetails'))
         
         return errors
     
@@ -8945,8 +8937,8 @@ class hb_airDetail(object):
             '  Heating Supply Air Temperature: ' + str(self.heatingSupplyAirTemp) + '\n' + \
             '  Cooling Supply Air Temperature: ' + str(self.coolingSupplyAirTemp) + '\n' + \
             '  Airside Economizer Method: ' + str(self.airsideEconomizer) + '\n' + \
-            '  Heat Recovery: ' + str(self.heatRecovery) + '\n' + \
-            '  Heat Recovery Effectiveness: ' + str(self.recoveryEffectiveness)
+            '  Sensible Heat Recovery Effectiveness: ' + str(self.sensibleHeatRecovery) + '\n' + \
+            '  Latent Heat Recovery Effectiveness: ' + str(self.latentHeatRecovery)
             
             return True, textStr
         else:
