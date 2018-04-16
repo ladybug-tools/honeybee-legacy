@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.63\nAPR_14_2018'
+ghenv.Component.Message = 'VER 0.0.63\nAPR_15_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -1127,7 +1127,7 @@ class RADMaterialAux(object):
             radFileString,
             re.MULTILINE)
     
-        radObjects = (' '.join(''.join(radiance_object).split())
+        radObjects = (' '.join(radiance_object[0].split())
                       for radiance_object in raw_rad_objects)
 
         radObjects = tuple(obj for obj in radObjects if obj and obj[0] != '#')
