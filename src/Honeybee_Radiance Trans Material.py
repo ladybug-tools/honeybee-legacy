@@ -30,9 +30,9 @@ Provided by Honeybee 0.0.63
     
     Args:
         _materialName: Unique name for this material
-        _RTransmittance:
-        _GTransmittance:
-        _BTransmittance:
+        _RDiffReflectance: (black = min 0, white = max 1)
+        _GDiffReflectance: (black = min 0, white = max 1)
+        _BDiffReflectance: (black = min 0, white = max 1)
         _specularReflection: Reflected specularity; Matte = min 0, Uncoated Glass ~ .06, Satin = suggested max 0.07
         roughness: Surface roughness; Polished = 0, Low gloss = suggested max 0.02
         _diffuseTransmission: Diffuse Transmission; Opaque = 0, Transparent = 1
