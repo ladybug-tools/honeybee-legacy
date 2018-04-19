@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.63\nAPR_15_2018'
+ghenv.Component.Message = 'VER 0.0.63\nAPR_19_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -9426,7 +9426,7 @@ if checkIn.letItFly:
         sc.sticky["honeybee_folders"] = {}
         
         # supported versions for EnergyPlus
-        EPVersions = ["V8-8-0","V8-7-0", "V8-6-0", "V8-5-0", "V8-4-0","V8-3-0", "V8-2-10", \
+        EPVersions = ["V8-9-0", "V8-8-0","V8-7-0", "V8-6-0", "V8-5-0", "V8-4-0", "V8-3-0", "V8-2-10", \
                       "V8-2-9", "V8-2-8", "V8-2-7", "V8-2-6", \
                       "V8-2-5", "V8-2-4", "V8-2-3", "V8-2-2", "V8-2-1", "V8-2-0", \
                       "V8-1-5", "V8-1-4", "V8-1-3", "V8-1-2", "V8-1-1", "V8-1-0"]
