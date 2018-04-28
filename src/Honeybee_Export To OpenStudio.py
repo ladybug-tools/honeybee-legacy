@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.63\nAPR_15_2018'
+ghenv.Component.Message = 'VER 0.0.63\nAPR_28_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -3189,6 +3189,8 @@ class WriteOPS(object):
                                 else:
                                     heatLoopTemp = self.createConstantScheduleRuleset('Condenser_Heating_Temperature' + str(HVACCount), 'Condenser_Heating_Temperature_Default' + str(HVACCount), 'TEMPERATURE 1', 20, model)
                                 cndwl = self.createVRFCondenser(model, HVACCount, condLoopTemp, coolLoopTemp, heatLoopTemp)
+                                if coolingDetails.centralPlant == 'True' and centralConden == None:
+                                    centralConden = cndwl
                     #Make a DOAS air loop.
                     if airDetails != None and airDetails.centralAirLoop == 'True' and centralAir != None:
                         airLoop = self.addZoneToAirLoop(centralAir, 'DOAS', model, thermalZoneVector, hbZones, airDetails, coolingDetails, None, None)
