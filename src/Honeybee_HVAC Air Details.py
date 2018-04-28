@@ -51,11 +51,9 @@ Provided by Honeybee 0.0.63
             5 - Electronic Enthalpy - The HVAC system will calculate the humidity ratio limit of the outdoor air based on the dry-bulb temperature of outdoor air and a quadratic/cubic curve, and compare it to the actual outdoor air humidity ratio. If the actual outdoor humidity ratio is lower than the calculated humidity ratio limit and there is cooling load, then the outdoor airflow rate is increased.
             6 - Fixed Dew Point and Dry Bulb - The HVAC system will compare both the outdoor dewpoint temperature and the outdoor dry-bulb temperature to their specified high limit values (default of 28C).  The outdoor air flow rate will be increased when there is cooling load and the outdoor air is below both thresholds.
             7 - Differential Dry Bulb And Enthalpy - The HVAC system will increase the outdoor air flow rate when there is a cooling load and the outdoor air temperature is below a specified dry bulb temperature limit (default is 28C) AND enthalpy below a specified enthalpy limit (default is 64000 J/kg).
-        heatRecovery_: An integer or boolean value (0/1) that sets the heat recovery on the HVAC system.  The default is set to "False" or 0 to NOT include heat recovery.  Choose from the following options:
-             0 - None (The HVAC system will simply exhaust air without having it interact with incoming air).
-             1 - Sensible (The HVAC system will pass the exhaust air through a sensible heat exchanger with the fresh outdoor air before exhausting it, helping recover heat that would normally be lost through the exhaust).
-             2 - Enthalpy (The HVAC system will pass the exhaust air through a sensible and latent heat exchanger with the fresh outdoor air before exhausting it).
-        recoveryEffectiveness_: If the above input has been set to "True", input a number between 0 and 1 here to set the fraction of heat that is recovered by the heat recovery system.  By default, this value is typically around 0.7.
+        
+        sensibleHeatRecovery_: A number between 0 and 1 that sets the sensible heat recovery effectiveness of a heat recovery system on the HVAC (at approximately 75% of maximum flow rate).  Typical values range from 0.45 (for a heat pipe or glycol loop system) to 0.81 (for an enthalpy wheel).  If this value and the value below are set to 0, no heat recovery will be written into the model.  The default varies based on HVAC type.  Systems 1-10 (code baseline systems) do not have heat recovery by default.  Any system with a Dedicated Outdoor Air System (DOAS) includes an enthalpy wheel by default.
+        latentHeatRecovery_: A number between 0 and 1 that sets the latent heat recovery effectiveness of a heat recovery system on the HVAC (at approximately 75% of maximum flow rate).  Typical values for an enthalpy wheel are around 0.73 and most other types of heat recovery are sensible-only, in which case this input will be 0.  If this value and the value above are set to 0, no heat recovery will be written into the model.  The default varies based on HVAC type.  Systems 1-10 (code baseline systems) do not have heat recovery by default.  Any system with a Dedicated Outdoor Air System (DOAS) includes an enthalpy wheel by default.
     Returns:
         airDetails: A description of the HVAC ventilation system (or system air side), which can be plugged into "Honeybee_HVAC Systems" component.
 """
@@ -63,7 +61,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_HVAC Air Details"
 ghenv.Component.NickName = 'AirDetails'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.63\nAPR_15_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | HVACSystems"
@@ -81,7 +79,7 @@ w = gh.GH_RuntimeMessageLevel.Warning
 def main(hb_airDetail):
     myAirDetails = hb_airDetail(_HVACAvailabiltySched_, _fanTotalEfficiency_, _fanMotorEfficiency_, \
     _fanPressureRise_, _fanPlacement_, airSystemHardSize_, centralAirLoop_, demandControlledVent_, _heatingSupplyAirTemp_, _coolingSupplyAirTemp_, \
-    airsideEconomizer_, heatRecovery_, recoveryEffectiveness_)
+    airsideEconomizer_, sensibleHeatRecovery_, latentHeatRecovery_)
     
     success, airDetails = myAirDetails.class2Str()
     if success:
