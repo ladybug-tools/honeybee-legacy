@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.63\nAPR_28_2018'
+ghenv.Component.Message = 'VER 0.0.63\nMAY_02_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -4285,14 +4285,14 @@ class WriteOPS(object):
                     except:
                         constructionText = None
                 
-                if constructionText != str(surface.EPConstruction) or surface.BC.upper() == "ADIABATIC":
+                if constructionText != str(surface.EPConstruction) or surface.BC.upper() == "ADIABATIC" or surface.BC.upper() == "SURFACE":
                     if self.isConstructionInLib(surface.EPConstruction):
                         construction = self.getConstructionFromLib(surface.EPConstruction)
                     else:
                         construction = self.getOSConstruction(surface.EPConstruction, model)
                         self.addConstructionToLib(surface.EPConstruction, construction)
                     thisSurface.setConstruction(construction)
-            elif surface.BC.upper() == "ADIABATIC":
+            elif surface.BC.upper() == "ADIABATIC" or surface.BC.upper() == "SURFACE":
                 if self.isConstructionInLib(surface.construction):
                     construction = self.getConstructionFromLib(surface.construction)
                 else:
@@ -4341,7 +4341,7 @@ class WriteOPS(object):
                 else:
                     constructionText = str(self.defaultConstrDict['5'].name())
                 
-                if constructionText != str(childSrf.EPConstruction):
+                if constructionText != str(childSrf.EPConstruction) or surface.BC.upper() == "SURFACE":
                     if self.isConstructionInLib(childSrf.EPConstruction):
                         construction = self.getConstructionFromLib(childSrf.EPConstruction)
                     else:
@@ -4370,7 +4370,7 @@ class WriteOPS(object):
                 if childSrf.name == childSrf.BCObject.name:
                     raise Exception("Interior facing surfaces can't have the same name: %s"%childSrf.name + \
                         "\nRename one of the surfaces and try again!")
-                self.adjacentFenSrfsDict[childSrf.name] = [childSrf.BCObject.name, glazing]
+                self.adjacentFenSrfsDict[childSrf.name] = [childSrf.BCObject.name, glazing.handle()]
     
     def OPSShdSurface(self, shdSurfaces, model):
         shadingGroup = ops.ShadingSurfaceGroup(model)
@@ -4405,6 +4405,7 @@ class WriteOPS(object):
         defaultConstrDict = {
             'Wall': 'Interior Wall',
             'Ceiling': 'Interior Ceiling',
+            'RoofCeiling': 'Interior Ceiling',
             'Floor': 'Interior Floor'}
         
         # Set Adjacent zone surfaces.
@@ -4414,7 +4415,7 @@ class WriteOPS(object):
             
             try:
                 adjacentOSSurfaceHandle = self.adjacentSurfacesDict[adjacentSurfaceName][1]
-                adjacentOSSurface = model.getSurface(OSSurfaceHandle).get()
+                adjacentOSSurface = model.getSurface(adjacentOSSurfaceHandle).get()
                 OSSurface.setAdjacentSurface(adjacentOSSurface)
             except:
                 # if we didn't find the adjacent surfcae, do the next most accurate thing:
@@ -4439,30 +4440,24 @@ class WriteOPS(object):
         
         # Set adjacent Fenestration surfaces.
         for surfaceName in self.adjacentFenSrfsDict.keys():
-            adjacentSurfaceName, OSSurface = self.adjacentFenSrfsDict[surfaceName]
+            adjacentSurfaceName, OSSurfaceHandle = self.adjacentFenSrfsDict[surfaceName]
+            OSSurface = model.getSubSurface(OSSurfaceHandle).get()
             
             try:
-                adjacentOSSurface = self.adjacentFenSrfsDict[adjacentSurfaceName][1]
+                adjacentOSSurfaceHandle = self.adjacentFenSrfsDict[adjacentSurfaceName][1]
+                adjacentOSSurface = model.getSubSurface(adjacentOSSurfaceHandle).get()
                 OSSurface.setAdjacentSubSurface(adjacentOSSurface)
             except:
                 # if we didn't find the adjacent surfcae, do the next most accurate thing:
-                # make the surface adiabatic and add an interior construction
+                # delete the interior window and treat the parent surface as adiabatic.
                 try:
-                    OSSurface.setOutsideBoundaryCondition("ADIABATIC")
-                    OSSurface.setSunExposure("NOSUN")
-                    OSSurface.setWindExposure("NOWIND")
-                    if self.isConstructionInLib('Interior Window'):
-                        construction = self.getConstructionFromLib('Interior Window')
-                    else:
-                        construction = self.getOSConstruction('Interior Window', model)
-                        self.addConstructionToLib('Interior Window', construction)
-                    OSSurface.setConstruction(construction)
+                    OSSurface.remove()
                     warning = "Adjacent surface " + adjacentSurfaceName + " was not found.\n" + \
-                            "Boundary for surface " + surfaceName + " will be set to adiabatic."
+                            "Interior window " + surfaceName + " will be removed and its parent will be set to adiabatic."
                     print warning
                 except:
                     warning = "Adjacent surface " + adjacentSurfaceName + " was not found.\n" + \
-                        "Boundary for surface " + surfaceName + " will be set to adiabatic."
+                        "Interior window " + surfaceName + " will be removed and its parent will be set to adiabatic."
                     print warning
     
     def setOutputVariable(self, fields, model):
