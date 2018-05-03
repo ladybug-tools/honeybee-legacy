@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.63\nAPR_19_2018'
+ghenv.Component.Message = 'VER 0.0.63\nMAY_03_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -3389,7 +3389,6 @@ class hb_WriteDS(object):
                 elif controlSystem == "AutomatedThermalControl":
                     if glareControlRecipe!=None:
                         controlSystem = "AutomatedGlareControl"
-                        exteriorSensor = glareControlRecipe.exteriorSensor
                         threshold = glareControlRecipe.threshold
                         minAz = glareControlRecipe.minAz
                         maxAz = glareControlRecipe.maxAz
