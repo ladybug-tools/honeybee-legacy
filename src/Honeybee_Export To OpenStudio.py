@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.63\nMAY_02_2018'
+ghenv.Component.Message = 'VER 0.0.63\nMAY_05_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -4247,8 +4247,8 @@ class WriteOPS(object):
         checked, coordinates= self.checkCoordinates(coordinates)
         
         if int(surface.type) == 4: surface.type = 0
+        
         if checked:
-          
             # generate OpenStudio points
             pointVectors = ops.Point3dVector();
             for pt in coordinates:
@@ -5527,7 +5527,7 @@ def main(HBZones, HBContext, north, epwWeatherFile, analysisPeriod, simParameter
                         w = gh.GH_RuntimeMessageLevel.Warning
                         ghenv.Component.AddRuntimeMessage(w, warning)
                         resultFile = None
-                    elif "** Severe  **" in line and 'CheckControllerListOrder' not in line and not "surfaces and are non-convex" in line:
+                    elif "** Severe  **" in line and 'CheckControllerListOrder' not in line and not "surfaces and are non-convex" in line and not "Degenerate surfaces" in line:
                         comment = "The simulation has not run correctly because of this severe error: \n" + str(line)
                         c = gh.GH_RuntimeMessageLevel.Warning
                         ghenv.Component.AddRuntimeMessage(c, comment)

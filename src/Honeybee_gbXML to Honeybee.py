@@ -336,20 +336,23 @@ if openStudioIsReady and _import and _filepath:
     if adjResetNeeded == True:
         for zone in zones:
             for srf in zone.surfaces:
-                if adjDict[srf.name][0] == 'SURFACE':
-                    adjSrfName = adjDict[srf.name][1]
-                    aSrfFound = False
-                    if adjSrfName != None:
-                        # try to find the adjacent surface among the zones.
-                        for azone in zones:
-                            for asrf in azone.surfaces:
-                                if asrf.name == adjSrfName:
-                                    aSrfFound = True
-                                    updateAdj(srf, asrf)
-                elif adjDict[srf.name][0] != 'OUTDOORS':
-                    srf.BC = adjDict[srf.name][0]
-                    srf.setSunExposure('NoSun')
-                    srf.setSunExposure('NoSun')
+                try:
+                    if adjDict[srf.name][0] == 'SURFACE':
+                        adjSrfName = adjDict[srf.name][1]
+                        aSrfFound = False
+                        if adjSrfName != None:
+                            # try to find the adjacent surface among the zones.
+                            for azone in zones:
+                                for asrf in azone.surfaces:
+                                    if asrf.name == adjSrfName:
+                                        aSrfFound = True
+                                        updateAdj(srf, asrf)
+                    elif adjDict[srf.name][0] != 'OUTDOORS':
+                        srf.BC = adjDict[srf.name][0]
+                        srf.setSunExposure('NoSun')
+                        srf.setSunExposure('NoSun')
+                except:
+                    print 'Cound not set the boundary conditions correctly for surface {}'.format(srf.name)
     
     # give warnings about missing constructions.
     if missingCcount != 0:
