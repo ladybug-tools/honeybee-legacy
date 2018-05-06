@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.63\nMAY_03_2018'
+ghenv.Component.Message = 'VER 0.0.63\nMAY_05_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -5240,14 +5240,22 @@ class EPZone(object):
         
         def checkSrfNormal(HBSrf, anchorPts, nVecs, planarTrigger):
             #Find the corresponding surface in the closed zone geometry.
+            tol = sc.doc.ModelAbsoluteTolerance
             for count, cenpt in enumerate(anchorPts):
                 #If the center points are the same, then these two represent the same surface.
-                if cenpt == HBSrf.cenPt:
+                if cenpt.X <= HBSrf.cenPt.X +tol and cenpt.X >= HBSrf.cenPt.X - tol and cenpt.Y <= HBSrf.cenPt.Y +tol and cenpt.Y >= HBSrf.cenPt.Y - tol and cenpt.Z <= HBSrf.cenPt.Z +tol and cenpt.Z >= HBSrf.cenPt.Z - tol:
                     if nVecs[count] != HBSrf.normalVector:
                         print "Normal direction for " + HBSrf.name + " is fixed by Honeybee!"
                         HBSrf.geometry.Flip()
                         HBSrf.normalVector.Reverse()
                         HBSrf.basePlane.Flip()
+                        # change the surface type if need be.
+                        if HBSrf.srfTypeByUser == False:
+                            if int(HBSrf.type) == 2:
+                                HBSrf.setType(1)
+                            elif int(HBSrf.type) == 1 or int(HBSrf.type) == 3:
+                                HBSrf.setType(2)
+                        
                         try: HBSrf.punchedGeometry.Flip()
                         except: pass
                         if HBSrf.hasChild and HBSrf.isPlanar:
