@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.63\nMAY_05_2018'
+ghenv.Component.Message = 'VER 0.0.63\nMAY_08_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -70,7 +70,6 @@ import shutil
 import os
 import System.Threading.Tasks as tasks
 import System
-System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12
 import time
 import itertools
 import datetime
@@ -83,6 +82,12 @@ import uuid
 import re
 import random
 import zipfile
+
+try:
+    System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12
+except AttributeError:
+    # TLS 1.2 not provided by MacOS .NET Core; revert to using TLS 1.0
+    System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls
 
 PI = math.pi
 
@@ -813,9 +818,7 @@ class RADMaterialAux(object):
         
         self.HoneybeeFolder = HoneybeeFolder
         self.radMaterialLibrary = materialLibrary
-        self.radMatTypes = ["plastic", "glass", "trans", "metal",
-            "mirror", "texfunc", "mixedfunc", "dielectric", "transdata",
-            "light", "glow", "BRTDfunc"]
+        self.radMatTypes = ["plastic", "glass", "trans", "metal", "mirror", "texfunc", "mixedfunc", "dielectric", "transdata", "light", "glow"]
         
         if reloadRADMaterial:
                         
@@ -1122,17 +1125,9 @@ class RADMaterialAux(object):
         Returns:
             A list of strings. Each string represents a differnt Rdiance Object
         """
-        raw_rad_objects = re.findall(
-            r'^\s*([^0-9].*(\s*[\d|.]+.*)*)',
-            radFileString,
-            re.MULTILINE)
-    
-        radObjects = (' '.join(radiance_object[0].split())
-                      for radiance_object in raw_rad_objects)
-
-        radObjects = tuple(obj for obj in radObjects if obj and obj[0] != '#')
+        rawRadObjects = re.findall(r'(\n|^)(\w*(\h*\w.*\n){1,})', radFileString + "\n",re.MULTILINE)
         
-        return radObjects
+        return [("").join(radObject[:-1]) for radObject in rawRadObjects]
     
     def getRadianceObjectsFromFile(self, radFilePath):
         """
@@ -3389,6 +3384,7 @@ class hb_WriteDS(object):
                 elif controlSystem == "AutomatedThermalControl":
                     if glareControlRecipe!=None:
                         controlSystem = "AutomatedGlareControl"
+                        exteriorSensor = glareControlRecipe.exteriorSensor
                         threshold = glareControlRecipe.threshold
                         minAz = glareControlRecipe.minAz
                         maxAz = glareControlRecipe.maxAz
@@ -5240,22 +5236,14 @@ class EPZone(object):
         
         def checkSrfNormal(HBSrf, anchorPts, nVecs, planarTrigger):
             #Find the corresponding surface in the closed zone geometry.
-            tol = sc.doc.ModelAbsoluteTolerance
             for count, cenpt in enumerate(anchorPts):
                 #If the center points are the same, then these two represent the same surface.
-                if cenpt.X <= HBSrf.cenPt.X +tol and cenpt.X >= HBSrf.cenPt.X - tol and cenpt.Y <= HBSrf.cenPt.Y +tol and cenpt.Y >= HBSrf.cenPt.Y - tol and cenpt.Z <= HBSrf.cenPt.Z +tol and cenpt.Z >= HBSrf.cenPt.Z - tol:
+                if cenpt == HBSrf.cenPt:
                     if nVecs[count] != HBSrf.normalVector:
                         print "Normal direction for " + HBSrf.name + " is fixed by Honeybee!"
                         HBSrf.geometry.Flip()
                         HBSrf.normalVector.Reverse()
                         HBSrf.basePlane.Flip()
-                        # change the surface type if need be.
-                        if HBSrf.srfTypeByUser == False:
-                            if int(HBSrf.type) == 2:
-                                HBSrf.setType(1)
-                            elif int(HBSrf.type) == 1 or int(HBSrf.type) == 3:
-                                HBSrf.setType(2)
-                        
                         try: HBSrf.punchedGeometry.Flip()
                         except: pass
                         if HBSrf.hasChild and HBSrf.isPlanar:
@@ -8648,14 +8636,14 @@ class hb_hvacProperties(object):
         0: {'FanTotEff': False, 'FanMotEff': False, 'FanPres': False, 'FanPlace': False, 'airSysHardSize': False, 'centralAirLoop' : False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
         1: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : False, 'Econ' : False, 'HeatRecov' : False},
         2: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : False, 'CoolSupTemp' : False, 'Econ' : False, 'HeatRecov' : False},
-        3: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        4: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        3: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        4: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
         5: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
         6: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : False, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
         7: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
         8: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': False, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : False, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        9: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
-        10: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        9: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
+        10: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': False, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
         11: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
         12: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
         13: {'FanTotEff': True, 'FanMotEff': True, 'FanPres': True, 'FanPlace': True, 'airSysHardSize': True, 'centralAirLoop' : False, 'FanCntrl': True, 'HeatSupTemp' : True, 'CoolSupTemp' : True, 'Econ' : True, 'HeatRecov' : True},
@@ -8732,7 +8720,7 @@ class hb_hvacProperties(object):
 class hb_airDetail(object):
     def __init__(self, HVACAvailabiltySched=None, fanTotalEfficiency=None, fanMotorEfficiency=None, fanPressureRise=None, \
         fanPlacement=None, airSysHardSize = None, centralAirLoop=None, fanControl = None, heatingSupplyAirTemp=None, \
-        coolingSupplyAirTemp=None, airsideEconomizer=None, sensibleHeatRecovery=None, latentHeatRecovery=None):
+        coolingSupplyAirTemp=None, airsideEconomizer=None, heatRecovery=None, recoveryEffectiveness=None):
         
         self.areInputsChecked = False
         self.sysProps = hb_hvacProperties()
@@ -8770,6 +8758,15 @@ class hb_airDetail(object):
         False: 'Constant Volume',
         'Variable Volume': 'Variable Volume',
         'Constant Volume': 'Constant Volume'
+        }
+        
+        self.heatRecovDict = {
+        0: 'None',
+        1: 'Sensible',
+        2: 'Enthalpy',
+        'None': 'None',
+        'Sensible': 'Sensible',
+        'Enthalpy': 'Enthalpy'
         }
         
         if HVACAvailabiltySched:
@@ -8819,14 +8816,14 @@ class hb_airDetail(object):
                 self.airsideEconomizer = self.economizerCntrlDict[airsideEconomizer]
         else:
             self.airsideEconomizer = "Default"
-        if sensibleHeatRecovery != None:
-            self.sensibleHeatRecovery = float(sensibleHeatRecovery)
+        if heatRecovery != None:
+            self.heatRecovery = self.heatRecovDict[heatRecovery]
         else:
-            self.sensibleHeatRecovery = "Default"
-        if latentHeatRecovery != None:
-            self.latentHeatRecovery = float(latentHeatRecovery)
+            self.heatRecovery = "Default"
+        if recoveryEffectiveness:
+            self.recoveryEffectiveness = float(recoveryEffectiveness)
         else:
-            self.latentHeatRecovery = "Default"
+            self.recoveryEffectiveness = "Default"
     
     
     @classmethod
@@ -8878,14 +8875,13 @@ class hb_airDetail(object):
                 errors.append("Air Side Economizer not a valid control type.")
             else:
                 self.airsideEconomizer = self.economizerCntrlDict[self.airsideEconomizer]
-        if self.sensibleHeatRecovery != 'Default':
-            if self.sensibleHeatRecovery > 1 or self.sensibleHeatRecovery < 0:
+        if self.recoveryEffectiveness != 'Default':
+            if self.heatRecovery == 'Default' or self.heatRecovery == 'None':
                 success = False
-                errors.append("Sensible Heat Recovery Effeictiveness must be between 0 and 1.")
-        if self.latentHeatRecovery != 'Default':
-            if self.latentHeatRecovery > 1 or self.latentHeatRecovery < 0:
+                errors.append("Heat recovery effectivness specified without setting heatRecovery to True.")
+            if self.recoveryEffectiveness > 1 or self.recoveryEffectiveness < 0:
                 success = False
-                errors.append("Latent Heat Recovery Effeictiveness must be between 0 and 1.")
+                errors.append("Heat Recovery Effeictiveness must be between 0 and 1.")
         
         return success, errors
     
@@ -8919,10 +8915,10 @@ class hb_airDetail(object):
                 pass
             else:
                 errors.append('Airside economizer type ' + self.airsideEconomizer + ' is not supported for IDEAL AIR LOADS SYSTEMS.')
-        if self.sensibleHeatRecovery != 'Default' and hvacCapabilities['HeatRecov'] == False:
+        if self.heatRecovery != 'Default' and hvacCapabilities['HeatRecov'] == False:
             errors.append(self.sysProps.generateWarning(sysType, 'A HEAT RECOVERY SYSTEM', 'airDetails'))
-        if self.latentHeatRecovery != 'Default' and hvacCapabilities['HeatRecov'] == False:
-            errors.append(self.sysProps.generateWarning(sysType, 'A HEAT RECOVERY SYSTEM', 'airDetails'))
+        if self.recoveryEffectiveness != 'Default' and hvacCapabilities['HeatRecov'] == False:
+            errors.append(self.sysProps.generateWarning(sysType, 'HEAT RECOVERY EFFECTIVENESS', 'airDetails'))
         
         return errors
     
@@ -8944,8 +8940,8 @@ class hb_airDetail(object):
             '  Heating Supply Air Temperature: ' + str(self.heatingSupplyAirTemp) + '\n' + \
             '  Cooling Supply Air Temperature: ' + str(self.coolingSupplyAirTemp) + '\n' + \
             '  Airside Economizer Method: ' + str(self.airsideEconomizer) + '\n' + \
-            '  Sensible Heat Recovery Effectiveness: ' + str(self.sensibleHeatRecovery) + '\n' + \
-            '  Latent Heat Recovery Effectiveness: ' + str(self.latentHeatRecovery)
+            '  Heat Recovery: ' + str(self.heatRecovery) + '\n' + \
+            '  Heat Recovery Effectiveness: ' + str(self.recoveryEffectiveness)
             
             return True, textStr
         else:
@@ -9433,7 +9429,7 @@ if checkIn.letItFly:
         sc.sticky["honeybee_folders"] = {}
         
         # supported versions for EnergyPlus
-        EPVersions = ["V8-9-0", "V8-8-0","V8-7-0", "V8-6-0", "V8-5-0", "V8-4-0", "V8-3-0", "V8-2-10", \
+        EPVersions = ["V8-8-0","V8-7-0", "V8-6-0", "V8-5-0", "V8-4-0","V8-3-0", "V8-2-10", \
                       "V8-2-9", "V8-2-8", "V8-2-7", "V8-2-6", \
                       "V8-2-5", "V8-2-4", "V8-2-3", "V8-2-2", "V8-2-1", "V8-2-0", \
                       "V8-1-5", "V8-1-4", "V8-1-3", "V8-1-2", "V8-1-1", "V8-1-0"]
