@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Energy Simulation Par"
 ghenv.Component.NickName = 'EnergySimPar'
-ghenv.Component.Message = 'VER 0.0.63\nFEB_13_2018'
+ghenv.Component.Message = 'VER 0.0.63\nMAY_08_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -142,8 +142,15 @@ def main(timestep, shadowCalcPar, solarDistribution, simulationControls, ddyFile
     if coolingSizingFactor == None:
         coolingSizingFactor = 1.15
     
+    finalHoliday = []
+    for holiday in holidays:
+        if holiday == "" or holiday == None:
+            pass
+        else:
+            finalHoliday.append(holiday)
+    
     if (monthlyGrndTemps == [] or len(monthlyGrndTemps) == 12):
-        return [timestep] + shadowCalcPar + [solarDistribution] + simulationControls + [ddyFile] + [terrain] + [monthlyGrndTemps] + [holidays]  + [startDayOfWeek] + [heatingSizingFactor] + [coolingSizingFactor]
+        return [timestep] + shadowCalcPar + [solarDistribution] + simulationControls + [ddyFile] + [terrain] + [monthlyGrndTemps] + [finalHoliday]  + [startDayOfWeek] + [heatingSizingFactor] + [coolingSizingFactor]
     else:
         if monthlyGrndTemps != [] and len(monthlyGrndTemps) != 12:
             warning = 'monthlyGrndTemps_ must either be left blank or contain 12 values representing the average ground temperature for each month.'
