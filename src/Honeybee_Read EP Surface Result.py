@@ -46,7 +46,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Read EP Surface Result"
 ghenv.Component.NickName = 'readEPSrfResult'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.63\nMAY_08_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -146,8 +146,8 @@ if _resultFileAddress:
                     srfAreaLines = range(lineCount+3, lineCount+3+int(numZones)+int(numSrfs)+int(numFixShd)+int(numBldgShd)+int(numAttShd))
                 else:
                     srfAreaLines = range(lineCount+2, lineCount+2+int(numZones)+int(numSrfs))
-                    print srfAreaLines
-            elif '-FRAME' in line: srfAreaLines.append(srfAreaLines[-1]+1)
+            elif '-FRAME' in line or 'Frame/Divider' in line:
+                srfAreaLines.append(srfAreaLines[-1]+1)
             elif lineCount in srfAreaLines:
                 if "Shading_Surface" in line or "Shading Surface" in line: pass
                 elif "Zone_Surfaces" in line or "Zone Surfaces" in line:
