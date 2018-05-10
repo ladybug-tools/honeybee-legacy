@@ -80,7 +80,7 @@ Provided by Honeybee 0.0.63
         _fanPrises_: This field can be a float or a list of floats which correspond sequentially to the _HBZones. Each float is the pressure rise experienced across the fan in Pascals (N/m2) the default is 150 Pascals which will be used if no value is given for a zone.
         -
         This is a function of the fan and plays a role in determining the amount of energy consumed by the fan.
-        _fanEfficiencies_: This field can be a float or a list of floats between 0 and 1 which correspond sequentially to the _HBZones. Each float is the earth tube fan efficiency which is a decimal number between 0.0 and 1.0 the default is 1 which will be used if no value is given for a zone.
+        _fanEfficiencies_: This field can be a float or a list of floats between 0 and 1 which correspond sequentially to the _HBZones. Each float is the earth tube fan efficiency which is a decimal number between 0.0 and 1.0 the default is 0.7 which will be used if no value is given for a zone.
         -
         This is a function of the fan and plays a role in determining the amount of energy consumed by the fan.        _pipeRadii_: This field can be a float or a list of floats which correspond sequentially to the _HBZones. Each float is the radius of the earth tube(in meters) the default is 0.5 meter which will be used if no value is given for a zone. This plays a role in determining the amount of heat transferred from the surrounding soil to the air passing along the pipe. 
         -
@@ -112,7 +112,7 @@ Provided by Honeybee 0.0.63
 """
 
 ghenv.Component.Name = "Honeybee_AddEarthtube"
-ghenv.Component.Message = 'VER 0.0.63\nMAR_03_2018'
+ghenv.Component.Message = 'VER 0.0.63\nMAY_08_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "08 | Energy | Set Zone Properties"
@@ -222,9 +222,9 @@ def checktheinputs(schedules_,_designFlowrates,_mincoolingTemps_,_maxheatingTemp
     
     for values in _fanEfficiencies_:
     
-        if (fan_n < 0) or (fan_n > 1):
+        if (values < 0) or (values > 1):
             
-            warnMsg =  "fan_n - total fan efficiency must be a decimal number between 0 and 1!"
+            warnMsg =  "_fanEfficiencies_ must be a decimal number between 0 and 1!"
             print warnMsg
             w = gh.GH_RuntimeMessageLevel.Warning
             ghenv.Component.AddRuntimeMessage(w, warnMsg)
@@ -518,7 +518,7 @@ def main(_HBZones,schedules_,_designFlowrates,_mincoolingTemps_,_maxheatingTemps
         try: zone.efficiency = _fanEfficiencies_[zoneCount]
         
         except IndexError:
-            zone.efficiency  = 1
+            zone.efficiency  = 0.7
         
         # Writing earth tube earthtube pipe radius
         
