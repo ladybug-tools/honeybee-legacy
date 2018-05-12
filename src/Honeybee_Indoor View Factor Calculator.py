@@ -31,7 +31,7 @@ Provided by Honeybee 0.0.63
     Args:
         _HBZones: The HBZones out of any of the HB components that generate or alter zones.  Note that these should ideally be the zones that are fed into the Run Energy Simulation component as surfaces may not align otherwise.  Zones read back into Grasshopper from the Import idf component will not align correctly with the EP Result data.
         gridSize_: A number in Rhino model units to make each cell of the view factor mesh.
-        distFromFloorOrSrf_: A number in Rhino model units to set the distance of the view factor mesh from the ground.
+        distFromFloorOrSrf_: A number in Rhino model units to set the distance of the view factor mesh from the floor of the zones.  Alternatively, this can be a surface or list of surfaces on which you are interested in studying thermal comfort.  Lastly, it can be a list of points at which you want to evaluate microclimate conditions.
         additionalShading_: Add additional shading breps or meshes to account for geometry that is not a part of the zone but can still block direct sunlight to occupants.  Examples include outdoor context shading and indoor furniture.
         addShdTransmiss_: An optional transmissivity that will be used for all of the objects connected to the additionalShading_ input.  This can also be a list of transmissivities whose length matches the number of breps connected to additionalShading_ input, which will assign a different transmissivity to each object.  Lastly, this input can also accept a data tree with a number of branches equal to the number of objects connected to the additionalShading_ input with a number of values in each branch that march the number of hours in the simulated analysisPeriod (so, for an annual simulation, each branch would have 8760 values).  The default is set to assume that all additionalShading_ objects are completely opaque.  As one adds in transmissivities with this input, the calculation time will increase accordingly.
         ============: ...
@@ -58,7 +58,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.63\nJAN_20_2018'
+ghenv.Component.Message = 'VER 0.0.63\nMAY_12_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -286,7 +286,11 @@ def checkTheInputs():
             floatTest = float(distFromFloorOrSrf_[0])
             sectionMethod = 0
         except:
-            sectionMethod = 1
+            try:
+                rc.Geometry.Point3d(distFromFloorOrSrf_[0])
+                sectionMethod = 2
+            except:
+                sectionMethod = 1
     else: sectionMethod = 0
     
     if sectionMethod == 0:
@@ -306,9 +310,12 @@ def checkTheInputs():
             else:
                 distFromFloor = 0.1
             print "No value connected for distFromFloorOrSrf_.  The distance from the floor has been set to " + str(distFromFloor) + " " + rhinoModelUnits + "."
-    else:
+    elif sectionMethod == 1:
         distFromFloor = None
         sectionMesh, sectionBreps = lb_preparation.cleanAndCoerceList(distFromFloorOrSrf_)
+    else:
+        distFromFloor = None
+        sectionBreps = [distFromFloorOrSrf_]
     
     #Check to be sure that none of the zones are having the temperature map generated above them.
     checkData2 = True
@@ -429,6 +436,24 @@ def createMesh(brep, gridSize):
     for i in range(len(mesh)): makeMeshFromSrf(i, brep[i])
     
     return mesh
+
+def createMeshFromPoints(points, gridSize):
+    pointBreps = []
+    pointMesh = rc.Geometry.Mesh()
+    initPts = [rc.Geometry.Point3d(-gridSize/2, gridSize/2, 0),
+        rc.Geometry.Point3d(gridSize/2, gridSize/2, 0),
+        rc.Geometry.Point3d(gridSize/2, -gridSize/2, 0),
+        rc.Geometry.Point3d(-gridSize/2, -gridSize/2, 0)]
+    
+    for pt in points:
+        brepInit = rc.Geometry.Brep.CreateFromCornerPoints(initPts[0], initPts[1], initPts[2], initPts[3], sc.doc.ModelAbsoluteTolerance)
+        moveTrans = rc.Geometry.Transform.Translation(pt.X, pt.Y, pt.Z)
+        brepInit.Transform(moveTrans)
+        pointBreps.append(brepInit)
+        meshedBrep = rc.Geometry.Mesh.CreateFromBrep(brepInit)[0]
+        pointMesh.Append(meshedBrep)
+    
+    return pointMesh, pointBreps
 
 def constructNewMesh(finalFaceBreps):
     finalMesh = rc.Geometry.Mesh()
@@ -740,7 +765,7 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
     if geoCheck == True:
         
         #Check the section method and use this to decide whether to mesh the test surfaces now.
-        if sectionMethod != 0:
+        if sectionMethod == 1:
             allTestPts = []
             allFaceBreps = []
             finalBreps = [sectionBreps]
@@ -761,6 +786,11 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                             allFaceBreps[meshCount].append(faceBrep)
                         except:
                             pass
+        elif sectionMethod == 2:
+            pointMesh, pointBreps = createMeshFromPoints(sectionBreps[0], gridSize)
+            finalMesh = [pointMesh]
+            allTestPts = sectionBreps
+            allFaceBreps = [pointBreps]
         
         
         for zoneCount, srfList in enumerate(zoneSrfs):
