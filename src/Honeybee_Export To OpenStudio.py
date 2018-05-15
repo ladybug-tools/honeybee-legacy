@@ -71,7 +71,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.63\nMAY_05_2018'
+ghenv.Component.Message = 'VER 0.0.63\nMAY_14_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -2477,7 +2477,7 @@ class WriteOPS(object):
                         if airDetails.latentHeatRecovery != 'Default' and airDetails.latentHeatRecovery != 0:
                             zoneIdealAir.setHeatRecoveryType('Enthalpy')
                             zoneIdealAir.setLatentHeatRecoveryEffectiveness(airDetails.latentHeatRecovery)
-                            if airDetails.latentHeatRecovery == 'Default':
+                            if airDetails.sensibleHeatRecovery == 'Default':
                                 zoneIdealAir.setSensibleHeatRecoveryEffectiveness(0.8)
                     
                     # Set the heatingDetails.

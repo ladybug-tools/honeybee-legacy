@@ -62,7 +62,7 @@ Provided by Honeybee 0.0.63
 """
 ghenv.Component.Name = "Honeybee_ Run Energy Simulation"
 ghenv.Component.NickName = 'runEnergySimulation'
-ghenv.Component.Message = 'VER 0.0.63\nMAR_02_2018'
+ghenv.Component.Message = 'VER 0.0.63\nMAY_14_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -553,14 +553,16 @@ class WriteIDF(object):
                     coolSupply = str(airDetails.coolingSupplyAirTemp)
                 if airDetails.airsideEconomizer != 'Default':
                     airSideEconomizer =  airDetails.airsideEconomizer
-                if airDetails.heatRecovery != 'Default':
-                    heatRecovery = airDetails.heatRecovery
-                if airDetails.recoveryEffectiveness != 'Default':
-                    if heatRecovery == 'Sensible':
-                        sensRecovEffectiveness = str(airDetails.recoveryEffectiveness)
-                    elif heatRecovery == 'Enthalpy':
-                        sensRecovEffectiveness = str(airDetails.recoveryEffectiveness)
-                        latRecovEffectiveness = str(airDetails.recoveryEffectiveness)
+                
+                if airDetails.sensibleHeatRecovery != 'Default' and airDetails.sensibleHeatRecovery != 0:
+                    heatRecovery = 'Sensible'
+                    sensRecovEffectiveness = str(airDetails.sensibleHeatRecovery)
+                    latRecovEffectiveness = 0
+                if airDetails.latentHeatRecovery != 'Default' and airDetails.latentHeatRecovery != 0:
+                    heatRecovery = 'Enthalpy'
+                    latRecovEffectiveness = airDetails.latentHeatRecovery
+                    if airDetails.sensibleHeatRecovery == 'Default':
+                        zoneIdealAir.setSensibleHeatRecoveryEffectiveness(0.8)
             
             # Set the heatingDetails.
             heatAvailSch = ''
