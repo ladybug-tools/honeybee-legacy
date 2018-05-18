@@ -44,11 +44,11 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Assign HVAC System"
 ghenv.Component.NickName = 'HVACSystem'
-ghenv.Component.Message = 'VER 0.0.63\nAPR_06_2018'
+ghenv.Component.Message = 'VER 0.0.63\nMAY_18_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | HVACSystems"
-#compatibleHBVersion = VER 0.0.56\nNOV_04_2016
+#compatibleHBVersion = VER 0.0.56\nMAY_18_2016
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 try: ghenv.Component.AdditionalHelpFromDocStrings = "1"
 except: pass

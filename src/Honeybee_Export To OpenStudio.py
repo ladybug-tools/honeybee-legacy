@@ -71,11 +71,11 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Export To OpenStudio"
 ghenv.Component.NickName = 'exportToOpenStudio'
-ghenv.Component.Message = 'VER 0.0.63\nMAY_14_2018'
+ghenv.Component.Message = 'VER 0.0.63\nMAY_18_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
-#compatibleHBVersion = VER 0.0.56\nMAR_01_2018
+#compatibleHBVersion = VER 0.0.56\nMAY_18_2018
 #compatibleLBVersion = VER 0.0.59\nJUL_24_2015
 ghenv.Component.AdditionalHelpFromDocStrings = "1"
 
@@ -1464,6 +1464,8 @@ class WriteOPS(object):
             sizingSystem.setTypeofLoadtoSizeOn("Sensible") #VAV
             sizingSystem.setAllOutdoorAirinCooling(False) #VAV
             sizingSystem.setAllOutdoorAirinHeating(False) #VAV
+            if airDetails.recirculation == 'False':
+                self.setAirLoopToOnceThroughAir(airloopPrimary, model)
         
         airLoopComps = []
         # set availability schedule
@@ -2219,6 +2221,12 @@ class WriteOPS(object):
             outdoorNode = airloop.reliefAirNode().get()
             heatEx.addToNode(outdoorNode)
     
+    def setAirLoopToOnceThroughAir(self, airloop, model):
+        oasys = airloop.airLoopHVACOutdoorAirSystem()
+        oactrl = oasys.get().getControllerOutdoorAir()
+        onceTrhoughSched = self.createConstantScheduleRuleset('OnceThroughAir', 'OnceThroughAirSched', 'FRACTION', 1, model)
+        oactrl.setMinimumFractionofOutdoorAirSchedule(onceTrhoughSched)
+    
     def addDefaultAirsideEcon(self, airloop, dehumidTrigger):
         oasys = airloop.airLoopHVACOutdoorAirSystem()
         oactrl = oasys.get().getControllerOutdoorAir()
@@ -2259,6 +2267,8 @@ class WriteOPS(object):
                 cvfan.addToNode(mixAirNode)
         if airDetails.heatingSupplyAirTemp != 'Default' or airDetails.coolingSupplyAirTemp != 'Default':
             self.updateCVLoopSupplyTemp(airloop, model, airDetails.coolingSupplyAirTemp, airDetails.heatingSupplyAirTemp)
+        if airDetails.recirculation == 'False':
+            self.setAirLoopToOnceThroughAir(airloop, model)
         if airDetails.airsideEconomizer != 'Default':
             if airDetails.airsideEconomizer == 'NoEconomizer':
                 econLockout = True
@@ -2282,6 +2292,8 @@ class WriteOPS(object):
             self.updateFan(vvfan,airDetails.fanTotalEfficiency,airDetails.fanMotorEfficiency,airDetails.fanPressureRise,airDetails.airSysHardSize)
         if airDetails.airSysHardSize != "Default":
             airloop.setDesignSupplyAirFlowRate(float(airDetails.airSysHardSize))
+        if airDetails.recirculation == 'False':
+            self.setAirLoopToOnceThroughAir(airloop, model)
         if airDetails.airsideEconomizer != 'Default':
             self.adjustAirSideEcon(airloop, airDetails)
             if airDetails.airsideEconomizer == 'NoEconomizer':

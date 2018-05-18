@@ -42,6 +42,7 @@ Provided by Honeybee 0.0.63
             False = Constant Volume Minimum Air (the fan has only one miniumum flow rate when it is on).
         _heatingSupplyAirTemp_: A number representing the target temperature of the supply air when the system is in heating mode.  For large systems, this is the rated outlet air temperature of the heating coil.  Default for a VAV system is 35C. Default for ideal air is 40 C.
         _coolingSupplyAirTemp_: A number representing the target temperature of the supply air when the system is in cooling mode.  For large systems, this is the rated outlet air temperature of the cooling coil.  Default is typically around 12C, which is the coldest temperature before supply air can cause clear thermal discomfort issues. Default for ideal air is 13 C.
+        airRecirculation_: An optional boolean that, when set to False, will make all air pass through the air loop only once without recirculation.  The default is set to True, which will recirculate air when the air needed to meet heating/cooling loads is in excess of the minimum outdoor ventilation.  The only reasons why this output might be set to False is for systems where outdoor air intake and exhaust cannot be located close enough to allow for recirculation or one is modeling a space like a laboratory where the exhaust is toxic and cannot be recirculated.  Note that this input will have no effect on HVAC systems with a DOAS since this system isn't intedned to heat and cool the space.
         airsideEconomizer_: An integer or boolean value (0/1) that sets the economizer on the HVAC system.  The default is set to "True" or "1" to include a Differential Dry Bulb air side economizer or "2" for a Differential Enthalpy economizer if the zone has humidity control.  Choose from the following options:
             0 - No Economizer - The HVAC system will constantly provide the same amount of minimum outdoor air and may run the cooling system to remove heat and meet thermostat setpoints.
             1 - Differential Dry Bulb - The HVAC system will increase the outdoor air flow rate when there is a cooling load and the outdoor air temperature is below the temperature of the return (or exhaust) air. 
@@ -61,11 +62,11 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_HVAC Air Details"
 ghenv.Component.NickName = 'AirDetails'
-ghenv.Component.Message = 'VER 0.0.63\nAPR_15_2018'
+ghenv.Component.Message = 'VER 0.0.63\nMAY_18_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "09 | Energy | HVACSystems"
-#compatibleHBVersion = VER 0.0.56\nJUL_17_2017
+#compatibleHBVersion = VER 0.0.56\nMAY_18_2017
 #compatibleLBVersion = VER 0.0.59\nFEB_01_2015
 
 try: ghenv.Component.AdditionalHelpFromDocStrings = "2"
@@ -79,7 +80,7 @@ w = gh.GH_RuntimeMessageLevel.Warning
 def main(hb_airDetail):
     myAirDetails = hb_airDetail(_HVACAvailabiltySched_, _fanTotalEfficiency_, _fanMotorEfficiency_, \
     _fanPressureRise_, _fanPlacement_, airSystemHardSize_, centralAirLoop_, demandControlledVent_, _heatingSupplyAirTemp_, _coolingSupplyAirTemp_, \
-    airsideEconomizer_, sensibleHeatRecovery_, latentHeatRecovery_)
+    airRecirculation_, airsideEconomizer_, sensibleHeatRecovery_, latentHeatRecovery_)
     
     success, airDetails = myAirDetails.class2Str()
     if success:
