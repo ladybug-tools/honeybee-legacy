@@ -58,7 +58,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.63\nMAY_12_2018'
+ghenv.Component.Message = 'VER 0.0.63\nMAY_22_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -287,7 +287,10 @@ def checkTheInputs():
             sectionMethod = 0
         except:
             try:
-                rc.Geometry.Point3d(distFromFloorOrSrf_[0])
+                try:
+                    rc.Geometry.Point3d(distFromFloorOrSrf_[0])
+                except:
+                    points = [rs.coerce3dpoint(x) for x in distFromFloorOrSrf_]
                 sectionMethod = 2
             except:
                 sectionMethod = 1
@@ -445,6 +448,11 @@ def createMeshFromPoints(points, gridSize):
         rc.Geometry.Point3d(gridSize/2, -gridSize/2, 0),
         rc.Geometry.Point3d(-gridSize/2, -gridSize/2, 0)]
     
+    try:
+        points = [rs.coerce3dpoint(x) for x in points]
+    except:
+        pass
+    
     for pt in points:
         brepInit = rc.Geometry.Brep.CreateFromCornerPoints(initPts[0], initPts[1], initPts[2], initPts[3], sc.doc.ModelAbsoluteTolerance)
         moveTrans = rc.Geometry.Transform.Translation(pt.X, pt.Y, pt.Z)
@@ -453,7 +461,7 @@ def createMeshFromPoints(points, gridSize):
         meshedBrep = rc.Geometry.Mesh.CreateFromBrep(brepInit)[0]
         pointMesh.Append(meshedBrep)
     
-    return pointMesh, pointBreps
+    return pointMesh, pointBreps, points
 
 def constructNewMesh(finalFaceBreps):
     finalMesh = rc.Geometry.Mesh()
@@ -787,9 +795,9 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                         except:
                             pass
         elif sectionMethod == 2:
-            pointMesh, pointBreps = createMeshFromPoints(sectionBreps[0], gridSize)
+            pointMesh, pointBreps, sectionBreps = createMeshFromPoints(sectionBreps[0], gridSize)
             finalMesh = [pointMesh]
-            allTestPts = sectionBreps
+            allTestPts = [sectionBreps]
             allFaceBreps = [pointBreps]
         
         
