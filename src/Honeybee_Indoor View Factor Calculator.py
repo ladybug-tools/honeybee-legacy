@@ -58,7 +58,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Indoor View Factor Calculator"
 ghenv.Component.NickName = 'IndoorViewFactor'
-ghenv.Component.Message = 'VER 0.0.63\nMAY_22_2018'
+ghenv.Component.Message = 'VER 0.0.63\nMAY_24_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.application
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "10 | Energy | Energy"
@@ -944,9 +944,8 @@ def prepareGeometry(gridSize, distFromFloor, removeInt, sectionMethod, sectionBr
                     #Construct a new mesh from the breps that are inside each zone.
                     finalMesh = constructNewMesh(finalFaceBreps)
                     
-                    if finalMesh.Faces.Count > 3 and len(finalTestPts) > 0:
+                    if len(finalTestPts) > 0:
                         MRTMeshInit[zoneCount].append(finalMesh)
-                        
                         MRTMeshBreps[zoneCount].extend(finalFaceBreps)
                         testPts[zoneCount].extend(finalTestPts)
         
