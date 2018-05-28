@@ -47,7 +47,7 @@ Provided by Honeybee 0.0.63
 
 ghenv.Component.Name = "Honeybee_Honeybee"
 ghenv.Component.NickName = 'Honeybee'
-ghenv.Component.Message = 'VER 0.0.63\nMAY_18_2018'
+ghenv.Component.Message = 'VER 0.0.63\nMAY_27_2018'
 ghenv.Component.IconDisplayMode = ghenv.Component.IconDisplayMode.icon
 ghenv.Component.Category = "Honeybee"
 ghenv.Component.SubCategory = "00 | Honeybee"
@@ -133,10 +133,10 @@ class CheckIn():
         
         #set up default pass
         if not self.folderIsSetByUser:
-            if os.path.exists("c:\\ladybug\\") and os.access(os.path.dirname("c:\\ladybug\\"), os.F_OK):
+            if os.path.exists("c:\\ladybug\\") and os.access(os.path.dirname("c:\\ladybug\\"), os.X_OK):
                 # folder already exists so it is all fine
                 sc.sticky["Honeybee_DefaultFolder"] = "c:\\ladybug\\"
-            elif os.access(os.path.dirname("c:\\"), os.F_OK):
+            elif os.access(os.path.dirname("c:\\"), os.X_OK):
                 #the folder does not exists but write privileges are given so it is fine
                 sc.sticky["Honeybee_DefaultFolder"] = "c:\\ladybug\\"
             else:
